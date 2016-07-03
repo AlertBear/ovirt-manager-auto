@@ -1,7 +1,6 @@
 """
 multiple_queue_nics
 """
-import logging
 
 import pytest
 
@@ -13,11 +12,13 @@ from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import update_vnic_profile, run_vm, create_vm
 
-logger = logging.getLogger("Multiple_Queues_Nics_Cases")
-
 
 @attr(tier=2)
-@pytest.mark.usefixtures(update_vnic_profile.__name__, run_vm.__name__)
+@pytest.mark.incremental
+@pytest.mark.usefixtures(
+    update_vnic_profile.__name__,
+    run_vm.__name__
+)
 class TestMultipleQueueNics01(NetworkTest):
     """
     1) Verify that number of queues is not updated on running VM and check
@@ -32,7 +33,7 @@ class TestMultipleQueueNics01(NetworkTest):
     prop_queues = conf.PROP_QUEUES[1]
 
     @polarion("RHEVM3-4310")
-    def test_multiple_queue_nics_update(self):
+    def test_01_multiple_queue_nics_update(self):
         """
         Update queues while VM is running.
         Make sure that number of queues does not change on running VM.
@@ -44,17 +45,14 @@ class TestMultipleQueueNics01(NetworkTest):
             "Update custom properties on %s to %s", conf.MGMT_BRIDGE,
             self.prop_queues
         )
-
         assert ll_networks.update_vnic_profile(
             name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE,
             data_center=conf.DC_0, custom_properties=self.prop_queues
         )
-
         testflow.step(
             "Check that qemu still has %s queues after properties update",
             self.num_queues_0
         )
-
         assert network_helper.check_queues_from_qemu(
             vm=self.vm_name, host_obj=conf.VDS_0_HOST,
             num_queues=self.num_queues_0
@@ -63,7 +61,6 @@ class TestMultipleQueueNics01(NetworkTest):
         assert ll_vms.restartVm(
             vm=self.vm_name, placement_host=conf.HOST_0_NAME
         )
-
         testflow.step("Check that qemu has %s queues", self.num_queues_1)
         assert network_helper.check_queues_from_qemu(
             vm=self.vm_name, host_obj=conf.VDS_0_HOST,
@@ -71,9 +68,9 @@ class TestMultipleQueueNics01(NetworkTest):
         )
 
     @polarion("RHEVM3-4312")
-    def test_multiple_queue_nics(self):
+    def test_02_multiple_queue_nics(self):
         """
-        hibernate the VM and check the queue still confured on qemu
+        hibernate the VM and check the queue still configured on qemu
         """
         testflow.step("Suspend %s", self.vm_name)
         assert ll_vms.suspendVm(positive=True, vm=self.vm_name)
@@ -82,16 +79,15 @@ class TestMultipleQueueNics01(NetworkTest):
         assert ll_vms.startVm(
             positive=True, vm=self.vm_name, placement_host=conf.HOST_0_NAME
         )
-
-        testflow.step("Check that qemu has %s queues", self.num_queues_0)
+        testflow.step("Check that qemu has %s queues", self.num_queues_1)
         assert network_helper.check_queues_from_qemu(
             vm=self.vm_name, host_obj=conf.VDS_0_HOST,
-            num_queues=self.num_queues_0
+            num_queues=self.num_queues_1
         )
 
     @bz({"1349461": {}})
     @polarion("RHEVM3-4311")
-    def test_multiple_queue_nics_vm_migration(self):
+    def test_03_multiple_queue_nics_vm_migration(self):
         """
         Check number of queues after VM migration
         """
@@ -104,17 +100,19 @@ class TestMultipleQueueNics01(NetworkTest):
         )
         testflow.step(
             "Check that qemu has %s queues after VM migration",
-            self.num_queues_0
+            self.num_queues_1
         )
         assert network_helper.check_queues_from_qemu(
             vm=self.vm_name, host_obj=conf.VDS_1_HOST,
-            num_queues=self.num_queues_0
+            num_queues=self.num_queues_1
         )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    update_vnic_profile.__name__, create_vm.__name__, run_vm.__name__
+    update_vnic_profile.__name__,
+    create_vm.__name__,
+    run_vm.__name__
 )
 class TestMultipleQueueNics02(NetworkTest):
     """
@@ -129,7 +127,6 @@ class TestMultipleQueueNics02(NetworkTest):
         """
         Check that queue exist on VM from template
         """
-
         testflow.step("Check that qemu has %s queues", self.num_queues_0)
         assert network_helper.check_queues_from_qemu(
             vm=self.vm_name, host_obj=conf.VDS_0_HOST,

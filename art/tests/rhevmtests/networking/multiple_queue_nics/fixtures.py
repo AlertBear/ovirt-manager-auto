@@ -16,14 +16,14 @@ from rhevmtests.networking.fixtures import NetworkFixtures
 @pytest.fixture(scope="class")
 def update_vnic_profile(request,):
     """
-    Fixture for config and update queue value on vNIC profile for exiting
+    Config and update queue value on vNIC profile for exiting
     network (vNIC CustomProperties).
     """
     multiple_queue_nics = NetworkFixtures()
 
     def fin():
         """
-        Finalizer for remove custom properties on MGMT.
+        Remove custom properties on MGMT.
         """
         ll_networks.update_vnic_profile(
             name=multiple_queue_nics.mgmt_bridge,
@@ -43,14 +43,14 @@ def update_vnic_profile(request,):
 @pytest.fixture(scope="class")
 def run_vm(request):
     """
-    Fixture for start VM.
+    Start VM.
     """
     multiple_queue_nics = NetworkFixtures()
     vm_name = request.node.cls.vm_name
 
     def fin():
         """
-        Finalizer for stop the VM.
+        Stop VM.
         """
         ll_vms.stopVm(positive=True, vm=vm_name)
     request.addfinalizer(fin)
@@ -64,14 +64,14 @@ def run_vm(request):
 @pytest.fixture(scope="class")
 def create_vm(request):
     """
-    Fixture for create VM.
+    Create VM.
     """
     multiple_queue_nics = NetworkFixtures()
     vm_name = request.node.cls.vm_name
 
     def fin():
         """
-        Finalizer for remove vm
+        Remove vm
         """
         ll_vms.removeVm(
             positive=True, vm=vm_name, stopVM="True", wait=True
