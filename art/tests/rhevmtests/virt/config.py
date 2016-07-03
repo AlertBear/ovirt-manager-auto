@@ -59,6 +59,22 @@ OS_RHEL_7 = ENUMS['rhel7x64']
 SPICE = ENUMS['display_type_spice']
 VNC = ENUMS['display_type_vnc']
 
+# cpu_hotplug
+CPU_HOTPLUG_VM = "cpu_hotplug_vm"
+VCPU_PINNING_3 = ([{str(i): str(i)} for i in range(3)])
+CPU_TOPOLOGY = []
+CPU_HOTPLUG_VM_PARAMS = {
+    "cpu_cores": 1,
+    "cpu_socket": 1,
+    "placement_affinity": VM_MIGRATABLE,
+    "placement_host": VM_ANY_HOST,
+    "vcpu_pinning": [],
+}
+MIGRATING_STATUSES = [
+    ENUMS["vm_state_migrating"], ENUMS["vm_state_migrating_to"],
+    ENUMS["vm_state_migrating_from"]
+]
+
 FILE_NAME = 'test_file'
 TEMP_PATH = '/var/tmp/'
 ACTION_TIMEOUT = 30
