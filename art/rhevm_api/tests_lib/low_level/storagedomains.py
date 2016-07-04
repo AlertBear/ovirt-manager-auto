@@ -128,7 +128,6 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage(HostStorage(
             type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
-        sd.set_storage_format(kwargs.pop('format', None))
         sd.set_storage(
             HostStorage(
                 type_=storage_type, path=kwargs.pop('path', None),
@@ -204,8 +203,12 @@ def addStorageDomain(positive, wait=True, **kwargs):
                     False otherwise)
     '''
     sd = _prepareStorageDomainObject(positive, **kwargs)
+    format = kwargs.get('format', False)
+    operations = ['format=true'] if format else []
     try:
-        sd, status = util.create(sd, positive, async=(not wait))
+        sd, status = util.create(
+            sd, positive, async=(not wait), operations=operations
+        )
     except TypeError:
         util.logger.warning('Domain not created, wrong argument type passed. '
                             'Args: %s', kwargs)
