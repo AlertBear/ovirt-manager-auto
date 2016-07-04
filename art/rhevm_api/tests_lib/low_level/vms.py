@@ -2621,6 +2621,7 @@ def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
     operations = ['clone=true']
     expectedVm.set_snapshots(None)
     expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
+    logger.info("Cloning vm %s from snapshot %s", name, snapshot)
     vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm,
                                compare=compare, operations=operations)
     if positive and status and wait:

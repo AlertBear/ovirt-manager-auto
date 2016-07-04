@@ -3,7 +3,7 @@ Clone Vm From Snapshot
 """
 import config
 import logging
-from art.unittest_lib.common import attr, StorageTest as TestCase
+from art.unittest_lib.common import attr, StorageTest as TestCase, testflow
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -37,7 +37,8 @@ class BaseTestCase(TestCase):
         Get all the storage domains available.
         """
         self.storage_domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)
+            config.DATA_CENTER_NAME, self.storage
+        )
         self.storage_domain_0 = self.storage_domains[0]
         self.storage_domain_1 = self.storage_domains[1]
         self.vm = config.VM_NAME % self.storage
@@ -84,15 +85,25 @@ class TestCase6103(BaseTestCase):
         """
         Test that Clone from a vm snapshot works.
         """
-        logger.info("Creating vm %s from snapshot %s", self.cloned_vm,
-                    config.SNAPSHOT_NAME)
-
-        assert ll_vms.cloneVmFromSnapshot(
+        testflow.step(
+            "Cloning vm %s from snapshot %s",
+            self.cloned_vm, config.SNAPSHOT_NAME
+        )
+        self.assertTrue(ll_vms.cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False)
+            storagedomain=self.storage_domain_1, compare=False
+        ), "Failed to clone vm from snapshot %s" % config.SNAPSHOT_NAME)
 
-        assert ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN)
+        self.assertTrue(
+            ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN),
+            "VM %s is not in status down" % self.cloned_vm
+        )
+        testflow.step("Starting vm %s and waiting for IP", self.cloned_vm)
+        self.assertTrue(
+            ll_vms.startVm(True, self.cloned_vm, wait_for_ip=True),
+            "Starting vn %s encounter issues" % self.cloned_vm
+        )
 
 
 @attr(tier=2)
