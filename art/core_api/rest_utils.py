@@ -411,39 +411,34 @@ class RestUtil(APIUtil):
         self.validateResponseViaXSD(origEntity.href, ret)
         return parse(ret[RespKey.body], silence=True), True
 
-    def delete(self, entity, positive, body=None, element_name=None,
+    def delete(self, entity, positive,
                expected_pos_status=[200, 202, 204],
-               expected_neg_status=NEGATIVE_CODES):
+               expected_neg_status=NEGATIVE_CODES,
+               operations=[]):
         '''
-        Description: implements DELETE method and verify the reponse
-        Author: edolinin
-        Parameters:
-           * entity - entity to delete
-           * positive - if positive or negative verification should be done
-           * body - entity for post body
-           * element_name - element name
-           * expected_pos_status - list of expected statuses for positive
-                                   request
-           * expected_neg_status - list of expected statuses for negative
-                                   request
-        Return: status (True if DELETE test succeeded, False otherwise)
-        '''
-        with self.correlationIdContext(ApiOperation.delete):
-            if body:
-                if not element_name:
-                    element_name = self.element_name
-                body = validator.dump_entity(body, element_name)
-                self.logger.debug(
-                    "DELETE request content is --  url:%(uri)s body:%(body)s ",
-                    {'uri': entity.href, 'body': body})
+        Implements DELETE method and verify the reponse
 
-                with measure_time('DELETE'):
-                    ret = self.api.DELETE(entity.href, body)
-            else:
-                self.logger.debug("DELETE request content is --  url:%(uri)s",
-                                  {'uri': entity.href})
-                with measure_time('DELETE'):
-                    ret = self.api.DELETE(entity.href)
+        :param entity: Entity to delete
+        :type entity: object
+        :param positive: If positive or negative verification should be done
+        :type positive: bool
+        :param expected_pos_status: Expected statuses for positive request
+        :type expected_pos_status: list of int
+        :param expected_neg_status: Expected statuses for negative request
+        :type expected_neg_status: list of int
+        :param operations: Operations to concatenate to the href
+        :type operations: list of strings
+        :return: If the request status is same as expected
+        :rtype: bool
+        '''
+        href = entity.href
+        if operations:
+            href += ';' + ';'.join(operations)
+        with self.correlationIdContext(ApiOperation.delete):
+            self.logger.debug("DELETE request content is --  url:%(uri)s",
+                              {'uri': href})
+            with measure_time('DELETE'):
+                ret = self.api.DELETE(href)
 
         if not self.responseCodesMatch(positive, ApiOperation.delete,
                                        expected_pos_status,
@@ -456,7 +451,7 @@ class RestUtil(APIUtil):
         self.logger.debug("Response body for DELETE request is: %s ",
                           ret[RespKey.body])
 
-        self.validateResponseViaXSD(entity.href, ret)
+        self.validateResponseViaXSD(href, ret)
         return True
 
     def find(self, val, attribute='name', absLink=True, collection=None,

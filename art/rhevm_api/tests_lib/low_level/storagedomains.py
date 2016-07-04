@@ -545,17 +545,19 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
     util.logger.info("Removing storage domain %s", storagedomain)
 
     storDomObj = get_storage_domain_obj(storagedomain)
-    storDomObj.href += ";host=%s" % host
+
+    href_params = [
+        "host=%s" % host,
+        "format=%s" % format,
+    ]
 
     if destroy:
-        storDomObj.href += ";destroy=true"
+        href_params.append("destroy=true")
 
     if force:
-        storDomObj.href += ";force=true"
+        href_params.append("force=true")
 
-    storDomObj.href += ";format=%s" % format
-
-    return util.delete(storDomObj, positive)
+    return util.delete(storDomObj, positive, operations=href_params)
 
 
 def cleanExportDomainMetadata(address, path):

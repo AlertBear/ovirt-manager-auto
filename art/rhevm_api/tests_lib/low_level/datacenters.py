@@ -188,10 +188,11 @@ def remove_datacenter(positive, datacenter, force=False):
     )
     logger.info(log_info)
     dc = util.find(datacenter)
+    href_params = []
     if force:
-        dc.href += ";force=true"
+        href_params.append("force=true")
 
-    res = util.delete(dc, positive)
+    res = util.delete(dc, positive, operations=href_params)
     if not res:
         logger.error(log_error)
     return res
