@@ -19,7 +19,7 @@ import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers
@@ -704,7 +704,7 @@ class TestCase6169(BaseTestCase):
         status = ovf is None
         self.assertFalse(status, "OVF object wasn't found")
 
-        logger.info("Adding backup disk to vm %s", self.backup_vm)
+        testflow.step("Add second disk (backup disk) to vm %s", self.backup_vm)
         self.assertTrue(
             ll_vms.addDisk(
                 True, self.backup_vm, BACKUP_DISK_SIZE, True,
@@ -716,7 +716,9 @@ class TestCase6169(BaseTestCase):
             if not ll_vms.check_VM_disk_state(
                 self.backup_vm, disk.get_alias()
             ):
+
                 ll_vms.activateVmDisk(True, self.backup_vm, disk.get_alias())
+        testflow.step("Starting vms %s", ', '.join(self.vm_names))
         ll_vms.start_vms(self.vm_names, 2, config.VM_UP, True)
         self.backup_vm_ip = storage_helpers.get_vm_ip(self.backup_vm)
         if not self.backup_vm_ip:
@@ -734,13 +736,16 @@ class TestCase6169(BaseTestCase):
                 "Failed to find storage devices on vm %s" % self.backup_vm_ip
             )
 
-        logger.info("Copy disk from %s to %s", devices[1], devices[2])
+        testflow.step(
+            "Copy data from disk %s to %s of backup vm %s",
+            devices[1], devices[2], self.backup_vm
+        )
         status = helpers.copy_backup_disk(
             self.backup_vm_ip, devices[1], devices[2], TASK_TIMEOUT
         )
 
         self.assertTrue(status, "Failed to copy disk")
-
+        testflow.step("Stopping vms %s", self.vm_names)
         ll_vms.stop_vms_safely(self.vm_names)
         logger.info("Succeeded to stop vms %s", ', '.join(self.vm_names))
 
@@ -748,19 +753,26 @@ class TestCase6169(BaseTestCase):
             self.source_vm, self.first_snapshot_description
         )
 
+        testflow.step(
+            "Detaching snapshot's disk %s, of source vm %s, from backup vm %s",
+            disk_objects[0].get_alias(), self.source_vm, self.backup_vm
+        )
         self.assertTrue(
             ll_disks.detachDisk(
                 True, disk_objects[0].get_alias(), self.backup_vm
             ), "Failed to detach disk %s" % disk_objects[0].get_alias()
         )
 
+        testflow.step("Remove source vm %s", self.source_vm)
         if not ll_vms.safely_remove_vms([self.source_vm]):
             raise exceptions.VMException(
                 "Failed to power off and remove VM '%s'" % self.source_vm
             )
         self.vm_names.remove(self.source_vm)
 
-        logger.info("Restoring vm %s", self.source_vm)
+        testflow.step(
+            "Restoring source vm %s from ovf file", self.source_vm
+        )
         status = ll_vms.create_vm_from_ovf(
             self.restored_vm, config.CLUSTER_NAME, ovf
         )
@@ -769,10 +781,9 @@ class TestCase6169(BaseTestCase):
 
         disk_objects = ll_vms.getVmDisks(self.backup_vm)
         disk_to_detach = [
-            d.get_alias() for d in disk_objects if not ll_vms.is_bootable_disk(
-                self.backup_vm, d.get_id()
-            )
+            d.get_alias() for d in disk_objects if not d.get_bootable()
         ][0]
+        testflow.step("Detach backup disk from backup vm %s", self.backup_vm)
         self.assertTrue(
             ll_disks.detachDisk(
                 True, disk_to_detach, self.backup_vm
@@ -780,6 +791,7 @@ class TestCase6169(BaseTestCase):
                disk_objects[1].get_alias()
         )
 
+        testflow.step("Attach backup disk to restored vm %s", self.restored_vm)
         self.assertTrue(
             ll_disks.attachDisk(
                 True, disk_to_detach, self.restored_vm
@@ -794,6 +806,7 @@ class TestCase6169(BaseTestCase):
         )
         self.vm_names.remove(self.restored_vm)
         self.vm_names.append(self.source_vm)
+        testflow.step("Start restored vm %s and wait for IP", self.restored_vm)
         self.assertTrue(
             ll_vms.startVm(True, self.source_vm, config.VM_UP, True),
             "Failed to power on source VM '%s'" % self.source_vm

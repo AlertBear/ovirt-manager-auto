@@ -1319,6 +1319,7 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
         disk.set_storage_domains(diskSds)
 
     disks = DISKS_API.getElemFromLink(vmObj, get_href=True)
+    logger.info("Adding disk to vm %s", vm)
     disk, status = DISKS_API.create(disk, positive, collection=disks)
     if status and positive and wait:
         return DISKS_API.waitForElemStatus(disk, "OK", timeout)
@@ -4210,8 +4211,10 @@ def create_vm_from_ovf(new_vm_name, cluster_name, ovf, compare=False):
         * compare - If True, run compareElements, otherwise not.
     Return: True if operation succeeded, or False otherwise
     """
-    restored_vm_obj = _prepareVmObject(name=new_vm_name, cluster=cluster_name,
-                                       initialization=ovf)
+    restored_vm_obj = _prepareVmObject(
+        name=new_vm_name, cluster=cluster_name, initialization=ovf
+    )
+    logger.debug("Restoring vm %s from ovf file %s", new_vm_name, ovf)
     _, status = VM_API.create(restored_vm_obj, True, compare=compare)
     return status
 
