@@ -511,9 +511,9 @@ class T13ProxyChosenFromCluster(TestFenceProxySelection):
     @polarion("RHEVM3-9159")
     def test_proxy_chosen_from_cluster(self):
         _fence_host(True, config.FENCE_RESTART)
-        if not events.searchForRecentEvent(True, win_start_query=self.event,
-                                           query=host_restart_event,
-                                           expected_count=1):
+        if not events.search_for_recent_event(True, win_start_query=self.event,
+                                              query=host_restart_event,
+                                              expected_count=1):
             raise HostException("Cannot fence host: %s" % HOST_WITH_PM)
 
 
@@ -535,9 +535,9 @@ class T14ProxyChosenFromDataCenter(TestFenceProxySelection):
 
     def test_proxy_chosen_from_data_center(self):
         _fence_host(True, config.FENCE_RESTART)
-        if not events.searchForRecentEvent(True, win_start_query=self.event,
-                                           query=host_restart_event,
-                                           expected_count=1):
+        if not events.search_for_recent_event(True, win_start_query=self.event,
+                                              query=host_restart_event,
+                                              expected_count=1):
             raise HostException("Cannot fence host: %s" % HOST_WITH_PM)
 
 
@@ -565,9 +565,9 @@ class T15ProxyChosenNonOperationalButConnective(TestFenceProxySelection):
 
     def test_proxy_chosen_non_operational_but_connective(self):
         _fence_host(True, config.FENCE_RESTART)
-        if not events.searchForRecentEvent(True, win_start_query=self.event,
-                                           query=host_restart_event,
-                                           expected_count=1):
+        if not events.search_for_recent_event(True, win_start_query=self.event,
+                                              query=host_restart_event,
+                                              expected_count=1):
             raise HostException("Cannot fence host: %s" % HOST_WITH_PM)
 
 
@@ -602,7 +602,7 @@ class T16ProxyChosenFromSecondClusterAsFallback(TestFenceProxySelection):
 
     def test_proxy_chosen_from_second_cluster_as_fallback(self):
         _fence_host(True, config.FENCE_RESTART)
-        if not events.searchForRecentEvent(True, win_start_query=self.event,
-                                           query=host_restart_event,
-                                           expected_count=1):
+        if not events.search_for_recent_event(True, win_start_query=self.event,
+                                              query=host_restart_event,
+                                              expected_count=1):
             raise HostException("Cannot fence host: %s" % HOST_WITH_PM)
