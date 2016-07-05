@@ -175,71 +175,98 @@ def update_network_on_host(host_name, nic_name=None, **kwargs):
 
 def setup_networks(host_name, **kwargs):
     """
-    Send setupNetworks to host
+    Sends setupNetwork action request to VDS host
 
-    :param host_name: Host name
-    :type host_name: str
-    :param kwargs: Network/bonds attachment kwargs
-    :type kwargs: dict
-    :return: True/False
-    :rtype: bool
-    :Example:
-
-    kwargs to add, remove and update networks/bonds
     add > add1: Attach network net1 to host_nic dummy1 with IP (Can be more
-                then one IP per attachment but only one primary)
+        then one IP per attachment but only one primary)
     add > add2: Create BOND with two slaves without network attached
     add > add3: Create nicless network (Network without host_nic attached)
     remove: Remove net2 network (Can remove more then one network)
-            Remove bond20 (Can remove more then one BOND)
+        Remove bond20 (Can remove more then one BOND)
     update > update1: Update existing  bond30 to 3 slaves
-    update > update2: Attach existing attached network net3 to host_nic dummy10
+    update > update2: Attach existing attached network net3 to host_nic
+        dummy10
+    update > update3: Remove existing bond30 slave and add new bond30 slave
+    update > update4: Remove slave from existing bond30
+    update > update5: Add new slave to existing bond30
+    update > update6: Update existing bond30 mode to 1
     sync > sync net1 and net2
-    kwargs = {
-            "add": {
-                "add1": {
-                    "datacenter": "dc1" # in case of same network name in DCs
-                    "network": "net1",
-                    "nic": "dummy1",
-                    "ip": {
-                        "ip1": {
-                            "address": "1.1.1.1",
-                            "netmask": "255.255.255.0",
-                            "boot_protocol": "static",
-                            "primary": True
+
+    Args:
+        host_name (str): Host name
+
+    Keyword Args:
+            persist (bool): Make network settings persistent on the host
+            dict (dict): Networks settings to be used in setup
+
+    Example:
+        dict = {
+                "add": {
+                    "add1": {
+                        "datacenter": "dc1" # in case of same network name
+                        "network": "net1",
+                        "nic": "dummy1",
+                        "ip": {
+                            "ip1": {
+                                "address": "1.1.1.1",
+                                "netmask": "255.255.255.0",
+                                "boot_protocol": "static",
+                                "primary": True
+                            }
                         }
-                    }
-                },
-                "add2": {
-                    "nic": "bond10",
-                    "slaves": ["dummy2", "dummy3"]
                     },
-                "add3": {
-                    "network": "net4"
+                    "add2": {
+                        "nic": "bond10",
+                        "slaves": ["dummy2", "dummy3"]
+                        },
+                    "add3": {
+                        "network": "net4"
+                        },
+                    "add4": {
+                        "nic": dummy10,
+                        "labels": ["lb1"]
                     },
-                "add4": {
-                    "nic": dummy10,
-                    "labels": ["lb1"]
+                    "remove": {
+                        "networks": ["net2"],
+                        "bonds": ["bond20"],
+                        "labels": ["lb1", "lb2"]
+                        },
+                    "update": {
+                        "update1": {
+                        "nic": "bond30",
+                        "slaves": ["dummy6", "dummy7", "dummy8"]
+                        },
+                    "update2": {
+                        "nic": "dummy10",
+                        "network": "net3"
+                        },
+                    "update3": {
+                        "nic": "bond30",
+                        "slaves": ["dummy7", "dummy9"]
+                    },
+                    "update4": {
+                        "nic": "bond30",
+                        "slaves": ["dummy9"]
+                    },
+                    "update5": {
+                        "nic": "bond30",
+                        "slaves": ["dummy10"]
+                    },
+                    "update6": {
+                        "nic": "bond30",
+                         "mode": 1
                 },
-            "remove": {
-                "networks": ["net2"],
-                "bonds": ["bond20"],
-                "labels": ["lb1", "lb2"]
-                },
-            "update": {
-                "update1": {
-                    "nic": "bond30",
-                    "slaves": ["dummy6", "dummy7", "dummy8"]
-                },
-                "update2": {
-                    "nic": "dummy10",
-                    "network": "net3"
-                },
-            "sync": {
-                "networks": ["net1", "net2"]
-                },
+                "sync": {
+                    "networks": ["net1", "net2"]
+                    },
+                }
             }
-        }
+
+        setup_networks(host_name=hostname, kwargs=dict)
+        setup_networks(host_name=hostname, kwargs=dict, persist=True)
+
+    Returns:
+        bool: True if success, otherwise False
     """
     bonds = data_st.HostNics()
     removed_bonds = data_st.HostNics()
@@ -254,6 +281,7 @@ def setup_networks(host_name, **kwargs):
     add = kwargs.get("add")
     update = kwargs.get("update")
     sync = kwargs.get("sync")
+    persist = kwargs.get("persist", False)
     check_connectivity = kwargs.get("check_connectivity", True)
     check_connectivity_timeout = kwargs.get(
         "check_connectivity_timeout", CONNECTIVITY_TIMEOUT
@@ -277,7 +305,6 @@ def setup_networks(host_name, **kwargs):
                 network_attachments, labels, host_name, update, True
             )
         )
-
     if sync:
         networks = sync["networks"]
         nets_to_sync = (
@@ -298,8 +325,12 @@ def setup_networks(host_name, **kwargs):
             check_connectivity=check_connectivity
         )
     )
+
     if not res:
         logger.error("Failed to send SetupNetworks to %s", host_name)
+    if persist and res:
+            res = ll_hosts.commit_network_config(host=host_name)
+
     return res
 
 

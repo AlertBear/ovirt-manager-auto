@@ -240,54 +240,71 @@ def prepare_network_attachment_obj(host_name, **kwargs):
 
 def prepare_bond_attachment_obj(host_name, **kwargs):
     """
-    Prepare BOND host_nic object
+    Prepares a BOND host_nic object
 
-    :param host_name: Host name
-    :type host_name: str
-    :param kwargs: BOND kwargs
-    :type kwargs: dict
-    :return: HostNic
-    :rtype: HostNic object
+    Args:
+        host_name (str): Engine hostname
+
+    Keyword Args:
+            slaves (list): List of strings that represents slaves names
+            nic (str): NIC name
+            update (bool): True for update mode
+            mode (int): Specifies a BOND mode type (0=Round-Robin,
+                1=Active-Backup, ...)
+            miimon (int): Specifies, in milliseconds, how often MII link
+                monitoring occurs
+
+    Returns:
+        HostNic: HostNic object
     """
     slave_list = kwargs.get(SLAVES)
     nic_name = kwargs.get(NIC)
     update = kwargs.get(UPDATE)
+    mode = kwargs.get(MODE)
+    mii_mon = kwargs.get(MIIMON)
+
     if update:
-        host_nic_bond_obj = ll_hosts.get_host_nic(host_name, kwargs.get(NIC))
+        host_nic_bond_obj = ll_hosts.get_host_nic(host=host_name, nic=nic_name)
         bond_obj = host_nic_bond_obj.get_bonding()
         slaves = bond_obj.get_slaves()
         options = bond_obj.get_options()
-
+        if mode:
+            option = [i for i in options.get_option() if i.name == MODE][0]
+            option.set_value(mode)
+        if mii_mon:
+            option = [i for i in options.get_option() if i.name == MIIMON][0]
+            option.set_value(mii_mon)
     else:
         host_nic_bond_obj = data_st.HostNic()
         bond_obj = data_st.Bonding()
         options = data_st.Options()
         slaves = data_st.HostNics()
+        if mode:
+            options.add_option(data_st.Option(name=MODE, value=mode))
+        if mii_mon:
+            options.add_option(data_st.Option(name=MIIMON, value=mii_mon))
 
     if nic_name:
         host_nic_bond_obj.set_name(nic_name)
 
     if slave_list:
-        slaves_nics_ids = [i.get_id() for i in slaves.get_host_nic()]
-        for nic in slave_list:
+        host_slave_nics = slaves.get_host_nic()
+        try:
+            host_slave_dict = dict((i.id, i) for i in host_slave_nics)
+        except TypeError:
+            host_slave_dict = dict()
+        for slave in slave_list:
             if update:
-                nic_id = ll_hosts.get_host_nic(host_name, nic).get_id()
-                if nic_id in slaves_nics_ids:
-                    continue
-            slaves.add_host_nic(data_st.HostNic(name=nic.strip()))
+                host_nic = ll_hosts.get_host_nic(host_name, slave)
+                if host_nic and host_slave_dict.get(host_nic.id):
+                    del host_slave_dict[host_nic.id]
+            else:
+                slave_object = data_st.HostNic(name=slave.strip())
+                host_slave_dict[slave] = slave_object
+        slaves.set_host_nic(host_slave_dict.values())
         bond_obj.set_slaves(slaves)
 
-    value = kwargs.get(MODE) if kwargs.get(MODE) else "4"
-    options.add_option(data_st.Option(name=MODE, value=value))
     bond_obj.set_options(options)
-
-    if kwargs.get(MIIMON):
-        options.add_option(
-            data_st.Option(name=MIIMON, value=kwargs.get(MIIMON)
-                           )
-        )
-        bond_obj.set_options(options)
-
     host_nic_bond_obj.set_bonding(bond_obj)
     return host_nic_bond_obj
 
@@ -352,25 +369,25 @@ def prepare_add_for_setupnetworks(
     :rtype: tuple
     """
     bonds = data_st.HostNics()
-    for k in dict_to_add.keys():
+    for k, v in dict_to_add.iteritems():
         if update:
-            dict_to_add.get(k)[UPDATE] = True
+            v[UPDATE] = True
 
-        if dict_to_add.get(k).get(SLAVES):
+        if v.get(SLAVES) or v.get(MODE):
             bond_obj = prepare_bond_attachment_obj(
-                host_name, **dict_to_add.get(k)
+                host_name=host_name, **v
             )
             bonds.add_host_nic(bond_obj)
 
-        if dict_to_add.get(k).get(NETWORK):
+        if v.get(NETWORK):
             network_attachment = prepare_network_attachment_obj(
-                host_name, **dict_to_add.get(k)
+                host_name=host_name, **v
             )
             network_attachments.add_network_attachment(network_attachment)
 
-        if dict_to_add.get(k).get(LABELS):
-            labels_list = dict_to_add.get(k).get(LABELS)
-            host_nic = dict_to_add.get(k).get("nic")
+        if v.get(LABELS):
+            labels_list = v.get(LABELS)
+            host_nic = v.get("nic")
             for label in labels_list:
                 label_obj = create_host_nic_label_object(
                     host_name=host_name, nic=host_nic, label=label

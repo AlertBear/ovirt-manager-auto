@@ -693,12 +693,11 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443,
     return True
 
 
-def commit_network_config(positive, host):
+def commit_network_config(host):
     """
     Save host network configuration
 
     Args:
-        positive (bool): Expected result
         host (str): Name of a host to be committed
 
     Returns:
@@ -707,12 +706,12 @@ def commit_network_config(positive, host):
     """
     log_info, log_error = ll_general.get_log_msg(
         action="Commit", obj_type="network config", obj_name="",
-        positive=positive, extra_txt="on host %s" % host
+        positive=True, extra_txt="on host %s" % host
     )
     logger.info(log_info)
     host_obj = HOST_API.find(host)
     res = bool(
-        HOST_API.syncAction(host_obj, "commitnetconfig", positive)
+        HOST_API.syncAction(host_obj, "commitnetconfig", True)
     )
     if not res:
         logger.error(log_error)
