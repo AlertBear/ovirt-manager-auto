@@ -6,7 +6,7 @@ Storage/3_6_Storage_Create_Disk_From_Existing_Disk
 import config
 import logging
 import os
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -473,8 +473,13 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         """
         Copy existing disk to the same storage domain with the same alias
         """
+        testflow.step("Copying vm %s disks", self.vm_name)
         self.basic_copy(self.vm_name)
+        testflow.step(
+            "Attach the newly copied disks to vm %s", self.test_vm_name
+        )
         self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
+        testflow.step("Check the data exists")
         self.check_file_existence(self.test_vm_name)
 
     @attr(tier=2)
@@ -522,6 +527,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         Copy existing disk to the same storage domain with the same alias
         """
+        testflow.step("Copying disks %s", self.disks_for_test)
         self.basic_copy()
 
     @attr(tier=2)
