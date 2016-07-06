@@ -323,7 +323,9 @@ class TestCase11864(CommonUsage):
             disk_id=self.disk_id
         )
         ll_vms.waitForVmsDisks(self.vm_name)
-        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        ll_jobs.wait_for_jobs(
+            [config.JOB_LIVE_MIGRATE_DISK, config.JOB_REMOVE_SNAPSHOT]
+        )
         if not status:
             raise exceptions.DiskException("Disk update should be blocked")
 
