@@ -439,8 +439,8 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
     __test__ = True
     ip_netmask = conf.IPS[22]
     bond = "bond12"
-    dummys_1 = conf.DUMMYS[:2]
-    dummys_2 = conf.DUMMYS[:3]
+    dummies = conf.DUMMYS[:2]
+    dummy_2 = [conf.DUMMYS[2]]
     net = conf.SN_NETS[12][0]
 
     @polarion("RHEVM3-9621")
@@ -452,7 +452,7 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             "add": {
                 "1": {
                     "nic": self.bond,
-                    "slaves": self.dummys_1,
+                    "slaves": self.dummies,
                     "mode": 1
                 }
             }
@@ -473,7 +473,7 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             "update": {
                 "1": {
                     "nic": self.bond,
-                    "slaves": self.dummys_2
+                    "slaves": self.dummy_2
                 }
             }
         }
@@ -493,7 +493,7 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             "update": {
                 "1": {
                     "nic": self.bond,
-                    "slaves": self.dummys_1
+                    "slaves": self.dummy_2
                 }
             }
         }
@@ -513,7 +513,6 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             "update": {
                 "1": {
                     "nic": self.bond,
-                    "slaves": self.dummys_1,
                     "mode": 1
                 }
             }

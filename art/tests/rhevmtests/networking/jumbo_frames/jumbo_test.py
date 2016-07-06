@@ -144,7 +144,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
             "update": {
                 "1": {
                     "nic": self.bond,
-                    "mode": "4",
+                    "mode": "1",
                 },
             }
         }
@@ -174,7 +174,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
             "update": {
                 "1": {
                     "nic": self.bond,
-                    "slaves": conf.HOST_0_NICS[1:4]
+                    "slaves": [conf.HOST_0_NICS[1]]
                 }
             }
         }

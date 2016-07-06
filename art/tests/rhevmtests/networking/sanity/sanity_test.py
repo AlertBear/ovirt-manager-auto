@@ -201,11 +201,11 @@ class TestSanity02(TestSanityCaseBase):
                 },
                 "4": {
                     "nic": self.bond_2,
-                    "slaves": sanity_conf.DUMMYS[2:5]
+                    "slaves": [sanity_conf.DUMMYS[4]]
                 },
                 "5": {
                     "nic": self.bond_3,
-                    "slaves": sanity_conf.DUMMYS[6:8]
+                    "slaves": [sanity_conf.DUMMYS[8]]
                 },
             },
             "remove": {
