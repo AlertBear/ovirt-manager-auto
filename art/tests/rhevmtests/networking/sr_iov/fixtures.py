@@ -45,9 +45,14 @@ class SRIOV(NetworkFixtures):
             i for i in sriov_conf.HOST_0_PF_NAMES if i ==
             conf.VDS_0_HOST.nics[1]
             ]
-        sriov_conf.HOST_0_PF_OBJECT = ll_sriov.SriovNicPF(
-            conf.HOST_0_NAME, pf_host_nic_name[0]
-        )
+        if not pf_host_nic_name:
+            sriov_conf.HOST_0_PF_OBJECT = ll_sriov.SriovNicPF(
+                conf.HOST_0_NAME, sriov_conf.HOST_0_PF_NAMES[0]
+            )
+        else:
+            sriov_conf.HOST_0_PF_OBJECT = ll_sriov.SriovNicPF(
+                conf.HOST_0_NAME, pf_host_nic_name[0]
+            )
         mgmt_nic_obj = hl_networks.get_management_network_host_nic(
             host=self.host_0_name, cluster=self.cluster_0
         )
