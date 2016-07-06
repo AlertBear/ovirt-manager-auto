@@ -78,3 +78,8 @@ MIGRATING_STATUSES = [
 FILE_NAME = 'test_file'
 TEMP_PATH = '/var/tmp/'
 ACTION_TIMEOUT = 30
+
+# memory hot plug
+MB_SIZE_256 = 256 * MB
+MB_SIZE_400 = 400 * MB
+MEMORY_HOTPLUG_VM = "memory_hotplug_test"

@@ -590,6 +590,7 @@ def update_vms_memory(vms_list, memory):
             True,
             vm=vm,
             memory=memory,
+            memory_guaranteed=memory / 2
         ):
             LOGGER.error(
                 "Failed to update memory to vm %s",
@@ -740,10 +741,7 @@ def check_vm_memory(vm_resource, expected_mem_size):
     :rtype: bool
     """
     expected_memory = expected_mem_size / KB
-    rc, out, _ = vm_resource.run_command(shlex.split(CHECK_MEMORY_COMMAND))
-    if rc:
-        return False
-    actual_memory = int(shlex.split(out)[1]) * KB
+    actual_memory = get_memory_on_vm(vm_resource)
     LOGGER.info("Expected memory(kb): %s", expected_memory)
     LOGGER.info("Actual memory(kb): %s", actual_memory)
     if expected_memory * 0.90 <= actual_memory <= expected_memory:
@@ -783,10 +781,10 @@ def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
 
     memory_size_after = get_vm_memory(vm_name)
     LOGGER.info(
-        "After update: memory_size_before:%s \n"
-        "memory_size_after: %s \n"
-        "new_memory_size:%s "
-        % (memory_size_before, memory_size_after, new_memory_size)
+        "VM was update to %s:\n"
+        "VM memory size before(on engine):%s \n"
+        "VM memory size after(on engine): %s \n",
+        new_memory_size, memory_size_before, memory_size_after
     )
     return memory_size_before, memory_size_after, new_memory_size
 
@@ -1063,3 +1061,21 @@ def move_vm_disks(vm_name, target_storage_domain):
         raise errors.VMException(
             "The disks of vm: %s failed to move to state 'ok'" % vm_name
         )
+
+
+def get_memory_on_vm(vm_resource):
+    """
+    Return the memory on VM using free command
+    Args:
+         vm_resource(Host): VM
+    Returns:
+        str: VM memory in KB
+    """
+    LOGGER.info("Getting vm actual memory with free command")
+    rc, out, _ = vm_resource.run_command(shlex.split(CHECK_MEMORY_COMMAND))
+    if rc:
+        LOGGER.error("Failed to get VM memory")
+        return ""
+    actual_memory = int(shlex.split(out)[1]) * KB
+    LOGGER.info("VM actual memory: %s", actual_memory)
+    return actual_memory

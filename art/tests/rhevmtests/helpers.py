@@ -467,3 +467,47 @@ def get_host_resource_by_name(host_name):
         if host_resource.ip == host_ip:
             return host_resource
     return None
+
+
+def wait_for_vm_gets_to_full_memory(vm_name, expected_memory):
+    """
+    Wait until VM gets to full Memory allocation,
+    Check that the value is as expected 3 times,
+    In order to be sure the Memory value is stable.
+
+    Args:
+        vm_name (str): vm_name
+        expected_memory(int): value of expected Memory allocation
+    Returns:
+      bool: True if VM gets to the expected Memory allocation, False otherwise
+    """
+    count = 0
+    vm_resource = get_vm_resource(vm_name)
+    expected_mem = expected_memory / 1024
+    sampler = apis_utils.TimeoutingSampler(
+        60, 5, hl_vms.get_memory_on_vm, vm_resource
+    )
+    for sample in sampler:
+        try:
+            if expected_mem * 0.90 <= sample <= expected_mem:
+                logging.info(
+                    "Try #: %d Memory is as expected: %d ",
+                    count, expected_mem
+                )
+                count += 1
+                if count == 3:
+                    logging.info(
+                        "Current Memory is as expected: %d" % expected_mem
+                    )
+                    return True
+            else:
+                logging.warning(
+                    "Memory allocation of %s:  is %d, waiting for "
+                    "usage will be %d, 3 times",
+                    vm_name, sample, expected_mem
+                )
+        except apis_exceptions.APITimeout:
+            logging.error(
+                "Timeout When Trying to get VM %s CPU consumption", vm_name
+            )
+    return False
