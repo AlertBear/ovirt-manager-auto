@@ -521,41 +521,46 @@ class CreateDC(TestCase):
         data_sds = self._get_data_storage_domains(datacenter)
 
         for template in templ_def:
-            template_name = template['name']
+            template_name = template.get('name')
+            copy_disks = template.get('copy_disks', True)
             assert templates.createTemplate(
                 True, vm=template['base_vm'],
                 name=template_name,
                 cluster=cluster
             )
-
-            self.copy_template_disks(template_name, data_sds)
+            if copy_disks:
+                self.copy_template_disks(template_name, data_sds)
 
     def add_glance_templates(self, glance_templates, data_center, cluster):
         for glance_template in glance_templates:
-            glance, image = glance_template['source'].split(':')
+            glance, image = glance_template.get('source').split(':')
             gi = ll_sd.GlanceImage(image, glance)
 
             data_sds = self._get_data_storage_domains(data_center)
+            glance_template_name = glance_template.get('name')
+            copy_disks = glance_template.get('copy_disks', True)
+
             assert gi.import_image(
                 destination_storage_domain=data_sds[0],
                 cluster_name=cluster,
-                new_disk_alias=glance_template['name'],
-                new_template_name=glance_template['name'],
+                new_disk_alias=glance_template_name,
+                new_template_name=glance_template_name,
                 import_as_template=True,
                 async=False
             )
-            self.add_nic_to_glance_template(glance_template['name'])
-            assert templates.waitForTemplatesStates(glance_template['name'])
+            self.add_nic_to_glance_template(glance_template_name)
+            assert templates.waitForTemplatesStates(glance_template_name)
             template_disk = templates.getTemplateDisks(
-                glance_template['name']
+                glance_template_name
             )[0]
             disks.wait_for_disks_status(template_disk.get_name())
             assert templates.updateTemplate(
                 True,
-                glance_template['name'],
+                glance_template_name,
                 virtio_scsi=True
             )
-            self.copy_template_disks(glance_template['name'], data_sds)
+            if copy_disks:
+                self.copy_template_disks(glance_template_name, data_sds)
 
     def add_nic_to_glance_template(self, template_name):
         sampler = TimeoutingSampler(
@@ -584,8 +589,8 @@ class CreateDC(TestCase):
     def add_export_templates(self, export_templates, data_center, cluster):
         data_sds = self._get_data_storage_domains(data_center)
         for export_template in export_templates:
-            export_domain, template = export_template['source'].split(':')
-
+            export_domain, template = export_template.get('source').split(':')
+            copy_disks = export_template.get('copy_disks', True)
             assert templates.import_template(
                 positive=True,
                 template=template,
@@ -594,7 +599,8 @@ class CreateDC(TestCase):
                 cluster=cluster,
                 name=export_template['name']
             )
-            self.copy_template_disks(export_template['name'], data_sds)
+            if copy_disks:
+                self.copy_template_disks(export_template['name'], data_sds)
 
     def build_dc(self, dc_def, host_conf, storage_conf, ep_conf=None):
         datacenter_name = dc_def['name']
