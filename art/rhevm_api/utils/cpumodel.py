@@ -1,10 +1,13 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 import logging
 from art.rhevm_api.utils.test_utils import get_api
 
 
 logger = logging.getLogger('cpumodel')
 
-VERSION = get_api('version', 'capabilities')
+VERSION = get_api('cluster_level', 'clusterlevels')
 MIN_MODEL = {
     'Intel': "model_Conroe",
     'AMD': "model_Opteron_G1",
@@ -47,16 +50,16 @@ class CpuModelDenominator(object):
         super(CpuModelDenominator, self).__init__()
         self.cpus = dict(
             (
-                "%s.%s" % (v.get_major(), v.get_minor()), {
+                v.get_id(), {
                     "cpus": [
                         {
-                            'cpu': c.get_type(),
+                            'cpu': c.get_name(),
                             'level': c.get_level(),
-                            'model': self._id_to_model(c.get_type()),
-                            'vendor': self._id_to_vendor(c.get_type()),
-                        } for c in v.get_cpus().get_cpu()
+                            'model': self._id_to_model(c.get_name()),
+                            'vendor': self._id_to_vendor(c.get_name()),
+                        } for c in v.get_cpu_types().get_cpu_type()
                     ],
-                    'current': v.get_current(),
+                    'current': v.get_id(),
                 }
             ) for v in VERSION.get(absLink=False)
         )
