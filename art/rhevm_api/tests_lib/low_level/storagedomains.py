@@ -76,6 +76,7 @@ diskUtil = get_api('disk', 'disks')
 connUtil = get_api('storage_connection', 'storageconnections')
 
 OVF_STORE_DISK_NAME = "OVF_STORE"
+HOSTED_STORAGE = "hosted_storage"
 
 
 def _prepareStorageDomainObject(positive, **kwargs):
@@ -1866,7 +1867,10 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
 
         if sd_type == DATA_DOMAIN_TYPE or sd_type == CINDER_DOMAIN_TYPE:
             if _storage_type == storage_type and state == ACTIVE_DOMAIN:
-                return True
+                # TODO: W/A for bug:
+                # https://bugzilla.redhat.com/show_bug.cgi?id=1354200
+                if storage_domain_object.get_name() != HOSTED_STORAGE:
+                    return True
         return False
 
     sdObjList = getDCStorages(datacenter_name, False)
