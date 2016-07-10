@@ -43,6 +43,58 @@ def check_recent_job(positive, description, last_jobs_num=None,
         return False, None
 
 
+def get_jobs():
+    """
+    Get a all jobs in the system
+
+    __author__= "ratamir"
+
+    Returns:
+        list: List of job objects
+    """
+    return JOBS_API.get(absLink=False)
+
+
+def get_job_object(description, job_status=ENUMS['job_finished']):
+    """
+    Get the latest job that specified by description and with status
+
+    __author__= "ratamir"
+
+    Args:
+        description (str): Search for job with given description
+        job_status (str): The status of the requested job
+
+    Returns:
+        Job object: Job object if a job with the given description was
+        found or None otherwise
+    """
+    jobs = [job for job in get_jobs() if (
+        re.match(description, job.get_description())
+        ) and job.get_status() == job_status]
+    if jobs:
+        return max(jobs, key=lambda j: j.get_start_time())
+    return None
+
+
+def get_job_execution_time(description):
+    """
+    Get the execution time of the job
+
+    __author__= "ratamir"
+
+    Args:
+        description (str): Search for job with given description
+
+    Returns:
+        float: Execution time of requested job in seconds
+    """
+    job = get_job_object(description)
+    time = (job.get_last_updated() - job.get_start_time()).total_seconds()
+    LOGGER.info("JOB '%s' TOOK %s seconds", job.get_description(), time)
+    return time
+
+
 def get_active_jobs(job_descriptions=None):
     """
     Check if all/requested jobs have been completed
@@ -80,7 +132,10 @@ def get_active_jobs(job_descriptions=None):
     return jobs
 
 
-def wait_for_jobs(job_descriptions=None, timeout=JOB_TIMEOUT, sleep=TASK_POLL):
+def wait_for_jobs(
+    job_descriptions=None, timeout=JOB_TIMEOUT, sleep=TASK_POLL,
+    exec_time=True
+):
     """
     Waits until all/requested jobs in data-center have completed
 
@@ -91,6 +146,9 @@ def wait_for_jobs(job_descriptions=None, timeout=JOB_TIMEOUT, sleep=TASK_POLL):
     :type timeout: int
     :param sleep: polling interval
     :type sleep: int
+    :param exec_time: Determines if the execution time of the job should be
+    logged
+    :type exec_time: bool
     :raise: TimeoutExpiredError
     """
     LOGGER.info("Waiting for jobs %s", job_descriptions)
@@ -99,6 +157,11 @@ def wait_for_jobs(job_descriptions=None, timeout=JOB_TIMEOUT, sleep=TASK_POLL):
     )
     for jobs in sampler:
         if not jobs:
+            if job_descriptions and exec_time:
+                for job_description in job_descriptions:
+                    job = get_job_object(job_description)
+                    if job:
+                        get_job_execution_time(job.get_description())
             LOGGER.info("All jobs are gone")
             return
 
