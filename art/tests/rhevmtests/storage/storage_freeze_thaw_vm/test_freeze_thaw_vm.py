@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr
-from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib.common import StorageTest as TestCase, testflow
 from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers
 
@@ -129,6 +129,7 @@ class BaseTestCase(TestCase):
         """
         dd_pid = self.run_cmd(DD_CMD % self.dd_path, out_as_int=True)
 
+        testflow.step("Freezing filesystem of vm %s", self.vm_name)
         self.assertTrue(
             ll_vms.freeze_vm(True, self.vm_name),
             "Failed to freeze vm %s filesystems" % self.vm_name
@@ -148,9 +149,13 @@ class BaseTestCase(TestCase):
             "are frozen" % self.dd_path
         )
 
+        testflow.step(
+            "Ensures it is impossible to create a file on a freezed filesystem"
+        )
         self.assert_fail_write_to_filesystem_with_timeout()
         self.func_to_exec_on_freeze()
 
+        testflow.step("Thaw filesystem of vm %s", self.vm_name)
         self.assertTrue(
             ll_vms.thaw_vm(True, self.vm_name),
             "Failed to thaw vm %s filesystems" % self.vm_name
@@ -165,6 +170,9 @@ class BaseTestCase(TestCase):
             "was frozen. Did the write operation restart?"
         )
 
+        testflow.step(
+            "Ensures it is possible to create a file on a thawed filesystem"
+        )
         self.run_cmd(WRITE_TO_FILE_CMD % self.file_path)
 
     def tearDown(self):
