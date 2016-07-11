@@ -2905,7 +2905,7 @@ def createVm(
 
 def waitForIP(
     vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False,
-    vm_password=VM_PASSWORD
+    vm_password=VM_PASSWORD, json=False
 ):
     """
     Waits until agent starts reporting IP address
@@ -2916,6 +2916,7 @@ def waitForIP(
         sleep (int): polling interval
         get_all_ips (bool): Get all VM ips
         vm_password (str): VM root password
+        json (bool): Use json client (default is to use xml)
 
     Returns:
         tuple: True/False whether it obtained the IP, IP if fetched or None
@@ -2924,7 +2925,7 @@ def waitForIP(
     import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
     vm_host = get_vm_host(vm_name=vm)
     if not vm_host:
-        logger.error("Vm %s is not running", vm)
+        logger.error("VM %s is not running", vm)
         return False, {'ip': None}
 
     host_ip = ll_hosts.get_host_ip_from_engine(host=vm_host)
@@ -2941,18 +2942,27 @@ def waitForIP(
         Returns:
             str or list: IP or list of IPs depend on get_all_ips param
         """
-        out = vds_resource.vds_client("list")
-        vms_ids = out.get("items")
+        logger.debug("Using %s vds_client", "json" if json else "xml")
+        cmd_args = ["table"] if not json else list()
+        out = vds_resource.vds_client(cmd="list", args=cmd_args, json=json)
+        vms_ids = [
+            _vm.get("vmId") for _vm in out.get("vmList")
+            ] if not json else out.get("items")
         vm_ips = list()
         if not vms_ids:
             return None
 
         for vm_id in vms_ids:
-            vm_info = vds_resource.vds_client("getVmStats", [vm_id])
+            vm_info = vds_resource.vds_client(
+                cmd="getVmStats", args=[vm_id], json=json
+            )
             if not vm_info:
                 return None
 
-            vm_info = vm_info.get("items")[0]
+            vm_info = (
+                vm_info.get("statsList")[0] if not json else
+                vm_info.get("items")[0]
+            )
             vm_name = vm_info.get("vmName")
             if vm_name == vm:
                 vm_interfaces = vm_info.get("netIfaces")

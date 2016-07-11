@@ -73,7 +73,7 @@ class VDS(Host):
     def get_cpu_model(self):
         raise NotImplementedError()
 
-    def vds_client(self, cmd, args=list()):
+    def vds_client(self, cmd, args=list(), json=False):
         """
         Run given command on host with vdsClient
         All commands can be found in /usr/share/vdsm/rpc/bindingxmlrpc.py
@@ -81,6 +81,7 @@ class VDS(Host):
         Args:
             cmd (str): command to execute
             args (list): command parameters optional
+            json (bool): Use json client (default is to use xml)
 
         Returns:
             dict: command output
@@ -96,14 +97,20 @@ class VDS(Host):
         """
         cmd_args = " ".join(args)
         args_txt = "'{0}'".format(cmd_args) if cmd_args else ""
-        command = (
-            "python -c 'from vdsm import jsonrpcvdscli;"
-            "from vdsm.config import config;"
-            "requestQueues = config.get(\"addresses\",\"request_queues\");"
-            "requestQueue = requestQueues.split(\",\")[0];"
-            "conn = jsonrpcvdscli.connect(requestQueue);"
-            "print conn.{0}(\"{1}\")'".format(cmd, args_txt)
-        )
+        if json:
+            command = (
+                "python -c 'from vdsm import jsonrpcvdscli;"
+                "from vdsm.config import config;"
+                "requestQueues = config.get(\"addresses\",\"request_queues\");"
+                "requestQueue = requestQueues.split(\",\")[0];"
+                "conn = jsonrpcvdscli.connect(requestQueue);"
+                "print conn.{0}(\"{1}\")'".format(cmd, args_txt)
+            )
+        else:
+            command = (
+                'python -c "from vdsm import vdscli;'
+                'print vdscli.connect().{0}({1})"'.format(cmd, args_txt)
+            )
         rc, out, err = self.executor().run_cmd(shlex.split(command))
         if rc:
             self.logger.error(
