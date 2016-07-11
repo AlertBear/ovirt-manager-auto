@@ -81,8 +81,7 @@ def datacenter_networks_prepare_setup(request, network_cleanup_fixture):
     request.addfinalizer(fin)
 
     assert hl_networks.create_basic_setup(
-        datacenter=dc_net.dc_networks_1,
-        storage_type=conf.STORAGE_TYPE, version=conf.COMP_VERSION
+        datacenter=dc_net.dc_networks_1, version=conf.COMP_VERSION
     )
 
 

@@ -143,8 +143,7 @@ class UpgradeBaseClass(StorageTest):
         Create a data center and attach hosts
         """
         ll_dc.addDataCenter(
-            True, name=self.data_center_name, storage_type=self.storage,
-            version=config.DC_ORIGIN_VERSION
+            True, name=self.data_center_name, version=config.DC_ORIGIN_VERSION
         )
         ll_clusters.addCluster(
             True, name=self.cluster_name, cpu=config.CPU_NAME,

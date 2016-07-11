@@ -906,7 +906,7 @@ class TestCase6249(EnvironmentWithNewVm):
             "Creating a %s Data center", config.DC_6249_INITIAL_VERSION
         )
         if not ll_dc.addDataCenter(
-            True, name=cls.data_center_name, storage_type=cls.storage,
+            True, name=cls.data_center_name,
             version=config.DC_6249_INITIAL_VERSION
         ):
             raise exceptions.DataCenterException(

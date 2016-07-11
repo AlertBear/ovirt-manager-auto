@@ -159,7 +159,6 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
         assert lldatacenters.addDataCenter(
             positive=True,
             name=unittest_conf.NEW_DC_NAME,
-            storage_type=unittest_conf.STORAGE_TYPE,
             version=unittest_conf.COMP_VERSION)
         assert llclusters.addCluster(
             positive=True,

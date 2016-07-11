@@ -296,8 +296,7 @@ class TestCaseNFSOptions(TestCase):
         """
         logger.info("Creating %s data center", version)
         if not ll_dc.addDataCenter(
-                True, name=self.dc_name, storage_type=NFS,
-                version=version
+                True, name=self.dc_name, version=version
         ):
             self.fail("Adding %s data center failed" % self.dc_name)
         logger.info("Datacenter %s was created successfully", self.dc_name)

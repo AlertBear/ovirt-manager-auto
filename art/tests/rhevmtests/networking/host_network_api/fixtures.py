@@ -775,9 +775,8 @@ def sync_prepare_setup(request, host_network_api_prepare_setup):
     request.addfinalizer(fin1)
 
     assert hl_networks.create_basic_setup(
-        datacenter=hna_conf.SYNC_DC, storage_type=conf.STORAGE_TYPE,
-        version=conf.COMP_VERSION, cluster=hna_conf.SYNC_CL,
-        cpu=conf.CPU_NAME
+        datacenter=hna_conf.SYNC_DC, version=conf.COMP_VERSION,
+        cluster=hna_conf.SYNC_CL, cpu=conf.CPU_NAME
     )
 
     hna.prepare_networks_on_setup(

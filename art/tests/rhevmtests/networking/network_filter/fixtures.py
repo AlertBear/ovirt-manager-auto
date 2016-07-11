@@ -69,7 +69,7 @@ def create_dc_cluster(request):
     request.addfinalizer(fin)
 
     assert hl_networks.create_basic_setup(
-        datacenter=ext_dc, cluster=ext_cl, storage_type=conf.STORAGE_TYPE,
+        datacenter=ext_dc, cluster=ext_cl,
         version=conf.COMP_VERSION_4_0[0], cpu=conf.CPU_NAME
     )
 

@@ -49,25 +49,26 @@ def build_setup(config, storage, storage_type, basename="testname",
     cluster_name = config.get('cluster_name', '%s_Cluster_1' % basename)
     config['dc_name'] = datacenter_name
     config['cluster_name'] = cluster_name
+    version = config.get('compatibility_version')
 
-    if not datacenters.addDataCenter(True, name=datacenter_name,
-                                     storage_type=storage_type, local=local,
-                                     version=config['compatibility_version']):
-        raise errors.DataCenterException("addDataCenter %s with storage type "
-                                         "%s and version %s failed." %
-                                         (datacenter_name, storage_type,
-                                          config['compatibility_version']))
+    if not datacenters.addDataCenter(
+            positive=True, name=datacenter_name, local=local, version=version
+    ):
+        raise errors.DataCenterException(
+            "Add DataCenter %s version %s failed." %
+            (datacenter_name, version)
+        )
     LOGGER.info("Datacenter %s was created successfully", datacenter_name)
 
-    if not clusters.addCluster(True, name=cluster_name,
-                               cpu=config['cpu_name'],
-                               data_center=datacenter_name,
-                               version=config['compatibility_version']):
-        raise errors.ClusterException("addCluster %s with cpu_type %s and "
-                                      "version %s to datacenter %s failed" %
-                                      (cluster_name, config['cpu_name'],
-                                       config['compatibility_version'],
-                                       datacenter_name))
+    if not clusters.addCluster(
+            positive=True, name=cluster_name, cpu=config['cpu_name'],
+            data_center=datacenter_name, version=version
+    ):
+        raise errors.ClusterException(
+            "Add Cluster %s with cpu_type %s and version %s "
+            "to datacenter %s failed" %
+            (cluster_name, config['cpu_name'], version, datacenter_name)
+        )
     LOGGER.info("Cluster %s was created successfully", cluster_name)
 
     hosts.add_hosts(config.as_list('vds'), config.as_list('vds_password'),
@@ -78,7 +79,7 @@ def build_setup(config, storage, storage_type, basename="testname",
     cpu_den = CpuModelDenominator()
     try:
         cpu_info = cpu_den.get_common_cpu_model(
-            hosts_obj, version=config['compatibility_version'],
+            hosts_obj, version=version,
         )
     except CpuModelError as ex:
         LOGGER.error("Can not determine the best cpu_model: %s", ex)

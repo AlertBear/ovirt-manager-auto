@@ -111,8 +111,7 @@ def create_dc(
             mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
 
     assert ll_dc.addDataCenter(
-        positive=True, name=dc_name,
-        storage_type=network_conf.STORAGE_TYPE, version=version,
+        positive=True, name=dc_name, version=version,
         local=False, mac_pool=mac_pool_obj
     )
 

@@ -38,9 +38,7 @@ def setUpModule():
         )
 
         datacenters.addDataCenter(
-            True, name=config.DC_NAME_B,
-            storage_type=config.STORAGE_TYPE,
-            version=config.COMP_VERSION
+            True, name=config.DC_NAME_B, version=config.COMP_VERSION
         )
         clusters.addCluster(
             True, name=config.CLUSTER_NAME_B,

@@ -23,9 +23,9 @@ def setup_package():
     """
     if not config.GOLDEN_ENV:
         logger.info("Creating data center with 2 clusters and 3 hosts")
-        if not addDataCenter(True, name=config.DC_NAME[0],
-                             storage_type=config.STORAGE_TYPE,
-                             version=config.COMP_VERSION):
+        if not addDataCenter(
+                True, name=config.DC_NAME[0], version=config.COMP_VERSION
+        ):
             raise DataCenterException("cannot add data center: %s" %
                                       config.DC_NAME[0])
         for cluster_name in [config.CLUSTER_NAME[0], config.CLUSTER_NAME[1]]:

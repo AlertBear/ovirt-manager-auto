@@ -256,8 +256,7 @@ def case_08_fixture(request):
         }
     }
     assert hl_networks.create_basic_setup(
-        datacenter=dc, version=conf.COMP_VERSION,
-        storage_type=conf.STORAGE_TYPE, cpu=conf.CPU_NAME
+        datacenter=dc, version=conf.COMP_VERSION, cpu=conf.CPU_NAME
     )
     network_helper.prepare_networks_on_setup(
         networks_dict=net_dict, dc=dc,

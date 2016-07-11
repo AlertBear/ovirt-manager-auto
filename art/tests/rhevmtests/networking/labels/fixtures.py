@@ -304,7 +304,7 @@ def case_07_fixture(request, all_classes_teardown):
     request.addfinalizer(fin)
 
     assert ll_datacenters.addDataCenter(
-        positive=True, name=dc_name2, storage_type=conf.STORAGE_TYPE,
+        positive=True, name=dc_name2,
         version=conf.COMP_VERSION_4_0[0], local=False
     )
 

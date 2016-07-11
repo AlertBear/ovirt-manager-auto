@@ -760,8 +760,7 @@ class PositiveNetworkPermissions317269(NetworkingPossitive):
 
     def setUp(self):
         assert datacenters.addDataCenter(
-            True, name=self.dc_name, storage_type=config.STORAGE_TYPE_NFS,
-            version=config.COMP_VERSION
+            True, name=self.dc_name, version=config.COMP_VERSION
         )
 
     def tearDown(self):
@@ -789,8 +788,7 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
         users.addRoleToUser(True, config.USER_NAME, role.DataCenterAdmin)
         loginAsUser(config.USER_NAME, filter_=False)
         assert datacenters.addDataCenter(
-            True, name=self.dc_name, storage_type=config.STORAGE_TYPE_NFS,
-            version=config.COMP_VERSION
+            True, name=self.dc_name, version=config.COMP_VERSION
         )
 
     def tearDown(self):

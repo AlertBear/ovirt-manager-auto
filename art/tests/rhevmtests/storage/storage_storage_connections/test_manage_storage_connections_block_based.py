@@ -83,7 +83,6 @@ def setup_module():
 
     if not ll_dc.addDataCenter(
         True, name=config.DATACENTER_ISCSI_CONNECTIONS,
-        storage_type=config.STORAGE_TYPE_ISCSI,
         version=config.COMP_VERSION
     ):
         raise exceptions.DataCenterException(
@@ -248,8 +247,7 @@ def _restore_empty_dc():
             "Failed to clean Data center '%s'" % dc_name
         )
     if not ll_dc.addDataCenter(
-        True, name=dc_name, storage_type=config.STORAGE_TYPE_ISCSI,
-        version=config.COMP_VERSION
+        True, name=dc_name, version=config.COMP_VERSION
     ):
         raise exceptions.DataCenterException(
             "Failed to create Data center '%s'" % dc_name

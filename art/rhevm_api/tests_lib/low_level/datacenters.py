@@ -93,7 +93,6 @@ def addDataCenter(positive, **kwargs):
 
     Keyword Args:
         name (str): Name of a new data center
-        storage_type (str): Storage type data center will support
         version (str): Datacenter supported version (2.2 or 3.0)
         local (bool): True for localFS DC type, False for shared DC type
 
@@ -109,8 +108,6 @@ def addDataCenter(positive, **kwargs):
     logger.info(log_info)
     major_version, minor_version = kwargs.pop('version').split(".")
     dc_version = Version(major=int(major_version), minor=int(minor_version))
-    if kwargs.get("storage_type"):
-        kwargs.pop("storage_type")
 
     dc = DataCenter(version=dc_version, local=local, **kwargs)
 

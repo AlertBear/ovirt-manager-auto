@@ -94,7 +94,6 @@ def setup_module():
     assert datacenters.addDataCenter(
         True,
         name=config.DELETE_DC,
-        storage_type='nfs',
         version=config.COMP_VERSION
     )
     assert mla.addTemplatePermissionsToGroup(
@@ -387,7 +386,6 @@ class CaseRoleActions(TestCase):
             datacenters.addDataCenter(
                 self.positive,
                 name=config.USER_SYSTEM,
-                storage_type='nfs',
                 version=config.COMP_VERSION
             )
         )
@@ -869,7 +867,6 @@ class CaseRoleActions(TestCase):
         cleanup_func=datacenters.addDataCenter,
         positive=True,
         name=config.DELETE_DC,
-        storage_type='nfs',
         version=config.COMP_VERSION
     )
     def test_delete_storage_pool(self):

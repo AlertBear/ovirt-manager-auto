@@ -42,7 +42,7 @@ class TestRunnerWrapper():
         try:
             status = wrapper.runCommand(\
                 "art.rhevm_api.tests_lib.low_level.datacenters.addDataCenter",
-                "true",name="test",storage_type="NFS",version="3.1")
+                "true",name="test",version="3.1")
         except APICommandError:
             pass #handle error
     """

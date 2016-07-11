@@ -110,7 +110,6 @@ class TestVNICProfileCase01(NetworkTest):
     dc_name2 = "vnic_profile_DC_35_case01"
     mgmt_br = conf.MGMT_BRIDGE
     dc_ver = conf.COMP_VERSION
-    storage_type = conf.STORAGE_TYPE
 
     @classmethod
     def setup_class(cls):
@@ -119,7 +118,6 @@ class TestVNICProfileCase01(NetworkTest):
         """
         if not ll_datacenters.addDataCenter(
             positive=True, name=cls.dc_name2, version=cls.dc_ver,
-            storage_type=cls.storage_type
         ):
             raise conf.NET_EXCEPTION()
 

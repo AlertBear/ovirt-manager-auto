@@ -515,7 +515,7 @@ def check_host_nic_params(host, nic, **kwargs):
 
 
 def create_basic_setup(
-    datacenter, storage_type, version, cluster=None, cpu=None, host=None,
+    datacenter, version, cluster=None, cpu=None, host=None,
     host_password=None
 ):
     """
@@ -523,7 +523,6 @@ def create_basic_setup(
 
     Args:
         datacenter (str): Datacenter name
-        storage_type (str): Storage type for datacenter
         version (str): Version of the datacenter/cluster
         cluster (str): Cluster name
         cpu (str): CPU type for cluster
@@ -535,8 +534,7 @@ def create_basic_setup(
     """
     logger.info("Create dc %s", datacenter)
     if not ll_datacenters.addDataCenter(
-        positive=True, name=datacenter, storage_type=storage_type,
-        version=version
+        positive=True, name=datacenter, version=version
     ):
         logger.error("Failed to create DC %s", datacenter)
         return False

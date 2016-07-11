@@ -11,7 +11,6 @@ from rhevmtests.virt import config
 from art.test_handler import exceptions
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from rhevmtests.networking import config as netconf
 from rhevmtests.networking import helper as net_helper
 import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -62,7 +61,6 @@ def setup_package():
     logger.info("Add additional data center and cluster")
     if not hl_networks.create_basic_setup(
         config.ADDITIONAL_DC_NAME,
-        storage_type=netconf.STORAGE_TYPE,
         version=config.COMP_VERSION,
         cluster=config.ADDITIONAL_CL_NAME,
         cpu=config.CPU_NAME

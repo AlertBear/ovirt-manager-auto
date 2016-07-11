@@ -57,9 +57,8 @@ class MacPool(NetworkFixtures):
         Create basic setup (DC/Cluster)
         """
         assert hl_networks.create_basic_setup(
-            datacenter=self.ext_dc, storage_type=conf.STORAGE_TYPE,
-            version=self.comp_ver, cluster=self.mac_pool_cl,
-            cpu=conf.CPU_NAME
+            datacenter=self.ext_dc, version=self.comp_ver,
+            cluster=self.mac_pool_cl, cpu=conf.CPU_NAME
         )
 
     def move_host_to_new_cluster(self):

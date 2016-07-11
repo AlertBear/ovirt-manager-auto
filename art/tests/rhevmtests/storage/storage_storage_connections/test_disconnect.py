@@ -294,7 +294,7 @@ class BaseTestCaseNewDC(BaseTestCase):
             self.__class__.__name__, config.OBJECT_TYPE_CLUSTER
         )
         if not ll_dc.addDataCenter(
-            True, name=self.dc, storage_type=ISCSI, version=config.COMP_VERSION
+            True, name=self.dc, version=config.COMP_VERSION
         ):
             raise exceptions.DataCenterException(
                 "Failed to create Data center '%s'" % self.dc

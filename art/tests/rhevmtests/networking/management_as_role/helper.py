@@ -195,8 +195,8 @@ def create_setup(dc, cl=None):
     :raises: Network exception
     """
     if not hl_networks.create_basic_setup(
-        datacenter=dc, cluster=cl, version=conf.COMP_VERSION,
-        storage_type=conf.STORAGE_TYPE, cpu=conf.CPU_NAME
+        datacenter=dc, cluster=cl,
+        version=conf.COMP_VERSION, cpu=conf.CPU_NAME
     ):
         raise conf.NET_EXCEPTION()
 
