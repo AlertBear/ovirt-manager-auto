@@ -447,14 +447,20 @@ def updateHost(positive, host, **kwargs):
     return status
 
 
-def removeHost(positive, host, deactivate=False):
+def removeHost(positive, host, deactivate=False, force=False):
     """
-    Description: remove existed host
-    Author: edolinin
-    Parameters:
-       *  *host* - name of a host to be removed
-       *  *deactivate* - Flag to put host in maintenance before remove
-    Return: status (True if host was removed properly, False otherwise)
+    Remove existing host
+
+    :param positive: If positive or negative verification should be done
+    :type positive: bool
+    :param host: Name of a host to be removed
+    :type host: str
+    :param deactivate: Flag to put host in maintenance before remove
+    :type deactivate: bool
+    :param force: True if the host should be forcefully removed
+    :type force: bool
+    :return: If the removal status is same as expected
+    :rtype: bool
     """
 
     hostObj = HOST_API.find(host)
@@ -463,7 +469,9 @@ def removeHost(positive, host, deactivate=False):
             if not deactivateHost(positive=positive, host=host):
                 return False
 
-    return HOST_API.delete(hostObj, positive)
+    operations = ['force=true'] if force else None
+
+    return HOST_API.delete(hostObj, positive, operations=operations)
 
 
 def activateHost(positive, host, wait=True):
