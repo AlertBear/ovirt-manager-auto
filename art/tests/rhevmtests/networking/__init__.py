@@ -205,6 +205,7 @@ def remove_unneeded_vnic_profiles():
                 logger.error("Failed to remove %s profile", vnic.name)
 
 
+@ignore_exception
 def remove_unneeded_vms():
     """
     Remove all unneeded VMs

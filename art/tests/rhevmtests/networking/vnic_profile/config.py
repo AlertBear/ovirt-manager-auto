@@ -5,15 +5,18 @@
 Config file for vNIC profile test
 """
 
-from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
 VLAN_IDS = [str(i) for i in xrange(2, 20)]
-NETS = global_helper.generate_object_names(
-    num_of_cases=4, num_of_objects=20
-)
+
+NETS = global_helper.generate_object_names(num_of_cases=4, num_of_objects=20)
+
 VNIC_PROFILES = global_helper.generate_object_names(
-    num_of_cases=4, num_of_objects=20, prefix="profile"
+    num_of_cases=3, num_of_objects=20, prefix="vnic-profile_vnic_profile"
+)
+
+VNICS = global_helper.generate_object_names(
+    num_of_cases=3, num_of_objects=20, prefix="vnic-profile_vnics"
 )
 
 NETS_DICT = {
@@ -67,9 +70,6 @@ NETS_DICT = {
         "required": "false",
     },
     NETS[2][14]: {
-        "required": "false",
-    },
-    NETS[2][15]: {
         "required": "false",
     },
     NETS[2][16]: {

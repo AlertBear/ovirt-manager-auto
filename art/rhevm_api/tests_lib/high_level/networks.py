@@ -22,6 +22,7 @@ import logging
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.high_level.datacenters as hl_datacenters
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -490,7 +491,7 @@ def create_basic_setup(
     return True
 
 
-def remove_basic_setup(datacenter, cluster=None, hosts=[]):
+def remove_basic_setup(datacenter, cluster=None, hosts=list()):
     """
     Remove basic setup with datacenter and optional cluster and hosts
 
@@ -713,3 +714,45 @@ def create_and_attach_label(label, networks=list(), host_nic_dict=None):
             return False
 
     return True
+
+
+def remove_unneeded_vnic_profiles(dc_name):
+    """
+    Remove vNIC profiles which aren't attached to the management network.
+
+    Args:
+        dc_name (str): Remove profiles from a specified Data-Center name.
+
+    Returns:
+        True if remove was successful, False if one or more profiles removal(s)
+        failed.
+    """
+    dc_id = ll_datacenters.get_data_center(dc_name=dc_name).get_id()
+    clusters = hl_datacenters.get_clusters_connected_to_datacenter(
+        dc_id=dc_id
+    )
+
+    # Filter to safely remove vNIC profiles from non-management networks
+    nets_ids_to_remove_from = list()
+
+    for cluster in clusters:
+        cluster_nets = ll_networks.get_cluster_networks(
+            cluster=cluster.name, href=False
+        )
+        mngmnt_net = ll_clusters.get_cluster_management_network(
+            cluster_name=cluster.name
+        )
+        non_mngmnt_nets_ids = [
+            net.get_id() for net in cluster_nets
+            if not mngmnt_net or net.get_id() != mngmnt_net.get_id()
+        ]
+        nets_ids_to_remove_from.extend(non_mngmnt_nets_ids)
+
+    success = True
+    for profile in ll_networks.get_vnic_profile_objects():
+        if profile.get_network().get_id() in nets_ids_to_remove_from:
+            logger.info("Removing vNIC profile: %s", profile.name)
+            if not ll_networks.VNIC_PROFILE_API.delete(profile, True):
+                logger.error("Failed removing vNIC profile: %s", profile.name)
+                success = False
+    return success
