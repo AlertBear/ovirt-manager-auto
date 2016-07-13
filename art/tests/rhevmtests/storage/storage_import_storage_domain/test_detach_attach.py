@@ -50,7 +50,7 @@ def teardown_module():
     """
     Clean datacenter
     """
-    # TODO: Seems the imported vms will get assing a mac address and will get
+    # TODO: Seems the imported vms will get assign a mac address and will get
     # released after the engine is restarted. Restart the engine as a W/A
     # until this issue is investigated and fixed:
     # https://projects.engineering.redhat.com/browse/RHEVM-2610
@@ -227,6 +227,7 @@ class BasicEnvironment(BaseTestCase):
                 config.UNUSED_LUNS["lun_targets"][index],
                 override_luns=True
             )
+
         elif self.storage == FCP:
             status = hl_sd.addFCPDataDomain(
                 self.host,
@@ -390,9 +391,6 @@ class DomainImportWithTemplate(BasicEnvironment):
     Create vm from imported domain's Template
     """
     vm_from_template = 'vm_from_temp'
-    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
-    # supports FCP
-    storages = set([ISCSI, NFS, GLUSTER, CEPH])
 
     def setUp(self):
         """
@@ -434,11 +432,14 @@ class DomainImportWithTemplate(BasicEnvironment):
         """
         status = False
         if self.storage == ISCSI:
-            # TODO: Implement and test importBlockStorageDomain for FCP
-            status = hl_sd.importBlockStorageDomain(
+            status = hl_sd.import_iscsi_storage_domain(
                 self.host, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
                 lun_target=config.UNUSED_LUNS["lun_targets"][0]
             )
+
+        elif self.storage == FCP:
+            status = hl_sd.import_fcp_storage_domain(self.host)
+
         elif self.storage == NFS:
             status = ll_sd.importStorageDomain(
                 True, config.TYPE_DATA, NFS,
@@ -966,9 +967,6 @@ class BaseCaseInitializeDataCenter(BasicEnvironment):
     Base class for initializing a data center with an imported domain
     """
     remove_param = None
-    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
-    # supports FCP
-    storages = set([ISCSI, NFS, GLUSTER, POSIX])
 
     def setUp(self):
         """
@@ -1008,11 +1006,13 @@ class BaseCaseInitializeDataCenter(BasicEnvironment):
         """
         status = False
         if self.storage == ISCSI:
-            # TODO: Implement and test importBlockDomain for FCP
-            status = hl_sd.importBlockStorageDomain(
+            status = hl_sd.import_iscsi_storage_domain(
                 self.host, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
                 lun_target=config.UNUSED_LUNS["lun_targets"][0]
             )
+
+        elif self.storage == FCP:
+            status = hl_sd.import_fcp_storage_domain(self.host)
 
         elif self.storage == NFS:
             status = ll_sd.importStorageDomain(
@@ -1044,10 +1044,7 @@ class TestCase5201(BaseCaseInitializeDataCenter):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5201
     """
-    __test__ = (
-        ISCSI in opts['storages'] or NFS in opts['storages'] or
-        GLUSTER in opts['storages'] or POSIX in opts['storages']
-    )
+    __test__ = True
     polarion_test_case = '5201'
     remove_param = {'format': 'false'}
     detach = True
@@ -1104,12 +1101,7 @@ class TestCase12207(BaseCaseInitializeDataCenter):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-12207
     """
-    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
-    # supports FCP
-    __test__ = (
-        ISCSI in opts['storages'] or NFS in opts['storages'] or
-        GLUSTER in opts['storages'] or POSIX in opts['storages']
-    )
+    __test__ = True
     polarion_test_case = '12207'
     remove_param = {'destroy': True}
     detach = False
@@ -1358,9 +1350,7 @@ class TestCase5200(DomainImportWithTemplate):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5200
     """
-    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
-    # supports FCP
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
     storages = set([ISCSI, NFS])
     polarion_test_case = '5200'
 
@@ -1415,12 +1405,7 @@ class TestCase5297(DomainImportWithTemplate):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5297
     """
-    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
-    # supports FCP
-    __test__ = (
-        ISCSI in opts['storages'] or NFS in opts['storages'] or
-        GLUSTER in opts['storages'] or CEPH in opts['storages']
-    )
+    __test__ = True
     polarion_test_case = '5297'
 
     @polarion("RHEVM3-5297")

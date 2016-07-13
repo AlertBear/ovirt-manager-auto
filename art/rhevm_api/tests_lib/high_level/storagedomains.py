@@ -104,53 +104,99 @@ def discover_addresses_and_targets(host, server_address):
     return list(addresses), list(targets)
 
 
-def importBlockStorageDomain(host, lun_address, lun_target):
+def import_block_storage_domain(
+    host_id, response, storage_type=ENUMS['storage_type_iscsi']
+):
     """
-    Import an iscsi storage domain
+    Parse the response from:
+    /api/hosts/{host: id}/'unregisteredstoragedomainsdiscover' and import
+    the storage domains from the response
 
     __author__ = "ratamir"
-    :param host: host name to use for import
-    :type host: str
-    :param lun_address: lun address
-    :type lun_address: str
-    :param lun_target: lun target
-    :type lun_target: str
-    :return: True if the import succeeded or False otherwise
+
+    Arguments:
+        host_id (str): Host ID to use for import operation
+        response (str): Response body from POST to
+        /api/hosts/{host: id}/'unregisteredstoragedomainsdiscover'
+        storage_type (str): Block storage type, iscsi or fcp
+
+    Returns:
+        bool: True if the import succeeded or False otherwise
     """
-    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target, True):
-        return False
-    host_obj = ll_sd.hostUtil.find(host)
-    host_obj_id = ll_sd.Host(id=host_obj.get_id())
-    iscsi = ll_sd.IscsiDetails(address=lun_address)
-    iscsi_targets = ll_sd.iscsi_targetsType(iscsi_target=[lun_target])
-    response = ll_sd.hostUtil.syncAction(
-        host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
-        iscsi_targets=iscsi_targets
-    )
     if not response:
-        ll_sd.util.logger.error('Failed to find storage domains to import')
+        ll_sd.util.logger.error('Response message should be provided')
         return False
     response = response.split()
     sd_ids = [item for item in response if (
         item.startswith("id=") and item.endswith('">')
     )]
     sds_status = list()
-    for id in sd_ids:
+    for id_ in sd_ids:
         # id == u'id="xxxx-yyyy-zzzz-qqqq">
         # str(id) ==> convert it to str (u' is removed)
-        # id[4:-2] ==> removes id=" and ">
-        sd_id = str(id[4:-2])
+        # strip('id="">') ==> removes id=" and ">
+        sd_id = str(id_.strip('id="">'))
 
         storage_object = ll_sd.HostStorage()
-        storage_object.set_type(ENUMS['storage_type_iscsi'])
+        storage_object.set_type(storage_type)
 
         sd = ll_sd.StorageDomain(id=sd_id)
         sd.set_type(ENUMS['storage_dom_type_data'])
-        sd.set_host(host_obj_id)
+        sd.set_host(host_id)
         sd.set_storage(storage_object)
         sd.set_import('true')
         sds_status.append(ll_sd.util.create(sd, True, compare=False)[1])
-    return False not in sds_status
+    return all(sds_status)
+
+
+def import_iscsi_storage_domain(host, lun_address, lun_target):
+    """
+    Import an iscsi storage domain
+
+    __author__ = "ratamir"
+
+    Arguments:
+        host (str): host name to use for import
+        lun_address (str): lun address
+        lun_target (str): lun target
+
+    Returns:
+        bool: True if the import succeeded or False otherwise
+    """
+    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
+        return False
+    host_obj = ll_sd.hostUtil.find(host)
+    host_obj_id = ll_sd.Host(id=host_obj.get_id())
+    iscsi = ll_sd.IscsiDetails(address=lun_address)
+    response = ll_sd.hostUtil.syncAction(
+        host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
+        iscsi_target=[lun_target]
+    )
+    return import_block_storage_domain(
+        host_obj_id, response, ENUMS['storage_type_iscsi']
+    )
+
+
+def import_fcp_storage_domain(host):
+    """
+    Import an fcp storage domain
+
+    __author__ = "ratamir"
+
+    Arguments:
+        host (str): host name to use for import
+
+    Returns:
+        bool: True if the import succeeded or False otherwise
+    """
+    host_obj = ll_sd.hostUtil.find(host)
+    host_obj_id = ll_sd.Host(id=host_obj.get_id())
+    response = ll_sd.hostUtil.syncAction(
+        host_obj, "unregisteredstoragedomainsdiscover", True
+    )
+    return import_block_storage_domain(
+        host_obj_id, response, ENUMS['storage_type_fcp']
+    )
 
 
 def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
