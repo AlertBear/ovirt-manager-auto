@@ -27,16 +27,10 @@ class TestUpgrade(TestCase):
         vms_list = [vm.get_name() for vm in all_vms]
         return ll_vms.stop_vms_safely(vms_list)
 
-    def update_repos_and_vdsm(self, host_ip):
-        command_list = (
-            (['puppet', 'agent', '--enable'], lambda x: x == 0),
-            (['puppet', 'agent', '-t'], lambda x: True),
-            (['yum', 'update', '-y'], lambda x: True),
-        )
-        host = resources.VDS(host_ip, self._passwd)
-        with host.executor().session() as ss:
+    def execute_on_remote(self, executor, command_list, name):
+        with executor.session() as ss:
             for cmd, erc in command_list:
-                ss.logger.info('Executing on host:%s cmd: %s', host_ip, cmd)
+                ss.logger.info('Executing on:%s cmd: %s', name, cmd)
                 rc, _, err = ss.run_cmd(cmd)
                 if not erc(rc):
                     raise Exception(
@@ -45,36 +39,55 @@ class TestUpgrade(TestCase):
                         )
                     )
 
-    def update_engine(self):
+    def update_repos_and_vdsm(self, host_ip):
+        executor = resources.VDS(host_ip, self._passwd).executor()
         command_list = (
-            (['test', '-f', config.ANSWER_FILE], lambda x: x == 0),
-            (['puppet', 'agent', '--enable'], lambda x: x == 0),
             (['rpm', '-qa', '\'(rhev|ovirt)-release-*\'', '|',
                 'xargs', 'rpm', '-e'], lambda x: True),
-            (['puppet', 'agent', '-t'], lambda x: True),
-            (['yum', 'update', 'rhevm-setup', '-y'], lambda x: x == 0),
+            (['rm', '-f', '/etc/yum.repos.d/rhev*.repo'], lambda x: True),
+            (['puppet', 'agent', '--enable'], lambda x: x == 0),
+            (['puppet', 'agent', '-t'], lambda x: x in (0, 2)),
+            (['puppet', 'agent', '--disable'], lambda x: x == 0),
+            (['yum', 'update', '-y'], lambda x: True),
+        )
+        self.execute_on_remote(executor, command_list, host_ip)
+
+    def update_engine(self, executor):
+        command_list = (
             (['engine-setup', '--config-append=' + config.ANSWER_FILE],
                 lambda x: x == 0),
-            (['yum', 'update', '-y', 'java_sdk',
-                'ovirt-engine-extension-aaa-ldap',
-                'ovirt-engine-extension-aaa-misc',
-                'ovirt-engine-extension-aaa-ldap-setup'],
-                lambda x: True),
-            (['yum', 'update', '-y', 'rhevm-sdk-java',
-                'rhevm-log-collector'], lambda x: True),
-            (['yum', 'update', '-y', 'ovirt-sdk-java',
-                'ovirt-log-collector'], lambda x: True),
         )
-        with config.ENGINE_HOST.executor().session() as ss:
-            for cmd, erc in command_list:
-                ss.logger.info('Executing on engine, cmd: %s', cmd)
-                rc, _, err = ss.run_cmd(cmd)
-                if not erc(rc):
-                    raise Exception(
-                        'Command: %s, exited unexpectly %s ERR: %s' % (
-                            cmd, rc, err,
-                        )
-                    )
+        self.execute_on_remote(executor, command_list, 'engine')
+
+    def update_engine_repositories(self, executor):
+        command_list = (
+            (['test', '-f', config.ANSWER_FILE], lambda x: x == 0),
+            (['rpm', '-qa', '\'(rhev|ovirt)-release-*\'', '|',
+                'xargs', 'rpm', '-e'], lambda x: True),
+            (['rm', '-f', '/etc/yum.repos.d/rhev*.repo'], lambda x: True),
+            (['puppet', 'agent', '--enable'], lambda x: x == 0),
+            (['puppet', 'agent', '-t'], lambda x: x in (0, 2)),
+            (['puppet', 'agent', '--disable'], lambda x: x == 0),
+        )
+        self.execute_on_remote(executor, command_list, 'engine')
+
+    def update_engine_packages(self, executor):
+        packages = [
+            'ovirt-engine-setup',
+            'ovirt-engine-sdk-java',
+            'java-ovirt-engine-sdk4',
+            'python-ovirt-engine-sdk4',
+            'rubygem-ovirt-engine-sdk4',
+            'ovirt-log-collector',
+            'ovirt-engine-extension-aaa-ldap',
+            'ovirt-engine-extension-aaa-misc',
+            'ovirt-engine-extension-aaa-ldap-setup',
+            'ovirt-engine-dwh-setup',
+        ]
+        command_list = tuple(
+            (['yum', 'update', '-y', p], lambda x: x == 0) for p in packages
+        )
+        self.execute_on_remote(executor, command_list, 'engine')
 
     def wait_for_engine(self):
         engine = resources.Engine(
@@ -107,14 +120,16 @@ class TestUpgrade(TestCase):
 
         # Get not RHEV-H
         self.rhel_hosts_ip = self.get_rhel_hosts_ip(host_list)
-        assert self.rhel_hosts_ip, 'No hosts found'
 
-        # update hosts
+        # update rhel hosts if any
         for host_ip in self.rhel_hosts_ip:
             self.update_repos_and_vdsm(host_ip)
 
         # update engine
-        self.update_engine()
+        executor = config.ENGINE_HOST.executor()
+        self.update_engine_repositories(executor)
+        self.update_engine_packages(executor)
+        self.update_engine(executor)
 
         # wait for engine to start
         self.wait_for_engine()
