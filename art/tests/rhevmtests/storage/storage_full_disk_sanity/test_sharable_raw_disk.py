@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import StorageTest as TestCase, attr
+from art.unittest_lib import StorageTest as TestCase, attr, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -61,7 +61,7 @@ class TestCase11513(TestCase):
     def test_shared(self):
         """Creates a shared disk and assign it to different vms
         """
-        logger.info("Creating sharable raw disk")
+        testflow.step("Creating sharable raw disk %s", self.disk_name)
         self.assertTrue(
             ll_disks.addDisk(
                 True, alias=self.disk_name, provisioned_size=config.GB,
@@ -72,7 +72,9 @@ class TestCase11513(TestCase):
         )
 
         self.assertTrue(ll_disks.wait_for_disks_status(disks=[self.disk_name]))
-        logger.info("Attaching disk to vm %s" % self.vm_1)
+        testflow.step(
+            "Attaching shared disk %s to vm %s", self.disk_name, self.vm_1
+        )
         self.assertTrue(ll_disks.attachDisk(True, self.disk_name, self.vm_1))
         self.assertTrue(ll_disks.wait_for_disks_status(disks=[self.disk_name]))
         self.assertTrue(
@@ -82,7 +84,9 @@ class TestCase11513(TestCase):
         )
         # TODO: Extra validation ?
 
-        logger.info("Attaching disk to vm %s", self.vm_2)
+        testflow.step(
+            "Attaching shared disk %s to vm %s", self.disk_name, self.vm_2
+        )
         self.assertTrue(ll_disks.attachDisk(True, self.disk_name, self.vm_2))
         self.assertTrue(ll_disks.wait_for_disks_status([self.disk_name]))
         self.assertTrue(

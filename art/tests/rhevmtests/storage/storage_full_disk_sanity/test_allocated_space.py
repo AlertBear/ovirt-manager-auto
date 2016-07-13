@@ -20,7 +20,7 @@ from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -149,6 +149,10 @@ class BaseCase(TestCase):
         """
         Check that details match expected details
         """
+        testflow.step(
+            "Checking storage domain info: actual size, allocated size and "
+            "total size"
+        )
         for domain in self.domains:
             logger.info('Checking info for domain %s', domain)
             allocated_size = ll_sd.get_allocated_size(domain)
@@ -189,6 +193,7 @@ class TestCase11536(BaseCase):
         """
         Create a preallocated and a thin provision disk
         """
+        testflow.step("Create a preallocated and a thin provision disk")
         self.create_disks()
 
     @polarion("RHEVM3-11536")

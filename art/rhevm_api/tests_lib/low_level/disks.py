@@ -300,6 +300,7 @@ def addDisk(positive, **kwargs):
             False - if positive but failed to add or not positive but added
     """
     disk = _prepareDiskObject(**kwargs)
+    logger.info("Adding disk %s", disk.get_alias())
     disk, status = DISKS_API.create(disk, positive)
     return status, {'diskId': disk.get_id() if (disk and not isinstance(
         disk, Fault)) else None}
@@ -402,6 +403,7 @@ def attachDisk(
     )
 
     vm_disks = getObjDisks(vm_name)
+    logger.info("Attaching disk %s to vm %s", alias, vm_name)
     return DISKS_API.create(updated_disk, positive, collection=vm_disks)[1]
 
 
@@ -419,6 +421,7 @@ def detachDisk(positive, alias, vmName):
     :returns: True/False of the operation dependent on positive value
     """
     disk_object = getVmDisk(vmName, alias)
+    logger.info("Detaching disk %s from vm %s", alias, vmName)
     return DISKS_API.delete(disk_object, positive)
 
 

@@ -6,7 +6,7 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Storage/
 import config
 import logging
 from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
-from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib.common import StorageTest as TestCase, testflow
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -504,15 +504,16 @@ class TestCase5924(DirectLunAttachTestCase):
         1) Create a direct LUN and attach it to the vm
         2) Detach the LUN from the vm and remove it
         """
-        self.attach_disk_to_vm()
-        self.assertTrue(
-            ll_vms.startVm(True, self.vm_name, config.VM_UP),
-            "Failed to start vm %s" % self.vm_name
+        testflow.step(
+            "Attach direct lun %s to vm %s", self.disk_alias, self.vm_name
         )
+        self.attach_disk_to_vm()
         # TODO: verify write operation to direct LUN when bug:
         # https://bugzilla.redhat.com/show_bug.cgi?id=957788 will fix
-        ll_vms.stop_vms_safely([self.vm_name])
-        logger.info("Detaching direct lun %s", self.disk_alias)
+
+        testflow.step(
+            "Detaching direct lun %s from vm %s", self.disk_alias, self.vm_name
+        )
         self.assertTrue(
             ll_disks.detachDisk(True, self.disk_alias, self.vm_name),
             "Failed to detach direct lun from vm %s" % self.vm_name
