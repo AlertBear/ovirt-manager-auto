@@ -12,35 +12,28 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as qos_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
-
-
-class HostNetworkQos(NetworkFixtures):
-    """
-    Fixtures for host_network_qos
-    """
-    pass
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
-def host_network_qos_prepare_setup(request, network_cleanup_fixture):
+def host_network_qos_prepare_setup(request):
     """
     Prepare setup
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
 
     def fin():
         """
         Finalizer for remove networks from setup
         """
-        hnqos.remove_networks_from_setup(hosts=hnqos.host_0_name)
+        host_network_qos.remove_networks_from_setup(
+            hosts=host_network_qos.host_0_name
+        )
     request.addfinalizer(fin)
 
-    hnqos.prepare_networks_on_setup(
-        networks_dict=qos_conf.NETS_DICT, dc=hnqos.dc_0,
-        cluster=hnqos.cluster_0
+    host_network_qos.prepare_networks_on_setup(
+        networks_dict=qos_conf.NETS_DICT, dc=host_network_qos.dc_0,
+        cluster=host_network_qos.cluster_0
     )
 
 
@@ -49,13 +42,15 @@ def teardown_all_cases(request, host_network_qos_prepare_setup):
     """
     Teardown for all cases
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
 
     def fin():
         """
         Finalizer for clean host interfaces
         """
-        hl_host_network.clean_host_interfaces(host_name=hnqos.host_0_name)
+        hl_host_network.clean_host_interfaces(
+            host_name=host_network_qos.host_0_name
+        )
     request.addfinalizer(fin)
 
 
@@ -64,13 +59,13 @@ def fixture_case_01(request, teardown_all_cases):
     """
     Fixture for case01
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     nets = qos_conf.NETS[1][:2]
     sn_dict = {
         "add": {
             "1": {
                 "network": nets[0],
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
                 "qos": {
                     "type_": qos_conf.HOST_NET_QOS_TYPE,
                     "outbound_average_linkshare": qos_conf.TEST_VALUE,
@@ -80,7 +75,7 @@ def fixture_case_01(request, teardown_all_cases):
             },
             "2": {
                 "network": nets[1],
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
                 "qos": {
                     "type_": qos_conf.HOST_NET_QOS_TYPE,
                     "outbound_average_linkshare": qos_conf.TEST_VALUE,
@@ -91,7 +86,7 @@ def fixture_case_01(request, teardown_all_cases):
         }
     }
     assert hl_host_network.setup_networks(
-        host_name=hnqos.host_0_name, **sn_dict
+        host_name=host_network_qos.host_0_name, **sn_dict
     )
 
 
@@ -100,7 +95,7 @@ def fixture_case_02(request, teardown_all_cases):
     """
     Fixture for case02
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     net1 = qos_conf.NETS[2][0]
     qos_name = qos_conf.QOS_NAME[13][0]
 
@@ -121,12 +116,12 @@ def fixture_case_02(request, teardown_all_cases):
         "add": {
             "1": {
                 "network": net1,
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
             },
         }
     }
     assert hl_host_network.setup_networks(
-        host_name=hnqos.host_0_name, **sn_dict
+        host_name=host_network_qos.host_0_name, **sn_dict
     )
 
 
@@ -135,7 +130,7 @@ def fixture_case_03(request, teardown_all_cases):
     """
     Fixture for case03
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     net = qos_conf.NETS[3][0]
 
     def fin():
@@ -155,13 +150,13 @@ def fixture_case_03(request, teardown_all_cases):
         "add": {
             "1": {
                 "network": net,
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
             }
         }
     }
 
     assert hl_host_network.setup_networks(
-        host_name=hnqos.host_0_name, **sn_dict
+        host_name=host_network_qos.host_0_name, **sn_dict
     )
 
 
@@ -170,19 +165,19 @@ def fixture_case_04(request, teardown_all_cases):
     """
     Fixture for case04
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     net1 = qos_conf.NETS[4][0]
 
     sn_dict = {
         "add": {
             "1": {
                 "network": net1,
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
             },
         }
     }
     assert hl_host_network.setup_networks(
-        host_name=hnqos.host_0_name, **sn_dict
+        host_name=host_network_qos.host_0_name, **sn_dict
     )
 
 
@@ -206,7 +201,7 @@ def fixture_case_06(request, teardown_all_cases):
     """
     Fixture for case06
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     net1 = qos_conf.NETS[6][0]
     qos_name = qos_conf.QOS_NAME[6][0]
 
@@ -222,10 +217,10 @@ def fixture_case_06(request, teardown_all_cases):
     )
 
     assert ll_networks.update_network_in_datacenter(
-        positive=True, network=net1, datacenter=hnqos.dc_0,
+        positive=True, network=net1, datacenter=host_network_qos.dc_0,
         qos_dict={
             "qos_name": qos_name,
-            "datacenter": hnqos.dc_0
+            "datacenter": host_network_qos.dc_0
         }
     )
 
@@ -235,7 +230,7 @@ def fixture_case_07(request, teardown_all_cases):
     """
     Fixture for case07
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     net1 = qos_conf.NETS[7][0]
     qos_name = qos_conf.QOS_NAME[7][0]
 
@@ -244,22 +239,22 @@ def fixture_case_07(request, teardown_all_cases):
     )
 
     assert ll_networks.update_network_in_datacenter(
-        positive=True, network=net1, datacenter=hnqos.dc_0,
+        positive=True, network=net1, datacenter=host_network_qos.dc_0,
         qos_dict={
             "qos_name": qos_name,
-            "datacenter": hnqos.dc_0
+            "datacenter": host_network_qos.dc_0
         }
     )
     sn_dict = {
         "add": {
             "1": {
                 "network": net1,
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
             },
         }
     }
     assert hl_host_network.setup_networks(
-        host_name=hnqos.host_0_name, **sn_dict
+        host_name=host_network_qos.host_0_name, **sn_dict
     )
 
 
@@ -300,13 +295,13 @@ def fixture_case_10(request, teardown_all_cases):
     """
     Fixture for case10
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     net = qos_conf.NETS[10][0]
     sn_dict = {
         "add": {
             "1": {
                 "network": net,
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
                 "qos": {
                     "type_": qos_conf.HOST_NET_QOS_TYPE,
                     "outbound_average_linkshare": qos_conf.TEST_VALUE,
@@ -317,7 +312,7 @@ def fixture_case_10(request, teardown_all_cases):
         }
     }
     assert hl_host_network.setup_networks(
-        host_name=hnqos.host_0_name, **sn_dict
+        host_name=host_network_qos.host_0_name, **sn_dict
     )
 
 
@@ -326,7 +321,7 @@ def fixture_case_11(request, teardown_all_cases):
     """
     Fixture for case11
     """
-    hnqos = HostNetworkQos()
+    host_network_qos = NetworkFixtures()
     nets = qos_conf.NETS[11][:2]
     qos_names = qos_conf.QOS_NAME[11][:2]
 
@@ -337,25 +332,25 @@ def fixture_case_11(request, teardown_all_cases):
 
     for net, qos_name in zip(nets, qos_names):
         assert ll_networks.update_network_in_datacenter(
-            positive=True, network=net, datacenter=hnqos.dc_0,
+            positive=True, network=net, datacenter=host_network_qos.dc_0,
             qos_dict={
                 "qos_name": qos_name,
-                "datacenter": hnqos.dc_0
+                "datacenter": host_network_qos.dc_0
             }
         )
     sn_dict = {
         "add": {
             "1": {
                 "network": nets[0],
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
             },
             "2": {
                 "network": nets[1],
-                "nic": hnqos.host_0_nics[1],
+                "nic": host_network_qos.host_0_nics[1],
             },
         }
     }
 
     assert hl_host_network.setup_networks(
-        host_name=hnqos.host_0_name, **sn_dict
+        host_name=host_network_qos.host_0_name, **sn_dict
     )

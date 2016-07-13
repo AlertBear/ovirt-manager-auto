@@ -96,7 +96,7 @@ class VDS(Host):
             out = config.VDS_HOSTS[0].vds_client("getVdsCapabilities")
         """
         cmd_args = " ".join(args)
-        args_txt = "'{0}'".format(cmd_args) if cmd_args else ""
+        args_txt = "'{0}'".format(cmd_args) if cmd_args else "()"
         if json:
             command = (
                 "python -c 'from vdsm import jsonrpcvdscli;"
@@ -104,7 +104,7 @@ class VDS(Host):
                 "requestQueues = config.get(\"addresses\",\"request_queues\");"
                 "requestQueue = requestQueues.split(\",\")[0];"
                 "conn = jsonrpcvdscli.connect(requestQueue);"
-                "print conn.{0}(\"{1}\")'".format(cmd, args_txt)
+                "print conn.{0}{1}'".format(cmd, args_txt)
             )
         else:
             command = (
