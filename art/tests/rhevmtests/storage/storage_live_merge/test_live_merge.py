@@ -23,7 +23,7 @@ from art.rhevm_api.utils.test_utils import (
 )
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from socket import timeout as TimeoutError
 from utilities.machine import LINUX, Machine
@@ -222,7 +222,10 @@ class BasicEnvironment(BaseTestCase):
         Verifies whether files exist in snapshot using Preview for the
         verification
         """
-        logger.info("Previewing snapshot %s", snapshot_description)
+        testflow.step(
+            "Previewing snapshot %s to validate disk's content",
+            snapshot_description
+        )
         if not ll_vms.preview_snapshot(
                 True, self.vm_name, snapshot_description, True
         ):
@@ -244,7 +247,7 @@ class BasicEnvironment(BaseTestCase):
         # Make sure to undo the previewed snapshot even if the file
         # verification failed
         finally:
-            logger.info("Undoing snapshot preview")
+            testflow.step("Undoing snapshot preview")
             status = ll_vms.undo_snapshot_preview(True, self.vm_name, True)
             ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
             ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
@@ -257,6 +260,7 @@ class BasicEnvironment(BaseTestCase):
             self, vm_name, snapshot_description, running_io_op=False
     ):
         if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+            testflow.step("Starting vm %s", vm_name)
             ll_vms.startVm(True, vm_name, config.VM_UP, wait_for_ip=True)
         snapshot_disks = [
             disk.get_id() for disk in ll_vms.get_snapshot_disks(
@@ -284,6 +288,9 @@ class BasicEnvironment(BaseTestCase):
             p = Process(target=f, args=(q,))
             p.start()
             sleep(5)
+        testflow.step(
+            "Removing snapshot '%s' of vm %s", snapshot_description, vm_name
+        )
         if not ll_vms.removeSnapshot(True, vm_name, snapshot_description):
             exceptions.VMException(
                 "Failed to live delete snapshot %s" % snapshot_description
@@ -313,11 +320,13 @@ class BasicEnvironment(BaseTestCase):
         for idx in xrange(snapshot_count):
             # Create files on all vm's disks before snapshot operation.
             # Files will be named: 'test_file_<idx>'
+            testflow.step("Creating files on vm's '%s' disks", self.vm_name)
             if not self.create_files_on_vm_disks(self.vm_name, idx):
                 raise exceptions.VMException("Failed to create file")
             snap_description = SNAPSHOT_DESCRIPTION_TEMPLATE % (
                 self.test_case, self.storage, idx
             )
+            testflow.step("Creating snapshot of vm %s", self.vm_name)
             self.perform_snapshot_with_verification(
                 snap_description, disk_names
             )

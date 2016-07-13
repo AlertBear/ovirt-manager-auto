@@ -3874,6 +3874,7 @@ def preview_snapshot(positive, vm, description, ensure_vm_down=False,
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
+    logger.info("Previewing vm's %s snapshot '%s'", vm, description)
     return snapshot_action(positive, vm, PREVIEW, description,
                            restore_memory=restore_memory, disks_lst=disks_lst)
 
@@ -3889,6 +3890,7 @@ def undo_snapshot_preview(positive, vm, ensure_vm_down=False):
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
+    logger.info("Undoing snapshot preview of vm %s", vm)
     return snapshot_action(positive, vm, UNDO)
 
 
