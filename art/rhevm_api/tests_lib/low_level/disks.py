@@ -419,7 +419,7 @@ def detachDisk(positive, alias, vmName):
     :returns: True/False of the operation dependent on positive value
     """
     disk_object = getVmDisk(vmName, alias)
-    return DISKS_API.delete(disk_object, positive, element_name='action')
+    return DISKS_API.delete(disk_object, positive)
 
 
 def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
