@@ -34,7 +34,7 @@ from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr
-from art.unittest_lib.common import StorageTest
+from art.unittest_lib.common import StorageTest, testflow
 
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
@@ -241,6 +241,12 @@ class TestCase6004(AllPermutationsDisks):
         Expected Results:
             - move should succeed
         """
+        testflow.step(
+            "Live migrate vm's %s disks to another storage domain "
+            "with %s storage type",
+            self.vm_name, "the same" if config.MIGRATE_SAME_TYPE else
+            "a different"
+        )
         ll_vms.live_migrate_vm(
             self.vm_name, same_type=config.MIGRATE_SAME_TYPE
         )
