@@ -3110,8 +3110,11 @@ def activateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
     Return: True if ok, False if something went wrong (or good
             in case positive is False)
     """
-    return changeVmDiskState(positive, vm, 'activate', diskAlias, diskId,
-                             wait)
+    logger.info(
+        "Activating disk %s of VM %s", diskAlias if diskAlias else diskId, vm)
+    return changeVmDiskState(
+        positive, vm, 'activate', diskAlias, diskId, wait
+    )
 
 
 def deactivateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
@@ -3126,8 +3129,13 @@ def deactivateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
     Return: True if ok, False if something went wrong (or good
             in case positive is False)
     """
-    return changeVmDiskState(positive, vm, 'deactivate', diskAlias, diskId,
-                             wait)
+    logger.info(
+        "Deactivating disk %s of VM %s",
+        diskAlias if diskAlias else diskId, vm
+    )
+    return changeVmDiskState(
+        positive, vm, 'deactivate', diskAlias, diskId, wait
+    )
 
 
 def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):

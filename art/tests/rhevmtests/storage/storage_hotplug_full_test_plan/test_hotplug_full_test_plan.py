@@ -24,7 +24,7 @@ from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from utilities import machine
 
@@ -268,7 +268,11 @@ class HotplugHookTest(TestCase):
         Calls defined action (activate/deactivate disk) and checks if hooks
         were called
         """
+        testflow.step("Performing hotplug/hot-unplug action on disk")
         self.perform_action()
+        testflow.step(
+            "Verifying relevant hook '%s' was called", self.hooks.keys()[0]
+        )
         self.verify_hook_called()
 
 
@@ -765,7 +769,7 @@ class TestCase6231(BasePlugDiskTest):
                 disk.get_active()
             ]
             disk_name = inactive_disks[0].get_name()
-            logger.info("Activating disk %s on VM %s", disk_name, vm)
+            testflow.step("Hot plug disk %s to VM %s", disk_name, vm)
             status = ll_vms.activateVmDisk(True, vm, disk_name)
             logger.info("Finished activating disk %s", disk_name)
             self.assertTrue(status)
@@ -776,7 +780,7 @@ class TestCase6231(BasePlugDiskTest):
                 disk.get_active()
             ]
             disk_name = active_disks[0].get_name()
-            logger.info("Deactivating disk %s on VM %s", disk_name, vm)
+            testflow.step("Hot unplug disk %s to VM %s", disk_name, vm)
             status = ll_vms.deactivateVmDisk(True, vm, disk_name)
             logger.info("Finished deactivating disk %s", disk_name)
             self.assertTrue(status)
