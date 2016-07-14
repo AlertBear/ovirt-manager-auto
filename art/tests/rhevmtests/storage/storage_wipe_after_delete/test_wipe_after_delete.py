@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
 )
 from art.rhevm_api.utils.log_listener import watch_logs
-from art.unittest_lib.common import StorageTest as BaseTestCase
+from art.unittest_lib.common import StorageTest as BaseTestCase, testflow
 
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr
@@ -93,6 +93,9 @@ class CommonUsage(BaseTestCase):
         Adding new disk, edit the wipe after delete flag if update=True,
         and removes the disk to see in log file that the operation succeeded
         """
+        testflow.step(
+            "Adding new disk %s to vm %s", config.DISK_ALIAS, self.vm_name
+        )
         assert ll_vms.addDisk(
             True, self.vm_name, config.DISK_SIZE,
             storagedomain=self.storage_domain, sparse=True,
@@ -112,12 +115,17 @@ class CommonUsage(BaseTestCase):
         regex = REGEX_TEMPLATE % disk_obj.get_image_id()
 
         if update:
+            testflow.step(
+                "Update disk's %s wipe_after_delete flag to 'True'",
+                config.DISK_ALIAS
+            )
             assert ll_vms.updateVmDisk(
                 True, self.vm_name, config.DISK_ALIAS, disk_id=self.disk_id,
                 wipe_after_delete=True
             )
         ll_vms.stop_vms_safely([self.vm_name])
         ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        testflow.step("Removing disk %s", config.DISK_ALIAS)
 
         t = threading.Timer(
             5.0, ll_vms.removeDisk, (
