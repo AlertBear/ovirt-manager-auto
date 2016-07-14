@@ -4613,6 +4613,7 @@ def extend_vm_disk_size(positive, vm, disk, **kwargs):
     """
     disk_obj = _getVmFirstDiskByName(vm, disk)
     new_disk = _prepareDiskObject(**kwargs)
+    logger.info("Extending disk %s size", disk)
     if positive:
         # Expecting to succeed: in this case the validator will verify that
         # the returned object is like the expected one. update() operation is

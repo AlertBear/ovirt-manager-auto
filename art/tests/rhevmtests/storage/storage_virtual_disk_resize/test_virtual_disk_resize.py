@@ -10,7 +10,7 @@ import time
 from threading import Thread
 from utilities.machine import Machine
 from art.unittest_lib import attr
-from art.unittest_lib.common import StorageTest as BaseTestCase
+from art.unittest_lib.common import StorageTest as BaseTestCase, testflow
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dcs,
     disks as ll_disks,
@@ -145,7 +145,7 @@ class BasicResize(BaseClass):
         2) start to write using 'dd'
         3) Check that disk's size is actually growing
         """
-        logger.info("Resizing disk %s", self.disk_name)
+        testflow.step("Resizing disk %s", self.disk_name)
         status = ll_vms.extend_vm_disk_size(
             True, self.vm_name, disk=self.disk_name,
             provisioned_size=self.new_size
@@ -176,14 +176,19 @@ class BasicResize(BaseClass):
         ecode, output = storage_helpers.perform_dd_to_disk(
             self.vm_name, self.disk_name, size=dd_size
         )
+        testflow.step(
+            "Performing 'dd' command to extended disk %s", self.disk_name
+        )
         self.assertTrue(ecode, "dd command failed. output: %s" % output)
         disks_objs = ll_vms.getVmDisks(self.vm_name)
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (self.disk_name == disk_obj.get_alias())][0]
         datacenter_obj = ll_dcs.get_data_center(config.DATA_CENTER_NAME)
 
-        logger.info("Checking volume size in host %s with ip %s for disk %s",
-                    self.host, self.host_ip, disk_obj.get_alias())
+        testflow.step(
+            "Checking volume size for disk %s in host %s ",
+            disk_obj.get_alias(), self.host
+        )
         lv_size = helpers.get_volume_size(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
             datacenter_obj
