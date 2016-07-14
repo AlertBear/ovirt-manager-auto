@@ -343,6 +343,7 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
     if osType.lower().find('hypervisor') == -1 or rhel_like:
         host = Host(name=name, cluster=hostCl, address=host_address, **kwargs)
 
+        logger.info("Adding host %s to cluster %s", name, cluster)
         host, status = HOST_API.create(host, positive)
 
         if not wait:

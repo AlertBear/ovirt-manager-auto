@@ -17,7 +17,7 @@ import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from utilities import utils
 
 
@@ -235,7 +235,7 @@ class TestCase6220(BasicEnvironment):
         * Add the remove host back and check the default spm value
         Expected result: default value shuld be '5'
         """
-        logger.info("Add %s back to the environment", self.removed_host)
+        testflow.step("Add host %s back to the environment", self.removed_host)
         self.assertTrue(
             ll_hosts.addHost(
                 True, self.removed_host, address=self.removed_host_ip,
@@ -245,7 +245,7 @@ class TestCase6220(BasicEnvironment):
                (self.removed_host, config.DATA_CENTER_NAME)
         )
 
-        logger.info(
+        testflow.step(
             "verify SPM priority of %s is equal to %s", self.removed_host,
             config.DEFAULT_SPM_PRIORITY
         )
