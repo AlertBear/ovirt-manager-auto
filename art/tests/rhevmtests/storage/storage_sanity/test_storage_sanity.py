@@ -10,9 +10,9 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import attr, StorageTest as TestCase, testflow
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
 
@@ -35,7 +35,6 @@ def setup_module():
 
 
 @attr(tier=1)
-@bz({'1340164': {}})
 class TestCase11591(TestCase):
     """
     storage sanity test, create and extend a Data domain
@@ -114,7 +113,10 @@ class TestCase11591(TestCase):
             "lun_targets": [config.UNUSED_LUNS["lun_targets"][1]],
             "override_luns": True
         }
-        logger.info("Extending storage domain %s", self.sd_name)
+        testflow.step(
+            "Extending storage domain %s, current size is %s",
+            self.sd_name, self.domain_size
+        )
         hl_sds.extend_storage_domain(
             self.sd_name, self.storage, self.spm_host, **extend_lun
         )
@@ -122,8 +124,8 @@ class TestCase11591(TestCase):
             self.sd_name, self.domain_size
         )
         extended_sd_size = ll_sds.get_total_size(self.sd_name)
-        logger.info(
-            "Total size for domain '%s' is '%s'",
+        testflow.step(
+            "Total size for domain '%s' after extend is '%s'",
             self.sd_name, extended_sd_size
         )
         self.assertTrue(
