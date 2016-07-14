@@ -6,7 +6,7 @@ Storage/3_3_Storage_Ram_Snapshots
 import config
 import logging
 from helpers import is_pid_running_on_vm, start_cat_process_on_vm
-from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import StorageTest as TestCase, testflow
 from art.unittest_lib import attr
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
@@ -248,7 +248,7 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
         """
         Commit RAM snapshot
         """
-        logger.info(
+        testflow.step(
             'Checking RAM snapshot %s on vm %s using action %s',
             self.memory_snapshot, self.vm, self.action_to_call.__name__,
         )
@@ -271,7 +271,7 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
         ), 'Error when resuming VM %s from memory snapshot %s' %
            (self.vm, self.memory_snapshot))
 
-        logger.info('Checking if process is still running on vm %s', self.vm)
+        testflow.step('Checking if process is still running on vm %s', self.vm)
         self.assertTrue(
             is_pid_running_on_vm(
                 self.vm, self.pids[0], self.cmdlines[0]

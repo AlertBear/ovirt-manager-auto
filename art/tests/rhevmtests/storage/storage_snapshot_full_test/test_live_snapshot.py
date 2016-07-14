@@ -12,7 +12,7 @@ from rhevmtests.networking.helper import seal_vm
 from rhevmtests.storage import helpers as storage_helpers
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import StorageTest as TestCase, attr
+from art.unittest_lib import StorageTest as TestCase, attr, testflow
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     storagedomains as ll_sds,
@@ -169,11 +169,11 @@ class TestCase11660(BasicEnvironmentSetUp):
         if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
             ll_vms.startVms([vm_name])
             ll_vms.waitForVMState(vm_name)
-        logger.info("Creating snapshot")
+        testflow.step("Creating snapshot on a running vm %s", vm_name)
         self._perform_snapshot_operation(vm_name, live=True)
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
-        logger.info("writing file to disk")
+        testflow.step("Writing files to vm's %s disk", vm_name)
         cmd = self.cmd_create
         status, _ = self.vm.runCmd(shlex.split(cmd))
         assert status
@@ -182,7 +182,7 @@ class TestCase11660(BasicEnvironmentSetUp):
                 "Writing operation failed"
             )
         ll_vms.shutdownVm(True, vm_name, 'false')
-        logger.info(
+        testflow.step(
             "Previewing snapshot %s on vm %s", self.snapshot_desc, vm_name
         )
         self.previewed = ll_vms.preview_snapshot(
@@ -198,19 +198,22 @@ class TestCase11660(BasicEnvironmentSetUp):
         assert ll_vms.startVm(
             True, vm=vm_name, wait_for_ip=True
         )
-        logger.info("Checking that files no longer exist after preview")
+        testflow.step("Checking that files no longer exist after preview")
         if not self.check_file_existence_operation(vm_name, False):
             raise exceptions.SnapshotException(
                 "Snapshot operation failed"
             )
 
+        testflow.step(
+            "Committing snapshot %s on vm %s", self.snapshot_desc, vm_name
+        )
         self.assertTrue(ll_vms.commit_snapshot(
             True, vm=vm_name, ensure_vm_down=True
         ),
             "Failed to commit snapshot %s" % self.snapshot_desc)
         ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
         self.previewed = False
-        logger.info("Checking that files no longer exist after commit")
+        testflow.step("Checking that files no longer exist after commit")
         if not self.check_file_existence_operation(vm_name, False):
             raise exceptions.SnapshotException(
                 "Snapshot operation failed"
