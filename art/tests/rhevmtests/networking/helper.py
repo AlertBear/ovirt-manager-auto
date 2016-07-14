@@ -467,7 +467,7 @@ def is_network_in_vds_caps(host_resource, network):
     logger.info("Get vdsCaps output")
     out = host_resource.vds_client("getVdsCapabilities", json=True)
     logger.info("Check if %s in vdsCaps output", network)
-    if network not in out.get("networks").keys():
+    if network not in out.get("networks", {}).keys():
         logger.error("Network %s is missing in vdsCaps", network)
         return False
     return True

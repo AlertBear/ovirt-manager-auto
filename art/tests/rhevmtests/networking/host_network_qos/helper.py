@@ -40,9 +40,10 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=None):
         return False
 
     vds_caps_out = host.vds_client("getVdsCapabilities", json=True)
-    qos = vds_caps_out.get("networks").get(net).get("hostQos").get("out")
+    out_networks = vds_caps_out.get("networks", {})
+    qos = out_networks.get(net, {}).get("hostQos", {}).get("out", {})
     for key in ("rt", "ul", "ls"):
-        vds_caps_qos_dict[key] = qos[key]["m2"]
+        vds_caps_qos_dict[key] = qos.get(key, {}).get("m2")
 
     logger.info("Compare provided host QoS values with VDSCaps values")
     if cmp(vds_caps_qos_dict, qos_dict):
