@@ -20,7 +20,7 @@ from art.rhevm_api.utils.storage_api import (
 )
 from art.rhevm_api.utils.test_utils import restartVdsmd, restart_engine
 from rhevmtests.storage import helpers as storage_helpers
-from art.unittest_lib import StorageTest as BaseTestCase
+from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from art.unittest_lib import attr
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
@@ -135,11 +135,13 @@ class BasicEnvironment(BaseTestCase):
             if not ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
                 ll_vms.shutdownVm(True, self.vm_name, 'false')
         if disks:
-            is_disks = 'disks: %s' % disks
+            snapshot_disks = '%s disks: %s' % (len(disks), disks)
         else:
-            is_disks = 'all disks'
-        logger.info("Adding new snapshot to vm %s with %s", self.vm_name,
-                    is_disks)
+            snapshot_disks = 'all disks'
+        testflow.step(
+            "Adding new snapshot to vm %s with %s",
+            self.vm_name, snapshot_disks
+        )
         status = ll_vms.addSnapshot(
             True, self.vm_name, self.snapshot_desc, disks_lst=disks, wait=wait
         )
@@ -214,6 +216,9 @@ class BasicEnvironment(BaseTestCase):
         )
         logger.info("After snapshot: %s volumes", current_vol_count)
 
+        testflow.step(
+            "Verifying amount of volumes increased by %s", len(disk_ids)
+        )
         self.assertEqual(current_vol_count,
                          initial_vol_count + len(disk_ids))
 

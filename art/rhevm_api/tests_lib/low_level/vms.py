@@ -1827,6 +1827,7 @@ def addSnapshot(
 
     vmSnapshots = _getVmSnapshots(vm)
 
+    logger.info("Adding new snapshot to vm %s", vm)
     snapshot, status = SNAPSHOT_API.create(snapshot, positive,
                                            collection=vmSnapshots,
                                            compare=wait)
