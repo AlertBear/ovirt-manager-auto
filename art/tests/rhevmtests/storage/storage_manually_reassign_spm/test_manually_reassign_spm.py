@@ -17,7 +17,7 @@ import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -257,6 +257,7 @@ class TestCase5815(BasicEnvironment):
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
+        testflow.step("Selecting host %s as new SPM", self.hsm_hosts[0])
         self.assertTrue(
             ll_hosts.select_host_as_spm(
                 True, self.hsm_hosts[0], config.DATA_CENTER_NAME
@@ -279,12 +280,13 @@ class TestCase5823(BasicEnvironment):
         * Verify HSM host become the SPM
         Expected result: HSM host becomes SPM
         """
+        testflow.step("Deactivate SPM host %s", self.spm_host)
         self.assertTrue(
             ll_hosts.deactivateHost(True, self.spm_host),
             "Unable to deactivate host %s " % self.spm_host
         )
 
-        logger.info('Waiting for SPM to be elected')
+        testflow.step('Waiting for new SPM to be elected')
         self.assertTrue(
             ll_hosts.waitForSPM(
                 config.DATA_CENTER_NAME, WAIT_FOR_SPM_TIMEOUT, RETRY_INTERVAL
