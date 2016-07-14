@@ -8,7 +8,7 @@ import helpers
 import logging
 
 from utilities.machine import Machine
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import attr, StorageTest as TestCase, testflow
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
@@ -793,9 +793,8 @@ class TestCase4564(IscsiNfsSD):
         """
         Test having two disks in two different storage domain types
         """
-        logger.info(
-            "Creating vm %s in iscsi storage domain and installing OS",
-            self.vm_name
+        testflow.step(
+            "Cloning vm %s from template in iscsi storage domain", self.vm_name
         )
         vm_args = VM_ARGS.copy()
         vm_args['vmName'] = self.vm_name
@@ -806,6 +805,10 @@ class TestCase4564(IscsiNfsSD):
                 'Unable to create vm %s for test' % self.vm_name
             )
         self.vms_to_remove.append(self.vm_name)
+        testflow.step(
+            "Creating disk %s on storage domain %s",
+            self.second_disk_alias, self.nfs
+        )
         helpers.add_disk_to_sd(
             self.second_disk_alias, self.nfs, attach_to_vm=self.vm_name
         )
@@ -819,11 +822,12 @@ class TestCase4564(IscsiNfsSD):
         device_name = ll_vms.get_vm_disk_logical_name(
             self.vm_name, self.second_disk_alias
         )
-        logger.info("Create a partition in newly attached disk")
+        testflow.step("Create a partition in newly attached disk")
         partition_cmd = PARTITION_CREATE_CMD % device_name
         success, output = linux_machine.runCmd(partition_cmd.split())
         self.assertTrue(success, "Failed to create partition: %s" % output)
         mkfs_cmd = MKFS_CMD % device_name
+        testflow.step("Creating a filesystem on the partition")
         success, output = linux_machine.runCmd(mkfs_cmd.split())
         self.assertTrue(success, "Failed to create filesystem: %s" % output)
 
