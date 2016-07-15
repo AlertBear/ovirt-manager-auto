@@ -8,40 +8,24 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as custom_prop_conf
-import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
-def prepare_setup(request, network_cleanup_fixture):
+def prepare_setup(request):
     """
     Create networks on engine
     """
     custom_properties = NetworkFixtures()
 
-    def fin2():
-        """
-        Remove ve dummies interfaces from host
-        """
-        custom_properties.remove_dummies(
-            host_resource=custom_properties.vds_0_host
-        )
-    request.addfinalizer(fin2)
-
-    def fin1():
+    def fin():
         """
         Remove networks from engine
         """
         custom_properties.remove_networks_from_setup(
             hosts=custom_properties.host_0_name
         )
-    request.addfinalizer(fin1)
-
-    custom_properties.prepare_dummies(
-        host_resource=custom_properties.vds_0_host, num_dummy=conf.NUM_DUMMYS
-    )
+    request.addfinalizer(fin)
 
     custom_properties.prepare_networks_on_setup(
         networks_dict=custom_prop_conf.NETS_DICT, dc=custom_properties.dc_0,

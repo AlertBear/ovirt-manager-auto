@@ -5,10 +5,8 @@
 Networking fixtures
 """
 
-import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
-from rhevmtests import networking
 from rhevmtests.networking import helper as network_helper
 
 
@@ -43,24 +41,6 @@ class NetworkFixtures(object):
         self.num_dummies = conf.NUM_DUMMYS
         self.mgmt_bridge = conf.MGMT_BRIDGE
 
-    def cleanup(self):
-        """
-        Network cleanup
-        """
-        networking.network_cleanup()
-
-    def prepare_dummies(self, host_resource, num_dummy):
-        """
-        Create dummies interfaces on host
-
-        Args:
-            host_resource (Host): Host resource
-            num_dummy (int): Number of dummies to create
-        """
-        network_helper.prepare_dummies(
-            host_resource=host_resource, num_dummy=num_dummy
-        )
-
     def prepare_networks_on_setup(self, networks_dict, dc=None, cluster=None):
         """
         Create networks on setup
@@ -73,15 +53,6 @@ class NetworkFixtures(object):
         network_helper.prepare_networks_on_setup(
             networks_dict=networks_dict, dc=dc, cluster=cluster
         )
-
-    def remove_dummies(self, host_resource):
-        """
-        Remove dummies interfaces from host
-
-        Args:
-            host_resource (Host): Host resource
-        """
-        network_helper.delete_dummies(host_resource=host_resource)
 
     def remove_networks_from_setup(self, hosts):
         """
@@ -117,12 +88,3 @@ class NetworkFixtures(object):
             vm (str): Name of vm.
         """
         ll_vms.stopVm(positive=positive, vm=vm)
-
-
-@pytest.fixture(scope="module")
-def network_cleanup_fixture(request):
-    """
-    Network cleanup fixture
-    """
-    network_fixtures = NetworkFixtures()
-    network_fixtures.cleanup()

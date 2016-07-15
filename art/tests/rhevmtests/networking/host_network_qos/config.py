@@ -11,7 +11,9 @@ MB_CONVERTER = 1000000
 QOS_NAME = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=4, prefix="QoS"
 )
-NETS = global_helper.generate_object_names(num_of_cases=15, num_of_objects=2)
+NETS = global_helper.generate_object_names(
+    num_of_cases=15, num_of_objects=2, prefix="QoS"
+)
 VLAN_IDS = [str(i) for i in xrange(2, 50)]
 
 

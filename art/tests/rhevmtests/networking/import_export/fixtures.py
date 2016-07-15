@@ -17,9 +17,7 @@ import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as networking_helper
 from rhevmtests import networking
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 class ImportExport(NetworkFixtures):
@@ -39,7 +37,7 @@ class ImportExport(NetworkFixtures):
 
 
 @pytest.fixture(scope="module")
-def import_export_prepare_setup(request, network_cleanup_fixture):
+def import_export_prepare_setup(request):
     """
     Prepare setup
     """

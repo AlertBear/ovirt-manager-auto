@@ -18,6 +18,7 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.utils.inventory import Inventory
 from rhevmtests.networking import config
+from rhevmtests.networking.helper import delete_dummies, prepare_dummies
 
 logger = logging.getLogger("GE_Network_cleanup")
 
@@ -64,9 +65,7 @@ def network_cleanup():
     Remove all dummy interfaces from hosts
     Remove all QOS from setup
     Remove all non management bridges from hosts
-
-    Args:
-        funcs (list): Send specific functions to run
+    Remove unneeded NFS storage domains
     """
     if config.GOLDEN_ENV:
         logger.info("Running network cleanup")
@@ -360,10 +359,25 @@ def set_default_mac_pool_for_dcs():
 def teardown_package():
     """
     Run inventory
+    Remove dummies interfaces
     """
+    for vds_host in config.VDS_HOSTS[:2]:
+        delete_dummies(vds_host)
+
     reporter = Inventory.get_instance()
     reporter.get_setup_inventory_report(
         print_report=True,
         check_inventory=True,
         rhevm_config_file=config
     )
+
+
+def setup_package():
+    """
+    Run network cleanup
+    Create dummies interfaces on 2 hosts
+    """
+    network_cleanup()
+    for vds_host in config.VDS_HOSTS[:2]:
+        num_dummy = 20 if vds_host.fqdn == config.VDS_HOSTS[0].fqdn else 8
+        prepare_dummies(host_resource=vds_host, num_dummy=num_dummy)

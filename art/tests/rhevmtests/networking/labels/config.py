@@ -15,7 +15,7 @@ LABEL_NAME = global_helper.generate_object_names(
 )
 
 NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=10
+    num_of_cases=20, num_of_objects=10, prefix="label"
 )
 
 NET_DICT = {

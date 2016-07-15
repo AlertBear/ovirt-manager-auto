@@ -12,13 +12,11 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as qos_conf
 import helper
 from rhevmtests import networking
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def case_01_fixture(request, network_cleanup_fixture):
+def case_01_fixture(request):
     """
     Create QoSs and add them to vNIC profiles
     Update vNIC to plugged False

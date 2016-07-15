@@ -12,13 +12,11 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as topologies_conf
 import helper
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
-def topologies_prepare_setup(request, network_cleanup_fixture):
+def topologies_prepare_setup(request):
     """
     prepare setup
     """

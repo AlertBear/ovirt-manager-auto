@@ -285,34 +285,24 @@ def createAndAttachNetworkSN(
 
 
 def remove_net_from_setup(
-    host, network=[], data_center=None, all_net=False, mgmt_network=None
+    host, network=list(), data_center=None, all_net=False, mgmt_network=None
 ):
     """
     Function that removes networks from the host, Cluster and DC
 
-    :param host: list or str of hosts names
-    :type host: str or list
-    :param network: list of networks to remove
-    :type network: list
-    :param data_center: DC where the network is
-    :type data_center: str
-    :param all_net: True to remove all networks from setup (except MGMT net)
-    :rtype  all_net: bool
-    :param mgmt_network: Management network
-    :type mgmt_network: str
-    :return: True value if succeeded in deleting networks
-            from Hosts, Cluster, DC
-    :rtype: bool
+    Args:
+        host (str): list or str of hosts names
+        network (list): list of networks to remove
+        data_center (str): DC where the network is
+        all_net (bool): True to remove all networks from setup (except MGMT
+            net)
+        mgmt_network (str): Management network
+
+    Returns:
+        bool: True value if succeeded in deleting networks from Hosts,
+            Cluster, DC
     """
     hosts_list = [host] if not isinstance(host, list) else host
-    if all_net:
-        if not remove_all_networks(
-                datacenter=data_center, mgmt_network=mgmt_network
-        ):
-            return False
-    else:
-        if not remove_networks(True, network, data_center):
-            return False
     try:
         for host_name in hosts_list:
             if not hl_host_network.clean_host_interfaces(host_name):
@@ -321,6 +311,15 @@ def remove_net_from_setup(
     except Exception as ex:
         logger.error("Clean hosts interfaces failed %s", ex, exc_info=True)
         return False
+
+    if all_net:
+        if not remove_all_networks(
+                datacenter=data_center, mgmt_network=mgmt_network
+        ):
+            return False
+    else:
+        if not remove_networks(True, network, data_center):
+            return False
     return True
 
 
@@ -343,7 +342,7 @@ def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
 
     for i in range(num_dummy):
         cmd = ["ip", "link", "add", dummy_int % i, "type", "dummy"]
-        rc, out, error = host.run_command(cmd)
+        rc = host.run_command(cmd)[0]
         if rc:
             return False
 
@@ -362,18 +361,19 @@ def delete_dummy_interfaces(host):
     :return: True/False
     :rtype: bool
     """
-    rhevh = RHEVH in host.get_os_info()["dist"]
+    rhevh = RHEVH in host.os.distribution.distname
     all_interfaces = host.network.all_interfaces()
     dummy_list = [i for i in all_interfaces if 'dummy' in i]
-    for i in dummy_list:
-        host.network.delete_interface(interface=i)
-        ifcfg_file = "/etc/sysconfig/network-scripts/ifcfg-%s" % i
+    for dummy in dummy_list:
+        logger.info("Delete dummy %s from host %s", dummy, host)
+        host.network.delete_interface(interface=dummy)
+        ifcfg_file = "/etc/sysconfig/network-scripts/ifcfg-%s" % dummy
         if host.fs.isfile(ifcfg_file):
             if rhevh:
-                rc, out, err = host.run_command(["unpersist", ifcfg_file])
+                rc = host.run_command(["unpersist", ifcfg_file])[0]
                 if rc:
                     return False
-            host.network.delete_ifcfg_file(nic=i)
+            host.network.delete_ifcfg_file(nic=dummy)
     return True
 
 

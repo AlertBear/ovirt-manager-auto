@@ -17,9 +17,7 @@ import config as multi_host_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 class MultiHost(NetworkFixtures):
@@ -62,18 +60,11 @@ class MultiHost(NetworkFixtures):
 
 
 @pytest.fixture(scope="module")
-def multi_host_prepare_setup(request, network_cleanup_fixture):
+def multi_host_prepare_setup(request):
     """
     Prepare setup
     """
     multi_host = MultiHost()
-
-    def fin3():
-        """
-        Remove ve dummies interfaces from host
-        """
-        multi_host.remove_dummies(host_resource=multi_host.vds_0_host)
-    request.addfinalizer(fin3)
 
     def fin2():
         """
@@ -89,9 +80,6 @@ def multi_host_prepare_setup(request, network_cleanup_fixture):
         multi_host.remove_networks_from_setup(hosts=multi_host.host_0_name)
     request.addfinalizer(fin1)
 
-    multi_host.prepare_dummies(
-        host_resource=multi_host.vds_0_host, num_dummy=conf.NUM_DUMMYS
-    )
     multi_host.prepare_networks_on_setup(
         networks_dict=multi_host_conf.NETS_DICT, dc=multi_host.dc_0,
         cluster=multi_host.cluster_0
@@ -107,7 +95,7 @@ def teardown_all_cases(request, multi_host_prepare_setup):
     """
     Restore host interfaces MTU and remove unneeded networks
     """
-    multi_host = MultiHost()
+    MultiHost()
 
     def fin2():
         """
@@ -251,7 +239,7 @@ def fixture_case_06(request, teardown_all_cases):
         positive=True, name=cl_name2, cpu=cpu, data_center=dc, version=version
     )
     assert ll_networks.add_network_to_cluster(
-        positive=True, network=net,cluster=cl_name2, required=False
+        positive=True, network=net, cluster=cl_name2, required=False
     )
     assert hl_hosts.move_host_to_another_cluster(
         host=multi_host.host_1_name, cluster=cl_name2

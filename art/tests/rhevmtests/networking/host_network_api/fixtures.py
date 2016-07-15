@@ -7,20 +7,17 @@ Fixtures for host_network_api
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as hna_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from art.rhevm_api.utils import test_utils
-from rhevmtests.networking.fixtures import (
-    network_cleanup_fixture, NetworkFixtures
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 class HostNetworkApi(NetworkFixtures):
@@ -58,29 +55,18 @@ class HostNetworkApi(NetworkFixtures):
 
 #  Prepare setup for all host_network_api modules
 @pytest.fixture(scope="module")
-def host_network_api_prepare_setup(request, network_cleanup_fixture):
+def host_network_api_prepare_setup(request):
     """
     Prepare setup for all modules
     """
     hna = HostNetworkApi()
 
-    def fin2():
+    def fin():
         """
         Finalizer for activate host
         """
         hl_hosts.activate_host_if_not_up(hna.host_0_name)
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Finalizer for remove dummies
-        """
-        hna.remove_dummies(host_resource=hna.vds_0_host)
-    request.addfinalizer(fin1)
-
-    hna.prepare_dummies(
-        host_resource=hna.vds_0_host, num_dummy=hna_conf.NUM_DUMMYS
-    )
+    request.addfinalizer(fin)
 
 
 #  Prepare setup for host_nic_test module
@@ -1178,7 +1164,6 @@ def sync_case_11(request, teardown_all_cases_sync):
     Fixture for sync case11
     """
     hna = HostNetworkApi()
-    move_host = False
     net_case_1 = hna_conf.SYNC_NETS_DC_1[11][0]
     net_case_1_netmask_prefix_actual = "255.255.255.255"
     ip_prefix = hna_conf.IPS[41]

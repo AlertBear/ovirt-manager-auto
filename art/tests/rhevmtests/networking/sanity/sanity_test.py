@@ -27,7 +27,7 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    add_vnic_profile, create_dummies, create_networks, clean_host_interfaces,
+    add_vnic_profile, create_networks, clean_host_interfaces,
     remove_qos, attach_networks, update_vnic_profile, start_vm,
     case_06_fixture, case_07_fixture, case_08_fixture, add_labels,
     deactivate_hosts, set_host_nic_down
@@ -80,7 +80,6 @@ class TestSanity01(TestSanityCaseBase):
 
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
-    create_dummies.__name__,
     create_networks.__name__
 )
 @pytest.mark.incremental
@@ -288,7 +287,6 @@ class TestSanity03(TestSanityCaseBase):
 
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
-    create_dummies.__name__,
     create_networks.__name__
 )
 class TestSanity04(TestSanityCaseBase):
@@ -378,7 +376,6 @@ class TestSanity04(TestSanityCaseBase):
 
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
-    create_dummies.__name__,
     create_networks.__name__
 )
 class TestSanity05(TestSanityCaseBase):
@@ -904,7 +901,6 @@ class TestSanity13(TestSanityCaseBase):
 
 
 @pytest.mark.usefixtures(
-    create_dummies.__name__,
     create_networks.__name__,
     attach_networks.__name__,
     add_labels.__name__

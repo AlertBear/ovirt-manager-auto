@@ -14,17 +14,14 @@ import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.networking.config as conf
-import helper
 import config as mac_pool_conf
-from art.rhevm_api.utils import test_utils
+import helper
+import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 from rhevmtests import networking
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 class MacPool(NetworkFixtures):
@@ -108,33 +105,12 @@ class MacPool(NetworkFixtures):
         vm = self.mp_vm if not vm else vm
         ll_vms.removeVm(positive=True, vm=vm)
 
-    def deactivate_storage(self):
-        """
-        Deactivate storage
-        """
-        test_utils.wait_for_tasks(
-            vdc=conf.VDC_HOST, vdc_password=conf.VDC_ROOT_PASSWORD,
-            datacenter=self.ext_dc
-        )
-        ll_storagedomains.deactivate_master_storage_domain(
-            positive=True, datacenter=self.ext_dc
-        )
-
     def remove_dc(self):
         """
         Remove DC
         """
         ll_datacenters.remove_datacenter(
             positive=True, datacenter=self.ext_dc, force=True
-        )
-
-    def remove_storage(self):
-        """
-        Remove storage
-        """
-        hl_storagedomains.remove_storage_domain(
-            name=mac_pool_conf.MP_STORAGE, datacenter=None,
-            host=conf.HOST_1_NAME
         )
 
     def move_host_to_original_cluster(self):
@@ -362,7 +338,7 @@ class Case11Fixture(MacPool):
 
 
 @pytest.fixture(scope="module")
-def mac_pool_prepare_setup(request, network_cleanup_fixture):
+def mac_pool_prepare_setup(request):
     """
     Prepare setup for MAC pool per DC tests
 
@@ -379,43 +355,27 @@ def mac_pool_prepare_setup(request, network_cleanup_fixture):
     ps = MacPool()
 
     @networking.ignore_exception
-    def fin8():
+    def fin6():
         """
         Finalizer for remove non default MAC pools
         """
         ps.remove_non_default_mac_pool()
-    request.addfinalizer(fin8)
-
-    @networking.ignore_exception
-    def fin7():
-        """
-        Finalizer for set default MAC pools for DCs
-        """
-        ps.update_mac_pool_to_default()
-    request.addfinalizer(fin7)
-
-    @networking.ignore_exception
-    def fin6():
-        """
-        Finalizer for remove cluster
-        """
-        ps.remove_cluster()
     request.addfinalizer(fin6)
 
     @networking.ignore_exception
     def fin5():
         """
-        Move host to original cluster
+        Finalizer for set default MAC pools for DCs
         """
-        ps.move_host_to_original_cluster()
+        ps.update_mac_pool_to_default()
     request.addfinalizer(fin5)
 
     @networking.ignore_exception
     def fin4():
         """
-        Finalizer for remove storage
+        Finalizer for remove cluster
         """
-        ps.remove_storage()
+        ps.remove_cluster()
     request.addfinalizer(fin4)
 
     @networking.ignore_exception
@@ -429,11 +389,12 @@ def mac_pool_prepare_setup(request, network_cleanup_fixture):
     @networking.ignore_exception
     def fin2():
         """
-        Finalizer for remove DC
+        Move host to original cluster
         """
-        ps.deactivate_storage()
+        ps.move_host_to_original_cluster()
     request.addfinalizer(fin2)
 
+    @global_helper.wait_for_jobs_deco(["Removing VM"])
     @networking.ignore_exception
     def fin1():
         """
@@ -540,7 +501,7 @@ def fixture_mac_pool_range_case_02(request, mac_pool_prepare_setup):
     Create a new DC with MAC pool
     Remove a created DC
     """
-    ps = MacPool()
+    MacPool()
     mac_pool = request.node.cls.mac_pool
     range_ = request.node.cls.range
     ext_dc = request.node.cls.ext_dc
@@ -702,7 +663,7 @@ def fixture_mac_pool_range_case_09(request, mac_pool_prepare_setup):
      Create MAC pool
     Create 2 new DCs with MAC pool
     """
-    ps = MacPool()
+    MacPool()
     ext_dc_1 = request.node.cls.ext_dc_1
     ext_dc_2 = request.node.cls.ext_dc_2
     pool_name_0 = request.node.cls.pool_name_0

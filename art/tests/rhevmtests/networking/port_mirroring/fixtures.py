@@ -194,7 +194,6 @@ def port_mirroring_prepare_setup(request):
         ps.remove_ifcfg_files_from_vms()
     request.addfinalizer(fin1)
 
-    networking.network_cleanup()
     ps.create_pm_networks()
     ps.create_vnic_profiles_with_pm()
     ps.set_pm_on_vm_mgmt_net()

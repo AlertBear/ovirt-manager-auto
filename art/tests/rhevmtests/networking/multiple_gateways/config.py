@@ -8,7 +8,9 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
 
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
-NETS = global_helper.generate_object_names(num_of_cases=11)
+NETS = global_helper.generate_object_names(
+    num_of_cases=11, prefix="multi_gw"
+)
 IPS = network_helper.create_random_ips(num_of_ips=10, mask=24)
 
 NETS_DICT = {

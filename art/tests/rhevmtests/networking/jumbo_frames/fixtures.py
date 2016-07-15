@@ -16,9 +16,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 from art.rhevm_api.utils import test_utils
 import helper
 import rhevmtests.networking.jumbo_frames.config as jumbo_conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 class JumboFrame(NetworkFixtures):
@@ -33,7 +31,7 @@ class JumboFrame(NetworkFixtures):
 
 
 @pytest.fixture(scope="module")
-def prepare_setup_jumbo_frame(request, network_cleanup_fixture):
+def prepare_setup_jumbo_frame(request):
     """
     Prepare setup for jumbo frame test
     """

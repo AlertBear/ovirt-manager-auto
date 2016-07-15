@@ -2918,6 +2918,9 @@ def waitForIP(
         logger.debug("Using %s vds_client", "json" if json else "xml")
         cmd_args = ["table"] if not json else list()
         out = vds_resource.vds_client(cmd="list", args=cmd_args, json=json)
+        if not out:
+            return None
+
         vms_ids = [
             _vm.get("vmId") for _vm in out.get("vmList")
             ] if not json else out.get("items")
@@ -2954,7 +2957,9 @@ def waitForIP(
                 if not vds_resource.network.send_icmp(dst=ping_ip):
                     return None
                 return ip
+        return None
 
+    logger.info("Waiting for IP from %s", vm)
     try:
         for ip in TimeoutingSampler(
             timeout, sleep, _get_ip, vm, vds_resource

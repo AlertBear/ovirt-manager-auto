@@ -7,8 +7,12 @@ Config file for network filter
 
 import rhevmtests.helpers as global_helper
 
-NETS = global_helper.generate_object_names(num_of_cases=10)
-VNIC_PROFILES = global_helper.generate_object_names(num_of_cases=10)
+NETS = global_helper.generate_object_names(
+    num_of_cases=10, prefix="nf_net"
+)
+VNIC_PROFILES = global_helper.generate_object_names(
+    num_of_cases=10, prefix="nf_v_pro"
+)
 NETWORK_FILTER_STR = "network_filter"
 ARP_FILTER = "allow-arp"
 NETS_DICT = {

@@ -10,37 +10,24 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as multiple_gw_conf
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
-def host_network_qos_prepare_setup(request, network_cleanup_fixture):
+def multiple_gw_prepare_setup(request):
     """
     Create dummies on host
     Create networks on engine
     """
     multiple_gw = NetworkFixtures()
 
-    def fin2():
-        """
-        Remove dummies interfaces from host
-        """
-        multiple_gw.remove_dummies(host_resource=multiple_gw.vds_0_host)
-    request.addfinalizer(fin2)
-
-    def fin1():
+    def fin():
         """
         Remove networks from setup
         """
         multiple_gw.remove_networks_from_setup(hosts=multiple_gw.host_0_name)
-    request.addfinalizer(fin1)
+    request.addfinalizer(fin)
 
-    multiple_gw.prepare_dummies(
-        host_resource=multiple_gw.vds_0_host,
-        num_dummy=conf.NUM_DUMMYS
-    )
     multiple_gw.prepare_networks_on_setup(
         networks_dict=multiple_gw_conf.NETS_DICT, dc=multiple_gw.dc_0,
         cluster=multiple_gw.cluster_0
@@ -48,7 +35,7 @@ def host_network_qos_prepare_setup(request, network_cleanup_fixture):
 
 
 @pytest.fixture(scope="class")
-def teardown_all_cases(request, host_network_qos_prepare_setup):
+def teardown_all_cases(request, multiple_gw_prepare_setup):
     """
     Teardown for all cases
     """

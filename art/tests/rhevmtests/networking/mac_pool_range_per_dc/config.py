@@ -24,4 +24,4 @@ NIC_NAME_2 = network_conf.NIC_NAME[2]
 NIC_NAME_3 = network_conf.NIC_NAME[3]
 NIC_NAME_4 = network_conf.NIC_NAME[4]
 NIC_NAME_5 = network_conf.NIC_NAME[5]
-MP_STORAGE = "MAC_P_Storage"
+MP_STORAGE = "MAC_Pool_Storage"

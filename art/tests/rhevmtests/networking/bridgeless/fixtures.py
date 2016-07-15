@@ -21,23 +21,12 @@ def case_01_fixture(request):
     bond_1 = request.node.cls.bond_1
     bond_2 = request.node.cls.bond_2
 
-    def fin2():
-        """
-        Finalizer for remove dummies
-        """
-        bridgeless.remove_dummies(host_resource=bridgeless.vds_0_host)
-    request.addfinalizer(fin2)
-
-    def fin1():
+    def fin():
         """
         Finalizer for remove networks
         """
         bridgeless.remove_networks_from_setup(hosts=bridgeless.host_0_name)
-    request.addfinalizer(fin1)
-
-    bridgeless.prepare_dummies(
-        host_resource=bridgeless.vds_0_host, num_dummy=bridgeless.num_dummies
-    )
+    request.addfinalizer(fin)
 
     bridgeless.prepare_networks_on_setup(
         networks_dict=conf.BRIDGELESS_NET_DICT, dc=bridgeless.dc_0,

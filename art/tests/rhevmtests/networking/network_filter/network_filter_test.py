@@ -94,6 +94,7 @@ class TestNetworkFilterCase02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    network_filter_prepare_setup.__name__,
     restore_vnic_profile_filter.__name__,
     remove_vnic_from_vm.__name__,
     start_vm.__name__,
@@ -179,7 +180,11 @@ class TestNetworkFilterCase03(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(add_vnic_to_vm.__name__)
+@pytest.mark.usefixtures(
+    network_filter_prepare_setup.__name__,
+    remove_vnic_from_vm.__name__,
+    add_vnic_to_vm.__name__
+)
 class TestNetworkFilterCase04(NetworkTest):
     """
     Remove network filter from vNIC profile while profile attach to stopped VM

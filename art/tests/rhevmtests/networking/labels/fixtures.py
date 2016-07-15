@@ -17,9 +17,7 @@ import art.unittest_lib.network as ul_network
 import config as label_conf
 import helper
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 class Labels(NetworkFixtures):
@@ -30,33 +28,21 @@ class Labels(NetworkFixtures):
 
 
 @pytest.fixture(scope="module")
-def labels_prepare_setup(request, network_cleanup_fixture):
+def labels_prepare_setup(request):
     """
     Prepare setup
     """
     labels = Labels()
 
-    def fin2():
-        """
-        Finalizer for remove dummies
-        """
-        for vds_host in (labels.vds_0_host, labels.vds_1_host):
-            labels.remove_dummies(host_resource=vds_host)
-    request.addfinalizer(fin2)
-
-    def fin1():
+    def fin():
         """
         Finalizer for remove networks
         """
         labels.remove_networks_from_setup(
             hosts=[labels.host_0_name, labels.host_1_name]
         )
-    request.addfinalizer(fin1)
+    request.addfinalizer(fin)
 
-    for vds_host in (labels.vds_0_host, labels.vds_1_host):
-        labels.prepare_dummies(
-            host_resource=vds_host, num_dummy=label_conf.NUM_DUMMYS
-        )
     labels.prepare_networks_on_setup(
         networks_dict=label_conf.NET_DICT, dc=labels.dc_0,
         cluster=labels.cluster_0

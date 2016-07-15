@@ -7,7 +7,9 @@ Config for network custom properties
 
 import rhevmtests.helpers as global_helper
 
-NETS = global_helper.generate_object_names(num_of_cases=15)
+NETS = global_helper.generate_object_names(
+    num_of_cases=15, prefix="cus_pr"
+)
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
 
 NETS_DICT = {

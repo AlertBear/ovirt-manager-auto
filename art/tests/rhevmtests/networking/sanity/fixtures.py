@@ -41,23 +41,6 @@ def create_networks(request):
     )
 
 
-@pytest.fixture(scope="module")
-def create_dummies(request):
-    """
-    Create dummies
-    """
-    sanity = NetworkFixtures()
-
-    def fin2():
-        """
-        Remove dummies from host
-        """
-        sanity.remove_dummies(host_resource=sanity.vds_0_host)
-    request.addfinalizer(fin2)
-
-    sanity.prepare_dummies(host_resource=sanity.vds_0_host, num_dummy=20)
-
-
 @pytest.fixture(scope="class")
 def clean_host_interfaces(request):
     """

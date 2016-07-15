@@ -15,12 +15,12 @@ QOS_NAME = global_helper.generate_object_names(
 
 # Network
 NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=10
+    num_of_cases=20, num_of_objects=10, prefix="sanity"
 )
 
 # vnic_profile
 VNIC_PROFILES = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=1, prefix="vpro"
+    num_of_cases=20, num_of_objects=1, prefix="v_pro"
 )
 
 VLAN_IDS = [str(i) for i in xrange(2, 20)]

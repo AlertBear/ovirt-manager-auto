@@ -11,8 +11,9 @@ import shlex
 import uuid
 from random import randint
 
+from utilities import jobs
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.events as ll_events
@@ -24,10 +25,7 @@ import rhevmtests.helpers as global_helper
 from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import events
 from art.rhevm_api.utils import test_utils
-from art.test_handler import exceptions
 from art.test_handler import settings
-from rhevmtests import helpers
-from utilities import jobs
 
 logger = logging.getLogger("Global_Network_Helper")
 
@@ -87,7 +85,6 @@ def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
         return False
 
     if wait_for_up_status:
-        logger.info("Wait %s to be up", vm)
         ll_vms.wait_for_vm_states(vm_name=vm)
 
     logger.info("Check that %s was started on host %s", vm, host)
@@ -110,26 +107,18 @@ def seal_vm(vm, root_password):
     :return: True/False
     :rtype: bool
     """
-    logger.info("Start VM: %s", vm)
     if not ll_vms.startVm(positive=True, vm=vm):
-        logger.error("Failed to start %s.", vm)
         return False
 
-    logger.info("Waiting for IP from %s", vm)
     rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
     if not rc:
-        logger.error("Failed to get %s IP", vm)
         return False
 
     ip = out["ip"]
-    logger.info("Running setPersistentNetwork on %s", vm)
     if not test_utils.setPersistentNetwork(host=ip, password=root_password):
-        logger.error("Failed to seal %s", vm)
         return False
 
-    logger.info("Stopping %s", vm)
     if not ll_vms.stopVm(positive=True, vm=vm):
-        logger.error("Failed to stop %s", vm)
         return False
     return True
 
@@ -293,79 +282,6 @@ def update_host_net_qos(qos_name, datacenter=conf.DC_NAME[0], **qos_dict):
         )
 
 
-def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
-    """
-    Set passwordless ssh from engine to host
-    Set sasl on/off for libvirtd on host
-
-    :param engine_resource: Engine resource
-    :type engine_resource: resources.Engine
-    :param host_resource: Host resource
-    :type host_resource: resources.VDS
-    :param sasl: Set sasl on/off (True/False)
-    :type sasl: bool
-    :return: True/False
-    :rtype: bool
-    """
-    if not sasl:
-        if not helpers.set_passwordless_ssh(
-            src_host=engine_resource, dst_host=host_resource
-        ):
-            return False
-
-        if not set_libvirtd_sasl(host_obj=host_resource, sasl=sasl):
-            return False
-
-    else:
-        if not set_libvirtd_sasl(host_obj=host_resource, sasl=sasl):
-            return False
-    return True
-
-
-def set_libvirtd_sasl(host_obj, sasl=True):
-    """
-    Set auth_unix_rw="none" in libvirtd.conf to enable passwordless
-    connection to libvirt command line (virsh)
-
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param sasl: True to enable sasl, False to disable
-    :type sasl: bool
-    :return: True/False
-    :rtype: bool
-    """
-    logger.info("%s sasl in libvirt" % "Enable" if not sasl else "Disable")
-    sasl_off = 'auth_unix_rw="{0}"'.format(conf.SASL_OFF)
-    sasl_on = 'auth_unix_rw="{0}"'.format(conf.SASL_ON)
-    sed_arg = "'s/{0}/{1}/g'".format(
-        sasl_on if not sasl else sasl_off, sasl_off if not sasl else sasl_on
-    )
-
-    # following sed procedure is needed by RHEV-H and its read only file system
-    # TODO: add persist after config.VDS_HOST.os is available see
-    # https://projects.engineering.redhat.com/browse/RHEVM-2049
-    sed_cmd = ["sed", sed_arg, conf.LIBVIRTD_CONF]
-    logger_str = "Enable" if sasl else "Disable"
-    logger.info("%s sasl in %s", logger_str, conf.LIBVIRTD_CONF)
-    rc, sed_out, _ = host_obj.run_command(command=sed_cmd)
-    if rc:
-        return False
-
-    cat_cmd = ["echo", "%s" % sed_out, ">", conf.LIBVIRTD_CONF]
-    rc, _, _ = host_obj.run_command(command=cat_cmd)
-    if rc:
-        return False
-
-    try:
-        hl_hosts.restart_services_under_maintenance_state(
-            [conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE], host_obj, conf.TIMEOUT
-        )
-    except exceptions.HostException as e:
-        logger.error(e)
-        return False
-    return True
-
-
 def prepare_dummies(host_resource, num_dummy=2):
     """
     Prepare dummies interfaces on host
@@ -377,32 +293,19 @@ def prepare_dummies(host_resource, num_dummy=2):
     :raise: NetworkException
     """
     host_name = ll_hosts.get_host_name_from_engine(host_resource)
-    logger.info(
-        "Creating %s dummy interfaces on %s", num_dummy, host_name
-    )
-    if not hl_networks.create_dummy_interfaces(
+    assert hl_networks.create_dummy_interfaces(
         host=host_resource, num_dummy=num_dummy
-    ):
-        raise conf.NET_EXCEPTION(
-            "Failed to create dummy interfaces on %s" % host_name
-        )
-    last_event = events.get_max_event_id(query="")
-    logger.info("Refresh capabilities for %s", host_name)
-    if not ll_hosts.refresh_host_capabilities(
+    )
+    last_event = events.get_max_event_id()
+    assert ll_hosts.refresh_host_capabilities(
         host=host_name, start_event_id=last_event
-    ):
-        raise conf.NET_EXCEPTION()
-
-    logger.info("Check if %s exist on host via engine", conf.DUMMY_0)
+    )
     sample = apis_utils.TimeoutingSampler(
         timeout=conf.SAMPLER_TIMEOUT, sleep=1,
         func=check_dummy_on_host_interfaces, dummy_name=conf.DUMMY_0,
         host_name=host_name
     )
-    if not sample.waitForFuncStatus(result=True):
-        raise conf.NET_EXCEPTION(
-            "Dummy interface does not exist on engine"
-        )
+    assert sample.waitForFuncStatus(result=True)
 
 
 def check_dummy_on_host_interfaces(dummy_name, host_name):
@@ -417,9 +320,14 @@ def check_dummy_on_host_interfaces(dummy_name, host_name):
     :rtype: bool
     """
     host_nics = ll_hosts.get_host_nics_list(host_name)
+    logger.info(
+        "Check if dummy %s exist on host %s via engine",
+        dummy_name, host_name
+    )
     for nic in host_nics:
         if dummy_name == nic.name:
             return True
+    logger.warning("Dummy %s does not exist in host %s", dummy_name, host_name)
     return False
 
 
@@ -431,26 +339,17 @@ def delete_dummies(host_resource):
     :type host_resource: resources.VDS
     """
     host_name = ll_hosts.get_host_name_from_engine(host_resource)
-    logger.info("Delete all dummy interfaces")
-    if not hl_networks.delete_dummy_interfaces(host=host_resource):
-        logger.error("Failed to delete dummy interfaces")
-
-    last_event = events.get_max_event_id(query="")
-    logger.info("Refresh capabilities for %s", host_name)
+    hl_networks.delete_dummy_interfaces(host=host_resource)
+    last_event = events.get_max_event_id()
     ll_hosts.refresh_host_capabilities(
         host=host_name, start_event_id=last_event
-    )
-
-    logger.info(
-        "Check that %s does not exist on host via engine", conf.DUMMY_0
     )
     sample = apis_utils.TimeoutingSampler(
         timeout=conf.SAMPLER_TIMEOUT, sleep=1,
         func=check_dummy_on_host_interfaces, dummy_name=conf.DUMMY_0,
         host_name=host_name
     )
-    if not sample.waitForFuncStatus(result=False):
-        logger.error("Dummy interface exists on engine")
+    sample.waitForFuncStatus(result=False)
 
 
 def is_network_in_vds_caps(host_resource, network):

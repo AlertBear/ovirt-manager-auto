@@ -10,9 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 class DatacenterNetworks(NetworkFixtures):
@@ -65,7 +63,7 @@ class DatacenterNetworks(NetworkFixtures):
 
 
 @pytest.fixture(scope="module")
-def datacenter_networks_prepare_setup(request, network_cleanup_fixture):
+def datacenter_networks_prepare_setup(request):
     """
     Prepare setup
     """

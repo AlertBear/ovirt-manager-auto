@@ -165,7 +165,7 @@ def generate_object_names(
         [
             (
                 c, [
-                    "case%s_%s%d" % (
+                    "C%s_%s%d" % (
                         c, prefix, (i + 1)) for i in range(num_of_objects)
                     ]
             ) for c in cases
