@@ -145,6 +145,7 @@ import logging
 import keyword
 import StringIO
 import textwrap
+import re
 
 # Default logger configuration
 logging.basicConfig(
@@ -4177,17 +4178,45 @@ def generateHascontentMethod(wrt, element):
     wrt('            return False\n')
 
 
+def camelcase_to_underscore(camelcase_name):
+    return re.sub('(?!^)([A-Z]+)', r'_\1', camelcase_name).lower()
+
+
 def generateClasses(wrt, prefix, element, delayed, nameSpacesDef=''):
     logging.debug("Generating class for: %s" % element)
     parentName, base = getParentName(element)
     logging.debug("Element base: %s" % base)
     if not element.isExplicitDefine():
         logging.debug("Not an explicit define, returning.")
-        if element.isComplex() and element.getName() != element.getType():
-            if element.getType() == 'ApiSummaryItem':
-                return
-
-            MappingTypes[element.getName()] = element.getType()
+        element_type = element.getType()
+        element_name = element.getName()
+        if element.isComplex() and element_name != element_type:
+            if element_name in MappingTypes and (
+                MappingTypes[element_name] != element_type
+            ):
+                new_element_name = camelcase_to_underscore(element_type)
+                if new_element_name != element_name:
+                    logging.warning(
+                        "Element: '%s' is already defined as '%s', and was "
+                        "renamed to '%s' to avoid overwriting it by '%s'",
+                        element_name, MappingTypes[element_name],
+                        new_element_name, element_type
+                    )
+                    MappingTypes[new_element_name] = element_type
+                    return
+                existing_element_type = MappingTypes[element_name]
+                existing_element_new_name = camelcase_to_underscore(
+                    existing_element_type
+                )
+                logging.warning(
+                    "Element: '%s' is already defined as '%s', and existing "
+                    "element was renamed to '%s' to avoid overwriting existing"
+                    "element to '%s'", element_name,
+                    MappingTypes[element_name], existing_element_new_name,
+                    element_type
+                )
+                MappingTypes[existing_element_new_name] = existing_element_type
+            MappingTypes[element_name] = element_type
         return
     # If this element is an extension (has a base) and the base has
     #   not been generated, then postpone it.
