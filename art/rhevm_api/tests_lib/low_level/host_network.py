@@ -293,14 +293,15 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
             host_slave_dict = dict((i.id, i) for i in host_slave_nics)
         except TypeError:
             host_slave_dict = dict()
+
         for slave in slave_list:
-            if update:
-                host_nic = ll_hosts.get_host_nic(host_name, slave)
-                if host_nic and host_slave_dict.get(host_nic.id):
-                    del host_slave_dict[host_nic.id]
+            host_nic = ll_hosts.get_host_nic(host=host_name, nic=slave)
+            if host_nic and host_slave_dict.get(host_nic.id):
+                del host_slave_dict[host_nic.id]
             else:
                 slave_object = data_st.HostNic(name=slave.strip())
                 host_slave_dict[slave] = slave_object
+
         slaves.set_host_nic(host_slave_dict.values())
         bond_obj.set_slaves(slaves)
 
