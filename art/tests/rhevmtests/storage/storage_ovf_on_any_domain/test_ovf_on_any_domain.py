@@ -426,9 +426,11 @@ class BasicEnvironment(BaseTestCase):
 
         self.assertTrue(attach_disk_success, "Failed to attach disk '%s' to "
                                              "VM '%s'" % (disk_alias, vm_name))
-        self.assertTrue(ll_vms.waitForVmDiskStatus(vm_name, True, disk_alias),
-                        "Disk '%s' did not reach the active status while "
-                        "being attached to VM '%s'" % (disk_alias, vm_name))
+        self.assertTrue(
+            ll_vms.wait_for_vm_disk_active_status(vm_name, True, disk_alias),
+            "Disk '%s' did not reach the active status while "
+            "being attached to VM '%s'" % (disk_alias, vm_name)
+        )
 
     def get_ovf_contents_or_num_ovf_files(
             self, disk, vm, template, ovf_should_exist=True, get_content=True

@@ -22,8 +22,8 @@ from art.rhevm_api.tests_lib.low_level.templates import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, startVm, removeVm,
-    waitForVmDiskStatus, addSnapshot, removeSnapshot, cloneVmFromTemplate,
-    removeVms, safely_remove_vms,
+    wait_for_vm_disk_active_status, addSnapshot, removeSnapshot,
+    cloneVmFromTemplate, removeVms, safely_remove_vms,
 )
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -225,7 +225,7 @@ class BasicEnvironment(BaseTestCase):
             self.assertTrue(attachDisk(True, self.disk_alias, self.vm_name),
                             "Failed to attach disk '%s' to VM '%s'" % (
                                 self.disk_alias, self.vm_name))
-            waitForVmDiskStatus(self.vm_name, True, self.disk_alias)
+            wait_for_vm_disk_active_status(self.vm_name, True, self.disk_alias)
 
     def basic_positive_flow(self):
         """

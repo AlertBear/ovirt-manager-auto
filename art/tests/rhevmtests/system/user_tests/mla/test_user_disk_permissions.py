@@ -484,8 +484,9 @@ class DPCase147127(TestCase):
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
-            vms.updateVmDisk(
-                True, config.VM_NAME, self.disk_name, interface='ide'
+            disks.updateDisk(
+                True, vmName=config.VM_NAME, alias=self.disk_name,
+                interface='ide'
             ),
             "User can't update vm disk."
         )
@@ -764,8 +765,9 @@ class DPCase147137(TestCase):
         LOGGER.info("Shared disk was attached by user.")
 
         self.assertTrue(
-            vms.updateVmDisk(
-                True, config.VM_NO_DISK, config.DISK_NAME, interface='ide'
+            disks.updateDisk(
+                True, vmName=config.VM_NO_DISK, alias=config.DISK_NAME,
+                interface='ide'
             ),
             "User can't update vm shared disk."
         )

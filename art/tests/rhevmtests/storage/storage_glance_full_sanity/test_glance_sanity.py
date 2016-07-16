@@ -520,8 +520,8 @@ class TestCase5746(BasicEnvironment):
             start_vm=False
         )
         self.assertTrue(
-            ll_vms.updateVmDisk(
-                True, self.vm_name, self.new_disk_alias,
+            ll_disks.updateDisk(
+                True, vmName=self.vm_name, alias=self.new_disk_alias,
                 interface=config.VIRTIO_SCSI
             ), "Unable to change vm %s interface to interface %s" % (
                 self.vm_name, config.VIRTIO_SCSI

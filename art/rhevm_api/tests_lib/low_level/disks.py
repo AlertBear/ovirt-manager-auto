@@ -40,6 +40,7 @@ TEMPLATE_API = get_api('template', 'templates')
 HOST_API = get_api('host', 'hosts')
 STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 DISKS_API = get_api('disk', 'disks')
+DISK_ATTACHMENTS_API = get_api('disk_attachment', 'diskattachments')
 NIC_API = get_api('nic', 'nics')
 SNAPSHOT_API = get_api('snapshot', 'snapshots')
 TAG_API = get_api('tag', 'tags')
@@ -69,24 +70,31 @@ def getStorageDomainDisks(storagedomain, get_href):
 
 def getObjDisks(name, get_href=True, is_template=False):
     """
-    Description: Returns given vm's disks collection
-    Parameters:
-        * vmName - name of VM
-        * get_href - True means to return href link for rest or object for sdk
-                    (VmDisks)
-                    False means to return the list of objects -
-                    [VmDisk, VmDisk, ...]
-    Author: jlibosva
-    Return: href link to disks or list of disks
+    Returns given vm's/templates's disks collection href or list of disk
+    objects
+
+    :param name: Name of VM/Template
+    :type name: str
+    :param get_href: True means to return href link for rest or object for sdk
+                     (DiskAttachments)
+                     False means to return the list of objects -
+                     [VmDisk, VmDisk, ...]
+    :type get_href: bool
+    :param is_template: True in case the provided name is from a template
+    :type is_template: bool
+    :returns: href link to diskattachments or list of disks
     """
-    api = TEMPLATE_API if is_template else VM_API
-    obj = api.find(name)
-    return DISKS_API.getElemFromLink(obj, get_href=get_href)
+    response = get_disk_attachments(
+        name, 'template' if is_template else 'vm', get_href
+    )
+    if get_href:
+        return response
+    return get_disk_list_from_disk_attachments(response)
 
 
 def getVmDisk(vmName, alias=None, disk_id=None):
     """
-    Description: Returns disk from VM's collection
+    Returns a Disk object from a disk attached to a vm
     Parameters:
         * vmName - name of VM
         * alias - name of disk
@@ -94,7 +102,6 @@ def getVmDisk(vmName, alias=None, disk_id=None):
     Return: Disk from VM's collection
     """
     value = None
-    vmObj = VM_API.find(vmName)
     if disk_id:
         prop = "id"
         value = disk_id
@@ -102,20 +109,33 @@ def getVmDisk(vmName, alias=None, disk_id=None):
         prop = "name"
         value = alias
     else:
-        raise EntityNotFound("No disk identifier or name was provided")
-    return DISKS_API.getElemFromElemColl(vmObj, value, prop=prop)
+        logger.error("No disk identifier or name was provided")
+        return None
+    return get_disk_obj_from_disk_attachment(
+        get_disk_attachment(vmName, value, prop)
+    )
 
 
 def getTemplateDisk(template_name, alias):
     """
-    Description: Returns disk from template collection
-    Parameters:
-        *  template_name - name of template
-        * alias - name of disk
-    Return: Disk from template collection
+    Returns disk from template collection
+
+    :param template_name: Name of the template
+    :type template_name: str
+    :param alias: Name of the disk
+    :type alias: str
+    :raises: EntityNotFound
+    :returns: Disk obj
     """
-    template_obj = TEMPLATE_API.find(template_name)
-    return DISKS_API.getElemFromElemColl(template_obj, alias)
+    template_disks = getObjDisks(
+        template_name, get_href=False, is_template=True
+    )
+    for template_disk in template_disks:
+        if alias == template_disk.get_alias():
+            return template_disk
+    raise EntityNotFound(
+        "Didn't find disk %s for template %s" % (alias, template_name)
+    )
 
 
 def get_disk_obj(disk_alias, attribute='name'):
@@ -339,14 +359,48 @@ def updateDisk(positive, **kwargs):
         raise TypeError("Parameter vmName is needed to update the disk")
     disk_id = kwargs.pop('id', None)
     alias = kwargs.get('alias', None)
+
+    # Get the disk parameters and construct the disk object
     if disk_id:
         disk_object = getVmDisk(vmName=vm_name, disk_id=disk_id)
     elif alias:
         disk_object = getVmDisk(vmName=vm_name, alias=alias)
 
+    # Disk Attachment properties
+    interface = kwargs.pop('interface', None)
+    bootable = kwargs.pop('bootable', None)
+    active = kwargs.pop('active', None)
+    disk_attachment_obj = get_disk_attachment(
+        vm_name, disk_object.get_id()
+    )
+    disk_attachment_obj = prepare_disk_attachment_object(
+        disk_object.get_id(), interface=disk_attachment_obj.get_interface(),
+        bootable=disk_attachment_obj.get_bootable(),
+        disk=disk_object
+    )
+    # Create the new disk object to be updated
     new_disk_object = _prepareDiskObject(**kwargs)
-    new_disk_object, status = DISKS_API.update(disk_object, new_disk_object,
-                                               positive)
+    new_disk_attachment_object = prepare_disk_attachment_object(
+        disk_object.get_id(), interface=interface, bootable=bootable,
+        disk=new_disk_object, active=active,
+    )
+    # W/A Starts - neccesary for BZ1352657
+    vm_obj = VM_API.find(vm_name)
+    new_disk_attachment_object.set_href(
+        "%s/%s/%s" % (
+            vm_obj.get_href(), "diskattachments", disk_object.get_id()
+        )
+    )
+    disk_attachment_obj.set_href(
+        "%s/%s/%s" % (
+            vm_obj.get_href(), "diskattachments", disk_object.get_id()
+        )
+    )
+    # W/A Ends
+    response, status = DISK_ATTACHMENTS_API.update(
+        disk_attachment_obj, new_disk_attachment_object, positive,
+        compare=False
+    )
     return status
 
 
@@ -374,7 +428,8 @@ def deleteDisk(positive, alias=None, async=True, disk_id=None):
 
 
 def attachDisk(
-        positive, alias, vm_name, active=True, read_only=False, disk_id=None
+    positive, alias, vm_name, active=True, read_only=False, disk_id=None,
+    interface='virtio', bootable=None,
 ):
     """
     Attach disk to VM
@@ -391,20 +446,37 @@ def attachDisk(
     :type active: bool
     :param read_only: Specifies whether disk should be marked as read-only
     :type read_only: bool
+    :param interface: Interface of the disk (default virtio)
+    :type interface: str
+    :param bootable: True if disk should be marked as bootable, False otherwise
+    :type bootable: bool
     :return: Status of the operation based on the input positive value
     on positive value
     :rtype: bool
     """
-    disk_object = DISKS_API.find(disk_id, attribute='id') if disk_id else (
-        DISKS_API.find(alias)
-    )
+    if disk_id:
+        name = disk_id
+        attribute = 'id'
+    else:
+        name = alias
+        attribute = 'name'
+    disk_object = get_disk_obj(name, attribute)
+    # This is only needed because for legacy reason we also want to modify
+    # the read_only property when we attach a disk
+    # Also for attaching a disk the active parameter is pass inside the disk
+    # object
     updated_disk = _prepareDiskObject(
-        update=disk_object, active=active, read_only=read_only
+        id=disk_object.get_id(), read_only=read_only, active=active
     )
-
     vm_disks = getObjDisks(vm_name)
     logger.info("Attaching disk %s to vm %s", alias, vm_name)
-    return DISKS_API.create(updated_disk, positive, collection=vm_disks)[1]
+    disk_attachment = prepare_disk_attachment_object(
+        updated_disk.get_id(), interface=interface, bootable=bootable,
+        disk=updated_disk
+    )
+    return DISK_ATTACHMENTS_API.create(
+        disk_attachment, positive, collection=vm_disks
+    )[1]
 
 
 def detachDisk(positive, alias, vmName):
@@ -420,9 +492,17 @@ def detachDisk(positive, alias, vmName):
     :type vmName: str
     :returns: True/False of the operation dependent on positive value
     """
-    disk_object = getVmDisk(vmName, alias)
     logger.info("Detaching disk %s from vm %s", alias, vmName)
-    return DISKS_API.delete(disk_object, positive)
+    disk_attachment = get_disk_attachment(vmName, alias, attr='name')
+    # W/A Starts - neccesary for BZ1352657
+    vm_obj = VM_API.find(vmName)
+    disk_attachment.set_href(
+        "%s/%s/%s" % (
+            vm_obj.get_href(), "diskattachments", disk_attachment.get_id()
+        )
+    )
+    # W/A Ends
+    return DISK_ATTACHMENTS_API.delete(disk_attachment, positive)
 
 
 def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
@@ -867,20 +947,25 @@ def get_all_disks():
     return DISKS_API.get(absLink=False)
 
 
-def prepare_disk_attachment_object(disk_id, **kwargs):
+def prepare_disk_attachment_object(disk_id=None, **kwargs):
     """
     Creates a disk attachment object
 
     :param disk_id: ID of the disk
     :type disk_id: str
-    :param interface: Interface of the disk
-    :type interface: str
+    :param active: True if disk should be activate, False otherwise
+    :type active: bool
     :param bootable: True if disk should be marked as bootable, False otherwise
     :type bootable: bool
+    :param disk: A Disk object to update
+    :type disk: Disk object
+    :param interface: Interface of the disk
+    :type interface: str
     :return: DiskAttahcment object
     :rtype: data_st.DiskAtachment
     """
-    disk_obj = prepare_ds_object("Disk", id=disk_id)
+    disk = kwargs.pop("disk", None)
+    disk_obj = disk if disk else prepare_ds_object("Disk", id=disk_id)
     return prepare_ds_object("DiskAttachment", disk=disk_obj, **kwargs)
 
 
@@ -909,3 +994,83 @@ def wait_for_disk_storage_domain(
     ):
         if sample == storage_domain:
             return
+
+
+def get_disk_obj_from_disk_attachment(disk_attachment):
+    """
+    Return disk obj from disk attachment obj
+
+    :param disk_attachment: disk attachment obj
+    :type disk_attachment: DiskAttachment
+    :returns: Disk object
+    :rtype: Disk object
+    """
+    return get_disk_obj(disk_attachment.get_id(), 'id')
+
+
+def get_disk_list_from_disk_attachments(disk_attachments):
+    """
+    Return disk obj list from disk attachments list
+
+    :param disk_attachments: disk attachment objs
+    :type disk_attachment: list
+    :returns: list of Disk objects
+    :rtype: list
+    """
+    return [
+        get_disk_obj_from_disk_attachment(disk_attachment) for disk_attachment in
+        disk_attachments
+    ]
+
+
+def get_disk_attachments(name, object_type='vm', get_href=False):
+    """
+    Get disk attachments objects or hrefs from a vm or template
+
+    :param name: Name of the vm or template
+    :type name: str
+    :param object_type: If the object is a vm or a template
+    :type object_type: str
+    :param get_href: True if function should return the href to the objects,
+    False if it should return list of DiskAttachment objects
+    :type get_href: bool
+    :returns: List of disk attachment objects or href
+    :rtype: list
+    """
+    api = get_api(object_type, "%ss" % object_type)
+    obj = api.find(name)
+    return DISK_ATTACHMENTS_API.getElemFromLink(obj, get_href=get_href)
+
+
+def get_disk_attachment(name, disk, attr='id', object_type='vm'):
+    """
+    Returns a disk attachment object
+
+    :param name: Name of the vm or template
+    :type name: str
+    :param disk: Disk name or ID
+    :type disk: str
+    :param attr: Attribute to identify the disk, 'id' or 'name'
+    :type attr: str
+    :param object_type: If parameter name is a vm or a template
+    :type object_type: str
+    :returns: Disk attachment object
+    :rtype: Disk attachment object
+    """
+    disk_list = get_disk_attachments(name, object_type=object_type)
+    disk_id = None
+    if attr == 'name' or attr == 'alias':
+        for disk_obj in disk_list:
+            disk_obj_alias = get_disk_obj(
+                disk_obj.get_id(), attribute='id'
+            ).get_alias()
+            if disk_obj_alias == disk:
+                disk_id = disk_obj.get_id()
+                break
+    elif attr == 'id':
+        disk_id = disk
+
+    for disk in disk_list:
+        if disk.get_id() == disk_id:
+            return disk
+    return None

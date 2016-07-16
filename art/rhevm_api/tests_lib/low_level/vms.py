@@ -19,7 +19,6 @@ import logging
 import os
 import re
 import shlex
-import time
 from art.rhevm_api import resources
 from Queue import Queue
 from threading import Thread
@@ -32,8 +31,9 @@ from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
-    wait_for_disks_status, get_disk_storage_domain_name, get_disk_obj,
-    deleteDisk, prepare_disk_attachment_object,
+    wait_for_disks_status, get_disk_storage_domain_name,
+    prepare_disk_attachment_object, updateDisk, get_disk_attachments,
+    get_disk_attachment, get_disk_obj, get_disk_list_from_disk_attachments
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
@@ -77,7 +77,7 @@ DD_TIMEOUT = 1500
 
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = [
-    'size', 'type', 'interface', 'format', 'bootable', 'sparse',
+    'size', 'type', 'format', 'sparse',
     'wipe_after_delete', 'propagate_errors', 'alias', 'active', 'read_only'
 ]
 VM_WAIT_FOR_IP_TIMEOUT = 600
@@ -104,7 +104,7 @@ WATCHDOG_API = get_api('watchdog', 'watchdogs')
 CAP_API = get_api('version', 'capabilities')
 NUMA_NODE_API = get_api("vm_numa_node", "vm_numa_nodes")
 HOST_DEVICE_API = get_api("host_device", "host_devices")
-DISK_ATTACHMENTS = get_api("disk_attachment", "diskattachments")
+DISK_ATTACHMENTS_API = get_api("disk_attachment", "diskattachments")
 
 Snapshots = getDS('Snapshots')
 NUMA_NODE_LINK = "numanodes"
@@ -1210,8 +1210,11 @@ def getVmDisks(vm, storage_domain=None):
     else:
         vm_obj = VM_API.find(vm)
 
-    disks = VM_API.getElemFromLink(vm_obj, link_name='disks', attr='disk',
-                                   get_href=False)
+    disk_attachments = VM_API.getElemFromLink(
+        vm_obj, link_name='diskattachments', attr='disk_attachment',
+        get_href=False
+    )
+    disks = get_disk_list_from_disk_attachments(disk_attachments)
     disks.sort(key=lambda disk: disk.get_alias())
     return disks
 
@@ -1279,10 +1282,14 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
         * provisioned_size - disk's provisioned size
     Return: status (True if disk was added properly, False otherwise)
     '''
-    vmObj = VM_API.find(vm)
+    # TODO: This function shouldn't contain pre-define values like format or
+    # interface as helpers, because testing a negative case cannot be possible.
+    # pre-define values should be used in other helper functions or generated
+    # dictionaries. Remove the pre-define values and check all instances of
+    # this function
     disk = data_st.Disk(provisioned_size=provisioned_size,
                         format=ENUMS['format_cow'],
-                        interface=ENUMS['interface_ide'], sparse=True,
+                        sparse=True,
                         alias=kwargs.pop('alias', None),
                         description=kwargs.pop('description', None),
                         active=kwargs.get('active', True))
@@ -1316,6 +1323,8 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
     elif quota_id:
         disk.set_quota(data_st.Quota(id=quota_id))
 
+    interface = kwargs.pop('interface', ENUMS['interface_virtio'])
+    bootable = kwargs.pop('bootable', None)
     # Report the unknown arguments that remains.
     if 0 < len(kwargs):
         E = "addDisk() got an unexpected keyword arguments %s"
@@ -1327,17 +1336,24 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
         diskSds.add_storage_domain(sd)
         disk.set_storage_domains(diskSds)
 
-    disks = DISKS_API.getElemFromLink(vmObj, get_href=True)
+    disk_attachment_obj = prepare_disk_attachment_object(
+        interface=interface, bootable=bootable, disk=disk
+    )
+
+    disks = get_disk_attachments(vm, get_href=True)
     logger.info("Adding disk to vm %s", vm)
-    disk, status = DISKS_API.create(disk, positive, collection=disks)
+    new_disk, status = DISK_ATTACHMENTS_API.create(
+        disk_attachment_obj, positive, collection=disks
+    )
     if status and positive and wait:
+        disk = DISKS_API.find(new_disk.get_id(), attribute='id')
         return DISKS_API.waitForElemStatus(disk, "OK", timeout)
     return status
 
 
 def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
     """
-    Detach disk from vm and remove it
+    Removes a disk from the system (that is attached to a vm)
 
     __Author__ = 'ratamir'
     :param positive: Determines whether the case is positive or negative
@@ -1366,9 +1382,7 @@ def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
         return None
     disk_obj = does_disk_exist(getVmDisks(vm))
     if disk_obj:
-        status = VM_API.delete(disk_obj, positive) and deleteDisk(
-            positive=positive, disk_id=disk_obj.get_id()
-        )
+        status = VM_API.delete(disk_obj, positive)
     else:
         logger.error("Disk %s not found in vm %s", disk, vm)
         return False
@@ -1820,17 +1834,17 @@ def addSnapshot(
     snapshot.set_persist_memorystate(persist_memory)
 
     if disks_lst:
-        disks_coll = data_st.Disks()
+        disks_coll = data_st.DiskAttachments()
         for disk in disks_lst:
 
-            diskObj = DISKS_API.find(disk)
-
-            disk = data_st.Disk()
+            diskObj = get_disk_obj(disk)
+            disk = data_st.DiskAttachment()
             disk.set_id(diskObj.get_id())
+            disk.set_disk(data_st.Disk(id=diskObj.get_id()))
 
-            disks_coll.add_disk(disk)
+            disks_coll.add_disk_attachment(disk)
 
-        snapshot.set_disks(disks_coll)
+        snapshot.set_disk_attachments(disks_coll)
 
     vmSnapshots = _getVmSnapshots(vm)
 
@@ -2468,7 +2482,7 @@ def remove_cdrom_vm(positive, vm_name):
 def _createVmForClone(
     name, template=None, cluster=None, vol_sparse=None,
     vol_format=None, storagedomain=None, snapshot=None, vm_name=None,
-    **kwargs
+    interface=ENUMS['interface_virtio'], bootable='True', **kwargs
 ):
     """
     Description: helper function - creates VM objects for VM_API.create call
@@ -2483,6 +2497,8 @@ def _createVmForClone(
        * storagedomain - storage domain to clone the VM disk
        * snapshot - description of the snapshot to clone
        * vm_name - name of the snapshot's vm
+       * interface - disk interface
+       * bootable - if disk should be bootable
     Returns: VM object
     """
     # TODO: Probaly better split this since the disk parameter is not that
@@ -2492,7 +2508,9 @@ def _createVmForClone(
     if template:
         templObj = TEMPLATE_API.find(template)
         vm.set_template(templObj)
-        disks_from = templObj
+        disks = get_disk_attachments(
+            template, 'template', get_href=False
+        )
     elif snapshot and vm_name:
         # better pass both elements and don't search in all vms
         snapshotObj = _getVmSnapshot(vm_name, snapshot)
@@ -2500,13 +2518,15 @@ def _createVmForClone(
         snapshots.add_snapshot(snapshotObj)
         vm.set_snapshots(snapshots)
         disks_from = snapshotObj
+        disks = DISKS_API.getElemFromLink(
+            disks_from, link_name='disks', attr='disk',
+            get_href=False
+        )
     else:
         raise ValueError("Either template or snapshot and vm parameters "
                          "must be set")
 
     diskArray = data_st.Disks()
-    disks = DISKS_API.getElemFromLink(disks_from, link_name='disks',
-                                      attr='disk', get_href=False)
     for dsk in disks:
         if template:
             disk = data_st.Disk(id=dsk.get_id())
@@ -2524,7 +2544,8 @@ def _createVmForClone(
             # StorageDomain property is needed when include any disk
             # on the request
             sd = []
-            for elem in dsk.get_storage_domains().get_storage_domain():
+            disk_obj = get_disk_obj(dsk.get_id(), attribute='id')
+            for elem in disk_obj.get_storage_domains().get_storage_domain():
                 sd.append(
                     STORAGE_DOMAIN_API.find(
                         elem.get_id(), attribute="id")
@@ -2533,8 +2554,14 @@ def _createVmForClone(
             storage_domains.add_storage_domain(elem)
         disk.storage_domains = storage_domains
         diskArray.add_disk(disk)
-    vm.set_disks(diskArray)
-
+    disk_attachments = data_st.DiskAttachments()
+    for _disk in diskArray.get_disk():
+        disk_attachments.add_disk_attachment(
+            prepare_disk_attachment_object(
+                _disk.get_id(), interface=interface, bootable=bootable
+            )
+        )
+    vm.set_disk_attachments(disk_attachments)
     return vm
 
 
@@ -3167,19 +3194,19 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
     if diskAlias is None and diskId is None:
         VM_API.logger.error("Disk must be specified either by alias or ID")
         return False
-
     if diskId is not None:
         disk = _getVmDiskById(vm, diskId)
     else:
         disk = _getVmFirstDiskByName(vm, diskAlias)
 
-    status = bool(DISKS_API.syncAction(disk, action, positive))
+    active = True if action == 'activate' else False
+    status = updateDisk(
+        positive, id=disk.get_id(), vmName=vm, active=active
+    )
     if status and wait:
         if positive:
-            # wait until the disk is really (de)activated
-            active = True if action == 'activate' else False
             # always use disk.id
-            return waitForVmDiskStatus(
+            return wait_for_vm_disk_active_status(
                 vm, active, diskId=disk.get_id(), timeout=300) == positive
         else:
             # only wait for the disk to be again in 'ok' state
@@ -3187,8 +3214,10 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
     return status
 
 
-def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
-                        timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP):
+def wait_for_vm_disk_active_status(
+    vm, active, diskAlias=None, diskId=None, timeout=VM_ACTION_TIMEOUT,
+    sleep=DEF_SLEEP
+):
     """
     Description: Waits for desired status of disk within VM (active,
                  deactivated)
@@ -3202,23 +3231,22 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
         * sleep - polling interval
     Return: True if desired state was reached, False on timeout
     """
-    if diskAlias is None and diskId is None:
+    if diskAlias:
+        disk = diskAlias
+        attr = 'name'
+    elif diskId:
+        disk = diskId
+        attr = 'id'
+    else:
         VM_API.logger.error("Disk must be specified either by alias or ID")
         return False
 
-    getFunc, diskDesc = (_getVmDiskById, diskId) if diskId is not None else \
-        (_getVmFirstDiskByName, diskAlias)
+    def check_active_status():
+        disk_attachment_obj = get_disk_attachment(vm, disk, attr=attr)
+        return disk_attachment_obj.get_active() == active
 
-    disk = getFunc(vm, diskDesc)
-    cur_state = disk.get_active()
-
-    t_start = time.time()
-    while time.time() - t_start < timeout and cur_state != active:
-        time.sleep(sleep)
-        disk = getFunc(vm, diskDesc)
-        cur_state = disk.get_active()
-
-    return cur_state == active
+    sampler = TimeoutingSampler(timeout, sleep, check_active_status)
+    return sampler.waitForFuncStatus(result=True)
 
 
 def checkVMConnectivity(
@@ -3465,9 +3493,7 @@ def validateVmDisks(positive, vm, sparse, format):
         * format - disk format (COW/RAW)
     Return: status (True/False)
     '''
-    vmObj = VM_API.find(vm)
-    disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
-                                   get_href=False)
+    disks = get_disk_list_from_disk_attachments(get_disk_attachments(vm))
 
     for disk in disks:
         if disk.get_sparse() != sparse:
@@ -4261,7 +4287,10 @@ def stop_vms_safely(vms_list):
     return True
 
 
-def attach_snapshot_disk_to_vm(disk_obj, vm_name, async=False, activate=True):
+def attach_snapshot_disk_to_vm(
+    disk_obj, vm_name, async=False, activate=True,
+    interface=ENUMS['interface_virtio']
+):
     """
     Attaching a snapshot disk to a vm
     Author: ratamir
@@ -4270,17 +4299,21 @@ def attach_snapshot_disk_to_vm(disk_obj, vm_name, async=False, activate=True):
         * vm_name - name of the vm that the disk should be attached to
         * async - True if operation should be async
         * activate - True if the disk should be activated after attachment
+        * interface - Interface to attach the disk to the vm
 
     Return:
         True if operation succeeded, False otherwise
     """
-
     new_disk_obj = _prepareDiskObject(id=disk_obj.get_id(),
                                       active=activate,
                                       snapshot=disk_obj.get_snapshot())
+    new_disk_attachment_obj = prepare_disk_attachment_object(
+        id=disk_obj.get_id(), interface=interface, disk=new_disk_obj,
+    )
     vmDisks = getObjDisks(vm_name)
-    diskObj, status = DISKS_API.create(new_disk_obj, True,
-                                       collection=vmDisks, async=async)
+    diskObj, status = DISK_ATTACHMENTS_API.create(
+        new_disk_attachment_obj, True, collection=vmDisks, async=async
+    )
     return status
 
 
@@ -4612,7 +4645,7 @@ def reboot_vms(vms):
     return startVms(vms)
 
 
-def extend_vm_disk_size(positive, vm, disk, **kwargs):
+def extend_vm_disk_size(positive, vm, disk, provisioned_size):
     """
     Description: extend already existing vm disk
     Parameters:
@@ -4622,23 +4655,9 @@ def extend_vm_disk_size(positive, vm, disk, **kwargs):
     Author: ratamir
     Return: Status of the operation's result dependent on positive value
     """
-    disk_obj = _getVmFirstDiskByName(vm, disk)
-    new_disk = _prepareDiskObject(**kwargs)
-    logger.info("Extending disk %s size", disk)
-    if positive:
-        # Expecting to succeed: in this case the validator will verify that
-        # the returned object is like the expected one. update() operation is
-        # async so the returned object is not the updated one. The returned
-        # object in this case is a locked disk with the original size (i.e
-        # before the resize).
-        # To bypass the object comparison, use compare=False
-        disk, status = DISKS_API.update(disk_obj, new_disk, True,
-                                        compare=False)
-    else:
-        # Expecting to fail: in this case the validator is disabled so no
-        # further manipulation is needed
-        disk, status = DISKS_API.update(disk_obj, new_disk, False)
-    return status
+    return updateDisk(
+        positive, vmName=vm, alias=disk, provisioned_size=provisioned_size
+    )
 
 
 def live_migrate_vm_disk(
@@ -5847,43 +5866,6 @@ def get_all_vms():
     return VM_API.get(absLink=False)
 
 
-def get_vm_disk_attachments(vm, disk=None, attr='id', href=False):
-    """
-    Return disk attachments list of objects or the specific disk attachment
-    object in case disk is specified
-
-    :param vm: Name of vm
-    :type : str
-    :param disk: Disk name or ID
-    :type : str
-    :param attr: Attribute to identify the disk, 'id' or 'name'
-    :type: str
-    :returns: List of disk attachment objects or a list of a single disk
-    attachment object if disk parameter is specified
-    :param href: True if function should return the href to the objects,
-    False if it should return list of DiskAttachment objects
-    :type href: bool
-    :rtype: list
-    """
-    vm_obj = VM_API.find(vm)
-    disk_list = VM_API.getElemFromLink(
-        vm_obj, link_name='diskattachments', attr='disk_attachment',
-        get_href=href
-    )
-    if disk:
-        if href:
-            logger.error(
-                "Specify either href, disk parameter or none of them"
-            )
-            return None
-        disk_id = get_disk_obj(disk).get_id() if attr == 'name' else disk
-        return [
-            disk_attach for disk_attach in disk_list if
-            disk_attach.get_id() == disk_id
-        ]
-    return disk_list
-
-
 def is_bootable_disk(vm, disk, attr='id'):
     """
     Gets the disk bootable flag
@@ -5897,75 +5879,7 @@ def is_bootable_disk(vm, disk, attr='id'):
     :return: True in case the disk is bootable, False otherwise
     :rtype: bool
     """
-    vm_disks = get_vm_disk_attachments(vm, disk, attr)
-    if vm_disks:
-        return vm_disks[0].get_bootable()
-
-
-# This method doesn't work until BZ1350226 is fixed
-def update_disk_attachment(
-    positive, disk_id, vm_name, interface=None, bootable=None
-):
-    """
-    Update a disk's disk attachment parameters
-
-    :param positive: Specifies whether the update call should succeed
-    :type positive: bool
-    :param disk_id: ID of the disk
-    :type disk_id: str
-    :param vm_name: Name of the vm where disk is attached
-    :type vm_name: str
-    :param interface: Interface to change the disk attachment to
-    :type interface: str
-    :param bootable: True if the disk should be marked as bootable, False
-    otherwise
-    :type bootable: bool
-    :return: Status of the operation's result dependent on positive value
-    :rtype: bool
-    :raises: EntityNotFound if the disk is not attached to the vm
-    """
-    new_disk_attachment_obj = prepare_disk_attachment_object(
-        disk_id, interface=interface, bootable=bootable
-    )
-    disk_attachment_obj = get_vm_disk_attachments(vm_name, disk_id)
-    if not disk_attachment_obj:
-        raise EntityNotFound(
-            "No disk with id %s found attached to vm %s" % (disk_id, vm_name)
-        )
-    disk_attachment_obj = disk_attachment_obj[0]
-    _new_disk_attachment_obj, status = DISK_ATTACHMENTS.update(
-        disk_attachment_obj, new_disk_attachment_obj, positive
-    )
-    return status
-
-
-# TODO: This should be the function to use from 4.0 onwards, change
-# attachDisk to use this function after verifying tier1/tier2
-def attach_disk_vm(positive, disk_id, vm_name, interface=None, bootable=None):
-    """
-    Attach a disk to a VM through diskattachments collection
-
-    :param positive: Specifies whether the attach call should succeed
-    :type positive: bool
-    :param disk_id: ID of the disk
-    :type disk_id: str
-    :param vm_name: Name of the vm to attach the disk
-    :type vm_name: str
-    :param interface: Interface to which attach the disk to the vm
-    :type interface: str
-    :param bootable: True if disk should be marked as bootable, False otherwise
-    :type bootable: bool
-    :return: Status of the operation's result dependent on positive value
-    :rtype: bool
-    """
-    disk_attachment_obj = prepare_disk_attachment_object(
-        disk_id, interface=interface, bootable=bootable
-    )
-    vm_disk_attachments = get_vm_disk_attachments(vm_name, href=True)
-    _response, status = DISK_ATTACHMENTS.create(
-        disk_attachment_obj, positive, collection=vm_disk_attachments
-    )
-    return status
+    return get_disk_attachment(vm, disk, attr).get_bootable()
 
 
 def get_vm_snapshot_type(vm, snapshot):

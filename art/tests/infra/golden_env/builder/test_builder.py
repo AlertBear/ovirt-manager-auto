@@ -394,9 +394,9 @@ class CreateDC(TestCase):
                 vol_sparse=vol_sparse,
                 clone=False
             )
-            ll_vms.updateVmDisk(
-                positive=True, vm=vm_description['name'],
-                disk=vm_description['clone_from'], bootable=True
+            disks.updateDisk(
+                positive=True, vmName=vm_description['name'],
+                alias=vm_description['clone_from'], bootable=True
             )
             cloned_vms.append(vm_description['name'])
             suffix_num += 1

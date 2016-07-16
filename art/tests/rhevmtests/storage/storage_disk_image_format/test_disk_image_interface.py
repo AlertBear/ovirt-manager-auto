@@ -9,14 +9,11 @@ import itertools
 import logging
 import pytest
 
-import art.rhevm_api.utils.storage_api as st_api
-from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
-    hosts as ll_hosts,
     storagedomains as ll_sd,
     vms as ll_vms,
 )
@@ -45,10 +42,6 @@ INTERFACE_REGEX_GUEST_OS = {
 }
 
 
-# TODO: Change all the updateDisk calls to ll_vms.update_disk_attachment
-# so the UPDATE is to the new API url
-# /vms/{vm:id}/diskattachments/{diskattachmentid}
-# when bug BZ1352657 is fixed
 class BaseTestCase(TestCase):
 
     def create_vm_setup(self):
@@ -76,7 +69,7 @@ class BaseTestCase(TestCase):
             vm_name = self.vm_name
         if not disk_id:
             disk_id = self.disk_id
-        disk = ll_vms.get_vm_disk_attachments(vm_name, disk_id)[0]
+        disk = ll_vms.get_disk_attachment(vm_name, disk_id)
         self.assertEqual(
             disk_interface, disk.get_interface(),
             "Disk %s should have interface %s instead interface is %s"
@@ -192,7 +185,7 @@ class TestCaseMultipleDisks(BaseTestCase):
         """
         while self.permutations:
             map_change = []
-            for disk in ll_vms.get_vm_disk_attachments(self.vm_name):
+            for disk in ll_vms.get_disk_attachments(self.vm_name):
                 if disk.get_bootable():
                     continue
                 previous_interface = disk.get_interface()
@@ -745,133 +738,6 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
         ll_vms.restore_snapshot(True, self.vm_name, self.snapshot_name)
         self.check_engine_disk_interface(self.base_interface)
         self.check_guest_os_disk_interface(self.base_interface)
-
-
-@attr(tier=4)
-class TestCase14954(BaseOneDiskAttachedTestCase):
-    """
-    RHEVM_14954 - Change disk interface for a paused VM
-
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
-    workitem?id=RHEVM-14954
-    """
-    # TODO: Verify this case after BZ1352657 is fixed
-    __test__ = False
-
-    @pytest.fixture(scope='function')
-    def initializer_TestCase14954(self, request):
-        """
-        Pytest fixture
-        """
-        def finalizer_TestCase14954():
-            """
-            Unblock connection from the host to the storage domain
-            """
-            for address in self.storage_connections:
-                status = st_api.unblockOutgoingConnection(
-                    self.host_ip, config.HOSTS_USER, config.HOSTS_PW, address
-                )
-                if not status:
-                    logger.error(
-                        "Failed to unblock connectivity to address %s failed",
-                        address
-                        )
-                    BaseTestCase.test_failed = True
-
-            self.finalizer_BaseTestCase()
-
-        request.addfinalizer(finalizer_TestCase14954)
-        self.initialize_BaseOneDiskAttachedTestCase()
-        self.host = None
-        self.host_ip = None
-        self.storage_connections = [
-            connection.get_address() for connection in
-            ll_sd.getConnectionsForStorageDomain(self.storage_domain)
-        ]
-        if not self.storage_connections:
-            raise exceptions.StorageDomainException(
-                "Unable to get storage domain's %s list of connections" %
-                self.storage_domain
-            )
-        # If the connection from the host to the master storage domain is
-        # blocked, the host is set to non-operational and the vm is migrated.
-        # The easiest way is to make the master storage domain a different type
-        # from the current storage type been tested
-        status, non_master = ll_sd.findNonMasterStorageDomains(
-            True, config.DATA_CENTER_NAME
-        )
-        if not status:
-            raise exceptions.StorageDomainException(
-                "Unable to find non master storage domains"
-            )
-        deactivated_domains = []
-        # There no way to select an specific storage domain as master domain,
-        # loop deactivating storage domains until the master domain selected
-        # if from a different type from the current storage type been tested
-        for _x in non_master['nonMasterDomains']:
-            master = ll_sd.get_master_storage_domain_name(
-                config.DATA_CENTER_NAME
-            )
-            master_obj = ll_sd.get_storage_domain_obj(master)
-            if master_obj.get_storage().get_type() != self.storage:
-                break
-            if not ll_sd.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, master
-            ):
-                raise exceptions.StorageDomainException(
-                    "Unable to deactivate storage domain %s" % master
-                )
-            deactivated_domains.append(master)
-
-        for domain in deactivated_domains:
-            if not ll_sd.activateStorageDomain(
-                True, config.DATA_CENTER_NAME, domain
-            ):
-                raise exceptions.StorageDomainException(
-                    "Unable to activate storage domain %s" % domain
-                )
-        wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
-
-    @polarion("RHEVM-14954")
-    @pytest.mark.usefixtures("initializer_TestCase14954")
-    def test_change_disk_paused_vm(self):
-        """
-        Test setup:
-        - Create a VM with disk attached and install OS
-        - Create and attach a disk to the VM
-
-        Test flow:
-        - Start the VM
-        - Cause the VM to move to paused (block connectivity from the host
-        that runs the VM to the storage domain of the VM's attached OS disk)
-        - Try to change the disk interface of the attached disk to Virtio-SCSI
-        -> Should succeed
-        """
-        ll_vms.startVm(True, self.vm_name, config.VM_UP)
-        self.host = ll_vms.get_vm_host(self.vm_name)
-        self.host_ip = ll_hosts.getHostIP(self.host)
-        for address in self.storage_connections:
-            status = st_api.blockOutgoingConnection(
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW, address
-            )
-            self.assertTrue(
-                status, "block connectivity to address %s failed" % address
-            )
-        ll_vms.wait_for_vm_states(self.vm_name, config.VM_PAUSED)
-        # TODO: Test this is working with the new UPDATE method
-        self.update_disk_interface(check_guest=False)
-        for address in self.storage_connections:
-            status = st_api.unblockOutgoingConnection(
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW, address
-            )
-            self.assertTrue(
-                status,
-                "Failed to unblock connectivity to address %s failed" % address
-            )
-        ll_vms.wait_for_vm_states(self.vm_name)
-        self.check_guest_os_disk_interface(self.new_interface)
 
 
 @attr(tier=2)

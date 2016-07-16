@@ -729,10 +729,10 @@ class CaseRoleActions(TestCase):
     def test_edit_disk_properties(self):
         """ edit_disk_properties """
         self.assertTrue(
-            vms.updateVmDisk(
+            disks.updateDisk(
                 self.positive,
-                config.CREATE_VM,
-                '%s_Disk1' % config.CREATE_VM,
+                vmName=config.CREATE_VM,
+                alias='%s_Disk1' % config.CREATE_VM,
                 description=str(uuid.uuid4())
             )
         )

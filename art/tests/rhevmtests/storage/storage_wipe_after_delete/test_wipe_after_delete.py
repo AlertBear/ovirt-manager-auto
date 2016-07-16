@@ -119,8 +119,8 @@ class CommonUsage(BaseTestCase):
                 "Update disk's %s wipe_after_delete flag to 'True'",
                 config.DISK_ALIAS
             )
-            assert ll_vms.updateVmDisk(
-                True, self.vm_name, config.DISK_ALIAS, disk_id=self.disk_id,
+            assert ll_disks.updateDisk(
+                True, vmName=self.vm_name, id=self.disk_id,
                 wipe_after_delete=True
             )
         ll_vms.stop_vms_safely([self.vm_name])
@@ -187,8 +187,8 @@ class TestCase5116(CommonUsage):
             ll_vms.is_bootable_disk(self.vm, d.get_id())
         ][0]
 
-        assert ll_vms.updateVmDisk(
-            True, self.vm_name, config.DISK_ALIAS, disk_id=self.disk_id,
+        assert ll_disks.updateDisk(
+            True, vmName=self.vm_name, id=self.disk_id,
             wipe_after_delete=True
         )
 
@@ -326,9 +326,9 @@ class TestCase11864(CommonUsage):
         ll_disks.wait_for_disks_status(
             [self.disk_name], status=config.DISK_LOCKED
         )
-        status = ll_vms.updateVmDisk(
-            False, self.vm_name, self.disk_name, wipe_after_delete=False,
-            disk_id=self.disk_id
+        status = ll_disks.updateDisk(
+            False, vmName=self.vm_name, id=self.disk_id,
+            wipe_after_delete=False
         )
         ll_vms.waitForVmsDisks(self.vm_name)
         ll_jobs.wait_for_jobs(

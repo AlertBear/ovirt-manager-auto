@@ -195,7 +195,9 @@ class HotplugHookTest(TestCase):
     def put_disks_in_correct_state(self):
         """ Activate/Deactivate disks we will use in the test """
         for disk_name in self.use_disks:
-            disk = ll_disks.getVmDisk(self.vm_name, disk_name)
+            disk = ll_disks.get_disk_attachment(
+                self.vm_name, disk_name, attr='name'
+            )
             logger.info("Disk active: %s" % disk.active)
             if disk.get_active() and not self.active_disk:
                 assert ll_vms.deactivateVmDisk(True, self.vm_name, disk_name)
@@ -766,7 +768,9 @@ class TestCase6231(BasePlugDiskTest):
             inactive_disks = [
                 disk for disk in ll_vms.getVmDisks(vm) if not
                 ll_vms.is_bootable_disk(vm, disk.get_id()) and not
-                disk.get_active()
+                ll_disks.get_disk_attachment(
+                    vm, disk.get_id()
+                ).get_active()
             ]
             disk_name = inactive_disks[0].get_name()
             testflow.step("Hot plug disk %s to VM %s", disk_name, vm)
@@ -777,7 +781,9 @@ class TestCase6231(BasePlugDiskTest):
             active_disks = [
                 disk for disk in ll_vms.getVmDisks(vm) if not
                 ll_vms.is_bootable_disk(vm, disk.get_id()) and
-                disk.get_active()
+                ll_disks.get_disk_attachment(
+                    vm, disk.get_id()
+                ).get_active()
             ]
             disk_name = active_disks[0].get_name()
             testflow.step("Hot unplug disk %s to VM %s", disk_name, vm)
@@ -988,7 +994,9 @@ class TestCase6230(TestCase):
             active_disks = [
                 disk for disk in ll_vms.getVmDisks(vm) if not
                 ll_vms.is_bootable_disk(vm, disk.get_id()) and
-                disk.get_active()
+                ll_disks.get_disk_attachment(
+                    vm, disk.get_id()
+                ).get_active()
             ]
             if len(active_disks) > 0:
                 disk_name = active_disks[0].get_name()
@@ -1005,7 +1013,9 @@ class TestCase6230(TestCase):
             inactive_disks = [
                 disk for disk in ll_vms.getVmDisks(vm) if not
                 ll_vms.is_bootable_disk(vm, disk.get_id()) and not
-                disk.get_active()
+                ll_disks.get_disk_attachment(
+                    vm, disk.get_id()
+                ).get_active()
             ]
             if len(inactive_disks) > 0:
                 for disk in inactive_disks:

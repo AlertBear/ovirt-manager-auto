@@ -25,7 +25,7 @@ import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
@@ -425,6 +425,7 @@ class TestCase5060(DisksPermutationEnvironment):
         super(TestCase5060, self).tearDown()
 
 
+@bz({'1358271': {}})
 @attr(tier=1)
 class TestCase5062(BasicResize):
     """
@@ -451,6 +452,7 @@ class TestCase5062(BasicResize):
         self.perform_basic_action()
 
 
+@bz({'1358271': {}})
 @attr(tier=1)
 class TestCase5063(BasicResize):
     """
@@ -477,6 +479,7 @@ class TestCase5063(BasicResize):
         self.perform_basic_action()
 
 
+@bz({'1358271': {}})
 @attr(tier=1)
 class TestCase5065(BasicResize):
     """

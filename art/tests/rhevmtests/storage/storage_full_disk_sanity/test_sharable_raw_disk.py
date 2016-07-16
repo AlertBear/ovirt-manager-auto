@@ -78,7 +78,7 @@ class TestCase11513(TestCase):
         self.assertTrue(ll_disks.attachDisk(True, self.disk_name, self.vm_1))
         self.assertTrue(ll_disks.wait_for_disks_status(disks=[self.disk_name]))
         self.assertTrue(
-            ll_vms.waitForVmDiskStatus(
+            ll_vms.wait_for_vm_disk_active_status(
                 self.vm_1, True, self.disk_name, sleep=1
             )
         )
@@ -90,12 +90,12 @@ class TestCase11513(TestCase):
         self.assertTrue(ll_disks.attachDisk(True, self.disk_name, self.vm_2))
         self.assertTrue(ll_disks.wait_for_disks_status([self.disk_name]))
         self.assertTrue(
-            ll_vms.waitForVmDiskStatus(
+            ll_vms.wait_for_vm_disk_active_status(
                 self.vm_1, True, self.disk_name, sleep=1
             )
         )
         self.assertTrue(
-            ll_vms.waitForVmDiskStatus(
+            ll_vms.wait_for_vm_disk_active_status(
                 self.vm_2, True, self.disk_name, sleep=1
             )
         )

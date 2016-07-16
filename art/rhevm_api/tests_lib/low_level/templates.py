@@ -24,7 +24,7 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
-from art.rhevm_api.tests_lib.low_level.disks import getObjDisks
+from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.networks import (
     get_vnic_profile_obj, VNIC_PROFILE_API,
@@ -752,10 +752,19 @@ def import_template(
 
 
 def getTemplateDisks(template):
-    tmpObj = TEMPLATE_API.find(template)
-    disks = TEMPLATE_API.getElemFromLink(
-        tmpObj, link_name='disks', attr='disk', get_href=False)
-    return disks
+    """
+    Return template's disks
+
+    :param template: Template name
+    :type template: str
+    :returns: List of disks
+    :rtype: list
+    """
+    return ll_disks.get_disk_list_from_disk_attachments(
+        ll_disks.get_disk_attachmens(
+            template, type='template', get_href=False
+        )
+    )
 
 
 def _getTemplateFirstDiskByName(template, diskName, idx=0):
@@ -853,7 +862,7 @@ def wait_for_template_disks_state(template, state=ENUMS['disk_state_ok'],
     * state - desired state of disks
     * timeout - how long should it wait
     """
-    disks = getObjDisks(template, get_href=False, is_template=True)
+    disks = getTemplateDisks(template)
     for disk in disks:
         if not DISKS_API.waitForElemStatus(disk, state, timeout):
             raise exceptions.DiskException(
@@ -936,7 +945,7 @@ def copy_template_disks(positive, template, disks, storagedomain, async=True):
     """
     disks_names = split(disks)
     storage_domain = SD_API.find(storagedomain)
-    all_disks = getObjDisks(template, is_template=True, get_href=False)
+    all_disks = getTemplateDisks(template)
     relevant_disks = [disk for disk in all_disks if
                       (disk.get_name() in disks_names)]
     for disk in relevant_disks:

@@ -7,7 +7,7 @@ import config
 import logging
 import os
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -461,6 +461,7 @@ class CopyDiskClonedFromTemplate(CopyDiskWithContent):
             )
 
 
+@bz({'1358271': {}})
 @attr(tier=1)
 class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     """

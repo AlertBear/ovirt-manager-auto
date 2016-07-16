@@ -22,7 +22,7 @@ from art.rhevm_api.utils.test_utils import (
     restartVdsmd, restart_engine,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from socket import timeout as TimeoutError
@@ -333,6 +333,7 @@ class BasicEnvironment(BaseTestCase):
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
 
+@bz({'1358271': {}})
 @attr(tier=1)
 class TestCase6038(BasicEnvironment):
     """

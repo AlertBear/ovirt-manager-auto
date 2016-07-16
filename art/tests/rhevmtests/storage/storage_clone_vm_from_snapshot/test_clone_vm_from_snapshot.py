@@ -57,7 +57,7 @@ class BaseTestCase(TestCase):
         assert ll_disks.wait_for_disks_status(disks=[disk_alias])
         assert ll_disks.attachDisk(True, disk_alias, self.vm)
         assert ll_disks.wait_for_disks_status(disks=[disk_alias])
-        assert ll_vms.waitForVmDiskStatus(
+        assert ll_vms.wait_for_vm_disk_active_status(
             self.vm, True, diskAlias=disk_alias, sleep=1)
 
     def tearDown(self):
