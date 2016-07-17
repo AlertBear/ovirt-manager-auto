@@ -51,13 +51,13 @@ DATA_CENTER_INIT_TIMEOUT = 180
 QUOTA_COL = "quotas"
 QUOTA_ELM = "quota"
 QUOTA_API = get_api(QUOTA_ELM, QUOTA_COL)
-QUOTA_CLUSTER_LIMIT_ELM = "cluster_quota_limit"
+QUOTA_CLUSTER_LIMIT_ELM = "quota_cluster_limit"
 QUOTA_CLUSTER_LIMIT_API = get_api(
-    QUOTA_CLUSTER_LIMIT_ELM, "cluster_quota_limits"
+    QUOTA_CLUSTER_LIMIT_ELM, "quota_cluster_limits"
 )
-QUOTA_STORAGE_DOMAIN_LIMIT_ELM = "storage_quota_limit"
+QUOTA_STORAGE_DOMAIN_LIMIT_ELM = "quota_storage_limit"
 QUOTA_STORAGE_DOMAIN_LIMIT_API = get_api(
-    QUOTA_STORAGE_DOMAIN_LIMIT_ELM, "storage_quota_limits"
+    QUOTA_STORAGE_DOMAIN_LIMIT_ELM, "quota_storage_limits"
 )
 API = "api"
 ATTR = "attr"
