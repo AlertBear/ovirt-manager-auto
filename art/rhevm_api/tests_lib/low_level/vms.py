@@ -140,6 +140,8 @@ def _prepareVmObject(**kwargs):
     :type cpu_socket: int
     :param cpu_cores: number of cpu cores
     :type cpu_cores: int
+    :param cpu_threads: number of cpu threads
+    :type cpu_threads: int
     :param cpu_mode: mode of cpu
     :type cpu_mode: str
     :param os_type: OS type of new vm
@@ -265,18 +267,19 @@ def _prepareVmObject(**kwargs):
     # cpu topology & cpu pinning
     cpu_socket = kwargs.pop("cpu_socket", None)
     cpu_cores = kwargs.pop("cpu_cores", None)
+    cpu_threads = kwargs.pop("cpu_threads", None)
     vcpu_pinning = kwargs.pop("vcpu_pinning", None)
     cpu_mode = kwargs.pop("cpu_mode", None)
     if (
-            cpu_socket or cpu_cores or
+            cpu_socket or cpu_cores or cpu_threads or
             vcpu_pinning is not None or
             cpu_mode is not None
     ):
         cpu = data_st.Cpu()
-        if cpu_socket or cpu_cores:
+        if cpu_socket or cpu_cores or cpu_threads:
             cpu.set_topology(
                 topology=data_st.CpuTopology(
-                    sockets=cpu_socket, cores=cpu_cores
+                    sockets=cpu_socket, cores=cpu_cores, threads=cpu_threads
                 )
             )
         if vcpu_pinning is not None and vcpu_pinning == []:
@@ -524,6 +527,8 @@ def addVm(positive, wait=True, **kwargs):
     :type cpu_socket: int
     :param cpu_cores: number of cpu cores
     :type cpu_cores: int
+    :param cpu_threads: number of cpu threads
+    :type cpu_threads: int
     :param cpu_mode: mode of cpu
     :type cpu_mode: str
     :param os_type: OS type of new vm
@@ -671,6 +676,8 @@ def updateVm(positive, vm, **kwargs):
     :type cpu_socket: int
     :param cpu_cores: number of cpu cores
     :type cpu_cores: int
+    :param cpu_threads: number of cpu threads
+    :type cpu_threads: int
     :param cpu_mode: mode of cpu
     :type cpu_mode: str
     :param os_type: OS type of new vm
