@@ -415,7 +415,7 @@ class TestIOTest09(NetworkTest):
             initial_name, valid_name
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=True, network=initial_name, name=valid_name
             )
         )
@@ -433,7 +433,7 @@ class TestIOTest09(NetworkTest):
             valid_name, invalid_name
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=False, network=valid_name, name=invalid_name
             )
         )
@@ -451,7 +451,7 @@ class TestIOTest09(NetworkTest):
         )
         for valid_tag in valid_tags:
             self.assertTrue(
-                ll_networks.updateNetwork(
+                ll_networks.update_network(
                     positive=True, network=default_name, vlan_id=valid_tag
                 )
             )
@@ -470,7 +470,7 @@ class TestIOTest09(NetworkTest):
         )
         for invalid_tag in invalid_tags:
             self.assertTrue(
-                ll_networks.updateNetwork(
+                ll_networks.update_network(
                     positive=False, network=default_name, vlan_id=invalid_tag
                 )
             )
@@ -486,7 +486,7 @@ class TestIOTest09(NetworkTest):
             "Change VM network %s to be non-VM network", valid_name
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=True, network=valid_name, usages="",
                 description="nonVM network"
             )
@@ -496,7 +496,7 @@ class TestIOTest09(NetworkTest):
             "Change non-VM network %s to be VM network", valid_name
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=True, network=valid_name, usages="vm",
                 description="VM network again"
             )

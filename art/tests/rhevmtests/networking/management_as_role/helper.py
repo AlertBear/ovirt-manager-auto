@@ -137,7 +137,7 @@ def add_host_new_mgmt(
         ):
             raise conf.NET_EXCEPTION()
 
-        if not ll_networks.removeNetwork(
+        if not ll_networks.remove_network(
             positive=True, network=network, data_center=dc
         ):
             raise conf.NET_EXCEPTION()
@@ -158,7 +158,7 @@ def update_host_mgmt_bridge(network, dc):
     :type dc: str
     """
     network_helper.call_function_and_wait_for_sn(
-        func=ll_networks.updateNetwork, content=network, positive=True,
+        func=ll_networks.update_network, content=network, positive=True,
         network=network, data_center=dc, usages=""
     )
 
@@ -282,7 +282,7 @@ def remove_net(net=conf.NET_1, dc=conf.EXT_DC_0, positive=True, teardown=True):
     :type teardown: bool
     :raises: Network exception
     """
-    if not ll_networks.removeNetwork(
+    if not ll_networks.remove_network(
         positive=positive, network=net, data_center=dc
     ):
         if teardown:

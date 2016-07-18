@@ -363,7 +363,7 @@ def host_case_13(request, teardown_all_cases_host):
         "nic": hna.host_0_nics[1]
     }
     helper.attach_network_attachment(**network_host_api_dict)
-    assert ll_networks.removeNetwork(
+    assert ll_networks.remove_network(
         positive=True, network="unman_net_13", data_center=hna.dc_0
     )
     assert ll_host_network.get_host_unmanaged_networks(
@@ -399,7 +399,7 @@ def host_case_16(request, teardown_all_cases_host):
         }
     }
     assert hl_host_network.setup_networks(host_name=hna.host_0_name, **sn_dict)
-    assert ll_networks.removeNetwork(
+    assert ll_networks.remove_network(
         positive=True, network="unman_host16", data_center=hna.dc_0
     )
     assert ll_host_network.get_host_unmanaged_networks(
@@ -601,7 +601,7 @@ def sn_case_16(request, teardown_all_cases_sn):
     }
 
     assert hl_host_network.setup_networks(host_name=hna.host_0_name, **sn_dict)
-    assert ll_networks.removeNetwork(
+    assert ll_networks.remove_network(
         positive=True, network=unmamanged_net, data_center=hna.dc_0
     )
     assert ll_host_network.get_host_unmanaged_networks(
@@ -636,7 +636,7 @@ def sn_case_17(request, teardown_all_cases_sn):
         }
     }
     assert hl_host_network.setup_networks(host_name=hna.host_0_name, **sn_dict)
-    assert ll_networks.removeNetwork(
+    assert ll_networks.remove_network(
         positive=True, network=unmamanged_net, data_center=hna.dc_0
     )
     assert ll_host_network.get_host_unmanaged_networks(

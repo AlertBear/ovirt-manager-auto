@@ -84,7 +84,7 @@ class NetworkingNegative(TestCase):
             config.NETWORK_NAME4,
         ]:
             ignoreAllExceptions(
-                networks.removeNetwork,
+                networks.remove_network,
                 positive=True,
                 network=network,
                 data_center=config.DC_NAME[0]
@@ -119,7 +119,7 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
         assert networks.add_network(
             False, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
-        assert networks.removeNetwork(
+        assert networks.remove_network(
             False, network=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         LOGGER.info(msg, config.USER, role.ClusterAdmin)
@@ -141,19 +141,19 @@ class NegativeNetworkPermissions231916(NetworkingNegative):
         """  Edit network in DC """
         msg = "User %s with %s can't update network."
         loginAsUser(config.USER_NAME, filter_=False)
-        assert networks.updateNetwork(
+        assert networks.update_network(
             False, network=config.NETWORK_NAME1,
             data_center=config.DC_NAME[0], mtu=1502
         )
-        assert networks.updateNetwork(
+        assert networks.update_network(
             False, network=config.NETWORK_NAME1,
             data_center=config.DC_NAME[0], vlan_id=3
         )
-        assert networks.updateNetwork(
+        assert networks.update_network(
             False, network=config.NETWORK_NAME1,
             data_center=config.DC_NAME[0], usages=''
         )
-        assert networks.updateNetwork(
+        assert networks.update_network(
             False, network=config.NETWORK_NAME1,
             data_center=config.DC_NAME[0], usages='VM'
         )

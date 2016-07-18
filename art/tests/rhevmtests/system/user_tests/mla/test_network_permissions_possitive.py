@@ -81,7 +81,7 @@ class PositiveNetworkPermissions231821(NetworkingPossitive):
                 True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
             )
             loginAsAdmin()
-            assert networks.removeNetwork(
+            assert networks.remove_network(
                 True,
                 network=config.NETWORK_NAME1,
                 data_center=config.DC_NAME[0]
@@ -113,7 +113,7 @@ class PositiveNetworkPermissions231822(NetworkingPossitive):
         stp = True
         for uName in [config.USER_NAME, config.USER_NAME2]:
             loginAsUser(userName=uName, filter_=False)
-            assert networks.updateNetwork(
+            assert networks.update_network(
                 True, config.NETWORK_NAME1,
                 data_center=config.DC_NAME[0],
                 mtu=mtu, stp=str(stp).lower()
@@ -710,7 +710,7 @@ class PositiveNetworkPermissions236577(NetworkingPossitive):
         assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.removeNetwork(
+        assert networks.remove_network(
             True, network=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         loginAsAdmin()
@@ -746,10 +746,10 @@ class PositiveNetworkPermissions236664(NetworkingPossitive):
         assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.updateNetwork(
+        assert networks.update_network(
             True, config.NETWORK_NAME1, mtu=1405, data_center=config.DC_NAME[0]
         )
-        assert networks.removeNetwork(
+        assert networks.remove_network(
             True, network=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
 
@@ -909,7 +909,7 @@ class PositiveNetworkPermissions317270(NetworkingPossitive):
             )
         )
         self.assertTrue(
-            networks.updateNetwork(
+            networks.update_network(
                 True,
                 network=config.NETWORK_NAME1,
                 data_center=config.DC_NAME[0],

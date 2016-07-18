@@ -115,7 +115,7 @@ def fixture_case_03(request, teardown_all_cases_linking):
         """
         Remove network
         """
-        ll_networks.removeNetwork(
+        ll_networks.remove_network(
             positive=True, network=net, data_center=linking.dc_0
         )
     request.addfinalizer(fin)

@@ -18,17 +18,17 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import art.test_handler.settings as test_settings
-import art.test_handler.exceptions as test_exceptions
+
 import art.core_api.apis_exceptions as apis_exceptions
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.general as ll_general
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.test_handler.exceptions as test_exceptions
+import art.test_handler.settings as test_settings
 
 ENUMS = test_settings.opts['elements_conf']['RHEVM Enums']
 
@@ -53,99 +53,21 @@ IP_CMD = "/sbin/ip"
 MODPROBE_CMD = "/sbin/modprobe"
 
 
-# FIXME: need to check if this function is being used else just remove.
-def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
-    """
-     Validate Datacenter/Cluster network configurations/existence.
-     This function tests the network configured parameters. we look for
-     networks link under cluster even though we check the DC network
-     configurations only because cluster networks related
-     to main networks href.
-
-     Author: atal
-     Parameters:
-        * cluster - cluster name
-        * network - network name
-        * datacenter - data center name. in order to check if the given
-                       network exists in the DC.
-        * tag - the tag we are looking to validate
-     return: True and value of the given filed, otherwise False and None
-    """
-    try:
-        netObj = ll_networks.get_cluster_network(cluster, network)
-    except apis_exceptions.EntityNotFound:
-        return False, {'value': None}
-
-    # validate cluster network related to the given datacenter
-    if datacenter:
-        try:
-            dcObj = ll_networks.DC_API.find(datacenter)
-        except apis_exceptions.EntityNotFound:
-            return False, {'value': None}
-
-        # return False means that given datacenter
-        # doesn't contain the given network
-        if dcObj.get_id() != netObj.get_data_center().get_id():
-            return False, {'value': None}
-
-    if tag:
-        if hasattr(netObj, tag):
-            attrValue = None
-            if tag == 'status':
-                attrValue = getattr(netObj.get_status(), 'state')
-            else:
-                attrValue = getattr(netObj, tag)
-            return True, {'value': attrValue}
-
-    # in case we only like to check if the network exists or not.
-    if netObj:
-        return True, {'value': netObj.get_name()}
-
-    return False, tag
-
-
-def validate_network_param(positive, cluster, network, tag, val):
-    """
-    Validate network param
-
-    Args:
-        positive (bool): Expected result
-        cluster (str): Cluster name where the network is
-        network (str): Network name
-        tag (str): Tag to get the value for
-        val (str): Value to check
-
-    Returns:
-        bool: True/False
-    """
-    log_info, log_error = ll_general.get_log_msg(
-        action="Validate", obj_type="network", obj_name=network,
-        positive=positive, tag=tag, val=val
-    )
-    logger.info(log_info)
-    status, output = getNetworkConfig(positive, cluster, network, tag=tag)
-    res = bool(status and str(output['value']).lower() == str(val).lower())
-    if not res:
-        logger.error(log_error)
-    return res
-
-
 def remove_networks(positive, networks, data_center=None):
     """
     Remove networks
 
-    :param positive: Expected state that the function should return
-    :type positive: bool
-    :param networks: List of networks
-    :type networks: list
-    :param data_center: DC from where to remove network
-    :type data_center: str
-    :return: True if remove networks succeeded, otherwise False
-    :rtype: bool
+    Args:
+        positive (bool): Expected state that the function should return
+        networks (list): List of networks
+        data_center (str): DC from where to remove network
+
+    Returns:
+        bool: True if remove networks succeeded, otherwise False
     """
     for net in networks:
         logger.info("Removing %s", net)
-        if not ll_networks.removeNetwork(positive, net, data_center):
+        if not ll_networks.remove_network(positive, net, data_center):
             logger.error("Failed to remove %s", net)
             return False
     return True
@@ -291,11 +213,11 @@ def remove_net_from_setup(
     Function that removes networks from the host, Cluster and DC
 
     Args:
-        host (str): list or str of hosts names
+        host (list): list or str of hosts names
         network (list): list of networks to remove
         data_center (str): DC where the network is
-        all_net (bool): True to remove all networks from setup (except MGMT
-            net)
+        all_net (bool): True to remove all networks from setup
+            (except MGMT net)
         mgmt_network (str): Management network
 
     Returns:
@@ -327,14 +249,13 @@ def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     """
     create (X) dummy network interfaces on host
 
-    :param host: VDS
-    :type host: resources.VDS
-    :param num_dummy: number of dummy interfaces to create
-    :type num_dummy: int
-    :param ifcfg_params: Ifcfg file content
-    :type ifcfg_params: dict
-    :return: True/False
-    :rtype: bool
+    Args:
+        host (VDS): VDS
+        num_dummy (int): number of dummy interfaces to create
+        ifcfg_params (dict): Ifcfg file content
+
+    Returns:
+        bool: True/False
     """
     dummy_int = "dummy_%s"
     if ifcfg_params is None:
@@ -356,10 +277,11 @@ def delete_dummy_interfaces(host):
     """
     Delete dummy network interfaces on host
 
-    :param host: VDS
-    :type host: resources.VDS
-    :return: True/False
-    :rtype: bool
+    Args:
+        host (VDS): VDS
+
+    Returns:
+        bool: True/False
     """
     rhevh = RHEVH in host.os.distribution.distname
     all_interfaces = host.network.all_interfaces()
@@ -441,20 +363,21 @@ def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
     return status
 
 
-def getIpOnHostNic(host, nic):
-    '''
-    Description: Get IP on host NIC
+def get_ip_on_host_nic(host, nic):
+    """
+    Get IP on host NIC
 
-    **Author**: myakove
-    **Parameters**:
-        *  *host* - IP or FDQN of the host
-        *  *nic* - NIC to get IP from, execpted NICs:
+    Args:
+        host (str): IP or FDQN of the host
+        nic (str): NIC to get IP from, execpted NICs:
                    eth(x) - Non VLAN nic
                    eth(x).(xxx) - VLAN NIC
                    bond(x) - BOND NIC
                    bond(x).(xxx) - VLAN BOND NIC
-    **Return**: IP or None
-    '''
+
+    Returns:
+        Ip or None: IP if HosNic have IP else None
+    """
     host_nic = ll_hosts.get_host_nic(host=host, nic=nic)
     return host_nic.get_ip().get_address()
 
@@ -463,18 +386,18 @@ def check_host_nic_params(host, nic, **kwargs):
     """
     Check MTU, VLAN interface and bridge (VM/Non-VM) host nic parameters.
 
-    :param host: Host name
-    :type host: str
-    :param nic: Nic to get parameters from
-    :type nic: str
-    :param kwargs:
-        vlan_id: expected VLAN id on the host (str)
-        mtu: expected mtu on the host (str)
-        bridge: Expected VM, Non-VM network (True for VM, False for
-               Non-VM) (bool)
-    :type kwargs: dict
-    :return: True if action succeeded, otherwise False
-    :rtype: bool
+    Args:
+        host (str): Host name
+        nic (str): Nic to get parameters from
+
+    Keyword Args:
+        vlan_id (str): expected VLAN id on the host
+        mtu (str): expected mtu on the host
+        bridge (bool): Expected VM, Non-VM network (True for VM, False for
+            Non-VM)
+
+    Returns:
+        bool: True if action succeeded, otherwise False
     """
     res = True
     host_nic = ll_hosts.get_host_nic(host, nic)
@@ -643,16 +566,14 @@ def get_nic_statistics(nic, host=None, vm=None, keys=None):
         data.total.rx
         data.total.tx
 
-    :param nic: NIC name
-    :type nic: str
-    :param host: Host name
-    :type host: str
-    :param vm: VM name
-    :type vm: str
-    :param keys: Keys to get keys for
-    :type keys: list
-    :return: Dict with keys values
-    :rtype: dict
+    Args:
+        nic (str): NIC name
+        host (str): Host name
+        vm (str): VM name
+        keys (list): Keys to get keys for
+
+    Returns:
+        dict: Dict with keys values
     """
     res = dict()
     stats = ll_hosts.get_host_nic_statistics(
@@ -674,20 +595,16 @@ def convert_old_sn_dict_to_new_api_dict(
     Convert old CreateAndAttachSN call dict to new network API dict to use
     in setup_networks()
 
-    :param new_dict: New SN dict
-    :type new_dict: dict
-    :param old_dict: Network dict
-    :type old_dict: dict
-    :param idx: Index number for new API dict
-    :type idx: int
-    :param nic: NIC name
-    :type nic: str
-    :param network: Network name
-    :type network: str
-    :param slaves: BOND slaves list
-    :type slaves: list
-    :return: New dict for new API function (setup_networks())
-    :rtype: dict
+    Args:
+        new_dict (dict): New SN dict
+        old_dict (dict): Network dict
+        idx (int): Index number for new API dict
+        nic (str): NIC name
+        network (str): Network name
+        slaves (list): BOND slaves list
+
+    Returns:
+        dict: New dict for new API function (setup_networks())
     """
     ip_dict = None
     properties = old_dict.get("properties")
@@ -721,10 +638,11 @@ def get_clusters_managements_networks_ids(cluster=None):
     Get clusters managements networks IDs for all clusters in the engine if
     not cluster else get only for the given cluster
 
-    :param cluster: Cluster name
-    :type cluster: list
-    :return: managements networks ids
-    :rtype: list
+    Args:
+        cluster (str): Cluster name
+
+    Returns:
+        list: Managements networks ids
     """
     clusters = (
         ll_clusters.CLUSTER_API.get(absLink=False) if not cluster else cluster

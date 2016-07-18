@@ -152,7 +152,7 @@ class TestMultiHostCase02(NetworkTest):
             "Host"
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=False, network=self.net, data_center=self.dc,
                 name=self.new_net_name
             )
@@ -170,7 +170,7 @@ class TestMultiHostCase02(NetworkTest):
             "Negative: Try to update network name when network resides on VM"
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=False, network=self.net, data_center=self.dc,
                 name=self.new_net_name
             )
@@ -191,7 +191,7 @@ class TestMultiHostCase02(NetworkTest):
             "on Template"
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=False, network=self.net, data_center=self.dc,
                 name=self.vnic_2_name
             )
@@ -206,7 +206,7 @@ class TestMultiHostCase02(NetworkTest):
             "Update network name when network resides only on DC and Cluster"
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=True, network=self.net, data_center=self.dc,
                 name=self.new_net_name
             )
@@ -267,7 +267,7 @@ class TestMultiHostCase03(NetworkTest):
             "non-running VM"
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=False, network=self.net, data_center=conf.DC_0,
                 usages=""
             )
@@ -312,7 +312,7 @@ class TestMultiHostCase04(NetworkTest):
             "is using it"
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=False, network=self.net, data_center=conf.DC_0,
                 usages=""
             )
@@ -395,7 +395,7 @@ class TestMultiHostCase06(NetworkTest):
             "Update network with VLAN %s and MTU %s ", vlan_id, mtu_9000
         )
         self.assertTrue(
-            ll_networks.updateNetwork(
+            ll_networks.update_network(
                 positive=True, network=self.net, data_center=self.dc,
                 vlan_id=vlan_id, mtu=mtu_9000
             )

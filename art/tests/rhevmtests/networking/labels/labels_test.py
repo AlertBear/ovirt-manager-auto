@@ -817,7 +817,7 @@ class TestNetLabels06(NetworkTest):
         )
 
         self.assertTrue(
-            ll_networks.removeNetwork(
+            ll_networks.remove_network(
                 positive=True, network=self.net_1, data_center=self.dc_1
             )
         )

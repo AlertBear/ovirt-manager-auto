@@ -41,11 +41,26 @@ ETHTOOL_CMD = "ethtool"
 logger = logging.getLogger('networks')
 
 
-def _prepareNetworkObject(**kwargs):
+def _prepare_network_object(**kwargs):
     """
-    preparing logical network object
-    Author: edolinin, atal
-    return: logical network data structure object
+    Preparing logical network object
+
+    Keyword Args:
+        name (str): Network name
+        description (str): Network description
+        stp (str): Set STP on network
+        data_center (str): Datacenter name for the network
+        address (str): IP address
+        netmask (str): IP netmask
+        gateway (str): IP gateway
+        vlan_id (str): VLAN id for the network
+        usages (str): VM or Non-VM network (send "" for Non-VM)
+        mtu (str): Network MTU
+        profile_required (str): Set if vNIC profile is required
+        qos_dict (dict): QoS for the network
+
+    Returns:
+        Network: Network object
     """
     net = apis_utils.data_st.Network()
 
@@ -94,8 +109,6 @@ def add_network(positive, **kwargs):
     """
     Add network to a data center
 
-    __author__: 'edolinin'
-
     Args:
         positive (bool): True if action should succeed, False otherwise.
         kwargs (dict): Parameters for add network.
@@ -124,14 +137,14 @@ def add_network(positive, **kwargs):
         positive=positive, extra_txt="in datacenter %s" % datacenter, **kwargs
     )
     logger.info(log_info)
-    net_obj = _prepareNetworkObject(**kwargs)
+    net_obj = _prepare_network_object(**kwargs)
     status = NET_API.create(entity=net_obj, positive=positive)[1]
     if not status:
         logger.error(log_error)
     return status
 
 
-def updateNetwork(positive, network, **kwargs):
+def update_network(positive, network, **kwargs):
     """
     Update network
 
@@ -162,7 +175,7 @@ def updateNetwork(positive, network, **kwargs):
         positive=positive, **kwargs
     )
     logger.info(log_info_txt)
-    net_update = _prepareNetworkObject(**kwargs)
+    net_update = _prepare_network_object(**kwargs)
     status = NET_API.update(net, net_update, positive)[1]
     if not status:
         logger.error(log_error_txt)
@@ -170,7 +183,7 @@ def updateNetwork(positive, network, **kwargs):
     return True
 
 
-def removeNetwork(positive, network, data_center=None):
+def remove_network(positive, network, data_center=None):
     """
     Remove network
 
@@ -236,11 +249,18 @@ def find_network(network, data_center=None, cluster=None):
         return NET_API.find(network)
 
 
-def _prepareClusterNetworkObj(**kwargs):
+def _prepare_cluster_network_object(**kwargs):
     """
-    preparing cluster network object
-    Author: edolinin, atal
-    return: logical network data structure object for cluster
+    Preparing cluster network object
+
+    Keyword Args:
+        net (str): Network name to update
+        usages (str): VM or Non-VM network (send "" for Non-VM)
+        required (str): Set if network is required network
+        display (str): Set if network is display network
+
+    Returns:
+        Network: Network object
     """
     net = kwargs.get('net', apis_utils.data_st.Network())
 
@@ -284,12 +304,13 @@ def get_cluster_networks(cluster, href=True):
     """
     Get href of the cluster networks or the networks objects
 
-    :param cluster: Name of the cluster.
-    :type cluster: str
-    :param href: Get cluster networks href if True
-    :type href: bool
-    :return: Href that links to the cluster networks or list of networks
-    :rtype: str or list
+    Args:
+        cluster (str): Name of the cluster.
+        href (bool): Get cluster networks href if True
+
+    Returns:
+        str or list: Href that links to the cluster networks or list of
+            networks
     """
     cluster_obj = CL_API.find(cluster)
     logger.info("Get all networks from %s", cluster)
@@ -301,8 +322,6 @@ def get_cluster_networks(cluster, href=True):
 def add_network_to_cluster(positive, network, cluster, **kwargs):
     """
     Attach network to cluster
-
-    __author__: 'atal'
 
     Args:
         positive (bool): True if test is positive, False if negative.
@@ -324,7 +343,7 @@ def add_network_to_cluster(positive, network, cluster, **kwargs):
         action="Add", obj_type="network", obj_name=network,
         positive=positive, extra_txt="in cluster %s" % cluster, **kwargs
     )
-    net = _prepareClusterNetworkObj(**kwargs)
+    net = _prepare_cluster_network_object(**kwargs)
     cluster_nets = get_cluster_networks(cluster=cluster)
     logger.info(log_info_txt)
     status = NET_API.create(
@@ -359,7 +378,7 @@ def update_cluster_network(positive, cluster, network, **kwargs):
     )
     net = get_cluster_network(cluster, network)
     logger.info(log_info)
-    net_update = _prepareClusterNetworkObj(**kwargs)
+    net_update = _prepare_cluster_network_object(**kwargs)
     status = NET_API.update(net, net_update, positive)[1]
     if not status:
         logger.error(log_error)
@@ -413,14 +432,14 @@ def is_network_required(network, cluster):
 
 def check_ip_rule(vds_resource, subnet):
     """
-    Check occurence of specific ip in 'ip rule' command output
+    Check occurrence of specific ip in 'ip rule' command output
 
-    :param vds_resource: VDS resource object
-    :type vds_resource: resources.VDS
-    :param subnet: subnet to search for
-    :type subnet: str
-    :return: True/False
-    :rtype: bool
+    Args:
+        vds_resource (VDS): VDS resource object
+        subnet (str): subnet to search for
+
+    Returns:
+        bool: True/False
     """
     rc, out, _ = vds_resource.run_command(["ip", "rule"])
     logger.info("The output of ip rule command is:\n %s", out)
@@ -458,14 +477,14 @@ def update_vnic_profile(name, network, **kwargs):
     kwargs["name"] = name
     cluster = kwargs.get("cluster")
     data_center = kwargs.get("data_center")
-    vnic_profile_obj = getVnicProfileFromNetwork(
+    vnic_profile_obj = get_vnic_profile_from_network(
         network=network, vnic_profile=name, cluster=cluster,
         data_center=data_center
     )
     if not vnic_profile_obj:
         return False
 
-    new_vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
+    new_vnic_profile_obj = _prepare_vnic_profile_object(**kwargs)
 
     logger.info(log_info)
     if not VNIC_PROFILE_API.update(
@@ -609,7 +628,7 @@ def add_vnic_profile(positive, name, **kwargs):
         positive=positive, **kwargs
     )
     kwargs["name"] = name
-    vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
+    vnic_profile_obj = _prepare_vnic_profile_object(**kwargs)
     logger.info(log_info_txt)
     if not VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]:
         logger.error(log_error_txt)
@@ -677,10 +696,11 @@ def get_networks_in_datacenter(datacenter):
     """
     Get all networks in datacenter.
 
-    :param datacenter: datacenter name
-    :type datacenter: str
-    :return: list of all networks
-    :rtype: list
+    Args:
+        datacenter (str): datacenter name
+
+    Returns:
+        list: list of all datacenter networks
     """
     dc = DC_API.find(datacenter)
     logger.info("Get all networks from %s", datacenter)
@@ -736,7 +756,7 @@ def create_network_in_datacenter(positive, datacenter, **kwargs):
     )
     dc = DC_API.find(datacenter)
     logger.info(log_info_txt)
-    net_obj = _prepareNetworkObject(**kwargs)
+    net_obj = _prepare_network_object(**kwargs)
     status = NET_API.create(
         entity=net_obj, positive=positive, collection=NET_API.getElemFromLink
         (dc, get_href=True)
@@ -804,7 +824,7 @@ def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     net = get_network_in_datacenter(
         network=network, datacenter=datacenter
     )
-    net_update = _prepareNetworkObject(**kwargs)
+    net_update = _prepare_network_object(**kwargs)
     res = NET_API.update(net, net_update, positive)
     if not res:
         logger.error(log_error)
@@ -839,14 +859,14 @@ def is_host_network_is_vm(vds_resource, net_name):
 def is_vlan_on_host_network(vds_resource, interface, vlan):
     """
     Check for VLAN value on the network that resides on Host
-    :param vds_resource: VDS resource object
-    :type vds_resource: resources.VDS
-    :param interface: Name of the phy interface
-    :type interface: str
-    :param vlan: The value to check on the host (str)
-    :type vlan: str
-    :return: True if VLAN on the host == provided VLAN, False otherwise
-    :rtype: bool
+
+    Args:
+        vds_resource (VDS): VDS resource object
+        interface (str): Name of the phy interface
+        vlan (vlan): The value to check on the host (str)
+
+    Returns:
+        bool: True if VLAN on the host == provided VLAN, False otherwise
     """
     vid = None
     vlan_file = os.path.join(
@@ -874,14 +894,14 @@ def is_vlan_on_host_network(vds_resource, interface, vlan):
 def create_networks_in_datacenter(datacenter, num_of_net, prefix):
     """
     Create number of networks under datacenter.
-    :param datacenter: datacenter name
-    :type datacenter: str
-    :param num_of_net: number of networks to create
-    :type num_of_net: int
-    :param prefix: Prefix for network name
-    :type prefix: str
-    :return: list of networks that created under datacenter
-    :rtype: list
+
+    Args:
+        datacenter (str): datacenter name
+        num_of_net (int): number of networks to create
+        prefix (str): Prefix for network name
+
+    Returns:
+        list: list of networks that created under datacenter
     """
     dc_net_list = list()
     for num in range(num_of_net):
@@ -925,22 +945,21 @@ def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
     return True
 
 
-def getVnicProfileFromNetwork(
+def get_vnic_profile_from_network(
     network, vnic_profile, cluster=None, data_center=None
 ):
     """
-    Returns the VNIC profile object that belong to a certain network.
+    Get the VNIC profile object that belong to a certain network.
 
-    :param network:Name of the network
-    :type network: str
-    :param vnic_profile: VNIC profile name
-    :type vnic_profile: str
-    :param cluster: Name of the cluster in which the network is located
-    :type cluster: str
-    :param data_center: Name of the data center in which the network resides
-    :type data_center: str
-    :return: VNIC profile object that belong to the provided network or None
-    :rtype: VnicProfile
+    Args:
+        network (str):Name of the network
+        vnic_profile (str): VNIC profile name
+        cluster (str): Name of the cluster in which the network is located
+        data_center (str): Name of the data center in which the network resides
+
+    Returns:
+        VnicProfile: VNIC profile object that belong to the provided network or
+            None
     """
     network_obj = find_network(network, data_center, cluster).id
     all_vnic_profiles = get_vnic_profile_objects()
@@ -980,11 +999,13 @@ def check_network_on_nic(network, host, nic):
 
 def create_label(label):
     """
-    Description: Create label object with provided id
-    Author: gcheresh
-    Parameters:
-        *  *label* - label id to create label object
-    **Return**: label object with provided id
+    Create label object with provided id
+
+    Args:
+        label (str)
+
+    Returns:
+        NetworkLabel: Network label object with provided id
     """
     label_obj = apis_utils.data_st.NetworkLabel()
     label_obj.set_id(label)
@@ -995,24 +1016,28 @@ def add_label(**kwargs):
     """
     Add network label to the network in the list provided or to
     the NIC on the host for a dictionary of host: [nics] items
-    Example: add_label(networks=['vlan0'], host_nic_dict={
-            'silver-vdsb.qa.lab.tlv.redhat.com': ['eth3']}, label='vl1')
-    Author: gcheresh
 
-    :param kwargs: Label params
-        :label: label to be added to network or NIC on the Host:
-        if string is provided will create a new label, otherwise expect
-        already existed Label object (str)
-        :networks: list of networks with labels (list)
-        :host_nic_dict: dictionary with hosts as keys and a list of host
-        interfaces as a value for that key (dict)
-        :datacenter: for network parameter datacenter that networks
-        resides on (str)
-        :cluster: for cluster parameter cluster that the network
-        resides on (str)
-    :type kwargs: dict
-    :return: status (True if label was added properly, False otherwise)
-    :rtype: bool
+    Keyword Args:
+        label (str): label to be added to network or NIC on the Host
+            if string is provided will create a new label, otherwise expect
+            already existed Label object
+        networks (list): list of networks with labels
+        host_nic_dict (dict): dictionary with hosts as keys and a list of host
+            interfaces as a value for that key
+        datacenter (str): for network parameter datacenter that networks
+            resides on
+        cluster (str): for cluster parameter cluster that the network
+            resides on
+
+    Returns:
+        bool: True if label was added properly, False otherwise
+
+    Example:
+        add_label(
+                networks=['vlan0'], host_nic_dict={
+                    'silver-vdsb.qa.lab.tlv.redhat.com': ['eth3']
+                        }, label='vl1'
+                    )
     """
     datacenter = kwargs.get("datacenter")
     cluster = kwargs.get("cluster")
@@ -1079,8 +1104,6 @@ def get_label_objects(**kwargs):
     Get network labels from given networks list and given list NICs of any
     number of Hosts.
 
-    __author__: 'gcheresh'
-
     Args:
         kwargs (dict): Parameters to get label objects.
 
@@ -1144,7 +1167,21 @@ def get_label_objects(**kwargs):
 def remove_label(**kwargs):
     """
     Remove network labels from given network and Host NIC dictionary
-    Example usage:
+
+    Keyword Args:
+        labels (list): list of label names if specific labels should be removed
+        networks (list): list of networks with labels
+        host_nic_dict (dict): dictionary with hosts as keys and a list of host
+            interfaces as a value for that key
+        datacenter (str): for network parameter datacenter that networks
+            resides on
+        cluster (str): for cluster parameter cluster that the network
+            resides on
+
+    Returns:
+        bool: True if labels were properly removed, False otherwise
+
+    Example:
     remove_label(
         host_nic_dict={
             'silver-vdsb.qa.lab.tlv.redhat.com': ['eth2']
@@ -1152,19 +1189,6 @@ def remove_label(**kwargs):
             networks=['net1', 'vlan0'],
             labels=['net1', 'net2']
             )
-    Author: gcheresh
-    :param kwargs: Host NIC dict with labels params to remove
-
-       :labels: list of label names if specific labels should be removed (list)
-       :networks: list of networks with labels (list)
-       :host_nic_dict: dictionary with hosts as keys and a list of host
-       interfaces as a value for that key (dict)
-       :datacenter: for network parameter datacenter that networks resides
-       on (str)
-       :cluster: for cluster parameter cluster that the network resides on
-        (str)
-    :return: status (True if labels were properly removed, False otherwise)
-    :rtype: bool
     """
     labels_obj = get_label_objects(**kwargs)
     status = True
@@ -1220,14 +1244,13 @@ def check_bond_mode(vds_resource, interface, mode):
     """
     Check BOND mode on BOND interface
 
-    :param vds_resource: VDS resource
-    :type vds_resource: resources.VDS
-    :param interface:name of the BOND interface
-    :type interface: str
-    :param mode: The BOND mode
-    :type mode: int
-    :return: True if correct BOND mode was found, False otherwise
-    :rtype: bool
+    Args:
+        vds_resource (VDS): VDS resource
+        interface (str):name of the BOND interface
+        mode (int): The BOND mode
+
+    Returns:
+        bool: True if correct BOND mode was found, False otherwise
     """
     mode_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, interface, "bonding/mode"
@@ -1299,11 +1322,13 @@ def check_bridge_file_exist(positive, vds_resource, bridge_name):
 def create_properties(**kwargs):
     """
     Creates Properties object that contains list of different property objects
-    **Author**: gcheresh
-        **Parameters**:
-        *  *kwargs* - dictionary of (network customer property: value)
-        elements
-    **Return**: Properties object
+
+    Keyword Args:
+        bridge_opts (str): Bridge opts
+        ethtool_opts (str): Ethtool opts
+
+    Returns:
+        Properties: Properties object
     """
     properties_obj = apis_utils.data_st.Properties()
     for key, val in kwargs.iteritems():
@@ -1336,18 +1361,23 @@ def get_dc_network_by_cluster(cluster, network):
     return None
 
 
-def update_qos_on_vnic_profile(datacenter, qos_name, vnic_profile_name,
-                               network_name, cluster=None):
+def update_qos_on_vnic_profile(
+    datacenter, qos_name, vnic_profile_name, network_name, cluster=None
+):
     """
     Update QoS to vNIC profile.
     Every vNIC profile has default QoS (Unlimited) so only update functions
     is needed (No add_qos functions)
-    :param datacenter: Datacenter name
-    :param qos_name: QoS name to update
-    :param vnic_profile_name: vNIC profile name
-    :param network_name: Network name
-    :param cluster: Cluster name
-    :return: True/False
+
+    Args:
+        datacenter (str): Datacenter name
+        qos_name (str): QoS name to update
+        vnic_profile_name (str): vNIC profile name
+        network_name (str): Network name
+        cluster (str): Cluster name
+
+    Returns:
+        bool: True/False
     """
     qos = ll_datacenters.get_qos_from_datacenter(
         datacenter=datacenter, qos_name=qos_name
@@ -1370,12 +1400,13 @@ def get_vnic_profile_objects():
 
 def get_management_network(cluster_name):
     """
-    Find MGMT network besides all networks of specific Cluster
+    Find management network besides all networks of specific Cluster
 
-    :param cluster_name: Name of the Cluster
-    :type cluster_name: str
-    :return: network MGMT
-    :rtype: object
+    Args:
+        cluster_name (str): Name of the Cluster
+
+    Returns:
+        Network: Management network object
     """
     try:
         logger.info("Get management network from %s", cluster_name)
@@ -1417,10 +1448,11 @@ def get_host_nic_labels(nic):
     """
     Get host NIC labels
 
-    :param nic: HostNic object
-    :type nic: HostNic
-    :return: List of host NIC labels
-    :rtype: list
+    Args:
+        nic (HostNic): HostNic object
+
+    Returns:
+        list: List of HostNic labels
     """
     return ll.hosts.HOST_NICS_API.getElemFromLink(
         nic, "networklabels", "network_label"
@@ -1431,12 +1463,12 @@ def get_host_nic_label_objs_by_id(host_nics, labels_id):
     """
     Get host NIC label objects by label ID
 
-    :param host_nics: Host NICS object list
-    :type host_nics: list
-    :param labels_id: Label ID
-    :type labels_id: list
-    :return: List of host NICs objects
-    :rtype: list
+    Args:
+        host_nics (list): Host NICS object list
+        labels_id (list): Label ID
+
+    Returns:
+        list: List of HostNic objects
     """
     label_objs_list = list()
     for nic in host_nics:
@@ -1451,10 +1483,11 @@ def prepare_qos_on_net(qos_dict):
     """
     Prepare QoS on network
 
-    :param qos_dict: QoS values to add
-    :type qos_dict: dict
-    :return: Qos object
-    :rtype: data_st.Qos()
+    Args:
+        qos_dict (dict): QoS values to add
+
+    Returns:
+        Qos: QoS object
     """
     # if we want to update qos to be unlimited need to send empty qos_dict,
     # otherwise update network with the QoS, given in the qos_dict
@@ -1483,23 +1516,20 @@ def get_network_on_host_nic(host, nic):
     """
     Get network name from host NIC
 
-    :param host: Host name
-    :type host: str
-    :param nic: NIC name
-    :type nic: str
-    :return: Network name
-    :rtype: str
+    Args:
+        host (str): Host name
+        nic (str): NIC name
+
+    Returns:
+        str: Network name
     """
     return ll.general.get_object_name_by_id(
         NET_API, ll.hosts.get_host_nic(host, nic).get_network().get_id())
 
 
-def _prepare_vnic_profile_object(kwargs):
+def _prepare_vnic_profile_object(**kwargs):
     """
     Prepare vnic profile object for create or update
-
-    Args:
-        kwargs (dict): Params for vNIC profile object
 
     Keyword Args:
         name (str): Name of vnic profile

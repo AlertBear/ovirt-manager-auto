@@ -72,8 +72,8 @@ def find_ip(vm, host_list, nic_index, vlan=None, bond=None):
         src_int = src_host.nics[nic_index]
         dst_int = dst_host.nics[nic_index]
     return (
-        hl_networks.getIpOnHostNic(orig_host, src_int),
-        hl_networks.getIpOnHostNic(dst_name_engine, dst_int)
+        hl_networks.get_ip_on_host_nic(orig_host, src_int),
+        hl_networks.get_ip_on_host_nic(dst_name_engine, dst_int)
     )
 
 

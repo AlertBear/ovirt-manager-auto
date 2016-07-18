@@ -205,7 +205,7 @@ class TestVNICProfileCase02(NetworkTest):
         Check that both VNIC profiles of the network were removed as a
         result of changing the state of the network to non-VM
         """
-        if not ll_networks.updateNetwork(
+        if not ll_networks.update_network(
             positive=True, network=self.net_3, usages=""
         ):
             raise conf.NET_EXCEPTION()
@@ -236,7 +236,7 @@ class TestVNICProfileCase02(NetworkTest):
             ):
                 raise conf.NET_EXCEPTION()
 
-        if not ll_networks.removeNetwork(
+        if not ll_networks.remove_network(
             positive=True, network=self.net_4, data_center=self.dc
         ):
             raise conf.NET_EXCEPTION()
@@ -690,7 +690,7 @@ class TestVNICProfileCase03(NetworkTest):
         if not ll_vms.removeVm(positive=True, vm=self.vm_name2):
             raise conf.NET_EXCEPTION()
 
-        if not ll_networks.removeNetwork(
+        if not ll_networks.remove_network(
             positive=False, network=self.net_1, data_center=self.dc
         ):
             raise conf.NET_EXCEPTION()

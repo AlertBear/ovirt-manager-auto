@@ -49,7 +49,7 @@ def update_network_and_check_changes(
     hosts = hosts if hosts else [conf.HOST_0_NAME]
     vds_hosts = vds_hosts if vds_hosts else [conf.VDS_0_HOST]
     network_helper.call_function_and_wait_for_sn(
-        func=ll_networks.updateNetwork, content=net, positive=True,
+        func=ll_networks.update_network, content=net, positive=True,
         network=net, matches=matches, **kwargs
     )
     for host, vds_host in zip(hosts, vds_hosts):

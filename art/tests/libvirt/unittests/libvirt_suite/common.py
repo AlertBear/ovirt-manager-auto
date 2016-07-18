@@ -6,7 +6,7 @@ Author: Alex Jia <ajia@redhat.com>
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level import vms, hosts
 from art.rhevm_api.tests_lib.high_level.networks import TrafficMonitor, \
-    checkICMPConnectivity, getIpOnHostNic
+    checkICMPConnectivity, get_ip_on_host_nic
 from art.rhevm_api.tests_lib.high_level.vms import check_vm_migration
 from art.rhevm_api.tests_lib.low_level.vms import getVmHost
 from utilities import machine
@@ -145,7 +145,9 @@ def find_ip(vm_name, host_list, nic):
 
     orig_host = get_host(vm_name)
     dst_host = host_list[(host_list.index(orig_host)+1) % len(host_list)]
-    return getIpOnHostNic(orig_host, nic), getIpOnHostNic(dst_host, nic)
+    return (
+        get_ip_on_host_nic(orig_host, nic), get_ip_on_host_nic(dst_host, nic)
+    )
 
 
 def block_storage(host, user, password, sd_address, block_network=False):
