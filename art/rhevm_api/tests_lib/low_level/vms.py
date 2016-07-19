@@ -5961,3 +5961,18 @@ def attach_disk_vm(positive, disk_id, vm_name, interface=None, bootable=None):
         disk_attachment_obj, positive, collection=vm_disk_attachments
     )
     return status
+
+
+def get_vm_snapshot_type(vm, snapshot):
+    """
+    Get snapshot_type parameter
+
+    :param vm: vm name
+    :type vm: str
+    :param snapshot: snapshot description
+    :type snapshot: str
+    :return: snapshot_type: regular | active | stateless | preview
+    :rtype: str
+    """
+    snapshot_obj = _getVmSnapshot(vm, snapshot)
+    return snapshot_obj.get_snapshot_type()
