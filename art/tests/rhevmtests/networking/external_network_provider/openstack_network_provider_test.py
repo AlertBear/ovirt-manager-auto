@@ -4,17 +4,22 @@
 """
 OpenStack network provider tests
 """
+import shlex
+
 import pytest
 
 import rhevmtests.networking.config as conf
 import config as osnp_conf
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     add_neutron_provider, ExternalNetworkProviderFixtures,
-    get_provider_networks, import_openstack_network
+    get_provider_networks, import_openstack_network, run_packstack,
+    add_vnic_to_vm, stop_vm
 )
+import rhevmtests.helpers as global_helper
 
 
 @attr(tier=2)
@@ -66,17 +71,37 @@ class TestOsnp01(NetworkTest):
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     add_neutron_provider.__name__,
-    import_openstack_network.__name__
+    import_openstack_network.__name__,
+    run_packstack.__name__,
+    add_vnic_to_vm.__name__,
+    stop_vm.__name__
 )
 class TestOsnp02(NetworkTest):
     """
     Run VM with neutron network
     """
-    __test__ = True
+    __test__ = False
+    vm = conf.VM_0
+    nic = osnp_conf.VM_NIC
+    network = osnp_conf.PROVIDER_NETWORKS_NAME[0]
 
     @polarion("RHEVM-14832")
-    def test_01_run_vm_openstack_network(self):
+    def test_01_run_vm_with_openstack_network(self):
         """
         Run VM with neutron network
         """
-        pytest.skip("NotImplemented")
+        testflow.step(
+            "Run VM %s with neutron network %s", self.vm, self.network
+        )
+        assert ll_vms.startVm(positive=True, vm=self.vm)
+        vm_resource = global_helper.get_vm_resource(vm=self.vm)
+        vm_interfaces = vm_resource.network.all_interfaces()
+        assert vm_interfaces
+        vm_interface = vm_interfaces[-1]
+        assert not vm_resource.run_command(
+            command=shlex.split(
+                "dhclient {interface}".format(interface=vm_interface)
+            )
+        )[0]
+        testflow.step("Check the VM %s got IP from neutron DHCP", self.vm)
+        assert ll_vms.waitForIP(vm=self.vm, get_all_ips=True, json=True)

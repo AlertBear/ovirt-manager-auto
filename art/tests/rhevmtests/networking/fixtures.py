@@ -25,8 +25,10 @@ class NetworkFixtures(object):
         conf.HOST_1_NICS = conf.VDS_1_HOST.nics
         self.vds_0_host = conf.VDS_0_HOST
         self.vds_1_host = conf.VDS_1_HOST
+        self.vds_list = [self.vds_0_host, self.vds_1_host]
         self.host_0_name = conf.HOST_0_NAME
         self.host_1_name = conf.HOST_1_NAME
+        self.hosts_list = [self.host_0_name, self.host_1_name]
         self.host_0_ip = conf.HOST_0_IP
         self.host_1_ip = conf.HOST_1_IP
         self.host_0_nics = conf.HOST_0_NICS

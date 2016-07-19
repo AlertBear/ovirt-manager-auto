@@ -7,6 +7,30 @@ OpenStack network provider config file
 
 import rhevmtests.networking.config as conf
 
+# Packstack params
+DELETE_IPTABLE_RULE = (
+    "iptables -D FORWARD -m physdev ! --physdev-is-bridged -j REJECT "
+    "--reject-with icmp-host-prohibited"
+)
+OSNP_VDSM_HOOK = "vdsm-hook-openstacknet"
+ANSWER_FILE = "/root/neutron_answer5"
+RHOS_CMD = "rhos-release 8"
+RHOS_LATEST = (
+    "http://rhos-release.virt.bos.redhat.com/repos/rhos-release/"
+    "rhos-release-latest.noarch.rpm"
+)
+PACKSTACK_CMD = "packstack --answer-file=%s" % ANSWER_FILE
+COMPUTE_HOSTS = "CONFIG_COMPUTE_HOSTS=.*"
+NETWORK_HOSTS = "CONFIG_NETWORK_HOSTS=.*"
+ANSWER_FILE_HOSTS_PARAMS = [COMPUTE_HOSTS, NETWORK_HOSTS]
+OVS_BRIDGE_IFACES = "CONFIG_NEUTRON_OVS_BRIDGE_IFACES=.*"
+OVS_TUNNEL_IF = "CONFIG_NEUTRON_OVS_TUNNEL_IF=.*"
+ANSWER_FILE_HOSTS_IFACES = [OVS_BRIDGE_IFACES, OVS_TUNNEL_IF]
+PBDU_FORWARD = "ovs-vsctl set bridge {bridge} other-config:forward-bpdu=true"
+OVS_SHOW_CMD = "ovs-vsctl list-br"
+OVS_TUNNEL_IPS = ["172.16.0.200", "172.16.0.201"]
+
+# Provider params
 PROVIDER_MOCK_GIT = "https://github.com/mmirecki/ovirt-provider-mock.git"
 PROVIDER_NAME = "neutron_network_provider"
 PROVIDER_IP = "10.35.128.196"
@@ -44,3 +68,7 @@ NEUTRON_PARAMS = {
 }
 
 PROVIDER_NETWORKS = None
+OVS_TUNNEL_BRIDGE = "ovs-tunnel"
+BR_EXT = "br-ext"
+VM_NIC = "neutron_vnic"
+PROVIDER_NETWORKS_NAME = ["onp1", "onp2", "onp3", "onp4", "onp5"]
