@@ -388,6 +388,7 @@ def updateHost(positive, host, **kwargs):
         pm_automatic (bool): Host automatic_pm_enabled flag
         agents (dict): if you have number of pm's, need to specify it
             under agents.
+        rng_sources (list of str): Supported random number generator sources
 
     Returns:
         bool: True if host was updated properly, False otherwise.
@@ -415,6 +416,17 @@ def updateHost(positive, host, **kwargs):
     if 'spm_priority' in kwargs:
         new_priority = kwargs.pop('spm_priority')
         host_upd.set_spm(data_st.Spm(new_priority))
+
+    if 'rng_sources' in kwargs:
+        host_upd.set_hardware_information(
+            data_st.HardwareInformation(
+                supported_rng_sources=(
+                    data_st.supported_rng_sourcesType(
+                        kwargs.pop('rng_sources')
+                    )
+                )
+            )
+        )
 
     pm_enabled = kwargs.get('pm')
     if pm_enabled is not None:
@@ -2700,3 +2712,18 @@ def get_host_device_id_by_name(host_name, device_name):
     )
     if host_device_obj:
         return host_device_obj.get_id()
+
+
+def get_supported_rng_sources_from_host(host_name):
+    """
+    Get list of supported random number generator sources from host
+
+    Args:
+        host_name (str): Name of the host
+
+    Returns:
+        list of str: List of rng sources
+    """
+    host_obj = get_host_object(host_name)
+    hw_info = host_obj.get_hardware_information()
+    return hw_info.get_supported_rng_sources().get_supported_rng_source()

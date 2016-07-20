@@ -167,6 +167,13 @@ def _prepareClusterObject(**kwargs):
             )
         )
 
+    if 'rng_sources' in kwargs:
+        cl.set_required_rng_sources(
+            data_st.required_rng_sourcesType(
+                kwargs.pop('rng_sources')
+            )
+        )
+
     if 'ha_reservation' in kwargs:
         cl.set_ha_reservation(kwargs.pop('ha_reservation'))
 
@@ -205,6 +212,7 @@ def addCluster(positive, **kwargs):
         ballooning_enabled (bool): If True, enables ballooning on cluster
         ksm_enabled (bool): If True, enables KSM on cluster
         ksm_merge_across_nodes (bool): Merge KSM pages across NUMA nodes
+        rng_sources (list of str): Random number generator sources
 
     Returns:
         bool: True if cluster was created properly, False otherwise
@@ -245,6 +253,7 @@ def updateCluster(positive, cluster, **kwargs):
         ksm_enabled (bool): Enables KSM on cluster
         ha_reservation (bool): Enables HA Reservation on cluster
         ksm_merge_across_nodes (bool): Merge KSM pages across NUMA nodes
+        rng_sources (list of str): Random number generator sources
 
     Returns:
         bool: True, if update succeed, otherwise False
@@ -895,3 +904,17 @@ def get_cluster_list():
     :rtype: list
     """
     return util.get(absLink=False)
+
+
+def get_rng_sources_from_cluster(cluster_name):
+    """
+    Get list of random number generator sources from cluster
+
+    Args:
+        cluster_name (str): Name of the Cluster
+
+    Returns:
+        list of str: Rng sources
+    """
+    cl_obj = get_cluster_object(cluster_name)
+    return cl_obj.get_required_rng_sources().get_required_rng_source()
