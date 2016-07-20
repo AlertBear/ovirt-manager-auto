@@ -80,6 +80,7 @@ TEMPLATE_NAME = PARAMETERS.get('template_name', 'golden_env')
 STORAGE['lun'] = PARAMETERS.as_list('lun')
 STORAGE['lun_address'] = PARAMETERS.as_list('lun_address')
 STORAGE['lun_target'] = PARAMETERS.as_list('lun_target')
+STORAGE['fc_lun'] = PARAMETERS.as_list('fc_lun')
 
 STORAGE['data_domain_address'] = PARAMETERS.as_list('data_domain_address')
 STORAGE['data_domain_path'] = PARAMETERS.as_list('data_domain_path')

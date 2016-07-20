@@ -57,6 +57,10 @@ class StorageConfiguration(object):
         else:
             self.iscsi_luns, self.iscsi_lun_addresses = [], []
             self.iscsi_lun_targets = []
+        if 'fc_lun' in configuration:
+            self.fc_luns = configuration.as_list('fc_lun')
+        else:
+            self.fc_luns = []
         if 'gluster_data_domain_address' in configuration:
             self.gluster_addresses = configuration.as_list(
                 'gluster_data_domain_address')
@@ -88,6 +92,7 @@ class StorageConfiguration(object):
             self.iscsi_luns, self.iscsi_lun_addresses, self.iscsi_lun_targets)
         self.gluster_shares = zip(
             self.gluster_addresses, self.gluster_paths, self.gluster_vfs_types)
+        self.fcp_shares = list(self.fc_luns)
         self.unused_local_paths = list(self.local_paths)
         self.export_shares = zip(
             self.export_addresses, self.export_paths)
@@ -103,6 +108,9 @@ class StorageConfiguration(object):
 
     def get_gluster_share(self):
         return self.gluster_shares.pop(0)
+
+    def get_fcp_share(self):
+        return self.fcp_shares.pop(0)
 
     def get_unused_local_share(self):
         return self.unused_local_paths.pop(0)
@@ -305,6 +313,15 @@ class CreateDC(TestCase):
                 else:
                     LOGGER.warning("No external provider defined")
 
+            elif storage_type == ENUMS['storage_type_fcp']:
+                fcp = storage_conf.get_fcp_share()
+                assert storagedomains.addFCPDataDomain(
+                    host,
+                    sd_name,
+                    datacenter_name,
+                    fcp,
+                    override_luns=True,
+                )
             else:
                 LOGGER.warning("unknown type: %s", storage_type)
 
