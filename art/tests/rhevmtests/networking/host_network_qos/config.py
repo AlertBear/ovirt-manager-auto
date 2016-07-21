@@ -9,10 +9,10 @@ import rhevmtests.helpers as global_helper
 
 MB_CONVERTER = 1000000
 QOS_NAME = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=4, prefix="QoS"
+    num_of_cases=20, num_of_objects=6, prefix="HostQoS"
 )
 NETS = global_helper.generate_object_names(
-    num_of_cases=15, num_of_objects=2, prefix="QoS"
+    num_of_cases=15, num_of_objects=6, prefix="HostQoS"
 )
 VLAN_IDS = [str(i) for i in xrange(2, 50)]
 
@@ -25,6 +25,19 @@ DEFAULT_RATE = 1024
 UPDATED_RATE = "2048"
 HOST_NET_QOS_TYPE = "hostnetwork"
 TEST_VALUE = 10
+
+QOS_1 = {
+    "type_": HOST_NET_QOS_TYPE,
+    "outbound_average_linkshare": TEST_VALUE,
+    "outbound_average_realtime": TEST_VALUE,
+    "outbound_average_upperlimit": TEST_VALUE
+}
+QOS_2 = {
+    "type_": HOST_NET_QOS_TYPE,
+    "outbound_average_linkshare": TEST_VALUE,
+    "outbound_average_realtime": TEST_VALUE - 1,
+    "outbound_average_upperlimit": TEST_VALUE + 1
+}
 
 NETS_DICT = {
     NETS[1][0]: {
@@ -46,6 +59,12 @@ NETS_DICT = {
     NETS[4][0]: {
         "required": "false"
     },
+    NETS[5][1]: {
+        "required": "false"
+    },
+    NETS[5][2]: {
+        "required": "false"
+    },
     NETS[6][0]: {
         "vlan_id": VLAN_IDS[10],
         "required": "false"
@@ -58,20 +77,14 @@ NETS_DICT = {
         "vlan_id": VLAN_IDS[12],
         "required": "false"
     },
-    NETS[8][1]: {
+    NETS[8][0]: {
         "required": "false"
     },
     NETS[9][0]: {
-        "required": "false"
-    },
-    NETS[10][0]: {
-        "required": "false"
-    },
-    NETS[11][0]: {
         "vlan_id": VLAN_IDS[13],
         "required": "false"
     },
-    NETS[11][1]: {
+    NETS[9][1]: {
         "vlan_id": VLAN_IDS[14],
         "required": "false"
     },
