@@ -95,7 +95,8 @@ def setup_module():
         True, name=config.POOL_NAME, size=config.VM_NUM,
         cluster=config.CLUSTER_NAME[0],
         template=config.TEMPLATE_NAME[0],
-        description="%s pool" % config.POOL_NAME
+        description="%s pool" % config.POOL_NAME,
+        stateful=True
     ):
         raise errors.VMException(
             "Failed creation of pool for %s" % config.POOL_NAME

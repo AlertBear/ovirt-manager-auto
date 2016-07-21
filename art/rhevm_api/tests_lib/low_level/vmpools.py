@@ -83,6 +83,10 @@ def _prepareVmPoolObject(**kwargs):
     if max_user_vms is not None:
         pool.set_max_user_vms(max_user_vms)
 
+    stateful = kwargs.pop('stateful', None)
+    if stateful is not None:
+        pool.set_stateful(stateful)
+
     return pool
 
 
@@ -107,7 +111,9 @@ def addVmPool(positive, wait=True, **kwargs):
     :param prestarted_vms: number of prestarted vms in the pool
     :type prestarted_vms: int
     :param max_user_vms: max number of vms per user in pool
-    :param max_user_vms: int
+    :type max_user_vms: int
+    :param stateful: pool state
+    :type stateful: bool
     :return: True if action result == positive, False otherwise
     :rtype: bool
     """
