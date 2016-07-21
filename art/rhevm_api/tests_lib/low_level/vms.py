@@ -3546,8 +3546,6 @@ def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
         * disks_status - desired state of all disks
     Returns: True on success, False on timeout
     """
-    vm = VM_API.find(vm)
-
     def all_disks_status():
         disks = [
             d for d in getVmDisks(vm) if
