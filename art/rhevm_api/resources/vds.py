@@ -99,12 +99,12 @@ class VDS(Host):
         args_txt = "'{0}'".format(cmd_args) if cmd_args else "()"
         if json:
             command = (
-                "python -c 'from vdsm import jsonrpcvdscli;"
-                "from vdsm.config import config;"
-                "requestQueues = config.get(\"addresses\",\"request_queues\");"
-                "requestQueue = requestQueues.split(\",\")[0];"
-                "conn = jsonrpcvdscli.connect(requestQueue);"
-                "print conn.{0}{1}'".format(cmd, args_txt)
+                'python -c "from vdsm import jsonrpcvdscli;'
+                'from vdsm.config import config;'
+                'requestQueues = config.get(\'addresses\',\'request_queues\');'
+                'requestQueue = requestQueues.split(\',\')[0];'
+                'conn = jsonrpcvdscli.connect(requestQueue);'
+                'print conn.{0}({1})"'.format(cmd, args_txt)
             )
         else:
             command = (
