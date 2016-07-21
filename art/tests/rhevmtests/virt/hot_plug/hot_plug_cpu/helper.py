@@ -40,8 +40,8 @@ def calculate_the_cpu_topology(cpu_number):
 
     :param cpu_number: the total number of CPU
     :type cpu_number: int
-    :return: list with cpu_socket and cpu_core
-    :rtype: list
+    :return: tuple with cpu_socket and cpu_core
+    :rtype: tuple
     """
     cpu_socket = cpu_number
     cpu_core = 1
