@@ -78,6 +78,13 @@ class VDS(Host):
         Run given command on host with vdsClient
         All commands can be found in /usr/share/vdsm/rpc/bindingxmlrpc.py
 
+        Json code:
+            from vdsm import jsonrpcvdscli
+            from vdsm.config import config
+            requestQueues = config.get('addresses', 'request_queues')
+            requestQueue = requestQueues.split(',')[0]
+            conn = jsonrpcvdscli.connect(requestQueue)
+
         Args:
             cmd (str): command to execute
             args (list): command parameters optional
@@ -96,7 +103,7 @@ class VDS(Host):
             out = config.VDS_HOSTS[0].vds_client("getVdsCapabilities")
         """
         cmd_args = " ".join(args)
-        args_txt = "'{0}'".format(cmd_args) if cmd_args else "()"
+        args_txt = "('{0}')".format(cmd_args) if cmd_args else "()"
         if json:
             command = (
                 'python -c "from vdsm import jsonrpcvdscli;'
@@ -104,12 +111,12 @@ class VDS(Host):
                 'requestQueues = config.get(\'addresses\',\'request_queues\');'
                 'requestQueue = requestQueues.split(\',\')[0];'
                 'conn = jsonrpcvdscli.connect(requestQueue);'
-                'print conn.{0}({1})"'.format(cmd, args_txt)
+                'print conn.{0}{1}"'.format(cmd, args_txt)
             )
         else:
             command = (
                 'python -c "from vdsm import vdscli;'
-                'print vdscli.connect().{0}({1})"'.format(cmd, args_txt)
+                'print vdscli.connect().{0}{1}"'.format(cmd, args_txt)
             )
         rc, out, err = self.executor().run_cmd(shlex.split(command))
         if rc:

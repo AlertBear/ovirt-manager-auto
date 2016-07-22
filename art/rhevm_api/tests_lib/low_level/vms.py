@@ -2922,7 +2922,7 @@ def waitForIP(
             return None
 
         vms_ids = [
-            _vm.get("vmId") for _vm in out.get("vmList")
+            _vm.get("vmId") for _vm in out.get("vmList", list())
             ] if not json else out.get("items")
         vm_ips = list()
         if not vms_ids:
