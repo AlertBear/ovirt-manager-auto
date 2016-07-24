@@ -273,6 +273,7 @@ class QOSTier1(QOS):
         host = ll_vms.get_vm_host(config.QOS_VMS[0])
         host_cpu = ll_hosts.get_host_processing_units_number(host)
         expected_value = host_cpu * 100 / load_dict.values()[0]
+        expected_value = 100 if expected_value > 100 else expected_value
         expected_dict = {config.QOS_VMS[0]: expected_value}
         self.assertTrue(
             self.load_vm_and_check_the_load(load_dict, expected_dict)
@@ -344,6 +345,7 @@ class QOSTier2(QOS):
             raise errors.VMException("Failed to migrate VM")
         host_cpu = ll_hosts.get_host_processing_units_number(host)
         expected_value = host_cpu * 100 / load_dict.values()[0]
+        expected_value = 100 if expected_value > 100 else expected_value
         expected_dict = {config.QOS_VMS[0]: expected_value}
         self.assertTrue(
             self.load_vm_and_check_the_load(load_dict, expected_dict)
