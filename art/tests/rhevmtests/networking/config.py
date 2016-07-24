@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Consolidated network config module
 """
@@ -75,7 +78,6 @@ MG_GATEWAY = "5.5.5.254"
 MG_IP_ADDR = "5.5.5.1"
 
 # Jumbo frame parameters
-NUM_PACKETS = 1000
 INTER_SUBNET = '3.3.3.'
 IPS = ['3.3.3.1', '3.3.3.2']
 SEND_MTU = [4500, 8500, 1500, 1000]

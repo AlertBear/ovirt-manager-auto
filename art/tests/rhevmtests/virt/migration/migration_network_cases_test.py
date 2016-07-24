@@ -8,643 +8,354 @@ Network migration will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks
 """
 
-import logging
-from art.unittest_lib import common
-from art.test_handler import exceptions
+import pytest
+
 from art.test_handler.tools import polarion
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.unittest_lib import attr, NetworkTest, testflow
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-from rhevmtests.networking import config
-import rhevmtests.virt.config as virt_config
-import rhevmtests.networking.helper as network_helper
-import rhevmtests.virt.helper as virt_helper
+import rhevmtests.virt.helper as helper
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces
+)  # flake8: noqa
+from rhevmtests.virt.migration.fixtures import (
+    migration_init, add_nic_to_vm, update_migration_network_on_cluster,
+    network_migrate_init
+)
+import migration_helper
+import config
 
-logger = logging.getLogger("Network_Migration_Cases")
 
-
-class TestMigrationCaseBase(common.NetworkTest):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationNetworkCase01(NetworkTest):
     """
-    base class which provides  teardown class method for each test case
-    """
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[:2], data_center=config.DC_NAME[0],
-            mgmt_network=config.MGMT_BRIDGE, all_net=True
-        ):
-            logger.error("Cannot remove networks from setup")
-
-
-@common.attr(tier=2)
-class TestMigrationNetworkSanity(TestMigrationCaseBase):
-    """
-    Network sanity: check migration of one vm over nic
+    Check that network migration 1 VMs over NIC is working as
+    expected by putting NIC with required network down
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster/Hosts
-        Configure it as migration network
-        """
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {
-                "nic": 2,
-                "required": "true"
-            }
-        }
-        logger.info(
-            "Configure migration VM network %s on DC/Cluster and Host ",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    config.NET_1 = config.NETS[1][0]
+    config.NET_2 = config.NETS[1][1]
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT,
+        networks=networks,
+        hosts=2
+    )
 
     @polarion("RHEVM3-3878")
     def test_migration_nic(self):
-        """
-        Check network migration for 1 VMs
-        by putting req net down
-        """
-        logger.info(
-            "Check that network migration 1 VMs "
-            "over NIC is working as expected by "
-            "putting NIC with required network down"
+        testflow.step(
+            "Check that network migration 1 VMs over NIC is working as "
+            "expected by putting NIC with required network down"
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], req_nic=2
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], req_nic=2
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase02(TestMigrationCaseBase):
-    """
-    Verify default migration when no migration network specified
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster/Hosts
-        """
-        ips = network_helper.create_random_ips()
-        logger.info(
-            "Create non-migration network %s on DC/Cluster/Hosts",
-            config.NETWORKS[0]
-        )
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            }
-        }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-3846")
-    def test_default_migration(self):
-        """
-        Check default migration on mgmt network network
-        """
-        logger.info("Check migration over MGMT network")
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], nic_index=0
-        )
-
-
-@common.attr(tier=2)
-class TestMigrationCase03(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase02(NetworkTest):
     """
     Verify dedicated migration over tagged network over NIC
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical tagged vm network on DC/Cluster/Hosts
-        """
-        logger.info(
-            "Create logical tagged vm network %s on DC/Cluster/Hosts",
-            config.VLAN_NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.VLAN_NETWORKS[0]: {
-                "vlan_id": config.VLAN_ID[0],
-                "nic": 1,
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.VLAN_NETWORKS[1]: {
-                "vlan_id": config.VLAN_ID[1], "nic": 2, "required": "true"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict,
-            auto_nics=[0, 1, 2]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
-            )
+    config.NET_1 = config.NETS[2][0]
+    config.NET_2 = config.NETS[2][1]
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT,
+        networks=networks,
+        hosts=2
+    )
 
     @polarion("RHEVM3-3851")
     def test_dedicated_tagged_migration(self):
-        """
-        Check dedicated migration over tagged network over NIC
-        """
-        logger.info(
+        testflow.step(
             "Check that VLAN network migration over NIC is working as expected"
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], vlan=config.VLAN_ID[0]
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], vlan=config.REAL_VLANS[0]
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase04(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase03(NetworkTest):
     """
     Verify dedicated migration over non-VM network over NIC
     """
-    __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical non-vm network on DC/Cluster/Hosts
-        """
-        logger.info(
-            "Create logical non-vm network %s on DC/Cluster/Hosts",
-            config.NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "usages": "",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {"nic": 2, "required": "true"}
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    __test__ = True
+    config.NET_1 = config.NETS[3][0]
+    config.NET_2 = config.NETS[3][1]
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT,
+        networks=networks,
+        hosts=2
+    )
 
     @polarion("RHEVM3-3849")
     def test_nonvm_migration(self):
         """
         Check dedicated migration over non-VM network over NIC
         """
-        logger.info(
+        testflow.step(
             "Check that non-VM network migration over NIC is working as "
             "expected"
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], non_vm=True
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], non_vm=True
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase05(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase04(NetworkTest):
     """
     Verify dedicated regular network migration when its also display network
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster/Hosts
-        Configure it as migration and display network
-        """
-        logger.info(
-            "Create migration and display vm network %s on "
-            "DC/Cluster/Hosts", config.NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "cluster_usages": "migration,display",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {
-                "nic": 2, "required": "true"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    config.NET_1 = config.NETS[4][0]
+    config.NET_2 = config.NETS[4][1]
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT,
+        networks=networks,
+        hosts=2
+    )
 
     @polarion("RHEVM3-3885")
     def test_dedicated_migration_display(self):
-        """
-        Check dedicated network migration over display network
-        """
-        logger.info(
+        testflow.step(
             "Check that network migration over NIC is working as "
             "expected when the network is also the display network"
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM]
-        )
+        helper.migrate_vms_and_check_traffic(vms=[self.vm_name])
 
 
-@common.attr(tier=2)
-class TestMigrationCase06(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__,
+    add_nic_to_vm.__name__
+)
+class TestMigrationCase05(NetworkTest):
     """
     Verify dedicated regular network migration when the net reside on the VM
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster/Hosts
-        Configure it as migration and configure it on the VM
-        """
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {
-                "nic": 2, "required": "true"
-            }
-        }
-
-        logger.info(
-            "Configure migration network %s on the DC/Cluster/Host",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-        logger.info("Creating VNIC on VM with default plugged/linked states")
-        if not ll_vms.addNic(
-            True, config.VM_NAME[0], name="nic2", network=config.NETWORKS[0]
-        ):
-            raise exceptions.NetworkException("Cannot add VNIC to VM")
+    config.NET_1 = config.NETS[5][0]
+    config.NET_2 = config.NETS[5][1]
+    network = migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    # NIC to VM
+    nic = 'nic2'
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT,
+        networks=networks,
+        hosts=2
+    )
 
     @polarion("RHEVM3-3847")
     def test_dedicated_migration_reside_vm(self):
-        """
-        Check dedicated network migration when network resides on VM
-        """
-        logger.info(
+        testflow.step(
             "Check that network migration over NIC is working as "
             "expected when the network also resides on the VM"
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM]
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove NIC from VM and remove networks from the setup.
-        """
-        logger.info("Remove VNIC from VM %s", config.VM_NAME[0])
-        if not ll_vms.updateNic(
-            True, config.VM_NAME[0], "nic2", plugged="false"
-        ):
-            logger.error("Couldn't update nic to be unplugged")
-
-        logger.info("Removing the nic2 from the VM %s", config.VM_NAME[0])
-        if not ll_vms.removeNic(True, config.VM_NAME[0], "nic2"):
-            logger.error("Cannot remove nic from setup")
-
-        logger.info("Remove networks from setup")
-        super(TestMigrationCase06, cls).teardown_class()
+        helper.migrate_vms_and_check_traffic(vms=[self.vm_name])
 
 
-@common.attr(tier=2)
-class TestMigrationCase07(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase06(NetworkTest):
     """
     Verify migration over mgmt network when migration network is not attached
     to Hosts. Migration Network is attached only to DC and Cluster
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster
-        Configure it as migration network
-        """
-        logger.info(
-            "Configure migration network %s on the DC/Cluster and not on Host",
-            config.NETWORKS[0]
-        )
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1, "required": "true",
-                "cluster_usages": "migration"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network to DC/CL"
-            )
+    migration_network = config.NETS[6][0]
+    networks = list()
 
     @polarion("RHEVM3-3847")
     def test_mgmt_network_migration(self):
-        """
-        Check mgmt network migration
-        """
-        logger.info(
+        testflow.step(
             "Verify migration over mgmt network when migration network"
             " is not attached to Hosts"
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], nic_index=0
+        helper.migrate_vms_and_check_traffic(
+            vms=[config.MIGRATION_VM], nic_index=0
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase08(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase07(NetworkTest):
     """
     Verify dedicated regular network migration over Bond
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster/Hosts
-        Configure it as migration network and attach it to Bond
-        """
-        logger.info(
-            "Configure migration network %s on the DC/Cluster/Hosts over Bond",
-            config.NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "slaves": [2, 3],
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {
-                "nic": 1, "required": "true"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network"
-            )
+    config.NET_1 = config.NETS[7][0]
+    config.NET_2 = config.NETS[7][1]
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    bond70 = 'bond70'
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT_WITH_BONDS,
+        networks=networks,
+        hosts=2,
+        bond_name=bond70
+    )
 
     @polarion("RHEVM3-3848")
     def test_dedicated_migration_bond(self):
-        """
-        Check dedicated network migration over bond
-        """
-        logger.info(
+        testflow.step(
             "Check that network migration over Bond is working as expected "
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], bond=config.BOND[0]
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], bond=self.bond70
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase09(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase08(NetworkTest):
     """
     Verify dedicated regular non-vm network migration over Bond
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical non-vm network on DC/Cluster
-        Configure it as migration network and attach it to Bond on the Host
-        """
-        logger.info(
-            "Configure non-VM migration network %s on the DC/Cluster/Hosts "
-            "over bond", config.NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "slaves": [2, 3],
-                "required": "true",
-                "usages": "",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {
-                "nic": 1, "required": "true"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network"
-            )
+    config.NET_1 = config.NETS[8][0]
+    config.NET_2 = config.NETS[8][1]
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    bond80 = 'bond80'
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT_WITH_BONDS,
+        networks=networks,
+        hosts=2,
+        bond_name=bond80
+    )
 
     @polarion("RHEVM3-3850")
     def test_dedicated_migration_nonvm_bond(self):
-        """
-        Check migration over dedicated non-vm network over bond
-        """
-        logger.info(
+        testflow.step(
             "Check that non-VM network migration over Bond is working "
             "as expected "
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], bond=config.BOND[0], non_vm=True
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], bond=self.bond80, non_vm=True
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase10(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase09(NetworkTest):
     """
     Verify dedicated regular tagged network migration over Bond
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical tagged network on DC/Cluster
-        Configure it as migration network and attach it to Bond on the Host
-        """
-        logger.info(
-            "Configure tagged migration network %s on the DC/Cluster/Host "
-            "over Bond", config.NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            None: {
-                "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
-            },
-            config.VLAN_NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "vlan_id": config.VLAN_ID[0],
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {
-                "nic": 1, "required": "true"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network"
-            )
+    config.NET_1 = config.NETS[9][0]
+    config.NET_2 = config.NETS[9][1]
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    vm_name = config.MIGRATION_VM
+    bond90 = 'bond90'
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT_WITH_BONDS,
+        networks=networks,
+        hosts=2,
+        bond_name=bond90
+    )
 
     @polarion("RHEVM3-3852")
     def test_dedicated_migration_vlan_bond(self):
-        """
-        Check migration over dedicated tagged network over bond
-        """
-        logger.info(
+        testflow.step(
             "Check that VLAN network migration over Bond is working as "
             "expected "
         )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], vlan=config.VLAN_ID[0],
-            bond=config.BOND[0]
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], vlan=config.REAL_VLANS[1],
+            bond=self.bond90
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase11(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase10(NetworkTest):
     """
     Verify  migration over mgmt network when dedicated migration network is
     replaced with display network
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical regular migration network on DC/Cluster/Hosts
-        """
-        logger.info(
-            "Configure migration network %s on the DC/Cluster/Host",
-            config.NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            },
-            config.NETWORKS[1]: {"nic": 2, "required": "true"}
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network"
-            )
+    config.NET_1 = config.NETS[10][0]
+    config.NET_2 = config.NETS[10][1]
+    vm_name = config.MIGRATION_VM
+    migration_network = config.NET_1
+    networks = [config.NET_1, config.NET_2]
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOSTS_NETS_NIC_DICT,
+        networks=networks,
+        hosts=2
+    )
 
     @polarion("RHEVM3-3859")
     def test_tmgmt_network_migration(self):
@@ -652,121 +363,49 @@ class TestMigrationCase11(TestMigrationCaseBase):
         Check migration over mgmt network when migration network is changed to
         display
         """
-        logger.info(
+        testflow.step(
             "Replace migration from the network %s with display network",
-            config.NETWORKS[0]
+            config.NETS[10][0]
         )
-        if not ll_networks.update_cluster_network(
-            True, cluster=config.CLUSTER_NAME[0], network=config.NETWORKS[0],
+        assert (ll_networks.update_cluster_network(
+            True, cluster=config.CLUSTER_NAME[0],
+            network=config.NETS[10][0],
             usages="display"
-        ):
-            raise exceptions.NetworkException(
-                "Cannot update network usages param"
-            )
+        ), "Cannot update network usages param"
+        )
 
-        logger.info("Make sure the migration is over mgmt network")
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], nic_index=0
+        testflow.step("Make sure the migration is over mgmt network")
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], nic_index=0
         )
 
 
-@common.attr(tier=2)
-class TestMigrationCase12(TestMigrationCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    network_migrate_init.__name__,
+    setup_networks_fixture.__name__,
+    update_migration_network_on_cluster.__name__
+)
+class TestMigrationCase11(NetworkTest):
     """
     Verify when dedicated regular network migration is not configured on the
     Host the migration will occur on the mgmt network network
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster and only one Host
-        Configure it as migration network
-        """
-        logger.info(
-            "Create migration network %s and put it only on Host1",
-            config.NETWORKS[0]
-        )
-        ips = network_helper.create_random_ips(num_of_ips=1)
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": [ips[0]],
-                "netmask": [virt_helper.NETMASK]
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network"
-            )
+    config.NET_1 = config.NETS[11][0]
+    vm_name = config.MIGRATION_VM
+    migration_network = config.NET_1
+    networks = [config.NET_1]
+    hosts_nets_nic_dict = migration_helper.init_network_dict(
+        hosts_nets_nic_dict=config.HOST_NET_NIC_DICT,
+        networks=networks,
+        hosts=1
+    )
 
     @polarion("RHEVM3-3872")
     def test_dedicated_migration_mgmt(self):
-        """
-        Check dedicated network migration
-        """
-        logger.info("Make sure the migration is over mgmt network")
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM], nic_index=0
-        )
-
-
-@common.attr(tier=2)
-class TestMigrationCase13(TestMigrationCaseBase):
-    """
-    Network sanity: check migration of one vm over nic
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create random IPs
-        Create logical vm network on DC/Cluster/Hosts
-        Configure it as migration network
-        """
-        ips = network_helper.create_random_ips()
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "true",
-                "cluster_usages": "migration",
-                "bootproto": "static",
-                "address": ips[:2],
-                "netmask": [
-                    virt_helper.NETMASK, virt_helper.NETMASK
-                ]
-            }
-        }
-        logger.info(
-            "Configure migration VM network %s on DC/Cluster and Host ",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-3878")
-    def test_migration_nic(self):
-        """
-        Check network migration for 1 VMs
-        """
-        logger.info(
-            "Check that migration of 1 VMs over migration network is working "
-            "as expected"
-        )
-        virt_helper.migrate_vms_and_check_traffic(
-            vms=[virt_config.MIGRATION_VM]
+        testflow.step("Make sure the migration is over mgmt network")
+        helper.migrate_vms_and_check_traffic(
+            vms=[self.vm_name], nic_index=0
         )

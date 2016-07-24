@@ -12,7 +12,6 @@ import logging
 from utilities import jobs
 from art import test_handler
 from rhevmtests import helpers
-import art.core_api.apis_utils as utils
 from rhevmtests.networking import config
 from art.unittest_lib import testflow
 from art.test_handler import exceptions
@@ -40,7 +39,6 @@ DELAY_FOR_SNAPSHOT = 60
 RUN_SCRIPT_COMMAND = (
     'python /tmp/memoryLoad.py -s %s -r %s &> /tmp/OUT1 & echo $!'
 )
-NETMASK = "255.255.0.0"
 LOAD_VM_COMMAND = (
     '/home/loadTool -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
 )
@@ -51,10 +49,11 @@ def get_origin_host(vm):
     """
     Check where VM is located
 
-    :param vm: vm on the host
-    :type vm: str
-    :return: host obj and host name where the VM is located
-    :rtype: tuple
+    Args:
+    vm (str): vm on the host
+
+    Returns:
+        tuple: host obj and host name where the VM is located
     """
     orig_host = lib_network.get_host(vm)
     if orig_host not in config.HOSTS[:2]:
@@ -69,10 +68,11 @@ def get_dst_host(orig_host_obj):
     """
     Check what is dst Host for migration
 
-    :param orig_host_obj: Origin host object
-    :type orig_host_obj: Resources.VDS
-    :return: host obj and host name where to migrate VM
-    :rtype: tuple
+    Args:
+    orig_host_obj (host): Origin host object
+
+    Returns:
+        tuple: host obj and host name where to migrate VM
     """
     dst_host_obj = filter(
         lambda x: x.ip != orig_host_obj.ip, config.VDS_HOSTS[:2]
@@ -90,21 +90,16 @@ def migrate_vms_and_check_traffic(
     and check migration traffic via tcpdump.
     Send only req_nic or maintenance
 
-    :param vms: VMs to migrate
-    :type vms: list
-    :param nic_index: index for the nic where the migration happens
-    :type nic_index: int
-    :param vlan: Network VLAN
-    :type vlan: str
-    :param bond: Network Bond
-    :type bond: str
-    :param req_nic: index for nic with required network
-    :type req_nic: int
-    :param maintenance: Migrate by set host to maintenance
-    :type maintenance: bool
-    :param non_vm: True if network is Non-VM network
-    :type non_vm: bool
-    :raise: config.NET_EXCEPTION
+    Args:
+        vms (list): VMs to migrate
+        nic_index (int): index for the nic where the migration happens
+        vlan (str): Network VLAN
+        bond (str): Network Bond
+        req_nic (int): index for nic with required network
+        maintenance (bool): Migrate by set host to maintenance
+        non_vm (bool): True if network is Non-VM network
+    Raises:
+            AssertionError: if migration failed
     """
     (
         orig_host_obj,
@@ -146,24 +141,22 @@ def migrate_vms_and_check_traffic(
     if bond:
         logger.info("Migrate over BOND, sleep for 30 seconds")
         time.sleep(30)
-
-    if not check_traffic_while_migrating(
+    err = "Couldn't migrate %s over %s %s" % (vms, nic, log_msg)
+    assert check_traffic_while_migrating(
         vms=vms, orig_host_obj=orig_host_obj, orig_host=orig_host,
         dst_host=dst_host, nic=nic, src_ip=src, dst_ip=dst,
         req_nic=req_nic, maintenance=maintenance
-    ):
-        raise config.NET_EXCEPTION(
-            "Couldn't migrate %s over %s %s" % (vms, nic, log_msg)
-        )
+    ), err
 
 
 def set_host_status(activate=False):
     """
     Set host to operational/maintenance state
 
-    :param activate: activate Host if True, else put into maintenance
-    :type activate: bool
-    :raise: exceptions.NetworkException
+    Args:
+        activate (bool): activate Host if True, else put into maintenance
+    Raises:
+            AssertionError: if failed operation
     """
     host_state = "active" if activate else "maintenance"
     func = "activateHost" if activate else "deactivateHost"
@@ -176,10 +169,8 @@ def set_host_status(activate=False):
     call_func = getattr(hosts, func)
     logger.info("Putting hosts besides first two to %s", host_state)
     for host in config.HOSTS[2:]:
-        if not call_func(True, host):
-            raise exceptions.HostException(
-                "Couldn't put %s into %s" % (host, host_state)
-            )
+        err = "Couldn't put %s into %s" % (host, host_state)
+        assert call_func(True, host), err
 
 
 def check_traffic_while_migrating(
@@ -189,26 +180,19 @@ def check_traffic_while_migrating(
     """
     Search for packets in tcpdump output during migration
 
-    :param vms: VMs to migrate
-    :type vms: list
-    :param orig_host_obj: Host object of original Host
-    :type orig_host_obj: resources.VDS object
-    :param orig_host: orig host
-    :type orig_host: str
-    :param dst_host: destination host
-    :type dst_host: str
-    :param nic: NIC where IP is configured for migration
-    :type nic: str
-    :param src_ip: IP from where the migration should be sent
-    :type src_ip: str
-    :param dst_ip: IP where the migration should be sent
-    :type dst_ip: str
-    :param req_nic: NIC with required network
-    :type req_nic: int
-    :param maintenance: Migrate by set host to maintenance
-    :type maintenance: bool
-    :return True/False
-    :rtype: bool
+    Args:
+        vms (list): VMs to migrate
+        orig_host_obj (resources.VDS object): Host object of original Host
+        orig_host (str): orig host
+        dst_host (str): destination host
+        nic (str): NIC where IP is configured for migration
+        src_ip (str): IP from where the migration should be sent
+        dst_ip (str): IP where the migration should be sent
+        req_nic (int): NIC with required network
+        maintenance (bool): Migrate by set host to maintenance
+
+    Returns:
+        bool: True is migrate succeed, otherwise False
     """
     dump_timeout = config.TIMEOUT * 3 if not req_nic else config.TIMEOUT * 4
     req_nic = orig_host_obj.nics[req_nic] if req_nic else None
@@ -224,7 +208,7 @@ def check_traffic_while_migrating(
         "nic": nic,
         "src": src_ip,
         "dst": dst_ip,
-        "numPackets": config.NUM_PACKETS,
+        "numPackets": config_virt.NUM_PACKETS,
     }
     if req_nic:
         func = hl_vms.migrate_by_nic_down
@@ -253,16 +237,16 @@ def get_orig_and_dest_hosts(vms):
     Get orig_host_obj, orig_host, dst_host_obj, dst_host for VMs and check
     that all VMs are started on the same host
 
-    :param vms: VMs to check
-    :type vms: list
-    :return: orig_host_obj, orig_host, dst_host_obj, dst_host
-    :rtype: object
-    :raise: exceptions.NetworkException
+    Args:
+        vms (list): VMs to check
+
+    Returns
+        tuple: orig_host_obj, orig_host, dst_host_obj, dst_host
     """
     orig_hosts = [ll_vms.get_vm_host(vm) for vm in vms]
     logger.info("Checking if all VMs are on the same host")
-    if not orig_hosts[1:] == orig_hosts[:-1]:
-        raise config.NET_EXCEPTION("Not all VMs are on the same host")
+    res = (orig_hosts[1:] == orig_hosts[:-1])
+    assert res, "Not all VMs are on the same host"
 
     orig_host_obj, orig_host = get_origin_host(vms[0])
     dst_host_obj, dst_host = get_dst_host(orig_host_obj)
@@ -273,14 +257,13 @@ def copy_file_to_vm(vm_ip, source_file_path, destination_path):
     """
     Copy file to VM using Machine.
 
-    :param vm_ip: VM ip
-    :type vm_ip: str
-    :param source_file_path: File location at ART
-    :type source_file_path: str
-    :param destination_path: destination path on VM
-    :type destination_path: str
-    :return: Returns False if action of copy to VM, otherwise True
-    :rtype: bool
+    Args:
+        vm_ip (str): VM ip
+        source_file_path (str): File location at ART
+        destination_path (str): destination path on VM
+
+    Returns:
+        bool: Returns False if copy to VM failed, otherwise True
     """
     logger.info(
         "Copy file %s to vm-%s:%s",
@@ -303,135 +286,17 @@ def copy_file_to_vm(vm_ip, source_file_path, destination_path):
     return True
 
 
-def load_vm_memory(
-    vm_name,
-    memory_size,
-    reuse_memory='True',
-    memory_usage=MEMORY_USAGE
-):
-    """
-     1. Copy load memory python script to VM
-     2. Run it, wait for 60 sec to memory be capture by script.
-
-    :param vm_name: VM that run the script
-    :type vm_name: str
-    :param memory_size:  Memory size for script
-    :type memory_size: str
-    :param reuse_memory: Re-use allocated memory
-    :type reuse_memory: str
-    :param memory_usage: Memory usage in percent
-    :type: memory_usage: int
-    """
-    command = RUN_SCRIPT_COMMAND % (memory_size, reuse_memory)
-    logger.info(
-        "Run VM memory load script,"
-        " till usage is:%s percent, script command: %s ",
-        memory_usage,
-        command
-    )
-    vm_ip = ll_vms.waitForIP(vm_name)[1]['ip']
-    if not vm_ip:
-        raise exceptions.VMException('Failed to get IP for VM %s' % vm_name)
-    logger.info(
-        'Copy script %s to VM: %s',
-        LOAD_MEMORY_FILE,
-        vm_name
-    )
-    if not copy_file_to_vm(vm_ip, LOAD_MEMORY_FILE, DESTINATION_PATH):
-        raise exceptions.VMException(
-            'Failed to copy script %s to VM:%s dst path %s' %
-            LOAD_MEMORY_FILE, vm_name, DESTINATION_PATH
-        )
-    logger.info('Running script')
-    run_command(vm_name, command)
-    logger.info('Wait till memory is catch by script')
-    return monitor_vm_load_status(vm_name, memory_usage)
-
-
-def run_command(vm_name, cmd):
-    """
-    running command using resource VM, if command failed
-    it returns 0 (False) . Command is string send to run as list
-    usage: 1. To run load memory script in BG - No output
-           2. To run free - output memory usage
-
-    :param vm_name: VM name
-    :type: vm_name: str
-    :param cmd: Command to run
-    :type cmd: str
-    :return: If command success returns command out
-    else returns 0 (False)
-    :rtype: int
-    """
-    cmd_array = cmd.split()
-
-    vm_exec = helpers.get_vm_resource(vm_name)
-    rc, out, error = vm_exec.run_command(cmd_array)
-    logger.info("output: %s", out)
-    return int(out)
-
-
-def check_vm_memory_load(vm_name, memory_usage):
-    """
-     checks VM memory status using free command
-     compare with expected memory.
-
-    :param vm_name: VM name to monitor
-    :type: vm_name: str
-    :param memory_usage: Memory usage in percents
-    :type: memory_usage:int
-    :return: True if VM load is as expected else False
-    :rtype: bool
-    """
-    total_mem_cmd = "free | grep Mem | awk '{ print $2 }'"
-    use_mem_cmd = "free | grep Mem | awk '{ print $3 }'"
-    total = run_command(vm_name, total_mem_cmd)
-    use = run_command(vm_name, use_mem_cmd)
-    if total and use:
-        current_usage = (100 * use) / total
-        logger.info("Current usage is : {0}%".format(current_usage))
-        if int(current_usage) >= memory_usage:
-            return True
-        else:
-            return False
-    else:
-        return False
-
-
-def monitor_vm_load_status(vm_name, memory_usage):
-    """
-     uses timer to monitor VM load status
-     calls check_vm_memory_load method in 5 sec
-     intervals, time out after 70 sec.
-
-    :param vm_name: VM name to monitor
-    :type: vm_name: str
-    :param memory_usage: memory usage in percents
-    :type: memory_usage: int
-    :return: True if VM load is as expected else False
-    :rtype: bool
-    """
-    sample = utils.TimeoutingSampler(
-        timeout=DELAY_FOR_SCRIPT,
-        sleep=5,
-        func=check_vm_memory_load,
-        vm_name=vm_name,
-        memory_usage=memory_usage
-    )
-    return sample.waitForFuncStatus(result=True)
-
-
 def migration_vms_to_diff_hosts(vms):
     """
     Migrate vms that are on different hosts
     using Jobs, wait for all migration till timeout is finished.
     and check that all vm migrated to different host.
 
-    :param vms: Vms list
-    :type vms: list
-    :return: True if all finish on time, and migrated to different host
-    else return False
-    :rtype: bool
+    Args:
+        vms (list): Vms list
+
+    Returns:
+        bool: True if all finish on time, and migrated to different host
     """
     vm_to_host_before = map_vms_to_hosts(vms)
     my_jobs = []
@@ -457,10 +322,12 @@ def migration_vms_to_diff_hosts(vms):
 def map_vms_to_hosts(vms):
     """"
     Maps between Vms and their hosts
-    :param vms: VMs list
-    :type vms: list
-    :return: maps between Vms and their hosts
-    :rtype: dict
+
+    Args:
+        vms (list): VMs list
+
+    Returns
+        dict: VMs to Hosts
     """
 
     vm_to_host_list = {}
@@ -473,12 +340,13 @@ def map_vms_to_hosts(vms):
 def compare_resources_lists(before_list, after_list):
     """
     Compare between list pending resources on hosts
-    :param before_list: list of hosts with their resources
-    :type before_list: list
-    :param after_list: list of hosts with their resources
-    :type after_list: list
-    :return: True if list are equals else False
-    :rtype: bool
+
+    Args:
+        before_list (list): list of hosts with their resources
+        after_list (list): list of hosts with their resources
+
+    Returns:
+        bool: True if list are equals else False
     """
 
     logging.info("Compare pending resources on hosts")
@@ -497,39 +365,38 @@ def create_vm_from_glance_image(image_name, vm_name):
     """
     Create VM with glance image on NFS storage domain
 
-    :param image_name: The image name in glance
-    :type image_name: str
-    :param vm_name: VM name to create
-    :type vm_name: str
-    :raise VMException in case of failure
+    Args:
+        image_name (str): The image name in glance
+        vm_name (str): VM name to create
+
+    Returns:
+        bool: True if VM created else False
     """
     sd_name = ll_sd.getStorageDomainNamesForType(
         datacenter_name=config.DC_NAME[0],
         storage_type=config.STORAGE_TYPE
     )[0]
-    if not hl_vms.create_vm_using_glance_image(
+    return hl_vms.create_vm_using_glance_image(
         vmName=vm_name, vmDescription=vm_name,
         cluster=config.CLUSTER_NAME[0], nic=config.NIC_NAME[0],
         storageDomainName=sd_name, network=config.MGMT_BRIDGE,
         glance_storage_domain_name=config.GLANCE_DOMAIN,
         glance_image=image_name
 
-    ):
-        raise exceptions.VMException()
+    )
 
 
 def load_vm_memory_with_load_tool(vm_name, load=500, time_to_run=60):
     """
     Load VM memory with load tool that install on VM
 
-    :param vm_name: VM name
-    :type vm_name: str
-    :param load: Load value in MB
-    :type load: int
-    :param time_to_run: Time to run memory load in sec
-    :type time_to_run: int
-    :return: Process id
-    :rtype: int
+    Args:
+        vm_name (str): VM name
+        load (int): Load value in MB
+        time_to_run (int): Time to run memory load in sec
+
+    Returns:
+        int: Process id
     """
     logger.info(
         "Run load %s MB on vm %s for %s sec",
@@ -553,27 +420,20 @@ def create_base_vm(
     """
     Create vm with disk or nic
 
-    :param vm_name: VM name
-    :type vm_name: str
-    :param cluster: cluster name
-    :type cluster: str
-    :param memory: memory size
-    :type memory: int
-    :param os_type: vm os type
-    :type os_type: str
-    :param vm_type: vm type
-    :type vm_type: str
-    :param display_type: display type
-    :type display_type: str
-    :param vm_parameters: vm parameter to update after creation
-    :type vm_parameters: dict
-    :param add_disk: If True add disk to VM after creation
-    :param disk_type: disk type, default set to data
-    :type disk_type: str
-    :param storage_domain: master storage domain
-    :type: storage_domain: str
-    :return True if all operations succeed Else False
-    :rtype: bool
+    Args:
+        vm_name (str): VM name
+        cluster (str): cluster name
+        memory (int): memory size
+        os_type (str): vm os type
+        vm_type (str): vm type
+        display_type (str): display type
+        vm_parameters (dict): vm parameter to update after creation
+        add_disk (bool): If True add disk to VM after creation
+        disk_type (str): disk type, default set to data
+        storage_domain (str): master storage domain
+
+    Returns:
+        bool: True if all operations succeed Else False
     """
 
     if not ll_vms.addVm(
@@ -620,16 +480,14 @@ def create_vm_from_template(
     """
     Create VM from given template, with optional parameters
 
-    :param vm_name: VM name
-    :type vm_name: str
-    :param cluster: cluster name
-    :type cluster: str
-    :param template: template name
-    :type template: str
-    :param vm_parameters: vm parameter to update after creation
-    :type vm_parameters: dict
-    :return: True if all operations succeed, Else False
-    :rtype: bool
+    Args:
+        vm_name (str): VM name
+        cluster (str): cluster name
+        template (str): template name
+        vm_parameters (dict): vm parameter to update after creation
+
+    Returns:
+        bool: True if all operations succeed, Else False
     """
 
     if not ll_vms.addVm(
@@ -652,12 +510,12 @@ def check_display_parameters(vm_name, display_type):
     """
     Check display parameters
 
-    :param vm_name: VM name
-    :type vm_name: str
-    :param display_type: display type on vm
-    :type display_type: str
-    :return: True if display port/address exists, else False
-    :rtype: bool
+    Args:
+        vm_name (str): VM name
+        display_type (str): display type on vm
+
+    Returns:
+         bool: True if display port/address exists, else False
     """
 
     if display_type != config_virt.SPICE:
@@ -676,11 +534,12 @@ def create_file_in_vm(vm, vm_resource):
     """
     Create an empty file in vm using vm resource entity
 
-    :param vm: Vm name
-    :type vm: str
-    :param vm_resource: Resource for the vm
-    :type vm_resource: Host resource
-    :raises: VMException
+    Args:
+        vm (str): Vm name
+        vm_resource (Host resource): Resource for the vm
+
+    Raises:
+        VMException: If failed to create file
     """
     logger.info("attempting to create an empty file in vm: %s", vm)
     if not vm_resource.fs.touch(config_virt.FILE_NAME, config_virt.TEMP_PATH):
@@ -694,13 +553,13 @@ def check_if_file_exist(positive, vm, vm_resource):
     Checks if file (name of file in config) exist or not in the vm using vm
     resource entity
 
-    :param positive: Signifies the expected result
-    :type positive: bool
-    :param vm: Vm name
-    :type vm: str
-    :param vm_resource: Command executor for the vm
-    :type vm_resource: Host resource executor
-    :raises: VMException
+    Args:
+        positive (bool): Signifies the expected result
+        vm (str): Vm name
+        vm_resource (host resource): Command executor for the vm
+
+    Raises:
+        VMException: If file exist
     """
     testflow.step(
         "checking if file: %s exists in vm: %s. expecting result: %s",
@@ -721,10 +580,11 @@ def reboot_stateless_vm(vm_name):
     2. Wait until stateless snapshot removed
     3. Start VM
 
-    :param vm_name: Vm name
-    :type vm_name: str
-    :return: True if VM successfully rebooted else False
-    :rtype: bool
+    Args:
+        vm_name (str): Vm name
+
+    Returns:
+        bool: True if VM successfully rebooted else False
     """
 
     logger.info("Reboot stateless VM, vm name: %s", vm_name)
@@ -738,8 +598,8 @@ def get_storage_domains():
     """
     Returns the storage domains: master,export,non master
 
-    :return: returns storage domains
-    :rtype: tuple
+    Returns
+        tuple: returns storage domains (master,export,non master)
     """
 
     master_domain = (
@@ -774,12 +634,30 @@ def get_all_vm_in_cluster(cluster_name, skip=None):
     cluster_name (str): cluster name
     skip (list): list of vms to skip
 
-    Returns: list of vms in cluster
+    Returns:
+         list: List of VMs in cluster
 
     """
     vms_in_cluster = []
     vms_list = ll_vms.get_vms_from_cluster(cluster=cluster_name)
     for vm_name in vms_list:
-            if vm_name not in skip:
-                vms_in_cluster.append(vm_name)
+        if vm_name not in skip:
+            vms_in_cluster.append(vm_name)
     return vms_in_cluster
+
+
+def get_err_msg(action=None, vm_name=None):
+    """
+    Return error massage according to action and vm name, or action
+
+    Args:
+        action (str): action name
+        vm_name (str): vm name
+
+    Returns:
+        str: return error massage
+    """
+    if vm_name:
+        return "Failed to %s on VM: %s", action, vm_name
+    else:
+        return "Failed to %s", action

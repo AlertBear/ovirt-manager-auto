@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+
 """
 High-level functions above virtual machines
 """
+from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api import resources
 import logging
 import shlex
@@ -269,22 +272,17 @@ def migrate_by_nic_down(
     """
     Migrate VMs by set down required network on host
 
-    :param vms_list: VMs to migrate
-    :type vms_list: list
-    :param src_host: Host to set the NIC down
-    :type src_host: str
-    :param password: Host password
-    :type password: str
-    :param nic: NIC name to put down
-    :type nic: str
-    :param vm_user: User for the VM machine
-    :type vm_user: str
-    :param vm_password: Password for the vm machine
-    :type vm_password: str
-    :param vm_os_type: Type of the OS of VM
-    :type vm_os_type: str
-    :return: True/False
-    :rtype: bool
+    Args:
+        vms_list (list): VMs to migrate
+        src_host (str): Host to set the NIC down
+        password (str): Host password
+        nic (str): NIC name to put down
+        vm_user (str): User for the VM machine
+        vm_password (str): Password for the vm machine
+        vm_os_type (str): Type of the OS of VM
+
+    Returns
+        bool: True is VM was migrate over Nic, else False
     """
     status = True
     logger.info("Setting %s down on %s", nic, src_host)
@@ -358,10 +356,17 @@ def check_vms_after_migration(
         ):
             logger.error("Check connectivity to %s failed", vm)
             return False
-
+        sampler = TimeoutingSampler(
+            timeout=MIGRATION_TIMEOUT, sleep=1, func=vms.getVmHost, vm=vm
+        )
         logger.info("Checking that the %s switched hosts", vm)
-        vms_host.append(vms.getVmHost(vm)[1]["vmHoster"])
-
+        try:
+            for sample in sampler:
+                if sample[0] and sample[1]["vmHoster"] != src_host:
+                    vms_host.append(sample[1]["vmHoster"])
+                    break
+        except APITimeout as e:
+            logger.error(e.message)
     if dst_host:
         logger.info(
             "Checking that all VMs moved to destination host (%s)", dst_host

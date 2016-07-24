@@ -1,8 +1,9 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Virt - Test configuration module
 """
-
-__test__ = False
 
 from rhevmtests.config import *  # flake8: noqa
 
@@ -53,10 +54,16 @@ RHEL_OS_TYPE_FOR_MIGRATION = "rhel"
 RHEL_IMAGE_GLANCE_IMAGE = 'latest-rhel-guest-image-7.2'
 
 # migration
-MIGRATION_VM = VM_NAME[0] if PPC_ARCH else "migration_vm"
+CANCEL_VM_MIGRATE = False
+MIGRATION_VM = VM_NAME[0]
+MIGRATION_VM_LOAD = "migration_vm_test"
 CONNECTIVITY_CHECK = False if PPC_ARCH else True
 MIGRATION_IMAGE_VM = "vm_with_loadTool"
 OS_RHEL_7 = ENUMS['rhel7x64']
+HOST_INDEX_MAX_MEMORY = -1
+# for network migration check
+NUM_PACKETS = 500
+
 
 # reg_vms
 SPICE = ENUMS['display_type_spice']
