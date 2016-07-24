@@ -10,6 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import helper
 import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as net_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -36,8 +37,22 @@ def create_networks_on_engine(request):
     )
 
 
+@pytest.fixture(scope="module")
+def set_virsh_credentails_on_vds_host_0(request):
+    """
+    Set virsh credentails on vds host-0
+    """
+    arbitrary_vlan_device_name = NetworkFixtures()
+
+    assert net_helper.set_virsh_sasl_password(
+        vds_resource=arbitrary_vlan_device_name.vds_0_host
+    )
+
+
 @pytest.fixture(scope="class")
-def create_vlans_and_bridges_on_host(request):
+def create_vlans_and_bridges_on_host(
+        request, set_virsh_credentails_on_vds_host_0
+):
     """
     Fixtures for add VLANs and bridge names on host.
     """

@@ -5,8 +5,10 @@
 Test ArbitraryVlanDeviceName
 Supporting vlan devices with names not in standard "dev.VLANID"
 (e.g. eth0.10-fcoe, em1.myvlan10, vlan20, ...).
-This job required password less ssh between the machine that run the job
-and the host
+
+This test will use the following elements on the engine:
+
+Host (VDS_HOST0), networks (vm & non-vm), BONDS, VLANS, Bridge
 """
 
 import logging
@@ -37,6 +39,7 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
     5. Remove the VLAN using setupNetwork
     """
     __test__ = True
+
     vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
     vlan_names = [conf.VLAN_NAMES[0]]
     bridge_names = [conf.BRIDGE_NAMES[0]]
@@ -79,6 +82,7 @@ class TestArbitraryVlanDeviceName02(NetworkTest):
     6. Remove the VLAN using setupNetwork
     """
     __test__ = True
+
     vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
     vlan_names = [conf.VLAN_NAMES[0]]
     bridge_names = [conf.BRIDGE_NAMES[0]]
@@ -120,6 +124,7 @@ class TestArbitraryVlanDeviceName03(NetworkTest):
     5. For each VLAN remove the VLAN using setupNetwork
     """
     __test__ = True
+
     vlan_ids = conf.ARBITRARY_VLAN_IDS
     vlan_names = conf.VLAN_NAMES
     bridge_names = conf.BRIDGE_NAMES
@@ -165,6 +170,7 @@ class TestArbitraryVlanDeviceName04(NetworkTest):
     6. For each VLAN remove the VLAN using setupNetwork
     """
     __test__ = True
+
     network = None
     nic = "bond02"
     vlan_ids = conf.ARBITRARY_VLAN_IDS
@@ -212,6 +218,7 @@ class TestArbitraryVlanDeviceName05(NetworkTest):
     6. Remove the VLAN using setupNetwork
     """
     __test__ = True
+
     network = conf.ARBITRARY_NETS[5][0]
     nic = 1
     vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
@@ -258,6 +265,7 @@ class TestArbitraryVlanDeviceName06(NetworkTest):
     6. Remove the VLAN using setupNetwork
     """
     __test__ = True
+
     network = conf.ARBITRARY_NETS[6][0]
     nic = 1
     vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
