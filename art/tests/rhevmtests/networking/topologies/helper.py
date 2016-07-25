@@ -7,8 +7,6 @@ Helper for topologies job
 
 import logging
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.helper as network_helper
 from rhevmtests.networking import config
@@ -62,47 +60,6 @@ def check_connectivity(vm=True, flags=list()):
     return network_helper.send_icmp_sampler(
         host_resource=config.VDS_0_HOST, dst=config.DST_HOST_IP
     )
-
-
-def create_and_attach_bond(mode):
-    """
-    Create and attach BOND.
-
-    :param mode: Bond mode
-    :type mode: str
-    :return: True in case of success/False otherwise
-    :rtype: bool
-    """
-    (usages, address, netmask, bootproto) = "vm", None, None, None
-
-    slaves = [4, 5] if mode == 2 else [2, 3]
-
-    # for modes bellow create non-VM network with static IP
-    if mode in ["0", "3", "5", "6"]:
-        usages = ""
-        address = [config.ADDR_AND_MASK[0]]
-        netmask = [config.ADDR_AND_MASK[1]]
-        bootproto = "static"
-
-    local_dict = {
-        config.NETWORKS[0]: {
-            "nic": config.BOND[int(mode)], "mode": mode, "slaves": slaves,
-            "usages": usages, "address": address, "netmask": netmask,
-            "bootproto": bootproto, "required": False
-        }
-    }
-
-    if not hl_networks.createAndAttachNetworkSN(
-        data_center=config.DC_0, cluster=config.CL_0,
-        host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-    ):
-        return False
-    if not ll_networks.check_bond_mode(
-        config.VDS_HOSTS[0], interface=config.BOND[int(mode)], mode=mode
-    ):
-        logger.error("BOND mode should be %s but it's not", mode)
-        return False
-    return True
 
 
 def check_connectivity_log(
