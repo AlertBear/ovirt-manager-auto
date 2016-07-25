@@ -25,7 +25,7 @@ from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 FILE_TO_WATCH = config.VDSM_LOG
-REGEX_TEMPLATE = 'dd if=/dev/zero of=.*/%s'
+REGEX_TEMPLATE = 'dd.* if=/dev/zero.* of=.*/%s'
 TASK_TIMEOUT = 120
 VM_NAMES = dict()
 ISCSI = config.STORAGE_TYPE_ISCSI
