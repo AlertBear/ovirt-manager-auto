@@ -159,7 +159,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage(
             HostStorage(
                 type_=storage_type,
-                logical_unit=LogicalUnits(logical_unit=[logical_unit]),
+                logical_units=LogicalUnits(logical_unit=[logical_unit]),
                 override_luns=kwargs.pop('override_luns', None)
             )
         )
