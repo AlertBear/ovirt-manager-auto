@@ -423,7 +423,7 @@ def _prepareVmObject(**kwargs):
                 name=payload_fname, content=payload_file_content
             )
             payload_files.add_file(payload_file)
-            payload = data_st.Payload(payload_type, payload_files)
+            payload = data_st.Payload(files=payload_files, type_=payload_type)
             payload_array.append(payload)
         payloads = data_st.Payloads(payload_array)
         vm.set_payloads(payloads)
