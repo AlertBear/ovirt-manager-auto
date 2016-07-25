@@ -287,6 +287,9 @@ def createTemplate(
         vm (str): Name of vm for template generation
         name (str): Template name
         description (str):Template description
+        disks (dict): Dictionary disk id as key and as value another
+        dictionary with each property (format, alias, storagedomain) and its
+        value
         cluster (str): Template cluster
         memory (str): Template memory size
         cpu_socket (str): Number of cpu sockets
@@ -319,6 +322,28 @@ def createTemplate(
         }
         kwargs['version'] = data_st.TemplateVersion(**template_version_params)
     template = _prepareTemplateObject(**kwargs)
+    disks = kwargs.pop('disks', None)
+    if disks:
+        disk_array = data_st.Disks()
+        for key, properties in disks.items():
+            disk = data_st.Disk(id=key)
+            disk.set_format(properties.get('format', None))
+            disk.set_sparse(properties.get('sparse', None))
+            disk.set_alias(properties.get('alias', None))
+            storagedomain = properties.get('storagedomain', None)
+            if storagedomain:
+                sd = SD_API.find(storagedomain)
+                disk.set_storage_domains(StorageDomain(id=sd.get_id()))
+            disk_array.add_disk(disk)
+
+        disk_attachments = data_st.DiskAttachments()
+        for disk_ in disk_array.get_disk():
+            disk_attachments.add_disk_attachment(
+                ll_disks.prepare_disk_attachment_object(
+                    disk.get_id(), disk=disk_,
+                )
+            )
+        template.vm.set_disk_attachments(disk_attachments)
     logger.info(log_info)
     operations = []
     if copy_permissions:
