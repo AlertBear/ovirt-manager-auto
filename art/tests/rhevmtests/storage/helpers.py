@@ -54,6 +54,7 @@ LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
 FIND_CMD = 'find / -name %s'
+ECHO_CMD = 'echo %s > %s'
 CREATE_FILE_CMD = 'touch %s/%s'
 REGEX_DEVICE_NAME = '[sv]d[a-z]'
 CREATE_DISK_LABEL_CMD = '/sbin/parted %s --script -- mklabel gpt'
@@ -968,6 +969,38 @@ def create_file_on_vm(vm_name, file_name, path):
     :rtype: bool
     """
     command = CREATE_FILE_CMD % (path, file_name)
+    return _run_cmd_on_remote_machine(vm_name, command)
+
+
+def checksum_file(vm_name, file_name):
+    """
+    Return the file file_name checksum value
+
+    __author__ = "ratamir"
+    :param vm_name: The VM name that the file needs checksum located on
+    :type vm_name: str
+    :param file_name: The full path to file to checksum
+    :type file_name: str
+    :returns: Checksum value is succeeded, None otherwise
+    :rtype: str or None
+    """
+    command = config.MD5SUM_CMD % file_name
+    return get_vm_executor(vm_name).run_cmd(shlex.split(command))[1]
+
+
+def write_content_to_file(vm_name, file_name, content=config.TEXT_CONTENT):
+    """
+    Write content to file_name
+
+    __author__ = "ratamir"
+    :param vm_name: The VM to use in checking whether file exists
+    :type vm_name: str
+    :param file_name: File name to write content to
+    :type file_name: str
+    :returns: True if succeeded, False otherwise
+    :rtype: bool
+    """
+    command = ECHO_CMD % (content, file_name)
     return _run_cmd_on_remote_machine(vm_name, command)
 
 

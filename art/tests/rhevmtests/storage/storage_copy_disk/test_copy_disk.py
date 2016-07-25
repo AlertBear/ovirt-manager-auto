@@ -93,6 +93,7 @@ class BasicEnvironment(BaseTestCase):
     disks_after_copy = list()
     new_disks = list()
     disks_for_test = list()
+    checksum_files = dict()
 
     @classmethod
     def setup_class(cls):
@@ -116,6 +117,7 @@ class BasicEnvironment(BaseTestCase):
             )
         for mount_dir in cls.mount_points:
             logger.info("Creating file in %s", mount_dir)
+            full_path = os.path.join(mount_dir, TEST_FILE_TEMPLATE)
             rc = storage_helpers.create_file_on_vm(
                 vm_name, TEST_FILE_TEMPLATE, mount_dir
             )
@@ -125,6 +127,16 @@ class BasicEnvironment(BaseTestCase):
                     mount_dir, vm_name
                 )
                 return False
+            if not storage_helpers.write_content_to_file(
+                vm_name, full_path
+            ):
+                logger.error(
+                    "Failed to write content to file %s on vm %s",
+                    full_path, vm_name
+                )
+            cls.checksum_files[full_path] = storage_helpers.checksum_file(
+                vm_name, full_path
+            )
         return True
 
     def check_file_existence(
@@ -147,6 +159,16 @@ class BasicEnvironment(BaseTestCase):
                 "File %s %s",
                 file_name, 'exists' if result else 'does not exist'
             )
+            if result:
+                checksum = storage_helpers.checksum_file(
+                    vm_name, full_path
+                )
+                if checksum != self.checksum_files[full_path]:
+                    logger.error(
+                        "File exists but it's content changed since it's "
+                        "creation!"
+                    )
+                    result = False
             result_list.append(result)
 
         if state in result_list:
@@ -369,8 +391,10 @@ class CopyDiskWithContent(BasicEnvironment):
         copy_disk_args = copy_args.copy()
         copy_disk_args['new_disk_alias'] = new_alias
         vm_disks = ll_vms.getVmDisks(vm_name)
-        ll_vms.stop_vms_safely([vm_name])
-        seal_vm(vm_name, config.VM_PASSWORD)
+        ll_vms.shutdownVm(positive=True, vm=vm_name, async='false')
+        sealed = seal_vm(vm_name, config.VM_PASSWORD)
+        if not sealed:
+            logger.error("Failed to seal vm %s", vm_name)
         with ThreadPoolExecutor(max_workers=len(vm_disks)) as executor:
             for disk_obj in vm_disks:
                 if same_domain:
