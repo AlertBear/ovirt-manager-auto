@@ -99,7 +99,10 @@ ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
 DST_HOST_IP = "10.35.147.62"
 
 # Port mirroring parameters
-PM_VNIC_PROFILE = ['%s_PM' % net for net in [MGMT_BRIDGE] + VLAN_NETWORKS]
+PM_NETWORK = ["pm_net_1", "pm_net_2", "pm_net_3"]
+PM_VNIC_PROFILE = [
+    '%s_vNIC_PORT_MIRRORING' % net for net in [MGMT_BRIDGE] + PM_NETWORK
+]
 NUM_VMS = 5
 MGMT_IPS = []  # Gets filled up during the test
 NET1_IPS = [

@@ -44,7 +44,9 @@ def set_port_mirroring(
     unplug_error = "Failed to unplug %s on %s"
     update_error = "Failed to update %s to %s profile."
     plug_error = "Failed to plug %s on %s"
-    vnic_profile = network + ("" if disable_mirroring else "_PM")
+    vnic_profile = network + (
+        "" if disable_mirroring else "_vNIC_PORT_MIRRORING"
+    )
     port_mirror_text = "Disabling" if disable_mirroring else "Enabling"
     logger_info = (
         "%s port mirroring on: VM: %s, NIC: %s,  vNIC profile: %s" %
@@ -150,7 +152,7 @@ def create_vnic_profiles_with_pm():
     :raise: conf.NET_EXCEPTION
     """
     for vnic_profile, network in zip(
-        conf.PM_VNIC_PROFILE[:2], [conf.MGMT_BRIDGE, conf.VLAN_NETWORKS[0]]
+        conf.PM_VNIC_PROFILE[:2], [conf.MGMT_BRIDGE, conf.PM_NETWORK[0]]
     ):
         if not ll_networks.add_vnic_profile(
             positive=True, name=vnic_profile, cluster=conf.CL_0,
@@ -204,7 +206,7 @@ def add_nics_to_vms():
     vms_list = conf.VM_NAME[:conf.NUM_VMS]
     for vm_name in vms_list:
         conf.VMS_MACS_AND_IPS[vm_name] = dict()
-        for nic, net in zip(conf.NIC_NAME[1:3], conf.VLAN_NETWORKS[:2]):
+        for nic, net in zip(conf.NIC_NAME[1:3], conf.PM_NETWORK[:2]):
             # Add vNIC with PM to first VM on second NIC
             if vm_name == conf.VM_0 and nic == conf.NIC_NAME[1]:
                 vnic_profile = conf.PM_VNIC_PROFILE[1]
@@ -251,8 +253,8 @@ def create_networks_pm():
     """
     logger.info(
         "Create %s, %s on %s/%s and attach them to %s",
-        conf.VLAN_NETWORKS[0],
-        ".".join([conf.BOND[0], conf.VLAN_NETWORKS[1]]),
+        conf.PM_NETWORK[0],
+        ".".join([conf.BOND[0], conf.PM_NETWORK[1]]),
         conf.DC_0, conf.CL_0, conf.HOSTS[:2]
     )
     network_params = {
@@ -261,12 +263,12 @@ def create_networks_pm():
             "mode": 1,
             "slaves": [2, 3]
         },
-        conf.VLAN_NETWORKS[0]: {
+        conf.PM_NETWORK[0]: {
             "vlan_id": VLAN_0,
             "nic": 1,
             "required": "false"
         },
-        conf.VLAN_NETWORKS[1]: {
+        conf.PM_NETWORK[1]: {
             "vlan_id": VLAN_1,
             "nic": conf.BOND[0],
             "required": "false"

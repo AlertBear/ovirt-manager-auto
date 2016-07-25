@@ -132,7 +132,7 @@ class TestPortMirroringCase02(Base):
 
         for vm_name in VM_NAME[2:4]:
             helper.set_port_mirroring(
-                vm_name, conf.NIC_NAME[1], conf.VLAN_NETWORKS[1],
+                vm_name, conf.NIC_NAME[1], conf.PM_NETWORK[1],
                 disable_mirroring=True
             )
 
@@ -225,7 +225,7 @@ class TestPortMirroringCase04(Base):
             "traffic while VM2 doesn't"
         )
         helper.set_port_mirroring(
-            conf.VM_NAME[1], conf.NIC_NAME[1], conf.VLAN_NETWORKS[0],
+            conf.VM_NAME[1], conf.NIC_NAME[1], conf.PM_NETWORK[0],
             disable_mirroring=True
         )
 
@@ -291,19 +291,19 @@ class TestPortMirroringCase06(Base):
         )
 
         logger.info(
-            "Setting down %s on %s", conf.VLAN_NETWORKS[1],
+            "Setting down %s on %s", conf.PM_NETWORK[1],
             conf.HOSTS[0]
         )
-        if not conf.VDS_HOSTS[0].network.if_down(nic=conf.VLAN_NETWORKS[0]):
+        if not conf.VDS_HOSTS[0].network.if_down(nic=conf.PM_NETWORK[0]):
             raise conf.NET_EXCEPTION(
                 "Failed to set down %s on %s" %
-                (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
+                (conf.PM_NETWORK[0], conf.HOSTS[0])
             )
 
-        if not conf.VDS_HOSTS[0].network.if_up(nic=conf.VLAN_NETWORKS[0]):
+        if not conf.VDS_HOSTS[0].network.if_up(nic=conf.PM_NETWORK[0]):
             raise conf.NET_EXCEPTION(
                 "Failed to set up %s on %s" %
-                (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
+                (conf.PM_NETWORK[0], conf.HOSTS[0])
             )
         vm_resource = global_helper.get_host_resource(
             ip=conf.MGMT_IPS[1], password=conf.VMS_LINUX_PW

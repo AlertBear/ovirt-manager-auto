@@ -232,7 +232,7 @@ def case02_fixture(request, port_mirroring_prepare_setup):
         for vm_name in conf.VM_NAME[2:4]:
             helper.set_port_mirroring(
                 vm=vm_name, nic=conf.NIC_NAME[1],
-                network=conf.VLAN_NETWORKS[0], disable_mirroring=True,
+                network=conf.PM_NETWORK[0], disable_mirroring=True,
                 teardown=True
             )
     request.addfinalizer(fin)
@@ -244,7 +244,7 @@ def case04_fixture(request, port_mirroring_prepare_setup):
     Fixture for case04
     """
     helper.set_port_mirroring(
-        vm=conf.VM_NAME[1], nic=conf.NIC_NAME[1], network=conf.VLAN_NETWORKS[0]
+        vm=conf.VM_NAME[1], nic=conf.NIC_NAME[1], network=conf.PM_NETWORK[0]
     )
 
     def fin():
@@ -263,7 +263,7 @@ def case04_fixture(request, port_mirroring_prepare_setup):
         ):
             helper.set_port_mirroring(
                 vm=conf.VM_NAME[1], nic=conf.NIC_NAME[1],
-                network=conf.VLAN_NETWORKS[0], disable_mirroring=True,
+                network=conf.PM_NETWORK[0], disable_mirroring=True,
                 teardown=True
             )
     request.addfinalizer(fin)
