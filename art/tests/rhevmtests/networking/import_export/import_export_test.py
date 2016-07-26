@@ -6,7 +6,6 @@ Testing Import/Export feature.
 1 DC, 1 Cluster, 1 Hosts, 1 export domain, 1 VM and 1 templates will be
 created for testing.
 """
-import logging
 
 import pytest
 
@@ -18,10 +17,9 @@ from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import fixture_case_01, fixture_case_02, fixture_case_03
 
-logger = logging.getLogger("Import_Export_Cases")
-
 
 @attr(tier=2)
+@bz({"1359668": {}})
 @pytest.mark.usefixtures(fixture_case_01.__name__)
 class TestIECase01(NetworkTest):
     """
@@ -62,7 +60,7 @@ class TestIECase01(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1339686": {}})
+@bz({"1359668": {}})
 @pytest.mark.usefixtures(fixture_case_02.__name__)
 class TestIECase02(NetworkTest):
     """
@@ -107,7 +105,7 @@ class TestIECase02(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1339686": {}})
+@bz({"1359668": {}})
 @pytest.mark.usefixtures(fixture_case_03.__name__)
 class TestIECase03(NetworkTest):
     """
