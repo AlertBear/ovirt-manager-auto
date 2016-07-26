@@ -14,7 +14,7 @@ from art.unittest_lib import attr
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from rhevmtests.virt.reg_vms.fixtures import (
     test_snapshot_and_import_export_fixture
 )
@@ -24,6 +24,7 @@ import config
 logger = logging.getLogger("import_export_vm")
 
 
+@bz({"1359668": {}})
 class ImportExportVm(VirtTest):
     """
     Check different cases for import/export vm
