@@ -761,9 +761,7 @@ def getTemplateDisks(template):
     :rtype: list
     """
     return ll_disks.get_disk_list_from_disk_attachments(
-        ll_disks.get_disk_attachmens(
-            template, type='template', get_href=False
-        )
+        ll_disks.get_disk_attachments(name=template, object_type='template')
     )
 
 

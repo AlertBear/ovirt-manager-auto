@@ -2508,9 +2508,7 @@ def _createVmForClone(
     if template:
         templObj = TEMPLATE_API.find(template)
         vm.set_template(templObj)
-        disks = get_disk_attachments(
-            template, 'template', get_href=False
-        )
+        disks = get_disk_attachments(name=template, object_type='template')
     elif snapshot and vm_name:
         # better pass both elements and don't search in all vms
         snapshotObj = _getVmSnapshot(vm_name, snapshot)
