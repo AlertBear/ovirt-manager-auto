@@ -347,12 +347,22 @@ def addLocalDataDomain(host, storage, data_center, path):
 def addPosixfsDataDomain(
         host, storage, data_center, address, path,
         sd_type=ENUMS['storage_dom_type_data'],
-        vfs_type=ENUMS['storage_type_nfs'], nfs_version=None):
+        vfs_type=ENUMS['storage_type_nfs'], nfs_version=None,
+        mount_options=None
+):
     """
     positive flow for adding posixfs storage including all the necessary steps
 
+    :param storage: Name of storage domain to create
+    :type storage: str
     :param host: Name of the host to be used for adding the posix domain
     :type host: str
+    *****IMPORTANT******:
+    We cannot know the backend type for POSIX domain from the API, so in order
+    to identifying the domain in our environments the backend type must be
+    part of the domain name
+    using the following pattern - <backend type>_<storage domain name>,
+    for example: ceph_my_domain_1
     :param storage: Name of storage domain that will be created in rhevm
     :type storage: str
     :param data_center: Name of DC which will contain this SD
@@ -367,13 +377,17 @@ def addPosixfsDataDomain(
     :type vfs_type: str
     :param nfs_version: NFS version to use for mounting posix domain
     :type nfs_version: str
+    :param mount_options: Mount options required for posix support
+    :type mount_options: str
     :returns: True if succeeded, False otherwise
     :rtype: bool
     """
     if not ll_sd.addStorageDomain(
             True, host=host, name=storage, type=sd_type,
             address=address, storage_type=ENUMS['storage_type_posixfs'],
-            path=path, vfs_type=vfs_type, nfs_version=nfs_version):
+            path=path, vfs_type=vfs_type, nfs_version=nfs_version,
+            mount_options=mount_options
+    ):
         logger.error('Failed to add posixfs storage %s to %s' % (path, host))
         return False
 

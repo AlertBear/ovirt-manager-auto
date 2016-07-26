@@ -35,6 +35,7 @@ WATCH_TIMOUT = 480
 NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
+CEPH = config.STORAGE_TYPE_CEPH
 
 
 class BaseClass(BaseTestCase):
@@ -488,8 +489,8 @@ class TestCase5065(BasicResize):
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
     # TODO: Verify it works in glusterfs and enable the test for this storage
-    __test__ = NFS in opts['storages']
-    storages = set([NFS])
+    __test__ = CEPH in opts['storages'] or NFS in opts['storages']
+    storages = set([CEPH, NFS])
     polarion_test_case = '5065'
     test_disk_args = {
         'sparse': True,

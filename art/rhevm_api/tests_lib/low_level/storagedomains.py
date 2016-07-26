@@ -48,6 +48,10 @@ from utilities import sshConnection, machine
 ENUMS = opts['elements_conf']['RHEVM Enums']
 ACTIVE_DOMAIN = ENUMS['storage_domain_state_active']
 DATA_DOMAIN_TYPE = ENUMS['storage_dom_type_data']
+STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
+STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
+STORAGE_TYPE_CEPH = ENUMS['storage_type_ceph']
+POSIX_BACKENDS = [STORAGE_TYPE_CEPH, STORAGE_TYPE_NFS]
 CINDER_DOMAIN_TYPE = ENUMS['storage_dom_type_cinder']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
@@ -587,7 +591,8 @@ def cleanExportDomainMetadata(address, path):
 def importStorageDomain(positive, type, storage_type, address, path, host,
                         nfs_version=None, nfs_retrans=None, nfs_timeo=None,
                         vfs_type=None, storage_format=None,
-                        clean_export_domain_metadata=False):
+                        clean_export_domain_metadata=False,
+                        mount_options=None):
     '''
     Description: import storage domain (similar to create function, but not
     providing name)
@@ -599,6 +604,7 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
        * path - storage domain path (for NFS)
        * host - host to use
        * clean_export_domain_metadata - if True clear export domain metadata
+       * mount_options - Mount options required for posix support
     Return: status (True if storage domain was imported properly,
                     False otherwise)
     '''
@@ -614,7 +620,7 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
     sdStorage = HostStorage(
         type_=storage_type, address=address, path=path,
         nfs_version=nfs_version, nfs_retrans=nfs_retrans,
-        nfs_timeo=nfs_timeo, vfs_type=vfs_type,
+        nfs_timeo=nfs_timeo, vfs_type=vfs_type, mount_options=mount_options
     )
     h = Host(name=host)
 
@@ -1852,7 +1858,7 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
         :param storage_domain_object: Storage domain object
         :type storage_domain_object: Storage Object
         :param storage_type: The type of storage to use (NFS,
-        iSCSI, GlusterFS, Volume etc.)
+        iSCSI, GlusterFS, Volume, POSIX etc.)
         :type storage_type: str
         :returns: True if a data domain is active and is of a chosen type,
         False otherwise
@@ -1867,6 +1873,19 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
                 # TODO: W/A for bug:
                 # https://bugzilla.redhat.com/show_bug.cgi?id=1354200
                 if storage_domain_object.get_name() != HOSTED_STORAGE:
+                    return True
+
+            # Check for POSIX storage type and the POSIX backend type.
+            # Check if the backend type is included in the domain name.
+            # This is needed since we don't have the ability to retrieve
+            # the backend type via API
+
+            elif (_storage_type == STORAGE_TYPE_POSIX and
+                    state == ACTIVE_DOMAIN and
+                    storage_type in POSIX_BACKENDS
+                  ):
+                sd_name = storage_domain_object.get_name()
+                if storage_type in sd_name:
                     return True
         return False
 

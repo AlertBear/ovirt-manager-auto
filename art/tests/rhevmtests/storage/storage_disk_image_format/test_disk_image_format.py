@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 MOVE_DISK_TIMEOUT = 600
 
 
-@attr(tier=2)
 class BaseTestDiskImage(TestCase):
     """
     Base Test Class for test plan:
@@ -224,6 +223,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         # teardown_exception will be called from the child classes
 
 
+@attr(tier=2)
 class TestCase11604(BaseTestDiskImageVms):
     """ Polarion case 11604 """
     # Bugzilla history:
@@ -277,6 +277,7 @@ class TestCase11621(BaseTestDiskImageVms):
         self.check_disks()
 
 
+@attr(tier=2)
 class TestCase11620(BaseTestDiskImageVms):
     """ Polarion case 11620 """
     # Bugzilla history:
@@ -308,6 +309,7 @@ class TestCase11620(BaseTestDiskImageVms):
         self.check_disks({self.vm_prealloc: True})
 
 
+@attr(tier=2)
 class TestCase11619(BaseTestDiskImageVms):
     """ Polarion case 11619 """
     # Bugzilla history:
@@ -376,6 +378,7 @@ class ExportVms(BaseTestDiskImageVms):
         TestCase.teardown_exception()
 
 
+@attr(tier=2)
 class TestCase11618(ExportVms):
     """ Polarion case 11618 """
     __test__ = True
@@ -396,6 +399,7 @@ class TestCase11618(ExportVms):
         self.check_disks()
 
 
+@attr(tier=2)
 class TestCase11617(ExportVms):
     """ Polarion case 11617 """
     __test__ = True
@@ -418,6 +422,7 @@ class TestCase11617(ExportVms):
         self.check_disks({self.vm_prealloc: True})
 
 
+@attr(tier=2)
 class TestCase11616(ExportVms):
     """ Polarion case 11616 """
     __test__ = True
@@ -441,6 +446,7 @@ class TestCase11616(ExportVms):
         self.check_disks()
 
 
+@attr(tier=2)
 class TestCase11615(ExportVms):
     """ Polarion case 11615 """
     __test__ = True
@@ -461,6 +467,7 @@ class TestCase11615(ExportVms):
         self.check_disks()
 
 
+@attr(tier=2)
 class TestCase11614(ExportVms):
     """ Polarion case 11614 """
     __test__ = True
@@ -482,6 +489,7 @@ class TestCase11614(ExportVms):
         self.check_disks({self.vm_prealloc: True})
 
 
+@attr(tier=2)
 class TestCase11613(ExportVms):
     """ Polarion case 11613 """
     __test__ = True
@@ -578,6 +586,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
         TestCase.teardown_exception()
 
 
+@attr(tier=2)
 class TestCase11612(TestCasesImportVmLinked):
     """ Polarion case 11612 """
     __test__ = True
@@ -606,6 +615,7 @@ class TestCase11612(TestCasesImportVmLinked):
         self.check_disks()
 
 
+@attr(tier=2)
 class TestCase11611(TestCasesImportVmLinked):
     """ Polarion case 11611 """
     __test__ = True
@@ -690,6 +700,7 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
         TestCase.teardown_exception()
 
 
+@attr(tier=2)
 class TestCase11610(TestCasesImportVmWithNewName):
     """ Polarion case 11610 """
     __test__ = True
@@ -707,6 +718,7 @@ class TestCase11610(TestCasesImportVmWithNewName):
         self.import_vm_with_new_name()
 
 
+@attr(tier=2)
 class TestCase11609(TestCasesImportVmWithNewName):
     """ Polarion case 11609 """
     __test__ = True
@@ -779,6 +791,7 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         TestCase.teardown_exception()
 
 
+@attr(tier=2)
 class TestCase11608(TestCasesCreateTemplate):
     """ Polarion case 11608 """
     __test__ = True
@@ -795,6 +808,7 @@ class TestCase11608(TestCasesCreateTemplate):
         self.create_template_from_vm()
 
 
+@attr(tier=2)
 class TestCase11607(TestCasesCreateTemplate):
     """ Polarion case 11607 """
     __test__ = True
@@ -812,6 +826,7 @@ class TestCase11607(TestCasesCreateTemplate):
         self.create_template_from_vm()
 
 
+@attr(tier=2)
 class TestCase11606(BaseTestDiskImage):
     """
     Test vm with both disk formats

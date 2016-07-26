@@ -93,6 +93,7 @@ STORAGE_TYPE = PARAMETERS.get('storage_type', None)
 STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
 STORAGE_TYPE_ISCSI = ENUMS['storage_type_iscsi']
 STORAGE_TYPE_FCP = ENUMS['storage_type_fcp']
+STORAGE_TYPE_CEPH = ENUMS['storage_type_ceph']
 STORAGE_TYPE_LOCAL = ENUMS['storage_type_local']
 STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
 STORAGE_TYPE_GLANCE = ENUMS['storage_type_glance']
@@ -131,6 +132,12 @@ VDS_HOSTS = []
 # list of Host object. one only for rhel and the second only for rhev-h
 HOSTS_RHEL = []
 HOSTS_RHEVH = []
+
+CEPHFS_ADDRESS = get_list(PARAMETERS, 'cephfs_domain_address')
+CEPHFS_PATH = get_list(PARAMETERS, 'cephfs_domain_path')
+CEPH_SERVER_SECRET = PARAMETERS.get('ceph_server_secret', None)
+CEPH_MOUNT_OPTIONS = "name=admin,secret={0}".format(CEPH_SERVER_SECRET)
+
 
 ADDRESS = get_list(PARAMETERS, 'data_domain_address')
 PATH = get_list(PARAMETERS, 'data_domain_path')
@@ -342,6 +349,14 @@ logger.info(
     UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS
 )
 
+UNUSED_CEPHFS_DATA_DOMAIN_PATHS = get_list(
+    PARAMETERS,  'extra_cephfs_data_domain_path'
+)
+UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES = get_list(
+    PARAMETERS,  'extra_ceph_data_domain_address'
+)
+
+
 UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = get_list(
     PARAMETERS, 'gluster_extra_data_domain_address'
 )
@@ -543,6 +558,11 @@ JOB_REMOVE_SNAPSHOTS_DISK = ENUMS['job_remove_snapshots_disk']
 # Storage Domain section
 JOB_ACTIVATE_DOMAIN = ENUMS['job_activate_storage_domain']
 JOB_ADD_DOMAIN = ENUMS['job_add_storage_domain']
+JOB_ADD_POSIX_DOMAIN = ENUMS['job_add_posixfs_storage_domain']
+JOB_ADD_NFS_DOMAIN = ENUMS['job_add_nfs_storage_domain']
+JOB_ADD_SAN_DOMAIN = ENUMS['job_add_san_storage_domain']
+JOB_ADD_GLUSTERFS_DOMAIN = ENUMS['job_add_glusterfs_storage_domain']
+JOB_ADD_STORAGE_DOMAIN = ENUMS['job_add_storage_domain']
 JOB_DETACH_DOMAIN = ENUMS['job_detach_storage_domain']
 JOB_REMOVE_DOMAIN = ENUMS['job_remove_storage_domain']
 # Template section

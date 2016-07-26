@@ -23,6 +23,7 @@ ISCSI = opts['elements_conf']['RHEVM Enums']['storage_type_iscsi']
 NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
 GLUSTERFS = opts['elements_conf']['RHEVM Enums']['storage_type_gluster']
 FCP = opts['elements_conf']['RHEVM Enums']['storage_type_fcp']
+CEPH = opts['elements_conf']['RHEVM Enums']['storage_type_ceph']
 STORAGE_TYPE = ART_CONFIG['PARAMETERS'].get('storage_type', None)
 NOT_APPLICABLE = 'N/A'
 
@@ -59,7 +60,7 @@ class StorageTest(BaseTestCase):
     """
     __test__ = False
 
-    storages = set([NFS, ISCSI, GLUSTERFS, FCP])
+    storages = set([NFS, ISCSI, GLUSTERFS, CEPH, FCP])
 
     # STORAGE_TYPE value sets type of storage when running
     # without the --with-multiplier flag

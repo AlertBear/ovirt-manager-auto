@@ -33,6 +33,7 @@ DATA_CENTER_TIMEOUT = 60 * 5
 ISCSI = config.STORAGE_TYPE_ISCSI
 GLUSTER = config.STORAGE_TYPE_GLUSTER
 NFS = config.STORAGE_TYPE_NFS
+CEPH = config.STORAGE_TYPE_CEPH
 
 
 def setup_module():
@@ -572,7 +573,7 @@ TYPE_TO_CLASS = {
 storage_v3_format = ENUMS['storage_format_version_v3']
 for storage_type in config.STORAGE_SELECTOR:
     logger.debug("Generating TestUpgrade for storage type %s", storage_type)
-    if storage_type == GLUSTER:
+    if storage_type in (GLUSTER, CEPH):
         # TODO: Implement TestUpgradeGluster (3.3 and up)
         continue
     for dc_version in config.DC_VERSIONS:

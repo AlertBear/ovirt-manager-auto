@@ -30,6 +30,7 @@ DESCRIPTION = "description"
 GLUSTERFS = config.STORAGE_TYPE_GLUSTER
 ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
+CEPH = config.STORAGE_TYPE_CEPH
 NFS = config.STORAGE_TYPE_NFS
 VMS_WITH_VIRTIO_SCSI_FALSE = list()
 DISK_STATUS_OK_TIMEOUT = 900
@@ -184,8 +185,11 @@ class TestCase11501(BaseClassEditDescription):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
-    __test__ = NFS in opts['storages'] or GLUSTERFS in opts['storages']
-    storages = set([NFS, GLUSTERFS])
+    __test__ = (
+        NFS in opts['storages'] or GLUSTERFS in opts['storages'] or
+        CEPH in opts['storages']
+    )
+    storages = set([NFS, GLUSTERFS, CEPH])
     polarion_test_case = '11501'
     # Bugzilla history
     # 1211314: CLI auto complete option description is missing for add disk

@@ -29,8 +29,12 @@ class TestCase11513(TestCase):
     __test__ = (
         config.STORAGE_TYPE_NFS in opts['storages']
         or config.STORAGE_TYPE_ISCSI in opts['storages']
+        or config.STORAGE_TYPE_CEPH in opts['storages']
     )
-    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
+    storages = set(
+        [config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS,
+         config.STORAGE_TYPE_CEPH]
+    )
 
     polarion_test_case = '11513'
     disk_name = "shareableDisk"

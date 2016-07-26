@@ -212,8 +212,11 @@ class TestCase11576Shared(BaseCaseIsoDomains):
     # The Posix ISO domain fails to Detach and can only be removed by using
     # the Destroy option (which the code doesn't do)
     # Gluster doesn't support being used as an ISO domain
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
-    storages = set([config.STORAGE_TYPE_NFS])
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_CEPH in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_NFS, config.STORAGE_TYPE_CEPH])
     local = False
     vm_name = "TestCase11576Shared"
     # Bugzilla history

@@ -42,6 +42,7 @@ FCP = config.STORAGE_TYPE_FCP
 NFS = config.STORAGE_TYPE_NFS
 GLUSTER = config.STORAGE_TYPE_GLUSTER
 POSIX = config.STORAGE_TYPE_POSIX
+CEPH = config.STORAGE_TYPE_CEPH
 TIMEOUT_DEACTIVATE_DOMAIN = 90
 
 
@@ -258,12 +259,34 @@ class BasicEnvironment(BaseTestCase):
                 path=gluster_path,
                 vfs_type=config.ENUMS['vfs_type_glusterfs']
             )
+        elif self.storage == CEPH:
+            name = "{0}_{1}".format(CEPH, self.non_master)
+            self.non_master = name
+            posix_address = (
+                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[0]
+            )
+            posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[0]
+            status = hl_sd.addPosixfsDataDomain(
+                host=self.host,
+                storage=name,
+                data_center=config.DATA_CENTER_NAME,
+                address=posix_address,
+                path=posix_path,
+                vfs_type=CEPH,
+                mount_options=config.CEPH_MOUNT_OPTIONS
+            )
         if not status:
             raise exceptions.StorageDomainException(
                 "Creating %s storage domain '%s' failed"
                 % (self.storage, name)
             )
-        ll_jobs.wait_for_jobs([config.JOB_ADD_DOMAIN])
+        ll_jobs.wait_for_jobs(
+            [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
+        )
+        ll_sd.waitForStorageDomainStatus(
+            True, config.DATA_CENTER_NAME, name,
+            config.SD_ACTIVE
+        )
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, data_center
         )
@@ -362,7 +385,6 @@ class CommonSetUp(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 class DomainImportWithTemplate(BasicEnvironment):
     """
     Create vm from imported domain's Template
@@ -370,7 +392,7 @@ class DomainImportWithTemplate(BasicEnvironment):
     vm_from_template = 'vm_from_temp'
     # TODO: Ensure this test is FCP ready when importBlockStorageDomain
     # supports FCP
-    storages = set([ISCSI, NFS, GLUSTER, POSIX])
+    storages = set([ISCSI, NFS, GLUSTER, CEPH])
 
     def setUp(self):
         """
@@ -428,6 +450,13 @@ class DomainImportWithTemplate(BasicEnvironment):
                 True, config.TYPE_DATA, GLUSTER,
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host
+            )
+        elif self.storage == CEPH:
+            status = ll_sd.importStorageDomain(
+                True, config.TYPE_DATA, POSIX,
+                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[0], self.host,
+                vfs_type=CEPH, mount_options=config.CEPH_MOUNT_OPTIONS
             )
         self.assertTrue(status, "Failed to import storage domain")
         logger.info("Attaching storage domain %s", self.non_master)
@@ -1320,7 +1349,7 @@ class TestCase5192_3_6(BaseTestCase5192):
 # Bugzilla history:
 # BZ1328071: Unexpected flow when importing a domain with a template with
 # multiple disks on different domains
-@bz({'1351145': {}})
+@attr(tier=2)
 class TestCase5200(DomainImportWithTemplate):
     """
     Create vm from a template with two disks, one on a block domain
@@ -1379,7 +1408,6 @@ class TestCase5200(DomainImportWithTemplate):
 
 
 @attr(tier=1)
-@bz({'1351145': {}})
 class TestCase5297(DomainImportWithTemplate):
     """
     Create vm from a template from an imported data domain
@@ -1390,7 +1418,7 @@ class TestCase5297(DomainImportWithTemplate):
     # supports FCP
     __test__ = (
         ISCSI in opts['storages'] or NFS in opts['storages'] or
-        GLUSTER in opts['storages'] or POSIX in opts['storages']
+        GLUSTER in opts['storages'] or CEPH in opts['storages']
     )
     polarion_test_case = '5297'
 
