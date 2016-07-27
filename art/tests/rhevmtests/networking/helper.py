@@ -596,7 +596,7 @@ def check_queues_from_qemu(vm, host_obj, num_queues):
     logger.info("Check if VM %s have number of queues == %s", vm, num_queues)
     running_vms = re.findall(r'\d+ .*qemu-kvm.*', out)
     for run_vm in running_vms:
-        if re.findall(r'-name %s' % vm, run_vm):
+        if re.findall(r'-name.*%s' % vm, run_vm):
             qemu_queues = re.findall(r'fds=[\d\d:]+', out)
             if not qemu_queues:
                 if num_queues == 0:
