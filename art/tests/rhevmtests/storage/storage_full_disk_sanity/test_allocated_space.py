@@ -246,7 +246,8 @@ class TestCase11537(BaseCase):
             disk = ll_disks.get_disk_obj(disk_name)
             logger.info('Removing disk %s', disk.get_alias())
             self.assertTrue(ll_disks.deleteDisk(True, disk.get_alias()))
-            self.expected_allocated_size[self.domains[0]] -= disk.get_size()
+            provisioned_size = disk.get_provisioned_size()
+            self.expected_allocated_size[self.domains[0]] -= provisioned_size
 
 
 @attr(tier=2)
@@ -284,8 +285,9 @@ class TestCase11547(BaseCase):
                     disk_name=disk.get_alias(), target_domain=self.domains[1]
                 )
             )
-            self.expected_allocated_size[self.domains[0]] -= disk.get_size()
-            self.expected_allocated_size[self.domains[1]] += disk.get_size()
+            provisioned_size = disk.get_provisioned_size()
+            self.expected_allocated_size[self.domains[0]] -= provisioned_size
+            self.expected_allocated_size[self.domains[1]] += provisioned_size
 
     @polarion("RHEVM3-11547")
     def test_move_disks(self):
