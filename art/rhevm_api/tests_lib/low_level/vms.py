@@ -2552,14 +2552,20 @@ def _createVmForClone(
             storage_domains.add_storage_domain(elem)
         disk.storage_domains = storage_domains
         diskArray.add_disk(disk)
+
     disk_attachments = data_st.DiskAttachments()
+
     for _disk in diskArray.get_disk():
         disk_attachments.add_disk_attachment(
             prepare_disk_attachment_object(
-                _disk.get_id(), interface=interface, bootable=bootable
+                _disk.get_id(),
+                interface=interface,
+                bootable=bootable,
+                disk=_disk,
             )
         )
     vm.set_disk_attachments(disk_attachments)
+
     return vm
 
 
