@@ -5396,7 +5396,7 @@ def __prepare_numa_node_object(
             )
             if not h_numa_node_obj:
                 logger.error(
-                    "Numa node with index %d not found on host %s",
+                    "Numa node with index %s not found on host %s",
                     h_numa_node_index, host_name
                 )
                 return None
@@ -5507,9 +5507,20 @@ def update_numa_node_on_vm(
             kwargs
         )
         return False
-    return NUMA_NODE_API.update(
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update",
+        obj_type="numa node",
+        obj_name=str(old_index),
+        extra_txt="on VM %s" % vm_name,
+        **kwargs
+    )
+    logger.info(log_info)
+    status = NUMA_NODE_API.update(
         old_numa_node_obj, new_numa_node_obj, True
     )[1]
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def remove_numa_node_from_vm(vm_name, numa_node_index):

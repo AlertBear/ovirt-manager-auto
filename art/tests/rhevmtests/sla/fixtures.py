@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture(scope="class")
 def start_vms(request):
     """
-    1) Start VMS
+    1) Start VM's
     """
     vms_to_start = request.node.cls.vms_to_start
 
@@ -30,7 +30,7 @@ def stop_vms(request):
 
     def fin():
         """
-        1) Stop VM
+        1) Stop VM's
         """
         ll_vms.stop_vms_safely(vms_list=vms_to_stop)
     request.addfinalizer(fin)
@@ -62,13 +62,13 @@ def run_once_vms(request):
 @pytest.fixture(scope="class")
 def update_vms(request):
     """
-    1) Pin VM to list of hosts
+    1) Update VM's
     """
     vms_to_params = request.node.cls.vms_to_params
 
     def fin():
         """
-        1) Unpin VM
+        1) Update VM's to default parameters
         """
         for vm_name in vms_to_params.iterkeys():
             ll_vms.updateVm(
