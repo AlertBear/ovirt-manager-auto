@@ -98,24 +98,6 @@ EXPORT_TYPE = ENUMS['storage_dom_type_export']
 ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
 DST_HOST_IP = "10.35.147.62"
 
-# Port mirroring parameters
-PM_NETWORK = ["pm_net_1", "pm_net_2", "pm_net_3"]
-PM_VNIC_PROFILE = [
-    '%s_vNIC_PORT_MIRRORING' % net for net in [MGMT_BRIDGE] + PM_NETWORK
-]
-NUM_VMS = 5
-MGMT_IPS = []  # Gets filled up during the test
-NET1_IPS = [
-    '5.5.%s.%s' % (
-        randint(1, 250), randint(1, 250)
-    ) for i in range(NUM_VMS + 1)
-]
-NET2_IPS = [
-    '6.6.%s.%s' % (
-        randint(1, 250), randint(1, 250)
-    ) for i in range(NUM_VMS + 1)
-]
-
 # Queues parameters
 NUM_QUEUES = [5, 6]
 PROP_QUEUES = ["=".join(["queues", str(i)]) for i in NUM_QUEUES]

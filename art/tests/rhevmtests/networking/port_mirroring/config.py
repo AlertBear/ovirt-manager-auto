@@ -5,8 +5,44 @@
 Config file for port mirroring
 """
 
-from rhevmtests.networking.config import *  # NOQA
+import rhevmtests.networking.config as conf
+import rhevmtests.helpers as global_helper
+from random import randint
 
+PM_NIC_NAME = global_helper.generate_object_names(
+    num_of_cases=1, prefix="PortMirroringNic"
+)
 VM_NICS_DICT = dict()
 VMS_MACS_AND_IPS = dict()
 VMS_NETWORKS_PARAMS = dict()
+PM_NETWORK = ["pm_net_1", "pm_net_2", "pm_net_3"]
+PM_VNIC_PROFILE = [
+    '%s_vNIC_PORT_MIRRORING' % net for net in [conf.MGMT_BRIDGE] + PM_NETWORK
+]
+NUM_VMS = 5
+MGMT_IPS = []  # Gets filled up during the test
+NET1_IPS = [
+    '5.5.%s.%s' % (
+        randint(1, 250), randint(1, 250)
+    ) for i in range(NUM_VMS + 1)
+]
+
+NET2_IPS = [
+    '6.6.%s.%s' % (
+        randint(1, 250), randint(1, 250)
+    ) for j in range(NUM_VMS + 1)
+]
+
+VLAN_0 = "1000" if conf.PPC_ARCH else conf.VLAN_ID[0]
+VLAN_1 = "1500" if conf.PPC_ARCH else conf.VLAN_ID[1]
+
+NETS_DICT = {
+    PM_NETWORK[0]: {
+        "vlan_id": VLAN_0,
+        "required": "false"
+    },
+    PM_NETWORK[1]: {
+        "vlan_id": VLAN_1,
+        "required": "false"
+    }
+}
