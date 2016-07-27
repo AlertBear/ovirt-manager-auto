@@ -654,6 +654,7 @@ class TestCase6168(BaseTestCase):
 
 
 @attr(tier=1)
+@bz({'1360686': {}})
 class TestCase6169(BaseTestCase):
     """
     Full flow of backup/restore API
