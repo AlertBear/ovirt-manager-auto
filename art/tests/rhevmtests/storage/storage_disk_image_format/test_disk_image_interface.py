@@ -460,7 +460,7 @@ class TestCase14945(BaseTestCase):
             raise exceptions.DiskException(
                 "Unable to create disk %s" % disk_args['alias']
             )
-        if not ll_disks.wait_for_disks_status(self.disk_alias):
+        if not ll_disks.wait_for_disks_status([self.disk_alias]):
             raise exceptions.DiskException(
                 "Failed to wait for disk %s status OK" % self.disk_alias
             )
@@ -484,8 +484,9 @@ class TestCase14945(BaseTestCase):
         changed in RHEVM and in the guest for the specific VM ONLY
         """
         self.assertTrue(
-            ll_vms.attach_disk_vm(
-                True, self.disk_id, self.vm_names[0],
+            ll_disks.attachDisk(
+                positive=True, alias=self.disk_alias, vm_name=self.vm_names[0],
+                active=False, disk_id=self.disk_id,
                 interface=config.INTERFACE_IDE
             )
         )
@@ -495,8 +496,9 @@ class TestCase14945(BaseTestCase):
             )
         )
         self.assertTrue(
-            ll_vms.attach_disk_vm(
-                True, self.disk_id, self.vm_names[1],
+            ll_disks.attachDisk(
+                positive=True, alias=self.disk_alias, vm_name=self.vm_names[1],
+                active=False, disk_id=self.disk_id,
                 interface=config.INTERFACE_VIRTIO
             )
         )
@@ -680,7 +682,7 @@ class TestCase14948(BaseTestCase):
             raise exceptions.DiskException(
                 "Unable to create disk %s" % disk_args['alias']
             )
-        if not ll_disks.wait_for_disks_status(self.disk_alias):
+        if not ll_disks.wait_for_disks_status([self.disk_alias]):
             raise exceptions.DiskException(
                 "Failed to wait for disk %s status OK" % self.disk_alias
             )
@@ -699,8 +701,10 @@ class TestCase14948(BaseTestCase):
         """
         disk_obj = ll_disks.get_disk_obj(self.disk_alias)
         self.assertTrue(
-            ll_vms.attach_disk_vm(
-                False, disk_obj.get_id(), self.vm_name
+            ll_disks.attachDisk(
+                positive=True, alias=disk_obj.get_alias(),
+                vm_name=self.vm_name, active=False, disk_id=disk_obj.get_id(),
+                interface=None
             ), "Succeeded to attach a disk to a vm without specifying "
             "the disk interface"
         )
