@@ -711,7 +711,7 @@ def removeDirOnHost(
 
 
 def searchForObj(
-    util, query_key, query_val, key_name, max=-1, case_sensitive=True,
+    util, query_key, query_val, key_name, max=None, case_sensitive=True,
     expected_count=None
 ):
     '''
