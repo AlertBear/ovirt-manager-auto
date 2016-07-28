@@ -3,8 +3,8 @@ Vm Pool test config
 """
 from rhevmtests.virt.config import *  # flake8:  noqa
 
-MISSING_PRESTARTED_MSG = "VmPool '%s' is missing %s prestarted Vms"
-NO_AVAILABLE_VMS_MSG = "No Vms avaialable for prestarting"
+MISSING_PRESTARTED_MSG = "VmPool '%s' is missing %s prestarted VMs"
+NO_AVAILABLE_VMS_MSG = "No VMs available for prestarting"
 ALLOCATE_VM_POSITIVE_MSG = "Failed to take a vm from pool: %s as user: %s"
 ALLOCATE_VM_NEGETIVE_MSG = (
     "Allocating a vm from pool %s as user: %s was successful although expected "

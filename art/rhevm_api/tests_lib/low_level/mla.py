@@ -45,7 +45,7 @@ userUtil = get_api('user', 'users')
 sdUtil = get_api('storage_domain', 'storagedomains')
 clUtil = get_api('cluster', 'clusters')
 templUtil = get_api('template', 'templates')
-poolUtil = get_api('vmpool', 'vmpools')
+poolUtil = get_api('vm_pool', 'vmpools')
 domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
 permisUtil = get_api('permission', 'permissions')
@@ -499,7 +499,7 @@ def addVmPoolPermissionToUser(positive, user, vmpool, role, domain=None):
     '''
 
     poolObj = poolUtil.find(vmpool)
-    return addPermitsToUser(positive, user, domain, role, poolObj, 'vmpool')
+    return addPermitsToUser(positive, user, domain, role, poolObj, 'vm_pool')
 
 
 def findUserByUserName(user_name):

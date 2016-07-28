@@ -75,7 +75,8 @@ class BaseVmPool(TestCase):
             if cls.version < config.NEW_IMPLEMENTATION_VERSION:
                 helpers.wait_for_vm_pool_removed(cls.pool_name)
             else:
-                ll_vmpools.removeVmPool(True, cls.pool_name)
+                if not ll_vmpools.removeVmPool(True, cls.pool_name, wait=True):
+                    helpers.wait_for_vm_pool_removed(cls.pool_name)
 
 
 class VmPool(BaseVmPool):

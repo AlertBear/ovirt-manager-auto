@@ -21,7 +21,10 @@ import time
 import art.core_api.apis_utils as api_utils
 import art.core_api.validator as validator
 import art.rhevm_api.utils.test_utils as test_utils
-import art.rhevm_api.tests_lib.low_level.general as ll_general
+from art.rhevm_api.tests_lib.low_level import (
+    general as ll_general,
+    vms as ll_vms,
+)
 from art.test_handler.settings import opts
 import art.core_api.apis_exceptions as exceptions
 
@@ -231,7 +234,7 @@ def get_vms_in_pool_by_name(vm_pool):
     return [vm_obj.get_name() for vm_obj in vms_object_list]
 
 
-def removeVmPool(positive, vmpool):
+def removeVmPool(positive, vmpool, wait=False):
     """
     Description: remove vm pool
 
@@ -241,10 +244,14 @@ def removeVmPool(positive, vmpool):
     :type positive: bool
     :param vmpool:  vmpool name
     :type vmpool: str
-    :return: True if update status == positive, False otherwise
+    :param wait: If True wait for all vms in the pool to be removed, otherwise
+        return delete status.
+    :type wait: bool
+    :return: True if status == positive, False otherwise.
     :rtype: bool
     """
     pool = UTIL.find(vmpool)
+    pool_vms = get_vms_in_pool_by_name(vmpool)
     log_info, log_error = ll_general.get_log_msg(
         action="remove", obj_type="vmpool", obj_name=vmpool, positive=positive
     )
@@ -252,6 +259,12 @@ def removeVmPool(positive, vmpool):
     status = UTIL.delete(pool, positive)
     if not status:
         logger.error(log_error)
+    if wait and positive:
+        try:
+            ll_vms.waitForVmsGone(positive, pool_vms)
+        except exceptions.APITimeout:
+            logger(log_error)
+            return False
     return status
 
 

@@ -289,21 +289,23 @@ def wait_for_no_available_prestarted_vms(vmpool, prestarted_vms):
     ]
     sampler = timeout_api.TimeoutingSampler(
         config.PRESTARTED_VMS_TIMEOUT, config.VM_POOL_ACTION_SLEEP,
-        engine_executor.run_cmd, no_more_vms_cmd
+        engine_executor.run_cmd, missing_prestarted_cmd
     )
     try:
-        logger.info("running cmd: %s", no_more_vms_cmd)
+        logger.info("running cmd: %s", missing_prestarted_cmd)
         for rc_1, out_1, error_1 in sampler:
-            if not out_1 == '':
-                logger.info("running cmd: %s", missing_prestarted_cmd)
+            if out_1:
+                delta = 100
+                logger.info("running cmd: %s", no_more_vms_cmd)
                 rc_2, out_2, error_2 = engine_executor.run_cmd(
-                    missing_prestarted_cmd
+                    no_more_vms_cmd
                 )
-                delta = (
-                    datetime.strptime(out_2.strip(), "%H:%M") -
-                    datetime.strptime(out_1.strip(), "%H:%M")
-                )
-                if delta.seconds <= 60:
+                if out_2:
+                    delta = (
+                        datetime.strptime(out_2.strip(), "%H:%M") -
+                        datetime.strptime(out_1.strip(), "%H:%M")
+                    ).seconds
+                if delta <= 60:
                     break
     except timeout_api.TimeoutExpiredError:
         raise exceptions.VmPoolException(
