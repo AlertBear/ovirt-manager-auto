@@ -1,27 +1,34 @@
 """
-CPU QoS TEST
+CPU QoS test
 """
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.unittest_lib as u_libs
+import config as conf
 import pytest
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.test_handler.exceptions as errors
-from art.rhevm_api.tests_lib.low_level import (
-    vms as ll_vms,
-    hosts as ll_hosts,
-    sla as ll_sla,
-    clusters as ll_cluster,
-    datacenters as ll_datacenter,
-    templates as ll_templates
+import rhevmtests.sla.helpers as sla_helpers
+from art.test_handler.tools import polarion
+from fixtures import (
+    attach_cpu_profiles_to_vms,
+    create_cpu_profile,
+    create_cpu_qoss,
+    create_template_for_cpu_qos_test,
+    create_vm_from_template_for_cpu_qos_test,
+    disable_guest_agent_service,
+    update_vms_cpu
 )
-from art.test_handler.tools import polarion, bz
-from art.unittest_lib import SlaTest as TestCase, attr
-from rhevmtests import helpers
-from rhevmtests.sla.cpu_qos import config
+from rhevmtests.sla.fixtures import (
+    start_vms,
+    update_vms_to_default_parameters
+)
 
-logger = config.logging.getLogger(__name__)
+logger = conf.logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="class", autouse=True)
-def setup_and_teardown(request):
+@pytest.fixture(scope="module", autouse=True)
+def init_constants():
     """
     Setup:
     1. Create 3 VMS for QOS test
@@ -33,107 +40,44 @@ def setup_and_teardown(request):
     3. Remove all VMS created in the test
     4. Remove QOS template
     """
-    def fin():
-        config.QOS_VMS.append(config.QOS_VM_FROM_TEMPLATE)
-        ll_vms.safely_remove_vms(config.QOS_VMS)
-        if ll_templates.get_template_obj(config.QOS_template):
-            if not ll_templates.removeTemplate(True, config.QOS_template):
-                logger.error(
-                    "Failed to remove template %s", config.QOS_template
-                )
-        for cluster_name in config.CLUSTER_NAME[:2]:
-            for profile in ll_cluster.get_all_cpu_profile_names(cluster_name):
-                if profile != cluster_name:
-                    if not ll_cluster.remove_cpu_profile(
-                        cluster_name, profile
-                    ):
-                        logger.error("Failed to remove  profile %s", profile)
-        for qos in ll_datacenter.get_cpu_qoss_from_data_center(
-            config.DC_NAME[0]
-        ):
-            ll_datacenter.delete_qos_from_datacenter(config.DC_NAME[0], qos)
-
-    request.addfinalizer(fin)
-
-    config.DEFAULT_CPU_PROFILE_ID_CLUSTER_0 = (
-        ll_cluster.get_cpu_profile_id_by_name(
-            config.CLUSTER_NAME[0], config.CLUSTER_NAME[0]
+    conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_0 = (
+        ll_clusters.get_cpu_profile_id_by_name(
+            conf.CLUSTER_NAME[0], conf.CLUSTER_NAME[0]
         )
     )
-    config.DEFAULT_CPU_PROFILE_ID_CLUSTER_1 = (
-        ll_cluster.get_cpu_profile_id_by_name(
-            config.CLUSTER_NAME[1], config.CLUSTER_NAME[1]
+    conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_1 = (
+        ll_clusters.get_cpu_profile_id_by_name(
+            conf.CLUSTER_NAME[1], conf.CLUSTER_NAME[1]
         )
     )
-    for vm_name in config.QOS_VMS:
-        if not ll_vms.createVm(
-            positive=True,
-            vmName=vm_name,
-            vmDescription="QOS VM",
-            cluster=config.CLUSTER_NAME[0],
-            template=config.TEMPLATE_NAME[0]
-        ):
-            raise errors.VMException("Failed to Create VM %s" % vm_name)
 
 
-class QOS(TestCase):
+@u_libs.attr(tier=1)
+class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
     """
     1. test_a_add_qos
     2. test_b_negative_add_qos
     3. test_c_add_cpu_profile
     4. test_d_attach_cpu_profile_to_vm
-    5. test_e_negative_remove_cpu_profile_and_qos
-    6. test_f_remove_cpu_profile_and_qos
-    7. test_g_create_qos_vm_from_template
-    8. test_h_sanity
-    9. test_i_migration
-    10. test_j_cpu_qos_while_hot_plug
-    11. test_k_different_QoS_values
-    12. test_l_no_guest_agent
+    5. test_e_remove_cpu_profile_and_qos
     """
-
     __test__ = True
 
-    @classmethod
-    def load_vm_and_check_the_load(cls, load_dict, expected_dict=None):
-        """
-        1. load vms
-        2. check if the vms have expected cpu load percentage
-
-        :param load_dict: keys - vm names , values - load percentage
-        :type load_dict: dict
-        :param expected_dict: keys - vm names ,values - vm expected cpu percent
-        :type: dict
-        :return:True if VM gets the expected CPU load, False otherwise
-        :rtype: bool
-        """
-        if expected_dict is None:
-            expected_dict = load_dict
-        for vm_name, load_value in load_dict.iteritems():
-            vm_res = helpers.get_host_resource(
-                hl_vms.get_vm_ip(vm_name), config.VMS_LINUX_PW
-            )
-            if not ll_sla.load_resource_cpu(vm_res, 100):
-                logger.error("Failed to load the %s", vm_name)
-                return False
-        if not helpers.wait_for_vms_gets_to_full_consumption(expected_dict):
-            logger.error("VM is not loading the VM %s as expected", vm_name)
-            return False
-        return True
-
-
-@attr(tier=1)
-class QOSTier1(QOS):
     @polarion("RHEVM3-14700")
     def test_a_add_qos(self):
         """
         Add 4 QoS with: 10%, 25%, 50% and 75%
         """
-        for qos_name, qos_value in config.QOSS.iteritems():
-            self.assertTrue(
-                ll_datacenter.add_qos_to_datacenter(
-                    config.DC_NAME[0], qos_name, "cpu", cpu_limit=qos_value
-                )
+        for qos_name, qos_value in conf.QOSS.iteritems():
+            u_libs.testflow.step(
+                "Create CPU QoS %s on datacenter %s with value: %s",
+                qos_name, conf.DC_NAME[0], qos_value
+            )
+            assert ll_datacenters.add_qos_to_datacenter(
+                datacenter=conf.DC_NAME[0],
+                qos_name=qos_name,
+                qos_type=conf.QOS_TYPE_CPU,
+                cpu_limit=qos_value
             )
 
     @polarion("RHEVM3-14700")
@@ -145,10 +89,15 @@ class QOSTier1(QOS):
         """
         qoss = {"qos_120": 120, "qos_-5": -5}
         for qos_name, qos_value in qoss.iteritems():
-            self.assertFalse(
-                ll_datacenter.add_qos_to_datacenter(
-                    config.DC_NAME[0], qos_name, "cpu", cpu_limit=qos_value
-                )
+            u_libs.testflow.step(
+                "Create CPU QoS %s on datacenter %s with parameters: %s",
+                qos_name, conf.DC_NAME[0], qos_value
+            )
+            assert not ll_datacenters.add_qos_to_datacenter(
+                datacenter=conf.DC_NAME[0],
+                qos_name=qos_name,
+                qos_type=conf.QOS_TYPE_CPU,
+                cpu_limit=qos_value
             )
 
     @polarion("RHEVM3-14711")
@@ -156,266 +105,302 @@ class QOSTier1(QOS):
         """
         Add 4 cpu profile that match the QOSS that were already created
         """
-        for qos_name in config.QOSS.keys():
-            cpu_qos_obj = ll_datacenter.get_qos_from_datacenter(
-                config.DC_NAME[0], str(qos_name)
+        for cpu_profile_name, qos_name in conf.CPU_PROFILES.iteritems():
+            cpu_qos_obj = ll_datacenters.get_qos_from_datacenter(
+                datacenter=conf.DC_NAME[0],
+                qos_name=qos_name
             )
-            logger.info(
-                "Create cpu profile %s on cluster %s",
-                qos_name, config.CLUSTER_NAME[0]
-                )
-            self.assertTrue(
-                ll_cluster.add_cpu_profile(
-                    cluster_name=config.CLUSTER_NAME[0],
-                    name=qos_name,
-                    qos=cpu_qos_obj
-                ), "Failed to create cpu profile with qos %s" % qos_name
+            u_libs.testflow.step(
+                "Create CPU profile %s on cluster %s with QoS %s",
+                cpu_profile_name, conf.CLUSTER_NAME[0], qos_name
+            )
+            assert ll_clusters.add_cpu_profile(
+                cluster_name=conf.CLUSTER_NAME[0],
+                name=cpu_profile_name,
+                qos=cpu_qos_obj
             )
 
     @polarion("RHEVM-14932")
     def test_d_attach_cpu_profile_to_vm(self):
         """
-        Attach all cpu profiles to VMs
+        Attach all cpu profiles to VM's
         """
-        for vm_name, qos in zip(
-            config.QOS_VMS, sorted(config.QOSS.keys())[:3]
-        ):
-            cpu_profile_id = ll_cluster.get_cpu_profile_id_by_name(
-                config.CLUSTER_NAME[0], str(qos)
+        for vm_name, cpu_profile_name in conf.VMS_CPU_PROFILES.iteritems():
+            cpu_profile_id = ll_clusters.get_cpu_profile_id_by_name(
+                cluster_name=conf.CLUSTER_NAME[0],
+                cpu_profile_name=cpu_profile_name
             )
-            self.assertTrue(
-                ll_vms.updateVm(
-                    positive=True, vm=vm_name,
-                    cpu_profile_id=cpu_profile_id
-                ), "Failed to update VM cpu profile %s" % qos
+            u_libs.testflow.step(
+                "Attach CPU profile %s to VM %s", cpu_profile_name, vm_name
             )
-
-    @polarion("RHEVM-14708")
-    def test_e_negative_remove_cpu_profile_and_qos(self):
-        """
-        1. Try to delete a CPU profile that is attached to a VM
-        2. Try to delete a Qos that is attached to a VM
-        """
-        cpu_profile = sorted(config.QOSS.keys())[0]
-        self.assertFalse(
-            ll_cluster.remove_cpu_profile(
-                config.CLUSTER_NAME[0], cpu_profile
+            assert ll_vms.updateVm(
+                positive=True,
+                vm=vm_name,
+                cpu_profile_id=cpu_profile_id
             )
-        )
 
     @polarion("RHEVM-14710")
-    def test_f_remove_cpu_profile_and_qos(self):
+    def test_e_remove_cpu_profile_and_qos(self):
         """
-        1. Delete a CPU profile that is not attached to a VM
-        2. Delete a Qos that is not attached to a VM
+        1. Detach CPU profiles from VM's
+        2. Delete a CPU profile that does not attached to a VM
+        3. Delete a Qos that does not attached to a VM
         """
-        cpu_qos = sorted(config.QOSS.keys())[3]
-        self.assertTrue(
-            ll_cluster.remove_cpu_profile(
-                config.CLUSTER_NAME[0], cpu_qos
+        for vm_name in conf.VMS_CPU_PROFILES.iterkeys():
+            u_libs.testflow.step(
+                "Attach default CPU profile to VM %s", vm_name
             )
+            assert ll_vms.updateVm(
+                positive=True,
+                vm=vm_name,
+                cpu_profile_id=conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_0
+            )
+        for cpu_profile_name, qos_name in conf.CPU_PROFILES.iteritems():
+            u_libs.testflow.step(
+                "Remove CPU profile %s from cluster %s",
+                cpu_profile_name, conf.CLUSTER_NAME[0]
+            )
+            assert ll_clusters.remove_cpu_profile(
+                cluster_name=conf.CLUSTER_NAME[0],
+                cpu_prof_name=cpu_profile_name
+            )
+            u_libs.testflow.step(
+                "Remove CPU QoS %s from datacenter %s",
+                qos_name, conf.DC_NAME[0]
+            )
+            assert ll_datacenters.delete_qos_from_datacenter(
+                datacenter=conf.DC_NAME[0],
+                qos_name=qos_name
+            )
+
+
+@pytest.mark.usefixtures(
+    create_cpu_qoss.__name__,
+    create_cpu_profile.__name__,
+    attach_cpu_profiles_to_vms.__name__
+)
+class BaseCpuQoSAndCpuProfile(u_libs.SlaTest):
+    """
+    Apply common fixtures on all child classes
+    """
+
+    @staticmethod
+    def calculate_expected_values(vm_name):
+        """
+        Calculate expected values for test
+
+        Args:
+            vm_name (str): VM name
+
+        Returns:
+            dict: Expected CPU load percentage
+        """
+        host = ll_vms.get_vm_host(vm_name=vm_name)
+        host_cpu = ll_hosts.get_host_processing_units_number(host_name=host)
+        vm_cpu = ll_vms.get_vm_processing_units_number(vm_name=vm_name)
+        expected_value = host_cpu / vm_cpu * conf.QOSS[conf.CPU_QOS_10]
+        expected_value = 100 if expected_value > 100 else expected_value
+        return {vm_name: expected_value}
+
+
+@u_libs.attr(tier=1)
+@pytest.mark.usefixtures(start_vms.__name__)
+class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
+    """
+    Check that VM limited to specific CPU load by CPU QoS
+    """
+    __test__ = True
+    cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
+    cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
+    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_start = conf.QOS_VMS[:1]
+    load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
+
+    def test_vm_cpu_limitation(self):
+        """
+        1. Load VM CPU to 100%
+        2. Check that the VM CPU is the right amount CPU,
+           that is taken from the host.
+        """
+        expected_dict = self.calculate_expected_values(
+            vm_name=conf.QOS_VMS[0]
         )
-        self.assertTrue(
-            ll_datacenter.delete_qos_from_datacenter(
-                config.DC_NAME[0], cpu_qos
-            )
+        assert sla_helpers.load_vm_and_check_the_load(
+            load_dict=self.load_dict,
+            expected_values=expected_dict
         )
 
+
+@u_libs.attr(tier=2)
+class TestRemoveAttachedCpuProfile(BaseCpuQoSAndCpuProfile):
+    """
+    Negative: remove CPU profile that attached to VM
+    """
+    __test__ = True
+    cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
+    cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
+    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+
+    @polarion("RHEVM-14708")
+    def test_remove_cpu_profile(self):
+        """
+        Try to delete a CPU profile that is attached to a VM
+        """
+        u_libs.testflow.step("Remove CPU profile %s", conf.CPU_PROFILE_10)
+        assert not ll_clusters.remove_cpu_profile(
+            cluster_name=conf.CLUSTER_NAME[0],
+            cpu_prof_name=conf.CPU_PROFILE_10
+        )
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    create_template_for_cpu_qos_test.__name__,
+    create_vm_from_template_for_cpu_qos_test.__name__
+)
+class TestCreateQoSVmFromTemplate(BaseCpuQoSAndCpuProfile):
+    """
+    Create VM from template that has specific CPU profile
+    """
+    __test__ = True
+    cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
+    cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
+    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+
     @polarion("RHEVM3-14939")
-    def test_g_create_qos_vm_from_template(self):
+    def test_template_cpu_profile(self):
         """
         1. Create a template on first cluster with a CPU profile
         2. Create a VM from the template on second cluster
         3. Check that created and gets the default CPU profile
         """
-        cpu_profile_id = ll_cluster.get_cpu_profile_id_by_name(
-            config.CLUSTER_NAME[0], str(config.QOSS.keys()[0])
-        )
-        if not ll_templates.createTemplate(
-            True, name=config.QOS_template,
-            vm=config.VM_NAME[0],
-            vmDescription="QOS VM",
-            cluster=config.CLUSTER_NAME[0],
-            template=config.TEMPLATE_NAME[0],
-            cpu_profile_id=cpu_profile_id
-
-        ):
-            raise errors.TemplateException(
-                "Failed to create template for pool"
-            )
-        if not ll_vms.createVm(
-            positive=True,
-            vmName=config.QOS_VM_FROM_TEMPLATE,
-            cluster=config.CLUSTER_NAME[1],
-            template=config.QOS_template
-        ):
-            raise errors.VMException(
-                "Failed to Create VM %s" % config.QOS_template
-            )
         vm_cpu_profile_id = ll_vms.get_cpu_profile_id(
-            config.QOS_VM_FROM_TEMPLATE
+            vm_name=conf.QOS_VM_FROM_TEMPLATE
         )
-        self.assertEqual(
-            vm_cpu_profile_id, config.DEFAULT_CPU_PROFILE_ID_CLUSTER_1
+        u_libs.testflow.step(
+            "Check if VM created from template has default CPU profile %s",
+            conf.CLUSTER_NAME[1]
         )
-
-    @bz({"1346252": {}})
-    @polarion("RHEVM3-14688")
-    def test_h_sanity(self):
-        """
-        1. Start VM
-        2. Load VM CPU to 100%
-        3. Check that the VM CPU is the right amount CPU,
-           that is taken from the host.
-        """
-        assert ll_vms.startVm(True, config.QOS_VMS[0])
-        load_dict = {config.QOS_VMS[0]: sorted(config.QOSS.values())[0]}
-        host = ll_vms.get_vm_host(config.QOS_VMS[0])
-        host_cpu = ll_hosts.get_host_processing_units_number(host)
-        expected_value = host_cpu * 100 / load_dict.values()[0]
-        expected_value = 100 if expected_value > 100 else expected_value
-        expected_dict = {config.QOS_VMS[0]: expected_value}
-        self.assertTrue(
-            self.load_vm_and_check_the_load(load_dict, expected_dict)
-        )
+        assert vm_cpu_profile_id == conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_1
 
 
-@bz({"1346252": {}})
-@attr(tier=2)
-class QOSTier2(QOS):
-
-    @pytest.fixture(scope="class", autouse=True)
-    def setup_tier2(self):
-        """
-        Setup:
-        1. add qos
-        3. add cpu profiles
-        4. attach cpu profiles to vms
-        """
-        for qos_name, qos_value in config.QOSS.iteritems():
-            assert ll_datacenter.add_qos_to_datacenter(
-                config.DC_NAME[0], qos_name, "cpu", cpu_limit=qos_value)
-
-            cpu_qos_obj = ll_datacenter.get_qos_from_datacenter(
-                config.DC_NAME[0], str(qos_name)
-            )
-            logger.info(
-                "Create cpu profile %s on cluster %s",
-                qos_name, config.CLUSTER_NAME[0]
-                )
-            assert ll_cluster.add_cpu_profile(
-                cluster_name=config.CLUSTER_NAME[0],
-                name=qos_name,
-                qos=cpu_qos_obj
-                )
-        for vm_name, qos in zip(
-            config.QOS_VMS, sorted(config.QOSS.keys())[:3]
-        ):
-            cpu_profile_id = ll_cluster.get_cpu_profile_id_by_name(
-                config.CLUSTER_NAME[0], str(qos)
-            )
-            assert ll_vms.updateVm(
-                positive=True, vm=vm_name,
-                cpu_profile_id=cpu_profile_id
-            )
-
-    @pytest.fixture()
-    def clean(self, request):
-        """
-        stop Vms
-        """
-        def fin():
-            for vm in config.QOS_VMS:
-                ll_vms.stopVm(True, vm)
-
-        request.addfinalizer(fin)
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(start_vms.__name__)
+class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
+    """
+    Check VM CPU limitation after migration
+    """
+    __test__ = True
+    cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
+    cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
+    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_start = conf.QOS_VMS[:1]
+    load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
     @polarion("RHEVM3-14697")
-    def test_i_migration(self):
+    def test_vm_cpu_limitation(self):
         """
         1. Migrate VM to a different host
         2. Load vm CPU to 100%
         3. Check that the VM CPU is the right amount CPU,
            that is taken from the host.
         """
-        assert ll_vms.startVm(True, config.QOS_VMS[0])
-        load_dict = {config.QOS_VMS[0]: sorted(config.QOSS.values())[0]}
-        host = ll_vms.get_vm_host(config.QOS_VMS[0])
-        if not ll_vms.migrateVm(True, config.QOS_VMS[0]):
-            raise errors.VMException("Failed to migrate VM")
-        host_cpu = ll_hosts.get_host_processing_units_number(host)
-        expected_value = host_cpu * 100 / load_dict.values()[0]
-        expected_value = 100 if expected_value > 100 else expected_value
-        expected_dict = {config.QOS_VMS[0]: expected_value}
-        self.assertTrue(
-            self.load_vm_and_check_the_load(load_dict, expected_dict)
+        u_libs.testflow.step("Migrate VM %s", conf.QOS_VMS[0])
+        assert ll_vms.migrateVm(positive=True, vm=conf.QOS_VMS[0])
+        expected_dict = self.calculate_expected_values(
+            vm_name=conf.QOS_VMS[0]
+        )
+        assert sla_helpers.load_vm_and_check_the_load(
+            load_dict=self.load_dict, expected_values=expected_dict
         )
 
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    update_vms_to_default_parameters.__name__,
+    start_vms.__name__
+)
+class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
+    """
+    Check VM CPU limitation after CPU hotplug
+    """
+    __test__ = True
+    cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
+    cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
+    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    update_to_default_params = conf.QOS_VMS[:1]
+    vms_to_start = conf.QOS_VMS[:1]
+    load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
+
     @polarion("RHEVM3-14696")
-    @pytest.mark.usefixtures("clean")
-    def test_j_cpu_qos_while_hot_plug(self):
+    def test_vm_cpu_limitation_after_cpu_hot_plug(self):
         """
-        1. Load the vms CPU to 100%
-        2. See that every VM take CPU resources exactly as set in cpu profile
-        3. Preform hot-plug to maximum host processing units
-        4. Check if now CPU load increased, as additional CPUs were added
+        1. Preform hot-plug to maximum host processing units
+        2. Check if now CPU load increased, as additional CPUs were added
         """
-        load_dict = {config.QOS_VMS[0]: sorted(config.QOSS.values())[0]}
-        host = ll_vms.get_vm_host(config.QOS_VMS[0])
-        host_cpu = ll_hosts.get_host_processing_units_number(host)
-        for vm_name in config.QOS_VMS:
-            if not ll_vms.updateVm(
-                True, vm_name,
-                cpu_socket=host_cpu
-            ):
-                raise errors.VMException(
-                    "Failed to update vm %s cpu sockets", vm_name
-                )
-        self.assertTrue(self.load_vm_and_check_the_load(load_dict))
+        host = ll_vms.get_vm_host(vm_name=conf.QOS_VMS[0])
+        host_cpu = ll_hosts.get_host_processing_units_number(host_name=host)
+        u_libs.testflow.step("Hotplug CPU to VM %s", conf.QOS_VMS[0])
+        assert ll_vms.updateVm(
+            positive=True, vm=conf.QOS_VMS[0], cpu_socket=host_cpu
+        )
+        assert sla_helpers.load_vm_and_check_the_load(load_dict=self.load_dict)
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    update_vms_to_default_parameters.__name__,
+    update_vms_cpu.__name__,
+    start_vms.__name__
+)
+class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
+    """
+    Check VM CPU limitation with different values
+    """
+    __test__ = True
+    cpu_qoss = conf.QOSS
+    cpu_profiles = conf.CPU_PROFILES
+    vms_to_cpu_profiles = conf.VMS_CPU_PROFILES
+    update_to_default_params = conf.QOS_VMS
+    update_vms_cpu = conf.QOS_VMS
+    vms_to_start = conf.QOS_VMS
+    load_dict = dict(zip(conf.QOS_VMS, sorted(conf.QOSS.values())))
 
     @polarion("RHEVM3-14727")
-    @pytest.mark.usefixtures("clean")
-    def test_k_different_QoS_values(self):
+    def test_cpu_limitation(self):
         """
-        1. Load the 3 vms with different cpu profiles values CPU to 100%
+        1. Load the 4 vms with different cpu profiles values CPU to 100%
         2. See that every VM take CPU resources exactly as set in cpu profile
         """
-        load_dict = dict(zip(config.QOS_VMS, sorted(config.QOSS.values())))
-        vm_cpu = ll_hosts.get_host_processing_units_number(config.HOSTS[0])
-        for vm_name in config.QOS_VMS:
-            if not ll_vms.updateVm(
-                True, vm_name,
-                cpu_socket=vm_cpu,
-                placement_host=config.HOSTS[0],
-                placement_affinity=config.VM_PINNED
-            ):
-                raise errors.VMException(
-                    "Failed to update vm %s", vm_name
-                )
-        self.assertTrue(self.load_vm_and_check_the_load(load_dict))
+        assert sla_helpers.load_vm_and_check_the_load(load_dict=self.load_dict)
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    start_vms.__name__,
+    disable_guest_agent_service.__name__
+)
+class TestVmCpuLimitationWithoutGuestAgent(BaseCpuQoSAndCpuProfile):
+    """
+    Check VM CPU limitation when VM does not have guest agent
+    """
+    __test__ = True
+    cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
+    cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
+    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_start = conf.QOS_VMS[:1]
+    load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
     @polarion("RHEVM3-14729")
-    def test_l_no_guest_agent(self):
+    def test_cpu_limitation_without_guest_agent(self):
         """
         1. Remove guest agent and puppet if exits
         2. Load VM CPU to 100%
         3. Check that VM take CPU resources exactly as set in cpu profile
         """
-        load_dict = {config.QOS_VMS[0]: sorted(config.QOSS.values())[0]}
-        vm_resource = helpers.get_host_resource(
-            hl_vms.get_vm_ip(config.QOS_VMS[0]), config.VMS_LINUX_PW
+        expected_dict = self.calculate_expected_values(
+            vm_name=conf.QOS_VMS[0]
         )
-        if vm_resource.package_manager.exist(config.SERVICE_PUPPET):
-            logger.info("remove %s", config.SERVICE_PUPPET)
-            if not vm_resource.package_manager.remove(config.SERVICE_PUPPET):
-                raise errors.VMException(
-                    "Failed to remove %s" % config.SERVICE_PUPPET
-                )
-
-        logger.info("Stop %s service", config.SERVICE_GUEST_AGENT)
-        if not vm_resource.service(config.SERVICE_GUEST_AGENT).stop():
-            raise errors.VMException(
-                "Failed to stop service %s on VM %s" %
-                (config.SERVICE_GUEST_AGENT, config.QOS_VMS[0])
-            )
-        self.assertTrue(self.load_vm_and_check_the_load(load_dict))
+        assert sla_helpers.load_vm_and_check_the_load(
+            load_dict=self.load_dict, expected_values=expected_dict
+        )

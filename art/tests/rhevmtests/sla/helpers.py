@@ -5,16 +5,20 @@ Helper for SLA tests
 import logging
 import re
 
-from concurrent.futures import ThreadPoolExecutor
-
+import art.core_api.apis_exceptions as apis_exceptions
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import config as conf
+from art.core_api import apis_utils
 from art.core_api.apis_exceptions import APITimeout
 from art.core_api.apis_utils import TimeoutingSampler
+from concurrent.futures import ThreadPoolExecutor
+from rhevmtests import helpers
+from art.unittest_lib import testflow
 
 logger = logging.getLogger(__name__)
 
@@ -415,3 +419,113 @@ def wait_for_numa_aware_ksm_status(
             resource, expected_value
         )
         return False
+
+
+def wait_for_vm_gets_to_full_consumption(vm_name, expected_load):
+    """
+    Wait until VM gets to full CPU consumption.
+    Check that the value is as expected 3 times,
+    in order to be sure the CPU value is stable
+
+    Args:
+        vm_name (str): VM name
+        expected_load (int): Expected VM CPU load
+
+    Returns:
+        bool: True if VM gets to the expected CPU load, False otherwise
+    """
+    count = 0
+    sampler = apis_utils.TimeoutingSampler(
+        timeout=conf.SAMPLER_TIMEOUT,
+        sleep=conf.SAMPLER_SLEEP,
+        func=hl_vms.get_vm_cpu_consumption_on_the_host,
+        vm_name=vm_name
+    )
+    for sample in sampler:
+        try:
+            if expected_load - 1 <= sample <= expected_load + 1:
+                logging.info(
+                    "Current CPU usage is as expected: %d" % expected_load
+                )
+                count += 1
+                if count == 3:
+                    return True
+            else:
+                logging.warning(
+                    "CPU usage of %s is %d, waiting for "
+                    "usage will be %d, 3 times",
+                    vm_name, sample, expected_load
+                )
+        except apis_exceptions.APITimeout:
+            logging.error(
+                "Timeout when trying to get VM %s CPU consumption", vm_name
+            )
+    return False
+
+
+def wait_for_vms_gets_to_full_consumption(expected_values):
+    """
+    Wait until VMs gets to full CPU consumption
+
+    Args:
+        expected_values (dict): Expected VM's CPU load
+
+    Returns:
+        bool: True if all VM's get to the expected CPU load, False otherwise
+    """
+    results = list()
+    with ThreadPoolExecutor(max_workers=len(expected_values.keys())) as e:
+        for vm_name, expected_load in expected_values.iteritems():
+            logger.info("Checking consumption on the VM %s", vm_name)
+            results.append(
+                e.submit(
+                    fn=wait_for_vm_gets_to_full_consumption,
+                    vm_name=vm_name,
+                    expected_load=expected_load
+                )
+            )
+
+    for vm_name, result in zip(expected_values.keys(), results):
+        if result.exception():
+            logger.error(
+                "Got exception while checking the VM %s consumption: %s",
+                vm_name, result.exception()
+            )
+            raise result.exception()
+        if not result.result():
+            raise errors.VMException("Cannot get VM %s consumption" % vm_name)
+    return True
+
+
+def load_vm_and_check_the_load(load_dict, expected_values=None):
+    """
+    1) Load VM's
+    2) Verify that VM's have expected CPU load percentage
+
+    Args:
+        load_dict (dict): CPU load parameters
+        expected_values (dict): Expected CPU load percentage
+
+    Returns:
+        bool: True, if VM has expected CPU load, otherwise False
+    """
+    if expected_values is None:
+        expected_values = load_dict
+    for vm_name, load_value in load_dict.iteritems():
+        vm_ip = hl_vms.get_vm_ip(vm_name=vm_name)
+        vm_res = helpers.get_host_resource(
+            ip=vm_ip, password=conf.VMS_LINUX_PW
+        )
+        testflow.step("Load VM %s CPU to 100 percent", vm_name)
+        if not ll_sla.load_resource_cpu(resource=vm_res, load=100):
+            logger.error("Failed to load VM %s CPU", vm_name)
+            return False
+    testflow.step(
+        "Wait until VM's CPU load will be equal to expected values: %s",
+        expected_values
+    )
+    if not wait_for_vms_gets_to_full_consumption(
+        expected_values=expected_values
+    ):
+        return False
+    return True

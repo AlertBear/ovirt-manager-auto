@@ -7,10 +7,13 @@ rhevmtests helper functions
 import functools
 import logging
 import os
-from rrmngmnt import ssh
-import config
-from art.rhevm_api.resources import User, Host, storage
+
+import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import config
+from art.core_api import apis_utils
+from art.rhevm_api.resources import User, Host, storage
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms,
@@ -19,14 +22,10 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     storagedomains as ll_sd,
 )
-from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
-from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.rhevm_api.utils import cpumodel
+from art.rhevm_api.utils.test_utils import wait_for_tasks
+from rrmngmnt import ssh
 from utilities.foremanApi import ForemanActions
-from concurrent.futures import ThreadPoolExecutor
-import art.test_handler.exceptions as errors
-import art.core_api.apis_exceptions as apis_exceptions
-from art.core_api import apis_utils
 
 NFS = config.STORAGE_TYPE_NFS
 GULSTERFS = config.STORAGE_TYPE_GLUSTER
@@ -378,78 +377,6 @@ def get_pm_details(host_name):
     pm_host_details = foreman_api.get_host_pm_details(host_name)
     logger.debug("Power Management Details: %s", pm_host_details)
     return pm_host_details
-
-
-def wait_for_vm_gets_to_full_consumption(vm_name, expected_load):
-    """
-    Wait until VM gets to full CPU consumption
-    Check that the value is as expected 3 times,
-    In order to be sure the CPU value is stable.
-
-    :param vm_name: vm name
-    :type vm_name: str
-    :param expected_load: value of expected CPU load
-    :type expected_load: int
-    :return: True if VM gets to the expected CPU load, False otherwise
-    :rtype: bool
-    """
-    count = 0
-    sampler = apis_utils.TimeoutingSampler(
-        300, 10, hl_vms.get_vm_cpu_consumption_on_the_host, vm_name
-    )
-    for sample in sampler:
-        try:
-            if expected_load - 1 <= sample <= expected_load + 1:
-                logging.info(
-                    "Current CPU usage is as expected: %d" % expected_load
-                )
-                count += 1
-                if count == 3:
-                    return True
-            else:
-                logging.warning(
-                    "CPU usage of %s is %d, waiting for "
-                    "usage will be %d, 3 times",
-                    vm_name, sample, expected_load
-                )
-        except apis_exceptions.APITimeout:
-            logging.error(
-                "Timeout When Trying to get VM %s CPU consumption", vm_name
-            )
-    return False
-
-
-def wait_for_vms_gets_to_full_consumption(expected_dict):
-    """
-    Wait until VMs gets to full CPU consumption
-
-
-    :param expected_dict: keys- VM name, Values- expected CPU load
-    :type expected_dict: dict
-    :return:True if all VMs gets to the expected CPU load, False otherwise
-    :rtype: bool
-    """
-    results = list()
-    with ThreadPoolExecutor(max_workers=2) as e:
-        for vm_name, expected_load in expected_dict.iteritems():
-            logger.info("checking consumption on VM %s", vm_name)
-            results.append(
-                e.submit(
-                    wait_for_vm_gets_to_full_consumption,
-                    vm_name, expected_load
-                )
-            )
-
-    for vm_name, result in zip(expected_dict.keys(), results):
-        if result.exception():
-            logger.error(
-                "Got exception while checking VM %s consumption: %s",
-                vm_name, result.exception()
-            )
-            raise result.exception()
-        if not result.result():
-            raise errors.VMException("Cannot get vm %s consumption" % vm_name)
-    return True
 
 
 def get_host_resource_by_name(host_name):

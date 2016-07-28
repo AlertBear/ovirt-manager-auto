@@ -58,6 +58,7 @@ VM_API = get_api('vm', 'vms')
 
 CLUSTER_NAME = "cluster"
 AFFINITY_GROUP_NAME = "affinity group"
+CPU_PROFILE_NAME = "cpu profile"
 
 # Scheduler policy properties
 OVER_COMMITMENT_DURATION = "CpuOverCommitDurationMinutes"
@@ -817,6 +818,7 @@ def add_cpu_profile(cluster_name, **kwargs):
                    qos: type=QOS instance
     :return: True, if creation success, otherwise False
     """
+    cpu_profile_name = kwargs.get("name")
     cluster_obj = get_cluster_object(cluster_name)
     cpu_profiles_obj = CLUSTER_API.getElemFromLink(
         cluster_obj, link_name='cpuprofiles', get_href=True
@@ -826,8 +828,19 @@ def add_cpu_profile(cluster_name, **kwargs):
     except exceptions.RHEVMEntityException:
         return False
 
-    return CPU_PROFILE_API.create(
-        cpu_profile_obj, True, collection=cpu_profiles_obj)[1]
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add",
+        obj_type=CPU_PROFILE_NAME,
+        obj_name=cpu_profile_name,
+        positive=True, **kwargs
+    )
+    logger.info(log_info)
+    status = CPU_PROFILE_API.create(
+        cpu_profile_obj, True, collection=cpu_profiles_obj
+    )[1]
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def update_cpu_profile(cluster_name, cpu_prof_name, **kwargs):

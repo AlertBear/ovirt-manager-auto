@@ -21,7 +21,8 @@ def sla_cleanup():
     ll_vms.stop_vms_safely(ll_vms.VM_API.get(absLink=False))
     logger.info("Remove all exceed vms")
     ll_vms.remove_all_vms_from_cluster(
-        config.CLUSTER_NAME[0], skip=config.VM_NAME)
+        config.CLUSTER_NAME[0], skip=config.VM_NAME
+    )
     for vm in config.VM_NAME:
         logger.info("Update VM %s to default parameters ")
         if not ll_vms.updateVm(

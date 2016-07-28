@@ -1,11 +1,10 @@
 """
 SLA fixtures
 """
-import pytest
-
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sla_config
+import pytest
 
 
 @pytest.fixture(scope="class")
@@ -105,4 +104,19 @@ def activate_hosts(request):
         ]
         for host_to_activate in hosts_to_activate:
             hl_hosts.activate_host_if_not_up(host=host_to_activate)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def update_vms_to_default_parameters(request):
+    update_to_default_params = request.node.cls.update_to_default_params
+
+    def fin():
+        """
+        1) Update VM's to default parameters
+        """
+        for vm_name in update_to_default_params:
+            ll_vms.updateVm(
+                positive=True, vm=vm_name, **sla_config.DEFAULT_VM_PARAMETERS
+            )
     request.addfinalizer(fin)
