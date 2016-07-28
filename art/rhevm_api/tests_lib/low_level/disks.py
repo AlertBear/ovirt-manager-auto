@@ -370,13 +370,8 @@ def updateDisk(positive, **kwargs):
     interface = kwargs.pop('interface', None)
     bootable = kwargs.pop('bootable', None)
     active = kwargs.pop('active', None)
-    disk_attachment_obj = get_disk_attachment(
+    disk_attachment_object = get_disk_attachment(
         vm_name, disk_object.get_id()
-    )
-    disk_attachment_obj = prepare_disk_attachment_object(
-        disk_object.get_id(), interface=disk_attachment_obj.get_interface(),
-        bootable=disk_attachment_obj.get_bootable(),
-        disk=disk_object
     )
     # Create the new disk object to be updated
     new_disk_object = _prepareDiskObject(**kwargs)
@@ -384,22 +379,8 @@ def updateDisk(positive, **kwargs):
         disk_object.get_id(), interface=interface, bootable=bootable,
         disk=new_disk_object, active=active,
     )
-    # W/A Starts - neccesary for BZ1352657
-    vm_obj = VM_API.find(vm_name)
-    new_disk_attachment_object.set_href(
-        "%s/%s/%s" % (
-            vm_obj.get_href(), "diskattachments", disk_object.get_id()
-        )
-    )
-    disk_attachment_obj.set_href(
-        "%s/%s/%s" % (
-            vm_obj.get_href(), "diskattachments", disk_object.get_id()
-        )
-    )
-    # W/A Ends
     response, status = DISK_ATTACHMENTS_API.update(
-        disk_attachment_obj, new_disk_attachment_object, positive,
-        compare=False
+        disk_attachment_object, new_disk_attachment_object, positive,
     )
     return status
 
@@ -494,14 +475,6 @@ def detachDisk(positive, alias, vmName):
     """
     logger.info("Detaching disk %s from vm %s", alias, vmName)
     disk_attachment = get_disk_attachment(vmName, alias, attr='name')
-    # W/A Starts - neccesary for BZ1352657
-    vm_obj = VM_API.find(vmName)
-    disk_attachment.set_href(
-        "%s/%s/%s" % (
-            vm_obj.get_href(), "diskattachments", disk_attachment.get_id()
-        )
-    )
-    # W/A Ends
     return DISK_ATTACHMENTS_API.delete(disk_attachment, positive)
 
 
