@@ -20,6 +20,7 @@ import art.unittest_lib.network as lib_network
 import config as sanity_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
 import rhevmtests.networking.network_filter.config as nf_conf
@@ -523,7 +524,7 @@ class TestSanity07(TestSanityCaseBase):
     4. Remove added ranges from the Default MAC pool
     """
     __test__ = True
-    ext_dc = conf.EXT_DC_1
+    ext_dc = mac_pool_conf.EXT_DC_1
 
     @polarion("RHEVM3-14507")
     def test_check_default_mac_new_dc(self):
@@ -555,7 +556,7 @@ class TestSanity07(TestSanityCaseBase):
         testflow.step("Add new ranges to the Default MAC pool")
         assert hl_mac_pool.add_ranges_to_mac_pool(
             mac_pool_name=conf.DEFAULT_MAC_POOL,
-            range_list=conf.MAC_POOL_RANGE_LIST
+            range_list=mac_pool_conf.MAC_POOL_RANGE_LIST
         )
 
     @polarion("RHEVM3-14511")
@@ -566,7 +567,7 @@ class TestSanity07(TestSanityCaseBase):
         testflow.step("Remove added ranges from the Default MAC pool")
         assert hl_mac_pool.remove_ranges_from_mac_pool(
             mac_pool_name=conf.DEFAULT_MAC_POOL,
-            range_list=conf.MAC_POOL_RANGE_LIST
+            range_list=mac_pool_conf.MAC_POOL_RANGE_LIST
         )
 
 

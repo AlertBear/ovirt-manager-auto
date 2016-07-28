@@ -69,7 +69,7 @@ def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
     macs = [i[0] for i in mac_ranges]
     for i in range(start_idx, end_idx):
         nic_mac = ll_vm.get_vm_nic_mac_address(
-            vm=network_conf.VM_0, nic=network_conf.NIC_NAME[i]
+            vm=network_conf.VM_0, nic=conf.NICS_NAME[i]
         )
         if nic_mac in macs:
             macs.remove(nic_mac)
@@ -83,7 +83,7 @@ def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
 
 
 def create_dc(
-    dc_name=network_conf.EXT_DC_1, mac_pool_name=conf.MAC_POOL_NAME_0,
+    dc_name=conf.EXT_DC_1, mac_pool_name=conf.MAC_POOL_NAME_0,
     mac_pool_ranges=list(), version=network_conf.COMP_VERSION
 ):
     """
@@ -118,7 +118,7 @@ def create_dc(
 
 def check_mac_in_range(
     vm=conf.MP_VM, nic=conf.NIC_NAME_1,
-    mac_range=network_conf.MAC_POOL_RANGE_LIST[0]
+    mac_range=conf.MAC_POOL_RANGE_LIST[0]
 ):
     """
     Check if MAC of VM is in the given range

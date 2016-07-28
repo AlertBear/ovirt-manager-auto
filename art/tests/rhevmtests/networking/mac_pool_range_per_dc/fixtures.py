@@ -20,6 +20,8 @@ import config as mac_pool_conf
 import helper
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
+from art.rhevm_api.resources.storage import clean_mount_point
 from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -42,10 +44,10 @@ class MacPool(NetworkFixtures):
         self.mp_vm = mac_pool_conf.MP_VM
         self.mp_vm_1 = mac_pool_conf.MP_VM_NAMES[1]
         self.mp_template = mac_pool_conf.MP_TEMPLATE
-        self.ext_dc = conf.EXT_DC_0
+        self.ext_dc = mac_pool_conf.EXT_DC_0
         self.def_mac_pool = conf.DEFAULT_MAC_POOL
         self.mac_pool_cl = mac_pool_conf.MAC_POOL_CL
-        self.range_list = conf.MAC_POOL_RANGE_LIST
+        self.range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
         self.ver_35 = conf.VERSION[5]
         self.comp_ver = conf.COMP_VERSION
 
@@ -71,7 +73,7 @@ class MacPool(NetworkFixtures):
         Add storage
         """
         assert hl_storagedomains.addNFSDomain(
-            host=conf.HOST_1_NAME, storage=mac_pool_conf.MP_STORAGE,
+            host=self.host_0_name, storage=mac_pool_conf.MP_STORAGE,
             data_center=self.ext_dc, path=conf.UNUSED_DATA_DOMAIN_PATHS[0],
             address=conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
         )
@@ -355,6 +357,29 @@ def mac_pool_prepare_setup(request):
     ps = MacPool()
 
     @networking.ignore_exception
+    def fin8():
+        """
+        Clean storage domain
+        """
+        clean_mount_point(
+            host=ps.host_0_name, src_ip=conf.UNUSED_DATA_DOMAIN_ADDRESSES[0],
+            src_path=conf.UNUSED_DATA_DOMAIN_PATHS[0],
+            opts=global_helper.NFS_MNT_OPTS
+        )
+    request.addfinalizer(fin8)
+
+    @networking.ignore_exception
+    def fin7():
+        """
+        Remove storage
+        """
+        ll_storagedomains.removeStorageDomain(
+            positive=True, storagedomain=mac_pool_conf.MP_STORAGE,
+            host=ps.host_0_name, force=True
+        )
+    request.addfinalizer(fin7)
+
+    @networking.ignore_exception
     def fin6():
         """
         Finalizer for remove non default MAC pools
@@ -597,7 +622,7 @@ def fixture_mac_pool_range_case_04(request, mac_pool_prepare_setup):
         """
         Remove vNICs from VM
         """
-        for nic in conf.NIC_NAME[1:5]:
+        for nic in mac_pool_conf.NICS_NAME[1:5]:
             ll_vms.removeNic(positive=True, vm=vm, nic=nic)
     request.addfinalizer(fin1)
 
@@ -640,7 +665,7 @@ def fixture_mac_pool_range_case_05(request, mac_pool_prepare_setup):
         """
         Remove vNICs from VM
         """
-        for nic in conf.NIC_NAME[1:7]:
+        for nic in mac_pool_conf.NICS_NAME[1:7]:
             ll_vms.removeNic(positive=True, vm=vm, nic=nic)
     request.addfinalizer(fin1)
 
@@ -653,7 +678,7 @@ def fixture_mac_pool_range_case_05(request, mac_pool_prepare_setup):
     )
     for i in range(3):
         assert ll_vms.addNic(
-            positive=True, vm=vm, name=conf.NIC_NAME[i + 1]
+            positive=True, vm=vm, name=mac_pool_conf.NICS_NAME[i + 1]
         )
 
 

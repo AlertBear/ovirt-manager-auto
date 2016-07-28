@@ -70,10 +70,10 @@ class TestMacPoolRange02(NetworkTest):
     """
     __test__ = True
     def_mac_pool = conf.DEFAULT_MAC_POOL
-    range = conf.MAC_POOL_RANGE_LIST[0]
-    ext_dc = conf.EXT_DC_1
+    range = mac_pool_conf.MAC_POOL_RANGE_LIST[0]
+    ext_dc = mac_pool_conf.EXT_DC_1
     mac_pool = mac_pool_conf.MAC_POOL_NAME_0
-    range_list = conf.MAC_POOL_RANGE_LIST
+    range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
 
     @polarion("RHEVM3-6462")
     def test_01_recreate_dc(self):
@@ -153,11 +153,11 @@ class TestMacPoolRange03(NetworkTest):
     5) Creating pool with the same range
     """
     __test__ = True
-    range_list = conf.MAC_POOL_RANGE_LIST
+    range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
     vm = conf.VM_0
     mp_vm = mac_pool_conf.MP_VM
     dc = conf.DC_0
-    ext_dc = conf.EXT_DC_1
+    ext_dc = mac_pool_conf.EXT_DC_1
     vnic_1 = mac_pool_conf.NIC_NAME_1
     vnic_2 = mac_pool_conf.NIC_NAME_2
     vnic_3 = mac_pool_conf.NIC_NAME_3
@@ -363,7 +363,7 @@ class TestMacPoolRange04(NetworkTest):
     Extending the MAC pool range by 2 will let you add 2 additional VNICs only
     """
     __test__ = True
-    range_list = conf.MAC_POOL_RANGE_LIST
+    range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
     dc = conf.DC_0
     vm = conf.VM_0
     pool_name = mac_pool_conf.MAC_POOL_NAME_0
@@ -413,7 +413,9 @@ class TestMacPoolRange04(NetworkTest):
         testflow.step("Add another VNICs (till you reach range limit again)")
         for i in range(3, 5):
             self.assertTrue(
-                ll_vms.addNic(positive=True, vm=self.vm, name=conf.NIC_NAME[i])
+                ll_vms.addNic(
+                    positive=True, vm=self.vm, name=mac_pool_conf.NICS_NAME[i]
+                )
             )
         testflow.step("Fail when you try to overcome that limit")
         self.assertTrue(
@@ -438,7 +440,7 @@ class TestMacPoolRange05(NetworkTest):
         ("00:00:00:10:10:50", "00:00:00:10:10:50"),
         ("00:00:00:10:10:60", "00:00:00:10:10:60")
     ]
-    nic7 = conf.NIC_NAME[6]
+    nic7 = mac_pool_conf.NIC_NAME_6
     pool_name = mac_pool_conf.MAC_POOL_NAME_0
     dc = conf.DC_0
     vm = conf.VM_0
@@ -467,7 +469,9 @@ class TestMacPoolRange05(NetworkTest):
         )
         for i in range(4, 6):
             self.assertTrue(
-                ll_vms.addNic(positive=True, vm=self.vm, name=conf.NIC_NAME[i])
+                ll_vms.addNic(
+                    positive=True, vm=self.vm, name=mac_pool_conf.NICS_NAME[i]
+                )
             )
         self.assertTrue(
             helper.check_single_mac_range_match(
@@ -520,9 +524,9 @@ class TestMacPoolRange06(NetworkTest):
     pool_1 = mac_pool_conf.MAC_POOL_NAME_1
     vm_0 = conf.VM_0
     mp_vm = mac_pool_conf.MP_VM
-    range = conf.MAC_POOL_RANGE_LIST
+    range = mac_pool_conf.MAC_POOL_RANGE_LIST
     dc = conf.DC_0
-    ext_dc = conf.EXT_DC_0
+    ext_dc = mac_pool_conf.EXT_DC_0
     def_mac_pool = conf.DEFAULT_MAC_POOL
 
     @polarion("RHEVM3-6452")
@@ -666,11 +670,11 @@ class TestMacPoolRange08(NetworkTest):
     Check that creating new VM from template fails
     """
     __test__ = True
-    range_list = conf.MAC_POOL_RANGE_LIST
+    range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
     template = mac_pool_conf.MP_TEMPLATE
     mp_vm = mac_pool_conf.MP_VM_NAMES[1]
     cluster = mac_pool_conf.MAC_POOL_CL
-    nic_1 = conf.NIC_NAME[0]
+    nic_1 = mac_pool_conf.NIC_NAME_0
 
     @polarion("RHEVM3-6455")
     def test_vm_from_template(self):
@@ -708,7 +712,7 @@ class TestMacPoolRange09(NetworkTest):
     """
     __test__ = True
     pool_name_0 = mac_pool_conf.MAC_POOL_NAME_0
-    range_list = conf.MAC_POOL_RANGE_LIST
+    range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
     ext_dc_1 = conf.EXTRA_DC[1]
     ext_dc_2 = conf.EXTRA_DC[2]
 

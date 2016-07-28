@@ -140,14 +140,6 @@ LIBVIRTD_CONF = "/etc/libvirt/libvirtd.conf"
 SASL_OFF = "none"
 SASL_ON = "sasl"
 
-# MAC pool range
-MAC_POOL_RANGE_LIST = [
-    ("00:00:00:10:10:10", "00:00:00:10:10:11"),
-    ("00:00:00:20:10:10", "00:00:00:20:10:12"),
-    ("00:00:00:30:10:10", "00:00:00:30:10:12")
-]
-EXT_DC_1 = "mac_pool_range_ext_dc_1"
-
 # Management network as role
 EXT_DC_0 = "mgmt_role_ext_dc"
 EXTRA_CLUSTER_0 = "mgmt_role_ext_cl"
