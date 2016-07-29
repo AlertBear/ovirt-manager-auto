@@ -27,12 +27,12 @@ def import_image(diskName):
     glance_image = storagedomains.GlanceImage(
         image_name=diskName,
         glance_repository_name=config.GLANCE_NAME,
+        timeout=1800
     )
-    glance_image.import_image(
+    assert glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
         cluster_name=None,
-        new_disk_alias=diskName,
-        async=True
+        new_disk_alias=diskName
     )
     return glance_image
 
@@ -48,14 +48,16 @@ def checkIfSupported(method):
 
 def setup_module():
     global WIN_IMAGES, GLANCE_IMAGE
-    WIN_IMAGES = [
-        x[1].diskName for x in sorted(
-            inspect.getmembers(sys.modules[__name__], inspect.isclass),
-            reverse=True
-        ) if getattr(x[1], '__test__', False)
-    ]
+    WIN_IMAGES = sorted(
+        set([
+            x[1].diskName for x in inspect.getmembers(
+                sys.modules[__name__],
+                inspect.isclass
+            ) if getattr(x[1], '__test__', False)
+        ]),
+        reverse=True,
+    )
     assert len(WIN_IMAGES) > 0, "There are no test cases to run"
-    GLANCE_IMAGE = import_image(WIN_IMAGES.pop())
 
 
 @attr(tier=2, extra_reqs={'deprecated': True})
@@ -374,400 +376,7 @@ class Windows(TestCase):
         )
 
 
-class WindowsDesktop(Windows):
-    __test__ = False
-
-
-class WindowsServer(Windows):
-    __test__ = False
-    UNSUPPORTED = Windows.UNSUPPORTED + [
-        'test_checkProductSpice',
-        'test_checkProductUSB',
-        'test_checkProductSSO',
-        'test_checkServiceUSBRedirector',
-        'test_driver_usb_bus',
-        'test_driver_usb_host_controller',
-    ]
-
-
-class Windows7_64bit(WindowsDesktop):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 7 64bit.
-    """
-    __test__ = True
-    # TODO: name disk in glance as these clasess and get rid of diskName var
-    diskName = config.WIN7_DISK_64b
-    codename = 'Win 7'
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13354',
-        'test_checkProductSpice': 'RHEVM3-13355',
-        'test_checkProductSerial': 'RHEVM3-13356',
-        'test_checkProductBlock': 'RHEVM3-13357',
-        'test_checkProductBalloon': 'RHEVM3-13358',
-        'test_checkProductUSB': 'RHEVM3-13359',
-        'test_checkProductQemuAgent': 'RHEVM3-13360',
-        'test_checkProductSSO': 'RHEVM3-13361',
-        'test_checkProductSpiceAgent': 'RHEVM3-13362',
-        'test_checkProductAgent': 'RHEVM3-13363',
-        'test_checkProductSCSI': 'RHEVM3-13364',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13365',
-        'test_driver_vioscsi_disk': 'RHEVM3-13366',
-        'test_driver_vioserial': 'RHEVM3-13367',
-        'test_driver_network': 'RHEVM3-13368',
-        'test_driver_usb_bus': 'RHEVM3-13369',
-        'test_driver_usb_host_controller': 'RHEVM3-13370',
-        'test_driver_viostor': 'RHEVM3-13371',
-        'test_driver_qxl_gpu': 'RHEVM3-13372',
-        'test_driver_balloon': 'RHEVM3-13373',
-        'test_checkServiceAgent': 'RHEVM3-13374',
-        'test_checkServiceQemuGA': 'RHEVM3-13375',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13376',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13377',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13378',
-        'test_guest_applications': 'RHEVM3-14437',
-        'test_guest_timezone': 'RHEVM3-14439',
-        'test_guest_os': 'RHEVM3-14440',
-    }
-    SUPPORTED = ['test_driver_qxl_gpu']
-
-
-class Windows7_32b(WindowsDesktop):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 7 32bit.
-    """
-    __test__ = True
-    diskName = config.WIN7_DISK_32b
-    codename = 'Win 7'
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13278',
-        'test_checkProductSpice': 'RHEVM3-13279',
-        'test_checkProductSerial': 'RHEVM3-13280',
-        'test_checkProductBlock': 'RHEVM3-13281',
-        'test_checkProductBalloon': 'RHEVM3-13282',
-        'test_checkProductUSB': 'RHEVM3-13283',
-        'test_checkProductQemuAgent': 'RHEVM3-13284',
-        'test_checkProductSSO': 'RHEVM3-13285',
-        'test_checkProductSpiceAgent': 'RHEVM3-13286',
-        'test_checkProductAgent': 'RHEVM3-13287',
-        'test_checkProductSCSI': 'RHEVM3-13288',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13289',
-        'test_driver_vioscsi_disk': 'RHEVM3-13290',
-        'test_driver_vioserial': 'RHEVM3-13291',
-        'test_driver_network': 'RHEVM3-13292',
-        'test_driver_usb_bus': 'RHEVM3-13293',
-        'test_driver_usb_host_controller': 'RHEVM3-13294',
-        'test_driver_viostor': 'RHEVM3-13295',
-        'test_driver_qxl_gpu': 'RHEVM3-13296',
-        'test_driver_balloon': 'RHEVM3-13297',
-        'test_checkServiceAgent': 'RHEVM3-13298',
-        'test_checkServiceQemuGA': 'RHEVM3-13299',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13300',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13301',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13302',
-        'test_guest_applications': 'RHEVM3-14425',
-        'test_guest_timezone': 'RHEVM3-14427',
-        'test_guest_os': 'RHEVM3-14428',
-    }
-    SUPPORTED = ['test_driver_qxl_gpu']
-
-
-class Windows8_64bit(WindowsDesktop):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 7 64bit.
-    """
-    __test__ = False
-    diskName = config.WIN8_DISK_64b
-    codename = 'Win 8'
-    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'test_checkProductSpice',
-        'test_checkProductUSB',
-        'test_driver_qxl_gpu',
-    ]
-
-
-class Windows8_32b(WindowsDesktop):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 7 32bit.
-    """
-    __test__ = False
-    diskName = config.WIN8_DISK_32b
-    codename = 'Win 8'
-    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'test_checkProductSpice',
-        'test_checkProductUSB',
-        'test_driver_qxl_gpu',
-    ]
-
-
-class Windows8_1_64bit(WindowsDesktop):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 7 64bit.
-    """
-    __test__ = False
-    diskName = config.WIN8_1_DISK_64b
-    codename = 'Win 8.1'
-    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'test_checkProductSpice',
-        'test_checkProductUSB',
-        'test_driver_qxl_gpu',
-    ]
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13228',
-        'test_checkProductSpice': 'RHEVM3-13229',
-        'test_checkProductSerial': 'RHEVM3-13230',
-        'test_checkProductBlock': 'RHEVM3-13231',
-        'test_checkProductBalloon': 'RHEVM3-13232',
-        'test_checkProductUSB': 'RHEVM3-13233',
-        'test_checkProductQemuAgent': 'RHEVM3-13234',
-        'test_checkProductSSO': 'RHEVM3-13235',
-        'test_checkProductSpiceAgent': 'RHEVM3-13236',
-        'test_checkProductAgent': 'RHEVM3-13237',
-        'test_checkProductSCSI': 'RHEVM3-13238',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13239',
-        'test_driver_vioscsi_disk': 'RHEVM3-13240',
-        'test_driver_vioserial': 'RHEVM3-13241',
-        'test_driver_network': 'RHEVM3-13242',
-        'test_driver_usb_bus': 'RHEVM3-13243',
-        'test_driver_usb_host_controller': 'RHEVM3-13244',
-        'test_driver_viostor': 'RHEVM3-13245',
-        'test_driver_qxl_gpu': 'RHEVM3-13246',
-        'test_driver_balloon': 'RHEVM3-13247',
-        'test_checkServiceAgent': 'RHEVM3-13248',
-        'test_checkServiceQemuGA': 'RHEVM3-13249',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13250',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13251',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13252',
-        'test_guest_applications': 'RHEVM3-14417',
-        'test_guest_timezone': 'RHEVM3-14419',
-        'test_guest_os': 'RHEVM3-14420',
-    }
-
-
-class Windows8_1_32b(WindowsDesktop):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 7 32bit.
-    """
-    __test__ = True
-    diskName = config.WIN8_1_DISK_32b
-    codename = 'Win 8.1'
-    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'test_checkProductSpice',
-        'test_checkProductUSB',
-        'test_test_driver_qxl_gpu',
-    ]
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13178',
-        'test_checkProductSpice': 'RHEVM3-13179',
-        'test_checkProductSerial': 'RHEVM3-13180',
-        'test_checkProductBlock': 'RHEVM3-13181',
-        'test_checkProductBalloon': 'RHEVM3-13182',
-        'test_checkProductUSB': 'RHEVM3-13183',
-        'test_checkProductQemuAgent': 'RHEVM3-13184',
-        'test_checkProductSSO': 'RHEVM3-13185',
-        'test_checkProductSpiceAgent': 'RHEVM3-13186',
-        'test_checkProductAgent': 'RHEVM3-13187',
-        'test_checkProductSCSI': 'RHEVM3-13188',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13189',
-        'test_driver_vioscsi_disk': 'RHEVM3-13190',
-        'test_driver_vioserial': 'RHEVM3-13191',
-        'test_driver_network': 'RHEVM3-13192',
-        'test_driver_usb_bus': 'RHEVM3-13193',
-        'test_driver_usb_host_controller': 'RHEVM3-13194',
-        'test_driver_viostor': 'RHEVM3-13195',
-        'test_driver_qxl_gpu': 'RHEVM3-13196',
-        'test_driver_balloon': 'RHEVM3-13197',
-        'test_checkServiceAgent': 'RHEVM3-13198',
-        'test_checkServiceQemuGA': 'RHEVM3-13199',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13200',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13201',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13202',
-        'test_guest_applications': 'RHEVM3-14409',
-        'test_guest_timezone': 'RHEVM3-14411',
-        'test_guest_os': 'RHEVM3-14412',
-    }
-
-
-class Windows2008_32b(WindowsServer):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 2008 32bit.
-    """
-    __test__ = False
-    diskName = config.WIN2008_DISK_32b
-    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
-
-
-class Windows2008_64b(WindowsServer):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 2008 64bit.
-    """
-    __test__ = False
-    diskName = config.WIN2008_DISK_64b
-    codename = 'Win 2008'
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13253',
-        'test_checkProductSpice': 'RHEVM3-13254',
-        'test_checkProductSerial': 'RHEVM3-13255',
-        'test_checkProductBlock': 'RHEVM3-13256',
-        'test_checkProductBalloon': 'RHEVM3-13257',
-        'test_checkProductUSB': 'RHEVM3-13258',
-        'test_checkProductQemuAgent': 'RHEVM3-13259',
-        'test_checkProductSSO': 'RHEVM3-13260',
-        'test_checkProductSpiceAgent': 'RHEVM3-13261',
-        'test_checkProductAgent': 'RHEVM3-13262',
-        'test_checkProductSCSI': 'RHEVM3-13263',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13264',
-        'test_driver_vioscsi_disk': 'RHEVM3-13265',
-        'test_driver_vioserial': 'RHEVM3-13266',
-        'test_driver_network': 'RHEVM3-13267',
-        'test_driver_usb_bus': 'RHEVM3-13268',
-        'test_driver_usb_host_controller': 'RHEVM3-13269',
-        'test_driver_viostor': 'RHEVM3-13270',
-        'test_driver_qxl_gpu': 'RHEVM3-13271',
-        'test_driver_balloon': 'RHEVM3-13272',
-        'test_checkServiceAgent': 'RHEVM3-13273',
-        'test_checkServiceQemuGA': 'RHEVM3-13274',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13275',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13276',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13277',
-        'test_guest_applications': 'RHEVM3-14421',
-        'test_guest_timezone': 'RHEVM3-14423',
-        'test_guest_os': 'RHEVM3-14424',
-    }
-    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
-
-
-class Windows2008R2_64b(WindowsServer):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 2008R2 64bit.
-    """
-    __test__ = True
-    diskName = config.WIN2008R2_DISK_64b
-    codename = 'Win 2008 R2'
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13303',
-        'test_checkProductSpice': 'RHEVM3-13304',
-        'test_checkProductSerial': 'RHEVM3-13305',
-        'test_checkProductBlock': 'RHEVM3-13306',
-        'test_checkProductBalloon': 'RHEVM3-13307',
-        'test_checkProductUSB': 'RHEVM3-13308',
-        'test_checkProductQemuAgent': 'RHEVM3-13309',
-        'test_checkProductSSO': 'RHEVM3-13310',
-        'test_checkProductSpiceAgent': 'RHEVM3-13311',
-        'test_checkProductAgent': 'RHEVM3-13312',
-        'test_checkProductSCSI': 'RHEVM3-13313',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13314',
-        'test_driver_vioscsi_disk': 'RHEVM3-13315',
-        'test_driver_vioserial': 'RHEVM3-13316',
-        'test_driver_network': 'RHEVM3-13317',
-        'test_driver_usb_bus': 'RHEVM3-13318',
-        'test_driver_usb_host_controller': 'RHEVM3-13319',
-        'test_driver_viostor': 'RHEVM3-13320',
-        'test_driver_qxl_gpu': 'RHEVM3-13321',
-        'test_driver_balloon': 'RHEVM3-13322',
-        'test_checkServiceAgent': 'RHEVM3-13323',
-        'test_checkServiceQemuGA': 'RHEVM3-13324',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13325',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13326',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13327',
-        'test_guest_applications': 'RHEVM3-14429',
-        'test_guest_timezone': 'RHEVM3-14431',
-        'test_guest_os': 'RHEVM3-14432',
-    }
-    UNSUPPORTED = WindowsServer.UNSUPPORTED
-
-
-class Windows2012_64b(WindowsServer):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 2012 64bit.
-    """
-    __test__ = True
-    diskName = config.WIN2012_DISK_64b
-    codename = 'Win 2012'
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13328',
-        'test_checkProductSpice': 'RHEVM3-13329',
-        'test_checkProductSerial': 'RHEVM3-13330',
-        'test_checkProductBlock': 'RHEVM3-13331',
-        'test_checkProductBalloon': 'RHEVM3-13332',
-        'test_checkProductUSB': 'RHEVM3-13333',
-        'test_checkProductQemuAgent': 'RHEVM3-13334',
-        'test_checkProductSSO': 'RHEVM3-13335',
-        'test_checkProductSpiceAgent': 'RHEVM3-13336',
-        'test_checkProductAgent': 'RHEVM3-13337',
-        'test_checkProductSCSI': 'RHEVM3-13338',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13339',
-        'test_driver_vioscsi_disk': 'RHEVM3-13340',
-        'test_driver_vioserial': 'RHEVM3-13341',
-        'test_driver_network': 'RHEVM3-13342',
-        'test_driver_usb_bus': 'RHEVM3-13344',
-        'test_driver_usb_host_controller': 'RHEVM3-13345',
-        'test_driver_viostor': 'RHEVM3-13346',
-        'test_driver_qxl_gpu': 'RHEVM3-13347',
-        'test_driver_balloon': 'RHEVM3-13348',
-        'test_checkServiceAgent': 'RHEVM3-13349',
-        'test_checkServiceQemuGA': 'RHEVM3-13350',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13351',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13352',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13353',
-        'test_guest_applications': 'RHEVM3-14433',
-        'test_guest_timezone': 'RHEVM3-14435',
-        'test_guest_os': 'RHEVM3-14436',
-    }
-    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
-
-
-class Windows2012R2_64b(WindowsServer):
-    """
-    Test that all product and services exist on windows machine after
-    GuestTools installation for windows 2012R2 64bit.
-    """
-    __test__ = True
-    diskName = config.WIN2012R2_DISK_64b
-    codename = 'Win 2012 R2'
-    polarion_map = {
-        'test_checkProductNetwork': 'RHEVM3-13153',
-        'test_checkProductSpice': 'RHEVM3-13154',
-        'test_checkProductSerial': 'RHEVM3-13155',
-        'test_checkProductBlock': 'RHEVM3-13156',
-        'test_checkProductBalloon': 'RHEVM3-13157',
-        'test_checkProductUSB': 'RHEVM3-13158',
-        'test_checkProductQemuAgent': 'RHEVM3-13159',
-        'test_checkProductSSO': 'RHEVM3-13160',
-        'test_checkProductSpiceAgent': 'RHEVM3-13161',
-        'test_checkProductAgent': 'RHEVM3-13162',
-        'test_checkProductSCSI': 'RHEVM3-13163',
-        'test_driver_vioscsi_pass_through': 'RHEVM3-13164',
-        'test_driver_vioscsi_disk': 'RHEVM3-13165',
-        'test_driver_vioserial': 'RHEVM3-13166',
-        'test_driver_network': 'RHEVM3-13167',
-        'test_driver_usb_bus': 'RHEVM3-13168',
-        'test_driver_usb_host_controller': 'RHEVM3-13169',
-        'test_driver_viostor': 'RHEVM3-13170',
-        'test_driver_qxl_gpu': 'RHEVM3-13171',
-        'test_driver_balloon': 'RHEVM3-13172',
-        'test_checkServiceAgent': 'RHEVM3-13173',
-        'test_checkServiceQemuGA': 'RHEVM3-13174',
-        'test_checkServiceUSBRedirector': 'RHEVM3-13175',
-        'test_checkServiceSpiceAgent': 'RHEVM3-13176',
-        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13177',
-        'test_guest_applications': 'RHEVM3-14405',
-        'test_guest_timezone': 'RHEVM3-14407',
-        'test_guest_os': 'RHEVM3-14408',
-    }
-    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
-
-
-class Windows10_64b(WindowsDesktop):
+class Windows10_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 10 64bit.
@@ -805,6 +414,6 @@ class Windows10_64b(WindowsDesktop):
         'test_guest_timezone': 'RHEVM3-14415',
         'test_guest_os': 'RHEVM3-14416',
     }
-    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
+    UNSUPPORTED = Windows.UNSUPPORTED + [
         'test_driver_qxl_gpu',
     ]

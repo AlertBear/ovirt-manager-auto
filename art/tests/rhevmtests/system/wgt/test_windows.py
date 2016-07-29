@@ -8,7 +8,7 @@ import sys
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
@@ -25,14 +25,13 @@ def import_image(disk_name):
     glance_image = ll_storagedomains.GlanceImage(
         image_name=disk_name,
         glance_repository_name=config.GLANCE_DOMAIN,
+        timeout=1800
     )
-    glance_image.import_image(
+    assert glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
         cluster_name=None,
-        new_disk_alias=disk_name,
-        async=True
+        new_disk_alias=disk_name
     )
-    assert glance_image._is_import_success(timeout=1200)
     return glance_image
 
 
@@ -72,7 +71,8 @@ class Windows(TestCase):
     @classmethod
     def setup_class(cls):
         # Windows VMs have a naming limitation of 15 characters
-        cls.vm_name = '%s%s' % (cls.disk_name[:9], cls.disk_name[-6:])
+        cls.vm_name = '%s' % ((cls.disk_name[:9] + cls.disk_name[-6:]) if
+                              len(cls.disk_name) > 15 else cls.disk_name)
         import_image(cls.disk_name)
         ret = hl_vms.create_windows_vm(
             disk_name=cls.disk_name,
@@ -101,7 +101,7 @@ class Windows(TestCase):
         """ Check vm ip/fqdn are reported """
         vm = ll_vms.get_vm(self.vm_name)
         assert len(
-            LookUpVMIpByName()._get_ip_from_vm(self.vm_name)
+            LookUpVMIpByName('', '').get_ip(self.vm_name)
         ) > 0, "No ip found in guest info"
         assert vm.get_fqdn() and len(vm.get_fqdn()) > 0
 
@@ -219,6 +219,11 @@ class Win2012R2_CI_64b(Windows):
         'test_guest_os': 'RHEVM3-14408',
     }
 
+    @classmethod
+    def setup_class(cls):
+        super(Win2012R2_CI_64b, cls).setup_class()
+        ll_vms.waitForIP(cls.vm_name)
+
 
 class Win2012R2_CI_core_64b(Windows):
     """
@@ -320,8 +325,7 @@ class Win8_1_CI_32b(Windows):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 8.1 32bit.
     """
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1318623
-    __test__ = False  # Enable when there is support for Win8.1
+    __test__ = True
     disk_name = 'Win8_1_CI_%s_32b' % config.PRODUCT
     serial_number = config.WIN8_1_32B['serial_number']
     architecture = config.WIN8_1_32B['architecture']
@@ -340,8 +344,7 @@ class Win8_1_CI_64b(Windows):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 8.1 64bit.
     """
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1318623
-    __test__ = False  # Enable when there is support for Win8.1
+    __test__ = True
     disk_name = 'Win8_1_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN8_1_64B['serial_number']
     architecture = config.WIN8_1_64B['architecture']
@@ -390,4 +393,24 @@ class Win8_CI_64b(Windows):
         'test_vm_ip_fqdn_info': 'RHEVM-14789',
         'test_guest_timezone': 'RHEVM-14790',
         'test_guest_os': 'RHEVM-14791',
+    }
+
+
+@bz({'1300959': {}})
+class Windows10_64b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 10 64bit.
+    """
+    __test__ = True
+    disk_name = 'win10_Disk1'
+    serial_number = config.WIN10_64B['serial_number']
+    architecture = config.WIN10_64B['architecture']
+    codename = config.WIN10_64B['codename']
+    os_type = config.ENUMS['windows10x64']
+    polarion_map = {
+        'test_guest_applications': 'RHEVM3-14413',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14414',
+        'test_guest_timezone': 'RHEVM3-14415',
+        'test_guest_os': 'RHEVM3-14416',
     }

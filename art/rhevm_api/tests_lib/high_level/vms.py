@@ -846,6 +846,10 @@ def create_windows_vm(
                 logger.error("Got invalid status: '%s'", status)
                 request = None
                 break
+        else:
+            vms.restartVm(vm_name, wait_for_ip=True)
+            request = urllib.urlopen(
+                agent_url.format(action='query', vm_id=vm_id))
 
         return request
 
