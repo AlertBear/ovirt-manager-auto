@@ -18,7 +18,7 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.utils.inventory import Inventory
 from rhevmtests.networking import config
-from rhevmtests.networking.helper import delete_dummies, prepare_dummies
+from rhevmtests.networking.helper import prepare_dummies
 
 logger = logging.getLogger("GE_Network_cleanup")
 
@@ -362,9 +362,7 @@ def teardown_package():
     Run inventory
     Remove dummies interfaces
     """
-    for vds_host in config.VDS_HOSTS[:2]:
-        delete_dummies(vds_host)
-
+    network_cleanup()
     reporter = Inventory.get_instance()
     reporter.get_setup_inventory_report(
         print_report=True,
