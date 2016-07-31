@@ -30,6 +30,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as test_exceptions
 import art.test_handler.settings as test_settings
+import art.rhevm_api.tests_lib.low_level.events as ll_events
 
 ENUMS = test_settings.opts['elements_conf']['RHEVM Enums']
 
@@ -284,6 +285,7 @@ def delete_dummy_interfaces(host):
     Returns:
         bool: True/False
     """
+    host_name = ll_hosts.get_host_name_from_engine(vds_resource=host)
     rhevh = RHEVH in host.os.distribution.distname
     all_interfaces = host.network.all_interfaces()
     dummy_list = [i for i in all_interfaces if 'dummy' in i]
@@ -297,7 +299,10 @@ def delete_dummy_interfaces(host):
                 if rc:
                     return False
             host.network.delete_ifcfg_file(nic=dummy)
-    return True
+    last_event = ll_events.get_max_event_id()
+    return ll_hosts.refresh_host_capabilities(
+        host=host_name, start_event_id=last_event
+    )
 
 
 def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
