@@ -747,7 +747,8 @@ def sync_prepare_setup(request, host_network_api_prepare_setup):
         Finalizer for remove networks
         """
         hl_networks.remove_net_from_setup(
-            host=hna.host_0_name, all_net=True, mgmt_network=hna.mgmt_bridge
+            host=hna.host_0_name, all_net=True, mgmt_network=hna.mgmt_bridge,
+            data_center=hna.dc_0
         )
     request.addfinalizer(fin2)
 
