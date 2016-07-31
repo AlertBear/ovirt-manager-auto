@@ -1,3 +1,3 @@
 """
-CPU SHARE test
+Initialization of CPU Share Test
 """
