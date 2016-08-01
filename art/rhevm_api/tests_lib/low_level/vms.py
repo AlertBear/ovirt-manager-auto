@@ -968,24 +968,31 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     return status
 
 
-def restartVm(vm, wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, async='false',
-              wait_for_status=ENUMS['vm_state_up'], placement_host=None):
-    '''
-    Description: Stop and start vm.
-    Parameters:
-      * vm - name of vm
-      * wait_for_ip - True/False wait for ip
-      * timeout - timeout of wait for vm
-      * async - stop VM asynchronously if 'true' ('false' by default)
-      * wait_for_status - status which should have vm after starting it
-      * placement_host - host where the vm should be started
-    '''
+def restartVm(
+    vm, wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, async='false',
+    wait_for_status=ENUMS['vm_state_up'], placement_host=None
+):
+    """
+    Restart vm
+
+    Args:
+        vm (str): Name of vm
+        wait_for_ip (bool): True/False wait for ip
+        timeout (int): Timeout of wait for vm
+        async (str): Stop VM asynchronously if 'true' ('false' by default)
+        wait_for_status (str): Status which should have vm after starting it
+        placement_host (str): host where the vm should be started
+
+    Returns:
+        bool: True if vm restarted successfully, False otherwise
+    """
     if not checkVmState(True, vm, ENUMS['vm_state_down']):
         if not stopVm(True, vm, async=async):
             return False
-    return startVm(True, vm, wait_for_status=wait_for_status,
-                   wait_for_ip=True, timeout=timeout,
-                   placement_host=placement_host)
+    return startVm(
+        True, vm, wait_for_status=wait_for_status, wait_for_ip=wait_for_ip,
+        timeout=timeout, placement_host=placement_host
+    )
 
 
 def startVm(
@@ -1045,7 +1052,10 @@ def startVm(
         vm, wait_for_status.lower().replace('_', ''))
     started = VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     if started and wait_for_ip:
-        started = waitForIP(vm)[0]
+        vm_ip = waitForIP(vm)[0]
+        # TODO: Remove this W/A when moving to work with guest image of el7.X
+        if not vm_ip:
+            started = restartVm(vm, wait_for_ip)
         if started != positive:
             VM_API.logger.error("waitForIP returned %s, positive is set to %s",
                                 started, positive)
