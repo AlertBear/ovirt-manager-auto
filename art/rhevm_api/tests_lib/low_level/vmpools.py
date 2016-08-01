@@ -263,7 +263,7 @@ def removeVmPool(positive, vmpool, wait=False):
         try:
             ll_vms.waitForVmsGone(positive, pool_vms)
         except exceptions.APITimeout:
-            logger(log_error)
+            logger.error(log_error)
             return False
     return status
 

@@ -592,6 +592,13 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
        * user_names - list with user names (ie.['user1@..', 'user2@..'])
     Return: status (True if permissions was removed, False otherwise)
     '''
+    extra_log_text = "for users %s on %s: %s" % (
+        user_names, obj.__class__.__name__, obj.get_name()
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        "remove", "permissions", 'All', extra_txt=extra_log_text
+    )
+    logger.info(log_info)
     status = True
     permits = permisUtil.getElemFromLink(obj, get_href=False)
     user_ids = [userUtil.query('{0}={1}'.format('usrname', user))[0].get_id()
@@ -599,9 +606,10 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
 
     for perm in permits:
         if (
-            perm.get_user() and perm.get_user().get_id() in user_ids
-            and not permisUtil.delete(perm, positive)
+            perm.get_user() and perm.get_user().get_id() in user_ids and not
+            permisUtil.delete(perm, positive)
         ):
+            logger.error(log_error)
             status = False
 
     return status

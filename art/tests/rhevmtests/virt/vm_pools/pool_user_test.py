@@ -6,20 +6,32 @@ Vm pool user test - contains test cases regarding user usage of vm pools.
 """
 
 import config
-from rhevmtests.virt.vm_pools import (
-    vm_pool_base as base,
-    helpers,
+import copy
+import pytest
+from fixtures import (
+    create_vm_pool, add_user,
+    vm_pool_teardown  # flake8: noqa
 )
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from rhevmtests.virt.vm_pools import helpers
+from art.rhevm_api.tests_lib.low_level import (
+    vms as ll_vms,
+    mla as ll_mla,
+    vmpools as ll_vmpools,
+)
 from art.rhevm_api.tests_lib.high_level import (
     vmpools as hl_vmpools,
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
+from art.unittest_lib import VirtTest, attr, testflow
 
 
-class TestUserVmContinuity(base.VmPoolWithUser):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, add_user.__name__
+)
+class TestUserVmContinuity(VirtTest):
     """
     Tests that after user allocates a vm, when user is disconnected from the vm
     the vm is still up and not shut down
@@ -28,11 +40,12 @@ class TestUserVmContinuity(base.VmPoolWithUser):
     __test__ = True
 
     pool_name = "Virt_pools_user_vm_continuity"
-    pool_size = 1
-    prestarted_vms = 1
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    pool_params['size'] = 1
+    pool_params['prestarted_vms'] = 1
+    users = [config.USER]
 
-    @bz({'1342795': {}})
-    @polarion("RHEVM-9859")
+    @polarion("RHEVM3-9859")
     def test_user_vm_continuity(self):
         """
         Tests that after user allocates a vm, when user is disconnected from
@@ -43,33 +56,44 @@ class TestUserVmContinuity(base.VmPoolWithUser):
         3. Remove user1's permissions from the vm while it is still up.
         4. Verify the vm is still up and does not shut down.
         """
+        testflow.step(
+            "Waiting for %s prestarted vms in pool: %s to start",
+            self.pool_params['prestarted_vms'], self.pool_name
+        )
         hl_vmpools.wait_for_prestarted_vms(
             vm_pool=self.pool_name, wait_until_up=True
         )
+        testflow.step("Allocate the prestarted vm as user: %s", config.USER)
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.USER, 0, 1, False
         )
         user_vms = helpers.get_user_vms(
-            self.pool_name, self.user_name, config.USER_ROLE, 1
+            self.pool_name, config.USER_NAME, config.USER_ROLE, 1
         )
         if not user_vms:
             raise exceptions.VmPoolException()
-        if not base.ll_mla.removeUserPermissionsFromVm(
-            True, user_vms[0], self.user_name
+        testflow.step(
+            "Removing permissions for user: %s on vm: %s - vm should return "
+            "to pool and stay up", config.USER, user_vms[0]
+        )
+        if not ll_mla.removeUserPermissionsFromVm(
+            True, user_vms[0], config.USER_NAME
         ):
-            raise exceptions.VMException(
-                "Failed to remove permission for user: %s on vm: %s" %
-                (self.user_name, user_vms[0])
-            )
+            raise exceptions.VMException()
+        testflow.step("Verifying that status is 'up' for vm: %s", user_vms[0])
         if not ll_vms.checkVmState(True, user_vms[0], config.VM_UP):
             raise exceptions.VMException(
                 "Vm: %s changed status unexpectedly after user: %s "
                 "disconnected. Expected state = %s" %
-                (user_vms[0], self.user_name, config.VM_UP)
+                (user_vms[0], config.USER_NAME, config.VM_UP)
             )
 
 
-class TestTwoUsersTakeVmFromPool(base.VmPoolWithUser):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, add_user.__name__
+)
+class TestTwoUsersTakeVmFromPool(VirtTest):
     """
     Tests vm allocation from pool as user + allocating remaining vm with
     another user:
@@ -83,25 +107,43 @@ class TestTwoUsersTakeVmFromPool(base.VmPoolWithUser):
     __test__ = True
 
     pool_name = "Virt_user_role_take_vm_from_pool"
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    users = [config.USER, config.VDC_ADMIN_USER]
 
-    @bz({'1342795': {}})
-    @polarion("RHEVM-9891")
+    @polarion("RHEVM3-9891")
     def test_two_users_take_vm_from_pool(self):
+        testflow.step(
+            "Allocating a vm from pool: %s as user %s",
+            self.pool_name, config.USER
+        )
         helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)
+        testflow.step(
+            "Allocating a vm from pool: %s as user %s",
+            self.pool_name, config.VDC_ADMIN_USER
+        )
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
         )
+        testflow.step("Stopping all vms in pool: %s", self.pool_name)
         assert hl_vmpools.stop_vm_pool(self.pool_name)
-        vms = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)
-        helpers.verify_vms_have_no_permissions_for_user(
-            vms, self.user_name, config.USER_ROLE
+        vms = ll_vmpools.get_vms_in_pool_by_name(self.pool_name)
+        testflow.step(
+            "Verify that the users permissions on the vms from the previous "
+            "sessions is gone as pool is an automatic pool"
         )
         helpers.verify_vms_have_no_permissions_for_user(
-            vms, self.admin_user_name, config.USER_ROLE
+            vms, config.USER_NAME, config.USER_ROLE
+        )
+        helpers.verify_vms_have_no_permissions_for_user(
+            vms, config.ADMIN_USER_NAME, config.USER_ROLE
         )
 
 
-class TestNoAvailableVmsForUser(base.VmPoolWithUser):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, add_user.__name__
+)
+class TestNoAvailableVmsForUser(VirtTest):
     """
     Negative case - user fails to allocate vm after admin started all vms in
     the pool
@@ -109,14 +151,25 @@ class TestNoAvailableVmsForUser(base.VmPoolWithUser):
     __test__ = True
 
     pool_name = "Virt_no_available_vms_for_user"
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    users = [config.USER]
 
-    @polarion("RHEVM-9881")
+    @polarion("RHEVM3-9881")
     def test_no_available_vms_for_user(self):
+        testflow.step("Start the only vm in pool: %s as admin", self.pool_name)
         hl_vmpools.start_vm_pool(self.pool_name)
+        testflow.step(
+            "Attempt to allocate the vm as user: %s - should fail as vm is "
+            "used by admin", config.USER
+        )
         helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
 
 
-class TestCannotStealVmFromOtherUser(base.VmPoolWithUser):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, add_user.__name__
+)
+class TestCannotStealVmFromOtherUser(VirtTest):
     """
     Negative case - user fails to allocate a vm from the pool after all vms
     were allocated by another user
@@ -124,18 +177,31 @@ class TestCannotStealVmFromOtherUser(base.VmPoolWithUser):
     __test__ = True
 
     pool_name = "Virt_cannot_steal_vm_from_another_user"
-    pool_size = 1
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    pool_params['size'] = 1
+    users = [config.USER, config.VDC_ADMIN_USER]
 
-    @bz({'1342795': {}})
-    @polarion("RHEVM-9883")
+    @polarion("RHEVM3-9883")
     def test_cannot_steal_vm_from_another_user(self):
+        testflow.step(
+            "Allocate the only vm in pool: %s as user: %s",
+            self.pool_name, config.VDC_ADMIN_USER
+        )
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
+        )
+        testflow.step(
+            "Attempt to allocate the vm as user: %s - should fail as vm is "
+            "used by admin", config.USER
         )
         helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
 
 
-class TestVmReturnsToPoolAfterUse(base.VmPoolWithUser):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, add_user.__name__
+)
+class TestVmReturnsToPoolAfterUse(VirtTest):
     """
     Basic test for Automatic Pools - allocate a vm from the pool with user1
     stop the vm with user1, login with user2 and allocate a vm from the pool
@@ -144,15 +210,25 @@ class TestVmReturnsToPoolAfterUse(base.VmPoolWithUser):
     __test__ = True
 
     pool_name = "Virt_vm_returns_to_pool_after_use"
-    pool_size = 1
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    pool_params['size'] = 1
+    users = [config.USER, config.VDC_ADMIN_USER]
 
-    @bz({'1342795': {}})
-    @polarion("RHEVM-9882")
+    @polarion("RHEVM3-9882")
     def test_vm_returns_to_pool_after_use(self):
+        testflow.step(
+            "Allocate the only vm in pool: %s as user: %s",
+            self.pool_name, config.VDC_ADMIN_USER
+        )
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
         )
+        testflow.step("Stop the vm")
         hl_vms.stop_stateless_vm(
-            base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
+            ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
+        )
+        testflow.step(
+            "Attempt to allocate the vm as user: %s - should succeed as pool "
+            "is automatic and previous session was done", config.USER
         )
         helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)

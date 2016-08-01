@@ -371,6 +371,7 @@ def create_vm_pool(positive, pool_name, pool_params):
     :raises: VmPoolException
     """
     wait = not bool(pool_params['prestarted_vms'])
+    pool_params['name'] = pool_name
     if not ll_vmpools.addVmPool(positive, wait=wait, **pool_params):
         raise exceptions.VmPoolException()
     if not wait:

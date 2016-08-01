@@ -64,40 +64,43 @@ def wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
     :param interval: Intervals between each sample of removeVmPool call
     :type interval: int
     """
-    pool_type = ll_vmpools.get_vm_pool_type(vmpool)
-    user_names = [
-        "%s@%s" % (user, config.USER_DOMAIN) for user in [
-            config.USER, config.VDC_ADMIN_USER
+    if ll_vmpools.does_vm_pool_exist(vmpool):
+        pool_type = ll_vmpools.get_vm_pool_type(vmpool)
+        user_names = [
+            "%s@%s" % (user, config.USER_DOMAIN) for user in [
+                config.USER, config.VDC_ADMIN_USER
+            ]
         ]
-    ]
-    if pool_type == 'manual':
-        vms_in_pool = ll_vmpools.get_vms_in_pool_by_name(vmpool)
-        for vm in vms_in_pool:
-            if not ll_mla.removeUsersPermissionsFromVm(True, vm, user_names):
-                logger.error("Failed to remove permission from vm: %s", vm)
-    logger.info("Stopping all vms in pool: %s", vmpool)
-    if not hl_vmpools.stop_vm_pool(vmpool):
-        logger.error(
-            "Failed to stop vms in pool: %s", vmpool
+        if pool_type == 'manual':
+            vms_in_pool = ll_vmpools.get_vms_in_pool_by_name(vmpool)
+            for vm in vms_in_pool:
+                if not ll_mla.removeUsersPermissionsFromVm(
+                    True, vm, user_names
+                ):
+                    logger.error("Failed to remove permission from vm: %s", vm)
+        logger.info("Stopping all vms in pool: %s", vmpool)
+        if not hl_vmpools.stop_vm_pool(vmpool):
+            logger.error(
+                "Failed to stop vms in pool: %s", vmpool
+            )
+        sampler = timeout_api.TimeoutingSampler(
+            timeout, interval, ll_vmpools.removeVmPool, True, vmpool
         )
-    vm_pool_size = ll_vmpools.get_vm_pool_size(vmpool)
-    pool_vms_names = generate_vms_name_list_from_pool(vmpool, vm_pool_size)
-    # TODO: if bz 1246886 is fixed change code to handle one removeVmPool call
-    sampler = timeout_api.TimeoutingSampler(
-        timeout, interval, ll_vmpools.removeVmPool, True, vmpool
-    )
-    timeout_message = (
-        "Timeout waiting for vms in Pool: '{0}' to restore snapshots "
-        "before deleting the pool'".format(vmpool)
-    )
-    sampler.timeout_exc_args = timeout_message
-    try:
-        for sampleOk in sampler:
-            if sampleOk and not ll_vmpools.does_vm_pool_exist(vmpool):
-                break
-    except timeout_api.TimeoutExpiredError:
-        logger.error(timeout_message)
+        timeout_message = (
+            "Timeout waiting for vms in Pool: '{0}' to restore snapshots "
+            "before deleting the pool'".format(vmpool)
+        )
+        sampler.timeout_exc_args = timeout_message
+        try:
+            for sampleOk in sampler:
+                if sampleOk and not ll_vmpools.does_vm_pool_exist(vmpool):
+                    break
+        except timeout_api.TimeoutExpiredError:
+            logger.error(timeout_message)
     # TODO: remove this iteration after bz 1245630 is resolved
+    pool_vms_names = generate_vms_name_list_from_pool(
+        vmpool, config.MAX_VMS_IN_POOL_TEST
+    )
     for vm in pool_vms_names:
         if ll_vms.does_vm_exist(vm):
             logger.error(

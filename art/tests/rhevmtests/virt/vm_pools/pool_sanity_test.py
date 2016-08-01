@@ -7,28 +7,34 @@ vm pools.
 """
 
 import config
+import copy
 import logging
-
+import pytest
+from fixtures import (
+    vm_pool_teardown, create_vm_pool, add_user
+)
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
+    vmpools as ll_vmpools
 )
 from art.rhevm_api.tests_lib.high_level import (
     vmpools as hl_vmpools,
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
-from rhevmtests.virt.vm_pools import (
-    vm_pool_base as base,
-    helpers
-)
+from art.test_handler.tools import polarion
+from art.unittest_lib import VirtTest, attr, testflow
+from rhevmtests.virt.vm_pools import helpers
 import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as helper
+
 
 logger = logging.getLogger("virt.vm_pools.sanity")
 
 
-class TestFullCreateRemovePoolCycle(base.BaseVmPool):
+@attr(tier=1)
+@pytest.mark.usefixtures(vm_pool_teardown.__name__)
+class TestFullCreateRemovePoolCycle(VirtTest):
     """
     This test covers the basic vm pool flow not using the deleteVmPool
     function which handles stop vms -> detach vms -> delete vms -> delete pool
@@ -38,6 +44,7 @@ class TestFullCreateRemovePoolCycle(base.BaseVmPool):
     __test__ = True
 
     pool_name = 'Virt_vmpool_full_cycle'
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
 
     @polarion("RHEVM3-13976")
     def test_full_create_remove_pool_cycle(self):
@@ -46,24 +53,30 @@ class TestFullCreateRemovePoolCycle(base.BaseVmPool):
         pool -> stop vms in pool -> detach vms from pool -> delete vms ->
         delete pool.
         """
+        testflow.step(
+            "Creating a vm pool with params: %s", self.pool_params
+        )
         hl_vmpools.create_vm_pool(True, self.pool_name, self.pool_params)
+        testflow.step("Starting all vms in pool: %s", self.pool_name)
         if not hl_vmpools.start_vm_pool(self.pool_name):
             raise exceptions.VmPoolException()
+        testflow.step("Removing pool: %s", self.pool_name)
         if not hl_vmpools.remove_whole_vm_pool(
             self.pool_name, stop_vms=True
         ):
-            raise exceptions.VmPoolException(
-                "Failed to remove pool: %s and all it's vms" % self.pool_name
-            )
+            raise exceptions.VmPoolException()
 
 
-class TestAddVmsToPool(base.VmPool):
+@attr(tier=1)
+@pytest.mark.usefixtures(create_vm_pool.__name__)
+class TestAddVmsToPool(VirtTest):
     """
     Tests add vm to pool by updating pool and increasing pool size.
     """
     __test__ = True
 
     pool_name = 'Virt_vmpool_add_to_pool'
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     new_pool_size = 3
 
     @polarion("RHEVM3-9870")
@@ -71,24 +84,19 @@ class TestAddVmsToPool(base.VmPool):
         """
         Tests add vm to pool by updating pool and increasing pool size.
         """
-        if not base.ll_vmpools.updateVmPool(
+        testflow.step("Updating number of vms in pool: %s", self.pool_name)
+        if not ll_vmpools.updateVmPool(
             True,
             self.pool_name,
             size=self.new_pool_size
         ):
             raise exceptions.VmPoolException()
-        self.__class__.pool_size = self.new_pool_size
         vms_in_pool = helpers.generate_vms_name_list_from_pool(
             self.pool_name,
             self.new_pool_size
         )
-        logger.info("Searching for new vm: %s", vms_in_pool[-1])
+        testflow.step("Searching for the new vm: %s", vms_in_pool[-1])
         ll_vms.get_vm(vms_in_pool[-1])
-        logger.info(
-            "The new vm: %s was successfully added pool %s",
-            vms_in_pool[-1],
-            self.pool_name
-        )
         if not ll_vms.waitForVmsStates(
             True,
             vms_in_pool[-1],
@@ -100,32 +108,44 @@ class TestAddVmsToPool(base.VmPool):
             )
 
 
-class TestAdminStartedVmNotStateless(base.VmPool):
+@attr(tier=1)
+@pytest.mark.usefixtures(create_vm_pool.__name__)
+class TestAdminStartedVmNotStateless(VirtTest):
     """
     Test case verifies that a vm from pool started by admin is stateful.
     """
     __test__ = True
 
     pool_name = "Virt_pool_admin_started_vm_not_stateless"
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
 
-    @polarion("RHEVM-9880")
+    @polarion("RHEVM3-9880")
     def test_admin_started_vm_not_stateless(self):
         """
         Test case verifies that a vm from pool started by admin is stateful.
         """
-        vm = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
+        vm = ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
+        testflow.step("Start a vm from pool: %s", self.pool_name)
         assert ll_vms.startVm(True, vm)
         vm_resource = gen_helper.get_vm_resource(vm)
+        testflow.step("Create a file in the vm")
         helper.create_file_in_vm(vm, vm_resource)
+        testflow.step("Make sure the file exists in the vm's disk")
         helper.check_if_file_exist(True, vm, vm_resource)
         assert helpers.flush_file_system_buffers(vm_resource)
+        testflow.step("Restart the vm (shutdown and start again)")
         assert ll_vms.stop_vms_safely([vm])
         assert ll_vms.startVm(True, vm, wait_for_status=config.VM_UP)
         vm_resource = gen_helper.get_vm_resource(vm)
+        testflow.step("Verify that file exists after vm restart")
         helper.check_if_file_exist(True, vm, vm_resource)
 
 
-class TestUserStartedVmIsStateless(base.VmPoolWithUser):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, add_user.__name__
+)
+class TestUserStartedVmIsStateless(VirtTest):
     """
     Test case verifies that a vm from pool started by a user with pool user
     permissions is stateless.
@@ -133,23 +153,40 @@ class TestUserStartedVmIsStateless(base.VmPoolWithUser):
     __test__ = True
 
     pool_name = "Virt_pool_user_started_vm_is_stateless"
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    pool_params['size'] = 1
+    users = [config.USER, config.VDC_ADMIN_USER]
     pool_size = 1
 
-    @bz({'1342795': {}})
-    @polarion("RHEVM-9878")
+    @polarion("RHEVM3-9878")
     def test_user_started_vm_is_stateless(self):
         """
         Test case verifies that a vm from pool started by a user with pool user
         permissions is stateless.
         """
+        testflow.step(
+            "Allocating a vm from pool: %s as user %s",
+            self.pool_name, config.USER
+        )
         helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)
-        vm = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
+        vm = ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
         vm_resource = gen_helper.get_vm_resource(vm)
+        testflow.step("Creating a file in vm: %s", vm)
         helper.create_file_in_vm(vm, vm_resource)
+        testflow.step("Verifying file exists in vm: %s", vm)
         helper.check_if_file_exist(True, vm, vm_resource)
+        testflow.step("Stopping vm: %s", vm)
         hl_vms.stop_stateless_vm(vm)
+        testflow.step(
+            "Allocating vm: %s from pool: %s as user %s",
+            vm, self.pool_name, config.USER
+        )
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
         )
         vm_resource = gen_helper.get_vm_resource(vm)
+        testflow.step(
+            "Verifying that the file created in the previous session does not "
+            "exist as vm is stateless"
+        )
         helper.check_if_file_exist(False, vm, vm_resource)
