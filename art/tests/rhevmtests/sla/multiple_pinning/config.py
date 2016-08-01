@@ -1,5 +1,5 @@
 """
-Configuration file for multiple pinning test
+Configuration File for Multiple Pinning Test
 """
 from rhevmtests.sla.config import *  # flake8: noqa
 

@@ -1,17 +1,37 @@
 """
 Test multiple pinning of VM under different conditions
 """
+import logging
+
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
+import config as conf
+import helpers as pinning_helpers
+import pytest
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
-from fixtures import *  # flake8: noqa
+from fixtures import (
+    attach_host_device,
+    create_vm_for_export_and_template_checks,
+    export_vm,
+    import_vm,
+    make_template_from_vm,
+    make_vm_from_template,
+    numa_pinning,
+    update_class_cpu_pinning
+)
+from rhevmtests.sla.fixtures import (
+    activate_hosts,
+    stop_vms,
+    update_vms
+)
 
 logger = logging.getLogger(__name__)
 
 
-@u_libs.attr(tier=2)
 class BaseMultiplePinning(u_libs.SlaTest):
     """
     Base class for all multiple pinning tests
@@ -42,9 +62,9 @@ class BaseMultiplePinning(u_libs.SlaTest):
 
 @u_libs.attr(tier=1)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms",
-    "activate_hosts"
+    update_vms.__name__,
+    stop_vms.__name__,
+    activate_hosts.__name__
 )
 class TestMultiplePinning01(BaseMultiplePinning):
     """
@@ -59,7 +79,7 @@ class TestMultiplePinning01(BaseMultiplePinning):
         }
     }
     vms_to_stop = [conf.VM_NAME[0]]
-    hosts_to_activate = range(2)
+    hosts_to_activate_indexes = range(2)
 
     @polarion("RHEVM3-12073")
     def test_check_multiple_pinning(self):
@@ -80,8 +100,8 @@ class TestMultiplePinning01(BaseMultiplePinning):
 
 @u_libs.attr(tier=1)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms"
+    update_vms.__name__,
+    stop_vms.__name__
 )
 class TestMultiplePinning02(BaseMultiplePinning):
     """
@@ -108,8 +128,8 @@ class TestMultiplePinning02(BaseMultiplePinning):
 
 @u_libs.attr(tier=1)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms"
+    update_vms.__name__,
+    stop_vms.__name__
 )
 class TestMultiplePinning03(BaseMultiplePinning):
     """
@@ -155,11 +175,12 @@ class TestMultiplePinning03(BaseMultiplePinning):
         )
 
 
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    "update_class_cpu_pinning",
-    "update_vms",
-    "stop_vms",
-    "activate_hosts"
+    update_class_cpu_pinning.__name__,
+    update_vms.__name__,
+    stop_vms.__name__,
+    activate_hosts.__name__
 )
 class TestMultiplePinning04(BaseMultiplePinning):
     """
@@ -173,7 +194,7 @@ class TestMultiplePinning04(BaseMultiplePinning):
         }
     }
     vms_to_stop = [conf.VM_NAME[0]]
-    hosts_to_activate = range(2)
+    hosts_to_activate_indexes = range(2)
 
     @polarion("RHEVM3-12099")
     def test_check_vm_cpu_pinning(self):
@@ -200,10 +221,11 @@ class TestMultiplePinning04(BaseMultiplePinning):
             self._stop_vm_and_deactivate_vm_host(vm_host=vm_host)
 
 
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms",
-    "activate_hosts"
+    update_vms.__name__,
+    stop_vms.__name__,
+    activate_hosts.__name__
 )
 class TestMultiplePinning05(BaseMultiplePinning):
     """
@@ -218,7 +240,7 @@ class TestMultiplePinning05(BaseMultiplePinning):
         }
     }
     vms_to_stop = [conf.VM_NAME[0]]
-    hosts_to_activate = range(2)
+    hosts_to_activate_indexes = range(2)
 
     @polarion("RHEVM3-12101")
     def test_check_vm_cpu_mode(self):
@@ -243,9 +265,10 @@ class TestMultiplePinning05(BaseMultiplePinning):
             self._stop_vm_and_deactivate_vm_host(vm_host=vm_host)
 
 
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms"
+    update_vms.__name__,
+    stop_vms.__name__
 )
 class TestMultiplePinning06(BaseMultiplePinning):
     """
@@ -268,10 +291,11 @@ class TestMultiplePinning06(BaseMultiplePinning):
         pinning_helpers.add_one_numa_node_to_vm(negative=True)
 
 
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms",
-    "numa_pinning"
+    update_vms.__name__,
+    stop_vms.__name__,
+    numa_pinning.__name__
 )
 class TestMultiplePinning07(BaseMultiplePinning):
     """
@@ -298,6 +322,7 @@ class TestMultiplePinning07(BaseMultiplePinning):
         )
 
 
+@u_libs.attr(tier=3)
 class TestMultiplePinning08(BaseMultiplePinning):
     """
     Negative: Pin VM to host from another cluster
@@ -309,6 +334,8 @@ class TestMultiplePinning08(BaseMultiplePinning):
         """
         1) Pin VM to host from another cluster
         """
+        if len(conf.HOSTS) < 4:
+            pytest.skip("Golden environment does not have four hosts")
         assert not ll_vms.updateVm(
             positive=True,
             vm=conf.VM_NAME[0],
@@ -317,9 +344,10 @@ class TestMultiplePinning08(BaseMultiplePinning):
         )
 
 
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms"
+    update_vms.__name__,
+    stop_vms.__name__
 )
 class TestMultiplePinning09(BaseMultiplePinning):
     """
@@ -349,10 +377,11 @@ class TestMultiplePinning09(BaseMultiplePinning):
         )
 
 
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    "update_vms",
-    "stop_vms",
-    "attach_host_device"
+    update_vms.__name__,
+    stop_vms.__name__,
+    attach_host_device.__name__
 )
 class TestMultiplePinning10(BaseMultiplePinning):
     """
@@ -381,6 +410,7 @@ class TestMultiplePinning10(BaseMultiplePinning):
         assert not ll_vms.get_vm_host_devices(vm_name=conf.VM_NAME[0])
 
 
+@u_libs.attr(tier=2)
 class TestImportExportTemplate(BaseMultiplePinning):
     """
     Import, export, and template of VM that pinned to two hosts
@@ -388,9 +418,9 @@ class TestImportExportTemplate(BaseMultiplePinning):
     __test__ = True
 
     @pytest.mark.usefixtures(
-        "create_vm_for_export_and_template_checks",
-        "export_vm",
-        "import_vm"
+        create_vm_for_export_and_template_checks.__name__,
+        export_vm.__name__,
+        import_vm.__name__
     )
     @polarion("RHEVM3-12406")
     def test_check_import_export(self):
@@ -405,9 +435,9 @@ class TestImportExportTemplate(BaseMultiplePinning):
 
     @bz({"1333409": {}})
     @pytest.mark.usefixtures(
-        "create_vm_for_export_and_template_checks",
-        "make_template_from_vm",
-        "make_vm_from_template"
+        create_vm_for_export_and_template_checks.__name__,
+        make_template_from_vm.__name__,
+        make_vm_from_template.__name__
     )
     @polarion("RHEVM3-12407")
     def test_check_template(self):

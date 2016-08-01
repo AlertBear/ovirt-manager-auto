@@ -464,7 +464,7 @@ def get_host_resource_by_name(host_name):
     """
     host_ip = ll_hosts.get_host_ip_from_engine(host_name)
     for host_resource in config.VDS_HOSTS:
-        if host_resource.ip == host_ip:
+        if host_ip in (host_resource.ip, host_resource.fqdn):
             return host_resource
     return None
 

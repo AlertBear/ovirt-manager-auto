@@ -5,9 +5,10 @@ import logging
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import helpers as pinning_helpers
-from rhevmtests.sla.fixtures import *  # flake8: noqa
+import pytest
 
 
 logger = logging.getLogger(__name__)
