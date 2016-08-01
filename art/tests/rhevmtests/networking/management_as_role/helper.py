@@ -2,62 +2,65 @@
 # -*- coding: utf-8 -*-
 
 """
-Utilities used by MGMT network role feature
+Utilities used by the test cases of Management As A Role
 """
 
 import logging
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import config as conf
+import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger("MGMT_Net_Role_Helper")
 
 
 def install_host_new_mgmt(
-    host_resource=None, network=conf.MGMT_BRIDGE, dc=conf.EXT_DC_0,
-    cl=conf.EXTRA_CLUSTER_0, dest_cl=conf.EXTRA_CLUSTER_0, new_setup=True,
-    remove_setup=False, maintenance=True
+        dc, cl, dest_cl, net_setup, mgmt_net, host_resource=None,
+        network=conf.MGMT_BRIDGE, new_setup=True, remove_setup=False,
+        maintenance=True
 ):
     """
     Install host with MGMT network different from the previous one
 
-    :param host_resource: Host resource
-    :type host_resource: VDS instance
-    :param network: Network name for the MGMT
-    :type network: str
-    :param dc: DC for newly created setup
-    :type dc: str
-    :param cl: Cluster for newly created setup
-    :type cl: str
-    :param dest_cl: Cluster where host should be installed
-    :type dest_cl: str
-    :param new_setup: Flag indicating if there is a need to install a new setup
-    :param remove_setup: Flag indicating if there is a need to remove setup
-    :type remove_setup: bool
-    :type new_setup:bool
-    :param maintenance: Set host to maintenance before move
-    :type maintenance: bool
-    :raises: Network exception
+    Args:
+        dc (str): DC for newly created setup
+        cl (str): Cluster for newly created setup
+        dest_cl (str): Cluster where host should be installed
+        net_setup (dict): Network setup to set on host
+        mgmt_net (str): Management network name to set on host
+        host_resource (VDS instance, optional): Host resource
+        network (str, optional): Network name for the MGMT
+        new_setup (bool, optional): Flag indicating if there is a need to
+            install a new setup
+        remove_setup (bool, optional): Flag indicating if there is a need to
+            remove setup
+        maintenance (bool, optional): Set host to maintenance before move
+
+    Returns:
+        bool: True if install host succeeded, otherwise False
     """
     if host_resource is None:
         host_resource = conf.VDS_1_HOST
 
     host_name = ll_hosts.get_host_name_from_engine(host_resource)
-    prepare_host_for_installation(
+
+    if not host_name:
+        return False
+
+    if not prepare_host_for_installation(
         host_resource=host_resource, network=network,
         dc=dc, cl=cl, new_setup=new_setup, host_name=host_name,
         maintenance=maintenance
-    )
+    ):
+        return False
 
-    add_host_new_mgmt(
-        host_resource=host_resource, network=network, dc=dc, cl=cl,
+    return add_host_new_mgmt(
+        host_rsc=host_resource, network=network, dc=dc, cl=cl,
         new_setup=new_setup, dest_cl=dest_cl, host_name=host_name,
-        remove_setup=remove_setup
+        remove_setup=remove_setup, net_setup=net_setup, mgmt_net=mgmt_net
     )
 
 
@@ -67,228 +70,153 @@ def prepare_host_for_installation(
     """
     Prepares host for installation with new MGMT network
 
-    :param host_resource: Host resource
-    :type host_resource: VDS instance
-    :param network: Network name for the MGMT
-    :type network: str
-    :param dc: DC for newly created setup
-    :type dc: str
-    :param cl: Cluster for newly created setup
-    :type cl: str
-    :param new_setup: Flag indicating if there is a need to install a new setup
-    :type new_setup:bool
-    :param host_name: Name of the Host
-    :type host_name: str
-    :param maintenance: Set host to maintenance before move
-    :type maintenance: bool
-    :raises: Network exception
+    Args:
+        host_resource (VDS instance): Host resource
+        network (str): Network name for the MGMT
+        dc (str): DC for newly created setup
+        cl (str): Cluster for newly created setup
+        new_setup (bool): Flag indicating if there is a need to install a new
+            setup
+        host_name (str): Name of the Host
+        maintenance (bool): Set host to maintenance before move
+
+    Returns:
+        bool: True if prepare host succeeded, otherwise False
     """
     if maintenance:
-        if not ll_hosts.deactivateHost(positive=True, host=host_name):
-            raise conf.NET_EXCEPTION()
+        assert ll_hosts.deactivateHost(positive=True, host=host_name)
 
     if new_setup:
-        create_setup(dc=dc, cl=cl)
-        move_host_new_cl(host=host_name, cl=cl)
-
-    update_host_mgmt_bridge(network=network, dc=dc)
-
-    virsh_remove_network(vds_resource=conf.VDS_1_HOST, network=network)
-
-    if not ll_hosts.removeHost(positive=True, host=host_name):
-        raise conf.NET_EXCEPTION()
-
-    remove_persistance_nets(host_resource=host_resource)
-
-
-def add_host_new_mgmt(
-    host_resource, network, dc, cl, new_setup, dest_cl, host_name, remove_setup
-):
-    """
-    Add Host with new MGMT bridge
-
-    :param host_resource: Host resource
-    :type host_resource: VDS instance
-    :param network: Network name for the MGMT
-    :type network: str
-    :param dc: DC for newly created setup
-    :type dc: str
-    :param cl: Cluster for newly created setup
-    :type cl: str
-    :param new_setup: Flag indicating if there is a need to install a new setup
-    :type new_setup:bool
-    :param dest_cl: Cluster where host should be installed
-    :type dest_cl: str
-    :param host_name: Name of the Host
-    :type host_name: str
-    :param remove_setup: Remove the setup
-    :type remove_setup: bool
-    :raises: Network exception
-    """
-    if new_setup:
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=dc,  cluster=cl, network_dict=conf.NET_DICT
+        if not hl_networks.create_basic_setup(
+            datacenter=dc, cluster=cl, version=conf.COMP_VERSION,
+            cpu=conf.CPU_NAME
         ):
-            raise conf.NET_EXCEPTION()
+            return False
+        if not move_host_new_cl(host=host_name, cl=cl):
+            return False
 
-        if not ll_networks.update_cluster_network(
-            positive=True, cluster=cl, network=conf.NET_1,
-            usages=conf.MGMT
-        ):
-            raise conf.NET_EXCEPTION()
-
-        if not ll_networks.remove_network(
-            positive=True, network=network, data_center=dc
-        ):
-            raise conf.NET_EXCEPTION()
-
-    if remove_setup:
-        hl_networks.remove_basic_setup(datacenter=dc, cluster=cl)
-
-    add_host(host_resource=host_resource, host=host_name, cl=dest_cl)
-
-
-def update_host_mgmt_bridge(network, dc):
-    """
-    Update Host MGMT bridge to be non-VM
-
-    :param network: Network name for the MGMT
-    :type network: str
-    :param dc: DC where the network is located
-    :type dc: str
-    """
+    # Update Host MGMT bridge to be non-VM
     network_helper.call_function_and_wait_for_sn(
         func=ll_networks.update_network, content=network, positive=True,
         network=network, data_center=dc, usages=""
     )
 
+    virsh_remove_network(vds_resource=conf.VDS_1_HOST, network=network)
 
-def add_host(host_resource, host, cl):
+    if not ll_hosts.removeHost(positive=True, host=host_name):
+        return False
+
+    return remove_persistence_nets(host_resource=host_resource)
+
+
+def add_host_new_mgmt(
+    host_rsc, network, dc, cl, new_setup, dest_cl, host_name, remove_setup,
+    net_setup, mgmt_net
+):
     """
-    Add host
+    Add Host with new MGMT bridge
 
-    :param host_resource: Host resource
-    :type host_resource: VDS instance
-    :param host: Host name
-    :type host: str
-    :param cl: Cluster name
-    :type cl: str
-    :raises: Network exception
+    Args:
+        host_rsc (VDS instance): Host resource
+        network (str): Network name for the MGMT
+        dc (str): DC for newly created setup
+        cl (str): Cluster for newly created setup
+        new_setup (bool): Flag indicating if there is a need to install a new
+            setup
+        dest_cl (str): Cluster where host should be installed
+        host_name (str): Name of the Host
+        remove_setup (bool): Remove the setup
+        net_setup (dict): Network setup to set on host
+        mgmt_net (str): Management network name to set on host
+
+    Returns:
+        bool: True if add host succeeded, otherwise False
     """
-    if not ll_hosts.addHost(
-        positive=True, name=host, root_password=conf.HOSTS_PW, cluster=cl,
-        address=host_resource.fqdn, comment=host_resource.ip
-    ):
-        raise conf.NET_EXCEPTION(
-            "Couldn't add %s to %s" % (host_resource.fqdn, cl)
-        )
+    if new_setup:
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=dc,  cluster=cl, network_dict=net_setup
+        ):
+            return False
 
+        if not ll_networks.update_cluster_network(
+            positive=True, cluster=cl, network=mgmt_net,
+                usages=conf.MANAGEMENT_NET_USAGE
+        ):
+            return False
 
-def create_setup(dc, cl=None):
-    """
-    Creates a new DC and Cluster in the setup
+        if not ll_networks.remove_network(
+            positive=True, network=network, data_center=dc
+        ):
+            return False
 
-    :param dc: DC name
-    :type dc: str
-    :param cl: Cluster name
-    :type cl: str or None
-    :raises: Network exception
-    """
-    if not hl_networks.create_basic_setup(
-        datacenter=dc, cluster=cl,
-        version=conf.COMP_VERSION, cpu=conf.CPU_NAME
-    ):
-        raise conf.NET_EXCEPTION()
+    if remove_setup:
+        if not hl_networks.remove_basic_setup(datacenter=dc, cluster=cl):
+            return False
+
+    return ll_hosts.addHost(
+        positive=True, name=host_name, root_password=conf.HOSTS_PW,
+        cluster=dest_cl, address=host_rsc.fqdn, comment=host_rsc.ip
+    )
 
 
 def move_host_new_cl(host, cl, positive=True, activate_host=False):
     """
     Move Host to new Cluster
 
-    :param host: Host name to move
-    :type host: str
-    :param cl: Destination Cluster
-    :param positive: Flag if an action of moving host should succeed
-    :type positive: bool
-    :param activate_host: Flag if host should be activated
-    :type activate_host: bool
-    :type cl: str
-    :raises: Network exception
+    Args:
+        host (str): Host name to move
+        cl (str): Destination Cluster
+        positive (bool): Flag if an action of moving host should succeed
+        activate_host (bool): Flag if host should be activated
+
+    Returns:
+        bool: True if host move was successful, otherwise False
     """
-    log_info, log_error = ll_general.get_log_msg(
-        action="Move", obj_type="host", obj_name=host, positive=positive,
-        extra_txt="to cluster %s" % cl
-    )
-    logger.info(log_info)
     if not ll_hosts.updateHost(positive=positive, host=host, cluster=cl):
-        raise conf.NET_EXCEPTION(log_error)
+        return False
 
     if activate_host:
         if not ll_hosts.activateHost(True, host=host):
-            raise conf.NET_EXCEPTION()
+            return False
+
+    return True
 
 
-def remove_persistance_nets(host_resource):
+def remove_persistence_nets(host_resource):
     """
     Remove networks from persistence files
 
-    :param host_resource: Host resource
-    :type host_resource: VDS instance
-    :raises: Network exception
+    Args:
+        host_resource (VDS instance): Host resource
+
+    Returns:
+        bool: True if persistence networks were removed, otherwise False
     """
     for location in ("lib/vdsm/persistence", "run/vdsm"):
         if host_resource.executor().run_cmd(
             ["rm", "-rf", "/".join(["/var", location, "netconf/nets/*"])]
         )[0]:
-            raise conf.NET_EXCEPTION(
-                "Couldn't remove network from persistent file"
-            )
+            return False
+    return True
 
 
-def add_cluster(
-    cl=conf.EXTRA_CLUSTER_0, dc=conf.DC_0, positive=True, **kwargs
-):
+def add_cluster(cl, dc, positive=True, **kwargs):
     """
     Add Cluster to DC
 
-    :param cl: Cluster name
-    :type cl: str
-    :param dc: DC name
-    :type dc: str
-    :param positive: Flag if test is positive or negative
-    :type positive: bool
-    :param kwargs: dict of additional params (for example MGMT network)
-    :type kwargs: dict
-    :raises: Network exception
+    Args:
+        cl (str): Cluster name
+        dc (str, optional): DC name
+        positive (bool, optional): Flag if test is positive or negative
+        **kwargs: dict of additional params (for example MGMT network)
+
+    Returns:
+        bool: True if cluster added successfully, otherwise False
     """
-    if not ll_clusters.addCluster(
+    return ll_clusters.addCluster(
         positive=positive, name=cl, cpu=conf.CPU_NAME, data_center=dc,
         version=conf.COMP_VERSION, **kwargs
-    ):
-        raise conf.NET_EXCEPTION()
-
-
-def remove_net(net=conf.NET_1, dc=conf.EXT_DC_0, positive=True, teardown=True):
-    """
-    Remove network from DC
-
-    :param net: Network name
-    :type net: str
-    :param dc: DC name
-    :type dc: str
-    :param positive: Flag for removal a network
-    :type positive: bool
-    :param teardown: Called from teardown
-    :type teardown: bool
-    :raises: Network exception
-    """
-    if not ll_networks.remove_network(
-        positive=positive, network=net, data_center=dc
-    ):
-        if teardown:
-            pass
-        else:
-            raise conf.NET_EXCEPTION()
+    )
 
 
 def virsh_remove_network(vds_resource, network):

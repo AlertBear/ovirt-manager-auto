@@ -2,120 +2,201 @@
 # -*- coding: utf-8 -*-
 
 """
-Fixtures for management_as_role
+Fixtures for Management Network As A Role test cases
 """
 
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import config as conf
 import helper
-from rhevmtests import networking
-
-
-class PrepareSetupCase08(object):
-    """
-    Setup and Teardown for case08
-    """
-    def __init__(self):
-        self.cluster_0 = conf.EXTRA_CL[0]
-        self.cluster_1 = conf.EXTRA_CL[1]
-        self.cluster_2 = conf.EXTRA_CL[2]
-        self.net_1 = conf.NET_1
-        self.net_2 = conf.NET_2
-        self.dc = conf.EXT_DC_0
-        self.cluster_list = [self.cluster_1, self.cluster_2]
-        self.cluster_nets_dict = {
-            self.cluster_1: [self.net_1, self.net_2],
-            self.cluster_2: [self.net_2, self.net_1]
-        }
-        self.local_dict = {
-            self.net_2: {
-                "required": "true",
-            },
-        }
-
-    def move_host_to_new_cluster(self):
-        """
-        Move host to new cluster
-        """
-        helper.install_host_new_mgmt()
-
-    def create_and_attach_network(self):
-        """
-        Create and attach network
-        """
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=self.dc,  network_dict=self.local_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-    def create_clusters_and_attach_networks(self):
-        """
-        Create clusters and attach networks to the clusters
-        """
-        for cl in self.cluster_list:
-            mgmt_net = self.cluster_nets_dict[cl][0]
-            net = self.cluster_nets_dict[cl][1]
-            helper.add_cluster(
-                cl=cl, dc=self.dc, management_network=mgmt_net
-            )
-            if not ll_networks.add_network_to_cluster(
-                positive=True, network=net, cluster=cl, required=True
-            ):
-                raise conf.NET_EXCEPTION()
-
-    def move_host_to_original_cluster(self):
-        """
-        Move host to original cluster
-        """
-        helper.install_host_new_mgmt(
-            network=self.net_1, dest_cl=conf.CL_0, new_setup=False,
-            remove_setup=True, maintenance=False
-        )
-
-    def remove_clusters(self):
-        """
-        Remove clusters
-        """
-        for cl in self.cluster_list:
-            ll_clusters.removeCluster(positive=True, cluster=cl)
+import rhevmtests.networking.config as conf
+from art.core_api import apis_exceptions
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def prepare_setup_case_08(request):
+def create_basic_setup(request):
     """
-    Move host to new DC/cluster with net1 as management network
-    Create network net2 on DC
-    Create 2 clusters
-    Attach both networks to each cluster
-    Final result should be:
-        cluster_0 with host and management network net_1
-        cluster_1 without host and management network net_1 and net_2
-            attached to the cluster
-        cluster_2 without host and management network net_2 and net_1
-            attached to the cluster
+    Create basic setup (Data-Center and optional cluster)
     """
-    ps = PrepareSetupCase08()
+    dc = request.cls.create_basic_setup_params[0]
+    cluster = request.cls.create_basic_setup_params[1]
 
-    @networking.ignore_exception
+    def fin():
+        """
+        Remove basic setup
+        """
+        assert hl_networks.remove_basic_setup(datacenter=dc, cluster=cluster)
+    request.addfinalizer(fin)
+
+    assert hl_networks.create_basic_setup(
+        datacenter=dc, cluster=cluster, version=conf.COMP_VERSION,
+        cpu=conf.CPU_NAME
+    )
+
+
+@pytest.fixture(scope="class")
+def add_clusters_to_dcs(request):
+    """
+    Add cluster(s) to Data-Center(s) with optional management network(s)
+    """
+    cl_dcs_nets = request.cls.add_clusters_to_dcs_params
+    clusters = [cl[0] for cl in request.cls.add_clusters_to_dcs_params]
+
+    def fin():
+        """
+        Remove cluster from DC
+        """
+        for cl in clusters:
+            # Avoid failure when deleting clusters that were changed during
+            # runtime
+            try:
+                assert ll_clusters.removeCluster(positive=True, cluster=cl)
+            except apis_exceptions.EntityNotFound:
+                pass
+    request.addfinalizer(fin)
+
+    for cl, dc, net in cl_dcs_nets:
+        assert ll_clusters.addCluster(
+            positive=True, name=cl, cpu=conf.CPU_NAME, data_center=dc,
+            version=conf.COMP_VERSION, management_network=net
+        )
+
+
+@pytest.fixture(scope="class")
+def create_and_attach_network(request):
+    """
+    Create and attach network to Data-Centers and clusters
+    """
+    dcs_clusters = request.cls.create_and_attach_network_params[0]
+    setup = request.cls.create_and_attach_network_params[1]
+
+    for dc, cl in dcs_clusters:
+        assert hl_networks.createAndAttachNetworkSN(
+            data_center=dc, cluster=cl, network_dict=setup
+        )
+
+
+@pytest.fixture(scope="class")
+def remove_all_networks(request):
+    """
+    Remove all networks from Data-Center
+    """
+    dcs = request.cls.remove_all_networks_params
+
+    def fin():
+        for dc in dcs:
+            assert hl_networks.remove_all_networks(datacenter=dc)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def update_cluster_network_usages(request):
+    """
+    Update cluster network usages
+    """
+    cluster = request.cls.update_cluster_network_usages_params[0]
+    net = request.cls.update_cluster_network_usages_params[1]
+    usages = request.cls.update_cluster_network_usages_params[2]
+
+    assert ll_networks.update_cluster_network(
+        positive=True, cluster=cluster, network=net, usages=usages
+    )
+
+
+@pytest.fixture(scope="class")
+def move_host_to_cluster(request):
+    """
+    Move vds host to a specified cluster
+    """
+    mgmt_as_role = NetworkFixtures()
+    host = mgmt_as_role.hosts_list[request.cls.move_host_to_cluster_params[0]]
+    cl = request.cls.move_host_to_cluster_params[1]
+
     def fin2():
         """
-        Finalizer for remove clusters
+        Activate host after updating its cluster
         """
-        ps.remove_clusters()
+        assert ll_hosts.activateHost(positive=True, host=host)
     request.addfinalizer(fin2)
 
-    @networking.ignore_exception
     def fin1():
         """
-        Finalizer for move host to original cluster
+        Move host to a specified cluster
         """
-        ps.move_host_to_original_cluster()
+        assert ll_hosts.updateHost(positive=True, host=host, cluster=cl)
     request.addfinalizer(fin1)
 
-    ps.move_host_to_new_cluster()
-    ps.create_and_attach_network()
-    ps.create_clusters_and_attach_networks()
+
+@pytest.fixture(scope="class")
+def add_networks_to_clusters(request):
+    """
+    Add network(s) to cluster(s)
+    """
+    cl_nets = request.cls.add_networks_to_clusters_params
+
+    for cl, net in cl_nets:
+        assert ll_networks.add_network_to_cluster(
+            positive=True, network=net, cluster=cl, required=True
+        )
+
+
+@pytest.fixture(scope="class")
+def remove_clusters(request):
+    """
+    Remove all clusters from a given list
+    """
+    def fin():
+        for cl in request.cls.remove_clusters_params:
+            assert ll_clusters.removeCluster(positive=True, cluster=cl)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def remove_network(request):
+    """
+    Remove a network from Data-Center
+    """
+    dc = request.cls.remove_network_params[0]
+    net = request.cls.remove_network_params[1]
+
+    assert ll_networks.remove_network(
+        positive=True, network=net, data_center=dc
+    )
+
+
+@pytest.fixture(scope="class")
+def install_host_with_new_management(request):
+    """
+    Install host with new management network
+    """
+    mgmt_as_role = NetworkFixtures()
+
+    host_index = request.cls.install_host_with_new_management_params[0]
+    net = request.cls.install_host_with_new_management_params[1]
+    src_cl = request.cls.install_host_with_new_management_params[2]
+    dst_cl = request.cls.install_host_with_new_management_params[3]
+    dc = request.cls.install_host_with_new_management_params[4]
+    net_setup = request.cls.install_host_with_new_management_params[5]
+    mgmt_net = request.cls.install_host_with_new_management_params[6]
+
+    def fin():
+        """
+        Reinstall host on origin cluster
+        """
+        assert helper.install_host_new_mgmt(
+            dc=dc, cl=dst_cl, dest_cl=src_cl, net_setup=net_setup,
+            mgmt_net=mgmt_net, network=net, remove_setup=True,
+            maintenance=False, new_setup=False
+        )
+    request.addfinalizer(fin)
+
+    vds_host_obj = mgmt_as_role.vds_list[host_index]
+
+    assert helper.install_host_new_mgmt(
+        dc=dc, cl=dst_cl, dest_cl=dst_cl, net_setup=net_setup,
+        mgmt_net=mgmt_net, host_resource=vds_host_obj
+    )

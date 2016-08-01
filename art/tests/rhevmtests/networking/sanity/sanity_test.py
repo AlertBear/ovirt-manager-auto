@@ -582,9 +582,9 @@ class TestSanity08(TestSanityCaseBase):
     __test__ = True
     net = "sanity_mgmt_net"
     nets = [net]
-    dc = conf.EXT_DC_0
-    cluster_1 = conf.EXTRA_CL[0]
-    cluster_2 = conf.EXTRA_CL[1]
+    dc = "sanity_extra_dc_0"
+    cluster_1 = "sanity_extra_cluster_1"
+    cluster_2 = "sanity_extra_cluster_2"
     mgmt_bridge = conf.MGMT_BRIDGE
 
     @polarion("RHEVM3-14512")
@@ -595,7 +595,7 @@ class TestSanity08(TestSanityCaseBase):
         testflow.step(
             "Create %s with %s as management network", self.cluster_1, self.net
         )
-        mgmt_net_helper.add_cluster(
+        assert mgmt_net_helper.add_cluster(
             cl=self.cluster_1, dc=self.dc, management_network=self.net
         )
         assert hl_networks.is_management_network(
@@ -610,7 +610,7 @@ class TestSanity08(TestSanityCaseBase):
         testflow.step(
             "Create new DC and cluster with default management network"
         )
-        mgmt_net_helper.add_cluster(
+        assert mgmt_net_helper.add_cluster(
             cl=self.cluster_2, dc=self.dc, management_network=self.mgmt_bridge
         )
         assert hl_networks.is_management_network(

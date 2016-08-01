@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 def _prepareClusterObject(**kwargs):
 
     cl = Cluster()
-    if 'management_network' in kwargs:
+    if kwargs.get("management_network"):
         net_obj = ll_networks.find_network(
             kwargs.get("management_network"),
             data_center=kwargs.get("data_center")

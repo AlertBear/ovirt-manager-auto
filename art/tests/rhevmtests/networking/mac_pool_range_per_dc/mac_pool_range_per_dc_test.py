@@ -713,8 +713,8 @@ class TestMacPoolRange09(NetworkTest):
     __test__ = True
     pool_name_0 = mac_pool_conf.MAC_POOL_NAME_0
     range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
-    ext_dc_1 = conf.EXTRA_DC[1]
-    ext_dc_2 = conf.EXTRA_DC[2]
+    ext_dc_1 = mac_pool_conf.EXT_DC_2
+    ext_dc_2 = mac_pool_conf.EXT_DC_3
 
     @polarion("RHEVM3-6461")
     def test_remove_two_dcs(self):

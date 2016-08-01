@@ -685,7 +685,7 @@ def fixture_mac_pool_range_case_05(request, mac_pool_prepare_setup):
 @pytest.fixture(scope="class")
 def fixture_mac_pool_range_case_09(request, mac_pool_prepare_setup):
     """
-     Create MAC pool
+    Create MAC pool
     Create 2 new DCs with MAC pool
     """
     MacPool()

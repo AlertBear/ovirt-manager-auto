@@ -12,9 +12,12 @@ from rhevmtests.config import *  # flake8: noqa
 __test__ = False
 
 # Global parameters
+VIRSH_USER = "virsh"
+VIRSH_PASS = "qum5net"
+MANAGEMENT_NET_USAGE = "management"
+MIGRATION_NET_USAGE = "migration"
+DISPLAY_NET_USAGE = "display"
 STORAGE_TYPE = "nfs"
-EXTRA_DC = ["_".join(["EXTRA_DC", str(i)]) for i in range(6)]
-EXTRA_CL = ["".join(["NET_Cluster", str(i)]) for i in range(5)]
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
 VNIC_PROFILE = PARAMETERS.as_list('vnic_profile')
@@ -121,10 +124,6 @@ NET_QOS_TYPE = "network"
 LIBVIRTD_CONF = "/etc/libvirt/libvirtd.conf"
 SASL_OFF = "none"
 SASL_ON = "sasl"
-
-# Management network as role
-EXT_DC_0 = "mgmt_role_ext_dc"
-EXTRA_CLUSTER_0 = "mgmt_role_ext_cl"
 
 # bridgeless
 BRIDGELESS_VLAN_IDS = [str(i) for i in xrange(2, 4)]

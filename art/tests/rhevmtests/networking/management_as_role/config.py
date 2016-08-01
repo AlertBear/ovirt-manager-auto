@@ -2,25 +2,82 @@
 # -*- coding: utf-8 -*-
 
 """
-MGMT network role networking feature config
+Management As A Role test cases configuration
 """
-from rhevmtests.networking.config import *  # NOQA
 
-EXT_DC_0 = EXTRA_DC[0]
-EXT_DC_1 = EXTRA_DC[1]
-EXTRA_CLUSTER_0 = EXTRA_CL[0]
-EXTRA_CLUSTER_1 = EXTRA_CL[1]
-EXTRA_CLUSTER_2 = EXTRA_CL[2]
-EXTRA_CLUSTER_3 = EXTRA_CL[3]
-MGMT = "management"
-NET_1 = "net_mgmt_role_1"
-NET_2 = "net_mgmt_role_2"
-NET_3 = "net_mgmt_role_3"
-NET_4 = "net_mgmt_role_4"
-VIRSH_USER = "virsh"
-VIRSH_PASS = "qum5net"
-NET_DICT = {
-    NET_1: {
+import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
+
+DATA_CENTERS = global_helper.generate_object_names(
+    num_of_cases=8, num_of_objects=1, prefix="mgmt_role_dc"
+)
+
+CLUSTERS = global_helper.generate_object_names(
+    num_of_cases=8, num_of_objects=4, prefix="mgmt_role_cl"
+)
+
+NETS = global_helper.generate_object_names(
+    num_of_cases=8, num_of_objects=4, prefix="mgmt_role_n"
+)
+
+NET_DICT_CASE_02 = {
+    NETS[2][0]: {
+        "required": "true"
+    },
+    NETS[2][1]: {
+        "required": "false"
+    }
+}
+
+NET_DICT_CASE_03 = {
+    NETS[3][0]: {
+        "required": "true"
+    }
+}
+
+NET_DICT_CASE_04 = {
+    NETS[4][0]: {
+        "required": "true"
+    },
+    NETS[4][1]: {
+        "required": "true",
+        "cluster_usages": conf.MIGRATION_NET_USAGE
+    },
+    NETS[4][2]: {
+        "required": "true",
+        "cluster_usages": conf.DISPLAY_NET_USAGE
+    }
+}
+
+NET_DICT_CASE_05 = {
+    NETS[5][0]: {
+        "required": "true"
+    }
+}
+
+NET_DICT_CASE_06 = {
+    NETS[6][0]: {
+        "required": "true"
+    },
+    NETS[6][1]: {
+        "required": "true"
+    }
+}
+
+NET_DICT_CASE_07 = {
+    NETS[7][0]: {
+        "required": "true"
+    }
+}
+
+NET_DICT_CASE_08_1 = {
+    NETS[8][0]: {
+        "required": "true"
+    }
+}
+
+NET_DICT_CASE_08_2 = {
+    NETS[8][1]: {
         "required": "true"
     }
 }
