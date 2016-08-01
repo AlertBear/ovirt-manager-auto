@@ -263,7 +263,7 @@ class QuotaTestMode(BaseQuotaClass):
         :type vm_sockets: int
         :raise: assertError
         """
-        max_id = ll_events.get_max_event_id(None)
+        max_id = ll_events.get_max_event_id()
         logger.info("Start vm %s", conf.VM_NAME)
         self.assertTrue(
             ll_vms.startVm(
@@ -325,7 +325,7 @@ class QuotaTestMode(BaseQuotaClass):
         last_event_id = None
         if audit_msg_type:
             logger.info("Get id of last event")
-            last_event_id = ll_events.get_max_event_id(None)
+            last_event_id = ll_events.get_max_event_id()
         if vm_params:
             logger.info(
                 "Update vm %s with parameters: %s", conf.VM_NAME, vm_params
@@ -372,7 +372,7 @@ class QuotaTestMode(BaseQuotaClass):
         last_event_id = None
         if audit_msg_type:
             logger.info("Get id of last event")
-            last_event_id = ll_events.get_max_event_id(None)
+            last_event_id = ll_events.get_max_event_id()
         positive = True
         if (
             audit_msg_type and audit_msg_type == conf.EXCEED_TYPE and
