@@ -8,24 +8,25 @@ import os
 import shlex
 import time
 import logging
+
 from utilities import jobs
 from art import test_handler
 from rhevmtests import helpers
 import art.core_api.apis_utils as utils
 from rhevmtests.networking import config
-import rhevmtests.virt.config as config_virt
 from art.unittest_lib import testflow
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
 import art.unittest_lib.network as lib_network
 import rhevmtests.networking.helper as network_helper
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
+import config as config_virt
 
 logger = logging.getLogger("Virt_Helper")
 
@@ -762,3 +763,21 @@ def get_storage_domains():
             "exists in the system", master_domain_type
         )
     return master_domain, export_domain, non_master_domain
+
+
+def get_all_vm_in_cluster(cluster_name, skip=None):
+    """
+    Get all vms in cluster except skip
+
+    cluster_name (str): cluster name
+    skip (list): list of vms to skip
+
+    Returns: list of vms in cluster
+
+    """
+    vms_in_cluster = []
+    vms_list = ll_vms.get_vms_from_cluster(cluster=cluster_name)
+    for vm_name in vms_list:
+            if vm_name not in skip:
+                vms_in_cluster.append(vm_name)
+    return vms_in_cluster

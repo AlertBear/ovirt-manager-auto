@@ -1,5 +1,43 @@
-from rhevmtests.virt import config
+import logging
 from art.rhevm_api.utils.inventory import Inventory
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config
+import helper
+
+logger = logging.getLogger(__name__)
+
+
+def setup_package():
+    """
+    1. Stop all VMs
+    2. Update all VMs to default parameters
+    3. Remove all redundant VMs
+    """
+    logger.info("VIRT cleanup")
+    none_ge_vms_in_cluster = helper.get_all_vm_in_cluster(
+        cluster_name=config.CLUSTER_NAME[0],
+        skip=config.VM_NAME
+    )
+    logger.info("Stop GE VMs")
+    ll_vms.stop_vms_safely(config.VM_NAME)
+    logger.info("Remove none GE VMs")
+    if none_ge_vms_in_cluster:
+        ll_vms.stop_vms_safely(none_ge_vms_in_cluster)
+        for vm in none_ge_vms_in_cluster:
+            ll_vms.updateVm(
+                positive=True,
+                vm=vm,
+                protected=False
+            )
+    ll_vms.remove_all_vms_from_cluster(
+        config.CLUSTER_NAME[0], skip=config.VM_NAME
+    )
+    for vm in config.VM_NAME:
+        logger.info("Update VM %s to default parameters ")
+        if not ll_vms.updateVm(
+            positive=True, vm=vm, **config.DEFAULT_VM_PARAMETERS
+        ):
+            logger.error("Failed to update VM %s to default Parameters" % vm)
 
 
 def teardown_package():
