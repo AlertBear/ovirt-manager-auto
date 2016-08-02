@@ -39,24 +39,36 @@ PE_EXPECT = "pe.expect"
 PE_SENDLINE = "pe.sendline"
 
 
-def create_random_ips(num_of_ips=2, mask=16):
+def create_random_ips(num_of_ips=2, mask=16, ip_version=4):
     """
     Create random IPs (only support masks 8/16/24)
 
-    :param num_of_ips: Number of IPs to create
-    :type num_of_ips: int
-    :param mask: IP subnet to create the IPs for
-    :type mask: int
-    :return: IPs
-    :rtype: list
+    Args:
+        num_of_ips (int): Number of IPs to create
+        mask (int): IP subnet to create the IPs for
+        ip_version (int): IP version to generate IPs (6 or 4)
+
+    Returns:
+        list: List of IPs
     """
-    ips = []
-    ip_mask = mask // 8
-    base_ip = ".".join("5" * ip_mask)
+    ips = list()
+    if ip_version == 4:
+        ip_mask = mask // 8
+        base_ip = ".".join("5" * ip_mask)
+    elif ip_version == 6:
+        ip_mask = 3
+        base_ip = "2001::"
+    else:
+        logger.error("IP version %s is not supported", ip_version)
+        return ips
+
     for i in xrange(num_of_ips):
         rand_num = [randint(1, 250) for i in xrange(4 - ip_mask)]
-        rand_oct = ".".join(str(i) for i in rand_num)
-        ips.append(".".join([base_ip, rand_oct]))
+        if ip_version == 4:
+            rand_oct = ".".join(str(i) for i in rand_num)
+            ips.append(".".join([base_ip, rand_oct]))
+        if ip_version == 6:
+            ips.append("{0}{1}".format(base_ip, rand_num[0]))
     return ips
 
 

@@ -89,6 +89,27 @@ def host_nic_api_prepare_setup(request, host_network_api_prepare_setup):
     )
 
 
+#  Prepare setup for ipv6 module
+@pytest.fixture(scope="module")
+def ipv6_prepare_setup(request, host_network_api_prepare_setup):
+    """
+    Prepare setup for ipv6 tests
+    """
+    hna = HostNetworkApi()
+
+    def fin():
+        """
+        Remove networks from setup
+        """
+        hna.remove_networks_from_setup(hosts=hna.host_0_name)
+    request.addfinalizer(fin)
+
+    hna.prepare_networks_on_setup(
+        networks_dict=hna_conf.IPV6_NETS_DICT, dc=hna.dc_0,
+        cluster=hna.cluster_0
+    )
+
+
 #  Teardown for all host_nic_test cases
 @pytest.fixture(scope="class")
 def teardown_all_cases_host_nic(request, host_nic_api_prepare_setup):
@@ -1481,3 +1502,21 @@ def sync_case_20(request, teardown_all_cases_sync):
     assert ll_hosts.updateHost(
         positive=True, host=hna.host_0_name, cluster=hna_conf.SYNC_CL
     )
+
+
+@pytest.fixture(scope="class")
+def clean_host_interfaces(request):
+    """
+    Clean host interfaces
+    """
+    host_index = request.node.cls.host_index
+
+    def fin():
+        """
+        Clean host interface
+        """
+        HostNetworkApi()
+        assert hl_host_network.clean_host_interfaces(
+            host_name=conf.HOSTS[host_index]
+        )
+    request.addfinalizer(fin)

@@ -22,6 +22,9 @@ SYNC_NETS_DC_1 = global_helper.generate_object_names(
 SN_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="sn"
 )
+IPV6_NETS = global_helper.generate_object_names(
+    num_of_cases=35, num_of_objects=10, prefix="ipv6_"
+)
 NUM_DUMMYS = 15
 DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 VLAN_STR = "vlan"
@@ -34,8 +37,11 @@ AVERAGE_SHARE_STR = "outAverageLinkShare"
 AVERAGE_LIMIT_STR = "outAverageUpperLimit"
 AVERAGE_REAL_STR = "outAverageRealTime"
 QOS_VALUES = [AVERAGE_SHARE_STR, AVERAGE_LIMIT_STR, AVERAGE_REAL_STR]
-VLAN_IDS = [str(i) for i in xrange(2, 60)]
+VLAN_IDS = [str(i) for i in xrange(2, 70)]
 IPS = network_helper.create_random_ips(num_of_ips=50, mask=24)
+IPV6_IPS = network_helper.create_random_ips(
+    num_of_ips=50, mask=24, ip_version=6
+)
 BASIC_IP_DICT_NETMASK = {
     "ip": {
         "address": None,
@@ -51,8 +57,20 @@ BASIC_IP_DICT_PREFIX = {
         "boot_protocol": "static"
     }
 }
+
+BASIC_IPV6_DICT = {
+    "ip": {
+        "address": None,
+        "netmask": "24",
+        "boot_protocol": "static",
+        "version": "v6"
+    }
+}
+
 IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip"]
 IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip"]
+IPV6_IP_DICT = BASIC_IPV6_DICT["ip"]
+
 
 NIC_DICT = {
     NIC_NETS[1][0]: {
@@ -692,4 +710,30 @@ SYNC_DICT_2 = {
     SYNC_NETS_DC_1[20][2]: {
         "required": "false",
     }
+}
+
+IPV6_NETS_DICT = {
+    IPV6_NETS[1][0]: {
+        "required": "false"
+    },
+    IPV6_NETS[1][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[56]
+    },
+    IPV6_NETS[1][2]: {
+        "required": "false"
+    },
+    IPV6_NETS[1][3]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[57]
+    },
+    IPV6_NETS[1][4]: {
+        "required": "false",
+        "usages": ""
+    },
+    IPV6_NETS[1][5]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS[58]
+    },
 }

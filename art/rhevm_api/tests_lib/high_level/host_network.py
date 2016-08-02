@@ -212,6 +212,12 @@ def setup_networks(host_name, **kwargs):
                                 "netmask": "255.255.255.0",
                                 "boot_protocol": "static",
                                 "primary": True
+                            },
+                            "ip2": {
+                                "address": "2001::1",
+                                "netmask": "32",
+                                "boot_protocol": "static",
+                                "version": "v6"
                             }
                         }
                     },
@@ -262,7 +268,6 @@ def setup_networks(host_name, **kwargs):
                 }
             }
 
-        setup_networks(host_name=hostname, kwargs=dict)
         setup_networks(host_name=hostname, kwargs=dict, persist=True)
 
     Returns:

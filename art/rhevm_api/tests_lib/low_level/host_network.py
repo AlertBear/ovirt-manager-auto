@@ -403,12 +403,12 @@ def prepare_ip_object(network_attachment, ip_dict):
     """
     Prepare Ip object for NetworkAttachment
 
-    :param network_attachment: NetworkAttachment object
-    :type network_attachment: NetworkAttachment
-    :param ip_dict: Dict with Ip params
-    :type ip_dict: dict
-    :return: NetworkAttachment object
-    :rtype: NetworkAttachment
+    Args:
+        network_attachment (NetworkAttachment): NetworkAttachment object
+        ip_dict (dict): Dict with Ip params
+
+    Returns:
+        NetworkAttachment: NetworkAttachment object
     """
     for value in ip_dict.values():
         ip_address_assignments = data_st.IpAddressAssignments()

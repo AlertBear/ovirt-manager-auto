@@ -5,8 +5,6 @@
 Job for new host network API via SetupNetworks
 """
 
-import logging
-
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -18,8 +16,6 @@ from fixtures import (
     teardown_all_cases_sn, sn_case_09, sn_case_10, sn_case_11, sn_case_15,
     sn_case_16, sn_case_17, sn_case_24, sn_case_25, sn_case_26
 )
-
-logger = logging.getLogger("Host_Network_API_SN_Cases")
 
 
 @attr(tier=2)
