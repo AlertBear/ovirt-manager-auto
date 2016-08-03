@@ -10,10 +10,8 @@ import helpers
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
-    hosts as hl_hosts,
 )
 from art.rhevm_api.tests_lib.low_level import (
-    clusters as ll_clusters,
     datacenters as ll_dc,
     disks as ll_disks,
     hosts as ll_hosts,
@@ -26,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage.helpers import (
     create_vm_or_clone, get_spuuid, get_sduuid, get_imguuid, get_voluuid,
@@ -866,261 +864,6 @@ class TestCase6248(BasicEnvironment):
 
 
 @attr(tier=2)
-class TestCase6249(EnvironmentWithNewVm):
-    """
-    Disks on 3.4 Cluster
-
-    1. Create a new Data Center with a 3.4 Compatibility version
-    2. Create a new Cluster with a 3.4 Compatibility version
-    3. Move an existing host into the new Data Center (maintenance, remove
-    and then add)
-    4. Create 2 new storage domains using the 3.4 host
-    5. Create a VM with 2 disks (on different storage domains) using the
-    Cluster with the 3.4 compatibility
-    6. Upgrade the cluster and ensure that the OVFs are created on each of
-    the storage domains
-
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
-    workitem?id=RHEVM3-6249
-    """
-    __test__ = True
-    polarion_test_case = '6249'
-    data_center_name = "test_6249_data_center"
-    cluster_name = "test_6249_cluster"
-    new_domain_1 = "test_6249_sd_1"
-    new_domain_2 = "test_6249_sd_2"
-    # Bugzilla history: 1279788 (Failed to remove Data Center)
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a Data center, Cluster and move one host into the new setup
-        """
-        logger.info(
-            "Retrieve the first host from the 2nd cluster (in original Data "
-            "center"
-        )
-        cls.original_cluster = config.CLUSTERS[1]['name']
-        cls.host_being_moved = config.CLUSTERS[1]['hosts'][0]['name']
-        cls.host_being_moved_ip = ll_hosts.getHostIP(cls.host_being_moved)
-
-        logger.info(
-            "Creating a %s Data center", config.DC_6249_INITIAL_VERSION
-        )
-        if not ll_dc.addDataCenter(
-            True, name=cls.data_center_name,
-            version=config.DC_6249_INITIAL_VERSION
-        ):
-            raise exceptions.DataCenterException(
-                "Failed to create Data center '%s'" % cls.data_center_name
-            )
-
-        logger.info(
-            "Creating a Cluster with a %s compatibility version for the %s "
-            "Data center",
-            config.DC_TEST_VERSION, config.DC_6249_INITIAL_VERSION
-        )
-        ll_clusters.addCluster(
-            True, name=cls.cluster_name, cpu=config.CPU_NAME,
-            data_center=cls.data_center_name, version=config.COMP_VERSION
-        )
-        logger.info("Move the host into the newly created cluster")
-        if not hl_hosts.move_host_to_another_cluster(
-            cls.host_being_moved, cls.cluster_name
-        ):
-            raise exceptions.ClusterException(
-                "Could not move host '%s' into cluster '%s'" % (
-                    cls.host_being_moved, cls.cluster_name
-                )
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove the created Data center and Cluster, any storage domains
-        created and move host into its original cluster
-        """
-        status = hl_dc.clean_datacenter(
-            True, cls.data_center_name, formatExpStorage='true',
-            vdc=config.VDC, vdc_password=config.VDC_PASSWORD
-        )
-        if not status:
-            raise exceptions.DataCenterException(
-                "Failed to clean Data center '%s'" % cls.data_center_name
-            )
-
-        logger.info(
-            "Re-add the moved host back into its original cluster/data center"
-        )
-        if not ll_hosts.addHost(
-                True, cls.host_being_moved, address=cls.host_being_moved_ip,
-                wait=True, reboot=False, cluster=cls.original_cluster,
-                root_password=config.VDC_ROOT_PASSWORD
-        ):
-            raise exceptions.ClusterException(
-                "Could not add host '%s' back into cluster '%s'" % (
-                    cls.host_being_moved, cls.original_cluster
-                )
-            )
-
-    def setUp(self):
-        # Determine whether storage type is block
-        self.is_block_storage = self.storage in config.BLOCK_TYPES
-
-        # Initialize the storage domains to be used in this test
-        self.storage_domain_0 = self.new_domain_1
-        self.storage_domain_1 = self.new_domain_2
-
-        # Initialize the variables for this test
-        self.initialize_variables()
-
-        # Use the moved VDSM host for both the Block and File level OVF
-        # verifications
-        self.host = self.host_being_moved
-        self.host_machine = helpers.machine_to_use(self.host_being_moved_ip)
-
-        logger.info(
-            "Creating 2 storage domains and attaching them to the host "
-            "sitting on the new cluster and Data center"
-        )
-        sd_1_args = {
-            'type': config.TYPE_DATA,
-            'storage_type': self.storage,
-            'host': self.host_being_moved,
-            'name': self.storage_domain_0
-        }
-        sd_2_args = sd_1_args.copy()
-        sd_2_args['name'] = self.storage_domain_1
-
-        if self.storage == config.STORAGE_TYPE_ISCSI:
-            sd_1_args['lun'] = config.UNUSED_LUNS[0]
-            sd_2_args['lun'] = config.UNUSED_LUNS[1]
-            sd_1_args['lun_address'] = config.UNUSED_LUN_ADDRESSES[0]
-            sd_2_args['lun_address'] = config.UNUSED_LUN_ADDRESSES[1]
-            sd_1_args['lun_target'] = config.UNUSED_LUN_TARGETS[0]
-            sd_2_args['lun_target'] = config.UNUSED_LUN_TARGETS[1]
-            sd_1_args['lun_port'] = config.LUN_PORT
-            sd_2_args['lun_port'] = config.LUN_PORT
-            sd_1_args['override_luns'] = True
-            sd_2_args['override_luns'] = True
-        elif self.storage == config.STORAGE_TYPE_NFS:
-            sd_1_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-            sd_2_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[1]
-            sd_1_args['path'] = config.UNUSED_DATA_DOMAIN_PATHS[0]
-            sd_2_args['path'] = config.UNUSED_DATA_DOMAIN_PATHS[1]
-        elif self.storage == config.STORAGE_TYPE_GLUSTER:
-            sd_1_args['address'] = (
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
-            )
-            sd_2_args['address'] = (
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[1]
-            )
-            sd_1_args['path'] = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
-            sd_2_args['path'] = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[1]
-
-        for sd_args in [sd_1_args, sd_2_args]:
-            logger.info('Creating storage domain with parameters: %s', sd_args)
-            ll_sd.addStorageDomain(True, wait=True, **sd_args)
-            ll_sd.attachStorageDomain(
-                True, self.data_center_name, sd_args['name']
-            )
-
-        logger.info("Creating a standalone VM on new cluster")
-        self.create_and_initialize_standalone_vm_params(
-            ovf_store_supported=False, cluster_name=self.cluster_name
-        )
-
-    def tearDown(self):
-        if not ll_vms.safely_remove_vms([VM3_NAME]):
-            self.test_failed = True
-            logger.error("Could not remove VM'%s'", VM3_NAME)
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
-
-        if self.test_failed:
-            raise exceptions.TestException("Test failed during tearDown")
-
-    @polarion(POLARION_PROJECT + polarion_test_case)
-    def test_disks_on_34_cluster_with_upgrade(self):
-        """ Polarion case 6249 """
-        logger.info("Ensure that storage domains created on a 3.4 Data "
-                    "center have no OVF stores")
-        ovf_stores_domain_0 = ll_sd.get_number_of_ovf_store_disks(
-            self.storage_domain_0)
-        ovf_stores_domain_1 = ll_sd.get_number_of_ovf_store_disks(
-            self.storage_domain_1)
-        self.assertTrue(ovf_stores_domain_0 == 0, "The number of OVF stores "
-                                                  "was expected to be zero")
-        self.assertTrue(ovf_stores_domain_1 == 0, "The number of OVF stores "
-                                                  "was expected to be zero")
-        logger.info("Attaching a disk to each of the storage domains created")
-        self.create_and_attach_disk(VM3_NAME, self.storage_domain_0,
-                                    bootable=True, wait_on_engine_log=False,
-                                    ovf_store_supported=False)
-        self.create_and_attach_disk(VM3_NAME, self.storage_domain_1,
-                                    bootable=False, wait_on_engine_log=False,
-                                    ovf_store_supported=False)
-        # Retrieve all keys from the input VM's dictionary excluding 'vm_id'
-        logger.info("Attach each of the disks created to VM '%s'", VM3_NAME)
-        disk_aliases = self.vms_and_disks_dict[VM3_NAME].keys()
-        for disk_alias in disk_aliases:
-            if disk_alias == 'vm_id':
-                continue
-            self.assertTrue(ll_disks.attachDisk(True, disk_alias, VM3_NAME),
-                            "Failed to attach disk '%s' to VM '%s'" % (
-                                disk_alias, VM3_NAME))
-
-        # Upgrade the Data Center (Cluster is already at the latest version)
-        logger.info(
-            "Upgrading Data center '%s' to version '%s'",
-            self.data_center_name, config.DC_TEST_VERSION
-        )
-        self.assertTrue(
-            ll_dc.update_datacenter(
-                True, self.data_center_name, version=config.DC_TEST_VERSION
-            ), "Data center '%s' was not updated" % self.data_center_name
-        )
-        logger.info("Ensure that OVF store count is 2 after the Data center "
-                    "upgrade, allowing about a minute")
-        for num_ovf_store_disks_sd_0 in TimeoutingSampler(
-            timeout=FIND_OVF_DISKS_TIMEOUT, sleep=FIND_OVF_DISKS_SLEEP,
-            func=ll_sd.get_number_of_ovf_store_disks,
-            storage_domain=self.storage_domain_0
-        ):
-            if num_ovf_store_disks_sd_0 == DEFAULT_NUM_OVF_STORES_PER_SD:
-                break
-        self.assertTrue(num_ovf_store_disks_sd_0 ==
-                        DEFAULT_NUM_OVF_STORES_PER_SD,
-                        "The number of OVF stores in domain '%s' isn't %s "
-                        "after the Data center upgrade" %
-                        (self.storage_domain_0, DEFAULT_NUM_OVF_STORES_PER_SD))
-
-        for num_ovf_store_disks_sd_1 in TimeoutingSampler(
-            timeout=FIND_OVF_DISKS_TIMEOUT, sleep=FIND_OVF_DISKS_SLEEP,
-            func=ll_sd.get_number_of_ovf_store_disks,
-            storage_domain=self.storage_domain_1
-        ):
-            if num_ovf_store_disks_sd_1 == DEFAULT_NUM_OVF_STORES_PER_SD:
-                break
-        self.assertTrue(num_ovf_store_disks_sd_1 ==
-                        DEFAULT_NUM_OVF_STORES_PER_SD,
-                        "The number of OVF stores in domain '%s' isn't %s "
-                        "after the Data center upgrade" %
-                        (self.storage_domain_1, DEFAULT_NUM_OVF_STORES_PER_SD))
-
-        logger.info("Update the disks dict with the OVF store related data "
-                    "now that Data center version is 3.5 or higher")
-        # Retrieve all keys from the input VM's dictionary excluding 'vm_id'
-        disk_aliases = self.vms_and_disks_dict[VM3_NAME].keys()
-        for disk_alias in disk_aliases:
-            if disk_alias == 'vm_id':
-                continue
-            self.initialize_disk_params(VM3_NAME, disk_alias, raw_lun=False,
-                                        data_center=self.data_center_name)
-
-        self.validate_ovf_contents(vm_name=VM3_NAME)
-
-
-@attr(tier=2)
 class TestCase6250(BasicEnvironment):
     """
     Several Disks from several VMs on one storage domain
@@ -1692,6 +1435,7 @@ class TestCase6261(BasicEnvironment):
         self.validate_ovf_contents(vm_name=VM1_NAME)
 
 
+@bz({'1357259': {}})
 @attr(tier=2)
 class TestCase6262(EnvironmentWithNewVm):
     """
