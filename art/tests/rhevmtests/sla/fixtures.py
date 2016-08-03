@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sla_config
 import pytest
 import rhevmtests.helpers as rhevm_helpers
+from concurrent.futures import ThreadPoolExecutor
 
 logger = sla_config.logging.getLogger(__name__)
 
@@ -173,17 +174,6 @@ def update_vms_memory_to_hosts_memory(request):
     """
     update_vms_memory = request.node.cls.update_vms_memory
 
-    def fin():
-        """
-        1) Update VM's to default parameters
-        """
-        for vm_name in update_vms_memory:
-            ll_vms.updateVm(
-                positive=True, vm=vm_name, **sla_config.DEFAULT_VM_PARAMETERS
-            )
-
-    request.addfinalizer(fin)
-
     hosts_memory = hl_vms.calculate_memory_for_memory_filter(
         hosts_list=sla_config.HOSTS[:len(update_vms_memory)]
     )
@@ -263,3 +253,39 @@ def update_cluster_to_default_parameters(request):
             mem_ovrcmt_prc=sla_config.CLUSTER_OVERCOMMITMENT_DESKTOP
         )
     request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def create_vms(request):
+    """
+    1) Create VM's
+    """
+    vms_create_params = request.node.cls.vms_create_params
+
+    def fin():
+        """
+        1) Remove VM's
+        """
+        ll_vms.safely_remove_vms(vms=vms_create_params.iterkeys())
+    request.addfinalizer(fin)
+
+    results = []
+    with ThreadPoolExecutor(max_workers=len(vms_create_params)) as executor:
+        for vm_name, vm_params in vms_create_params.iteritems():
+            if sla_config.VM_PLACEMENT_HOSTS in vm_params:
+                hosts = []
+                for host_index in vm_params[sla_config.VM_PLACEMENT_HOSTS]:
+                    hosts.append(sla_config.HOSTS[host_index])
+                vm_params[sla_config.VM_PLACEMENT_HOSTS] = hosts
+            if sla_config.VM_PLACEMENT_HOST in vm_params:
+                vm_params[sla_config.VM_PLACEMENT_HOST] = sla_config.HOSTS[
+                    vm_params[sla_config.VM_PLACEMENT_HOST]
+                ]
+            results.append(
+                executor.submit(
+                    ll_vms.createVm, True, vm_name, **vm_params
+                )
+            )
+    for result in results:
+        if result.exception():
+            raise result.exception()

@@ -1,3 +1,3 @@
 """
-Ha reservation test
+HA Reservation Test Initialization
 """

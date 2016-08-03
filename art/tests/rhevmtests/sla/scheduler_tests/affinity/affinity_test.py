@@ -21,6 +21,7 @@ from rhevmtests.sla.fixtures import (
     run_once_vms,
     start_vms,
     update_vms,
+    update_vms_to_default_parameters,
     update_vms_memory_to_hosts_memory
 )
 from rhevmtests.sla.scheduler_tests.fixtures import create_affinity_groups
@@ -775,6 +776,7 @@ class TestStartHAVmsUnderHardPositiveAffinity(u_libs.SlaTest):
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     update_vms_memory_to_hosts_memory.__name__,
+    update_vms_to_default_parameters.__name__,
     create_affinity_groups.__name__,
     start_vms.__name__
 )
@@ -785,6 +787,7 @@ class TestSoftPositiveAffinityVsMemoryFilter(u_libs.SlaTest):
     """
     __test__ = True
     update_vms_memory = conf.VM_NAME[:2]
+    update_to_default_params = conf.VM_NAME[:2]
     affinity_groups = {
         "memory_vs_soft_affinity": {
             conf.AFFINITY_GROUP_POSITIVE: True,
