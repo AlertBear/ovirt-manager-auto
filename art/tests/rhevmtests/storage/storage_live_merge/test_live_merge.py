@@ -5,7 +5,6 @@ Storage/3_5_Storage_Live_Merge
 """
 import logging
 import os
-import shlex
 from multiprocessing import Process, Queue
 from time import sleep
 
@@ -25,7 +24,6 @@ from art.test_handler import exceptions
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
-from socket import timeout as TimeoutError
 from utilities.machine import LINUX, Machine
 
 logger = logging.getLogger(__name__)
@@ -55,6 +53,7 @@ class BasicEnvironment(BaseTestCase):
     """
     __test__ = False
     test_case = None
+    checksum_files = dict()
 
     def setUp(self):
         """
@@ -96,10 +95,6 @@ class BasicEnvironment(BaseTestCase):
                 True, vmName=self.vm_name, id=disk.get_id(),
                 alias=new_vm_disk_name
             )
-        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        self.vm_machine = Machine(
-            host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
-        ).util(LINUX)
 
     def tearDown(self):
         """
@@ -128,16 +123,29 @@ class BasicEnvironment(BaseTestCase):
             )
         for idx, mount_dir in enumerate(MOUNT_POINTS[self.storage]):
             logger.info("Creating file in %s", mount_dir)
-            status, output = self.vm_machine.runCmd(
-                shlex.split(CMD_CREATE_FILE % (mount_dir, iteration_number))
+            full_path = os.path.join(
+                mount_dir, TEST_FILE_TEMPLATE % iteration_number
             )
-            if not status:
+            rc = storage_helpers.create_file_on_vm(
+                vm_name, TEST_FILE_TEMPLATE, mount_dir
+            )
+            if not rc:
                 logger.error(
-                    "Failed to create file test_file_%s under %s on vm %s. "
-                    "output:  %s",
-                    iteration_number, mount_dir, vm_name, output
+                    "Failed to create file test_file_%s under %s on vm %s",
+                    mount_dir, vm_name
                 )
                 return False
+            if not storage_helpers.write_content_to_file(
+                vm_name, full_path
+            ):
+                logger.error(
+                    "Failed to write content to file %s on vm %s",
+                    full_path, vm_name
+                )
+            self.checksum_files[full_path] = storage_helpers.checksum_file(
+                vm_name, full_path
+            )
+
         return True
 
     def perform_snapshot_operation(
@@ -203,14 +211,23 @@ class BasicEnvironment(BaseTestCase):
         for mount_dir in MOUNT_POINTS[self.storage]:
             for file_name in files:
                 full_path = os.path.join(mount_dir, file_name)
-                try:
-                    logger.info("Checking if file %s exists", full_path)
-                    result = self.vm_machine.isFileExists(full_path)
-                except TimeoutError, ex:
-                    logger.error("%s", ex)
+                logger.info("Checking if file %s exists", full_path)
+                result = storage_helpers.does_file_exist(
+                    self.vm_name, full_path
+                )
                 logger.info(
                     "File %s", 'exists' if result else 'does not exist'
                 )
+                if result:
+                    checksum = storage_helpers.checksum_file(
+                        self.vm_name, full_path
+                    )
+                    if checksum != self.checksum_files[full_path]:
+                        logger.error(
+                            "File exists but it's content changed since it's "
+                            "creation!"
+                        )
+                        result = False
                 result_list.append(result)
 
         if state in result_list:
@@ -696,14 +713,13 @@ class TestCase6058(BasicEnvironment):
         # Creation of 4th disk
         for mount_dir in MOUNT_POINTS[self.storage]:
             logger.info("Creating file in %s", mount_dir)
-            status, output = self.vm_machine.runCmd(
-                shlex.split(CMD_CREATE_FILE % (mount_dir, 3))
+            status = storage_helpers.create_file_on_vm(
+                self.vm_name, TEST_FILE_TEMPLATE % 3, mount_dir
             )
             if not status:
                 logger.error(
-                    "Failed to create file test_file_%s under %s on vm %s. "
-                    "output:  %s",
-                    3, mount_dir, self.vm_name, output
+                    "Failed to create file test_file_%s under %s on vm %s",
+                    3, mount_dir, self.vm_name
                 )
 
         logger.info("Removing snapshot %s", self.snapshot_list[1])
