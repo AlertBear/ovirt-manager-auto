@@ -176,6 +176,7 @@ def fixture_case_03(request, teardown_all_cases):
                 "network": net,
                 "nic": bond,
                 "slaves": None,
+                "mode": 1,
                 "ip": {
                     "1": {
                         "address": None,

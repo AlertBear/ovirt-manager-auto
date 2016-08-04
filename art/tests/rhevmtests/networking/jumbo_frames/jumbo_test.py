@@ -106,6 +106,11 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
         )
 
 
+@pytest.mark.skipif(
+    conf.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+)
+@pytest.mark.incremental
 @pytest.mark.usefixtures(fixture_case_03.__name__)
 class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     """
@@ -122,7 +127,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     vm = conf.VM_0
 
     @polarion("RHEVM3-3732")
-    def test_check_configurations_and_traffic(self):
+    def test_01_check_configurations_and_traffic(self):
         """
         Pass traffic between the hosts with configured MTU.
         """
@@ -135,7 +140,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         )
 
     @polarion("RHEVM3-3713")
-    def test_bond_mode_change(self):
+    def test_02_bond_mode_change(self):
         """
         Change BOND mode
         Check physical and logical levels for networks with Jumbo frames
@@ -144,7 +149,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
             "update": {
                 "1": {
                     "nic": self.bond,
-                    "mode": "1",
+                    "mode": 4,
                 },
             }
         }
@@ -165,7 +170,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         )
 
     @polarion("RHEVM3-3716")
-    def test_increasing_bond_nics(self):
+    def test_03_increasing_bond_nics(self):
         """
         Add slave to BOND
         Check physical and logical levels for networks with Jumbo frames
@@ -195,7 +200,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         )
 
     @polarion("RHEVM3-3722")
-    def test_check_traffic_on_vm_over_bond(self):
+    def test_04_check_traffic_on_vm_over_bond(self):
         """
         Send ping with MTU 4500 between the two VMS
         """
