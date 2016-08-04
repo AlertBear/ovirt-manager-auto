@@ -11,6 +11,9 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sla_config
 import pytest
+import rhevmtests.helpers as rhevm_helpers
+
+logger = sla_config.logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="class")
@@ -28,7 +31,11 @@ def start_vms(request):
         ll_vms.stop_vms_safely(vms_list=vms_to_start)
     request.addfinalizer(fin)
 
-    ll_vms.start_vms(vm_list=vms_to_start, wait_for_ip=wait_for_vms_ip)
+    ll_vms.start_vms(
+        vm_list=vms_to_start,
+        wait_for_ip=wait_for_vms_ip,
+        max_workers=len(vms_to_start)
+    )
 
 
 @pytest.fixture(scope="class")
@@ -211,3 +218,48 @@ def create_cluster_for_affinity_test(request):
         version=sla_config.COMP_VERSION,
         data_center=sla_config.DC_NAME[0]
     )
+
+
+@pytest.fixture(scope="class")
+def stop_guest_agent_service(request):
+    """
+    1) Stop puppet and agent services
+    """
+    stop_guest_agent_vm = request.node.cls.stop_guest_agent_vm
+    vm_resource = rhevm_helpers.get_host_resource(
+        ip=hl_vms.get_vm_ip(stop_guest_agent_vm),
+        password=sla_config.VMS_LINUX_PW
+    )
+
+    def fin():
+        """
+        1) Start puppet and agent services
+        """
+        for service_name in (
+            sla_config.SERVICE_PUPPET, sla_config.SERVICE_GUEST_AGENT
+        ):
+            logger.info("Start %s service", service_name)
+            vm_resource.service(name=service_name).start()
+    request.addfinalizer(fin)
+
+    for service_name in (
+        sla_config.SERVICE_PUPPET, sla_config.SERVICE_GUEST_AGENT
+    ):
+        logger.info("Stop %s service", service_name)
+        vm_resource.service(name=service_name).stop()
+
+
+@pytest.fixture(scope="class")
+def update_cluster_to_default_parameters(request):
+    def fin():
+        """
+        1) Update cluster to default parameters
+        """
+        ll_clusters.updateCluster(
+            positive=True,
+            cluster=sla_config.CLUSTER_NAME[0],
+            ksm_enabled=False,
+            ballooning_enabled=False,
+            mem_ovrcmt_prc=sla_config.CLUSTER_OVERCOMMITMENT_DESKTOP
+        )
+    request.addfinalizer(fin)

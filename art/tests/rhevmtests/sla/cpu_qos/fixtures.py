@@ -1,7 +1,6 @@
 """
 CPU QoS fixtures
 """
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -9,9 +8,6 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import pytest
-import rhevmtests.helpers as rhevm_helpers
-
-logger = conf.logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="class")
@@ -142,30 +138,6 @@ def create_vm_from_template_for_cpu_qos_test(request):
         cluster=conf.CLUSTER_NAME[1],
         template=conf.QOS_TEMPLATE
     )
-
-
-@pytest.fixture(scope="class")
-def disable_guest_agent_service(request):
-    """
-    1) Stop puppet and agent services
-    """
-    vm_resource = rhevm_helpers.get_host_resource(
-        ip=hl_vms.get_vm_ip(conf.QOS_VMS[0]),
-        password=conf.VMS_LINUX_PW
-    )
-
-    def fin():
-        """
-        1) Start puppet and agent services
-        """
-        for service_name in (conf.SERVICE_GUEST_AGENT, conf.SERVICE_PUPPET):
-            logger.info("Start %s service", service_name)
-            vm_resource.service(name=service_name).start()
-    request.addfinalizer(fin)
-
-    for service_name in (conf.SERVICE_GUEST_AGENT, conf.SERVICE_PUPPET):
-        logger.info("Stop %s service", service_name)
-        vm_resource.service(name=service_name).stop()
 
 
 @pytest.fixture(scope="class")

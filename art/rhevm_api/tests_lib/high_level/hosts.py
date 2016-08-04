@@ -226,7 +226,9 @@ def restart_services_under_maintenance_state(
     services, host_resource, timeout=None
 ):
     """
-    Put host to maintenance, restart given services then activate host.
+    1) Put host to maintenance
+    2) Restart given services
+    3) Activate host
     The services will be restarted by the list order.
 
     Args:
@@ -234,58 +236,52 @@ def restart_services_under_maintenance_state(
         host_resource (VDS): host resource
         timeout (int): Timeout for restart service operation
 
-    Raises:
-        HostException: If one of the steps fail
+    Returns:
+        bool: True, if all actions succeed, otherwise False
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_resource)
+    host_name = ll_hosts.get_host_name_from_engine(vds_resource=host_resource)
 
-    if not ll_hosts.deactivateHost(True, host_name):
-        raise errors.HostException(
-            "Failed to put host %s to maintenance" % host_name
-        )
+    if not ll_hosts.deactivateHost(positive=True, host=host_name):
+        return False
+
+    service_restarted = False
     LOGGER.info("Restart services %s on %s ", services, host_name)
     for srv in services:
-        if not host_resource.service(srv, timeout).restart():
+        service_restarted = host_resource.service(srv, timeout).restart()
+        if not service_restarted:
             LOGGER.error(
-                "Failed to restart %s, activating host %s", srv, host_name
+                "Failed to restart service %s, activating host %s",
+                srv, host_name
             )
-            ll_hosts.activateHost(True, host_name)
-            raise errors.HostException(
-                "Failed to restart %s services on host %s" % (host_name, srv)
-            )
-    if not ll_hosts.activateHost(True, host_name):
-        raise errors.HostException()
+            break
+    if not ll_hosts.activateHost(positive=True, host=host_name):
+        return False
+    return service_restarted
 
 
 def restart_vdsm_and_wait_for_activation(
-        hosts_resource, dc_name, storage_domain_name
+    hosts_resource, dc_name, storage_domain_name
 ):
     """
-    Restart vdsmd service and wait until storage will be active,
+    1) Restart vdsmd service on service
+    2) Wait until storage will be active
 
-    :param hosts_resource: list of host resource
-    :type hosts_resource: list of host resource
-    :param dc_name: dc name
-    :type dc_name: str
-    :param storage_domain_name: storage domain name
-    :type storage_domain_name: str
-    :raises: HostException or StorageDomainException
+    Args:
+        hosts_resource (list): Host resources
+        dc_name (str): Datacenter name
+        storage_domain_name (str): Storage domain name
+
+    Returns:
+        bool: True, if all actions succeed, otherwise False
     """
-
-    for host in hosts_resource:
-        host_name = ll_hosts.get_host_name_from_engine(host)
-        restart_services_under_maintenance_state(['vdsmd'], host)
-        ll_hosts.waitForHostsStates(True, host_name)
-    ll_hosts.waitForSPM(dc_name, 200, 5)
-
-    for host in hosts_resource:
-        host_name = ll_hosts.get_host_name_from_engine(host)
-        if ll_hosts.checkHostSpmStatus(True, host_name):
-            if not ll_sd.waitForStorageDomainStatus(
-                True, dc_name, storage_domain_name,
-                ENUMS["storage_domain_state_active"]
-            ):
-                raise errors.StorageDomainException(
-                    "Failed to activate storage domain"
-                    " %s after restart of VDSM" % storage_domain_name
-                )
+    for host_resource in hosts_resource:
+        if not restart_services_under_maintenance_state(
+            services=["vdsmd"], host_resource=host_resource
+        ):
+            return False
+    return ll_sd.waitForStorageDomainStatus(
+        positive=True,
+        dataCenterName=dc_name,
+        storageDomainName=storage_domain_name,
+        expectedStatus=ENUMS["storage_domain_state_active"]
+    )

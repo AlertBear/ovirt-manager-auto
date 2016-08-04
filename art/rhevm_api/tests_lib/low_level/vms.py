@@ -111,7 +111,7 @@ NUMA_NODE_LINK = "numanodes"
 HOST_DEVICE_LINK = "hostdevices"
 SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
-VM = "vm"
+VM = "VM"
 MIGRATION_TIMEOUT = 300
 VM_PASSWORD = "qum5net"
 
@@ -1024,7 +1024,6 @@ def startVm(
     :return: status (True if vm was started properly, False otherwise)
     :rtype: bool
     """
-    logger.info("Starting VM %s", vm)
     if not positive:
         wait_for_status = None
 
@@ -5931,3 +5930,44 @@ def get_vm_snapshot_type(vm, snapshot):
     """
     snapshot_obj = _getVmSnapshot(vm, snapshot)
     return snapshot_obj.get_snapshot_type()
+
+
+def create_vms(vms_params, max_workers=None):
+    """
+    Create VM's simultaneously
+
+    Args:
+        vms_params (dict): VM's parameters to create
+            {
+                vm_name_1: {
+                    cluster: ...,
+                    vmDescription: ...,
+                    nic: ...,
+                    storageDomainName: ...,
+                    provisioned_size: ...,
+                    memory: ...,
+                    template: ...,
+                    ...
+                },
+                vm_name_2: {
+                    ...
+                }
+            }
+        max_workers (int): Number of threads to use
+
+    Returns:
+        bool: True, if succeed to create all VM's, otherwise False
+    """
+    max_workers = max_workers if max_workers else len(vms_params)
+    results = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for vm_name, vm_params in vms_params.iteritems():
+            results.append(
+                executor.submit(
+                    fn=createVm, positive=True, vmName=vm_name, **vm_params
+                )
+            )
+    for result in results:
+        if result.exception() or not result.result():
+            return False
+    return True

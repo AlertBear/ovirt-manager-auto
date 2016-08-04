@@ -35,6 +35,8 @@ VM_DISPLAY = "display_type"
 VM_CLUSTER = "cluster"
 VM_WATCHDOG_MODEL = "watchdog_model"
 VM_CPU_SHARES = "cpu_shares"
+VM_TEMPLATE = "template"
+VM_BALLOONING = "ballooning"
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,

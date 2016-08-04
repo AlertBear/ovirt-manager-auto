@@ -16,11 +16,11 @@ from fixtures import (
     create_cpu_qoss,
     create_template_for_cpu_qos_test,
     create_vm_from_template_for_cpu_qos_test,
-    disable_guest_agent_service,
     update_vms_cpu
 )
 from rhevmtests.sla.fixtures import (
     start_vms,
+    stop_guest_agent_service,
     update_vms_to_default_parameters
 )
 
@@ -378,7 +378,7 @@ class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     start_vms.__name__,
-    disable_guest_agent_service.__name__
+    stop_guest_agent_service.__name__
 )
 class TestVmCpuLimitationWithoutGuestAgent(BaseCpuQoSAndCpuProfile):
     """
@@ -390,6 +390,7 @@ class TestVmCpuLimitationWithoutGuestAgent(BaseCpuQoSAndCpuProfile):
     vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
+    stop_guest_agent_vm = conf.QOS_VMS[0]
 
     @polarion("RHEVM3-14729")
     def test_cpu_limitation_without_guest_agent(self):
