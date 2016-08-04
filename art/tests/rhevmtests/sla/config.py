@@ -134,3 +134,9 @@ QOS_TYPE_CPU = "cpu"
 # Package manager constants
 PACKAGE_MANAGER_INSTALL = "install"
 PACKAGE_MANAGER_REMOVE = "remove"
+
+# Affinity groups constants
+AREM_OPTION = "AffinityRulesEnforcementManagerEnabled"
+AFFINITY_GROUP_POSITIVE = "positive"
+AFFINITY_GROUP_ENFORCING = "enforcing"
+AFFINITY_GROUP_VMS = "vms"

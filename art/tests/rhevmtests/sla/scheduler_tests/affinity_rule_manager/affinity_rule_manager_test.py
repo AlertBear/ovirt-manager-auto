@@ -1,11 +1,10 @@
 """
 AREM test - check automatic migration of VM's under different affinity rules
 """
-import pytest
-
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.unittest_lib as u_libs
-import config as conf
+import pytest
+import rhevmtests.sla.config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
