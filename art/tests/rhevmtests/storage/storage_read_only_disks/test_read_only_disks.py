@@ -51,7 +51,8 @@ def not_bootable(vm_name):
     """
     return [
         disk for disk in ll_vms.getVmDisks(vm_name) if not
-        ll_vms.is_bootable_disk(vm_name, disk.get_id()) and disk.get_active()
+        ll_vms.is_bootable_disk(vm_name, disk.get_id()) and
+        ll_vms.is_active_disk(vm_name, disk.get_id())
     ]
 
 

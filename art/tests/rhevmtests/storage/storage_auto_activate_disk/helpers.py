@@ -41,15 +41,14 @@ def attach_new_disk(
     ll_disks.wait_for_disks_status(disk_args["alias"])
 
     disk_obj = ll_disks.getVmDisk(vm_name, disk_alias)
-    logger.info(
-        "Disk '%s' has status of '%s'", disk_alias, disk_obj.get_active()
-    )
+    active = ll_vms.is_active_disk(vm_name, disk_obj.get_id())
+    logger.info("Disk '%s' has status of '%s'", disk_alias, active)
     logger.info(
         "Disk Status is %s, expected disk status is %s",
-        disk_obj.get_active(), should_be_active
+        active, should_be_active
     )
     # Compare the actual and expected disk status
-    if disk_obj.get_active() == should_be_active:
+    if active == should_be_active:
         logger.info("Actual disk status matches the expected disk status")
         return True
 

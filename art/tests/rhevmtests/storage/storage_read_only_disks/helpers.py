@@ -31,7 +31,8 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
     """
     vm_disks = [
         disk for disk in ll_vms.getVmDisks(vm_name) if not
-        ll_vms.is_bootable_disk(vm_name, disk.get_id()) and disk.get_active()
+        ll_vms.is_bootable_disk(vm_name, disk.get_id()) and
+        ll_vms.is_active_disk(vm_name, disk.get_id())
     ]
     if imported_vm:
         global DISK_NAMES

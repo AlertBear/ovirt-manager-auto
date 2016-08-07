@@ -78,7 +78,7 @@ DD_TIMEOUT = 1500
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = [
     'size', 'type', 'format', 'sparse',
-    'wipe_after_delete', 'propagate_errors', 'alias', 'active', 'read_only'
+    'wipe_after_delete', 'propagate_errors', 'alias', 'read_only'
 ]
 VM_WAIT_FOR_IP_TIMEOUT = 600
 SNAPSHOT_TIMEOUT = 15 * 60
@@ -1301,8 +1301,7 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
                         format=ENUMS['format_cow'],
                         sparse=True,
                         alias=kwargs.pop('alias', None),
-                        description=kwargs.pop('description', None),
-                        active=kwargs.get('active', True))
+                        description=kwargs.pop('description', None))
 
     log_info, log_error = ll_general.get_log_msg(
         action="Add", obj_type="disk", obj_name=disk, positive=positive,
@@ -1339,6 +1338,7 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
 
     interface = kwargs.pop('interface', ENUMS['interface_virtio'])
     bootable = kwargs.pop('bootable', None)
+    active = kwargs.pop('active', True)
     # Report the unknown arguments that remains.
     if 0 < len(kwargs):
         E = "addDisk() got an unexpected keyword arguments %s"
@@ -1351,7 +1351,7 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
         disk.set_storage_domains(diskSds)
 
     disk_attachment_obj = prepare_disk_attachment_object(
-        interface=interface, bootable=bootable, disk=disk
+        interface=interface, bootable=bootable, disk=disk, active=active
     )
 
     disks = get_disk_attachments(vm, get_href=True)
@@ -4108,7 +4108,7 @@ def check_VM_disk_state(vm_name, disk_alias):
         raise DiskNotFound('Disk %s not found in vm %s' %
                            (disk_alias, vm_name))
     disk = disks[0]
-    return disk.get_active()
+    return is_active_disk(vm_name, disk.get_id())
 
 
 def get_vm_state(vm_name):
@@ -4314,11 +4314,12 @@ def attach_snapshot_disk_to_vm(
     Return:
         True if operation succeeded, False otherwise
     """
-    new_disk_obj = _prepareDiskObject(id=disk_obj.get_id(),
-                                      active=activate,
-                                      snapshot=disk_obj.get_snapshot())
+    new_disk_obj = _prepareDiskObject(
+        id=disk_obj.get_id(), snapshot=disk_obj.get_snapshot()
+    )
     new_disk_attachment_obj = prepare_disk_attachment_object(
-        id=disk_obj.get_id(), interface=interface, disk=new_disk_obj,
+        id=disk_obj.get_id(), interface=interface, active=activate,
+        disk=new_disk_obj,
     )
     vmDisks = getObjDisks(vm_name)
     diskObj, status = DISK_ATTACHMENTS_API.create(
@@ -4346,8 +4347,9 @@ def attach_backup_disk_to_vm(src_vm, backup_vm, snapshot_description,
     for disk_obj in disks_objs:
         logger.info("Attach disk %s of vm %s to vm %s",
                     disk_obj.get_alias(), src_vm, backup_vm)
-        status = attach_snapshot_disk_to_vm(disk_obj, backup_vm, async=async,
-                                            activate=activate)
+        status = attach_snapshot_disk_to_vm(
+            disk_obj, backup_vm, async=async, activate=activate
+        )
 
         if not status:
             logger.info("Failed to attach disk %s of vm %s to vm %s",
@@ -5901,6 +5903,22 @@ def is_bootable_disk(vm, disk, attr='id'):
     :rtype: bool
     """
     return get_disk_attachment(vm, disk, attr).get_bootable()
+
+
+def is_active_disk(vm, disk, attr='id'):
+    """
+    Gets the disk active flag
+
+    :param vm: Name of vm
+    :type : str
+    :param disk: Disk name or ID
+    :type : str
+    :param attr: Attribute to identify the disk, 'id' or 'name'
+    :type: str
+    :return: True in case the disk is active, False otherwise
+    :rtype: bool
+    """
+    return get_disk_attachment(vm, disk, attr).get_active()
 
 
 def get_vm_snapshot_type(vm, snapshot):

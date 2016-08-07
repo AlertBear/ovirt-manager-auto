@@ -946,19 +946,19 @@ class TestCase5996(BaseTestCase):
                 "Cannot attach floating disk %s to vm %s" %
                 (disk_name, vm_name)
             )
-        inactive_disk = ll_disks.getVmDisk(vm_name, disk_name)
-        if activate and not inactive_disk.get_active():
+        ll_vms.is_active_disk(vm_name, disk_name, 'alias')
+        inactive_disk = ll_vms.is_active_disk(vm_name, disk_name, 'alias')
+        if activate and not inactive_disk:
             logger.warning("Disk %s in vm %s is not active after attaching",
                            disk_name, vm_name)
             assert ll_vms.activateVmDisk(True, vm_name, disk_name)
 
-        elif not activate and inactive_disk.get_active():
+        elif not activate and inactive_disk:
             logger.warning("Disk %s in vm %s is active after attaching",
                            disk_name, vm_name)
             assert ll_vms.deactivateVmDisk(True, vm_name, disk_name)
         logger.info("%s disks active: %s %s", disk_name,
-                    inactive_disk.get_active(),
-                    type(inactive_disk.get_active()))
+                    inactive_disk, type(inactive_disk))
         ll_vms.waitForVmsDisks(vm_name)
         ll_vms.live_migrate_vm(
             vm_name, LIVE_MIGRATION_TIMEOUT, same_type=config.MIGRATE_SAME_TYPE

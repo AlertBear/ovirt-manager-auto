@@ -708,8 +708,8 @@ class TestCase6169(BaseTestCase):
         )
 
         for disk in ll_vms.getVmDisks(self.backup_vm):
-            if not ll_vms.check_VM_disk_state(
-                self.backup_vm, disk.get_alias()
+            if not ll_vms.is_active_disk(
+                self.backup_vm, disk.get_alias(), 'alias'
             ):
 
                 ll_vms.activateVmDisk(True, self.backup_vm, disk.get_alias())

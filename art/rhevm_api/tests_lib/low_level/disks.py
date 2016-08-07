@@ -222,6 +222,7 @@ def _prepareDiskObject(**kwargs):
         logger.error(
             "You cannot set storage connection id and LUN params in one call!")
         return None
+    kwargs.pop('active', None)
 
     disk = kwargs.pop('update', None)
     if disk is None:
@@ -267,11 +268,6 @@ def _prepareDiskObject(**kwargs):
     read_only = kwargs.pop('read_only', None)
     if read_only is not None:
         disk.set_read_only(read_only)
-
-    # active
-    active = kwargs.pop('active', None)
-    if active is not None:
-        disk.set_active(active)
 
     # snapshot
     snapshot = kwargs.pop('snapshot', None)
@@ -447,13 +443,13 @@ def attachDisk(
     # Also for attaching a disk the active parameter is pass inside the disk
     # object
     updated_disk = _prepareDiskObject(
-        id=disk_object.get_id(), read_only=read_only, active=active
+        id=disk_object.get_id(), read_only=read_only
     )
     vm_disks = getObjDisks(vm_name)
     logger.info("Attaching disk %s to vm %s", alias, vm_name)
     disk_attachment = prepare_disk_attachment_object(
         updated_disk.get_id(), interface=interface, bootable=bootable,
-        disk=updated_disk
+        disk=updated_disk, active=active
     )
     return DISK_ATTACHMENTS_API.create(
         disk_attachment, positive, collection=vm_disks
@@ -744,8 +740,7 @@ def check_disk_visibility(disk, disks_list):
         * disks_list - collection of disks objects
     Return: True if ok, or False otherwise
     """
-    is_visible = disk in [disk_obj.get_alias() for disk_obj in
-                          disks_list if disk_obj.get_active()]
+    is_visible = disk in [disk_obj.get_alias() for disk_obj in disks_list]
     return is_visible
 
 
