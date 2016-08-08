@@ -39,7 +39,7 @@ PE_EXPECT = "pe.expect"
 PE_SENDLINE = "pe.sendline"
 
 
-def create_random_ips(num_of_ips=2, mask=16, ip_version=4):
+def create_random_ips(num_of_ips=2, mask=16, ip_version=4, base_ip_prefix="5"):
     """
     Create random IPs (only support masks 8/16/24)
 
@@ -47,6 +47,8 @@ def create_random_ips(num_of_ips=2, mask=16, ip_version=4):
         num_of_ips (int): Number of IPs to create
         mask (int): IP subnet to create the IPs for
         ip_version (int): IP version to generate IPs (6 or 4)
+        base_ip_prefix (str): IP number to generate IP from. (5 will
+            generate 5.5.5.x according to mask)
 
     Returns:
         list: List of IPs
@@ -54,7 +56,7 @@ def create_random_ips(num_of_ips=2, mask=16, ip_version=4):
     ips = list()
     if ip_version == 4:
         ip_mask = mask // 8
-        base_ip = ".".join("5" * ip_mask)
+        base_ip = ".".join(base_ip_prefix * ip_mask)
     elif ip_version == 6:
         ip_mask = 3
         base_ip = "2001::"

@@ -26,7 +26,6 @@ class JumboFrame(NetworkFixtures):
     def __init__(self):
         super(JumboFrame, self).__init__()
         self.vms_list = [self.vm_0, self.vm_1]
-        self.hosts_list = [self.host_0_name, self.host_1_name]
         self.host_nics_list = [self.host_0_nics, self.host_1_nics]
 
 
@@ -37,56 +36,28 @@ def prepare_setup_jumbo_frame(request):
     """
     jumbo_frame = JumboFrame()
 
-    def fin3():
+    def fin2():
         """
-        Finalizer for remove networks from setup
+        Remove networks from setup
         """
         hl_networks.remove_net_from_setup(
             host=jumbo_frame.hosts_list, data_center=jumbo_frame.dc_0,
             mgmt_network=jumbo_frame.mgmt_bridge, all_net=True
         )
-    request.addfinalizer(fin3)
-
-    def fin2():
-        """
-        Finalizer for stop VMs
-        """
-        ll_vms.stopVms(vms=jumbo_frame.vms_list)
     request.addfinalizer(fin2)
 
     def fin1():
         """
-        Finalizer for clean hosts interfaces
+        Stop VMs
         """
-        network_dict = {
-            "1": {
-                "network": "clear_net_1",
-                "nic": None
-            },
-            "2": {
-                "network": "clear_net_1",
-                "nic": None
-            },
-            "3": {
-                "network": "clear_net_1",
-                "nic": None
-            }
-        }
-
-        for host, nics in zip(
-            jumbo_frame.hosts_list, jumbo_frame.host_nics_list
-        ):
-            network_dict["1"]["nic"] = nics[1]
-            network_dict["2"]["nic"] = nics[2]
-            network_dict["3"]["nic"] = nics[3]
-            hl_host_network.setup_networks(host_name=host, **network_dict)
-            hl_host_network.clean_host_interfaces(host_name=host)
+        ll_vms.stopVms(vms=jumbo_frame.vms_list)
     request.addfinalizer(fin1)
 
-    jumbo_frame.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=jumbo_conf.NETS_DICT, dc=jumbo_frame.dc_0,
         cluster=jumbo_frame.cluster_0
     )
+
     for vm, host in zip(jumbo_frame.vms_list, jumbo_frame.hosts_list):
         assert network_helper.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
@@ -94,333 +65,128 @@ def prepare_setup_jumbo_frame(request):
 
 
 @pytest.fixture(scope="class")
-def teardown_all_cases(request, prepare_setup_jumbo_frame):
+def attach_networks_to_hosts(request, restore_hosts_mtu):
     """
-    Teardown for all cases
+    Attach networks to hosts via setup_networks
     """
+    JumboFrame()
+    hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
+    ip_dict = {
+        "1": {
+            "address": None,
+            "netmask": "24",
+            "boot_protocol": "static"
+        }
+    }
+    sn_dict = {
+        "add": {}
+    }
+
+    for key, val in hosts_nets_nic_dict.iteritems():
+        host = conf.HOSTS[key]
+        host_resource = conf.VDS_HOSTS[key]
+        for net, value in val.iteritems():
+            slaves_list = list()
+            slaves = value.get("slaves")
+            nic = value.get("nic")
+            ip_addr = value.get("ip")
+            mode = value.get("mode")
+            if slaves:
+                for nic_ in slaves:
+                    slaves_list.append(host_resource.nics[nic_])
+
+            if isinstance(nic, int):
+                nic = host_resource.nics[nic]
+
+            sn_dict["add"][net] = {
+                "network": net,
+                "nic": nic,
+                "slaves": slaves_list,
+                "mode": mode
+            }
+            if ip_addr:
+                ip_dict["1"]["address"] = ip_addr
+                sn_dict["add"][net]["ip"] = ip_dict
+
+        assert hl_host_network.setup_networks(host_name=host, **sn_dict)
+
+
+@pytest.fixture(scope="class")
+def configure_mtu_on_host(request, restore_hosts_mtu):
+    """
+    Configure MTU on hosts interfaces
+    """
+    jumbo_frame = JumboFrame()
+    mtu = request.node.cls.mtu
+    host_nic_index = request.node.cls.host_nic_index
+    assert test_utils.configure_temp_mtu(
+        vds_resource=jumbo_frame.vds_0_host, mtu=mtu,
+        nic=jumbo_frame.host_0_nics[host_nic_index]
+    )
+
+
+@pytest.fixture(scope="class")
+def add_vnics_to_vms(request):
+    """
+    Add vNICs to VMs
+    """
+    JumboFrame()
+    vms_ips = request.node.cls.vms_ips
+    vnics_to_add = request.node.cls.vnics_to_add
+
     def fin():
         """
-        Finalizer for restore MTU on hosts
+        Remove NICs from VMs
         """
-        helper.restore_mtu_and_clean_interfaces()
+        for vm_name in conf.VM_NAME[:2]:
+            for vnic_to_remove in vnics_to_add:
+                nic_name = vnic_to_remove.get("nic_name")
+                ll_vms.updateNic(
+                    positive=True, vm=vm_name, nic=nic_name, plugged=False
+                )
+                ll_vms.removeNic(positive=True, vm=vm_name, nic=nic_name)
     request.addfinalizer(fin)
 
-
-@pytest.fixture(scope="class")
-def fixture_case_01(request, teardown_all_cases):
-    """
-    Fixture for case01
-    """
-    jumbo_frame = JumboFrame()
-    net = jumbo_conf.NETS[1][0]
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": jumbo_frame.host_0_nics[1]
-            }
-        }
-    }
-    assert hl_host_network.setup_networks(
-        host_name=jumbo_frame.host_0_name, **network_dict
-    )
+    for vnic_to_add in vnics_to_add:
+        vnic_to_add["ips"] = vms_ips
+        assert helper.add_vnics_to_vms(**vnic_to_add)
 
 
 @pytest.fixture(scope="class")
-def fixture_case_02(request, teardown_all_cases):
+def update_cluster_network(request):
     """
-    Fixture for case02
-    """
-    jumbo_frame = JumboFrame()
-    net_1 = jumbo_conf.NETS[2][0]
-    net_2 = jumbo_conf.NETS[2][1]
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net_1,
-                "nic": jumbo_frame.host_0_nics[1]
-            },
-            "2": {
-                "network": net_2,
-                "nic": jumbo_frame.host_0_nics[1]
-            }
-        }
-    }
-    assert hl_host_network.setup_networks(
-        host_name=jumbo_frame.host_0_name, **network_dict
-    )
-
-
-@pytest.fixture(scope="class")
-def fixture_case_03(request, teardown_all_cases):
-    """
-    Fixture for case03
+    Update cluster network usages
     """
     jumbo_frame = JumboFrame()
-    net = jumbo_conf.NETS[3][0]
-    mtu_5000 = conf.MTU[1]
-    bond = "bond3"
-    ips = network_helper.create_random_ips(num_of_ips=4, mask=24)
-    jumbo_conf.CASE_3_IPS = ips
+    net = request.node.cls.net
 
     def fin():
         """
-        Finalizer for remove NICs from VMs
-        """
-        helper.remove_vnics_from_vms()
-    request.addfinalizer(fin)
-
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": bond,
-                "slaves": None,
-                "mode": 1,
-                "ip": {
-                    "1": {
-                        "address": None,
-                        "netmask": "24",
-                        "boot_protocol": "static"
-                    }
-                }
-            },
-        }
-    }
-
-    for host, nics, ip in zip(
-        jumbo_frame.hosts_list,
-        jumbo_frame.host_nics_list,
-        ips[2:]
-    ):
-        network_dict["add"]["1"]["slaves"] = nics[2:4]
-        network_dict["add"]["1"]["ip"]["1"]["address"] = ip
-        assert hl_host_network.setup_networks(host_name=host, **network_dict)
-
-    assert helper.add_vnics_to_vms(ips=ips[:2], network=net, mtu=mtu_5000)
-
-
-@pytest.fixture(scope="class")
-def fixture_case_04(request, teardown_all_cases):
-    """
-    Fixture for case04
-    """
-    jumbo_frame = JumboFrame()
-    ips = network_helper.create_random_ips(mask=24)
-    bond = "bond12"
-    net_1 = jumbo_conf.NETS[4][0]
-    net_2 = jumbo_conf.NETS[4][1]
-    net_3 = jumbo_conf.NETS[4][2]
-    net_4 = jumbo_conf.NETS[4][3]
-    vnic = conf.NIC_NAME[2]
-    mtu_9000 = conf.MTU[0]
-    mtu_5000 = str(conf.MTU[1])
-    jumbo_conf.CASE_4_IPS = ips
-
-    def fin2():
-        """
-        Finalizer for remove NICs from VMs
-        """
-        helper.remove_vnics_from_vms(nic_name=vnic)
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Finalizer for remove NICs from VMs
-        """
-        helper.remove_vnics_from_vms()
-    request.addfinalizer(fin1)
-
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net_1,
-                "nic": bond,
-                "slaves": None,
-            },
-            "2": {
-                "network": net_2,
-                "nic": bond,
-                "ip": {
-                    "1": {
-                        "address": None,
-                        "netmask": "24",
-                        "boot_protocol": "static"
-                    }
-                }
-            },
-            "3": {
-                "network": net_3,
-                "nic": bond,
-            },
-            "4": {
-                "network": net_4,
-                "nic": bond,
-            },
-        }
-    }
-    for host, nics, ip in zip(
-        jumbo_frame.hosts_list,
-        jumbo_frame.host_nics_list,
-        ips
-    ):
-        network_dict["add"]["1"]["slaves"] = nics[2:4]
-        network_dict["add"]["2"]["ip"]["1"]["address"] = ip
-        assert hl_host_network.setup_networks(host_name=host, **network_dict)
-
-    assert helper.add_vnics_to_vms(ips=ips, mtu=str(mtu_9000), network=net_2)
-    assert helper.add_vnics_to_vms(
-        ips=ips, mtu=mtu_5000, nic_name=vnic, network=net_1, set_ip=False
-    )
-
-
-@pytest.fixture(scope="class")
-def fixture_case_05(request, teardown_all_cases):
-    """
-    Fixture for case05
-    """
-    jumbo_frame = JumboFrame()
-    ips = network_helper.create_random_ips(num_of_ips=4, mask=24)
-    net = jumbo_conf.NETS[5][0]
-    mtu_5000 = str(conf.MTU[1])
-    jumbo_conf.CASE_5_IPS = ips
-
-    def fin2():
-        """
-        Finalizer for update network on cluster
+        Update management cluster network to default
         """
         ll_networks.update_cluster_network(
             positive=True, cluster=jumbo_frame.cluster_0,
             network=jumbo_frame.mgmt_bridge,
             usages="display,vm,migration,management"
         )
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Finalizer for remove NICs from VMs
-        """
-        helper.remove_vnics_from_vms()
-    request.addfinalizer(fin1)
+    request.addfinalizer(fin)
 
     assert ll_networks.update_cluster_network(
         positive=True, cluster=jumbo_frame.cluster_0, network=net,
         usages='display,vm'
     )
 
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": None,
-                "ip": {
-                    "1": {
-                        "address": None,
-                        "netmask": "24",
-                        "boot_protocol": "static"
-                    }
-                }
-            }
-        }
-    }
-    for host, nics, ip in zip(
-        jumbo_frame.hosts_list,
-        jumbo_frame.host_nics_list,
-        ips[2:]
-    ):
-        network_dict["add"]["1"]["ip"]["1"]["address"] = ip
-        network_dict["add"]["1"]["nic"] = nics[1]
-        assert hl_host_network.setup_networks(host_name=host, **network_dict)
-    assert helper.add_vnics_to_vms(ips=ips[:2], mtu=mtu_5000, network=net)
-
 
 @pytest.fixture(scope="class")
-def fixture_case_07(request, teardown_all_cases):
+def restore_hosts_mtu(request):
     """
-    Fixture for case07
+    Restore hosts interfaces MTU
     """
-    jumbo_frame = JumboFrame()
-    net_1 = jumbo_conf.NETS[7][0]
-    net_2 = jumbo_conf.NETS[7][1]
-    mtu_5000 = conf.MTU[1]
-    ips = network_helper.create_random_ips(mask=24)
-    jumbo_conf.CASE_7_IPS = ips
+    JumboFrame()
 
     def fin():
         """
-        Finalizer for remove NICs from VMs
+        Set default MTU on all hosts interfaces
         """
-        helper.remove_vnics_from_vms()
+        helper.restore_mtu_and_clean_interfaces()
     request.addfinalizer(fin)
-
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net_1,
-                "nic": None,
-            },
-            "2": {
-                "network": net_2,
-                "nic": None
-            }
-        }
-    }
-
-    for host, nics in zip(
-        jumbo_frame.hosts_list,
-        jumbo_frame.host_nics_list
-    ):
-        network_dict["add"]["1"]["nic"] = nics[1]
-        network_dict["add"]["2"]["nic"] = nics[1]
-        assert hl_host_network.setup_networks(host_name=host, **network_dict)
-    assert helper.add_vnics_to_vms(ips=ips, network=net_1, mtu=mtu_5000)
-
-
-@pytest.fixture(scope="class")
-def fixture_case_08(request, teardown_all_cases):
-    """
-    Fixture for case08
-    """
-    jumbo_frame = JumboFrame()
-    net_1 = jumbo_conf.NETS[8][0]
-    bond = "bond8"
-
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net_1,
-                "nic": bond,
-                "slaves": jumbo_frame.host_0_nics[2:4]
-            }
-        }
-    }
-
-    assert hl_host_network.setup_networks(
-        host_name=jumbo_frame.host_0_name, **network_dict
-    )
-
-
-@pytest.fixture(scope="class")
-def fixture_case_09(request, teardown_all_cases):
-    """
-    Fixture for case09
-    """
-    jumbo_frame = JumboFrame()
-    mtu_2000 = str(conf.MTU[2])
-    net = jumbo_conf.NETS[9][0]
-
-    assert test_utils.configure_temp_mtu(
-        vds_resource=jumbo_frame.vds_0_host, mtu=mtu_2000,
-        nic=jumbo_frame.host_0_nics[1]
-    )
-    network_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": jumbo_frame.host_0_nics[1],
-            }
-        }
-    }
-    assert hl_host_network.setup_networks(
-        host_name=jumbo_frame.host_0_name, **network_dict
-    )

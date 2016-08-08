@@ -87,9 +87,7 @@ def check_logical_physical_layer(
     return True
 
 
-def add_vnics_to_vms(
-    ips, mtu, network, nic_name=conf.NIC_NAME[1], set_ip=True
-):
+def add_vnics_to_vms(ips, mtu, network, nic_name, set_ip=True):
     """
     Adding NIC to config.VM_NAME[:2]
 
@@ -136,7 +134,7 @@ def add_vnics_to_vms(
     return True
 
 
-def remove_vnics_from_vms(nic_name=conf.NIC_NAME[1]):
+def remove_vnics_from_vms(nic_name):
     """
     Remove NIC from config.VM_NAME[:2]
 
