@@ -9,57 +9,9 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import config as dc_conf
 import rhevmtests.networking.config as conf
 from rhevmtests.networking.fixtures import NetworkFixtures
-
-
-class DatacenterNetworks(NetworkFixtures):
-    """
-    Fixtures for datacenter networks
-    """
-    def __init__(self):
-        super(DatacenterNetworks, self).__init__()
-        self.dc_networks_1 = conf.DATACENTER_NETWORKS_DC_NAMES[1]
-        self.dc_0_prefix = "dc_0_net"
-        self.dc_1_prefix = "dc_1_net"
-
-    def delete_networks_in_dc(self, dc):
-        """
-        Delete networks in datacenter
-
-        Args:
-            dc (str): Datacenter name
-
-        Raises:
-            AssertionError: If delete failed
-        """
-        assert ll_networks.delete_networks_in_datacenter(
-            datacenter=dc, mgmt_net=self.mgmt_bridge
-        )
-
-    def create_networks_in_dc(self, nets_num, dc, prefix):
-        """
-        Create networks in datacenter
-
-        Args:
-            nets_num (int): Number of networks to create
-            dc (str): Datacenter name
-            prefix (str): Networks prefix name
-
-        Raises:
-            AssertionError: If create fails
-        """
-        dc_net_list = ll_networks.create_networks_in_datacenter(
-            num_of_net=nets_num, datacenter=dc, prefix=prefix
-        )
-
-        if self.dc_0_prefix == prefix:
-            conf.DC_0_NET_LIST = dc_net_list
-
-        if self.dc_1_prefix == prefix:
-            conf.DC_1_NET_LIST = dc_net_list
-
-        assert dc_net_list
 
 
 @pytest.fixture(scope="module")
@@ -67,75 +19,72 @@ def datacenter_networks_prepare_setup(request):
     """
     Prepare setup
     """
-    dc_net = DatacenterNetworks()
+    NetworkFixtures()
+    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
 
     def fin():
         """
-        Finalizer for remove basic setup
+        Remove basic setup
         """
-        hl_networks.remove_basic_setup(
-            datacenter=dc_net.dc_networks_1
+        for dc_name in dc_list:
+            hl_networks.remove_basic_setup(datacenter=dc_name)
+    request.addfinalizer(fin)
+
+    for dc in dc_list:
+        assert hl_networks.create_basic_setup(
+            datacenter=dc, version=conf.COMP_VERSION
         )
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_basic_setup(
-        datacenter=dc_net.dc_networks_1, version=conf.COMP_VERSION
-    )
 
 
 @pytest.fixture(scope="class")
-def teardown_all_cases(request, datacenter_networks_prepare_setup):
+def create_network_in_datacenter(request, datacenter_networks_prepare_setup):
     """
-    Teardown for all cases
+    create network in datacenter
     """
-    dc_net = DatacenterNetworks()
+    NetworkFixtures()
+    net_name = request.node.cls.net_name
+    dc_1 = dc_conf.DATACENTER_NETWORKS_DC_NAMES[1]
 
-    def fin():
-        """
-        Finalizer for remove networks from setup
-        """
-        dc_net.delete_networks_in_dc(dc=dc_net.dc_0)
-        dc_net.delete_networks_in_dc(dc=dc_net.dc_networks_1)
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def fixture_case_01(request, teardown_all_cases):
-    """
-    Fixture for case01
-    """
-    dc_net = DatacenterNetworks()
-    dc_net.create_networks_in_dc(
-        nets_num=10, dc=dc_net.dc_0, prefix=dc_net.dc_0_prefix
-    )
-    dc_net.create_networks_in_dc(
-        nets_num=5, dc=dc_net.dc_networks_1, prefix=dc_net.dc_1_prefix
-    )
-
-
-@pytest.fixture(scope="class")
-def fixture_case_02(request, teardown_all_cases):
-    """
-    Fixture for case02
-    """
-    dc_net = DatacenterNetworks()
-    for key, val in conf.DATACENTER_NETWORKS_NET_DICT.iteritems():
-        name = "_".join([ll_networks.NETWORK_NAME, key])
+    for idx, (key, val) in enumerate(
+        dc_conf.DATACENTER_NETWORKS_NET_DICT.iteritems()
+    ):
         kwargs_dict = {
             key: val,
-            "name": name
+            "name": net_name[idx]
         }
         assert ll_networks.create_network_in_datacenter(
-            positive=True, datacenter=dc_net.dc_networks_1, **kwargs_dict
+            positive=True, datacenter=dc_1, **kwargs_dict
         )
 
 
 @pytest.fixture(scope="class")
-def fixture_case_03(request, teardown_all_cases):
+def create_networks_in_dc(request, datacenter_networks_prepare_setup):
     """
-    Fixture for case03
+    Create networks in datacenter.
     """
-    dc_net = DatacenterNetworks()
-    dc_net.create_networks_in_dc(
-        nets_num=5, dc=dc_net.dc_0, prefix=dc_net.dc_0_prefix
-    )
+    datacenter_networks = NetworkFixtures()
+    nets_num_list = request.node.cls.nets_num_list
+    dc_list = request.node.cls.dc_list
+    prefix_list = request.node.cls.prefix_list
+
+    def fin():
+        """
+        Remove networks from setup
+        """
+        for dc_name in dc_list:
+            assert ll_networks.delete_networks_in_datacenter(
+                datacenter=dc_name, mgmt_net=datacenter_networks.mgmt_bridge
+            )
+    request.addfinalizer(fin)
+
+    for idx, (nets_num, dc, prefix) in enumerate(
+        zip(nets_num_list, dc_list, prefix_list)
+    ):
+        dc_net_list = ll_networks.create_networks_in_datacenter(
+            num_of_net=nets_num, datacenter=dc, prefix=prefix
+        )
+        if dc_conf.DATACENTER_NETWORKS_DC_NAMES[0] == dc:
+            dc_conf.DC_0_NET_LIST = dc_net_list
+
+        if dc_conf.DATACENTER_NETWORKS_DC_NAMES[1] == dc:
+            dc_conf.DC_1_NET_LIST = dc_net_list

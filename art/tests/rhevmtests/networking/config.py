@@ -191,20 +191,5 @@ BASIC_IP_DICT_NETMASK = {
     }
 }
 
-# Datacenter networks
-DATACENTER_NETWORKS_NET_DICT = {
-    "description": "New network",
-    "stp": True,
-    "vlan_id": 500,
-    "usages": [],
-    "mtu": 5555
-}
-DATACENTER_NETWORKS_VERIFY_NET_LIST = [
-    "description", "stp", "vlan_id", "usages", "mtu"
-]
-DATACENTER_NETWORKS_DC_NAMES = [DC_0, "DataCenter_Network_DC2"]
-DC_0_NET_LIST = None  # Filled in test
-DC_1_NET_LIST = None  # Filled in test
-
 # Network Filter
 VDSM_NO_MAC_SPOOFING = "vdsm-no-mac-spoofing"
