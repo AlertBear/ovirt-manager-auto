@@ -545,7 +545,7 @@ class TestSanity07(TestSanityCaseBase):
         """
         testflow.step("Extend the default range values of Default MAC pool")
         assert mac_pool_helper.update_mac_pool_range_size(
-            mac_pool_name=conf.DEFAULT_MAC_POOL, size=(2, 2)
+            mac_pool_name=mac_pool_conf.DEFAULT_MAC_POOL, size=(2, 2)
         )
 
     @polarion("RHEVM3-14510")
@@ -555,7 +555,7 @@ class TestSanity07(TestSanityCaseBase):
         """
         testflow.step("Add new ranges to the Default MAC pool")
         assert hl_mac_pool.add_ranges_to_mac_pool(
-            mac_pool_name=conf.DEFAULT_MAC_POOL,
+            mac_pool_name=mac_pool_conf.DEFAULT_MAC_POOL,
             range_list=mac_pool_conf.MAC_POOL_RANGE_LIST
         )
 
@@ -566,7 +566,7 @@ class TestSanity07(TestSanityCaseBase):
         """
         testflow.step("Remove added ranges from the Default MAC pool")
         assert hl_mac_pool.remove_ranges_from_mac_pool(
-            mac_pool_name=conf.DEFAULT_MAC_POOL,
+            mac_pool_name=mac_pool_conf.DEFAULT_MAC_POOL,
             range_list=mac_pool_conf.MAC_POOL_RANGE_LIST
         )
 

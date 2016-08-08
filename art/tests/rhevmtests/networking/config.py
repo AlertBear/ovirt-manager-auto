@@ -26,7 +26,6 @@ BOND = PARAMETERS.as_list('bond')
 NETWORKS = PARAMETERS.as_list('networks')
 TIMEOUT = 60
 NET_EXCEPTION = exceptions.NetworkException
-DEFAULT_MAC_POOL = "Default"
 VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
 FIREWALL_SRV = "iptables"
 BOND_MODES = PARAMETERS.as_list("bond_modes")
@@ -91,10 +90,6 @@ VM_IP_LIST = []
 # https://engineering.redhat.com/rt/Ticket/Display.html?id=336074
 ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
 DST_HOST_IP = "10.35.147.62"
-
-# Big MAC pool range
-BMPR_VM_NAME = "BigRangeMacPool_VM1"
-MAC_POOL_RANGE_CMD = "MacPoolRanges"
 
 # PPC
 VM_DISPLAY_TYPE = ENUMS[

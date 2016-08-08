@@ -203,7 +203,7 @@ def case_07_fixture(request):
         ll_dc.remove_datacenter(positive=True, datacenter=ext_dc)
     request.addfinalizer(fin)
 
-    mac_pool_helper.create_dc(mac_pool_name="")
+    mac_pool_helper.create_dc_with_mac_pool(mac_pool_name="")
 
 
 @pytest.fixture(scope="class")

@@ -4,10 +4,6 @@
 """
 Tests for the vNIC profile feature
 
-Polarion URL:
-https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Network/
-3_3_Network_VNIC_Profiles
-
 The following elements will be used for the tests:
 1 DC, 1 Cluster, 1 Hosts and 1 VM
 """
