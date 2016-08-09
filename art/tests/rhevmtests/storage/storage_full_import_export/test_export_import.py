@@ -95,6 +95,7 @@ class TestCase4665(BaseExportImportTestCase):
                 "Failed to create template %s", self.template_name
             )
 
+    @bz({'1365384': {}})
     @polarion("RHEVM3-4665")
     def test_import_force_override(self):
         """
