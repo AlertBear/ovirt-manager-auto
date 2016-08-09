@@ -86,7 +86,7 @@ def add_disk_to_sd(disk_name, storagedomain, attach_to_vm=None):
     disk_args = {
         'alias': disk_name,
         'provisioned_size': DISK_SIZE,
-        'interface': config.INTERFACE_IDE,
+        'interface': config.INTERFACE_VIRTIO,
         'format': config.DISK_FORMAT_COW,
         'sparse': True,
         'storagedomain': storagedomain,

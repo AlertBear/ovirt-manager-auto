@@ -24,7 +24,6 @@ from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers
-from utilities.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -625,7 +624,7 @@ class TestCase6168(BaseTestCase):
 
 
 @attr(tier=1)
-@bz({'1360686': {}})
+@bz({'1358271': {}})
 class TestCase6169(BaseTestCase):
     """
     Full flow of backup/restore API
@@ -671,9 +670,13 @@ class TestCase6169(BaseTestCase):
         assert not status, "OVF object wasn't found"
 
         testflow.step("Add second disk (backup disk) to vm %s", self.backup_vm)
+        self.backup_disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
+        )
         assert ll_vms.addDisk(
             True, self.backup_vm, BACKUP_DISK_SIZE, True,
-            self.storage_domains[0], interface=config.INTERFACE_VIRTIO
+            self.storage_domains[0], interface=config.INTERFACE_VIRTIO,
+            alias=self.backup_disk_alias,
         ), "Failed to add backup disk to backup vm %s" % self.backup_vm
 
         for disk in ll_vms.getVmDisks(self.backup_vm):
@@ -689,23 +692,20 @@ class TestCase6169(BaseTestCase):
             raise exceptions.VMException(
                 "Failed to get IP for vm %s" % self.backup_vm
             )
-        linux_machine = Machine(
-            host=self.backup_vm_ip, user=config.VM_USER,
-            password=config.VM_PASSWORD
-        ).util('linux')
-
-        devices = linux_machine.get_storage_devices()
-        if not devices:
-            raise exceptions.VMException(
-                "Failed to find storage devices on vm %s" % self.backup_vm_ip
-            )
-
+        backup_disk_device = ll_vms.get_vm_disk_logical_name(
+            self.backup_vm, self.backup_disk_alias
+        ).split('/')[-1]
+        source_vm_disk_alias = ll_vms.getVmDisks(self.source_vm)[0].get_alias()
+        source_vm_device = ll_vms.get_vm_disk_logical_name(
+            self.backup_vm, source_vm_disk_alias
+        ).split('/')[-1]
         testflow.step(
             "Copy data from disk %s to %s of backup vm %s",
-            devices[1], devices[2], self.backup_vm
+            source_vm_device, backup_disk_device, self.backup_vm
         )
         status = helpers.copy_backup_disk(
-            self.backup_vm_ip, devices[1], devices[2], TASK_TIMEOUT
+            self.backup_vm_ip, source_vm_device, backup_disk_device,
+            timeout=TASK_TIMEOUT
         )
 
         assert status, "Failed to copy disk"

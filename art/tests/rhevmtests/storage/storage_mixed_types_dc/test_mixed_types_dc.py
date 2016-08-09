@@ -723,7 +723,7 @@ class TestCase4566(IscsiNfsSD):
             'provisioned_size': config.GB,
             'sparse': False,
             'format': config.DISK_FORMAT_RAW,
-            'interface': config.INTERFACE_IDE,
+            'interface': config.INTERFACE_VIRTIO,
             'storagedomain': self.non_master[0],
             'bootable': False,
         }

@@ -59,7 +59,7 @@ CREATE_FILE_CMD = 'touch %s/%s'
 REGEX_DEVICE_NAME = '[sv]d[a-z]'
 CREATE_DISK_LABEL_CMD = '/sbin/parted %s --script -- mklabel gpt'
 CREATE_DISK_PARTITION_CMD = \
-    '/sbin/parted %s --script -- mkpart primary 0 100%%'
+    '/sbin/parted %s --script -- mkpart primary ext4 0 100%%'
 NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
@@ -254,25 +254,44 @@ def perform_dd_to_disk(
 
             return False, ERROR_MSG
 
+    size_mb = size / config.MB
+
     if write_to_file:
-        dev = disk_logical_volume_name.split('/')[-1]
-        dev_size = vm_machine.get_storage_device_size(dev)
-        # Create a partition of the size of the disk but take into account the
-        # usual offset for logical partitions, setting to 10 MB
-        partition = vm_machine.createPartition(
-            disk_logical_volume_name, dev_size * config.GB - config.MB * 10,
+        logger.info(
+            "Creating label: %s",
+            CREATE_DISK_LABEL_CMD % disk_logical_volume_name
         )
-        assert partition
+        rc, out = vm_machine.runCmd(
+            (CREATE_DISK_LABEL_CMD % disk_logical_volume_name).split()
+        )
+        logger.info("Output after creating disk label: %s", out)
+        if not rc:
+            return rc, out
+        logger.info(
+            "Creating partition %s",
+            CREATE_DISK_PARTITION_CMD % disk_logical_volume_name
+        )
+        rc, out = vm_machine.runCmd(
+            (CREATE_DISK_PARTITION_CMD % disk_logical_volume_name).split()
+        )
+        logger.info("Output after creating partition: %s", out)
+        if not rc:
+            return rc, out
+        # '1': create the fs as the first partition
+        # '?': createFileSystem will return a random mount point
         mount_point = vm_machine.createFileSystem(
-            disk_logical_volume_name, partition, FILESYSTEM, '?',
+            disk_logical_volume_name, '1', FILESYSTEM, '?',
         )
         assert mount_point
         destination = os.path.join(mount_point, TARGET_FILE)
+        # IMPORTANT: This is exactly the size used by the ex4 partition data,
+        # don't change
+        size_mb -= 90
     else:
         destination = disk_logical_volume_name
 
     command = DD_COMMAND % (
-        size / config.MB, "{0}".format(boot_device), destination,
+        size_mb, "{0}".format(boot_device), destination,
     )
     logger.info("Performing command '%s'", command)
 
@@ -608,17 +627,22 @@ def get_disks_volume_count(disk_ids, cluster_name=config.CLUSTER_NAME):
     sp_id = get_spuuid(data_center_obj)
     logger.debug("The Storage Pool ID is: '%s'", sp_id)
     # Initialize the volume count before iterating through the disk aliases
+    storage_domains_map = {}
     volume_count = 0
     for disk_id in disk_ids:
         disk_obj = ll_disks.get_disk_obj(disk_id, attribute='id')
         storage_id = (
             disk_obj.get_storage_domains().get_storage_domain()[0].get_id()
         )
-        storage_domain_object = ll_sd.get_storage_domain_obj(
-            storage_domain=storage_id, key='id'
-        )
-        storage_type = storage_domain_object.get_storage().get_type()
+        if storage_id not in storage_domains_map.keys():
+            storage_domain_object = ll_sd.get_storage_domain_obj(
+                storage_domain=storage_id, key='id'
+            )
+            storage_domains_map[storage_id] = (
+                storage_domain_object.get_storage().get_type()
+            )
 
+        storage_type = storage_domains_map[storage_id]
         if storage_type in config.BLOCK_TYPES:
             volume_count += get_lv_count_for_block_disk(
                 disk_id=disk_id, host_ip=host_ip,
@@ -890,7 +914,7 @@ def get_vm_executor(vm_name):
     )
 
 
-def _run_cmd_on_remote_machine(machine_name, command):
+def _run_cmd_on_remote_machine(machine_name, command, vm_executor=None):
     """
     Executes Linux command on remote machine
 
@@ -900,7 +924,8 @@ def _run_cmd_on_remote_machine(machine_name, command):
     :type command: str
     :return: True if the command executed successfully, False otherwise
     """
-    vm_executor = get_vm_executor(machine_name)
+    if not vm_executor:
+        vm_executor = get_vm_executor(machine_name)
     rc, _, error = vm_executor.run_cmd(cmd=shlex.split(command))
     if rc:
         logger.error(
@@ -938,7 +963,7 @@ def get_storage_devices(vm_name, filter='vd[a-z]'):
     return output.split()
 
 
-def does_file_exist(vm_name, file_name):
+def does_file_exist(vm_name, file_name, vm_executor=None):
     """
     Check if file_name refers to an existing file
 
@@ -951,10 +976,14 @@ def does_file_exist(vm_name, file_name):
     :rtype: bool
     """
     command = FIND_CMD % file_name
-    return _run_cmd_on_remote_machine(vm_name, command)
+    return _run_cmd_on_remote_machine(
+        vm_name, command, vm_executor=vm_executor
+    )
 
 
-def create_file_on_vm(vm_name, file_name, path):
+def create_file_on_vm(
+    vm_name, file_name, path, vm_executor=None
+):
     """
     Creates a file on vm
 
@@ -969,10 +998,10 @@ def create_file_on_vm(vm_name, file_name, path):
     :rtype: bool
     """
     command = CREATE_FILE_CMD % (path, file_name)
-    return _run_cmd_on_remote_machine(vm_name, command)
+    return _run_cmd_on_remote_machine(vm_name, command, vm_executor)
 
 
-def checksum_file(vm_name, file_name):
+def checksum_file(vm_name, file_name, vm_executor=None):
     """
     Return the file file_name checksum value
 
@@ -985,10 +1014,15 @@ def checksum_file(vm_name, file_name):
     :rtype: str or None
     """
     command = config.MD5SUM_CMD % file_name
-    return get_vm_executor(vm_name).run_cmd(shlex.split(command))[1]
+    if not vm_executor:
+        vm_executor = get_vm_executor(vm_name)
+    return vm_executor.run_cmd(shlex.split(command))[1]
 
 
-def write_content_to_file(vm_name, file_name, content=config.TEXT_CONTENT):
+def write_content_to_file(
+    vm_name, file_name, content=config.TEXT_CONTENT,
+    vm_executor=None
+):
     """
     Write content to file_name
 
@@ -1001,7 +1035,7 @@ def write_content_to_file(vm_name, file_name, content=config.TEXT_CONTENT):
     :rtype: bool
     """
     command = ECHO_CMD % (content, file_name)
-    return _run_cmd_on_remote_machine(vm_name, command)
+    return _run_cmd_on_remote_machine(vm_name, command, vm_executor)
 
 
 def verify_lun_not_in_use(lun_id):

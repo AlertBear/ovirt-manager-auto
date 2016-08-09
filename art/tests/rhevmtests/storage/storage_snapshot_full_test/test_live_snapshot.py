@@ -167,14 +167,19 @@ class TestCase11660(BasicEnvironmentSetUp):
         if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
             ll_vms.startVms([vm_name])
             ll_vms.waitForVMState(vm_name)
+            # PPC's IP doesn't seems to be static
+            vm_ip = storage_helpers.get_vm_ip(vm_name)
+            self.vm = Machine(
+                vm_ip, config.VM_USER, config.VM_PASSWORD
+            ).util(LINUX)
         testflow.step("Creating snapshot on a running vm %s", vm_name)
         self._perform_snapshot_operation(vm_name, live=True)
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
         testflow.step("Writing files to vm's %s disk", vm_name)
         cmd = self.cmd_create
-        status, _ = self.vm.runCmd(shlex.split(cmd))
-        assert status
+        status, out = self.vm.runCmd(shlex.split(cmd))
+        assert status, "Unable to write to vm %s: %s" % (vm_name, out)
         if not self.check_file_existence_operation(vm_name, True):
             raise exceptions.DiskException(
                 "Writing operation failed"
@@ -196,6 +201,11 @@ class TestCase11660(BasicEnvironmentSetUp):
             True, vm=vm_name, wait_for_ip=True
         )
         testflow.step("Checking that files no longer exist after preview")
+        # PPC's IP doesn't seems to be static
+        vm_ip = storage_helpers.get_vm_ip(vm_name)
+        self.vm = Machine(
+            vm_ip, config.VM_USER, config.VM_PASSWORD
+        ).util(LINUX)
         if not self.check_file_existence_operation(vm_name, False):
             raise exceptions.SnapshotException(
                 "Snapshot operation failed"
@@ -263,7 +273,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         logger.info("Adding disk to vm %s", self.vm_name)
         if not ll_vms.addDisk(
             True, vm=self.vm_name, provisioned_size=3 * config.GB,
-            wait='True', storagedomain=self.storage_domains[0],
+            wait=True, storagedomain=self.storage_domains[0],
             type=config.DISK_TYPE_DATA, interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW, sparse='true'
         ):
@@ -277,6 +287,11 @@ class TestCase11679(BasicEnvironmentSetUp):
             raise exceptions.VMException(
                 "Failed to start vm %s" % self.vm_name
             )
+        # PPC's IP doesn't seems to be static
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
+        self.vm = Machine(
+            vm_ip, config.VM_USER, config.VM_PASSWORD
+        ).util(LINUX)
         vm_devices = self.vm.get_storage_devices()
         if not vm_devices:
             logger.error("No devices found in vm %s", self.vm_name)
@@ -302,6 +317,11 @@ class TestCase11679(BasicEnvironmentSetUp):
             self, should_exist=True, operation='snapshot'
     ):
         ll_vms.start_vms([self.vm_name], 1, config.VM_UP)
+        # PPC's IP doesn't seems to be static
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
+        self.vm = Machine(
+            vm_ip, config.VM_USER, config.VM_PASSWORD
+        ).util(LINUX)
         lst = []
         state = not should_exist
         for dev in self.devices:
@@ -323,6 +343,11 @@ class TestCase11679(BasicEnvironmentSetUp):
         logger.info("Make sure vm %s is up", vm_name)
         if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
             ll_vms.startVms([vm_name], config.VM_UP)
+            # PPC's IP doesn't seems to be static
+            vm_ip = storage_helpers.get_vm_ip(vm_name)
+            self.vm = Machine(
+                vm_ip, config.VM_USER, config.VM_PASSWORD
+            ).util(LINUX)
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(vm_name, live=True)
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
@@ -473,7 +498,7 @@ class TestCase11665(BaseTestCase):
             logger.info("Adding disk %s to vm %s", alias, self.vm_name)
             assert ll_vms.addDisk(
                 True, vm=self.vm_name, provisioned_size=3 * config.GB,
-                wait='True', storagedomain=self.storage_domains[1],
+                wait=True, storagedomain=self.storage_domains[1],
                 type=config.DISK_TYPE_DATA,
                 interface=config.VIRTIO, format=config.COW_DISK,
                 sparse='true', alias=alias

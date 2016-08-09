@@ -50,7 +50,9 @@ def get_vm_storage_devices(vm_name):
     return vm_devices, boot_disk
 
 
-def get_volume_size(hostname, user, password, disk_object, dc_obj):
+def get_volume_size(
+    hostname, user, password, disk_object, dc_obj, size_format='g'
+):
     """
     Get volume size in GB
     Author: ratamir
@@ -60,6 +62,7 @@ def get_volume_size(hostname, user, password, disk_object, dc_obj):
         * password - password for host
         * disk_object - disk object that need checksum
         * dc_obj - data center that the disk belongs to
+        * size_format - 'g' for Gigabyte, 'm' for Megabyte, ...
     Return:
         Volume size (integer), or raise exception otherwise
     """
@@ -71,9 +74,13 @@ def get_volume_size(hostname, user, password, disk_object, dc_obj):
     image_id = disk_object.get_id()
     sp_id = dc_obj.get_id()
 
-    lv_size = host_machine.get_volume_size(sd_id, sp_id, image_id, vol_id)
-    logger.info("Volume size of disk %s is %s GB",
-                disk_object.get_alias(), lv_size)
+    lv_size = host_machine.get_volume_size(
+        sd_id, sp_id, image_id, vol_id, size_format
+    )
+    logger.info(
+        "Volume size of disk %s is %s %sb",
+        disk_object.get_alias(), lv_size, size_format.upper()
+    )
 
     return lv_size
 

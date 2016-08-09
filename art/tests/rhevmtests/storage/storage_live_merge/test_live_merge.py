@@ -73,7 +73,6 @@ class BasicEnvironment(BaseTestCase):
         vm_args = config.create_vm_args.copy()
         vm_args['storageDomainName'] = self.storage_domain
         vm_args['vmName'] = self.vm_name
-        vm_args['start'] = 'true'
 
         logger.info('Creating vm and installing OS on it')
         if not storage_helpers.create_vm_or_clone(**vm_args):
@@ -121,13 +120,14 @@ class BasicEnvironment(BaseTestCase):
             assert ll_vms.startVm(
                 True, self.vm_name, config.VM_UP, wait_for_ip=True
             )
+        vm_executor = storage_helpers.get_vm_executor(self.vm_name)
         for idx, mount_dir in enumerate(MOUNT_POINTS[self.storage]):
             logger.info("Creating file in %s", mount_dir)
             full_path = os.path.join(
                 mount_dir, TEST_FILE_TEMPLATE % iteration_number
             )
             rc = storage_helpers.create_file_on_vm(
-                vm_name, TEST_FILE_TEMPLATE, mount_dir
+                vm_name, TEST_FILE_TEMPLATE, mount_dir, vm_executor=vm_executor
             )
             if not rc:
                 logger.error(
@@ -136,14 +136,14 @@ class BasicEnvironment(BaseTestCase):
                 )
                 return False
             if not storage_helpers.write_content_to_file(
-                vm_name, full_path
+                vm_name, full_path, vm_executor=vm_executor
             ):
                 logger.error(
                     "Failed to write content to file %s on vm %s",
                     full_path, vm_name
                 )
             self.checksum_files[full_path] = storage_helpers.checksum_file(
-                vm_name, full_path
+                vm_name, full_path, vm_executor=vm_executor
             )
 
         return True
@@ -206,20 +206,21 @@ class BasicEnvironment(BaseTestCase):
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         result_list = []
         state = not should_exist
+        vm_executor = storage_helpers.get_vm_executor(self.vm_name)
         # For each mount point, check if the corresponding file exists
         for mount_dir in MOUNT_POINTS[self.storage]:
             for file_name in files:
                 full_path = os.path.join(mount_dir, file_name)
                 logger.info("Checking if file %s exists", full_path)
                 result = storage_helpers.does_file_exist(
-                    self.vm_name, full_path
+                    self.vm_name, full_path, vm_executor=vm_executor
                 )
                 logger.info(
                     "File %s", 'exists' if result else 'does not exist'
                 )
                 if result:
                     checksum = storage_helpers.checksum_file(
-                        self.vm_name, full_path
+                        self.vm_name, full_path, vm_executor=vm_executor
                     )
                     if checksum != self.checksum_files[full_path]:
                         logger.error(

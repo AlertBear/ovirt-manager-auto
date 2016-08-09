@@ -174,7 +174,7 @@ class BasicResize(BaseClass):
             # For file devices the true size will be the same as the dd size.
             dd_size = self.new_size
         ecode, output = storage_helpers.perform_dd_to_disk(
-            self.vm_name, self.disk_name, size=dd_size
+            self.vm_name, self.disk_name, size=dd_size, write_to_file=True
         )
         testflow.step(
             "Performing 'dd' command to extended disk %s", self.disk_name
@@ -191,9 +191,17 @@ class BasicResize(BaseClass):
         )
         lv_size = helpers.get_volume_size(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
-            datacenter_obj
+            datacenter_obj, size_format='m'
         )
-        assert lv_size == self.new_size / config.GB
+        EXPECTED_THRESHOLD = 50 * config.MB
+        assert (
+            ((self.new_size/config.MB) - lv_size) < EXPECTED_THRESHOLD
+        ), (
+            "Disk extended to size %s, real size %s was not close to the "
+            "threshold %s MB" % (
+                self.new_size/config.MB, lv_size, EXPECTED_THRESHOLD
+            )
+        )
         devices, boot_device = helpers.get_vm_storage_devices(self.vm_name)
 
         for device in devices:
