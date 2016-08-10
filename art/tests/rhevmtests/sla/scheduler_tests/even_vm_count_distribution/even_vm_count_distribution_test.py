@@ -203,7 +203,7 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
         )
 
 
-@u_libs.attr(tier=4)
+@u_libs.attr(tier=3)
 class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
     """
     Positive: Start vms under vm_evenly_distributed cluster policy,

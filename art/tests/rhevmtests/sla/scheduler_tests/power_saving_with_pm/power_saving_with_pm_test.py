@@ -90,7 +90,7 @@ def teardown_module(module):
 
 
 @bz({'1316456': {}})
-@u_lib.attr(tier=4)
+@u_lib.attr(tier=3)
 class PowerSavingWithPM(u_lib.SlaTest):
     """
     Base class for power saving with power management test
