@@ -64,9 +64,9 @@ PACKAGE_NAME = '%s-common' % GA_NAME
 # GA repositories
 UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/14.04/xUbuntu_14.04/'
 GA_REPO_NAME = 'rhevm_latest'
-GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/3.6/%s/%s'
+GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/4.0/%s/%s'
 GA_REPO_OLDER_NAME = 'rhevm_older'
-GA_REPO_OLDER_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_vt/%s'
+GA_REPO_OLDER_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_3.6/%s'
 
 GUEST_ROOT_USER = 'root'
 GUEST_ROOT_PASSWORD = '123456'
