@@ -1052,10 +1052,7 @@ def startVm(
         vm, wait_for_status.lower().replace('_', ''))
     started = VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     if started and wait_for_ip:
-        vm_ip = waitForIP(vm)[0]
-        # TODO: Remove this W/A when moving to work with guest image of el7.X
-        if not vm_ip:
-            started = restartVm(vm, wait_for_ip)
+        started = waitForIP(vm)[0]
         if started != positive:
             VM_API.logger.error("waitForIP returned %s, positive is set to %s",
                                 started, positive)
