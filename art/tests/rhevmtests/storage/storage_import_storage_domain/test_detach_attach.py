@@ -449,7 +449,8 @@ class DomainImportWithTemplate(BasicEnvironment):
             status = ll_sd.importStorageDomain(
                 True, config.TYPE_DATA, GLUSTER,
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host,
+                vfs_type=GLUSTER
             )
         elif self.storage == CEPH:
             status = ll_sd.importStorageDomain(
