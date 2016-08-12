@@ -62,6 +62,38 @@ class TestFlowInterface(object):
         if tl:
             tl.log_teststep(msg, *args, **kwargs)
 
+    @staticmethod
+    def setup(msg, *args, **kwargs):
+        """
+        This function add single setup step into console.
+
+        :param msg: step description
+        :type msg: str
+        :param args: arguments used to format message
+        :type args: tuple
+        :param kwargs: keywords used to format message
+        :type kwargs: dict
+        """
+        tl = TestFlowInterface._get_logger()
+        if tl:
+            tl.log_testsetup(msg, *args, **kwargs)
+
+    @staticmethod
+    def teardown(msg, *args, **kwargs):
+        """
+        This function add single teardown step into console.
+
+        :param msg: step description
+        :type msg: str
+        :param args: arguments used to format message
+        :type args: tuple
+        :param kwargs: keywords used to format message
+        :type kwargs: dict
+        """
+        tl = TestFlowInterface._get_logger()
+        if tl:
+            tl.log_testteardown(msg, *args, **kwargs)
+
 
 class RecordingFilter(logging.Filter):
     """
@@ -265,7 +297,33 @@ class ARTLogging(object):
         self.step_id += 1
         self.log_filter.toggle(False)
         try:
-            msg = "   Step {0:2}: {1}".format(self.step_id, msg)
+            msg = "   Test step     {0:2}: {1}".format(self.step_id, msg)
+            # we may want to check length of message
+            flow_logger.info(msg, *args, **kwargs)
+        finally:
+            self.log_filter.toggle(True)
+
+    def log_testsetup(self, msg, *args, **kwargs):
+        """
+        User interface to add the Test setup into console.
+        """
+        self.step_id += 1
+        self.log_filter.toggle(False)
+        try:
+            msg = "   Test setup    {0:2}: {1}".format(self.step_id, msg)
+            # we may want to check length of message
+            flow_logger.info(msg, *args, **kwargs)
+        finally:
+            self.log_filter.toggle(True)
+
+    def log_testteardown(self, msg, *args, **kwargs):
+        """
+        User interface to add the Test teardown into console.
+        """
+        self.step_id += 1
+        self.log_filter.toggle(False)
+        try:
+            msg = "   Test teardown {0:2}: {1}".format(self.step_id, msg)
             # we may want to check length of message
             flow_logger.info(msg, *args, **kwargs)
         finally:
