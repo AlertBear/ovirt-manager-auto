@@ -19,6 +19,7 @@ from art.test_handler import exceptions
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from utilities import utils
+import pytest
 
 
 logger = logging.getLogger(__name__)
@@ -197,11 +198,11 @@ class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
         self.activate_and_verify_hosts(hosts=hosts)
 
         logger.info('Waiting for SPM to be elected')
-        self.assertRaises(
-            apis_exceptions.APITimeout,
-            ll_hosts.waitForSPM, datacenter=config.DATA_CENTER_NAME,
-            timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
-        )
+        with pytest.raises(apis_exceptions.APITimeout):
+            ll_hosts.waitForSPM(
+                datacenter=config.DATA_CENTER_NAME,
+                timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
+            )
 
 
 @attr(tier=1)
@@ -236,24 +237,22 @@ class TestCase6220(BasicEnvironment):
         Expected result: default value shuld be '5'
         """
         testflow.step("Add host %s back to the environment", self.removed_host)
-        self.assertTrue(
-            ll_hosts.addHost(
-                True, self.removed_host, address=self.removed_host_ip,
-                wait=True, reboot=False, cluster=config.CLUSTER_NAME,
-                root_password=config.HOSTS_PW
-            ), "Failed to add host %s back to %s" %
-               (self.removed_host, config.DATA_CENTER_NAME)
+        assert ll_hosts.addHost(
+            True, self.removed_host, address=self.removed_host_ip,
+            wait=True, reboot=False, cluster=config.CLUSTER_NAME,
+            root_password=config.HOSTS_PW
+        ), "Failed to add host %s back to %s" % (
+            self.removed_host, config.DATA_CENTER_NAME
         )
 
         testflow.step(
             "verify SPM priority of %s is equal to %s", self.removed_host,
             config.DEFAULT_SPM_PRIORITY
         )
-        self.assertEqual(
-            ll_hosts.getSPMPriority(self.removed_host),
-            config.DEFAULT_SPM_PRIORITY,
-            "SPM priority of %s is not equal to %s" %
-            (self.removed_host, config.DEFAULT_SPM_PRIORITY)
+        assert ll_hosts.getSPMPriority(self.removed_host) == (
+            config.DEFAULT_SPM_PRIORITY
+        ), "SPM priority of %s is not equal to %s" % (
+            self.removed_host, config.DEFAULT_SPM_PRIORITY
         )
 
 
@@ -294,32 +293,25 @@ class TestCase6212(BasicEnvironment):
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.BELOW_MIN_SPM_PRIORITY
         )
-        self.assertTrue(
-            ll_hosts.setSPMPriority(
-                False, self.hsm_hosts[0], config.BELOW_MIN_SPM_PRIORITY
-            ), 'Set SPM priority to illegal value succeded'
+        assert ll_hosts.setSPMPriority(
+            False, self.hsm_hosts[0], config.BELOW_MIN_SPM_PRIORITY
+        ), 'Set SPM priority to illegal value succeded'
+        assert ll_hosts.checkSPMPriority(
+            True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
+        ), "Host %s SPM priority isn't %s" % (
+            (self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY)
         )
-        self.assertTrue(
-            ll_hosts.checkSPMPriority(
-                True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
-            ), "Host %s SPM priority isn't %s" %
-               (self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY)
-        )
-
         logger.info(
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.LARGER_THAN_MAX_SPM_PRIORITY
         )
-        self.assertTrue(
-            ll_hosts.setSPMPriority(
-                False, self.hsm_hosts[0], config.LARGER_THAN_MAX_SPM_PRIORITY
-            ), 'Set SPM priority to illegal value succeded'
-        )
-        self.assertTrue(
-            ll_hosts.checkSPMPriority(
-                True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
-            ), "Host %s SPM priority isn't %s" %
-               (self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY)
+        assert ll_hosts.setSPMPriority(
+            False, self.hsm_hosts[0], config.LARGER_THAN_MAX_SPM_PRIORITY
+        ), 'Set SPM priority to illegal value succeded'
+        assert ll_hosts.checkSPMPriority(
+            True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
+        ), "Host %s SPM priority isn't %s" % (
+            self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY
         )
 
     @polarion(POLARION_PROJECT, '6209')
@@ -332,11 +324,9 @@ class TestCase6212(BasicEnvironment):
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.ILLEGAL_SPM_PRIORITY
         )
-        self.assertTrue(
-            ll_hosts.setSPMPriority(
-                False, self.hsm_hosts[0], config.ILLEGAL_SPM_PRIORITY
-            ), 'Set SPM priority to illegal value succeded'
-        )
+        assert ll_hosts.setSPMPriority(
+            False, self.hsm_hosts[0], config.ILLEGAL_SPM_PRIORITY
+        ), 'Set SPM priority to illegal value succeded'
 
 
 @attr(tier=2)
@@ -391,17 +381,16 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
         logger.info("Restarting vdsmd on %s", self.spm_host)
         spm_host_ip = ll_hosts.getHostIP(self.spm_host)
         test_utils.restartVdsmd(spm_host_ip, config.HOSTS_PW)
-        self.assertTrue(
-            ll_hosts.waitForHostsStates(True, self.spm_host, config.HOST_UP),
-            "Host %s failed to reach 'UP' state" % self.spm_host
-        )
+        assert ll_hosts.waitForHostsStates(
+            True, self.spm_host, config.HOST_UP
+        ), "Host %s failed to reach 'UP' state" % self.spm_host
 
         logger.info('Waiting for SPM to be elected')
-        self.assertRaises(
-            apis_exceptions.APITimeout,
-            ll_hosts.waitForSPM, datacenter=config.DATA_CENTER_NAME,
-            timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
-        )
+        with pytest.raises(apis_exceptions.APITimeout):
+            ll_hosts.waitForSPM(
+                datacenter=config.DATA_CENTER_NAME,
+                timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
+            )
 
     def tearDown(self):
         """
@@ -447,7 +436,7 @@ class TestCase6206(BasicEnvironment):
         self.low_spm_priority_host = self.hsm_hosts[1]
         self.hosts = [self.high_spm_priority_host, self.low_spm_priority_host]
         self.priorities = [
-            config.DEFAULT_SPM_PRIORITY, config.DEFAULT_SPM_PRIORITY-1
+            config.DEFAULT_SPM_PRIORITY, config.DEFAULT_SPM_PRIORITY - 1
         ]
 
     @polarion(POLARION_PROJECT, polarion_test_case)
@@ -482,7 +471,7 @@ class TestCase6206(BasicEnvironment):
         logger.info("Activate all hosts")
         hosts_to_activate = [
             host for host in config.HOSTS if host not in self.hosts
-            ]
+        ]
         for host in hosts_to_activate:
             if not ll_hosts.activateHost(True, host):
                 logger.error("Failed to activate host: %s", host)
@@ -555,14 +544,13 @@ class TestCase6224(BasicEnvironment):
             host_name=self.spm_host, priority=config.MIN_SPM_PRIORITY
         )
         logger.info('Waiting for SPM to be elected')
-        self.assertRaises(
-            apis_exceptions.APITimeout,
-            ll_hosts.waitForSPM, datacenter=config.DATA_CENTER_NAME,
-            timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
-        )
+        with pytest.raises(apis_exceptions.APITimeout):
+            ll_hosts.waitForSPM(
+                datacenter=config.DATA_CENTER_NAME,
+                timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
+            )
         self.basic_flow(host_name=self.hsm_hosts[0], priority=2)
-        self.assertTrue(
-            self.wait_for_spm_host_and_verify_identity(self.hsm_hosts[0]),
+        assert self.wait_for_spm_host_and_verify_identity(self.hsm_hosts[0]), (
             "%s selected as SPM and not %s" %
             (self.spm_host, self.hsm_hosts[0])
         )
@@ -587,21 +575,18 @@ class TestCase6222(BasicEnvironment):
             config.DATA_CENTER_NAME
         )
         former_spm = self.spm_host
-        self.assertTrue(
-            ll_sd.deactivate_master_storage_domain(
-                True, config.DATA_CENTER_NAME
-            ), "Failed to deactivate master storage domain"
-        )
+        assert ll_sd.deactivate_master_storage_domain(
+            True, config.DATA_CENTER_NAME
+        ), "Failed to deactivate master storage domain"
         status, master_domain_obj = ll_sd.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME
         )
-        self.assertTrue(status, "Master storage domain was not found")
+        assert status, "Master storage domain was not found"
         status = self.wait_for_spm_host_and_verify_identity(
             former_spm
         )
-        self.assertTrue(
-            status, "%s selected as SPM and not %s" %
-                    (self.spm_host, self.hsm_hosts[0])
+        assert status, "%s selected as SPM and not %s" % (
+            self.spm_host, self.hsm_hosts[0]
         )
 
     def tearDown(self):
@@ -637,25 +622,23 @@ class TestCase6221(BasicEnvironment):
             "Change SPM priority to %s in the DB to %s", self.spm_host,
             config.LARGER_THAN_MAX_SPM_PRIORITY
         )
-        self.assertFalse(
-            ll_hosts.set_spm_priority_in_db(
-                host_name=self.spm_host,
-                spm_priority=config.LARGER_THAN_MAX_SPM_PRIORITY,
-                engine=config.ENGINE
-            ), "SPM priority on the DB for host '%s' changed to '%s'" %
-               (self.spm_host, config.MIN_SPM_PRIORITY+1)
+        assert not ll_hosts.set_spm_priority_in_db(
+            host_name=self.spm_host,
+            spm_priority=config.LARGER_THAN_MAX_SPM_PRIORITY,
+            engine=config.ENGINE
+        ), "SPM priority on the DB for host '%s' changed to '%s'" % (
+            self.spm_host, config.MIN_SPM_PRIORITY + 1
         )
         logger.info(
             "Change SPM priority to %s in the DB to %s", self.spm_host,
             config.BELOW_MIN_SPM_PRIORITY
         )
-        self.assertFalse(
-            ll_hosts.set_spm_priority_in_db(
-                host_name=self.spm_host,
-                spm_priority=config.BELOW_MIN_SPM_PRIORITY,
-                engine=config.ENGINE
-            ), "SPM priority on the DB for host '%s' changed to '%s'" %
-               (self.spm_host, config.MIN_SPM_PRIORITY+1)
+        assert not ll_hosts.set_spm_priority_in_db(
+            host_name=self.spm_host,
+            spm_priority=config.BELOW_MIN_SPM_PRIORITY,
+            engine=config.ENGINE
+        ), "SPM priority on the DB for host '%s' changed to '%s'" % (
+            self.spm_host, config.MIN_SPM_PRIORITY + 1
         )
 
 
@@ -705,12 +688,11 @@ class TestCase6215(BasicEnvironment):
             self.max_spm_priority_host
         )
         self.former_spm = self.spm_host
-        self.assertTrue(
-            st_api.blockOutgoingConnection(
-                self.max_spm_priority_host_ip, config.HOSTS_USER,
-                config.HOSTS_PW, self.engine_ip
-            ), 'Unable to block connection between %s and %s' %
-               (self.max_spm_priority_host_ip, self.engine_ip)
+        assert st_api.blockOutgoingConnection(
+            self.max_spm_priority_host_ip, config.HOSTS_USER,
+            config.HOSTS_PW, self.engine_ip
+        ), 'Unable to block connection between %s and %s' % (
+            self.max_spm_priority_host_ip, self.engine_ip
         )
         self.wait_for_spm_host_and_verify_identity(
             self.second_spm_priority_host
@@ -736,7 +718,8 @@ class TestCase6215(BasicEnvironment):
             BaseTestCase.test_failed = True
         if not ll_hosts.waitForHostsStates(True, self.max_spm_priority_host):
             logger.error(
-                "Host failed to reach 'UP' state", self.max_spm_priority_host
+                "Host failed to reach 'UP' state %s",
+                self.max_spm_priority_host
             )
             BaseTestCase.test_failed = True
         if not ll_hosts.activateHost(True, self.former_spm):
@@ -746,7 +729,7 @@ class TestCase6215(BasicEnvironment):
             BaseTestCase.test_failed = True
         if not ll_hosts.waitForHostsStates(True, self.former_spm):
             logger.error(
-                "Host failed to reach 'UP' state", self.former_spm
+                "Host failed to reach 'UP' state %s", self.former_spm
             )
             BaseTestCase.test_failed = True
         super(TestCase6215, self).tearDown()
@@ -813,18 +796,15 @@ class TestCase6219(BasicEnvironment):
             self.non_master_storage_domain_ip
         )
         self.former_spm = self.spm_host
-        self.assertTrue(
-            st_api.blockOutgoingConnection(
-                self.spm_host_ip, config.HOSTS_USER, config.HOSTS_PW,
-                self.non_master_storage_domain_ip
-            ), 'Unable to block connection between %s and %s' %
-               (self.spm_host, self.non_master_storage_domain_ip)
+        assert st_api.blockOutgoingConnection(
+            self.spm_host_ip, config.HOSTS_USER, config.HOSTS_PW,
+            self.non_master_storage_domain_ip
+        ), 'Unable to block connection between %s and %s' % (
+            self.spm_host, self.non_master_storage_domain_ip
         )
-        self.assertTrue(
-            ll_hosts.waitForHostsStates(
-                True, self.spm_host, states=config.HOST_NONOPERATIONAL
-            ), "Host %s failed to reach non-operational state" % self.spm_host
-        )
+        assert ll_hosts.waitForHostsStates(
+            True, self.spm_host, states=config.HOST_NONOPERATIONAL
+        ), "Host %s failed to reach non-operational state" % self.spm_host
         self.set_priorities(
             priorities=[config.DEFAULT_SPM_PRIORITY], hosts=[self.hsm_hosts[0]]
         )
@@ -849,7 +829,7 @@ class TestCase6219(BasicEnvironment):
             BaseTestCase.test_failed = True
         if not ll_hosts.waitForHostsStates(True, self.former_spm):
             logger.error(
-                "Host failed to reach 'UP' state", self.former_spm
+                "Host failed to reach 'UP' state %s", self.former_spm
             )
             BaseTestCase.test_failed = True
         super(TestCase6219, self).tearDown()

@@ -61,7 +61,7 @@ class BasicEnvironment(BaseTestCase):
         self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
         self.hsm_hosts = [
             host for host in config.HOSTS if host != self.spm_host
-            ]
+        ]
         logger.info(
             'Found SPM host: %s, hsm hosts: %s', self.spm_host, self.hsm_hosts
         )
@@ -258,11 +258,9 @@ class TestCase5815(BasicEnvironment):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         testflow.step("Selecting host %s as new SPM", self.hsm_hosts[0])
-        self.assertTrue(
-            ll_hosts.select_host_as_spm(
-                True, self.hsm_hosts[0], config.DATA_CENTER_NAME
-            ), 'Unable to set host %s as SPM' % self.hsm_hosts[0]
-        )
+        assert ll_hosts.select_host_as_spm(
+            True, self.hsm_hosts[0], config.DATA_CENTER_NAME
+        ), 'Unable to set host %s as SPM' % self.hsm_hosts[0]
 
 
 @attr(tier=1)
@@ -281,17 +279,14 @@ class TestCase5823(BasicEnvironment):
         Expected result: HSM host becomes SPM
         """
         testflow.step("Deactivate SPM host %s", self.spm_host)
-        self.assertTrue(
-            ll_hosts.deactivateHost(True, self.spm_host),
-            "Unable to deactivate host %s " % self.spm_host
-        )
+        assert ll_hosts.deactivateHost(
+            True, self.spm_host
+        ), "Unable to deactivate host %s " % self.spm_host
 
         testflow.step('Waiting for new SPM to be elected')
-        self.assertTrue(
-            ll_hosts.waitForSPM(
-                config.DATA_CENTER_NAME, WAIT_FOR_SPM_TIMEOUT, RETRY_INTERVAL
-            ), 'A new SPM host was not elected'
-        )
+        assert ll_hosts.waitForSPM(
+            config.DATA_CENTER_NAME, WAIT_FOR_SPM_TIMEOUT, RETRY_INTERVAL
+        ), 'A new SPM host was not elected'
 
     def tearDown(self):
         """
@@ -329,18 +324,14 @@ class TestCase5818(BasicEnvironment):
             ll_sd.get_master_storage_domain_name(config.DATA_CENTER_NAME)
         )
 
-        self.assertTrue(
-            ll_disks.addDisk(
-                True, alias=self.disk_alias, provisioned_size=config.GB,
-                interface=config.VIRTIO, sparse=False, format=config.RAW_DISK,
-                storagedomain=domain_name
-            ), "Failed to add disk '%s'" % self.disk_alias
-        )
-        self.assertFalse(
-            ll_hosts.select_host_as_spm(
-                False, self.hsm_hosts[0], config.DATA_CENTER_NAME
-            ), 'Host %s set as SPM' % self.hsm_hosts[0]
-        )
+        assert ll_disks.addDisk(
+            True, alias=self.disk_alias, provisioned_size=config.GB,
+            interface=config.VIRTIO, sparse=False, format=config.RAW_DISK,
+            storagedomain=domain_name
+        ), "Failed to add disk '%s'" % self.disk_alias
+        assert not ll_hosts.select_host_as_spm(
+            False, self.hsm_hosts[0], config.DATA_CENTER_NAME
+        ), 'Host %s set as SPM' % self.hsm_hosts[0]
 
     def tearDown(self):
         """
@@ -389,19 +380,15 @@ class TestCase5819(BasicEnvironment):
         Expected result: HSM host shouldn't become SPM
         """
         logger.info('Deactivating storage domain %s', self.non_master_domain)
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.non_master_domain,
-                wait=False
-            ), 'Unable to deactivate domain %s' % self.non_master_domain
-        )
+        assert ll_sd.deactivateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.non_master_domain,
+            wait=False
+        ), 'Unable to deactivate domain %s' % self.non_master_domain
 
         logger.info('Trying to select host %s as new SPM', self.hsm_hosts[0])
-        self.assertFalse(
-            ll_hosts.select_host_as_spm(
-                False, self.hsm_hosts[0], config.DATA_CENTER_NAME
-            ), 'Host %s set as SPM' % self.hsm_hosts[0]
-        )
+        assert not ll_hosts.select_host_as_spm(
+            False, self.hsm_hosts[0], config.DATA_CENTER_NAME
+        ), 'Host %s set as SPM' % self.hsm_hosts[0]
 
     def tearDown(self):
         """
@@ -489,33 +476,27 @@ class TestCase14812(BasicEnvironment):
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        self.assertTrue(
-            ll_hosts.select_host_as_spm(
-                True, self.vm_host, config.DATA_CENTER_NAME,
-                timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL, wait=True
-            ), 'Unable to set host %s as SPM' % self.vm_host
-        )
+        assert ll_hosts.select_host_as_spm(
+            True, self.vm_host, config.DATA_CENTER_NAME,
+            timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL, wait=True
+        ), 'Unable to set host %s as SPM' % self.vm_host
 
         logger.info("Power off VM '%s'", self.vm_name)
-        self.assertTrue(
-            ll_vms.stop_vms_safely([self.vm_name]),
-            'Failed to power off VM %s' % self.vm_name
-        )
+        assert ll_vms.stop_vms_safely(
+            [self.vm_name]
+        ), 'Failed to power off VM %s' % self.vm_name
 
         logger.info(
             "Perform Storage operation - Add disk '%s'", self.disk_alias
         )
-        self.assertTrue(
-            ll_disks.addDisk(
-                True, alias=self.disk_alias, provisioned_size=config.GB,
-                interface=config.VIRTIO, sparse=False, format=config.RAW_DISK,
-                storagedomain=self.storage_domain
-            ), "Failed to add disk '%s'" % self.disk_alias
-        )
-        self.assertTrue(
-            ll_disks.wait_for_disks_status([self.disk_alias]),
-            "Disk %s is not in the expected state 'OK" % self.disk_alias
-        )
+        assert ll_disks.addDisk(
+            True, alias=self.disk_alias, provisioned_size=config.GB,
+            interface=config.VIRTIO, sparse=False, format=config.RAW_DISK,
+            storagedomain=self.storage_domain
+        ), "Failed to add disk '%s'" % self.disk_alias
+        assert ll_disks.wait_for_disks_status(
+            [self.disk_alias]
+        ), "Disk %s is not in the expected state 'OK" % self.disk_alias
         logger.info("Disk '%s' created successfully", self.disk_alias)
 
     def tearDown(self):

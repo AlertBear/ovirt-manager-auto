@@ -130,7 +130,7 @@ class TestCaseVnic(TestCase):
                 content=(SPEED if t == SCRIPT_TYPE.PYTHON else None))
             result = result or (not ret)
 
-        self.assertFalse(result)
+        assert not result
 
     def tearDown(self):
         """ remove created script """
@@ -248,11 +248,10 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
                                      )[1]['out'][:-2].split()[0]
         vm_id = vms.VM_API.find(config.HOOKS_VM_NAME).get_id()
         cmd = self.UPDATE_FAIL % (vm_id, fail_nic, self.NONEXISTENT)
-        self.assertFalse(
-            runMachineCommand(True, ip=config.HOSTS_IP[0],
-                              user=config.HOSTS_USER,
-                              password=config.HOSTS_PW,
-                              cmd=cmd)[0])
+        assert not runMachineCommand(
+            True, ip=config.HOSTS_IP[0], user=config.HOSTS_USER,
+            password=config.HOSTS_PW, cmd=cmd
+        )[0]
 
     @polarion("RHEVM3-12346")
     def test_after_update_device_fail(self):

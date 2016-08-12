@@ -117,19 +117,15 @@ class TestMemoryHotplug(VirtTest):
             self.vm_name, mem_size_to_expand=config.GB
         )
         testflow.step("Suspend vm %s", self.vm_name)
-        self.assertTrue(ll_vms.suspendVm(True, self.vm_name))
+        assert ll_vms.suspendVm(True, self.vm_name)
         testflow.step("Resume vm %s", self.vm_name)
-        self.assertTrue(ll_vms.startVm(
-            positive=True, vm=self.vm_name, wait_for_ip=True),
-            "Failed to start VM"
-        )
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name, wait_for_ip=True
+        ), "Failed to start VM"
         testflow.step("Check VM memory on VM")
-        self.assertTrue(
-            global_helper.wait_for_vm_gets_to_full_memory(
-                vm_name=self.vm_name, expected_memory=new_memory
-            ),
-            "Memory check on VM failed"
-        )
+        assert global_helper.wait_for_vm_gets_to_full_memory(
+            vm_name=self.vm_name, expected_memory=new_memory
+        ), "Memory check on VM failed"
 
     @attr(tier=1)
     @polarion("RHEVM3-14607")
@@ -149,14 +145,11 @@ class TestMemoryHotplug(VirtTest):
             self.vm_name, mem_size_to_expand=config.GB
         )
         testflow.step("reboot vm %s", self.vm_name)
-        self.assertTrue(ll_vms.reboot_vms([self.vm_name]))
+        assert ll_vms.reboot_vms([self.vm_name])
         testflow.step("Check VM memory on VM")
-        self.assertTrue(
-            global_helper.wait_for_vm_gets_to_full_memory(
-                vm_name=self.vm_name, expected_memory=new_memory
-            ),
-            "Memory check on VM failed"
-        )
+        assert global_helper.wait_for_vm_gets_to_full_memory(
+            vm_name=self.vm_name, expected_memory=new_memory
+        ), "Memory check on VM failed"
 
     @attr(tier=1)
     @polarion("RHEVM3-14608")
@@ -176,20 +169,14 @@ class TestMemoryHotplug(VirtTest):
             self.vm_name, mem_size_to_expand=config.GB
         )
         testflow.step("Migrate VM")
-        self.assertTrue(
-            ll_vms.migrateVm(
-                positive=True,
-                vm=self.vm_name
-            ),
-            "Failed to migrate VM: %s " % config.VM_NAME[0]
-        )
+        assert ll_vms.migrateVm(
+            positive=True,
+            vm=self.vm_name
+        ), "Failed to migrate VM: %s " % config.VM_NAME[0]
         testflow.step("Check memory after migration")
-        self.assertTrue(
-            global_helper.wait_for_vm_gets_to_full_memory(
-                vm_name=self.vm_name, expected_memory=new_memory
-            ),
-            "Memory check on VM failed"
-        )
+        assert global_helper.wait_for_vm_gets_to_full_memory(
+            vm_name=self.vm_name, expected_memory=new_memory
+        ), "Memory check on VM failed"
 
     @attr(tier=2)
     @pytest.mark.usefixtures(reboot_vm.__name__)
@@ -205,14 +192,11 @@ class TestMemoryHotplug(VirtTest):
         hl_vms.expand_vm_memory(self.vm_name, config.MB_SIZE_256, 16)
         memory_size = hl_vms.get_vm_memory(self.vm_name)
         memory_size += config.MB_SIZE_256
-        self.assertFalse(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                memory=memory_size
-            ),
-            "succeed to add memory device over the limit of 16"
-        )
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            memory=memory_size
+        ), "succeed to add memory device over the limit of 16"
 
     @attr(tier=2)
     @pytest.mark.usefixtures(reboot_vm.__name__)
@@ -228,11 +212,8 @@ class TestMemoryHotplug(VirtTest):
         )
         memory_size = hl_vms.get_vm_memory(self.vm_name)
         memory_size += config.MB_SIZE_400
-        self.assertFalse(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                memory=memory_size
-            ),
-            "succeed to add memory, wrong memory size."
-        )
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            memory=memory_size
+        ), "succeed to add memory, wrong memory size."

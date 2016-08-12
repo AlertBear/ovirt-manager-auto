@@ -59,13 +59,10 @@ class TestMigrateNegativeCase1(TestCase):
         """
         Negative: Check vm migration
         """
-        self.assertFalse(
-            ll_vms.migrateVm(
-                True,
-                config.MIGRATION_VM
-            ), 'migration success although'
-               'no available host on cluster'
-        )
+        assert not ll_vms.migrateVm(
+            True,
+            config.MIGRATION_VM
+        ), 'migration success although no available host on cluster'
 
 
 @attr(tier=2)
@@ -100,13 +97,13 @@ class TestMigrateNegativeCase2(TestCase):
         """
         Negative: Check vm migration
         """
-        self.assertFalse(
-            ll_vms.migrateVm(
-                True,
-                config.MIGRATION_VM,
-                host=config.HOSTS[1]
-            ), 'migration success although'
-               'migration between data centers is not supported'
+        assert not ll_vms.migrateVm(
+            True,
+            config.MIGRATION_VM,
+            host=config.HOSTS[1]
+        ), (
+            'migration success although migration between data centers is not '
+            'supported'
         )
 
 
@@ -122,13 +119,13 @@ class TestMigrateNegativeCase3(TestCase):
         """
         Negative: Check vm migration
         """
-        self.assertFalse(
-            ll_vms.migrateVm(
-                True,
-                config.MIGRATION_VM,
-                host=config.HOSTS[0]
-            ), 'migration success although'
-               'migration to the same host is NOT supported'
+        assert not ll_vms.migrateVm(
+            True,
+            config.MIGRATION_VM,
+            host=config.HOSTS[0]
+        ), (
+            'migration success although migration to the same host is NOT '
+            'supported'
         )
 
 
@@ -258,19 +255,15 @@ class TestMigrateNegativeCase4(TestCase):
         expected_host_status = ENUMS['host_state_preparing_for_maintenance']
         logger.info("Deactivate host %s",
                     self.hosts[self.host_index_max_mem])
-        self.assertTrue(
-            ll_hosts.deactivateHost(
-                True,
-                self.hosts[self.host_index_max_mem],
-                expected_status=expected_host_status),
-            "Failed to deactivate host")
+        assert ll_hosts.deactivateHost(
+            True,
+            self.hosts[self.host_index_max_mem],
+            expected_status=expected_host_status
+        ), "Failed to deactivate host"
         logger.info("Check that all vms still in up state")
-        self.assertTrue(
-            ll_vms.waitForVmsStates(
-                True,
-                self.test_vms),
-            "not all VMs are up"
-        )
+        assert ll_vms.waitForVmsStates(
+            True, self.test_vms
+        ), "not all VMs are up"
 
 
 @attr(tier=2)
@@ -343,13 +336,11 @@ class TestVMMigrateOptionsCase1(TestCase):
          Negative test:
          Migration new VM with option 'Do not allow migration'
         """
-        self.assertFalse(
-            ll_vms.migrateVm(
-                True,
-                self.vm_name,
-                host=config.HOSTS[1]),
-            'Migration succeed although vm set to "Do not allow migration"'
-        )
+        assert not ll_vms.migrateVm(
+            True,
+            self.vm_name,
+            host=config.HOSTS[1]
+        ), 'Migration succeed although vm set to "Do not allow migration"'
 
 
 @attr(tier=2)
@@ -421,10 +412,8 @@ class TestVMMigrateOptionsCase2(TestCase):
         Negative test:
         Migration updated VM with option 'Do not allow migration'
         """
-        self.assertFalse(
-            ll_vms.migrateVm(
-                True,
-                config.VM_NAME[1],
-                host=config.HOSTS[1]),
-            'Migration succeed although vm set to "Do not allow migration"'
-        )
+        assert not ll_vms.migrateVm(
+            True,
+            config.VM_NAME[1],
+            host=config.HOSTS[1]
+        ), 'Migration succeed although vm set to "Do not allow migration"'

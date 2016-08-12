@@ -116,24 +116,20 @@ class TestCRUD(TestCase):
         Create, update and remove cluster policy
         """
         logger.info("Create new scheduler policy %s.", self.policy_name)
-        self.assertTrue(
-            ll_sch.add_new_scheduling_policy(name=self.policy_name),
-            "Failed to create new cluster policy"
-        )
+        assert ll_sch.add_new_scheduling_policy(
+            name=self.policy_name
+        ), "Failed to create new cluster policy"
         logger.info(
             "Update cluster policy %s name to %s",
             self.policy_name, self.new_policy_name
         )
-        self.assertTrue(
-            ll_sch.update_scheduling_policy(
-                self.policy_name, name=self.new_policy_name
-            ), "Failed to update cluster policy"
-        )
+        assert ll_sch.update_scheduling_policy(
+            self.policy_name, name=self.new_policy_name
+        ), "Failed to update cluster policy"
         logger.info("Remove cluster policy %s", self.new_policy_name)
-        self.assertTrue(
-            ll_sch.remove_scheduling_policy(self.new_policy_name),
-            "Failed to remove cluster policy"
-        )
+        assert ll_sch.remove_scheduling_policy(
+            self.new_policy_name
+        ), "Failed to remove cluster policy"
         # TODO: Still no api to clone cluster policy via REST
 
 
@@ -220,7 +216,7 @@ class TestDeletePolicyInUse(AttachPolicyToCluster):
         """
         Delete attached policy
         """
-        self.assertFalse(ll_sch.remove_scheduling_policy(self.policy_name))
+        assert not ll_sch.remove_scheduling_policy(self.policy_name)
 
 
 @attr(tier=1)
@@ -236,7 +232,7 @@ class TestRemoveBuildInPolicy(TestCase):
         Delete build-in policy.
         """
         policy_to_remove = random.choice(conf.ENGINE_POLICIES)
-        self.assertFalse(ll_sch.remove_scheduling_policy(policy_to_remove))
+        assert not ll_sch.remove_scheduling_policy(policy_to_remove)
 
 
 class TestPinToHostFilter(UpdateVms):
@@ -269,22 +265,18 @@ class TestPinToHostFilter(UpdateVms):
         Check filter.
         """
         logger.info("Start vm %s", conf.VM_NAME[0])
-        self.assertTrue(
-            ll_vms.startVm(True, conf.VM_NAME[0]), "Failed to run vm."
-        )
+        assert ll_vms.startVm(True, conf.VM_NAME[0]), "Failed to run vm."
         logger.info(
             "Check if vm %s, started on host %s",
             conf.VM_NAME[0], conf.HOSTS[0]
         )
-        self.assertEqual(
-            conf.HOSTS[0], ll_vms.get_vm_host(conf.VM_NAME[0]),
-            "Vm run on different host."
-        )
+        assert conf.HOSTS[0] == ll_vms.get_vm_host(
+            conf.VM_NAME[0]
+        ), "Vm run on different host."
         logger.info("Try to migrate pinned vm %s", conf.VM_NAME[0])
-        self.assertFalse(
-            ll_vms.migrateVm(True, conf.VM_NAME[0]),
-            "Migration successed"
-        )
+        assert not ll_vms.migrateVm(
+            True, conf.VM_NAME[0]
+        ), "Migration successed"
 
 
 class TestNegativePinToHostFilter(UpdateVms):
@@ -324,10 +316,9 @@ class TestNegativePinToHostFilter(UpdateVms):
         Check filter.
         """
         logger.info("Start vm %s", conf.VM_NAME[0])
-        self.assertFalse(
-            ll_vms.startVm(True, conf.VM_NAME[0]),
-            "Success to run vm on other host"
-        )
+        assert not ll_vms.startVm(
+            True, conf.VM_NAME[0]
+        ), "Success to run vm on other host"
 
     @classmethod
     def teardown_class(cls):
@@ -394,15 +385,12 @@ class TestMemoryFilter(UpdateVms):
             "Check if vm %s and %s run on different hosts",
             conf.VM_NAME[0], conf.VM_NAME[1]
         )
-        self.assertNotEqual(
-            ll_vms.get_vm_host(conf.VM_NAME[0]),
-            ll_vms.get_vm_host(conf.VM_NAME[1]),
-            "Vms started on the same host."
-        )
+        assert ll_vms.get_vm_host(conf.VM_NAME[0]) != (
+            ll_vms.get_vm_host(conf.VM_NAME[1])
+        ), "Vms started on the same host."
         logger.info("Try to migrate vm %s", conf.VM_NAME[0])
-        self.assertFalse(ll_vms.migrateVm(
+        assert not ll_vms.migrateVm(
             True, conf.VM_NAME[0]), "Migration successed"
-        )
 
 
 class TestCpuFilter(UpdateVms):
@@ -442,24 +430,21 @@ class TestCpuFilter(UpdateVms):
         logger.info(
             "Start vm %s on host %s", conf.VM_NAME[0], conf.HOSTS[0]
         )
-        self.assertTrue(
-            ll_vms.startVm(True, conf.VM_NAME[0]), "Vm failed to run"
-        )
+        assert ll_vms.startVm(True, conf.VM_NAME[0]), "Vm failed to run"
         logger.info(
             "Check that vm %s started on host %s",
             conf.VM_NAME[0], conf.HOSTS[0]
         )
-        self.assertEqual(
-            conf.HOSTS[0], ll_vms.get_vm_host(conf.VM_NAME[0]),
-            "Vm run on different host."
-        )
+        assert conf.HOSTS[0] == ll_vms.get_vm_host(
+            conf.VM_NAME[0]
+        ), "Vm run on different host."
         dst_host_topology = ll_hosts.get_host_topology(conf.HOSTS[1])
         dst_host_cpus = dst_host_topology.cores * dst_host_topology.sockets
         v_sockets = self.vms_new_parameters[conf.VM_NAME[0]]['cpu_socket']
         v_cores = self.vms_new_parameters[conf.VM_NAME[0]]['cpu_cores']
         migrate_bool = True if dst_host_cpus >= v_sockets * v_cores else False
         logger.info("Try to migrate vm %s", conf.VM_NAME[0])
-        self.assertTrue(ll_vms.migrateVm(migrate_bool, conf.VM_NAME[0]))
+        assert ll_vms.migrateVm(migrate_bool, conf.VM_NAME[0])
 
 
 class TestNegativeCpuFilter(UpdateVms):
@@ -502,9 +487,7 @@ class TestNegativeCpuFilter(UpdateVms):
         logger.info(
             "Start vm %s on host %s", conf.VM_NAME[0], conf.HOSTS[0]
         )
-        self.assertFalse(
-            ll_vms.startVm(True, conf.VM_NAME[0]), "Vm successed to run"
-        )
+        assert not ll_vms.startVm(True, conf.VM_NAME[0]), "Vm successed to run"
 
 
 class TestNetworkFilter(UpdateVms):
@@ -568,28 +551,22 @@ class TestNetworkFilter(UpdateVms):
         Check if vms success to run
         """
         logger.info("Start vm %s", conf.VM_NAME[0])
-        self.assertTrue(
-            ll_vms.startVm(True, conf.VM_NAME[0]), "Vm failed to run"
-        )
+        assert ll_vms.startVm(True, conf.VM_NAME[0]), "Vm failed to run"
         logger.info(
             "Check if vm %s run on host %s",
             conf.VM_NAME[0], conf.HOSTS[0]
         )
-        self.assertEqual(
-            ll_vms.get_vm_host(conf.VM_NAME[0]), conf.HOSTS[0],
-            "Vm run on different host"
-        )
+        assert ll_vms.get_vm_host(
+            conf.VM_NAME[0]
+        ) == conf.HOSTS[0], "Vm run on different host"
         logger.info("Try to migrate vm %s", conf.VM_NAME[0])
-        self.assertFalse(ll_vms.migrateVm(
+        assert not ll_vms.migrateVm(
             True, conf.VM_NAME[0]), "Migration successed"
-        )
         logger.info(
             "Check that vm %s failed to run because network filter",
             conf.VM_NAME[1]
         )
-        self.assertFalse(
-            ll_vms.startVm(True, conf.VM_NAME[1]), "Vm success to run"
-        )
+        assert not ll_vms.startVm(True, conf.VM_NAME[1]), "Vm success to run"
 
     @classmethod
     def teardown_class(cls):

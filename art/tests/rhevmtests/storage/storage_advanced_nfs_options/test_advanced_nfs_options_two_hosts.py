@@ -182,10 +182,8 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             config.NFS_PATHS[0], version='v3', retrans=7, timeo=700,
             datacenter=config.DATA_CENTER_NAME
         )
-        self.assertTrue(
-            ll_sd.activateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_1
-            )
+        assert ll_sd.activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_1
         )
 
         hl_sd.create_nfs_domain_with_options(
@@ -193,10 +191,8 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             config.NFS_PATHS[1], version='v3', retrans=8, timeo=800,
             datacenter=config.DATA_CENTER_NAME
         )
-        self.assertTrue(
-            ll_sd.activateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_2
-            )
+        assert ll_sd.activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_2
         )
 
         hl_sd.create_nfs_domain_with_options(
@@ -204,59 +200,47 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             config.NFS_ADDRESSES[2], config.NFS_PATHS[2],
             datacenter=config.DATA_CENTER_NAME
         )
-        self.assertTrue(
-            ll_sd.activateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_exp
-            )
+        assert ll_sd.activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_exp
         )
 
-        self.assertTrue(
-            ll_disks.addDisk(
-                True, alias=self.disk_1, provisioned_size=config.DISK_SIZE,
-                storagedomain=self.sd_1, format=config.RAW_DISK,
-                interface=config.INTERFACE_VIRTIO, bootable=True
-            )
+        assert ll_disks.addDisk(
+            True, alias=self.disk_1, provisioned_size=config.DISK_SIZE,
+            storagedomain=self.sd_1, format=config.RAW_DISK,
+            interface=config.INTERFACE_VIRTIO, bootable=True
         )
 
-        self.assertTrue(ll_disks.addDisk(
+        assert ll_disks.addDisk(
             True, alias=self.disk_2, provisioned_size=config.DISK_SIZE,
             storagedomain=self.sd_1, format=config.RAW_DISK,
             interface=config.INTERFACE_VIRTIO, bootable=True)
+
+        assert ll_vms.addVm(
+            True, name=self.vm_1, storagedomain=self.sd_1,
+            cluster=config.CLUSTER_NAME, display_type=config.DISPLAY_TYPE,
+            os_type=config.OS_TYPE
+        )
+        assert ll_vms.addVm(
+            True, name=self.vm_2, storagedomain=self.sd_1,
+            cluster=config.CLUSTER_NAME, display_type=config.DISPLAY_TYPE,
+            os_type=config.OS_TYPE,
         )
 
-        self.assertTrue(
-            ll_vms.addVm(
-                True, name=self.vm_1, storagedomain=self.sd_1,
-                cluster=config.CLUSTER_NAME, display_type=config.DISPLAY_TYPE,
-                os_type=config.OS_TYPE
-            )
-        )
-        self.assertTrue(
-            ll_vms.addVm(
-                True, name=self.vm_2, storagedomain=self.sd_1,
-                cluster=config.CLUSTER_NAME, display_type=config.DISPLAY_TYPE,
-                os_type=config.OS_TYPE,
-            )
-        )
-
-        self.assertTrue(ll_disks.wait_for_disks_status(
+        assert ll_disks.wait_for_disks_status(
             [self.disk_1, self.disk_2], timeout=600)
-        )
 
-        self.assertTrue(ll_disks.attachDisk(True, self.disk_1, self.vm_1))
-        self.assertTrue(ll_disks.attachDisk(True, self.disk_2, self.vm_2))
+        assert ll_disks.attachDisk(True, self.disk_1, self.vm_1)
+        assert ll_disks.attachDisk(True, self.disk_2, self.vm_2)
 
-        self.assertTrue(ll_templates.createTemplate(
+        assert ll_templates.createTemplate(
             True, vm=self.vm_1, name=self.template,
             cluster=config.CLUSTER_NAME)
-        )
 
-        self.assertTrue(ll_hosts.addHost(
+        assert ll_hosts.addHost(
             True, name=self.host_for_dc, root_password=self.password,
             cluster=config.CLUSTER_NAME,
-            ), "Unable to add host %s to cluster %s" % (
+        ), "Unable to add host %s to cluster %s" % (
             self.host_for_dc, config.CLUSTER_NAME)
-        )
 
     def perform_standard_operations(self, vm, vm_with_disk, disk, another_std,
                                     template, export_std, datacenter):

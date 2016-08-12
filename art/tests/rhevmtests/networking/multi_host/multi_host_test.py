@@ -64,16 +64,12 @@ class TestMultiHostCase01(NetworkTest):
         6) Check that the Host was updated as well
         """
         testflow.step("Update network with VLAN %s", self.vlan_1)
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, vlan_id=self.vlan_1
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, vlan_id=self.vlan_1
         )
         testflow.step("Update network with VLAN %s", self.vlan_2)
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, vlan_id=self.vlan_2
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, vlan_id=self.vlan_2
         )
 
     @polarion("RHEVM3-4080")
@@ -85,16 +81,12 @@ class TestMultiHostCase01(NetworkTest):
         4) Check that the Host was updated with MTU 1500
         """
         testflow.step("Update network with MTU 9000")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, mtu=self.mtu_9000
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, mtu=self.mtu_9000
         )
         testflow.step("Update network with MTU 1500")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, mtu=self.mtu_1500
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, mtu=self.mtu_1500
         )
 
     @polarion("RHEVM3-4072")
@@ -106,16 +98,12 @@ class TestMultiHostCase01(NetworkTest):
         4) Check that the Host was updated accordingly
         """
         testflow.step("Update network to be non-VM network")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, bridge=False
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=False
         )
         testflow.step("Update network to be VM network")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, bridge=True
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=True
         )
 
 
@@ -151,65 +139,48 @@ class TestMultiHostCase02(NetworkTest):
             "Negative: update network name when the network resides on the "
             "Host"
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=False, network=self.net, data_center=self.dc,
-                name=self.new_net_name
-            )
+        assert ll_networks.update_network(
+            positive=False, network=self.net, data_center=self.dc,
+            name=self.new_net_name
         )
-        self.assertTrue(
-            hl_host_network.clean_host_interfaces(host_name=conf.HOST_0_NAME)
-        )
-        self.assertTrue(
-            ll_vms.addNic(
-                positive=True, vm=conf.VM_1, name=self.vnic_2_name,
-                network=self.net
-            )
+        assert hl_host_network.clean_host_interfaces(
+            host_name=conf.HOST_0_NAME)
+        assert ll_vms.addNic(
+            positive=True, vm=conf.VM_1, name=self.vnic_2_name,
+            network=self.net
         )
         testflow.step(
             "Negative: Try to update network name when network resides on VM"
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=False, network=self.net, data_center=self.dc,
-                name=self.new_net_name
-            )
+        assert ll_networks.update_network(
+            positive=False, network=self.net, data_center=self.dc,
+            name=self.new_net_name
         )
-        self.assertTrue(
-            ll_vms.removeNic(
-                positive=True, vm=conf.VM_1, nic=self.vnic_2_name
-            )
+        assert ll_vms.removeNic(
+            positive=True, vm=conf.VM_1, nic=self.vnic_2_name
         )
-        self.assertTrue(
-            ll_templates.addTemplateNic(
-                positive=True, template=conf.TEMPLATE_NAME[0],
-                name=self.vnic_2_name, data_center=self.dc, network=self.net
-            )
+        assert ll_templates.addTemplateNic(
+            positive=True, template=conf.TEMPLATE_NAME[0],
+            name=self.vnic_2_name, data_center=self.dc, network=self.net
         )
         testflow.step(
             "Negative: Try to update network name when network resides "
             "on Template"
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=False, network=self.net, data_center=self.dc,
-                name=self.vnic_2_name
-            )
+        assert ll_networks.update_network(
+            positive=False, network=self.net, data_center=self.dc,
+            name=self.vnic_2_name
         )
-        self.assertTrue(
-            ll_templates.removeTemplateNic(
-                positive=True, template=conf.TEMPLATE_NAME[0],
-                nic=self.vnic_2_name
-            )
+        assert ll_templates.removeTemplateNic(
+            positive=True, template=conf.TEMPLATE_NAME[0],
+            nic=self.vnic_2_name
         )
         testflow.step(
             "Update network name when network resides only on DC and Cluster"
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=True, network=self.net, data_center=self.dc,
-                name=self.new_net_name
-            )
+        assert ll_networks.update_network(
+            positive=True, network=self.net, data_center=self.dc,
+            name=self.new_net_name
         )
 
 
@@ -248,34 +219,26 @@ class TestMultiHostCase03(NetworkTest):
             "Change MTU on net when running VM is using it and Change MTU on "
             "net when non-running VM is using it"
         )
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, mtu=self.mtu_9000
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, mtu=self.mtu_9000
         )
         testflow.step(
             "Change VLAN on net when running VM is using it and Change VLAN "
             "on net when non-running VM is using it"
         )
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, vlan_id=self.vlan
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, vlan_id=self.vlan
         )
         testflow.step(
             "Negative: Update non-VM network to be VM network used by "
             "non-running VM"
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=False, network=self.net, data_center=conf.DC_0,
-                usages=""
-            )
+        assert ll_networks.update_network(
+            positive=False, network=self.net, data_center=conf.DC_0,
+            usages=""
         )
-        self.assertTrue(
-            ll_networks.is_host_network_is_vm(
-                vds_resource=conf.VDS_0_HOST, net_name=self.net
-            )
+        assert ll_networks.is_host_network_is_vm(
+            vds_resource=conf.VDS_0_HOST, net_name=self.net
         )
 
 
@@ -311,23 +274,17 @@ class TestMultiHostCase04(NetworkTest):
             "Negative: Try to update network from VM to non-VM when template "
             "is using it"
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=False, network=self.net, data_center=conf.DC_0,
-                usages=""
-            )
+        assert ll_networks.update_network(
+            positive=False, network=self.net, data_center=conf.DC_0,
+            usages=""
         )
         testflow.step("Try to change MTU on net when template is using it")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, mtu=self.mtu_9000
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, mtu=self.mtu_9000
         )
         testflow.step("Try to change VLAN on net when template is using it")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, vlan_id=self.vlan
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, vlan_id=self.vlan
         )
 
 
@@ -353,11 +310,9 @@ class TestMultiHostCase05(NetworkTest):
         3) Update network with MTU 9000
         4) Check that the both Hosts were updated with VLAN 162 and MTU 9000
         """
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, vlan_id=self.vlan, mtu=self.mtu_9000,
-                hosts=conf.HOSTS_LIST, vds_hosts=conf.VDS_HOSTS_LIST, matches=2
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, vlan_id=self.vlan, mtu=self.mtu_9000,
+            hosts=conf.HOSTS_LIST, vds_hosts=conf.VDS_HOSTS_LIST, matches=2
         )
 
 
@@ -394,11 +349,9 @@ class TestMultiHostCase06(NetworkTest):
         testflow.step(
             "Update network with VLAN %s and MTU %s ", vlan_id, mtu_9000
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=True, network=self.net, data_center=self.dc,
-                vlan_id=vlan_id, mtu=mtu_9000
-            )
+        assert ll_networks.update_network(
+            positive=True, network=self.net, data_center=self.dc,
+            vlan_id=vlan_id, mtu=mtu_9000
         )
 
         for host, nic in zip(
@@ -415,28 +368,22 @@ class TestMultiHostCase06(NetworkTest):
                 )
             )
         for i in range(2):
-            self.assertTrue(sample1[i].waitForFuncStatus(result=True))
+            assert sample1[i].waitForFuncStatus(result=True)
 
         testflow.step(
             "Check that the both hosts were updated with VLAN and MTU 9000"
         )
         for vds_host in conf.VDS_HOSTS_LIST:
             nic = vds_host.nics[1]
-            self.assertTrue(
-                test_utils.check_mtu(
-                    vds_resource=vds_host, mtu=mtu_9000,
-                    physical_layer=False, network=self.net, nic=nic
-                )
+            assert test_utils.check_mtu(
+                vds_resource=vds_host, mtu=mtu_9000,
+                physical_layer=False, network=self.net, nic=nic
             )
-            self.assertTrue(
-                test_utils.check_mtu(
-                    vds_resource=vds_host, mtu=mtu_9000, nic=nic
-                )
+            assert test_utils.check_mtu(
+                vds_resource=vds_host, mtu=mtu_9000, nic=nic
             )
-            self.assertTrue(
-                ll_networks.is_vlan_on_host_network(
-                    vds_resource=vds_host, interface=nic, vlan=vlan_id
-                )
+            assert ll_networks.is_vlan_on_host_network(
+                vds_resource=vds_host, interface=nic, vlan=vlan_id
             )
 
 
@@ -467,16 +414,12 @@ class TestMultiHostCase07(NetworkTest):
         4) Check that the Host was updated with VLAN 163
         """
         testflow.step("Update network with VLAN %s on BOND", self.vlan_1)
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, vlan_id=self.vlan_1, nic=self.bond
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, vlan_id=self.vlan_1, nic=self.bond
         )
         testflow.step("Update network with VLAN %s on BOND", self.vlan_2)
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, vlan_id=self.vlan_2, nic=self.bond
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, vlan_id=self.vlan_2, nic=self.bond
         )
 
     @polarion("RHEVM3-4068")
@@ -488,16 +431,12 @@ class TestMultiHostCase07(NetworkTest):
         4) Check that the Host was updated with MTU 1500
         """
         testflow.step("Update network with MTU 9000 on BOND")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, mtu=self.mtu_9000, nic=self.bond
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, mtu=self.mtu_9000, nic=self.bond
         )
         testflow.step("Update network with MTU 1500 on BOND")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, mtu=self.mtu_1500, nic=self.bond
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, mtu=self.mtu_1500, nic=self.bond
         )
 
     @polarion("RHEVM3-4081")
@@ -509,14 +448,10 @@ class TestMultiHostCase07(NetworkTest):
         4) Check that the Host was updated accordingly
         """
         testflow.step("Update network to be non-VM network on BOND")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, bridge=False, nic=self.bond
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=False, nic=self.bond
         )
         testflow.step("Update network to be VM network on BOND")
-        self.assertTrue(
-            helper.update_network_and_check_changes(
-                net=self.net, bridge=True, nic=self.bond
-            )
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=True, nic=self.bond
         )

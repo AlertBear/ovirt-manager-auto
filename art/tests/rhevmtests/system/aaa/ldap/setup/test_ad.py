@@ -79,7 +79,7 @@ class ADDifferentUPN(base.AuthBaseCase):
     @polarion('RHEVM3-14484')
     def test_different_upn(self):
         """ Login as user with disabled account """
-        self.assertTrue(self.login(user='automation_upn@w2k12r2-t1.com'))
+        assert self.login(user='automation_upn@w2k12r2-t1.com')
 
 
 class ADSpecialCharsSearch(base.BaseSpecialCharsSearch):

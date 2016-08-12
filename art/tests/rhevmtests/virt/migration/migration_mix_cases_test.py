@@ -76,10 +76,9 @@ class TestMigrationMixCase1(common.VirtTest):
         logger.info(
             "Check bidirectional vms migration between two hosts"
         )
-        self.assertTrue(
-            virt_helper.migration_vms_to_diff_hosts(vms=config.VM_NAME[1:5]),
-            "Failed to migration all VMs"
-        )
+        assert virt_helper.migration_vms_to_diff_hosts(
+            vms=config.VM_NAME[1:5]
+        ), "Failed to migration all VMs"
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -170,11 +169,9 @@ class TestMigrationMixCase2(common.VirtTest):
             vm_name=self.vm_name, load=self.load_of_2_gb,
             time_to_run=self.time_to_run_load
         )
-        self.assertTrue(
-            ll_vm.migrateVm(
-                positive=True, vm=self.vm_name),
-            "Failed to migrate VM with large memory"
-        )
+        assert ll_vm.migrateVm(
+            positive=True, vm=self.vm_name
+        ), "Failed to migrate VM with large memory"
 
 
 @common.attr(tier=2)
@@ -244,12 +241,11 @@ class TestMigrationMixCase3(common.VirtTest):
         """
         Migrate VM with more then one disk
         """
-        self.assertTrue(ll_vm.migrateVm(
+        assert ll_vm.migrateVm(
             positive=True,
             vm=self.vm_name,
             wait=True
         ), "Failed to migrate VM with more then 1 disk"
-        )
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -278,15 +274,12 @@ class TestMigrationMixCase4(common.VirtTest):
         table_before = config.ENGINE.db.psql(sql=self.sql)
         logger.info("table before migration %s", table_before)
         logger.info("start vm migration")
-        self.assertTrue(
-            ll_vm.migrateVm(
-                positive=True,
-                vm=self.vm_name
-            ),
-            "Failed to migration VM: %s " % self.vm_name
-        )
+        assert ll_vm.migrateVm(
+            positive=True,
+            vm=self.vm_name
+        ), "Failed to migration VM: %s " % self.vm_name
         table_after = config.ENGINE.db.psql(sql=self.sql)
         logger.info("table after migration %s", table_after)
-        self.assertTrue(
-            virt_helper.compare_resources_lists(table_before, table_after),
-            "Found resource that are pended to hosts")
+        assert virt_helper.compare_resources_lists(
+            table_before, table_after
+        ), "Found resource that are pended to hosts"

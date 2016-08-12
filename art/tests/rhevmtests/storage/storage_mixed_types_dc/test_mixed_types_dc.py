@@ -278,7 +278,7 @@ class TestCase4562(IscsiNfsSD):
         Creates a new snapshots and clones vm from it for both vms
         """
         get_sd_id = lambda w: w.get_storage_domains(
-            ).get_storage_domain()[0].get_id()
+        ).get_storage_domain()[0].get_id()
 
         def add_snapshot_and_clone(vm_name):
             snapshot_name = "%s_snaphot" % vm_name
@@ -292,10 +292,9 @@ class TestCase4562(IscsiNfsSD):
 
             self.vms_to_remove.append(cloned_vm_name)
             disks = ll_vms.getVmDisks(cloned_vm_name)
-            self.assertNotEqual(
-                get_sd_id(disks[0]), get_sd_id(disks[1]),
-                "Disks are not in different storage domains"
-            )
+            assert get_sd_id(disks[0]) != get_sd_id(
+                disks[1]
+            ), "Disks are not in different storage domains"
             logger.info("Starting up vm %s to make sure is operational")
             assert ll_vms.startVm(
                 True, cloned_vm_name, config.VM_UP)
@@ -369,11 +368,9 @@ class TestCase4563(IscsiNfsSD):
             disk_id = ll_vms.getVmDisks(vm_name)[0].get_id()
             logger.info("Verify disk %s is in storage domain %s",
                         disk_id, storagedomain)
-            self.assertTrue(
-                disk_id in map(
-                    lambda w: w.get_id(),
-                    ll_disks.getStorageDomainDisks(storagedomain, False)
-                )
+            assert disk_id in map(
+                lambda w: w.get_id(),
+                ll_disks.getStorageDomainDisks(storagedomain, False)
             )
 
         clone_and_verify(self.iscsi)
@@ -826,11 +823,11 @@ class TestCase4564(IscsiNfsSD):
         testflow.step("Create a partition in newly attached disk")
         partition_cmd = PARTITION_CREATE_CMD % device_name
         success, output = linux_machine.runCmd(partition_cmd.split())
-        self.assertTrue(success, "Failed to create partition: %s" % output)
+        assert success, "Failed to create partition: %s" % output
         mkfs_cmd = MKFS_CMD % device_name
         testflow.step("Creating a filesystem on the partition")
         success, output = linux_machine.runCmd(mkfs_cmd.split())
-        self.assertTrue(success, "Failed to create filesystem: %s" % output)
+        assert success, "Failed to create filesystem: %s" % output
 
 
 @attr(tier=2)
@@ -886,9 +883,9 @@ class TestCase4551(IscsiNfsSD):
         self.vms_to_remove.append(self.vm_cloned_name)
 
         disk = ll_vms.getVmDisks(self.vm_cloned_name)[0]
-        self.assertTrue(
-            disk.get_sparse(),
-            "Disk %s should be Thin Proivisioning" % disk.get_alias())
+        assert disk.get_sparse(), (
+            "Disk %s should be Thin Proivisioning" % disk.get_alias()
+        )
 
 
 @attr(tier=2)

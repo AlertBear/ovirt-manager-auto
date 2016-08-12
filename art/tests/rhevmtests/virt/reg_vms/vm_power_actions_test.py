@@ -48,12 +48,10 @@ class TestPowerActions(VirtTest):
             config.DC_NAME[0]
         )
         time.sleep(20)
-        self.assertTrue(
-            ll_vms.remove_locked_vm(
-                self.vm_name,
-                vdc=config.VDC_HOST,
-                vdc_pass=config.VDC_ROOT_PASSWORD
-            )
+        assert ll_vms.remove_locked_vm(
+            self.vm_name,
+            vdc=config.VDC_HOST,
+            vdc_pass=config.VDC_ROOT_PASSWORD
         )
 
     @attr(tier=1)
@@ -64,20 +62,16 @@ class TestPowerActions(VirtTest):
         Suspend / Resume VM test
         """
         testflow.step("Check suspend/resume vm")
-        self.assertTrue(
-            ll_vms.startVm(
-                positive=True, vm=self.vm_name,
-                wait_for_status=config.VM_UP
-            )
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name,
+            wait_for_status=config.VM_UP
         )
         testflow.step("Suspend vm %s", self.vm_name)
-        self.assertTrue(ll_vms.suspendVm(True, self.vm_name))
+        assert ll_vms.suspendVm(True, self.vm_name)
         testflow.step("Resume vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.startVm(
-                True, self.vm_name,
-                wait_for_status=config.VM_UP
-            )
+        assert ll_vms.startVm(
+            True, self.vm_name,
+            wait_for_status=config.VM_UP
         )
 
     @attr(tier=2)
@@ -88,19 +82,14 @@ class TestPowerActions(VirtTest):
         Migrate suspend VM, migration should fail
         """
         testflow.step("Check migration is suspend vm")
-        self.assertTrue(
-            ll_vms.startVm(
-                positive=True, vm=self.vm_name,
-                wait_for_status=config.VM_UP
-            )
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name,
+            wait_for_status=config.VM_UP
         )
-        self.assertTrue(ll_vms.suspendVm(True, self.vm_name))
-        self.assertFalse(
-            ll_vms.migrateVm(
-                True, self.vm_name,
-            ),
-            'succeeded migrate vm in suspend state'
-        )
+        assert ll_vms.suspendVm(True, self.vm_name)
+        assert not ll_vms.migrateVm(
+            True, self.vm_name,
+        ), 'succeeded migrate vm in suspend state'
 
 
 @attr(tier=1)
@@ -123,13 +112,10 @@ class TestPauseVM(VirtTest):
         testflow.step(
             "Start vm %s in pause mode and check status", self.vm_name
         )
-        self.assertTrue(
-            ll_vms.startVm(
-                True, vm=self.vm_name,
-                wait_for_status=config.ENUMS['vm_state_paused']
-            ),
-            "Failed to start vm in pause mode"
-        )
+        assert ll_vms.startVm(
+            True, vm=self.vm_name,
+            wait_for_status=config.ENUMS['vm_state_paused']
+        ), "Failed to start vm in pause mode"
 
     @attr(tier=2)
     @polarion("RHEVM3-9964")
@@ -140,25 +126,18 @@ class TestPauseVM(VirtTest):
         Start vm in pause, migrate vm
         """
         testflow.step("Migrate vm in pause mode")
-        self.assertTrue(
-            ll_vms.startVm(
-                True, vm=self.vm_name,
-                wait_for_status=config.ENUMS['vm_state_paused']
-            ),
-            "Failed to start vm in pause mode"
-        )
+        assert ll_vms.startVm(
+            True, vm=self.vm_name,
+            wait_for_status=config.ENUMS['vm_state_paused']
+        ), "Failed to start vm in pause mode"
         host_before = ll_vms.get_vm_host(self.vm_name)
         # set time to '0', need only to check if vm is up since it in pause
         # mode
-        self.assertFalse(
-            ll_vms.migrateVm(positive=True, vm=self.vm_name, timeout=0),
-            "pause vm has migrate"
-        )
+        assert not ll_vms.migrateVm(
+            positive=True, vm=self.vm_name, timeout=0
+        ), "pause vm has migrate"
         host_after = ll_vms.get_vm_host(self.vm_name)
-        self.assertEqual(
-            host_before, host_after,
-            "vm didn't stay on the same host"
-        )
+        assert host_before == host_after, "vm didn't stay on the same host"
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -178,16 +157,10 @@ class TestStatelessVM(VirtTest):
         """
         testflow.step("Check stateless")
         vm_obj = ll_vms.get_vm_obj(self.vm_name)
-        self.assertTrue(
-            vm_obj is not None,
-            "Error finding VM %s" % self.vm_name
-        )
+        assert vm_obj is not None, "Error finding VM %s" % self.vm_name
         stateless = vm_obj.get_stateless()
         logger.info("Actual stateless status is %s", stateless)
-        self.assertTrue(
-            stateless,
-            "VM %s stateless status does not set" % self.vm_name
-        )
+        assert stateless, "VM %s stateless status does not set" % self.vm_name
 
     @polarion("RHEVM3-9979")
     @pytest.mark.usefixtures(stateless_vm_test_fixture.__name__)
@@ -204,11 +177,9 @@ class TestStatelessVM(VirtTest):
         virt_helper.create_file_in_vm(
             vm=self.vm_name, vm_resource=vm_resource
         )
-        self.assertTrue(vm_resource.run_command(['sync'])[0] == 0)
+        assert vm_resource.run_command(['sync'])[0] == 0
         testflow.step("Reboot vm, and check that file don't exist")
         virt_helper.reboot_stateless_vm(self.vm_name)
-        self.assertFalse(
-            virt_helper.check_if_file_exist(
-                positive=False, vm=self.vm_name, vm_resource=vm_resource
-            ), "File exists after reboot vm "
-        )
+        assert not virt_helper.check_if_file_exist(
+            positive=False, vm=self.vm_name, vm_resource=vm_resource
+        ), "File exists after reboot vm "

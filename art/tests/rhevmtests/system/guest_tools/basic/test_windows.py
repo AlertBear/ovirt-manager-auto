@@ -117,7 +117,7 @@ class Windows(TestCase):
             nic=config.NIC_NAME,
             nicType=config.NIC_TYPE_E1000,
             cpu_cores=4,
-            memory=4*config.GB,
+            memory=4 * config.GB,
             ballooning=True,  # Need for test driver balloon
         )
         assert vms.addNic(  # Need for test_driver_network
@@ -162,18 +162,14 @@ class Windows(TestCase):
 
     def test_a00_install_guest_tools(self):
         """ Install all supported apps of Windows version """
-        self.assertTrue(
-            self.machine.install_guest_tools(),
+        assert self.machine.install_guest_tools(), (
             'Installation of guest tools failed.'
         )
 
     def _checkProduct(self, product):
         if not self.products:
             self.products = self.machine.get_all_products()
-        self.assertTrue(
-            product in self.products,
-            '%s was not installed' % product
-        )
+        assert product in self.products, '%s was not installed' % product
         LOGGER.info('%s is installed', product)
 
     @checkIfSupported
@@ -234,12 +230,10 @@ class Windows(TestCase):
     def _checkService(self, service):
         if not self.services:
             self.services = self.machine.get_all_services()
-        self.assertTrue(
-            self.services[service]['State'] == 'Running',
+        assert self.services[service]['State'] == 'Running', (
             '%s is not running' % service
         )
-        self.assertTrue(
-            self.services[service]['StartMode'] == 'Auto',
+        assert self.services[service]['StartMode'] == 'Auto', (
             '%s is not enabled' % service
         )
         LOGGER.info('Service %s is running/enabled', service)
@@ -275,7 +269,7 @@ class Windows(TestCase):
         vm = VM_API.find(self.diskName)
         apps = vms.get_vm_applications(vm.get_name())
         LOGGER.info("Windows '%s' apps are: %s", self.diskName, apps)
-        self.assertTrue(len(apps) > 0, "Applications are empty")
+        assert len(apps) > 0, "Applications are empty"
 
     def test_guest_os(self):
         """ Check guest OS info is reported """
@@ -286,23 +280,16 @@ class Windows(TestCase):
         LOGGER.info("Architecture: '%s'", guest_os.get_architecture())
         LOGGER.info("Codename: '%s'", guest_os.get_codename())
         LOGGER.info("Family: '%s'", guest_os.get_family())
-        self.assertTrue(
-            self.architecture == guest_os.get_architecture(),
-            "Windows has wrong arch '%s', should be '%s'" % (
-                guest_os.get_architecture(),
-                self.architecture
-            )
+        assert self.architecture == guest_os.get_architecture(), (
+            "Windows has wrong arch '%s', should be '%s'" %
+            (guest_os.get_architecture(), self.architecture)
         )
-        self.assertTrue(
-            GUEST_FAMILY == guest_os.get_family(),
+        assert GUEST_FAMILY == guest_os.get_family(), (
             "Guest os family is windows: '%s'" % guest_os.get_family()
         )
-        self.assertTrue(
-            self.codename == guest_os.get_codename(),
-            "Guest codename '%s' should be '%s'" % (
-                guest_os.get_codename(),
-                self.codename
-            )
+        assert self.codename == guest_os.get_codename(), (
+            "Guest codename '%s' should be '%s'" %
+            (guest_os.get_codename(), self.codename)
         )
 
     def test_guest_timezone(self):
@@ -316,12 +303,8 @@ class Windows(TestCase):
         )
         # TODO: obtain this info for windows machine via pywin and check
         # for correct versions
-        self.assertTrue(
-            len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
-        )
-        self.assertTrue(
-            len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
-        )
+        assert len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
+        assert len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
 
     def _checkDeviceManager(self, deviceName):
         """
@@ -331,8 +314,8 @@ class Windows(TestCase):
         """
         device = self.machine.get_device_info(deviceName)
         assert device, "Device driver '%s' was not found" % deviceName
-        self.assertTrue(device['Status'].upper() == 'OK', '%s' % device)
-        self.assertTrue(device['ConfigManagerErrorCode'] == '0', '%s' % device)
+        assert device['Status'].upper() == 'OK', '%s' % device
+        assert device['ConfigManagerErrorCode'] == '0', '%s' % device
 
     @checkIfSupported
     def test_driver_balloon(self):
@@ -383,12 +366,10 @@ class Windows(TestCase):
         """
         This tests uninstallation of GT
         """
-        self.assertTrue(
-            self.machine.wait_for_machine_ready(),
+        assert self.machine.wait_for_machine_ready(), (
             'Windows machine is not ready, timeout expired.'
         )
-        self.assertTrue(
-            self.machine.uninstall_guest_tools(),
+        assert self.machine.uninstall_guest_tools(), (
             "GT failed to uninstall"
         )
 

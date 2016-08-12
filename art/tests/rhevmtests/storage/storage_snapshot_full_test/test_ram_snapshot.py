@@ -174,23 +174,20 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         """
         logger.info('Starting process on vm %s', self.vm)
         status, _ = start_cat_process_on_vm(self.vm, '/dev/zero')
-        self.assertTrue(status)
+        assert status
 
         logger.info(
             'Creating snapshot %s on vm %s', self.snapshot, self.vm
         )
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                True, self.vm, self.snapshot, persist_memory=True),
-            'Unable to create RAM snapshot on vm %s' % self.vm
-        )
+        assert ll_vms.addSnapshot(
+            True, self.vm, self.snapshot, persist_memory=True), (
+                'Unable to create RAM snapshot on vm %s' % self.vm
+            )
 
         logger.info('Ensuring snapshot %s has memory state', self.snapshot)
-        self.assertTrue(
-            ll_vms.is_snapshot_with_memory_state(
-                self.vm, self.snapshot
-            ), 'Snapshot %s does not contain memory state' % self.snapshot
-        )
+        assert ll_vms.is_snapshot_with_memory_state(
+            self.vm, self.snapshot
+        ), 'Snapshot %s does not contain memory state' % self.snapshot
 
 
 @attr(tier=2)
@@ -252,13 +249,10 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
             'Checking RAM snapshot %s on vm %s using action %s',
             self.memory_snapshot, self.vm, self.action_to_call.__name__,
         )
-        self.assertTrue(
-            self.action_to_call(
-                True, self.vm, self.memory_snapshot, restore_memory=True,
-            ),
-            'Could not restore RAM snapshot %s on vm %s' % (
-                self.memory_snapshot, self.vm,
-            )
+        assert self.action_to_call(
+            True, self.vm, self.memory_snapshot, restore_memory=True,
+        ), 'Could not restore RAM snapshot %s on vm %s' % (
+            self.memory_snapshot, self.vm
         )
         logger.info("Wait for running jobs")
         ll_jobs.wait_for_jobs(
@@ -266,17 +260,16 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
         )
 
         logger.info('Starting vm %s', self.vm)
-        self.assertTrue(ll_vms.startVm(
+        assert ll_vms.startVm(
             True, self.vm, config.VM_UP, True
-        ), 'Error when resuming VM %s from memory snapshot %s' %
-           (self.vm, self.memory_snapshot))
+        ), 'Error when resuming VM %s from memory snapshot %s' % (
+            self.vm, self.memory_snapshot
+        )
 
         testflow.step('Checking if process is still running on vm %s', self.vm)
-        self.assertTrue(
-            is_pid_running_on_vm(
-                self.vm, self.pids[0], self.cmdlines[0]
-            ), 'Process %s not running on vm %s' % (self.pids[0], self.vm)
-        )
+        assert is_pid_running_on_vm(
+            self.vm, self.pids[0], self.cmdlines[0]
+        ), 'Process %s not running on vm %s' % (self.pids[0], self.vm)
 
 
 @attr(tier=1)
@@ -385,76 +378,74 @@ class TestCase5137(VMWithMemoryStateSnapshot):
         """
         status, pid = start_cat_process_on_vm(self.vm, self.cmdlines[1])
         self.pids.append(pid)
-        self.assertTrue(status, 'Unable to run process on VM %s' % self.vm)
+        assert status, 'Unable to run process on VM %s' % self.vm
         logger.info('Creating snapshot %s on vm %s',
                     self.second_snapshot_name, self.vm)
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                True, self.vm, self.second_snapshot_name, persist_memory=True
-            ), 'Unable to create snapshot %s on vm %s' %
-               (self.memory_snapshot, self.vm)
+        assert ll_vms.addSnapshot(
+            True, self.vm, self.second_snapshot_name, persist_memory=True
+        ), 'Unable to create snapshot %s on vm %s' % (
+            self.memory_snapshot, self.vm
         )
         logger.info('Shutting down vm %s', self.vm)
-        self.assertTrue(ll_vms.stopVm(True, self.vm))
+        assert ll_vms.stopVm(True, self.vm)
 
         logger.info('Previewing first snapshot (%s) on vm %s',
                     self.memory_snapshot, self.vm)
-        self.assertTrue(
-            ll_vms.preview_snapshot(
-                True, self.vm, self.memory_snapshot, restore_memory=True
-            ), 'Unable to preview snapshot %s on vm %s'
-               % (self.memory_snapshot, self.vm)
+        assert ll_vms.preview_snapshot(
+            True, self.vm, self.memory_snapshot, restore_memory=True
+        ), 'Unable to preview snapshot %s on vm %s' % (
+            self.memory_snapshot, self.vm
         )
         self.previewed_snapshot = self.memory_snapshot
 
         logger.info('Starting vm %s', self.vm)
-        self.assertTrue(
-            ll_vms.startVm(
-                True, self.vm, wait_for_ip=True, wait_for_status=config.VM_UP
-            )
+        assert ll_vms.startVm(
+            True, self.vm, wait_for_ip=True, wait_for_status=config.VM_UP
         )
         logger.info('Checking if first process is running on vm %s', self.vm)
-        self.assertTrue(
-            is_pid_running_on_vm(
-                self.vm, self.pids[0], self.cmdlines[0]
-            ), 'First process is not running on vm - memory state not '
-               'restored correctly'
+        assert is_pid_running_on_vm(
+            self.vm, self.pids[0], self.cmdlines[0]
+        ), (
+            'First process is not running on vm - memory state not '
+            'restored correctly'
         )
         logger.info(
             'Checking that second process is not running on vm %s', self.vm
         )
-        self.assertFalse(
-            is_pid_running_on_vm(self.vm, self.pids[1], self.cmdlines[1]),
+        assert not is_pid_running_on_vm(
+            self.vm, self.pids[1], self.cmdlines[1]
+        ), (
             'Second process is running on vm - memory state not '
             'restored correctly'
         )
         logger.info('Powering vm %s off', self.vm)
-        self.assertTrue(
-            ll_vms.stopVm(True, self.vm), 'Could not power vm %s off' % self.vm
-        )
+        assert ll_vms.stopVm(
+            True, self.vm), 'Could not power vm %s off' % self.vm
         logger.info('Undoing snapshot preview')
-        self.assertTrue(ll_vms.undo_snapshot_preview(True, self.vm))
+        assert ll_vms.undo_snapshot_preview(True, self.vm)
         self.previewed_snapshot = None
         logger.info('Previewing second snapshot (%s) on vm %s',
                     self.second_snapshot_name, self.vm)
-        self.assertTrue(ll_vms.preview_snapshot(
+        assert ll_vms.preview_snapshot(
             True, self.vm, self.second_snapshot_name, restore_memory=True
-        ), 'Unable to preview snapshot %s on vm %s' %
-           (self.second_snapshot_name, self.vm))
+        ), 'Unable to preview snapshot %s on vm %s' % (
+            self.second_snapshot_name, self.vm
+        )
         self.previewed_snapshot = self.second_snapshot_name
 
         logger.info('Starting vm %s', self.vm)
-        self.assertTrue(ll_vms.startVm(
+        assert ll_vms.startVm(
             True, self.vm, wait_for_ip=True, wait_for_status=config.VM_UP
-        ))
+        )
 
         logger.info('Checking that both processes are running on vm %s',
                     self.vm)
         first = is_pid_running_on_vm(self.vm, self.pids[0], self.cmdlines[0])
         second = is_pid_running_on_vm(self.vm, self.pids[1], self.cmdlines[1])
-        self.assertTrue(first and second,
-                        'Processes not both running on vm. First process: %s '
-                        'second process: %s' % (first, second))
+        assert first and second, (
+            'Processes not both running on vm. First process: %s '
+            'second process: %s' % (first, second)
+        )
 
     def tearDown(self):
         """
@@ -505,18 +496,16 @@ class TestCase5136(VMWithMemoryStateSnapshot):
         logger.info('Creating new vm %s from snapshot %s of vm %s',
                     self.cloned_vm_name, self.memory_snapshot, self.vm)
 
-        self.assertTrue(
-            ll_vms.cloneVmFromSnapshot(
-                True, name=self.cloned_vm_name, cluster=config.CLUSTER_NAME,
-                vm=self.vm, snapshot=self.memory_snapshot,
-                ),
-            'Could not create vm %s from snapshot %s'
-            % (self.cloned_vm_name, self.memory_snapshot)
+        assert ll_vms.cloneVmFromSnapshot(
+            True, name=self.cloned_vm_name, cluster=config.CLUSTER_NAME,
+            vm=self.vm, snapshot=self.memory_snapshot,
+        ), (
+            'Could not create vm %s from snapshot %s' %
+            (self.cloned_vm_name, self.memory_snapshot)
         )
 
         logger.info('Starting VM %s', self.cloned_vm_name)
-        self.assertTrue(
-            ll_vms.startVms([self.cloned_vm_name], config.VM_UP),
+        assert ll_vms.startVms([self.cloned_vm_name], config.VM_UP), (
             'Unable to start VM %s' % self.cloned_vm_name
         )
         status, ip = ll_vms.waitForIP(self.cloned_vm_name)
@@ -525,8 +514,8 @@ class TestCase5136(VMWithMemoryStateSnapshot):
                 "Failed to get IP for vm %s" % self.cloned_vm_name
             )
 
-        self.assertFalse(is_pid_running_on_vm(self.cloned_vm_name,
-                                              self.pids[0], self.cmdlines[0]))
+        assert not is_pid_running_on_vm(self.cloned_vm_name,
+                                        self.pids[0], self.cmdlines[0])
 
     def tearDown(self):
         """
@@ -579,35 +568,31 @@ class TestCase5134(VMWithMemoryStateSnapshot):
             'Importing vm %s from export domain %s',
             self.vm, config.EXPORT_DOMAIN
         )
-        self.assertTrue(
-            ll_vms.importVm(
-                True, self.vm, config.EXPORT_DOMAIN, self.storage_domain,
-                config.CLUSTER_NAME
-            ), 'Unable to import vm %s from export domain %s' %
-               (self.vm, config.EXPORT_DOMAIN)
+        assert ll_vms.importVm(
+            True, self.vm, config.EXPORT_DOMAIN, self.storage_domain,
+            config.CLUSTER_NAME
+        ), 'Unable to import vm %s from export domain %s' % (
+            self.vm, config.EXPORT_DOMAIN
         )
 
         logger.info('Restoring snapshot %s with memory state on vm %s',
                     self.memory_snapshot, self.vm)
-        self.assertTrue(
-            ll_vms.restore_snapshot(
-                True, self.vm, self.memory_snapshot, restore_memory=True
-            ), 'Unable to restore snapshot %s on vm %s' %
-               (self.memory_snapshot, self.vm)
+        assert ll_vms.restore_snapshot(
+            True, self.vm, self.memory_snapshot, restore_memory=True
+        ), 'Unable to restore snapshot %s on vm %s' % (
+            self.memory_snapshot, self.vm
         )
 
         logger.info('Starting vm %s', self.vm)
-        self.assertTrue(
-            ll_vms.startVm(
-                True, self.vm, wait_for_status=config.VM_UP, wait_for_ip=True
-            ), 'Unable to start vm %s' % self.vm
-        )
+        assert ll_vms.startVm(
+            True, self.vm, wait_for_status=config.VM_UP, wait_for_ip=True
+        ), 'Unable to start vm %s' % self.vm
 
-        self.assertTrue(
-            is_pid_running_on_vm(
-                self.vm, self.pids[0], self.cmdlines[0]
-            ), 'process is not running on vm %s, memory state not correctly '
-               'restored' % self.vm
+        assert is_pid_running_on_vm(
+            self.vm, self.pids[0], self.cmdlines[0]
+        ), (
+            'process is not running on vm %s, memory state not correctly '
+            'restored' % self.vm
         )
 
     def tearDown(self):
@@ -644,23 +629,18 @@ class TestCase5133(VMWithMemoryStateSnapshot):
         """
         logger.info('Removing snapshot %s with memory state from vm %s',
                     self.memory_snapshot, self.vm)
-        self.assertTrue(
-            ll_vms.removeSnapshot(
-                True, self.vm, self.memory_snapshot
-            ), 'Unable to remove snapshot %s from vm %s' %
-               (self.memory_snapshot, self.vm)
+        assert ll_vms.removeSnapshot(
+            True, self.vm, self.memory_snapshot
+        ), 'Unable to remove snapshot %s from vm %s' % (
+            self.memory_snapshot, self.vm
         )
         logger.info('Starting vm %s', self.vm)
-        self.assertTrue(
-            ll_vms.startVm(
-                True, self.vm, wait_for_ip=True, wait_for_status=config.VM_UP
-            ), 'Unable to start VM %s' % self.vm
-        )
+        assert ll_vms.startVm(
+            True, self.vm, wait_for_ip=True, wait_for_status=config.VM_UP
+        ), 'Unable to start VM %s' % self.vm
         logger.info('Ensuring vm %s started without memory state', self.vm)
-        self.assertFalse(
-            is_pid_running_on_vm(
-                self.vm, self.pids[0], self.cmdlines[0]
-            )
+        assert not is_pid_running_on_vm(
+            self.vm, self.pids[0], self.cmdlines[0]
         )
 
 
@@ -689,35 +669,25 @@ class TestCase5131(VMWithMemoryStateSnapshot):
             'Restoring memory snapshot %s on vm %s',
             self.memory_snapshot, self.vm
         )
-        self.assertTrue(
-            ll_vms.restore_snapshot(
-                True, self.vm, self.memory_snapshot, restore_memory=True
-            ), 'Unable to restore snapshot %s on vm %s' %
-               (self.memory_snapshot, self.vm)
+        assert ll_vms.restore_snapshot(
+            True, self.vm, self.memory_snapshot, restore_memory=True
+        ), 'Unable to restore snapshot %s on vm %s' % (
+            self.memory_snapshot, self.vm
         )
         logger.info('Setting vm %s to stateless', self.vm)
-        self.assertTrue(
-            ll_vms.updateVm(True, self.vm, stateless=True),
+        assert ll_vms.updateVm(True, self.vm, stateless=True), (
             'Unable to set vm %s to be stateless' % self.vm
         )
         logger.info('Starting vm %s', self.vm)
-        self.assertTrue(
-            ll_vms.startVm(True, self.vm, wait_for_status=config.VM_UP)
-        )
-        self.assertTrue(
-            is_pid_running_on_vm(self.vm, self.pids[0], self.cmdlines[0])
-        )
+        assert ll_vms.startVm(True, self.vm, wait_for_status=config.VM_UP)
+        assert is_pid_running_on_vm(self.vm, self.pids[0], self.cmdlines[0])
         logger.info('Killing process %s', self.pids[0])
-        self.assertTrue(
-            ll_vms.kill_process_by_pid_on_vm(
-                self.vm, self.pids[0], config.VM_USER, config.VM_PASSWORD
-            )
+        assert ll_vms.kill_process_by_pid_on_vm(
+            self.vm, self.pids[0], config.VM_USER, config.VM_PASSWORD
         )
         logger.info('Power vm %s off', self.vm)
-        self.assertTrue(ll_vms.shutdownVm(True, self.vm))
+        assert ll_vms.shutdownVm(True, self.vm)
 
         logger.info('Starting vm %s again', self.vm)
-        self.assertTrue(ll_vms.startVm(True, self.vm, config.VM_UP))
-        self.assertTrue(
-            is_pid_running_on_vm(self.vm, self.pids[0], self.cmdlines[0])
-        )
+        assert ll_vms.startVm(True, self.vm, config.VM_UP)
+        assert is_pid_running_on_vm(self.vm, self.pids[0], self.cmdlines[0])

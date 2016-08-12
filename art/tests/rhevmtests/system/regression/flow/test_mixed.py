@@ -36,7 +36,7 @@ class TestCaseMixed(TestCase):
         """
         logger.info('Check product name')
         status = ll_general.checkProductName(config.PRODUCT_NAME)
-        self.assertTrue(status, 'Failed to check product name')
+        assert status, 'Failed to check product name'
 
     @attr(tier=1)
     def test_check_existing_permissions(self):
@@ -46,7 +46,7 @@ class TestCaseMixed(TestCase):
         """
         logger.info('Check existing permissions')
         status = ll_mla.checkSystemPermits(positive=True)
-        self.assertTrue(status, 'Failed to check existing permissions')
+        assert status, 'Failed to check existing permissions'
 
     @attr(tier=2)
     @bz({'1303346': {}})
@@ -57,4 +57,4 @@ class TestCaseMixed(TestCase):
         """
         logger.info('Check xsd schema validations')
         status = ll_general.checkResponsesAreXsdValid()
-        self.assertTrue(status, 'Failed to check xsd schema validations')
+        assert status, 'Failed to check xsd schema validations'

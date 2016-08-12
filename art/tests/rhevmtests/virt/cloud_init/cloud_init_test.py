@@ -36,22 +36,18 @@ class TestCloudInit(VirtTest):
         """
 
         testflow.step("Start VM %s with cloud init enable", self.vm_name)
-        self.assertTrue(
-            ll_vms.startVm(
-                positive=True, vm=self.vm_name, wait_for_ip=True,
-                use_cloud_init=True, wait_for_status=config.VM_UP
-            )
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name, wait_for_ip=True,
+            use_cloud_init=True, wait_for_status=config.VM_UP
         )
         testflow.step("Check cloud init parameters")
-        self.assertTrue(
-            helper.check_cloud_init_parameters(
-                script_content=helper.SCRIPT_CONTENT,
-                time_zone=config.NEW_ZEALAND_TZ_LIST,
-                hostname=config.CLOUD_INIT_HOST_NAME
-            ),
-            "Failed checking VM %s, "
-            "one or more of init parameter/s didn't set" % self.vm_name
-
+        assert helper.check_cloud_init_parameters(
+            script_content=helper.SCRIPT_CONTENT,
+            time_zone=config.NEW_ZEALAND_TZ_LIST,
+            hostname=config.CLOUD_INIT_HOST_NAME
+        ), (
+            "Failed checking VM %s, one or more of init parameter/s didn't set"
+            % self.vm_name
         )
 
     @polarion("RHEVM3-4795")
@@ -65,21 +61,18 @@ class TestCloudInit(VirtTest):
         """
         testflow.step("Start VM %s with cloud init enable", self.vm_name)
         logger.info("initialization parameters: %s", vars(self.initialization))
-        self.assertTrue(
-            ll_vms.runVmOnce(
-                positive=True, vm=self.vm_name, use_cloud_init=True,
-                initialization=self.initialization,
-                wait_for_state=config.VM_UP
-            ), "Failed to start VM %s " % self.vm_name
-        )
+        assert ll_vms.runVmOnce(
+            positive=True, vm=self.vm_name, use_cloud_init=True,
+            initialization=self.initialization,
+            wait_for_state=config.VM_UP
+        ), "Failed to start VM %s " % self.vm_name
         testflow.step("Check VM %s with root user", self.vm_name)
-        self.assertTrue(
-            helper.check_cloud_init_parameters(
-                time_zone=config.NEW_ZEALAND_TZ_LIST,
-                check_nic=False, script_content=helper.SCRIPT_CONTENT,
-            ),
-            "Failed checking VM %s, "
-            "one or more of init parameter/s didn't set" % self.vm_name
+        assert helper.check_cloud_init_parameters(
+            time_zone=config.NEW_ZEALAND_TZ_LIST,
+            check_nic=False, script_content=helper.SCRIPT_CONTENT,
+        ), (
+            "Failed checking VM %s, one or more of init parameter/s didn't set"
+            % self.vm_name
         )
 
     @polarion("RHEVM3-14369")
@@ -92,23 +85,19 @@ class TestCloudInit(VirtTest):
         Cloud init case 3: Migration VM with cloud init configuration
         """
         testflow.step("Migration VM %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.migrateVm(
-                positive=True, vm=self.vm_name
-            ),
-            "Failed to migrate VM: %s " % self.vm_name
-        )
+        assert ll_vms.migrateVm(
+            positive=True, vm=self.vm_name
+        ), "Failed to migrate VM: %s " % self.vm_name
         testflow.step(
             "Check that all cloud init configuration exists after migration"
         )
-        self.assertTrue(
-            helper.check_cloud_init_parameters(
-                script_content=helper.SCRIPT_CONTENT,
-                time_zone=config.NEW_ZEALAND_TZ_LIST,
-                hostname=config.CLOUD_INIT_HOST_NAME
-            ),
-            "Failed checking VM %s, one or more of parameter/s didn't set"
-            % self.vm_name
+        assert helper.check_cloud_init_parameters(
+            script_content=helper.SCRIPT_CONTENT,
+            time_zone=config.NEW_ZEALAND_TZ_LIST,
+            hostname=config.CLOUD_INIT_HOST_NAME
+        ), (
+            "Failed checking VM %s, one or more of parameter/s didn't set" %
+            self.vm_name
         )
 
     @polarion("RHEVM3-4796")
@@ -120,19 +109,16 @@ class TestCloudInit(VirtTest):
         to vm without password
         """
         testflow.step("Start vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.startVm(
-                positive=True, vm=self.vm_name, wait_for_ip=True,
-                use_cloud_init=True, wait_for_status=config.VM_UP
-            )
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name, wait_for_ip=True,
+            use_cloud_init=True, wait_for_status=config.VM_UP
         )
         testflow.step("Check connectivity without password")
-        self.assertTrue(
-            helper.check_cloud_init_parameters(
-                script_content=helper.SCRIPT_CONTENT,
-                time_zone=config.NEW_ZEALAND_TZ_LIST,
-                hostname=config.CLOUD_INIT_HOST_NAME
-            ),
-            "Failed checking VM %s, one or more of parameter/s didn't set"
-            % self.vm_name
+        assert helper.check_cloud_init_parameters(
+            script_content=helper.SCRIPT_CONTENT,
+            time_zone=config.NEW_ZEALAND_TZ_LIST,
+            hostname=config.CLOUD_INIT_HOST_NAME
+        ), (
+            "Failed checking VM %s, one or more of parameter/s didn't set" %
+            self.vm_name
         )

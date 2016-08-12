@@ -33,6 +33,7 @@ from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 import rhevmtests.storage.helpers as storage_helpers
 import rhevmtests.helpers as rhevm_helpers
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -379,6 +380,7 @@ class CommonSetUp(BasicEnvironment):
     """
     Class for common setUp actions
     """
+
     def setUp(self):
         super(CommonSetUp, self).setUp()
         self._secure_deactivate_detach_storage_domain(
@@ -460,7 +462,7 @@ class DomainImportWithTemplate(BasicEnvironment):
                 config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[0], self.host,
                 vfs_type=CEPH, mount_options=config.CEPH_MOUNT_OPTIONS
             )
-        self.assertTrue(status, "Failed to import storage domain")
+        assert status, "Failed to import storage domain"
         logger.info("Attaching storage domain %s", self.non_master)
         hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
@@ -481,13 +483,12 @@ class DomainImportWithTemplate(BasicEnvironment):
         self.template_exists = ll_sd.register_object(
             template_to_register[0], cluster=config.CLUSTER_NAME
         )
-        self.assertTrue(self.template_exists, "Template registration failed")
-        self.assertTrue(
-            ll_vms.createVm(
-                True, self.vm_from_template, self.vm_from_template,
-                template=self.template_name, cluster=config.CLUSTER_NAME
-            ), "Unable to create vm %s from template %s" %
-            (self.vm_from_template, self.template_name)
+        assert self.template_exists, "Template registration failed"
+        assert ll_vms.createVm(
+            True, self.vm_from_template, self.vm_from_template,
+            template=self.template_name, cluster=config.CLUSTER_NAME
+        ), "Unable to create vm %s from template %s" % (
+            self.vm_from_template, self.template_name
         )
 
     def tearDown(self):
@@ -560,11 +561,8 @@ class TestCase5299(BasicEnvironment):
             )
         ]
         logger.info("Unregistered vms: %s", vm_to_import)
-        self.assertEqual(
-            len(vm_to_import), 0, "VM with no disks was unregistered"
-        )
-        self.assertTrue(
-            ll_vms.does_vm_exist(self.vm_no_disks),
+        assert len(vm_to_import) == 0, "VM with no disks was unregistered"
+        assert ll_vms.does_vm_exist(self.vm_no_disks), (
             "VM doesn't exist after importing storage domain"
         )
 
@@ -821,17 +819,14 @@ class TestCase5194(BasicEnvironment):
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
         logger.info("Unregistered vms: %s", vm_names)
-        self.assertTrue(
-            ll_sd.register_object(
-                unregistered_vms[0], cluster=config.CLUSTER_NAME
-            ),
-            "Failed to register vm %s" % unregistered_vms[0]
-        )
+        assert ll_sd.register_object(
+            unregistered_vms[0], cluster=config.CLUSTER_NAME
+        ), "Failed to register vm %s" % unregistered_vms[0]
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
-        self.assertTrue(ll_vms.startVms(
+        assert ll_vms.startVms(
             [self.vm_name], wait_for_status=config.VM_UP
-        ), "VM %s failed to restart" % self.vm_name)
+        ), "VM %s failed to restart" % self.vm_name
 
     def tearDown(self):
         """
@@ -956,8 +951,8 @@ class TestCase5304(CommonSetUp):
         self.imported = self.non_master in [
             sd['nonMasterDomains'] for sd in non_master_domains
         ]
-        self.assertFalse(
-            self.imported, "Storage domain %s was imported" % self.non_master
+        assert not self.imported, "Storage domain %s was imported" % (
+            self.non_master
         )
 
 
@@ -1026,7 +1021,7 @@ class BaseCaseInitializeDataCenter(BasicEnvironment):
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host
             )
-        self.assertTrue(status, "Failed to import storage domain")
+        assert status, "Failed to import storage domain"
 
     def tearDown(self):
         """
@@ -1069,18 +1064,15 @@ class TestCase5201(BaseCaseInitializeDataCenter):
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
         logger.info("Unregistered vms: %s", vm_names)
-        self.assertTrue(
-            ll_sd.register_object(
-                unregistered_vms[0], cluster=self.cluster_name
-            ), "Unable to register vm %s in cluster %s" %
+        assert ll_sd.register_object(
+            unregistered_vms[0], cluster=self.cluster_name
+        ), "Unable to register vm %s in cluster %s" % (
             (vm_names[0], self.cluster_name)
         )
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
-        self.assertTrue(
-            ll_vms.startVm(
-                True, self.vm_name, wait_for_status=config.VM_UP
-            ), "VM %s failed to restart" % self.vm_name
-        )
+        assert ll_vms.startVm(
+            True, self.vm_name, wait_for_status=config.VM_UP
+        ), "VM %s failed to restart" % self.vm_name
 
     def tearDown(self):
         """
@@ -1119,10 +1111,8 @@ class TestCase12207(BaseCaseInitializeDataCenter):
         """
         self.execute_flow()
         logger.info("Attaching storage domain %s", self.non_master)
-        self.assertRaises(
-            exceptions.StorageDomainException,
-            hl_sd.attach_and_activate_domain, self.dc_name, self.non_master
-        )
+        with pytest.raises(exceptions.StorageDomainException):
+            hl_sd.attach_and_activate_domain(self.dc_name, self.non_master)
 
     def tearDown(self):
         """
@@ -1227,19 +1217,15 @@ class TestCase10951(BasicEnvironment):
         - Import existing export storage domain
         - Attach it to the data center
         """
-        self.assertTrue(
-            ll_sd.importStorageDomain(
-                True, self.sd_type, self.storage_type, self.export_address,
-                self.export_path, self.host, nfs_version=self.nfs_version,
-                vfs_type=self.vfs_type
-            ), "Unable to import export domain %s" % self.export_domain
-        )
+        assert ll_sd.importStorageDomain(
+            True, self.sd_type, self.storage_type, self.export_address,
+            self.export_path, self.host, nfs_version=self.nfs_version,
+            vfs_type=self.vfs_type
+        ), "Unable to import export domain %s" % self.export_domain
         logger.info("Attaching storage domain %s", self.export_domain)
-        self.assertTrue(
-            hl_sd.attach_and_activate_domain(
-                config.DATA_CENTER_NAME, self.export_domain
-            ), "Unable to attach export domain %s" % self.export_domain
-        )
+        assert hl_sd.attach_and_activate_domain(
+            config.DATA_CENTER_NAME, self.export_domain
+        ), "Unable to attach export domain %s" % self.export_domain
 
     def tearDown(self):
         """
@@ -1313,10 +1299,9 @@ class BaseTestCase5192(BasicEnvironment):
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
         logger.info("Unregistered vms: %s", vm_names)
-        self.assertTrue(
-            ll_sd.register_object(
-                unregistered_vms[0], cluster=config.CLUSTER_NAME
-            ), "Unable to register vm %s in cluster %s" %
+        assert ll_sd.register_object(
+            unregistered_vms[0], cluster=config.CLUSTER_NAME
+        ), "Unable to register vm %s in cluster %s" % (
             (vm_names[0], config.CLUSTER_NAME)
         )
 

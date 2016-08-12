@@ -19,6 +19,7 @@ from test_network_permissions_negative import (
 from art.rhevm_api.tests_lib.low_level import (
     mla, networks, users, vms, templates, datacenters
 )
+import pytest
 
 
 LOGGER = logging.getLogger(__name__)
@@ -331,9 +332,10 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
     def canSee(self, net1, net2, vnic1, vnic2):
         for net in [net1, net2, vnic1, vnic2]:
             if net['filt']:
-                self.assertTrue(net['func'](net['name']) is not None)
+                assert net['func'](net['name']) is not None
             else:
-                self.assertRaises(EntityNotFound, net['func'], net['name'])
+                with pytest.raises(EntityNotFound):
+                    net['func'](net['name'])
 
     def filterNet(self, name, filt, func):
         return {'name': name, 'filt': filt, 'func': func}
@@ -771,13 +773,10 @@ class PositiveNetworkPermissions317269(NetworkingPossitive):
     def test_automaticCreateionOfPermissions(self):
         """ Check auto permission creation on new datacenter """
         # newly created dc, vnicprofile has VnicProfileUser role on Everyone
-        self.assertTrue(
-            mla.hasGroupPermissionsOnObject(
-                'Everyone', mla.groupUtil.find('Everyone'),
-                role=role.VnicProfileUser
-            ),
-            "Permission was not created at datacenter for Everyone."
-        )
+        assert mla.hasGroupPermissionsOnObject(
+            'Everyone', mla.groupUtil.find('Everyone'),
+            role=role.VnicProfileUser
+        ), "Permission was not created at datacenter for Everyone."
 
 
 class PositiveNetworkPermissions317133(NetworkingPossitive):
@@ -811,18 +810,12 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
             data_center=self.dc_name,
             cluster=config.CLUSTER_NAME[0]
         )
-        self.assertTrue(
-            mla.hasUserPermissionsOnObject(
-                config.USER1, net, role=role.NetworkAdmin
-            ),
-            "Permission was not created at datacenter for network."
-        )
-        self.assertTrue(
-            mla.hasUserPermissionsOnObject(
-                config.USER1, vnic, role=role.NetworkAdmin
-            ),
-            "Permission was not created at datacenter for vnicprofile."
-        )
+        assert mla.hasUserPermissionsOnObject(
+            config.USER1, net, role=role.NetworkAdmin
+        ), "Permission was not created at datacenter for network."
+        assert mla.hasUserPermissionsOnObject(
+            config.USER1, vnic, role=role.NetworkAdmin
+        ), "Permission was not created at datacenter for vnicprofile."
 
 
 class PositiveNetworkPermissions320610(NetworkingPossitive):
@@ -860,23 +853,19 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
         vnicProfile perms on vNIC profile are restricted to specific profile
         """
         loginAsUser(config.USER_NAME)
-        self.assertTrue(
-            vms.addNic(
-                True, VM_NAME, name=NIC_NAME,
-                vnic_profile=config.NETWORK_NAME1,
-                network=config.NETWORK_NAME1,
-                interface='virtio'
-            )
+        assert vms.addNic(
+            True, VM_NAME, name=NIC_NAME,
+            vnic_profile=config.NETWORK_NAME1,
+            network=config.NETWORK_NAME1,
+            interface='virtio'
         )
-        self.assertRaises(
-            EntityNotFound,
-            lambda: vms.addNic(
+        with pytest.raises(EntityNotFound):
+            vms.addNic(
                 False, VM_NAME, name=NIC_NAME,
                 vnic_profile=config.NETWORK_NAME2,
                 network=config.NETWORK_NAME1,
                 interface='virtio'
             )
-        )
 
 
 class PositiveNetworkPermissions317270(NetworkingPossitive):
@@ -903,22 +892,15 @@ class PositiveNetworkPermissions317270(NetworkingPossitive):
             config.CLUSTER_NAME[0],
             config.DC_NAME[0]
         )
-        self.assertTrue(
-            mla.hasUserPermissionsOnObject(
-                config.USER1, vnic, role=role.UserRole
-            )
+        assert mla.hasUserPermissionsOnObject(
+            config.USER1, vnic, role=role.UserRole
         )
-        self.assertTrue(
-            networks.update_network(
-                True,
-                network=config.NETWORK_NAME1,
-                data_center=config.DC_NAME[0],
-                usages=''
-            )
+        assert networks.update_network(
+            True,
+            network=config.NETWORK_NAME1,
+            data_center=config.DC_NAME[0],
+            usages=''
         )
-        self.assertFalse(
-            mla.hasUserPermissionsOnObject(
-                config.USER1, vnic, role=role.UserRole
-            ),
-            "Permission persists on vnicprofile after swtiched to nonvm."
-        )
+        assert not mla.hasUserPermissionsOnObject(
+            config.USER1, vnic, role=role.UserRole
+        ), "Permission persists on vnicprofile after swtiched to nonvm."

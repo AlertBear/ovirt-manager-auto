@@ -150,8 +150,7 @@ class TestActivateActiveHost(TestActiveHost):
     @polarion("RHEVM3-8433")
     def test_activate_active_host(self):
         logger.info("Trying to activate host %s", HOST)
-        self.assertFalse(
-            ll_hosts.activateHost(True, host=HOST))
+        assert not ll_hosts.activateHost(True, host=HOST)
 
 
 @attr(tier=1)
@@ -166,9 +165,7 @@ class TestUpdateHostName(TestCase):
     @polarion("RHEVM3-8418")
     def test_update_host_name(self):
         logger.info("Updating host %s's name", HOST)
-        self.assertTrue(
-            ll_hosts.updateHost(True, host=HOST, name=self.new_name)
-        )
+        assert ll_hosts.updateHost(True, host=HOST, name=self.new_name)
 
     @classmethod
     def teardown_class(cls):

@@ -68,8 +68,7 @@ class DirectLogin(TestCase):
         """ login as user """
         users.loginAsUser(self.USER, self.conf['authn_name'],
                           self.PASSWORD, self.FILTER)
-        self.assertTrue(common.connectionTest(),
-                        "User %s can't login." % self.USER)
+        assert common.connectionTest(), "User %s can't login." % self.USER
 
 
 class ADDigestMD5(DirectLogin):

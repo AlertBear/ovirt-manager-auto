@@ -66,12 +66,15 @@ vm2_args = {'positive': True,
             'display_type': config.DISPLAY_TYPE,
             }
 
-CMD_ERROR_INCORRECT_NUM_PARAMS_PART_1 = \
+CMD_ERROR_INCORRECT_NUM_PARAMS_PART_1 = (
     "Error using command: Wrong number of parameters"
-CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2 = \
+)
+CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2 = (
     "<spUUID> <sdUUID> <imgUUID> <volUUID>"
-CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3 = \
+)
+CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3 = (
     "Prepare an image, making the needed volumes available."
+)
 
 CMD_OK = "OK"
 CMD_INCORRECT_PARAMETER = "incorrect"
@@ -212,19 +215,18 @@ class BasicEnvironment(BaseTestCase):
                                                        self.polarion_test_case,
                                                        self.storage_domain)
             self.disk_aliases.append(self.disk_alias)
-            self.assertTrue(addDisk(True, alias=self.disk_alias,
-                                    provisioned_size=disk_size,
-                                    sparse=disk_sparse,
-                                    storagedomain=self.storage_domain,
-                                    format=disk_format,
-                                    interface=config.VIRTIO,
-                                    wipe_after_delete=wipe_after_delete,
-                                    bootable=False),
-                            "Failed to Add Disk %s" % self.disk_alias)
+            assert addDisk(
+                True, alias=self.disk_alias, provisioned_size=disk_size,
+                sparse=disk_sparse, storagedomain=self.storage_domain,
+                format=disk_format, interface=config.VIRTIO,
+                wipe_after_delete=wipe_after_delete, bootable=False
+            ), "Failed to Add Disk %s" % self.disk_alias
             wait_for_disks_status(self.disk_alias)
-            self.assertTrue(attachDisk(True, self.disk_alias, self.vm_name),
-                            "Failed to attach disk '%s' to VM '%s'" % (
-                                self.disk_alias, self.vm_name))
+            assert attachDisk(
+                True, self.disk_alias, self.vm_name
+            ), "Failed to attach disk '%s' to VM '%s'" % (
+                self.disk_alias, self.vm_name
+            )
             wait_for_vm_disk_active_status(self.vm_name, True, self.disk_alias)
 
     def basic_positive_flow(self):
@@ -246,23 +248,28 @@ class BasicEnvironment(BaseTestCase):
             volume_id = ""
             if use_volume_id:
                 volume_id = self.vol_ids[i]
-            status, prepare_output = \
+            status, prepare_output = (
                 self.host_machine.execute_prepareImage_command(
                     self.sp_id, self.sd_ids[i], self.img_ids[i], volume_id,
                     timeout=TIMEOUT_IMAGE_OPERATION
                 )
+            )
             # Ensure that a status of True is returned for the prepareImage
             # execution
             logger.info("The returned status from running prepareImage is: "
                         "'%s'", status)
             logger.info("The returned output from running prepareImage is: "
                         "'%s'", prepare_output)
-            self.assertTrue(status, "Status returned for prepareImage "
-                                    "command was not True as expected")
-            self.assertTrue(self.host_machine.compare_lv_attributes(
-                self.sd_ids[i], self.vol_ids[i], "a-"),
+            assert status, (
+                "Status returned for prepareImage command was not True as "
+                "expected"
+            )
+            assert self.host_machine.compare_lv_attributes(
+                self.sd_ids[i], self.vol_ids[i], "a-"
+            ), (
                 "The disk was not found to be active after running "
-                "prepareImage")
+                "prepareImage"
+            )
 
     def basic_positive_flow_teardown_image_only(self):
         """
@@ -272,21 +279,26 @@ class BasicEnvironment(BaseTestCase):
         for i in xrange(self.disk_count):
             logger.info("Ensure that the disk becomes inactive after running "
                         "teardownImage")
-            status, teardown_image_output = \
+            status, teardown_image_output = (
                 self.host_machine.execute_teardownImage_command(
                     self.sp_id, self.sd_ids[i], self.img_ids[i],
                     self.vol_ids[i], timeout=TIMEOUT_IMAGE_OPERATION
                 )
+            )
             # Ensure that a status of True is returned for the teardownImage
             # execution
-            self.assertTrue(status, "Status returned for teardownImage "
-                                    "command was not True as expected")
+            assert status, (
+                "Status returned for teardownImage command was not True as "
+                "expected"
+            )
             logger.info("The returned output from running teardownImage is: "
                         "'%s'", teardown_image_output)
-            self.assertTrue(self.host_machine.compare_lv_attributes(
-                self.sd_ids[i], self.vol_ids[i], "--"),
+            assert self.host_machine.compare_lv_attributes(
+                self.sd_ids[i], self.vol_ids[i], "--"
+            ), (
                 "The disk was not found to be inactive after running "
-                "teardownImage")
+                "teardownImage"
+            )
 
     def basic_positive_flow_teardown_first(self, num_repetitions):
         """
@@ -297,44 +309,56 @@ class BasicEnvironment(BaseTestCase):
             for i in xrange(self.disk_count):
                 logger.info("Ensure that the initial disk attributes are "
                             "active")
-                self.assertTrue(self.host_machine.compare_lv_attributes(
-                    self.sd_ids[i], self.vol_ids[i], "a-"),
+                assert self.host_machine.compare_lv_attributes(
+                    self.sd_ids[i], self.vol_ids[i], "a-"), (
                     "The initial disk attributes were not found to show the "
-                    "disk in an active state")
+                    "disk in an active state"
+                    )
 
                 logger.info("Ensure that the disk becomes inactive after "
                             "running teardownImage")
-                status, teardown_image_output = \
+                status, teardown_image_output = (
                     self.host_machine.execute_teardownImage_command(
                         self.sp_id, self.sd_ids[i], self.img_ids[i],
-                        self.vol_ids[i])
+                        self.vol_ids[i]
+                    )
+                )
                 # Ensure that a status of True is returned for the
                 # teardownImage execution
-                self.assertTrue(status, "Status returned for teardownImage "
-                                        "command was not True as expected")
+                assert status, (
+                    "Status returned for teardownImage command was not True "
+                    "as expected"
+                )
                 logger.info("The returned output from running teardownImage "
                             "is: '%s'", teardown_image_output)
-                self.assertTrue(self.host_machine.compare_lv_attributes(
-                    self.sd_ids[i], self.vol_ids[i], "--"),
+                assert self.host_machine.compare_lv_attributes(
+                    self.sd_ids[i], self.vol_ids[i], "--"), (
                     "The disk was not found to be inactive after running "
-                    "teardownImage")
+                    "teardownImage"
+                    )
 
                 logger.info("Ensure that the disk becomes active after "
                             "running prepareImage")
-                status, prepare_output = \
+                status, prepare_output = (
                     self.host_machine.execute_prepareImage_command(
                         self.sp_id, self.sd_ids[i], self.img_ids[i],
-                        self.vol_ids[i])
+                        self.vol_ids[i]
+                    )
+                )
                 # Ensure that a status of True is returned for the prepareImage
                 # execution
-                self.assertTrue(status, "Status returned for prepareImage "
-                                        "command was not True as expected")
+                assert status, (
+                    "Status returned for prepareImage command was not True as "
+                    "expected"
+                )
                 logger.info("The returned output from running prepareImage "
                             "is: '%s'", prepare_output)
-                self.assertTrue(self.host_machine.compare_lv_attributes(
-                    self.sd_ids[i], self.vol_ids[i], "a-"),
+                assert self.host_machine.compare_lv_attributes(
+                    self.sd_ids[i], self.vol_ids[i], "a-"
+                ), (
                     "The disk was not found to be active after running "
-                    "prepareImage")
+                    "prepareImage"
+                )
 
     def basic_positive_flow_only_teardown_image_no_volume_id(self):
         """
@@ -345,19 +369,25 @@ class BasicEnvironment(BaseTestCase):
         for i in xrange(self.disk_count):
             logger.info("Ensure that the disk becomes inactive after running "
                         "teardownImage")
-            status, teardown_image_output = \
+            status, teardown_image_output = (
                 self.host_machine.execute_teardownImage_command(
-                    self.sp_id, self.sd_ids[i], self.img_ids[i])
+                    self.sp_id, self.sd_ids[i], self.img_ids[i]
+                )
+            )
             # Ensure that a status of True is returned for the teardownImage
             # execution
-            self.assertTrue(status, "Status returned for teardownImage "
-                                    "command was not True as expected")
+            assert status, (
+                "Status returned for teardownImage command was not True as "
+                "expected"
+            )
             logger.info("The returned output from running teardownImage is: "
                         "'%s'", teardown_image_output)
-            self.assertTrue(self.host_machine.compare_lv_attributes(
-                self.sd_ids[i], self.vol_ids[i], "--"),
+            assert self.host_machine.compare_lv_attributes(
+                self.sd_ids[i], self.vol_ids[i], "--"
+            ), (
                 "The disk was not found to be inactive after running "
-                "teardownImage")
+                "teardownImage"
+            )
 
     def basic_negative_flow_erroneous_parameters(self, function, indices,
                                                  errors):
@@ -387,14 +417,19 @@ class BasicEnvironment(BaseTestCase):
             )
             # Ensure that status is False, expected when any parameters are
             # missing or incorrect
-            self.assertFalse(status, "The status is not False as expected when"
-                                     " running with an incorrect parameter")
-            logger.info("The returned output from running %s with an "
-                        "incorrect parameter is: '%s'" % (function, output))
+            assert not status, (
+                "The status is not False as expected when running with an "
+                "incorrect parameter"
+            )
+            logger.info(
+                "The returned output from running %s with an incorrect "
+                "parameter is: '%s'" % (function, output)
+            )
             for error in errors:
-                self.assertTrue(error in output,
-                                "Did not observe the expected error, '%s', as "
-                                "part of the output" % error)
+                assert error in output, (
+                    "Did not observe the expected error, '%s', as part of the "
+                    "output" % error
+                )
 
 
 @attr(tier=config.DO_NOT_RUN)
@@ -423,8 +458,9 @@ class TestCase4581(BasicEnvironment):
         self.basic_positive_flow()
 
         logger.info("Ensure that the VM can be powered on successfully")
-        self.assertTrue(startVm(True, self.vm_name, config.VM_UP),
-                        "Failed to start VM '%s'" % self.vm_name)
+        assert startVm(True, self.vm_name, config.VM_UP), (
+            "Failed to start VM '%s'" % self.vm_name
+        )
 
 
 @attr(tier=config.DO_NOT_RUN)
@@ -453,22 +489,24 @@ class TestCase4595(BasicEnvironment):
         status, output = host_machine.execute_prepareImage_command()
         # Ensure that status is False, expected when any parameters are
         # missing or incorrect
-        self.assertFalse(status, "Running prepareImage with no parameters "
-                                 "did not yield a False status as expected")
+        assert not status, (
+            "Running prepareImage with no parameters did not yield a False "
+            "status as expected"
+        )
         logger.info("The returned output from running prepareImage with no "
                     "parameters is: '%s'", output)
-        self.assertTrue(CMD_ERROR_INCORRECT_NUM_PARAMS_PART_1 in output,
-                        "Did not observe the expected error, '%s', as "
-                        "part of the output" %
-                        CMD_ERROR_INCORRECT_NUM_PARAMS_PART_1)
-        self.assertTrue(CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2 in output,
-                        "Did not observe the expected error, '%s', as "
-                        "part of the output" %
-                        CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2)
-        self.assertTrue(CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3 in output,
-                        "Did not observe the expected error, '%s', as "
-                        "part of the output" %
-                        CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3)
+        assert CMD_ERROR_INCORRECT_NUM_PARAMS_PART_1 in output, (
+            "Did not observe the expected error, '%s', as part of the output" %
+            CMD_ERROR_INCORRECT_NUM_PARAMS_PART_1
+        )
+        assert CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2 in output, (
+            "Did not observe the expected error, '%s', as part of the output" %
+            CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2
+        )
+        assert CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3 in output, (
+            "Did not observe the expected error, '%s', as part of the output" %
+            CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3
+        )
 
         logger.info("Run through the prepareImage and teardownImage flows "
                     "for all disks on the powered off VM")
@@ -492,17 +530,19 @@ class TestCase4596(BasicEnvironment):
     def setUp(self):
         super(TestCase4596, self).setUp()
         logger.info("Create a snapshot that includes all attached disks")
-        self.snapshot_success = addSnapshot(True, self.vm_name,
-                                            VM1_SNAPSHOT1_DESCRIPTION,
-                                            wait=True,
-                                            persist_memory=False,
-                                            disks_lst=self.disk_aliases)
-        self.assertTrue(self.snapshot_success, "Taking a snapshot of "
-                                               "the VM failed, aborting case")
+        self.snapshot_success = addSnapshot(
+            True, self.vm_name, VM1_SNAPSHOT1_DESCRIPTION, wait=True,
+            persist_memory=False, disks_lst=self.disk_aliases
+        )
+        assert self.snapshot_success, (
+            "Taking a snapshot of the VM failed, aborting case"
+        )
 
     def tearDown(self):
-        logger.info("Remove the snapshot created (if it succeeded), paving "
-                    "the way for the disk to be detached and removed")
+        logger.info(
+            "Remove the snapshot created (if it succeeded), paving the way for"
+            " the disk to be detached and removed"
+        )
         if self.snapshot_success:
             removeSnapshot(True, self.vm_name, VM1_SNAPSHOT1_DESCRIPTION)
         super(TestCase4596, self).tearDown()
@@ -643,16 +683,18 @@ class TestCase4599(BasicEnvironment):
         self.basic_positive_flow()
 
         logger.info("Create a snapshot that includes all attached disks")
-        self.snapshot_success = addSnapshot(True, self.vm_name,
-                                            VM1_SNAPSHOT1_DESCRIPTION,
-                                            wait=True, persist_memory=False,
-                                            disks_lst=self.disk_aliases)
-        self.assertTrue(self.snapshot_success, "Taking a snapshot of "
-                                               "the VM failed, aborting case")
+        self.snapshot_success = addSnapshot(
+            True, self.vm_name, VM1_SNAPSHOT1_DESCRIPTION, wait=True,
+            persist_memory=False, disks_lst=self.disk_aliases
+        )
+        assert self.snapshot_success, (
+            "Taking a snapshot of the VM failed, aborting case"
+        )
 
-        logger.info("Run through the prepareImage and teardownImage flows "
-                    "for all disks following the snapshot on the powered off"
-                    "VM")
+        logger.info(
+            "Run through the prepareImage and teardownImage flows for all "
+            "disks following the snapshot on the powered off VM"
+        )
         self.basic_positive_flow()
 
 
@@ -676,16 +718,16 @@ class TestCase4600(BasicEnvironment):
         target_storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[1]
         for index in xrange(2):
-            self.assertTrue(
-                move_disk(
-                    disk_name=self.disk_aliases[self.disk_count - index - 1],
-                    target_domain=target_storage_domain
-                ), "Migrating disk failed for disk '%s" %
+            assert move_disk(
+                disk_name=self.disk_aliases[self.disk_count - index - 1],
+                target_domain=target_storage_domain
+            ), "Migrating disk failed for disk '%s" % (
                 self.disk_aliases[self.disk_count - index - 1]
             )
             # Update the Storage domain ID for the disk that was migrated
-            disk_obj = get_disk_obj(self.disk_aliases[self.disk_count -
-                                                      index - 1])
+            disk_obj = get_disk_obj(
+                self.disk_aliases[self.disk_count - index - 1]
+            )
             self.sd_ids[self.disk_count - index - 1] = get_sduuid(disk_obj)
 
     def tearDown(self):
@@ -703,21 +745,25 @@ class TestCase4600(BasicEnvironment):
         3. Take a snapshot of the VM
         4. Run prepareImage on each disk and ensure only this disk is affected
         """
-        logger.info("Run through the prepareImage and teardownImage flows "
-                    "for all disks on the powered off VM")
+        logger.info(
+            "Run through the prepareImage and teardownImage flows for all "
+            "disks on the powered off VM"
+        )
         self.basic_positive_flow()
 
         logger.info("Create a snapshot that includes all attached disks")
-        self.snapshot_success = addSnapshot(True, self.vm_name,
-                                            VM1_SNAPSHOT1_DESCRIPTION,
-                                            wait=True, persist_memory=False,
-                                            disks_lst=self.disk_aliases)
-        self.assertTrue(self.snapshot_success, "Taking a snapshot of "
-                                               "the VM failed, aborting case")
+        self.snapshot_success = addSnapshot(
+            True, self.vm_name, VM1_SNAPSHOT1_DESCRIPTION, wait=True,
+            persist_memory=False, disks_lst=self.disk_aliases
+        )
+        assert self.snapshot_success, (
+            "Taking a snapshot of the VM failed, aborting case"
+        )
 
-        logger.info("Run through the prepareImage and teardownImage flows "
-                    "for all disks following the snapshot on the powered off"
-                    "VM")
+        logger.info(
+            "Run through the prepareImage and teardownImage flows for all "
+            "disks following the snapshot on the powered off VM"
+        )
         self.basic_positive_flow()
 
 
@@ -737,10 +783,10 @@ class TestCase4601(BasicEnvironment):
         super(TestCase4601, self).setUp()
         logger.info("Create a template with 3 disks")
         template_name = "template_%s" % self.polarion_test_case
-        self.assertTrue(createTemplate(True, wait=True, vm=self.vm_name,
-                                       name=template_name,
-                                       cluster=config.CLUSTER_NAME),
-                        "Failed to create template '%s'" % template_name)
+        assert createTemplate(
+            True, wait=True, vm=self.vm_name, name=template_name,
+            cluster=config.CLUSTER_NAME
+        ), "Failed to create template '%s'" % template_name
 
         logger.info("Remove the original VM created which was used to "
                     "generate the template so that there are no duplicate "
@@ -751,17 +797,17 @@ class TestCase4601(BasicEnvironment):
 
         logger.info("Create a VM from the template created earlier in the "
                     "test")
-        self.assertTrue(cloneVmFromTemplate(True, name=self.vm_name,
-                                            template=template_name,
-                                            cluster=config.CLUSTER_NAME),
-                        "Failed to clone a VM from template '%s'" %
-                        template_name)
+        assert cloneVmFromTemplate(
+            True, name=self.vm_name, template=template_name,
+            cluster=config.CLUSTER_NAME
+        ), "Failed to clone a VM from template '%s'" % template_name
         waitForVMState(self.vm_name, config.VM_DOWN)
 
         logger.info("Remove the template so that there are no duplicate disk "
                     "aliases left")
-        self.assertTrue(removeTemplate(True, template_name, wait=True),
-                        "Failed to remove template '%s'" % template_name)
+        assert removeTemplate(
+            True, template_name, wait=True
+        ), "Failed to remove template '%s'" % template_name
 
         # Re-build the list of UUIDs now that we have a new set of
         # disks created from the template
@@ -843,38 +889,43 @@ class TestCase4602(BasicEnvironment):
         6. Run the prepareImage command on the remaining disks with all the
         correct parameters for each image
         """
-        logger.info("Fills up the wipe after delete disk with data written "
-                    "using dd urandom ")
+        logger.info(
+            "Fills up the wipe after delete disk with data written using dd "
+            "urandom "
+        )
         status, out = perform_dd_to_disk(self.vm_name, self.disk_aliases[-1])
-        logger.info("The output of the file copy from the boot disk into the "
-                    "5 GB disk was '%s'", out)
-        logger.info("Power off the VM in order to delete the 5 GB disk and "
-                    "attempt to run prepareImage and teardownImage while "
-                    "delete is in progress")
+        logger.info(
+            "The output of the file copy from the boot disk into the 5 GB disk"
+            " was '%s'", out
+        )
+        logger.info(
+            "Power off the VM in order to delete the 5 GB disk and attempt to "
+            "run prepareImage and teardownImage while delete is in progress"
+        )
         stop_vms_safely([self.vm_name])
         self.host_machine = host_to_use()
         deleteDisk(True, self.disk_aliases[-1])
-        _, prepare_output = \
-            self.host_machine.execute_prepareImage_command(
-                self.sp_id, self.sd_ids[-1],
-                self.img_ids[-1], self.vol_ids[-1])
+        _, prepare_output = self.host_machine.execute_prepareImage_command(
+            self.sp_id, self.sd_ids[-1], self.img_ids[-1], self.vol_ids[-1]
+        )
         logger.info("The returned output from running prepareImage on the "
                     "disk being deleted was '%s'", prepare_output)
-        self.assertTrue(CMD_ERROR_VOLUME_DOES_NOT_EXIST in prepare_output,
-                        "Did not observe the expected error, '%s', as "
-                        "part of the output '%s'" %
-                        (CMD_ERROR_VOLUME_DOES_NOT_EXIST, prepare_output))
+        assert CMD_ERROR_VOLUME_DOES_NOT_EXIST in prepare_output, (
+            "Did not observe the expected error, '%s', as part of the output "
+            "'%s'" % (CMD_ERROR_VOLUME_DOES_NOT_EXIST, prepare_output)
+        )
 
-        _, teardown_output = \
-            self.host_machine.execute_teardownImage_command(
-                self.sp_id, self.sd_ids[-1],
-                self.img_ids[-1], self.vol_ids[-1])
-        logger.info("The returned output from running teardownImage on the "
-                    "disk being deleted was '%s'", teardown_output)
-        self.assertTrue(CMD_OK in teardown_output,
-                        "Did not observe the expected message, '%s', as "
-                        "part of the output '%s'" %
-                        (CMD_ERROR_VOLUME_DOES_NOT_EXIST, teardown_output))
+        _, teardown_output = self.host_machine.execute_teardownImage_command(
+            self.sp_id, self.sd_ids[-1], self.img_ids[-1], self.vol_ids[-1]
+        )
+        logger.info(
+            "The returned output from running teardownImage on the disk being "
+            "deleted was '%s'", teardown_output
+        )
+        assert CMD_OK in teardown_output, (
+            "Did not observe the expected message, '%s', as part of the output"
+            " '%s'" % (CMD_ERROR_VOLUME_DOES_NOT_EXIST, teardown_output)
+        )
 
         # Remove the wipe after delete disk alias so it doesn't get deleted
         # again in the class tearDown

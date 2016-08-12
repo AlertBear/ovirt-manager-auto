@@ -40,7 +40,7 @@ class TestCaseStorageDomain(TestCase):
             address=config.DATA_DOMAIN_ADDRESSES[0], host=config.HOSTS[0],
             path=config.DATA_DOMAIN_PATHS[0]
         )
-        self.assertTrue(status, 'Add storage domain')
+        assert status, 'Add storage domain'
 
     @attr(tier=1)
     def test_update_storage_domain(self):
@@ -53,8 +53,8 @@ class TestCaseStorageDomain(TestCase):
         status = ll_sd.updateStorageDomain(
             positive=True, storagedomain=self.sd_name, name=new_name
         )
-        self.assertTrue(status, 'Update storage domain')
+        assert status, 'Update storage domain'
         status = ll_sd.updateStorageDomain(
             positive=True, storagedomain=new_name, name=self.sd_name
         )
-        self.assertTrue(status, 'Revert storage domain')
+        assert status, 'Revert storage domain'

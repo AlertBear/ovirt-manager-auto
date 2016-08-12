@@ -43,33 +43,27 @@ class VmSnapshots(VirtTest):
                 description, self.vm_name
             )
             logger.info("add snapshot job description: %s", job_description)
-            self.assertTrue(
-                ll_vms.addSnapshot(
-                    positive=True,
-                    vm=self.vm_name,
-                    description=description,
-                ), "Failed to add snapshot to VM."
-            )
+            assert ll_vms.addSnapshot(
+                positive=True,
+                vm=self.vm_name,
+                description=description,
+            ), "Failed to add snapshot to VM."
         testflow.step(
             "Restore vm %s from snapshot %s",
             self.vm_name,
             self.snapshot_description[1]
         )
-        self.assertTrue(
-            ll_vms.restore_snapshot(
-                True,
-                self.vm_name,
-                self.snapshot_description[1]
-            )
+        assert ll_vms.restore_snapshot(
+            True,
+            self.vm_name,
+            self.snapshot_description[1]
         )
         testflow.step("Export vm %s with discarded snapshots", self.vm_name)
-        self.assertTrue(
-            ll_vms.exportVm(
-                positive=True,
-                vm=self.vm_name,
-                storagedomain=self.export_domain,
-                discard_snapshots='true'
-            )
+        assert ll_vms.exportVm(
+            positive=True,
+            vm=self.vm_name,
+            storagedomain=self.export_domain,
+            discard_snapshots='true'
         )
         testflow.step(
             "Remove snapshots %s and %s of vm %s",
@@ -78,12 +72,10 @@ class VmSnapshots(VirtTest):
             self.vm_name
         )
         for snapshot in self.snapshot_description:
-            self.assertTrue(
-                ll_vms.removeSnapshot(
-                    True,
-                    self.vm_name,
-                    snapshot
-                )
+            assert ll_vms.removeSnapshot(
+                True,
+                self.vm_name,
+                snapshot
             )
 
     @attr(tier=1)
@@ -93,7 +85,7 @@ class VmSnapshots(VirtTest):
         """
         Create, restore, export and remove snapshots
         """
-        self.assertTrue(ll_vms.startVm(True, self.vm_name))
+        assert ll_vms.startVm(True, self.vm_name)
         testflow.step(
             "Create two new snapshots of vm %s with memory",
             self.vm_name
@@ -104,27 +96,23 @@ class VmSnapshots(VirtTest):
                 (description, self.vm_name)
             )
             logger.info("add snapshot job description: %s", job_description)
-            self.assertTrue(
-                ll_vms.addSnapshot(
-                    positive=True,
-                    vm=self.vm_name,
-                    description=description,
-                    persist_memory=True,
-                ), "Failed to add snapshot to VM."
-            )
+            assert ll_vms.addSnapshot(
+                positive=True,
+                vm=self.vm_name,
+                description=description,
+                persist_memory=True,
+            ), "Failed to add snapshot to VM."
         testflow.step(
             "Restore vm %s from snapshot %s",
             self.vm_name,
             self.snapshot_description[1]
         )
-        self.assertTrue(
-            ll_vms.restore_snapshot(
-                True,
-                self.vm_name,
-                self.snapshot_description[1],
-                restore_memory=True,
-                ensure_vm_down=True
-            )
+        assert ll_vms.restore_snapshot(
+            True,
+            self.vm_name,
+            self.snapshot_description[1],
+            restore_memory=True,
+            ensure_vm_down=True
         )
         testflow.step(
             "Remove snapshots %s and %s of vm %s",
@@ -133,10 +121,8 @@ class VmSnapshots(VirtTest):
             self.vm_name
         )
         for snapshot in self.snapshot_description:
-            self.assertTrue(
-                ll_vms.removeSnapshot(
-                    True,
-                    self.vm_name,
-                    snapshot
-                )
+            assert ll_vms.removeSnapshot(
+                True,
+                self.vm_name,
+                snapshot
             )

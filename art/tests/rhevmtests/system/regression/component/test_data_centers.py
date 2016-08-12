@@ -37,12 +37,12 @@ class TestCaseDataCenter(TestCase):
             True, name='temp_data_center', local=True,
             version=config.COMP_VERSION
         )
-        self.assertTrue(status, 'Create temporary Local data center')
+        assert status, 'Create temporary Local data center'
         logger.info('Remove temporary data center')
         status = ll_dc.remove_datacenter(
             positive=True, datacenter='temp_data_center'
         )
-        self.assertTrue(status, 'Remove temporary data center')
+        assert status, 'Remove temporary data center'
 
     @attr(tier=2)
     def test_create_data_center_with_spaces_in_name(self):
@@ -55,7 +55,7 @@ class TestCaseDataCenter(TestCase):
             False, name='No Data Center', local=True,
             version=config.COMP_VERSION
         )
-        self.assertTrue(status, 'Create data center with spaces in name')
+        assert status, 'Create data center with spaces in name'
 
     @attr(tier=2)
     def test_create_data_center_with_existing_name(self):
@@ -67,7 +67,7 @@ class TestCaseDataCenter(TestCase):
             False, name=self.dc_name, local=True,
             version=config.COMP_VERSION
         )
-        self.assertTrue(status, 'Create data center with existing name')
+        assert status, 'Create data center with existing name'
 
     @attr(tier=1)
     def test_update_data_center_name_and_description(self):
@@ -85,12 +85,8 @@ class TestCaseDataCenter(TestCase):
             positive=True, datacenter=updated_name,
             name=self.dc_name, description=''
         )
-        self.assertTrue(
-            update_status, 'Update data center name and description'
-        )
-        self.assertTrue(
-            revert_status, 'Revert data center name and description'
-        )
+        assert update_status, 'Update data center name and description'
+        assert revert_status, 'Revert data center name and description'
 
     @attr(tier=1)
     def test_search_for_data_center(self):
@@ -103,4 +99,4 @@ class TestCaseDataCenter(TestCase):
             positive=True, query_key='name',
             query_val=self.dc_name, key_name='name'
         )
-        self.assertTrue(status, log_msg)
+        assert status, log_msg

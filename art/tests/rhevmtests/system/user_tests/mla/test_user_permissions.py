@@ -144,13 +144,11 @@ class PermissionsCase54409(TestCase):
     def test_permissionsInheritence(self):
         """ permissions inheritence """
         loginAsUser(config.USER_NAME, filter=False)
-        self.assertTrue(
-            vms.createVm(
-                True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
-                network=config.MGMT_BRIDGE
-            )
+        assert vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
         )
-        self.assertTrue(vms.removeVm(True, config.VM_NAME1))
+        assert vms.removeVm(True, config.VM_NAME1)
         LOGGER.info("User can create/remove vm with vm permissions.")
 
         loginAsAdmin()
@@ -164,11 +162,9 @@ class PermissionsCase54409(TestCase):
         )
 
         loginAsUser(config.USER_NAME)
-        self.assertTrue(
-            vms.createVm(
-                False, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
-                network=config.MGMT_BRIDGE
-            )
+        assert vms.createVm(
+            False, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
         )
         LOGGER.info("User can't create/remove vm without vm permissions.")
 
@@ -300,25 +296,19 @@ class PermissionsCase54425(TestCase):
                     except:  # Ignore, user should not add perms
                         pass
                     LOGGER.info("'%s' can't add admin permissions." % r)
-                    self.assertTrue(
-                        mla.addVMPermissionsToUser(
-                            True, config.USER_NAME, config.VM_NAME1
-                        )
+                    assert mla.addVMPermissionsToUser(
+                        True, config.USER_NAME, config.VM_NAME1
                     )
                     LOGGER.info("'%s' can add user permissions." % r)
                 else:
-                    self.assertTrue(
-                        mla.addVMPermissionsToUser(
-                            True, config.USER_NAME, config.VM_NAME1,
-                            role.UserRole
-                        )
+                    assert mla.addVMPermissionsToUser(
+                        True, config.USER_NAME, config.VM_NAME1,
+                        role.UserRole
                     )
                     LOGGER.info("'%s' can add user permissions." % r)
-                    self.assertTrue(
-                        mla.addVMPermissionsToUser(
-                            True, config.USER_NAME, config.VM_NAME1,
-                            role.TemplateAdmin
-                        )
+                    assert mla.addVMPermissionsToUser(
+                        True, config.USER_NAME, config.VM_NAME1,
+                        role.TemplateAdmin
                     )
                     LOGGER.info("'%s' can add admin permissions." % r)
             else:
@@ -375,17 +365,13 @@ class PermissionsCase54446(TestCase):
     def test_usersPermissions(self):
         """ users permissions """
         loginAsUser(config.GROUP_USER)
-        self.assertTrue(
-            vms.createVm(
-                True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
-                network=config.MGMT_BRIDGE
-            )
+        assert vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
         )
-        self.assertTrue(
-            templates.createTemplate(
-                False, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
-                cluster=config.CLUSTER_NAME[0]
-            )
+        assert templates.createTemplate(
+            False, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
+            cluster=config.CLUSTER_NAME[0]
         )
 
 
@@ -540,11 +526,11 @@ class PermissionsCase109086(TestCase):
     def test_permsInhForVmPools(self):
         """ Permission inheritance for desktop pools """
         loginAsUser(config.USER_NAME)
-        self.assertTrue(vmpools.allocateVmFromPool(True, config.VMPOOL_NAME))
+        assert vmpools.allocateVmFromPool(True, config.VMPOOL_NAME)
         loginAsAdmin()
         vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='up')
         loginAsUser(config.USER_NAME)
-        self.assertTrue(hl_vmpools.stop_vm_pool(config.VMPOOL_NAME))
+        assert hl_vmpools.stop_vm_pool(config.VMPOOL_NAME)
         loginAsAdmin()
         vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
         time.sleep(10)  # Didn't find any reliable way how to wait.
@@ -685,15 +671,11 @@ class AdminPropertiesOfTemplate(TestCase):
     def test_create_vm_from_template_with_admin_props(self):
         """ Test create vm from template with admin properties set """
         loginAsUser(config.USER_NAME)
-        self.assertTrue(
-            vms.createVm(
-                True,
-                config.VM_NAME1,
-                '',
-                cluster=config.CLUSTER_NAME[0],
-                template=config.TEMPLATE_NAME[0],
-            )
+        assert vms.createVm(
+            True,
+            config.VM_NAME1,
+            '',
+            cluster=config.CLUSTER_NAME[0],
+            template=config.TEMPLATE_NAME[0],
         )
-        self.assertTrue(
-            vms.removeVm(True, config.VM_NAME1)
-        )
+        assert vms.removeVm(True, config.VM_NAME1)

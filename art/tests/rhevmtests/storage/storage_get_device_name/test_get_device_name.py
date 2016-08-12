@@ -94,15 +94,17 @@ class BasicEnvironment(BaseTestCase):
         sd* in the guest OS, all other disks should show up as vd*
         """
         if disk_interface == config.VIRTIO_SCSI:
-            self.assertTrue(disk_logical_volume_name.find("sd") != -1,
-                            "The VirtIO-SCSI disk name was not found to use "
-                            "sd*, the disk logical name is: '%s'" %
-                            disk_logical_volume_name)
+            assert disk_logical_volume_name.find("sd") != -1, (
+                "The VirtIO-SCSI disk name was not found to use "
+                "sd*, the disk logical name is: '%s'" %
+                disk_logical_volume_name
+            )
         else:
-            self.assertTrue(disk_logical_volume_name.find("vd") != -1,
-                            "The VirtIO disk name was not found to use "
-                            "vd*, the disk logical name is: '%s'" %
-                            disk_logical_volume_name)
+            assert disk_logical_volume_name.find("vd") != -1, (
+                "The VirtIO disk name was not found to use "
+                "vd*, the disk logical name is: '%s'" %
+                disk_logical_volume_name
+            )
 
     def create_and_attach_disk_to_vms(self, is_disk_shared, vm_names):
         """
@@ -180,10 +182,10 @@ class BasicEnvironment(BaseTestCase):
                     self.vm_name, STORAGE_DEVICES_FILTER
                 )
             )
-            self.assertTrue(disk_logical_volume_name in
-                            self.current_storage_devices,
-                            "The disk created '%s' was found after being "
-                            "attached to the VM" % disk_alias)
+            assert disk_logical_volume_name in self.current_storage_devices, (
+                "The disk created '%s' was found after being "
+                "attached to the VM" % disk_alias
+            )
 
             # Retrieve the disk object, and then retrieve its interface
             # needed in verifying the logical device name
@@ -198,10 +200,12 @@ class BasicEnvironment(BaseTestCase):
                         self.vm_name, STORAGE_DEVICES_FILTER
                     )
                 )
-                self.assertTrue(disk_logical_volume_name not in
-                                self.current_storage_devices,
-                                "The disk created '%s' was found after being "
-                                "attached to the VM" % disk_alias)
+                assert disk_logical_volume_name not in (
+                    self.current_storage_devices
+                ), (
+                    "The disk created '%s' was found after being attached to "
+                    "the VM" % disk_alias
+                )
 
             if not hot_plug:
                 vms.stop_vms_safely([self.vm_name])
@@ -245,11 +249,12 @@ class BasicEnvironment(BaseTestCase):
                 )
             self.verify_logical_device_naming(config.VIRTIO,
                                               disk_logical_volume_name)
-            self.assertTrue(disk_logical_volume_name in
-                            self.current_storage_devices[vm_name],
-                            "The disk volume name '%s' was not found "
-                            "after being attached to the VM" %
-                            disk_logical_volume_name)
+            assert disk_logical_volume_name in (
+                self.current_storage_devices[vm_name]
+            ), (
+                "The disk volume name '%s' was not found after being attached "
+                "to the VM" % disk_logical_volume_name
+            )
 
         vms.stop_vms_safely(vm_names)
 

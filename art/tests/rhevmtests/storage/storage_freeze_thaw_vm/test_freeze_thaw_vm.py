@@ -70,11 +70,10 @@ class BaseTestCase(TestCase):
         Ensure writing a file while the vm's filesystems are frozen fails
         with a timeout
         """
-        self.assertTrue(
-            "timeout" in self.run_cmd(
-                WRITE_TO_FILE_CMD % self.file_path, positive=False,
-                timeout=5
-            ),
+        assert "timeout" in self.run_cmd(
+            WRITE_TO_FILE_CMD % self.file_path, positive=False,
+            timeout=5
+        ), (
             "Write operation when the filesystems are frozen should have "
             "failed with a timeout"
         )
@@ -130,10 +129,9 @@ class BaseTestCase(TestCase):
         dd_pid = self.run_cmd(DD_CMD % self.dd_path, out_as_int=True)
 
         testflow.step("Freezing filesystem of vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.freeze_vm(True, self.vm_name),
-            "Failed to freeze vm %s filesystems" % self.vm_name
-        )
+        assert ll_vms.freeze_vm(
+            True, self.vm_name
+        ), "Failed to freeze vm %s filesystems" % self.vm_name
 
         self.run_cmd(CHECK_PID_CMD % dd_pid)
 
@@ -143,8 +141,7 @@ class BaseTestCase(TestCase):
         second_dd_file_size = self.run_cmd(
             DD_FILE_SIZE_CMD % self.dd_path, out_as_int=True
         )
-        self.assertEqual(
-            dd_file_size, second_dd_file_size,
+        assert dd_file_size == second_dd_file_size, (
             "File %s size isn't suppose to be increased when the filesystems "
             "are frozen" % self.dd_path
         )
@@ -156,16 +153,14 @@ class BaseTestCase(TestCase):
         self.func_to_exec_on_freeze()
 
         testflow.step("Thaw filesystem of vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.thaw_vm(True, self.vm_name),
-            "Failed to thaw vm %s filesystems" % self.vm_name
-        )
+        assert ll_vms.thaw_vm(
+            True, self.vm_name
+        ), "Failed to thaw vm %s filesystems" % self.vm_name
         self.run_cmd(CHECK_PID_CMD % dd_pid)
         new_dd_file_size = self.run_cmd(
             DD_FILE_SIZE_CMD % self.dd_path, out_as_int=True
         )
-        self.assertTrue(
-            new_dd_file_size > dd_file_size,
+        assert new_dd_file_size > dd_file_size, (
             "File %s size after thaw is not bigger than when the filesystem "
             "was frozen. Did the write operation restart?"
         )
@@ -285,10 +280,9 @@ class TestCase14716(BaseTestCase):
         """
         While the vm's fileystems are frozen, create a snapshot
         """
-        self.assertTrue(
-            ll_vms.addSnapshot(True, self.vm_name, self.snapshot_description),
-            "Taking a snapshot while the vm's filesystems are frozen failed"
-        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, self.snapshot_description
+        ), "Taking a snapshot while the vm's filesystems are frozen failed"
 
 
 @attr(tier=2)
@@ -317,35 +311,29 @@ class TestCase14715(BaseTestCase):
         => freeze/thaw should fail
          """
         ll_vms.suspendVm(True, self.vm_name)
-        self.assertTrue(
-            ll_vms.freeze_vm(False, self.vm_name),
-            "Succeeded to freeze suspended vm %s" % self.vm_name
-        )
-        self.assertTrue(
-            ll_vms.thaw_vm(False, self.vm_name),
-            "Succeeded to thaw suspended vm %s" % self.vm_name
-        )
+        assert ll_vms.freeze_vm(
+            False, self.vm_name
+        ), "Succeeded to freeze suspended vm %s" % self.vm_name
+        assert ll_vms.thaw_vm(
+            False, self.vm_name
+        ), "Succeeded to thaw suspended vm %s" % self.vm_name
         ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
         self.run_cmd(
             WRITE_TO_FILE_CMD % self.file_path, positive=True,
             timeout=5
         )
-        self.assertTrue(
-            ll_vms.freeze_vm(True, self.vm_name),
-            "Failed to freeze vm filesystems %s" % self.vm_name
-        )
-        self.assertTrue(
-            ll_vms.freeze_vm(False, self.vm_name),
-            "Succeeded to freeze the already frozen vm %s" % self.vm_name
-        )
+        assert ll_vms.freeze_vm(
+            True, self.vm_name
+        ), "Failed to freeze vm filesystems %s" % self.vm_name
+        assert ll_vms.freeze_vm(
+            False, self.vm_name
+        ), "Succeeded to freeze the already frozen vm %s" % self.vm_name
         self.assert_fail_write_to_filesystem_with_timeout()
 
-        self.assertTrue(
-            ll_vms.thaw_vm(True, self.vm_name),
-            "Failed to thaw vm %s filesystems" % self.vm_name
-        )
-        self.assertTrue(
-            ll_vms.thaw_vm(True, self.vm_name),
+        assert ll_vms.thaw_vm(
+            True, self.vm_name
+        ), "Failed to thaw vm %s filesystems" % self.vm_name
+        assert ll_vms.thaw_vm(True, self.vm_name), (
             "Failed to thaw vm %s with filesystems that are not frozen" %
             self.vm_name
         )
@@ -355,16 +343,14 @@ class TestCase14715(BaseTestCase):
         )
 
         self.run_cmd(OVIRT_GUEST_AGENT_STOP_CMD)
-        self.assertTrue(
-            ll_vms.freeze_vm(True, self.vm_name),
-            "Failed to freeze a vm %s when ovirt guest agent "
-            "is stopped" % self.vm_name
+        assert ll_vms.freeze_vm(True, self.vm_name), (
+            "Failed to freeze a vm %s when ovirt guest agent is stopped" %
+            self.vm_name
         )
         self.assert_fail_write_to_filesystem_with_timeout()
-        self.assertTrue(
-            ll_vms.thaw_vm(True, self.vm_name),
-            "Failed to thaw vm %s filesystems when ovirt guest agent "
-            " is stopped" % self.vm_name
+        assert ll_vms.thaw_vm(True, self.vm_name), (
+            "Failed to thaw vm %s filesystems when ovirt guest agent is "
+            "stopped" % self.vm_name
         )
         self.run_cmd(
             WRITE_TO_FILE_CMD % self.file_path, positive=True,
@@ -372,8 +358,7 @@ class TestCase14715(BaseTestCase):
         )
 
         self.run_cmd(QEMU_GUEST_AGENT_STOP_CMD)
-        self.assertTrue(
-            ll_vms.freeze_vm(False, self.vm_name),
+        assert ll_vms.freeze_vm(False, self.vm_name), (
             "Succeeded to freeze vm %s when qemu-guest-agent is not running" %
             self.vm_name
         )
@@ -381,22 +366,19 @@ class TestCase14715(BaseTestCase):
             WRITE_TO_FILE_CMD % self.file_path, positive=True,
             timeout=5
         )
-        self.assertTrue(
-            ll_vms.thaw_vm(False, self.vm_name),
+        assert ll_vms.thaw_vm(False, self.vm_name), (
             "Succeeded to thaw vm %s when qemu-guest-agent is not running" %
             self.vm_name
         )
 
         ll_vms.reboot_vm(True, self.vm_name)
         ll_vms.waitForVMState(self.vm_name, config.VM_REBOOT)
-        self.assertTrue(
-            ll_vms.freeze_vm(False, self.vm_name),
-            "Succeeded to freeze vm %s that is in reboot status" % self.vm_name
-        )
-        self.assertTrue(
-            ll_vms.thaw_vm(False, self.vm_name),
-            "Succeeded to thaw vm %s that is in reboot status" % self.vm_name
-        )
+        assert ll_vms.freeze_vm(
+            False, self.vm_name
+        ), "Succeeded to freeze vm %s that is in reboot status" % self.vm_name
+        assert ll_vms.thaw_vm(
+            False, self.vm_name
+        ), "Succeeded to thaw vm %s that is in reboot status" % self.vm_name
         ll_vms.waitForVMState(self.vm_name, config.VM_UP)
         ll_vms.waitForIP(self.vm_name, timeout=60)
         self.run_cmd(
@@ -405,16 +387,13 @@ class TestCase14715(BaseTestCase):
         )
 
         ll_vms.stopVm(True, self.vm_name, async='false')
-        self.assertTrue(
-            ll_vms.waitForVMState(self.vm_name, config.VM_DOWN),
-            "VM %s is not in status down" % self.vm_name
-        )
+        assert ll_vms.waitForVMState(
+            self.vm_name, config.VM_DOWN
+        ), "VM %s is not in status down" % self.vm_name
 
-        self.assertTrue(
-            ll_vms.freeze_vm(False, self.vm_name),
-            "Succeeded to freeze when vm %s is down" % self.vm_name
-        )
-        self.assertTrue(
-            ll_vms.thaw_vm(False, self.vm_name),
-            "Succeeded to thaw when vm %s is down" % self.vm_name
-        )
+        assert ll_vms.freeze_vm(
+            False, self.vm_name
+        ), "Succeeded to freeze when vm %s is down" % self.vm_name
+        assert ll_vms.thaw_vm(
+            False, self.vm_name
+        ), "Succeeded to thaw when vm %s is down" % self.vm_name

@@ -74,28 +74,27 @@ class TestCase4742(TestCase):
         found = st_api.blockOutgoingConnection(self.spm, config.HOSTS_USER,
                                                config.HOSTS_PW,
                                                self.master_domain_ip)
-        self.assertTrue(found, "block connectivity to master domain failed")
+        assert found, "block connectivity to master domain failed"
 
         logger.info("wait for state : 'Non Operational'")
         state = hosts.waitForHostsStates(True, self.spm,
                                          states=config.HOST_NONOPERATIONAL)
         logger.info("state: %s", state)
-        self.assertTrue(state, "Cannot move to Non Operational state")
+        assert state, "Cannot move to Non Operational state"
 
         logger.info("wait for state : 'Non Responsive'")
-        state_is_fenced = \
-            hosts.waitForHostsStates(True, self.spm,
-                                     states=config.HOST_NONRESPONSIVE)
+        state_is_fenced = hosts.waitForHostsStates(
+            True, self.spm, states=config.HOST_NONRESPONSIVE
+        )
 
         logger.info("state: %s", state_is_fenced)
-        self.assertFalse(state_is_fenced, "host fenced")
+        assert not state_is_fenced, "host fenced"
 
-        self.assertTrue(waitForSPM(config.DATA_CENTER_NAME, 120, 10),
-                        "wait for SPM")
+        assert waitForSPM(config.DATA_CENTER_NAME, 120, 10), "wait for SPM"
 
         new_spm = hosts.getSPMHost(config.HOSTS)
         logger.info('new spm is %s', new_spm)
-        self.assertTrue(self.spm != new_spm, "New SPM isn't elected")
+        assert self.spm != new_spm, "New SPM isn't elected"
 
     @classmethod
     def teardown_class(cls):

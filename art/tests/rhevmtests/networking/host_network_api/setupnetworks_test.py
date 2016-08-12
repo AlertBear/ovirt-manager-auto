@@ -41,10 +41,8 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
             }
         }
         testflow.step("Attach network to host NIC")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -71,10 +69,8 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             }
         }
         testflow.step("Attach VLAN network to host NIC")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -101,10 +97,8 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
             }
         }
         testflow.step("Attach Non-VM network to host NIC")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -145,10 +139,8 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
         testflow.step(
             "Attach network with IP (netmask and prefix) to host NIC"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -189,10 +181,8 @@ class TestHostNetworkApiSetupNetworks05(NetworkTest):
         testflow.step(
             "Attach VLAN network with IP (netmask and prefix) to host NIC"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -233,10 +223,8 @@ class TestHostNetworkApiSetupNetworks06(NetworkTest):
         testflow.step(
             "Attach Non-VM network with IP (netmask and prefix) to host NIC"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -263,10 +251,8 @@ class TestHostNetworkApiSetupNetworks07(NetworkTest):
             }
         }
         testflow.step("Attach label to host NIC")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -303,10 +289,8 @@ class TestHostNetworkApiSetupNetworks08(NetworkTest):
             "Attach Non-VM network with 5000 MTU size to host NIC and try to "
             "attach VLAN network with 9000 MTU size to the same NIC"
         )
-        self.assertFalse(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert not hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -327,13 +311,11 @@ class TestHostNetworkApiSetupNetworks09(NetworkTest):
         network_host_api_dict = {
             "remove": {
                 "networks": [self.net]
-                }
             }
+        }
         testflow.step("Remove network from host NIC")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -373,10 +355,8 @@ class TestHostNetworkApiSetupNetworks10(NetworkTest):
             }
         }
         testflow.step("Update the network to have IP (netmask and prefix)")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -415,10 +395,8 @@ class TestHostNetworkApiSetupNetworks11(NetworkTest):
             }
         }
         testflow.step("Attach network to BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -454,10 +432,8 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             }
         }
         testflow.step("Create BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-9622")
@@ -474,10 +450,8 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             }
         }
         testflow.step("Add slave to BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-10520")
@@ -494,10 +468,8 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             }
         }
         testflow.step("Remove slave from BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-9642")
@@ -514,10 +486,8 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             }
         }
         testflow.step("Update BOND to mode 1")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-10521")
@@ -536,10 +506,8 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
             }
         }
         testflow.step("Attach network with IP to BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -579,10 +547,8 @@ class TestHostNetworkApiSetupNetworks13(NetworkTest):
             }
         }
         testflow.step("Create 3 BONDs")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -610,10 +576,8 @@ class TestHostNetworkApiSetupNetworks14(NetworkTest):
             }
         }
         testflow.step("Create BOND with 5 slaves")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -639,10 +603,8 @@ class TestHostNetworkApiSetupNetworks15(NetworkTest):
             }
         }
         testflow.step("Remove network from BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -662,9 +624,7 @@ class TestHostNetworkApiSetupNetworks16(NetworkTest):
         Remove the unmanaged network from host
         """
         testflow.step("Remove the unmanaged network from host")
-        self.assertTrue(
-            hl_host_network.clean_host_interfaces(net_conf.HOST_0_NAME)
-        )
+        assert hl_host_network.clean_host_interfaces(net_conf.HOST_0_NAME)
 
 
 @attr(tier=2)
@@ -683,9 +643,7 @@ class TestHostNetworkApiSetupNetworks17(NetworkTest):
         Remove the unmanaged network from host
         """
         testflow.step("Remove the unmanaged network from host (BOND)")
-        self.assertTrue(
-            hl_host_network.clean_host_interfaces(net_conf.HOST_0_NAME)
-        )
+        assert hl_host_network.clean_host_interfaces(net_conf.HOST_0_NAME)
 
 
 @attr(tier=2)
@@ -724,10 +682,8 @@ class TestHostNetworkApiSetupNetworks18(NetworkTest):
             }
         }
         testflow.step("Attach network with custom properties to BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -768,10 +724,8 @@ class TestHostNetworkApiSetupNetworks19(NetworkTest):
         testflow.step(
             "Attach Non-VM VLAN network with IP (netmask) to host NIC"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -798,10 +752,8 @@ class TestHostNetworkApiSetupNetworks20(NetworkTest):
             }
         }
         testflow.step("Attach Non-VM VLAN network to host NIC")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -834,10 +786,8 @@ class TestHostNetworkApiSetupNetworks21(NetworkTest):
             }
         }
         testflow.step("Create BOND with network")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -874,10 +824,8 @@ class TestHostNetworkApiSetupNetworks22(NetworkTest):
             }
         }
         testflow.step("Attach multiple VLANs to host NIC")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -920,10 +868,8 @@ class TestHostNetworkApiSetupNetworks23(NetworkTest):
             }
         }
         testflow.step("Attach multiple VLANs to BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -951,10 +897,8 @@ class TestHostNetworkApiSetupNetworks24(NetworkTest):
             }
         }
         testflow.step("Attach label to BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -988,10 +932,8 @@ class TestHostNetworkApiSetupNetworks25(NetworkTest):
         testflow.step(
             "Attach VLAN network to host NIC that has VM network on it"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-14015")
@@ -1010,10 +952,8 @@ class TestHostNetworkApiSetupNetworks25(NetworkTest):
         testflow.step(
             "Attach VM network to host NIC that has VLAN network on it"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-14017")
@@ -1036,10 +976,8 @@ class TestHostNetworkApiSetupNetworks25(NetworkTest):
         testflow.step(
             "Attach VLAN network and VM network to same host NIC"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -1079,10 +1017,8 @@ class TestHostNetworkApiSetupNetworks26(NetworkTest):
         testflow.step(
             "Attach VLAN network to BOND that has VM network on it"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-14018")
@@ -1101,10 +1037,8 @@ class TestHostNetworkApiSetupNetworks26(NetworkTest):
         testflow.step(
             "Attach VM network to BOND that has VLAN network on it"
         )
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-14020")
@@ -1125,8 +1059,6 @@ class TestHostNetworkApiSetupNetworks26(NetworkTest):
             }
         }
         testflow.step("Attach VLAN network and VM network to same BOND")
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )

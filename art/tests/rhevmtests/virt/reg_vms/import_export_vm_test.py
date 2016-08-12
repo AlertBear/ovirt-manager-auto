@@ -49,43 +49,35 @@ class ImportExportVm(VirtTest):
             6) Move vm disks back to master storage domain
         """
         testflow.step("Export vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.exportVm(True, self.vm_name, self.export_domain)
-        )
+        assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
 
         testflow.step(
             "Export vm %s, that override existing one", self.vm_name
         )
-        self.assertTrue(
-            ll_vms.exportVm(
-                positive=True,
-                vm=self.vm_name,
-                storagedomain=self.export_domain,
-                exclusive='true'
-            )
+        assert ll_vms.exportVm(
+            positive=True,
+            vm=self.vm_name,
+            storagedomain=self.export_domain,
+            exclusive='true'
         )
         testflow.step("Remove vm %s", self.vm_name)
         if not ll_vms.removeVm(True, self.vm_name):
             raise errors.VMException("Failed to remove vm")
         logger.info("Import exported vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.importVm(
-                True,
-                self.vm_name,
-                self.export_domain,
-                self.master_domain,
-                config.CLUSTER_NAME[0]
-            )
+        assert ll_vms.importVm(
+            True,
+            self.vm_name,
+            self.export_domain,
+            self.master_domain,
+            config.CLUSTER_NAME[0]
         )
         testflow.step("Negative: Import existed vm")
-        self.assertFalse(
-            ll_vms.importVm(
-                True,
-                self.vm_name,
-                self.export_domain,
-                self.master_domain,
-                config.CLUSTER_NAME[0]
-            )
+        assert not ll_vms.importVm(
+            True,
+            self.vm_name,
+            self.export_domain,
+            self.master_domain,
+            config.CLUSTER_NAME[0]
         )
         testflow.step(
             "Move vm disks to storage domain %s", self.non_master_domain

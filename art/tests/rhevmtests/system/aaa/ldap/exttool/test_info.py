@@ -41,12 +41,10 @@ class ExttoolInfo(TestCase):
         rc, out = self.info_cli.run('list-extensions', format='{instance}')
         extensions = out.split('\n')[:-1]
         logger.info('Enabled extensions: %s', extensions)
-        self.assertTrue(rc, 'Failed to run info list-extensions')
+        assert rc, 'Failed to run info list-extensions'
 
         for extension in ['internal-authz', 'internal-authn']:
-            self.assertTrue(
-                extension in extensions, '%s was not found' % extension
-            )
+            assert extension in extensions, '%s was not found' % extension
 
     @polarion('RHEVM3-14042')
     def test_configuration(self):
@@ -58,8 +56,8 @@ class ExttoolInfo(TestCase):
             )
             logger.info('Extension configuration: %s', out)
 
-            self.assertTrue(rc, 'Failed to run info configuration')
-            self.assertTrue('aaa.jdbc' in out, 'Extension not found in conf')
+            assert rc, 'Failed to run info configuration'
+            assert 'aaa.jdbc' in out, 'Extension not found in conf'
 
     @polarion('RHEVM3-14043')
     def test_context(self):
@@ -68,8 +66,7 @@ class ExttoolInfo(TestCase):
             rc, out = self.info_cli.run('context', extension_name=extension)
             logger.info('Extension context : %s', out)
 
-            self.assertTrue(rc, 'Failed to run info context')
-            self.assertTrue(
-                extension in out,
+            assert rc, 'Failed to run info context'
+            assert extension in out, (
                 'Extension "%s" was not found in context' % extension
             )

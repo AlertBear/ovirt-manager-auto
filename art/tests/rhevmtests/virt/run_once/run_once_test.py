@@ -38,10 +38,8 @@ class TestRunVmOnce(common.VirtTest):
         Run once VM boot from CD
         """
         testflow.step("Run once vm - boot from cdrom")
-        self.assertTrue(
-            helper.run_once_with_boot_dev(
-                config.ENUMS['boot_sequence_cdrom'], config.CDROM_IMAGE_1
-            )
+        assert helper.run_once_with_boot_dev(
+            config.ENUMS['boot_sequence_cdrom'], config.CDROM_IMAGE_1
         )
 
     @attr(tier=1)
@@ -52,10 +50,8 @@ class TestRunVmOnce(common.VirtTest):
         Run once VM boot from Network
         """
         testflow.step("Run once vm - boot from network")
-        self.assertTrue(
-            helper.run_once_with_boot_dev(
-                config.ENUMS['boot_sequence_network']
-            )
+        assert helper.run_once_with_boot_dev(
+            config.ENUMS['boot_sequence_network']
         )
 
     @polarion("RHEVM3-9803")
@@ -65,14 +61,9 @@ class TestRunVmOnce(common.VirtTest):
         Run once VM in paused mode
         """
         testflow.step("Run once vm %s in pause mode", config.VM_RUN_ONCE)
-        self.assertTrue(
-            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, pause=True)
-        )
+        assert ll_vms.runVmOnce(True, config.VM_RUN_ONCE, pause=True)
         testflow.step("Check that vm started in pause mode")
-        self.assertTrue(
-            ll_vms.get_vm_state(config.VM_RUN_ONCE) ==
-            config.VM_PAUSED
-        )
+        assert ll_vms.get_vm_state(config.VM_RUN_ONCE) == config.VM_PAUSED
 
     @polarion("RHEVM3-12353")
     @pytest.mark.usefixtures(
@@ -87,26 +78,20 @@ class TestRunVmOnce(common.VirtTest):
         testflow.step(
             "Run once vm %s in pause mode with attached cd", config.VM_RUN_ONCE
         )
-        self.assertTrue(
-            ll_vms.runVmOnce(
-                True, config.VM_RUN_ONCE,
-                cdrom_image=config.CDROM_IMAGE_1,
-                pause=True
-            )
+        assert ll_vms.runVmOnce(
+            True, config.VM_RUN_ONCE,
+            cdrom_image=config.CDROM_IMAGE_1,
+            pause=True
         )
         testflow.step("Check if vm state is paused")
-        self.assertTrue(
-            ll_vms.waitForVMState(
-                config.VM_RUN_ONCE,
-                state=config.ENUMS['vm_state_paused']
-            )
+        assert ll_vms.waitForVMState(
+            config.VM_RUN_ONCE,
+            state=config.ENUMS['vm_state_paused']
         )
         testflow.step("Change vm %s cd", config.VM_RUN_ONCE)
-        self.assertTrue(
-            ll_vms.changeCDWhileRunning(
-                config.VM_RUN_ONCE,
-                config.CDROM_IMAGE_2
-            )
+        assert ll_vms.changeCDWhileRunning(
+            config.VM_RUN_ONCE,
+            config.CDROM_IMAGE_2
         )
 
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -123,12 +108,10 @@ class TestRunVmOnce(common.VirtTest):
             "Run once vm %s with attached floppy %s",
             config.VM_RUN_ONCE, config.FLOPPY_IMAGE
         )
-        self.assertTrue(
-            ll_vms.runVmOnce(
-                True, config.VM_RUN_ONCE,
-                floppy_image=config.FLOPPY_IMAGE,
-                pause=True
-            )
+        assert ll_vms.runVmOnce(
+            True, config.VM_RUN_ONCE,
+            floppy_image=config.FLOPPY_IMAGE,
+            pause=True
         )
 
     @polarion("RHEVM3-9800")
@@ -141,9 +124,7 @@ class TestRunVmOnce(common.VirtTest):
             "Run once vm %s on specific host %s",
             config.VM_RUN_ONCE, config.HOSTS[0]
         )
-        self.assertTrue(
-            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, host=config.HOSTS[0])
-        )
+        assert ll_vms.runVmOnce(True, config.VM_RUN_ONCE, host=config.HOSTS[0])
 
     @polarion("RHEVM3-9781")
     @pytest.mark.usefixtures(
@@ -156,9 +137,7 @@ class TestRunVmOnce(common.VirtTest):
         Negative - run once VM without disk in stateless mode
         """
         testflow.step("run once VM %s without disk", config.VM_RUN_ONCE)
-        self.assertFalse(
-            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
-        )
+        assert not ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
 
     @polarion("RHEVM3-9805")
     @pytest.mark.usefixtures(
@@ -171,10 +150,8 @@ class TestRunVmOnce(common.VirtTest):
         testflow.step(
             "run once VM %s without nic, boot from network", config.VM_RUN_ONCE
         )
-        self.assertFalse(
-            helper.run_once_with_boot_dev(
-                config.ENUMS['boot_sequence_network']
-            )
+        assert not helper.run_once_with_boot_dev(
+            config.ENUMS['boot_sequence_network']
         )
 
     @polarion("RHEVM3-9783")
@@ -185,9 +162,7 @@ class TestRunVmOnce(common.VirtTest):
         Nagtive test - run once HA VM in stateless mode
         """
         testflow.step("run once HA VM %s as stateless vm", config.VM_RUN_ONCE)
-        self.assertFalse(
-            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
-        )
+        assert not ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
 
     @polarion("RHEVM3-9796")
     @pytest.mark.usefixtures(
@@ -201,16 +176,12 @@ class TestRunVmOnce(common.VirtTest):
         testflow.step(
             "Run once vm %s with attached cd", config.VM_RUN_ONCE
         )
-        self.assertTrue(
-            ll_vms.runVmOnce(
-                True, config.VM_RUN_ONCE,
-                cdrom_image=config.CDROM_IMAGE_1,
-            )
+        assert ll_vms.runVmOnce(
+            True, config.VM_RUN_ONCE,
+            cdrom_image=config.CDROM_IMAGE_1,
         )
         testflow.step("Change vm %s cd", config.VM_RUN_ONCE)
-        self.assertTrue(
-            ll_vms.changeCDWhileRunning(
-                config.VM_RUN_ONCE,
-                config.CDROM_IMAGE_2
-            )
+        assert ll_vms.changeCDWhileRunning(
+            config.VM_RUN_ONCE,
+            config.CDROM_IMAGE_2
         )

@@ -356,17 +356,15 @@ class BasicEnvironment(BaseTestCase):
         lun_address = config.EXTEND_LUN_ADDRESS[0] if raw_lun else None
         lun_target = config.EXTEND_LUN_TARGET[0] if raw_lun else None
         lun_id = config.EXTEND_LUN[0] if raw_lun else None
-        self.assertTrue(
-            ll_disks.addDisk(
-                True, alias=disk_alias, provisioned_size=config.DISK_SIZE,
-                sparse=sparse, storagedomain=storage_domain,
-                format=disk_format, interface=config.VIRTIO,
-                wipe_after_delete=False, bootable=bootable,
-                shareable=shareable, lun_address=lun_address,
-                lun_target=lun_target, lun_id=lun_id,
-                type_=config.STORAGE_TYPE_ISCSI
-            ), "Failed to add disk %s" % disk_alias
-        )
+        assert ll_disks.addDisk(
+            True, alias=disk_alias, provisioned_size=config.DISK_SIZE,
+            sparse=sparse, storagedomain=storage_domain,
+            format=disk_format, interface=config.VIRTIO,
+            wipe_after_delete=False, bootable=bootable,
+            shareable=shareable, lun_address=lun_address,
+            lun_target=lun_target, lun_id=lun_id,
+            type_=config.STORAGE_TYPE_ISCSI
+        ), "Failed to add disk %s" % disk_alias
         if not raw_lun:
             ll_disks.wait_for_disks_status([disk_alias])
         self.total_disks_created += 1
@@ -422,10 +420,12 @@ class BasicEnvironment(BaseTestCase):
                 True, disk_alias, vm_name
             )
 
-        self.assertTrue(attach_disk_success, "Failed to attach disk '%s' to "
-                                             "VM '%s'" % (disk_alias, vm_name))
-        self.assertTrue(
-            ll_vms.wait_for_vm_disk_active_status(vm_name, True, disk_alias),
+        assert attach_disk_success, (
+            "Failed to attach disk '%s' to VM '%s'" % (disk_alias, vm_name)
+        )
+        assert ll_vms.wait_for_vm_disk_active_status(
+            vm_name, True, disk_alias
+        ), (
             "Disk '%s' did not reach the active status while "
             "being attached to VM '%s'" % (disk_alias, vm_name)
         )
@@ -602,14 +602,12 @@ class BasicEnvironment(BaseTestCase):
 
                 if should_ovf_exist:
                     if positive:
-                        self.assertTrue(
-                            return_value,
+                        assert return_value, (
                             "Disk alias '%s' was not found in the OVF file, "
                             "contents '%s'" % (disk_alias, ovf_file_content)
                         )
                     else:
-                        self.assertTrue(
-                            return_value,
+                        assert return_value, (
                             "Disk alias '%s' was found in the OVF file, "
                             "contents '%s'" % (disk_alias, ovf_file_content)
                         )
@@ -624,22 +622,22 @@ class BasicEnvironment(BaseTestCase):
             helpers.remove_ovf_store_extracted(self.host, template_name)
             if should_ovf_exist:
                 if positive:
-                    self.assertTrue(
-                        OBJECT_NAME_IN_OVF % template_name in ovf_file_content,
+                    assert OBJECT_NAME_IN_OVF % template_name in (
+                        ovf_file_content
+                    ), (
                         "Template name '%s' was not found in the OVF file "
                         "contents '%s'" % (template_name, ovf_file_content)
                     )
-                    self.assertTrue(
-                        template['disk_name'] in ovf_file_content,
+                    assert template['disk_name'] in ovf_file_content, (
                         "Disk alias '%s' was not found in the OVF file "
                         "contents '%s'" % (
                             template['disk_name'], ovf_file_content
                         )
                     )
                 else:
-                    self.assertTrue(
-                        OBJECT_NAME_IN_OVF % template_name not in
-                        ovf_file_content,
+                    assert OBJECT_NAME_IN_OVF % template_name not in (
+                        ovf_file_content
+                    ), (
                         "Template name '%s' was found in the OVF file "
                         "contents '%s'" % (template_name, ovf_file_content)
                     )
@@ -649,8 +647,10 @@ class BasicEnvironment(BaseTestCase):
                     "part of the self.get_ovf_contents_or_num_ovf_files call"
                 )
         else:
-            self.assertTrue(False, "vm_name or template_name must be passed "
-                                   "in to validate_ovf_contents")
+            assert False, (
+                "vm_name or template_name must be passed in to "
+                "validate_ovf_contents"
+            )
 
     def retrieve_number_of_ovf_files_from_ovf_store(
             self, vm_name=None, template_name=None
@@ -731,12 +731,14 @@ class BasicEnvironment(BaseTestCase):
                 ENGINE_REGEX_VM_NAME % vm['ovf_store_id'], self.host_machine,
                 **vm_args_and_function
             )
-            self.assertTrue(create_vm_success, "Failed to create VM '%s'" %
-                            VM3_NAME)
+            assert create_vm_success, "Failed to create VM '%s'" % (
+                VM3_NAME
+            )
             self.initialize_vm_params(VM3_NAME)
         else:
-            self.assertTrue(create_vm_or_clone(**vm_args_and_function),
-                            "Failed to create VM '%s'" % VM3_NAME)
+            assert create_vm_or_clone(**vm_args_and_function), (
+                "Failed to create VM '%s'" % VM3_NAME
+            )
 
     def create_and_initialize_template_and_its_params(self):
         """
@@ -759,8 +761,9 @@ class BasicEnvironment(BaseTestCase):
             if disk_alias == 'vm_id':
                 disk_aliases.remove(disk_alias)
 
-        self.assertTrue(len(disk_aliases) == 1,
-                        "Did not retrieve the expected number of disks")
+        assert len(
+            disk_aliases
+        ) == 1, "Did not retrieve the expected number of disks"
         # Retrieve the tuple contents for the current disk, wait for the
         # OVF store to be updated
         disk = self.vms_and_disks_dict[VM3_NAME][disk_aliases[0]]
@@ -771,8 +774,9 @@ class BasicEnvironment(BaseTestCase):
             ENGINE_REGEX_VM_NAME % disk['ovf_store_id'], self.host_machine,
             **template_function_and_args
         )
-        self.assertTrue(create_template_success, "Failed to create Template "
-                                                 "'%s'" % VM3_NAME)
+        assert create_template_success, "Failed to create Template '%s'" % (
+            VM3_NAME
+        )
         self.template_created = True
         # Store the disk alias added into the template dict
         self.template_dict['disk_name'] = disk_aliases[0]
@@ -943,12 +947,10 @@ class TestCase6252(BasicEnvironment):
             # Assign the dictionary to disk in order to improve readability
             disk = self.vms_and_disks_dict[vm_name][disk_alias]
             new_sd = ll_disks.get_other_storage_domain(disk_alias, vm_name)
-            self.assertTrue(
-                ll_disks.move_disk(
-                    target_domain=new_sd, disk_id=disk['ovf_store_id'],
-                    positive=False
-                ), "Move disk succeeded for an OVF store"
-            )
+            assert ll_disks.move_disk(
+                target_domain=new_sd, disk_id=disk['ovf_store_id'],
+                positive=False
+            ), "Move disk succeeded for an OVF store"
 
     def delete_ovf_stores(self, vm_name):
         """
@@ -958,12 +960,10 @@ class TestCase6252(BasicEnvironment):
         for disk_alias in disk_aliases:
             # Assign the dictionary to disk in order to improve readability
             disk = self.vms_and_disks_dict[vm_name][disk_alias]
-            self.assertTrue(
-                ll_disks.deleteDisk(
-                    positive=False, alias=OVF_STORE_DISK_NAME,
-                    disk_id=disk['ovf_store_id']
-                ), "Delete disk succeeded for an OVF store"
-            )
+            assert ll_disks.deleteDisk(
+                positive=False, alias=OVF_STORE_DISK_NAME,
+                disk_id=disk['ovf_store_id']
+            ), "Delete disk succeeded for an OVF store"
 
     def setUp(self):
         self.domain_to_use = MASTER_DOMAIN
@@ -1085,8 +1085,9 @@ class TestCase6254(BasicEnvironment):
                 ENGINE_REGEX_VM_NAME % disk['ovf_store_id'], self.host_machine,
                 **delete_disk_function_and_args
             )
-            self.assertTrue(delete_disk_success,
-                            "Deleting disk '%s' failed" % disk_alias)
+            assert delete_disk_success, (
+                "Deleting disk '%s' failed" % disk_alias
+            )
 
         self.validate_ovf_contents(vm_name=VM1_NAME, positive=False)
 
@@ -1122,8 +1123,9 @@ class TestCase6255(EnvironmentWithNewVm):
             if disk_alias == 'vm_id':
                 disk_aliases.remove(disk_alias)
 
-        self.assertTrue(len(disk_aliases) == 1,
-                        "Did not retrieve the expected number of disks")
+        assert len(disk_aliases) == 1, (
+            "Did not retrieve the expected number of disks"
+        )
         # Retrieve the tuple contents for the current disk, wait for the
         # OVF store to be updated
         disk = self.vms_and_disks_dict[VM3_NAME][disk_aliases[0]]
@@ -1137,10 +1139,13 @@ class TestCase6255(EnvironmentWithNewVm):
             ENGINE_REGEX_VM_NAME % disk['ovf_store_id'], self.host_machine,
             **remove_vm_function_and_args
         )
-        self.assertTrue(remove_vm_success,
-                        "Failed to remove VM '%s'" % VM3_NAME)
-        self.validate_ovf_contents(vm_name=VM3_NAME, template_name=None,
-                                   positive=False, should_ovf_exist=False)
+        assert remove_vm_success, (
+            "Failed to remove VM '%s'" % VM3_NAME
+        )
+        self.validate_ovf_contents(
+            vm_name=VM3_NAME, template_name=None, positive=False,
+            should_ovf_exist=False
+        )
 
 
 @attr(tier=2)
@@ -1174,7 +1179,7 @@ class TestCase6256(EnvironmentWithNewVm):
                 break
 
         logger.info("Ensure that the VM's OVF file contains the VM name")
-        self.assertTrue(OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content)
+        assert OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content
 
 
 @attr(tier=2)
@@ -1220,8 +1225,7 @@ class TestCase6257(EnvironmentWithNewVm):
                 break
 
         logger.info("Ensure that the VM's OVF file contains the VM name")
-        self.assertTrue(
-            OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content,
+        assert OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content, (
             "VM name '%s' doesn't exist in the OVF file" % VM3_NAME
         )
         new_vm_name = "storage_ovf_renamed_vm"
@@ -1237,9 +1241,7 @@ class TestCase6257(EnvironmentWithNewVm):
             ENGINE_REGEX_VM_NAME % vm['ovf_store_id'], self.host_machine,
             **update_vm_function_and_args
         )
-        self.assertTrue(
-            update_vm_success, "Failed to update the VM '%s'" % VM3_NAME
-        )
+        assert update_vm_success, "Failed to update the VM '%s'" % VM3_NAME
         # VM name updated successfully, update the specified boolean so that
         # the tearDown will remove the VM with this new name
         self.vm_name_updated = True
@@ -1259,13 +1261,11 @@ class TestCase6257(EnvironmentWithNewVm):
                 break
 
         logger.info("Ensure that the VM's OVF file contains the VM name")
-        self.assertTrue(
-            OBJECT_NAME_IN_OVF % VM3_NAME not in ovf_file_content,
+        assert OBJECT_NAME_IN_OVF % VM3_NAME not in ovf_file_content, (
             "Original VM name '%s' still exists in the updated OVF file" %
             VM3_NAME
         )
-        self.assertTrue(
-            OBJECT_NAME_IN_OVF % new_vm_name in ovf_file_content,
+        assert OBJECT_NAME_IN_OVF % new_vm_name in ovf_file_content, (
             "Updated VM name '%s' does not exist in the updated OVF file" %
             new_vm_name
         )
@@ -1403,12 +1403,10 @@ class TestCase6261(BasicEnvironment):
         ):
             if num_ovf_store_disks_sd_0 == UPDATED_NUM_OVF_STORES_PER_SD:
                 break
-        self.assertTrue(
-            num_ovf_store_disks_sd_0 == UPDATED_NUM_OVF_STORES_PER_SD,
+        assert num_ovf_store_disks_sd_0 == UPDATED_NUM_OVF_STORES_PER_SD, (
             "The number of OVF stores in domain '%s' isn't %s after the "
-            "engine configuration change" % (
-                self.storage_domain_0, UPDATED_NUM_OVF_STORES_PER_SD
-            )
+            "engine configuration change" %
+            (self.storage_domain_0, UPDATED_NUM_OVF_STORES_PER_SD)
         )
 
         for num_ovf_store_disks_sd_1 in TimeoutingSampler(
@@ -1418,12 +1416,10 @@ class TestCase6261(BasicEnvironment):
         ):
             if num_ovf_store_disks_sd_1 == UPDATED_NUM_OVF_STORES_PER_SD:
                 break
-        self.assertTrue(
-            num_ovf_store_disks_sd_1 == UPDATED_NUM_OVF_STORES_PER_SD,
+        assert num_ovf_store_disks_sd_1 == UPDATED_NUM_OVF_STORES_PER_SD, (
             "The number of OVF stores in domain '%s' isn't %s after the "
-            "engine configuration change" % (
-                self.storage_domain_1, UPDATED_NUM_OVF_STORES_PER_SD
-            )
+            "engine configuration change" %
+            (self.storage_domain_1, UPDATED_NUM_OVF_STORES_PER_SD)
         )
 
         self.create_and_attach_disk(
@@ -1477,13 +1473,13 @@ class TestCase6262(EnvironmentWithNewVm):
         )
 
         logger.info("Create a VM pool with 5 VMs from the created template")
-        self. assertTrue(ll_vmpools.addVmPool(
+        assert ll_vmpools.addVmPool(
             True, name=config.POOL_NAME, size=config.POOL_SIZE,
             cluster=config.CLUSTER_NAME, template=TEMPLATE_NAME,
             description=config.POOL_DESCRIPTION
         ), "Failed to add VM pool '%s' using template '%s'" % (
             config.POOL_NAME, TEMPLATE_NAME
-        ))
+        )
         logger.info("Wait until all VMs in the pool have been created "
                     "successfully")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
@@ -1499,9 +1495,9 @@ class TestCase6262(EnvironmentWithNewVm):
                 num_ovf_files_with_template + config.POOL_SIZE
             ):
                 break
-        self.assertTrue(
-            num_ovf_files_with_vm_pool ==
-            num_ovf_files_with_template + config.POOL_SIZE,
+        assert num_ovf_files_with_vm_pool == (
+            num_ovf_files_with_template + config.POOL_SIZE
+        ), (
             "The number of OVF stores in domain '%s' hasn't increased by the "
             "%s VMs added in the VM pool after the Data center upgrade" %
             (self.storage_domain_0, config.POOL_SIZE)

@@ -163,9 +163,7 @@ class BasicEnvironment(BaseTestCase):
         status = ll_vms.addSnapshot(
             True, self.vm_name, snapshot_description, wait=wait
         )
-        self.assertTrue(
-            status, "Failed to create snapshot %s" % snapshot_description
-        )
+        assert status, "Failed to create snapshot %s" % snapshot_description
         if wait:
             ll_vms.wait_for_vm_snapshots(
                 self.vm_name, [config.SNAPSHOT_OK], [snapshot_description]
@@ -197,8 +195,9 @@ class BasicEnvironment(BaseTestCase):
         )
         logger.info("After snapshot: %s volumes", current_vol_count)
 
-        self.assertEqual(current_vol_count,
-                         initial_vol_count + len(disk_ids))
+        assert current_vol_count == (
+            initial_vol_count + len(disk_ids)
+        )
 
     def check_files_existence(self, files, should_exist=True):
         """
@@ -315,7 +314,7 @@ class BasicEnvironment(BaseTestCase):
         if running_io_op:
             p.join()
             rc, output = q.get()
-            self.assertTrue(rc, "dd command failed: %s" % output)
+            assert rc, "dd command failed: %s" % output
 
         current_vol_count = storage_helpers.get_disks_volume_count(
             snapshot_disks
@@ -423,20 +422,18 @@ class TestCase16287(BasicEnvironment):
         )
         disk_ids_before = [disk.get_id() for disk in snapshot_disks_before]
         vm_disk = ll_vms.getVmDisks(self.vm_name)[-1]
-        self.assertTrue(
-            vm_disk.get_id() in disk_ids_before,
+        assert vm_disk.get_id() in disk_ids_before, (
             "Disk %s is not part of the snapshot's disks" % vm_disk.get_alias()
         )
-        self.assertTrue(ll_vms.delete_snapshot_disks(
+        assert ll_vms.delete_snapshot_disks(
             self.vm_name, self.snapshot_description, vm_disk.get_id()
-        ), "Failed to remove snapshots disk %s" % vm_disk.get_alias())
+        ), "Failed to remove snapshots disk %s" % vm_disk.get_alias()
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
         snapshot_disks_after = ll_vms.get_snapshot_disks(
             self.vm_name, self.snapshot_description
         )
         disk_ids_after = [disk.get_id() for disk in snapshot_disks_after]
-        self.assertTrue(
-            vm_disk.get_id() not in disk_ids_after,
+        assert vm_disk.get_id() not in disk_ids_after, (
             "Disk %s is part of the snapshot's disks" % vm_disk.get_alias()
         )
 
@@ -767,10 +764,9 @@ class TestCase6062(BasicEnvironment):
         ll_disks.wait_for_disks_status(
             [self.disk_to_migrate], status=config.DISK_LOCKED
         )
-        self.assertTrue(
-            ll_vms.removeSnapshot(
-                False, self.vm_name, self.snapshot_list[1], wait=False
-            ),
+        assert ll_vms.removeSnapshot(
+            False, self.vm_name, self.snapshot_list[1], wait=False
+        ), (
             "Removing snapshot '%s' during a live migration of disk %s was "
             "expected to fail" % (self.snapshot_list[1], self.disk_to_migrate)
         )
@@ -838,8 +834,9 @@ class TestCase12216(BasicEnvironment):
                 True, self.vm_name, disk=disk.get_alias(),
                 provisioned_size=new_size
             )
-            self.assertTrue(status, "Failed to resize disk %s to size %s"
-                                    % (disk.get_alias(), new_size))
+            assert status, "Failed to resize disk %s to size %s" % (
+                disk.get_alias(), new_size
+            )
             assert ll_disks.wait_for_disks_status(disk.get_alias())
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
             assert disk_obj.get_size() == new_size

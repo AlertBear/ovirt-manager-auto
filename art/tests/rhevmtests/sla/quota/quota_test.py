@@ -180,16 +180,14 @@ class QuotaTestCRUD(BaseQuotaClass):
         logger.info(
             "Create quota %s with cluster and storage limits", conf.QUOTA2_NAME
         )
-        self.assertTrue(
-            self._create_quota_with_limits(
-                dc_name=conf.DC_NAME_0,
-                quota_name=conf.QUOTA2_NAME,
-                quota_params={"description": conf.QUOTA2_DESC},
-                quota_cluster_limit={
-                    None: {conf.VCPU_LIMIT: 1, conf.MEMORY_LIMIT: 1024}
-                },
-                quota_storage_limit={None: {conf.STORAGE_LIMIT: 10}}
-            )
+        assert self._create_quota_with_limits(
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA2_NAME,
+            quota_params={"description": conf.QUOTA2_DESC},
+            quota_cluster_limit={
+                None: {conf.VCPU_LIMIT: 1, conf.MEMORY_LIMIT: 1024}
+            },
+            quota_storage_limit={None: {conf.STORAGE_LIMIT: 10}}
         )
 
     @bz({"1348559": {}})
@@ -199,25 +197,20 @@ class QuotaTestCRUD(BaseQuotaClass):
         Update quota
         """
         logger.info("Update quota %s description", conf.QUOTA2_NAME)
-        self.assertTrue(
-            ll_datacenters.update_dc_quota(
-                dc_name=conf.DC_NAME_0,
-                quota_name=conf.QUOTA2_NAME,
-                description=conf.QUOTA_DESC
-            ),
-            "Failed to update quota %s description" % conf.QUOTA2_NAME
-        )
+        assert ll_datacenters.update_dc_quota(
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA2_NAME,
+            description=conf.QUOTA_DESC
+        ), "Failed to update quota %s description" % conf.QUOTA2_NAME
 
         logger.info("Update quota %s limits", conf.QUOTA2_NAME)
-        self.assertTrue(
-            self._create_quota_limits(
-                dc_name=conf.DC_NAME_0,
-                quota_name=conf.QUOTA2_NAME,
-                quota_cluster_limit={
-                    None: {conf.VCPU_LIMIT: 2, conf.MEMORY_LIMIT: 2048}
-                },
-                quota_storage_limit={None: {conf.STORAGE_LIMIT: 20}}
-            )
+        assert self._create_quota_limits(
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA2_NAME,
+            quota_cluster_limit={
+                None: {conf.VCPU_LIMIT: 2, conf.MEMORY_LIMIT: 2048}
+            },
+            quota_storage_limit={None: {conf.STORAGE_LIMIT: 20}}
         )
 
     @bz({"1348559": {}})
@@ -230,13 +223,11 @@ class QuotaTestCRUD(BaseQuotaClass):
             "Remove quota %s from datacenter %s",
             conf.QUOTA2_NAME, conf.DC_NAME_0
         )
-        self.assertTrue(
-            ll_datacenters.delete_dc_quota(
-                dc_name=conf.DC_NAME_0,
-                quota_name=conf.QUOTA2_NAME
-            ),
-            "Failed to delete quota %s from datacenter %s" %
-            (conf.QUOTA2_NAME, conf.DC_NAME_0)
+        assert ll_datacenters.delete_dc_quota(
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA2_NAME
+        ), "Failed to delete quota %s from datacenter %s" % (
+            conf.QUOTA2_NAME, conf.DC_NAME_0
         )
 
 
@@ -265,12 +256,9 @@ class QuotaTestMode(BaseQuotaClass):
         """
         max_id = ll_events.get_max_event_id()
         logger.info("Start vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.startVm(
-                positive=True, vm=conf.VM_NAME, wait_for_status=vm_state
-            ),
-            "Failed to start vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.startVm(
+            positive=True, vm=conf.VM_NAME, wait_for_status=vm_state
+        ), "Failed to start vm %s" % conf.VM_NAME
 
         compare = (
             False if self.quota_mode == conf.QUOTA_ENFORCED_MODE else True
@@ -279,18 +267,15 @@ class QuotaTestMode(BaseQuotaClass):
             "Update vm %s number of cpu sockets to %d",
             conf.VM_NAME, vm_sockets
         )
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=conf.VM_NAME,
-                cpu_socket=vm_sockets,
-                compare=compare
-            ),
-            "Failed to update vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=conf.VM_NAME,
+            cpu_socket=vm_sockets,
+            compare=compare
+        ), "Failed to update vm %s" % conf.VM_NAME
 
         logger.info("Check quota message under events")
-        self.assertTrue(self._check_quota_message(max_id, audit_msg_type))
+        assert self._check_quota_message(max_id, audit_msg_type)
 
     def _check_quota_message(self, max_id, audit_msg_type):
         """
@@ -330,12 +315,9 @@ class QuotaTestMode(BaseQuotaClass):
             logger.info(
                 "Update vm %s with parameters: %s", conf.VM_NAME, vm_params
             )
-            self.assertTrue(
-                ll_vms.updateVm(
-                    positive=True, vm=conf.VM_NAME, **vm_params
-                ),
-                "Failed to update vm %s" % conf.VM_NAME
-            )
+            assert ll_vms.updateVm(
+                positive=True, vm=conf.VM_NAME, **vm_params
+            ), "Failed to update vm %s" % conf.VM_NAME
         positive = True
         if (
             audit_msg_type and audit_msg_type == conf.EXCEED_TYPE and
@@ -343,18 +325,17 @@ class QuotaTestMode(BaseQuotaClass):
         ):
             positive = False
         logger.info("Start vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.startVm(positive=positive, vm=conf.VM_NAME),
-            "Failed to start vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.startVm(
+            positive=positive, vm=conf.VM_NAME
+        ), "Failed to start vm %s" % conf.VM_NAME
         if last_event_id:
             logger.info(
                 "Check if quota message of type %s, appear under events",
                 audit_msg_type
             )
-            self.assertTrue(
-                self._check_quota_message(last_event_id, audit_msg_type),
-                "Quota message of type %s not appear under events" %
+            assert self._check_quota_message(
+                last_event_id, audit_msg_type
+            ), "Quota message of type %s not appear under events" % (
                 audit_msg_type
             )
 
@@ -386,25 +367,21 @@ class QuotaTestMode(BaseQuotaClass):
         logger.info(
             "Add new disk %s with size of %d", conf.DISK_NAME, provisioned_size
         )
-        self.assertTrue(
-            ll_disks.addDisk(
-                positive=positive,
-                alias=conf.DISK_NAME,
-                provisioned_size=provisioned_size,
-                interface=conf.DISK_INTERFACE,
-                format=conf.DISK_FORMAT_COW,
-                storagedomain=conf.STORAGE_NAME[0],
-                quota=q_id
-            ),
-            "Failed to add new disk %s" % conf.DISK_NAME
-        )
+        assert ll_disks.addDisk(
+            positive=positive,
+            alias=conf.DISK_NAME,
+            provisioned_size=provisioned_size,
+            interface=conf.DISK_INTERFACE,
+            format=conf.DISK_FORMAT_COW,
+            storagedomain=conf.STORAGE_NAME[0],
+            quota=q_id
+        ), "Failed to add new disk %s" % conf.DISK_NAME
         if last_event_id:
             logger.info(
                 "Check if quota message of type %s, appear under events",
                 audit_msg_type
             )
-            self.assertTrue(
-                self._check_quota_message(last_event_id, audit_msg_type),
+            assert self._check_quota_message(last_event_id, audit_msg_type), (
                 "Quota message of type %s not appear under events" %
                 audit_msg_type
             )
@@ -431,7 +408,7 @@ class QuotaTestMode(BaseQuotaClass):
             "Check if expected %s: %s equal to quota limit %s: %s",
             usage_type, usage, usage_type, quota_limit_usage
         )
-        self.assertEqual(usage, quota_limit_usage)
+        assert usage == quota_limit_usage
 
     @classmethod
     def setup_class(cls):
@@ -563,10 +540,8 @@ class TestDeleteQuotaInUseAudit(QuotaTestMode):
         """
         Delete quota in use
         """
-        self.assertFalse(
-            ll_datacenters.delete_dc_quota(
-                dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
-            )
+        assert not ll_datacenters.delete_dc_quota(
+            dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
         )
 
 
@@ -582,10 +557,8 @@ class TestDeleteQuotaInUseEnforced(QuotaTestMode):
         """
         Delete quota in use
         """
-        self.assertFalse(
-            ll_datacenters.delete_dc_quota(
-                dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
-            )
+        assert not ll_datacenters.delete_dc_quota(
+            dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
         )
 
 
@@ -976,10 +949,9 @@ class TestQuotaConsumptionRunOnceVM(QuotaTestMode):
         Run vm once and check quota consumption
         """
         logger.info("Run once vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.runVmOnce(positive=True, vm=conf.VM_NAME),
-            "Failed to run vm %s once" % conf.VM_NAME
-        )
+        assert ll_vms.runVmOnce(
+            positive=True, vm=conf.VM_NAME
+        ), "Failed to run vm %s once" % conf.VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_CLUSTER,
             usage_type=conf.MEMORY_USAGE,
@@ -1005,17 +977,13 @@ class TestQuotaConsumptionSnapshot(QuotaTestMode):
         Make snapshot and check quota consumption
         """
         logger.info("Start vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.startVm(positive=True, vm=conf.VM_NAME),
-            "Failed to start vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.startVm(
+            positive=True, vm=conf.VM_NAME
+        ), "Failed to start vm %s" % conf.VM_NAME
         logger.info("Create snapshot from vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                positive=True, vm=conf.VM_NAME, description=conf.VM_SNAPSHOT
-            ),
-            "Failed to create snapshot from vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.addSnapshot(
+            positive=True, vm=conf.VM_NAME, description=conf.VM_SNAPSHOT
+        ), "Failed to create snapshot from vm %s" % conf.VM_NAME
         quota_limit_usage = ll_datacenters.get_quota_limit_usage(
             dc_name=conf.DC_NAME_0,
             quota_name=conf.QUOTA_NAME,
@@ -1026,8 +994,7 @@ class TestQuotaConsumptionSnapshot(QuotaTestMode):
             "Check if quota %s storage usage greater than %dGB",
             conf.QUOTA_NAME, conf.DEFAULT_DISK_USAGE
         )
-        self.assertTrue(
-            quota_limit_usage > conf.DEFAULT_DISK_USAGE,
+        assert quota_limit_usage > conf.DEFAULT_DISK_USAGE, (
             "Quota %s storage usage less or equal to %d" %
             (conf.QUOTA_NAME, conf.DEFAULT_DISK_USAGE)
         )
@@ -1047,25 +1014,19 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
         Create template from vm, remove it and check quota consumption
         """
         logger.info("Create template from vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_templates.createTemplate(
-                positive=True, vm=conf.VM_NAME,
-                name=conf.TEMPLATE_NAME, cluster=conf.CLUSTER_NAME[0]
-            ),
-            "Failed to create template from vm %s" % conf.VM_NAME
-        )
+        assert ll_templates.createTemplate(
+            positive=True, vm=conf.VM_NAME,
+            name=conf.TEMPLATE_NAME, cluster=conf.CLUSTER_NAME[0]
+        ), "Failed to create template from vm %s" % conf.VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_STORAGE,
             usage_type=conf.STORAGE_USAGE,
             usage=conf.FULL_DISK_USAGE
         )
         logger.info("Remove template %s", conf.TEMPLATE_NAME)
-        self.assertTrue(
-            ll_templates.removeTemplate(
-                positive=True, template=conf.TEMPLATE_NAME
-            ),
-            "Failed to remove template %s" % conf.TEMPLATE_NAME
-        )
+        assert ll_templates.removeTemplate(
+            positive=True, template=conf.TEMPLATE_NAME
+        ), "Failed to remove template %s" % conf.TEMPLATE_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_STORAGE,
             usage_type=conf.STORAGE_USAGE,
@@ -1109,30 +1070,26 @@ class TestQuotaConsumptionVmWithDisk(QuotaTestMode):
             conf.CLUSTER_NAME[0], conf.CLUSTER_NAME[0]
         )
         logger.info("Create new vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.createVm(
-                positive=True, vmName=conf.TMP_VM_NAME,
-                vmDescription=conf.VM_DESC,
-                cluster=conf.CLUSTER_NAME[0],
-                storageDomainName=conf.STORAGE_NAME[0],
-                provisioned_size=conf.SIZE_10_GB, memory=conf.SIZE_512_MB,
-                memory_guaranteed=conf.SIZE_512_MB,
-                vm_quota=q_id, disk_quota=q_id,
-                nic=conf.NIC_NAME[0], network=conf.MGMT_BRIDGE,
-                cpu_profile_id=cpu_profile_id
-            ),
-            "Failed to create new vm %s" % conf.TMP_VM_NAME
-        )
+        assert ll_vms.createVm(
+            positive=True, vmName=conf.TMP_VM_NAME,
+            vmDescription=conf.VM_DESC,
+            cluster=conf.CLUSTER_NAME[0],
+            storageDomainName=conf.STORAGE_NAME[0],
+            provisioned_size=conf.SIZE_10_GB, memory=conf.SIZE_512_MB,
+            memory_guaranteed=conf.SIZE_512_MB,
+            vm_quota=q_id, disk_quota=q_id,
+            nic=conf.NIC_NAME[0], network=conf.MGMT_BRIDGE,
+            cpu_profile_id=cpu_profile_id
+        ), "Failed to create new vm %s" % conf.TMP_VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_STORAGE,
             usage_type=conf.STORAGE_USAGE,
             usage=conf.FULL_DISK_USAGE
         )
         logger.info("Remove vm %s", conf.TMP_VM_NAME)
-        self.assertTrue(
-            ll_vms.removeVm(positive=True, vm=conf.TMP_VM_NAME),
-            "Failed to remove vm %s" % conf.TMP_VM_NAME
-        )
+        assert ll_vms.removeVm(
+            positive=True, vm=conf.TMP_VM_NAME
+        ), "Failed to remove vm %s" % conf.TMP_VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_STORAGE,
             usage_type=conf.STORAGE_USAGE,
@@ -1171,10 +1128,9 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
         Run basic vm actions and check quota consumption
         """
         logger.info("Start vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.startVm(positive=True, vm=conf.VM_NAME),
-            "Failed to start vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.startVm(
+            positive=True, vm=conf.VM_NAME
+        ), "Failed to start vm %s" % conf.VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_CLUSTER,
             usage_type=conf.MEMORY_USAGE,
@@ -1189,10 +1145,9 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
             "Wait until vm %s state will not equal to %s",
             conf.VM_NAME, conf.VM_UP
         )
-        self.assertTrue(
-            ll_vms.waitForVmsStates(positive=True, names=conf.VM_NAME),
-            "Vm %s still not have state %s" % (conf.VM_NAME, conf.VM_UP)
-        )
+        assert ll_vms.waitForVmsStates(
+            positive=True, names=conf.VM_NAME
+        ), "Vm %s still not have state %s" % (conf.VM_NAME, conf.VM_UP)
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_CLUSTER,
             usage_type=conf.MEMORY_USAGE,
@@ -1204,10 +1159,9 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
             usage=conf.DEFAULT_CPU_USAGE
         )
         logger.info("Suspend vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.suspendVm(positive=True, vm=conf.VM_NAME),
-            "Failed to suspend vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.suspendVm(
+            positive=True, vm=conf.VM_NAME
+        ), "Failed to suspend vm %s" % conf.VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_CLUSTER,
             usage_type=conf.MEMORY_USAGE,
@@ -1219,10 +1173,9 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
             usage=conf.ZERO_USAGE
         )
         logger.info("Start vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.startVm(positive=True, vm=conf.VM_NAME),
-            "Failed to start vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.startVm(
+            positive=True, vm=conf.VM_NAME
+        ), "Failed to start vm %s" % conf.VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_CLUSTER,
             usage_type=conf.MEMORY_USAGE,
@@ -1234,10 +1187,9 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
             usage=conf.DEFAULT_CPU_USAGE
         )
         logger.info("Stop vm %s", conf.VM_NAME)
-        self.assertTrue(
-            ll_vms.stopVm(positive=True, vm=conf.VM_NAME),
-            "Failed to stop vm %s" % conf.VM_NAME
-        )
+        assert ll_vms.stopVm(
+            positive=True, vm=conf.VM_NAME
+        ), "Failed to stop vm %s" % conf.VM_NAME
         self.check_limit_usage(
             limit_type=conf.LIMIT_TYPE_CLUSTER,
             usage_type=conf.MEMORY_USAGE,

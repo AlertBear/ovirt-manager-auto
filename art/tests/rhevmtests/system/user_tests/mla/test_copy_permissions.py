@@ -114,8 +114,9 @@ def _compare(exists, user_name, roles_list, predefined):
         assert len(roles_list[user_name]) == 0
         return
 
-    assert set(roles_list[user_name]) == set(predefined) and \
+    assert set(roles_list[user_name]) == set(predefined) and (
         len(roles_list[user_name]) == len(predefined)
+    )
 
 
 def checkForVmPermissions(exists):

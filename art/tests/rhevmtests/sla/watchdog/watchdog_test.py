@@ -247,12 +247,9 @@ class TestWatchdogCRUD(TestCase, WatchdogMixin):
         Detect watchdog
         """
         logger.info("Check if vm %s run", config.VM_NAME[0])
-        self.assertTrue(
-            ll_vms.checkVmState(
-                True, config.VM_NAME[0], config.VM_UP
-            ),
-            "VM %s is not running" % config.VM_NAME[0]
-        )
+        assert ll_vms.checkVmState(
+            True, config.VM_NAME[0], config.VM_UP
+        ), "VM %s is not running" % config.VM_NAME[0]
         self.detect_watchdog(True, config.VM_NAME[0])
 
     @polarion("RHEVM3-4965")
@@ -337,10 +334,9 @@ class WatchdogTestNone(WatchdogActionTest):
         """
         logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
         self.kill_watchdog(config.VM_NAME[1])
-        self.assertTrue(
-            ll_vms.waitForVMState(config.VM_NAME[1]),
-            "Watchdog action none did not succeed"
-        )
+        assert ll_vms.waitForVMState(
+            config.VM_NAME[1]
+        ), "Watchdog action none did not succeed"
         self.detect_watchdog(True, config.VM_NAME[1])
         logger.info("Watchdog action none succeeded")
 
@@ -366,21 +362,18 @@ class WatchdogTestReset(WatchdogActionTest):
             "Wait until vm %s will have state %s",
             config.VM_NAME[1], config.ENUMS['vm_state_reboot_in_progress']
         )
-        self.assertTrue(
-            ll_vms.waitForVMState(
-                config.VM_NAME[1], config.ENUMS['vm_state_reboot_in_progress']
-            ),
-            "Vm still not have state %s" %
+        assert ll_vms.waitForVMState(
+            config.VM_NAME[1], config.ENUMS['vm_state_reboot_in_progress']
+        ), "Vm still not have state %s" % (
             config.ENUMS['vm_state_reboot_in_progress']
         )
         logger.info(
             "Wait until vm %s will have state %s",
             config.VM_NAME[1], config.VM_UP
         )
-        self.assertTrue(
-            ll_vms.waitForVMState(config.VM_NAME[1], config.VM_UP),
-            "Vm still not have state %s" % config.VM_UP
-        )
+        assert ll_vms.waitForVMState(
+            config.VM_NAME[1], config.VM_UP
+        ), "Vm still not have state %s" % config.VM_UP
 
 #######################################################################
 
@@ -402,10 +395,9 @@ class WatchdogTestPoweroff(WatchdogActionTest):
         logger.info(
             "Wait until watchdog device will poweroff vm %s", config.VM_NAME[0]
         )
-        self.assertTrue(
-            ll_vms.waitForVMState(config.VM_NAME[1], state=config.VM_DOWN),
-            "Watchdog action poweroff failed"
-        )
+        assert ll_vms.waitForVMState(
+            config.VM_NAME[1], state=config.VM_DOWN
+        ), "Watchdog action poweroff failed"
 
 #######################################################################
 
@@ -427,10 +419,9 @@ class WatchdogTestPause(WatchdogActionTest):
         logger.info(
             "Wait until vm %s will have state paused", config.VM_NAME[1]
         )
-        self.assertTrue(
-            ll_vms.waitForVMState(config.VM_NAME[1], state='paused'),
-            "Vm %s still not have state paused"
-        )
+        assert ll_vms.waitForVMState(
+            config.VM_NAME[1], state='paused'
+        ), "Vm %s still not have state paused"
 
 #######################################################################
 
@@ -476,8 +467,7 @@ class WatchdogTestDump(WatchdogActionTest):
         dump_path = self.get_host_dump_path(config.VDS_HOSTS[host_index])
         cmd = ['ls', '-l', dump_path, '|', 'wc', '-l']
         rc, out, err = host_executor.run_cmd(cmd)
-        self.assertTrue(
-            not rc,
+        assert not rc, (
             "Failed to run command '%s' on resource %s; out: %s; err: %s" %
             (" ".join(cmd), config.VDS_HOSTS[host_index], out, err)
         )
@@ -491,17 +481,14 @@ class WatchdogTestDump(WatchdogActionTest):
         logger.info("Watchdog action dump successful")
 
         rc, out, err = host_executor.run_cmd(cmd)
-        self.assertTrue(
-            not rc,
+        assert not rc, (
             "Failed to run command '%s' on resource %s; out: %s; err: %s" %
             (" ".join(cmd), config.VDS_HOSTS[host_index], out, err)
         )
         logger.info(
             "Number of files in dumpath after watchdog dump action: %s", out
         )
-        self.assertEqual(
-            logs_count + 1,
-            int(out),
+        assert logs_count + 1 == int(out), (
             "Dump file was not created on resource %s under directory %s" %
             (config.VDS_HOSTS[host_index], dump_path)
         )
@@ -525,19 +512,15 @@ class WatchdogMigration(WatchdogActionTest):
             raise SkipTest("Too few hosts")
 
         logger.info("Migrate VM %s", config.VM_NAME[1])
-        self.assertTrue(
-            ll_vms.migrateVm(
-                positive=True,
-                vm=config.VM_NAME[1],
-                force=True
-            ),
-            "Migration of vm %s Failed" % config.VM_NAME[1]
-        )
+        assert ll_vms.migrateVm(
+            positive=True,
+            vm=config.VM_NAME[1],
+            force=True
+        ), "Migration of vm %s Failed" % config.VM_NAME[1]
         time.sleep(config.WATCHDOG_TIMER)
         logger.info("Check, that vm %s still up", config.VM_NAME[1])
-        self.assertTrue(
-            ll_vms.waitForVMState(config.VM_NAME[1]), "Watchdog was triggered"
-        )
+        assert ll_vms.waitForVMState(
+            config.VM_NAME[1]), "Watchdog was triggered"
 
 #######################################################################
 
@@ -581,8 +564,7 @@ class WatchdogHighAvailability(WatchdogActionTest):
             "Check, that vm %s started because high available flag",
             config.VM_NAME[0]
         )
-        self.assertTrue(
-            ll_vms.waitForVMState(config.VM_NAME[1]),
+        assert ll_vms.waitForVMState(config.VM_NAME[1]), (
             "VM %s did not start as high available" % config.VM_NAME[1]
         )
 
@@ -624,8 +606,7 @@ class WatchdogEvents(WatchdogActionTest):
         """
         logger.info("Backup engine log to %s", self.engine_backup_log)
         cmd = ['cp', config.ENGINE_LOG, self.engine_backup_log]
-        self.assertTrue(
-            config.ENGINE_HOST.run_command(command=cmd),
+        assert config.ENGINE_HOST.run_command(command=cmd), (
             "Failed to copy engine log to %s" % self.engine_backup_log
         )
 
@@ -638,8 +619,7 @@ class WatchdogEvents(WatchdogActionTest):
             '|', 'grep', 'Watchdog'
         ]
         logger.info("Check if new watchdog event appear under engine log")
-        self.assertTrue(
-            config.ENGINE_HOST.run_command(command=cmd),
+        assert config.ENGINE_HOST.run_command(command=cmd), (
             "Error: no new watchdog event under engine.log"
         )
 
@@ -674,12 +654,10 @@ class WatchdogCRUDTemplate(WatchdogVM):
         """
         Add watchdog to clean template
         """
-        self.assertTrue(
-            ll_templates.add_watchdog(
-                template_name=config.TEMPLATE_NAME[0],
-                model='i6300esb',
-                action='reset'
-            )
+        assert ll_templates.add_watchdog(
+            template_name=config.TEMPLATE_NAME[0],
+            model='i6300esb',
+            action='reset'
         )
 
     @bz({"1338503": {}})
@@ -692,26 +670,22 @@ class WatchdogCRUDTemplate(WatchdogVM):
             "Create new vm %s from template %s",
             self.vm_name1, config.TEMPLATE_NAME[0]
         )
-        self.assertTrue(
-            ll_vms.createVm(
-                positive=True,
-                vmName=self.vm_name1,
-                vmDescription="Watchdog VM",
-                cluster=config.CLUSTER_NAME[0],
-                template=config.TEMPLATE_NAME[0]
-            ),
-            "Cannot create vm %s from template %s" %
-            (self.vm_name1, config.TEMPLATE_NAME[0])
+        assert ll_vms.createVm(
+            positive=True,
+            vmName=self.vm_name1,
+            vmDescription="Watchdog VM",
+            cluster=config.CLUSTER_NAME[0],
+            template=config.TEMPLATE_NAME[0]
+        ), "Cannot create vm %s from template %s" % (
+            self.vm_name1, config.TEMPLATE_NAME[0]
         )
         logger.info("Wait until vm %s will have state down", self.vm_name1)
-        self.assertTrue(
-            ll_vms.waitForVMState(self.vm_name1, state=config.VM_DOWN),
+        assert ll_vms.waitForVMState(self.vm_name1, state=config.VM_DOWN), (
             "Vm %s not in status down after creation from template" %
             self.vm_name1
         )
         logger.info("Start vm %s", self.vm_name1)
-        self.assertTrue(
-            ll_vms.startVm(positive=True, vm=self.vm_name1),
+        assert ll_vms.startVm(positive=True, vm=self.vm_name1), (
             "Failed to start vm %s" % self.vm_name1
         )
         self.detect_watchdog(True, self.vm_name1)
@@ -722,34 +696,28 @@ class WatchdogCRUDTemplate(WatchdogVM):
         """
         Deleting watchdog model
         """
-        self.assertTrue(
-            ll_templates.delete_watchdog(
-                template_name=config.TEMPLATE_NAME[0]
-            )
+        assert ll_templates.delete_watchdog(
+            template_name=config.TEMPLATE_NAME[0]
         )
         logger.info(
             "Create new vm %s from template %s",
             self.vm_name2, config.TEMPLATE_NAME[0])
-        self.assertTrue(
-            ll_vms.createVm(
-                positive=True,
-                vmName=self.vm_name2,
-                vmDescription="tempalte vm",
-                cluster=config.CLUSTER_NAME[0],
-                template=config.TEMPLATE_NAME[0]
-            ),
-            "Cannot create vm %s from template %s" %
+        assert ll_vms.createVm(
+            positive=True,
+            vmName=self.vm_name2,
+            vmDescription="tempalte vm",
+            cluster=config.CLUSTER_NAME[0],
+            template=config.TEMPLATE_NAME[0]
+        ), "Cannot create vm %s from template %s" % (
             (self.vm_name2, config.TEMPLATE_NAME[0])
         )
         logger.info("Wait until vm %s will have state down", self.vm_name2)
-        self.assertTrue(
-            ll_vms.waitForVMState(self.vm_name2, state=config.VM_DOWN),
+        assert ll_vms.waitForVMState(self.vm_name2, state=config.VM_DOWN), (
             "Vm %s not in status down after creation from template" %
             self.vm_name2
         )
         logger.info("Start vm %s", self.vm_name2)
-        self.assertTrue(
-            ll_vms.startVm(positive=True, vm=self.vm_name2),
+        assert ll_vms.startVm(positive=True, vm=self.vm_name2), (
             "Failed to start vm %s" % self.vm_name2
         )
         self.detect_watchdog(False, self.vm_name2)

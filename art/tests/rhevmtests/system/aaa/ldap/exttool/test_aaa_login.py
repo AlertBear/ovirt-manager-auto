@@ -97,15 +97,12 @@ class ExttoolAAALogin(TestCase):
             ss.run_cmd(['rm', '-f', '%s.pem' % CERT_BASE])
 
     def login(self, user_name=TEST_USER, password=TEST_USER_PASSWORD):
-        self.assertTrue(
-            self.cli.run(
-                'login-user',
-                user_name=user_name,
-                profile=self.profile,
-                password=password,
-            )[0],
-            "Failed to run login-user action"
-        )
+        assert self.cli.run(
+            'login-user',
+            user_name=user_name,
+            profile=self.profile,
+            password=password,
+        )[0], "Failed to run login-user action"
 
 
 class ExttoolAAALoginAD(ExttoolAAALogin):

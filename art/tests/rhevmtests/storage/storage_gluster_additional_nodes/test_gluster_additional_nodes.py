@@ -180,11 +180,9 @@ class BaseGlusterMount(BaseTestCase):
         :raises: AssertionError
         """
         status = self.add_storage_domain(address, backupvolfile_list)
-        self.assertEqual(
-            status, positive, "Adding a gluster domain with %s address "
-            "should have %s." % (
-                address, "succeeded" if positive else "failed"
-            )
+        assert status == positive, (
+            "Adding a gluster domain with %s address should have %s." %
+            (address, "succeeded" if positive else "failed")
         )
 
     def tearDown(self):
@@ -258,21 +256,17 @@ class BaseTestBlockingNodes(BaseGlusterMount):
                 logger.error("Failed to delete disk %s", self.disk_alias)
                 raise_exception = True
         if not writable:
-            self.assertTrue(
-                status, "Storage domain %s is %s" % (
-                    self.domain_name,
-                    "in read-only mode" if disk_operation_positive else
-                    "writable"
-                )
+            assert status, "Storage domain %s is %s" % (
+                self.domain_name,
+                "in read-only mode" if disk_operation_positive else
+                "writable"
             )
 
         if active:
-            self.assertTrue(
-                ll_sd.wait_storage_domain_status_is_unchanged(
-                    config.DATA_CENTER_NAME, self.domain_name,
-                    config.SD_ACTIVE
-                ), "Storage domain %s is not active" % self.domain_name
-            )
+            assert ll_sd.wait_storage_domain_status_is_unchanged(
+                config.DATA_CENTER_NAME, self.domain_name,
+                config.SD_ACTIVE
+            ), "Storage domain %s is not active" % self.domain_name
         else:
             try:
                 ll_sd.waitForStorageDomainStatus(
@@ -283,9 +277,9 @@ class BaseTestBlockingNodes(BaseGlusterMount):
                 domain_obj = ll_sd.getDCStorage(
                     config.DATA_CENTER_NAME, self.domain_name
                 )
-                self.assertTrue(
-                    False, "Storage domain %s is in status %s, expected "
-                    "status is %s" % (
+                assert False, (
+                    "Storage domain %s is in status %s, expected status is %s"
+                    % (
                         self.domain_name, domain_obj.get_status(),
                         config.SD_INACTIVE
                     )
@@ -553,9 +547,8 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
             raise exceptions.StorageDomainException(
                 "Error adding gluster storage domain %s" % self.mount_point
             )
-        self.assertTrue(
-            exception_code,
-            "Couldn't find regex %s, output %s" % (self.regex, output)
+        assert exception_code, "Couldn't find regex %s, output %s" % (
+            self.regex, output
         )
 
     @polarion("RHEVM3-14682")

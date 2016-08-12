@@ -171,8 +171,7 @@ class CheckVmAfterSoftFencing(SoftFencing):
         _check_host_state(config.host_with_pm, config.service_vdsmd,
                           config.job_finished)
         logger.info("Check VM state")
-        self.assertTrue(checkVmState(True, self.vm_test,
-                                     ENUMS['vm_state_up']))
+        assert checkVmState(True, self.vm_test, ENUMS['vm_state_up'])
         logger.info("Vm state up")
 
     @classmethod

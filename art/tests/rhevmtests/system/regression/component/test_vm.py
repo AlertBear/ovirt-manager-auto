@@ -41,7 +41,7 @@ class TestCaseVM(TestCase):
             type=config.ENUMS['disk_type_system'],
             format='bad_config', interface=config.ENUMS['interface_virtio']
         )
-        self.assertTrue(status, 'Add disk to vm - wrong format')
+        assert status, 'Add disk to vm - wrong format'
 
     @attr(tier=2)
     def test_add_disk_to_vm_wrong_interface(self):
@@ -56,7 +56,7 @@ class TestCaseVM(TestCase):
             type=config.ENUMS['disk_type_system'],
             format=config.ENUMS['format_cow']
         )
-        self.assertTrue(status, 'Add disk to vm - wrong interface')
+        assert status, 'Add disk to vm - wrong interface'
 
     @attr(tier=1)
     def test_add_remove_disk(self):
@@ -72,9 +72,9 @@ class TestCaseVM(TestCase):
             type=config.ENUMS['disk_type_system'],
             format=config.ENUMS['format_cow']
         )
-        self.assertTrue(status, 'Add disk to vm')
+        assert status, 'Add disk to vm'
         logger.info('Remove disk from vm')
         status = ll_vm.removeDisk(
             positive=True, vm=self.vm_name, disk='test_disk'
         )
-        self.assertTrue(status, 'Failed to remove disk from vm')
+        assert status, 'Failed to remove disk from vm'

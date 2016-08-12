@@ -99,16 +99,14 @@ class GABaseTestCase(TestCase):
                 config.PRODUCT_BUILD, self.disk_name[2:5]
             ),
         )
-        self.assertTrue(
-            self.machine.package_manager.update([package]),
-            "Failed to update package '%s'",
-        )
+        assert self.machine.package_manager.update(
+            [package]
+        ), "Failed to update package '%s'" % package
 
     def install_guest_agent(self, package):
-        self.assertTrue(
-            self.machine.package_manager.install(package),
-            "Failed to install '%s' on machine '%s'" % (package, self.machine)
-        )
+        assert self.machine.package_manager.install(
+            package
+        ), "Failed to install '%s' on machine '%s'" % (package, self.machine)
         self.machine.service(config.AGENT_SERVICE_NAME).start()
 
     def post_install(self, commands=None):
@@ -123,53 +121,43 @@ class GABaseTestCase(TestCase):
         rc, _, err = executor.run_cmd(
             ['ls', '-l', '/etc/ovirt-guest-agent.conf']
         )
-        self.assertTrue(
-            not rc,
-            "Failed to check guest agent config: %s" % err
-        )
+        assert not rc, "Failed to check guest agent config: %s" % err
         rc, _, err = executor.run_cmd(
             ['grep', 'ovirtagent', '/etc/{passwd,group}']
         )
-        self.assertTrue(
-            not rc,
-            'User/Group ovirtagent was no found: %s' % err
-        )
+        assert not rc, 'User/Group ovirtagent was no found: %s' % err
         rc, out, err = executor.run_cmd([
             'stat',
             '--format=%U:%G',
             '-L',
             '/dev/virtio-ports/com.redhat.rhevm.vdsm',
         ])
-        self.assertTrue(
-            not rc,
+        assert not rc, (
             "Failed to run check of ownership of virtio-ports: %s" % err
         )
-        self.assertTrue(
-            out.strip() == 'ovirtagent:ovirtagent',
+        assert out.strip() == 'ovirtagent:ovirtagent', (
             "Virtio port have invalid ownership '%s': %s" % (out, err)
         )
         if commands:
             for command in commands:
                 rc, _, err = executor.run_cmd(command)
-                self.assertTrue(
-                    not rc,
+                assert not rc, (
                     "Failed to run command '%s': %s" % (command, err)
                 )
 
     def uninstall(self, package):
         """ uninstall guest agent """
-        self.assertTrue(
-            self.machine.package_manager.remove(package),
-            "Failed to remove '%s' on machine '%s'" % (package, self.machine)
-        )
+        assert self.machine.package_manager.remove(
+            package
+        ), "Failed to remove '%s' on machine '%s'" % (package, self.machine)
 
     def services(self, service_name):
         """ rhevm-guest-agent start-stop-restart-status """
         ga_service = self.machine.service(service_name)
         ga_service.stop()
-        self.assertTrue(ga_service.start())
-        self.assertTrue(ga_service.stop())
-        self.assertTrue(ga_service.restart())
+        assert ga_service.start()
+        assert ga_service.stop()
+        assert ga_service.restart()
 
     def _check_fqdn(self):
         fqdn_agent = self._run_cmd_on_hosts_vm(
@@ -184,8 +172,7 @@ class GABaseTestCase(TestCase):
             'hostname', '--fqdn'
         ])
 
-        self.assertEqual(
-            fqdn_real.strip(), fqdn_agent,
+        assert fqdn_real.strip() == fqdn_agent, (
             "Agent returned wrong FQDN '%s' != '%s'" % (fqdn_real, fqdn_agent)
         )
 
@@ -199,7 +186,7 @@ class GABaseTestCase(TestCase):
         )
         iface_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
         logger.info(iface_agent)
-        self.assertTrue(iface_agent is not None)
+        assert iface_agent is not None
         return ast.literal_eval(iface_agent)
 
     def _check_net_ifaces(self):
@@ -208,10 +195,10 @@ class GABaseTestCase(TestCase):
         ])
         iface_real = iface_real.strip()
         for it in self.get_ifaces():
-            self.assertTrue(it['name'] in iface_real)
-            self.assertTrue(it['hw'] in iface_real)
+            assert it['name'] in iface_real
+            assert it['hw'] in iface_real
             for i in it['inet6'] + it['inet']:
-                self.assertTrue(i in iface_real)
+                assert i in iface_real
 
     def _check_diskusage(self):
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
@@ -224,7 +211,7 @@ class GABaseTestCase(TestCase):
                 'df', '-B', '1', fs['path']]
             )
             df_real = df_real.strip()
-            self.assertTrue(fs['total'] in df_real)
+            assert fs['total'] in df_real
 
     def _check_applist(self, application_list, list_app_cmd):
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
@@ -245,7 +232,7 @@ class GABaseTestCase(TestCase):
         for app in app_real_list:
             if app.endswith(('i686', 'x86_64', 'noarch')):
                 app = app[:app.rfind('.')]
-            self.assertTrue(len(filter(lambda x: app in x, app_list)) > 0)
+            assert len(filter(lambda x: app in x, app_list)) > 0
 
     def _check_guestIP(self):
         ip = ['ifconfig', '|', 'grep', 'inet addr:', '|', 'cut', '-d:',
@@ -259,7 +246,7 @@ class GABaseTestCase(TestCase):
             ip.insert(1, iface['name'])
             rc, ip_real, err = self.machine.executor().run_cmd(ip)
             ip_real = ip_real.strip()
-            self.assertTrue(ip_real in ip_list)
+            assert ip_real in ip_list
 
     def agent_data(self, application_list, list_app_cmd):
         """ rhevm-guest-agent data """
@@ -274,9 +261,9 @@ class GABaseTestCase(TestCase):
 
     def function_continuity(self, application_list, list_app_cmd):
         """ rhevm-guest-agent function continuity """
-        self.assertTrue(self.is_agent_running())
-        self.assertTrue(vms.migrateVm(True, self.disk_name))
-        self.assertTrue(self.is_agent_running())
+        assert self.is_agent_running()
+        assert vms.migrateVm(True, self.disk_name)
+        assert self.is_agent_running()
         self.agent_data(application_list, list_app_cmd)
 
     def _run_cmd_on_hosts_vm(self, cmd, vm_name):

@@ -36,10 +36,8 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad1(BaseTestEDWithMemory):
         """
         Check if all VMS stay on old hosts
         """
-        self.assertFalse(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
-            )
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
         )
 
 
@@ -72,10 +70,8 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad2(BaseTestEDWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[1], expected_num_of_vms=2
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
@@ -105,10 +101,8 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad3(BaseTestEDWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[1], expected_num_of_vms=2
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
@@ -141,10 +135,8 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad4(BaseTestEDWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[1], expected_num_of_vms=2
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
@@ -177,10 +169,8 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad5(BaseTestEDWithMemory):
         """
         Check if all VMS stay on old hosts
         """
-        self.assertFalse(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
-            )
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
         )
 
 
@@ -214,10 +204,8 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad6(BaseTestEDWithMemory):
         """
         Check if all VMS stay on old hosts
         """
-        self.assertFalse(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
-            )
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
@@ -250,10 +238,8 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad7(BaseTestEDWithMemory):
         """
         Check if all VMS stay on old hosts
         """
-        self.assertFalse(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
-            )
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
@@ -288,13 +274,11 @@ class TestStartVm(StartAndMigrateVmEDBase):
         1) Start vm
         2) Check that vm started on correct host
         """
-        self.assertTrue(
-            ll_vms.startVm(positive=True, vm=self.vm_to_start),
-            "Failed to start vm %s" % self.vm_to_start
-        )
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_to_start
+        ), "Failed to start vm %s" % self.vm_to_start
         vm_host = ll_vms.get_vm_host(vm_name=self.vm_to_start)
-        self.assertEqual(
-            vm_host, conf.HOSTS[0],
+        assert vm_host == conf.HOSTS[0], (
             "Vm %s started on wrong host %s" % (self.vm_to_start, vm_host)
         )
 
@@ -324,13 +308,11 @@ class TestMigrateVm(StartAndMigrateVmEDBase):
         1) Migrate vm
         2) Check that vm migrated to correct host
         """
-        self.assertTrue(
-            ll_vms.migrateVm(positive=True, vm=self.vm_to_migrate),
-            "Failed to migrate vm %s" % self.vm_to_migrate
-        )
+        assert ll_vms.migrateVm(
+            positive=True, vm=self.vm_to_migrate
+        ), "Failed to migrate vm %s" % self.vm_to_migrate
         vm_host = ll_vms.get_vm_host(vm_name=self.vm_to_migrate)
-        self.assertEqual(
-            vm_host, conf.HOSTS[0],
+        assert vm_host == conf.HOSTS[0], (
             "Vm %s migrated to wrong host %s" % (self.vm_to_migrate, vm_host)
         )
 
@@ -376,8 +358,6 @@ class TestTakeInAccountVmMemory(StartAndMigrateVmEDBase):
         """
         Check if all vms stay on old hosts
         """
-        self.assertFalse(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[2], expected_num_of_vms=1, negative=True
-            )
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[2], expected_num_of_vms=1, negative=True
         )

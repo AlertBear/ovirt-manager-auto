@@ -43,7 +43,7 @@ class WrongConfiguration(Configuration):
     @common.check(config.EXTENSIONS)
     def test_wrongConfiguration(self):
         ''' wrong configuration '''
-        self.assertFalse(self._isExtensionAvailable(self.conf['authz_name']))
+        assert not self._isExtensionAvailable(self.conf['authz_name'])
 
 
 @attr(tier=2)
@@ -58,4 +58,4 @@ class DisabledConfiguration(Configuration):
     @common.check(config.EXTENSIONS)
     def test_disabledConfiguration(self):
         ''' disabled configuration '''
-        self.assertFalse(self._isExtensionAvailable(self.conf['authz_name']))
+        assert not self._isExtensionAvailable(self.conf['authz_name'])

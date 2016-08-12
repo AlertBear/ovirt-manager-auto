@@ -113,9 +113,7 @@ class BasicEnvironmentSetUp(BaseTestCase):
                     self.vm_name, is_disks)
         status = ll_vms.addSnapshot(
             True, vm_name, self.snapshot_desc, disks_lst=disks, wait=wait)
-        self.assertTrue(
-            status, "Failed to create snapshot %s" % self.snapshot_desc
-        )
+        assert status, "Failed to create snapshot %s" % self.snapshot_desc
         if wait:
             ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
@@ -189,9 +187,8 @@ class TestCase11660(BasicEnvironmentSetUp):
             True, vm=vm_name, description=self.snapshot_desc,
             ensure_vm_down=True
         )
-        self.assertTrue(
-            self.previewed,
-            "Failed to preview snapshot %s" % self.snapshot_desc
+        assert self.previewed, "Failed to preview snapshot %s" % (
+            self.snapshot_desc
         )
         ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
 
@@ -207,10 +204,9 @@ class TestCase11660(BasicEnvironmentSetUp):
         testflow.step(
             "Committing snapshot %s on vm %s", self.snapshot_desc, vm_name
         )
-        self.assertTrue(ll_vms.commit_snapshot(
+        assert ll_vms.commit_snapshot(
             True, vm=vm_name, ensure_vm_down=True
-        ),
-            "Failed to commit snapshot %s" % self.snapshot_desc)
+        ), "Failed to commit snapshot %s" % self.snapshot_desc
         ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
         self.previewed = False
         testflow.step("Checking that files no longer exist after commit")
@@ -353,9 +349,8 @@ class TestCase11679(BasicEnvironmentSetUp):
         self.previewed = ll_vms.preview_snapshot(
             True, vm=vm_name, description=self.snapshot_desc,
             ensure_vm_down=True)
-        self.assertTrue(
-            self.previewed,
-            "Failed to preview snapshot %s" % self.snapshot_desc
+        assert self.previewed, "Failed to preview snapshot %s" % (
+            self.snapshot_desc
         )
         logger.info("Wait for all jobs to complete")
         ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
@@ -367,9 +362,10 @@ class TestCase11679(BasicEnvironmentSetUp):
         logger.info("Checking that files no longer exist after preview")
         self.check_file_existence_operation(False)
 
-        self.assertTrue(ll_vms.commit_snapshot(
-            True, vm=vm_name, ensure_vm_down=True),
-            "Failed to commit snapshot %s" % self.snapshot_desc)
+        assert ll_vms.commit_snapshot(
+            True, vm=vm_name, ensure_vm_down=True), (
+                "Failed to commit snapshot %s" % self.snapshot_desc
+            )
         logger.info("Wait for all jobs to complete")
         ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
         self.previewed = False
@@ -417,15 +413,12 @@ class TestCase11676(BaseTestCase):
         Parameters:
             * length - how many 'a' chars should description contain
         """
-        self.assertTrue(
-            ll_vms.startVm(True, vm_name), "Failed to start vm %s" % vm_name
-        )
+        assert ll_vms.startVm(True, vm_name), "Failed to start vm %s" % vm_name
         description = length * 'a'
         logger.info("Trying to create snapshot on vm %s with description "
                     "containing %d 'a' letters", vm_name, length)
-        self.assertTrue(
-            ll_vms.addSnapshot(positive, vm=vm_name, description=description)
-        )
+        assert ll_vms.addSnapshot(
+            positive, vm=vm_name, description=description)
 
     @polarion("RHEVM3-11676")
     def test_snapshot_description_length_positive(self):
@@ -445,10 +438,11 @@ class TestCase11676(BaseTestCase):
             "Trying to create snapshot with description %s",
             config.SPECIAL_CHAR_DESC
         )
-        self.assertTrue(ll_vms.addSnapshot(
+        assert ll_vms.addSnapshot(
             True, vm=self.vm_name, description=config.SPECIAL_CHAR_DESC
-        ), "Failed to add snapshot %s to vm %s" %
-           (config.SPECIAL_CHAR_DESC, self.vm_name))
+        ), "Failed to add snapshot %s to vm %s" % (
+            config.SPECIAL_CHAR_DESC, self.vm_name
+        )
 
 
 @attr(tier=2)
@@ -496,10 +490,8 @@ class TestCase11665(BaseTestCase):
         Tests whether snapshot can be created on vm that has disks on multiple
         storage domains
         """
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                True, vm=self.vm_name, description=self.snapshot_description
-            )
+        assert ll_vms.addSnapshot(
+            True, vm=self.vm_name, description=self.snapshot_description
         )
 
 
@@ -528,15 +520,12 @@ class TestCase11680(BaseTestCase):
         """
         Tests live snapshot during migration
         """
-        self.assertTrue(
-            ll_vms.startVm(True, self.vm_name),
-            "Failed to start vm %s" % self.vm_name
+        assert ll_vms.startVm(True, self.vm_name), "Failed to start vm %s" % (
+            self.vm_name
         )
         assert ll_vms.migrateVm(True, self.vm_name, wait=False)
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                False, vm=self.vm_name, description=self.snapshot_description
-            )
+        assert ll_vms.addSnapshot(
+            False, vm=self.vm_name, description=self.snapshot_description
         )
 
 
@@ -589,14 +578,12 @@ class TestCase11674(BaseTestCase):
         disks
         """
         snap_descs = set([config.ACTIVE_SNAPSHOT, self.snapshot_description])
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                True, vm=self.vm_name, description=self.snapshot_description
-            )
+        assert ll_vms.addSnapshot(
+            True, vm=self.vm_name, description=self.snapshot_description
         )
         snapshots = ll_vms._getVmSnapshots(self.vm_name, False)
         current_snap_descs = set([snap.description for snap in snapshots])
-        self.assertTrue(snap_descs == current_snap_descs)
+        assert snap_descs == current_snap_descs
 
 
 @attr(tier=2)
@@ -682,10 +669,8 @@ class TestCase11684(BaseTestCase):
         """
         Try to make a live snapshot from thinly provisioned VM
         """
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                True, vm=self.vm_thin, description=self.snapshot_description
-            )
+        assert ll_vms.addSnapshot(
+            True, vm=self.vm_thin, description=self.snapshot_description
         )
 
     @polarion("RHEVM3-11684")
@@ -693,8 +678,6 @@ class TestCase11684(BaseTestCase):
         """
         Try to make a live snapshot from cloned VM
         """
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                True, vm=self.vm_clone, description=self.snapshot_description
-            )
+        assert ll_vms.addSnapshot(
+            True, vm=self.vm_clone, description=self.snapshot_description
         )

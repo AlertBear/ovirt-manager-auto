@@ -62,14 +62,10 @@ class TestHostNetworkApiSync01(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different VLAN"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13979")
@@ -90,14 +86,10 @@ class TestHostNetworkApiSync01(NetworkTest):
             "Check that the network is un-sync and the sync reason is no "
             "VLAN"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13980")
@@ -117,14 +109,10 @@ class TestHostNetworkApiSync01(NetworkTest):
         testflow.step(
             "Check that the network is un-sync and the sync reason is VLAN"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -172,14 +160,10 @@ class TestHostNetworkApiSync02(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different VLAN over BOND"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13982")
@@ -201,14 +185,10 @@ class TestHostNetworkApiSync02(NetworkTest):
             "Check that the network is un-sync and the sync reason is no "
             "VLAN over BOND"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13985")
@@ -229,14 +209,10 @@ class TestHostNetworkApiSync02(NetworkTest):
             "Check that the network is un-sync and the sync reason is VLAN "
             "over BOND"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -277,14 +253,10 @@ class TestHostNetworkApiSync03(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different MTU"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13988")
@@ -305,14 +277,10 @@ class TestHostNetworkApiSync03(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different MTU"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13989")
@@ -333,14 +301,10 @@ class TestHostNetworkApiSync03(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different MTU"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -388,14 +352,10 @@ class TestHostNetworkApiSync04(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different MTU over BOND"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13991")
@@ -417,14 +377,10 @@ class TestHostNetworkApiSync04(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different MTU over BOND"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13992")
@@ -446,14 +402,10 @@ class TestHostNetworkApiSync04(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "different MTU over BOND"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -491,14 +443,10 @@ class TestHostNetworkApiSync05(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "Vm/Non-VM"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13994")
@@ -519,14 +467,10 @@ class TestHostNetworkApiSync05(NetworkTest):
             "Check that the network is un-sync and the sync reason is is "
             "Vm/Non-VM"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
 
@@ -568,14 +512,10 @@ class TestHostNetworkApiSync06(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "Vm/Non-VM"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13996")
@@ -596,14 +536,10 @@ class TestHostNetworkApiSync06(NetworkTest):
             "Check that the network is un-sync and the sync reason is is "
             "Vm/Non-VM"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
 
@@ -651,14 +587,10 @@ class TestHostNetworkApiSync07(NetworkTest):
             "Check that the network is un-sync and the sync reasons are "
             "different VLAN, MTU and Bridge"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -708,14 +640,10 @@ class TestHostNetworkApiSync08(NetworkTest):
             "Check that the network is un-sync and the sync reasons are "
             "different VLAN, MTU and Bridge"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -751,14 +679,10 @@ class TestHostNetworkApiSync09(NetworkTest):
             "Check that the network is un-sync and the sync reasons is "
             "changed IP"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -795,14 +719,10 @@ class TestHostNetworkApiSync10(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "changed netmask"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -839,14 +759,10 @@ class TestHostNetworkApiSync11(NetworkTest):
             "Check that the network is un-sync and the sync reasons is "
             "changed netmask prefix"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -884,14 +800,10 @@ class TestHostNetworkApiSync12(NetworkTest):
             "Check that the network is un-sync and the sync reasons is "
             "changed IP"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -930,14 +842,10 @@ class TestHostNetworkApiSync13(NetworkTest):
             "Check that the network is un-sync and the sync reason is "
             "changed netmask"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -976,14 +884,10 @@ class TestHostNetworkApiSync14(NetworkTest):
             "Check that the network is un-sync and the sync reasons is "
             "changed netmask prefix"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1018,14 +922,10 @@ class TestHostNetworkApiSync15(NetworkTest):
         testflow.step(
             "Check that the network is un-sync and the sync reasons is new IP"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1062,14 +962,10 @@ class TestHostNetworkApiSync16(NetworkTest):
         testflow.step(
             "Check that the network is un-sync and the sync reasons is new IP"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1104,14 +1000,10 @@ class TestHostNetworkApiSync17(NetworkTest):
         testflow.step(
             "Check that the network is un-sync and the sync reasons is no IP"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1146,14 +1038,10 @@ class TestHostNetworkApiSync18(NetworkTest):
         testflow.step(
             "Check that the network is un-sync and the sync reasons is no IP"
         )
-        self.assertTrue(
-            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        )
+        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1207,17 +1095,13 @@ class TestHostNetworkApiSync19(NetworkTest):
                     qos_value: self.expected_actual_dict_1
                 }
             }
-            self.assertTrue(
-                helper.get_networks_sync_status_and_unsync_reason(
-                    compare_dict_
-                )
+            assert helper.get_networks_sync_status_and_unsync_reason(
+                compare_dict_
             )
 
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-14027")
@@ -1235,17 +1119,13 @@ class TestHostNetworkApiSync19(NetworkTest):
                     qos_value: self.expected_actual_dict_2
                 }
             }
-            self.assertTrue(
-                helper.get_networks_sync_status_and_unsync_reason(
-                    compare_dict_
-                )
+            assert helper.get_networks_sync_status_and_unsync_reason(
+                compare_dict_
             )
 
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-14028")
@@ -1263,17 +1143,13 @@ class TestHostNetworkApiSync19(NetworkTest):
                     qos_value: self.expected_actual_dict_3
                 }
             }
-            self.assertTrue(
-                helper.get_networks_sync_status_and_unsync_reason(
-                    compare_dict_
-                )
+            assert helper.get_networks_sync_status_and_unsync_reason(
+                compare_dict_
             )
 
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -1334,17 +1210,13 @@ class TestHostNetworkApiSync20(NetworkTest):
                     qos_value: self.expected_actual_dict_1
                 }
             }
-            self.assertTrue(
-                helper.get_networks_sync_status_and_unsync_reason(
-                    compare_dict_
-                )
+            assert helper.get_networks_sync_status_and_unsync_reason(
+                compare_dict_
             )
 
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-14030")
@@ -1363,17 +1235,13 @@ class TestHostNetworkApiSync20(NetworkTest):
                     qos_value: self.expected_actual_dict_2
                 }
             }
-            self.assertTrue(
-                helper.get_networks_sync_status_and_unsync_reason(
-                    compare_dict_
-                )
+            assert helper.get_networks_sync_status_and_unsync_reason(
+                compare_dict_
             )
 
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-14031")
@@ -1392,15 +1260,11 @@ class TestHostNetworkApiSync20(NetworkTest):
                     qos_value: self.expected_actual_dict_3
                 }
             }
-            self.assertTrue(
-                helper.get_networks_sync_status_and_unsync_reason(
-                    compare_dict_
-                )
+            assert helper.get_networks_sync_status_and_unsync_reason(
+                compare_dict_
             )
 
         testflow.step("Sync the network")
-        self.assertTrue(
-            network_helper.sync_networks(
-                host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
-            )
+        assert network_helper.sync_networks(
+            host=net_conf.HOST_0_NAME, networks=[self.net_case_3]
         )

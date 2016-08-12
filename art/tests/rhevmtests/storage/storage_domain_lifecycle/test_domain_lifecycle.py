@@ -236,15 +236,11 @@ class TestCase11784(TestCase):
         Check that both storage domains were automatically activated
         after attaching them
         """
-        self.assertTrue(
-            ll_sd.attachStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-            ), "Failed to attach SD %s" % self.sd_name
-        )
-        self.assertTrue(
-            ll_sd.is_storage_domain_active(
-                config.DATA_CENTER_NAME, self.sd_name
-            )
+        assert ll_sd.attachStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_name
+        ), "Failed to attach SD %s" % self.sd_name
+        assert ll_sd.is_storage_domain_active(
+            config.DATA_CENTER_NAME, self.sd_name
         )
 
     def tearDown(self):
@@ -413,7 +409,7 @@ class TestUpgrade(TestCase):
             logger.info(
                 "Checking that %s was upgraded: %s", sd_obj.name, was_upgraded
             )
-            self.assertTrue(was_upgraded)
+            assert was_upgraded
 
 
 class TestUpgradeNFS(TestUpgrade):

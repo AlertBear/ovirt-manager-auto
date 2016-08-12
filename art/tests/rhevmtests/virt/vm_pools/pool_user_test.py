@@ -91,7 +91,7 @@ class TestTwoUsersTakeVmFromPool(base.VmPoolWithUser):
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
         )
-        self.assertTrue(hl_vmpools.stop_vm_pool(self.pool_name))
+        assert hl_vmpools.stop_vm_pool(self.pool_name)
         vms = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)
         helpers.verify_vms_have_no_permissions_for_user(
             vms, self.user_name, config.USER_ROLE

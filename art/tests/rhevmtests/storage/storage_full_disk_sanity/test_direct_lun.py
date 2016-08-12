@@ -243,8 +243,7 @@ class TestCase5931(DirectLunAttachTestCase):
             True, vm=self.vm_name, name=self.template_name,
             cluster=config.CLUSTER_NAME
         )
-        self.assertTrue(
-            self.template_created,
+        assert self.template_created, (
             "Failed to create template %s" % self.template_name
         )
 
@@ -290,9 +289,9 @@ class TestCase5932(DirectLunAttachTestCase):
         self.snap_added = ll_vms.addSnapshot(
             False, self.vm_name, self.snap_desc
         )
-        self.assertTrue(
-            self.snap_added, "Succeeded to create snapshot from stateless "
-                             "vm with direct LUN attached"
+        assert self.snap_added, (
+            "Succeeded to create snapshot from stateless vm with direct LUN "
+            "attached"
         )
 
     def tearDown(self):
@@ -323,10 +322,11 @@ class TestCase5933(DirectLunAttachTestCase):
         """
         self.attach_disk_to_vm()
         logger.info("Create new snapshot %s", self.snap_desc)
-        self.assertTrue(ll_vms.addSnapshot(
+        assert ll_vms.addSnapshot(
             True, self.vm_name, self.snap_desc
-        ), "Failed to create snapshot %s to vm %s" %
-            (self.snap_desc, self.vm_name))
+        ), "Failed to create snapshot %s to vm %s" % (
+            self.snap_desc, self.vm_name
+        )
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, config.SNAPSHOT_OK, [self.snap_desc],
         )
@@ -356,21 +356,18 @@ class TestCase5934(DirectLunAttachTestCase):
         2) kill qemu precess
         """
         self.attach_disk_to_vm()
-        self.assertTrue(ll_vms.updateVm(
-            True, self.vm_name, highly_available='true'),
-            "Failed to update vm %s HA attribute to 'true" % self.vm_name
-        )
+        assert ll_vms.updateVm(
+            True, self.vm_name, highly_available='true'
+        ), "Failed to update vm %s HA attribute to 'true" % self.vm_name
         ll_vms.startVm(True, self.vm_name)
         _, host = ll_vms.getVmHost(self.vm_name)
         host_ip = getHostIP(host['vmHoster'])
         host_machine = Machine(
             host_ip, config.HOSTS_USER, config.HOSTS_PW).util(LINUX)
-        self.assertTrue(
-            host_machine.kill_qemu_process(self.vm_name),
-            "Failed to kill the QEMU process"
-        )
-        self.assertTrue(
-            ll_vms.waitForVMState(self.vm_name),
+        assert host_machine.kill_qemu_process(
+            self.vm_name
+        ), "Failed to kill the QEMU process"
+        assert ll_vms.waitForVMState(self.vm_name), (
             "VM state is not up after killing QEMU process and setting HA "
             "attribute to 'true"
         )
@@ -401,10 +398,9 @@ class TestCase5938(DirectLunAttachTestCase):
         """
         1) Add direct LUN as bootable
         """
-        self.assertTrue(
-            ll_disks.addDisk(True, **self.kwargs),
-            "Failed to add direct LUN with bootable attribute set to 'true"
-        )
+        assert ll_disks.addDisk(
+            True, **self.kwargs
+        ), "Failed to add direct LUN with bootable attribute set to 'true'"
         ll_jobs.wait_for_jobs([config.JOB_ADD_DISK])
 
     def tearDown(self):
@@ -438,10 +434,9 @@ class TestCase5939(DirectLunAttachTestCase):
         """
         1) Add direct LUN as shareable
         """
-        self.assertTrue(
-            ll_disks.addDisk(True, **self.kwargs),
-            "Failed to add direct LUN with shareable attribute set to 'true"
-        )
+        assert ll_disks.addDisk(
+            True, **self.kwargs
+        ), "Failed to add direct LUN with shareable attribute set to 'true'"
 
     def tearDown(self):
         logger.info("Deleting disk %s", self.disk_alias)
@@ -479,9 +474,7 @@ class TestCase5940(DirectLunAttachTestCase):
             vm_disk.get_alias(), self.vm_name, storage_type=self.storage
         )
 
-        self.assertTrue(
-            self.target_sd, "Target SD %s wasn't found" % self.target_sd
-        )
+        assert self.target_sd, "Target SD %s wasn't found" % self.target_sd
         hl_vms.move_vm_disks(self.vm_name, self.target_sd)
 
     def tearDown(self):
@@ -514,15 +507,13 @@ class TestCase5924(DirectLunAttachTestCase):
         testflow.step(
             "Detaching direct lun %s from vm %s", self.disk_alias, self.vm_name
         )
-        self.assertTrue(
-            ll_disks.detachDisk(True, self.disk_alias, self.vm_name),
-            "Failed to detach direct lun from vm %s" % self.vm_name
-        )
+        assert ll_disks.detachDisk(
+            True, self.disk_alias, self.vm_name
+        ), "Failed to detach direct lun from vm %s" % self.vm_name
         logger.info("Removing direct lun %s", self.disk_alias)
-        self.assertTrue(
-            ll_disks.deleteDisk(True, self.disk_alias),
-            "Failed to delete direct lun"
-        )
+        assert ll_disks.deleteDisk(
+            True, self.disk_alias
+        ), "Failed to delete direct lun"
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
 
     @polarion("RHEVM3-5924")
@@ -565,9 +556,7 @@ class TestCase5911(DirectLunAttachTestCase):
 
         ll_vms.stop_vms_safely([self.vm_name])
         self.vm_removed = ll_vms.removeVm(True, self.vm_name)
-        self.assertTrue(
-            self.vm_removed, "Failed to remove vm %s" % self.vm_name
-        )
+        assert self.vm_removed, "Failed to remove vm %s" % self.vm_name
 
     def tearDown(self):
         if not self.vm_removed:
@@ -595,10 +584,9 @@ class TestCase5913(DirectLunAttachTestCase):
     @polarion("RHEVM3-5913")
     def test_wipe_after_delete_with_direct_lun(self):
 
-        self.assertTrue(
-            ll_disks.addDisk(True, **self.kwargs),
-            "Failed to add direct LUN with shareable attribute set to 'true"
-        )
+        assert ll_disks.addDisk(
+            True, **self.kwargs
+        ), "Failed to add direct LUN with shareable attribute set to 'true'"
 
     def tearDown(self):
         logger.info("Deleting disk %s", self.disk_alias)
@@ -630,10 +618,9 @@ class TestCase5918(DirectLunAttachTestCase):
             'interface': config.VIRTIO_SCSI,
             'shareable': True,
         }
-        self.assertTrue(
-            ll_vms.updateDisk(True, vmName=self.vm_name, **update_kwars),
-            "Failed to update direct LUN"
-        )
+        assert ll_vms.updateDisk(
+            True, vmName=self.vm_name, **update_kwars
+        ), "Failed to update direct LUN"
         lun_disk = ll_vms.getVmDisk(self.vm_name, self.new_alias)
         lun_attachment = ll_vms.get_disk_attachment(
             self.vm_name, lun_disk.get_id(),
@@ -643,7 +630,7 @@ class TestCase5918(DirectLunAttachTestCase):
             update_kwars['shareable'] == lun_disk.get_shareable() and
             update_kwars['interface'] == lun_attachment.get_interface()
         )
-        self.assertTrue(status, "Direct LUN disk's parameters are not updated")
+        assert status, "Direct LUN disk's parameters are not updated"
 
     def tearDown(self):
         logger.info("Deleting disk %s", self.new_alias)

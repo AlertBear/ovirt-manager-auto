@@ -39,18 +39,13 @@ class TestMixCases(VirtTest):
         Start vm, check set ticket
         """
         testflow.step("Set ticket test")
-        self.assertTrue(
-            ll_vms.startVm(positive=True, vm=self.vm_name),
-            "Failed to start vm"
-        )
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name
+        ), "Failed to start vm"
         testflow.step("Ticket running vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.ticketVm(
-                True, self.vm_name,
-                config.ticket_expire_time
-            ),
-            "Failed to set ticket to VM"
-        )
+        assert ll_vms.ticketVm(
+            True, self.vm_name, config.ticket_expire_time
+        ), "Failed to set ticket to VM"
 
     @attr(tier=1)
     @polarion("RHEVM3-14773")
@@ -61,11 +56,9 @@ class TestMixCases(VirtTest):
          Create template from running vm
         """
         testflow.step("Negative: Create template from running vm")
-        self.assertFalse(
-            ll_templates.createTemplate(
-                True, vm=self.vm_name,
-                name=config.template_name
-            )
+        assert not ll_templates.createTemplate(
+            True, vm=self.vm_name,
+            name=config.template_name
         )
 
     @attr(tier=1)
@@ -76,11 +69,9 @@ class TestMixCases(VirtTest):
         Add new vm and check that vm have attached cdrom
         """
         testflow.step("Check if vm %s have cdrom", self.vm_name)
-        self.assertTrue(
-            ll_vms.checkVmHasCdromAttached(
-                positive=True,
-                vmName=self.vm_name
-            )
+        assert ll_vms.checkVmHasCdromAttached(
+            positive=True,
+            vmName=self.vm_name
         )
 
     @attr(tier=2)
@@ -91,7 +82,7 @@ class TestMixCases(VirtTest):
         Add vm and check vm stats
         """
         testflow.step("Check vm %s statistics", self.vm_name)
-        self.assertTrue(ll_vms.checkVmStatistics(True, self.vm_name))
+        assert ll_vms.checkVmStatistics(True, self.vm_name)
 
     @attr(tier=2)
     @polarion("RHEVM3-12577")
@@ -104,35 +95,27 @@ class TestMixCases(VirtTest):
         nics = ["%s_%d" % (config.NIC_NAME, i) for i in range(3)]
 
         testflow.step("Add nic %s to vm %s", nics[0], self.vm_name)
-        self.assertTrue(
-            ll_vms.addNic(
-                True, vm=self.vm_name,
-                name=nics[0],
-                network=config.MGMT_BRIDGE
-            )
+        assert ll_vms.addNic(
+            True, vm=self.vm_name,
+            name=nics[0],
+            network=config.MGMT_BRIDGE
         )
         testflow.step("Add additional nic %s to vm %s", nics[1], self.vm_name)
 
-        self.assertTrue(
-            ll_vms.addNic(
-                True, vm=self.vm_name,
-                name=nics[1],
-                network=config.MGMT_BRIDGE
-            )
+        assert ll_vms.addNic(
+            True, vm=self.vm_name,
+            name=nics[1],
+            network=config.MGMT_BRIDGE
         )
         testflow.step("Update nic %s name to %s", nics[1], nics[2])
-        self.assertTrue(
-            ll_vms.updateNic(
-                True, vm=self.vm_name,
-                nic=nics[1], name=nics[2]
-            )
+        assert ll_vms.updateNic(
+            True, vm=self.vm_name,
+            nic=nics[1], name=nics[2]
         )
         testflow.step("Remove nic %s from vm %s", nics[2], self.vm_name)
-        self.assertTrue(
-            ll_vms.removeNic(
-                True, vm=self.vm_name,
-                nic=nics[2]
-            )
+        assert ll_vms.removeNic(
+            True, vm=self.vm_name,
+            nic=nics[2]
         )
 
     @attr(tier=2)
@@ -143,17 +126,15 @@ class TestMixCases(VirtTest):
         Add raw virtio disk to vm without sparse
         """
         testflow.step("Add new vm with raw virtio disk to vm without sparse")
-        self.assertTrue(
-            ll_vms.addDisk(
-                True,
-                vm=self.vm_name,
-                provisioned_size=config.GB,
-                storagedomain=self.master_domain,
-                type=config.DISK_TYPE_DATA,
-                format=config.DISK_FORMAT_RAW,
-                interface=config.INTERFACE_VIRTIO,
-                sparse=False
-            )
+        assert ll_vms.addDisk(
+            True,
+            vm=self.vm_name,
+            provisioned_size=config.GB,
+            storagedomain=self.master_domain,
+            type=config.DISK_TYPE_DATA,
+            format=config.DISK_FORMAT_RAW,
+            interface=config.INTERFACE_VIRTIO,
+            sparse=False
         )
 
     @attr(tier=2)
@@ -166,7 +147,7 @@ class TestMixCases(VirtTest):
         """
 
         testflow.step("Add new VM with bootable cow ide data disk")
-        self.assertTrue(ll_vms.addDisk(
+        assert ll_vms.addDisk(
             True,
             vm=self.vm_name,
             provisioned_size=config.GB,
@@ -176,7 +157,6 @@ class TestMixCases(VirtTest):
             interface=config.INTERFACE_IDE,
             bootable=True,
             wipe_after_delete=True)
-        )
 
     @attr(tier=2)
     @polarion("RHEVM3-12573")
@@ -187,17 +167,15 @@ class TestMixCases(VirtTest):
         """
 
         testflow.step("Add new VM with sparse cow virtio data disk")
-        self.assertTrue(
-            ll_vms.addDisk(
-                True,
-                vm=self.vm_name,
-                provisioned_size=config.GB,
-                storagedomain=self.master_domain,
-                type=config.DISK_TYPE_DATA,
-                format=config.DISK_FORMAT_COW,
-                interface=config.INTERFACE_VIRTIO,
-                sparse=True
-            )
+        assert ll_vms.addDisk(
+            True,
+            vm=self.vm_name,
+            provisioned_size=config.GB,
+            storagedomain=self.master_domain,
+            type=config.DISK_TYPE_DATA,
+            format=config.DISK_FORMAT_COW,
+            interface=config.INTERFACE_VIRTIO,
+            sparse=True
         )
 
     @attr(tier=2)
@@ -228,7 +206,7 @@ class TestMixCases(VirtTest):
                     format=disk_format,
                     interface=disk_interface
                 )
-                self.assertTrue(result)
+                assert result
 
     @attr(tier=1)
     @polarion("RHEVM3-12583")
@@ -239,13 +217,11 @@ class TestMixCases(VirtTest):
         """
 
         testflow.step("Create new vm from template")
-        self.assertTrue(
-            ll_vms.addVm(
-                True,
-                name=self.vm_name,
-                cluster=config.CLUSTER_NAME[0],
-                template=config.TEMPLATE_NAME[0]
-            )
+        assert ll_vms.addVm(
+            True,
+            name=self.vm_name,
+            cluster=config.CLUSTER_NAME[0],
+            template=config.TEMPLATE_NAME[0]
         )
 
     @attr(tier=1)
@@ -257,14 +233,12 @@ class TestMixCases(VirtTest):
         """
 
         testflow.step("Create new vm with specified storage domain")
-        self.assertTrue(
-            ll_vms.addVm(
-                True,
-                name=self.vm_name,
-                cluster=config.CLUSTER_NAME[0],
-                template=self.template_name,
-                storagedomain=self.master_domain
-            )
+        assert ll_vms.addVm(
+            True,
+            name=self.vm_name,
+            cluster=config.CLUSTER_NAME[0],
+            template=self.template_name,
+            storagedomain=self.master_domain
         )
 
     @attr(tier=1)
@@ -276,14 +250,12 @@ class TestMixCases(VirtTest):
         """
         template_base = 'template_virt'
         testflow.step("Negative: Create new vm with wrong storage domain")
-        self.assertFalse(
-            ll_vms.addVm(
-                positive=True,
-                name=self.vm_name,
-                cluster=config.CLUSTER_NAME[0],
-                template=template_base,
-                storagedomain=self.non_master_domain
-            )
+        assert not ll_vms.addVm(
+            positive=True,
+            name=self.vm_name,
+            cluster=config.CLUSTER_NAME[0],
+            template=template_base,
+            storagedomain=self.non_master_domain
         )
 
     @attr(tier=1)
@@ -295,13 +267,11 @@ class TestMixCases(VirtTest):
         """
 
         testflow.step("Clone vm from template")
-        self.assertTrue(
-            ll_vms.cloneVmFromTemplate(
-                positive=True,
-                name=self.vm_name,
-                template=self.template_name,
-                cluster=config.CLUSTER_NAME[0]
-            )
+        assert ll_vms.cloneVmFromTemplate(
+            positive=True,
+            name=self.vm_name,
+            template=self.template_name,
+            cluster=config.CLUSTER_NAME[0]
         )
 
 
@@ -327,9 +297,7 @@ class VmDisplay(VirtTest):
         Check address and port parameters under display with type spice
         """
         testflow.step("Set spice and check address and port")
-        self.assertTrue(
-            helper.check_display_parameters(self.vm_names[0], config.SPICE)
-        )
+        assert helper.check_display_parameters(self.vm_names[0], config.SPICE)
 
     @polarion("RHEVM3-12575")
     def test_check_vnc_parameters(self):
@@ -337,6 +305,4 @@ class VmDisplay(VirtTest):
         Check address and port parameters under display with type vnc
         """
         testflow.step("Set vnc and check address and port")
-        self.assertTrue(
-            helper.check_display_parameters(self.vm_names[1], config.VNC)
-        )
+        assert helper.check_display_parameters(self.vm_names[1], config.VNC)

@@ -42,11 +42,9 @@ class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
             ]
         )
         time.sleep(20)
-        self.assertTrue(
-            helper.compare_nic_stats(
-                nic=conf.HOST_0_NICS[1], host=conf.HOST_0_NAME,
-                total_rx=conf.TOTAL_RX, total_tx=conf.TOTAL_TX, oper=">"
-            )
+        assert helper.compare_nic_stats(
+            nic=conf.HOST_0_NICS[1], host=conf.HOST_0_NAME,
+            total_rx=conf.TOTAL_RX, total_tx=conf.TOTAL_TX, oper=">"
         )
 
 
@@ -68,9 +66,7 @@ class CumulativeNetworkUsageHostStatisticsCase2(NetworkTest):
             "Move the host to another compatible cluster and check that "
             "statistics remains the same"
         )
-        self.assertTrue(
-            helper.compare_nic_stats(
-                nic=conf.HOST_0_NICS[1], host=conf.HOST_0_NAME,
-                total_rx=conf.TOTAL_RX, total_tx=conf.TOTAL_TX
-            )
+        assert helper.compare_nic_stats(
+            nic=conf.HOST_0_NICS[1], host=conf.HOST_0_NAME,
+            total_rx=conf.TOTAL_RX, total_tx=conf.TOTAL_TX
         )

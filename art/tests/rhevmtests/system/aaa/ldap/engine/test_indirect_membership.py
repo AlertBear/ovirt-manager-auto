@@ -41,7 +41,7 @@ class IndirectMembership(TestCase):
     def indirect_group_membership(self):
         user = self.USER
         users.loginAsUser(user, self.conf['authn_name'], self.PASSWORD, True)
-        self.assertTrue(common.connectionTest(), "%s can't login" % user)
+        assert common.connectionTest(), "%s can't login" % user
         LOGGER.info("User %s can login and is indirect member of group %s.",
                     user, self.GROUP)
 
@@ -118,4 +118,4 @@ class GroupRecursion(TestCase):
             self.PASSWORD,
             True
         )
-        self.assertTrue(common.connectionTest(), "%s can't login" % self.USER)
+        assert common.connectionTest(), "%s can't login" % self.USER

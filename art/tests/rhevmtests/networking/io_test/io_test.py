@@ -60,11 +60,9 @@ class TestIOTest01(NetworkTest):
                 "datacenter %s and to cluster %s", network_name, conf.DC_0,
                 conf.CL_0
             )
-            self.assertTrue(
-                hl_networks.createAndAttachNetworkSN(
-                    data_center=conf.DC_0, cluster=conf.CL_0,
-                    network_dict=local_dict
-                )
+            assert hl_networks.createAndAttachNetworkSN(
+                data_center=conf.DC_0, cluster=conf.CL_0,
+                network_dict=local_dict
             )
 
     @polarion("RHEVM3-14742")
@@ -86,10 +84,8 @@ class TestIOTest01(NetworkTest):
                 "datacenter %s and to cluster %s", network_name, conf.DC_0,
                 conf.CL_0
             )
-            self.assertTrue(
-                ll_networks.add_network(
-                    positive=False, name=network_name, data_center=conf.DC_0,
-                )
+            assert ll_networks.add_network(
+                positive=False, name=network_name, data_center=conf.DC_0,
             )
 
 
@@ -136,10 +132,8 @@ class TestIOTest02(NetworkTest):
                 "Try to create network with invalid IP %s",
                 invalid_ip
             )
-            self.assertFalse(
-                hl_host_network.setup_networks(
-                    host_name=conf.HOST_0_NAME, **local_dict
-                )
+            assert not hl_host_network.setup_networks(
+                host_name=conf.HOST_0_NAME, **local_dict
             )
 
 
@@ -185,10 +179,8 @@ class TestIOTest03(NetworkTest):
                 "Try to create network with invalid netmask %s",
                 invalid_netmask
             )
-            self.assertFalse(
-                hl_host_network.setup_networks(
-                    host_name=conf.HOST_0_NAME, **local_dict
-                )
+            assert not hl_host_network.setup_networks(
+                host_name=conf.HOST_0_NAME, **local_dict
             )
 
 
@@ -226,10 +218,8 @@ class TestIOTest04(NetworkTest):
             "Try to create a network %s with netmask %s but "
             "without an IP address", self.net, self.netmask
         )
-        self.assertFalse(
-            hl_host_network.setup_networks(
-                host_name=conf.HOST_0_NAME, **local_dict
-            )
+        assert not hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **local_dict
         )
 
 
@@ -266,10 +256,8 @@ class TestIOTest05(NetworkTest):
             "Try to create a network %s with static IP %s but without netmask",
             self.net, self.static_ip
         )
-        self.assertFalse(
-            hl_host_network.setup_networks(
-                host_name=conf.HOST_0_NAME, **local_dict
-            )
+        assert not hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **local_dict
         )
 
 
@@ -293,10 +281,8 @@ class TestIOTest06(NetworkTest):
             "Creating networks with valid MTUs %s and adding "
             "them to a data center %s", valid_mtus, conf.DC_0
         )
-        self.assertTrue(
-            helper.create_networks(
-                positive=True, params=valid_mtus, type_="mtu"
-            )
+        assert helper.create_networks(
+            positive=True, params=valid_mtus, type_="mtu"
         )
 
     @polarion("RHEVM3-14743")
@@ -309,10 +295,8 @@ class TestIOTest06(NetworkTest):
         testflow.step(
             "Try to create a network with invalid MTUs %s", invalid_mtus
         )
-        self.assertTrue(
-            helper.create_networks(
-                positive=False, params=invalid_mtus, type_="mtu"
-            )
+        assert helper.create_networks(
+            positive=False, params=invalid_mtus, type_="mtu"
         )
 
 
@@ -337,10 +321,8 @@ class TestIOTest07(NetworkTest):
         testflow.step(
             "Try to create a network with invalid usages value"
         )
-        self.assertFalse(
-            hl_networks.createAndAttachNetworkSN(
-                data_center=conf.DC_0, network_dict=local_dict
-            )
+        assert not hl_networks.createAndAttachNetworkSN(
+            data_center=conf.DC_0, network_dict=local_dict
         )
 
 
@@ -365,10 +347,8 @@ class TestIOTest08(NetworkTest):
             "Create networks with valid VLAN IDs %s and adding "
             "them to a DC %s", valid_vlan_ids, conf.DC_0
         )
-        self.assertTrue(
-            helper.create_networks(
-                positive=True, params=valid_vlan_ids, type_="vlan_id"
-            )
+        assert helper.create_networks(
+            positive=True, params=valid_vlan_ids, type_="vlan_id"
         )
 
     @polarion("RHEVM3-14744")
@@ -381,10 +361,8 @@ class TestIOTest08(NetworkTest):
         testflow.step(
             "Try to create networks with invalid VLAN IDs %s", invalid_vlan_ids
         )
-        self.assertTrue(
-            helper.create_networks(
-                positive=False, params=invalid_vlan_ids, type_="vlan_id"
-            )
+        assert helper.create_networks(
+            positive=False, params=invalid_vlan_ids, type_="vlan_id"
         )
 
 
@@ -414,10 +392,8 @@ class TestIOTest09(NetworkTest):
             "Create network %s and edit its name to valid name %s",
             initial_name, valid_name
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=True, network=initial_name, name=valid_name
-            )
+        assert ll_networks.update_network(
+            positive=True, network=initial_name, name=valid_name
         )
 
     @polarion("RHEVM3-14745")
@@ -432,10 +408,8 @@ class TestIOTest09(NetworkTest):
             "Try to edit valid network name %s to invalid name %s",
             valid_name, invalid_name
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=False, network=valid_name, name=invalid_name
-            )
+        assert ll_networks.update_network(
+            positive=False, network=valid_name, name=invalid_name
         )
 
     @polarion("RHEVM3-4373")
@@ -450,10 +424,8 @@ class TestIOTest09(NetworkTest):
             default_name, valid_tags
         )
         for valid_tag in valid_tags:
-            self.assertTrue(
-                ll_networks.update_network(
-                    positive=True, network=default_name, vlan_id=valid_tag
-                )
+            assert ll_networks.update_network(
+                positive=True, network=default_name, vlan_id=valid_tag
             )
 
     @polarion("RHEVM3-14746")
@@ -469,10 +441,8 @@ class TestIOTest09(NetworkTest):
             default_name, invalid_tags
         )
         for invalid_tag in invalid_tags:
-            self.assertTrue(
-                ll_networks.update_network(
-                    positive=False, network=default_name, vlan_id=invalid_tag
-                )
+            assert ll_networks.update_network(
+                positive=False, network=default_name, vlan_id=invalid_tag
             )
 
     @polarion("RHEVM3-4372")
@@ -485,21 +455,17 @@ class TestIOTest09(NetworkTest):
         testflow.step(
             "Change VM network %s to be non-VM network", valid_name
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=True, network=valid_name, usages="",
-                description="nonVM network"
-            )
+        assert ll_networks.update_network(
+            positive=True, network=valid_name, usages="",
+            description="nonVM network"
         )
 
         testflow.step(
             "Change non-VM network %s to be VM network", valid_name
         )
-        self.assertTrue(
-            ll_networks.update_network(
-                positive=True, network=valid_name, usages="vm",
-                description="VM network again"
-            )
+        assert ll_networks.update_network(
+            positive=True, network=valid_name, usages="vm",
+            description="VM network again"
         )
 
 

@@ -100,18 +100,17 @@ class Windows(TestCase):
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         vm = ll_vms.get_vm(self.vm_name)
-        self.assertTrue(
-            len(LookUpVMIpByName()._get_ip_from_vm(self.vm_name)) > 0,
-            "No ip found in guest info"
-        )
-        self.assertTrue(vm.get_fqdn() and len(vm.get_fqdn()) > 0)
+        assert len(
+            LookUpVMIpByName()._get_ip_from_vm(self.vm_name)
+        ) > 0, "No ip found in guest info"
+        assert vm.get_fqdn() and len(vm.get_fqdn()) > 0
 
     def test_guest_applications(self):
         """ Check guest applications are reported """
         vm = ll_vms.get_vm(self.vm_name)
         apps = ll_vms.get_vm_applications(vm.get_name())
         logger.info("Windows '%s' apps are: %s", self.disk_name, apps)
-        self.assertTrue(len(apps) > 0, "Applications are empty")
+        assert len(apps) > 0, "Applications are empty"
 
     def test_guest_os(self):
         """ Check guest OS info is reported """
@@ -125,23 +124,16 @@ class Windows(TestCase):
         logger.info("Architecture: '%s'", guest_os.get_architecture())
         logger.info("Codename: '%s'", guest_os.get_codename())
         logger.info("Family: '%s'", guest_os.get_family())
-        self.assertTrue(
-            self.architecture == guest_os.get_architecture(),
-            "Windows has wrong arch '%s', should be '%s'" % (
-                guest_os.get_architecture(),
-                self.architecture
-            )
+        assert self.architecture == guest_os.get_architecture(), (
+            "Windows has wrong arch '%s', should be '%s'" %
+            (guest_os.get_architecture(), self.architecture)
         )
-        self.assertTrue(
-            GUEST_FAMILY == guest_os.get_family(),
+        assert GUEST_FAMILY == guest_os.get_family(), (
             "Guest os family is windows: '%s'" % guest_os.get_family()
         )
-        self.assertTrue(
-            self.codename == guest_os.get_codename(),
-            "Guest codename '%s' should be '%s'" % (
-                guest_os.get_codename(),
-                self.codename
-            )
+        assert self.codename == guest_os.get_codename(), (
+            "Guest codename '%s' should be '%s'" %
+            (guest_os.get_codename(), self.codename)
         )
 
     def test_guest_timezone(self):
@@ -156,12 +148,8 @@ class Windows(TestCase):
             guest_timezone.get_name(),
             guest_timezone.get_utc_offset()
         )
-        self.assertTrue(
-            len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
-        )
-        self.assertTrue(
-            len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
-        )
+        assert len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
+        assert len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
 
 # **IMPORTANT**
 # py.test testclass execution order is same as order of classes in file

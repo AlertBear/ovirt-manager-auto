@@ -40,17 +40,13 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
             "network": conf.NETWORK_2
         }
         testflow.step("Change %s profile to %s", conf.VM_NIC_1, conf.NETWORK_2)
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, **profile_dict
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, **profile_dict
         )
         testflow.step("Check that statistics remains the same")
-        self.assertTrue(
-            helper.compare_nic_stats(
-                nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-                total_tx=conf.TOTAL_TX
-            )
+        assert helper.compare_nic_stats(
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
+            total_tx=conf.TOTAL_TX
         )
 
     @polarion("RHEVM3-13581")
@@ -62,17 +58,13 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
             "network": None
         }
         testflow.step("Change %s to empty profile", conf.VM_NIC_1)
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, **profile_dict
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, **profile_dict
         )
         testflow.step("Check that statistics remains the same")
-        self.assertTrue(
-            helper.compare_nic_stats(
-                nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-                total_tx=conf.TOTAL_TX
-            )
+        assert helper.compare_nic_stats(
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
+            total_tx=conf.TOTAL_TX
         )
 
     @polarion("RHEVM3-6639")
@@ -81,17 +73,13 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
         Hot unplug the vNIC
         """
         testflow.step("Unplug vNIC %s from VM %s", conf.VM_NIC_1, conf.VM_1)
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, plugged=False
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, plugged=False
         )
         testflow.step("Check that statistics remains the same")
-        self.assertTrue(
-            helper.compare_nic_stats(
-                nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-                total_tx=conf.TOTAL_TX
-            )
+        assert helper.compare_nic_stats(
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
+            total_tx=conf.TOTAL_TX
         )
 
     @polarion("RHEVM3-13512")
@@ -100,15 +88,11 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
         Hot plug the vNIC
         """
         testflow.step("Plug vNIC %s to VM %s", conf.VM_NIC_1, conf.VM_1)
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, plugged=True
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, plugged=True
         )
         testflow.step("Check that statistics remains the same")
-        self.assertTrue(
-            helper.compare_nic_stats(
-                nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-                total_tx=conf.TOTAL_TX
-            )
+        assert helper.compare_nic_stats(
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
+            total_tx=conf.TOTAL_TX
         )

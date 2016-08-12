@@ -121,31 +121,24 @@ class BaseTestCase(TestCase):
         Import an export storage domain
         Import the vm
         """
-        self.assertTrue(
-            ll_sd.addStorageDomain(
-                True, host=config.HOSTS[0], type=config.EXPORT_TYPE,
-                **self.storage_domain_kwargs
-            ), "Unable to import an export domain %s" % self.export_domain_name
+        assert ll_sd.addStorageDomain(
+            True, host=config.HOSTS[0], type=config.EXPORT_TYPE,
+            **self.storage_domain_kwargs
+        ), "Unable to import an export domain %s" % self.export_domain_name
+        assert ll_sd.attachStorageDomain(
+            True, config.DATA_CENTER_NAME, self.export_domain_name
+        ), "Unable to attach export domain %s to data center %s" % (
+            self.export_domain_name, config.DATA_CENTER_NAME
         )
-        self.assertTrue(
-            ll_sd.attachStorageDomain(
-                True, config.DATA_CENTER_NAME, self.export_domain_name
-            ), "Unable to attach export domain %s to data center %s" % (
-                self.export_domain_name, config.DATA_CENTER_NAME
-            )
+        assert ll_vms.importVm(
+            True, config.VM_NAME[0], self.export_domain_name,
+            self.storage_domain, config.CLUSTER_NAME, self.imported_vm
+        ), "Unable to import vm %s from storage domain %s" % (
+            config.VM_NAME[0], self.export_domain_name
         )
-        self.assertTrue(
-            ll_vms.importVm(
-                True, config.VM_NAME[0], self.export_domain_name,
-                self.storage_domain, config.CLUSTER_NAME, self.imported_vm
-            ), "Unable to import vm %s from storage domain %s" % (
-                config.VM_NAME[0], self.export_domain_name
-            )
-        )
-        self.assertTrue(
-            ll_vms.startVm(True, self.imported_vm, config.VM_UP),
+        assert ll_vms.startVm(True, self.imported_vm, config.VM_UP), (
             "Unable to start vm %s after been imported from an imported "
-            " storage domain" % self.imported_vm
+            "storage domain" % self.imported_vm
         )
 
     def tearDown(self):

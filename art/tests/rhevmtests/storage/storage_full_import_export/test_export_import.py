@@ -106,21 +106,17 @@ class TestCase4665(BaseExportImportTestCase):
             "Exporting VM %s with force override enabled should "
             "succeed when there's no VM in the export domain", self.vm_name
         )
-        self.assertTrue(
-            ll_vms.exportVm(
-                True, self.vm_name, self.export_domain, exclusive='true'
-            ),
-            "Exporting VM %s with force override enabled failed" % self.vm_name
-        )
+        assert ll_vms.exportVm(
+            True, self.vm_name, self.export_domain, exclusive='true'
+        ), "Exporting VM %s with force override enabled failed" % self.vm_name
 
         logger.info(
             "Exporting VM %s with force override disabled should fail "
             "when there's a VM in the export domain", self.vm_name
         )
-        self.assertTrue(
-            ll_vms.exportVm(
-                False, self.vm_name, self.export_domain, exclusive='false'
-            ),
+        assert ll_vms.exportVm(
+            False, self.vm_name, self.export_domain, exclusive='false'
+        ), (
             "Exporting VM %s with force override disabled succeeded although "
             "the VM already exists in the export domain" % self.vm_name
         )
@@ -129,23 +125,19 @@ class TestCase4665(BaseExportImportTestCase):
             "Exporting VM %s with force override enabled should "
             "succeed when there's a VM in the export domain", self.vm_name
         )
-        self.assertTrue(
-            ll_vms.exportVm(
-                True, self.vm_name, self.export_domain, exclusive='true'
-            ),
-            "Exporting VM %s with force override enabled failed" % self.vm_name
-        )
+        assert ll_vms.exportVm(
+            True, self.vm_name, self.export_domain, exclusive='true'
+        ), "Exporting VM %s with force override enabled failed" % self.vm_name
 
         logger.info(
             "Exporting template %s with force override enabled "
             "should succeed when there's not a template in the "
             "export domain", self.template_name
         )
-        self.assertTrue(
-            ll_templates.exportTemplate(
-                True, self.template_name, self.export_domain, exclusive='true'
-            ), "Exporting template %s with force override failed" %
-               self.template_name
+        assert ll_templates.exportTemplate(
+            True, self.template_name, self.export_domain, exclusive='true'
+        ), "Exporting template %s with force override failed" % (
+            self.template_name
         )
 
         logger.info(
@@ -153,13 +145,13 @@ class TestCase4665(BaseExportImportTestCase):
             " fail because there's a template in the export domain",
             self.template_name
         )
-        self.assertTrue(
-            ll_templates.exportTemplate(
-                False, self.template_name, self.export_domain,
-                exclusive='false'
-            ), "Exporting template %s with force override disabled succeeded "
-               "although the template already exists in the export domain" %
-               self.template_name
+        assert ll_templates.exportTemplate(
+            False, self.template_name, self.export_domain,
+            exclusive='false'
+        ), (
+            "Exporting template %s with force override disabled succeeded "
+            "although the template already exists in the export domain" %
+            self.template_name
         )
 
         logger.info(
@@ -167,11 +159,10 @@ class TestCase4665(BaseExportImportTestCase):
             "succeed when there's a template in the export domain",
             self.template_name
         )
-        self.assertTrue(
-            ll_templates.exportTemplate(
-                True, self.template_name, self.export_domain, exclusive='true'
-            ), "Exporting template %s with force override enabled failed" %
-               self.template_name
+        assert ll_templates.exportTemplate(
+            True, self.template_name, self.export_domain, exclusive='true'
+        ), "Exporting template %s with force override enabled failed" % (
+            self.template_name
         )
 
     def tearDown(self):
@@ -221,45 +212,36 @@ class TestCase4684(BaseExportImportTestCase):
             self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         logger.info("Add snapshot to VM %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.addSnapshot(True, self.vm_name, self.snap_desc),
+        assert ll_vms.addSnapshot(True, self.vm_name, self.snap_desc), (
             "Failed to add snapshot to %s" % self.vm_name
         )
 
         logger.info(
             "Exporting vm %s with collapse snapshots enabled", self.vm_name
         )
-        self.assertTrue(
-            ll_vms.exportVm(
-                True, self.vm_name, self.export_domain,
-                discard_snapshots='true'
-            ), "Exporting vm %s with collapse snapshots enabled failed"
-               % self.vm_name
+        assert ll_vms.exportVm(
+            True, self.vm_name, self.export_domain,
+            discard_snapshots='true'
+        ), "Exporting vm %s with collapse snapshots enabled failed" % (
+            self.vm_name
         )
 
         logger.info("Importing vm with collapse snapshots enabled")
-        self.assertTrue(
-            ll_vms.importVm(
-                True, self.vm_name, self.export_domain, self.storage_domain,
-                config.CLUSTER_NAME, name=self.imported_vm
-            ), "Importing vm with collapse snapshots enabled failed"
-        )
+        assert ll_vms.importVm(
+            True, self.vm_name, self.export_domain, self.storage_domain,
+            config.CLUSTER_NAME, name=self.imported_vm
+        ), "Importing vm with collapse snapshots enabled failed"
 
         logger.info("Powering on VM %s should work")
-        self.assertTrue(
-            ll_vms.startVm(True, self.imported_vm),
+        assert ll_vms.startVm(True, self.imported_vm), (
             "Failed to power on VM %s" % self.imported_vm
         )
 
         logger.info("Template for vm %s should be Blank", self.imported_vm)
-        self.assertEqual(
-            ll_vms.getVmTemplateId(self.imported_vm), BLANK_TEMPLATE_ID
-        )
+        assert ll_vms.getVmTemplateId(self.imported_vm) == BLANK_TEMPLATE_ID
 
         logger.info("Number of snapshots is only one")
-        self.assertEqual(
-            len(ll_vms._getVmSnapshots(self.imported_vm, False)), 1
-        )
+        assert len(ll_vms._getVmSnapshots(self.imported_vm, False)) == 1
 
     def tearDown(self):
         """
@@ -348,10 +330,9 @@ class TestCase11987(BaseExportImportTestCase):
             export_vm(vm)
         ll_jobs.wait_for_jobs([config.JOB_EXPORT_VM])
         logger.info("Removing existing vm %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.removeVm(True, self.vm_name, wait=True),
-            "Failed to remove VM %s" % self.vm_name
-        )
+        assert ll_vms.removeVm(
+            True, self.vm_name, wait=True
+        ), "Failed to remove VM %s" % self.vm_name
         for vm in vms_list:
             import_vm(vm)
         ll_jobs.wait_for_jobs([config.JOB_IMPORT_VM])
@@ -425,11 +406,10 @@ class TestCase11986(BaseExportImportTestCase):
             "Exporting template %s to export domain %s", self.template_name,
             self.export_domain
         )
-        self.assertTrue(
-            ll_templates.exportTemplate(
-                True, self.template_name, self.export_domain
-            ), "Failed to export template %s to %s" %
-               (self.template_name, self.export_domain)
+        assert ll_templates.exportTemplate(
+            True, self.template_name, self.export_domain
+        ), "Failed to export template %s to %s" % (
+            self.template_name, self.export_domain
         )
 
     def tearDown(self):

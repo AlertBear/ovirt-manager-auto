@@ -272,23 +272,19 @@ class TestCase5243(TestCase):
         conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = ll_storageconnections.add_connection(**conn)
-        self.assertTrue(success, "Adding storage connection failed")
+        assert success, "Adding storage connection failed"
 
         ll_storageconnections.remove_storage_connection(self.conn.id)
         self.conn = None
         self.sd_name = 'sd_%s' % self.polarion_test_case
-        self.assertTrue(
-            ll_sd.addStorageDomain(
-                True, host=config.HOST_FOR_MOUNT, name=self.sd_name,
-                type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
-                override_luns=True, lun=config.CONNECTIONS[0]['luns'][0],
-                **(config.CONNECTIONS[0])
-            ), "Failed to create storage domain '%s'" % self.sd_name
-        )
+        assert ll_sd.addStorageDomain(
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name,
+            type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
+            override_luns=True, lun=config.CONNECTIONS[0]['luns'][0],
+            **(config.CONNECTIONS[0])
+        ), "Failed to create storage domain '%s'" % self.sd_name
         old_conns_for_sd = ll_sd.getConnectionsForStorageDomain(self.sd_name)
-        self.assertEqual(
-            len(old_conns_for_sd), 1, "The connection count is not 1"
-        )
+        assert len(old_conns_for_sd) == 1, "The connection count is not 1"
         old_conn = old_conns_for_sd[0]
 
         logger.info(
@@ -296,16 +292,11 @@ class TestCase5243(TestCase):
             "- should fail"
         )
         self.conn, success = ll_storageconnections.add_connection(**conn)
-        self.assertFalse(
-            success, "Adding the same storage connection succeeded"
-        )
+        assert not success, "Adding the same storage connection succeeded"
         conns_for_sd = ll_sd.getConnectionsForStorageDomain(self.sd_name)
-        self.assertEqual(
-            len(conns_for_sd), 1, "The connection count is not 1"
-        )
+        assert len(conns_for_sd) == 1, "The connection count is not 1"
         new_conn = conns_for_sd[0]
-        self.assertTrue(
-            _compare_connections(old_conn, new_conn),
+        assert _compare_connections(old_conn, new_conn), (
             "The connection count is different before adding the duplicate "
             "connection"
         )
@@ -344,9 +335,7 @@ class TestCase5247(TestCase):
         self.conn, success = ll_storageconnections.add_connection(**conn)
         if not success:
             self.conn = None
-        self.assertFalse(
-            success, "Add storage connection was expected to fail"
-        )
+        assert not success, "Add storage connection was expected to fail"
 
     def add_connection_with_empty_sth(self, param):
         conn = dict(config.CONNECTIONS[0]).copy()
@@ -355,9 +344,7 @@ class TestCase5247(TestCase):
         self.conn, success = ll_storageconnections.add_connection(**conn)
         if not success:
             self.conn = None
-        self.assertFalse(
-            success, "Add storage connection was expected to fail"
-        )
+        assert not success, "Add storage connection was expected to fail"
 
     @polarion("RHEVM3-5247")
     def test_adding_storage_connection_without_ip(self):
@@ -408,21 +395,14 @@ class TestCase5247(TestCase):
         conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = ll_storageconnections.add_connection(**conn)
-        self.assertTrue(
-            success, "Add storage connection was expected to succeed"
-        )
+        assert success, "Add storage connection was expected to succeed"
         _, success = ll_storageconnections.add_connection(**conn)
-        self.assertFalse(
-            success, "Add storage connection was expected to fail"
-        )
-        self.assertTrue(
-            ll_storageconnections.remove_storage_connection(self.conn.id),
+        assert not success, "Add storage connection was expected to fail"
+        assert ll_storageconnections.remove_storage_connection(self.conn.id), (
             "Removing storage connection failed"
         )
         self.conn, success = ll_storageconnections.add_connection(**conn)
-        self.assertTrue(
-            success, "Add storage connection was expected to succeed"
-        )
+        assert success, "Add storage connection was expected to succeed"
 
     def tearDown(self):
         """
@@ -475,9 +455,7 @@ class TestCase5248(TestCase):
         _, success = ll_storageconnections.update_connection(
             conn.id, **conn_params
         )
-        self.assertFalse(
-            success, "Update storage connection was expected to fail"
-        )
+        assert not success, "Update storage connection was expected to fail"
 
     @polarion("RHEVM3-5248")
     def test_changing_storage_connection_without_ip(self):
@@ -511,9 +489,7 @@ class TestCase5248(TestCase):
         _, success = ll_storageconnections.update_connection(
             self.conn_1.id, **self.conn_2_params
         )
-        self.assertFalse(
-            success, "update storage connection was expected to fail"
-        )
+        assert not success, "update storage connection was expected to fail"
 
     @classmethod
     def teardown_class(cls):
@@ -608,8 +584,7 @@ class TestCase5246(TestCase):
         logger.info("Try to remove the storage connection - should fail")
         conns = ll_sd.getConnectionsForStorageDomain(self.sd_name_1)
         conn_id = conns[0].id
-        self.assertFalse(
-            ll_storageconnections.remove_storage_connection(conn_id),
+        assert not ll_storageconnections.remove_storage_connection(conn_id), (
             "Removing storage connection succeeded"
         )
 
@@ -618,53 +593,43 @@ class TestCase5246(TestCase):
             config.DATACENTER_ISCSI_CONNECTIONS
         )
         logger.info("Put the first domain into maintenance")
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
-            ), "Deactivating storage domain '%s' failed" % self.sd_name_1
-        )
+        assert ll_sd.deactivateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
+        ), "Deactivating storage domain '%s' failed" % self.sd_name_1
         logger.info("Try to remove the storage connection - should fail")
-        self.assertFalse(
-            ll_storageconnections.remove_storage_connection(conn_id),
+        assert not ll_storageconnections.remove_storage_connection(conn_id), (
             "Removing the storage connection was expected to fail"
         )
 
         logger.info("Detach the storage connection from the first domain")
-        self.assertTrue(
-            ll_sd.detachConnectionFromStorageDomain(self.sd_name_1, conn_id),
-            "Detaching storage connection failed"
-        )
+        assert ll_sd.detachConnectionFromStorageDomain(
+            self.sd_name_1, conn_id
+        ), "Detaching storage connection failed"
         logger.info("Try to remove the storage connection - should fail")
-        self.assertFalse(
-            ll_storageconnections.remove_storage_connection(conn_id),
-            "Removing the storage connection was expected to fail"
-        )
+        assert not ll_storageconnections.remove_storage_connection(
+            conn_id
+        ), "Removing the storage connection was expected to fail"
 
         logger.info("Put the second storage domain into maintenance")
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
-            ), "Deactivating storage domain '%s' failed" % self.sd_name_2
-        )
+        assert ll_sd.deactivateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
+        ), "Deactivating storage domain '%s' failed" % self.sd_name_2
         logger.info("Try to remove the storage connection - should fail")
-        self.assertFalse(
-            ll_storageconnections.remove_storage_connection(conn_id),
+        assert not ll_storageconnections.remove_storage_connection(conn_id), (
             "Removing the storage connection was expected to fail"
         )
         logger.info("Detach the storage connection from the second domain")
-        self.assertTrue(
-            ll_sd.detachConnectionFromStorageDomain(self.sd_name_2, conn_id),
-            "Detaching connection from storage domain failed"
-        )
+        assert ll_sd.detachConnectionFromStorageDomain(
+            self.sd_name_2, conn_id
+        ), "Detaching connection from storage domain failed"
         logger.info("Try to remove the storage connection - should succeed")
-        self.assertTrue(
-            ll_storageconnections.remove_storage_connection(conn_id),
-            "Removing storage connection failed"
-        )
+        assert ll_storageconnections.remove_storage_connection(
+            conn_id
+        ), "Removing storage connection failed"
 
     def tearDown(self):
         test_utils.wait_for_tasks(
@@ -728,8 +693,7 @@ class TestCase5240(TestCase):
                 ll_storageconnections.update_connection,
                 self.conns[1].id, ** self.con_params[0]
             )
-        self.assertEqual(
-            result_1.result()[1], result_2.result()[1],
+        assert result_1.result()[1] == result_2.result()[1], (
             "Updating storage connections failed"
         )
 
@@ -740,10 +704,9 @@ class TestCase5240(TestCase):
             self.conns[1].id, 'id'
         )
 
-        self.assertFalse(
-            _compare_connections(conn_1, conn_2),
-            "Connections were expected to be different"
-        )
+        assert not _compare_connections(
+            conn_1, conn_2
+        ), "Connections were expected to be different"
 
         logger.info("Trying to change 10 connections at once")
         results = []
@@ -758,7 +721,7 @@ class TestCase5240(TestCase):
                     )
                 )
         for result in results:
-            self.assertTrue(result.result(), "Connection failed")
+            assert result.result(), "Connection failed"
 
     @classmethod
     def teardown_class(cls):
@@ -796,12 +759,11 @@ class TestCase5242(TestCase):
         conn_1 = dict(config.CONNECTIONS[0]).copy()
         conn_1['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = ll_storageconnections.add_connection(**conn_1)
-        self.assertTrue(success, "Error adding storage connection %s" % conn_1)
+        assert success, "Error adding storage connection %s" % conn_1
         self.storage_connections.append(self.conn.id)
         new_conn = self.get_all_new_connections()
-        self.assertEqual(
-            len(new_conn), 1, "The number of new connections was expected to "
-                              "be 1"
+        assert len(new_conn) == 1, (
+            "The number of new connections was expected to be 1"
         )
         ll_storageconnections.remove_storage_connection(self.conn.id)
         self.storage_connections.remove(self.conn.id)
@@ -813,40 +775,32 @@ class TestCase5242(TestCase):
         """
         logger.info("Verifying get for one orphaned connection")
         sd_name = "sd_1_%s" % self.polarion_test_case
-        self.assertTrue(
-            ll_sd.addStorageDomain(
-                True, host=config.HOST_FOR_MOUNT, name=sd_name,
-                type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
-                override_luns=True, lun=config.CONNECTIONS[0]['luns'][0],
-                **(config.CONNECTIONS[0])
-            ), "Failed to create storage domain %s" % sd_name
-        )
+        assert ll_sd.addStorageDomain(
+            True, host=config.HOST_FOR_MOUNT, name=sd_name,
+            type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
+            override_luns=True, lun=config.CONNECTIONS[0]['luns'][0],
+            **(config.CONNECTIONS[0])
+        ), "Failed to create storage domain %s" % sd_name
         self.storage_domains.append(sd_name)
         new_conn = self.get_all_new_connections()
         conn_for_sd = ll_sd.getConnectionsForStorageDomain(sd_name)
-        self.assertEqual(
-            len(new_conn), 1, "The number of storage connections was "
-                              "expected to be 1"
+        assert len(new_conn) == 1, (
+            "The number of storage connections was expected to be 1"
         )
-        self.assertEqual(
-            len(conn_for_sd), 1, "The number of storage connections for the "
-                                 "storage domain was expected to be 1"
+        assert len(conn_for_sd) == 1, (
+            "The number of storage connections for the storage domain was "
+            "expected to be 1"
         )
-        self.assertTrue(
-            _compare_connections(new_conn[0], conn_for_sd[0]),
+        assert _compare_connections(new_conn[0], conn_for_sd[0]), (
             "The storage connection and the connection for the storage "
             "domain do not match"
         )
-        self.assertTrue(
-            ll_sd.removeStorageDomain(
-                True, sd_name, config.HOST_FOR_MOUNT, 'true'
-            ), "Failed to remove storage domain '%s'" % sd_name
-        )
+        assert ll_sd.removeStorageDomain(
+            True, sd_name, config.HOST_FOR_MOUNT, 'true'
+        ), "Failed to remove storage domain '%s'" % sd_name
         self.storage_domains.remove(sd_name)
         new_conn = self.get_all_new_connections()
-        self.assertEqual(
-            len(new_conn), 0, "New connections was expected to be 0"
-        )
+        assert len(new_conn) == 0, "New connections was expected to be 0"
 
     @polarion("RHEVM3-5242")
     def test_verify_storage_domain_with_two_connections(self):
@@ -856,27 +810,21 @@ class TestCase5242(TestCase):
         """
         logger.info("Verifying get for one storage domain")
         sd_name = "sd_2_%s" % self.polarion_test_case
-        self.assertTrue(
-            ll_sd.addStorageDomain(
-                True, host=config.HOST_FOR_MOUNT, name=sd_name,
-                type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
-                override_luns=True, lun=config.CONNECTIONS[0]['luns'][0],
-                **(config.CONNECTIONS[0])
-            ), "Failed to create storage domain '%s'" % sd_name
-        )
+        assert ll_sd.addStorageDomain(
+            True, host=config.HOST_FOR_MOUNT, name=sd_name,
+            type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
+            override_luns=True, lun=config.CONNECTIONS[0]['luns'][0],
+            **(config.CONNECTIONS[0])
+        ), "Failed to create storage domain '%s'" % sd_name
         self.storage_domains.append(sd_name)
-        self.assertTrue(
-            ll_sd.attachStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name
-            ), "Failed to attach storage domain '%s'" % sd_name
-        )
+        assert ll_sd.attachStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name
+        ), "Failed to attach storage domain '%s'" % sd_name
         self.storage_domains.remove(sd_name)
-        self.assertTrue(
-            ll_sd.waitForStorageDomainStatus(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name,
-                config.SD_ACTIVE
-            ), "Storage domain '%s' failed to become active" % sd_name
-        )
+        assert ll_sd.waitForStorageDomainStatus(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name,
+            config.SD_ACTIVE
+        ), "Storage domain '%s' failed to become active" % sd_name
         new_sd_connections = self.get_all_new_connections()
         logger.info(
             "The number of new connections created when storage domain '%s' "
@@ -886,25 +834,22 @@ class TestCase5242(TestCase):
             config.HOST_FOR_MOUNT, config.CONNECTIONS[1]['lun_address'],
             config.CONNECTIONS[1]['lun_target']
         )
-        self.assertTrue(
-            ll_sd.extendStorageDomain(
-                True, sd_name, storage_type=config.STORAGE_TYPE_ISCSI,
-                host=config.HOST_FOR_MOUNT, override_luns=True,
-                lun=config.CONNECTIONS[1]['luns'][1], **(config.CONNECTIONS[1])
-            ), "Failed to extend storage domain '%s'" % sd_name
-        )
+        assert ll_sd.extendStorageDomain(
+            True, sd_name, storage_type=config.STORAGE_TYPE_ISCSI,
+            host=config.HOST_FOR_MOUNT, override_luns=True,
+            lun=config.CONNECTIONS[1]['luns'][1], **(config.CONNECTIONS[1])
+        ), "Failed to extend storage domain '%s'" % sd_name
         connections_for_sd = ll_sd.getConnectionsForStorageDomain(sd_name)
         extend_sd_connections = self.get_all_new_connections()
         logger.info(
             "The number of new connections is: '%s'",
             len(extend_sd_connections)
         )
-        self.assertEqual(
-            len(connections_for_sd), 2, "2 storage connection are expected "
-                                        "for storage domain '%s'" % sd_name
+        assert len(connections_for_sd) == 2, (
+            "2 storage connection are expected for storage domain '%s'" %
+            sd_name
         )
-        self.assertEqual(
-            len(extend_sd_connections), len(new_sd_connections) + 1,
+        assert len(extend_sd_connections) == len(new_sd_connections) + 1, (
             "1 additional connection was expected after extending storage "
             "domain '%s'" % sd_name
         )
@@ -934,30 +879,25 @@ class TestCase5242(TestCase):
 
         conn_sd_1 = ll_sd.getConnectionsForStorageDomain(sd_name_1)
         conn_sd_2 = ll_sd.getConnectionsForStorageDomain(sd_name_2)
-        self.assertEqual(
-            len(conn_sd_1), len(conn_sd_2),
+        assert len(conn_sd_1) == len(conn_sd_2), (
             "The number of storage connections for storage domain '%s' and "
             "'%s' does not match" % (sd_name_1, sd_name_2)
         )
-        self.assertTrue(
-            _compare_connections(conn_sd_1[0], conn_sd_2[0]),
-            "The connections for storage domains '%s' and '%s' do not match" %
-            (sd_name_1, sd_name_2)
+        assert _compare_connections(
+            conn_sd_1[0], conn_sd_2[0]
+        ), "The connections for storage domains '%s' and '%s' do not match" % (
+            sd_name_1, sd_name_2
         )
-        self.assertTrue(
-            ll_sd.removeStorageDomain(
-                True, sd_name_1, config.HOST_FOR_MOUNT, 'true'
-            ), "Failed to remove storage domain '%s'" % sd_name_1
-        )
+        assert ll_sd.removeStorageDomain(
+            True, sd_name_1, config.HOST_FOR_MOUNT, 'true'
+        ), "Failed to remove storage domain '%s'" % sd_name_1
         self.storage_domains.remove(sd_name_1)
-        self.assertTrue(
-            ll_sd.removeStorageDomain(
-                True, sd_name_2, config.HOST_FOR_MOUNT, 'true'
-            ), "Failed to remove storage domain '%s'" % sd_name_2
-        )
+        assert ll_sd.removeStorageDomain(
+            True, sd_name_2, config.HOST_FOR_MOUNT, 'true'
+        ), "Failed to remove storage domain '%s'" % sd_name_2
         self.storage_domains.remove(sd_name_2)
         new_conn = self.get_all_new_connections()
-        self.assertFalse(new_conn, "No new connections were expected")
+        assert not new_conn, "No new connections were expected"
 
     @polarion("RHEVM3-5242")
     def test_verify_one_direct_lun(self):
@@ -976,18 +916,15 @@ class TestCase5242(TestCase):
 
         self.disks.append(alias)
         new_conn = self.get_all_new_connections()
-        self.assertEqual(
-            len(new_conn), 1, "1 new storage connection was expected"
-        )
+        assert len(new_conn) == 1, "1 new storage connection was expected"
         # TODO: When the API allows it, check the storage connection of
         # a direct lun, something like:
         # conn_disk = ll_disks.getConnectionsForDisk(alias)
-        # self.assertTrue(_compare_connections(all_conn, conn_disk),"Text")
+        # assert _compare_connections(all_conn, conn_disk), "Text"
         # https://bugzilla.redhat.com/show_bug.cgi?id=1227322
-        self.assertTrue(
-            ll_disks.deleteDisk(True, alias),
-            "Deleting disk '%s' failed" % alias
-        )
+        assert ll_disks.deleteDisk(
+            True, alias
+        ), "Deleting disk '%s' failed" % alias
         self.disks.remove(alias)
 
     def tearDown(self):
@@ -1071,14 +1008,11 @@ class TestCase5245(TestCase):
         """
         for parameter in ['lun_address', 'lun_target', 'lun_port']:
             fail_action = 'Unable' if should_pass else 'Able'
-            self.assertEqual(
-                should_pass, ll_storageconnections.update_connection(
-                    conn_id, type=config.STORAGE_TYPE_ISCSI,
-                    **{parameter: config.CONNECTIONS[1][parameter]}
-                )[1],
-                "{0} to update the storage connection {1}".format(
-                    fail_action, conn_id
-                )
+            assert should_pass == ll_storageconnections.update_connection(
+                conn_id, type=config.STORAGE_TYPE_ISCSI,
+                **{parameter: config.CONNECTIONS[1][parameter]}
+            )[1], "{0} to update the storage connection {1}".format(
+                fail_action, conn_id
             )
 
     @polarion("RHEVM3-5245")
@@ -1108,11 +1042,9 @@ class TestCase5245(TestCase):
         )
 
         logger.info("Deactivating one of the storage domains")
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
-            ), "Failed to deactivate storage domain '%s'" % self.sd_name_2
-        )
+        assert ll_sd.deactivateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
+        ), "Failed to deactivate storage domain '%s'" % self.sd_name_2
         logger.info("Trying to change the connection - should fail")
         self._try_to_change_connection(conn.id, False)
         logger.info("Waiting for tasks before deactivating the storage domain")
@@ -1122,23 +1054,17 @@ class TestCase5245(TestCase):
         )
 
         logger.info("Deactivating both storage domains")
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
-            ), "Failed to deactivate storage domain '%s'" % self.sd_name_1
-        )
+        assert ll_sd.deactivateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
+        ), "Failed to deactivate storage domain '%s'" % self.sd_name_1
         logger.info("Trying to change the connection - should succeed")
         self._try_to_change_connection(conn.id, True)
-        self.assertTrue(
-            ll_sd.activateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
-            ), "Failed to activate storage domain '%s'" % self.sd_name_1
-        )
-        self.assertTrue(
-            ll_sd.activateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
-            ), "Failed to activate storage domain '%s'" % self.sd_name_2
-        )
+        assert ll_sd.activateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
+        ), "Failed to activate storage domain '%s'" % self.sd_name_1
+        assert ll_sd.activateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
+        ), "Failed to activate storage domain '%s'" % self.sd_name_2
 
     def tearDown(self):
         """
@@ -1232,55 +1158,44 @@ class TestCase5244(TestCase):
         * Try to add the same connection again
         * Activate the storage domain
         """
-        self.assertFalse(
-            ll_sd.addConnectionToStorageDomain(
-                self.sd_name_1, self.conn.id
-            ), "Added storage connection to active domain '%s'" %
-               self.sd_name_1
+        assert not ll_sd.addConnectionToStorageDomain(
+            self.sd_name_1, self.conn.id
+        ), "Added storage connection to active domain '%s'" % (
+            self.sd_name_1
         )
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
-            ), "Failed to deactivate storage domain '%s'" % self.sd_name_1
-        )
-        self.assertTrue(
-            ll_sd.addConnectionToStorageDomain(self.sd_name_1, self.conn.id),
-            "Failed to add storage connection to domain '%s'" % self.sd_name_1
-        )
-        self.assertTrue(
-            ll_sd.activateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
-            ), "Failed to activate storage domain '%s'" % self.sd_name_1
-        )
+        assert ll_sd.deactivateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
+        ), "Failed to deactivate storage domain '%s'" % self.sd_name_1
+        assert ll_sd.addConnectionToStorageDomain(
+            self.sd_name_1, self.conn.id
+        ), "Failed to add storage connection to domain '%s'" % self.sd_name_1
+        assert ll_sd.activateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
+        ), "Failed to activate storage domain '%s'" % self.sd_name_1
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
-            ), "Failed to deactivate storage domain '%s'" % self.sd_name_2
-        )
-        self.assertTrue(
-            ll_sd.addConnectionToStorageDomain(self.sd_name_2, self.conn.id),
-            "Failed to add storage connection to domain '%s'" % self.sd_name_2
-        )
-        self.assertFalse(
-            ll_sd.addConnectionToStorageDomain(self.sd_name_2, self.conn.id),
-            "Succeeded to add a duplicate connection to storage domain '%s'" %
+        assert ll_sd.deactivateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
+        ), "Failed to deactivate storage domain '%s'" % self.sd_name_2
+        assert ll_sd.addConnectionToStorageDomain(
+            self.sd_name_2, self.conn.id
+        ), "Failed to add storage connection to domain '%s'" % self.sd_name_2
+        assert not ll_sd.addConnectionToStorageDomain(
+            self.sd_name_2, self.conn.id
+        ), "Succeeded to add a duplicate connection to storage domain '%s'" % (
             self.sd_name_2
         )
-        self.assertTrue(
-            ll_sd.activateStorageDomain(
-                True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
-            ), "Failed to activate storage domain '%s'" % self.sd_name_2
-        )
+        assert ll_sd.activateStorageDomain(
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
+        ), "Failed to activate storage domain '%s'" % self.sd_name_2
 
     def tearDown(self):
         _restore_empty_dc()
@@ -1401,58 +1316,43 @@ class TestCase5241(TestCase):
                 lun_conn = conn
                 break
 
-        self.assertTrue(
-            lun_conn,
+        assert lun_conn, (
             "The connection target does not match the configured target"
         )
 
-        self.assertFalse(
-            ll_storageconnections.update_connection(
-                lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
-                type=config.STORAGE_TYPE_ISCSI
-            )[1], "Succeeded to update connection in use"
-        )
+        assert not ll_storageconnections.update_connection(
+            lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
+            type=config.STORAGE_TYPE_ISCSI
+        )[1], "Succeeded to update connection in use"
 
-        self.assertTrue(
-            ll_vms.stopVm(True, self.vm_name_1),
+        assert ll_vms.stopVm(True, self.vm_name_1), (
             "Failed to power off VM '%s'" % self.vm_name_1
         )
-        self.assertTrue(
-            ll_vms.waitForVMState(
-                self.vm_name_1, config.VM_DOWN
-            ), "VM '%s' failed to reach powered off state" % self.vm_name_1
-        )
+        assert ll_vms.waitForVMState(
+            self.vm_name_1, config.VM_DOWN
+        ), "VM '%s' failed to reach powered off state" % self.vm_name_1
 
-        self.assertFalse(
-            ll_storageconnections.update_connection(
-                lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
-                type=config.STORAGE_TYPE_ISCSI
-            )[1], "Succeeded to update a connection that is in use"
-        )
+        assert not ll_storageconnections.update_connection(
+            lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
+            type=config.STORAGE_TYPE_ISCSI
+        )[1], "Succeeded to update a connection that is in use"
 
-        self.assertTrue(
-            ll_vms.stopVm(True, self.vm_name_2),
+        assert ll_vms.stopVm(True, self.vm_name_2), (
             "Failed to power off VM '%s'" % self.vm_name_2
         )
-        self.assertTrue(
-            ll_vms.waitForVMState(
-                self.vm_name_2, config.VM_DOWN
-            ), "VM '%s' failed to reach powered off state" % self.vm_name_2
-        )
+        assert ll_vms.waitForVMState(
+            self.vm_name_2, config.VM_DOWN
+        ), "VM '%s' failed to reach powered off state" % self.vm_name_2
 
-        self.assertTrue(
-            ll_storageconnections.update_connection(
-                lun_conn.id, type=config.STORAGE_TYPE_ISCSI,
-                **(config.CONNECTIONS[1])
-            )[1], "Failed to update storage connection"
-        )
+        assert ll_storageconnections.update_connection(
+            lun_conn.id, type=config.STORAGE_TYPE_ISCSI,
+            **(config.CONNECTIONS[1])
+        )[1], "Failed to update storage connection"
 
-        self.assertTrue(
-            ll_vms.startVm(True, self.vm_name_1),
+        assert ll_vms.startVm(True, self.vm_name_1), (
             "Failed to power on VM '%s'" % self.vm_name_1
         )
-        self.assertTrue(
-            ll_vms.startVm(True, self.vm_name_2),
+        assert ll_vms.startVm(True, self.vm_name_2), (
             "Failed to power on VM '%s'" % self.vm_name_2
         )
 
@@ -1506,15 +1406,13 @@ class TestCase5249(TestCase):
         logger.info("Adding a new storage domain with a new connection")
         sd_name_2 = "sd_%s_2" % self.polarion_test_case
 
-        self.assertTrue(
-            ll_sd.addStorageDomain(
-                True, name=sd_name_2, host=config.HOST_FOR_MOUNT,
-                type=config.TYPE_DATA,
-                storage_type=config.STORAGE_TYPE_ISCSI,
-                override_luns=True, lun=config.CONNECTIONS[1]['luns'][0],
-                **(config.CONNECTIONS[1])
-            ), "Failed to create storage domain '%s'" % sd_name_2
-        )
+        assert ll_sd.addStorageDomain(
+            True, name=sd_name_2, host=config.HOST_FOR_MOUNT,
+            type=config.TYPE_DATA,
+            storage_type=config.STORAGE_TYPE_ISCSI,
+            override_luns=True, lun=config.CONNECTIONS[1]['luns'][0],
+            **(config.CONNECTIONS[1])
+        ), "Failed to create storage domain '%s'" % sd_name_2
         self.storage_domains.append(sd_name_2)
 
         sd_name_2_conn = ll_sd.getConnectionsForStorageDomain(sd_name_2)
@@ -1522,15 +1420,12 @@ class TestCase5249(TestCase):
             "Connection of storage domain %s is: %s",
             sd_name_2, sd_name_2_conn[0].id
         )
-        self.assertEqual(
-            len(sd_name_2_conn), 1,
+        assert len(sd_name_2_conn) == 1, (
             "The expected number of storage connections was 1"
         )
-        self.assertTrue(
-            ll_sd.removeStorageDomain(
-                True, sd_name_2, config.HOST_FOR_MOUNT, 'true'
-            ), "Failed to remove storage domain '%s'" % sd_name_2
-        )
+        assert ll_sd.removeStorageDomain(
+            True, sd_name_2, config.HOST_FOR_MOUNT, 'true'
+        ), "Failed to remove storage domain '%s'" % sd_name_2
         self.storage_domains.remove(sd_name_2)
 
         logger.info(
@@ -1538,15 +1433,13 @@ class TestCase5249(TestCase):
             "existing connection"
         )
         sd_name_3 = "sd_%s_3" % self.polarion_test_case
-        self.assertTrue(
-            ll_sd.addStorageDomain(
-                True, name=sd_name_3, host=config.HOST_FOR_MOUNT,
-                type=config.TYPE_DATA,
-                storage_type=config.STORAGE_TYPE_ISCSI,
-                override_luns=True, lun=config.CONNECTIONS[0]['luns'][1],
-                **(config.CONNECTIONS[0])
-            ), "Failed to create storage domain '%s'" % sd_name_3
-        )
+        assert ll_sd.addStorageDomain(
+            True, name=sd_name_3, host=config.HOST_FOR_MOUNT,
+            type=config.TYPE_DATA,
+            storage_type=config.STORAGE_TYPE_ISCSI,
+            override_luns=True, lun=config.CONNECTIONS[0]['luns'][1],
+            **(config.CONNECTIONS[0])
+        ), "Failed to create storage domain '%s'" % sd_name_3
         sd_name_3_conn = ll_sd.getConnectionsForStorageDomain(sd_name_3)
         logger.info(
             "Connection of storage domain %s is: %s",

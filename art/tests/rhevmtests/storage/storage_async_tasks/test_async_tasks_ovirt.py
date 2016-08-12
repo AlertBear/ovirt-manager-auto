@@ -114,9 +114,9 @@ class TestCase6160(RestartOvirt):
             waitForVMState(config.VM_NAME[0], config.VM_DOWN)
 
             LOGGER.info("Removing snapshot %s", self.snapshot_name)
-            self.assertTrue(
-                removeSnapshot(True, config.VM_NAME[0], self.snapshot_name),
-                "Removing snapshot %s failed" % self.snapshot_name)
+            assert removeSnapshot(
+                True, config.VM_NAME[0], self.snapshot_name
+            ), "Removing snapshot %s failed" % self.snapshot_name
 
             LOGGER.info("Starting vm %s", config.VM_NAME[0])
             startVm(True, config.VM_NAME[0], config.VM_UP)
@@ -127,14 +127,14 @@ class TestCase6160(RestartOvirt):
 
     def perform_action(self):
         LOGGER.info("Create snapshot %s", self.snapshot_name)
-        self.assertTrue(
-            addSnapshot(True, config.VM_NAME[0], self.snapshot_name, False),
-            "Adding snapshot %s failed" % self.snapshot_name)
+        assert addSnapshot(
+            True, config.VM_NAME[0], self.snapshot_name, False
+        ), "Adding snapshot %s failed" % self.snapshot_name
 
     def check_action_failed(self):
-        self.assertFalse(
-            validateSnapshot(True, config.VM_NAME[0], self.snapshot_name),
-            "Snapshot %s exists!" % self.snapshot_name)
+        assert not validateSnapshot(
+            True, config.VM_NAME[0], self.snapshot_name
+        ), "Snapshot %s exists!" % self.snapshot_name
 
     @polarion("RHEVM3-6160")
     def test_restart_before_tasks_start(self):
@@ -195,10 +195,10 @@ class TestCase6161(RestartOvirt):
         wait_for_vm_states(config.VM_NAME[0],
                            [config.VM_UP, config.VM_DOWN, config.VM_SUSPENDED])
         status = get_vm_state(config.VM_NAME[0])
-        self.assertEqual(
-            status, config.VM_UP,
+        assert status == config.VM_UP, (
             "VM %s status incorrect, is: %s, should be: %s" %
-            (config.VM_NAME[0], status, config.VM_UP))
+            (config.VM_NAME[0], status, config.VM_UP)
+        )
 
     @polarion("RHEVM3-6161")
     def test_restart_before_tasks_start(self):

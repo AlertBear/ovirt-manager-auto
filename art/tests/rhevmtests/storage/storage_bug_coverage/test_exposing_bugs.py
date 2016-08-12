@@ -164,10 +164,10 @@ class TestCase11909(TestCase):
         logger.info("Adding a second bootable disk to vm %s should fail",
                     self.vm_name)
         self.bootable_disk = "bootable_disk_%s" % self.bz_id
-        self.assertTrue(ll_vms.addDisk(
+        assert ll_vms.addDisk(
             False, self.vm_name, GB, wait=True, alias=self.bootable_disk,
             storagedomain=self.storage_domain, bootable=True
-        ), "Shouldn't be possible to add a second bootable disk")
+        ), "Shouldn't be possible to add a second bootable disk"
 
     def tearDown(self):
         """
@@ -384,10 +384,10 @@ class TestCase11907(TestCase):
 
     def _create_template(self):
         logger.info("Creating new template")
-        self.assertTrue(ll_templates.createTemplate(
+        assert ll_templates.createTemplate(
             positive=True, vm=self.vm_name, name=self.template_name,
             wait=False
-        ), "Failed to create template from vm %s" % self.vm_name)
+        ), "Failed to create template from vm %s" % self.vm_name
         logger.info("Successfully created template")
 
     @polarion("RHEVM3-11907")
@@ -399,32 +399,29 @@ class TestCase11907(TestCase):
         self._create_template()
 
         # Wait until VM becomes lock
-        self.assertTrue(
-            ll_vms.waitForVMState(
-                self.vm_name,
-                state=config.VM_LOCK_STATE
-            ), "Image status won't change to lock"
-        )
+        assert ll_vms.waitForVMState(
+            self.vm_name,
+            state=config.VM_LOCK_STATE
+        ), "Image status won't change to lock"
 
         test_utils.restart_engine(config.ENGINE, 5, 75)
         logger.info("Successfully restarted ovirt-engine")
 
         # Wait until VM is down
-        self.assertTrue(
-            ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN_STATE),
-            "image status won't change to down"
-        )
+        assert ll_vms.waitForVMState(
+            self.vm_name, state=config.VM_DOWN_STATE
+        ), "image status won't change to down"
 
         logger.info("starting vm %s", self.vm_name)
-        self.assertTrue(ll_vms.startVm(True, self.vm_name),
-                        "Failed to start vm %s" % self.vm_name)
+        assert ll_vms.startVm(
+            True, self.vm_name
+        ), "Failed to start vm %s" % self.vm_name
         logger.info("Successfully started VM %s", self.vm_name)
 
         logger.info("wait for template %s - state to be 'ok'",
                     self.template_name)
 
-        self.assertTrue(
-            ll_templates.waitForTemplatesStates(self.template_name),
+        assert ll_templates.waitForTemplatesStates(self.template_name), (
             "template %s state is not ok" % self.template_name
         )
         logger.info("template %s - state is 'ok'",
@@ -432,20 +429,21 @@ class TestCase11907(TestCase):
 
         logger.info("adding new vm %s from template %s",
                     self.vm_from_template, self.template_name)
-        self.assertTrue(
-            ll_vms.addVm(
-                positive=True,
-                name=self.vm_from_template,
-                vmDescription="Server - copy",
-                cluster=config.CLUSTER_NAME,
-                template=self.template_name),
-            "Failed to create vm from template %s" %
-            self.template_name)
+        assert ll_vms.addVm(
+            positive=True,
+            name=self.vm_from_template,
+            vmDescription="Server - copy",
+            cluster=config.CLUSTER_NAME,
+            template=self.template_name
+        ), "Failed to create vm from template %s" % (
+            self.template_name
+        )
         logger.info("Successfully created VM from template")
 
         logger.info("starting vm %s", self.vm_from_template)
-        self.assertTrue(ll_vms.startVm(True, self.vm_from_template),
-                        "Can't start vm %s" % self.vm_from_template)
+        assert ll_vms.startVm(
+            True, self.vm_from_template
+        ), "Can't start vm %s" % self.vm_from_template
         logger.info("Successfully started VM %s", self.vm_from_template)
 
     def tearDown(self):
@@ -517,10 +515,9 @@ class TestCase11956(EnvironmentWithTwoHosts):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         logger.info("Deactivating SPM host %s", self.spm_host)
-        self.assertTrue(
-            ll_hosts.deactivateHost(True, self.spm_host),
-            "Failed to deactivate SPM with running vm"
-        )
+        assert ll_hosts.deactivateHost(
+            True, self.spm_host
+        ), "Failed to deactivate SPM with running vm"
         ll_hosts.waitForHostsStates(
             True, self.spm_host, config.HOST_MAINTENANCE
         )
@@ -807,7 +804,6 @@ class TestCase11624(TestCase):
                 username=config.HOSTS_USER,
                 password=config.HOSTS_PW
             )
-        self.assertTrue(
-            regex_flag, "Couldn't find expend request for %s sec" %
-                        IO_ERROR_TIMEOUT
+        assert regex_flag, "Couldn't find expend request for %s sec" % (
+            IO_ERROR_TIMEOUT
         )

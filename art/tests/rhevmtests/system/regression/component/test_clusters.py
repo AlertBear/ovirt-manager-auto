@@ -57,7 +57,7 @@ class TestCaseCluster(TestCase):
             data_center=self.dc_name, version=config.COMP_VERSION,
             on_error='migrate'
         )
-        self.assertTrue(status, 'Add existing cluster')
+        assert status, 'Add existing cluster'
 
     @attr(tier=2)
     def test_add_cluster_wrong_cpu(self):
@@ -70,7 +70,7 @@ class TestCaseCluster(TestCase):
             data_center=self.dc_name, version=config.COMP_VERSION,
             on_error='migrate'
         )
-        self.assertTrue(status, 'Add cluster - wrong cpu')
+        assert status, 'Add cluster - wrong cpu'
 
     @attr(tier=1)
     def test_search_cluster(self):
@@ -78,12 +78,12 @@ class TestCaseCluster(TestCase):
         Positive - send a query to search for cluster
         """
         logger.info('Search cluster by name')
-        partial_cl_name = config.CLUSTER_NAME[0][:10]+'*'
+        partial_cl_name = config.CLUSTER_NAME[0][:10] + '*'
         status = ll_cluster.searchForCluster(
             positive=True, query_key='name', query_val=partial_cl_name,
             key_name='name'
         )
-        self.assertTrue(status, 'Search cluster by name')
+        assert status, 'Search cluster by name'
 
     @attr(tier=1)
     def test_search_cluster_case_insensitive(self):
@@ -91,14 +91,14 @@ class TestCaseCluster(TestCase):
         Positive - send a query to search for cluster case insensitive
         """
         logger.info('Search cluster by name - case insensitive')
-        partial_cl_name = config.CLUSTER_NAME[0][:10]+'*'
+        partial_cl_name = config.CLUSTER_NAME[0][:10] + '*'
         lst = [w[0].upper() + w[1:] for w in partial_cl_name.split('_')]
         partial_cl_name = "_".join(lst)
         status = ll_cluster.searchForCluster(
             positive=True, query_key='name', query_val=partial_cl_name,
             key_name='name', case_sensitive=False
         )
-        self.assertTrue(status, 'Search cluster by name - case insensitive')
+        assert status, 'Search cluster by name - case insensitive'
 
     @attr(tier=1)
     def test_search_cluster_max_matches(self):
@@ -106,12 +106,12 @@ class TestCaseCluster(TestCase):
         Positive - send query to search for cluster with max matches parameter
         """
         logger.info('Search cluster by name - max matches')
-        partial_cl_name = config.CLUSTER_NAME[0][:10]+'*'
+        partial_cl_name = config.CLUSTER_NAME[0][:10] + '*'
         status = ll_cluster.searchForCluster(
             positive=True, query_key='name', query_val=partial_cl_name,
             key_name='name', max=1
         )
-        self.assertTrue(status, 'Search cluster by name - max matches')
+        assert status, 'Search cluster by name - max matches'
 
     @attr(tier=1)
     def test_update_cluster_name(self):
@@ -125,13 +125,13 @@ class TestCaseCluster(TestCase):
         status = ll_cluster.updateCluster(
             positive=True, name=new_name, cluster=old_name
         )
-        self.assertTrue(status, 'Update cluster name')
+        assert status, 'Update cluster name'
 
         logger.info('Revert cluster name update')
         status = ll_cluster.updateCluster(
             positive=True, name=old_name, cluster=new_name
         )
-        self.assertTrue(status, 'Revert cluster name update')
+        assert status, 'Revert cluster name update'
 
     @attr(tier=1)
     def test_update_cluster_description(self):
@@ -144,12 +144,12 @@ class TestCaseCluster(TestCase):
             positive=True, cluster=self.cluster_name,
             description='Cluster Description'
         )
-        self.assertTrue(status, 'Update cluster description')
+        assert status, 'Update cluster description'
         logger.info('Clear cluster description')
         status = ll_cluster.updateCluster(
             positive=True, cluster=self.cluster_name, description=''
         )
-        self.assertTrue(status, 'Clear cluster description')
+        assert status, 'Clear cluster description'
 
     @attr(tier=1)
     def test_update_cluster_on_error(self):
@@ -163,12 +163,12 @@ class TestCaseCluster(TestCase):
             positive=True, cluster=self.cluster_name,
             on_error='migrate_highly_available'
         )
-        self.assertTrue(status, 'Update cluster on error behavior')
+        assert status, 'Update cluster on error behavior'
         logger.info('Revert cluster on error behavior')
         status = ll_cluster.updateCluster(
             positive=True, cluster=self.cluster_name, on_error=old_on_error
         )
-        self.assertTrue(status, 'Revert cluster on error behavior')
+        assert status, 'Revert cluster on error behavior'
 
     @attr(tier=2)
     def test_update_cluster_data_center(self):
@@ -182,7 +182,7 @@ class TestCaseCluster(TestCase):
             positive=True, name='test_data_center',
             local=False, version=config.COMP_VERSION
         )
-        self.assertTrue(status, 'Add data center')
+        assert status, 'Add data center'
 
         logger.info('Update cluster data center')
         test_status = ll_cluster.updateCluster(
@@ -192,8 +192,8 @@ class TestCaseCluster(TestCase):
         remove_status = ll_dc.remove_datacenter(
             positive=True, datacenter='test_data_center'
         )
-        self.assertTrue(remove_status, 'Remove data center')
-        self.assertTrue(test_status, 'Update cluster data center')
+        assert remove_status, 'Remove data center'
+        assert test_status, 'Update cluster data center'
 
     @attr(tier=1)
     def test_update_cluster_memory_overcommit(self):
@@ -210,26 +210,26 @@ class TestCaseCluster(TestCase):
             positive=True, cluster=self.cluster_name,
             data_center=self.dc_name, mem_ovrcmt_prc=77
         )
-        self.assertTrue(status, 'Update cluster memory overcommit')
+        assert status, 'Update cluster memory overcommit'
         logger.info('Check cluster - memory overcommit')
         status = ll_cluster.check_cluster_params(
             positive=True, cluster=self.cluster_name, over_commit=77
         )
-        self.assertTrue(status, 'Check cluster - memory overcommit')
+        assert status, 'Check cluster - memory overcommit'
 
         logger.info('Revert cluster memory overcommit update')
         status = ll_cluster.updateCluster(
             positive=True, cluster=self.cluster_name,
             data_center=self.dc_name, mem_ovrcmt_prc=old_over_commit_val
         )
-        self.assertTrue(status, 'Revert cluster memory overcommit')
+        assert status, 'Revert cluster memory overcommit'
 
         logger.info('Check cluster - revert memory overcommit')
         status = ll_cluster.check_cluster_params(
             positive=True, cluster=self.cluster_name,
             over_commit=old_over_commit_val
         )
-        self.assertTrue(status, 'Check cluster - Revert memory overcommit')
+        assert status, 'Check cluster - Revert memory overcommit'
 
     @attr(tier=2)
     @bz({'1301353': {}})
@@ -247,14 +247,14 @@ class TestCaseCluster(TestCase):
             positive=False, cluster=self.cluster_name,
             data_center=self.dc_name, mem_ovrcmt_prc=-7
         )
-        self.assertTrue(status, 'Update cluster memory overcommit')
+        assert status, 'Update cluster memory overcommit'
         logger.info('Check cluster - memory overcommit')
         status = ll_cluster.check_cluster_params(
             positive=False, cluster=self.cluster_name,
             over_commit=old_over_commit_val
         )
 
-        self.assertTrue(status, 'Check cluster - memory overcommit')
+        assert status, 'Check cluster - memory overcommit'
 
     @attr(tier=2)
     @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
@@ -277,11 +277,8 @@ class TestCaseCluster(TestCase):
                 sla_conf.OVER_COMMITMENT_DURATION: 240
             }
         )
-        self.assertTrue(
-            update_status, 'Update cluster - high threshold out of range'
-        )
-        self.assertTrue(
-            self.set_thresholds_to_default(),
+        assert update_status, 'Update cluster - high threshold out of range'
+        assert self.set_thresholds_to_default(), (
             'Revert cluster - high threshold out of range'
         )
 
@@ -306,11 +303,8 @@ class TestCaseCluster(TestCase):
                 sla_conf.OVER_COMMITMENT_DURATION: 240
             }
         )
-        self.assertTrue(
-            update_status, 'Update cluster - low threshold out of range'
-        )
-        self.assertTrue(
-            self.set_thresholds_to_default(),
+        assert update_status, 'Update cluster - low threshold out of range'
+        assert self.set_thresholds_to_default(), (
             'Revert cluster - low threshold out of range'
         )
 
@@ -334,9 +328,7 @@ class TestCaseCluster(TestCase):
             scheduling_policy=sla_conf.POLICY_POWER_SAVING,
             properties=properties
         )
-        self.assertTrue(
-            update_status, 'Update cluster - power_saving thresholds'
-        )
+        assert update_status, 'Update cluster - power_saving thresholds'
         logger.info('Check cluster - power_saving thresholds')
         check_status = ll_cluster.check_cluster_params(
             positive=True,
@@ -344,9 +336,7 @@ class TestCaseCluster(TestCase):
             scheduling_policy=sla_conf.POLICY_POWER_SAVING,
             properties=properties
         )
-        self.assertTrue(
-            check_status, 'Check cluster - power_saving thresholds'
-        )
+        assert check_status, 'Check cluster - power_saving thresholds'
 
     @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     @attr(tier=1)
@@ -367,8 +357,9 @@ class TestCaseCluster(TestCase):
             scheduling_policy=sla_conf.POLICY_EVEN_DISTRIBUTION,
             properties=properties
         )
-        self.assertTrue(status,
-                        'Update cluster - evenly_distributed threshold')
+        assert status, (
+            'Update cluster - evenly_distributed threshold'
+        )
         logger.info('Check cluster - evenly_distributed threshold')
         status = ll_cluster.check_cluster_params(
             positive=True,
@@ -376,9 +367,7 @@ class TestCaseCluster(TestCase):
             scheduling_policy=sla_conf.POLICY_EVEN_DISTRIBUTION,
             properties=properties
         )
-        self.assertTrue(
-            status, 'Check cluster - evenly_distributed threshold'
-        )
+        assert status, 'Check cluster - evenly_distributed threshold'
 
     @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     @attr(tier=1)
@@ -408,11 +397,9 @@ class TestCaseCluster(TestCase):
             properties=properties
         )
 
-        self.assertTrue(update_status, 'Update cluster - scheduling policy')
-        self.assertTrue(check_status, 'Check cluster - scheduling policy')
-        self.assertTrue(
-            self.set_thresholds_to_default(), 'Restore - scheduling policy'
-        )
+        assert update_status, 'Update cluster - scheduling policy'
+        assert check_status, 'Check cluster - scheduling policy'
+        assert self.set_thresholds_to_default(), 'Restore - scheduling policy'
 
     @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     @attr(tier=2)
@@ -431,9 +418,8 @@ class TestCaseCluster(TestCase):
                 sla_conf.HIGH_UTILIZATION: 20
             }
         )
-        self.assertTrue(update_status, 'Update cluster - bad threshold range')
-        self.assertTrue(
-            self.set_thresholds_to_default(),
+        assert update_status, 'Update cluster - bad threshold range'
+        assert self.set_thresholds_to_default(), (
             'Revert cluster - bad threshold range'
         )
 
@@ -455,6 +441,6 @@ class TestCaseCluster(TestCase):
                [text()="Transparent-Huge-Pages Memory Policy"])'
         try:
             status = xpathMatch(True, 'capabilities', expr)
-            self.assertTrue(status, 'Check cluster capabilities property')
+            assert status, 'Check cluster capabilities property'
         except EngineTypeError:
             logger.info('xPath is only supported for rest')

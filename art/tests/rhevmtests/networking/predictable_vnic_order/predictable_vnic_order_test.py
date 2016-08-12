@@ -35,13 +35,11 @@ class TestPredictableVnicOrder01(NetworkTest):
         Check vNICs MAC order
         """
         setup_dict = helper.get_vnics_names_and_macs_from_last_vm()
-        self.assertTrue(
-            ll_vms.startVm(
-                positive=True, vm=conf.LAST_VM, wait_for_ip=True
-            )
+        assert ll_vms.startVm(
+            positive=True, vm=conf.LAST_VM, wait_for_ip=True
         )
         case_dict = helper.get_vnics_names_and_macs_from_last_vm()
         testflow.step("Check vNICs MAC ordering on VM %s", conf.LAST_VM)
-        self.assertEqual(
-            setup_dict, case_dict, "vNICs not in order on %s" % conf.LAST_VM
+        assert setup_dict == case_dict, (
+            "vNICs not in order on %s" % conf.LAST_VM
         )

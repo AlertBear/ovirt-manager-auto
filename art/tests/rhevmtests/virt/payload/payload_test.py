@@ -216,7 +216,7 @@ class TestCreateVmWithCdromPayload(PayloadViaCreate):
         """
         Check if cdrom payload exist on vm
         """
-        self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
+        assert self._check_existence_of_payload(PAYLOADS_DEVICES[0])
 
     @polarion("RHEVM3-10074")
     @bz({'1198677': {'engine': ['cli']}})
@@ -224,7 +224,7 @@ class TestCreateVmWithCdromPayload(PayloadViaCreate):
         """
         Check if payload object exist under vm
         """
-        self.assertTrue(vms.getVmPayloads(True, self.vm_name)[0])
+        assert vms.getVmPayloads(True, self.vm_name)[0]
 
 
 class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
@@ -244,7 +244,7 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
         """
         Check if cdrom payload exist on vm
         """
-        self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
+        assert self._check_existence_of_payload(PAYLOADS_DEVICES[0])
 
 
 @attr(tier=2)
@@ -266,7 +266,7 @@ class TestCdromPayloadComplexContent(PayloadViaUpdate):
         """
         Check if cdrom payload exist on vm
         """
-        self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
+        assert self._check_existence_of_payload(PAYLOADS_DEVICES[0])
 
 
 class TestCreateVmWithFloppyPayload(PayloadViaCreate):
@@ -287,7 +287,7 @@ class TestCreateVmWithFloppyPayload(PayloadViaCreate):
         """
         Check if floppy payload exist on vm
         """
-        self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[1]))
+        assert self._check_existence_of_payload(PAYLOADS_DEVICES[1])
 
 
 class TestUpdateVmWithFloppyPayload(PayloadViaUpdate):
@@ -308,4 +308,4 @@ class TestUpdateVmWithFloppyPayload(PayloadViaUpdate):
         """
         Check if floppy payload exist on vm
         """
-        self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[1]))
+        assert self._check_existence_of_payload(PAYLOADS_DEVICES[1])

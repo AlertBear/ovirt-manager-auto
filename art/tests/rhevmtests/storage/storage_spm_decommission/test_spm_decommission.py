@@ -194,9 +194,8 @@ class UpgradeBaseClass(StorageTest):
 
         def assert_found(q):
             found, host = q.get()
-            self.assertTrue(
-                found, "Search %s failed returned no results on host %s" %
-                (regex, host)
+            assert found, "Search %s failed returned no results on host %s" % (
+                regex, host
             )
 
         logger.info(

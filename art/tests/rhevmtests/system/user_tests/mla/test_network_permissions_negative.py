@@ -15,6 +15,7 @@ from art.test_handler.tools import polarion
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (mla, networks, users, vms,
                                                templates)
+import pytest
 
 
 LOGGER = logging.getLogger(__name__)
@@ -352,14 +353,15 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
     def test_attachNetworkToVM(self):
         """ Attach a network to VM """
         loginAsUser(config.USER_NAME)
-        self.assertRaises(
-            EntityNotFound, vms.addNic, False, VM_NAME, name=NIC_NAME3,
-            network=config.NETWORK_NAME1, interface='virtio'
-        )
-        self.assertRaises(
-            EntityNotFound, vms.updateNic, False, VM_NAME,
-            NIC_NAME, network=config.NETWORK_NAME1
-        )
+        with pytest.raises(EntityNotFound):
+            vms.addNic(
+                False, VM_NAME, name=NIC_NAME3, network=config.NETWORK_NAME1,
+                interface='virtio'
+            )
+        with pytest.raises(EntityNotFound):
+            vms.updateNic(
+                False, VM_NAME, NIC_NAME, network=config.NETWORK_NAME1
+            )
 
 
 class NegativeNetworkPermissions236736(NetworkingNegative):
@@ -411,10 +413,11 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
             False, VM_NAME, NIC_NAME2, network=config.NETWORK_NAME1
         )
         assert vms.removeNic(True, VM_NAME, NIC_NAME)
-        self.assertRaises(
-            EntityNotFound, vms.addNic, False, VM_NAME, name=NIC_NAME,
-            network=config.NETWORK_NAME1, interface='virtio'
-        )
+        with pytest.raises(EntityNotFound):
+            vms.addNic(
+                False, VM_NAME, name=NIC_NAME, network=config.NETWORK_NAME1,
+                interface='virtio'
+            )
         nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
         LOGGER.info("User can see networks: '%s'", nets)
         # User can see network2 and default rhevm network, because has

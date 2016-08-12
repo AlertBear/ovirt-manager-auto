@@ -71,7 +71,7 @@ class BaseUserFromGroup(AuthBaseCase):
 
     def user_from_group(self):
         """ Authenticate as user from group """
-        self.assertTrue(self.login())
+        assert self.login()
 
     def tearDown(self):
         common.loginAsAdmin()
@@ -85,7 +85,7 @@ class BaseExpiredAccount(AuthBaseCase):
 
     def expired_account(self):
         """ Login as user with expired password """
-        self.assertTrue(not self.login())
+        assert not self.login()
 
 
 class BaseExpiredPassword(AuthBaseCase):
@@ -95,7 +95,7 @@ class BaseExpiredPassword(AuthBaseCase):
 
     def expired_password(self):
         """ Login as user with disabled account """
-        self.assertTrue(not self.login())
+        assert not self.login()
 
 
 class BaseDisabledAccount(AuthBaseCase):
@@ -105,7 +105,7 @@ class BaseDisabledAccount(AuthBaseCase):
 
     def disabled_account(self):
         """ Login as user with disabled account """
-        self.assertTrue(not self.login())
+        assert not self.login()
 
 
 @attr(tier=1)
@@ -124,7 +124,8 @@ class BaseSpecialCharsSearch(TestCase):
             logger.info("Search for user '%s'", user_name)
             # https://bugzilla.redhat.com/show_bug.cgi?id=1275237
             # When resolved modify this test based, on implmentation details
-            self.assertTrue(
-                users.search_user(self.domain, 'name', user_name) is not None,
-                "Failed to search by special character '%s'" % special_char
+            assert users.search_user(
+                self.domain, 'name', user_name
+            ) is not None, "Failed to search by special character '%s'" % (
+                special_char
             )

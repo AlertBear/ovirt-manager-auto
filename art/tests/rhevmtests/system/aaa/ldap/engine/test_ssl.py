@@ -45,8 +45,7 @@ class ADTLS(TestCase):
             principal = '%s@%s' % (config.ADW2k12_USER1, domain)
             users.loginAsUser(principal, self.conf['authn_name'],
                               config.ADW2k12_USER_PASSWORD, True)
-            self.assertTrue(common.connectionTest(),
-                            "User %s can't login." % principal)
+            assert common.connectionTest(), "User %s can't login." % principal
 
 
 @attr(tier=1)
@@ -88,6 +87,4 @@ class ADGroupWithSpacesInName(TestCase):
             config.ADW2k12_USER_PASSWORD,
             True,
         )
-        self.assertTrue(
-            common.connectionTest(), "User %s can't login." % self.princ
-        )
+        assert common.connectionTest(), "User %s can't login." % self.princ

@@ -410,16 +410,13 @@ class TestCase11196(BaseTestCaseNewDC):
         - Run command 'iscsiadm -m session' ->  Host shouldn't have any iscsi
         connections
         """
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
-        self.assertTrue(
-            ll_hosts.deactivateHost(True, self.host),
+        assert ll_hosts.deactivateHost(True, self.host), (
             "Unable to place host %s in maintenance mode" % self.host
         )
-        self.assertTrue(
-            self.timeout_sampling_iscsi_session(),
+        assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
 
@@ -428,17 +425,16 @@ class BasicDeactivateStorageDomain(BaseTestCaseNewDC):
     add_nfs_domain = True
 
     def deactivate_last_iscsi_domain(self):
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(True, self.dc, self.iscsi_domain),
+        assert ll_sd.deactivateStorageDomain(
+            True, self.dc, self.iscsi_domain
+        ), (
             "Unable to place iscsi domain %s in maintenance mode"
             % self.iscsi_domain
         )
-        self.assertTrue(
-            self.timeout_sampling_iscsi_session(),
+        assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
 
@@ -550,17 +546,16 @@ class TestCase11201(BaseTestCaseNewDC):
         - Run command 'iscsiadm -m session' -> Host should have iscsi
         connections
         """
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(True, self.dc, self.iscsi_domain2),
-            "Unable to place iscsi domain %s in maintenance mode"
-            % self.iscsi_domain2
+        assert ll_sd.deactivateStorageDomain(
+            True, self.dc, self.iscsi_domain2
+        ), (
+            "Unable to place iscsi domain %s in maintenance mode" %
+            self.iscsi_domain2
         )
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
 
@@ -614,26 +609,22 @@ class TestCase11257(BaseTestCaseNewDC):
         - Once the remove task is finished, run command'iscsiadm -m session' ->
         Host shouldn't have iscsi connections
         """
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(True, self.dc, self.iscsi_domain),
-            "Unable to place iscsi domain %s in maintenance mode"
-            % self.iscsi_domain
+        assert ll_sd.deactivateStorageDomain(
+            True, self.dc, self.iscsi_domain
+        ), "Unable to place iscsi domain %s in maintenance mode" % (
+            self.iscsi_domain
         )
-        self.assertTrue(
-            self.timeout_sampling_iscsi_session(),
+        assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
-        self.assertTrue(
-            ll_sd.detachStorageDomain(True, self.dc, self.iscsi_domain),
+        assert ll_sd.detachStorageDomain(True, self.dc, self.iscsi_domain), (
             "Unable to detach iscsi domain %s" % self.iscsi_domain
         )
         wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD, self.dc)
-        self.assertTrue(
-            self.timeout_sampling_iscsi_session(),
+        assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
 
@@ -666,27 +657,23 @@ class TestCase11233(BaseTestCaseNewDC):
         - Once the remove domain task has completed, run command
         'iscsiadm -m session' -> Host shouldn't have iscsi connections
         """
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
-        self.assertTrue(
-            ll_sd.deactivateStorageDomain(True, self.dc, self.iscsi_domain),
-            "Unable to place iscsi domain %s in maintenance mode"
-            % self.iscsi_domain
+        assert ll_sd.deactivateStorageDomain(
+            True, self.dc, self.iscsi_domain
+        ), (
+            "Unable to place iscsi domain %s in maintenance mode" %
+            self.iscsi_domain
         )
-        self.assertTrue(
-            ll_sd.detachStorageDomain(True, self.dc, self.iscsi_domain),
+        assert ll_sd.detachStorageDomain(True, self.dc, self.iscsi_domain), (
             "Unable to detach iscsi domain %s" % self.iscsi_domain
         )
-        self.assertTrue(
-            ll_sd.removeStorageDomain(
-                True, self.iscsi_domain, self.host, format='true'
-            ), "Unable to remove iscsi domain %s" % self.iscsi_domain
-        )
+        assert ll_sd.removeStorageDomain(
+            True, self.iscsi_domain, self.host, format='true'
+        ), "Unable to remove iscsi domain %s" % self.iscsi_domain
         wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD, self.dc)
-        self.assertTrue(
-            self.timeout_sampling_iscsi_session(),
+        assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
 
@@ -730,32 +717,25 @@ class TestCase11231(BaseTestCaseNewDC):
             "alias":  self.lun_alias,
             "type_": ISCSI,
         }
-        self.assertTrue(
-            hl_sd._ISCSIdiscoverAndLogin(
-                self.host, config.UNUSED_LUN_ADDRESSES[0],
-                config.UNUSED_LUN_TARGETS[0]
-            ), "Unable to discover and login targets for %s, %s on host %s"
-            % (
-                config.UNUSED_LUN_ADDRESSES[0],
-                config.UNUSED_LUN_TARGETS[0], self.host
-            )
+        assert hl_sd._ISCSIdiscoverAndLogin(
+            self.host, config.UNUSED_LUN_ADDRESSES[0],
+            config.UNUSED_LUN_TARGETS[0]
+        ), "Unable to discover and login targets for %s, %s on host %s" % (
+            config.UNUSED_LUN_ADDRESSES[0], config.UNUSED_LUN_TARGETS[0],
+            self.host
         )
-        self.assertTrue(
-            ll_disks.addDisk(True, **self.lun_kwargs),
+        assert ll_disks.addDisk(True, **self.lun_kwargs), (
             "Failed to add direct LUN %s" % self.lun_alias
         )
         ll_jobs.wait_for_jobs([config.JOB_ADD_DISK])
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
-        self.assertTrue(
-            ll_disks.deleteDisk(True, self.lun_alias),
+        assert ll_disks.deleteDisk(True, self.lun_alias), (
             "Failed to remove LUN %s" % self.lun_alias
         )
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
-        self.assertTrue(
-            self.host_iscsi_sessions(),
+        assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
 

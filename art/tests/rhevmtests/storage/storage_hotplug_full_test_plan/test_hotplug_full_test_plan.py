@@ -184,7 +184,7 @@ class HotplugHookTest(TestCase):
 
     def run_cmd(self, cmd):
         rc, out = self.machine.runCmd(cmd)
-        self.assertTrue(rc, "Command %s failed: %s" % (cmd, out))
+        assert rc, "Command %s failed: %s" % (cmd, out)
         return out
 
     def create_hook_file(self, local_hook, remote_hook):
@@ -261,10 +261,8 @@ class HotplugHookTest(TestCase):
             )
         for future in as_completed(future_to_results):
             disk_name = future_to_results[future]
-            self.assertTrue(
-                future.result(), "Failed to perform action %s on %s" % (
-                    self.action[0].__name__, disk_name),
-            )
+            assert future.result(), "Failed to perform action %s on %s" % (
+                self.action[0].__name__, disk_name)
 
     def perform_action_and_verify_hook_called(self):
         """
@@ -393,7 +391,7 @@ class TestCase5037(HotplugHookTest):
                 DISKS_TO_PLUG[self.storage]
             )
         )
-        self.assertEqual(len(result), len(DISKS_TO_PLUG[self.storage]), result)
+        assert len(result) == len(DISKS_TO_PLUG[self.storage]), result
 
 
 @attr(tier=2)
@@ -426,7 +424,7 @@ class TestCase5038(HotplugHookTest):
                 DISKS_TO_PLUG[self.storage]
             )
         )
-        self.assertEqual(len(result), len(DISKS_TO_PLUG[self.storage]), result)
+        assert len(result) == len(DISKS_TO_PLUG[self.storage]), result
 
 
 @attr(tier=2)
@@ -459,11 +457,10 @@ class TestCase5039(HotplugHookTest):
             vm_disks = ll_vms.getVmDisks(self.vm_name)
             disk_names = [disk.get_name() for disk in vm_disks]
             if not self.use_disks[0] in disk_names:
-                self.assertTrue(
-                    ll_disks.attachDisk(True, self.use_disks[0], self.vm_name),
-                    "Failed to attach disk %s to vm %s" % (
-                        self.use_disks[0], self.vm_name
-                    )
+                assert ll_disks.attachDisk(
+                    True, self.use_disks[0], self.vm_name
+                ), "Failed to attach disk %s to vm %s" % (
+                    self.use_disks[0], self.vm_name
                 )
 
     def put_disks_in_correct_state(self):
@@ -501,16 +498,15 @@ class TestCase5044(HotplugHookTest):
 
         logger.info("Attached disks - %s", disk_names)
         if not self.use_disks[0] in disk_names:
-            self.assertTrue(
-                ll_disks.attachDisk(
-                    True, self.use_disks[0], self.vm_name, False
-                ), "Failed to attach disk %s to vm %s" %
-                   (self.use_disks[0], self.vm_name)
+            assert ll_disks.attachDisk(
+                True, self.use_disks[0], self.vm_name, False
+            ), "Failed to attach disk %s to vm %s" % (
+                self.use_disks[0], self.vm_name
             )
 
-        self.assertTrue(
-            ll_vms.activateVmDisk(True, self.vm_name, self.use_disks[0]),
-            "Activation of VM disk %s should have succeed" % self.use_disks[0])
+        assert ll_vms.activateVmDisk(
+            True, self.vm_name, self.use_disks[0]
+        ), "Activation of VM disk %s should have succeed" % self.use_disks[0]
 
         ll_vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
 
@@ -590,12 +586,10 @@ class TestCase5040(HotplugHookTest):
     def verify_hook_called(self):
         logger.info("Verifying hook files...")
         result = self.get_hooks_result_file()
-        self.assertEqual(
-            len(result), 4, "There should have been 4 hooks called!")
-        self.assertEqual(
-            len([x for x in result if x.strip() == TEXT]), 2,
-            "'%s' should have appeared twice!" % TEXT
-        )
+        assert len(result) == 4, "There should have been 4 hooks called!"
+        assert len(
+            [x for x in result if x.strip() == TEXT]
+        ) == 2, "'%s' should have appeared twice!" % TEXT
 
     @polarion("RHEVM3-5040")
     def test_multiple_hooks(self):
@@ -640,7 +634,7 @@ class TestCase5042(HotplugHookTest):
             )
             executor.submit(func)
 
-        self.assertTrue(attach.result(), "Activate should have failed")
+        assert attach.result(), "Activate should have failed"
 
     def verify_hook_called(self):
         logger.info("File should be empty")
@@ -775,7 +769,7 @@ class TestCase6231(BasePlugDiskTest):
             testflow.step("Hot plug disk %s to VM %s", disk_name, vm)
             status = ll_vms.activateVmDisk(True, vm, disk_name)
             logger.info("Finished activating disk %s", disk_name)
-            self.assertTrue(status)
+            assert status
 
             active_disks = [
                 disk for disk in ll_vms.getVmDisks(vm) if not
@@ -786,7 +780,7 @@ class TestCase6231(BasePlugDiskTest):
             testflow.step("Hot unplug disk %s to VM %s", disk_name, vm)
             status = ll_vms.deactivateVmDisk(True, vm, disk_name)
             logger.info("Finished deactivating disk %s", disk_name)
-            self.assertTrue(status)
+            assert status
 
 
 @attr(tier=2)
@@ -983,9 +977,7 @@ class TestCase6230(TestCase):
         activates it
         """
         for vm in self.vm_names:
-            self.assertTrue(
-                ll_vms.startVm(True, vm), "Unable to power on VM '%s'" % vm
-            )
+            assert ll_vms.startVm(True, vm), "Unable to power on VM '%s'" % vm
 
         for vm in self.vm_names:
             active_disks = [
@@ -998,7 +990,7 @@ class TestCase6230(TestCase):
                 logger.info("Deactivating disk %s on VM %s", disk_name, vm)
                 status = ll_vms.deactivateVmDisk(True, vm, disk_name)
                 logger.info("Finished deactivating disk %s", disk_name)
-                self.assertTrue(status)
+                assert status
 
         utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
@@ -1017,7 +1009,7 @@ class TestCase6230(TestCase):
                     ll_vms.wait_for_vm_states(vm, [config.VM_UP])
                     status = ll_vms.activateVmDisk(True, vm, disk_name)
                     logger.info("Finished activating disk %s", disk_name)
-                    self.assertTrue(status)
+                    assert status
 
 
 @attr(tier=2)

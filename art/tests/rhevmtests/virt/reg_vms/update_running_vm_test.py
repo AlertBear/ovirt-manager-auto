@@ -49,9 +49,7 @@ class UpdateRunningVm(VirtTest):
             "Checking vm value: %s, actual_value: %s, expected_value: %s",
             parameter_name, actual_value, expected_value
         )
-        self.assertEqual(
-            actual_value,
-            expected_value,
+        assert actual_value == expected_value, (
             "parameter %s value is not as expected" % parameter_name
         )
 
@@ -69,14 +67,12 @@ class UpdateRunningVm(VirtTest):
             'highly_available': 'true'
         }
         testflow.step("Update vm fields and check them without reboot")
-        self.assertTrue(
-            ll_vms.updateVm(positive=True, vm=self.vm_name, **parameters),
-            "Failed to update immediate fields"
-        )
+        assert ll_vms.updateVm(
+            positive=True, vm=self.vm_name, **parameters
+        ), "Failed to update immediate fields"
         vm_obj = ll_vms.get_vm_obj(self.vm_name, all_content=True)
         logger.info("Checking vm after update")
-        self.assertTrue(
-            vm_obj.get_high_availability().get_enabled(),
+        assert vm_obj.get_high_availability().get_enabled(), (
             "VM did not set to high availability"
         )
         self._check_vm_parameter(
@@ -112,11 +108,9 @@ class UpdateRunningVm(VirtTest):
         }
         testflow.step("Update vm fields and check them after reboot")
         host_id = ll_hosts.get_host_object(config.HOSTS[0]).get_id()
-        self.assertTrue(
-            ll_vms.updateVm(positive=True, vm=self.vm_name, compare=False,
-                            **parameters),
-            "Failed to update immediate fields"
-        )
+        assert ll_vms.updateVm(
+            positive=True, vm=self.vm_name, compare=False, **parameters
+        ), "Failed to update immediate fields"
         logger.info("Finish update vm fields, reboot vm")
         ll_vms.reboot_vms([self.vm_name])
         vm_obj = ll_vms.get_vm_obj(self.vm_name, all_content=True)

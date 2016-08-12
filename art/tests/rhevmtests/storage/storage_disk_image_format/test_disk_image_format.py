@@ -76,12 +76,9 @@ class BaseTestDiskImage(TestCase):
             # Make sure there's at least one disk
             assert vm_disks
             for disk in vm_disks:
-                self.assertEqual(
-                    disk.get_sparse(), sparse,
-                    "Wrong sparse value for disk %s (disk id: %s)"
-                    "expected %s" % (
-                        disk.get_alias(), disk.get_id(), str(sparse)
-                    )
+                assert disk.get_sparse() == sparse, (
+                    "Wrong sparse value for disk %s (disk id: %s) expected %s"
+                    % (disk.get_alias(), disk.get_id(), str(sparse))
                 )
 
 
@@ -209,8 +206,8 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
             snapshot.get_description() for snapshot in
             ll_vms.get_vm_snapshots(self.vm_prealloc)
         ]
-        self.assertTrue(self.snapshot_desc not in vm_thin_snapshots)
-        self.assertTrue(self.snapshot_desc not in vm_prealloc_snapshots)
+        assert self.snapshot_desc not in vm_thin_snapshots
+        assert self.snapshot_desc not in vm_prealloc_snapshots
 
     def tearDown(self):
         """
@@ -358,6 +355,7 @@ class ExportVms(BaseTestDiskImageVms):
     """
     Common class for export related cases
     """
+
     def tearDown(self):
         """
         Remove the vms from the export domain
@@ -655,6 +653,7 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
     Check disk images' format after importing the vm without removing the
     original vm used in the export process
     """
+
     def import_vm_with_new_name(self):
         """
         Export the thin provisioned and preallocated disk vms, then import them
@@ -830,6 +829,7 @@ class TestCase11606(BaseTestDiskImage):
     """
     Test vm with both disk formats
     """
+
     def setUp(self):
         """
         Create a vm with a thin provisioned disk and a preallocated disk
@@ -869,15 +869,13 @@ class TestCase11606(BaseTestDiskImage):
             preallocated_disk = function(
                 object_name, self.preallocated_disk_alias,
             )
-            self.assertEqual(
-                thin_disk.get_sparse(), True,
+            assert thin_disk.get_sparse(), (
                 "%s disk %s should be thin provisioned" %
-                (object_name, thin_disk.get_alias()),
+                (object_name, thin_disk.get_alias())
             )
-            self.assertEqual(
-                preallocated_disk.get_sparse(), False,
+            assert not preallocated_disk.get_sparse(), (
                 "%s disk %s should be preallocated" %
-                (object_name, preallocated_disk.get_alias()),
+                (object_name, preallocated_disk.get_alias())
             )
 
     def action_test(self, collapse=False):

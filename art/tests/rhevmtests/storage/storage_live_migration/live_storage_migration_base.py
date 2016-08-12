@@ -39,6 +39,7 @@ from art.unittest_lib.common import StorageTest, testflow
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
 from utilities.machine import Machine
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -216,11 +217,9 @@ class AllPermutationsDisks(BaseTestCase):
             failure_str = "Succeeded"
 
         for disk in DISK_NAMES[self.storage]:
-            self.assertEqual(
-                moved,
-                ll_vms.verify_vm_disk_moved(self.vm_name, disk, self.disk_sd),
-                "%s to live migrate vm disk %s" % (disk, failure_str)
-            )
+            assert moved == ll_vms.verify_vm_disk_moved(
+                self.vm_name, disk, self.disk_sd
+            ), "%s to live migrate vm disk %s" % (disk, failure_str)
 
 
 @attr(tier=1)
@@ -280,10 +279,9 @@ class TestCase5990(BaseTestCase):
         )
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
-        self.assertTrue(
-            ll_vms.verify_vm_disk_moved(self.vm_name, vm_disk, self.disk_sd),
-            "Failed to live migrate disk %s" % vm_disk
-        )
+        assert ll_vms.verify_vm_disk_moved(
+            self.vm_name, vm_disk, self.disk_sd
+        ), "Failed to live migrate disk %s" % vm_disk
 
 
 @attr(tier=2)
@@ -307,10 +305,11 @@ class TestCase5994(BaseTestCase):
             - live migration should fail
         """
         ll_vms.startVm(True, self.vm_name, config.VM_WAIT_FOR_LAUNCH)
-        self.assertRaises(
-            exceptions.DiskException, ll_vms.live_migrate_vm, self.vm_name,
-            TASK_TIMEOUT, True, True, config.MIGRATE_SAME_TYPE
-        )
+        with pytest.raises(exceptions.DiskException):
+            ll_vms.live_migrate_vm(
+                self.vm_name, TASK_TIMEOUT, True, True,
+                config.MIGRATE_SAME_TYPE
+            )
 
     @polarion("RHEVM3-" + polarion_test_case)
     def test_lsm_during_powering_up_state(self):
@@ -321,10 +320,11 @@ class TestCase5994(BaseTestCase):
             - migration should fail
         """
         ll_vms.startVm(True, self.vm_name, config.VM_POWERING_UP)
-        self.assertRaises(
-            exceptions.DiskException, ll_vms.live_migrate_vm, self.vm_name,
-            TASK_TIMEOUT, True, True, config.MIGRATE_SAME_TYPE
-        )
+        with pytest.raises(exceptions.DiskException):
+            ll_vms.live_migrate_vm(
+                self.vm_name, TASK_TIMEOUT, True, True,
+                config.MIGRATE_SAME_TYPE
+            )
 
     @polarion("RHEVM3-" + polarion_test_case)
     def test_lsm_during_powering_off_state(self):
@@ -337,10 +337,11 @@ class TestCase5994(BaseTestCase):
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         ll_vms.shutdownVm(True, self.vm_name)
         ll_vms.waitForVMState(self.vm_name, ENUMS['vm_state_powering_down'])
-        self.assertRaises(
-            exceptions.DiskException, ll_vms.live_migrate_vm, self.vm_name,
-            TASK_TIMEOUT, True, True, config.MIGRATE_SAME_TYPE
-        )
+        with pytest.raises(exceptions.DiskException):
+            ll_vms.live_migrate_vm(
+                self.vm_name, TASK_TIMEOUT, True, True,
+                config.MIGRATE_SAME_TYPE
+            )
 
 
 @attr(tier=2)
@@ -503,10 +504,11 @@ class TestCase5993(BaseTestCase):
 
         # Second test - template is copied on only one domain:
 
-        self.assertRaises(
-            exceptions.DiskException, ll_vms.live_migrate_vm, self.vm_names[0],
-            LIVE_MIGRATION_TIMEOUT, same_type=config.MIGRATE_SAME_TYPE
-        )
+        with pytest.raises(exceptions.DiskException):
+            ll_vms.live_migrate_vm(
+                self.vm_names[0], LIVE_MIGRATION_TIMEOUT,
+                same_type=config.MIGRATE_SAME_TYPE
+            )
 
     def tearDown(self):
         """
@@ -709,10 +711,8 @@ class TestCase5989(BaseTestCase):
             - try to migrate the vm's images once the vm is suspended
         * We should not be able to migrate images
         """
-        self.assertRaises(
-            exceptions.DiskException, self._suspended_vm_and_wait_for_state,
-            config.VM_SUSPENDED
-        )
+        with pytest.raises(exceptions.DiskException):
+            self._suspended_vm_and_wait_for_state(config.VM_SUSPENDED)
 
     def tearDown(self):
         """Stop the vm in suspend state"""
@@ -803,9 +803,8 @@ class TestCase5988(AllPermutationsDisks):
                 wait=False
             )
             ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
-            self.assertRaises(
-                exceptions.VMException, self._prepare_snapshots, self.vm_name
-            )
+            with pytest.raises(exceptions.VMException):
+                self._prepare_snapshots(self.vm_name)
             ll_vms.waitForVmsDisks(self.vm_name)
 
 
@@ -1028,7 +1027,7 @@ class TestCase6003(BaseTestCase):
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         ll_disks.wait_for_disks_status([self.vm_disk_name, self.disk_alias])
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-        self.assertTrue(status, "Succeeded to attach disk during LSM")
+        assert status, "Succeeded to attach disk during LSM"
 
     def tearDown(self):
         """
@@ -1088,11 +1087,11 @@ class TestCase6001(BaseTestCase):
         try to migrate to a domain in maintenance
         * we should fail to attach disk
         """
-        self.assertRaises(
-            exceptions.DiskException, ll_vms.live_migrate_vm_disk,
-            self.vm_name, self.vm_disk.get_alias(), self.target_sd,
-            LIVE_MIGRATION_TIMEOUT, True
-        )
+        with pytest.raises(exceptions.DiskException):
+            ll_vms.live_migrate_vm_disk(
+                self.vm_name, self.vm_disk.get_alias(), self.target_sd,
+                LIVE_MIGRATION_TIMEOUT, True
+            )
         self.succeeded = True
 
     def tearDown(self):
@@ -1129,31 +1128,31 @@ class TestCase5972(BaseTestCase):
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
 
     def _prepare_disks_for_vm(self, vm_name):
-            """
-            Prepares disk for given vm
-            """
-            disk_params = config.disk_args.copy()
-            disk_params['provisioned_size'] = 1 * config.GB
-            disk_params['format'] = config.RAW_DISK
-            disk_params['sparse'] = False
+        """
+        Prepares disk for given vm
+        """
+        disk_params = config.disk_args.copy()
+        disk_params['provisioned_size'] = 1 * config.GB
+        disk_params['format'] = config.RAW_DISK
+        disk_params['sparse'] = False
 
-            for index in range(self.disk_count):
-                disk_params['alias'] = (
-                    storage_helpers.create_unique_object_name(
-                        self.__class__.__name__, config.OBJECT_TYPE_DISK
-                    )
+        for index in range(self.disk_count):
+            disk_params['alias'] = (
+                storage_helpers.create_unique_object_name(
+                    self.__class__.__name__, config.OBJECT_TYPE_DISK
                 )
-                disk_params['storagedomain'] = self.storage_domains[index]
-                if not ll_disks.addDisk(True, **disk_params):
-                    raise exceptions.DiskException(
-                        "Can't create disk with params: %s" % disk_params
-                    )
-                logger.info(
-                    "Waiting for disk %s to be ok", disk_params['alias']
+            )
+            disk_params['storagedomain'] = self.storage_domains[index]
+            if not ll_disks.addDisk(True, **disk_params):
+                raise exceptions.DiskException(
+                    "Can't create disk with params: %s" % disk_params
                 )
-                ll_disks.wait_for_disks_status(disk_params['alias'])
-                self.disks_names.append(disk_params['alias'])
-                assert ll_disks.attachDisk(True, disk_params['alias'], vm_name)
+            logger.info(
+                "Waiting for disk %s to be ok", disk_params['alias']
+            )
+            ll_disks.wait_for_disks_status(disk_params['alias'])
+            self.disks_names.append(disk_params['alias'])
+            assert ll_disks.attachDisk(True, disk_params['alias'], vm_name)
 
     @polarion("RHEVM3-" + polarion_test_case)
     def test_live_migration_with_multiple_disks(self):
@@ -1235,9 +1234,8 @@ class TestCase5970(BaseTestCase):
         p.join()
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         exception_code, output = q.get()
-        self.assertTrue(
-            exception_code,
-            "Couldn't find regex %s, output: %s" % (self.regex, output)
+        assert exception_code, "Couldn't find regex %s, output: %s" % (
+            self.regex, output
         )
 
 
@@ -1288,17 +1286,13 @@ class TestCase5969(AllPermutationsDisks):
         )
         p.join()
         ex_code, output = q.get()
-        self.assertTrue(
-            ex_code, "Couldn't find regex %s, output: %s" % (regex, output)
-        )
+        assert ex_code, "Couldn't find regex %s, output: %s" % (regex, output)
         self.turn_off_method()
         # Is need to wait for the rollback after the LSM fails
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-        self.assertFalse(
-            ll_vms.verify_vm_disk_moved(
-                self.vm_name, disk_name, self.disk_sd
-            ), "Succeeded to live migrate vm disk %s" % disk_name
-        )
+        assert not ll_vms.verify_vm_disk_moved(
+            self.vm_name, disk_name, self.disk_sd
+        ), "Succeeded to live migrate vm disk %s" % disk_name
 
     @polarion("RHEVM3-" + polarion_test_case)
     def test_power_off_createVolume(self):
@@ -1418,9 +1412,8 @@ class TestCase5968(AllPermutationsDisks):
             )
             if self.storage in config.BLOCK_TYPES:
                 actual_size -= EXTENT_METADATA_SIZE
-            self.assertTrue(
-                actual_size <= virtual_size,
-                "Actual size exceeded to virtual size",
+            assert actual_size <= virtual_size, (
+                "Actual size exceeded to virtual size"
             )
 
 
@@ -1475,8 +1468,7 @@ class TestCase5967(AllPermutationsDisks):
             )
             if self.storage in config.BLOCK_TYPES:
                 actual_size -= EXTENT_METADATA_SIZE
-            self.assertTrue(
-                actual_size <= virtual_size,
+            assert actual_size <= virtual_size, (
                 "Actual size exceeded virtual size"
             )
 
@@ -1584,7 +1576,7 @@ class TestCase5979(BaseTestCase):
                          (s.get_description() ==
                           config.LIVE_SNAPSHOT_DESCRIPTION)]
         logger.info("Verify that the migration was not live migration")
-        self.assertEqual(len(LSM_snapshots), self.expected_lsm_snap_count)
+        assert len(LSM_snapshots) == self.expected_lsm_snap_count
 
 
 @attr(tier=2)
@@ -1633,9 +1625,9 @@ class TestCase5976(BaseTestCase):
         )
         sleep(5)
         status = ll_vms.deactivateVmDisk(False, self.vm_name, self.disk_name)
-        self.assertTrue(
-            status, "Succeeded to deactivate vm disk %s during live storage "
-                    "migration" % self.disk_name
+        assert status, (
+            "Succeeded to deactivate vm disk %s during live storage migration"
+            % self.disk_name
         )
 
     def tearDown(self):
@@ -1681,10 +1673,8 @@ class TestCase5977(BaseTestCase):
         )
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         ll_vms.migrateVm(True, self.vm_name, wait=False)
-        self.assertRaises(
-            exceptions.DiskException, ll_vms.live_migrate_vm_disk,
-            self.vm_name, disk_name, target_sd
-        )
+        with pytest.raises(exceptions.DiskException):
+            ll_vms.live_migrate_vm_disk(self.vm_name, disk_name, target_sd)
 
     @polarion("RHEVM3-" + polarion_test_case)
     @bz({'1258219': {}})
@@ -1699,7 +1689,7 @@ class TestCase5977(BaseTestCase):
             - we should be stopped by CanDoAction
         """
         status = self._migrate_vm_during_lsm_ops(wait=False)
-        self.assertFalse(status, "Succeeded to migrate vm during LSM")
+        assert not status, "Succeeded to migrate vm during LSM"
 
     @polarion("RHEVM3-" + polarion_test_case)
     @bz({'1258219': {}})
@@ -1714,7 +1704,7 @@ class TestCase5977(BaseTestCase):
             - we should succeed
         """
         status = self._migrate_vm_during_lsm_ops(wait=True)
-        self.assertTrue(status, "Succeeded to migrate vm during LSM")
+        assert status, "Succeeded to migrate vm during LSM"
 
 
 @attr(tier=2)
@@ -1836,7 +1826,7 @@ class TestCase6000(BaseTestCase):
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         ll_vms.live_migrate_vm_disk(self.vm_name, disk, target, wait=False)
         status = blockOutgoingConnection(source, username, password, target_ip)
-        self.assertTrue(status, "Failed to block connection")
+        assert status, "Failed to block connection"
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
 
     @polarion("RHEVM3-" + polarion_test_case)
@@ -1870,7 +1860,7 @@ class TestCase6000(BaseTestCase):
         status = ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, source_sd, self.target_sd
         )
-        self.assertFalse(status, "Disk moved but shouldn't have")
+        assert not status, "Disk moved but shouldn't have"
 
     def tearDown(self):
         """
@@ -1964,9 +1954,9 @@ class TestCase5999(BaseTestCase):
         ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = ll_vms.verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
-        self.assertFalse(
-            status, "Succeeded to live migrate vm disk %s during SPM host "
-                    "reboot" % vm_disk
+        assert not status, (
+            "Succeeded to live migrate vm disk %s during SPM host reboot" %
+            vm_disk
         )
 
     @polarion("RHEVM3-" + polarion_test_case)
@@ -2002,9 +1992,7 @@ class TestCase5999(BaseTestCase):
         ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = ll_vms.verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
-        self.assertFalse(
-            status, "Succeeded to live migrate vm disk %s" % vm_disk
-        )
+        assert not status, "Succeeded to live migrate vm disk %s" % vm_disk
 
 
 @attr(tier=4)
@@ -2038,9 +2026,7 @@ class TestCase5998(BaseTestCase):
         ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = ll_vms.verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
-        self.assertFalse(
-            status, "Succeeded to live migrate vm disk %s" % vm_disk
-        )
+        assert not status, "Succeeded to live migrate vm disk %s" % vm_disk
 
     @polarion("RHEVM3-" + polarion_test_case)
     def test_reboot_spm_during_lsm(self):
@@ -2115,9 +2101,7 @@ class TestCase5997(BaseTestCase):
         ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = ll_vms.verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
-        self.assertFalse(
-            status, "Succeeded to live migrate vm disk %s" % vm_disk
-        )
+        assert not status, "Succeeded to live migrate vm disk %s" % vm_disk
 
     @polarion("RHEVM3-" + polarion_test_case)
     def test_kill_ha_vm_pid_during_lsm(self):
@@ -2197,14 +2181,11 @@ class TestCase5985(BaseTestCase):
         ll_jobs.wait_for_jobs(
             [config.JOB_LIVE_MIGRATE_DISK, config.JOB_ADD_DISK]
         )
-        self.assertFalse(
-            ll_vms.verify_vm_disk_moved(
-                self.vm_name, vm_disk, source_sd, target_sd
-            ), "Succeeded to live migrate vm disk %s" % vm_disk
-        )
+        assert not ll_vms.verify_vm_disk_moved(
+            self.vm_name, vm_disk, source_sd, target_sd
+        ), "Succeeded to live migrate vm disk %s" % vm_disk
 
     def tearDown(self):
-
         """
         Remove created VM and disk
         """
@@ -2291,23 +2272,19 @@ class TestCase5971(BaseTestCase):
             )
 
             if index == 2:
-                self.assertRaises(
-                    exceptions.DiskException, ll_vms.live_migrate_vm_disk,
-                    self.vm_name, disk, target_sd
-                )
+                with pytest.raises(exceptions.DiskException):
+                    ll_vms.live_migrate_vm_disk(self.vm_name, disk, target_sd)
 
-                self.assertFalse(
-                    ll_vms.verify_vm_disk_moved(self.vm_name, disk, src_sd),
-                    "Succeeded to live migrate disk %s" % disk
-                )
+                assert not ll_vms.verify_vm_disk_moved(
+                    self.vm_name, disk, src_sd
+                ), "Succeeded to live migrate disk %s" % disk
             else:
                 ll_vms.live_migrate_vm_disk(
                     self.vm_name, disk, target_sd=target_sd
                 )
-                self.assertTrue(
-                    ll_vms.verify_vm_disk_moved(self.vm_name, disk, src_sd),
-                    "Failed to live migrate disk %s" % disk
-                )
+                assert ll_vms.verify_vm_disk_moved(
+                    self.vm_name, disk, src_sd
+                ), "Failed to live migrate disk %s" % disk
 
     def tearDown(self):
         """
@@ -2380,7 +2357,7 @@ class TestCase5980(BaseTestCase):
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         ll_disks.wait_for_disks_status([self.vm_disk_name, self.disk_name])
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-        self.assertTrue(status, "Attach operation succeeded during a LSM")
+        assert status, "Attach operation succeeded during a LSM"
 
     def tearDown(self):
         """
@@ -2513,7 +2490,7 @@ class TestCase5981(AllPermutationsDisks):
             status = storage_helpers.wait_for_dd_to_start(
                 self.vm_name, timeout=DD_TIMEOUT
             )
-            self.assertTrue(status, "dd didn't start writing to disk")
+            assert status, "dd didn't start writing to disk"
             logger.info(
                 "Stop the vm while the live storage migration is running",
             )
@@ -2522,11 +2499,9 @@ class TestCase5981(AllPermutationsDisks):
             ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
             ll_vms.remove_all_vm_lsm_snapshots(self.vm_name)
             ll_vms.startVm(True, self.vm_name, config.VM_UP, True)
-            self.assertFalse(
-                ll_vms.verify_vm_disk_moved(
-                    self.vm_name, disk, source_sd, target_sd
-                ), "Disk moved but shouldn't have"
-            )
+            assert not ll_vms.verify_vm_disk_moved(
+                self.vm_name, disk, source_sd, target_sd
+            ), "Disk moved but shouldn't have"
             logger.info("Disk %s done", disk)
 
 
@@ -2647,7 +2622,7 @@ class TestCase5984(BaseTestCase):
         status = blockOutgoingConnection(source, username, password,
                                          target_ip)
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-        self.assertTrue(status, "Failed to block connection")
+        assert status, "Failed to block connection"
 
     @polarion("RHEVM3-" + polarion_test_case)
     def test_LSM_block_from_hsm_to_domain(self):
@@ -2680,7 +2655,7 @@ class TestCase5984(BaseTestCase):
         status = ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, source_sd, self.target_sd
         )
-        self.assertFalse(status, "Disk moved but shouldn't have")
+        assert not status, "Disk moved but shouldn't have"
 
     def tearDown(self):
         """
@@ -2744,7 +2719,7 @@ class TestCase5974(BaseTestCase):
         status = blockOutgoingConnection(
             host_ip, self.username, self.password, target_sd_ip
         )
-        self.assertTrue(status, "Failed to block connection")
+        assert status, "Failed to block connection"
         ll_vms.waitForVMState(self.vm_name, ENUMS['vm_state_paused'])
         ll_vms.live_migrate_vm(
             self.vm_name, same_type=config.MIGRATE_SAME_TYPE
@@ -2754,7 +2729,7 @@ class TestCase5974(BaseTestCase):
         status = ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, source_sd, self.target_sd
         )
-        self.assertFalse(status, "Disk moved but shouldn't have")
+        assert not status, "Disk moved but shouldn't have"
 
     def tearDown(self):
         """

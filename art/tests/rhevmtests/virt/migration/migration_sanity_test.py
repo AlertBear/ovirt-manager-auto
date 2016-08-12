@@ -64,13 +64,10 @@ class TestMigrationVirtSanityCase1(common.VirtTest):
         """
         Check migration of one VM
         """
-        self.assertTrue(
-            ll_vms.migrateVm(
-                positive=True,
-                vm=config.MIGRATION_VM
-            ),
-            "Failed to migrate VM: %s " % config.VM_NAME[0]
-        )
+        assert ll_vms.migrateVm(
+            positive=True,
+            vm=config.MIGRATION_VM
+        ), "Failed to migrate VM: %s " % config.VM_NAME[0]
 
 
 @common.attr(tier=1)
@@ -108,17 +105,14 @@ class TestMigrationVirtSanityCase2(common.VirtTest):
         """
         Check migration VM by putting host into maintenance
         """
-        self.assertTrue(
-            hl_vms.migrate_by_maintenance(
-                vms_list=[config.VM_NAME[1]],
-                src_host=network_lib.get_host(config.VM_NAME[1]),
-                vm_os_type=config.RHEL_OS_TYPE_FOR_MIGRATION,
-                vm_user=config.VMS_LINUX_USER,
-                vm_password=config.VMS_LINUX_PW,
-                connectivity_check=config.CONNECTIVITY_CHECK
-            ),
-            "Maintenance test failed"
-        )
+        assert hl_vms.migrate_by_maintenance(
+            vms_list=[config.VM_NAME[1]],
+            src_host=network_lib.get_host(config.VM_NAME[1]),
+            vm_os_type=config.RHEL_OS_TYPE_FOR_MIGRATION,
+            vm_user=config.VMS_LINUX_USER,
+            vm_password=config.VMS_LINUX_PW,
+            connectivity_check=config.CONNECTIVITY_CHECK
+        ), "Maintenance test failed"
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -155,9 +149,7 @@ class TestMigrationVirtSanityCase3(common.VirtTest):
         """
 
         logger.info("Start migration for VM: %s ", config.MIGRATION_VM)
-        self.assertTrue(
-            ll_vms.migrateVm(True, config.MIGRATION_VM, wait=False)
-        )
+        assert ll_vms.migrateVm(True, config.MIGRATION_VM, wait=False)
         ll_vms.wait_for_vm_states(
             config.MIGRATION_VM, states=[
                 config.ENUMS['vm_state_migrating'],
@@ -168,7 +160,6 @@ class TestMigrationVirtSanityCase3(common.VirtTest):
         self.cancel_vm_migrate = hl_vms.cancel_vm_migrate(
             vm=config.MIGRATION_VM,
         )
-        self.assertTrue(
-            self.cancel_vm_migrate,
+        assert self.cancel_vm_migrate, (
             "Cancel migration didn't succeed for VM:%s " % config.MIGRATION_VM
         )

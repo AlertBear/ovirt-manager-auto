@@ -120,10 +120,9 @@ class BasicResize(BaseClass):
         self.disk_args['alias'] = "disk_%s" % self.polarion_test_case
         self.disk_name = self.disk_args['alias']
 
-        self.assertTrue(
-            ll_disks.addDisk(True, **self.disk_args),
-            "Failed to add disk %s" % self.disk_name
-        )
+        assert ll_disks.addDisk(
+            True, **self.disk_args
+        ), "Failed to add disk %s" % self.disk_name
         if not ll_disks.wait_for_disks_status(self.disk_name):
             raise exceptions.DiskException(
                 "Disk %s is not in the expected state 'OK" % self.disk_name
@@ -180,7 +179,7 @@ class BasicResize(BaseClass):
         testflow.step(
             "Performing 'dd' command to extended disk %s", self.disk_name
         )
-        self.assertTrue(ecode, "dd command failed. output: %s" % output)
+        assert ecode, "dd command failed. output: %s" % output
         disks_objs = ll_vms.getVmDisks(self.vm_name)
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (self.disk_name == disk_obj.get_alias())][0]
@@ -194,12 +193,12 @@ class BasicResize(BaseClass):
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
             datacenter_obj
         )
-        self.assertEqual(lv_size, self.new_size / config.GB)
+        assert lv_size == self.new_size / config.GB
         devices, boot_device = helpers.get_vm_storage_devices(self.vm_name)
 
         for device in devices:
             size = helpers.get_vm_device_size(self.vm_name, device)
-            self.assertEqual(int(size), (self.new_size / config.GB))
+            assert int(size) == (self.new_size / config.GB)
 
     def block_connection_case(self):
         """
@@ -251,13 +250,13 @@ class BasicResize(BaseClass):
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
             datacenter_obj
         )
-        self.assertEqual(lv_size, self.new_size / config.GB)
+        assert lv_size == self.new_size / config.GB
         devices, boot_device = helpers.get_vm_storage_devices(self.vm_name)
         ll_vms.start_vms([self.vm_name], max_workers=1, wait_for_ip=False)
         ll_vms.waitForVMState(self.vm_name)
         for device in devices:
             size = helpers.get_vm_device_size(self.vm_name, device)
-            self.assertEqual(int(size), (self.new_size / config.GB))
+            assert int(size) == (self.new_size / config.GB)
 
     def multiple_disks(self, vm_names):
         """
@@ -310,10 +309,9 @@ class TestCase5061(DisksPermutationEnvironment):
         - Resize the VM disk, add 1G to it
         """
         logger.info("Creating Snapshot")
-        self.assertTrue(
-            ll_vms.addSnapshot(True, self.vm_name, self.snap_description),
-            "Failed to add snapshot %s" % self.snap_description
-        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, self.snap_description
+        ), "Failed to add snapshot %s" % self.snap_description
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
 
         for disk in self.disk_names:
@@ -322,9 +320,8 @@ class TestCase5061(DisksPermutationEnvironment):
             status = ll_vms.extend_vm_disk_size(
                 True, self.vm_name, disk=disk, provisioned_size=self.new_size
             )
-            self.assertTrue(
-                status, "Failed to resize disk %s to size %s"
-                        % (disk, self.new_size)
+            assert status, "Failed to resize disk %s to size %s" % (
+                disk, self.new_size
             )
         if not ll_disks.wait_for_disks_status(
             self.disk_names, timeout=DISK_RESIZE_TIMEOUT
@@ -337,7 +334,7 @@ class TestCase5061(DisksPermutationEnvironment):
 
         for device in devices:
             size = helpers.get_vm_device_size(self.vm_name, device)
-            self.assertEqual(int(size), (self.new_size / config.GB))
+            assert int(size) == (self.new_size / config.GB)
 
 
 @attr(tier=2)
@@ -367,18 +364,18 @@ class TestCase5060(DisksPermutationEnvironment):
           created the snapshot
         """
         logger.info("Creating Snapshot")
-        self.assertTrue(
-            ll_vms.addSnapshot(True, self.vm_name, self.snap_description),
-            "Failed to add snapshot %s" % self.snap_description
-        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, self.snap_description
+        ), "Failed to add snapshot %s" % self.snap_description
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
 
         for disk in self.disk_names:
             status = ll_vms.extend_vm_disk_size(
                 True, self.vm_name, disk=disk, provisioned_size=self.new_size
             )
-            self.assertTrue(status, "Failed to resize disk %s to size %s"
-                                    % (disk, self.new_size))
+            assert status, "Failed to resize disk %s to size %s" % (
+                disk, self.new_size
+            )
         if not ll_disks.wait_for_disks_status(
             self.disk_names, timeout=DISK_RESIZE_TIMEOUT
         ):
@@ -390,18 +387,15 @@ class TestCase5060(DisksPermutationEnvironment):
             True, self.vm_name, self.snap_description
         )
         self.is_preview = status
-        self.assertTrue(
-            status, "Failed to preview snapshot %s" % self.snap_description
-        )
+        assert status, "Failed to preview snapshot %s" % self.snap_description
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
             [self.snap_description],
         )
 
         status = ll_vms.commit_snapshot(True, self.vm_name)
-        self.assertTrue(
-            status, "Failed restoring a previewed snapshot %s" %
-                    self.snap_description
+        assert status, "Failed restoring a previewed snapshot %s" % (
+            self.snap_description
         )
         self.is_preview = not status
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -412,10 +406,10 @@ class TestCase5060(DisksPermutationEnvironment):
             ll_vms.is_bootable_disk(self.vm_name, disk.get_id())
         ]
         for size in disks_sizes:
-            self.assertTrue(
-                size == (self.new_size - config.GB),
-                "Disk current size %s, expected size %s" %
-                (size, (self.new_size - config.GB))
+            assert size == (
+                self.new_size - config.GB
+            ), "Disk current size %s, expected size %s" % (
+                size, self.new_size - config.GB
             )
 
     def tearDown(self):
@@ -629,7 +623,7 @@ class TestCase5069(BasicResize):
         )
         for device in devices:
             size = helpers.get_vm_device_size(self.test_vm_name, device)
-            self.assertEqual(int(size), int(self.new_size / config.GB))
+            assert int(size) == int(self.new_size / config.GB)
 
     def tearDown(self):
         if not ll_vms.safely_remove_vms([self.test_vm_name, self.vm_name]):
@@ -679,9 +673,8 @@ class TestCase5070(BasicResize):
             False, self.vm_name, disk=self.disk_name,
             provisioned_size=self.new_size
         )
-        self.assertTrue(
-            status, "Succeeded to resize disk %s to new size %s"
-                    % (self.disk_name, self.new_size)
+        assert status, "Succeeded to resize disk %s to new size %s" % (
+            self.disk_name, self.new_size
         )
 
     def tearDown(self):
@@ -731,16 +724,15 @@ class TestCase5071(BasicResize):
             provisioned_size=self.new_size
         )
         t.join()
-        self.assertTrue(
-            status, "Failed to resize disk %s to size %s"
-                    % (self.disk_name, self.new_size)
+        assert status, "Failed to resize disk %s to size %s" % (
+            self.disk_name, self.new_size
         )
         host_machine = Machine(
             host=host_ip, user=config.HOSTS_USER,
             password=config.HOSTS_PW
         ).util('linux')
         rc, output = host_machine.runCmd(self.start_libvirt.split())
-        self.assertTrue(rc, "Failed to start libvirt: %s" % output)
+        assert rc, "Failed to start libvirt: %s" % output
         if not ll_disks.wait_for_disks_status(
             self.disk_name, timeout=DISK_RESIZE_TIMEOUT
         ):
@@ -762,7 +754,7 @@ class TestCase5071(BasicResize):
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
             datacenter_obj
         )
-        self.assertEqual(lv_size, self.new_size / config.GB)
+        assert lv_size == self.new_size / config.GB
 
 
 @attr(tier=2)

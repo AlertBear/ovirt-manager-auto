@@ -45,7 +45,7 @@ class TestAdminStartVmAndPrestartedVms(base.VmPool):
         and 1 is stateful.
         """
         first_vm = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
-        self.assertTrue(ll_vms.startVm(True, first_vm))
+        assert ll_vms.startVm(True, first_vm)
         helpers.update_prestarted_vms(
             self.pool_name, self.updated_prestarted, self.admin_started_vms
         )

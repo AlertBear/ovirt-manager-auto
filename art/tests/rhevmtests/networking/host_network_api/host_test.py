@@ -44,9 +44,7 @@ class TestHostNetworkApiHost01(NetworkTest):
             "nic": net_conf.HOST_0_NICS[1]
         }
         testflow.step("Attach network to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -68,9 +66,7 @@ class TestHostNetworkApiHost02(NetworkTest):
             "nic": net_conf.HOST_0_NICS[1]
         }
         testflow.step("Attach VLAN network to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -92,9 +88,7 @@ class TestHostNetworkApiHost03(NetworkTest):
             "nic": net_conf.HOST_0_NICS[1]
         }
         testflow.step("Attach Non-VM network to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -122,9 +116,7 @@ class TestHostNetworkApiHost04(NetworkTest):
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         testflow.step("Attach network with IP (netmask) to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
     @polarion("RHEVM3-10460")
     def test_ip_prefix_network_on_host(self):
@@ -138,9 +130,7 @@ class TestHostNetworkApiHost04(NetworkTest):
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         testflow.step("Attach network with IP (prefix) to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -168,9 +158,7 @@ class TestHostNetworkApiHost05(NetworkTest):
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         testflow.step("Attach VLAN network with IP (netmask) to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
     @polarion("RHEVM3-10461")
     def test_ip_prefix_vlan_network_on_host(self):
@@ -184,9 +172,7 @@ class TestHostNetworkApiHost05(NetworkTest):
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         testflow.step("Attach VLAN network with IP (prefix) to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -214,9 +200,7 @@ class TestHostNetworkApiHost06(NetworkTest):
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         testflow.step("Attach Non-VM network with IP (netmask) to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
     @polarion("RHEVM3-10462")
     def test_ip_prefix_non_vm_network_on_host(self):
@@ -230,9 +214,7 @@ class TestHostNetworkApiHost06(NetworkTest):
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         testflow.step("Attach Non-VM network with IP (prefix) to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -261,9 +243,7 @@ class TestHostNetworkApiHost07(NetworkTest):
             "properties": properties_dict
         }
         testflow.step("Attach network with custom properties to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -288,10 +268,8 @@ class TestHostNetworkApiHost08(NetworkTest):
             "Negative: Try to attach VLAN network with 9000 MTU size to the "
             "same NIC"
         )
-        self.assertTrue(
-            helper.attach_network_attachment(
-                positive=False, **network_host_api_dict
-            )
+        assert helper.attach_network_attachment(
+            positive=False, **network_host_api_dict
         )
 
 
@@ -310,10 +288,8 @@ class TestHostNetworkApiHost09(NetworkTest):
         Remove network from host NIC
         """
         testflow.step("Remove network from host NIC")
-        self.assertTrue(
-            hl_host_network.remove_networks_from_host(
-                host_name=net_conf.HOST_0_NAME, networks=[self.net]
-            )
+        assert hl_host_network.remove_networks_from_host(
+            host_name=net_conf.HOST_0_NAME, networks=[self.net]
         )
 
 
@@ -341,10 +317,8 @@ class TestHostNetworkApiHost10(NetworkTest):
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         testflow.step("Update the network to have IP (netmask)")
-        self.assertTrue(
-            hl_host_network.update_network_on_host(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.update_network_on_host(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
     @polarion("RHEVM3-10467")
@@ -358,10 +332,8 @@ class TestHostNetworkApiHost10(NetworkTest):
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         testflow.step("Update the network to have IP (prefix)")
-        self.assertTrue(
-            hl_host_network.update_network_on_host(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
+        assert hl_host_network.update_network_on_host(
+            host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
 
@@ -385,9 +357,7 @@ class TestHostNetworkApiHost11(NetworkTest):
             "nic": self.bond
         }
         testflow.step("Attach network to BOND")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -408,10 +378,8 @@ class TestHostNetworkApiHost12(NetworkTest):
         """
         testflow.step("Delete 2 networks from the BOND")
         for net in self.net_list_to_remove:
-            self.assertTrue(
-                hl_host_network.remove_networks_from_host(
-                    host_name=net_conf.HOST_0_NAME, networks=[net]
-                )
+            assert hl_host_network.remove_networks_from_host(
+                host_name=net_conf.HOST_0_NAME, networks=[net]
             )
 
 
@@ -430,10 +398,8 @@ class TestHostNetworkApiHost13(NetworkTest):
         Remove the unmanaged network from host
         """
         testflow.step("Remove the unmanaged network from host")
-        self.assertTrue(
-            ll_host_network.remove_unmanaged_networks(
-                host_name=net_conf.HOST_0_NAME, networks=[self.unmamanged_net]
-            )
+        assert ll_host_network.remove_unmanaged_networks(
+            host_name=net_conf.HOST_0_NAME, networks=[self.unmamanged_net]
         )
 
 
@@ -456,9 +422,7 @@ class TestHostNetworkApiHost14(NetworkTest):
             "nic": net_conf.HOST_0_NICS[1]
         }
         testflow.step("Attach Non-VM VLAN network to host NIC")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -488,9 +452,7 @@ class TestHostNetworkApiHost15(NetworkTest):
         testflow.step(
             "Attach Non-VM VLAN network with IP (netmask) to host NIC"
         )
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
     @polarion("RHEVM3-10463")
     def test_non_vm_vlan_ip_prefix_on_host(self):
@@ -506,9 +468,7 @@ class TestHostNetworkApiHost15(NetworkTest):
         testflow.step(
             "Attach Non-VM VLAN network with IP (prefix) to host NIC"
         )
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -526,10 +486,8 @@ class TestHostNetworkApiHost16(NetworkTest):
         Remove the unmanaged network from host
         """
         testflow.step("Remove the unmanaged network from host (BOND)")
-        self.assertTrue(
-            ll_host_network.remove_unmanaged_networks(
-                host_name=net_conf.HOST_0_NAME, networks=[self.unmamanged_net]
-            )
+        assert ll_host_network.remove_unmanaged_networks(
+            host_name=net_conf.HOST_0_NAME, networks=[self.unmamanged_net]
         )
 
 
@@ -560,9 +518,7 @@ class TestHostNetworkApiHost17(NetworkTest):
             "properties": properties_dict
         }
         testflow.step("Attach network with custom properties to BOND")
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
 
 @attr(tier=2)
@@ -587,9 +543,7 @@ class TestHostNetworkApiHost18(NetworkTest):
         testflow.step(
             "Attach VLAN network to host NIC that has VM network on it"
         )
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)
 
     def test_attach_vm_to_host_nic_with_vlan(self):
         """
@@ -602,6 +556,4 @@ class TestHostNetworkApiHost18(NetworkTest):
         testflow.step(
             "Attach VLAN network to host NIC that has VM network on it"
         )
-        self.assertTrue(
-            helper.attach_network_attachment(**network_host_api_dict)
-        )
+        assert helper.attach_network_attachment(**network_host_api_dict)

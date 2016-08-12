@@ -57,10 +57,9 @@ class TestCase11591(TestCase):
             )
         self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
 
-        self.assertTrue(
-            len(config.UNUSED_LUNS) >= MIN_UNUSED_LUNS,
-            "There are less than %s unused LUNs, aborting test"
-            % MIN_UNUSED_LUNS
+        assert len(config.UNUSED_LUNS) >= MIN_UNUSED_LUNS, (
+            "There are less than %s unused LUNs, aborting test" %
+            MIN_UNUSED_LUNS
         )
         self.sd_name = "{0}_{1}".format(
             self.polarion_test_case, "iSCSI_Domain"
@@ -72,8 +71,7 @@ class TestCase11591(TestCase):
             config.UNUSED_LUNS["lun_addresses"][0],
             config.UNUSED_LUNS["lun_targets"][0], override_luns=True
         )
-        self.assertTrue(
-            status_attach_and_activate,
+        assert status_attach_and_activate, (
             "The domain was not added and activated successfully"
         )
         ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
@@ -97,9 +95,9 @@ class TestCase11591(TestCase):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         logger.info("Removing Storage domain '%s'", self.sd_name)
-        self.assertTrue(ll_sds.removeStorageDomains(
+        assert ll_sds.removeStorageDomains(
             True, self.sd_name, self.spm_host
-        ), "Failed to remove domain '%s'" % self.sd_name)
+        ), "Failed to remove domain '%s'" % self.sd_name
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
 
     @polarion("RHEVM3-11591")
@@ -128,8 +126,7 @@ class TestCase11591(TestCase):
             "Total size for domain '%s' after extend is '%s'",
             self.sd_name, extended_sd_size
         )
-        self.assertTrue(
-            extended_sd_size > self.domain_size,
+        assert extended_sd_size > self.domain_size, (
             "The extended storage domain size hasn't increased"
         )
 
@@ -252,10 +249,9 @@ class TestCase11592(TestCase):
         including ensuring that it is impossible to detach an active domain
         """
         logger.info("Attempt to detach an active domain - this should fail")
-        self.assertTrue(
-            ll_sds.detachStorageDomain(
-                False, config.DATA_CENTER_NAME, self.sd_name
-            ),
+        assert ll_sds.detachStorageDomain(
+            False, config.DATA_CENTER_NAME, self.sd_name
+        ), (
             "Detaching non-master active domain '%s' worked" % self.sd_name
         )
 
@@ -264,18 +260,16 @@ class TestCase11592(TestCase):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         logger.info("De-activate non-master data domain")
-        self.assertTrue(
-            ll_sds.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-            ),
+        assert ll_sds.deactivateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_name
+        ), (
             "De-activating non-master domain '%s' failed" % self.sd_name
         )
 
         logger.info("Re-activate non-master data domain")
-        self.assertTrue(
-            ll_sds.activateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-            ),
+        assert ll_sds.activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_name
+        ), (
             "Activating non-master data domain '%s' failed" % self.sd_name
         )
 
@@ -284,11 +278,10 @@ class TestCase11592(TestCase):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         logger.info("Deactivating non-master data domain")
-        self.assertTrue(
-            hl_sds.detach_and_deactivate_domain(
-                config.DATA_CENTER_NAME, self.sd_name
-            ), "Detaching and De-activating non-master domain '%s' failed" %
-               self.sd_name
+        assert hl_sds.detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, self.sd_name
+        ), "Detaching and De-activating non-master domain '%s' failed" % (
+            self.sd_name
         )
 
         # In local DC, once a domain is detached it is removed completely
@@ -296,20 +289,14 @@ class TestCase11592(TestCase):
         # for non-local DCs
         if not config.LOCAL:
             logger.info("Attaching non-master data domain")
-            self.assertTrue(
-                ll_sds.attachStorageDomain(
-                    True, config.DATA_CENTER_NAME, self.sd_name
-                ),
-                "Attaching non-master data domain '%s' failed" % self.sd_name
-            )
+            assert ll_sds.attachStorageDomain(
+                True, config.DATA_CENTER_NAME, self.sd_name
+            ), "Attaching non-master data domain '%s' failed" % self.sd_name
 
             logger.info("Activating non-master data domain")
-            self.assertTrue(
-                ll_sds.activateStorageDomain(
-                    True, config.DATA_CENTER_NAME, self.sd_name
-                ),
-                "Activating non-master data domain '%s' failed" % self.sd_name
-            )
+            assert ll_sds.activateStorageDomain(
+                True, config.DATA_CENTER_NAME, self.sd_name
+            ), "Activating non-master data domain '%s' failed" % self.sd_name
 
 
 @attr(tier=2)
@@ -329,7 +316,7 @@ class TestCase11593(TestCase):
         found, master_domain = ll_sds.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME
         )
-        self.assertTrue(found, "Master domain not found!")
+        assert found, "Master domain not found!"
 
         old_master_domain_name = master_domain['masterDomain']
 
@@ -337,25 +324,21 @@ class TestCase11593(TestCase):
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        self.assertTrue(
-            ll_sds.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, old_master_domain_name
-            ), "Cannot deactivate master domain"
-        )
+        assert ll_sds.deactivateStorageDomain(
+            True, config.DATA_CENTER_NAME, old_master_domain_name
+        ), "Cannot deactivate master domain"
 
         logger.info("Finding new master domain")
         found, new_master = ll_sds.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME
         )
         logger.info("New master: %s" % new_master)
-        self.assertTrue(found, "New master domain not found")
+        assert found, "New master domain not found"
 
         logger.info("Activating old master domain")
-        self.assertTrue(
-            ll_sds.activateStorageDomain(
-                True, config.DATA_CENTER_NAME, old_master_domain_name
-            ), "Cannot activate old master domain"
-        )
+        assert ll_sds.activateStorageDomain(
+            True, config.DATA_CENTER_NAME, old_master_domain_name
+        ), "Cannot activate old master domain"
 
 
 @attr(tier=2)
@@ -426,25 +409,21 @@ class TestCase11581(TestCase):
                 else:
                     # policy_allocation = True --> sparse
                     policy_allocation = True
-                self.assertTrue(
-                    ll_vms.addDisk(
-                        True, self.vm_name, config.GB, True,
-                        storage, type=config.DISK_TYPE_DATA,
-                        interface=self.interface, format=self.formats[index],
-                        sparse=policy_allocation
-                    ), "Failed to add disk"
-                )
+                assert ll_vms.addDisk(
+                    True, self.vm_name, config.GB, True,
+                    storage, type=config.DISK_TYPE_DATA,
+                    interface=self.interface, format=self.formats[index],
+                    sparse=policy_allocation
+                ), "Failed to add disk"
                 self.disk_count += 1
         disks_after, _ = ll_vms.get_vm_storage_devices(
             self.vm_name, config.VM_USER, config.VM_PASSWORD, ensure_vm_on=True
         )
         ll_vms.stop_vms_safely([self.vm_name])
-        self.assertEqual(
-            len(disks_after), (len(disks_before) + self.disk_count),
+        assert len(disks_after) == (len(disks_before) + self.disk_count), (
             "Added disks are not visible via the guest"
         )
-        self.assertTrue(
-            ll_vms.startVm(True, self.vm_name, wait_for_ip=True),
+        assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True), (
             "Failed to start vm %s" % self.vm_name
         )
 

@@ -35,13 +35,11 @@ class UpdateVm(VirtTest):
         Positive: Update vm OS type from rhel to Windows 2008
         """
         testflow.step("Positive: Update vm OS type from rhel to Windows 2008")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                time_zone=config.WIN_TZ,
-                os_type=config.WIN_2008
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            time_zone=config.WIN_TZ,
+            os_type=config.WIN_2008
         )
 
     @polarion("RHEVM3-12561")
@@ -52,13 +50,11 @@ class UpdateVm(VirtTest):
         Positive: Update vm OS type from rhel to Windows 7
         """
         testflow.step("Positive: Update vm OS type from rhel to Windows 7")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                time_zone=config.WIN_TZ,
-                os_type=config.WIN_7
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            time_zone=config.WIN_TZ,
+            os_type=config.WIN_7
         )
 
     @polarion("RHEVM3-12564")
@@ -69,13 +65,11 @@ class UpdateVm(VirtTest):
         Positive: Update vm OS type from Windows 7 to RHEL
         """
         testflow.step("Positive: Update vm OS type from Windows 7 to RHEL")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                time_zone=config.RHEL_TZ,
-                os_type=config.RHEL6_64
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            time_zone=config.RHEL_TZ,
+            os_type=config.RHEL6_64
         )
 
     @polarion("RHEVM3-12562")
@@ -89,12 +83,10 @@ class UpdateVm(VirtTest):
             "Negative: "
             "Update vm OS type from rhel to Windows 7, no timezone update"
         )
-        self.assertFalse(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                os_type=config.WIN_7
-            )
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            os_type=config.WIN_7
         )
 
     @polarion("RHEVM3-12560")
@@ -104,14 +96,12 @@ class UpdateVm(VirtTest):
         Positive: Update vm OS parameters
         """
         testflow.step("Positive: Update vm OS parameters")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                kernel='/kernel-new-path',
-                initrd='/initrd-new-path',
-                cmdline='rd_NO_LUKS'
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            kernel='/kernel-new-path',
+            initrd='/initrd-new-path',
+            cmdline='rd_NO_LUKS'
         )
 
     @polarion("RHEVM3-10098")
@@ -122,19 +112,15 @@ class UpdateVm(VirtTest):
         """
         new_name = "update_vm_1"
         testflow.step("Update vm name to new name")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                name=new_name)
-        )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            name=new_name)
 
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=new_name,
-                name=self.vm_name)
-        )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=new_name,
+            name=self.vm_name)
 
     @attr(tier=2)
     @polarion("RHEVM3-12528")
@@ -147,13 +133,11 @@ class UpdateVm(VirtTest):
 
         affinity = config.ENUMS['vm_affinity_migratable']
         testflow.step("Update vm affinity to vm_affinity_migratable with host")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                placement_affinity=affinity,
-                placement_host=config.HOSTS[0]
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            placement_affinity=affinity,
+            placement_host=config.HOSTS[0]
         )
 
     @attr(tier=2)
@@ -166,13 +150,11 @@ class UpdateVm(VirtTest):
         """
         affinity = config.ENUMS['vm_affinity_user_migratable']
         testflow.step("Update vm affinity to user migratable with host")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                placement_affinity=affinity,
-                placement_host=config.HOSTS[0]
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            placement_affinity=affinity,
+            placement_host=config.HOSTS[0]
         )
 
     @attr(tier=2)
@@ -185,12 +167,11 @@ class UpdateVm(VirtTest):
         """
         affinity = config.ENUMS['vm_affinity_pinned']
         testflow.step("Update vm affinity to pinned with host")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                placement_affinity=affinity,
-                placement_host=config.HOSTS[0]))
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            placement_affinity=affinity,
+            placement_host=config.HOSTS[0])
 
     @attr(tier=2)
     @polarion("RHEVM3-12527")
@@ -202,13 +183,11 @@ class UpdateVm(VirtTest):
         """
         affinity = config.ENUMS['vm_affinity_migratable']
         testflow.step("Update vm affinity to migratable on any host")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                placement_host=config.VM_ANY_HOST,
-                placement_affinity=affinity
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            placement_host=config.VM_ANY_HOST,
+            placement_affinity=affinity
         )
 
     @attr(tier=2)
@@ -221,13 +200,11 @@ class UpdateVm(VirtTest):
         """
         affinity = config.ENUMS['vm_affinity_user_migratable']
         testflow.step("Update vm affinity to user migratable on any host")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                placement_host=config.VM_ANY_HOST,
-                placement_affinity=affinity
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            placement_host=config.VM_ANY_HOST,
+            placement_affinity=affinity
         )
 
     @polarion("RHEVM3-12533")
@@ -237,12 +214,10 @@ class UpdateVm(VirtTest):
         Positive: Update vm description
         """
         testflow.step("Update vm description")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                description="TEST"
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            description="TEST"
         )
 
     @polarion("RHEVM3-12532")
@@ -255,30 +230,24 @@ class UpdateVm(VirtTest):
         testflow.step("Update vm cluster, set vm migratable")
         logger.info("Turn VM %s back to being migratable", self.vm_name)
         affinity = config.ENUMS['vm_affinity_migratable']
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                placement_host=config.VM_ANY_HOST,
-                placement_affinity=affinity
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            placement_host=config.VM_ANY_HOST,
+            placement_affinity=affinity
         )
         cluster = config.CLUSTER_NAME[1]
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                cluster=cluster,
-                cpu_profile=None
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            cluster=cluster,
+            cpu_profile=None
         )
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                cluster=config.CLUSTER_NAME[0],
-                cpu_profile=None
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            cluster=config.CLUSTER_NAME[0],
+            cpu_profile=None
         )
         logger.info("Update cluster to: %s", cluster)
 
@@ -289,12 +258,10 @@ class UpdateVm(VirtTest):
         Update vm memory
         """
         testflow.step("Update vm memory")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                memory=config.TWO_GB
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            memory=config.TWO_GB
         )
 
     @polarion("RHEVM3-12555")
@@ -315,12 +282,10 @@ class UpdateVm(VirtTest):
                 memory=2 * self.new_mem
             )
         testflow.step("Update vm guaranteed memory")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                memory_guaranteed=self.new_mem
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            memory_guaranteed=self.new_mem
         )
 
     @polarion("RHEVM3-12559")
@@ -330,11 +295,10 @@ class UpdateVm(VirtTest):
         Positive: Update vm number of CPU sockets
         """
         testflow.step("Update vm number of CPU sockets")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                cpu_socket=2)
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            cpu_socket=2
         )
 
     @polarion("RHEVM3-12558")
@@ -344,10 +308,10 @@ class UpdateVm(VirtTest):
         Positive: Update vm number of CPU cores
         """
         testflow.step("Update vm number of CPU cores")
-        self.assertTrue(ll_vms.updateVm(
+        assert ll_vms.updateVm(
             positive=True,
             vm=self.vm_name,
-            cpu_cores=2)
+            cpu_cores=2
         )
 
     @polarion("RHEVM3-12534")
@@ -359,12 +323,10 @@ class UpdateVm(VirtTest):
         """
         display_type = config.ENUMS['display_type_vnc']
         testflow.step("Update vm display type to VNC")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                display_type=display_type
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            display_type=display_type
         )
 
     @polarion("RHEVM3-12526")
@@ -383,20 +345,16 @@ class UpdateVm(VirtTest):
         if not ll_vms.updateVm(True, self.vm_name, display_type=display_type):
             raise errors.VMException("Failed to update vm")
         logger.info("Positive: Update vm number of monitors to 2")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                monitors=2
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            monitors=2
         )
         testflow.step("Positive: Update vm number of monitors to 1")
-        self.assertTrue(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                monitors=1
-            )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            monitors=1
         )
 
     @polarion("RHEVM3-12567")
@@ -418,12 +376,10 @@ class UpdateVm(VirtTest):
         ):
             raise errors.VMException("Failed to update vm")
         testflow.step("Negative: Update vm number of monitors to 2")
-        self.assertFalse(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                monitors=2
-            )
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            monitors=2
         )
 
     @polarion("RHEVM3-12557")
@@ -443,16 +399,13 @@ class UpdateVm(VirtTest):
         ):
             raise errors.VMException("Failed to add vm")
         testflow.step("Update vm name to existing one")
-        self.assertFalse(
-            ll_vms.updateVm(
-                True, self.vm_name,
-                name=vm_exist_name
-            )
+        assert not ll_vms.updateVm(
+            True, self.vm_name,
+            name=vm_exist_name
         )
-        self.assertTrue(
-            ll_vms.safely_remove_vms([vm_exist_name]),
-            "Failed to remove vm %s" % vm_exist_name
-        )
+        assert ll_vms.safely_remove_vms(
+            [vm_exist_name]
+        ), "Failed to remove vm %s" % vm_exist_name
 
     @polarion("RHEVM3-12566")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
@@ -461,11 +414,10 @@ class UpdateVm(VirtTest):
         Negative: Update vm with too many CPU sockets
         """
         testflow.step("Negative: Update vm with too many CPU sockets")
-        self.assertFalse(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                cpu_socket=40)
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            cpu_socket=40
         )
 
     @polarion("RHEVM3-12565")
@@ -480,9 +432,8 @@ class UpdateVm(VirtTest):
             "to be less than guaranteed memory,"
             "that equal to 1 GB"
         )
-        self.assertFalse(
-            ll_vms.updateVm(
-                positive=True,
-                vm=self.vm_name,
-                memory=self.half_GB)
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=self.vm_name,
+            memory=self.half_GB
         )

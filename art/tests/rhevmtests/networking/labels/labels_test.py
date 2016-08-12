@@ -925,7 +925,7 @@ class TestNetLabels07(NetworkTest):
     comp_cl_names = [
         "Cluster_%s_case07" % conf.COMP_VERSION_4_0[i]
         for i in range(len(conf.COMP_VERSION_4_0) - 1)
-        ]
+    ]
     nets = label_conf.NETS[7][:4]
     vlan_id_list = label_conf.VLAN_IDS[9:11]
     sleep_timeout = 30

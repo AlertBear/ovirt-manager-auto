@@ -43,18 +43,14 @@ class TestRequiredNetwork01(NetworkTest):
         """
 
         testflow.step("Check that management network is required by default")
-        self.assertTrue(
-            ll_networks.is_network_required(
-                network=self.mgmt, cluster=self.cluster
-            )
+        assert ll_networks.is_network_required(
+            network=self.mgmt, cluster=self.cluster
         )
 
         testflow.step("Try to set management network to non required.")
-        self.assertTrue(
-            ll_networks.update_cluster_network(
-                positive=False, cluster=self.cluster, network=self.mgmt,
-                required="false"
-            )
+        assert ll_networks.update_cluster_network(
+            positive=False, cluster=self.cluster, network=self.mgmt,
+            required="false"
         )
 
 
@@ -79,12 +75,10 @@ class TestRequiredNetwork02(NetworkTest):
         testflow.step(
             "Set host NIC down and check that host is non-operational"
         )
-        self.assertTrue(
-            helper.set_nics_and_wait_for_host_status(
-                nics=[conf.HOST_0_NICS[1]],
-                nic_status=required_conf.NIC_STATE_DOWN,
-                host_status=conf.HOST_NONOPERATIONAL
-            )
+        assert helper.set_nics_and_wait_for_host_status(
+            nics=[conf.HOST_0_NICS[1]],
+            nic_status=required_conf.NIC_STATE_DOWN,
+            host_status=conf.HOST_NONOPERATIONAL
         )
 
 
@@ -112,12 +106,10 @@ class TestRequiredNetwork03(NetworkTest):
         testflow.step(
             "Set bond SLAVES DOWN and check that host is non-operational"
         )
-        self.assertTrue(
-            helper.set_nics_and_wait_for_host_status(
-                nics=conf.HOST_0_NICS[2:4],
-                nic_status=required_conf.NIC_STATE_DOWN,
-                host_status=conf.HOST_NONOPERATIONAL
-            )
+        assert helper.set_nics_and_wait_for_host_status(
+            nics=conf.HOST_0_NICS[2:4],
+            nic_status=required_conf.NIC_STATE_DOWN,
+            host_status=conf.HOST_NONOPERATIONAL
         )
 
     @polarion("RHEVM3-3745")
@@ -127,9 +119,7 @@ class TestRequiredNetwork03(NetworkTest):
         Check that host is operational
         """
         testflow.step("Set bond slaves up and check that host is operatinal")
-        self.assertTrue(
-            helper.set_nics_and_wait_for_host_status(
-                nics=conf.HOST_0_NICS[2:4],
-                nic_status=required_conf.NIC_STATE_UP
-            )
+        assert helper.set_nics_and_wait_for_host_status(
+            nics=conf.HOST_0_NICS[2:4],
+            nic_status=required_conf.NIC_STATE_UP
         )

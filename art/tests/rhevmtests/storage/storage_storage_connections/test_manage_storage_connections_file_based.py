@@ -179,8 +179,7 @@ class TestCasePosix(TestCase):
         should fail
         """
         logger.info("Changing storage connection on active storage domain")
-        self.assertFalse(
-            self.default_update(),
+        assert not self.default_update(), (
             "Changing the storage connection used by an active storage domain "
             "should fail"
         )
@@ -219,6 +218,7 @@ class TestCaseNFSAndGlusterFS(TestCasePosix):
 
 
 class TestCasePosixFS(TestCasePosix):
+
     @pytest.fixture(scope='function')
     def initializer_TestCasePosixFS(self, request, initializer_module):
         """
@@ -471,9 +471,9 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        self.assertTrue(ll_sd.deactivateStorageDomain(
+        assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
-        ), "Failed to deactivate storage domain %s" % self.sd_name)
+        ), "Failed to deactivate storage domain %s" % self.sd_name
 
         new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][1]
         new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
@@ -488,22 +488,21 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             conn_id=self.conn, address=new_address, path=new_path,
             type=self.storage, host=self.host
         )[1]
-        self.assertTrue(
-            result, "Failed to update storage domain's (%s) connection" %
-                    self.sd_name
+        assert result, "Failed to update storage domain's (%s) connection" % (
+            self.sd_name
         )
-        self.assertTrue(ll_sd.activateStorageDomain(
+        assert ll_sd.activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
-        ), "Failed to activate storage domain %s" % self.sd_name)
+        ), "Failed to activate storage domain %s" % self.sd_name
         logger.info(
             "Waiting for tasks before deactivating the storage domain"
         )
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        self.assertTrue(ll_sd.deactivateStorageDomain(
+        assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
-        ), "Failed to deactivate storage domain %s" % self.sd_name)
+        ), "Failed to deactivate storage domain %s" % self.sd_name
 
         new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][2]
         new_path = config.UNUSED_RESOURCE_PATH[self.storage][2]
@@ -521,11 +520,9 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             self.conn, address=new_address, path=new_path, type=self.storage,
             host=self.host
         )[1]
-        self.assertTrue(
-            result, "Failed to update storage domain's '%s' connection" %
-                    self.sd_name
+        assert result, "Failed to update storage domain's '%s' connection" % (
+            self.sd_name
         )
-        self.assertTrue(ll_sd.activateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name),
-            "Failed to activate storage domain %s" % self.sd_name
-        )
+        assert ll_sd.activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_name
+        ), "Failed to activate storage domain %s" % self.sd_name

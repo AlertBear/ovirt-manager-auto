@@ -260,7 +260,7 @@ class TestCase4907(BaseTestCase):
                 True, disk_alias, self.vm_name, active=True,
                 read_only=True
             )
-            self.assertTrue(status, "Failed to attach direct lun as read-only")
+            assert status, "Failed to attach direct lun as read-only"
             ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
             helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -311,9 +311,7 @@ class TestCase4908(DefaultEnvironment):
                 self.test_vm_name, disk
             )
             status = (not state) and (READ_ONLY in out or NOT_PERMITTED in out)
-            self.assertTrue(
-                status, "Write operation to read-only disk succeeded"
-            )
+            assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
     def tearDown(self):
@@ -381,8 +379,7 @@ class TestCase4909(DefaultEnvironment):
                 % (ro_disk.get_alias(), self.test_vm_name)
             )
             is_read_only = ro_disk.get_read_only()
-            self.assertTrue(
-                is_read_only,
+            assert is_read_only, (
                 "Disk %s is not visible to vm %s as read-only disk"
                 % (ro_disk.get_alias(), self.test_vm_name)
             )
@@ -400,10 +397,9 @@ class TestCase4909(DefaultEnvironment):
                 self.test_vm_name
             )
             is_read_only = ro_disk.get_read_only()
-            self.assertTrue(
-                is_read_only,
-                "Disk %s is not visible to vm %s as read-only disk"
-                % (ro_disk.get_alias(), self.test_vm_name)
+            assert is_read_only, (
+                "Disk %s is not visible to vm %s as read-only disk" %
+                (ro_disk.get_alias(), self.test_vm_name)
             )
 
     def tearDown(self):
@@ -460,17 +456,13 @@ class TestCase4910(BaseTestCase):
             status = ll_vms.updateDisk(
                 False, vmName=self.vm_name, alias=disk, read_only=True
             )
-            self.assertTrue(
-                status, "Succeeded to change RW disk %s to read-only" % disk
-            )
+            assert status, "Succeeded to change RW disk %s to read-only" % disk
             assert ll_vms.deactivateVmDisk(True, self.vm_name, disk)
 
             status = ll_vms.updateDisk(
                 True, vmName=self.vm_name, alias=disk, read_only=True
             )
-            self.assertTrue(
-                status, "Failed to change RW disk %s to read-only" % disk
-            )
+            assert status, "Failed to change RW disk %s to read-only" % disk
 
 
 @attr(tier=2)
@@ -535,9 +527,7 @@ class TestCase4913(DefaultEnvironment):
                 self.vm_name, disk
             )
             status = not state and (READ_ONLY in out or NOT_PERMITTED in out)
-            self.assertTrue(
-                status, "Write operation to read-only disk succeeded"
-            )
+            assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
         storage_domain_name = (
@@ -559,9 +549,8 @@ class TestCase4913(DefaultEnvironment):
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip
         )
-        self.assertTrue(
-            status, "Blocking connection from %s to %s failed"
-            % (self.host_ip, self.storage_domain_ip)
+        assert status, "Blocking connection from %s to %s failed" % (
+            (self.host_ip, self.storage_domain_ip)
         )
         if status:
             self.blocked = True
@@ -584,9 +573,7 @@ class TestCase4913(DefaultEnvironment):
             logger.info("Trying to write to read-only disk...")
             status = (not state) and ((READ_ONLY in out) or
                                       (NOT_PERMITTED in out))
-            self.assertTrue(
-                status, "Write operation to read-only disk succeeded"
-            )
+            assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
     def tearDown(self):
@@ -648,10 +635,9 @@ class TestCase4914(DefaultEnvironment):
                 % (ro_disk.get_alias(), self.vm_name)
             )
             is_read_only = ro_disk.get_read_only()
-            self.assertTrue(
-                is_read_only,
-                "Disk %s is not visible to vm %s as read-only disk"
-                % (ro_disk.get_alias(), self.vm_name)
+            assert is_read_only, (
+                "Disk %s is not visible to vm %s as read-only disk" %
+                (ro_disk.get_alias(), self.vm_name)
             )
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         assert ll_vms.waitForVMState(self.vm_name)
@@ -663,9 +649,9 @@ class TestCase4914(DefaultEnvironment):
                 'after migration', ro_disk.get_alias(), self.vm_name
             )
             is_read_only = ro_disk.get_read_only()
-            self.assertTrue(
-                is_read_only, "Disk %s is not visible to vm %s as Read "
-                "Only disk" % (ro_disk.get_alias(), self.vm_name)
+            assert is_read_only, (
+                "Disk %s is not visible to vm %s as Read Only disk" %
+                (ro_disk.get_alias(), self.vm_name)
             )
 
 
@@ -746,9 +732,7 @@ class TestCase4917(DefaultEnvironment):
         self.vm_exported = ll_vms.exportVm(
             True, self.vm_name, self.export_domain
         )
-        self.assertTrue(
-            self.vm_exported, "Couldn't export vm %s" % self.vm_name
-        )
+        assert self.vm_exported, "Couldn't export vm %s" % self.vm_name
         logger.info(
             "Importing vm %s as %s", self.vm_name, self.imported_vm_1
         )
@@ -893,8 +877,8 @@ class TestCase4919(DefaultSnapshotEnvironment):
         )
         self.create_snapshot = status
 
-        self.assertTrue(
-            status, "Failed to preview snapshot %s" % self.snapshot_description
+        assert status, "Failed to preview snapshot %s" % (
+            self.snapshot_description
         )
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
@@ -902,8 +886,7 @@ class TestCase4919(DefaultSnapshotEnvironment):
         )
         logger.info("Undoing snapshot %s", self.snapshot_description)
         status = ll_vms.undo_snapshot_preview(True, self.vm_name)
-        self.assertTrue(
-            status, "Failed to undo vm's snapshot %s" %
+        assert status, "Failed to undo vm's snapshot %s" % (
             self.snapshot_description
         )
         ll_vms.wait_for_vm_snapshots(
@@ -1024,9 +1007,8 @@ class TestCase4921(DefaultSnapshotEnvironment):
             timeout=REMOVE_SNAPSHOT_TIMEOUT,
         )
         self.snapshot_removed = status
-        self.assertTrue(
-            status, "Failed to remove snapshot %s from vm %s"
-            % (self.snapshot_description, self.vm_name)
+        assert status, "Failed to remove snapshot %s from vm %s" % (
+            (self.snapshot_description, self.vm_name)
         )
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
@@ -1076,7 +1058,7 @@ class TestCase4922(DefaultEnvironment):
         if status:
             self.cloned = True
 
-        self.assertTrue(status, "Failed to clone vm from snapshot")
+        assert status, "Failed to clone vm from snapshot"
         ll_vms.start_vms([self.cloned_vm_name], 1, wait_for_ip=True)
         ro_vm_disks = not_bootable(self.vm_name)
         for disk in ro_vm_disks:
@@ -1086,9 +1068,7 @@ class TestCase4922(DefaultEnvironment):
             logger.info("Trying to write to read-only disk %s", disk)
             status = (not state) and ((READ_ONLY in out) or
                                       (NOT_PERMITTED in out))
-            self.assertTrue(
-                status, "Write operation to read-only disk succeeded"
-            )
+            assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
     def tearDown(self):
@@ -1147,14 +1127,14 @@ class TestCase4923(DefaultEnvironment):
             True, self.cloned_vm_name, self.template_name, config.CLUSTER_NAME,
             storagedomain=self.storage_domains[0]
         )
-        self.assertTrue(self.cloned, "Failed to clone vm from template")
+        assert self.cloned, "Failed to clone vm from template"
 
         logger.info("Cloning vm from template as Thin copy")
         self.cloned = ll_vms.cloneVmFromTemplate(
             True, self.thin_cloned_vm_name, self.template_name,
             config.CLUSTER_NAME, clone=False
         )
-        self.assertTrue(self.cloned, "Failed to clone vm from template")
+        assert self.cloned, "Failed to clone vm from template"
         ll_vms.start_vms(self.cloned_vms, 2, wait_for_ip=True)
         for vm in self.cloned_vms:
             cloned_vm_disks = ll_vms.getVmDisks(vm)
@@ -1169,8 +1149,7 @@ class TestCase4923(DefaultEnvironment):
                     disk.get_alias(), vm
                 )
                 is_read_only = disk.get_read_only()
-                self.assertTrue(
-                    is_read_only,
+                assert is_read_only, (
                     "Disk %s is not visible to vm %s as read-only disk"
                     % (disk.get_alias(), vm)
                 )
@@ -1181,9 +1160,7 @@ class TestCase4923(DefaultEnvironment):
                 )
                 status = (not state) and ((READ_ONLY in out) or
                                           (NOT_PERMITTED in out))
-                self.assertTrue(
-                    status, "Write operation to read-only disk succeeded"
-                )
+                assert status, "Write operation to read-only disk succeeded"
                 logger.info("Failed to write to read-only disk")
 
     def tearDown(self):
@@ -1243,9 +1220,7 @@ class TestCase4924(DefaultEnvironment):
             )
             status = (not state) and (READ_ONLY in out) or (NOT_PERMITTED
                                                             in out)
-            self.assertTrue(
-                status, "Write operation to read-only disk succeeded"
-            )
+            assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
         for index, disk in enumerate(ro_vm_disks):
@@ -1260,10 +1235,9 @@ class TestCase4924(DefaultEnvironment):
             logger.info("disk %s moved", disk.get_alias())
             vm_disk = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
             is_disk_ro = vm_disk.get_read_only()
-            self.assertTrue(
-                is_disk_ro,
-                "Disk %s is not read-only after move "
-                "to different storage domain" % vm_disk.get_alias()
+            assert is_disk_ro, (
+                "Disk %s is not read-only after move to different storage "
+                "domain" % vm_disk.get_alias()
             )
             logger.info(
                 "Disk %s is read-only after move to different storage domain"
@@ -1314,8 +1288,7 @@ class TestCase4925(DefaultEnvironment):
             logger.info("disk %s moved", disk.get_alias())
             vm_disk = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
             is_disk_ro = vm_disk.get_read_only()
-            self.assertTrue(
-                is_disk_ro,
+            assert is_disk_ro, (
                 "Disk %s is not read-only after move "
                 "to different storage domain" % vm_disk.get_alias()
             )
@@ -1422,7 +1395,7 @@ class TestCase4930(DefaultEnvironment):
         status = ll_hosts.kill_vm_process(
             resource=host_resource, vm_name=self.vm_name
         )
-        self.assertTrue(status, "Failed to kill qemu process")
+        assert status, "Failed to kill qemu process"
         logger.info("qemu process killed")
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         ro_vm_disks = ll_vms.getVmDisks(self.vm_name)
@@ -1438,9 +1411,7 @@ class TestCase4930(DefaultEnvironment):
             )
             logger.info("Trying to write to read-only disk...")
             status = not state and (READ_ONLY in out or NOT_PERMITTED in out)
-            self.assertTrue(
-                status, "Write operation to read-only disk succeeded"
-            )
+            assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
 

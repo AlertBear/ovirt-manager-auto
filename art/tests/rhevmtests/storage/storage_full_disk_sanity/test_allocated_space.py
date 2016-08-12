@@ -86,10 +86,8 @@ class BaseCase(TestCase):
         logger.info('Waiting for disks to be OK')
         # Storage may take more than the default of 3 minutes to create a 7GB
         # Raw disk, increased the timeout to 5 minutes
-        self.assertTrue(
-            ll_disks.wait_for_disks_status(
-                self.disk_names, timeout=DISK_CREATION_TIMEOUT
-            )
+        assert ll_disks.wait_for_disks_status(
+            self.disk_names, timeout=DISK_CREATION_TIMEOUT
         )
 
     @classmethod
@@ -158,11 +156,10 @@ class BaseCase(TestCase):
             allocated_size = ll_sd.get_allocated_size(domain)
             logger.info('Allocated size for domain %s is %s', domain,
                         allocated_size)
-            self.assertEqual(allocated_size,
-                             self.expected_allocated_size[domain],
-                             'Allocated size is: %s, expected is %s'
-                             % (allocated_size,
-                                self.expected_allocated_size[domain]))
+            assert allocated_size == self.expected_allocated_size[domain], (
+                'Allocated size is: %s, expected is %s' %
+                (allocated_size, self.expected_allocated_size[domain])
+            )
             total_size = ll_sd.get_total_size(domain)
             logger.info('total size for domain %s is %s', domain, total_size)
 
@@ -174,10 +171,9 @@ class BaseCase(TestCase):
             # A SD size delta is necessary for a comparison between the actual
             # and expected sizes, since the API returns the SD size in GB as
             # an integer
-            self.assertTrue(
-                size_difference <= SD_SIZE_DELTA,
-                "Total size is: %s, expected is '%s'" % (
-                    str(total_size), str(self.expected_total_size[domain]))
+            assert size_difference <= SD_SIZE_DELTA, (
+                "Total size is: %s, expected is '%s'" %
+                (str(total_size), str(self.expected_total_size[domain]))
             )
 
 
@@ -211,7 +207,7 @@ class TestCase11536(BaseCase):
         """
         for name in self.disk_names:
             logger.info('Removing disk %s', name)
-            self.assertTrue(ll_disks.deleteDisk(True, name))
+            assert ll_disks.deleteDisk(True, name)
 
 
 @attr(tier=2)
@@ -245,7 +241,7 @@ class TestCase11537(BaseCase):
         for disk_name in self.disk_names:
             disk = ll_disks.get_disk_obj(disk_name)
             logger.info('Removing disk %s', disk.get_alias())
-            self.assertTrue(ll_disks.deleteDisk(True, disk.get_alias()))
+            assert ll_disks.deleteDisk(True, disk.get_alias())
             provisioned_size = disk.get_provisioned_size()
             self.expected_allocated_size[self.domains[0]] -= provisioned_size
 
@@ -280,10 +276,8 @@ class TestCase11547(BaseCase):
                 'Moving disk %s from domain %s to domain %s',
                 disk.get_alias(), self.domains[0], self.domains[1]
             )
-            self.assertTrue(
-                ll_disks.move_disk(
-                    disk_name=disk.get_alias(), target_domain=self.domains[1]
-                )
+            assert ll_disks.move_disk(
+                disk_name=disk.get_alias(), target_domain=self.domains[1]
             )
             provisioned_size = disk.get_provisioned_size()
             self.expected_allocated_size[self.domains[0]] -= provisioned_size
@@ -302,7 +296,7 @@ class TestCase11547(BaseCase):
         """
         for name in self.disk_names:
             logger.info('Removing disk %s', name)
-            self.assertTrue(ll_disks.deleteDisk(True, name))
+            assert ll_disks.deleteDisk(True, name)
 
 
 @attr(tier=2)
@@ -372,9 +366,10 @@ class TestCase11546(BaseCase):
         """
         Extend added domain
         """
-        self.assertTrue(len(config.EXTEND_LUNS) >= MIN_UNUSED_LUNS,
-                        "There are less than %s unused Extend LUNs, aborting "
-                        "test" % MIN_UNUSED_LUNS)
+        assert len(config.EXTEND_LUNS) >= MIN_UNUSED_LUNS, (
+            "There are less than %s unused Extend LUNs, aborting test" %
+            MIN_UNUSED_LUNS
+        )
         current_sd_size = ll_sd.get_total_size(self.new_sd_name)
         logger.info("The current SD size is: '%s'", current_sd_size)
 
@@ -412,8 +407,7 @@ class TestCase11546(BaseCase):
                     "'%s'", str(self.expected_total_size[self.new_sd_name]))
 
         # Assert size hasn't changed during the extend
-        self.assertEqual(
-            self.current_used_size[self.new_sd_name],
+        assert self.current_used_size[self.new_sd_name] == (
             ll_sd.get_used_size(self.new_sd_name)
         )
 
@@ -459,8 +453,9 @@ class TestCase11541(BaseCase):
                 'os_type': config.OS_TYPE,
                 'type': config.VM_TYPE,
             }
-            self.assertTrue(ll_vms.createVm(**vm_args),
-                            'unable to create vm %s' % vm_name)
+            assert ll_vms.createVm(**vm_args), 'unable to create vm %s' % (
+                vm_name
+            )
             self.expected_allocated_size[self.domains[0]] += VM_DISK_SIZE
 
         self.template_names = ['%s_template' % name for name in self.vms]
@@ -471,14 +466,13 @@ class TestCase11541(BaseCase):
         """
         for vm_name in self.vms:
             logger.info('Removing vm %s', vm_name)
-            self.assertTrue(
-                ll_vms.removeVm(True, vm_name),
-                'Unable to remove vm %s' % vm_name
+            assert ll_vms.removeVm(True, vm_name), 'Unable to remove vm %s' % (
+                vm_name
             )
 
         for template in self.template_names:
             logger.info('Removing template %s', template)
-            self.assertTrue(ll_templates.removeTemplate(True, template))
+            assert ll_templates.removeTemplate(True, template)
 
     def perform_action(self):
         """
@@ -494,8 +488,7 @@ class TestCase11541(BaseCase):
                 'vm': vm_name,
                 'storagedomains': self.domains[0]
             }
-            self.assertTrue(
-                ll_templates.createTemplate(**template_args),
+            assert ll_templates.createTemplate(**template_args), (
                 "Unable to create template %s" % template_name
             )
 
@@ -544,32 +537,28 @@ class TestCase11545(BaseCase):
         Start moving disk, then restart vdsm and wait for action to fail
         """
         logger.info('Starting to move disk %s', self.disk_name)
-        self.assertTrue(
-            ll_disks.move_disk(
-                self.disk_name, self.domains[0], self.domains[1], wait=False
-            )
+        assert ll_disks.move_disk(
+            self.disk_name, self.domains[0], self.domains[1], wait=False
         )
-        self.assertTrue(
-            ll_disks.wait_for_disks_status(
-                [self.disk_name], status=config.DISK_LOCKED
-            ), 'Disk {0} never moved to locked status'.format(self.disk_name)
-        )
+        assert ll_disks.wait_for_disks_status(
+            [self.disk_name], status=config.DISK_LOCKED
+        ), 'Disk {0} never moved to locked status'.format(self.disk_name)
 
         self.spm = ll_hosts.getSPMHost(config.HOSTS)
         self.spm_ip = ll_hosts.getHostIP(self.spm)
         logger.info('Restarting vdsm on host %s [%s]', self.spm, self.spm_ip)
-        self.assertTrue(restartVdsmd(self.spm_ip, config.HOSTS_PW),
-                        'Unable to restart vdsm on host %s' % self.spm)
+        assert restartVdsmd(self.spm_ip, config.HOSTS_PW), (
+            'Unable to restart vdsm on host %s' % self.spm
+        )
 
         logger.info('Waiting for host to come back up')
-        self.assertTrue(
-            ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 60, 5),
+        assert ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 60, 5), (
             'SPM was not elected on datacenter %s' % config.DATA_CENTER_NAME
         )
 
         logger.info('Waiting for disk %s to be OK after rollback',
                     self.disk_name)
-        self.assertTrue(ll_disks.wait_for_disks_status([self.disk_name]))
+        assert ll_disks.wait_for_disks_status([self.disk_name])
 
     def setUp(self):
         """

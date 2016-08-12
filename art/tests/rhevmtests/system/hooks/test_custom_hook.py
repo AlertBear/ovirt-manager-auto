@@ -142,7 +142,7 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
     def test_after_vdsm_stop(self):
         """ test_after_vdsm_stop """
         hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
-        self.assertTrue(self.check_for_file(positive=True))
+        assert self.check_for_file(positive=True)
 
 
 @attr(tier=2)
@@ -155,10 +155,10 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
     def test_before_vdsm_start(self):
         """ test_before_vdsm_start """
         hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
-        self.assertFalse(self.check_for_file(positive=False))
+        assert not self.check_for_file(positive=False)
         hosts.start_vdsm(config.HOSTS[0], config.HOSTS_PW,
                          config.DC_NAME[0])
-        self.assertTrue(self.check_for_file(positive=True))
+        assert self.check_for_file(positive=True)
 
 
 @attr(tier=2)
@@ -170,18 +170,16 @@ class TestCaseBeforeVmStart(TestCaseVm):
     @polarion("RHEVM3-8484")
     def test_before_vm_start(self):
         """ Check for file created by before_vm_start hook """
-        self.assertTrue(vms.stopVm(True, vm=config.HOOKS_VM_NAME))
-        self.assertFalse(self.check_for_file(positive=False))
-        self.assertTrue(
-            vms.startVm(
-                True,
-                vm=config.HOOKS_VM_NAME,
-                wait_for_status=config.VM_UP,
-                wait_for_ip=True,
-                placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
-            )
+        assert vms.stopVm(True, vm=config.HOOKS_VM_NAME)
+        assert not self.check_for_file(positive=False)
+        assert vms.startVm(
+            True,
+            vm=config.HOOKS_VM_NAME,
+            wait_for_status=config.VM_UP,
+            wait_for_ip=True,
+            placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
         )
-        self.assertTrue(self.check_for_file(positive=True))
+        assert self.check_for_file(positive=True)
 
 
 @attr(tier=2)
@@ -193,7 +191,5 @@ class TestCaseAfterVmPause(TestCaseVm):
     @polarion("RHEVM3-8485")
     def test_after_vm_pause(self):
         """ Check for file created by after_vm_pause hook """
-        self.assertTrue(
-            vms.suspendVm(True, vm=config.HOOKS_VM_NAME, wait=True)
-        )
-        self.assertTrue(self.check_for_file(positive=True))
+        assert vms.suspendVm(True, vm=config.HOOKS_VM_NAME, wait=True)
+        assert self.check_for_file(positive=True)

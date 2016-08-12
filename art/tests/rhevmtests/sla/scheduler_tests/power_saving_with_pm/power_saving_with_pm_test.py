@@ -255,9 +255,7 @@ class TestSPMHostNotKilledByPolicy(PowerSavingWithPM):
         """
         logger.info("Wait until one host turned off")
         result = self._check_hosts_num_with_status(1, conf.HOST_DOWN)
-        self.assertTrue(
-            self._check_host_status(conf.HOSTS[0], conf.HOST_UP) and result
-        )
+        assert self._check_host_status(conf.HOSTS[0], conf.HOST_UP) and result
 
 
 class TestHostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
@@ -284,11 +282,9 @@ class TestHostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
         """
         logger.info("Wait until one host turned off")
         result = self._check_hosts_num_with_status(1, conf.HOST_DOWN)
-        self.assertTrue(
-            self._check_host_status(
-                conf.HOSTS[2], conf.HOST_DOWN
-            ) and result
-        )
+        assert self._check_host_status(
+            conf.HOSTS[2], conf.HOST_DOWN
+        ) and result
 
 
 class TestHostStartedByPowerManagement(PowerSavingWithPM):
@@ -315,13 +311,11 @@ class TestHostStartedByPowerManagement(PowerSavingWithPM):
         """
         logger.info("Wait until one host turned off")
         result = self._check_hosts_num_with_status(1, conf.HOST_DOWN)
-        self.assertTrue(
-            self._check_host_status(
-                conf.HOSTS[2], conf.HOST_DOWN
-            ) and result
-        )
+        assert self._check_host_status(
+            conf.HOSTS[2], conf.HOST_DOWN
+        ) and result
         self._update_hosts_in_reserve(2)
-        self.assertTrue(self._check_hosts_num_with_status(3, conf.HOST_UP))
+        assert self._check_hosts_num_with_status(3, conf.HOST_UP)
 
 
 class TestCheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
@@ -348,9 +342,7 @@ class TestCheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
         """
         logger.info("Wait until one host turned off")
         result = self._check_hosts_num_with_status(1, conf.HOST_DOWN)
-        self.assertTrue(
-            self._check_host_status(conf.HOSTS[1], conf.HOST_UP) and result
-        )
+        assert self._check_host_status(conf.HOSTS[1], conf.HOST_UP) and result
 
     @classmethod
     def teardown_class(cls):
@@ -378,10 +370,9 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPM):
         because no hosts in reserve remain.
         """
         logger.info("Wait until one host turned off")
-        self.assertTrue(
-            self._check_hosts_num_with_status(1, conf.HOST_DOWN),
-            "Still no host in status DOWN"
-        )
+        assert self._check_hosts_num_with_status(
+            1, conf.HOST_DOWN
+        ), "Still no host in status DOWN"
         logger.info("Check what host has status DOWN")
         host_status = ll_hosts.get_host_status(conf.HOSTS[1]) == conf.HOST_UP
         host_up = conf.HOSTS[1] if host_status else conf.HOSTS[2]
@@ -389,15 +380,12 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPM):
         for vm_name, vm_params in self.vm_host_d.iteritems():
             if vm_params["host"] == host_up:
                 logger.info("Run vm %s on host %s", vm_name, vm_params["host"])
-                self.assertTrue(
-                    ll_vms.runVmOnce(
-                        positive=True, vm=vm_name, host=vm_params["host"]
-                    ),
-                    "Failed to run vm %s" % vm_name
-                )
+                assert ll_vms.runVmOnce(
+                    positive=True, vm=vm_name, host=vm_params["host"]
+                ), "Failed to run vm %s" % vm_name
                 additional_vm = vm_name
                 break
-        self.assertTrue(self._check_hosts_num_with_status(3, conf.HOST_UP))
+        assert self._check_hosts_num_with_status(3, conf.HOST_UP)
         logger.info("Stop additional vm %s", additional_vm)
         ll_vms.stop_vms_safely([additional_vm])
 
@@ -417,13 +405,11 @@ class TestNoExcessHosts(PowerSavingWithPM):
         engine not power off host without vm, because it must have one host in
         reserve.
         """
-        self.assertFalse(
-            self._check_hosts_num_with_status(
-                num_of_hosts=3,
-                hosts_state=conf.HOST_UP,
-                negative=True,
-                timeout=conf.SHORT_BALANCE_TIMEOUT
-            )
+        assert not self._check_hosts_num_with_status(
+            num_of_hosts=3,
+            hosts_state=conf.HOST_UP,
+            negative=True,
+            timeout=conf.SHORT_BALANCE_TIMEOUT
         )
 
 
@@ -450,11 +436,9 @@ class TestHostStoppedUnexpectedly(PowerSavingWithPM):
         """
         logger.info("Wait until one host turned off")
         result = self._check_hosts_num_with_status(1, conf.HOST_DOWN)
-        self.assertTrue(
-            self._check_host_status(
-                conf.HOSTS[2], conf.HOST_DOWN
-            ) and result
-        )
+        assert self._check_host_status(
+            conf.HOSTS[2], conf.HOST_DOWN
+        ) and result
         logger.info("Stop network on host %s", conf.HOSTS[1])
         try:
             conf.VDS_HOSTS[1].service('network').stop()
@@ -463,18 +447,13 @@ class TestHostStoppedUnexpectedly(PowerSavingWithPM):
         logger.info(
             "Check if host %s in non-responsive state", conf.HOSTS[1]
         )
-        self.assertTrue(
-            ll_hosts.waitForHostsStates(
-                True,
-                conf.HOSTS[1],
-                states=conf.HOST_NONRESPONSIVE
-            ),
-            "Host %s not in non-responsive state" % conf.HOSTS[1]
-        )
+        assert ll_hosts.waitForHostsStates(
+            True,
+            conf.HOSTS[1],
+            states=conf.HOST_NONRESPONSIVE
+        ), "Host %s not in non-responsive state" % conf.HOSTS[1]
         logger.info("Wait until another host up")
-        self.assertTrue(
-            self._check_hosts_num_with_status(2, conf.HOST_UP)
-        )
+        assert self._check_hosts_num_with_status(2, conf.HOST_UP)
 
     @classmethod
     def teardown_class(cls):
@@ -519,11 +498,9 @@ class TestHostStoppedByUser(PowerSavingWithPM):
         Positive: User manually stop host, and this host must not be started
         by engine, also when no reserve hosts.
         """
-        self.assertFalse(
-            self._check_hosts_num_with_status(
-                num_of_hosts=1,
-                hosts_state=conf.HOST_DOWN,
-                negative=True,
-                timeout=conf.SHORT_BALANCE_TIMEOUT
-            )
+        assert not self._check_hosts_num_with_status(
+            num_of_hosts=1,
+            hosts_state=conf.HOST_DOWN,
+            negative=True,
+            timeout=conf.SHORT_BALANCE_TIMEOUT
         )

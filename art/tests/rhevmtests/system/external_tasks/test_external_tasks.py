@@ -49,7 +49,7 @@ class AddJobWithCorrectDescription(AddingJob):
         '''
         Adding job with correct description
         '''
-        self.assertTrue(self._add_job(config.EXTERNAL_JOB_DESCRIPTION))
+        assert self._add_job(config.EXTERNAL_JOB_DESCRIPTION)
         logger.info("Job was created")
 
     @classmethod
@@ -79,7 +79,7 @@ class AddJobWithEmptyDescription(AddingJob):
         '''
         Adding job with empty description
         '''
-        self.assertFalse(self._add_job(''))
+        assert not self._add_job('')
         logger.info("Job creation was failed")
 
 
@@ -148,7 +148,7 @@ class AddStepWithCorrectParameters(AddingStep):
         '''
         Adding step with correct parameters under given job
         '''
-        self.assertTrue(self._add_step(ENUMS['step_validating']))
+        assert self._add_step(ENUMS['step_validating'])
         logger.info("Step exist")
 
 
@@ -164,7 +164,7 @@ class AddStepWithIncorrectType(AddingStep):
         '''
         Adding step with incorrect type under given job
         '''
-        self.assertFalse(self._add_step('some_string'))
+        assert not self._add_step('some_string')
         logger.info("Step adding was failed")
 
 
@@ -220,7 +220,7 @@ class AddSubStepWithCorrectParameters(TestCase):
                                                       step_description)
         status = (step_obj.get_parent_step().get_id() ==
                   parent_step_obj.get_id())
-        self.assertTrue(status)
+        assert status
         logger.info("Step exist")
 
     @classmethod
@@ -264,7 +264,7 @@ class EndJobWithCorrectDescription(TestCase):
         status = job_api.end_job(config.EXTERNAL_JOB_DESCRIPTION,
                                  ENUMS['job_started'],
                                  ENUMS['job_finished'])
-        self.assertTrue(status)
+        assert status
         logger.info("Ending job %s success", config.EXTERNAL_JOB_DESCRIPTION)
 
 
@@ -304,7 +304,7 @@ class EndStepWithCorrectDescription(TestCase):
         status = job_api.end_step(config.EXTERNAL_JOB_DESCRIPTION,
                                   ENUMS['job_started'],
                                   config.EXTERNAL_STEP_DESCRIPTION, True)
-        self.assertTrue(status)
+        assert status
         logger.info("Ending step %s success", config.EXTERNAL_STEP_DESCRIPTION)
 
     @classmethod

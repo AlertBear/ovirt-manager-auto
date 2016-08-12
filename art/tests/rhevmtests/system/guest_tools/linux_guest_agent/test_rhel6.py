@@ -86,17 +86,14 @@ class RHEL664bGATest(RHEL6GATest):
             '|', 'grep', 'Uid',
             '|', 'grep', '660'
         ])
-        self.assertTrue(
-            not rc, "Failed to check virtio ports: %s" % err
-        )
+        assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
             rc, out, err = self.machine.executor().run_cmd([
                 'tuned-adm', 'list', '|',
                 'grep', '^Current', '|',
                 'grep', '-i', 'virtual',
             ])
-            self.assertTrue(
-                not rc,
+            assert not rc, (
                 "Tuned profile isn't virtual. It's '%s'. Err: %s" % (out, err)
             )
 
@@ -152,17 +149,14 @@ class RHEL632bGATest(RHEL6GATest):
             '|', 'grep', 'Uid',
             '|', 'grep', '660'
         ])
-        self.assertTrue(
-            not rc, "Failed to check virtio ports: %s" % err
-        )
+        assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
             rc, out, err = self.machine.executor().run_cmd([
                 'tuned-adm', 'list', '|',
                 'grep', '^Current', '|',
                 'grep', '-i', 'virtual',
             ])
-            self.assertTrue(
-                not rc,
+            assert not rc, (
                 "Tuned profile isn't virtual. It's '%s'. Err: %s" % (out, err)
             )
 

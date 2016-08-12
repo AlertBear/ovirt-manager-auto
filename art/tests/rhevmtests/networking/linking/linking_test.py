@@ -47,13 +47,9 @@ class TestLinkedCase01(NetworkTest):
         testflow.step(
             "Check the default values for the Plugged/Linked options on VNIC"
         )
-        self.assertTrue(
-            ll_vms.get_vm_nic_linked(vm=self.vm, nic=self.nic1)
-        )
+        assert ll_vms.get_vm_nic_linked(vm=self.vm, nic=self.nic1)
 
-        self.assertTrue(
-            ll_vms.get_vm_nic_plugged(vm=self.vm, nic=self.nic1)
-        )
+        assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=self.nic1)
 
 
 @attr(tier=2)
@@ -83,18 +79,13 @@ class TestLinkedCase02(NetworkTest):
         """
         testflow.step("Check linked state of both vNICs")
         for nic, state in zip(self.nic_list, self.link_values):
-            self.assertTrue(
-                ll_vms.get_vm_nic_linked(vm=self.vm, nic=nic, positive=state)
+            assert ll_vms.get_vm_nic_linked(
+                vm=self.vm, nic=nic, positive=state)
+            assert ll_vms.updateNic(
+                positive=True, vm=self.vm, nic=nic, linked=not state
             )
-            self.assertTrue(
-                ll_vms.updateNic(
-                    positive=True, vm=self.vm, nic=nic, linked=not state
-                )
-            )
-            self.assertTrue(
-                ll_vms.get_vm_nic_linked(
-                    vm=self.vm, nic=nic, positive=not state
-                )
+            assert ll_vms.get_vm_nic_linked(
+                vm=self.vm, nic=nic, positive=not state
             )
         testflow.step(
             "Update vNICs with opposite link states and check the change "
@@ -102,27 +93,21 @@ class TestLinkedCase02(NetworkTest):
             "names and unplug them"
         )
         for nic_name in self.nic_list:
-            self.assertTrue(
-                ll_vms.updateNic(
-                    positive=True, vm=self.vm, nic=nic_name, network=None
-                )
+            assert ll_vms.updateNic(
+                positive=True, vm=self.vm, nic=nic_name, network=None
             )
 
         for nic, net in zip(self.nic_list, self.net_list):
-            self.assertTrue(
-                ll_vms.updateNic(
-                    positive=True, vm=self.vm, nic=nic, network=net,
-                    vnic_profile=net, plugged=False
-                )
+            assert ll_vms.updateNic(
+                positive=True, vm=self.vm, nic=nic, network=net,
+                vnic_profile=net, plugged=False
             )
 
         for nic in self.nic_list:
-            self.assertTrue(ll_vms.is_vm_nic_have_profile(
+            assert ll_vms.is_vm_nic_have_profile(
                 vm=self.vm, nic=nic)
-            )
-            self.assertTrue(
-                ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic, positive=False)
-            )
+            assert ll_vms.get_vm_nic_plugged(
+                vm=self.vm, nic=nic, positive=False)
 
 
 @attr(tier=2)
@@ -145,7 +130,7 @@ class TestLinkedCase03(NetworkTest):
         Try to start VM when there is no network on the host
         """
         testflow.step("Try to start VM when there is no network on the host")
-        self.assertTrue(ll_vms.startVm(positive=False, vm=self.vm))
+        assert ll_vms.startVm(positive=False, vm=self.vm)
 
 
 @attr(tier=2)
@@ -169,17 +154,13 @@ class TestLinkedCase04(NetworkTest):
         testflow.step(
             "Editing plugged VNIC with port mirroring enabled on running VM"
         )
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=False, vm=self.vm, nic=self.nic1, linked=False
-            )
+        assert ll_vms.updateNic(
+            positive=False, vm=self.vm, nic=self.nic1, linked=False
         )
 
         for plugged in (False, True):
-            self.assertTrue(
-                ll_vms.updateNic(
-                    positive=True, vm=self.vm, nic=self.nic1, plugged=plugged
-                )
+            assert ll_vms.updateNic(
+                positive=True, vm=self.vm, nic=self.nic1, plugged=plugged
             )
 
 
@@ -209,10 +190,8 @@ class TestLinkedCase05(NetworkTest):
         """
         testflow.step("Check network parameters changes for vNICs")
         for nic, plug_state in zip(self.nic_list, self.plug_states):
-            self.assertTrue(
-                ll_vms.get_vm_nic_plugged(
-                    vm=self.vm, nic=nic, positive=plug_state
-                )
+            assert ll_vms.get_vm_nic_plugged(
+                vm=self.vm, nic=nic, positive=plug_state
             )
 
         plug_states = [False, True]
@@ -220,42 +199,31 @@ class TestLinkedCase05(NetworkTest):
         for nic, name, plug_state in zip(
             self.nic_list, self.nic_names, plug_states
         ):
-            self.assertTrue(
-                ll_vms.updateNic(
-                    positive=True, vm=self.vm, nic=nic, name=name,
-                    network=self.net, vnic_profile=self.net, plugged=plug_state
-                )
+            assert ll_vms.updateNic(
+                positive=True, vm=self.vm, nic=nic, name=name,
+                network=self.net, vnic_profile=self.net, plugged=plug_state
             )
 
         for nic, plug_state in zip(self.nic_names, plug_states):
-            self.assertTrue(
-                ll_vms.get_vm_nic_plugged(
-                    vm=self.vm, nic=nic, positive=plug_state
-                )
+            assert ll_vms.get_vm_nic_plugged(
+                vm=self.vm, nic=nic, positive=plug_state
             )
 
         for nic_name in self.nic_names:
-            self.assertTrue(
-                ll_vms.updateNic(
-                    positive=True, vm=self.vm, nic=nic_name, network=self.net,
-                    vnic_profile=self.net, plugged=False
-                )
+            assert ll_vms.updateNic(
+                positive=True, vm=self.vm, nic=nic_name, network=self.net,
+                vnic_profile=self.net, plugged=False
             )
 
         for nic_name in self.nic_names:
-            self.assertTrue(ll_vms.is_vm_nic_have_profile(
+            assert ll_vms.is_vm_nic_have_profile(
                 vm=self.vm, nic=nic_name)
-            )
-            self.assertFalse(
-                ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic_name)
-            )
+            assert not ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic_name)
 
         testflow.step("Remove and return network from the VNIC")
         for nic_name, orig_nic in zip(self.nic_names, self.nic_list):
-            self.assertTrue(
-                ll_vms.updateNic(
-                    positive=True, vm=self.vm, nic=nic_name, name=orig_nic
-                )
+            assert ll_vms.updateNic(
+                positive=True, vm=self.vm, nic=nic_name, name=orig_nic
             )
 
 
@@ -283,54 +251,40 @@ class TestLinkedCase06(NetworkTest):
         Change plugged, network and name at once on VNIC of VM
         """
         testflow.step("Change plugged, network and name at once on VNIC of VM")
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=self.nic1, name=self.name,
-                network=self.net2, vnic_profile=self.net2, plugged=False
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.nic1, name=self.name,
+            network=self.net2, vnic_profile=self.net2, plugged=False
         )
 
-        self.assertFalse(ll_vms.get_vm_nic_plugged(vm=self.vm, nic=self.name))
+        assert not ll_vms.get_vm_nic_plugged(vm=self.vm, nic=self.name)
 
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=self.name, name=self.nic1,
-                network=self.net1, vnic_profile=self.net1, linked=False
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.name, name=self.nic1,
+            network=self.net1, vnic_profile=self.net1, linked=False
         )
 
-        self.assertFalse(ll_vms.get_vm_nic_linked(vm=self.vm, nic=self.nic1))
+        assert not ll_vms.get_vm_nic_linked(vm=self.vm, nic=self.nic1)
 
-        self.assertTrue(
-            net_help.run_vm_once_specific_host(
-                vm=self.vm, host=conf.HOSTS[0], wait_for_up_status=True
-            )
+        assert net_help.run_vm_once_specific_host(
+            vm=self.vm, host=conf.HOSTS[0], wait_for_up_status=True
         )
 
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=self.nic1, linked=True,
-                plugged=True, network=self.net2, vnic_profile=self.vprofile
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.nic1, linked=True,
+            plugged=True, network=self.net2, vnic_profile=self.vprofile
         )
 
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=False, vm=self.vm, nic=self.nic1,
-                interface=self.rtl_int, mac_address=self.mac_addr
-            )
+        assert ll_vms.updateNic(
+            positive=False, vm=self.vm, nic=self.nic1,
+            interface=self.rtl_int, mac_address=self.mac_addr
         )
 
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=self.nic1, network=self.net2,
-                vnic_profile=self.net2, linked=False, plugged=False
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.nic1, network=self.net2,
+            vnic_profile=self.net2, linked=False, plugged=False
         )
 
-        self.assertTrue(
-            ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=self.nic1,
-                interface=self.rtl_int, mac_address=self.mac_addr
-            )
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.nic1,
+            interface=self.rtl_int, mac_address=self.mac_addr
         )

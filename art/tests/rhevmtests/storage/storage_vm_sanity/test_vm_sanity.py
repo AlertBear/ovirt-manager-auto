@@ -144,67 +144,60 @@ class TestCase11834(TestCase):
                 root_name_prefix='snap',
                 dir_cnt=config.DATA_DIR_CNT,
                 file_cnt=config.DATA_FILE_CNT)
-            self.assertTrue(success, "Preparing data %d failed!" % i)
+            assert success, "Preparing data %d failed!" % i
             self.data_for_vm.append(result['data_path'])
 
     def _copy_data_to_vm_and_make_snapshot(self, source_path, snapshot_name):
         logger.info("Copying data from %s to %s", source_path, self.vm_name)
         vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        self.assertTrue(
-            resource_utils.copyDataToVm(
-                ip=vm_ip, user=config.VM_LINUX_USER,
-                password=config.VM_LINUX_PASSWORD, osType='linux',
-                src=source_path, dest=config.DEST_DIR
-            ), "Copying data to vm %s failed" % self.vms_ip_address
-        )
+        assert resource_utils.copyDataToVm(
+            ip=vm_ip, user=config.VM_LINUX_USER,
+            password=config.VM_LINUX_PASSWORD, osType='linux',
+            src=source_path, dest=config.DEST_DIR
+        ), "Copying data to vm %s failed" % self.vms_ip_address
         logger.info("Verify that all data were really copied")
         self._verify_data_on_vm([source_path])
         logger.info("Stopping VM %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.shutdownVm(True, self.vm_name),
-            "Stopping vm %s failed!" % self.vm_name)
+        assert ll_vms.shutdownVm(
+            True, self.vm_name
+        ), "Stopping vm %s failed!" % self.vm_name
         ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
         logger.info("Creating snapshot %s", snapshot_name)
-        self.assertTrue(
-            ll_vms.addSnapshot(True, self.vm_name, snapshot_name),
-            "Creating snapshot of vm %s failed!" % self.vm_name)
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, snapshot_name
+        ), "Creating snapshot of vm %s failed!" % self.vm_name
         logger.info("Starting VM %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.startVm(
-                True, self.vm_name, wait_for_status='up', wait_for_ip=True),
-            "Starting vm %s failed!" % self.vm_name)
+        assert ll_vms.startVm(
+            True, self.vm_name, wait_for_status='up', wait_for_ip=True
+        ), "Starting vm %s failed!" % self.vm_name
 
     def _verify_data_on_vm(self, paths):
         for path in paths:
             logger.info("Verify data from %s in VM %s", path, self.vm_name)
             vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-            self.assertTrue(
-                resource_utils.verifyDataOnVm(
-                    positive=True, ip=vm_ip,
-                    user=config.VM_LINUX_USER,
-                    password=config.VM_LINUX_PASSWORD, osType='linux',
-                    dest=config.DEST_DIR, destToCompare=path),
-                "Data verification of %s on %s failed!" % (path, self.vm_name))
+            assert resource_utils.verifyDataOnVm(
+                positive=True, ip=vm_ip,
+                user=config.VM_LINUX_USER,
+                password=config.VM_LINUX_PASSWORD, osType='linux',
+                dest=config.DEST_DIR, destToCompare=path
+            ), "Data verification of %s on %s failed!" % (path, self.vm_name)
 
     def _remove_snapshot_verify_data(self, snapshot_name, expected_data):
         logger.info("Stopping VM %s", self.vm_name)
-        self.assertTrue(
-            ll_vms.shutdownVm(True, vm=self.vm_name),
-            "Stopping vm %s failed!" % self.vm_name)
+        assert ll_vms.shutdownVm(
+            True, vm=self.vm_name
+        ), "Stopping vm %s failed!" % self.vm_name
         ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
         logger.info("Removing snapshot %s", snapshot_name)
-        self.assertTrue(
-            ll_vms.removeSnapshot(
-                True, vm=self.vm_name, description=snapshot_name,
-                timeout=2100
-            ), "Removing snapshot %s failed!" % snapshot_name
-        )
+        assert ll_vms.removeSnapshot(
+            True, vm=self.vm_name, description=snapshot_name,
+            timeout=2100
+        ), "Removing snapshot %s failed!" % snapshot_name
         logger.info(
             "Starting VM %s and waiting for status 'up'", self.vm_name)
-        self.assertTrue(
-            ll_vms.startVm(
-                True, vm=self.vm_name, wait_for_status='up', wait_for_ip=True),
-            "Starting vm %s failed!" % self.vm_name)
+        assert ll_vms.startVm(
+            True, vm=self.vm_name, wait_for_status='up', wait_for_ip=True
+        ), "Starting vm %s failed!" % self.vm_name
         logger.info("Verifying data on VM %s", self.vm_name)
         self._verify_data_on_vm(expected_data)
 
@@ -320,20 +313,18 @@ class TestCase11586(TestCase):
     def _make_snapshots(self):
         for snapshot in self.snapshots:
             logger.info("Creating snapshot %s", snapshot)
-            self.assertTrue(
-                ll_vms.addSnapshot(True, self.vm_name, description=snapshot),
-                "Creating snapshot of vm %s failed!" % self.vm_name)
+            assert ll_vms.addSnapshot(
+                True, self.vm_name, description=snapshot
+            ), "Creating snapshot of vm %s failed!" % self.vm_name
             logger.info("successfully created snapshot %s", snapshot)
 
     def _remove_snapshots(self):
         for snapshot in self.snapshots:
             logger.info("Removing snapshot %s", snapshot)
-            self.assertTrue(
-                ll_vms.removeSnapshot(
-                    True, vm=self.vm_name, description=snapshot,
-                    timeout=2100
-                ), "Removing snapshot %s failed!" % snapshot
-            )
+            assert ll_vms.removeSnapshot(
+                True, vm=self.vm_name, description=snapshot,
+                timeout=2100
+            ), "Removing snapshot %s failed!" % snapshot
 
     @polarion("RHEVM3-11586")
     @bz({'1185782': {}})
@@ -373,10 +364,9 @@ class TestCase11586(TestCase):
         )
 
         # VDSM allocates more 1 extent for metadata
-        self.assertTrue(
-            self.disk_size_after - self.disk_size_before <= config.EXTENT_SIZE,
-            "Failed to auto shrink qcow volumes on merge of block volumes"
-        )
+        assert (
+            self.disk_size_after - self.disk_size_before <= config.EXTENT_SIZE
+        ), "Failed to auto shrink qcow volumes on merge of block volumes"
 
 
 @attr(tier=2)

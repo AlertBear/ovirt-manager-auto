@@ -44,11 +44,9 @@ class CPUHotPlugClass(common.VirtTest):
             "Updating number of cpu sockets on vm: %s to %d",
             config.CPU_HOTPLUG_VM, 2
         )
-        self.assertTrue(
-            ll_vms.updateVm(True, config.CPU_HOTPLUG_VM, cpu_socket=2)
-        )
+        assert ll_vms.updateVm(True, config.CPU_HOTPLUG_VM, cpu_socket=2)
         testflow.step("migrating vm: %s", config.CPU_HOTPLUG_VM)
-        self.assertTrue(ll_vms.migrateVm(True, config.CPU_HOTPLUG_VM))
+        assert ll_vms.migrateVm(True, config.CPU_HOTPLUG_VM)
         vm_resource = helpers.get_host_resource(
             hl_vms.get_vm_ip(config.CPU_HOTPLUG_VM), config.VMS_LINUX_PW
         )
@@ -56,8 +54,7 @@ class CPUHotPlugClass(common.VirtTest):
             "Verifying that after migration vm: %s has %d cpus",
             config.CPU_HOTPLUG_VM, 2
         )
-        self.assertEqual(
-            helper.get_number_of_cores(vm_resource), 2,
+        assert helper.get_number_of_cores(vm_resource) == 2, (
             "The Cores number should be 2 and not: %s" %
             ll_vms.get_vm_cores(config.CPU_HOTPLUG_VM)
         )
@@ -72,9 +69,7 @@ class CPUHotPlugClass(common.VirtTest):
         testflow.step(
             "Updating cpu sockets on vm: %s to %d", config.CPU_HOTPLUG_VM, 4
         )
-        self.assertTrue(
-            ll_vms.updateVm(True, config.CPU_HOTPLUG_VM, cpu_socket=4)
-        )
+        assert ll_vms.updateVm(True, config.CPU_HOTPLUG_VM, cpu_socket=4)
         vm_resource = helpers.get_host_resource(
             hl_vms.get_vm_ip(config.CPU_HOTPLUG_VM), config.VMS_LINUX_PW
         )
@@ -83,8 +78,7 @@ class CPUHotPlugClass(common.VirtTest):
             "Verifying that after hotplug vm: %s has %d cpus",
             config.CPU_HOTPLUG_VM, 8
         )
-        self.assertEqual(
-            working_cores, 8,
+        assert working_cores == 8, (
             "The number of working cores: %s isn't correct" % working_cores
         )
 
@@ -106,10 +100,8 @@ class CPUHotPlugClass(common.VirtTest):
             "Updating number of sockets on vm: %s to %d",
             config.CPU_HOTPLUG_VM, cpu_number
         )
-        self.assertTrue(
-            ll_vms.updateVm(
-                True, config.CPU_HOTPLUG_VM, cpu_cores=1, cpu_socket=cpu_number
-            )
+        assert ll_vms.updateVm(
+            True, config.CPU_HOTPLUG_VM, cpu_cores=1, cpu_socket=cpu_number
         )
 
     @polarion("RHEVM3-9629")
@@ -126,10 +118,9 @@ class CPUHotPlugClass(common.VirtTest):
         testflow.step(
             "Attempting to reduce number of cpu cores to 1 - expecting to fail"
         )
-        self.assertFalse(
-            ll_vms.updateVm(True, config.CPU_HOTPLUG_VM, cpu_socket=1),
-            "The action of remove cores didn't failed"
-        )
+        assert not ll_vms.updateVm(
+            True, config.CPU_HOTPLUG_VM, cpu_socket=1
+        ), "The action of remove cores didn't failed"
 
     @polarion("RHEVM3-9637")
     @pytest.mark.usefixtures(
@@ -140,10 +131,9 @@ class CPUHotPlugClass(common.VirtTest):
         Test hot plug while migrating VM
         """
         testflow.step("Update VM %s cpu socket to 2", config.CPU_HOTPLUG_VM)
-        self.assertFalse(
-            ll_vms.updateVm(True, config.CPU_HOTPLUG_VM, cpu_socket=2),
-            "hot plug  worked while migrating VM "
-        )
+        assert not ll_vms.updateVm(
+            True, config.CPU_HOTPLUG_VM, cpu_socket=2
+        ), "hot plug  worked while migrating VM "
 
     @polarion("RHEVM3-9630")
     @pytest.mark.usefixtures(
@@ -159,8 +149,6 @@ class CPUHotPlugClass(common.VirtTest):
             "Update VM %s cpu socket to %d",
             config.CPU_HOTPLUG_VM, config.CPU_TOPOLOGY[0]
         )
-        self.assertTrue(
-            ll_vms.updateVm(
-                True, config.CPU_HOTPLUG_VM, cpu_socket=config.CPU_TOPOLOGY[0]
-            )
+        assert ll_vms.updateVm(
+            True, config.CPU_HOTPLUG_VM, cpu_socket=config.CPU_TOPOLOGY[0]
         )

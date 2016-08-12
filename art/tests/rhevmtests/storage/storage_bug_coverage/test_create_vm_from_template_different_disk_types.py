@@ -170,26 +170,26 @@ class TestCase11843(TestCase):
         """
         logger.info("Creating vm from template without disks")
         new_vm_name = "%s_new" % VM_NO_DISKS
-        self.assertTrue(ll_vms.createVm(True, new_vm_name,
-                                        "VM for bug 1000789",
-                                        template=TEMPLATE_NO_DISKS,
-                                        cluster=config.CLUSTER_NAME))
+        assert ll_vms.createVm(True, new_vm_name,
+                               "VM for bug 1000789",
+                               template=TEMPLATE_NO_DISKS,
+                               cluster=config.CLUSTER_NAME)
         self.vms.append(new_vm_name)
 
         logger.info("Creating vm from template with shared disk")
         new_vm_name = "%s_new" % VM_SHARED_DISK
-        self.assertTrue(ll_vms.createVm(True, new_vm_name,
-                                        "VM for bug 1000789",
-                                        template=TEMPLATE_SHARED_DISK,
-                                        cluster=config.CLUSTER_NAME))
+        assert ll_vms.createVm(True, new_vm_name,
+                               "VM for bug 1000789",
+                               template=TEMPLATE_SHARED_DISK,
+                               cluster=config.CLUSTER_NAME)
         self.vms.append(new_vm_name)
 
         logger.info("Creating vm from template with direct lun")
         new_vm_name = "%s_new" % VM_DIRECT_LUN
-        self.assertTrue(ll_vms.createVm(True, new_vm_name,
-                                        "VM for bug 1000789",
-                                        template=TEMPLATE_DIRECT_LUN,
-                                        cluster=config.CLUSTER_NAME))
+        assert ll_vms.createVm(True, new_vm_name,
+                               "VM for bug 1000789",
+                               template=TEMPLATE_DIRECT_LUN,
+                               cluster=config.CLUSTER_NAME)
         self.vms.append(new_vm_name)
         ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
 

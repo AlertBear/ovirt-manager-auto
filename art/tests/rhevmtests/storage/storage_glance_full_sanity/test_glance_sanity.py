@@ -178,11 +178,10 @@ class BasicEnvironment(BaseTestCase):
         self.add_nic_to_vm(self.vm_name)
         ll_vms.wait_for_vm_states(self.vm_name, [config.VM_DOWN])
         if start_vm:
-            self.assertTrue(
-                ll_vms.startVm(True, self.vm_name, wait_for_ip=True),
-                "Unable to start vm %s cloned from template %s" % (
-                    self.vm_name, template_name
-                )
+            assert ll_vms.startVm(
+                True, self.vm_name, wait_for_ip=True
+            ), "Unable to start vm %s cloned from template %s" % (
+                self.vm_name, template_name
             )
 
 
@@ -230,19 +229,18 @@ class TestCase10689(BasicEnvironment):
         -> Template should be imported with the new name
         """
         # Ensure there's no template with the same name in the system
-        self.assertFalse(
-            bool(ll_templates.get_template_obj(self.new_template_name)),
-            "Template with name %s exists already in the environment"
-            % self.new_template_name
+        assert not bool(
+            ll_templates.get_template_obj(self.new_template_name)
+        ), "Template with name %s exists already in the environment" % (
+            self.new_template_name
         )
         self.basic_flow_import_image_as_template(
             self.new_template_name, True, self.storage_domain,
             self.new_disk_alias
         )
-        self.assertTrue(
-            ll_templates.get_template_obj(self.new_template_name),
-            "Template with name %s does not exist" % self.new_template_name
-        )
+        assert ll_templates.get_template_obj(
+            self.new_template_name
+        ), "Template with name %s does not exist" % self.new_template_name
 
 
 @attr(tier=2)
@@ -362,11 +360,10 @@ class TestCase5738(BasicEnvironment):
         )
         self.basic_flow_import_image_as_disk(self.new_disk_alias, True)
         ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
-        self.assertTrue(
-            ll_disks.attachDisk(
-                True, self.new_disk_alias, self.vm_name_from_template
-            ), "Failed to attach disk %s to vm %s" %
-               (self.new_disk_alias, self.vm_name_from_template)
+        assert ll_disks.attachDisk(
+            True, self.new_disk_alias, self.vm_name_from_template
+        ), "Failed to attach disk %s to vm %s" % (
+            self.new_disk_alias, self.vm_name_from_template
         )
         ll_vms.startVm(True, self.vm_name_from_template, config.VM_UP, True)
         status, output = storage_helpers.perform_dd_to_disk(
@@ -444,8 +441,9 @@ class TestCase5741(BasicEnvironment):
                 vm_name, self.new_template_name, self.storage_domain,
                 wait=False
             )
-            if ll_templates.get_template_state(self.new_template_name) \
-                    == config.TEMPLATE_LOCKED:
+            if ll_templates.get_template_state(
+                self.new_template_name
+            ) == config.TEMPLATE_LOCKED:
                 raise errors.TemplateException(
                     "Template %s should not be in locked state while "
                     "creating a VM from it" % self.new_template_name
@@ -471,13 +469,11 @@ class TestCase5743(BasicEnvironment):
             self.new_template_name, True, self.storage_domains[0],
             self.new_disk_alias
         )
-        self.assertTrue(
-            ll_disks.copy_disk(
-                disk_name=self.new_disk_alias,
-                target_domain=self.storage_domains[1]
-            ), "Unable to copy disk %s to target domain %s" % (
-                self.new_disk_alias, self.storage_domains[1]
-            )
+        assert ll_disks.copy_disk(
+            disk_name=self.new_disk_alias,
+            target_domain=self.storage_domains[1]
+        ), "Unable to copy disk %s to target domain %s" % (
+            self.new_disk_alias, self.storage_domains[1]
         )
         self.vm_name = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
@@ -519,13 +515,11 @@ class TestCase5746(BasicEnvironment):
             self.vm_name, self.new_template_name, self.storage_domain,
             start_vm=False
         )
-        self.assertTrue(
-            ll_disks.updateDisk(
-                True, vmName=self.vm_name, alias=self.new_disk_alias,
-                interface=config.VIRTIO_SCSI
-            ), "Unable to change vm %s interface to interface %s" % (
-                self.vm_name, config.VIRTIO_SCSI
-            )
+        assert ll_disks.updateDisk(
+            True, vmName=self.vm_name, alias=self.new_disk_alias,
+            interface=config.VIRTIO_SCSI
+        ), "Unable to change vm %s interface to interface %s" % (
+            self.vm_name, config.VIRTIO_SCSI
         )
 
 
@@ -566,11 +560,10 @@ class TestCase5683(BaseTestCase):
         """
         Export template disk to glance domain
         """
-        self.assertTrue(
-            ll_disks.export_disk_to_glance(
-                True, self.disk.get_id(), config.GLANCE_DOMAIN
-            ), "Unable to export disk %s to glance domain %s" %
-            (self.disk.get_id(), config.GLANCE_DOMAIN)
+        assert ll_disks.export_disk_to_glance(
+            True, self.disk.get_id(), config.GLANCE_DOMAIN
+        ), "Unable to export disk %s to glance domain %s" % (
+            self.disk.get_id(), config.GLANCE_DOMAIN
         )
 
     def tearDown(self):
@@ -603,7 +596,7 @@ class TestCase5683(BaseTestCase):
             logger.error(
                 "Failed to find image in glance image %s repository %s",
                 self.disk.get_alias(), self.glance_domain
-                )
+            )
         BaseTestCase.teardown_exception()
 
 
@@ -633,8 +626,7 @@ class TestCase10696(BasicEnvironment):
         ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD)
         self.templates_to_remove.append(self.template_name)
         disk_id = ll_disks.get_disk_obj(self.disk_alias).get_id()
-        self.assertTrue(
-            disk_id in response_body,
+        assert disk_id in response_body, (
             "Imported image's ID is not part of the import request "
             "response's body"
         )
@@ -663,8 +655,7 @@ class TestCase10697(BasicEnvironment):
         )
         ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD)
         self.disk_id = ll_disks.get_disk_obj(self.disk_alias).get_id()
-        self.assertTrue(
-            self.disk_id in response_body,
+        assert self.disk_id in response_body, (
             "Imported image's ID is not part of the import request "
             "response's body"
         )

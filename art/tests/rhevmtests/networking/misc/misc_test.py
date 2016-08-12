@@ -39,8 +39,6 @@ class TestMisc01(NetworkTest):
         networks = ["net-155", "net-1-5-5-b----", "m-b_1-2_3_4-3_5"]
         for net in networks:
             testflow.step("Create %s on %s", net, conf.DC_0)
-            self.assertTrue(
-                ll_networks.add_network(
-                    positive=True, name=net, data_center=conf.DC_0
-                )
+            assert ll_networks.add_network(
+                positive=True, name=net, data_center=conf.DC_0
             )

@@ -70,8 +70,7 @@ class RHEL7GATest(common.GABaseTestCase):
             ip.insert(1, iface['name'])
             rc, ip_real, err = self.machine.executor().run_cmd(ip)
             ip_real = ip_real.strip()
-            self.assertTrue(
-                ip_real in ip_list,
+            assert ip_real in ip_list, (
                 "Guest IP '%s' is not in IP list '%s'" % (ip_real, ip_list)
             )
 
@@ -114,17 +113,14 @@ class RHEL764bGATest(RHEL7GATest):
             '|', 'grep', 'Uid',
             '|', 'grep', '660'
         ])
-        self.assertTrue(
-            not rc, "Failed to check virtio ports: %s" % err
-        )
+        assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
             rc, out, err = self.machine.executor().run_cmd([
                 'tuned-adm', 'list', '|',
                 'grep', '^Current', '|',
                 'grep', '-i', 'virtual',
             ])
-            self.assertTrue(
-                not rc,
+            assert not rc, (
                 "Tuned profile isn't virtual. It's '%s'. Err: %s" % (out, err)
             )
 

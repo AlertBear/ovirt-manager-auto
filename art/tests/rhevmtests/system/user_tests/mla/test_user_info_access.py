@@ -21,6 +21,7 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
+import pytest
 
 LOGGER = logging.getLogger(__name__)
 ALT_HOST_ID = None
@@ -223,12 +224,10 @@ class VmUserInfoTests2(TestCase):
         LOGGER.info("User can see object where he has permissions.")
 
         # is user forbidden to see other objects?
-        self.assertRaises(
-            EntityNotFound, datacenters.util.find, config.DC_NAME_B
-        )
-        self.assertRaises(
-            EntityNotFound, clusters.util.find, config.CLUSTER_NAME[1]
-        )
+        with pytest.raises(EntityNotFound):
+            datacenters.util.find(config.DC_NAME_B)
+        with pytest.raises(EntityNotFound):
+            clusters.util.find(config.CLUSTER_NAME[1])
         LOGGER.info("User can't see object where he has permissions.")
 
         assert len(dcs) == 1, msgVisible % ('datacenters', dcs)
@@ -242,17 +241,19 @@ class VmUserInfoTests2(TestCase):
         msg_info = "After deleting permissions from VM he can't see it anymore"
 
         vm1 = vms.VM_API.find(config.VM_NAME1)
-        self.assertTrue(vm1 is not None, msgBlind % config.VM_NAME1)
-        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME2)
+        assert vm1 is not None, msgBlind % config.VM_NAME1
+        with pytest.raises(EntityNotFound):
+            vms.VM_API.find(config.VM_NAME2)
         myvms = vms.VM_API.get(absLink=False)
-        self.assertEqual(len(myvms), 1, msgVisible)
+        assert len(myvms) == 1, msgVisible
         LOGGER.info(msgVisible)
 
         loginAsAdmin()
         mla.removeUserPermissionsFromVm(True, config.VM_NAME1, config.USER1)
 
         loginAsUser()
-        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME1)
+        with pytest.raises(EntityNotFound):
+            vms.VM_API.find(config.VM_NAME1)
         LOGGER.info(msg_info)
 
         loginAsAdmin()
@@ -318,9 +319,8 @@ class VmUserInfoTests2(TestCase):
     @polarion("RHEVM3-7645")
     def test_hostInfo(self):
         """ testHostPowerManagementInfo """
-        self.assertRaises(
-            EntityNotFound, hosts.HOST_API.find, config.HOSTS[0]
-        )
+        with pytest.raises(EntityNotFound):
+            hosts.HOST_API.find(config.HOSTS[0])
         LOGGER.info("User can't see any host info")
         vms.startVm(True, config.VM_NAME1)
         vm = vms.VM_API.find(config.VM_NAME1)
@@ -627,9 +627,8 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         """ Template creator with datacenter admin filter templates """
         loginAsUser()
         templates.TEMPLATE_API.find(config.TEMPLATE_NAME1)
-        self.assertRaises(
-            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME2
-        )
+        with pytest.raises(EntityNotFound):
+            templates.TEMPLATE_API.find(config.TEMPLATE_NAME2)
 
 
 # extra_reqs={'datacenters_count': 2}
@@ -699,9 +698,12 @@ class ComplexCombinationTest(TestCase):
         # TODO: extend, there could be tested more than this
         loginAsUser()
         vms.VM_API.find(config.VM_NAME1)
-        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME2)
-        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME3)
-        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME4)
+        with pytest.raises(EntityNotFound):
+            vms.VM_API.find(config.VM_NAME2)
+        with pytest.raises(EntityNotFound):
+            vms.VM_API.find(config.VM_NAME3)
+        with pytest.raises(EntityNotFound):
+            vms.VM_API.find(config.VM_NAME4)
         LOGGER.info("User can see %s" % config.VM_NAME1)
         LOGGER.info(
             "User can't see %s, %s, %s" % (
@@ -709,18 +711,14 @@ class ComplexCombinationTest(TestCase):
             )
         )
 
-        self.assertRaises(
-            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME1
-        )
-        self.assertRaises(
-            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME2
-        )
-        self.assertRaises(
-            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME3
-        )
-        self.assertRaises(
-            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME4
-        )
+        with pytest.raises(EntityNotFound):
+            templates.TEMPLATE_API.find(config.TEMPLATE_NAME1)
+        with pytest.raises(EntityNotFound):
+            templates.TEMPLATE_API.find(config.TEMPLATE_NAME2)
+        with pytest.raises(EntityNotFound):
+            templates.TEMPLATE_API.find(config.TEMPLATE_NAME3)
+        with pytest.raises(EntityNotFound):
+            templates.TEMPLATE_API.find(config.TEMPLATE_NAME4)
         LOGGER.info(
             "User can't see %s, %s, %s, %s" % (
                 config.TEMPLATE_NAME1, config.TEMPLATE_NAME2,

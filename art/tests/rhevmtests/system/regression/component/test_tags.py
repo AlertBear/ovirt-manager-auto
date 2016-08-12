@@ -68,13 +68,13 @@ class TestCaseTags(TestCase):
         status = ll_tags.addTag(
             positive=True, name=parent_tag, description=TAG_DESCRIPTION
         )
-        self.assertTrue(status, 'Create tag')
+        assert status, 'Create tag'
         sub_tag = self.generate_tag_name()
         status = ll_tags.addTag(
             positive=True, name=sub_tag, description=TAG_DESCRIPTION,
             parent=parent_tag
         )
-        self.assertTrue(status, 'Create sub tag')
+        assert status, 'Create sub tag'
 
     @attr(tier=2)
     def test_add_existing_tag(self):
@@ -87,11 +87,11 @@ class TestCaseTags(TestCase):
         status = ll_tags.addTag(
             positive=True, name=tag_name, description=TAG_DESCRIPTION
         )
-        self.assertTrue(status, 'Create tag')
+        assert status, 'Create tag'
         status = ll_tags.addTag(
             positive=False, name=tag_name, description=TAG_DESCRIPTION
         )
-        self.assertTrue(status, 'Create existing tag')
+        assert status, 'Create existing tag'
 
     @attr(tier=1)
     def test_update_tag(self):
@@ -104,13 +104,13 @@ class TestCaseTags(TestCase):
         status = ll_tags.addTag(
             positive=True, name=tag_name, description=TAG_DESCRIPTION
         )
-        self.assertTrue(status, 'Create tag')
+        assert status, 'Create tag'
         new_name = tag_name + 'Updated'
         status = ll_tags.updateTag(
             positive=True, tag=tag_name, name=new_name,
             description='Test Tag Description updated'
         )
-        self.assertTrue(status, 'Update tag')
+        assert status, 'Update tag'
         self.tag_set.remove(tag_name)
         self.tag_set.add(new_name)
 
@@ -125,11 +125,11 @@ class TestCaseTags(TestCase):
         status = ll_tags.addTag(
             positive=True, name=tag_name, description=TAG_DESCRIPTION
         )
-        self.assertTrue(status, 'Create tag')
+        assert status, 'Create tag'
         status = ll_tags.updateTag(
             positive=False, tag=tag_name, parent=tag_name
         )
-        self.assertTrue(status, 'Tag as parent')
+        assert status, 'Tag as parent'
 
     @attr(tier=1)
     def test_update_tag_parent_and_remove_parent(self):
@@ -147,14 +147,14 @@ class TestCaseTags(TestCase):
         sub_status = ll_tags.addTag(
             positive=True, name=sub_tag, description=TAG_DESCRIPTION
         )
-        self.assertTrue(parent_status & sub_status, 'Create tags')
+        assert parent_status & sub_status, 'Create tags'
         status = ll_tags.updateTag(
             positive=True, tag=sub_tag, parent=parent_tag
         )
-        self.assertTrue(status, 'Update tag parent')
+        assert status, 'Update tag parent'
         logger.info('Remove tag parent')
         status = ll_tags.removeTag(positive=True, tag=parent_tag)
-        self.assertTrue(status, 'Remove tag parent')
+        assert status, 'Remove tag parent'
 
     @attr(tier=2)
     def test_create_tag_loop(self):
@@ -172,15 +172,15 @@ class TestCaseTags(TestCase):
         sub_status = ll_tags.addTag(
             positive=True, name=sub_tag, description=TAG_DESCRIPTION
         )
-        self.assertTrue(parent_status & sub_status, 'Create tags')
+        assert parent_status & sub_status, 'Create tags'
         status = ll_tags.updateTag(
             positive=True, tag=sub_tag, parent=parent_tag
         )
-        self.assertTrue(status, 'Update tag parent')
+        assert status, 'Update tag parent'
         loop_status = ll_tags.updateTag(
             positive=False, tag=parent_tag, parent=sub_tag
         )
-        self.assertTrue(loop_status, 'Update tag parent to descendant')
+        assert loop_status, 'Update tag parent to descendant'
 
     @attr(tier=1)
     def test_associate_tag_with_vm_and_search_by_tag(self):
@@ -195,11 +195,11 @@ class TestCaseTags(TestCase):
         tag_status = ll_tags.addTag(
             positive=True, name=tag_name, description=TAG_DESCRIPTION
         )
-        self.assertTrue(tag_status, 'Create tag')
+        assert tag_status, 'Create tag'
         associate_status = ll_vms.addTagToVm(
             positive=True, tag=tag_name, vm=config.VM_NAME[0]
         )
-        self.assertTrue(associate_status, 'Associate tag with vm')
+        assert associate_status, 'Associate tag with vm'
         logger.info('Search vm by tag')
         search_status = ll_vms.searchForVm(
             positive=True, query_key='tag',
@@ -209,8 +209,8 @@ class TestCaseTags(TestCase):
         remove_status = ll_vms.removeTagFromVm(
             positive=True, vm=config.VM_NAME[0], tag=tag_name
         )
-        self.assertTrue(search_status, 'Search vm by tag')
-        self.assertTrue(remove_status, 'Remove tag from vm')
+        assert search_status, 'Search vm by tag'
+        assert remove_status, 'Remove tag from vm'
 
     @attr(tier=2)
     def test_associate_non_existing_tag_with_vm(self):
@@ -222,7 +222,7 @@ class TestCaseTags(TestCase):
         status = ll_vms.addTagToVm(
             positive=False, tag='bad_config', vm=config.VM_NAME[0]
         )
-        self.assertTrue(status, 'Associate non existing tag with vm')
+        assert status, 'Associate non existing tag with vm'
 
     @attr(tier=1)
     def test_associate_tag_with_host_and_search_host_by_tag(self):
@@ -237,11 +237,11 @@ class TestCaseTags(TestCase):
         tag_status = ll_tags.addTag(
             positive=True, name=tag_name, description=TAG_DESCRIPTION
         )
-        self.assertTrue(tag_status, 'Create tag')
+        assert tag_status, 'Create tag'
         associate_status = ll_hosts.addTagToHost(
             positive=True, tag=tag_name, host=config.HOSTS[0]
         )
-        self.assertTrue(associate_status, 'Associate tag with host')
+        assert associate_status, 'Associate tag with host'
         logger.info('Search host by tag')
         search_status = ll_hosts.searchForHost(
             positive=True, query_key='tag',
@@ -251,8 +251,8 @@ class TestCaseTags(TestCase):
         remove_status = ll_hosts.removeTagFromHost(
             positive=True, host=config.HOSTS[0], tag=tag_name
         )
-        self.assertTrue(search_status, 'Search host by tag')
-        self.assertTrue(remove_status, 'Remove tag from host')
+        assert search_status, 'Search host by tag'
+        assert remove_status, 'Remove tag from host'
 
     @attr(tier=2)
     def test_update_tag_name_to_existing_tag(self):
@@ -269,11 +269,11 @@ class TestCaseTags(TestCase):
         second_status = ll_tags.addTag(
             positive=True, name=second_tag, description=TAG_DESCRIPTION
         )
-        self.assertTrue(first_status & second_status, 'Create tags')
+        assert first_status & second_status, 'Create tags'
         status = ll_tags.updateTag(
             positive=False, tag=second_tag, name=first_tag
         )
-        self.assertTrue(status, 'Update tag name to existing')
+        assert status, 'Update tag name to existing'
 
     @attr(tier=1)
     def test_check_tag_is_unique(self):
@@ -286,11 +286,11 @@ class TestCaseTags(TestCase):
         tag_status = ll_tags.addTag(
             positive=True, name=tag_name, description=TAG_DESCRIPTION
         )
-        self.assertTrue(tag_status, 'Create tag')
+        assert tag_status, 'Create tag'
         xpathMatch = XPathMatch(ll_tags.util)
         expr = 'count(/tags/tag/name[text()="%s"])' % tag_name
         try:
             status = xpathMatch(True, 'tags', expr, rslt_eval='1==result')
-            self.assertTrue(status, 'Check tag unique')
+            assert status, 'Check tag unique'
         except EngineTypeError:
             logger.info('xPath is only supported for rest')

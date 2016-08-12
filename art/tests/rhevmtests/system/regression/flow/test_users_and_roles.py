@@ -66,7 +66,7 @@ class TestCaseUserAndRoles(TestCase):
         status = ll_mla.removeAllPermissionsFromUser(
             positive=True, user=config.USERNAME_NAME
         )
-        self.assertTrue(status, 'Remove permissions for user')
+        assert status, 'Remove permissions for user'
 
     @attr(tier=2)
     def test_delete_everyone_group(self):
@@ -76,7 +76,7 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Delete \'Everyone\' group')
         status = ll_users.deleteGroup(positive=False, group_name='Everyone')
-        self.assertTrue(status, "Delete 'Everyone' group failed as expected")
+        assert status, "Delete 'Everyone' group failed as expected"
 
     @attr(tier=2)
     def test_create_user_with_wrong_domain(self):
@@ -90,7 +90,7 @@ class TestCaseUserAndRoles(TestCase):
             domain='bad_config',
             user_name=config.USERNAME_NAME,
         )
-        self.assertTrue(status, 'Create user - wrong domain')
+        assert status, 'Create user - wrong domain'
 
     @attr(tier=2)
     def test_create_user_not_in_domain(self):
@@ -104,7 +104,7 @@ class TestCaseUserAndRoles(TestCase):
             domain=config.USER_DOMAIN,
             user_name=config.USER_NON_EXISTING,
         )
-        self.assertTrue(status, 'Create user which does not exists in domain')
+        assert status, 'Create user which does not exists in domain'
 
     @attr(tier=1)
     def test_add_tag_to_user(self):
@@ -115,14 +115,14 @@ class TestCaseUserAndRoles(TestCase):
         logger.info('Create tag')
         tag_name = 'Tag_A'
         tag_status = ll_tags.addTag(positive=True, name=tag_name)
-        self.assertTrue(tag_status, 'Create tag')
+        assert tag_status, 'Create tag'
         logger.info('Add tag to user')
         status = ll_users.addTagToUser(
             positive=True, user=config.USERNAME_NAME, tag=tag_name
         )
         remove_status = ll_tags.removeTag(positive=True, tag=tag_name)
-        self.assertTrue(status, 'Add tag to user')
-        self.assertTrue(remove_status, 'Delete tag')
+        assert status, 'Add tag to user'
+        assert remove_status, 'Delete tag'
 
     @attr(tier=1)
     def test_check_system_summary(self):
@@ -134,7 +134,7 @@ class TestCaseUserAndRoles(TestCase):
         status = ll_general.checkSummary(
             positive=True, domain=config.USER_DOMAIN
         )
-        self.assertTrue(status, 'Check system summary')
+        assert status, 'Check system summary'
 
     @attr(tier=1)
     def test_check_system_version_tag(self):
@@ -143,7 +143,7 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Check system version tag')
         status = ll_general.checkSystemVersionTag(positive=True)
-        self.assertTrue(status, 'Check system version tag')
+        assert status, 'Check system version tag'
 
     @attr(tier=1)
     def test_check_definition_of_blank_template(self):
@@ -159,7 +159,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         try:
             status = xpathMatch(True, 'api', expr)
-            self.assertTrue(status, 'Check definition of blank template')
+            assert status, 'Check definition of blank template'
         except EngineTypeError:
             logger.info('xPath is only supported for rest')
 
@@ -177,7 +177,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         try:
             status = xpathMatch(True, 'api', expr)
-            self.assertTrue(status, 'Check definition of tag root object')
+            assert status, 'Check definition of tag root object'
         except EngineTypeError:
             logger.info('xPath is only supported for rest')
 
@@ -197,4 +197,4 @@ class TestCaseUserAndRoles(TestCase):
             ),
             expected_department='Quality Assurance'
         )
-        self.assertTrue(status, 'Check user properties in aaa-jdbc provider')
+        assert status, 'Check user properties in aaa-jdbc provider'

@@ -53,8 +53,8 @@ def _create_vm(vm_name, highly_available):
                         placement_host=HOST_WITH_PM, provisioned_size=SIZE,
                         volumeFormat=config.FORMAT, storageDomainName=sd_name,
                         nic=NIC, network=config.MGMT_BRIDGE, start='true'):
-            raise VMException("cannot create vm with high availability"
-                              " on host: %s" % HOST_WITH_PM)
+        raise VMException("cannot create vm with high availability"
+                          " on host: %s" % HOST_WITH_PM)
 
 
 def _waitForHostPmOperation():
@@ -331,10 +331,8 @@ class T01AddPMWithNoPassword(TestPMWithBadParameters):
 
     @polarion("RHEVM3-8919")
     def test_add_power_management_with_no_password(self):
-        self.assertFalse(
-            hosts.add_power_management(
-                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
-            )
+        assert not hosts.add_power_management(
+            host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         )
 
 
@@ -345,10 +343,8 @@ class T02AddPMWithNoUsername(TestPMWithBadParameters):
 
     @polarion("RHEVM3-8917")
     def test_add_power_management_with_no_username(self):
-        self.assertFalse(
-            hosts.add_power_management(
-                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
-            )
+        assert not hosts.add_power_management(
+            host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         )
 
 
@@ -359,10 +355,8 @@ class T03AddPMWithNoAddress(TestPMWithBadParameters):
 
     @polarion("RHEVM3-8918")
     def test_add_power_management_with_no_address(self):
-        self.assertFalse(
-            hosts.add_power_management(
-                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
-            )
+        assert not hosts.add_power_management(
+            host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         )
 
 
@@ -373,10 +367,8 @@ class T04AddPMWithInvalidType(TestPMWithBadParameters):
 
     @polarion("RHEVM3-8916")
     def test_add_power_management_with_invalid_type(self):
-        self.assertFalse(
-            hosts.add_power_management(
-                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
-            )
+        assert not hosts.add_power_management(
+            host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         )
 
 
@@ -405,14 +397,14 @@ class T06HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
 
     @polarion("RHEVM3-12448")
     def test_host_in_non_responsive_state_with_high_available_vm(self):
-        self.assertTrue(ll_hosts.runDelayedControlService(
+        assert ll_hosts.runDelayedControlService(
             True, host=HOST_WITH_PM, host_user=config.HOSTS_USER,
             host_passwd=config.HOSTS_PW, service=self.service_network,
-            command=self.stop_command))
-        self.assertTrue(ll_hosts.waitForHostsStates(
-            True, names=HOST_WITH_PM, states=config.HOST_STATE_NON_RES))
-        self.assertTrue(ll_hosts.waitForHostsStates(
-            True, names=HOST_WITH_PM, states=config.HOST_STATE_UP))
+            command=self.stop_command)
+        assert ll_hosts.waitForHostsStates(
+            True, names=HOST_WITH_PM, states=config.HOST_STATE_NON_RES)
+        assert ll_hosts.waitForHostsStates(
+            True, names=HOST_WITH_PM, states=config.HOST_STATE_UP)
         if not vms.waitForVmsStates(True, names=self.vm_ha_name):
             raise VMException("vm: %s didn't migrate and is down" %
                               self.vm_ha_name)

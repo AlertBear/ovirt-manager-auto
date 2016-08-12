@@ -137,11 +137,9 @@ class CreateTemplateFromVM(BaseTestCase):
         logger.info(
             "Creating template of backup vm %s", self.vm_name_for_template
         )
-        self.assertTrue(
-            ll_templates.createTemplate(
-                True, vm=self.vm_name_for_template, name=self.template_name
-            ), "Failed to create template '%s'" % self.template_name
-        )
+        assert ll_templates.createTemplate(
+            True, vm=self.vm_name_for_template, name=self.template_name
+        ), "Failed to create template '%s'" % self.template_name
 
     def tearDown(self):
         """
@@ -175,15 +173,13 @@ class TestCase6178(BaseTestCase):
         backup_vm_vdsm_host_ip = ll_hosts.get_host_ip_from_engine(
             backup_vm_vdsm_host
         )
-        self.assertFalse(
-            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip),
-            "Transient directory is empty"
-        )
+        assert not (
+            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip)
+        ), "Transient directory is empty"
         ll_vms.stop_vms_safely([self.vm_names[1]])
         logger.info("Succeeded to stop vm %s", self.vm_names[1])
 
-        self.assertTrue(
-            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip),
+        assert helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip), (
             "Transient directory still contains backup disk volumes"
         )
 
@@ -193,7 +189,7 @@ class TestCase6178(BaseTestCase):
         is_disk_attached = disk_id in [disk.get_id() for disk in
                                        backup_vm_disks]
 
-        self.assertTrue(is_disk_attached, "Backup disk is not attached")
+        assert is_disk_attached, "Backup disk is not attached"
 
 
 @attr(tier=4)
@@ -228,8 +224,7 @@ class TestCase6182(BaseTestCase):
         )
 
         logger.info("Restarting VDSM...")
-        self.assertTrue(
-            utils.restartVdsmd(backup_vm_vdsm_host_ip, config.HOSTS_PW),
+        assert utils.restartVdsmd(backup_vm_vdsm_host_ip, config.HOSTS_PW), (
             "Failed restarting VDSM service"
         )
         ll_hosts.waitForHostsStates(True, self.host)
@@ -239,14 +234,11 @@ class TestCase6182(BaseTestCase):
         status = disk_objects[0].get_alias() in (
             [disk.get_alias() for disk in vm_disks]
         )
-        self.assertTrue(
-            status, "Backup disk is not attached after restarting VDSM"
-        )
+        assert status, "Backup disk is not attached after restarting VDSM"
 
-        self.assertFalse(
-            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip),
-            "Transient directory is empty"
-        )
+        assert not (
+            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip)
+        ), "Transient directory is empty"
 
         logger.info("Restarting ovirt-engine...")
         utils.restart_engine(config.ENGINE, 5, 30)
@@ -256,13 +248,12 @@ class TestCase6182(BaseTestCase):
         status = disk_objects[0].get_alias() in (
             [disk.get_alias() for disk in vm_disks]
         )
-        self.assertTrue(
-            status, "Backup disk is not attached after restarting ovirt-engine"
+        assert status, (
+            "Backup disk is not attached after restarting ovirt-engine"
         )
-        self.assertFalse(
-            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip),
-            "Transient directory is empty"
-        )
+        assert not (
+            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip)
+        ), "Transient directory is empty"
         logger.info("Transient directory contains backup disk")
 
         disk_objects = ll_vms.get_snapshot_disks(
@@ -278,7 +269,7 @@ class TestCase6182(BaseTestCase):
             snapshot_disk, dc_obj
         )
 
-        self.assertEqual(checksum_before, checksum_after, "Disk is corrupted")
+        assert checksum_before == checksum_after, "Disk is corrupted"
         logger.info("Disk is not corrupted")
 
 
@@ -317,22 +308,18 @@ class TestCase6183(BaseTestCase):
             raise exceptions.VMException(
                 "Failed to update VM '%s'" % self.vm_names[1]
             )
-        self.assertTrue(
-            helpers.is_transient_directory_empty(vdsm_host_ip),
+        assert helpers.is_transient_directory_empty(vdsm_host_ip), (
             "Transient directory contains backup disk volumes before backup "
             "vm '%s' is powered on" % self.vm_names[1]
         )
         logger.info("%s is empty", helpers.TRANSIENT_DIR_PATH)
 
         logger.info("Starting vm %s", self.vm_names[1])
-        self.assertTrue(
-            ll_vms.startVm(
-                True, self.vm_names[1], config.VM_UP, True
-            ), "Failed to start vm %s" % self.vm_names[1]
-        )
+        assert ll_vms.startVm(
+            True, self.vm_names[1], config.VM_UP, True
+        ), "Failed to start vm %s" % self.vm_names[1]
         logger.info("vm %s started successfully", self.vm_names[1])
-        self.assertFalse(
-            helpers.is_transient_directory_empty(vdsm_host_ip),
+        assert not helpers.is_transient_directory_empty(vdsm_host_ip), (
             "Transient directory should contain backup disk volumes"
         )
         logger.info("%s contain backup volume", helpers.TRANSIENT_DIR_PATH)
@@ -369,24 +356,20 @@ class TestCase6176(BaseTestCase):
         backup_vm_vdsm_host_ip = ll_hosts.get_host_ip_from_engine(
             backup_vm_vdsm_host
         )
-        self.assertTrue(
-            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip),
+        assert helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip), (
             "Transient directory should be empty"
         )
         logger.info("%s is empty on vdsm host", helpers.TRANSIENT_DIR_PATH)
 
-        self.assertTrue(
-            ll_vms.activateVmDisk(
-                True, self.vm_names[1], disk_objects[0].get_alias()
-            ), "Failed to activate disk %s of vm %s" % (
-                disk_objects[0].get_alias(), self.vm_names[1]
-            )
+        assert ll_vms.activateVmDisk(
+            True, self.vm_names[1], disk_objects[0].get_alias()
+        ), "Failed to activate disk %s of vm %s" % (
+            disk_objects[0].get_alias(), self.vm_names[1]
         )
 
-        self.assertFalse(
-            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip),
-            "Transient directory should contain backup disk volumes"
-        )
+        assert not (
+            helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip)
+        ), "Transient directory should contain backup disk volumes"
         logger.info(
             "%s contains backup volumes on vdsm host after hotplug",
             helpers.TRANSIENT_DIR_PATH
@@ -447,12 +430,9 @@ class TestCase6165(BaseTestCase):
         perform operations on that snapshot (as in step 2)
         """
         logger.info("Previewing snapshot %s", self.first_snapshot_description)
-        self.assertTrue(
-            ll_vms.preview_snapshot(
-                True, self.vm_names[0], self.first_snapshot_description
-            ),
-            "Failed to preview snapshot %s" % self.first_snapshot_description
-        )
+        assert ll_vms.preview_snapshot(
+            True, self.vm_names[0], self.first_snapshot_description
+        ), "Failed to preview snapshot %s" % self.first_snapshot_description
         ll_vms.wait_for_vm_snapshots(
             self.vm_names[0], config.SNAPSHOT_IN_PREVIEW,
             self.first_snapshot_description
@@ -461,22 +441,17 @@ class TestCase6165(BaseTestCase):
         logger.info(
             "Undoing Previewed snapshot %s", self.first_snapshot_description
         )
-        self.assertTrue(
-            ll_vms.undo_snapshot_preview(
-                True, self.vm_names[0], self.first_snapshot_description
-            ),
-            "Failed to undo previewed snapshot %s" %
+        assert ll_vms.undo_snapshot_preview(
+            True, self.vm_names[0], self.first_snapshot_description
+        ), "Failed to undo previewed snapshot %s" % (
             self.first_snapshot_description
         )
         ll_vms.wait_for_vm_snapshots(self.vm_names[0], config.SNAPSHOT_OK)
 
         logger.info("Previewing snapshot %s", self.first_snapshot_description)
-        self.assertTrue(
-            ll_vms.preview_snapshot(
-                True, self.vm_names[0], self.first_snapshot_description
-            ),
-            "Failed to preview snapshot %s" % self.first_snapshot_description
-        )
+        assert ll_vms.preview_snapshot(
+            True, self.vm_names[0], self.first_snapshot_description
+        ), "Failed to preview snapshot %s" % self.first_snapshot_description
         ll_vms.wait_for_vm_snapshots(
             self.vm_names[0], config.SNAPSHOT_IN_PREVIEW,
             self.first_snapshot_description
@@ -485,22 +460,19 @@ class TestCase6165(BaseTestCase):
         logger.info(
             "Committing Previewed snapshot %s", self.first_snapshot_description
         )
-        self.assertTrue(
-            ll_vms.commit_snapshot(
-                False, self.vm_names[0], self.first_snapshot_description
-            ),
-            "Succeeded to commit previewed snapshot %s" %
+        assert ll_vms.commit_snapshot(
+            False, self.vm_names[0], self.first_snapshot_description
+        ), "Succeeded to commit previewed snapshot %s" % (
             self.first_snapshot_description
         )
 
         logger.info(
             "Undoing Previewed snapshot %s", self.first_snapshot_description
         )
-        self.assertTrue(
-            ll_vms.undo_snapshot_preview(
-                True, self.vm_names[0], self.first_snapshot_description
-            ), "Failed to undo previewed snapshot %s" %
-               self.first_snapshot_description
+        assert ll_vms.undo_snapshot_preview(
+            True, self.vm_names[0], self.first_snapshot_description
+        ), "Failed to undo previewed snapshot %s" % (
+            self.first_snapshot_description
         )
         ll_vms.wait_for_vm_snapshots(self.vm_names[0], config.SNAPSHOT_OK)
 
@@ -619,13 +591,12 @@ class TestCase6168(BaseTestCase):
         if status:
             self.blocked = True
 
-        self.assertTrue(status, "block connectivity to master domain failed")
+        assert status, "block connectivity to master domain failed"
 
         ll_vms.waitForVMState(self.vm_names[1], config.VM_PAUSED)
 
         vm_state = ll_vms.get_vm_state(self.vm_names[1])
-        self.assertEqual(
-            vm_state, config.VM_PAUSED,
+        assert vm_state == config.VM_PAUSED, (
             "vm %s should be in state paused" % self.vm_names[1]
         )
 
@@ -697,15 +668,13 @@ class TestCase6169(BaseTestCase):
             self.source_vm, self.first_snapshot_description
         )
         status = ovf is None
-        self.assertFalse(status, "OVF object wasn't found")
+        assert not status, "OVF object wasn't found"
 
         testflow.step("Add second disk (backup disk) to vm %s", self.backup_vm)
-        self.assertTrue(
-            ll_vms.addDisk(
-                True, self.backup_vm, BACKUP_DISK_SIZE, True,
-                self.storage_domains[0], interface=config.INTERFACE_VIRTIO
-            ), "Failed to add backup disk to backup vm %s" % self.backup_vm
-        )
+        assert ll_vms.addDisk(
+            True, self.backup_vm, BACKUP_DISK_SIZE, True,
+            self.storage_domains[0], interface=config.INTERFACE_VIRTIO
+        ), "Failed to add backup disk to backup vm %s" % self.backup_vm
 
         for disk in ll_vms.getVmDisks(self.backup_vm):
             if not ll_vms.is_active_disk(
@@ -739,7 +708,7 @@ class TestCase6169(BaseTestCase):
             self.backup_vm_ip, devices[1], devices[2], TASK_TIMEOUT
         )
 
-        self.assertTrue(status, "Failed to copy disk")
+        assert status, "Failed to copy disk"
         testflow.step("Stopping vms %s", self.vm_names)
         ll_vms.stop_vms_safely(self.vm_names)
         logger.info("Succeeded to stop vms %s", ', '.join(self.vm_names))
@@ -752,11 +721,9 @@ class TestCase6169(BaseTestCase):
             "Detaching snapshot's disk %s, of source vm %s, from backup vm %s",
             disk_objects[0].get_alias(), self.source_vm, self.backup_vm
         )
-        self.assertTrue(
-            ll_disks.detachDisk(
-                True, disk_objects[0].get_alias(), self.backup_vm
-            ), "Failed to detach disk %s" % disk_objects[0].get_alias()
-        )
+        assert ll_disks.detachDisk(
+            True, disk_objects[0].get_alias(), self.backup_vm
+        ), "Failed to detach disk %s" % disk_objects[0].get_alias()
 
         testflow.step("Remove source vm %s", self.source_vm)
         if not ll_vms.safely_remove_vms([self.source_vm]):
@@ -771,7 +738,7 @@ class TestCase6169(BaseTestCase):
         status = ll_vms.create_vm_from_ovf(
             self.restored_vm, config.CLUSTER_NAME, ovf
         )
-        self.assertTrue(status, "Failed to create vm from ovf configuration")
+        assert status, "Failed to create vm from ovf configuration"
         self.vm_names.append(self.restored_vm)
 
         disk_objects = ll_vms.getVmDisks(self.backup_vm)
@@ -779,31 +746,27 @@ class TestCase6169(BaseTestCase):
             d.get_alias() for d in disk_objects if not d.get_bootable()
         ][0]
         testflow.step("Detach backup disk from backup vm %s", self.backup_vm)
-        self.assertTrue(
-            ll_disks.detachDisk(
-                True, disk_to_detach, self.backup_vm
-            ), "Failed to detach disk %s from backup vm" %
-               disk_objects[1].get_alias()
+        assert ll_disks.detachDisk(
+            True, disk_to_detach, self.backup_vm
+        ), "Failed to detach disk %s from backup vm" % (
+            disk_objects[1].get_alias()
         )
 
         testflow.step("Attach backup disk to restored vm %s", self.restored_vm)
-        self.assertTrue(
-            ll_disks.attachDisk(
-                True, disk_to_detach, self.restored_vm
-            ), "Failed to attach disk %s to restored vm" %
-               disk_objects[1].get_alias()
+        assert ll_disks.attachDisk(
+            True, disk_to_detach, self.restored_vm
+        ), "Failed to attach disk %s to restored vm" % (
+            disk_objects[1].get_alias()
         )
 
-        self.assertTrue(
-            ll_vms.updateVm(True, self.restored_vm, name=self.source_vm),
+        assert ll_vms.updateVm(True, self.restored_vm, name=self.source_vm), (
             "Failed to update VM '%s' to use name '%s'" %
             (self.restored_vm, self.source_vm)
         )
         self.vm_names.remove(self.restored_vm)
         self.vm_names.append(self.source_vm)
         testflow.step("Start restored vm %s and wait for IP", self.restored_vm)
-        self.assertTrue(
-            ll_vms.startVm(True, self.source_vm, config.VM_UP, True),
+        assert ll_vms.startVm(True, self.source_vm, config.VM_UP, True), (
             "Failed to power on source VM '%s'" % self.source_vm
         )
 
@@ -841,18 +804,15 @@ class TestCase6170(BaseTestCase):
                 self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
             )
         )
-        self.assertTrue(
-            ll_vms.addSnapshot(
-                True, self.vm_names[0], self.second_snapshot_description
-            )
+        assert ll_vms.addSnapshot(
+            True, self.vm_names[0], self.second_snapshot_description
         ), "Failed to create snapshot for VM '%s'" % self.vm_names[0]
 
-        self.assertTrue(
-            ll_vms.attach_backup_disk_to_vm(
-                self.vm_names[0], self.vm_names[1],
-                self.second_snapshot_description
-            ), "Failed to attach second snapshot disks to backup vm '%s'" %
-               self.vm_names[1]
+        assert ll_vms.attach_backup_disk_to_vm(
+            self.vm_names[0], self.vm_names[1],
+            self.second_snapshot_description
+        ), "Failed to attach second snapshot disks to backup vm '%s'" % (
+            self.vm_names[1]
         )
 
 
@@ -901,9 +861,9 @@ class TestCase6171(BaseTestCase):
             self.vm_names[0], self.vm_names[1], self.first_snapshot_description
         )
         ll_disks.wait_for_disks_status(disks=self.vm_disks[0].get_alias())
-        self.assertFalse(
-            status, "Succeeded to attach backup snapshot disk to backup vm "
-                    "while a migrate disk operation was in progress"
+        assert not status, (
+            "Succeeded to attach backup snapshot disk to backup vm while a "
+            "migrate disk operation was in progress"
         )
 
 
@@ -925,8 +885,8 @@ class TestCase6172(BaseTestCase):
         status = ll_vms.attach_backup_disk_to_vm(
             self.vm_names[0], self.vm_names[1], self.first_snapshot_description
         )
-        self.assertFalse(
-            status, "Succeeded to attach backup snapshot disk to backup vm"
+        assert not status, (
+            "Succeeded to attach backup snapshot disk to backup vm"
         )
 
 
@@ -986,6 +946,6 @@ class TestCase6173(BaseTestCase):
         ll_disks.wait_for_disks_status(
             [snapshot_disk_name], timeout=LIVE_MIGRATE_DISK_TIMEOUT
         )
-        self.assertFalse(
-            status, "Succeeded to attach backup snapshot disk to backup vm"
+        assert not status, (
+            "Succeeded to attach backup snapshot disk to backup vm"
         )

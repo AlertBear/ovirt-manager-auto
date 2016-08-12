@@ -211,18 +211,18 @@ class TestCase5897(TestCase):
         self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-        self.assertTrue(ll_disks.addDisk(
+        assert ll_disks.addDisk(
             True, alias=self.raw_disk, provisioned_size=config.DISK_SIZE,
             format=config.RAW_DISK, storagedomain=self.storage_domain,
             shareable=True, sparse=False
-        ), "Failed to create shared disk with format RAW")
+        ), "Failed to create shared disk with format RAW"
         self.disks_to_remove.append(self.raw_disk)
         self.disks_to_remove.append(self.cow_disk)
-        self.assertTrue(ll_disks.addDisk(
+        assert ll_disks.addDisk(
             False, alias=self.cow_disk, provisioned_size=config.DISK_SIZE,
             format=config.COW_DISK, storagedomain=self.storage_domain,
             shareable=True, sparse=True
-        ), "Succeeded to create shared disk with format COW")
+        ), "Succeeded to create shared disk with format COW"
 
 
 @attr(tier=2)

@@ -102,9 +102,9 @@ class TestCase6157(RestartVDSM):
             waitForVMState(config.VM_NAME[0], config.VM_DOWN)
 
             LOGGER.info("Removing snapshot %s", self.snapshot_name)
-            self.assertTrue(
-                removeSnapshot(True, config.VM_NAME[0], self.snapshot_name),
-                "Removing snapshot %s failed" % self.snapshot_name)
+            assert removeSnapshot(
+                True, config.VM_NAME[0], self.snapshot_name
+            ), "Removing snapshot %s failed" % self.snapshot_name
 
             LOGGER.info("Starting vm %s", config.VM_NAME[0])
             startVm(True, config.VM_NAME[0], config.VM_UP)
@@ -118,9 +118,9 @@ class TestCase6157(RestartVDSM):
         addSnapshot(True, config.VM_NAME[0], self.snapshot_name, False)
 
     def check_action_failed(self):
-        self.assertTrue(
-            validateSnapshot(True, config.VM_NAME[0], self.snapshot_name),
-            "Snapshot %s doesn't exists!" % self.snapshot_name)
+        assert validateSnapshot(
+            True, config.VM_NAME[0], self.snapshot_name
+        ), "Snapshot %s doesn't exists!" % self.snapshot_name
 
     @polarion("RHEVM3-6157")
     def test_restart_before_tasks_start(self):
@@ -211,9 +211,10 @@ class TestCase6159(RestartVDSM):
             [config.VM_UP, config.VM_DOWN, config.VM_SUSPENDED])
         status = get_vm_state(config.VM_NAME[0])
 
-        self.assertEqual(status, config.VM_UP,
-                         "VM %s status incorrect, is: %s, should be: %s" %
-                         (config.VM_NAME[0], status, config.VM_UP))
+        assert status == config.VM_UP, (
+            "VM %s status incorrect, is: %s, should be: %s" %
+            (config.VM_NAME[0], status, config.VM_UP)
+        )
 
     def setUp(self):
         common.start_vm()

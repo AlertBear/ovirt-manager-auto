@@ -93,31 +93,22 @@ class DPCase147121(TestCase):
     def test_diskInheritedPermissions(self):
         """ Check inheritance of disk permissions """
         # Check inheritance from SD
-        self.assertTrue(
-            mla.hasUserPermissionsOnObject(
-                config.USER1, disks.DISKS_API.find(config.DISK_NAME),
-                role=role.DiskOperator
-            ),
-            "Permissions from SD was not delegated to disk."
-        )
+        assert mla.hasUserPermissionsOnObject(
+            config.USER1, disks.DISKS_API.find(config.DISK_NAME),
+            role=role.DiskOperator
+        ), "Permissions from SD was not delegated to disk."
         LOGGER.info("Disk inherit permissions from SD.")
         # Check inheritance from vm
         disk_name = "%s%s" % (config.VM_NO_DISK, '_Disk1')
-        self.assertTrue(
-            vms.addDisk(
-                True, config.VM_NO_DISK, config.GB,
-                storagedomain=config.MASTER_STORAGE,
-                interface='virtio', format='cow'
-            ),
-            "Unable to attach disk to vm."
-        )
-        self.assertTrue(
-            mla.hasUserPermissionsOnObject(
-                config.USER1, disks.DISKS_API.find(disk_name),
-                role=role.UserVmManager
-            ),
-            "Permissions from vm was not delegated to disk."
-        )
+        assert vms.addDisk(
+            True, config.VM_NO_DISK, config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            interface='virtio', format='cow'
+        ), "Unable to attach disk to vm."
+        assert mla.hasUserPermissionsOnObject(
+            config.USER1, disks.DISKS_API.find(disk_name),
+            role=role.UserVmManager
+        ), "Permissions from vm was not delegated to disk."
         LOGGER.info("Disk inherit permissions from vm.")
 
     def tearDown(self):
@@ -149,14 +140,11 @@ class DPCase14722_2(TestCase):
     def test_createDiskWithoutPermissions(self):
         """ Create disk without permissions """
         # Check if user has not StorageAdmin perms on SD he can't create Disk
-        self.assertTrue(
-            disks.addDisk(
-                False, alias=config.DISK_NAME, interface='virtio',
-                format='cow', provisioned_size=config.GB,
-                storagedomain=config.MASTER_STORAGE
-            ),
-            "User without StorageAdmin permissions can create disk."
-        )
+        assert disks.addDisk(
+            False, alias=config.DISK_NAME, interface='virtio',
+            format='cow', provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE
+        ), "User without StorageAdmin permissions can create disk."
         LOGGER.info("User without StorageAdmin perms on SD can't create disk.")
 
     def tearDown(self):
@@ -195,14 +183,11 @@ class DPCase147122(TestCase):
     def test_createDisk(self):
         """ Create disk with permissions """
         # Check if user has StorageAdmin perms on SD he can create Disk
-        self.assertTrue(
-            disks.addDisk(
-                True, alias=config.DISK_NAME, interface='virtio',
-                format='cow', provisioned_size=config.GB,
-                storagedomain=config.MASTER_STORAGE
-            ),
-            "User with StorageAdmin permissions can't create disk."
-        )
+        assert disks.addDisk(
+            True, alias=config.DISK_NAME, interface='virtio',
+            format='cow', provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE
+        ), "User with StorageAdmin permissions can't create disk."
         h_disks.delete_disks([config.DISK_NAME])
         LOGGER.info("User with StorageAdmin perms on SD can create disk.")
 
@@ -254,12 +239,9 @@ class DPCase147123(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            disks.attachDisk(
-                self.pos, config.DISK_NAME, config.VM_NO_DISK
-            ),
-            "Unable to attach disk to vm."
-        )
+        assert disks.attachDisk(
+            self.pos, config.DISK_NAME, config.VM_NO_DISK
+        ), "Unable to attach disk to vm."
         LOGGER.info(msg)
 
     def tearDown(self):
@@ -329,12 +311,9 @@ class DPCase147124(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            disks.detachDisk(
-                self.pos, self.disk_name, config.VM_NAME
-            ),
-            "User with UserVmManager can't detach disk from VM."
-        )
+        assert disks.detachDisk(
+            self.pos, self.disk_name, config.VM_NAME
+        ), "User with UserVmManager can't detach disk from VM."
         LOGGER.info("User who has UserVmManager perms on vm can detach disk.")
 
     def tearDown(self):
@@ -384,19 +363,13 @@ class DPCase147125(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            vms.deactivateVmDisk(
-                True, config.VM_NAME, diskAlias=self.disk_name
-            ),
-            "User with UserVmManager role can't deactivate vm disk"
-        )
+        assert vms.deactivateVmDisk(
+            True, config.VM_NAME, diskAlias=self.disk_name
+        ), "User with UserVmManager role can't deactivate vm disk"
         LOGGER.info("User with UserVmManager perms can deactivate vm disk.")
-        self.assertTrue(
-            vms.activateVmDisk(
-                True, config.VM_NAME, diskAlias=self.disk_name
-            ),
-            "User with UserVmManager role can't activate vm disk"
-        )
+        assert vms.activateVmDisk(
+            True, config.VM_NAME, diskAlias=self.disk_name
+        ), "User with UserVmManager role can't activate vm disk"
         LOGGER.info("User with UserVmManager permissions can active vm disk.")
 
     def tearDown(self):
@@ -429,10 +402,9 @@ class DPCase147126(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            disks.deleteDisk(False, config.DISK_NAME),
-            "User without delete_disk action group can remove disk."
-        )
+        assert disks.deleteDisk(
+            False, config.DISK_NAME
+        ), "User without delete_disk action group can remove disk."
         LOGGER.info("User without delete_disk action group can't remove disk.")
 
         loginAsAdmin()
@@ -444,10 +416,9 @@ class DPCase147126(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            disks.deleteDisk(True, config.DISK_NAME),
-            "User with delete_disk action group can't remove disk."
-        )
+        assert disks.deleteDisk(
+            True, config.DISK_NAME
+        ), "User with delete_disk action group can't remove disk."
         LOGGER.info("User with delete_disk action group can remove disk.")
 
     def tearDown(self):
@@ -483,13 +454,10 @@ class DPCase147127(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            disks.updateDisk(
-                True, vmName=config.VM_NAME, alias=self.disk_name,
-                interface='ide'
-            ),
-            "User can't update vm disk."
-        )
+        assert disks.updateDisk(
+            True, vmName=config.VM_NAME, alias=self.disk_name,
+            interface='ide'
+        ), "User can't update vm disk."
         LOGGER.info("User can update vm disk.")
 
     def tearDown(self):
@@ -612,14 +580,11 @@ class DPCase147129(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            vms.addDisk(
-                False, config.VM_NO_DISK, config.GB,
-                storagedomain=config.MASTER_STORAGE,
-                interface='virtio', format='cow'
-            ),
-            "UserRole can add disk to vm."
-        )
+        assert vms.addDisk(
+            False, config.VM_NO_DISK, config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            interface='virtio', format='cow'
+        ), "UserRole can add disk to vm."
         LOGGER.info("User without permissions on vm, can't add disk to vm.")
 
         loginAsAdmin()
@@ -630,14 +595,11 @@ class DPCase147129(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            vms.addDisk(
-                False, config.VM_NO_DISK, config.GB,
-                storagedomain=config.MASTER_STORAGE,
-                interface='virtio', format='cow'
-            ),
-            "User without permissions on sd can add disk to vm."
-        )
+        assert vms.addDisk(
+            False, config.VM_NO_DISK, config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            interface='virtio', format='cow'
+        ), "User without permissions on sd can add disk to vm."
         LOGGER.info("User without permissions on sd, can't add disk to vm.")
 
         loginAsAdmin()
@@ -650,14 +612,11 @@ class DPCase147129(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            vms.addDisk(
-                True, config.VM_NO_DISK, config.GB,
-                storagedomain=config.MASTER_STORAGE,
-                interface='virtio', format='cow'
-            ),
-            "User with permissions on sd and vm can't add disk to vm."
-        )
+        assert vms.addDisk(
+            True, config.VM_NO_DISK, config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            interface='virtio', format='cow'
+        ), "User with permissions on sd and vm can't add disk to vm."
         LOGGER.info("User with permissions on sd and vm, can add disk to vm.")
 
     def tearDown(self):
@@ -703,10 +662,9 @@ class DPCase147130(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            vms.removeVm(False, config.VM_NAME),
-            "User can remove vm as DiskOperator."
-        )
+        assert vms.removeVm(
+            False, config.VM_NAME
+        ), "User can remove vm as DiskOperator."
         LOGGER.info("User can't remove vm as DiskOperator.")
 
         loginAsAdmin()
@@ -718,10 +676,9 @@ class DPCase147130(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            vms.removeVm(True, config.VM_NAME, wait=False),
-            "User can't remove vm as DiskOperator and UserVmManager on vm."
-        )
+        assert vms.removeVm(
+            True, config.VM_NAME, wait=False
+        ), "User can't remove vm as DiskOperator and UserVmManager on vm."
         LOGGER.info("User can remove vm as UserVmManager, DiskOperator on vm")
 
 
@@ -758,25 +715,20 @@ class DPCase147137(TestCase):
             config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
-        self.assertTrue(
-            disks.attachDisk(True, config.DISK_NAME, config.VM_NO_DISK),
-            "Unable to attach disk to vm."
-        )
+        assert disks.attachDisk(
+            True, config.DISK_NAME, config.VM_NO_DISK
+        ), "Unable to attach disk to vm."
         LOGGER.info("Shared disk was attached by user.")
 
-        self.assertTrue(
-            disks.updateDisk(
-                True, vmName=config.VM_NO_DISK, alias=config.DISK_NAME,
-                interface='ide'
-            ),
-            "User can't update vm shared disk."
-        )
+        assert disks.updateDisk(
+            True, vmName=config.VM_NO_DISK, alias=config.DISK_NAME,
+            interface='ide'
+        ), "User can't update vm shared disk."
         LOGGER.info("User can update vm shared disk.")
 
-        self.assertTrue(
-            disks.deleteDisk(True, config.DISK_NAME),
-            "User can't remove shared disk."
-        )
+        assert disks.deleteDisk(
+            True, config.DISK_NAME
+        ), "User can't remove shared disk."
         LOGGER.info("User can remove shared disk.")
 
     def tearDown(self):

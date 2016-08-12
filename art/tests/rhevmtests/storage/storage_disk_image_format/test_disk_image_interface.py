@@ -73,8 +73,7 @@ class BaseTestCase(TestCase):
         if not disk_id:
             disk_id = self.disk_id
         disk = ll_vms.get_disk_attachment(vm_name, disk_id)
-        self.assertEqual(
-            disk_interface, disk.get_interface(),
+        assert disk_interface == disk.get_interface(), (
             "Disk %s should have interface %s instead interface is %s"
             % (disk_id, disk_interface, disk.get_interface())
         )
@@ -97,15 +96,11 @@ class BaseTestCase(TestCase):
             vm_name, disk_id, key='id',
             parse_logical_name=True
         )
-        self.assertTrue(
-            re.match(
-                INTERFACE_REGEX_GUEST_OS[interface],
-                logical_name
-            ), "Interface %s does not match expected pattern %s"
-            % (
-                logical_name,
-                INTERFACE_REGEX_GUEST_OS[interface]
-            )
+        assert re.match(
+            INTERFACE_REGEX_GUEST_OS[interface],
+            logical_name
+        ), "Interface %s does not match expected pattern %s" % (
+            logical_name, INTERFACE_REGEX_GUEST_OS[interface]
         )
         if vm_started:
             status_action = {
@@ -199,12 +194,12 @@ class TestCaseMultipleDisks(BaseTestCase):
                     True, vmName=self.vm_name, id=disk.get_id(),
                     interface=new_interface
                 )
-                self.assertEqual(
-                    positive, status,
-                    "Changing disk %s interface from %s to %s %s "
-                    % (
+                assert positive == status, (
+                    "Changing disk %s interface from %s to %s %s " %
+                    (
                         disk.get_id(), previous_interface, new_interface,
-                        'failed' if positive else 'passed')
+                        'failed' if positive else 'passed'
+                    )
                 )
                 logger.info(
                     "Disk %s changed interface from %s to %s %s",
@@ -384,13 +379,9 @@ class BaseOneDiskAttachedTestCase(BaseTestCase):
             positive, vmName=self.vm_name, alias=self.disk_alias,
             interface=self.new_interface
         )
-        self.assertTrue(
-            status,
-            "Changing disk %s interface from %s to %s %s "
-            % (
-                self.disk_alias, self.base_interface, self.new_interface,
-                'failed' if positive else 'passed'
-            )
+        assert status, "Changing disk %s interface from %s to %s %s " % (
+            self.disk_alias, self.base_interface, self.new_interface,
+            'failed' if positive else 'passed'
         )
         logger.info(
             "Disk %s changed interface from %s to %s %s",
@@ -486,29 +477,21 @@ class TestCase14945(BaseTestCase):
         - Change the shared disk interface -> Disks interface should get
         changed in RHEVM and in the guest for the specific VM ONLY
         """
-        self.assertTrue(
-            ll_disks.attachDisk(
-                positive=True, alias=self.disk_alias, vm_name=self.vm_names[0],
-                active=False, disk_id=self.disk_id,
-                interface=config.INTERFACE_IDE
-            )
+        assert ll_disks.attachDisk(
+            positive=True, alias=self.disk_alias, vm_name=self.vm_names[0],
+            active=False, disk_id=self.disk_id,
+            interface=config.INTERFACE_IDE
         )
-        self.assertTrue(
-            ll_vms.activateVmDisk(
-                True, self.vm_names[0], diskId=self.disk_id
-            )
+        assert ll_vms.activateVmDisk(
+            True, self.vm_names[0], diskId=self.disk_id
         )
-        self.assertTrue(
-            ll_disks.attachDisk(
-                positive=True, alias=self.disk_alias, vm_name=self.vm_names[1],
-                active=False, disk_id=self.disk_id,
-                interface=config.INTERFACE_VIRTIO
-            )
+        assert ll_disks.attachDisk(
+            positive=True, alias=self.disk_alias, vm_name=self.vm_names[1],
+            active=False, disk_id=self.disk_id,
+            interface=config.INTERFACE_VIRTIO
         )
-        self.assertTrue(
-            ll_vms.activateVmDisk(
-                True, self.vm_names[1], diskId=self.disk_id
-            )
+        assert ll_vms.activateVmDisk(
+            True, self.vm_names[1], diskId=self.disk_id
         )
         ll_vms.start_vms(self.vm_names, wait_for_ip=True)
         self.check_engine_disk_interface(
@@ -524,17 +507,13 @@ class TestCase14945(BaseTestCase):
             config.INTERFACE_VIRTIO, self.vm_names[1]
         )
         ll_vms.stop_vms_safely(self.vm_names)
-        self.assertTrue(
-            ll_disks.updateDisk(
-                True, vmName=self.vm_names[0], alias=self.disk_alias,
-                interface=config.INTERFACE_VIRTIO
-            )
+        assert ll_disks.updateDisk(
+            True, vmName=self.vm_names[0], alias=self.disk_alias,
+            interface=config.INTERFACE_VIRTIO
         )
-        self.assertTrue(
-            ll_disks.updateDisk(
-                True, vmName=self.vm_names[1], alias=self.disk_alias,
-                interface=config.INTERFACE_IDE
-            )
+        assert ll_disks.updateDisk(
+            True, vmName=self.vm_names[1], alias=self.disk_alias,
+            interface=config.INTERFACE_IDE
         )
         ll_vms.start_vms(self.vm_names, wait_for_ip=True)
         self.check_engine_disk_interface(
@@ -601,17 +580,15 @@ class TestCase14946(BaseTestCase):
         attached to the VM
         """
         for disk in self.disk_aliases[:3]:
-            self.assertTrue(
-                ll_disks.updateDisk(
-                    True, vmName=self.vm_name, alias=disk,
-                    interface=config.INTERFACE_IDE
-                ), "Error changing disk interface to IDE"
-            )
-        self.assertTrue(
-            ll_disks.updateDisk(
-                False, vmName=self.vm_name, alias=self.disk_aliases[3],
+            assert ll_disks.updateDisk(
+                True, vmName=self.vm_name, alias=disk,
                 interface=config.INTERFACE_IDE
-            ), "It shouldn't be possible to have more than 3 disks with "
+            ), "Error changing disk interface to IDE"
+        assert ll_disks.updateDisk(
+            False, vmName=self.vm_name, alias=self.disk_aliases[3],
+            interface=config.INTERFACE_IDE
+        ), (
+            "It shouldn't be possible to have more than 3 disks with "
             "interface IDE attached to a VM"
         )
 
@@ -703,12 +680,12 @@ class TestCase14948(BaseTestCase):
         type -> Should fail
         """
         disk_obj = ll_disks.get_disk_obj(self.disk_alias)
-        self.assertTrue(
-            ll_disks.attachDisk(
-                positive=True, alias=disk_obj.get_alias(),
-                vm_name=self.vm_name, active=False, disk_id=disk_obj.get_id(),
-                interface=None
-            ), "Succeeded to attach a disk to a vm without specifying "
+        assert ll_disks.attachDisk(
+            positive=True, alias=disk_obj.get_alias(),
+            vm_name=self.vm_name, active=False, disk_id=disk_obj.get_id(),
+            interface=None
+        ), (
+            "Succeeded to attach a disk to a vm without specifying "
             "the disk interface"
         )
 

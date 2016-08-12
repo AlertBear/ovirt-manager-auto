@@ -97,10 +97,13 @@ class SuperVDSMTestBase(TestCase):
         # If there's a problem with vdsm the host switches between
         # non_operational - non_responsive status
         if not hosts.isHostUp(True, config.FIRST_HOST):
-            logger.error("Host %s was down unexpectedly."
-                         "Starting it up" % config.FIRST_HOST)
-            self.assertTrue(hosts.activateHost(True, config.FIRST_HOST),
-                            "Host %s was not activated" % config.FIRST_HOST)
+            logger.error(
+                "Host %s was down unexpectedly. Starting it up" %
+                config.FIRST_HOST
+            )
+            assert hosts.activateHost(
+                True, config.FIRST_HOST
+            ), "Host %s was not activated" % config.FIRST_HOST
         host_ip = hosts.getHostIP(config.FIRST_HOST)
         self.machine = Machine(
             host_ip, config.HOSTS_USER,
@@ -126,20 +129,19 @@ class TestCase6269(SuperVDSMTestBase):
         """
         logger.info("Make sure services are running after host is added "
                     "to rhevm in the setup Class")
-        self.assertTrue(isVdsmRunning(self.machine), "VDSM is not running")
-        self.assertTrue(isSupervdsmRunning(self.machine),
-                        "VDSM is not running")
+        assert isVdsmRunning(self.machine), "VDSM is not running"
+        assert isSupervdsmRunning(self.machine), "VDSM is not running"
 
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
-        self.assertTrue(success, ERROR_HW_OUTPUT % output)
+        assert success, ERROR_HW_OUTPUT % output
 
         logger.info("Make sure log files exists")
-        self.assertTrue(
-            self.machine.isFileExists(SUPERVDSM_LOG),
-            FILE_DOES_NOT_EXIST % SUPERVDSM_LOG)
-        self.assertTrue(
-            self.machine.isFileExists(VDSM_LOG),
-            FILE_DOES_NOT_EXIST % VDSM_LOG)
+        assert self.machine.isFileExists(SUPERVDSM_LOG), (
+            FILE_DOES_NOT_EXIST % SUPERVDSM_LOG
+        )
+        assert self.machine.isFileExists(VDSM_LOG), (
+            FILE_DOES_NOT_EXIST % VDSM_LOG
+        )
 
 
 @attr(tier=4)
@@ -169,12 +171,14 @@ class TestCase6270(SuperVDSMTestBase):
                 self.fail("Couldn't find supervdsm PID")
 
         logger.info("Stopping supervdsm")
-        self.assertTrue(self.machine.stopService(SUPERVDSMD),
-                        ERROR_EXEC_SERVICE_ACTION % ("stop", "supervdsm"))
+        assert self.machine.stopService(
+            SUPERVDSMD
+        ), ERROR_EXEC_SERVICE_ACTION % ("stop", "supervdsm")
         time.sleep(SLEEP_SERVICE)
         logger.info("Starting supervdsm")
-        self.assertTrue(self.machine.startService(SUPERVDSMD),
-                        ERROR_EXEC_SERVICE_ACTION % ("start", "supervdsm"))
+        assert self.machine.startService(
+            SUPERVDSMD
+        ), ERROR_EXEC_SERVICE_ACTION % ("start", "supervdsm")
         time.sleep(SLEEP_SERVICE)
         # for supporting rhel versions that stopping supervdsm stopps vdsm
         # (rhel7 and up)
@@ -185,8 +189,9 @@ class TestCase6270(SuperVDSMTestBase):
                             'try-restart']
         for command in restart_commands:
             logger.info("Restarting supervdsm")
-            self.assertTrue(runSystemInitSupervdsmd(command),
-                            ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm"))
+            assert runSystemInitSupervdsmd(
+                command
+            ), ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm")
 
 
 @attr(tier=4)
@@ -205,42 +210,39 @@ class TestCase6271(SuperVDSMTestBase):
         Test that both services work when one is stopped
         """
         logger.info("Stopping vdsmd")
-        self.assertTrue(self.machine.stopService(VDSMD),
-                        "vdsm didn't stop")
+        assert self.machine.stopService(VDSMD), "vdsm didn't stop"
         time.sleep(SLEEP_SERVICE)
-        self.assertTrue(isSupervdsmRunning(self.machine),
-                        ERROR_SERVICE_NOT_UP % "supervdsm")
+        assert isSupervdsmRunning(
+            self.machine
+        ), ERROR_SERVICE_NOT_UP % "supervdsm"
         logger.info("Starting supervdsmd")
         self.machine.startService(SUPERVDSMD)
         logger.info("Starting vdsmd")
-        self.assertTrue(self.machine.startService(VDSMD),
-                        "vdsm didn't start")
+        assert self.machine.startService(VDSMD), "vdsm didn't start"
         # After restart vdsm wait for host to be up
-        self.assertTrue(hosts.waitForHostsStates(
-            True, config.FIRST_HOST, states='up', timeout=60),
-            "Host never activated after vdsm restarted.")
+        assert hosts.waitForHostsStates(
+            True, config.FIRST_HOST, states='up', timeout=60
+        ), "Host never activated after vdsm restarted."
         time.sleep(SLEEP_SERVICE)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
-        self.assertTrue(success, ERROR_HW_OUTPUT % output)
+        assert success, ERROR_HW_OUTPUT % output
 
         logger.info("Stopping supervdsmd")
-        self.assertTrue(self.machine.stopService(SUPERVDSMD),
-                        "Supervdsm didn't stop")
+        assert self.machine.stopService(SUPERVDSMD), "Supervdsm didn't stop"
         time.sleep(SLEEP_SERVICE)
         logger.info("Starting supervdsmd")
-        self.assertTrue(self.machine.startService(SUPERVDSMD),
-                        "Supervdsm didn't start")
+        assert self.machine.startService(SUPERVDSMD), "Supervdsm didn't start"
         # for supporting rhel versions that stopping supervdsm stopps vdsm
         # (rhel7 and up)
         logger.info("Starting vdsmd")
         self.machine.startService(VDSMD)
         # After restart vdsm wait for host to be up
-        self.assertTrue(hosts.waitForHostsStates(
-            True, config.FIRST_HOST, states='up', timeout=60),
-            "Host never activated after vdsm restarted.")
+        assert hosts.waitForHostsStates(
+            True, config.FIRST_HOST, states='up', timeout=60
+        ), "Host never activated after vdsm restarted."
         time.sleep(SLEEP_SERVICE)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
-        self.assertTrue(success, ERROR_HW_OUTPUT % output)
+        assert success, ERROR_HW_OUTPUT % output
 
 
 @attr(tier=4)
@@ -260,16 +262,18 @@ class TestCase6272(SuperVDSMTestBase):
         """
         N = 1000
         # is much faster run it with one ssh session
-        cmd = "for i in `seq 0 %(iter)d`; do vdsClient -s 0 " \
-            "getVdsHardwareInfo >& /dev/null; if [ $? -ne 0 ];" \
-            "then exit -1; fi; done;" % {'iter': N}
+        cmd = (
+            "for i in `seq 0 %(iter)d`; do vdsClient -s 0 getVdsHardwareInfo"
+            " >& /dev/null; if [ $? -ne 0 ]; then exit -1; fi; done;" %
+            {'iter': N}
+        )
 
         logger.info("Executing vdsClient get HW Info for %d times" % N)
         # ~ 0.3 sec per execution
-        success, output = self.machine.runCmd(cmd.split(' '), timeout=N*0.3)
-        self.assertTrue(
-            success,
-            "Couldn't execute %(iter)d times the command. %(output)s:" % {
+        success, output = self.machine.runCmd(cmd.split(' '), timeout=N * 0.3)
+        assert success, (
+            "Couldn't execute %(iter)d times the command. %(output)s:" %
+            {
                 "iter": N,
                 "output": output,
             }
@@ -292,30 +296,32 @@ class TestCase6273(SuperVDSMTestBase):
         change permissions and delete supervdsm log
         """
         logger.info("Removing supervdsm log file to test recovery")
-        self.assertTrue(self.machine.removeFile(SUPERVDSM_LOG),
-                        "Error removing %s file" % SUPERVDSM_LOG)
-        self.assertTrue(isSupervdsmRunning(self.machine),
-                        ERROR_SERVICE_NOT_UP % "supervdsm")
+        assert self.machine.removeFile(
+            SUPERVDSM_LOG
+        ), "Error removing %s file" % SUPERVDSM_LOG
+        assert isSupervdsmRunning(
+            self.machine
+        ), ERROR_SERVICE_NOT_UP % "supervdsm"
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
-        self.assertTrue(
-            success, "Supervdsm didn't recover from removing log file, out=%s"
-            % output)
-        self.assertTrue(self.machine.isFileExists(SUPERVDSM_LOG),
-                        "%s should be created" % SUPERVDSM_LOG)
+        assert success, (
+            "Supervdsm didn't recover from removing log file, out=%s" % output
+        )
+        assert self.machine.isFileExists(
+            SUPERVDSM_LOG
+        ), "%s should be created" % SUPERVDSM_LOG
 
         logger.info("Changing supervdsm log file permissions to test recovery")
         success, output = self.machine.runCmd(["chmod", "0000", SUPERVDSM_LOG])
-        self.assertTrue(
-            success, "Error changing %s permissions %s" % (
-                SUPERVDSM_LOG, output
-            )
+        assert success, "Error changing %s permissions %s" % (
+            SUPERVDSM_LOG, output
         )
-        self.assertTrue(isSupervdsmRunning(self.machine),
-                        ERROR_SERVICE_NOT_UP % "supervdsm")
+        assert isSupervdsmRunning(
+            self.machine
+        ), ERROR_SERVICE_NOT_UP % "supervdsm"
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
-        self.assertTrue(
-            success, "Supervdsm didn't recover from changing "
-            "log file's permissions")
+        assert success, (
+            "Supervdsm didn't recover from changing log file's permissions"
+        )
 
     def tearDown(self):
         """

@@ -89,21 +89,19 @@ class TestCase6103(BaseTestCase):
             "Cloning vm %s from snapshot %s",
             self.cloned_vm, config.SNAPSHOT_NAME
         )
-        self.assertTrue(ll_vms.cloneVmFromSnapshot(
+        assert ll_vms.cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=config.SNAPSHOT_NAME,
             storagedomain=self.storage_domain_1, compare=False
-        ), "Failed to clone vm from snapshot %s" % config.SNAPSHOT_NAME)
+        ), "Failed to clone vm from snapshot %s" % config.SNAPSHOT_NAME
 
-        self.assertTrue(
-            ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN),
-            "VM %s is not in status down" % self.cloned_vm
-        )
+        assert ll_vms.waitForVMState(
+            self.cloned_vm, state=config.VM_DOWN
+        ), "VM %s is not in status down" % self.cloned_vm
         testflow.step("Starting vm %s and waiting for IP", self.cloned_vm)
-        self.assertTrue(
-            ll_vms.startVm(True, self.cloned_vm, wait_for_ip=True),
-            "Starting vn %s encounter issues" % self.cloned_vm
-        )
+        assert ll_vms.startVm(
+            True, self.cloned_vm, wait_for_ip=True
+        ), "Starting vn %s encounter issues" % self.cloned_vm
 
 
 @attr(tier=2)
@@ -255,10 +253,9 @@ class TestCase6108(BaseTestCase):
             interface=config.NIC_TYPE_VIRTIO
         )
 
-        self.assertEqual(
-            len(ll_vms.get_vm_nics_obj(self.vm)), 2,
-            "VM %s should have 2 nics" % self.vm
-        )
+        assert len(
+            ll_vms.get_vm_nics_obj(self.vm)
+        ) == 2, "VM %s should have 2 nics" % self.vm
 
         logger.info("Making a snapshot %s from %s",
                     self.snapshot_two_nics, self.vm)
@@ -273,7 +270,7 @@ class TestCase6108(BaseTestCase):
 
         assert ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN)
 
-        self.assertEqual(len(ll_vms.get_vm_nics_obj(self.cloned_vm)), 2)
+        assert len(ll_vms.get_vm_nics_obj(self.cloned_vm)) == 2
 
     def tearDown(self):
         """
@@ -321,7 +318,7 @@ class TestCase6109(BaseTestCase):
             storagedomain=self.storage_domain_1, compare=False)
 
         assert ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN)
-        self.assertEqual(len(ll_vms.getVmDisks(self.cloned_vm)), 2)
+        assert len(ll_vms.getVmDisks(self.cloned_vm)) == 2
 
     def tearDown(self):
         """
@@ -377,8 +374,9 @@ class TestCase6111(BaseTestCase):
             vm=self.vm, snapshot=config.SNAPSHOT_NAME,
             storagedomain=self.storage_domain_1, compare=False)
 
-        assert config.VM_TYPE_DESKTOP == \
-            ll_vms.get_vm(self.cloned_vm_desktop).get_type()
+        assert config.VM_TYPE_DESKTOP == ll_vms.get_vm(
+            self.cloned_vm_desktop
+        ).get_type()
 
         assert config.VM_TYPE_SERVER == ll_vms.get_vm(
             self.vm_server
@@ -390,8 +388,9 @@ class TestCase6111(BaseTestCase):
             vm=self.vm_server, snapshot=self.snapshot_server,
             storagedomain=self.storage_domain_1, compare=False)
 
-        assert config.VM_TYPE_SERVER == \
-            ll_vms.get_vm(self.cloned_vm_server).get_type()
+        assert config.VM_TYPE_SERVER == ll_vms.get_vm(
+            self.cloned_vm_server
+        ).get_type()
 
     def tearDown(self):
         """
@@ -459,9 +458,9 @@ class TestCase6112(BaseTestCase):
 
         cloned_disks = ll_vms.getVmDisks(self.cloned_vm)
         disks = [disk.name for disk in cloned_disks]
-        self.assertEqual(len(disks), 2)
-        self.assertTrue(self.disk_alias2 in disks)
-        self.assertFalse(self.disk_alias in disks)
+        assert len(disks) == 2
+        assert self.disk_alias2 in disks
+        assert not (self.disk_alias in disks)
 
     def tearDown(self):
         """

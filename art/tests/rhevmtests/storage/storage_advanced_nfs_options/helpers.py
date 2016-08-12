@@ -310,10 +310,9 @@ class TestCaseNFSOptions(TestCase):
         logger.info("Cluster was created successfully")
 
         logger.info("Adding host to dc %s", self.dc_name)
-        self.assertTrue(ll_hosts.addHost(
+        assert ll_hosts.addHost(
             True, name=self.host_for_dc, root_password=self.password,
             cluster=self.cl_name, reboot=True,
-            ), "Unable to add host %s to cluster %s" % (
+        ), "Unable to add host %s to cluster %s" % (
             self.host_for_dc, self.cl_name)
-        )
         logger.info("Datacenter %s prepared successfully", version)

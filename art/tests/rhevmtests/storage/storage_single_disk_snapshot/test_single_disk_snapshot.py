@@ -145,8 +145,7 @@ class BasicEnvironment(BaseTestCase):
         status = ll_vms.addSnapshot(
             True, self.vm_name, self.snapshot_desc, disks_lst=disks, wait=wait
         )
-        self.assertTrue(status, "Failed to create snapshot %s" %
-                                self.snapshot_desc)
+        assert status, "Failed to create snapshot %s" % self.snapshot_desc
         if wait:
             ll_vms.wait_for_vm_snapshots(
                 self.vm_name, [config.SNAPSHOT_OK]
@@ -219,8 +218,7 @@ class BasicEnvironment(BaseTestCase):
         testflow.step(
             "Verifying amount of volumes increased by %s", len(disk_ids)
         )
-        self.assertEqual(current_vol_count,
-                         initial_vol_count + len(disk_ids))
+        assert current_vol_count == initial_vol_count + len(disk_ids)
 
     def tearDown(self):
         if not ll_vms.safely_remove_vms([self.vm_name]):
@@ -289,7 +287,7 @@ class TestCase6023(BasicEnvironment):
         self._perform_snapshot_operation()
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         status, output = self.vm.runCmd(shlex.split(self.cm_del))
-        self.assertTrue(status, "Files were not deleted {0}".format(output))
+        assert status, "Files were not deleted {0}".format(output)
 
         disks_to_preview = [(self.boot_disk, self.snapshot_desc),
                             (self.disks_names[0], ACTIVE_VM),
@@ -391,7 +389,7 @@ class TestCase6024(BasicEnvironment):
             lst.append(result)
 
         results = [d for d in lst if d is True]
-        self.assertEqual(len(results), len(disks_for_snap))
+        assert len(results) == len(disks_for_snap)
 
     def tearDown(self):
         if not ll_vms.stop_vms_safely([self.vm_name]):
@@ -661,7 +659,7 @@ class TestCase6030(BasicEnvironment):
             lst.append(result)
 
         results = [d for d in lst if d is True]
-        self.assertEqual(len(results), self.disks_for_custom_preview)
+        assert len(results) == self.disks_for_custom_preview
 
     def tearDown(self):
         if not ll_vms.stop_vms_safely([self.vm_name]):
@@ -889,7 +887,7 @@ class TestCase6033(BasicEnvironment):
         logger.info("The number of volumes after removing one snapshot is: "
                     "%s", current_vol_count)
 
-        self.assertEqual(current_vol_count, initial_vol_count - 1)
+        assert current_vol_count == initial_vol_count - 1
 
         self.check_file_existence_operation(True, 'snapshot')
 
@@ -913,7 +911,7 @@ class TestCase6015(BasicEnvironment):
         self.host_ip = ll_hosts.getHostIP(self.host)
         self.sd = ll_vms.get_vms_disks_storage_domain_name(self.vm_name)
         found, address = ll_sds.getDomainAddress(True, self.sd)
-        self.assertTrue(found, "IP for storage domain %s not found" % self.sd)
+        assert found, "IP for storage domain %s not found" % self.sd
         self.sd_ip = address['address']
 
     @polarion("RHEVM3-6015")

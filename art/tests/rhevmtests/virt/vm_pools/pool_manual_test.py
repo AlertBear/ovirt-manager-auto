@@ -89,7 +89,7 @@ class TestManualPoolRememberUser(base.VmPoolWithUser):
             vm_resource = gen_helper.get_vm_resource(vms[user])
             virt_helper.create_file_in_vm(vms[user], vm_resource)
             virt_helper.check_if_file_exist(True, vms[user], vm_resource)
-            self.assertTrue(helpers.flush_file_system_buffers(vm_resource))
+            assert helpers.flush_file_system_buffers(vm_resource)
         for user in self.users:
             helpers.stop_vm_in_pool_as_user(
                 positive=True, vm=vms[user], user=user, manual=True
@@ -139,9 +139,7 @@ class TestManualPoolRecycleVm(base.VmPoolWithUser):
                 "Failed to remove permission for user: %s on vm: %s" %
                 (self.user_name, stopped_vm)
             )
-        self.assertTrue(
-            hl_vms.wait_for_restored_stateless_snapshot(stopped_vm)
-        )
+        assert hl_vms.wait_for_restored_stateless_snapshot(stopped_vm)
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
         )

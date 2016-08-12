@@ -159,14 +159,17 @@ class BaseCaseIsoDomains(TestCase):
             else:
                 ssh = ""
             upload_cmd = "engine-iso-uploader -f upload -i %s %s %s" % (
-                self.iso_domain_name, ssh, path)
+                self.iso_domain_name, ssh, path
+            )
             logger.info("Executing %s", upload_cmd)
             rc, out = self.machine.runCmd(
                 upload_cmd.split(), data=config.HOSTS_PW
             )
             if not rc:
-                logger.error("Error uploading iso %s to domain %s => %s",
-                             path, self.iso_domain_name, out)
+                logger.error(
+                    "Error uploading iso %s to domain %s => %s", path,
+                    self.iso_domain_name, out
+                )
                 assert rc
 
         if run_once:
@@ -183,8 +186,8 @@ class BaseCaseIsoDomains(TestCase):
         status = ll_sd.deactivateStorageDomain(
             False, self.data_center_name, self.iso_domain_name
         )
-        self.assertTrue(
-            status, "ISO domain %s was deactivated while one of the isos "
+        assert status, (
+            "ISO domain %s was deactivated while one of the isos "
             "is attached to vm %s" % (iso_domain['name'], self.vm_name)
         )
 
@@ -194,9 +197,9 @@ class BaseCaseIsoDomains(TestCase):
         wait_for_tasks(config.VDC, config.VDC_PASSWORD, self.data_center_name)
         status = ll_sd.deactivateStorageDomain(
             True, self.data_center_name, self.iso_domain_name)
-        self.assertTrue(
-            status, "ISO domain %s wasn't deactivated after ejecting one of "
-            "the isos from the vm %s" % (self.iso_domain_name, self.vm_name)
+        assert status, (
+            "ISO domain %s wasn't deactivated after ejecting one of the isos"
+            "from the vm %s" % (self.iso_domain_name, self.vm_name)
         )
 
 

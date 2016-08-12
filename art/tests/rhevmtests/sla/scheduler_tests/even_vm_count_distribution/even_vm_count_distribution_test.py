@@ -132,12 +132,10 @@ class BalancingWithDefaultParameters(TwoHostsTests):
         All vms runs on host_1 and three of them must migrate to host_2,
         because balancing policy
         """
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[1],
-                expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
-                sampler_timeout=conf.LONG_BALANCE_TIMEOUT
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[1],
+            expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT
         )
 
 
@@ -162,12 +160,10 @@ class NoHostForMigration(TwoHostsTests):
         Vms 1 and 2 runs on host_1 and 3,4 and 5 on host_2,
         so migration must not appear, because it's no hosts for balancing
         """
-        self.assertFalse(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[0],
-                expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST - 1,
-                negative=True
-            )
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0],
+            expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST - 1,
+            negative=True
         )
 
 
@@ -194,12 +190,10 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
         """
         test_vm = conf.VM_NAME[conf.NUM_OF_VM_NAME - 1]
         assert ll_vms.startVm(positive=True, vm=test_vm)
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[1],
-                expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
-                sampler_timeout=conf.LONG_BALANCE_TIMEOUT
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[1],
+            expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT
         )
 
 
@@ -271,12 +265,10 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         assert ll_hosts.waitForHostsStates(
             positive=True, names=conf.HOSTS[1], states=conf.HOST_NONRESPONSIVE
         )
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[0],
-                expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
-                sampler_timeout=conf.LONG_BALANCE_TIMEOUT
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0],
+            expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT
         )
 
     @classmethod
@@ -315,12 +307,10 @@ class PutHostToMaintenance(EvenVmCountDistribution):
         Put host_2 to maintenance and check, where migrate vms from host_2
         """
         assert ll_hosts.deactivateHost(True, conf.HOSTS[1])
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[2],
-                expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
-                sampler_timeout=conf.LONG_BALANCE_TIMEOUT
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[2],
+            expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT
         )
         assert ll_hosts.activateHost(True, conf.HOSTS[1])
 
@@ -353,10 +343,8 @@ class MigrateVmUnderPolicy(EvenVmCountDistribution):
             raise errors.VMException(
                 "Failed to migrate vm %s" % conf.VM_NAME[1]
             )
-        self.assertTrue(
-            sch_helpers.is_balancing_happen(
-                host_name=conf.HOSTS[2],
-                expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST - 1,
-                sampler_timeout=conf.LONG_BALANCE_TIMEOUT
-            )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[2],
+            expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST - 1,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT
         )
