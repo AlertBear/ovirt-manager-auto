@@ -63,15 +63,12 @@ class TestCase10338(basePlan.TestCase5994):
 
 
 @attr(tier=2)
-@bz({'1311610': {}})
 class TestCase10337(basePlan.TestCase5993):
     """
     live migration with thin provision copy
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Live_Storage_Migration
     """
-    # TODO: This has not been verified since the bz prevents to run it,
-    # make sure it works properly
     __test__ = True
     polarion_test_case = '10337'
 
@@ -235,17 +232,6 @@ class TestCase10311(basePlan.TestCase5967):
     """
     __test__ = True
     polarion_test_case = '10311'
-
-
-@attr(tier=2)
-class TestCase10326(basePlan.TestCase5982):
-    """
-    merge snapshot
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_6_Storage_Live_Storage_Migration
-    """
-    __test__ = True
-    polarion_test_case = '10326'
 
 
 @attr(tier=2)

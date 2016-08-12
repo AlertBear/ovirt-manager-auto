@@ -246,16 +246,6 @@ class TestCase5967(basePlan.TestCase5967):
 
 
 @attr(tier=2)
-class TestCase5982(basePlan.TestCase5982):
-    """
-    merge snapshot
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-    """
-    __test__ = True
-
-
-@attr(tier=2)
 class TestCase5979(basePlan.TestCase5979):
     """
     offline migration for disk attached to running vm

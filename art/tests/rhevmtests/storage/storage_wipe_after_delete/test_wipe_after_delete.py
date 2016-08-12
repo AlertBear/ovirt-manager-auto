@@ -25,7 +25,6 @@ from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 FILE_TO_WATCH = config.VDSM_LOG
-REGEX_TEMPLATE = 'dd.* if=/dev/zero.* of=.*/%s'
 TASK_TIMEOUT = 120
 VM_NAMES = dict()
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -112,7 +111,9 @@ class CommonUsage(BaseTestCase):
         self.host_ip = ll_hosts.getHostIP(host)
         assert self.host_ip
         disk_obj = ll_disks.getVmDisk(self.vm_name, disk_id=self.disk_id)
-        regex = REGEX_TEMPLATE % disk_obj.get_image_id()
+        regex = (
+            config.REGEX_DD_WIPE_AFTER_DELETE % disk_obj.get_image_id()
+        )
 
         if update:
             testflow.step(

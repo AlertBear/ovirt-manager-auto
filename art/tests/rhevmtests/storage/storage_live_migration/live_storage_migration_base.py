@@ -11,6 +11,7 @@ from time import sleep
 import config
 import helpers
 from art.core_api.apis_exceptions import APITimeout
+from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
@@ -28,7 +29,7 @@ from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
 from art.rhevm_api.utils.test_utils import (
-    get_api, setPersistentNetwork, restartVdsmd, wait_for_tasks,
+    get_api, restartVdsmd, wait_for_tasks,
 )
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -344,6 +345,7 @@ class TestCase5994(BaseTestCase):
             )
 
 
+@bz({'1361838': {}})
 @attr(tier=2)
 class TestCase5993(BaseTestCase):
     """
@@ -351,8 +353,6 @@ class TestCase5993(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: This has not been verified since there is a bz that prevents it
-    # from being run. Add the bz and test this once more
     __test__ = False
     polarion_test_case = '5993'
 
@@ -362,11 +362,6 @@ class TestCase5993(BaseTestCase):
             - one has disk on first storage domain
             - second has disks on both storage domains
         """
-        ll_vms.start_vms([self.base_vm], 1, config.VM_UP, False)
-        ip_addr = storage_helpers.get_vm_ip(self.base_vm)
-        setPersistentNetwork(ip_addr, config.VM_PASSWORD)
-        ll_vms.stop_vms_safely([self.base_vm])
-
         disks_objs = ll_disks.getObjDisks(self.base_vm, get_href=False)
 
         target_domain = ll_disks.get_disk_storage_domain_name(
@@ -380,14 +375,18 @@ class TestCase5993(BaseTestCase):
         if not ll_templates.createTemplate(
             True, True, vm=self.base_vm, name=self.test_templates[0],
             cluster=config.CLUSTER_NAME, storagedomain=target_domain,
-            disk=disks_objs[0].get_alias()
         ):
             raise exceptions.TemplateException(
                 "Failed to create template '%s'" % self.test_templates[0]
             )
+        # ISCSI -> GLUSTER: Detail: [Cannot move Virtual Disk. Disk Profile
+        # test_gluster_1 with id b9711b73-7ed7-4b30-a8d7-e749a328b937 is not
+        # assigned to Storage Domain iscsi_0.]
+        # TODO: after https://bugzilla.redhat.com/show_bug.cgi?id=1361838
+        # is fixed remove the ignore_type=[config.STORAGE_TYPE_GLUSTER]
         self.second_domain = ll_disks.get_other_storage_domain(
             disk=disks_objs[0].get_id(), force_type=config.MIGRATE_SAME_TYPE,
-            key='id'
+            key='id', ignore_type=[config.STORAGE_TYPE_GLUSTER]
         )
         target_domain = filter(
             lambda w: w != self.second_domain, self.storage_domains)[0]
@@ -403,8 +402,12 @@ class TestCase5993(BaseTestCase):
             raise exceptions.TemplateException(
                 "Failed to create template '%s'" % self.test_templates[1]
             )
+        template_disks = ll_disks.getObjDisks(
+            self.test_templates[1], get_href=False, is_template=True
+        )
         ll_templates.copy_template_disks(
-            self.test_templates[1], self.second_domain
+            True, self.test_templates[1], template_disks[0].get_alias(),
+            self.second_domain
         )
         if not ll_templates.waitForTemplatesStates(
             names=",".join(self.test_templates)
@@ -425,24 +428,24 @@ class TestCase5993(BaseTestCase):
             "{0}_{1}".format(
                 storage_helpers.create_unique_object_name(
                     self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
-                ), "single"
+                )[:33], "single"
             ),
             "{0}_{1}".format(
                 storage_helpers.create_unique_object_name(
                     self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
-                ), "both"
+                )[:35], "both"
             )
         ]
         self.vm_names = [
             "{0}_{1}".format(
                 storage_helpers.create_unique_object_name(
                     self.__class__.__name__, config.OBJECT_TYPE_VM
-                ), "from_both"
+                ), "from_single"
             ),
             "{0}_{1}".format(
                 storage_helpers.create_unique_object_name(
                     self.__class__.__name__, config.OBJECT_TYPE_VM
-                ), "from_single"
+                ), "from_both"
             )
         ]
 
@@ -451,7 +454,6 @@ class TestCase5993(BaseTestCase):
         )
         super(TestCase5993, self).setUp()
         self.base_vm = self.vm_name
-        self.vm_names.append(self.vm_name)
         self._prepare_templates()
         for template, vm_name in zip(self.test_templates, self.vm_names):
             template_disks = ll_disks.getObjDisks(
@@ -478,7 +480,7 @@ class TestCase5993(BaseTestCase):
                     "domain %s" % (vm_name, template, target_sd)
                 )
 
-        ll_vms.start_vms([self.base_vm], 1, config.VM_UP, False)
+        ll_vms.start_vms(self.vm_names, 2, config.VM_UP, False)
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_LIVE_MIGRATE_DISK])
     @polarion("RHEVM3-5993")
@@ -502,7 +504,6 @@ class TestCase5993(BaseTestCase):
         )
 
         # Second test - template is copied on only one domain:
-
         with pytest.raises(exceptions.DiskException):
             ll_vms.live_migrate_vm(
                 self.vm_names[0], LIVE_MIGRATION_TIMEOUT,
@@ -517,7 +518,7 @@ class TestCase5993(BaseTestCase):
         self.teardown_wait_for_disks_and_snapshots(
             [self.vm_names[0], self.vm_names[1]]
         )
-        if not ll_vms.removeVms(True, self.vm_names):
+        if not ll_vms.safely_remove_vms(self.vm_names):
             logger.error("Failed to remove VMs %s", ', '.join(self.vm_names))
             BaseTestCase.test_failed = True
         if not ll_templates.removeTemplates(True, self.test_templates):
@@ -741,17 +742,16 @@ class TestCase5988(AllPermutationsDisks):
         super(TestCase5988, self).setUp()
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
 
-    def _prepare_snapshots(self, vm_name):
+    def _prepare_snapshots(self, vm_name, expected_status=True):
         """
         Creates one snapshot on the vm vm_name
         """
         logger.info("Creating new snapshot for vm %s", vm_name)
-        status = ll_vms.addSnapshot(True, vm_name, self.snapshot_desc)
+        status = ll_vms.addSnapshot(
+            expected_status, vm_name, self.snapshot_desc
+        )
         ll_vms.wait_for_vm_snapshots(vm_name, config.SNAPSHOT_OK)
-        if not status:
-            raise exceptions.VMException(
-                "Add snapshot to vm %s failed" % vm_name
-            )
+        return status
 
     @polarion("RHEVM3-5988")
     def test_lsm_before_snapshot(self):
@@ -767,9 +767,9 @@ class TestCase5988(AllPermutationsDisks):
             same_type=config.MIGRATE_SAME_TYPE
         )
         self.verify_lsm()
-        self._prepare_snapshots(self.vm_name)
+        assert self._prepare_snapshots(self.vm_name)
 
-    @polarion("RHEVM3-5988")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_lsm_after_snapshot(self):
         """
         2) create snapshot -> move
@@ -778,7 +778,7 @@ class TestCase5988(AllPermutationsDisks):
             - move the vm's images
         * we should succeed to move the vm
         """
-        self._prepare_snapshots(self.vm_name)
+        assert self._prepare_snapshots(self.vm_name)
         ll_vms.live_migrate_vm(
             self.vm_name, LIVE_MIGRATION_TIMEOUT,
             same_type=config.MIGRATE_SAME_TYPE
@@ -802,9 +802,19 @@ class TestCase5988(AllPermutationsDisks):
                 wait=False
             )
             ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
-            with pytest.raises(exceptions.VMException):
-                self._prepare_snapshots(self.vm_name)
-            ll_vms.waitForVmsDisks(self.vm_name)
+            assert self._prepare_snapshots(self.vm_name, expected_status=False)
+            ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+            # TODO: Investigate. For some reason the remove of the
+            # aut-generated snapshot job doesn't start immediately,
+            # wait until the job starts and then wait until it finishes
+            sampler = TimeoutingSampler(
+                30, 5, ll_jobs.get_active_jobs, [config.JOB_REMOVE_SNAPSHOT]
+            )
+            for jobs in sampler:
+                if jobs:
+                    # Wait until the remove of auto-generated snapshot starts
+                    break
+            ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
 
 
 @attr(tier=2)
@@ -883,13 +893,15 @@ class TestCase5995(AllPermutationsDisks):
         )
         ll_vms.move_vm_disk(vm_name, self.disk_to_move, target_sd)
         ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
-        ll_vms.start_vms([vm_name], 1, config.VM_UP, False)
         target_sd = ll_disks.get_other_storage_domain(
             self.disk_to_move, vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
+        ll_vms.start_vms([vm_name], 1, config.VM_UP, False)
         ll_vms.live_migrate_vm_disk(
             self.vm_name, self.disk_to_move, target_sd, LIVE_MIGRATION_TIMEOUT
         )
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
+        ll_vms.stop_vms_safely([self.vm_name])
 
     @polarion("RHEVM3-5995")
     def test_lsm_with_image_on_target(self):
@@ -1178,7 +1190,7 @@ class TestCase5970(BaseTestCase):
     __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '5970'
-    regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
+    regex = config.REGEX_DD_WIPE_AFTER_DELETE
 
     def setUp(self):
         """
@@ -1416,6 +1428,7 @@ class TestCase5968(AllPermutationsDisks):
             )
 
 
+@bz({'1368203': {}})
 @attr(tier=2)
 class TestCase5967(AllPermutationsDisks):
     """
@@ -1449,10 +1462,12 @@ class TestCase5967(AllPermutationsDisks):
             ll_vms.live_migrate_vm_disk(
                 self.vm_name, disk, target_sd, wait=False
             )
+            ll_disks.wait_for_disks_status(
+                [self.vm_disk_name], status=config.DISK_LOCKED
+            )
             ll_vms.stopVm(True, self.vm_name)
             ll_vms.waitForVmsDisks(self.vm_name)
             ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-            ll_vms.remove_all_vm_lsm_snapshots(self.vm_name)
             ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk)
             actual_size = disk_obj.get_actual_size()
@@ -1470,51 +1485,6 @@ class TestCase5967(AllPermutationsDisks):
             assert actual_size <= virtual_size, (
                 "Actual size exceeded virtual size"
             )
-
-
-@attr(tier=2)
-class TestCase5982(AllPermutationsDisks):
-    """
-    merge snapshot
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-    """
-    __test__ = False
-    polarion_test_case = '5982'
-
-    @polarion("RHEVM3-5982")
-    def test_merge_snapshot_live_migration(self):
-        """
-        Actions:
-            - LSM the vm's disk -> write to the vm during the migration
-            - after the LSM finished stop the vm
-            - delete the LSM snapshot
-            - run the vm
-        Expected Results:
-            - we should succeed to delete the snapshot
-            - we should succeed to run the vm
-        """
-        for index, disk in enumerate(DISK_NAMES[self.storage]):
-            target_sd = ll_disks.get_other_storage_domain(
-                disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
-            )
-            ll_vms.startVm(True, self.vm_name, config.VM_UP)
-            ll_vms.live_migrate_vm_disk(
-                self.vm_name, disk, target_sd, wait=False
-            )
-            ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
-            status, _ = storage_helpers.perform_dd_to_disk(
-                self.vm_name, disk, size=int(config.DISK_SIZE * 0.9),
-                write_to_file=True
-            )
-            ll_disks.wait_for_disks_status([disk])
-            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-            ll_vms.stop_vms_safely([self.vm_name])
-            ll_vms.remove_all_vm_lsm_snapshots(self.vm_name)
-            if not status:
-                raise exceptions.DiskException(
-                    "Failed to perform dd operation on disk %s" % disk
-                )
 
 
 @attr(tier=2)
@@ -2199,12 +2169,9 @@ class TestCase5971(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = False
+    __test__ = True
     polarion_test_case = '5971'
     disk_count = 3
-    # Bugzilla history:
-    # 1282957 - LSM fails when one of the vm's disks is located on domain
-    # in maintenance
 
     def _prepare_disks_for_vm(self, vm_name):
         """
@@ -2352,7 +2319,9 @@ class TestCase5980(BaseTestCase):
         ll_disks.wait_for_disks_status(
             [self.vm_disk_name], status=config.DISK_LOCKED
         )
-        status = ll_disks.attachDisk(False, self.disk_name, self.vm_name)
+        status = ll_disks.attachDisk(
+            False, self.disk_name, self.vm_name, active=False
+        )
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         ll_disks.wait_for_disks_status([self.vm_disk_name, self.disk_name])
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
