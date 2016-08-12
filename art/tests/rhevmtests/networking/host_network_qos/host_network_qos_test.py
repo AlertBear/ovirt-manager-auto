@@ -28,8 +28,8 @@ from fixtures import (
 )
 class TestHostNetQOSCase01(NetworkTest):
     """
-     Remove anonymous host network QoS when several networks with QoS are
-     attached to the host
+     Try to remove anonymous host network QoS when several networks with QoS
+     are attached to the host
     """
     __test__ = True
     nets = conf.NETS[1][:2]
@@ -39,7 +39,7 @@ class TestHostNetQOSCase01(NetworkTest):
     @polarion("RHEVM3-14300")
     def test_01_remove_anonymous_qos_for_network_on_host_nic(self):
         """
-        Remove QoS from the first network
+        Try to remove QoS from the first network
         """
         network_host_api_dict_1 = {
             "update": {
@@ -54,14 +54,15 @@ class TestHostNetQOSCase01(NetworkTest):
         }
 
         testflow.step(
-            "Remove QoS from %s on %s", self.nets[0], net_conf.HOST_0_NICS[1]
+            "Try to remove QoS from %s on %s", self.nets[0],
+            net_conf.HOST_0_NICS[1]
         )
-        assert hl_host_network.setup_networks(
+        assert not hl_host_network.setup_networks(
             host_name=net_conf.HOST_0_NAME, **network_host_api_dict_1
         )
 
     @polarion("RHEVM3-14354")
-    def test_02_remove_anonymous_qos_for_all_networks_on_host_nic(self):
+    def test_02_remove_anonymous_qos_from_all_networks_on_host_nic(self):
         """
         Remove QoS from both networks
         """
@@ -69,6 +70,13 @@ class TestHostNetQOSCase01(NetworkTest):
             "update": {
                 "1": {
                     "network": self.nets[1],
+                    "nic": net_conf.HOST_0_NICS[1],
+                    "qos": {
+                        "type_": conf.HOST_NET_QOS_TYPE
+                    },
+                },
+                "2": {
+                    "network": self.nets[0],
                     "nic": net_conf.HOST_0_NICS[1],
                     "qos": {
                         "type_": conf.HOST_NET_QOS_TYPE
@@ -439,7 +447,7 @@ class TestHostNetQOSCase06(NetworkTest):
             self.nets[0], self.net2, net_conf.HOST_0_NICS[1],
             net_conf.HOST_0_NAME
         )
-        assert hl_host_network.setup_networks(
+        assert not hl_host_network.setup_networks(
             host_name=net_conf.HOST_0_NAME, **network_host_api_dict
         )
 
