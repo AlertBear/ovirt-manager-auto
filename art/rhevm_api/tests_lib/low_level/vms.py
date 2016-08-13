@@ -2991,12 +2991,13 @@ def waitForIP(
                 if not vm_ips:
                     return None
 
-                ip = vm_ips if get_all_ips else vm_ips[0]
-                ping_ip = ip[0] if isinstance(ip, list) else ip
-                logger.info("Send ICMP to %s", ping_ip)
-                if not vds_resource.network.send_icmp(dst=ping_ip):
-                    return None
-                return ip
+                vm_ip = None
+                for ip_ in vm_ips:
+                    logger.info("Send ICMP to %s", ip_)
+                    if vds_resource.network.send_icmp(dst=ip_):
+                        vm_ip = ip_
+                        break
+                return vm_ip if not get_all_ips else vm_ips
         return None
 
     logger.info("Waiting for IP from %s", vm)
