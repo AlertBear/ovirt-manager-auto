@@ -596,7 +596,7 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
     mtu_1500 = str(conf.MTU[3])
     mtu = str(conf.MTU[2])
     net = jumbo_conf.NETS[9][0]
-    host_nic_index = 0
+    host_nic_index = 1
     hosts_nets_nic_dict = {
         0: {
             net: {
