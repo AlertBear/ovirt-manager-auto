@@ -66,12 +66,12 @@ class BaseTestCase(TestCase):
     def setUp(self):
         global DISK_NAMES
         self.vm_name = config.VM_NAME % self.storage
-        storage_domain = ll_sd.getStorageDomainNamesForType(
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
 
         vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = storage_domain
+        vm_args['storageDomainName'] = self.storage_domain
         vm_args['vmName'] = self.vm_name
         vm_args['deep_copy'] = self.deep_copy
 
@@ -428,9 +428,7 @@ class TestCase4910(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
     """
-    # TODO: Currently False because update operation is needed:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=854932
-    __test__ = False
+    __test__ = True
     polarion_test_case = '4910'
 
     @polarion("RHEVM3-4910")
@@ -448,22 +446,28 @@ class TestCase4910(BaseTestCase):
         """
         DISK_NAMES[self.storage] = (
             storage_helpers.create_disks_from_requested_permutations(
-                domain_to_use=self.storage_domains[0],
+                domain_to_use=self.storage_domain,
                 test_name=self.polarion_test_case
             )
         )
-        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
+        ll_vms.start_vms(
+            [self.vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=False
+        )
         self.prepare_disks_for_vm(read_only=False)
 
         vm_disks = ll_vms.getVmDisks(self.vm_name)
         for disk in [vm_disk.get_alias() for vm_disk in vm_disks]:
-            status = ll_disks.updateDisk(False, alias=disk, read_only=True)
+            status = ll_vms.updateDisk(
+                False, vmName=self.vm_name, alias=disk, read_only=True
+            )
             self.assertTrue(
                 status, "Succeeded to change RW disk %s to read-only" % disk
             )
             assert ll_vms.deactivateVmDisk(True, self.vm_name, disk)
 
-            status = ll_disks.updateDisk(True, alias=disk, read_only=True)
+            status = ll_vms.updateDisk(
+                True, vmName=self.vm_name, alias=disk, read_only=True
+            )
             self.assertTrue(
                 status, "Failed to change RW disk %s to read-only" % disk
             )

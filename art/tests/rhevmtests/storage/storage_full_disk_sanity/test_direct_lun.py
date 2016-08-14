@@ -607,3 +607,49 @@ class TestCase5913(DirectLunAttachTestCase):
             TestCase.test_failed = True
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
         TestCase.teardown_exception()
+
+
+@attr(tier=2)
+class TestCase5918(DirectLunAttachTestCase):
+    """
+    Update a direct lun attached to vm
+    """
+    polarion_test_case = "5918"
+    new_alias = 'new_direct_lun'
+
+    @polarion("RHEVM3-5918")
+    def test_update_direct_lun(self):
+        """
+        Update direct lun attached to vm
+        """
+        self.attach_disk_to_vm()
+        lun_id = ll_vms.getVmDisk(self.vm_name, self.disk_alias).get_id()
+        update_kwars = {
+            'id': lun_id,
+            'alias': self.new_alias,
+            'interface': config.VIRTIO_SCSI,
+            'shareable': True,
+        }
+        self.assertTrue(
+            ll_vms.updateDisk(True, vmName=self.vm_name, **update_kwars),
+            "Failed to update direct LUN"
+        )
+        lun_disk = ll_vms.getVmDisk(self.vm_name, self.new_alias)
+        lun_attachment = ll_vms.get_disk_attachment(
+            self.vm_name, lun_disk.get_id(),
+        )
+        status = (
+            update_kwars['alias'] == lun_disk.get_alias() and
+            update_kwars['shareable'] == lun_disk.get_shareable() and
+            update_kwars['interface'] == lun_attachment.get_interface()
+        )
+        self.assertTrue(status, "Direct LUN disk's parameters are not updated")
+
+    def tearDown(self):
+        logger.info("Deleting disk %s", self.new_alias)
+        if not ll_disks.deleteDisk(True, self.new_alias):
+            logger.error("Failed to remove disk %s", self.new_alias)
+            TestCase.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
+        super(TestCase5918, self).tearDown()
+        TestCase.teardown_exception()
