@@ -12,7 +12,7 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as im_ex_conf
+import config as import_export_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as networking_helper
@@ -26,11 +26,13 @@ class ImportExport(NetworkFixtures):
     """
     def __init__(self):
         super(ImportExport, self).__init__()
-        im_ex_conf.SD_NAME = ll_storagedomains.getStorageDomainNamesForType(
-            datacenter_name=self.dc_0, storage_type=conf.STORAGE_TYPE
-        )[0]
-        self.ie_vm = conf.IE_VM
-        self.ie_template = conf.IE_TEMPLATE
+        import_export_conf.SD_NAME = (
+            ll_storagedomains.getStorageDomainNamesForType(
+                datacenter_name=self.dc_0, storage_type=conf.STORAGE_TYPE
+            )[0]
+        )
+        self.ie_vm = import_export_conf.IE_VM
+        self.ie_template = import_export_conf.IE_TEMPLATE
         self.export_domain = conf.EXPORT_DOMAIN_NAME
         self.more_then_once_vm = conf.IMP_MORE_THAN_ONCE_VM
         self.more_then_once_template = conf.IMP_MORE_THAN_ONCE_TEMP
@@ -41,8 +43,9 @@ def import_export_prepare_setup(request):
     """
     Prepare setup
     """
-    ieex = ImportExport()
+    import_export = ImportExport()
 
+    @networking.ignore_exception
     def fin4():
         """
         Remove templates
@@ -55,7 +58,9 @@ def import_export_prepare_setup(request):
         """
         Finalizer for remove networks from setup
         """
-        ieex.remove_networks_from_setup(hosts=ieex.host_0_name)
+        import_export.remove_networks_from_setup(
+            hosts=import_export.host_0_name
+        )
     request.addfinalizer(fin3)
 
     @networking.ignore_exception
@@ -64,8 +69,9 @@ def import_export_prepare_setup(request):
         Finalizer for remove template from export domain
         """
         ll_templates.removeTemplateFromExportDomain(
-            positive=True, template=ieex.ie_template, datacenter=ieex.dc_0,
-            export_storagedomain=ieex.export_domain
+            positive=True, template=import_export.ie_template,
+            datacenter=import_export.dc_0,
+            export_storagedomain=import_export.export_domain
         )
     request.addfinalizer(fin2)
 
@@ -75,147 +81,166 @@ def import_export_prepare_setup(request):
         Finalizer for remove VM from export domain
         """
         ll_vms.remove_vm_from_export_domain(
-            positive=True, vm=ieex.ie_vm, datacenter=ieex.dc_0,
-            export_storagedomain=ieex.export_domain
+            positive=True, vm=import_export.ie_vm,
+            datacenter=import_export.dc_0,
+            export_storagedomain=import_export.export_domain
         )
     request.addfinalizer(fin1)
 
     assert ll_vms.createVm(
-        positive=True, vmName=ieex.ie_vm, vmDescription="",
-        cluster=ieex.cluster_0, storageDomainName=im_ex_conf.SD_NAME,
+        positive=True, vmName=import_export.ie_vm, vmDescription="",
+        cluster=import_export.cluster_0,
+        storageDomainName=import_export_conf.SD_NAME,
         provisioned_size=conf.VM_DISK_SIZE
     )
 
+    sn_dict = {
+        "add": {
+            "1": {
+                "network": import_export_conf.NETS[0],
+                "nic": import_export.host_0_nics[1]
+            },
+            "2": {
+                "network": import_export_conf.NETS[1],
+                "nic": import_export.host_0_nics[2]
+            },
+            "3": {
+                "network": import_export_conf.NETS[2],
+                "nic": import_export.host_0_nics[3]
+            }
+        }
+    }
     assert hl_networks.createAndAttachNetworkSN(
-        data_center=ieex.dc_0, cluster=ieex.cluster_0,
-        host=ieex.vds_0_host, network_dict=im_ex_conf.LOCAL_DICT,
-        auto_nics=[0, 3]
+        data_center=import_export.dc_0, cluster=import_export.cluster_0,
+        network_dict=import_export_conf.LOCAL_DICT
     )
-
-    net_list = [ieex.mgmt_bridge] + im_ex_conf.NETS[:3] + [None]
+    assert hl_host_network.setup_networks(
+        host_name=import_export.host_0_name, **sn_dict
+    )
+    net_list = (
+        [import_export.mgmt_bridge] + import_export_conf.NETS[:3] + [None]
+    )
     helper.add_nics_to_vm(net_list=net_list)
 
     assert ll_templates.createTemplate(
-        positive=True, vm=ieex.ie_vm, cluster=ieex.cluster_0,
-        name=ieex.ie_template
+        positive=True, vm=import_export.ie_vm, cluster=import_export.cluster_0,
+        name=import_export.ie_template
     )
     assert ll_templates.exportTemplate(
-        positive=True, template=ieex.ie_template,
-        storagedomain=ieex.export_domain
+        positive=True, template=import_export.ie_template,
+        storagedomain=import_export.export_domain
     )
 
     assert ll_vms.exportVm(
-        positive=True, vm=ieex.ie_vm, storagedomain=ieex.export_domain
+        positive=True, vm=import_export.ie_vm,
+        storagedomain=import_export.export_domain
     )
-    assert ll_vms.removeVm(positive=True, vm=ieex.ie_vm, stopVM="true")
+    assert ll_vms.removeVm(
+        positive=True, vm=import_export.ie_vm, stopVM="true"
+    )
 
     assert ll_templates.removeTemplate(
-        positive=True, template=ieex.ie_template
+        positive=True, template=import_export.ie_template
     )
 
 
 @pytest.fixture(scope="class")
-def fixture_case_01(request, import_export_prepare_setup):
+def import_vms(request, import_export_prepare_setup):
     """
-    Fixture for case01
+    Import VMs
     """
-    ieex = ImportExport()
-    vms_list = [ieex.ie_vm, ieex.more_then_once_vm]
+    import_export = ImportExport()
+    vms_to_import = request.node.cls.vms_to_import
+    vms_list = request.node.cls.vms_list
 
     def fin():
         """
-        Finalizer for remove VMs
+        Remove VMs
         """
         ll_vms.safely_remove_vms(vms=vms_list)
     request.addfinalizer(fin)
 
-    for name in (None, vms_list[1]):
+    for name in vms_to_import:
         assert ll_vms.importVm(
-            positive=True, vm=ieex.ie_vm,
-            export_storagedomain=ieex.export_domain,
-            import_storagedomain=im_ex_conf.SD_NAME, cluster=ieex.cluster_0,
-            name=name
+            positive=True, vm=import_export.ie_vm,
+            export_storagedomain=import_export.export_domain,
+            import_storagedomain=import_export_conf.SD_NAME,
+            cluster=import_export.cluster_0, name=name
         )
 
 
 @pytest.fixture(scope="class")
-def fixture_case_02(request, import_export_prepare_setup):
+def import_templates(request, import_export_prepare_setup):
     """
-    Fixture for case02
+    Import templates
     """
-    ieex = ImportExport()
-    template_list = [ieex.more_then_once_template, ieex.ie_template]
+    import_export = ImportExport()
+    templates_to_import = request.node.cls.templates_to_import
+    template_list = request.node.cls.template_list
 
     def fin():
         """
-        Finalizer for remove templates
+        Remove templates
         """
         ll_templates.removeTemplates(positive=True, templates=template_list)
     request.addfinalizer(fin)
 
-    for name in (None, template_list[0]):
+    for name in templates_to_import:
         assert ll_templates.import_template(
-            positive=True, template=ieex.ie_template,
-            source_storage_domain=ieex.export_domain,
-            destination_storage_domain=im_ex_conf.SD_NAME,
-            cluster=ieex.cluster_0, name=name
+            positive=True, template=import_export.ie_template,
+            source_storage_domain=import_export.export_domain,
+            destination_storage_domain=import_export_conf.SD_NAME,
+            cluster=import_export.cluster_0, name=name
         )
 
 
 @pytest.fixture(scope="class")
-def fixture_case_03(request, import_export_prepare_setup):
+def remove_networks(request, import_export_prepare_setup):
     """
-    Fixture for case03
+    Remove networks from datacenter and host
     """
-    ieex = ImportExport()
-    vms_list = [ieex.ie_vm, "IE_VM_2"]
-    net_list = im_ex_conf.NETS
-    net1 = im_ex_conf.NETS[0]
-    net2 = im_ex_conf.NETS[1]
+    import_export = ImportExport()
+    net_list = request.node.cls.net_list
+    net1 = request.node.cls.net1
+    net2 = request.node.cls.net2
 
     def fin():
         """
-        Finalizer for remove VMs, template and remove networks
+        Remove networks
         """
         dc_dict1 = {
             net1: {
-                "nic": 1,
                 "required": "false"
             },
             net2: {
                 "mtu": conf.MTU[0],
-                "nic": 2,
                 "required": "false"
             }
         }
-
-        ll_vms.safely_remove_vms(vms=vms_list)
-        ll_templates.removeTemplate(positive=True, template=ieex.ie_template)
+        sn_dict = {
+            "add": {
+                "1": {
+                    "network": net1,
+                    "nic": import_export.host_0_nics[1]
+                },
+                "2": {
+                    "network": net2,
+                    "nic": import_export.host_0_nics[2]
+                }
+            }
+        }
         networking_helper.prepare_networks_on_setup(
-            networks_dict=dc_dict1, dc=ieex.dc_0,
-            cluster=ieex.cluster_0
+            networks_dict=dc_dict1, dc=import_export.dc_0,
+            cluster=import_export.cluster_0
         )
-
-        hl_networks.createAndAttachNetworkSN(
-            host=ieex.vds_0_host, network_dict=im_ex_conf.LOCAL_DICT,
-            auto_nics=[0, 3]
+        hl_host_network.setup_networks(
+            host_name=import_export.host_0_name, **sn_dict
         )
     request.addfinalizer(fin)
 
     assert hl_host_network.remove_networks_from_host(
-        host_name=ieex.host_0_name, networks=net_list[:3]
+        host_name=import_export.host_0_name, networks=net_list[:3]
     )
     assert hl_networks.remove_networks(
         positive=True, networks=net_list[:2]
-    )
-    assert ll_templates.import_template(
-        positive=True, template=ieex.ie_template,
-        source_storage_domain=ieex.export_domain,
-        destination_storage_domain=im_ex_conf.SD_NAME,
-        cluster=ieex.cluster_0
-    )
-    assert ll_vms.importVm(
-        positive=True, vm=vms_list[0],
-        export_storagedomain=ieex.export_domain,
-        import_storagedomain=im_ex_conf.SD_NAME, cluster=ieex.cluster_0
     )

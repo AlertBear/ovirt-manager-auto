@@ -9,8 +9,8 @@ import logging
 
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as ie_ex_conf
-import rhevmtests.networking.config as conf
+import config as import_export_conf
+import rhevmtests.networking.config as network_conf
 
 logger = logging.getLogger("Import_Export_Networks_Helper")
 
@@ -23,12 +23,11 @@ def add_nics_to_vm(net_list):
     :type net_list: list
     :raise: NetworkException
     """
-    for net, nic in zip(net_list, conf.NIC_NAME):
-        if not ll_vms.addNic(
-            positive=True, vm=conf.IE_VM, name=nic, network=net,
+    for net, nic in zip(net_list, import_export_conf.VNICS):
+        assert ll_vms.addNic(
+            positive=True, vm=import_export_conf.IE_VM, name=nic, network=net,
             vnic_profile=net
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
 
 def check_imported_vm_or_templates(net1, net2, vm=None, template=None):
@@ -48,8 +47,8 @@ def check_imported_vm_or_templates(net1, net2, vm=None, template=None):
     :rtype: bool
     """
     log = (
-        "more than once" if vm is not conf.IE_VM and
-        template is not conf.IE_TEMPLATE else ""
+        "more than once" if vm is not import_export_conf.IE_VM and
+        template is not import_export_conf.IE_TEMPLATE else ""
     )
     vm_template_log = "VM" if vm else "Template"
     logger.info(
@@ -57,10 +56,10 @@ def check_imported_vm_or_templates(net1, net2, vm=None, template=None):
         vm_template_log, log
     )
     for (nic, vnic) in (
-        (conf.NIC_NAME[0], conf.MGMT_BRIDGE),
-        (conf.NIC_NAME[1], net1),
-        (conf.NIC_NAME[2], net2),
-        (conf.NIC_NAME[3], ie_ex_conf.NETS[2])
+        (import_export_conf.VNICS[0], network_conf.MGMT_BRIDGE),
+        (import_export_conf.VNICS[1], net1),
+        (import_export_conf.VNICS[2], net2),
+        (import_export_conf.VNICS[3], import_export_conf.NETS[2])
     ):
         if vm:
             if not ll_vms.check_vnic_on_vm_nic(vm=vm, nic=nic, vnic=vnic):

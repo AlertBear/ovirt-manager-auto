@@ -87,14 +87,6 @@ GATEWAY = '3.3.3.254'
 TRAFFIC_TIMEOUT = 120
 VM_IP_LIST = []
 
-# Import/Export parameters
-NAME_INT = randint(1, 100)
-IE_VM = "IE_VM_%s" % NAME_INT
-IE_TEMPLATE = "IE_TEMP_%s" % NAME_INT
-IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM_%s" % NAME_INT
-IMP_MORE_THAN_ONCE_TEMP = "MoreThanOnceTEMPLATE_%s" % NAME_INT
-EXPORT_TYPE = ENUMS['storage_dom_type_export']
-
 # Topologies parameters
 # Due to the switch configuration with specific IP
 # https://engineering.redhat.com/rt/Ticket/Display.html?id=336074
