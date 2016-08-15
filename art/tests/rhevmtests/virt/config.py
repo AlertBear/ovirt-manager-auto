@@ -47,7 +47,6 @@ VM_OS_TYPE = ENUMS[RHEL7PPC64] if PPC_ARCH else ENUMS['rhel6x64']
 VM_DISPLAY_TYPE = ENUMS[
     'display_type_vnc'
 ] if PPC_ARCH else ENUMS['display_type_spice']
-VM_TYPE = VM_TYPE_SERVER if PPC_ARCH else VM_TYPE_DESKTOP
 RHEL_OS_TYPE_FOR_MIGRATION = "rhel"
 
 # glance
@@ -100,8 +99,8 @@ VM_CPU_PINNING = "vcpu_pinning"
 VM_CPU_SOCKET = "cpu_socket"
 VM_CPU_CORES = "cpu_cores"
 VM_CPU_MODE = "cpu_mode"
+TYPE_VM = "type"
 VM_OS = "os_type"
-VM_TYPE = "type"
 VM_DISPLAY = "display_type"
 VM_CLUSTER = "cluster"
 VM_WATCHDOG_MODEL = "watchdog_model"
@@ -113,7 +112,7 @@ DEFAULT_VM_PARAMETERS = {
     VM_CPU_SOCKET: 1,
     VM_CPU_CORES: 1,
     VM_OS: VM_OS_TYPE,
-    VM_TYPE: VM_TYPE_DESKTOP,
+    TYPE_VM: VM_TYPE_DESKTOP,
     VM_DISPLAY: VM_DISPLAY_TYPE,
     VM_PLACEMENT_AFFINITY: VM_MIGRATABLE,
     VM_PLACEMENT_HOST: VM_ANY_HOST,
@@ -122,5 +121,5 @@ DEFAULT_VM_PARAMETERS = {
     VM_HIGHLY_AVAILABLE: False,
     VM_CPU_PINNING: [],
     VM_CPU_SHARES: 0,
-    VM_CPU_MODE: "custom"  # W/A for 1337181
+    VM_CPU_MODE: "custom"  # TODO W/A for 1337181
 }
