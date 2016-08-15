@@ -17,34 +17,24 @@ import rhevmtests.networking.helper as network_helper
 logger = logging.getLogger("Host_Network_API_Helper")
 
 
-def attach_network_attachment(host_nic=None, positive=True, **network_dict):
+def get_networks_sync_status_and_unsync_reason(net_sync_reason):
     """
-    Attach network attachment to host NIC via NIC or host href
+    Check if networks attachment is unsync and check the unsync reason
 
-    :param network_dict: Network dict
-    :type network_dict: dict
-    :param host_nic: NIC name
-    :type host_nic: str
-    :param positive: Expected status
-    :type positive: bool
-    :return: True/False
-    :rtype: bool
+    Args:
+        net_sync_reason (dict): List of tuple of (network_name, unsync_reason)
+
+    Returns:
+        bool: True if network attachment is unsync and if unsync reason
+            is correct, else False.
     """
-    res = hl_host_network.add_network_to_host(
-        host_name=conf.HOST_0_NAME, nic_name=host_nic, **network_dict
-    )
-    return not res != positive
+    networks = [i for i in net_sync_reason]
+    if network_helper.networks_sync_status(
+        host=conf.HOST_0_NAME, networks=networks
+    ):
+        logger.error("%s are synced but shouldn't", networks)
+        return False
 
-
-def networks_unsync_reasons(net_sync_reason):
-    """
-    Check the reason for unsync networks is correct
-
-    :param net_sync_reason: List of tuples of (network_name, unsync_reason)
-    :type net_sync_reason: dict
-    :return: True if unsync reason is correct
-    :rtype: bool
-    """
     for net, val in net_sync_reason.iteritems():
         reas = val.keys()[0]
         dict_to_compare = net_sync_reason[net][reas]
@@ -61,43 +51,21 @@ def networks_unsync_reasons(net_sync_reason):
     return True
 
 
-def get_networks_sync_status_and_unsync_reason(net_sync_reason):
-    """
-    Check if networks attachment is unsync and check the unsync reason
-
-    :param net_sync_reason: List of tuple of (network_name, unsync_reason)
-    :type net_sync_reason: dict
-    :return: True/False
-    :rtype: bool
-    """
-    networks = [i for i in net_sync_reason]
-    if network_helper.networks_sync_status(
-        host=conf.HOST_0_NAME, networks=networks
-    ):
-        logger.error("%s are synced but shouldn't", networks)
-        return False
-
-    if not networks_unsync_reasons(net_sync_reason):
-        logger.error("%s unsync reason is incorrect", networks)
-        return False
-    return True
-
-
 def manage_ip_and_refresh_capabilities(
     interface, ip=None, netmask="24", set_ip=True
 ):
     """
     Set temporary IP on interface and refresh capabilities
 
-    :param interface: Interface name
-    :type interface: str
-    :param ip: IP to set
-    :type ip: str
-    :param netmask: Netmask for the IP
-    :type netmask: str
-    :param set_ip: True to set IP on interface
-    :type set_ip: bool
-    :raise: NET_EXCEPTION
+    Args:
+        interface (str): Interface name.
+        ip (str): IP to set.
+        netmask (str): Netmask for the IP.
+        set_ip (bool): True to set IP on interface.
+
+    Raises:
+        AssertionError: If failed to set temporary IP on interface and
+            refresh capabilities.
     """
     old_ip = None
     int_ip = conf.VDS_0_HOST.network.find_ip_by_int(interface)
@@ -106,11 +74,11 @@ def manage_ip_and_refresh_capabilities(
         old_ip = [i for i in host_ips[1] if int_ip in i][0]
 
     if old_ip:
-        remove_interface_ip(ip=old_ip, interface=interface)
+        remove_ip_from_interface(ip=old_ip, interface=interface)
 
     if set_ip:
         ip = int_ip if not ip else ip
-        set_interface_ip(ip=ip, netmask=netmask, interface=interface)
+        set_ip_on_interface(ip=ip, netmask=netmask, interface=interface)
 
     last_event = ll_events.get_max_event_id(query="")
     logger.info("Refresh capabilities for %s", conf.HOST_0_NAME)
@@ -119,35 +87,33 @@ def manage_ip_and_refresh_capabilities(
     )
 
 
-def remove_interface_ip(ip, interface):
+def remove_ip_from_interface(ip, interface):
     """
-    Remove IP from interface using ip addr
+    Remove IP from interface using ip address.
 
-    :param ip: IP to remove
-    :type ip: str
-    :param interface: Interface where the IP is
-    :type interface: str
-    :raise: NET_EXCEPTION
+    Args:
+        ip (str): IP to remove.
+        interface (str): Interface where the IP is.
+
+     Raises:
+        AssertionError: If failed to remove IP from interface.
     """
     cmd = ["ip", "addr", "del", "%s" % ip, "dev", interface]
-    rc, _, _ = conf.VDS_0_HOST.run_command(cmd)
-    if rc:
-        raise conf.NET_EXCEPTION()
+    assert not conf.VDS_0_HOST.run_command(cmd)[0]
 
 
-def set_interface_ip(ip, netmask, interface):
+def set_ip_on_interface(ip, netmask, interface):
     """
-    Set IP on interface using ip addr
+    Set IP on interface using ip address
 
-    :param ip: IP to set
-    :type ip: str
-    :param netmask: Netmask for the IP
-    :type netmask: str
-    :param interface: Interface to set the IP on
-    :type interface: str
-    :raise: NET_EXCEPTION
+    Args:
+        ip (str): IP to set.
+        netmask (str): Netmask for the IP.
+        interface (str): Interface to set the IP on.
+
+     Raises:
+        AssertionError: If failed to set IP on interface.
     """
-    if not test_utils.configure_temp_static_ip(
+    assert test_utils.configure_temp_static_ip(
         vds_resource=conf.VDS_0_HOST, ip=ip, nic=interface, netmask=netmask
-    ):
-        raise conf.NET_EXCEPTION()
+    )

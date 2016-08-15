@@ -9,7 +9,7 @@ import logging
 import re
 import shlex
 import uuid
-from random import randint
+import random
 
 from utilities import jobs
 
@@ -64,13 +64,16 @@ def create_random_ips(num_of_ips=2, mask=16, ip_version=4, base_ip_prefix="5"):
         logger.error("IP version %s is not supported", ip_version)
         return ips
 
+    int_list = random.sample(xrange(1, 250), 200)
     for i in xrange(num_of_ips):
-        rand_num = [randint(1, 250) for i in xrange(4 - ip_mask)]
         if ip_version == 4:
-            rand_oct = ".".join(str(i) for i in rand_num)
-            ips.append(".".join([base_ip, rand_oct]))
+            ip_str = ""
+            for x in range(4 - ip_mask):
+                ip_str += ".{ip_oct}".format(ip_oct=int_list.pop(x))
+            ips.append("".join([base_ip, ip_str]))
+
         if ip_version == 6:
-            ips.append("{0}{1}".format(base_ip, rand_num[0]))
+            ips.append("{0}{1}".format(base_ip, int_list.pop(i)))
     return ips
 
 

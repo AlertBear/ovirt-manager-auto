@@ -137,6 +137,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
             slaves = value.get("slaves")
             nic = value.get("nic")
             network = value.get("network")
+            datacenter = value.get("datacenter")
             ip_dict = value.get("ip")
             mode = value.get("mode")
             if slaves:
@@ -149,6 +150,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
             sn_dict["add"][net] = {
                 "network": network,
                 "nic": nic,
+                "datacenter": datacenter,
                 "slaves": slaves_list,
                 "mode": mode,
             }

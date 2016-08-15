@@ -59,6 +59,9 @@ NUM_DUMMYS = 20
 DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 DEFAULT_MGMT_QOS = "Default-Mgmt-Net-QoS"
 LAST_VM = VM_NAME[-1]
+CLEAN_HOSTS_DICT = {
+    0: {}
+}
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
