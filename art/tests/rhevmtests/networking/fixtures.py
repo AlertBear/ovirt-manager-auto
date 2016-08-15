@@ -5,8 +5,12 @@
 Networking fixtures
 """
 
+import pytest
+
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
+from art.unittest_lib import testflow
 from rhevmtests.networking import helper as network_helper
 
 
@@ -90,3 +94,68 @@ class NetworkFixtures(object):
             vm (str): Name of vm.
         """
         ll_vms.stopVm(positive=positive, vm=vm)
+
+
+@pytest.fixture(scope="class")
+def clean_host_interfaces(request):
+    """
+    Clean hosts interfaces.
+    """
+    NetworkFixtures()
+    hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
+
+    def fin():
+        """
+        Clean hosts interfaces
+        """
+        for key in hosts_nets_nic_dict.iterkeys():
+            host_name = conf.HOSTS[key]
+            testflow.teardown("Clean host %s interface", host_name)
+            hl_host_network.clean_host_interfaces(host_name=host_name)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def setup_networks_fixture(request, clean_host_interfaces):
+    """
+    perform network operation to host via setup network
+    """
+    NetworkFixtures()
+    hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
+
+    sn_dict = {
+        "add": {}
+    }
+
+    for key, val in hosts_nets_nic_dict.iteritems():
+        host = conf.HOSTS[key]
+        host_resource = conf.VDS_HOSTS[key]
+        for net, value in val.iteritems():
+            slaves_list = list()
+            slaves = value.get("slaves")
+            nic = value.get("nic")
+            network = value.get("network")
+            ip_dict = value.get("ip")
+            mode = value.get("mode")
+            if slaves:
+                for nic_ in slaves:
+                    slaves_list.append(host_resource.nics[nic_])
+
+            if isinstance(nic, int):
+                nic = host_resource.nics[nic]
+
+            sn_dict["add"][net] = {
+                "network": network,
+                "nic": nic,
+                "slaves": slaves_list,
+                "mode": mode,
+            }
+            if ip_dict:
+                for k, v in ip_dict.iteritems():
+                    ip_dict[k]["netmask"] = v.get("netmask", "24")
+                    ip_dict[k]["boot_protocol"] = v.get(
+                        "boot_protocol", "static"
+                    )
+                    sn_dict["add"][net]["ip"] = ip_dict
+        testflow.setup("Create %s via setup_network on host %s", sn_dict, host)
+        assert hl_host_network.setup_networks(host_name=host, **sn_dict)
