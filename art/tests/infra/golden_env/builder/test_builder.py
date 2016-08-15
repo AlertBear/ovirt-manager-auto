@@ -529,7 +529,7 @@ class CreateDC(TestCase):
         disk_sd = disks.get_disk_storage_domain_name(
             template_disk, template_name=template)
         for sd in all_sds:
-            if sd not in (disk_sd, config.HOSTED_ENGINE_SD_NAME):
+            if sd not in disk_sd:
                 for disk in template_disks:
                     templates.wait_for_template_disks_state(template)
                     LOGGER.info(
