@@ -76,6 +76,10 @@ class TestTopologiesCase01(NetworkTest):
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
+@pytest.mark.skipif(
+    conf.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+)
 class TestTopologiesCase02(NetworkTest):
     """
     Check connectivity to VM with VLAN over BOND mode 1 network
