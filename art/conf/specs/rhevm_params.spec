@@ -14,7 +14,7 @@ vds_ovirt_port = integer(default='8443')
 mgmt_bridge = string(default='ovirtmgmt')
 compatibility_version = option('3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', default='4.0')
 local_domain_path = string(default='/home/rest_test_domain')
-product_name = option('Red Hat Enterprise Virtualization Manager', 'oVirt Engine', default='Red Hat Enterprise Virtualization Manager')
+product_name = option('Red Hat Virtualization Manager', 'oVirt Engine', default='Red Hat Virtualization Manager')
 vds_password = force_list(default=list('qum5net', 'qum5net'))
 vds = is_alive()
 # local replaces data_center_type. it is boolean, shared dc will be created when it is False and local dc will be created when it is True
