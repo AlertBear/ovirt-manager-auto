@@ -19,6 +19,9 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.unittest_lib import attr, StorageTest as TestCase
 from rhevmtests.storage import helpers as storage_helpers
+from rhevmtests.storage.fixtures import (
+    create_vm, add_disk, update_vm
+)
 
 ENUMS = config.ENUMS
 
@@ -771,3 +774,34 @@ class TestCase14955(BaseOneDiskAttachedTestCase):
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         ll_vms.suspendVm(True, self.vm_name)
         self.update_disk_interface(positive=False)
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__, update_vm.__name__, add_disk.__name__
+)
+class TestCase16716(TestCase):
+    """
+    Attach a disk to a VM with virtio-scsi interface when the VM does not
+    support that interface
+    """
+    __test__ = True
+    disk_size = 1 * config.GB
+    installation = False
+    update_vm_params = {
+        "virtio_scsi": False
+    }
+
+    @polarion("RHEVM3-16716")
+    def test_attach_virtio_scsi_disk_to_unsupported_vm(self):
+        """
+        Attach a disk to a VM when the interface is virtio-scsi and the VM does
+        not support this interface
+        """
+        if not ll_disks.attachDisk(
+            False, self.disk_name, self.vm_name, interface=config.VIRTIO_SCSI
+        ):
+            raise exceptions.DiskException(
+                "Succeeded to attach disk %s to vm %s" %
+                (self.disk_name, self.vm_name)
+            )

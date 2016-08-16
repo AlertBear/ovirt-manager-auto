@@ -45,9 +45,9 @@ def create_vm(request):
 
 
 @pytest.fixture(scope='class')
-def delete_disk(request):
+def add_disk(request):
     """
-    Create VM and initialize parameters
+    Add disk and initialize parameters
     """
     self = request.node.cls
 
@@ -55,9 +55,52 @@ def delete_disk(request):
         if ll_disks.checkDiskExists(True, self.disk_name):
             ll_disks.wait_for_disks_status([self.disk_name])
             if not ll_disks.deleteDisk(True, self.disk_name):
-                logger.error(
-                    "Failed to delete disk %s", self.disk_name
-                )
+                self.test_failed = True
+        self.teardown_exception()
+    request.addfinalizer(finalizer)
+    if self.storage_domain is None:
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+    self.disk_name = storage_helpers.create_unique_object_name(
+        self.__class__.__name__, config.OBJECT_TYPE_DISK
+    )
+    if not ll_disks.addDisk(
+        True, provisioned_size=self.disk_size,
+        storagedomain=self.storage_domain, alias=self.disk_name,
+        format=config.COW_DISK, sparse=True
+    ):
+        raise exceptions.DiskException(
+            "Failed to create disk %s" % self.disk_name
+        )
+    ll_disks.wait_for_disks_status([self.disk_name])
+
+
+@pytest.fixture(scope='class')
+def update_vm(request):
+    """
+    Update VM
+    """
+    self = request.node.cls
+
+    if not ll_vms.updateVm(True, self.vm_name, **self.update_vm_params):
+        raise exceptions.VMException(
+            "Failed to disable virtio-scsi support of vm %s" %
+            self.disk_name
+        )
+
+
+@pytest.fixture(scope='class')
+def delete_disk(request):
+    """
+    Delete disk
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if ll_disks.checkDiskExists(True, self.disk_name):
+            ll_disks.wait_for_disks_status([self.disk_name])
+            if not ll_disks.deleteDisk(True, self.disk_name):
                 self.test_failed = True
         self.teardown_exception()
     request.addfinalizer(finalizer)

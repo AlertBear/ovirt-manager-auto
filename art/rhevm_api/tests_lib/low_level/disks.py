@@ -401,6 +401,8 @@ def deleteDisk(positive, alias=None, async=True, disk_id=None):
     )
     # TODO: add async parameter to delete method once it's supported
     status = DISKS_API.delete(disk_obj, positive)
+    if not status and positive:
+        logger.error("Failed to delete disk %s", alias)
     return status
 
 
