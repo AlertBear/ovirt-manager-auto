@@ -20,10 +20,12 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    attach_networks_to_hosts, add_vnics_to_vms,
-    update_cluster_network, restore_hosts_mtu, configure_mtu_on_host,
-    prepare_setup_jumbo_frame
+    add_vnics_to_vms, update_cluster_network, restore_hosts_mtu,
+    configure_mtu_on_host, prepare_setup_jumbo_frame
 )
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces
+)  # flake8: noqa
 
 
 @attr(tier=2)
@@ -41,7 +43,7 @@ class TestJumboFramesTestCaseBase(NetworkTest):
     pass
 
 
-@pytest.mark.usefixtures(attach_networks_to_hosts.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
     """
     Test VM network with MTU 5000
@@ -52,7 +54,8 @@ class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
     hosts_nets_nic_dict = {
         0: {
             net: {
-                "nic": 1
+                "nic": 1,
+                "network": net
             }
         }
     }
@@ -70,7 +73,7 @@ class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
         )
 
 
-@pytest.mark.usefixtures(attach_networks_to_hosts.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     """
     Attach two non-VM VLAN networks with Jumbo Frames
@@ -87,10 +90,12 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     hosts_nets_nic_dict = {
         0: {
             net_1: {
-                "nic": 1
+                "nic": 1,
+                "network": net_1
             },
             net_2: {
-                "nic": 1
+                "nic": 1,
+                "network": net_2
             }
         }
     }
@@ -120,7 +125,7 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
 )
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    attach_networks_to_hosts.__name__,
+    setup_networks_fixture.__name__,
     add_vnics_to_vms.__name__
 )
 class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
@@ -150,17 +155,27 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         0: {
             net: {
                 "nic": bond,
+                "network": net,
                 "slaves": [2, 3],
                 "mode": 1,
-                "ip": hosts_ips[0]
+                "ip": {
+                    "1": {
+                        "address": hosts_ips[0]
+                    }
+                }
             }
         },
         1: {
             net: {
                 "nic": bond,
+                "network": net,
                 "slaves": [2, 3],
                 "mode": 1,
-                "ip": hosts_ips[1]
+                "ip": {
+                    "1": {
+                        "address": hosts_ips[1]
+                    }
+                }
             }
         }
     }
@@ -242,7 +257,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
 
 
 @pytest.mark.usefixtures(
-    attach_networks_to_hosts.__name__,
+    setup_networks_fixture.__name__,
     add_vnics_to_vms.__name__
 )
 class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
@@ -282,11 +297,17 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         0: {
             net_1: {
                 "nic": bond,
+                "network": net_1,
                 "slaves": [2, 3]
             },
             net_2: {
                 "nic": bond,
-                "ip": hosts_ips[0]
+                "network": net_2,
+                "ip": {
+                    "1": {
+                        "address": hosts_ips[0]
+                    }
+                }
             },
             net_3: {
                 "nic": bond
@@ -298,11 +319,17 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         1: {
             net_1: {
                 "nic": bond,
+                "network": net_1,
                 "slaves": [2, 3]
             },
             net_2: {
                 "nic": bond,
-                "ip": hosts_ips[1]
+                "network": net_2,
+                "ip": {
+                    "1": {
+                        "address": hosts_ips[1]
+                    }
+                }
             },
             net_3: {
                 "nic": bond
@@ -354,7 +381,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
 
 @pytest.mark.usefixtures(
     update_cluster_network.__name__,
-    attach_networks_to_hosts.__name__,
+    setup_networks_fixture.__name__,
     add_vnics_to_vms.__name__
 )
 class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
@@ -382,13 +409,23 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
         0: {
             net: {
                 "nic": 1,
-                "ip": hosts_ips[0]
+                "network": net,
+                "ip": {
+                    "1": {
+                        "address": hosts_ips[0]
+                    }
+                }
             }
         },
         1: {
             net: {
                 "nic": 1,
-                "ip": hosts_ips[1]
+                "network": net,
+                "ip": {
+                    "1": {
+                        "address": hosts_ips[1]
+                    }
+                }
             }
         }
     }
@@ -442,7 +479,7 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
 
 
 @pytest.mark.usefixtures(
-    attach_networks_to_hosts.__name__,
+    setup_networks_fixture.__name__,
     add_vnics_to_vms.__name__
 )
 class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
@@ -473,17 +510,21 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         0: {
             net_1: {
                 "nic": 1,
+                "network": net_1,
             },
             net_2: {
                 "nic": 1,
+                "network": net_2,
             }
         },
         1: {
             net_1: {
                 "nic": 1,
+                "network": net_1,
             },
             net_2: {
                 "nic": 1,
+                "network": net_2,
             }
         }
     }
@@ -526,7 +567,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         )
 
 
-@pytest.mark.usefixtures(attach_networks_to_hosts.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     """
     Attach bridged VLAN network over BOND on Host with MTU 5000
@@ -546,6 +587,7 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
         0: {
             net_1: {
                 "nic": bond,
+                "network": net_1,
                 "slaves": [2, 3]
             }
         }
@@ -584,7 +626,7 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
 
 @pytest.mark.usefixtures(
     configure_mtu_on_host.__name__,
-    attach_networks_to_hosts.__name__
+    setup_networks_fixture.__name__
 )
 class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
     """
@@ -601,6 +643,7 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
         0: {
             net: {
                 "nic": 1,
+                "network": net,
             }
         }
     }

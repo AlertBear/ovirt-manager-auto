@@ -7,15 +7,15 @@ Fixtures for jumbo frame
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.networking.helper as network_helper
-import rhevmtests.networking.config as conf
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-from art.rhevm_api.utils import test_utils
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
+import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.jumbo_frames.config as jumbo_conf
+from art.rhevm_api.utils import test_utils
+from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -65,53 +65,6 @@ def prepare_setup_jumbo_frame(request):
 
 
 @pytest.fixture(scope="class")
-def attach_networks_to_hosts(request, restore_hosts_mtu):
-    """
-    Attach networks to hosts via setup_networks
-    """
-    JumboFrame()
-    hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
-    ip_dict = {
-        "1": {
-            "address": None,
-            "netmask": "24",
-            "boot_protocol": "static"
-        }
-    }
-    sn_dict = {
-        "add": {}
-    }
-
-    for key, val in hosts_nets_nic_dict.iteritems():
-        host = conf.HOSTS[key]
-        host_resource = conf.VDS_HOSTS[key]
-        for net, value in val.iteritems():
-            slaves_list = list()
-            slaves = value.get("slaves")
-            nic = value.get("nic")
-            ip_addr = value.get("ip")
-            mode = value.get("mode")
-            if slaves:
-                for nic_ in slaves:
-                    slaves_list.append(host_resource.nics[nic_])
-
-            if isinstance(nic, int):
-                nic = host_resource.nics[nic]
-
-            sn_dict["add"][net] = {
-                "network": net,
-                "nic": nic,
-                "slaves": slaves_list,
-                "mode": mode
-            }
-            if ip_addr:
-                ip_dict["1"]["address"] = ip_addr
-                sn_dict["add"][net]["ip"] = ip_dict
-
-        assert hl_host_network.setup_networks(host_name=host, **sn_dict)
-
-
-@pytest.fixture(scope="class")
 def configure_mtu_on_host(request, restore_hosts_mtu):
     """
     Configure MTU on hosts interfaces
@@ -119,9 +72,14 @@ def configure_mtu_on_host(request, restore_hosts_mtu):
     jumbo_frame = JumboFrame()
     mtu = request.node.cls.mtu
     host_nic_index = request.node.cls.host_nic_index
+    host_nic = jumbo_frame.host_0_nics[host_nic_index]
+    testflow.setup(
+        "Configure MTU %s on host %s host NIC %s", mtu,
+        jumbo_frame.vds_0_host, host_nic
+    )
     assert test_utils.configure_temp_mtu(
         vds_resource=jumbo_frame.vds_0_host, mtu=mtu,
-        nic=jumbo_frame.host_0_nics[host_nic_index]
+        nic=host_nic
     )
 
 
@@ -141,6 +99,9 @@ def add_vnics_to_vms(request):
         for vm_name in conf.VM_NAME[:2]:
             for vnic_to_remove in vnics_to_add:
                 nic_name = vnic_to_remove.get("nic_name")
+                testflow.teardown(
+                    "Remove vNIC %s from VM %s", nic_name, vm_name
+                )
                 ll_vms.updateNic(
                     positive=True, vm=vm_name, nic=nic_name, plugged=False
                 )
@@ -149,6 +110,7 @@ def add_vnics_to_vms(request):
 
     for vnic_to_add in vnics_to_add:
         vnic_to_add["ips"] = vms_ips
+        testflow.setup("Add vNIC: %s to VMs", vnic_to_add)
         assert helper.add_vnics_to_vms(**vnic_to_add)
 
 
@@ -164,6 +126,10 @@ def update_cluster_network(request):
         """
         Update management cluster network to default
         """
+        testflow.teardown(
+            "Update cluster network %s as display,vm,migration,management",
+            jumbo_frame.mgmt_bridge
+        )
         ll_networks.update_cluster_network(
             positive=True, cluster=jumbo_frame.cluster_0,
             network=jumbo_frame.mgmt_bridge,
@@ -171,6 +137,7 @@ def update_cluster_network(request):
         )
     request.addfinalizer(fin)
 
+    testflow.setup("Update cluster network %s as display,vm", net)
     assert ll_networks.update_cluster_network(
         positive=True, cluster=jumbo_frame.cluster_0, network=net,
         usages='display,vm'
@@ -188,5 +155,6 @@ def restore_hosts_mtu(request):
         """
         Set default MTU on all hosts interfaces
         """
+        testflow.teardown("Restore hosts interfaces MTU to 1500")
         helper.restore_mtu_and_clean_interfaces()
     request.addfinalizer(fin)
