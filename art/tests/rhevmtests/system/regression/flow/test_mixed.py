@@ -39,7 +39,6 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Failed to check product name')
 
     @attr(tier=1)
-    @bz({'1367400': {}})
     def test_check_existing_permissions(self):
         """
         verify users functionality
