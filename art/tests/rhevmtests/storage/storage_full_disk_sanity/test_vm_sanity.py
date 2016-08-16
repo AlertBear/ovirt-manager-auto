@@ -3,17 +3,28 @@ Storage VM sanity
 Polarion plan: https://polarion.engineering.redhat.com/polarion/#/project/
 RHEVM3/wiki/Storage/3_3_Storage_VM_Sanity
 """
-import config
 import logging
+
+import pytest
+
+import config
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
-from art.rhevm_api.tests_lib.low_level import vms, templates, storagedomains
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    vms as ll_vms,
+    templates as ll_template,
+    storagedomains as ll_sd,
+)
 from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import polarion
-import rhevmtests.storage.helpers as helpers
+import rhevmtests.storage.helpers as storage_helpers
+from rhevmtests.storage.fixtures import (
+    create_vm, delete_disk,
+)
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
@@ -21,13 +32,13 @@ ENUMS = config.ENUMS
 def _prepare_data(sparse, vol_format, template_names, storage_type):
     """ prepares data for vm
     """
-    storage_domain = storagedomains.getStorageDomainNamesForType(
+    storage_domain = ll_sd.getStorageDomainNamesForType(
         config.DATA_CENTER_NAME, storage_type)[0]
     template_name = "%s_%s_%s_%s" % (
         config.TEMPLATE_NAME, sparse, vol_format, storage_type)
     vm_name = '%s_%s_%s_%s_prep' % (
         config.TESTNAME, sparse, vol_format, storage_type)
-    LOGGER.info("Creating vm sparse - %s %s %s..." %
+    logger.info("Creating vm sparse - %s %s %s..." %
                 (sparse, vol_format, storage_type))
     vm_args = config.create_vm_args.copy()
     vm_args['vmName'] = vm_name
@@ -35,26 +46,26 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     vm_args['volumeType'] = sparse
     vm_args['volumeFormat'] = vol_format
     vm_args['start'] = 'true'
-    if not helpers.create_vm_or_clone(**vm_args):
+    if not storage_helpers.create_vm_or_clone(**vm_args):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
-    LOGGER.info("Waiting for ip of %s" % vm_name)
-    vm_ip = vms.waitForIP(vm_name)[1]['ip']
-    LOGGER.info("Setting persistent network")
+    logger.info("Waiting for ip of %s" % vm_name)
+    vm_ip = ll_vms.waitForIP(vm_name)[1]['ip']
+    logger.info("Setting persistent network")
     assert test_utils.setPersistentNetwork(vm_ip, config.VMS_LINUX_PW)
-    LOGGER.info("Stopping VM %s" % vm_name)
-    if not vms.stopVm(True, vm_name):
+    logger.info("Stopping VM %s" % vm_name)
+    if not ll_vms.stopVm(True, vm_name):
         raise exceptions.VMException("Stopping vm %s failed" % vm_name)
-    LOGGER.info(
+    logger.info(
         "Creating template %s from vm %s" % (template_name, vm_name))
-    if not templates.createTemplate(
+    if not ll_template.createTemplate(
             True, vm=vm_name, name=template_name, cluster=config.CLUSTER_NAME):
         raise exceptions.TemplateException(
             "Creation of template %s from vm %s failed!" % (
                 template_name, vm_name))
-    LOGGER.info("Removing vm %s" % vm_name)
-    if not vms.removeVm(True, vm=vm_name):
+    logger.info("Removing vm %s" % vm_name)
+    if not ll_vms.removeVm(True, vm=vm_name):
         raise exceptions.VMException("Removal of vm %s failed" % vm_name)
-    LOGGER.info(
+    logger.info(
         "Template for sparse=%s and volume format '%s' prepared" % (
             sparse, vol_format))
     template_names[(sparse, vol_format)] = template_name
@@ -92,21 +103,21 @@ class TestCase4710(TestCase):
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
             self.polarion_test_case, self.storage, name)
-        LOGGER.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
+        logger.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
             vm_name, template_name, sparse, vol_format))
         self.assertTrue(
-            vms.cloneVmFromTemplate(
+            ll_vms.cloneVmFromTemplate(
                 True, name=vm_name, cluster=config.CLUSTER_NAME,
                 vol_sparse=sparse, vol_format=vol_format,
                 template=template_name, clone=True, timeout=900),
             "cloning vm %s from template %s failed" % (vm_name, template_name))
         self.vm_names.append(vm_name)
-        LOGGER.info("Validating disk type and format")
+        logger.info("Validating disk type and format")
         self.assertTrue(
-            vms.validateVmDisks(
+            ll_vms.validateVmDisks(
                 True, vm=vm_name, sparse=sparse, format=vol_format),
             "Validation of disks on vm %s failed" % vm_name)
-        LOGGER.info("Validation passed")
+        logger.info("Validation passed")
 
     def create_vms_from_template_convert_disks(
             self, sparse, vol_format, name_prefix):
@@ -146,12 +157,12 @@ class TestCase4710(TestCase):
 
     def tearDown(self):
         if self.vm_names:
-            vms.removeVms(True, self.vm_names, stop='true')
+            ll_vms.removeVms(True, self.vm_names, stop='true')
 
     @classmethod
     def teardown_class(cls):
         for _, template_name in cls.template_names.iteritems():
-            templates.removeTemplate(True, template=template_name)
+            ll_template.removeTemplate(True, template=template_name)
 
 
 class TestReadLock(TestCase):
@@ -173,35 +184,35 @@ class TestReadLock(TestCase):
     def setup_class(cls):
         cls.vm_name = '%s_readlock_%s' % (config.TEST_NAME, cls.vm_type)
         cls.template_name = "template_%s" % (cls.vm_name)
-        storage_domain = storagedomains.getStorageDomainNamesForType(
+        storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]
-        if not helpers.create_vm_or_clone(
+        if not storage_helpers.create_vm_or_clone(
             True, cls.vm_name, diskInterface=config.INTERFACE_VIRTIO,
             type=cls.vm_type, storageDomainName=storage_domain
         ):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
-        LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
-        if not vms.waitForVMState(cls.vm_name):
+        logger.info("Waiting for vm %s state 'up'" % cls.vm_name)
+        if not ll_vms.waitForVMState(cls.vm_name):
             raise exceptions.VMException(
                 "Waiting for VM %s status 'up' failed" % cls.vm_name)
-        LOGGER.info("Waiting for ip of %s" % cls.vm_name)
-        vm_ip = vms.waitForIP(cls.vm_name)[1]['ip']
-        LOGGER.info("Setting persistent network")
+        logger.info("Waiting for ip of %s" % cls.vm_name)
+        vm_ip = ll_vms.waitForIP(cls.vm_name)[1]['ip']
+        logger.info("Setting persistent network")
         assert test_utils.setPersistentNetwork(vm_ip, config.VMS_LINUX_PW)
 
-        LOGGER.info("Shutting down %s" % cls.vm_name)
-        if not vms.shutdownVm(True, cls.vm_name, async='false'):
+        logger.info("Shutting down %s" % cls.vm_name)
+        if not ll_vms.shutdownVm(True, cls.vm_name, async='false'):
             raise exceptions.VMException("Can't shut down vm %s" %
                                          cls.vm_name)
-        LOGGER.info("Creating template %s from VM %s" % (cls.template_name,
+        logger.info("Creating template %s from VM %s" % (cls.template_name,
                                                          cls.vm_name))
         template_args = {
             "vm": cls.vm_name,
             "name": cls.template_name,
             "cluster": config.CLUSTER_NAME
         }
-        if not templates.createTemplate(True, **template_args):
+        if not ll_template.createTemplate(True, **template_args):
             raise exceptions.TemplateException("Failed creating template %s" %
                                                cls.template_name)
 
@@ -211,12 +222,13 @@ class TestReadLock(TestCase):
         Wait until template is locked
         Start creating another VM from the same template
         """
-        LOGGER.info("Creating first vm %s from template %s" %
+        logger.info("Creating first vm %s from template %s" %
                     (self.vm_name_1, self.template_name))
-        assert vms.createVm(True, self.vm_name_1, self.vm_name_1,
-                            template=self.template_name,
-                            cluster=config.CLUSTER_NAME)
-        LOGGER.info("Waiting for createVolume command in engine.log")
+        assert ll_vms.createVm(
+            True, self.vm_name_1, self.vm_name_1, template=self.template_name,
+            cluster=config.CLUSTER_NAME
+        )
+        logger.info("Waiting for createVolume command in engine.log")
         log_listener.watch_logs(
             files_to_watch=config.ENGINE_LOG,
             regex='createVolume',
@@ -225,24 +237,72 @@ class TestReadLock(TestCase):
             username='root',
             password=config.VDC_ROOT_PASSWORD
         )
-        LOGGER.info("Starting to create vm %s from template %s" %
+        logger.info("Starting to create vm %s from template %s" %
                     (self.vm_name_2, self.template_name))
-        assert vms.createVm(True, self.vm_name_2, self.vm_name_2,
-                            template=self.template_name,
-                            cluster=config.CLUSTER_NAME)
-        LOGGER.info("Starting VMs")
-        assert vms.startVm(True, self.vm_name_1,
-                           wait_for_status=ENUMS['vm_state_up'])
-        assert vms.startVm(True, self.vm_name_2,
-                           wait_for_status=ENUMS['vm_state_up'])
+        assert ll_vms.createVm(
+            True, self.vm_name_2, self.vm_name_2, template=self.template_name,
+            cluster=config.CLUSTER_NAME
+        )
+        logger.info("Starting VMs")
+        assert ll_vms.startVm(
+            True, self.vm_name_1, wait_for_status=ENUMS['vm_state_up']
+        )
+        assert ll_vms.startVm(
+            True, self.vm_name_2, wait_for_status=ENUMS['vm_state_up']
+        )
 
     @classmethod
     def teardown_class(cls):
         vms_list = [cls.vm_name, cls.vm_name_1, cls.vm_name_2]
-        LOGGER.info("Removing VMs %s" % vms_list)
-        if not vms.removeVms(True, vms_list, stop='true'):
+        logger.info("Removing VMs %s" % vms_list)
+        if not ll_vms.removeVms(True, vms_list, stop='true'):
             raise exceptions.VMException("Failed removing vms %s" % vms_list)
-        LOGGER.info("Removing template")
-        if not templates.removeTemplate(True, cls.template_name):
+        logger.info("Removing template")
+        if not ll_template.removeTemplate(True, cls.template_name):
             raise exceptions.TemplateException("Failed removing template %s"
                                                % cls.template_name)
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(create_vm.__name__, delete_disk.__name__)
+class NegativeAttachDetach(TestCase):
+    """
+    Attach a locked disk to VM
+    """
+    __test__ = True
+    disk_size = 20 * config.GB
+    installation = False
+    disk_name = None
+
+    @polarion("RHEVM3-16713")
+    def test_attach_locked_disk_to_vm(self):
+        """
+        Attach disk to VM when the disk is in locked state
+        """
+        ll_disks.addDisk(
+            True, provisioned_size=self.disk_size,
+            storagedomain=self.storage_domain, alias=self.disk_name,
+            interface=config.VIRTIO_SCSI, format=config.RAW_DISK,
+            sparse=False
+        )
+        assert ll_disks.wait_for_disks_status(
+            [self.disk_name], status=config.DISK_LOCKED
+        )
+        if not ll_disks.attachDisk(False, self.disk_name, self.vm_name):
+            raise exceptions.DiskException(
+                "Succeeded to attach disk %s to vm %s" %
+                (self.disk_name, self.vm_name)
+            )
+
+    @polarion("RHEVM3-16714")
+    def test_detach_disk_from_powering_up_vm(self):
+        """
+        Detach a disk from a VM in powering up state
+        """
+        vm_disk = ll_vms.getVmDisks(self.vm_name)[0]
+        ll_vms.startVm(True, self.vm_name, None)
+        if not ll_disks.detachDisk(False, vm_disk.get_alias(), self.vm_name):
+            raise exceptions.DiskException(
+                "Succeeded to detach disk %s from vm %s" %
+                (self.disk_name, self.vm_name)
+            )
