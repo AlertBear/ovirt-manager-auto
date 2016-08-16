@@ -4,6 +4,7 @@ Init for sla tests package
 import logging
 
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.utils.inventory import Inventory
 from rhevmtests import networking
 from rhevmtests.sla import config
@@ -21,7 +22,7 @@ def sla_cleanup():
     logger.info("SLA cleanup")
     ll_vms.stop_vms_safely(ll_vms.VM_API.get(absLink=False))
     logger.info("Remove all exceed vms")
-    ll_vms.remove_all_vms_from_cluster(
+    hl_vms.remove_all_vms_from_cluster(
         config.CLUSTER_NAME[0], skip=config.VM_NAME
     )
     for vm in config.VM_NAME:

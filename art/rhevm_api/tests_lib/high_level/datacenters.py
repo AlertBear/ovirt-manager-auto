@@ -7,11 +7,13 @@ import logging
 import art.rhevm_api.tests_lib.high_level.clusters as hl_clusters
 import art.rhevm_api.tests_lib.high_level.hosts as hosts
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.high_level.storagedomains as storagedomains
+import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.test_handler.exceptions as errors
 from art.rhevm_api.resources import Host  # This import is not good here
 from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
@@ -84,7 +86,7 @@ def build_setup(config, storage, storage_type, basename="testname",
                 "Can not update cluster cpu_model to: %s", cpu_info['cpu'],
             )
 
-    return storagedomains.create_storages(
+    return hl_sd.create_storages(
         storage, storage_type, config.as_list('vds')[0], datacenter_name)
 
 
@@ -129,12 +131,14 @@ def get_clusters_connected_to_datacenter(dc_id):
 def clean_datacenter(
         positive,
         datacenter,
-        db_name=ll_storagedomains.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-        db_user=ll_storagedomains.RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
+        db_name=ll_sd.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
+        db_user=ll_sd.RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
         formatIsoStorage='false',
         formatExpStorage='false',
         vdc=None,
-        vdc_password=None
+        vdc_password=None,
+        hosted_engine_vm=None,
+        hosted_engine_sd=None,
 ):
     """
     Description: Remove data center: all clusters. vms, templates floating
@@ -153,41 +157,80 @@ def clean_datacenter(
     :type vdc; str
     :param vdc_password
     :type vdc_password: str
+    :param hosted_engine_vm: the vm name of hosted engine
+    :type hosted_engine_vm: str
+    :param hosted_engine_sd: the sd name of hosted engine
+    :type hosted_engine_sd: str
     :returns: True if relevant operations within this function pass,
     False otherwise
     :rtype: bool
     """
     status = True
-    dc_obj = datacenters.util.find(datacenter)
+    hosted_engine = False
+    dc_obj = datacenters.get_data_center(datacenter)
 
-    spm_host_obj = get_spm_host(positive, datacenter)
     hosts_to_remove = []
-
     clusters_to_remove = get_clusters_connected_to_datacenter(dc_obj.get_id())
 
     for cluster_obj in clusters_to_remove:
-        hl_clusters.remove_vms_and_templates_from_cluster(
-            cluster_obj.get_name()
-        )
-        hosts_to_remove += (
+        cluster_name = cluster_obj.get_name()
+        cl_vms = hl_vms.get_vms_objects_from_cluster(cluster_name)
+        cl_vms_names = [cl.get_name() for cl in cl_vms]
+        if hosted_engine_vm in cl_vms_names:
+            cl_vms_names.remove(hosted_engine_vm)
+            hosted_cl_name = cluster_name
+            hosted_engine = True
+        ll_vms.safely_remove_vms(cl_vms_names)
+        hl_clusters.remove_templates_connected_cluster(cluster_name)
+        hosts_to_remove.extend(
             hl_clusters.get_hosts_connected_to_cluster(cluster_obj.get_id())
         )
 
-    sds = ll_storagedomains.getDCStorages(datacenter, False)
+    sds = ll_sd.getDCStorages(datacenter, False)
 
+    if hosted_engine:
+        _, master_domain = ll_sd.findMasterStorageDomain(True, datacenter)
+        hosted_host = ll_vms.get_vm_host(hosted_engine_vm)
+        logger.info("This is hosted Engine cleanup(leave the following):")
+        logger.info("  Datacenter: %s", datacenter)
+        logger.info("  Cluster: %s", hosted_cl_name)
+        logger.info("  Host: %s", hosted_host)
+        logger.info("  Hosted Engine SD: %s", hosted_engine_sd)
+        logger.info("  Master SD: %s", master_domain['masterDomain'])
+        logger.info("  VM: %s", hosted_engine_vm)
+        # Set spm priority to default (Medium)
+        ll_hosts.setSPMPriority(
+            positive=True, hostName=hosted_host, spmPriority=5
+        )
+        ll_hosts.select_host_as_spm(
+            positive=True, host=hosted_host, data_center=datacenter
+        )
+
+        hosts_to_remove = [
+            h for h in hosts_to_remove if h.get_name() != hosted_host
+        ]
+        clusters_to_remove = [
+            cl for cl in clusters_to_remove if cl.get_name() != hosted_cl_name
+        ]
+        sds = [
+            sd for sd in sds
+            if sd.get_name() != hosted_engine_sd and not sd.get_master()
+        ]
+
+    spm_host_obj = get_spm_host(positive, datacenter)
     if sds:
         for sd in sds:
             logger.info(
-                "Remove floating disks from storage domain: %s",
-                sd.get_name()
+                "Remove floating disks from storage domain: %s", sd.get_name()
             )
-            ll_storagedomains.remove_floating_disks(sd)
+            ll_sd.remove_floating_disks(sd)
 
+        dc_name = dc_obj.get_name()
         if vdc and vdc_password:
             wait_for_tasks(
                 vdc=vdc,
                 vdc_password=vdc_password,
-                datacenter=dc_obj.get_name(),
+                datacenter=dc_name,
                 db_name=db_name,
                 db_user=db_user
             )
@@ -195,46 +238,47 @@ def clean_datacenter(
         logger.info("Deactivate and detach non-master storage domains")
         for sd in sds:
             if not sd.get_master():
-                logger.info("Detach and deactivate %s", sd.get_name())
-                if not storagedomains.detach_and_deactivate_domain(
-                    dc_obj.get_name(), sd.get_name()
+                sd_name = sd.get_name()
+                logger.info("Detach and deactivate %s", sd_name)
+                if not hl_sd.detach_and_deactivate_domain(
+                    dc_name, sd_name
                 ):
                     raise errors.StorageDomainException(
-                        "Failed to deactivate storage domain %s" %
-                        sd.get_name()
+                        "Failed to deactivate storage domain %s" % sd_name
                     )
 
         if vdc and vdc_password:
             wait_for_tasks(
                 vdc=vdc,
                 vdc_password=vdc_password,
-                datacenter=dc_obj.get_name(),
+                datacenter=dc_name,
                 db_name=db_name,
                 db_user=db_user
             )
 
-        logger.info("Deactivate master storage domain")
-        status = ll_storagedomains.deactivate_master_storage_domain(
-            positive, datacenter
-        )
-
-        if vdc and vdc_password:
-            wait_for_tasks(
-                vdc=vdc,
-                vdc_password=vdc_password,
-                datacenter=dc_obj.get_name(),
-                db_name=db_name,
-                db_user=db_user
+        if not hosted_engine:
+            logger.info("Deactivate master storage domain")
+            status = ll_sd.deactivate_master_storage_domain(
+                positive, datacenter
             )
 
-    logger.info("Remove data center")
-    if not datacenters.remove_datacenter(positive, datacenter):
-        logger.error("Remove data center %s failed", datacenter)
-        status = False
+            if vdc and vdc_password:
+                wait_for_tasks(
+                    vdc=vdc,
+                    vdc_password=vdc_password,
+                    datacenter=dc_name,
+                    db_name=db_name,
+                    db_user=db_user
+                )
+    if not hosted_engine:
+        logger.info("Remove data center")
+        if not datacenters.remove_datacenter(positive, datacenter):
+            logger.error("Remove data center %s failed", datacenter)
+            status = False
 
     if sds and spm_host_obj:
         logger.info("Remove storage domains")
-        status = ll_storagedomains.remove_storage_domains(
+        status = ll_sd.remove_storage_domains(
             sds, spm_host_obj.get_name(),
             formatExpStorage,
             formatIsoStorage
@@ -242,19 +286,16 @@ def clean_datacenter(
 
     logger.info("Remove hosts")
     for host in hosts_to_remove:
-        logger.info("Put %s to maintenance & remove it", host.get_name())
+        logger.info("Put host %s to maintenance & remove it", host.get_name())
         if not ll_hosts.removeHost(True, host.get_name(), deactivate=True):
             logger.error("Failed to remove %s", host.get_name())
 
     logger.info("Remove cluster")
     for cluster_obj in clusters_to_remove:
-        if not clusters.removeCluster(positive, cluster_obj.get_name()):
-            logger.error(
-                "Remove cluster %s Failed",
-                cluster_obj.get_name()
-            )
+        cluster_name = cluster_obj.get_name()
+        if not clusters.removeCluster(positive, cluster_name):
+            logger.error("Remove cluster %s Failed", cluster_name)
             status = False
-
     return status
 
 
@@ -282,14 +323,14 @@ def ensure_data_center_and_sd_are_active(
         raise errors.StorageDomainException(
             "SPM host was not elected within 5 minutes, aborting test"
         )
-    for sd in ll_storagedomains.getDCStorages(datacenter, False):
+    for sd in ll_sd.getDCStorages(datacenter, False):
         if sd.get_status() in exclude_states:
             continue
         logger.info(
             "Waiting up to %s seconds for sd %s to be active",
             SD_STATUS_OK_TIMEOUT, sd.get_name()
         )
-        if not ll_storagedomains.waitForStorageDomainStatus(
+        if not ll_sd.waitForStorageDomainStatus(
             True, datacenter, sd.get_name(),
             ENUMS['storage_domain_state_active'], SD_STATUS_OK_TIMEOUT, 1
         ):

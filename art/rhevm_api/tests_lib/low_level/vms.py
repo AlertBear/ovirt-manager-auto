@@ -4363,43 +4363,6 @@ def get_vm_boot_sequence(vm_name):
     return boots.get_devices().get_device()
 
 
-def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
-    """
-    Stop if need and remove all exists vms from specific cluster
-
-    :param cluster_name: cluster name
-    :type cluster_name: str
-    :param skip: list of names of vms which should be left
-    :type skip: list
-    :param wait : If wait is False the remove will be asynchrony
-                  else we will wait for each remove VM to finish
-    :type wait: bool
-    :return: True, if all vms removed from cluster, False otherwise
-    :rtype: bool
-    """
-    logger_message = "Remove VMs in cluster"
-    if skip:
-        logger_message += " except %s" % ", ".join(skip)
-    logger.info(logger_message)
-    vms_in_cluster = []
-    cluster_name_query = "name=%s" % cluster_name
-    cluster_obj = CLUSTER_API.query(cluster_name_query)[0]
-    all_vms_obj = VM_API.get(absLink=False)
-    for vm_obj in all_vms_obj:
-        if vm_obj.get_cluster().get_id() == cluster_obj.get_id():
-            if vm_obj.get_name() not in skip:
-                vms_in_cluster.append(vm_obj.get_name())
-    if vms_in_cluster:
-        stop_vms_safely(vms_in_cluster)
-        log = "" if wait else "asynchrony"
-        logger.info("Remove VMs %s", log)
-        for vm in vms_in_cluster:
-            logger.info("send delete command to vm: %s", vm)
-            removeVm(True, vm, wait=wait)
-        return waitForVmsGone(True, vms_in_cluster)
-    return True
-
-
 def get_vm_display_port(vm_name):
     """
     Get vm display port
@@ -5827,16 +5790,6 @@ def remove_affinity_label(vm_name, affinity_label_name):
         element_type="VM",
         affinity_label_name=affinity_label_name
     )
-
-
-def get_vms():
-    """
-    Get list of VMs
-
-    Returns:
-        list: VMs objects from the engine
-    """
-    return VM_API.get(absLink=False)
 
 
 def get_vms_from_storage_domain(storage_domain_name):

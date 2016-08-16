@@ -763,19 +763,22 @@ def remove_storage_domains(
         sds, host, format_export='false', format_iso='false'):
     """
     Description: remove given list of storage domains with host to remove with
+
     :param sds storage domain object list to be removed
     :type sds: list
-    :param host name
+    :param host: host name
     :type host: str
-    :param format_export True to format domains when removing
+    :param format_export: True to format domains when removing
     :type format_export: bool
-    :param format_iso True to format domains when removing
+    :param format_iso: True to format domains when removing
     :type format_iso: bool
-
+    :return: True if succeed to remove sds list, False otherwise
+    :rtype: bool
     """
     for sd in sds:
+        sd_name = sd.get_name()
         try:
-            get_storage_domain_obj(sd.get_name())
+            get_storage_domain_obj(sd_name)
         except EntityNotFound:
             continue
         format_storage = True
@@ -784,13 +787,8 @@ def remove_storage_domains(
         if sd.get_type() == ENUMS['storage_dom_type_export']:
             format_storage = format_export
 
-        if not removeStorageDomain(
-                True,
-                sd.get_name(),
-                host,
-                str(format_storage)
-        ):
-            util.logger.error("Failed to remove %s", sd.get_name())
+        if not removeStorageDomain(True, sd_name, host, str(format_storage)):
+            util.logger.error("Failed to remove %s", sd_name)
             return False
 
     return True

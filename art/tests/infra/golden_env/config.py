@@ -20,6 +20,8 @@ REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 
 STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 
+HOSTED_ENGINE = ART_CONFIG.get('HOSTED_ENGINE', dict())
+
 # DC info
 STORAGE_TYPE = PARAMETERS['storage_type']
 
@@ -103,9 +105,14 @@ IBM_POWER_8E = 'IBM POWER8E'
 PPC_CPUS = [IBM_POWER_8, IBM_POWER_8E]
 PPC_ARCH = True if CPU_NAME in PPC_CPUS else False
 
-# Hosted engine constants
-HOSTED_ENGINE_SD_NAME = "hosted_storage"
-HOSTED_ENGINE_CLUSTER = "golden_env_mixed_1"
-
 DB_NAME = RHEVM_UTILS_ENUMS['RHEVM_DB_NAME']
 DB_USER = RHEVM_UTILS_ENUMS['RHEVM_DB_USER']
+
+# Hosted engine parameters
+HE_HOST_IP = HOSTED_ENGINE.get('host_ip')
+HE_ADDITIONAL_HOSTS = HOSTED_ENGINE.as_list('additional_hosts')
+HE_VM_NAME = HOSTED_ENGINE.get('vm_name')
+HE_SD_NAME = HOSTED_ENGINE.get('sd_name')
+HE_CL_NAME = HOSTED_ENGINE.get('cl_name')
+HE_DC_NAME = HOSTED_ENGINE.get('dc_name')
+HE_SD_LUN = HOSTED_ENGINE.get('lun')

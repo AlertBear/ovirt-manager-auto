@@ -93,6 +93,13 @@ def setup_package():
     if cpu_model:
         config.CPU_NAME = cpu_model
 
+    hosts_list = ll_hosts.get_host_list()
+    if hosts_list and ll_hosts.is_hosted_engine_configured(
+        host_name=hosts_list[0].get_name()
+    ):
+        config.VM_NAME.append(config.HE_VM)
+        config.SD_LIST.append(config.HE_STORAGE_DOMAIN)
+
     helpers.storage_cleanup()
 
     # setup inventory reporter
@@ -102,12 +109,6 @@ def setup_package():
         check_inventory=True,
         rhevm_config_file=config
     )
-    hosts_list = ll_hosts.get_host_list()
-    if hosts_list and ll_hosts.is_hosted_engine_configured(
-        host_name=hosts_list[0].get_name()
-    ):
-        config.VM_NAME.append(config.HE_VM)
-        config.SD_LIST.append(config.HE_STORAGE_DOMAIN)
 
 
 def teardown_package():

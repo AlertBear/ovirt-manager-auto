@@ -1,6 +1,5 @@
 import logging
 
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
@@ -15,21 +14,11 @@ def remove_templates_connected_cluster(cluster_name):
     """
     templates_in_cluster = ll_templates.get_template_from_cluster(cluster_name)
     for template in templates_in_cluster:
+        logger.info(
+            'Remove Template: %s from cluster: %s', template, cluster_name
+        )
         if not ll_templates.removeTemplate(True, template):
             logger.error("Remove template:%s failed", template)
-
-
-def remove_vms_and_templates_from_cluster(cluster_name):
-    """
-    Description: filter vms and templates connected to cluster
-    :param cluster: cluster name
-    :type cluster: str
-    """
-    logger.info('Remove VMs connected to cluster: %s', cluster_name)
-    ll_vms.remove_all_vms_from_cluster(cluster_name)
-
-    logger.info('Remove Templates from cluster: %s', cluster_name)
-    remove_templates_connected_cluster(cluster_name)
 
 
 def get_hosts_connected_to_cluster(cluster_id):

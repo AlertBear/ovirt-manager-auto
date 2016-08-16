@@ -919,3 +919,44 @@ def get_memory_on_vm(vm_resource):
     actual_memory = int(shlex.split(out)[1]) * KB
     logger.info("VM actual memory: %s", actual_memory)
     return actual_memory
+
+
+def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
+    """
+    Stop (if need) and remove all exists vms from specific cluster
+
+    Args:
+        cluster_name(str): cluster name
+        skip(list): list of names of vms which should be left
+        wait(bool) : If True we will wait for each remove VM to complete
+                     else the remove will be asynchronous
+    Returns:
+        bool: True, if all vms removed from cluster, False otherwise
+    """
+    all_removed = True
+    logger_message = "Remove VMs from cluster %s" % cluster_name
+    if skip:
+        logger_message += " except %s" % ", ".join(skip)
+    logger.info(logger_message)
+    vms_in_cluster = [
+        vm for vm in get_vms_objects_from_cluster(cluster_name)
+        if vm.get_name() not in skip
+    ]
+    if vms_in_cluster:
+        vms.stop_vms_safely(vms_in_cluster)
+        log = "" if wait else "asynchrony"
+        logger.info("Remove VMs %s", log)
+        for vm in vms_in_cluster:
+            if not vms.removeVm(True, vm):
+                all_removed = False
+        if wait and all_removed:
+            try:
+                vms.waitForVmsGone(True, vms_in_cluster)
+            except APITimeout:
+                all_removed = False
+    if not all_removed:
+        logger.error(
+            "Failed to remove all vms: %s from cluster: %s",
+            vms_in_cluster, cluster_name
+        )
+    return all_removed

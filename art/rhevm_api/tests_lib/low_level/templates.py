@@ -1179,7 +1179,7 @@ def get_all_template_objects_names():
     :return: List of template objects names
     :rtype: list
     """
-    return [template.name for template in get_all_template_objects()]
+    return [template.get_name() for template in get_all_template_objects()]
 
 
 def get_template_nics_objects(template):
