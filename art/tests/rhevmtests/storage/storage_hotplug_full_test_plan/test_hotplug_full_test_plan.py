@@ -27,6 +27,9 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from utilities import machine
+from rhevmtests.storage.fixtures import (
+    create_vm, add_disk, delete_disks
+)
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -1015,3 +1018,32 @@ class TestCase6230(TestCase):
                     status = ll_vms.activateVmDisk(True, vm, disk_name)
                     logger.info("Finished activating disk %s", disk_name)
                     self.assertTrue(status)
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__, add_disk.__name__, delete_disks.__name__
+)
+class TestCase6234(TestCase):
+    """
+    Hot unplug bootable disk
+    """
+    __test__ = True
+    polarion_test_case = '6234'
+
+    @polarion("RHEVM3-6234")
+    def test_hot_unplug_bootable_disk(self):
+        """
+        Hot unplug a bootable disk from a VM
+        """
+        vm_boot_disk = ll_vms.getVmDisks(self.vm_name)[0]
+        assert ll_vms.startVm(
+            True, self.vm_name, wait_for_status=config.VM_UP
+        ), "Failed to start VM %s" % self.vm_name
+        assert ll_disks.detachDisk(
+            True, vm_boot_disk.get_alias(), self.vm_name
+        ), "Failed to detach disk %s to vm %s" % (
+            self.disk_name, self.vm_name
+        )
+
+        self.disks_to_remove.append(vm_boot_disk.get_alias())

@@ -21,7 +21,7 @@ from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import polarion
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
-    create_vm, delete_disk,
+    create_vm, delete_disks,
 )
 
 logger = logging.getLogger(__name__)
@@ -264,7 +264,7 @@ class TestReadLock(TestCase):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(create_vm.__name__, delete_disk.__name__)
+@pytest.mark.usefixtures(create_vm.__name__, delete_disks.__name__)
 class NegativeAttachDetach(TestCase):
     """
     Attach a locked disk to VM
@@ -272,7 +272,6 @@ class NegativeAttachDetach(TestCase):
     __test__ = True
     disk_size = 20 * config.GB
     installation = False
-    disk_name = None
 
     @polarion("RHEVM3-16713")
     def test_attach_locked_disk_to_vm(self):
@@ -293,6 +292,7 @@ class NegativeAttachDetach(TestCase):
                 "Succeeded to attach disk %s to vm %s" %
                 (self.disk_name, self.vm_name)
             )
+        self.disks_to_remove.append(self.disk_name)
 
     @polarion("RHEVM3-16714")
     def test_detach_disk_from_powering_up_vm(self):

@@ -34,6 +34,8 @@ def create_vm(request):
     self.vm_name = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_VM
     )
+    if not hasattr(self, 'installation'):
+        self.installation = True
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
     vm_args['vmName'] = self.vm_name
@@ -58,13 +60,17 @@ def add_disk(request):
                 self.test_failed = True
         self.teardown_exception()
     request.addfinalizer(finalizer)
-    if self.storage_domain is None:
+    if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
+    if not hasattr(self, 'disk_size'):
+        self.disk_size = config.DISK_SIZE
+
     self.disk_name = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_DISK
     )
+
     if not ll_disks.addDisk(
         True, provisioned_size=self.disk_size,
         storagedomain=self.storage_domain, alias=self.disk_name,
@@ -91,20 +97,23 @@ def update_vm(request):
 
 
 @pytest.fixture(scope='class')
-def delete_disk(request):
+def delete_disks(request):
     """
     Delete disk
     """
     self = request.node.cls
 
     def finalizer():
-        if ll_disks.checkDiskExists(True, self.disk_name):
-            ll_disks.wait_for_disks_status([self.disk_name])
-            if not ll_disks.deleteDisk(True, self.disk_name):
-                self.test_failed = True
+        for disk in self.disks_to_remove:
+            if ll_disks.checkDiskExists(True, disk):
+                ll_disks.wait_for_disks_status([disk])
+                if not ll_disks.deleteDisk(True, disk):
+                    self.test_failed = True
         self.teardown_exception()
     request.addfinalizer(finalizer)
-    if self.disk_name is None:
+    if not hasattr(self, 'disk_name'):
         self.disk_name = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
+    if not hasattr(self, 'disks_to_remove'):
+        self.disks_to_remove = list()

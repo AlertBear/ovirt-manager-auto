@@ -786,7 +786,6 @@ class TestCase16716(TestCase):
     support that interface
     """
     __test__ = True
-    disk_size = 1 * config.GB
     installation = False
     update_vm_params = {
         "virtio_scsi": False
