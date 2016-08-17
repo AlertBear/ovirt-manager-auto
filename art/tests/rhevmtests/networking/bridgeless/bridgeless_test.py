@@ -14,11 +14,33 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
-from fixtures import case_01_fixture
+from rhevmtests.networking.fixtures import (
+    NetworkFixtures, setup_networks_fixture, clean_host_interfaces
+)  # flake8: noqa
+
+
+@pytest.fixture(scope="module", autouse=True)
+def prepare_setup(request):
+    """
+    Prepare setup
+    """
+    bridgeless = NetworkFixtures()
+
+    def fin():
+        """
+        Finalizer for remove networks
+        """
+        bridgeless.remove_networks_from_setup(hosts=bridgeless.host_0_name)
+    request.addfinalizer(fin)
+
+    bridgeless.prepare_networks_on_setup(
+        networks_dict=conf.BRIDGELESS_NET_DICT, dc=bridgeless.dc_0,
+        cluster=bridgeless.cluster_0
+    )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(case_01_fixture.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestBridgelessCase1(NetworkTest):
     """
     1) Attach non-VM network to host NIC.
@@ -29,6 +51,18 @@ class TestBridgelessCase1(NetworkTest):
     __test__ = True
     bond_1 = "bond01"
     bond_2 = "bond02"
+    hosts_nets_nic_dict = {
+        0: {
+            bond_1: {
+                "nic": bond_1,
+                "slaves": [-1, -2],
+            },
+            bond_2: {
+                "nic": bond_2,
+                "slaves": [-3, -4],
+            }
+        }
+    }
 
     @polarion("RHEVM-14837")
     def test_bridgeless_network(self):
