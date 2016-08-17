@@ -15,15 +15,18 @@ import logging
 
 import pytest
 
+import config as vlan_name_conf
 import helper
-import rhevmtests.networking.config as conf
+import rhevmtests.networking.config as network_conf
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    create_vlans_and_bridges_on_host, attach_network_to_host,
-    create_networks_on_engine
+    create_vlans_and_bridges_on_host, create_networks_on_engine
 )
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces
+)  # flake8: noqa
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Cases")
 
@@ -40,9 +43,9 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
     """
     __test__ = True
 
-    vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
-    vlan_names = [conf.VLAN_NAMES[0]]
-    bridge_names = [conf.BRIDGE_NAMES[0]]
+    vlan_ids = [vlan_name_conf.ARBITRARY_VLAN_IDS[0]]
+    vlan_names = [vlan_name_conf.VLAN_NAMES[0]]
+    bridge_names = [vlan_name_conf.BRIDGE_NAMES[0]]
     nic = 1
 
     @polarion("RHEVM3-4170")
@@ -54,23 +57,25 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
         Check that the bridge is in getVdsCaps
         """
         testflow.step(
-            "Check if %s in %s NICs", self.vlan_names[0], conf.HOST_0_NAME
+            "Check if %s in %s NICs", self.vlan_names[0],
+            network_conf.HOST_0_NAME
         )
         assert helper.check_if_nic_in_host_nics(
-            nic=self.vlan_names[0], host=conf.HOST_0_NAME
+            nic=self.vlan_names[0], host=network_conf.HOST_0_NAME
         )
         testflow.step(
             "Check if %s in %s GetVdsCaps", self.bridge_names[0],
-            conf.HOST_0_NAME
+            network_conf.HOST_0_NAME
         )
         assert network_helper.is_network_in_vds_caps(
-            host_resource=conf.VDS_0_HOST, network=self.bridge_names[0]
+            host_resource=network_conf.VDS_0_HOST, network=self.bridge_names[0]
         )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    attach_network_to_host.__name__, create_vlans_and_bridges_on_host.__name__
+    setup_networks_fixture.__name__,
+    create_vlans_and_bridges_on_host.__name__
 )
 class TestArbitraryVlanDeviceName02(NetworkTest):
     """
@@ -83,11 +88,18 @@ class TestArbitraryVlanDeviceName02(NetworkTest):
     """
     __test__ = True
 
-    vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
-    vlan_names = [conf.VLAN_NAMES[0]]
-    bridge_names = [conf.BRIDGE_NAMES[0]]
-    network = None
+    vlan_ids = [vlan_name_conf.ARBITRARY_VLAN_IDS[0]]
+    vlan_names = [vlan_name_conf.VLAN_NAMES[0]]
+    bridge_names = [vlan_name_conf.BRIDGE_NAMES[0]]
     nic = "bond01"
+    hosts_nets_nic_dict = {
+        0: {
+            nic: {
+                "nic": nic,
+                "slaves": [2, 3]
+            }
+        }
+    }
 
     @polarion("RHEVM3-4171")
     def test_vlan_on_bond(self):
@@ -98,18 +110,19 @@ class TestArbitraryVlanDeviceName02(NetworkTest):
         Check that the bridge is in getVdsCaps
         """
         testflow.step(
-            "Check if %s in %s NICs", self.vlan_names[0], conf.HOST_0_NAME
+            "Check if %s in %s NICs", self.vlan_names[0],
+            network_conf.HOST_0_NAME
         )
         assert helper.check_if_nic_in_host_nics(
-            nic=self.vlan_names[0], host=conf.HOST_0_NAME
+            nic=self.vlan_names[0], host=network_conf.HOST_0_NAME
         )
 
         testflow.step(
             "Check if %s in %s GetVdsCaps", self.bridge_names[0],
-            conf.HOST_0_NAME
+            network_conf.HOST_0_NAME
         )
         assert network_helper.is_network_in_vds_caps(
-            host_resource=conf.VDS_0_HOST, network=self.bridge_names[0]
+            host_resource=network_conf.VDS_0_HOST, network=self.bridge_names[0]
         )
 
 
@@ -125,9 +138,9 @@ class TestArbitraryVlanDeviceName03(NetworkTest):
     """
     __test__ = True
 
-    vlan_ids = conf.ARBITRARY_VLAN_IDS
-    vlan_names = conf.VLAN_NAMES
-    bridge_names = conf.BRIDGE_NAMES
+    vlan_ids = vlan_name_conf.ARBITRARY_VLAN_IDS
+    vlan_names = vlan_name_conf.VLAN_NAMES
+    bridge_names = vlan_name_conf.BRIDGE_NAMES
     nic = 1
 
     @polarion("RHEVM3-4172")
@@ -141,23 +154,24 @@ class TestArbitraryVlanDeviceName03(NetworkTest):
         """
         for vlan_name, bridge_name in zip(self.vlan_names, self.bridge_names):
             testflow.step(
-                "Check if %s in %s NICs", vlan_name, conf.HOST_0_NAME
+                "Check if %s in %s NICs", vlan_name, network_conf.HOST_0_NAME
             )
             assert helper.check_if_nic_in_host_nics(
-                nic=vlan_name, host=conf.HOST_0_NAME
+                nic=vlan_name, host=network_conf.HOST_0_NAME
             )
 
             testflow.step(
-                "Check if %s in %s GetVdsCaps", bridge_name, conf.HOST_0_NAME
+                "Check if %s in %s GetVdsCaps", bridge_name,
+                network_conf.HOST_0_NAME
             )
             assert network_helper.is_network_in_vds_caps(
-                host_resource=conf.VDS_0_HOST, network=bridge_name
+                host_resource=network_conf.VDS_0_HOST, network=bridge_name
             )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    attach_network_to_host.__name__,
+    setup_networks_fixture.__name__,
     create_vlans_and_bridges_on_host.__name__
 )
 class TestArbitraryVlanDeviceName04(NetworkTest):
@@ -171,11 +185,18 @@ class TestArbitraryVlanDeviceName04(NetworkTest):
     """
     __test__ = True
 
-    network = None
     nic = "bond02"
-    vlan_ids = conf.ARBITRARY_VLAN_IDS
-    vlan_names = conf.VLAN_NAMES
-    bridge_names = conf.BRIDGE_NAMES
+    vlan_ids = vlan_name_conf.ARBITRARY_VLAN_IDS
+    vlan_names = vlan_name_conf.VLAN_NAMES
+    bridge_names = vlan_name_conf.BRIDGE_NAMES
+    hosts_nets_nic_dict = {
+        0: {
+            nic: {
+                "nic": nic,
+                "slaves": [2, 3]
+            }
+        }
+    }
 
     @polarion("RHEVM3-4173")
     def test_multiple_vlans_on_bond(self):
@@ -188,24 +209,25 @@ class TestArbitraryVlanDeviceName04(NetworkTest):
         """
         for vlan_name, bridge_name in zip(self.vlan_names, self.bridge_names):
             testflow.step(
-                "Check if %s in %s NICs", vlan_name, conf.HOST_0_NAME
+                "Check if %s in %s NICs", vlan_name, network_conf.HOST_0_NAME
             )
             assert helper.check_if_nic_in_host_nics(
-                nic=vlan_name, host=conf.HOST_0_NAME
+                nic=vlan_name, host=network_conf.HOST_0_NAME
             )
 
             testflow.step(
-                "Check if %s in %s GetVdsCaps", bridge_name, conf.HOST_0_NAME
+                "Check if %s in %s GetVdsCaps", bridge_name,
+                network_conf.HOST_0_NAME
             )
             assert network_helper.is_network_in_vds_caps(
-                host_resource=conf.VDS_0_HOST, network=bridge_name
+                host_resource=network_conf.VDS_0_HOST, network=bridge_name
             )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_networks_on_engine.__name__,
-    attach_network_to_host.__name__,
+    setup_networks_fixture.__name__,
     create_vlans_and_bridges_on_host.__name__,
 )
 class TestArbitraryVlanDeviceName05(NetworkTest):
@@ -219,11 +241,19 @@ class TestArbitraryVlanDeviceName05(NetworkTest):
     """
     __test__ = True
 
-    network = conf.ARBITRARY_NETS[5][0]
     nic = 1
-    vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
-    vlan_names = [conf.VLAN_NAMES[0]]
-    bridge_names = [conf.BRIDGE_NAMES[0]]
+    network = vlan_name_conf.ARBITRARY_NETS[5][0]
+    vlan_ids = [vlan_name_conf.ARBITRARY_VLAN_IDS[0]]
+    vlan_names = [vlan_name_conf.VLAN_NAMES[0]]
+    bridge_names = [vlan_name_conf.BRIDGE_NAMES[0]]
+    hosts_nets_nic_dict = {
+        0: {
+            network: {
+                "nic": nic,
+                "network": network
+            }
+        }
+    }
 
     @polarion("RHEVM3-4174")
     def test_mixed_vlan_types(self):
@@ -234,25 +264,26 @@ class TestArbitraryVlanDeviceName05(NetworkTest):
         Check that the bridge is in getVdsCaps
         """
         testflow.step(
-            "Check if %s in %s NICs", self.vlan_names[0], conf.HOST_0_NAME
+            "Check if %s in %s NICs", self.vlan_names[0],
+            network_conf.HOST_0_NAME
         )
         assert helper.check_if_nic_in_host_nics(
-            nic=self.vlan_names[0], host=conf.HOST_0_NAME
+            nic=self.vlan_names[0], host=network_conf.HOST_0_NAME
         )
 
         testflow.step(
             "Check if %s in %s GetVdsCaps", self.bridge_names[0],
-            conf.HOST_0_NAME
+            network_conf.HOST_0_NAME
         )
         assert network_helper.is_network_in_vds_caps(
-            host_resource=conf.VDS_0_HOST, network=self.bridge_names[0]
+            host_resource=network_conf.VDS_0_HOST, network=self.bridge_names[0]
         )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_networks_on_engine.__name__,
-    attach_network_to_host.__name__,
+    setup_networks_fixture.__name__,
     create_vlans_and_bridges_on_host.__name__,
 )
 class TestArbitraryVlanDeviceName06(NetworkTest):
@@ -266,11 +297,19 @@ class TestArbitraryVlanDeviceName06(NetworkTest):
     """
     __test__ = True
 
-    network = conf.ARBITRARY_NETS[6][0]
     nic = 1
-    vlan_ids = [conf.ARBITRARY_VLAN_IDS[0]]
-    vlan_names = [conf.VLAN_NAMES[0]]
-    bridge_names = [conf.BRIDGE_NAMES[0]]
+    network = vlan_name_conf.ARBITRARY_NETS[6][0]
+    vlan_ids = [vlan_name_conf.ARBITRARY_VLAN_IDS[0]]
+    vlan_names = [vlan_name_conf.VLAN_NAMES[0]]
+    bridge_names = [vlan_name_conf.BRIDGE_NAMES[0]]
+    hosts_nets_nic_dict = {
+        0: {
+            network: {
+                "nic": nic,
+                "network": network
+            }
+        }
+    }
 
     @polarion("RHEVM3-4175")
     def test_vlan_with_non_vm(self):
@@ -281,16 +320,17 @@ class TestArbitraryVlanDeviceName06(NetworkTest):
         Check that the bridge is in getVdsCaps
         """
         testflow.step(
-            "Check if %s in %s NICs", self.vlan_names[0], conf.HOST_0_NAME
+            "Check if %s in %s NICs", self.vlan_names[0],
+            network_conf.HOST_0_NAME
         )
         assert helper.check_if_nic_in_host_nics(
-            nic=self.vlan_names[0], host=conf.HOST_0_NAME
+            nic=self.vlan_names[0], host=network_conf.HOST_0_NAME
         )
 
         testflow.step(
             "Check if %s in %s GetVdsCaps", self.bridge_names[0],
-            conf.HOST_0_NAME
+            network_conf.HOST_0_NAME
         )
         assert network_helper.is_network_in_vds_caps(
-            host_resource=conf.VDS_0_HOST, network=self.bridge_names[0]
+            host_resource=network_conf.VDS_0_HOST, network=self.bridge_names[0]
         )

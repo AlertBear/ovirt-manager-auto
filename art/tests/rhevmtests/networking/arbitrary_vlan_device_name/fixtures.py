@@ -7,9 +7,9 @@ Fixtures for arbitrary_vlan_device_name
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import helper
-import rhevmtests.networking.config as conf
+from art.unittest_lib import testflow
+import config as vlan_name_conf
 import rhevmtests.networking.helper as net_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -31,16 +31,16 @@ def create_networks_on_engine(request):
     request.addfinalizer(fin)
 
     arbitrary_vlan_device_name.prepare_networks_on_setup(
-        networks_dict=conf.ARBITRARY_NET_DICT,
+        networks_dict=vlan_name_conf.ARBITRARY_NET_DICT,
         dc=arbitrary_vlan_device_name.dc_0,
         cluster=arbitrary_vlan_device_name.cluster_0
     )
 
 
 @pytest.fixture(scope="module")
-def set_virsh_credentails_on_vds_host_0(request):
+def set_virsh_credentials(request):
     """
-    Set virsh credentails on vds host-0
+    Set virsh credentials on vds host-0
     """
     arbitrary_vlan_device_name = NetworkFixtures()
 
@@ -50,57 +50,60 @@ def set_virsh_credentails_on_vds_host_0(request):
 
 
 @pytest.fixture(scope="class")
-def create_vlans_and_bridges_on_host(
-        request, set_virsh_credentails_on_vds_host_0
-):
+def create_vlans_and_bridges_on_host(request, set_virsh_credentials):
     """
-    Fixtures for add VLANs and bridge names on host.
+    Add VLANs and bridge names on host.
     """
     arbitrary_vlan_device_name = NetworkFixtures()
     vlan_ids = request.node.cls.vlan_ids
     vlan_names = request.node.cls.vlan_names
     nic = request.node.cls.nic
     bridge_names = request.node.cls.bridge_names
+    vds_host = arbitrary_vlan_device_name.vds_0_host
+    host_name = arbitrary_vlan_device_name.host_0_name
 
-    def fin():
+    def fin2():
         """
-        Finalizer for remove all networks from host
+        Remove bridges from host
         """
-        helper.job_tear_down()
-    request.addfinalizer(fin)
+        for br in vlan_name_conf.BRIDGE_NAMES:
+            if net_helper.virsh_is_network_exists(
+                vds_resource=vds_host, network=br
+            ):
+                net_helper.virsh_delete_network(
+                    vds_resource=vds_host, network=br
+                )
 
+        for bridge in vlan_name_conf.BRIDGE_NAMES:
+            if vds_host.network.get_bridge(bridge):
+                testflow.teardown(
+                    "Delete BRIDGE: %s from host %s", bridge, host_name
+                )
+                vds_host.network.delete_bridge(bridge=bridge)
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove VLANs from host
+        """
+        vlans_to_remove = [
+            v for v in vlan_name_conf.VLAN_NAMES if
+            helper.is_interface_on_host(host_obj=vds_host, interface=v)
+            ]
+        testflow.teardown(
+            "Remove VLANs %s from host %s", vlans_to_remove, host_name
+        )
+        helper.remove_vlan_and_refresh_capabilities(
+            host_obj=vds_host, vlan_name=vlans_to_remove
+        )
+    request.addfinalizer(fin1)
+
+    vds_name = arbitrary_vlan_device_name.vds_0_host
+    testflow.setup("Create VLANs %s on host %s", vlan_names, vds_name)
     assert helper.add_vlans_to_host(
-        host_obj=arbitrary_vlan_device_name.vds_0_host, nic=nic,
-        vlan_id=vlan_ids, vlan_name=vlan_names
+        host_obj=vds_name, nic=nic, vlan_id=vlan_ids, vlan_name=vlan_names
     )
-
+    testflow.setup("Create bridges %s on host %s", bridge_names, vds_name)
     assert helper.add_bridge_on_host_and_virsh(
-        host_obj=arbitrary_vlan_device_name.vds_0_host, bridge=bridge_names,
-        network=vlan_names
-    )
-
-
-@pytest.fixture(scope="class")
-def attach_network_to_host(request):
-    """
-    Fixture for create bond or attach network to host NICs
-    """
-    arbitrary_vlan_device_name = NetworkFixtures()
-    nic = request.node.cls.nic
-    network = request.node.cls.network
-    sn_dict = {
-        "add": {
-            "1": {}
-        }
-    }
-    if isinstance(nic, int):
-        nic = arbitrary_vlan_device_name.host_0_nics[nic]
-        sn_dict["add"]["1"]["network"] = network
-    else:
-        sn_dict["add"]["1"]["slaves"] = conf.HOST_0_NICS[2:4]
-
-    sn_dict["add"]["1"]["nic"] = nic
-
-    assert hl_host_network.setup_networks(
-        host_name=arbitrary_vlan_device_name.host_0_name, **sn_dict
+        host_obj=vds_name, bridge=bridge_names, network=vlan_names
     )

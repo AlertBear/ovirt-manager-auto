@@ -6,49 +6,12 @@ Helper for ArbitraryVlanDeviceName job
 """
 import logging
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_helper
 from art.rhevm_api.tests_lib.low_level import events
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
-
-
-def job_tear_down():
-    """
-    tear_down for ArbitraryVlanDeviceName job
-    """
-    host_obj = conf.VDS_0_HOST
-    host_name = ll_hosts.get_host_name_from_engine(host_obj)
-    vlans_to_remove = [
-        v for v in conf.VLAN_NAMES if is_interface_on_host(
-            host_obj=host_obj, interface=v
-        )
-    ]
-    remove_vlan_and_refresh_capabilities(
-        host_obj=host_obj, vlan_name=vlans_to_remove
-    )
-    for br in conf.BRIDGE_NAMES:
-        if net_helper.virsh_is_network_exists(
-            vds_resource=conf.VDS_0_HOST, network=br
-        ):
-            net_helper.virsh_delete_network(
-                vds_resource=conf.VDS_0_HOST, network=br
-            )
-
-    for bridge in conf.BRIDGE_NAMES:
-        logger.info("Checking if %s exists on %s", bridge, host_name)
-        if host_obj.network.get_bridge(bridge):
-            logger.info("Delete BRIDGE: %s on %s", bridge, host_name)
-            try:
-                host_obj.network.delete_bridge(bridge=bridge)
-            except Exception:
-                logger.error(
-                    "Failed to delete BRIDGE: %s on %s", bridge, host_name
-                )
-
-    hl_host_network.clean_host_interfaces(host_name=conf.HOST_0_NAME)
 
 
 def host_add_vlan(host_obj, vlan_id, vlan_name, nic):
@@ -188,7 +151,7 @@ def refresh_capabilities(host):
     :return: True/False
     :rtype: bool
     """
-    last_event = events.get_max_event_id(query="")
+    last_event = events.get_max_event_id()
     return ll_hosts.refresh_host_capabilities(
         host=host, start_event_id=last_event
     )
