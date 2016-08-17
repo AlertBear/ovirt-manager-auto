@@ -5,8 +5,6 @@ Check working of all build-in filter, weight and balance units.
 import logging
 import random
 
-from unittest2 import SkipTest
-
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
@@ -14,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
+import pytest
 import rhevmtests.sla.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import SlaTest as TestCase
@@ -24,36 +23,33 @@ logger = logging.getLogger(__name__)
 FILTER_TYPE = conf.ENUMS['policy_unit_type_filter']
 
 
-def setup_module(module):
+@pytest.fixture(scope="module")
+def init_scheduler_sanity_test(request):
     """
     1) Deactivate third host
     """
-    logger.info("Deactivate additional host %s", conf.HOSTS[2])
-    if not ll_hosts.deactivateHost(True, conf.HOSTS[2]):
-        raise errors.HostException("Failed to deactivate host")
+    def fin():
+        """
+        1) Change cluster scheduler policy to none
+        2) Remove all redundant scheduler policies
+        3) Activate third host
+        """
+        ll_clusters.updateCluster(
+            positive=True,
+            cluster=conf.CLUSTER_NAME[0],
+            scheduling_policy=conf.POLICY_NONE
+        )
+        logger.info("Remove all user specified scheduling policies")
+        sched_policies = ll_sch.get_scheduling_policies()
+        sched_policies = filter(
+            lambda x: x.get_name() not in conf.ENGINE_POLICIES, sched_policies
+        )
+        for policy in sched_policies:
+            ll_sch.remove_scheduling_policy(policy_name=policy.get_name())
+        ll_hosts.activateHost(positive=True, host=conf.HOSTS[2])
+    request.addfinalizer(fin)
 
-
-def teardown_module(module):
-    """
-    1) Change cluster scheduler policy to none
-    2) Remove all redundant scheduler policies
-    3) Activate third host
-    """
-    ll_clusters.updateCluster(
-        positive=True,
-        cluster=conf.CLUSTER_NAME[0],
-        scheduling_policy=conf.POLICY_NONE
-    )
-    logger.info("Remove all user specified scheduling policies")
-    sched_policies = ll_sch.get_scheduling_policies()
-    sched_policies = filter(
-        lambda x: x.get_name() not in conf.ENGINE_POLICIES, sched_policies
-    )
-    for policy in sched_policies:
-        ll_sch.remove_scheduling_policy(policy_name=policy.get_name())
-    logger.info("Activate additional host %s", conf.HOSTS[2])
-    if not ll_hosts.activateHost(True, conf.HOSTS[2]):
-        logger.error("Failed to activate host")
+    assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[2])
 
 
 @attr(tier=2)
@@ -173,6 +169,7 @@ class AttachPolicyToCluster(BaseSchedulingClass):
         super(AttachPolicyToCluster, cls).teardown_class()
 
 
+@pytest.mark.usefixtures(init_scheduler_sanity_test.__name__)
 class UpdateVms(AttachPolicyToCluster):
     """
     Class to update and to start vm.
@@ -541,9 +538,7 @@ class TestNetworkFilter(UpdateVms):
         update vm nic to use new network
         """
         if len(conf.VDS_HOSTS[0].nics) < 2:
-            raise SkipTest(
-                "%s does not have enough nics" % conf.VDS_HOSTS[0]
-            )
+            pytest.skip("%s does not have enough nics" % conf.VDS_HOSTS[0])
         logger.info(
             "Create new network %s and attach it to host %s",
             cls.network_name, conf.HOSTS[0]

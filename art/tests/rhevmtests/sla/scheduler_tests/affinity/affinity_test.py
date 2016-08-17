@@ -14,7 +14,7 @@ import pytest
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
     create_cluster_for_affinity_test,
     deactivate_hosts,
@@ -96,6 +96,7 @@ class BaseStartVms(u_libs.SlaTest):
 
 
 @u_libs.attr(tier=1)
+@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestStartVmsUnderHardPositiveAffinity(BaseStartVms):
     """
     Start VM's that placed into the same hard positive affinity group,
@@ -151,6 +152,7 @@ class TestStartVmsUnderSoftPositiveAffinity(BaseStartVms):
 
 
 @u_libs.attr(tier=1)
+@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestStartVmsUnderHardNegativeAffinity(BaseStartVms):
     """
     Start VM's that placed into the same hard negative affinity group,
@@ -242,6 +244,7 @@ class BaseMigrateVm(u_libs.SlaTest):
 
 
 @u_libs.attr(tier=1)
+@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
     """
     Migrate VM under hard positive affinity,
@@ -288,6 +291,8 @@ class TestMigrateVmUnderSoftPositiveAffinity(BaseMigrateVm):
 
 
 @u_libs.attr(tier=1)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_TWO_HOSTS)
+@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
     """
     Migrate VM under hard negative affinity,

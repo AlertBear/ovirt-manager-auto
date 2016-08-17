@@ -123,6 +123,7 @@ IBM_POWER_8E = 'IBM POWER8E'
 PPC_CPUS = [IBM_POWER_8, IBM_POWER_8E]
 PPC_ARCH = True if CPU_NAME in PPC_CPUS else False
 PPC_SKIP_MESSAGE = 'Test not supported under PPC64 architecture'
+PPC_TWO_HOSTS = "Test requires three hosts, when PPC GE has only two"
 
 HOSTS = []
 HOSTS_IP = []

@@ -9,7 +9,7 @@ import art.unittest_lib as u_libs
 import helpers
 import pytest
 import rhevmtests.sla.config as conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from fixtures import update_vms_cpu_share
 from rhevmtests.sla.fixtures import start_vms
 
@@ -155,6 +155,7 @@ class TestCustomShare(BaseCpuShare):
 
 
 @u_libs.attr(tier=1)
+@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestPredefinedValues(BaseCpuShare):
     """
     Check that 4 vms that have the different CPU share values
