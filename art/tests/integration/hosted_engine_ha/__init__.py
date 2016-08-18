@@ -3,12 +3,12 @@ Init file for hosted_engine_ha package
 """
 import logging
 
-import config as conf
-import art.test_handler as t_handler
-import art.core_api.apis_utils as utils
-import hosted_engine_ha_test as he_test
-import art.test_handler.exceptions as errors
 import art.core_api.apis_exceptions as core_errors
+import art.core_api.apis_utils as utils
+import art.test_handler as t_handler
+import art.test_handler.exceptions as errors
+import config as conf
+import hosted_engine_ha_test as he_test
 
 logger = logging.getLogger(__name__)
 t_handler.find_test_file.__test__ = False

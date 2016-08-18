@@ -6,14 +6,13 @@ import logging
 import re
 import socket
 
-import pytest
-
 import art.core_api.apis_exceptions as core_errors
 import art.core_api.apis_utils as utils
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.test_handler.exceptions as errors
 import art.unittest_lib as test_libs
 import config as conf
+import pytest
 from art.test_handler import tools
 
 logger = logging.getLogger(__name__)
@@ -749,6 +748,10 @@ class TestHostWithVmLostConnection(GeneralSetupTeardownClass):
             cls.skip = False
 
 
+@pytest.mark.skipif(
+    condition=conf.IS_ISCSI_STORAGE_DOMAIN,
+    reason=conf.HE_ISCSI_STORAGE_DOMAIN_MSG
+)
 class TestBlockAccessToStorageDomainFromHost(GeneralSetupTeardownClass):
     """
     Block access to storage on host where HE runs and

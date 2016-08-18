@@ -202,3 +202,10 @@ VM_NOT_STARTED_ON_SECOND_HOST = "Vm not started on second host"
 ENGINE_NOT_STARTED_ON_SECOND_HOST = "Engine not started on second host"
 HE_VM_NOT_STARTED = "HE vm not started"
 ENGINE_UP = "Engine still alive"
+
+ISCSI_STORAGE_DOMAIN = "iscsi"
+HE_STORAGE_DOMAIN_TYPE = VDS_HOSTS[0].run_command(
+    command=["grep", "domainType", HOSTED_ENGINE_CONF_FILE]
+)[1].strip().split("=")[1]
+IS_ISCSI_STORAGE_DOMAIN = HE_STORAGE_DOMAIN_TYPE == ISCSI_STORAGE_DOMAIN
+HE_ISCSI_STORAGE_DOMAIN_MSG = "Test does not supported on ISCSI storage"
