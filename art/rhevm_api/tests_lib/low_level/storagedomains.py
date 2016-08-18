@@ -1937,7 +1937,7 @@ class GlanceImage(object):
       glance_repository_name: glance attached to your engine
     """
 
-    def __init__(self, image_name, glance_repository_name):
+    def __init__(self, image_name, glance_repository_name, timeout=600):
         self._image_name = image_name
         self._glance_repository_name = glance_repository_name
         self._imported_disk_name = None
@@ -1945,7 +1945,7 @@ class GlanceImage(object):
         self._disk_status = None
         self._destination_storage_domain = None
         self._is_imported_as_template = None
-        self._timeout = 600
+        self._timeout = timeout
 
     @property
     def image_name(self):

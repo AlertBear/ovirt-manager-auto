@@ -567,7 +567,7 @@ class CreateDC(TestCase):
     def add_glance_templates(self, glance_templates, data_center, cluster):
         for glance_template in glance_templates:
             glance, image = glance_template.get('source').split(':')
-            gi = ll_sd.GlanceImage(image, glance)
+            gi = ll_sd.GlanceImage(image, glance, timeout=1800)
 
             data_sds = self._get_data_storage_domains(data_center)
             glance_template_name = glance_template.get('name')
@@ -579,7 +579,7 @@ class CreateDC(TestCase):
                 new_disk_alias=glance_template_name,
                 new_template_name=glance_template_name,
                 import_as_template=True,
-                async=False
+                async=False,
             )
             self.add_nic_to_glance_template(glance_template_name)
             assert templates.waitForTemplatesStates(glance_template_name)
