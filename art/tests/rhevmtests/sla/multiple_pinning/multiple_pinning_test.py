@@ -25,13 +25,16 @@ from fixtures import (
 )
 from rhevmtests.sla.fixtures import (
     activate_hosts,
+    choose_specific_host_as_spm,
     stop_vms,
     update_vms
 )
 
 logger = logging.getLogger(__name__)
+host_as_spm = 2
 
 
+@pytest.mark.usefixtures(choose_specific_host_as_spm.__name__)
 class BaseMultiplePinning(u_libs.SlaTest):
     """
     Base class for all multiple pinning tests

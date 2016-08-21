@@ -65,7 +65,7 @@ def stop_memory_allocation(request):
     request.addfinalizer(fin)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def prepare_env_for_ballooning_test(request):
     """
     1) Update cluster parameters

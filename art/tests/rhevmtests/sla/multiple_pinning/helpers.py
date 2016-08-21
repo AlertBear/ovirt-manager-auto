@@ -25,7 +25,7 @@ def add_one_numa_node_to_vm(negative=False):
     assert ll_vms.add_numa_node_to_vm(
         vm_name=conf.VM_NAME[0],
         host_name=conf.HOSTS[0],
-        index=host_numa_node_index,
+        index=0,
         memory=vm_memory,
         cores=vm_cores,
         pin_list=[host_numa_node_index]

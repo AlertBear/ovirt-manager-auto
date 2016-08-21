@@ -194,20 +194,19 @@ def check_vms_balloon_state(vm_list, deflation=True):
                 vm_name, conf.HOSTS[0]
             )
             return False
+        balloon_cur = vm_ballooning_info[conf.VM_BALLOON_CURRENT]
+        balloon_max = vm_ballooning_info[conf.VM_BALLOON_MAX]
         logger.info(
             "VM %s has %s equal to %s and %s equal to %s",
             vm_name,
             conf.VM_BALLOON_MAX,
-            vm_ballooning_info[conf.VM_BALLOON_MAX],
+            balloon_max,
             conf.VM_BALLOON_CURRENT,
-            vm_ballooning_info[conf.VM_BALLOON_CURRENT]
+            balloon_cur
         )
-        if (
-            vm_ballooning_info[conf.VM_BALLOON_MAX] ==
-            vm_ballooning_info[conf.VM_BALLOON_CURRENT]
-        ) == deflation:
-            return False
-    return True
+        if (balloon_max - 1024 > balloon_cur) == deflation:
+            return True
+    return False
 
 
 def wait_for_vms_balloon_state(

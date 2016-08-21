@@ -114,7 +114,12 @@ class TestKSM(u_libs.SlaTest):
                 vm_name
             )
             ksm_running = helpers.is_ksm_running(resource=conf.VDS_HOSTS[0])
-            if helpers.is_ksm_running(resource=conf.VDS_HOSTS[0]):
+            if ksm_running:
+                # Add additional VM to the threshold list to be sure that KSM
+                # will be triggered in next test cases
+                if vm_name != conf.MOM_VMS[-1]:
+                    self.threshold_list.append(conf.MOM_VMS[-1])
+                    self.__class__.vms_to_stop.append(conf.MOM_VMS[-1])
                 break
         assert ll_vms.stop_vms_safely(vms_list=self.threshold_list)
         assert ksm_running

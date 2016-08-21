@@ -16,9 +16,9 @@ import config as conf
 from art.core_api import apis_utils
 from art.core_api.apis_exceptions import APITimeout
 from art.core_api.apis_utils import TimeoutingSampler
+from art.unittest_lib import testflow
 from concurrent.futures import ThreadPoolExecutor
 from rhevmtests import helpers
-from art.unittest_lib import testflow
 
 logger = logging.getLogger(__name__)
 
@@ -529,3 +529,45 @@ def load_vm_and_check_the_load(load_dict, expected_values=None):
     ):
         return False
     return True
+
+
+def wait_for_host_scheduling_memory(
+    host_name,
+    expected_sch_memory,
+    sampler_timeout=120,
+    sampler_sleep=conf.SAMPLER_SLEEP
+):
+    """
+    Wait until the host will have expected amount of scheduling memory
+
+    Args:
+        host_name (str): Host name
+        expected_sch_memory (int): Expected scheduling memory
+        sampler_timeout (int): Sampler timeout
+        sampler_sleep (int): Sampler sleep time
+
+    Returns:
+        bool: True, if the host has expected scheduling memory
+            before it reaches timeout, otherwise False
+    """
+    sampler = apis_utils.TimeoutingSampler(
+        timeout=sampler_timeout,
+        sleep=sampler_sleep,
+        func=ll_hosts.get_host_max_scheduling_memory,
+        host_name=host_name
+    )
+    error = 256 * conf.MB
+    for sample in sampler:
+        try:
+            if (
+                expected_sch_memory - error <=
+                sample <=
+                expected_sch_memory + error
+            ):
+                return True
+        except apis_exceptions.APITimeout:
+            logging.error(
+                "Host %s has unexpected amount of scheduling memory: %sMb",
+                host_name, sample / conf.MB
+            )
+    return False

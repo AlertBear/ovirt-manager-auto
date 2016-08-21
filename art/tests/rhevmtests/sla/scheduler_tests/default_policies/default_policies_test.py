@@ -14,6 +14,7 @@ import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
+    choose_specific_host_as_spm,
     run_once_vms,
     activate_hosts
 )
@@ -25,6 +26,7 @@ from rhevmtests.sla.scheduler_tests.fixtures import (
 )
 
 logger = logging.getLogger(__name__)
+host_as_spm = 2
 
 
 @pytest.fixture(scope="module")
@@ -47,12 +49,20 @@ def setup_default_policies(request):
 @bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
     setup_default_policies.__name__,
     run_once_vms.__name__,
-    load_hosts_cpu.__name__,
-    update_cluster_policy_to_power_saving.__name__
+    load_hosts_cpu.__name__
 )
-class TestPowerSavingBalanceModule1(u_libs.SlaTest):
+class BaseDefaultPolicies(u_libs.SlaTest):
+    """
+    Base class for all default policies
+    """
+    pass
+
+
+@pytest.mark.usefixtures(update_cluster_policy_to_power_saving.__name__)
+class TestPowerSavingBalanceModule1(BaseDefaultPolicies):
     """
     VM run on under utilized host and must migrate to normal utilized host
     """
@@ -75,15 +85,8 @@ class TestPowerSavingBalanceModule1(u_libs.SlaTest):
         )
 
 
-@bz({'1316456': {}})
-@u_libs.attr(tier=2)
-@pytest.mark.usefixtures(
-    setup_default_policies.__name__,
-    run_once_vms.__name__,
-    load_hosts_cpu.__name__,
-    update_cluster_policy_to_power_saving.__name__
-)
-class TestPowerSavingBalanceModule2(u_libs.SlaTest):
+@pytest.mark.usefixtures(update_cluster_policy_to_power_saving.__name__)
+class TestPowerSavingBalanceModule2(BaseDefaultPolicies):
     """
     VM run on under utilized host, but another hosts in cluster over or under
     utilized, so VM must stay on old host
@@ -110,15 +113,8 @@ class TestPowerSavingBalanceModule2(u_libs.SlaTest):
         )
 
 
-@bz({'1316456': {}})
-@u_libs.attr(tier=2)
-@pytest.mark.usefixtures(
-    setup_default_policies.__name__,
-    run_once_vms.__name__,
-    load_hosts_cpu.__name__,
-    update_cluster_policy_to_power_saving.__name__
-)
-class TestPowerSavingBalanceModule3(u_libs.SlaTest):
+@pytest.mark.usefixtures(update_cluster_policy_to_power_saving.__name__)
+class TestPowerSavingBalanceModule3(BaseDefaultPolicies):
     """
     VM run on under utilized host, check that VM migrate
     to normal utilized host and not to over utilized host
@@ -142,16 +138,11 @@ class TestPowerSavingBalanceModule3(u_libs.SlaTest):
         )
 
 
-@bz({'1316456': {}})
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    setup_default_policies.__name__,
-    run_once_vms.__name__,
-    load_hosts_cpu.__name__,
     update_cluster_policy_to_power_saving.__name__,
     activate_hosts.__name__
 )
-class TestPowerSavingWeightModule1(u_libs.SlaTest):
+class TestPowerSavingWeightModule1(BaseDefaultPolicies):
     """
     VM run on normal utilized host, we put host to
     maintenance and check that VM migrated to normal utilized host
@@ -178,15 +169,8 @@ class TestPowerSavingWeightModule1(u_libs.SlaTest):
         )
 
 
-@bz({'1316456': {}})
-@u_libs.attr(tier=2)
-@pytest.mark.usefixtures(
-    setup_default_policies.__name__,
-    run_once_vms.__name__,
-    load_hosts_cpu.__name__,
-    update_cluster_policy_to_even_distributed.__name__
-)
-class TestEvenDistributedBalanceModule1(u_libs.SlaTest):
+@pytest.mark.usefixtures(update_cluster_policy_to_even_distributed.__name__)
+class TestEvenDistributedBalanceModule1(BaseDefaultPolicies):
     """
     VM run on over utilized host and must migrate to normal utilized host
     """
@@ -209,15 +193,8 @@ class TestEvenDistributedBalanceModule1(u_libs.SlaTest):
         )
 
 
-@bz({'1316456': {}})
-@u_libs.attr(tier=2)
-@pytest.mark.usefixtures(
-    setup_default_policies.__name__,
-    run_once_vms.__name__,
-    load_hosts_cpu.__name__,
-    update_cluster_policy_to_even_distributed.__name__
-)
-class TestEvenDistributedBalanceModule2(u_libs.SlaTest):
+@pytest.mark.usefixtures(update_cluster_policy_to_even_distributed.__name__)
+class TestEvenDistributedBalanceModule2(BaseDefaultPolicies):
     """
     VM run on over utilized host, but other cluster hosts also over utilized,
     so VM must stay on old host
@@ -244,16 +221,11 @@ class TestEvenDistributedBalanceModule2(u_libs.SlaTest):
         )
 
 
-@bz({'1316456': {}})
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    setup_default_policies.__name__,
-    run_once_vms.__name__,
-    load_hosts_cpu.__name__,
     update_cluster_policy_to_even_distributed.__name__,
     activate_hosts.__name__
 )
-class TestEvenDistributedWeightModule1(u_libs.SlaTest):
+class TestEvenDistributedWeightModule1(BaseDefaultPolicies):
     """
     VM run on normal utilized host, we put host to
     maintenance and check that VM migrated on normal utilized host

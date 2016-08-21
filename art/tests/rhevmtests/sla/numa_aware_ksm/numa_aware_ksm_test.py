@@ -1,14 +1,16 @@
 """
 NUMA aware KSM test
 """
-import pytest
-
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.unittest_lib as u_libs
+import pytest
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion
+from rhevmtests.sla.fixtures import choose_specific_host_as_spm
+
+host_as_spm = 2
 
 
 @pytest.fixture(scope="class", autouse=True)
@@ -37,6 +39,8 @@ def update_cluster_merge_across_nodes(request):
     )
 
 
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(choose_specific_host_as_spm.__name__)
 class BaseNumaAwareKsm(u_libs.SlaTest):
     """
     Base class for all NUMA aware KSM tests
@@ -77,10 +81,6 @@ class BaseNumaAwareKsm(u_libs.SlaTest):
         )
 
 
-@pytest.mark.usefixtures(
-    "update_cluster_merge_across_nodes"
-)
-@u_libs.attr(tier=2)
 class TestNumaAwareKsm1(BaseNumaAwareKsm):
     """
     Activate host under cluster with merge_across_nodes=True
@@ -99,10 +99,6 @@ class TestNumaAwareKsm1(BaseNumaAwareKsm):
         self.check_host_activation(ksm_merge_across_nodes=True)
 
 
-@pytest.mark.usefixtures(
-    "update_cluster_merge_across_nodes"
-)
-@u_libs.attr(tier=2)
 class TestNumaAwareKsm2(BaseNumaAwareKsm):
     """
     Activate host under cluster with merge_across_nodes=False
@@ -121,10 +117,6 @@ class TestNumaAwareKsm2(BaseNumaAwareKsm):
         self.check_host_activation(ksm_merge_across_nodes=False)
 
 
-@pytest.mark.usefixtures(
-    "update_cluster_merge_across_nodes"
-)
-@u_libs.attr(tier=2)
 class TestNumaAwareKsm3(BaseNumaAwareKsm):
     """
     Update cluster merge_across_nodes=True and check if host receive new value
@@ -145,10 +137,6 @@ class TestNumaAwareKsm3(BaseNumaAwareKsm):
         )
 
 
-@pytest.mark.usefixtures(
-    "update_cluster_merge_across_nodes"
-)
-@u_libs.attr(tier=2)
 class TestNumaAwareKsm4(BaseNumaAwareKsm):
     """
     Update cluster merge_across_nodes=False and check if host receive new value

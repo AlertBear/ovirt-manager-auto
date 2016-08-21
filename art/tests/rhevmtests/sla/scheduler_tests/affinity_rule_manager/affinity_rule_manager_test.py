@@ -8,6 +8,7 @@ import rhevmtests.sla.config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
+    choose_specific_host_as_spm,
     run_once_vms,
     start_vms
 )
@@ -21,8 +22,10 @@ from rhevmtests.sla.scheduler_tests.fixtures import (
     wait_for_scheduling_memory_update
 )
 
+host_as_spm = 0
 
-@pytest.fixture(scope="module", autouse=True)
+
+@pytest.fixture(scope="module")
 def deactivate_third_host(request):
     """
     1) Deactivate third host in the cluster
@@ -39,10 +42,21 @@ def deactivate_third_host(request):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
+    deactivate_third_host.__name__
+)
+class BaseAREM(u_libs.SlaTest):
+    """
+    Base class for all AREM tests
+    """
+    pass
+
+
+@pytest.mark.usefixtures(
     run_once_vms.__name__,
     create_affinity_groups.__name__
 )
-class TestAREM1(u_libs.SlaTest):
+class TestAREM1(BaseAREM):
     """
     Check AREM for positive hard affinity group
 
@@ -80,12 +94,11 @@ class TestAREM1(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     create_affinity_groups.__name__
 )
-class TestAREM2(u_libs.SlaTest):
+class TestAREM2(BaseAREM):
     """
     Check AREM for negative hard affinity group
 
@@ -122,12 +135,11 @@ class TestAREM2(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     create_affinity_groups.__name__
 )
-class TestAREM3(u_libs.SlaTest):
+class TestAREM3(BaseAREM):
     """
     Check AREM for positive soft affinity group
 
@@ -165,12 +177,11 @@ class TestAREM3(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     create_affinity_groups.__name__
 )
-class TestAREM4(u_libs.SlaTest):
+class TestAREM4(BaseAREM):
     """
     Check AREM for negative soft affinity group
 
@@ -207,7 +218,6 @@ class TestAREM4(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     update_cluster_overcommitment.__name__,
     wait_for_scheduling_memory_update.__name__,
@@ -215,7 +225,7 @@ class TestAREM4(u_libs.SlaTest):
     start_vms.__name__,
     create_affinity_groups.__name__
 )
-class TestAREM5(u_libs.SlaTest):
+class TestAREM5(BaseAREM):
     """
     Check AREM for positive hard affinity group under
     additional memory restriction
@@ -250,7 +260,6 @@ class TestAREM5(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     update_cluster_overcommitment.__name__,
     wait_for_scheduling_memory_update.__name__,
@@ -258,7 +267,7 @@ class TestAREM5(u_libs.SlaTest):
     run_once_vms.__name__,
     create_affinity_groups.__name__
 )
-class TestAREM6(u_libs.SlaTest):
+class TestAREM6(BaseAREM):
     """
     Check AREM for negative hard affinity group
 
@@ -299,7 +308,6 @@ class TestAREM6(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     wait_for_scheduling_memory_update.__name__,
     run_once_vms.__name__,
@@ -307,7 +315,7 @@ class TestAREM6(u_libs.SlaTest):
     update_cluster_policy_to_power_saving.__name__,
     load_hosts_cpu.__name__,
 )
-class TestAREM7(u_libs.SlaTest):
+class TestAREM7(BaseAREM):
     """
     Check AREM for negative hard affinity group under the PowerSaving
     scheduling policy constraint
@@ -350,14 +358,13 @@ class TestAREM7(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     create_affinity_groups.__name__,
     load_hosts_cpu.__name__,
     update_cluster_policy_to_even_distributed.__name__,
 )
-class TestAREM8(u_libs.SlaTest):
+class TestAREM8(BaseAREM):
     """
     Check AREM for negative hard affinity group under the EvenlyDistributed
     scheduling policy constraint

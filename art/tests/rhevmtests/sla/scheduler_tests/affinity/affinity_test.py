@@ -7,7 +7,6 @@ import logging
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import pytest
@@ -16,6 +15,7 @@ import rhevmtests.sla.config as conf
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
+    choose_specific_host_as_spm,
     create_cluster_for_affinity_test,
     deactivate_hosts,
     run_once_vms,
@@ -28,6 +28,7 @@ from rhevmtests.sla.scheduler_tests.fixtures import create_affinity_groups
 
 
 logger = logging.getLogger(__name__)
+host_as_spm = 1
 
 
 def change_arem_state(enable):
@@ -47,21 +48,13 @@ def change_arem_state(enable):
     if not test_utils.set_engine_properties(conf.ENGINE, cmd):
         logger.error("Failed to set %s option to false", conf.AREM_OPTION)
         return False
-    if not ll_sds.waitForStorageDomainStatus(
-        positive=True,
-        dataCenterName=conf.DC_NAME[0],
-        storageDomainName=conf.STORAGE_NAME[0],
-        expectedStatus=conf.SD_ACTIVE
-    ):
-        logger.error(
-            "Storage domain %s not active", conf.STORAGE_NAME[0]
-        )
+    if not rhevm_helpers.wait_for_engine_api():
         return False
     return True
 
 
 @pytest.fixture(scope="module", autouse=True)
-def disable_arem(request):
+def init_affinity_test(request):
     """
     1) Disable AREM manager
     2) Change cluster overcommitment
@@ -84,10 +77,21 @@ def disable_arem(request):
 
 
 @pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
+    init_affinity_test.__name__
+)
+class BaseAffinity(u_libs.SlaTest):
+    """
+    Base class for all affinity tests
+    """
+    pass
+
+
+@pytest.mark.usefixtures(
     create_affinity_groups.__name__,
     start_vms.__name__
 )
-class BaseStartVms(u_libs.SlaTest):
+class BaseStartVms(BaseAffinity):
     """
     Start VM's under different affinity groups
     """
@@ -212,7 +216,7 @@ class TestStartVmsUnderSoftNegativeAffinity(BaseStartVms):
     run_once_vms.__name__,
     create_affinity_groups.__name__
 )
-class BaseMigrateVm(u_libs.SlaTest):
+class BaseMigrateVm(BaseAffinity):
     """
     Migrate VM under different affinity groups
     """
@@ -453,7 +457,7 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(BaseMigrateVm):
     create_cluster_for_affinity_test.__name__,
     update_vms.__name__
 )
-class TestRemoveVmFromAffinityGroupOnClusterChange(u_libs.SlaTest):
+class TestRemoveVmFromAffinityGroupOnClusterChange(BaseAffinity):
     """
     Change VM cluster, and check that VM removed from
     affinity group on the old cluster
@@ -548,7 +552,7 @@ class TestPutHostToMaintenanceUnderHardNegativeAffinity(BaseMigrateVm):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
-class TestTwoDifferentAffinitiesScenario1(u_libs.SlaTest):
+class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
     """
     Negative: create two affinity groups with the same VM's
     1) hard and positive
@@ -588,7 +592,7 @@ class TestTwoDifferentAffinitiesScenario1(u_libs.SlaTest):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
-class TestTwoDifferentAffinitiesScenario2(u_libs.SlaTest):
+class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
     """
     Negative: create two affinity groups with the same VM's
     1) hard and negative
@@ -628,7 +632,7 @@ class TestTwoDifferentAffinitiesScenario2(u_libs.SlaTest):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
-class TestTwoDifferentAffinitiesScenario3(u_libs.SlaTest):
+class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
     """
     Negative: create two affinity groups with the same VM's
     1) hard and negative
@@ -673,7 +677,7 @@ class TestTwoDifferentAffinitiesScenario3(u_libs.SlaTest):
     update_vms.__name__,
     start_vms.__name__
 )
-class TestFailedToStartHAVmUnderHardNegativeAffinity(u_libs.SlaTest):
+class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
     """
     Kill HA VM and check that VM failed to start,
     because hard negative affinity
@@ -699,6 +703,8 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(u_libs.SlaTest):
         1) Add HA VM to affinity group
         2) Kill HA VM
         3) Check that HA VM failed to start because affinity filter
+        4) Stop VM VM_NAME[1]
+        5) Check that HA VM succeeds to start
         """
         u_libs.testflow.step(
             "Add VM %s to affinity group %s",
@@ -723,6 +729,14 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(u_libs.SlaTest):
             "Check that HA VM %s fails to start", conf.VM_NAME[2]
         )
         assert not ll_vms.waitForVMState(vm=conf.VM_NAME[2], timeout=120)
+        u_libs.testflow.step("Stop VM %s", conf.VM_NAME[1])
+        assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[1])
+        u_libs.testflow.step(
+            "Check that HA VM %s succeeds to start", conf.VM_NAME[2]
+        )
+        assert ll_vms.waitForVMState(
+            vm=conf.VM_NAME[2], state=conf.VM_POWERING_UP
+        )
 
 
 @u_libs.attr(tier=2)
@@ -731,7 +745,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(u_libs.SlaTest):
     create_affinity_groups.__name__,
     start_vms.__name__
 )
-class TestStartHAVmsUnderHardPositiveAffinity(u_libs.SlaTest):
+class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
     """
     Start two HA VM's under hard positive affinity, kill them and
     check that they started on the same host
@@ -785,7 +799,7 @@ class TestStartHAVmsUnderHardPositiveAffinity(u_libs.SlaTest):
     create_affinity_groups.__name__,
     start_vms.__name__
 )
-class TestSoftPositiveAffinityVsMemoryFilter(u_libs.SlaTest):
+class TestSoftPositiveAffinityVsMemoryFilter(BaseAffinity):
     """
     Change memory of VM's to prevent possibility to start two VM's on the same
     host and check if soft positive affinity not prevent this

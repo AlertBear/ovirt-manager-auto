@@ -8,14 +8,13 @@ import logging
 import socket
 import time
 
-import pytest
-
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import art.unittest_lib as u_lib
+import pytest
 import rhevmtests.helpers as rhevm_helper
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
@@ -481,9 +480,7 @@ class TestHostStoppedByUser(PowerSavingWithPM):
         cls.host_down = conf.HOSTS[1]
         super(TestHostStoppedByUser, cls).setup_class()
         cls._update_hosts_in_reserve(2)
-        logger.info("Deactivate host %s", conf.HOSTS[1])
-        if not ll_hosts.deactivateHost(True, conf.HOSTS[1]):
-            raise errors.HostException("Fail to deactivate host")
+        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[1])
         logger.info("Stop host %s via power management", conf.HOSTS[1])
         if not ll_hosts.fenceHost(
             positive=True, host=conf.HOSTS[1], fence_type="stop"

@@ -7,12 +7,14 @@ import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sla_config
 import pytest
 import rhevmtests.helpers as rhevm_helpers
+from art.core_api import apis_exceptions
+from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
+
 
 logger = sla_config.logging.getLogger(__name__)
 
@@ -159,12 +161,6 @@ def deactivate_hosts(request):
 
     for host_name in hosts_to_deactivate:
         assert ll_hosts.deactivateHost(positive=True, host=host_name)
-    assert ll_sds.waitForStorageDomainStatus(
-        positive=True,
-        dataCenterName=sla_config.DC_NAME[0],
-        storageDomainName=sla_config.STORAGE_NAME[0],
-        expectedStatus=sla_config.SD_ACTIVE
-    )
 
 
 @pytest.fixture(scope="class")
@@ -213,7 +209,7 @@ def create_cluster_for_affinity_test(request):
 @pytest.fixture(scope="class")
 def stop_guest_agent_service(request):
     """
-    1) Stop puppet and agent services
+    1) Stop the agent service
     """
     stop_guest_agent_vm = request.node.cls.stop_guest_agent_vm
     vm_resource = rhevm_helpers.get_host_resource(
@@ -223,20 +219,14 @@ def stop_guest_agent_service(request):
 
     def fin():
         """
-        1) Start puppet and agent services
+        1) Start the agent service
         """
-        for service_name in (
-            sla_config.SERVICE_PUPPET, sla_config.SERVICE_GUEST_AGENT
-        ):
-            logger.info("Start %s service", service_name)
-            vm_resource.service(name=service_name).start()
+        logger.info("Start %s service", sla_config.SERVICE_GUEST_AGENT)
+        vm_resource.service(name=sla_config.SERVICE_GUEST_AGENT).start()
     request.addfinalizer(fin)
 
-    for service_name in (
-        sla_config.SERVICE_PUPPET, sla_config.SERVICE_GUEST_AGENT
-    ):
-        logger.info("Stop %s service", service_name)
-        vm_resource.service(name=service_name).stop()
+    logger.info("Stop %s service", sla_config.SERVICE_GUEST_AGENT)
+    assert vm_resource.service(name=sla_config.SERVICE_GUEST_AGENT).stop()
 
 
 @pytest.fixture(scope="class")
@@ -289,3 +279,27 @@ def create_vms(request):
     for result in results:
         if result.exception():
             raise result.exception()
+
+
+@pytest.fixture(scope="module")
+def choose_specific_host_as_spm(request):
+    """
+    1) Choose given host as SPM
+    """
+    host_as_spm = request.node.module.host_as_spm
+
+    logger.info("Wait until all async tasks will be gone from the engine")
+    try:
+        test_utils.wait_for_tasks(
+            vdc=sla_config.VDC_HOST,
+            vdc_password=sla_config.VDC_ROOT_PASSWORD,
+            datacenter=sla_config.DC_NAME[0]
+        )
+    except apis_exceptions.APITimeout:
+        logger.error("Engine has async tasks that still running")
+        return False
+    assert ll_hosts.select_host_as_spm(
+        positive=True,
+        host=sla_config.HOSTS[host_as_spm],
+        data_center=sla_config.DC_NAME[0]
+    )

@@ -774,7 +774,7 @@ class TestCPUPinCase1(BasicSlaClass):
         try:
             ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"A": "0"}])
             assert False, "Successfully changed VCPU pinning to A#0"
-        except TypeError:
+        except (TypeError, ValueError):
             logger.info("Unable to change VCPU pinning to A#0")
 
     @u_lib.attr(tier=2)

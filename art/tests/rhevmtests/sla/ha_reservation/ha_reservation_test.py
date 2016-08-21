@@ -12,16 +12,18 @@ import logging
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
 import helpers
 import pytest
+import rhevmtests.helpers as rhevm_helpers
+import rhevmtests.sla.helpers as sla_helpers
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
     activate_hosts,
+    choose_specific_host_as_spm,
     create_vms,
     start_vms,
     update_vms,
@@ -29,6 +31,7 @@ from rhevmtests.sla.fixtures import (
 )
 
 logger = logging.getLogger(__name__)
+host_as_spm = 0
 
 
 def update_ha_reservation_interval(ha_reservation_interval):
@@ -53,23 +56,18 @@ def update_ha_reservation_interval(ha_reservation_interval):
     ]
     if not test_utils.set_engine_properties(conf.ENGINE, cmd):
         return False
-    logger.info(
-        "Wait for active status of storage domain %s", conf.STORAGE_NAME[0]
-    )
-    return ll_sds.waitForStorageDomainStatus(
-        positive=True,
-        dataCenterName=conf.DC_NAME[0],
-        storageDomainName=conf.STORAGE_NAME[0],
-        expectedStatus=conf.SD_ACTIVE
-    )
+    if not rhevm_helpers.wait_for_engine_api():
+        return False
+    return True
 
 
-@pytest.fixture(scope="module", autouse=True)
-def deactivate_third_host(request):
+@pytest.fixture(scope="module")
+def init_ha_reservation(request):
     """
     1) Deactivate third host
     2) Update HA reservation time interval
     3) Update cluster overcommitment and HA reservation
+    4) Update cluster over commitment to None
     """
     def fin():
         """
@@ -89,9 +87,12 @@ def deactivate_third_host(request):
         )
     request.addfinalizer(fin)
 
-    assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[2])
+    assert ll_hosts.deactivateHost(
+        positive=True,
+        host=conf.HOSTS[2]
+    )
     assert update_ha_reservation_interval(
-        ha_reservation_interval=conf.RESERVATION_TIMEOUT / 60
+        ha_reservation_interval=conf.NEW_RESERVATION_INTERVAL / 60
     )
     assert ll_clusters.updateCluster(
         positive=True,
@@ -103,10 +104,21 @@ def deactivate_third_host(request):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
+    init_ha_reservation.__name__
+)
+class BaseHAReservation(u_libs.SlaTest):
+    """
+    Base class for all HA reservation tests
+    """
+    pass
+
+
+@pytest.mark.usefixtures(
     update_vms.__name__,
     start_vms.__name__
 )
-class PutHostToMaintenance(u_libs.SlaTest):
+class PutHostToMaintenance(BaseHAReservation):
     """
     Moving host to maintenance should make cluster not HA safe
     """
@@ -152,13 +164,12 @@ class PutHostToMaintenance(u_libs.SlaTest):
         assert helpers.is_cluster_ha_safe()
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vms_memory_to_hosts_memory.__name__,
     start_vms.__name__
 )
-class NotCompatibleHost(u_libs.SlaTest):
+class NotCompatibleHost(BaseHAReservation):
     """
     Cluster failing HA reservation check based on
     insufficient resources
@@ -183,8 +194,25 @@ class NotCompatibleHost(u_libs.SlaTest):
         )
         assert not helpers.is_cluster_ha_safe()
 
+        vm_host = ll_vms.get_vm_host(vm_name=conf.VM_NAME[0])
+        host_scheduling_memory = ll_hosts.get_host_max_scheduling_memory(
+            host_name=vm_host
+        )
+        vm_memory = ll_vms.get_vm_memory(vm_name=conf.VM_NAME[0])
+        host_expected_sch_memory = host_scheduling_memory + vm_memory
+
         u_libs.testflow.step("Stop memory allocating VM %s", conf.VM_NAME[0])
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
+
+        u_libs.testflow.step(
+            "Wait until the engine will update host %s max scheduling memory",
+            vm_host
+        )
+        sla_helpers.wait_for_host_scheduling_memory(
+            host_name=vm_host,
+            expected_sch_memory=host_expected_sch_memory,
+            sampler_timeout=conf.RESERVATION_TIMEOUT
+        )
 
         u_libs.testflow.step(
             "Check if cluster %s is HA safe", conf.CLUSTER_NAME[0]
@@ -192,13 +220,12 @@ class NotCompatibleHost(u_libs.SlaTest):
         assert helpers.is_cluster_ha_safe()
 
 
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     create_vms.__name__,
     start_vms.__name__,
     activate_hosts.__name__
 )
-class MultiVM(u_libs.SlaTest):
+class MultiVM(BaseHAReservation):
     """
     Create 8 HA VMS in HA safe cluster and put one host to maintenance
     """
@@ -209,7 +236,7 @@ class MultiVM(u_libs.SlaTest):
     )
     vms_to_start = vm_list
     wait_for_vms_ip = False
-    hosts_to_activate_indexes = [0]
+    hosts_to_activate_indexes = [1]
 
     @polarion("RHEVM3-4994")
     def test_multi_vms(self):
@@ -221,8 +248,8 @@ class MultiVM(u_libs.SlaTest):
         )
         assert helpers.is_cluster_ha_safe()
 
-        u_libs.testflow.step("Deactivate host %s", conf.HOSTS[0])
-        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[0])
+        u_libs.testflow.step("Deactivate host %s", conf.HOSTS[1])
+        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[1])
 
         u_libs.testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]

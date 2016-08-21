@@ -6,8 +6,6 @@ is Vm_Evenly_Distribute
 import logging
 import socket
 
-from unittest2 import SkipTest
-
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -15,22 +13,14 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import art.unittest_lib as u_libs
 import config as conf
+import pytest
 import rhevmtests.helpers as rhevm_helper
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion, bz
+from rhevmtests.sla.fixtures import choose_specific_host_as_spm
 
 logger = logging.getLogger(__name__)
-
-
-def setup_module(module):
-    """
-    1) Choose first host as SPM
-    """
-    assert ll_hosts.select_host_as_spm(
-        positive=True,
-        host=conf.HOSTS[0],
-        data_center=conf.DC_NAME[0]
-    )
+host_as_spm = 0
 
 ########################################################################
 #                             Test Cases                               #
@@ -39,10 +29,13 @@ def setup_module(module):
 
 @bz({'1316456': {}})
 @u_libs.attr(tier=2)
+@pytest.mark.usefixtures(choose_specific_host_as_spm.__name__)
 class EvenVmCountDistribution(u_libs.SlaTest):
     """
     Base class for EvenVmCountDistribution policy
     """
+    pass
+
     @classmethod
     def setup_class(cls):
         """
@@ -214,7 +207,7 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         host_fqdn = conf.VDS_HOSTS[1].fqdn
         host_pm = rhevm_helper.get_pm_details(host_fqdn).get(host_fqdn)
         if not host_pm:
-            raise SkipTest("Host %s don't have power management" % host_fqdn)
+            pytest.skip("Host %s does not have power management", host_fqdn)
         agent_option = {
             "slot": host_pm[conf.PM_SLOT]
         } if conf.PM_SLOT in host_pm else None
@@ -306,13 +299,13 @@ class PutHostToMaintenance(EvenVmCountDistribution):
         """
         Put host_2 to maintenance and check, where migrate vms from host_2
         """
-        assert ll_hosts.deactivateHost(True, conf.HOSTS[1])
+        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[1])
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[2],
             expected_num_of_vms=conf.NUM_OF_VMS_ON_HOST,
             sampler_timeout=conf.LONG_BALANCE_TIMEOUT
         )
-        assert ll_hosts.activateHost(True, conf.HOSTS[1])
+        assert ll_hosts.activateHost(positive=True, host=conf.HOSTS[1])
 
 
 class MigrateVmUnderPolicy(EvenVmCountDistribution):

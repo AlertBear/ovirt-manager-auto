@@ -3,12 +3,13 @@ High-level functions above data-center
 """
 
 import logging
-from art.core_api import apis_exceptions
-from art.test_handler.settings import opts
-import art.test_handler.exceptions as errors
-from concurrent.futures import ThreadPoolExecutor
+
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
+import art.test_handler.exceptions as errors
+from art.core_api import apis_exceptions
+from art.test_handler.settings import opts
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger("art.hl_lib.hosts")
 ENUMS = opts['elements_conf']['RHEVM Enums']

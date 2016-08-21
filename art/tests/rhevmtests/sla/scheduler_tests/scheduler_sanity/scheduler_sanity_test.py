@@ -17,8 +17,10 @@ import rhevmtests.sla.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import SlaTest as TestCase
 from art.unittest_lib import attr
+from rhevmtests.sla.fixtures import choose_specific_host_as_spm
 
 logger = logging.getLogger(__name__)
+host_as_spm = 1
 
 FILTER_TYPE = conf.ENUMS['policy_unit_type_filter']
 
@@ -165,7 +167,10 @@ class AttachPolicyToCluster(BaseSchedulingClass):
         super(AttachPolicyToCluster, cls).teardown_class()
 
 
-@pytest.mark.usefixtures(init_scheduler_sanity_test.__name__)
+@pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
+    init_scheduler_sanity_test.__name__
+)
 class UpdateVms(AttachPolicyToCluster):
     """
     Class to update and to start vm.
@@ -307,8 +312,7 @@ class TestNegativePinToHostFilter(UpdateVms):
         ] = conf.HOSTS[0]
         super(TestNegativePinToHostFilter, cls).setup_class()
         logger.info("Deactivate host %s.", conf.HOSTS[0])
-        if not ll_hosts.deactivateHost(True, conf.HOSTS[0]):
-            raise errors.HostException("Failed to deactivate host.")
+        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[0])
 
     @polarion("RHEVM3-9485")
     def test_check_filter(self):

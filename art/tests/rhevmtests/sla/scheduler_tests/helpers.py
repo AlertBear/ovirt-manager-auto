@@ -4,8 +4,8 @@ Helper for scheduler tests
 import logging
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
 from art.rhevm_api.utils import test_utils
@@ -99,14 +99,6 @@ def change_engine_config_low_utilization_value(value):
             conf.ENGINE_CONFIG_LOW_UTILIZATION, value
         )
         return False
-    if not ll_sd.waitForStorageDomainStatus(
-        positive=True,
-        dataCenterName=conf.DC_NAME[0],
-        storageDomainName=conf.STORAGE_NAME[0],
-        expectedStatus=conf.SD_ACTIVE
-    ):
-        logger.error(
-            "Storage domain %s not active", conf.STORAGE_NAME[0]
-        )
+    if not rhevm_helpers.wait_for_engine_api():
         return False
     return True
