@@ -354,8 +354,8 @@ class GlanceImageUpdator(GlanceImageBase):
             'rpm', '-e'
         ]
         remove_old_repo_files_cmd = [
-            "find", "/etc/yum.repos.d/", "-type", "f", "-name", "ovirt*",
-            "-or", "-name", "rhev*", "|", "xargs", "rm", "-f"
+            "find", "/etc/yum.repos.d/", "-type", "f", "-name", "'ovirt*'",
+            "-or", "-name", "'rhev*'", "|", "xargs", "rm", "-f"
         ]
         sync_disk_cmd = ['sync']
         if product == 'rhevm':
