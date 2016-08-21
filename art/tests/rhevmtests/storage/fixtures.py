@@ -6,6 +6,7 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms,
     storagedomains as ll_sd,
+    jobs as ll_jobs,
 )
 import rhevmtests.storage.helpers as storage_helpers
 
@@ -28,9 +29,10 @@ def create_vm(request):
             self.test_failed = True
         self.teardown_exception()
     request.addfinalizer(finalizer)
-    self.storage_domain = ll_sd.getStorageDomainNamesForType(
-        config.DATA_CENTER_NAME, self.storage
-    )[0]
+    if not hasattr(self, 'storage_domain'):
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
     self.vm_name = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_VM
     )
@@ -66,6 +68,11 @@ def add_disk(request):
         )[0]
     if not hasattr(self, 'disk_size'):
         self.disk_size = config.DISK_SIZE
+    if not hasattr(self, 'add_disk_params'):
+        self.add_disk_params = {
+            'format': config.COW_DISK,
+            'sparse': True,
+        }
 
     self.disk_name = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_DISK
@@ -74,10 +81,27 @@ def add_disk(request):
     if not ll_disks.addDisk(
         True, provisioned_size=self.disk_size,
         storagedomain=self.storage_domain, alias=self.disk_name,
-        format=config.COW_DISK, sparse=True
+        **self.add_disk_params
     ):
         raise exceptions.DiskException(
             "Failed to create disk %s" % self.disk_name
+        )
+    ll_disks.wait_for_disks_status([self.disk_name])
+
+
+@pytest.fixture(scope='class')
+def attach_disk(request):
+    """
+    Attach a disk to VM
+    """
+    self = request.node.cls
+
+    if not ll_disks.attachDisk(
+        True, alias=self.disk_name, vm_name=self.vm_name
+    ):
+        raise exceptions.DiskException(
+            "Failed to attach disk %s to VM %s" %
+            (self.disk_name, self.vm_name)
         )
     ll_disks.wait_for_disks_status([self.disk_name])
 
@@ -91,15 +115,71 @@ def update_vm(request):
 
     if not ll_vms.updateVm(True, self.vm_name, **self.update_vm_params):
         raise exceptions.VMException(
-            "Failed to disable virtio-scsi support of vm %s" %
-            self.disk_name
+            "Failed to update vm %s with params %s" %
+            (self.disk_name, self.update_vm_params)
         )
+
+
+@pytest.fixture(scope='class')
+def create_snapshot(request):
+    """
+    Create snapshot of VM
+    """
+    self = request.node.cls
+
+    if not hasattr(self, 'snapshot_description'):
+        self.snapshot_description = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
+        )
+    if not ll_vms.addSnapshot(True, self.vm_name, self.snapshot_description):
+        raise exceptions.VMException(
+            "Failed to create snapshot of VM %s" % self.vm_name
+        )
+    ll_vms.wait_for_vm_snapshots(
+        self.vm_name, [config.SNAPSHOT_OK], self.snapshot_description
+    )
+    ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+
+
+@pytest.fixture(scope='class')
+def preview_snapshot(request):
+    """
+    Create snapshot of VM
+    """
+    self = request.node.cls
+
+    if not ll_vms.preview_snapshot(
+        True, self.vm_name, self.snapshot_description
+    ):
+        raise exceptions.SnapshotException(
+            "Failed to preview snapshot %s" % self.snapshot_description
+        )
+    ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
+
+
+@pytest.fixture(scope='class')
+def undo_snapshot(request):
+    """
+    Undo snapshot
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if not ll_vms.undo_snapshot_preview(
+            True, self.vm_name
+        ):
+            raise exceptions.SnapshotException(
+                "Failed to undo previewed snapshot %s" %
+                self.snapshot_description
+            )
+        ll_vms.wait_for_vm_snapshots(self.vm_name, [config.SNAPSHOT_OK])
+    request.addfinalizer(finalizer)
 
 
 @pytest.fixture(scope='class')
 def delete_disks(request):
     """
-    Delete disk
+    Delete disks
     """
     self = request.node.cls
 
@@ -117,3 +197,18 @@ def delete_disks(request):
         )
     if not hasattr(self, 'disks_to_remove'):
         self.disks_to_remove = list()
+
+
+@pytest.fixture(scope='function')
+def poweroff_vm(request):
+    """
+    Power off VM
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if not ll_vms.stop_vms_safely([self.vm_name]):
+            logger.error("Failed to power off VM %s", self.vm_name)
+            self.test_failed = True
+        self.teardown_exception()
+    request.addfinalizer(finalizer)

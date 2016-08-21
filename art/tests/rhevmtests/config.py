@@ -504,6 +504,7 @@ HOST_MAINTENANCE = ENUMS["host_state_maintenance"]
 # Snapshot states
 SNAPSHOT_OK = ENUMS['snapshot_state_ok']
 SNAPSHOT_IN_PREVIEW = ENUMS['snapshot_state_in_preview']
+STATELESS_SNAPSHOT = ENUMS['snapshot_stateless_description']
 
 # Import/Export parameters
 IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM"
@@ -582,6 +583,7 @@ JOB_EXPORT_VM = ENUMS['job_export_vm']
 JOB_IMPORT_VM = ENUMS['job_import_vm']
 JOB_MIGRATE_VM = ENUMS['job_migrate_vm']
 JOB_REMOVE_VM = ENUMS['job_remove_vm']
+JOB_STOP_VM = ENUMS['job_stop_vm']
 
 # agent URL for guest tools testing
 AGENT_URL = 'http://10.34.63.72/cirunner/ci.php?action={action}&hostID={vm_id}'
