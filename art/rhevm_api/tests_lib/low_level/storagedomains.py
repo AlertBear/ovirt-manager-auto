@@ -1834,6 +1834,24 @@ def wait_for_change_total_size(storagedomain_name, original_size=0,
     return False
 
 
+def get_posix_backend_type(storagedomain_name):
+    """
+    Returns the vfs type of the given storage-domain
+
+    :param storagedomain_name: Storage domain name
+    :type storagedomain_name: str
+    :return: vfs type of the storage doamin
+    :rtype: str
+    """
+    storage_domain_object = get_storage_domain_obj(storagedomain_name)
+    storage_connections = connUtil.getElemFromLink(
+        storage_domain_object, link_name='storageconnections', get_href=False
+    )
+    for storage_connection in storage_connections:
+        if storage_connection.get_type() == STORAGE_TYPE_POSIX:
+            return storage_connection.get_vfs_type()
+
+
 def getStorageDomainNamesForType(datacenter_name, storage_type):
     """
     Returns a list of data domain names of a certain storage_type
@@ -1867,17 +1885,12 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
                 if storage_domain_object.get_name() != HOSTED_STORAGE:
                     return True
 
-            # Check for POSIX storage type and the POSIX backend type.
-            # Check if the backend type is included in the domain name.
-            # This is needed since we don't have the ability to retrieve
-            # the backend type via API
-
             elif (_storage_type == STORAGE_TYPE_POSIX and
                     state == ACTIVE_DOMAIN and
                     storage_type in POSIX_BACKENDS
                   ):
                 sd_name = storage_domain_object.get_name()
-                if storage_type in sd_name:
+                if storage_type == get_posix_backend_type(sd_name):
                     return True
         return False
 

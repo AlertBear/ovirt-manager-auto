@@ -404,12 +404,6 @@ def addPosixfsDataDomain(
     :type storage: str
     :param host: Name of the host to be used for adding the posix domain
     :type host: str
-    *****IMPORTANT******:
-    We cannot know the backend type for POSIX domain from the API, so in order
-    to identifying the domain in our environments the backend type must be
-    part of the domain name
-    using the following pattern - <backend type>_<storage domain name>,
-    for example: ceph_my_domain_1
     :param storage: Name of storage domain that will be created in rhevm
     :type storage: str
     :param data_center: Name of DC which will contain this SD

@@ -262,12 +262,10 @@ class BasicEnvironment(BaseTestCase):
                 vfs_type=config.ENUMS['vfs_type_glusterfs']
             )
         elif self.storage == CEPH:
-            name = "{0}_{1}".format(CEPH, self.non_master)
-            self.non_master = name
             posix_address = (
-                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[0]
+                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index]
             )
-            posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[0]
+            posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index]
             status = hl_sd.addPosixfsDataDomain(
                 host=self.host,
                 storage=name,
