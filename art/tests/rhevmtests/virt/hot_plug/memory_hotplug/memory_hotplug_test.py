@@ -148,7 +148,9 @@ class TestMemoryHotplug(VirtTest):
         assert ll_vms.reboot_vms([self.vm_name])
         testflow.step("Check VM memory on VM")
         assert global_helper.wait_for_vm_gets_to_full_memory(
-            vm_name=self.vm_name, expected_memory=new_memory
+            vm_name=self.vm_name,
+            expected_memory=new_memory,
+            threshold=0.85
         ), "Memory check on VM failed"
 
     @attr(tier=1)

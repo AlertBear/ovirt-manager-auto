@@ -396,7 +396,7 @@ def get_host_resource_by_name(host_name):
     return None
 
 
-def wait_for_vm_gets_to_full_memory(vm_name, expected_memory):
+def wait_for_vm_gets_to_full_memory(vm_name, expected_memory, threshold=0.9):
     """
     Wait until VM gets to full Memory allocation,
     Check that the value is as expected 3 times,
@@ -405,6 +405,8 @@ def wait_for_vm_gets_to_full_memory(vm_name, expected_memory):
     Args:
         vm_name (str): vm_name
         expected_memory(int): value of expected Memory allocation
+        threshold (float): lower bound to memory on VM
+
     Returns:
       bool: True if VM gets to the expected Memory allocation, False otherwise
     """
@@ -416,7 +418,7 @@ def wait_for_vm_gets_to_full_memory(vm_name, expected_memory):
     )
     for sample in sampler:
         try:
-            if expected_mem * 0.90 <= sample <= expected_mem:
+            if expected_mem * threshold <= sample <= expected_mem:
                 logging.info(
                     "Try #: %d Memory is as expected: %d ",
                     count, expected_mem

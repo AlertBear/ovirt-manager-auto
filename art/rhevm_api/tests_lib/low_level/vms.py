@@ -405,7 +405,7 @@ def _prepareVmObject(**kwargs):
     # memory policy memory_guaranteed and ballooning
     guaranteed = kwargs.pop("memory_guaranteed", None)
     ballooning = kwargs.pop('ballooning', None)
-    if ballooning or guaranteed:
+    if ballooning is not None or guaranteed:
         vm.set_memory_policy(
             data_st.MemoryPolicy(
                 guaranteed=guaranteed,
