@@ -49,6 +49,20 @@ def create_vm(request):
 
 
 @pytest.fixture(scope='class')
+def start_vm(request):
+    """
+    Start VM
+    """
+    self = request.node.cls
+
+    wait_for_ip = False
+    if hasattr(self, 'installation'):
+        wait_for_ip = True if self.installation else False
+    if not ll_vms.startVm(True, self.vm_name, config.VM_UP, wait_for_ip):
+        raise exceptions.VMException("Failed to start VM %s" % self.vm_name)
+
+
+@pytest.fixture(scope='class')
 def add_disk(request):
     """
     Add disk and initialize parameters

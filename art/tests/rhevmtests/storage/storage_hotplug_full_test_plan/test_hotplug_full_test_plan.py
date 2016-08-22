@@ -28,7 +28,7 @@ from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from utilities import machine
 from rhevmtests.storage.fixtures import (
-    create_vm, add_disk, delete_disks
+    create_vm, add_disk, delete_disks, start_vm
 )
 
 logger = logging.getLogger(__name__)
@@ -1014,7 +1014,9 @@ class TestCase6230(TestCase):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm.__name__, add_disk.__name__, delete_disks.__name__
+    create_vm.__name__,
+    add_disk.__name__,
+    delete_disks.__name__,
 )
 class TestCase6234(TestCase):
     """
@@ -1039,3 +1041,26 @@ class TestCase6234(TestCase):
         )
 
         self.disks_to_remove.append(vm_boot_disk.get_alias())
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disk.__name__,
+    start_vm.__name__,
+)
+class TestCase16753(TestCase):
+    """
+    Hot plug disk with unsupported interface IDE
+    """
+    __test__ = True
+    polarion_test_case = '16753'
+
+    @polarion("RHEVM3-16753")
+    def test_hot_plug_disk_unsupported_interface(self):
+        """
+        Hot plug disk with unsupported interface IDE
+        """
+        assert ll_disks.attachDisk(
+            False, self.disk_name, self.vm_name, interface=config.IDE
+        )
