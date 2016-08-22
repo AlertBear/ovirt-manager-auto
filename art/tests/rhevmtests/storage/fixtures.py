@@ -2,15 +2,28 @@ import pytest
 import logging
 import config
 from art.test_handler import exceptions
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sd,
+)
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
+    hosts as ll_hosts,
     vms as ll_vms,
     storagedomains as ll_sd,
+    templates as ll_templates,
     jobs as ll_jobs,
 )
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 import rhevmtests.storage.helpers as storage_helpers
 
+
 logger = logging.getLogger(__name__)
+ISCSI = config.STORAGE_TYPE_ISCSI
+FCP = config.STORAGE_TYPE_FCP
+NFS = config.STORAGE_TYPE_NFS
+GLUSTER = config.STORAGE_TYPE_GLUSTER
+POSIX = config.STORAGE_TYPE_POSIX
+CEPH = config.STORAGE_TYPE_CEPH
 
 
 @pytest.fixture(scope='class')
@@ -34,7 +47,7 @@ def create_vm(request):
             config.DATA_CENTER_NAME, self.storage
         )[0]
     self.vm_name = storage_helpers.create_unique_object_name(
-        self.__class__.__name__, config.OBJECT_TYPE_VM
+        self.__name__, config.OBJECT_TYPE_VM
     )
     if not hasattr(self, 'installation'):
         self.installation = True
@@ -89,7 +102,7 @@ def add_disk(request):
         }
 
     self.disk_name = storage_helpers.create_unique_object_name(
-        self.__class__.__name__, config.OBJECT_TYPE_DISK
+        self.__name__, config.OBJECT_TYPE_DISK
     )
 
     if not ll_disks.addDisk(
@@ -143,7 +156,7 @@ def create_snapshot(request):
 
     if not hasattr(self, 'snapshot_description'):
         self.snapshot_description = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
+            self.__name__, config.OBJECT_TYPE_SNAPSHOT
         )
     if not ll_vms.addSnapshot(True, self.vm_name, self.snapshot_description):
         raise exceptions.VMException(
@@ -207,7 +220,7 @@ def delete_disks(request):
     request.addfinalizer(finalizer)
     if not hasattr(self, 'disk_name'):
         self.disk_name = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_DISK
+            self.__name__, config.OBJECT_TYPE_DISK
         )
     if not hasattr(self, 'disks_to_remove'):
         self.disks_to_remove = list()
@@ -226,3 +239,184 @@ def poweroff_vm(request):
             self.test_failed = True
         self.teardown_exception()
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='class')
+def create_template(request):
+    """
+    Create a template from GE VM
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if ll_templates.check_template_existence(self.template_name):
+            if not ll_templates.removeTemplate(True, self.template_name):
+                self.test_failed = True
+
+    request.addfinalizer(finalizer)
+    if not hasattr(self, 'template_name'):
+        self.template_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_TEMPLATE
+        )
+    if not hasattr(self, 'storage_domain'):
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+    if not ll_templates.createTemplate(
+        True, vm=config.VM_NAME[0], name=self.template_name,
+        cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain
+    ):
+        exceptions.TemplateException(
+            "Failed to create template %s from VM %s" %
+            (self.template_name, config.VM_NAME[0])
+        )
+
+
+@pytest.fixture(scope='class')
+def initialize_storage_domains(request):
+    """
+    Initialize storage domain parameters
+    """
+    self = request.node.cls
+
+    self.storage_domains = ll_sd.getStorageDomainNamesForType(
+        config.DATA_CENTER_NAME, self.storage
+    )
+    self.storage_domain = self.storage_domains[0]
+    self.storage_domain_1 = self.storage_domains[1]
+    self.storage_domain_2 = self.storage_domains[2]
+
+
+@pytest.fixture(scope='class')
+def deactivate_domain(request):
+    """
+    Deactivates GE storage domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if not ll_sd.activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.sd_to_deactivate
+        ):
+            self.test_failed = True
+            logging.error(
+                "Failed to activate storage domain %s", self.sd_to_deactivate
+            )
+
+    request.addfinalizer(finalizer)
+    if not hasattr(self, 'sd_to_deactivate'):
+        self.sd_to_deactivate = self.storage_domain_1
+    wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )
+    if not ll_sd.deactivateStorageDomain(
+        True, config.DATA_CENTER_NAME, self.sd_to_deactivate
+    ):
+        exceptions.StorageDomainException(
+            "Failed to deactivate storage domain %s" % self.sd_to_deactivate
+        )
+
+
+@pytest.fixture(scope='class')
+def create_storage_domain(request):
+    """
+    Create new storage domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if not hl_sd.remove_storage_domain(
+            self.new_storage_domain, config.DATA_CENTER_NAME,
+            config.HOSTS[0], True
+        ):
+            self.test_failed = True
+            logging.error(
+                "Failed to remove storage domain %s",
+                self.new_storage_domain
+            )
+    request.addfinalizer(finalizer)
+    if not hasattr(self, 'new_storage_domain'):
+        self.new_storage_domain = (
+            storage_helpers.create_unique_object_name(
+                self.__name__, config.OBJECT_TYPE_SD
+            )
+        )
+    if not hasattr(self, 'index'):
+        self.index = 0
+    name = self.new_storage_domain
+    spm = ll_hosts.getSPMHost(config.HOSTS)
+    if self.storage == ISCSI:
+        status = hl_sd.addISCSIDataDomain(
+            spm,
+            name,
+            config.DATA_CENTER_NAME,
+            config.UNUSED_LUNS[self.index],
+            config.UNUSED_LUN_ADDRESSES[self.index],
+            config.UNUSED_LUN_TARGETS[self.index],
+            override_luns=True
+        )
+
+    elif self.storage == FCP:
+        status = hl_sd.addFCPDataDomain(
+            spm,
+            name,
+            config.DATA_CENTER_NAME,
+            config.UNUSED_FC_LUNS[self.index],
+            override_luns=True
+        )
+    elif self.storage == NFS:
+        nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[self.index]
+        nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[self.index]
+        status = hl_sd.addNFSDomain(
+            host=spm,
+            storage=name,
+            data_center=config.DATA_CENTER_NAME,
+            address=nfs_address,
+            path=nfs_path,
+            format=True
+        )
+    elif self.storage == GLUSTER:
+        gluster_address = (
+            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[self.index]
+        )
+        gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[self.index]
+        status = hl_sd.addGlusterDomain(
+            host=spm,
+            name=name,
+            data_center=config.DATA_CENTER_NAME,
+            address=gluster_address,
+            path=gluster_path,
+            vfs_type=config.ENUMS['vfs_type_glusterfs']
+        )
+    elif self.storage == CEPH:
+        # TODO: remove this when the patch related to the vfs_type will merge
+        name = "{0}_{1}".format(CEPH, self.non_master)
+        self.non_master = name
+        posix_address = (
+            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[self.index]
+        )
+        posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[self.index]
+        status = hl_sd.addPosixfsDataDomain(
+            host=spm,
+            storage=name,
+            data_center=config.DATA_CENTER_NAME,
+            address=posix_address,
+            path=posix_path,
+            vfs_type=CEPH,
+            mount_options=config.CEPH_MOUNT_OPTIONS
+        )
+    if not status:
+        raise exceptions.StorageDomainException(
+            "Creating %s storage domain '%s' failed"
+            % (self.storage, name)
+        )
+    ll_jobs.wait_for_jobs(
+        [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
+    )
+    ll_sd.waitForStorageDomainStatus(
+        True, config.DATA_CENTER_NAME, name,
+        config.SD_ACTIVE
+    )
+    wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )

@@ -988,8 +988,8 @@ def get_disk_list_from_disk_attachments(disk_attachments):
     :rtype: list
     """
     return [
-        get_disk_obj_from_disk_attachment(disk_attachment) for disk_attachment in
-        disk_attachments
+        get_disk_obj_from_disk_attachment(disk_attachment) for
+        disk_attachment in disk_attachments
     ]
 
 

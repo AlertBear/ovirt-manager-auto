@@ -709,19 +709,9 @@ def waitForStorageDomainStatus(
     for sd_object in TimeoutingSampler(
         timeOut, sleepTime, getDCStorage, dataCenterName, storageDomainName
     ):
-        # TODO: Remove when https://bugzilla.redhat.com/show_bug.cgi?id=1254936
-        # is fixed
-        if positive:
-            active = is_storage_domain_active(
-                dataCenterName, storageDomainName
-            )
-            if (expectedStatus ==
-                    ENUMS['storage_domain_state_maintenance'] and active):
-                deactivateStorageDomain(
-                    positive, dataCenterName, storageDomainName
-                )
         if sd_object.get_status() == expectedStatus:
             return positive
+
     return not positive
 
 
