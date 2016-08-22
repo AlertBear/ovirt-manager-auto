@@ -172,9 +172,12 @@ class GABaseTestCase(TestCase):
             'hostname', '--fqdn'
         ])
 
-        assert fqdn_real.strip() == fqdn_agent, (
-            "Agent returned wrong FQDN '%s' != '%s'" % (fqdn_real, fqdn_agent)
-        )
+        if (not fqdn_agent.startswith("localhost") and
+                not fqdn_real.startswith("localhost")):
+            assert fqdn_real.strip() == fqdn_agent, (
+                "Agent returned wrong FQDN '%s' != '%s'" %
+                (fqdn_real, fqdn_agent)
+            )
 
     def get_ifaces(self):
         cmd = shlex.split(
