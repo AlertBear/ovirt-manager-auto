@@ -10,8 +10,9 @@ import art.test_handler.exceptions as errors
 import art.unittest_lib as test_libs
 import config as conf
 import otopi_parser_helper
-import storage_helper
+import storageapi.he_storage_api as storage_helper
 from concurrent.futures import ThreadPoolExecutor
+from storageapi.storageErrors import StorageAPIGeneralException
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class BaseDeploy(test_libs.IntegrationTest):
         try:
             if cls.storage_api:
                 cls.storage_api.clean_storage()
-        except errors.HostedEngineException as e:
+        except StorageAPIGeneralException as e:
             logger.error(
                 "Failed to clean storage: %s", e
             )
