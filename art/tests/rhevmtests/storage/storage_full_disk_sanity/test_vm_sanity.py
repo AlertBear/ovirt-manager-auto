@@ -315,7 +315,7 @@ class NegativeAttachDetach(TestCase):
         )
         ll_vms.wait_for_vm_states(self.vm_name)
 
-    @polarion("RHEVM3-1111")
+    @polarion("RHEVM3-16736")
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_attach_disk_to_vm_in_powering_up_state(self):
         """
@@ -339,7 +339,7 @@ class NegativeAttachDetach(TestCase):
         ll_vms.wait_for_vm_states(self.vm_name)
         self.disks_to_remove.append(self.disk_name)
 
-    @polarion("RHEVM3-4444")
+    @polarion("RHEVM3-16739")
     def test_attach_disk_to_vm_as_bootable(self):
         """
         Attach disk to VM as second bootable disk - should fail
@@ -364,7 +364,7 @@ class NegativeAttachDetach(TestCase):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(create_vm.__name__)
-class TestCase2222(TestCase):
+class TestCase16737(TestCase):
     """
     Attach OVF store disk to VM - should fail
     """
@@ -372,7 +372,7 @@ class TestCase2222(TestCase):
     installation = False
     storage_domain = None
 
-    @polarion("RHEVM3-2222")
+    @polarion("RHEVM3-16737")
     def test_attach_ovf_disk_to_vm(self):
         """
         Attach OVF disk to VM
@@ -400,14 +400,14 @@ class TestCase2222(TestCase):
     add_disk.__name__,
     undo_snapshot.__name__
 )
-class TestCase3333(TestCase):
+class TestCase16738(TestCase):
     """
     Attach disk to VM in preview - should fail
     """
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-3333")
+    @polarion("RHEVM3-16738")
     def test_attach_disk_to_vm_in_preview(self):
         """
         Attach disk to VM in preview of snapshot
@@ -423,14 +423,14 @@ class TestCase3333(TestCase):
     create_vm.__name__,
     poweroff_vm_and_wait_for_stateless_to_remove.__name__
 )
-class TestCase6666(TestCase):
+class TestCase16741(TestCase):
     """
     Attach stateless snapshot's disk to VM - should fail
     """
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-6666")
+    @polarion("RHEVM3-16741")
     def test_attach_disk_of_stateless_snapshot_to_vm(self):
         """
         Attach stateless snapshot's disk to VM
@@ -451,14 +451,14 @@ class TestCase6666(TestCase):
     create_vm.__name__,
     add_disk.__name__,
 )
-class TestCase7777(TestCase):
+class TestCase16742(TestCase):
     """
     Attach read only disk to VM with IDE interface - should fail
     """
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-7777")
+    @polarion("RHEVM3-16742")
     def test_attach_read_only_disk_with_ide(self):
         """
         Attach read only disk to VM with IDE interface
@@ -478,17 +478,17 @@ class TestCase7777(TestCase):
     create_snapshot.__name__,
     create_second_vm.__name__
 )
-class TestCase8888(TestCase):
+class TestCase16743(TestCase):
     """
     Detach snapshot's disk from VM
     """
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-8888")
-    def test_attach_read_only_disk_with_ide(self):
+    @polarion("RHEVM3-16743")
+    def test_detach_snapshot_disk_to_vm(self):
         """
-        Attach read only disk to VM with IDE interface
+        Detach snapshot's disk from VM
         """
         snapshot_disk = ll_vms.get_snapshot_disks(
             self.vm_name, self.snapshot_description

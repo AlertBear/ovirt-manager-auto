@@ -342,15 +342,15 @@ class TestCase16686(TestCase):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(create_vm.__name__)
-class TestCase5555(TestCase):
+class TestCase16740(TestCase):
     """
     Attach non shared disk to second VM
     """
     __test__ = True
-    polarion_test_case = '5555'
+    polarion_test_case = '16740'
     installation = False
 
-    @polarion("RHEVM3-5555")
+    @polarion("RHEVM3-16740")
     def test_attach_non_shared_disk_to_second_vm(self):
         """
         Update non sharable disk to be shareable
