@@ -16,7 +16,7 @@ STATELESS_SNAPSHOT_DESCRIPTION = 'stateless snapshot'
 
 
 @pytest.fixture(scope='class')
-def create_second_vm(request):
+def create_second_vm(request, storage):
     """
     Create VM and initialize parameters
     """
@@ -51,7 +51,7 @@ def create_second_vm(request):
 
 
 @pytest.fixture()
-def poweroff_vm_and_wait_for_stateless_to_remove(request):
+def poweroff_vm_and_wait_for_stateless_to_remove(request, storage):
     """
     Power off VM and wait for stateless snapshot to be removed
     """
@@ -69,7 +69,7 @@ def poweroff_vm_and_wait_for_stateless_to_remove(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_direct_lun_params(request):
+def initialize_direct_lun_params(request, storage):
     """
     Initialize direct lun parameters
     """
@@ -86,7 +86,7 @@ def initialize_direct_lun_params(request):
 
 
 @pytest.fixture(scope='class')
-def delete_direct_lun_disk(request):
+def delete_direct_lun_disk(request, storage):
     """
     Removes direct lun disk
     Created due to direct lun disk status N/A unlike other type disks
@@ -106,7 +106,7 @@ def delete_direct_lun_disk(request):
 
 
 @pytest.fixture(scope='class')
-def check_initial_storage_domain_params(request):
+def check_initial_storage_domain_params(request, storage):
     """
     Check initial storage domain parameters
     """
@@ -147,7 +147,7 @@ def check_initial_storage_domain_params(request):
 
 
 @pytest.fixture(scope='class')
-def create_disks_fixture(request):
+def create_disks_fixture(request, storage):
     """
     Creates disks of given types and sizes and updates expected details
     """
@@ -157,7 +157,7 @@ def create_disks_fixture(request):
 
 
 @pytest.fixture(scope='class')
-def lun_size_calc(request):
+def lun_size_calc(request, storage):
     """
     Calculate lun size and free space
     """
@@ -174,7 +174,7 @@ def lun_size_calc(request):
 
 
 @pytest.fixture(scope='class')
-def create_2_vms_pre_disk_thin_disk(request):
+def create_2_vms_pre_disk_thin_disk(request, storage):
     """
     Create 2 vms, one with preallocated and one with thin provision disks
     """
@@ -211,7 +211,7 @@ def create_2_vms_pre_disk_thin_disk(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_disk_name(request):
+def initialize_disk_name(request, storage):
     """
     Initialize disk name
     """

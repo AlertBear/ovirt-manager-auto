@@ -10,7 +10,7 @@ from rhevmtests.storage.fixtures import add_disk_permutations  # flake8: noqa
 
 
 @pytest.fixture()
-def add_disks_permutation(request, add_disk_permutations):
+def add_disks_permutation(request, storage, add_disk_permutations):
     """
     Add disks to remove list for finalizer
     """
@@ -20,7 +20,7 @@ def add_disks_permutation(request, add_disk_permutations):
 
 
 @pytest.fixture()
-def create_second_vm(request):
+def create_second_vm(request, storage):
     """
     Add a second VM
     """
@@ -51,7 +51,7 @@ def create_second_vm(request):
 
 
 @pytest.fixture()
-def poweroff_vms(request):
+def poweroff_vms(request, storage):
     """
     Power off VMs
     """

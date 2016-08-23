@@ -3,6 +3,7 @@
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_6_Storage_Create_Disk_From_Existing_Disk
 """
+
 import config
 import logging
 import pytest
@@ -228,7 +229,7 @@ class CopyDiskWithContent(BasicEnvironment):
             self.new_disks, key='id', timeout=COPY_DISK_TIMEOUT
         )
 
-    def copy_with_template(self, clone=True):
+    def copy_with_template(self, storage, clone=True):
         """
         Copy disks from a VM that was created from a template
         """
@@ -266,7 +267,7 @@ class CopyDiskWithContent(BasicEnvironment):
         self.basic_copy(self.cloned_vm)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         assert helpers.check_file_existence(
-            self.test_vm_name, storage_type=self.storage
+            self.test_vm_name, storage_type=storage
         )
 
 
@@ -279,19 +280,19 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     @polarion("RHEVM3-11246")
     @bz({'1334726': {'ppc': config.PPC_ARCH}})
     @tier1
-    def test_same_domain_same_alias(self):
+    def test_same_domain_same_alias(self, storage):
         """
         Copy existing disk to the same storage domain with the same alias
         """
         self.basic_copy(self.vm_name)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         assert helpers.check_file_existence(
-            self.test_vm_name, storage_type=self.storage
+            self.test_vm_name, storage_type=storage
         )
 
     @polarion("RHEVM3-11247")
     @tier2
-    def test_different_domain_different_alias(self):
+    def test_different_domain_different_alias(self, storage):
         """
         Copy existing disk to different storage domain with different alias
         """
@@ -300,31 +301,31 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         )
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         assert helpers.check_file_existence(
-            self.test_vm_name, storage_type=self.storage
+            self.test_vm_name, storage_type=storage
         )
 
     @polarion("RHEVM3-11242")
     @tier3
-    def test_different_domain_same_alias(self):
+    def test_different_domain_same_alias(self, storage):
         """
         Copy existing disk to different storage domain with the same alias
         """
         self.basic_copy(self.vm_name, same_domain=False)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         assert helpers.check_file_existence(
-            self.test_vm_name, storage_type=self.storage
+            self.test_vm_name, storage_type=storage
         )
 
     @polarion("RHEVM3-11248")
     @tier3
-    def test_same_domain_different_alias(self):
+    def test_same_domain_different_alias(self, storage):
         """
         Copy existing disk to the same storage domain with different alias
         """
         self.basic_copy(self.vm_name, new_alias=self.new_alias)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         assert helpers.check_file_existence(
-            self.test_vm_name, storage_type=self.storage
+            self.test_vm_name, storage_type=storage
         )
 
 
@@ -404,13 +405,13 @@ class TestCase11264(CopyDiskWithContent):
 
     @polarion("RHEVM3-11246")
     @tier3
-    def test_copy_when_vm_in_various_states(self):
+    def test_copy_when_vm_in_various_states(self, storage):
         """
         Copy existing disk to the same storage when vm in different states
         """
         disk_objects = [
             d for d in ll_disks.DISKS_API.get(abs_link=False)
-            if d.get_id() in config.DISKS_FOR_TEST[self.storage]
+            if d.get_id() in config.DISKS_FOR_TEST[storage]
         ]
         copy_disk_args = copy_args.copy()
         copy_disk_args['new_disk_alias'] = self.new_alias
@@ -449,7 +450,7 @@ class TestCase11339(CopyDiskWithContent):
 
     @polarion("RHEVM3-11339")
     @tier3
-    def test_copy_vm_disks_with_snapshot(self):
+    def test_copy_vm_disks_with_snapshot(self, storage):
         """
         Copy existing disk when vm is with snapshot
         """
@@ -462,7 +463,7 @@ class TestCase11339(CopyDiskWithContent):
         self.basic_copy(self.vm_name)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         assert helpers.check_file_existence(
-            self.test_vm_name, storage_type=self.storage
+            self.test_vm_name, storage_type=storage
         )
 
 

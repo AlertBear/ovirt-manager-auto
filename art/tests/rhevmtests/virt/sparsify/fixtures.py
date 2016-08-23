@@ -262,3 +262,9 @@ def add_perallocate_disk(request):
     assert ll_disks.wait_for_disks_status(
         disk_id, key='id'
     ), "Failed to add per-allocate disk"
+
+
+@pytest.fixture()
+def set_storage_domain_name(request, storage):
+    self = request.node.cls
+    self.storage_domain_name = config.NEW_SD_NAME % storage

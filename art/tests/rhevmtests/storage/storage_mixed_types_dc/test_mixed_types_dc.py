@@ -13,7 +13,8 @@ from art.unittest_lib import (
     tier2,
     tier3,
     tier4,
-    testflow
+    testflow,
+    storages,
 )
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
@@ -37,6 +38,7 @@ from fixtures import (
 )
 
 
+@storages((config.NOT_APPLICABLE,))
 @pytest.mark.usefixtures(
     init_storage_domains.__name__,
     clean_export_domain.__name__,
@@ -50,7 +52,6 @@ class BaseCaseDCMixed(TestCase):
 
     __test__ = False
     vol_type = True
-    storages = config.NOT_APPLICABLE
 
 
 class IscsiNfsSD(BaseCaseDCMixed):

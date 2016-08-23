@@ -44,7 +44,7 @@ class BaseTestCase(TestCase):
     create_snapshot = False
 
     @pytest.fixture(scope='function')
-    def initializer_BaseTestCase(self, request):
+    def initializer_BaseTestCase(self, request, storage):
         """
         Creates a vm with one preallocated and one thin provisioned disk
         Creates a snapshot if `create_snapshot` attribute is True.

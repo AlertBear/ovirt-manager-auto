@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def initializer_hotplug_hook(request):
+def initializer_hotplug_hook(request, storage):
     """
     Initialize test params and ensure VM is 'UP'
     """
@@ -65,7 +65,7 @@ def initializer_hotplug_hook(request):
 
 
 @pytest.fixture()
-def create_results_files(request):
+def create_results_files(request, storage):
     """
     Create hotplug/unplug hooks on host machine
     """
@@ -87,7 +87,7 @@ def create_results_files(request):
 
 
 @pytest.fixture()
-def set_disks_in_the_correct_state(request):
+def set_disks_in_the_correct_state(request, storage):
     """
     Activate or deactivate disk according to self.active_disk
     """
@@ -108,7 +108,7 @@ def set_disks_in_the_correct_state(request):
 
 
 @pytest.fixture()
-def install_hooks(request):
+def install_hooks(request, storage):
     """
     Install hotplug/unplug hooks
     """
@@ -133,7 +133,7 @@ def install_hooks(request):
 
 
 @pytest.fixture()
-def remove_vm_disk(request):
+def remove_vm_disk(request, storage):
 
     self = request.node.cls
 
@@ -158,7 +158,7 @@ def remove_vm_disk(request):
 
 
 @pytest.fixture()
-def wait_for_dc_and_hosts(request):
+def wait_for_dc_and_hosts(request, storage):
 
     self = request.node.cls
 
@@ -176,7 +176,7 @@ def wait_for_dc_and_hosts(request):
 
 
 @pytest.fixture(scope='class')
-def add_disks_to_vm(request):
+def add_disks_to_vm(request, storage):
     """
     Create a VM with 2 disks - 1 active and 1 inactive
     """
@@ -209,7 +209,7 @@ def add_disks_to_vm(request):
 
 
 @pytest.fixture(scope='class')
-def add_floating_disks(request):
+def add_floating_disks(request, storage):
     """
     Create floating disks - 1 shareable and 1 non-shareable from each
     interface
@@ -252,7 +252,7 @@ def add_floating_disks(request):
 
 
 @pytest.fixture(scope='class')
-def attach_floating_disks_to_vm(request):
+def attach_floating_disks_to_vm(request, storage):
     """
     Attach floating disks from add_floating_disks fixture to a VM
     """
@@ -272,7 +272,7 @@ def attach_floating_disks_to_vm(request):
 
 
 @pytest.fixture(scope='class')
-def create_second_vm(request):
+def create_second_vm(request, storage):
     """
     Create second VM and initialize parameters
     """

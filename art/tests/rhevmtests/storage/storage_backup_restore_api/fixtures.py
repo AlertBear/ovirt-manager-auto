@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')
-def initialize_params(request):
+def initialize_params(request, storage):
     """
     Initialize parameters
     """
@@ -32,7 +32,7 @@ def initialize_params(request):
 
 
 @pytest.fixture(scope='class')
-def create_source_vm(request):
+def create_source_vm(request, storage):
     """
     Create a VM that will be restored from backup VM
     """
@@ -68,7 +68,7 @@ def create_source_vm(request):
 
 
 @pytest.fixture(scope='class')
-def create_backup_vm(request):
+def create_backup_vm(request, storage):
     """
     Create a VM that will act as a backup VM
     """
@@ -76,7 +76,7 @@ def create_backup_vm(request):
 
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
+            config.DATA_CENTER_NAME, storage
         )[0]
     self.backup_vm = storage_helpers.create_unique_object_name(
         self.__name__, 'backup_vm'
@@ -99,7 +99,7 @@ def create_backup_vm(request):
 
 
 @pytest.fixture(scope='class')
-def attach_backup_disk(request):
+def attach_backup_disk(request, storage):
     """
     Attach a backup disk to VM
     """
@@ -114,7 +114,7 @@ def attach_backup_disk(request):
 
 
 @pytest.fixture(scope='class')
-def finalizer(request):
+def finalizer(request, storage):
     """
     Clean the environment
     """

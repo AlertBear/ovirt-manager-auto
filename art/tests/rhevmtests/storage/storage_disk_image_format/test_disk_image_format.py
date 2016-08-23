@@ -618,8 +618,8 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
     """
     Verify the disk images' format of a template
     """
-    template_thin = "%s_template_thin"
-    template_preallocated = "%s_template_preallocated"
+    template_thin_name = "%s_template_thin"
+    template_preallocated_name = "%s_template_preallocated"
     # Bugzilla history:
     # 1257240: Template's disk format is wrong
 

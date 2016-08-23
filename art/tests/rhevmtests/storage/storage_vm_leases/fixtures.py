@@ -13,7 +13,7 @@ from rhevmtests.storage import helpers as storage_helpers
 
 
 @pytest.fixture(scope='class')
-def unblock_engine_to_host(request):
+def unblock_engine_to_host(request, storage):
     """
     Unblock connection from engine to host
     """
@@ -31,7 +31,7 @@ def unblock_engine_to_host(request):
 
 
 @pytest.fixture(scope='class')
-def unblock_host_to_storage_domain(request):
+def unblock_host_to_storage_domain(request, storage):
     """
     Unblock connection host to storage domain
     """
@@ -52,7 +52,7 @@ def unblock_host_to_storage_domain(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_params(request):
+def initialize_params(request, storage):
     """
     Initialize all variables
     """
@@ -94,7 +94,7 @@ def initialize_params(request):
 
 
 @pytest.fixture(scope='class')
-def finalizer_wait_for_host_up(request):
+def finalizer_wait_for_host_up(request, storage):
     """
     Wait until host is back up
     """

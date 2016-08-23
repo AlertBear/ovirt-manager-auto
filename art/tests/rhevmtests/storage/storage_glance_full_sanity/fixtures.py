@@ -7,7 +7,7 @@ from rhevmtests.storage import config, helpers as storage_helpers
 
 
 @pytest.fixture(scope='class')
-def initializer_class(request):
+def initializer_class(request, storage):
     """
     Prepare the environment for test
     """
@@ -49,7 +49,7 @@ def initializer_class(request):
 
 
 @pytest.fixture(scope='class')
-def extract_template_disks(request):
+def extract_template_disks(request, storage):
     """
     Extracts template disks
     """

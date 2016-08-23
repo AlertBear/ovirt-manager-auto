@@ -16,7 +16,7 @@ from rhevmtests.storage import helpers as storage_helpers
 
 
 @pytest.fixture(scope='class')
-def initialize_variables(request):
+def initialize_variables(request, storage):
     """
     Initialize variables needed for the test
     """
@@ -34,7 +34,7 @@ def initialize_variables(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_storage_domains_for_test(request):
+def initialize_storage_domains_for_test(request, storage):
     """
     Initialize storage domain variable as needed for test
     """
@@ -59,7 +59,7 @@ def initialize_storage_domains_for_test(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_new_disk_params(request):
+def initialize_new_disk_params(request, storage):
     """
     Initialize new disk parameters
     """
@@ -74,7 +74,7 @@ def initialize_new_disk_params(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_direct_lun_params(request):
+def initialize_direct_lun_params(request, storage):
     """
     Initialize direct LUN parameters
     """
@@ -93,7 +93,7 @@ def initialize_direct_lun_params(request):
 
 
 @pytest.fixture(scope='class')
-def init_params_for_diskless_test(request):
+def init_params_for_diskless_test(request, storage):
     """
     Initiazlie parameters for diskless VM tests
     """
@@ -110,7 +110,7 @@ def init_params_for_diskless_test(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_template_params(request):
+def initialize_template_params(request, storage):
     """
     Initialize template parameteres
     """
@@ -158,7 +158,7 @@ def set_ovf_store_count(request):
 
 
 @pytest.fixture(scope='class')
-def initalize_vm_to_remove(request):
+def initalize_vm_to_remove(request, storage):
     """
     Initialize VM to remove when the test is finished
     """
@@ -171,7 +171,7 @@ def initalize_vm_to_remove(request):
 
 
 @pytest.fixture(scope='class')
-def remove_ovf_store_from_glance_domain(request):
+def remove_ovf_store_from_glance_domain(request, storage):
     """
     Remove OVF store files from Glance domain
     """
@@ -188,7 +188,7 @@ def remove_ovf_store_from_glance_domain(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_vm_pool_name(request):
+def initialize_vm_pool_name(request, storage):
     """
     Initialize VM pool name for test
     """

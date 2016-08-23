@@ -14,7 +14,7 @@ from rhevmtests.storage.fixtures import remove_vm  # noqa F401
 
 
 @pytest.fixture(scope='class')
-def get_second_storage_domain(request):
+def get_second_storage_domain(request, storage):
     """
     Get storage domains by given type
     """
@@ -33,7 +33,7 @@ def get_second_storage_domain(request):
 
 
 @pytest.fixture(scope='function')
-def create_vm_for_test(request):
+def create_vm_for_test(request, storage):
     """
     Create a VM
     """
@@ -41,21 +41,21 @@ def create_vm_for_test(request):
         """
         Remove the VM
         """
-        remove_vm(request)
+        remove_vm(request, storage)
     request.addfinalizer(finalizer)
-    create_vm(request, None)
+    create_vm(request, storage, None)
 
 
 @pytest.fixture(scope='function')
-def start_vm_for_test(request):
+def start_vm_for_test(request, storage):
     """
     Start a VM
     """
-    start_vm(request)
+    start_vm(request, storage)
 
 
 @pytest.fixture(scope='function')
-def add_disks(request):
+def add_disks(request, storage):
     """
     Create thin provision and preallocated disks
     """
@@ -89,7 +89,7 @@ def add_disks(request):
 
 
 @pytest.fixture(scope='function')
-def attach_disks(request):
+def attach_disks(request, storage):
     """
     Attach disks to VM
     """
@@ -97,4 +97,4 @@ def attach_disks(request):
 
     for disk in self.disk_names:
         self.disk_name = disk
-        attach_disk(request)
+        attach_disk(request, storage)

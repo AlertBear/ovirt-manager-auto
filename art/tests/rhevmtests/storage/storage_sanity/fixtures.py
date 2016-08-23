@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')
-def get_storage_domain_size(request):
+def get_storage_domain_size(request, storage):
     """
     Get storage domain size
     """
@@ -28,7 +28,7 @@ def get_storage_domain_size(request):
 
 
 @pytest.fixture(scope='class')
-def prepare_storage_parameters(request):
+def prepare_storage_parameters(request, storage):
     """
     Prepare storage parameters
     """

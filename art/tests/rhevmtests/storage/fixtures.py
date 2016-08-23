@@ -2,6 +2,7 @@ import shlex
 import pytest
 import os
 import logging
+
 import config
 from art.core_api.apis_exceptions import APITimeout
 from art.test_handler import exceptions
@@ -21,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     jobs as ll_jobs,
 )
-from art.rhevm_api.resources import storage
+from art.rhevm_api.resources import storage as storage_resource
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
@@ -38,7 +39,7 @@ CEPH = config.STORAGE_TYPE_CEPH
 
 
 @pytest.fixture(scope='class')
-def create_vm(request, remove_vm):
+def create_vm(request, storage, remove_vm):
     """
     Create VM and initialize parameters
     """
@@ -87,7 +88,7 @@ def create_vm(request, remove_vm):
 
 
 @pytest.fixture()
-def add_disk_permutations(request):
+def add_disk_permutations(request, storage):
     """
     Creating all possible combinations of disks for test
     """
@@ -109,7 +110,7 @@ def add_disk_permutations(request):
 
 
 @pytest.fixture()
-def attach_and_activate_disks(request):
+def attach_and_activate_disks(request, storage):
     """
     Attach and activate disks to a VM
     """
@@ -122,7 +123,7 @@ def attach_and_activate_disks(request):
 
 
 @pytest.fixture(scope='class')
-def remove_vm(request):
+def remove_vm(request, storage):
     """
     Remove VM
     """
@@ -138,7 +139,7 @@ def remove_vm(request):
 
 
 @pytest.fixture(scope='class')
-def start_vm(request):
+def start_vm(request, storage):
     """
     Start VM (on a specific host if has requested)
     """
@@ -167,7 +168,7 @@ def start_vm(request):
 
 
 @pytest.fixture(scope='class')
-def add_disk(request):
+def add_disk(request, storage):
     """
     Add disk and initialize parameters
     """
@@ -176,7 +177,7 @@ def add_disk(request):
     disk_params = config.disk_args.copy()
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
+            config.DATA_CENTER_NAME, storage
         )[0]
     disk_params['storagedomain'] = self.storage_domain
     if hasattr(self, 'add_disk_params'):
@@ -196,7 +197,7 @@ def add_disk(request):
 
 
 @pytest.fixture(scope='class')
-def delete_disk(request):
+def delete_disk(request, storage):
     """
     Removes disk
     """
@@ -217,7 +218,7 @@ def delete_disk(request):
 
 
 @pytest.fixture(scope='class')
-def attach_disk(request):
+def attach_disk(request, storage):
     """
     Attach a disk to VM
     """
@@ -237,7 +238,7 @@ def attach_disk(request):
 
 
 @pytest.fixture(scope='class')
-def update_vm(request):
+def update_vm(request, storage):
     """
     Update VM
     """
@@ -250,7 +251,7 @@ def update_vm(request):
 
 
 @pytest.fixture(scope='class')
-def create_snapshot(request):
+def create_snapshot(request, storage):
     """
     Create snapshot of VM
     """
@@ -276,7 +277,7 @@ def create_snapshot(request):
 
 
 @pytest.fixture(scope='class')
-def preview_snapshot(request):
+def preview_snapshot(request, storage):
     """
     Create snapshot of VM
     """
@@ -292,7 +293,7 @@ def preview_snapshot(request):
 
 
 @pytest.fixture(scope='class')
-def undo_snapshot(request):
+def undo_snapshot(request, storage):
     """
     Undo snapshot
     """
@@ -314,7 +315,7 @@ def undo_snapshot(request):
 
 
 @pytest.fixture(scope='class')
-def delete_disks(request):
+def delete_disks(request, storage):
     """
     Delete disks
     """
@@ -345,6 +346,7 @@ def delete_disks(request):
                 logger.info(
                     "Delete disk %s succeeded", self.disks_to_remove[index]
                 )
+        self.disks_to_remove = list()
     request.addfinalizer(finalizer)
     if not hasattr(self, 'disk_name'):
         self.disk_name = storage_helpers.create_unique_object_name(
@@ -355,7 +357,7 @@ def delete_disks(request):
 
 
 @pytest.fixture()
-def poweroff_vm(request):
+def poweroff_vm(request, storage):
     """
     Power off VM
     """
@@ -370,7 +372,7 @@ def poweroff_vm(request):
 
 
 @pytest.fixture()
-def poweroff_vm_setup(request):
+def poweroff_vm_setup(request, storage):
     """
     Power off VM
     """
@@ -383,7 +385,7 @@ def poweroff_vm_setup(request):
 
 
 @pytest.fixture(scope='class')
-def create_template(request):
+def create_template(request, storage):
     """
     Create a template from GE VM
     """
@@ -402,7 +404,7 @@ def create_template(request):
         )
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
+            config.DATA_CENTER_NAME, storage
         )[0]
     base_vm_for_snapshot = getattr(self, 'vm_name', config.VM_NAME[0])
     testflow.setup("Creating template %s", self.template_name)
@@ -417,7 +419,7 @@ def create_template(request):
 
 
 @pytest.fixture(scope='class')
-def remove_template(request):
+def remove_template(request, storage):
     """
     Remove a template
     """
@@ -434,14 +436,14 @@ def remove_template(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_storage_domains(request):
+def initialize_storage_domains(request, storage):
     """
     Initialize storage domain parameters
     """
     self = request.node.cls
 
     self.storage_domains = ll_sd.getStorageDomainNamesForType(
-        config.DATA_CENTER_NAME, self.storage
+        config.DATA_CENTER_NAME, storage
     )
     self.storage_domain = self.storage_domains[0]
     self.storage_domain_1 = self.storage_domains[1]
@@ -449,7 +451,7 @@ def initialize_storage_domains(request):
 
 
 @pytest.fixture()
-def deactivate_domain(request):
+def deactivate_domain(request, storage):
     """
     Deactivates GE storage domain
     """
@@ -472,7 +474,7 @@ def deactivate_domain(request):
     else:
         self.sd_to_deactivate = getattr(
             self, 'sd_to_deactivate', ll_sd.getStorageDomainNamesForType(
-                config.DATA_CENTER_NAME, self.storage
+                config.DATA_CENTER_NAME, storage
             )[0]
         )
 
@@ -486,7 +488,7 @@ def deactivate_domain(request):
 
 
 @pytest.fixture(scope='class')
-def create_storage_domain(request):
+def create_storage_domain(request, storage):
     """
     Create new storage domain
     """
@@ -523,13 +525,13 @@ def create_storage_domain(request):
     )
     domain_kwargs = getattr(self, 'create_domain_kwargs', dict())
     storage_helpers.add_storage_domain(
-        self.new_storage_domain, self.datacenter, self.index, self.storage,
+        self.new_storage_domain, self.datacenter, self.index, storage,
         **domain_kwargs
     )
 
 
 @pytest.fixture(scope='class')
-def remove_storage_domain(request):
+def remove_storage_domain(request, storage):
     """
     Remove storage domain
     """
@@ -548,7 +550,7 @@ def remove_storage_domain(request):
 
 
 @pytest.fixture(scope='class')
-def remove_vms(request):
+def remove_vms(request, storage):
     """
     Remove VM
     """
@@ -568,7 +570,7 @@ def remove_vms(request):
 
 
 @pytest.fixture()
-def clean_export_domain(request):
+def clean_export_domain(request, storage):
     """
     Clean export domain from exported entities
     """
@@ -583,7 +585,7 @@ def clean_export_domain(request):
 
 
 @pytest.fixture()
-def set_spm_priorities(request):
+def set_spm_priorities(request, storage):
     """
     Set hosts' SPM priorities according to spm_priorities list
     """
@@ -632,7 +634,7 @@ def set_spm_priorities(request):
 
 
 @pytest.fixture()
-def init_master_domain_params(request):
+def init_master_domain_params(request, storage):
     """
     Extract master domain name and address
     """
@@ -661,7 +663,7 @@ def init_master_domain_params(request):
 
 
 @pytest.fixture(scope='class')
-def create_dc(request):
+def create_dc(request, storage):
     """
     Add data-center with one host to the environment
     """
@@ -692,7 +694,7 @@ def create_dc(request):
 
 
 @pytest.fixture(scope='class')
-def clean_dc(request):
+def clean_dc(request, storage):
     """
     Remove data-center from the the environment
     """
@@ -733,18 +735,17 @@ def clean_dc(request):
 
 
 @pytest.fixture()
-def clean_mount_point(request):
+def clean_mount_point(request, storage):
     """
     Clean storage domain mount point
     """
-    self = request.node.cls
 
     def finalizer():
 
         spm_host = ll_hosts.get_spm_host(config.HOSTS)
 
-        if self.storage == NFS or self.storage == POSIX:
-            assert storage.clean_mount_point(
+        if storage == NFS or storage == POSIX:
+            assert storage_resource.clean_mount_point(
                 spm_host, config.NFS_DOMAINS_KWARGS[0]['address'],
                 config.NFS_DOMAINS_KWARGS[0]['path'],
                 rhevm_helpers.NFS_MNT_OPTS
@@ -752,8 +753,8 @@ def clean_mount_point(request):
                 config.NFS_DOMAINS_KWARGS[0]['address'],
                 config.NFS_DOMAINS_KWARGS[0]['path'],
             )
-        elif self.storage == GLUSTER:
-            assert storage.clean_mount_point(
+        elif storage == GLUSTER:
+            assert storage_resource.clean_mount_point(
                 spm_host, config.GLUSTER_DOMAINS_KWARGS[0]['address'],
                 config.GLUSTER_DOMAINS_KWARGS[0]['path'],
                 rhevm_helpers.GLUSTER_MNT_OPTS
@@ -765,7 +766,7 @@ def clean_mount_point(request):
 
 
 @pytest.fixture()
-def remove_vm_from_export_domain(request):
+def remove_vm_from_export_domain(request, storage):
     """
     Remove VM from export domain
     """
@@ -791,7 +792,7 @@ def remove_vm_from_export_domain(request):
 
 
 @pytest.fixture()
-def remove_template_from_export_domain(request):
+def remove_template_from_export_domain(request, storage):
     """
     Remove template from export domain
     """
@@ -816,7 +817,7 @@ def remove_template_from_export_domain(request):
 
 
 @pytest.fixture()
-def seal_vm(request):
+def seal_vm(request, storage):
     """
     Seal VM
     """
@@ -828,7 +829,7 @@ def seal_vm(request):
 
 
 @pytest.fixture()
-def export_vm(request):
+def export_vm(request, storage):
     """
     Export VM to export domain
     """
@@ -848,7 +849,7 @@ def export_vm(request):
 
 
 @pytest.fixture()
-def create_fs_on_disk(request):
+def create_fs_on_disk(request, storage):
     """
     Creates a filesystem on a disk and mounts it in the vm
     """
@@ -865,7 +866,7 @@ def create_fs_on_disk(request):
 
 
 @pytest.fixture(scope='class')
-def prepare_disks_with_fs_for_vm(request):
+def prepare_disks_with_fs_for_vm(request, storage):
     """
     Prepare disks with filesystem for vm
     """
@@ -883,7 +884,7 @@ def prepare_disks_with_fs_for_vm(request):
 
 
 @pytest.fixture()
-def wait_for_disks_and_snapshots(request):
+def wait_for_disks_and_snapshots(request, storage):
     """
     Wait for given VMs snapshots and disks status
     """
@@ -913,7 +914,7 @@ def wait_for_disks_and_snapshots(request):
 
 
 @pytest.fixture()
-def unblock_connectivity_storage_domain_teardown(request):
+def unblock_connectivity_storage_domain_teardown(request, storage):
     """
     Unblock connectivity from host to storage domain
     """
@@ -931,7 +932,7 @@ def unblock_connectivity_storage_domain_teardown(request):
 
 
 @pytest.fixture()
-def initialize_variables_block_domain(request):
+def initialize_variables_block_domain(request, storage):
     """
     Initialize variables for blocking connection from the SPM to a
     storage domain
@@ -952,7 +953,7 @@ def initialize_variables_block_domain(request):
 
 
 @pytest.fixture()
-def add_nic(request):
+def add_nic(request, storage):
     """
     Add a nic to the VM
     """
@@ -969,7 +970,7 @@ def add_nic(request):
 
 
 @pytest.fixture()
-def export_template(request):
+def export_template(request, storage):
     """
     Export template to export domain
     """
@@ -991,7 +992,7 @@ def export_template(request):
 
 
 @pytest.fixture(scope='class')
-def remove_templates(request):
+def remove_templates(request, storage):
     """
     Remove templates
     """
@@ -1011,7 +1012,7 @@ def remove_templates(request):
 
 
 @pytest.fixture()
-def clone_vm_from_template(request):
+def clone_vm_from_template(request, storage):
     """
     Clone VM from template
     """
@@ -1034,7 +1035,7 @@ def clone_vm_from_template(request):
 
 
 @pytest.fixture()
-def create_export_domain(request):
+def create_export_domain(request, storage):
     """
     Create and attach export domain
     """
@@ -1060,7 +1061,7 @@ def create_export_domain(request):
 
 
 @pytest.fixture(scope='class')
-def remove_export_domain(request):
+def remove_export_domain(request, storage):
     """
     Remove export domain
     """
@@ -1084,7 +1085,7 @@ def remove_export_domain(request):
 
 
 @pytest.fixture(scope='class')
-def remove_glance_image(request):
+def remove_glance_image(request, storage):
     """
     Removes Glance image
     """
@@ -1108,7 +1109,7 @@ def remove_glance_image(request):
 
 
 @pytest.fixture(scope='class')
-def move_host_to_another_cluster(request):
+def move_host_to_another_cluster(request, storage):
     """
     Move host to another cluster
     """
@@ -1127,7 +1128,7 @@ def move_host_to_another_cluster(request):
 
 
 @pytest.fixture()
-def update_vm_disk(request):
+def update_vm_disk(request, storage):
     """
     Update VM disk
     """
@@ -1144,7 +1145,7 @@ def update_vm_disk(request):
 
 
 @pytest.fixture()
-def restart_vdsmd(request):
+def restart_vdsmd(request, storage):
     """
     Restart VDSM
     """
@@ -1172,7 +1173,7 @@ def restart_vdsmd(request):
 
 
 @pytest.fixture()
-def create_second_vm(request):
+def create_second_vm(request, storage):
     """
     Create second VM and initialize parameters
     """
@@ -1202,7 +1203,7 @@ def create_second_vm(request):
 
 
 @pytest.fixture(scope='class')
-def init_host_or_engine_executor(request):
+def init_host_or_engine_executor(request, storage):
     """
     Initialize executor later used for commands executions in the host or
     engine
@@ -1218,7 +1219,7 @@ def init_host_or_engine_executor(request):
 
 
 @pytest.fixture(scope='class')
-def init_host_resource(request):
+def init_host_resource(request, storage):
     """
     Initialize Host resource
     """
@@ -1230,7 +1231,7 @@ def init_host_resource(request):
 
 
 @pytest.fixture(scope='class')
-def init_vm_executor(request):
+def init_vm_executor(request, storage):
     """
     Initialize VM executor later used for commands executions in the VM
     """
@@ -1240,7 +1241,7 @@ def init_vm_executor(request):
 
 
 @pytest.fixture(scope='class')
-def create_several_snapshots(request):
+def create_several_snapshots(request, storage):
     """
     Create several snapshot of VM
     """
@@ -1272,7 +1273,7 @@ def create_several_snapshots(request):
 
 
 @pytest.fixture(scope='class')
-def import_image_from_glance(request):
+def import_image_from_glance(request, storage):
     """
     Import image from glance as template to new created domain
     """
@@ -1314,7 +1315,7 @@ def import_image_from_glance(request):
 
 
 @pytest.fixture(scope='class')
-def remove_hsm_host(request):
+def remove_hsm_host(request, storage):
     """
     Remove an hsm from the base data center and add it back
     """
@@ -1338,7 +1339,7 @@ def remove_hsm_host(request):
 
 
 @pytest.fixture(scope='class')
-def copy_template_disk(request):
+def copy_template_disk(request, storage):
     """
     Copy template disk to another storage domain
     """
@@ -1361,20 +1362,20 @@ def copy_template_disk(request):
 
 
 @pytest.fixture(scope='class')
-def skip_invalid_storage_type(request):
+def skip_invalid_storage_type(request, storage):
     """
     Skip the test case if the storage type is not valid for it
     """
     self = request.node.cls
 
-    if self.storage not in self.storages:
+    if storage not in self.storages:
         pytest.skip(
-            "Storage type %s is not valid for testing this case" % self.storage
+            "Storage type %s is not valid for testing this case" % storage
         )
 
 
 @pytest.fixture()
-def create_disks_with_fs(request):
+def create_disks_with_fs(request, storage):
     """
     Create disks from all permutation and create filesystem on them,
     saves all the needed data in dict object with vm_name as keys
@@ -1391,9 +1392,9 @@ def create_disks_with_fs(request):
         self, 'CHECKSUM_FILES_RESULTS', config.CHECKSUM_FILES.copy()
     )
 
-    # verify self.storage value will not override in case of create few VMs
-    if self.storage not in self.CHECKSUM_FILES_RESULTS.keys():
-        self.CHECKSUM_FILES_RESULTS[self.storage] = dict()
+    # verify storage value will not override in case of create few VMs
+    if storage not in self.CHECKSUM_FILES_RESULTS.keys():
+        self.CHECKSUM_FILES_RESULTS[storage] = dict()
 
     self.DISKS_MOUNTS_EXECUTOR[self.vm_name] = dict()
 
@@ -1436,7 +1437,7 @@ def create_disks_with_fs(request):
                 full_path, self.vm_name
             )
             testflow.setup("Save file %s checksum value", full_path)
-            self.CHECKSUM_FILES_RESULTS[self.storage][full_path] = (
+            self.CHECKSUM_FILES_RESULTS[storage][full_path] = (
                 storage_helpers.checksum_file(
                     self.vm_name, full_path, executor
                 )
@@ -1454,7 +1455,7 @@ def create_disks_with_fs(request):
 
 
 @pytest.fixture()
-def create_vms(request):
+def create_vms(request, storage):
     """
     Add number of VMs to the environment according to num_on_vms attribute
     """
@@ -1471,12 +1472,12 @@ def create_vms(request):
         self.vm_name = storage_helpers.create_unique_object_name(
             self.__name__, config.OBJECT_TYPE_VM
         )
-        create_vm(request, remove_vm)
+        create_vm(request, storage, remove_vm)
         self.vm_names.append(self.vm_name)
 
 
 @pytest.fixture(scope="class")
-def storage_cleanup(request):
+def storage_cleanup(request, storage):
     """
     Clean up all storage domains which are not in GE yaml and direct LUNs
     """
@@ -1486,7 +1487,7 @@ def storage_cleanup(request):
 
 
 @pytest.fixture(scope='class')
-def extend_storage_domain(request):
+def extend_storage_domain(request, storage):
     """
     Extend a block based storage domain
     """
@@ -1507,7 +1508,7 @@ def extend_storage_domain(request):
 
 
 @pytest.fixture()
-def create_file_than_snapshot_several_times(request):
+def create_file_than_snapshot_several_times(request, storage):
     """
     Create file ,take checksum & than snapshot several times
     """
@@ -1563,7 +1564,7 @@ def create_file_than_snapshot_several_times(request):
 
 
 @pytest.fixture(scope='class')
-def detach_disks(request):
+def detach_disks(request, storage):
     """
     Detach disks from VM before removing them
     """
@@ -1579,7 +1580,7 @@ def detach_disks(request):
 
 
 @pytest.fixture(scope='class')
-def delete_snapshot(request):
+def delete_snapshot(request, storage):
     """
     Delete the snapshot created in the test
     """
@@ -1596,7 +1597,7 @@ def delete_snapshot(request):
 
 
 @pytest.fixture(scope='class')
-def deactivate_and_detach_export_domain(request):
+def deactivate_and_detach_export_domain(request, storage):
     """
     Deactivate and detach the export domain and add it back
     """
@@ -1620,7 +1621,7 @@ def deactivate_and_detach_export_domain(request):
 
 
 @pytest.fixture()
-def copy_golden_template_disk(request):
+def copy_golden_template_disk(request, storage):
     """
     Copy golden environment template disk to another storage domain
     """
@@ -1647,7 +1648,7 @@ def copy_golden_template_disk(request):
 
 
 @pytest.fixture(scope='class')
-def put_all_hsm_hosts_to_maintenance(request):
+def put_all_hsm_hosts_to_maintenance(request, storage):
     """
     Put all HSM hosts to maintenance
     """
@@ -1672,7 +1673,7 @@ def put_all_hsm_hosts_to_maintenance(request):
 
 
 @pytest.fixture(scope='class')
-def remove_vms_pool(request):
+def remove_vms_pool(request, storage):
     """
     Detach and remove VMs pool
     """

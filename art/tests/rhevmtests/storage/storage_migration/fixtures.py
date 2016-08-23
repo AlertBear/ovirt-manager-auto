@@ -21,7 +21,7 @@ STORAGE_DOMAIN_NUM_FOR_TYPE = 3
 
 
 @pytest.fixture()
-def initialize_params(request):
+def initialize_params(request, storage):
     """
     Initialize parameters
     """
@@ -33,7 +33,7 @@ def initialize_params(request):
 
 
 @pytest.fixture()
-def add_disk(request):
+def add_disk(request, storage):
     """
     Create shareable disk
     """
@@ -81,7 +81,7 @@ def add_disk(request):
 
 
 @pytest.fixture()
-def attach_disk_to_vm(request):
+def attach_disk_to_vm(request, storage):
     """
     Attach disk to VM, if disk is shareable, attach it to another VM
     """
@@ -103,7 +103,7 @@ def attach_disk_to_vm(request):
 
 
 @pytest.fixture()
-def initialize_domain_to_deactivate(request):
+def initialize_domain_to_deactivate(request, storage):
     """
     Initialize storage domain to deactivate
     """
@@ -121,7 +121,7 @@ def initialize_domain_to_deactivate(request):
 
 
 @pytest.fixture()
-def create_disks_for_vm(request):
+def create_disks_for_vm(request, storage):
     """
     Prepares disks for given VM
     """
@@ -165,26 +165,26 @@ def create_disks_for_vm(request):
 
 
 @pytest.fixture()
-def prepare_disks_for_vm(request):
+def prepare_disks_for_vm(request, storage):
     """
     Attach disks to VM
     """
     self = request.node.cls
 
-    config.DISK_NAMES[self.storage] = self.disk_names
+    config.DISK_NAMES[storage] = self.disk_names
 
     testflow.setup(
-        "Add disks %s to VM %s", config.DISK_NAMES[self.storage], self.vm_name
+        "Add disks %s to VM %s", config.DISK_NAMES[storage], self.vm_name
     )
     disk_interfaces = [disk['disk_interface'] for disk in self.disks]
     assert storage_helpers.prepare_disks_for_vm(
-        self.vm_name, config.DISK_NAMES[self.storage],
+        self.vm_name, config.DISK_NAMES[storage],
         interfaces=disk_interfaces
     ), "Failed to attach disks to VM %s" % self.vm_name
 
 
 @pytest.fixture()
-def initialize_vm_and_template_names(request):
+def initialize_vm_and_template_names(request, storage):
     """
     Create unique names for test
     """
@@ -217,7 +217,7 @@ def initialize_vm_and_template_names(request):
 
 
 @pytest.fixture()
-def create_templates(request):
+def create_templates(request, storage):
     """
     Create two templates, first with one disk and the second with two disks on
     different storage domains
@@ -273,7 +273,7 @@ def create_templates(request):
 
 
 @pytest.fixture()
-def create_vms_from_templates(request):
+def create_vms_from_templates(request, storage):
     """
     Create two VMs from templates
     """
@@ -310,7 +310,7 @@ def create_vms_from_templates(request):
 
 
 @pytest.fixture()
-def add_two_storage_domains(request):
+def add_two_storage_domains(request, storage):
     """
     Add two storage-domains in order to extend them
     """
@@ -364,7 +364,7 @@ def add_two_storage_domains(request):
 
 
 @pytest.fixture()
-def create_vm_on_different_sd(request):
+def create_vm_on_different_sd(request, storage):
     """
     Create VM on storage domain in a different data center
     """
@@ -408,7 +408,7 @@ def create_vm_on_different_sd(request):
 
 
 @pytest.fixture(scope='class')
-def remove_storage_domain(request):
+def remove_storage_domain(request, storage):
     """
     Remove storage domain
     """
@@ -437,7 +437,7 @@ def remove_storage_domain(request):
 
 
 @pytest.fixture()
-def create_disks_with_fs_for_vms(request):
+def create_disks_with_fs_for_vms(request, storage):
     """
     Create disks from all permutation and create filesystem on them for each VM
     in vm_names, saves all the needed data in dict object with vm_names as keys
@@ -450,12 +450,12 @@ def create_disks_with_fs_for_vms(request):
     )
     for vm_name in self.vm_names:
         self.vm_name = vm_name
-        create_disks_with_fs(request)
+        create_disks_with_fs(request, storage)
     assert ll_vms.stop_vms_safely(vms_list=self.vm_names)
 
 
 @pytest.fixture()
-def unblock_connectivity_teardown(request):
+def unblock_connectivity_teardown(request, storage):
     """
     Verify connection unblocked from host to target in case test failed
     """

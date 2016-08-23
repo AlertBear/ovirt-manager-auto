@@ -10,6 +10,7 @@ from art.unittest_lib.common import (
     CoreSystemTest,
     UpgradeTest,
     testflow,
+    storages,
 )
 from _pytest_art.marks import (
     timeout,
@@ -55,4 +56,5 @@ __all__ = [
     'tier4',
     'upgrade',
     'do_not_run',
+    'storages',
 ]

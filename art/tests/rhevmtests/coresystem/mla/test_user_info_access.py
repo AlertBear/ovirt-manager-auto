@@ -20,10 +20,9 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
-    CoreSystemTest as TestCase,
     tier2,
     testflow,
-    do_not_run
+    do_not_run,
 )
 
 import common
@@ -200,7 +199,6 @@ class TestVmUserInfoTests2(common.BaseTestCase):
     """ Test if user can see correct objects """
     # Accessing to specific id don't working in java/python sdk
     # Cli - RHEVM-1758
-    apis = TestCase.apis - set(['java', 'sdk', 'cli'])
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")

@@ -29,13 +29,15 @@ from rhevmtests.storage.fixtures import (
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 from fixtures import (
-    create_memory_snapsot_running_process
+    create_memory_snapsot_running_process,
+    pids_list,
 )
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.mark.usefixtures(
+    pids_list.__name__,
     create_vm.__name__,
     create_snapshot.__name__,
     start_vm.__name__,

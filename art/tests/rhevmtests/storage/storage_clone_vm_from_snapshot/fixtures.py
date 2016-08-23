@@ -10,7 +10,7 @@ VM_NAMES = config.VM_NAMES
 
 
 @pytest.fixture(scope='class')
-def initialize_vm(request):
+def initialize_vm(request, storage):
     """
     Initialize VM name
     """
@@ -21,7 +21,7 @@ def initialize_vm(request):
 
 
 @pytest.fixture(scope='class')
-def create_server_vm_with_snapshot(request):
+def create_server_vm_with_snapshot(request, storage):
     """
     Create server VM with snapshot
     """
@@ -38,7 +38,7 @@ def create_server_vm_with_snapshot(request):
 
 
 @pytest.fixture(scope='class')
-def remove_additional_nic(request):
+def remove_additional_nic(request, storage):
     """
     Remove nic
     """
@@ -51,7 +51,7 @@ def remove_additional_nic(request):
 
 
 @pytest.fixture(scope='class')
-def remove_additional_snapshot(request):
+def remove_additional_snapshot(request, storage):
     """
     Remove snapshot
     """
@@ -67,7 +67,7 @@ def remove_additional_snapshot(request):
 
 
 @pytest.fixture()
-def remove_cloned_vm(request):
+def remove_cloned_vm(request, storage):
     """
     Remove cloned VM
     """

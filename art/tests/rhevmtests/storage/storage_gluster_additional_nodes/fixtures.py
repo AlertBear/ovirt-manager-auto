@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def block_connectivity_gluster_nodes(request):
+def block_connectivity_gluster_nodes(request, storage):
     """
     Block selected gluster nodes connections to SPM
     """
@@ -29,7 +29,7 @@ def block_connectivity_gluster_nodes(request):
 
 
 @pytest.fixture()
-def unblock_connectivity_gluster_nodes(request):
+def unblock_connectivity_gluster_nodes(request, storage):
     """
     Unblock specific gluster nodes connections
     """
@@ -46,7 +46,7 @@ def unblock_connectivity_gluster_nodes(request):
 
 
 @pytest.fixture()
-def initialize_params(request):
+def initialize_params(request, storage):
     """
     Initialize parameters
     """
@@ -69,7 +69,9 @@ def initialize_params(request):
 
 
 @pytest.fixture()
-def create_gluster_storage_domain_with_or_without_additional_nodes(request):
+def create_gluster_storage_domain_with_or_without_additional_nodes(
+    request, storage
+):
     """
     Create/Remove gluster storage domain w/wo additional nodes
     """

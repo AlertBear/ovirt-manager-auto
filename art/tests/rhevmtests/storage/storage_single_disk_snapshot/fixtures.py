@@ -10,7 +10,7 @@ from rhevmtests.storage import helpers as storage_helpers
 
 
 @pytest.fixture()
-def add_disks(request):
+def add_disks(request, storage):
     """
     Add self.disk_count number of disks and attach them to the VM
     """
@@ -39,7 +39,7 @@ def add_disks(request):
 
 
 @pytest.fixture()
-def initialize_test_variables(request):
+def initialize_test_variables(request, storage):
     """
     Get the boot disk and the vm executor
     """

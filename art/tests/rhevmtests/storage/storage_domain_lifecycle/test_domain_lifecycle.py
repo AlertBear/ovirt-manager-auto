@@ -28,6 +28,7 @@ from art.unittest_lib import (
     tier2,
     tier3,
     tier4,
+    storages,
 )
 from art.unittest_lib import StorageTest as TestCase
 
@@ -122,6 +123,7 @@ class TestCase11784(TestCase):
     clean_dc.__name__,
     deactivate_and_remove_non_master_domains.__name__,
 )
+@storages((config.NOT_APPLICABLE,))
 class TestUpgrade(TestCase):
     """
     Base class for upgrade testing
@@ -129,9 +131,8 @@ class TestUpgrade(TestCase):
     Storage/3_1_Storage_Storage_Domain_Live_Upgrade
     """
     __test__ = False
-    storage_types_for_exec = TestCase.storages
-    storages = config.NOT_APPLICABLE
     host_name = None
+    storage_types_for_exec = config.STORAGES_MATRIX
     storage_domain = None
     name_pattern = None
     new_dc_name = None

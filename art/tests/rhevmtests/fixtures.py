@@ -146,14 +146,13 @@ def create_datacenters(request):
 
 
 @pytest.fixture(scope='class')
-def init_storage_manager(request):
+def init_storage_manager(request, storage):
     """
     Initialize storage manager instance
     """
 
     self = request.node.cls
-
-    self.manager = config.ISCSI_STORAGE_MANAGER if self.storage == (
+    self.manager = config.ISCSI_STORAGE_MANAGER if storage == (
         config.STORAGE_TYPE_ISCSI
     ) else config.FCP_STORAGE_MANAGER
 
@@ -171,7 +170,7 @@ def init_storage_manager(request):
 
 
 @pytest.fixture(scope='class')
-def create_lun_on_storage_server(request):
+def create_lun_on_storage_server(request, storage):
     """
     Create a LUN on storage server and refresh hosts LUNs list by maintenance
     and activate them
@@ -184,7 +183,7 @@ def create_lun_on_storage_server(request):
     lun_name = 'lun_%s' % self.__name__
     new_lun_size = getattr(self, 'new_lun_size', '60')
     existing_sd = ll_sd.getStorageDomainNamesForType(
-        config.DATA_CENTER_NAME, self.storage
+        config.DATA_CENTER_NAME, storage
     )[0]
     existing_lun = helpers.get_lun_id(
         existing_sd, self.storage_manager, self.storage_server
@@ -202,12 +201,12 @@ def create_lun_on_storage_server(request):
                 self.new_lun_id, **self.lun_params
             )
 
-    if self.storage == config.STORAGE_TYPE_ISCSI:
+    if storage == config.STORAGE_TYPE_ISCSI:
         config.UNUSED_LUNS.append(self.new_lun_identifier)
         config.UNUSED_LUN_ADDRESSES.append(config.UNUSED_LUN_ADDRESSES[0])
         config.UNUSED_LUN_TARGETS.append(config.UNUSED_LUN_TARGETS[0])
         self.index = len(config.UNUSED_LUNS)-1
-    elif self.storage == config.STORAGE_TYPE_FCP:
+    elif storage == config.STORAGE_TYPE_FCP:
         config.UNUSED_FC_LUNS.append(self.new_lun_identifier)
         self.index = len(config.UNUSED_FC_LUNS)-1
     testflow.setup(
@@ -217,7 +216,7 @@ def create_lun_on_storage_server(request):
 
 
 @pytest.fixture(scope='class')
-def remove_lun_from_storage_server(request):
+def remove_lun_from_storage_server(request, storage):
     """
     Remove the LUN from storage server. Refresh the hosts LUNs list by
     maintenance and activate them for iSCSI and maintenance, reboot and
@@ -232,7 +231,7 @@ def remove_lun_from_storage_server(request):
                 self.storage_server
             )
             self.storage_manager.removeLun(self.new_lun_id)
-            if self.storage == config.STORAGE_TYPE_ISCSI:
+            if storage == config.STORAGE_TYPE_ISCSI:
                 config.UNUSED_LUNS.pop(self.index)
                 config.UNUSED_LUN_ADDRESSES.pop(self.index)
                 config.UNUSED_LUN_TARGETS.pop(self.index)
@@ -241,7 +240,7 @@ def remove_lun_from_storage_server(request):
                     config.HOSTS
                 )
                 helpers.maintenance_and_activate_hosts()
-            elif self.storage == config.STORAGE_TYPE_FCP:
+            elif storage == config.STORAGE_TYPE_FCP:
                 config.UNUSED_FC_LUNS.pop(self.index)
                 testflow.teardown(
                     "Rebooting hosts %s after LUN removal", config.HOSTS

@@ -17,6 +17,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
+    storages
 )
 from art.unittest_lib import VirtTest
 from rhevmtests.fixtures import (
@@ -29,6 +30,7 @@ from rhevmtests.virt.sparsify.fixtures import (
     add_vms_on_specific_sd,
     block_storage_domain_setup,
     copy_template_to_new_storage_domain,
+    set_storage_domain_name,
 )
 
 
@@ -39,15 +41,14 @@ class SparsifySanityBase(VirtTest):
     storage = None
     storage_manager = None
     storage_server = None
-    storage_domain_name = None
+    storage_domain_name = config.NEW_SD_NAME % storage
 
 
+@storages((config.STORAGE_TYPE_ISCSI,))
 class TestSparsifySanityBlockDevice(SparsifySanityBase):
     """
     Sparsify sanity block device: ISCSI
     """
-    storage = config.STORAGE_TYPE_ISCSI
-    storage_domain_name = config.NEW_SD_NAME % storage
     number_of_thin_vms = 1
     lun_used_space = None
     new_lun_id = None
@@ -56,6 +57,7 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
     @tier2
     @polarion('RHEVM-18289')
     @pytest.mark.usefixtures(
+        set_storage_domain_name.__name__,
         init_storage_manager.__name__,
         create_lun_on_storage_server.__name__,
         remove_lun_from_storage_server.__name__,
@@ -63,7 +65,7 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
         copy_template_to_new_storage_domain.__name__,
         add_vms_on_specific_sd.__name__,
     )
-    def test_1_sparsify_linux_thin_disk_iscsi(self):
+    def test_1_sparsify_linux_thin_disk_iscsi(self, storage):
         """
         Test basic sparsify feature on iscsi
         """
@@ -82,30 +84,28 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
         )
 
 
+@storages(
+    (
+        pytest.param(config.STORAGE_TYPE_NFS, marks=polarion("RHEVM-18289")),
+        pytest.param(
+            config.STORAGE_TYPE_GLUSTER, marks=polarion("RHEVM-21589")
+        ),
+    )
+)
 class TestSparsifySanityFileDevice(SparsifySanityBase):
     """
     Sparsify sanity file device: NFS, Gluster
     """
     disk_path = None
     number_of_thin_vms = 1
+    nfs_version = config.NFS_VERSION_AUTO
 
     @tier2
     @pytest.mark.usefixtures(
         file_storage_domain_setup.__name__,
         add_vms_on_specific_sd.__name__,
     )
-    @pytest.mark.parametrize(
-        ("storage", "nfs_version"),
-        [
-            polarion("RHEVM-18289")([
-                config.STORAGE_TYPE_NFS, config.NFS_VERSION_AUTO
-            ]),
-            polarion("RHEVM-21589")([
-                config.STORAGE_TYPE_GLUSTER, config.NFS_VERSION_AUTO
-            ])
-        ]
-    )
-    def test_linux_thin_disk(self, storage, nfs_version):
+    def test_linux_thin_disk(self, storage):
         """
         Test sparsify on thin provision disk with: NFS, Gluster
         """

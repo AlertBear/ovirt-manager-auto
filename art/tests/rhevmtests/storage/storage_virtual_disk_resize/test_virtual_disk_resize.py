@@ -4,6 +4,13 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_3_Storage_Virtual_Disk_Resize
 """
 import config
+from config import (
+    NFS,
+    GLUSTER,
+    ISCSI,
+    CEPH,
+    FCP,
+)
 import helpers
 import logging
 import pytest
@@ -15,6 +22,7 @@ from art.unittest_lib import (
     tier2,
     tier3,
     tier4,
+    storages,
 )
 from art.unittest_lib.common import StorageTest as BaseTestCase, testflow
 from art.rhevm_api.tests_lib.low_level import (
@@ -28,7 +36,6 @@ import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion, bz
-from art.test_handler.settings import ART_CONFIG
 
 from rhevmtests.storage.fixtures import (
     create_vm, create_snapshot, add_disk, attach_disk,
@@ -48,18 +55,12 @@ logger = logging.getLogger(__name__)
 
 DISK_RESIZE_TIMEOUT = 1200
 WATCH_TIMOUT = 480
-NFS = config.STORAGE_TYPE_NFS
-ISCSI = config.STORAGE_TYPE_ISCSI
-FCP = config.STORAGE_TYPE_FCP
-CEPH = config.STORAGE_TYPE_CEPH
-GLUSTER = config.STORAGE_TYPE_GLUSTER
 
 
 class BasicResize(BaseTestCase):
     """
     A class with common methods
     """
-    __test__ = False
     new_size = (config.DISK_SIZE + config.GB)
     block_cmd = "iptables -I OUTPUT -d %s -p tcp -j DROP"
     stop_libvirt = "service libvirtd stop"
@@ -232,7 +233,6 @@ class TestCase5061(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = True
     new_size = (config.DISK_SIZE + config.GB)
 
     @polarion("RHEVM3-5061")
@@ -278,7 +278,6 @@ class TestCase5060(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = True
     is_preview = False
     new_size = config.DISK_SIZE + config.GB
 
@@ -345,6 +344,7 @@ class TestCase5060(BaseTestCase):
             )
 
 
+@storages((ISCSI, FCP))
 @pytest.mark.usefixtures(
     create_vm.__name__,
     start_vm.__name__,
@@ -359,9 +359,6 @@ class TestCase5062(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
-                FCP in ART_CONFIG['RUN']['storages'])
-    storages = set([ISCSI, FCP])
     add_disk_params = {
         'sparse': False,
         'format': config.RAW_DISK,
@@ -380,6 +377,7 @@ class TestCase5062(BasicResize):
         self.perform_basic_action()
 
 
+@storages((ISCSI, FCP))
 @pytest.mark.usefixtures(
     create_vm.__name__,
     start_vm.__name__,
@@ -394,9 +392,6 @@ class TestCase5063(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
-                FCP in ART_CONFIG['RUN']['storages'])
-    storages = set([ISCSI, FCP])
     add_disk_params = {
         'sparse': True,
         'format': config.COW_DISK,
@@ -415,6 +410,7 @@ class TestCase5063(BasicResize):
         self.perform_basic_action()
 
 
+@storages((GLUSTER, CEPH, NFS))
 @pytest.mark.usefixtures(
     create_vm.__name__,
     start_vm.__name__,
@@ -429,12 +425,6 @@ class TestCase5065(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (
-        GLUSTER in ART_CONFIG['RUN']['storages'] or
-        CEPH in ART_CONFIG['RUN']['storages'] or
-        NFS in ART_CONFIG['RUN']['storages']
-    )
-    storages = set([GLUSTER, CEPH, NFS])
     add_disk_params = {
         'sparse': True,
         'format': config.COW_DISK,
@@ -452,6 +442,7 @@ class TestCase5065(BasicResize):
         self.perform_basic_action()
 
 
+@storages((ISCSI,))
 @pytest.mark.usefixtures(
     create_vm.__name__,
     start_vm.__name__,
@@ -467,8 +458,6 @@ class TestCase5066(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
-    storages = set([ISCSI])
     add_disk_params = {
         'sparse': False,
         'format': config.RAW_DISK,
@@ -487,6 +476,7 @@ class TestCase5066(BasicResize):
         self.block_connection_case()
 
 
+@storages((ISCSI,))
 @pytest.mark.usefixtures(
     create_vm.__name__,
     start_vm.__name__,
@@ -502,8 +492,6 @@ class TestCase5067(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
-    storages = set([ISCSI])
     add_disk_params = {
         'sparse': False,
         'format': config.RAW_DISK,
@@ -522,6 +510,7 @@ class TestCase5067(BasicResize):
         self.block_connection_case()
 
 
+@storages((NFS, ISCSI))
 @pytest.mark.usefixtures(
     create_vm.__name__,
     start_vm.__name__,
@@ -539,11 +528,6 @@ class TestCase5069(BasicResize):
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
     # glusterfs doesn't support shareable disks
-    __test__ = (
-        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
-        or config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
-    )
-    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     add_disk_params = {
         'sparse': False,
         'format': config.RAW_DISK,
@@ -575,6 +559,7 @@ class TestCase5069(BasicResize):
             assert int(size) == int(self.new_size / config.GB)
 
 
+@storages((ISCSI,))
 @pytest.mark.usefixtures(
     create_vm.__name__,
     start_vm.__name__,
@@ -590,9 +575,6 @@ class TestCase5070(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
-    storages = set([ISCSI])
-
     add_disk_params = {
         'sparse': False,
         'format': config.RAW_DISK,
@@ -634,7 +616,6 @@ class TestCase5071(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = True
     look_for_regex = 'START extendVolumeSize'
 
     add_disk_params = {
@@ -701,6 +682,7 @@ class TestCase5071(BasicResize):
         assert lv_size == self.new_size / config.GB
 
 
+@storages((ISCSI,))
 @pytest.mark.usefixtures(
     initialize_storage_domains.__name__,
     create_multiple_vms.__name__,
@@ -711,9 +693,7 @@ class TestCase5073(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     multiple_sd = False
-    storages = set([ISCSI])
     vm_count = 3
     new_size = 20 * config.GB
 
@@ -730,6 +710,7 @@ class TestCase5073(BasicResize):
         self.multiple_disks(self.vm_names)
 
 
+@storages((ISCSI,))
 @pytest.mark.usefixtures(
     initialize_storage_domains.__name__,
     create_multiple_vms.__name__,
@@ -740,8 +721,6 @@ class TestCase11862(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
-    storages = set([ISCSI])
     vm_count = 2
     multiple_sd = True
     new_size = 20 * config.GB

@@ -24,6 +24,7 @@ __all__ = [
     "pytest_addoption",
     "pytest_configure",
     "timeout",
+    "storages",
 ]
 
 MIN = 60
@@ -66,6 +67,7 @@ tier2 = pytest.mark.tier2(value=2)
 tier3 = pytest.mark.tier3(value=3)
 tier4 = pytest.mark.tier4(value=4)
 timeout = pytest.mark.timeout
+storages = pytest.mark.storages
 
 tier_markers = [tier1, tier2, tier3, tier4, upgrade, do_not_run]
 team_markers = [network, sla, storage, coresystem, virt, upgrade]
@@ -162,6 +164,7 @@ class AttribDecorator(object):
         values.update(
             dict((a, None) for a in self._names - set(values.keys()))
         )
+
         # Evaluate expression
         try:
             return bool(eval(self.expr, values))

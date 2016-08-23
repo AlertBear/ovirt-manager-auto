@@ -19,12 +19,12 @@
 
 import base64
 import cgi
-import copy
 import httplib
 import logging
 import re
 import ssl
 from contextlib import contextmanager
+from multiprocessing import Manager
 
 from art.core_api.apis_exceptions import APIException
 
@@ -41,7 +41,10 @@ class HTTPProxy(object):
         self.cookie = None
         self.last_active_user = None
         self.type = opts['RUN']['media_type']
-        self.headers = self.opts.get('HTTP_HEADERS', {})
+        self.process_manager = Manager()
+        self.headers = self.process_manager.dict(
+            self.opts.get('HTTP_HEADERS', {})
+        )
 
     @contextmanager
     def create_connection(self):
@@ -98,7 +101,7 @@ class HTTPProxy(object):
             repeat (bool): Repeat request in case of authorization error
         """
         with self.create_connection() as conn:
-            headers = self.basic_headers()
+            headers = dict(self.basic_headers())
 
             if body:
                 headers['Content-type'] = self.type
@@ -180,9 +183,9 @@ class HTTPProxy(object):
         Build request headers
         '''
         if self.headers:
-            headers = copy.deepcopy(self.headers)
+            headers = self.process_manager.dict(self.headers)
         else:
-            headers = {}
+            headers = self.process_manager.dict()
 
         if (
                 self.opts['REST_CONNECTION']['user'] and

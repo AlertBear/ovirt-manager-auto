@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def init_non_master_domains_params(request):
+def init_non_master_domains_params(request, storage):
     """
     Extract non-master domain name and address
     """
@@ -45,7 +45,7 @@ def init_non_master_domains_params(request):
 
 
 @pytest.fixture()
-def flush_iptable_block(request):
+def flush_iptable_block(request, storage):
     """
     Flush iptables rule
     """
@@ -77,7 +77,7 @@ def flush_iptable_block(request):
 
 
 @pytest.fixture()
-def fin_activate_host(request):
+def fin_activate_host(request, storage):
     """
     Activate host
     """
@@ -93,7 +93,7 @@ def fin_activate_host(request):
 
 
 @pytest.fixture()
-def activate_domain(request):
+def activate_domain(request, storage):
     """
     activates storage domain
     """
@@ -122,7 +122,7 @@ def activate_domain(request):
 
 
 @pytest.fixture()
-def start_vm_on_hsm_host(request):
+def start_vm_on_hsm_host(request, storage):
     """
     Start VM on HSM host
     """
@@ -136,7 +136,7 @@ def start_vm_on_hsm_host(request):
 
 
 @pytest.fixture()
-def retrieve_master_domain_for_vm_creation(request):
+def retrieve_master_domain_for_vm_creation(request, storage):
     """
     Create VM on master storage domain
     """

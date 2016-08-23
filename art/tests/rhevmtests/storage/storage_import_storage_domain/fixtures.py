@@ -30,7 +30,7 @@ CEPH = config.STORAGE_TYPE_CEPH
 
 
 @pytest.fixture(scope='class')
-def initialize_params(request):
+def initialize_params(request, storage):
     """
     Clean the environment
     """
@@ -54,7 +54,7 @@ def initialize_params(request):
 
 
 @pytest.fixture()
-def deactivate_detach_and_remove_domain_fin(request):
+def deactivate_detach_and_remove_domain_fin(request, storage):
 
     self = request.node.cls
 
@@ -86,7 +86,7 @@ def deactivate_detach_and_remove_domain_fin(request):
 
 
 @pytest.fixture()
-def add_non_master_storage_domain(request):
+def add_non_master_storage_domain(request, storage):
     """
     Add new non master storage domain
     """
@@ -112,7 +112,7 @@ def add_non_master_storage_domain(request):
 
 
 @pytest.fixture(scope='class')
-def remove_storage_domain_fin(request):
+def remove_storage_domain_fin(request, storage):
 
     self = request.node.cls
 
@@ -131,7 +131,7 @@ def remove_storage_domain_fin(request):
 
 
 @pytest.fixture(scope='class')
-def add_master_storage_domain_to_new_dc(request):
+def add_master_storage_domain_to_new_dc(request, storage):
     """
     Add new master storage domain
     """
@@ -154,7 +154,7 @@ def add_master_storage_domain_to_new_dc(request):
 
 
 @pytest.fixture(scope='class')
-def add_non_master_storage_domain_to_new_dc(request):
+def add_non_master_storage_domain_to_new_dc(request, storage):
     """
     Add new non master storage domain
     """
@@ -176,7 +176,7 @@ def add_non_master_storage_domain_to_new_dc(request):
 
 @pytest.fixture()
 def secure_deactivate_and_detach_storage_domain(
-    request, secure_deactivate_storage_domain
+    request, secure_deactivate_storage_domain, storage
 ):
     """
     Deactivate and detach storage-domain
@@ -192,7 +192,7 @@ def secure_deactivate_and_detach_storage_domain(
 
 
 @pytest.fixture()
-def secure_deactivate_storage_domain(request):
+def secure_deactivate_storage_domain(request, storage):
     """
     Deactivate storage-domain
     """
@@ -213,7 +213,9 @@ def secure_deactivate_storage_domain(request):
 
 
 @pytest.fixture()
-def create_gluster_or_posix_export_domain(request, attach_export_domain):
+def create_gluster_or_posix_export_domain(
+    request, storage, attach_export_domain
+):
     """
     Create export domain and remove it
     """
@@ -272,7 +274,7 @@ def create_gluster_or_posix_export_domain(request, attach_export_domain):
 
 
 @pytest.fixture()
-def attach_export_domain(request):
+def attach_export_domain(request, storage):
     """
     Attach export domain to the data-center
     """
@@ -288,7 +290,7 @@ def attach_export_domain(request):
 
 
 @pytest.fixture()
-def remove_template_setup(request):
+def remove_template_setup(request, storage):
     """
     Remove template from the data-center
     """
@@ -300,7 +302,7 @@ def remove_template_setup(request):
 
 
 @pytest.fixture()
-def remove_storage_domain_setup(request):
+def remove_storage_domain_setup(request, storage):
     """
     Remove storage domain from the data-center
     """
@@ -323,7 +325,7 @@ def remove_storage_domain_setup(request):
 
 
 @pytest.fixture()
-def attach_and_activate_storage_domain(request):
+def attach_and_activate_storage_domain(request, storage):
     """
     Deactivate storage-domain
     """
@@ -339,18 +341,18 @@ def attach_and_activate_storage_domain(request):
 
 
 @pytest.fixture(scope='class')
-def attach_disk_to_cloned_vm(request):
+def attach_disk_to_cloned_vm(request, storage):
     """
     Attach a disk to a VM cloned from template
     """
     self = request.node.cls
 
     self.vm_to_attach_disk = self.vm_from_template
-    attach_disk(request)
+    attach_disk(request, storage)
 
 
 @pytest.fixture()
-def initialize_disk_params(request):
+def initialize_disk_params(request, storage):
     """
     Initialize disk parameters for add operation
     """
@@ -365,7 +367,7 @@ def initialize_disk_params(request):
 
 
 @pytest.fixture()
-def delete_snapshot_setup(request):
+def delete_snapshot_setup(request, storage):
     """
     Delete the snapshot created in the test
     """
@@ -379,15 +381,15 @@ def delete_snapshot_setup(request):
 
 
 @pytest.fixture()
-def create_vm_func_lvl(request):
+def create_vm_func_lvl(request, storage):
     """
     Create VM
     """
-    create_vm(request, remove_vm)
+    create_vm(request, storage, remove_vm)
 
 
 @pytest.fixture()
-def block_connection_to_sd(request):
+def block_connection_to_sd(request, storage):
     """
     Block connection from all hosts to storage domain address
     """
@@ -441,7 +443,7 @@ def block_connection_to_sd(request):
 
 
 @pytest.fixture()
-def unblock_connection_to_sd(request):
+def unblock_connection_to_sd(request, storage):
     """
     Unblock connection from all hosts to storage domain address
     """
@@ -463,7 +465,7 @@ def unblock_connection_to_sd(request):
 
 
 @pytest.fixture()
-def wait_for_dc_state(request):
+def wait_for_dc_state(request, storage):
     """
     Wait until Data center is in status OK finalizer
     """

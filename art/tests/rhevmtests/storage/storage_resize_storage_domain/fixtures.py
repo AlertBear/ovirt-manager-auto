@@ -15,7 +15,7 @@ from rhevmtests.fixtures import (
 
 
 @pytest.fixture(scope='class')
-def set_disk_params(request):
+def set_disk_params(request, storage):
     """
     Set disk size
     """
@@ -31,7 +31,7 @@ def set_disk_params(request):
 
 
 @pytest.fixture(scope='class')
-def init_domain_disk_param(request):
+def init_domain_disk_param(request, storage):
     """
     Initialize VM parameters
     """
@@ -51,7 +51,7 @@ def init_domain_disk_param(request):
 
 
 @pytest.fixture(scope='class')
-def attach_disk_to_second_vm(request):
+def attach_disk_to_second_vm(request, storage):
     """
     Attach shared disk to second VM
     """
@@ -68,7 +68,7 @@ def attach_disk_to_second_vm(request):
 
 
 @pytest.fixture(scope='class')
-def set_shared_disk_params(request):
+def set_shared_disk_params(request, storage):
     """
     Set shared disk params
     """
@@ -83,7 +83,7 @@ def set_shared_disk_params(request):
 
 
 @pytest.fixture(scope='class')
-def poweroff_vms(request):
+def poweroff_vms(request, storage):
     """
     Power off VMs
     """
@@ -98,24 +98,24 @@ def poweroff_vms(request):
 
 
 @pytest.fixture(scope='class')
-def create_second_lun(request):
+def create_second_lun(request, storage):
     """
     Create second LUN on storage server
     """
-    create_lun_on_storage_server(request)
-    append_to_luns_to_resize(request)
+    create_lun_on_storage_server(request, storage)
+    append_to_luns_to_resize(request, storage)
 
 
 @pytest.fixture(scope='class')
-def remove_second_lun(request):
+def remove_second_lun(request, storage):
     """
     Remove second LUN from storage server
     """
-    remove_lun_from_storage_server(request)
+    remove_lun_from_storage_server(request, storage)
 
 
 @pytest.fixture(scope='class')
-def append_to_luns_to_resize(request):
+def append_to_luns_to_resize(request, storage):
     """
     Initialize LUNs to extend list
     """

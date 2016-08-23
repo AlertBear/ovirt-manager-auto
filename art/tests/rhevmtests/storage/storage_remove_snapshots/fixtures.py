@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')
-def initialize_params(request):
+def initialize_params(request, storage):
     """
     Initialize parameters
     """
@@ -27,7 +27,7 @@ def initialize_params(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_params_new_dc(request):
+def initialize_params_new_dc(request, storage):
     """
     Initialize storage_domain attribute
     """

@@ -70,7 +70,6 @@ class BasicEnvironment(BaseTestCase):
     # https://projects.engineering.redhat.com/browse/RHEVM-1654
     # https://bugzilla.redhat.com/show_bug.cgi?id=1223448
     __test__ = False
-    apis = BaseTestCase.apis - set(['cli', 'java', 'sdk'])
 
 
 @pytest.mark.usefixtures(

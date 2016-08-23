@@ -17,18 +17,18 @@ REMOVE_TEMPLATE_TIMEOUT = 300
 
 
 @pytest.fixture(scope='class')
-def initialize_vm(request):
+def initialize_vm(request, storage):
     """
     Initialize VM name
     """
     self = request.node.cls
 
     if not hasattr(self, 'vm_name'):
-        self.vm_name = config.VM_NAMES[self.storage]
+        self.vm_name = config.VM_NAMES[storage]
 
 
 @pytest.fixture(scope='class')
-def create_disks(request):
+def create_disks(request, storage):
     """
     Create disks
     """
@@ -58,7 +58,7 @@ def create_disks(request):
 
 
 @pytest.fixture()
-def remove_disks(request):
+def remove_disks(request, storage):
     """
     Remove disks
     """
@@ -72,7 +72,7 @@ def remove_disks(request):
 
 
 @pytest.fixture()
-def remove_vm(request):
+def remove_vm(request, storage):
     """
     Remove VMs
     """
@@ -85,14 +85,14 @@ def remove_vm(request):
 
 
 @pytest.fixture()
-def create_test_vm(request, remove_vm):
+def create_test_vm(request, storage, remove_vm):
     """
     Create new VM
     """
     self = request.node.cls
 
     self.test_vm_name = storage_helpers.create_unique_object_name(
-        "test_copy_disk_%s" % self.storage, config.OBJECT_TYPE_VM
+        "test_copy_disk_%s" % storage, config.OBJECT_TYPE_VM
     )
     testflow.setup("Creating new VM %s", self.test_vm_name)
     ll_vms.createVm(
@@ -107,7 +107,7 @@ def create_test_vm(request, remove_vm):
 
 
 @pytest.fixture(scope='class')
-def remove_template(request):
+def remove_template(request, storage):
     """
     Remove template
     """

@@ -12,7 +12,7 @@ import rhevmtests.storage.helpers as storage_helpers
 
 
 @pytest.fixture()
-def add_disks_permutation(request, add_disk_permutations):
+def add_disks_permutation(request, storage, add_disk_permutations):
     """
     Add disks to remove list for finalizer
     """
@@ -22,7 +22,7 @@ def add_disks_permutation(request, add_disk_permutations):
 
 
 @pytest.fixture()
-def create_vms_for_test(request, remove_vms):
+def create_vms_for_test(request, storage, remove_vms):
     """
     Create VMs for test and initialize parameters
     """
@@ -31,7 +31,7 @@ def create_vms_for_test(request, remove_vms):
     self.vm_names = list()
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
+            config.DATA_CENTER_NAME, storage
         )[0]
 
     for idx in xrange(2):

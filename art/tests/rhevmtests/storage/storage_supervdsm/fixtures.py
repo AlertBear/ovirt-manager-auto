@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def check_host_up(request):
+def check_host_up(request, storage):
     """
     Check the host is in status UP and get the host ip
     """
@@ -36,7 +36,7 @@ def check_host_up(request):
 
 
 @pytest.fixture()
-def restore_supervdsm_files(request):
+def restore_supervdsm_files(request, storage):
     """
     Make sure to restore supervdsm log file
     """

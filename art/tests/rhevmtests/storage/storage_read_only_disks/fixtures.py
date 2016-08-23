@@ -4,7 +4,7 @@ from rhevmtests.storage import helpers as storage_helpers
 
 
 @pytest.fixture(scope='class')
-def initialize_template_name(request):
+def initialize_template_name(request, storage):
     """
     Initialize template name for test
     """

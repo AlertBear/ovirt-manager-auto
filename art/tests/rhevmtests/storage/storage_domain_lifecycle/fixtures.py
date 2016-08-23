@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')
-def init_hsm_host(request):
+def init_hsm_host(request, storage):
     """
     Selects the first non-SPM host
     """
@@ -35,7 +35,7 @@ def init_hsm_host(request):
 
 
 @pytest.fixture(scope='class')
-def get_setup_info(request):
+def get_setup_info(request, storage):
     """
     Ensures that environment is ready for tests, validating that master
     domain is found and has an IP address, retrieves the IP address of
@@ -70,7 +70,7 @@ def get_setup_info(request):
 
 
 @pytest.fixture(scope='class')
-def init_storage_domains_params(request):
+def init_storage_domains_params(request, storage):
     """
     Initialize storage domain parameters
     """
@@ -90,7 +90,7 @@ def init_storage_domains_params(request):
 
 
 @pytest.fixture(scope='class')
-def unblock_connectivity_engine_to_host(request):
+def unblock_connectivity_engine_to_host(request, storage):
     """
     Unblock all connections that were blocked during the test
     """
@@ -127,7 +127,7 @@ def unblock_connectivity_engine_to_host(request):
 
 
 @pytest.fixture(scope='class')
-def create_dc(request):
+def create_dc(request, storage):
     """
     Creates a data center and cluster with no hosts
     """
@@ -140,7 +140,7 @@ def create_dc(request):
 
 
 @pytest.fixture(scope='class')
-def create_cluster(request):
+def create_cluster(request, storage):
     """
     Creates a cluster with no hosts
     """
@@ -158,7 +158,7 @@ def create_cluster(request):
 
 
 @pytest.fixture(scope='class')
-def create_storage_domains_for_upgrade(request):
+def create_storage_domains_for_upgrade(request, storage):
     """
     Creates storage domains for upgrade tests
     """
@@ -230,7 +230,7 @@ def create_storage_domains_for_upgrade(request):
 
 
 @pytest.fixture(scope='class')
-def deactivate_and_remove_non_master_domains(request):
+def deactivate_and_remove_non_master_domains(request, storage):
     """
     Remove storage domains created for the test
     """
@@ -269,7 +269,7 @@ def deactivate_and_remove_non_master_domains(request):
 
 
 @pytest.fixture(scope='class')
-def remove_unattached_domain(request):
+def remove_unattached_domain(request, storage):
     """
     Remove the unattached domain left after DC removal
     """

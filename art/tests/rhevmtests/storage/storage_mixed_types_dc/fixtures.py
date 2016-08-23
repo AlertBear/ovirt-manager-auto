@@ -17,7 +17,7 @@ from rhevmtests.storage.fixtures import (
 
 
 @pytest.fixture(scope='class')
-def init_storage_domains(request):
+def init_storage_domains(request, storage):
     """
     Initialize specific storage domains
     """
@@ -30,7 +30,7 @@ def init_storage_domains(request):
 
 
 @pytest.fixture(scope='class')
-def create_disks_on_selected_storage_domains(request):
+def create_disks_on_selected_storage_domains(request, storage):
     """
     Create disks on specific storage domains
     """
@@ -38,7 +38,7 @@ def create_disks_on_selected_storage_domains(request):
 
     def finalizer():
         self.disks_to_remove = self.disks
-        delete_disks(request)
+        delete_disks(request, storage)
 
     request.addfinalizer(finalizer)
 
@@ -48,12 +48,12 @@ def create_disks_on_selected_storage_domains(request):
             config.DATA_CENTER_NAME, sd
         )[0]
         disk_params['storagedomain'] = self.storage_domain
-        add_disk(request)
+        add_disk(request, storage)
         self.disks.append(self.disk_name)
 
 
 @pytest.fixture(scope='class')
-def add_disk_to_vm_on_iscsi(request):
+def add_disk_to_vm_on_iscsi(request, storage):
     """
     Add disk to VM on ISCSI storage domain
     """
@@ -73,7 +73,7 @@ def add_disk_to_vm_on_iscsi(request):
 
 
 @pytest.fixture(scope='class')
-def init_parameters(request):
+def init_parameters(request, storage):
     """
     Initializes host ip, disk name, master domain, non master,
     storage domain ip
@@ -109,7 +109,7 @@ def init_parameters(request):
 
 
 @pytest.fixture(scope='class')
-def create_vm_on_nfs(request):
+def create_vm_on_nfs(request, storage):
     """
     Create a VM on NFS storage
     """
@@ -117,12 +117,12 @@ def create_vm_on_nfs(request):
     self = request.node.cls
 
     setattr(self, 'storage_domain', self.storage_domains[config.NFS])
-    create_vm(request, remove_vm)
+    create_vm(request, storage, remove_vm)
     self.vm_names.append(self.vm_name)
 
 
 @pytest.fixture()
-def remove_cloned_vm(request):
+def remove_cloned_vm(request, storage):
     """
     Remove cloned VM
     """

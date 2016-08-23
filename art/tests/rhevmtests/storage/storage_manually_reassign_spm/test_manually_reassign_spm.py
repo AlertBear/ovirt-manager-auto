@@ -19,6 +19,7 @@ from art.unittest_lib import (
     tier2,
     tier3,
     tier4,
+    storages,
 )
 from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
@@ -34,6 +35,7 @@ from rhevmtests.storage.storage_manually_reassign_spm.fixtures import (
 logger = logging.getLogger(__name__)
 
 
+@storages((config.NOT_APPLICABLE,))
 @pytest.mark.usefixtures(
     set_spm_priorities.__name__
 )
@@ -42,7 +44,6 @@ class BasicEnvironment(BaseTestCase):
     Base class that ensures DC, all domains and hosts are up, SPM is elected
     and SPM priorities are set to default for all hosts
     """
-    storages = config.NOT_APPLICABLE
 
 
 @pytest.mark.usefixtures(

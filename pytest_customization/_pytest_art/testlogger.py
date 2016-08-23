@@ -233,7 +233,7 @@ class ARTLogging(object):
         for attr in ('api', 'storage'):
             value = getattr(item.parent.obj, attr, None)
             if value:
-                flow_logger.info("  %s: %s", attr.upper(), value.upper())
+                flow_logger.info("  %s: %s", attr.upper(), str(value).upper())
         m = item.get_marker("polarion-testcase-id")
         if m:
             message = "  POLARION: %s"

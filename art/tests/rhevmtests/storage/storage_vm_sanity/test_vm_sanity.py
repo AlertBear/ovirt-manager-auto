@@ -43,7 +43,7 @@ GB = config.GB
 
 
 @pytest.fixture(scope='class')
-def prepare_data(request):
+def prepare_data(request, storage):
     """
     Prepare data
     """
@@ -71,7 +71,7 @@ def prepare_data(request):
 
 
 @pytest.fixture()
-def clean_leftover_data(request):
+def clean_leftover_data(request, storage):
     """
     Clean leftover data in the slave
     """

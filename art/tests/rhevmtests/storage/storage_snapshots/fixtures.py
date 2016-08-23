@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def create_memory_snapsot_running_process(request):
+def create_memory_snapsot_running_process(request, storage):
     """
     Start VM, run process on VM and create RAM snapshot
     """
@@ -59,7 +59,7 @@ def create_memory_snapsot_running_process(request):
 
 
 @pytest.fixture()
-def initialize_prepare_environment(request):
+def initialize_prepare_environment(request, storage):
     """
     Set attributes for test
     """
@@ -73,7 +73,7 @@ def initialize_prepare_environment(request):
 
 
 @pytest.fixture()
-def add_disks_different_sd(request):
+def add_disks_different_sd(request, storage):
     """
     Create self.disks_count number of disks on the second storage domain
     """
@@ -94,7 +94,7 @@ def add_disks_different_sd(request):
 
 
 @pytest.fixture(scope='class')
-def add_two_vms_from_template(request):
+def add_two_vms_from_template(request, storage):
     """
     Create two vms, one thin and the other cloned, from a template
     """
@@ -131,3 +131,9 @@ def add_two_vms_from_template(request):
     self.vm_names.append(self.vm_clone)
     if self.live_snapshot:
         ll_vms.start_vms(self.vm_names, config.MAX_WORKERS)
+
+
+@pytest.fixture()
+def pids_list(request, storage):
+    self = request.cls
+    self.pids = []

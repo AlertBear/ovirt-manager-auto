@@ -20,7 +20,7 @@ from art.unittest_lib.common import StorageTest as TestCase  # noqa
 
 
 @pytest.fixture(scope='class')
-def init_hsm_host(request):
+def init_hsm_host(request, storage):
     """
     Selects the first non-SPM host
     """
@@ -36,7 +36,7 @@ def init_hsm_host(request):
 
 
 @pytest.fixture(scope='class')
-def init_spm_host(request):
+def init_spm_host(request, storage):
     """
     Selects the first non-SPM host
     """
@@ -49,7 +49,7 @@ def init_spm_host(request):
 
 
 @pytest.fixture(scope='class')
-def create_dc_with_no_hosts(request):
+def create_dc_with_no_hosts(request, storage):
     """
     Creates a data center with no hosts
     """
@@ -61,7 +61,7 @@ def create_dc_with_no_hosts(request):
 
 
 @pytest.fixture(scope='class')
-def create_cluster_with_no_hosts(request):
+def create_cluster_with_no_hosts(request, storage):
     """
     Creates a cluster with no hosts
     """
@@ -79,7 +79,7 @@ def create_cluster_with_no_hosts(request):
 
 
 @pytest.fixture(scope='class')
-def create_one_or_more_storage_domains_same_type_for_upgrade(request):
+def create_one_or_more_storage_domains_same_type_for_upgrade(request, storage):
     """
     Creates one or more storage domain for upgrade tests
     """
@@ -100,7 +100,7 @@ def create_one_or_more_storage_domains_same_type_for_upgrade(request):
 
 
 @pytest.fixture(scope='class')
-def deactivate_and_remove_non_master_domains(request):
+def deactivate_and_remove_non_master_domains(request, storage):
     """
     Remove storage domains created for the test
     """
@@ -139,7 +139,7 @@ def deactivate_and_remove_non_master_domains(request):
 
 
 @pytest.fixture(scope='class')
-def remove_unattached_domain(request):
+def remove_unattached_domain(request, storage):
     """
     Remove the unattached domain left after DC removal
     """
@@ -156,7 +156,7 @@ def remove_unattached_domain(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_dc_parameters_for_upgrade(request):
+def initialize_dc_parameters_for_upgrade(request, storage):
     """
     Initializing DC parameters for 4.0 to 4.1 upgrade
     """
@@ -183,7 +183,7 @@ def initialize_dc_parameters_for_upgrade(request):
 
 
 @pytest.fixture(scope='class')
-def remove_another_vm(request):
+def remove_another_vm(request, storage):
     """
     Remove another VM created during the test
     """
@@ -200,7 +200,7 @@ def remove_another_vm(request):
 
 
 @pytest.fixture(scope='class')
-def init_test_vm_name(request):
+def init_test_vm_name(request, storage):
     """
     Initialize test vm name
     """
@@ -215,7 +215,7 @@ def init_test_vm_name(request):
 
 
 @pytest.fixture(scope='class')
-def init_test_template_name(request):
+def init_test_template_name(request, storage):
     """
     Initialize test template name
     """
@@ -228,7 +228,7 @@ def init_test_template_name(request):
 
 
 @pytest.fixture(scope='class')
-def init_base_params(request):
+def init_base_params(request, storage):
     """
     Initialize base class parameters
     """
@@ -258,7 +258,7 @@ def init_base_params(request):
 
 
 @pytest.fixture(scope='class')
-def get_template_from_cluster(request):
+def get_template_from_cluster(request, storage):
     """
     Get existing first template from cluster
     """
@@ -276,7 +276,7 @@ def get_template_from_cluster(request):
 
 
 @pytest.fixture()
-def initialize_storage_domain_params(request):
+def initialize_storage_domain_params(request, storage):
     """
     Initialize storage domain parameters for add operation
     """

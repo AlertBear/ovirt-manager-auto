@@ -18,6 +18,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
     tier4,
+    storages,
 )
 from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from rhevmtests.storage.fixtures import (
@@ -37,6 +38,7 @@ WAIT_FOR_SPM_TIMEOUT = 100
 RETRY_INTERVAL = 10
 
 
+@storages((config.NOT_APPLICABLE,))
 @pytest.mark.usefixtures(
     wait_for_spm.__name__,
     set_spm_priorities.__name__
@@ -46,7 +48,6 @@ class BasicEnvironment(BaseTestCase):
     Base class that ensures SPM is elected and SPM priorities
     are set to default for all hosts
     """
-    storages = config.NOT_APPLICABLE
 
     def wait_for_spm_host_and_verify_identity(self, host_name):
         """

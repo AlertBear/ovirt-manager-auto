@@ -15,7 +15,7 @@ import rhevmtests.storage.helpers as storage_helpers
 
 
 @pytest.fixture(scope='class')
-def initialize_export_domain_param(request):
+def initialize_export_domain_param(request, storage):
     """
     Extract export domain name
     """
@@ -31,7 +31,7 @@ def initialize_export_domain_param(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_vm_and_template_names(request):
+def initialize_vm_and_template_names(request, storage):
     """
     Create unique name for VMs and templates
     """
@@ -61,7 +61,7 @@ def initialize_vm_and_template_names(request):
 
 
 @pytest.fixture()
-def remove_template_setup(request):
+def remove_template_setup(request, storage):
     """
     Remove template
     """
@@ -74,7 +74,7 @@ def remove_template_setup(request):
 
 
 @pytest.fixture()
-def remove_second_vm_from_export_domain(request):
+def remove_second_vm_from_export_domain(request, storage):
     """
     Remove second VM from export domain
     """
@@ -101,7 +101,7 @@ def remove_second_vm_from_export_domain(request):
 
 
 @pytest.fixture()
-def remove_export_domain_setup(request):
+def remove_export_domain_setup(request, storage):
     """
     Remove export domain
     """
@@ -118,7 +118,7 @@ def remove_export_domain_setup(request):
 
 
 @pytest.fixture()
-def fetch_golden_template_name(request):
+def fetch_golden_template_name(request, storage):
     """
     Fetch golden template name
     """
@@ -130,7 +130,7 @@ def fetch_golden_template_name(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_first_template_name(request):
+def initialize_first_template_name(request, storage):
     """
     Create unique name for first template
     """

@@ -11,6 +11,7 @@ import pytest
 from art.unittest_lib import (
     tier2,
     tier4,
+    storages,
 )
 import config
 from art.unittest_lib import StorageTest as TestCase
@@ -40,6 +41,7 @@ class BaseTestCase(TestCase):
     """
 
 
+@storages((config.NOT_APPLICABLE,))
 class TestCase6269(BaseTestCase):
     """
     supervdsm test case, sanity
@@ -47,10 +49,10 @@ class TestCase6269(BaseTestCase):
     Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    storages = config.NOT_APPLICABLE
 
     @polarion("RHEVM3-6269")
     @tier2
+    @storages(('iscsi',))
     def test_supervdsm_sanity(self):
         """
         Test basic functionality is running after host is installed

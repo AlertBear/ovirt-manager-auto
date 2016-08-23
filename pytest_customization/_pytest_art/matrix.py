@@ -1,192 +1,143 @@
 """
-This module implements our matrix multiplication.
+This plugin run parametrized tests with storage matrix
 
-TEST x ENGINE x STORAGE
+USAGE:
+You can decorate class or base class with @storage decorator as is in example
+bellow:
+
+# All storage types available that test can run with
+@storages(('nfs', 'iscsi')) # or @storages(('N/A',)) if it's not applicable
+@pytest.mark.usefixtures('storage') # this is not needed in function
+class BaseTestCase(object):
+    pass
+
+You can also see how it is used it in art/unittest_lib/common.py file.
+
+It is also possible to use some other pytest.mark which can be related to
+specific storage. (e.g.  for NFS storage you want to have different polarion ID
+than for Glusterfs storage). You can follow example below, to see how decorator
+should look like:
+
+@storages(
+    (
+        pytest.param(config.STORAGE_TYPE_NFS, marks=polarion("RHEVM-18289")),
+        pytest.param(
+            config.STORAGE_TYPE_GLUSTER, marks=polarion("RHEVM-21589")
+        ),
+    )
+)
+
+If you have specified class members 'storages' like it is in example bellow, it
+will also work, because this plugin supports backward compatibility:
+
+class TestClass(BaseTestCase):
+    # it has higher priority than decorator @storages(('nfs',))
+    storages = set(['nfs', 'iscsi'])
+
+It is possible overwrite also storages only for method inside class.
+
+
+class TestClass(BaseTestCase):
+    @storages((config.STORAGE_TYPE_NFS, config.STORAGE_TYPE_GLUSTER))
+    def test_storage(self, storage):
+        pass
 """
+
 import logging
-import inspect
-from _pytest.python import PyCollector as Collector
-from unittest import TestCase
 from art.test_handler import settings
 
+from _pytest.mark import ParameterSet
 
-__all__ = [
-    "pytest_artconf_ready",
-]
 
+__all__ = ["pytest_artconf_ready"]
 
 logger = logging.getLogger("pytest.art.matrix")
 
-
-class MatrixCollector(Collector):
-    def __init__(self, name, parent, apis, storages):
-        super(MatrixCollector, self).__init__(name, parent)
-        self._apis = apis
-        self._storages = storages
-
-    def collect(self):
-        obj = self.parent.module.__dict__[self.name]
-        objs = self._generate_api_and_storage_matrix(obj)
-        for new_obj in objs:
-            yield self.makeitem(new_obj.__name__, new_obj)
-
-    def makeitem(self, name, obj):
-        return self.ihook.pytest_pycollect_makeitem(
-            collector=self.parent, name=name, obj=obj,
-        )
-
-    def _create_test_class_obj(self, obj, new_name, api, storage=None):
-        '''
-        Description: this function multiplies test classes
-        :param obj: The class to be multiplied
-        :type obj: object
-        :param new_name: name to give for the new class
-        :type new_name: str
-        :param api: api to run with
-        :type api: str
-        :param storage: storage to use
-        :type storage: str
-        :return: test class
-        :rtype object
-        '''
-
-        new_dict = dict(obj.__dict__)
-        new_dict.update({'api': api, 'storage': storage, '__gen': True})
-        bases = [obj] + list(obj.__bases__)
-
-        new_obj = type(new_name, tuple(bases), new_dict)
-
-        self.parent.module.__dict__[new_name] = new_obj
-
-        return new_obj
-
-    def _generate_api_and_storage_matrix(self, obj):
-        objs = []
-
-        if not self._storages:
-            matrix = [{"api": x} for x in self._apis]
-        else:
-            matrix = [
-                {"api": x, "storage": y}
-                for x in self._apis for y in self._storages
-            ]
-
-        for option in matrix:
-            class_name_to_generate = [obj.__name__]
-            api = option["api"]
-            class_name_to_generate.append(api.upper())
-            storage = option["storage"] if "storage" in option else None
-            if storage:
-                class_name_to_generate.append(storage.upper())
-
-            new_name = self._generate_test_class_name(class_name_to_generate)
-
-            new_obj = self._create_test_class_obj(obj, new_name, api, storage)
-            objs.append(new_obj)
-
-        return objs
-
-    def _generate_test_class_name(self, name):
-        return '_'.join(name)
+NOT_APPLICABLE = 'N/A'
 
 
 class ARTMatrix(object):
     """
-    Implements test generator for ART library based on STORAGE x API
+    Parametrizes tests based on STORAGES
     """
+    storage_parameter_set = dict()
+
     def __init__(self):
         super(ARTMatrix, self).__init__()
-        self._storages_defined_in_conf = None
-        self._apis_defined_in_conf = None
-        self.not_applicable = 'N/A'
-        self._actual_api = None
-        self._system_api = None
+        self._storages_defined_in_conf = set(
+            settings.ART_CONFIG['RUN']['storages']
+        )
 
-    @property
-    def storages_defined_in_conf(self):
-        if self._storages_defined_in_conf is None:
-            try:
-                self._storages_defined_in_conf = set(
-                    settings.ART_CONFIG['RUN']['storages']
-                )
-            except KeyError:
-                pass
-        return self._storages_defined_in_conf
+    def get_storages_from_marks(self, marks):
+        """
+        Return set of storages from pytest mark storages
 
-    @property
-    def apis_defined_in_conf(self):
-        if self._apis_defined_in_conf is None:
-            try:
-                self._apis_defined_in_conf = set(
-                    settings.ART_CONFIG['RUN']['engines']
-                )
-            except KeyError:
-                pass
-        return self._apis_defined_in_conf
+        Args:
+            marks(list): list of pytest marks
 
-    def pytest_pycollect_makeitem(self, collector, name, obj):
-        if not inspect.isclass(obj):
-            return
-        if not issubclass(obj, TestCase):
-            return
-        if isinstance(collector, MatrixCollector):
-            return
-        if getattr(obj, '__gen', False):
-            return
+        Returns:
+            set: storages
+        """
+        reverse_marks = marks[:]
+        reverse_marks.reverse()
+        for mark in reverse_marks:
+            if mark.name == "storages":
+                storages = mark.args[0]
+                storage_list = []
+                for storage in storages:
+                    # this part is for ussage other pytest.mark for specific
+                    # storage type (e.g. polarion)
+                    if isinstance(storage, ParameterSet):
+                        _storage = storage.values[0]
+                        storage_list.append(_storage)
+                        self.storage_parameter_set[_storage] = storage
+                    else:
+                        storage_list.append(storage)
+                return set(storage_list)
+        return set()
 
-        # apis defined in TestClass
-        apis = getattr(obj, 'apis', set([]))
-        # storages defined in TestClass
-        storages = getattr(obj, 'storages', set([]))
+    def parametrize_storage_tests(self, metafunc):
+        """
+        This method will parametrize tests which are decorated with @storages
+        """
 
-        if self.not_applicable in storages:
-            # in case TestCase doesn't care about storage type
-            storages_to_use = None
-        elif not storages:
-            # in case storages is None (means: TestCase can run on any storage)
-            storages_to_use = self.storages_defined_in_conf
-        elif self.storages_defined_in_conf:
-            # TestCase can run on some storage types
-            storages_to_use = storages & self.storages_defined_in_conf
-        else:
-            # No storages provided via conf so use whatever set in TestCase
-            storages_to_use = storages
-
-        # intersection with apis in test class and ART_CONFIG['RUN']['engines']
-        apis_to_use = set(apis) & self.apis_defined_in_conf
-
-        # Return new collector
-        return MatrixCollector(name, collector, apis_to_use, storages_to_use)
-
-    def pytest_runtest_setup(self, item):
-        api = getattr(item.parent.obj, 'api', None)
-        if not isinstance(api, basestring):
-            return
-        if self._system_api is None:
-            self._system_api = settings.ART_CONFIG['RUN']['engine']
-        if settings.ART_CONFIG['RUN']['engine'] != api:
-            settings.ART_CONFIG['RUN']['engine'] = api
-            logger.info("The API backend switched to %s", api)
-
-        storage = getattr(item.parent.obj, 'storage', None)
-        if not isinstance(storage, basestring):
-            return
-        if settings.ART_CONFIG['RUN']['storage_type'] != storage:
-            settings.ART_CONFIG['RUN']['storage_type'] = storage
-            logger.info("The storage type switched to %s", storage)
-
-    def pytest_runtest_teardown(self, item, nextitem):
-        if self._system_api is None:
-            self._system_api = settings.ART_CONFIG['RUN']['engine']
-        elif settings.ART_CONFIG['RUN']['engine'] != self._system_api:
-            settings.ART_CONFIG['RUN']['engine'] = self._system_api
-            logger.info(
-                "The API backend switched to %s", self._system_api,
+        # Use markers from function if defined
+        storages = self.get_storages_from_marks(
+            getattr(metafunc.function, 'pytestmark', [])
+        )
+        if not storages:
+            # For backward compatibility we first check storages defined in
+            # class and if they are defined we use them.
+            storages = set(getattr(metafunc.cls, 'storages', []))
+        if not storages and hasattr(metafunc, 'cls'):
+            # Use markers from class if defined
+            storages = self.get_storages_from_marks(
+                getattr(metafunc.cls, 'pytestmark', [])
             )
+            if not storages:
+                return
+        if NOT_APPLICABLE in storages:
+            return
+        # We have to do intersection with storages defined in art config
+        storages = [
+            [storage] for storage in set(storages).intersection(
+                self._storages_defined_in_conf
+            )
+        ]
+        if storages:
+            if self.storage_parameter_set:
+                storages = [
+                    self.storage_parameter_set.get(storage[0], storage[0]) for
+                    storage in storages
+                ]
+            metafunc.parametrize(
+                ['storage'], storages, indirect=True, scope="class"
+            )
+            self.storage_parameter_set = dict()
 
-        if settings.ART_CONFIG['RUN']['storage_type']:
-            settings.ART_CONFIG['RUN']['storage_type'] = None
-            logger.info("The storage type reset to None")
+    def pytest_generate_tests(self, metafunc):
+        if 'storage' in metafunc.fixturenames:
+            self.parametrize_storage_tests(metafunc)
 
 
 def pytest_artconf_ready(config):
@@ -194,7 +145,7 @@ def pytest_artconf_ready(config):
     Register ARTMatrix plugin in case multiplier is enabled.
     """
     enabled = settings.ART_CONFIG.get(
-        'UNITTEST'
-    ).get('nose_test_multiplier_enabled')
+        'MATRIX'
+    ).get('enabled')
     if enabled:
         config.pluginmanager.register(ARTMatrix())

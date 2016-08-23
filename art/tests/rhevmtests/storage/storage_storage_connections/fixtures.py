@@ -128,7 +128,7 @@ def a0_initialize_variables_clean_storages(request):
 
 
 @pytest.fixture()
-def logout_all_iscsi_targets(request):
+def logout_all_iscsi_targets(request, storage):
     """
     Log out all iscsi targets
     """
@@ -139,7 +139,7 @@ def logout_all_iscsi_targets(request):
 
 
 @pytest.fixture()
-def remove_storage_domains(request):
+def remove_storage_domains(request, storage):
     """
     Remove storage domains
     """
@@ -158,7 +158,7 @@ def remove_storage_domains(request):
 
 
 @pytest.fixture()
-def remove_storage_connections(request):
+def remove_storage_connections(request, storage):
     """
     Remove storage_connection
     """
@@ -171,7 +171,7 @@ def remove_storage_connections(request):
 
 
 @pytest.fixture(scope='class')
-def add_storage_connections(request):
+def add_storage_connections(request, storage):
     """
     Add two storage connections
     """
@@ -198,7 +198,9 @@ def add_storage_connections(request):
 
 
 @pytest.fixture()
-def add_storage_domain_and_connections(request, add_two_storage_domains):
+def add_storage_domain_and_connections(
+    request, storage, add_two_storage_domains
+):
     """
     Add one storage domain and then another 2 storage domains that all use
     the same storage connection
@@ -236,7 +238,7 @@ def add_storage_domain_and_connections(request, add_two_storage_domains):
 
 
 @pytest.fixture(scope='class')
-def generate_random_storage_connections(request):
+def generate_random_storage_connections(request, storage):
     """
     Add multiple storage connections for testing
     """
@@ -262,7 +264,7 @@ def generate_random_storage_connections(request):
 
 
 @pytest.fixture()
-def initialize_variables_remove_leftover_domains(request):
+def initialize_variables_remove_leftover_domains(request, storage):
     """
     Initialize variables and remove leftover domains
     """
@@ -290,7 +292,7 @@ def initialize_variables_remove_leftover_domains(request):
 
 
 @pytest.fixture()
-def empty_dc(request):
+def empty_dc(request, storage):
     """
     Remove Data Center and logs out from all iscsi targets
     """
@@ -322,7 +324,7 @@ def empty_dc(request):
 
 
 @pytest.fixture()
-def add_two_storage_domains(request):
+def add_two_storage_domains(request, storage):
     """
     Add and attach two storage domains
     """
@@ -370,7 +372,7 @@ def add_two_storage_domains(request):
 
 
 @pytest.fixture()
-def add_new_storage_connection(request):
+def add_new_storage_connection(request, storage):
     """
     Add a new connection
     """
@@ -386,7 +388,7 @@ def add_new_storage_connection(request):
 
 
 @pytest.fixture()
-def add_nfs_domain_generate_vms(request):
+def add_nfs_domain_generate_vms(request, storage):
     """
     Add a nfs domain and vms
     """
@@ -482,7 +484,7 @@ def add_nfs_domain_generate_vms(request):
 
 
 @pytest.fixture()
-def remove_added_storages_and_clean_connections(request):
+def remove_added_storages_and_clean_connections(request, storage):
     """
     Remove added storage domains
     """
@@ -506,7 +508,7 @@ def remove_added_storages_and_clean_connections(request):
 
 
 @pytest.fixture(scope='class')
-def create_environment_logout_session(request):
+def create_environment_logout_session(request, storage):
     """
     Create environment and logout ISCSI sessions
     """
@@ -591,7 +593,7 @@ def create_environment_logout_session(request):
 
 
 @pytest.fixture()
-def activate_host(request):
+def activate_host(request, storage):
     """
     Activate host
     """
@@ -610,7 +612,7 @@ def activate_host(request):
 
 
 @pytest.fixture()
-def add_additional_iscsi_domain(request):
+def add_additional_iscsi_domain(request, storage):
     """
     Add an additional ISCSI domain
     """
@@ -662,7 +664,7 @@ def a1_initializer_module_nfs(request):
 
 
 @pytest.fixture()
-def add_storage_domain(request):
+def add_storage_domain(request, storage):
     """
     Add a storage domain for the test
     """

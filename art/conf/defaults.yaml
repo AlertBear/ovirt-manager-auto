@@ -3,8 +3,8 @@ HTTP_HEADERS: {}
 
 headers: {}
 
-UNITTEST:
-    nose_test_multiplier_enabled: True
+MATRIX:
+    enabled: True
 
 DEFAULT:
     RHEVM_BUILD: 4.2-XYZ

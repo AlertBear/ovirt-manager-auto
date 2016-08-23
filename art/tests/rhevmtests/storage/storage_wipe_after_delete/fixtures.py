@@ -8,7 +8,7 @@ from art.rhevm_api.tests_lib.low_level import (
 
 
 @pytest.fixture()
-def update_storage_domain_wipe_after_delete(request):
+def update_storage_domain_wipe_after_delete(request, storage):
     """
     Enable wipe_after_delete for storage domain
     """
@@ -20,7 +20,7 @@ def update_storage_domain_wipe_after_delete(request):
 
 
 @pytest.fixture()
-def add_disk_start_vm(request):
+def add_disk_start_vm(request, storage):
     """
     Add disk with wipe_after_delete and start the vm
     """

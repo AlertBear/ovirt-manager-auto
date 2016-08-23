@@ -10,7 +10,7 @@ import rhevmtests.storage.helpers as storage_helpers
 
 
 @pytest.fixture()
-def initialize_attributes(request):
+def initialize_attributes(request, storage):
     """
     Initialize attributes
     """
@@ -37,7 +37,7 @@ def flush_ip_table(request):
 
 
 @pytest.fixture()
-def add_vm_with_disk(request):
+def add_vm_with_disk(request, storage):
     """
     Create a new VM with a disk
     """
@@ -76,7 +76,7 @@ def add_vm_with_disk(request):
 
 
 @pytest.fixture()
-def wait_for_disks_status_ok(request):
+def wait_for_disks_status_ok(request, storage):
     """
     Wait until disk status is OK for self.disk_name
     """
@@ -91,7 +91,7 @@ def wait_for_disks_status_ok(request):
 
 
 @pytest.fixture()
-def create_multiple_vms(request):
+def create_multiple_vms(request, storage):
     """
     Create multiple VMs
     """

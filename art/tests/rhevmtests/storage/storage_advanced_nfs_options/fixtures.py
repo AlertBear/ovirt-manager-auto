@@ -22,7 +22,7 @@ DC_NAME = config.DATA_CENTER_NAME
 
 
 @pytest.fixture()
-def initializer_class(request):
+def initializer_class(request, storage):
     """
     Removes all storage domain created during the test
     """
@@ -72,7 +72,7 @@ def initializer_class(request):
 
 
 @pytest.fixture()
-def create_and_remove_sd(request):
+def create_and_remove_sd(request, storage):
     """
     Creates storage domains and removes it and it which will be later imported
     """

@@ -13,7 +13,7 @@ from art.unittest_lib import testflow
 
 
 @pytest.fixture(scope='class')
-def initialize_params(request):
+def initialize_params(request, storage):
     """
     Initialize disk parameters
     """
@@ -24,7 +24,7 @@ def initialize_params(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_template_name(request):
+def initialize_template_name(request, storage):
     """
     Initialize template_name parameter
     """
@@ -36,7 +36,7 @@ def initialize_template_name(request):
 
 
 @pytest.fixture()
-def create_test_vms(request, remove_vms):
+def create_test_vms(request, storage, remove_vms):
     """
     Create one vm with thin provisioned disk and other one with
     preallocated disk
@@ -82,7 +82,7 @@ def create_test_vms(request, remove_vms):
 
 
 @pytest.fixture(scope='class')
-def remove_vm_setup(request):
+def remove_vm_setup(request, storage):
     """
     Remove VM
     """
@@ -96,7 +96,7 @@ def remove_vm_setup(request):
 
 
 @pytest.fixture()
-def remove_test_templates(request):
+def remove_test_templates(request, storage):
     """
     Remove VM
     """
@@ -110,14 +110,14 @@ def remove_test_templates(request):
                     "Failed to remove template '%s'", template
                 )
     request.addfinalizer(finalizer)
-    self.template_thin = self.template_thin % self.polarion_test_id
+    self.template_thin = self.template_thin_name % self.polarion_test_id
     self.template_preallocated = (
-        self.template_preallocated % self.polarion_test_id
+        self.template_preallocated_name % self.polarion_test_id
     )
 
 
 @pytest.fixture(scope='class')
-def create_second_vm(request):
+def create_second_vm(request, storage):
     """
     Create VM and initialize parameters
     """
@@ -148,7 +148,7 @@ def create_second_vm(request):
 
 
 @pytest.fixture(scope='class')
-def create_disks_to_vm(request):
+def create_disks_to_vm(request, storage):
     """
     Create 4 disks and attach them to the VM
     """
@@ -178,7 +178,7 @@ def create_disks_to_vm(request):
 
 
 @pytest.fixture(scope='class')
-def create_disks_to_vm_by_interface(request):
+def create_disks_to_vm_by_interface(request, storage):
     """
     Create a VM and as many disks as interfaces to test and attach them
     to the VM

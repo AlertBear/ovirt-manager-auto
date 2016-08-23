@@ -12,7 +12,7 @@ from rhevmtests.storage import helpers as storage_helpers
 
 
 @pytest.fixture(scope='class')
-def deactivate_hsms(request):
+def deactivate_hsms(request, storage):
     """
     Deactivate all HSMs
     """
@@ -40,7 +40,7 @@ def deactivate_hsms(request):
 
 
 @pytest.fixture(scope='class')
-def initialize_object_names(request):
+def initialize_object_names(request, storage):
     """
     Initialize storage_domain and VM names
     """
@@ -55,7 +55,7 @@ def initialize_object_names(request):
 
 
 @pytest.fixture(scope='class')
-def wait_for_hosts_to_be_up(request):
+def wait_for_hosts_to_be_up(request, storage):
     """
     Wait for all host to be in 'up' state
     """

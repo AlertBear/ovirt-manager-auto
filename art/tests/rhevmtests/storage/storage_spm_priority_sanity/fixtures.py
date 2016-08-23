@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def wait_for_spm(request):
+def wait_for_spm(request, storage):
     """
     Wait for SPM to be elected
     """
@@ -29,7 +29,7 @@ def wait_for_spm(request):
 
 
 @pytest.fixture()
-def remove_host(request):
+def remove_host(request, storage):
     """
     Remove host from the environment
     """
@@ -48,7 +48,7 @@ def remove_host(request):
 
 
 @pytest.fixture()
-def activate_hosts(request):
+def activate_hosts(request, storage):
     """
     Activate given hosts
     """
@@ -68,7 +68,7 @@ def activate_hosts(request):
 
 
 @pytest.fixture()
-def deactivate_hsm_hosts(request, activate_hosts):
+def deactivate_hsm_hosts(request, storage, activate_hosts):
     """
     Deactivate HSM hosts
     """
@@ -86,7 +86,7 @@ def deactivate_hsm_hosts(request, activate_hosts):
 
 
 @pytest.fixture()
-def initialize_hosts_params(request, activate_hosts):
+def initialize_hosts_params(request, storage, activate_hosts):
     """
     Initialize hosts params
     """
@@ -118,7 +118,7 @@ def initialize_hosts_params(request, activate_hosts):
 
 
 @pytest.fixture()
-def activate_old_master_domain(request):
+def activate_old_master_domain(request, storage):
     """
     Activate old master storage domain
     """
@@ -142,7 +142,7 @@ def activate_old_master_domain(request):
 
 
 @pytest.fixture()
-def set_different_host_priorities(request):
+def set_different_host_priorities(request, storage):
     """
     Set different priorities to HSM hosts and SPM host
     """
@@ -179,7 +179,7 @@ def check_hosts_status(request, activate_hosts):
 
 
 @pytest.fixture()
-def init_host_and_sd_params(request):
+def init_host_and_sd_params(request, storage):
     """
     Initialize host and storage domain for test
     """
