@@ -973,31 +973,6 @@ def get_vnic_profile_from_network(
     return None
 
 
-def check_network_on_nic(network, host, nic):
-    """
-    Checks if network resides on Host NIC
-
-    Args:
-        network (str): Network name to check
-        host (str): Host name
-        nic (str): NIC name on Host
-
-    Returns:
-        bool: True if network resides on Host NIC, otherwise False
-    """
-    logger.info("Check if network %s is resides on NIC %s", network, nic)
-    try:
-        nic_obj = ll.hosts.get_host_nic(host, nic).get_network()
-        net_obj_id = NET_API.find(network).get_id()
-    except (apis_exceptions.EntityNotFound, AttributeError) as e:
-        logger.error(e)
-        return False
-    if nic_obj is not None:
-        return nic_obj.get_id() == net_obj_id
-    logger.error("Network %s doesn't exist on NIC %s", network, nic)
-    return False
-
-
 def create_label(label):
     """
     Create label object with provided id
@@ -1034,70 +1009,65 @@ def add_label(**kwargs):
         bool: True if label was added properly, False otherwise
 
     Example:
-        add_label(
-                networks=['vlan0'], host_nic_dict={
-                    'silver-vdsb.qa.lab.tlv.redhat.com': ['eth3']
-                        }, label='vl1'
-                    )
+        label_dict = {
+            'label_1': {
+                'host': 'host_mixed_1',
+                'nic': 'enp4s0',
+                'networks': ['net_1']
+                }
+            }
+        add_label(**label_dict)
     """
-    datacenter = kwargs.get("datacenter")
-    cluster = kwargs.get("cluster")
-    networks = kwargs.get("networks")
-    host_nic_dict = kwargs.get("host_nic_dict")
-    label = kwargs.get("label")
-    status = True
-    if isinstance(label, basestring):
-        label_obj = create_label(label)
-    else:
-        label_obj = label
-    try:
-        if networks:
-            for network in networks:
-                entity_obj = find_network(
-                    network, data_center=datacenter, cluster=cluster
+    for label, param_dict in kwargs.iteritems():
+        if isinstance(label, basestring):
+            label_obj = create_label(label)
+        else:
+            label_obj = label
+        datacenter = param_dict.get("datacenter")
+        cluster = param_dict.get("cluster")
+        networks = param_dict.get("networks", list())
+        nic = param_dict.get("nic", list())
+        host = param_dict.get("host")
+        for network in networks:
+            entity_obj = find_network(
+                network, data_center=datacenter, cluster=cluster
+            )
+            labels_href = NET_API.getElemFromLink(
+                entity_obj, "networklabels", "networklabel", get_href=True
+            )
+            logger.info(
+                "Add label %s to network %s", label_obj.id, network
+            )
+            if not LABEL_API.create(
+                entity=label_obj, positive=True, collection=labels_href,
+                coll_elm_name="network_label"
+            )[1]:
+                logger.error(
+                    "Can't add label %s to the network %s", label_obj.id,
+                    network
                 )
-                labels_href = NET_API.getElemFromLink(
-                    entity_obj, "networklabels", "networklabel", get_href=True
-                )
-                logger.info(
-                    "Add label %s to network %s", label_obj.id, network
-                )
-                if not LABEL_API.create(
-                    entity=label_obj, positive=True, collection=labels_href,
-                    coll_elm_name="network_label"
-                )[1]:
-                    logger.error(
-                        "Can't add label %s to the network %s", label_obj.id,
-                        network
-                    )
-                    status = False
-        if host_nic_dict:
-            for host in host_nic_dict:
-                for nic in host_nic_dict.get(host):
-                    entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
-                    labels_href = HOST_NICS_API.getElemFromLink(
-                        entity_obj, "networklabels", "networklabel",
-                        get_href=True
-                    )
-                    logger.info(
-                        "Add label %s to the NIC %s on Host %s",
-                        label_obj.id, nic, host
-                    )
-                    if not LABEL_API.create(
-                        entity=label_obj, positive=True,
-                        collection=labels_href, coll_elm_name="network_label"
-                    )[1]:
-                        logger.error(
-                            "Can't add label %s to the NIC %s on Host %s",
-                            label_obj.id, nic, host
-                        )
-                        status = False
+                return False
 
-    except apis_exceptions.EntityNotFound as e:
-        logger.error(e)
-        return False
-
-    return status
+        if nic:
+            entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
+            labels_href = HOST_NICS_API.getElemFromLink(
+                entity_obj, "networklabels", "networklabel",
+                get_href=True
+            )
+            logger.info(
+                "Add label %s to the NIC %s on Host %s",
+                label_obj.id, nic, host
+            )
+            if not LABEL_API.create(
+                entity=label_obj, positive=True,
+                collection=labels_href, coll_elm_name="network_label"
+            )[1]:
+                logger.error(
+                    "Can't add label %s to the NIC %s on Host %s",
+                    label_obj.id, nic, host
+                )
+                return False
+    return True
 
 
 def get_label_objects(**kwargs):

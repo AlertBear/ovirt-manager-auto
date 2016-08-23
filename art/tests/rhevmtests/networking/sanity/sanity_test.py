@@ -16,7 +16,6 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib.network as lib_network
 import config as sanity_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
@@ -932,26 +931,20 @@ class TestSanity14(TestSanityCaseBase):
         Check that untagged VM and VLAN networks are attached to the Host NIC
         via labels
         """
-        vlan_nic = lib_network.vlan_int_name(
-            conf.HOST_0_NICS[1], sanity_conf.VLAN_IDS[12]
-        )
         testflow.step(
             "Check that untagged VM and VLAN networks are attached to the "
             "Host NIC via labels"
         )
-        assert ll_networks.add_label(
-            label=self.lb_1,
-            host_nic_dict={
-                conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]
+        label_dict = {
+            self.lb_1: {
+                "host": conf.HOST_0_NAME,
+                "nic": conf.HOST_0_NICS[1],
             }
-        )
+        }
+        assert ll_networks.add_label(**label_dict)
         for net in (self.net_1_nic, self.net_2_nic_vlan):
-            host_nic = (
-                vlan_nic if net == self.net_2_nic_vlan else
-                conf.HOST_0_NICS[1]
-            )
-            assert ll_networks.check_network_on_nic(
-                network=net, host=conf.HOST_0_NAME, nic=host_nic
+            assert hl_host_network.check_network_on_nic(
+                network=net, host=conf.HOST_0_NAME, nic=conf.HOST_0_NICS[1]
             )
 
     @polarion("RHEVM3-13894")
@@ -960,24 +953,20 @@ class TestSanity14(TestSanityCaseBase):
         Check that the untagged VM and VLAN networks are attached to BOND via
         labels
         """
-        vlan_bond = lib_network.vlan_int_name(
-            self.bond, sanity_conf.VLAN_IDS[13]
-        )
         testflow.step(
             "Check that the untagged VM and VLAN networks are attached to "
             "BOND via labels"
         )
-        assert ll_networks.add_label(
-            label=self.lb_2, host_nic_dict={
-                conf.HOST_0_NAME: [self.bond]
+        label_dict = {
+            self.lb_2: {
+                "host": conf.HOST_0_NAME,
+                "nic": self.bond,
             }
-        )
+        }
+        assert ll_networks.add_label(**label_dict)
         for net in (self.net_3_bond, self.net_4_bond_vlan):
-            bond = (
-                vlan_bond if net == self.net_4_bond_vlan else self.bond
-            )
-            assert ll_networks.check_network_on_nic(
-                network=net, host=conf.HOST_0_NAME, nic=bond
+            assert hl_host_network.check_network_on_nic(
+                network=net, host=conf.HOST_0_NAME, nic=self.bond
             )
 
 

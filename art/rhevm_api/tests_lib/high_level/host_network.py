@@ -512,3 +512,25 @@ def get_networks_unsync_reason(host_name, networks=None):
             report_name_dict[report_name] = reported_dict
         res[net_name] = report_name_dict
     return res
+
+
+def check_network_on_nic(network, host, nic):
+    """
+    Checks if network resides on Host NIC via NIC attachments
+
+    Args:
+        network (str): Network name to check
+        host (str): Host name
+        nic (str): NIC name on Host
+
+    Returns:
+        bool: True if network resides on Host NIC, otherwise False
+    """
+    logger.info("Check if network %s is resides on NIC %s", network, nic)
+    networks = get_attached_networks_names_from_host_nic(
+        host_name=host, nic=nic
+    )
+    if network not in networks:
+        logger.error("Network %s doesn't exist on NIC %s", network, nic)
+        return False
+    return True

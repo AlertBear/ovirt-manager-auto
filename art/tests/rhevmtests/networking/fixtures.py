@@ -157,5 +157,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
                         "boot_protocol", "static"
                     )
                     sn_dict["add"][net]["ip"] = ip_dict
+
         testflow.setup("Create %s via setup_network on host %s", sn_dict, host)
         assert hl_host_network.setup_networks(host_name=host, **sn_dict)
+        sn_dict["add"] = dict()

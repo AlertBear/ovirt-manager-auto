@@ -6,18 +6,13 @@ config file for labels test
 """
 import rhevmtests.helpers as global_helper
 
-NUM_DUMMYS = 8
-DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 VLAN_IDS = [str(i) for i in xrange(2, 20)]
-
 LABEL_NAME = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=12, prefix="label"
 )
-
 NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=10, prefix="label"
+    num_of_cases=20, num_of_objects=10, prefix="label_net"
 )
-
 NET_DICT = {
     NETS[1][0]: {
         "vlan_id": VLAN_IDS[1],
@@ -63,7 +58,7 @@ NET_DICT = {
         "required": "false"
     },
     NETS[5][4]: {
-        "required": "false"
+        "required": "false",
     },
     NETS[5][5]: {
         "required": "false",
@@ -114,7 +109,6 @@ NET_DICT = {
         "usages": ""
     },
 }
-
 
 local_dict = {
     NETS[7][0]: {

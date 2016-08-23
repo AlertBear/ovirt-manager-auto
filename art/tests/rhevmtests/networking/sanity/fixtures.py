@@ -279,21 +279,28 @@ def add_labels(request):
     """
     NetworkFixtures()
     labels = request.node.cls.labels
-    bond = request.node.cls.bond
 
     def fin():
         """
         Remove labels
         """
-        ll_networks.remove_label(
-            host_nic_dict={
-                conf.HOST_0_NAME: [bond]
+        remove_dict = {
+            "remove": {
+                "labels": labels
             }
+        }
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **remove_dict
         )
     request.addfinalizer(fin)
 
     for lb, nets in labels.iteritems():
-        assert ll_networks.add_label(label=lb, networks=nets)
+        label_dict = {
+            lb: {
+                "networks": nets
+            }
+        }
+        assert ll_networks.add_label(**label_dict)
 
 
 @pytest.fixture(scope="class")

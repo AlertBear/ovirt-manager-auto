@@ -685,42 +685,6 @@ def get_management_network_host_nic(host, cluster):
     return None
 
 
-def create_and_attach_label(label, networks=list(), host_nic_dict=None):
-    """
-    Add network label to the network in the list provided or/and to
-    the NIC on the host
-
-    Args:
-        label (str): Label name.
-        networks (list): List of networks.
-        host_nic_dict (dict): Dictionary with hosts as keys and a list of host
-            interfaces as a value for that key
-
-    Examples:
-         create_and_attach_label(
-             label='label_1', networks=['net_1'],
-             host_nic_dict={
-            'silver-vdsb.qa.lab.tlv.redhat.com': ['eth3']
-            }
-         )
-
-    Returns:
-        bool: True if label was added properly, False otherwise
-    """
-    if networks:
-        if not ll_networks.add_label(label=label, networks=networks):
-            return False
-
-    if host_nic_dict:
-        if not ll_networks.add_label(
-            label=label, host_nic_dict=host_nic_dict
-
-        ):
-            return False
-
-    return True
-
-
 def remove_unneeded_vnic_profiles(dc_name):
     """
     Remove vNIC profiles which aren't attached to the management network.

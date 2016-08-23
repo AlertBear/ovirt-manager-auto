@@ -451,7 +451,12 @@ def add_labels(request):
     net_list = request.node.cls.net_list
     label_list = request.node.cls.label_list
     for net, label in zip(net_list[2:], label_list):
-        assert ll_networks.add_label(networks=[net], label=label)
+        label_dict = {
+            label: {
+                "networks": [net]
+            }
+        }
+        assert ll_networks.add_label(**label_dict)
 
 
 @pytest.fixture(scope="class")

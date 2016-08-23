@@ -530,25 +530,27 @@ class TestIOTest10(NetworkTest):
         attached label
         """
         special_char_labels = ["asd?f", "dfg/gd"]
-
         testflow.step(
             "Try to attach label with incorrect format %s to the network %s",
             special_char_labels, self.net_2
         )
         for label in special_char_labels:
-            self.assertFalse(
-                ll_networks.add_label(label=label, networks=[self.net_2])
-            )
-
+            label_dict = {
+                label: {
+                    "networks": [self.net_2]
+                }
+            }
+            assert not ll_networks.add_label(**label_dict)
         testflow.step(
             "Try to assign additional label %s to the network %s"
             " with attached label %s", self.label_2, self.net_1, self.label_1
         )
-        self.assertFalse(
-            ll_networks.add_label(
-                label=self.label_2, networks=[self.net_1]
-            )
-        )
+        label_dict = {
+            self.label_2: {
+                "networks": [self.net_1]
+            }
+        }
+        assert not ll_networks.add_label(**label_dict)
 
     @polarion("RHEVM3-14807")
     def test_label_non_restrict(self):
@@ -559,16 +561,15 @@ class TestIOTest10(NetworkTest):
         attached to the Host interface
         """
         long_label = "a" * 50
-
         testflow.step(
             "Attach label with 50 characters to a network %s", self.net_1
         )
-        self.assertTrue(
-            ll_networks.add_label(
-                label=long_label, networks=[self.net_1]
-            )
-        )
-
+        label_dict = {
+            long_label: {
+                "networks": [self.net_1]
+            }
+        }
+        assert ll_networks.add_label(**label_dict)
         testflow.step(
             "Attach 10 labels %s to the interface on the Host %s when one of "
             "those networks is attached to the network and check that "
@@ -576,11 +577,10 @@ class TestIOTest10(NetworkTest):
             io_conf.LABEL_NAME[10][1:], conf.HOST_0_NAME, conf.HOST_0_NICS[1]
         )
         for label in io_conf.LABEL_NAME[10][1:]:
-            self.assertTrue(
-                ll_networks.add_label(
-                    label=label,
-                    host_nic_dict={
-                        conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]
-                    }
-                )
-            )
+            label_dict = {
+                label: {
+                    "host": conf.HOST_0_NAME,
+                    "nic": conf.HOST_0_NICS[1]
+                }
+            }
+            assert ll_networks.add_label(**label_dict)
