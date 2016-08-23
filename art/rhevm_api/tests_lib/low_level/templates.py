@@ -827,7 +827,7 @@ def export_domain_template_exist(
     )
     if bool(template_obj) != positive:
         logger.error(
-            "Try to find template %s, version: %s in export domain: %s %."
+            "Try to find template %s, version: %s in export domain: %s. "
             "Expected: %s, got: %s",
             template, version, export_domain, positive, bool(template_obj)
         )
