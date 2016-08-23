@@ -64,6 +64,10 @@ def _prepare_connection_object(**kwargs):
         conn.set_path(kwargs.pop('path', None))
         conn.set_mount_options(kwargs.pop('mount_options', None))
         conn.set_vfs_type(kwargs.pop('vfs_type', None))
+    elif type_ == ENUMS['storage_type_gluster']:
+        conn.set_address(kwargs.pop('address', None))
+        conn.set_path(kwargs.pop('path', None))
+        conn.set_vfs_type(kwargs.pop('vfs_type', None))
     elif type_ == ENUMS['storage_type_local']:
         conn.set_path(kwargs.pop('path', None))
     else:

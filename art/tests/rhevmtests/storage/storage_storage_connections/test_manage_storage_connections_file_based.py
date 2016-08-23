@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as TestCase
 from rhevmtests import helpers as rhevm_helpers
 
@@ -213,7 +213,8 @@ class TestCaseNFSAndGlusterFS(TestCasePosix):
         new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
         return ll_sd_conn.update_connection(
             self.conn, address=new_address, path=new_path, type=self.storage,
-            nfs_version='V3', host=self.host
+            nfs_version='V3', host=self.host,
+            vfs_type=self.additional_params['vfs_type']
         )[1]
 
 
@@ -324,14 +325,13 @@ class TestCaseISO(TestCasePosix):
 
 
 @attr(tier=2)
-@bz({'1340164': {}})
 class TestCase5250(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = NFS in opts['storages']
-    storages = set([NFS])
+    __test__ = NFS in opts['storages'] or GLUSTER in opts['storages']
+    storages = set([NFS, GLUSTER])
     polarion_test_case = '5250'
     sd_name = "sd_%s" % polarion_test_case
 
@@ -351,8 +351,8 @@ class TestCase5251(TestCasePosixFS):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = NFS in opts['storages']
-    storages = set([NFS])
+    __test__ = NFS in opts['storages'] or GLUSTER in opts['storages']
+    storages = set([NFS, GLUSTER])
     polarion_test_case = '5251'
     sd_name = "sd_%s" % polarion_test_case
 
@@ -411,8 +411,8 @@ class TestCase5255(TestCasePosixFS):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = NFS in opts['storages']
-    storages = set([NFS])
+    __test__ = NFS in opts['storages'] or GLUSTER in opts['storages']
+    storages = set([NFS, GLUSTER])
     polarion_test_case = '5255'
     sd_name = "sd_%s" % polarion_test_case
     conn = None
@@ -433,8 +433,8 @@ class TestCase5254(TestCaseNFSAndGlusterFS):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = NFS in opts['storages']
-    storages = set([NFS])
+    __test__ = NFS in opts['storages'] or GLUSTER in opts['storages']
+    storages = set([NFS, GLUSTER])
     polarion_test_case = '5254'
     sd_name = "sd_%s" % polarion_test_case
     conn = None
@@ -455,8 +455,8 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = NFS in opts['storages']
-    storages = set([NFS])
+    __test__ = NFS in opts['storages'] or GLUSTER in opts['storages']
+    storages = set([NFS, GLUSTER])
     polarion_test_case = '5253'
     sd_name = "sd_%s" % polarion_test_case
 
@@ -486,7 +486,8 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
 
         result = ll_sd_conn.update_connection(
             conn_id=self.conn, address=new_address, path=new_path,
-            type=self.storage, host=self.host
+            type=self.storage, host=self.host,
+            vfs_type=self.additional_params['vfs_type']
         )[1]
         assert result, "Failed to update storage domain's (%s) connection" % (
             self.sd_name
@@ -517,8 +518,9 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
         ll_hosts.waitForHostsStates(True, self.host)
 
         result = ll_sd_conn.update_connection(
-            self.conn, address=new_address, path=new_path, type=self.storage,
-            host=self.host
+            conn_id=self.conn, address=new_address, path=new_path,
+            type=self.storage, host=self.host,
+            vfs_type=self.additional_params['vfs_type']
         )[1]
         assert result, "Failed to update storage domain's '%s' connection" % (
             self.sd_name
