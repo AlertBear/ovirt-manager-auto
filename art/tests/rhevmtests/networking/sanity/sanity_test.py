@@ -23,6 +23,7 @@ import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
 import rhevmtests.networking.network_filter.config as nf_conf
+import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
@@ -792,8 +793,8 @@ class TestSanity11(TestSanityCaseBase):
     """
     __test__ = True
     vm = conf.VM_0
-    num_queues = conf.NUM_QUEUES[0]
-    prop_queue = conf.PROP_QUEUES[0]
+    num_queues = multiple_queue_conf.NUM_QUEUES[0]
+    prop_queue = multiple_queue_conf.PROP_QUEUES[0]
     dc = conf.DC_0
     mgmt_bridge = conf.MGMT_BRIDGE
 

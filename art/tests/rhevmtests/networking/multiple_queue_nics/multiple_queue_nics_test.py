@@ -1,5 +1,11 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
-multiple_queue_nics
+Tests for Multiple Queue NICs feature
+
+The following elements will be used for the tests:
+VM from template, vNIC, vNIC profile
 """
 
 import pytest
@@ -8,9 +14,12 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, testflow, attr
-from fixtures import update_vnic_profile, run_vm, create_vm
+from fixtures import (
+    update_vnic_profile, run_vm, create_vm, attach_vnic_profile_to_vm
+)
 
 
 @attr(tier=2)
@@ -27,19 +36,20 @@ class TestMultipleQueueNics01(NetworkTest):
     3) Check that queues survive VM migration
     """
     __test__ = True
+
     vm_name = conf.VM_0
-    num_queues_0 = conf.NUM_QUEUES[0]
-    num_queues_1 = conf.NUM_QUEUES[1]
-    prop_queues = conf.PROP_QUEUES[1]
+    num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
+    num_queues_1 = multiple_queue_conf.NUM_QUEUES[1]
+    prop_queues = multiple_queue_conf.PROP_QUEUES[1]
 
     @polarion("RHEVM3-4310")
     def test_01_multiple_queue_nics_update(self):
         """
-        Update queues while VM is running.
-        Make sure that number of queues does not change on running VM.
-        stop VM.
-        start VM.
-        make sure number of queues changed on new boot.
+        1.  Update queues while VM is running.
+        2.  Make sure that number of queues does not change on running VM.
+        3.  Stop VM.
+        4.  Start VM.
+        5.  Make sure number of queues changed on new boot.
         """
         testflow.step(
             "Update custom properties on %s to %s", conf.MGMT_BRIDGE,
@@ -70,7 +80,7 @@ class TestMultipleQueueNics01(NetworkTest):
     @polarion("RHEVM3-4312")
     def test_02_multiple_queue_nics(self):
         """
-        hibernate the VM and check the queue still configured on qemu
+        Hibernate the VM and check the queue still configured on qemu
         """
         testflow.step("Suspend %s", self.vm_name)
         assert ll_vms.suspendVm(positive=True, vm=self.vm_name)
@@ -109,9 +119,11 @@ class TestMultipleQueueNics01(NetworkTest):
 
 
 @attr(tier=2)
+@pytest.mark.incremental
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
     create_vm.__name__,
+    attach_vnic_profile_to_vm.__name__,
     run_vm.__name__
 )
 class TestMultipleQueueNics02(NetworkTest):
@@ -119,8 +131,20 @@ class TestMultipleQueueNics02(NetworkTest):
     Check queue exists for VM from template
     """
     __test__ = True
-    vm_name = conf.VM_FROM_TEMPLATE
-    num_queues_0 = conf.NUM_QUEUES[0]
+
+    vm_name = multiple_queue_conf.VM_FROM_TEMPLATE
+    vm_nic = multiple_queue_conf.VM_NIC
+    num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
+
+    @bz({"1359520": {}})
+    def test_hot_unplug_with_custom_queues(self):
+        """
+        Check hot-unplug vNIC with custom queues property
+        """
+        testflow.step("Check hot-unplugging vNIC with queues custom property")
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm_name, nic=self.vm_nic, plugged="false"
+        )
 
     @polarion("RHEVM3-4313")
     def test_multiple_queue_nics(self):

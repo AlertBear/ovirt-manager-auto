@@ -3,7 +3,6 @@ Consolidated network config module
 """
 
 from collections import OrderedDict
-from random import randint
 
 import art.test_handler.exceptions as exceptions
 import rhevmtests.helpers as global_helper
@@ -92,11 +91,6 @@ VM_IP_LIST = []
 # https://engineering.redhat.com/rt/Ticket/Display.html?id=336074
 ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
 DST_HOST_IP = "10.35.147.62"
-
-# Queues parameters
-NUM_QUEUES = [5, 6]
-PROP_QUEUES = ["=".join(["queues", str(i)]) for i in NUM_QUEUES]
-VM_FROM_TEMPLATE = "vm_from_queues_template"
 
 # Big MAC pool range
 BMPR_VM_NAME = "BigRangeMacPool_VM1"
