@@ -9,7 +9,9 @@ from art.unittest_lib import attr, VirtTest, testflow
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from rhevmtests.virt.reg_vms.fixtures import add_vm_fixture
+from rhevmtests.virt.reg_vms.fixtures import (
+    add_vm_fixture, start_stop_fixture
+)
 import config
 
 logger = logging.getLogger("update_vm_cases")
@@ -22,7 +24,7 @@ class UpdateRunningVm(VirtTest):
     """
     __test__ = True
     vm_name = 'update_running_vm_test'
-    add_disk = False
+    add_disk = True
     affinity = config.ENUMS['vm_affinity_user_migratable']
 
     def _check_vm_parameter(
@@ -54,7 +56,9 @@ class UpdateRunningVm(VirtTest):
         )
 
     @polarion("RHEVM3-6295")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
+    @pytest.mark.usefixtures(
+        add_vm_fixture.__name__, start_stop_fixture.__name__
+    )
     def test_update_fields_applied_immediately(self):
         """
         Expect the fields be applied immediately.
@@ -87,20 +91,22 @@ class UpdateRunningVm(VirtTest):
         )
 
     @polarion("RHEVM3-6295")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
+    @pytest.mark.usefixtures(
+        add_vm_fixture.__name__, start_stop_fixture.__name__
+    )
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_update_field_applied_after_reboot_case_1(self):
         """
         Expect the fields be after next boot.
         VM fields:
-        memory, memory_guaranteed, display_monitors,
+        memory, memory_guaranteed, monitors,
         placement_affinity, placement_host
         """
 
         parameters = {
             'memory': config.TWO_GB,
             'memory_guaranteed': config.TWO_GB,
-            'display_monitors': 2,
+            'monitors': 2,
             'placement_affinity': self.affinity,
             'placement_host': config.HOSTS[0],
         }
@@ -139,7 +145,7 @@ class UpdateRunningVm(VirtTest):
         )
 
         self._check_vm_parameter(
-            'display_monitors',
+            'monitors',
             str(vm_obj.get_display().get_monitors()),
-            str(parameters['display_monitors'])
+            str(parameters['monitors'])
         )

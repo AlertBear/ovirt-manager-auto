@@ -57,7 +57,7 @@ def basic_teardown_fixture(request):
     vm_name = request.cls.vm_name
 
     def fin():
-        assert ll_vms.safely_remove_vms([vm_name])
+        ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin)
 
@@ -73,11 +73,34 @@ def add_vm_fixture(request):
     add_disk = request.cls.add_disk
 
     def fin():
-        assert ll_vms.safely_remove_vms([vm_name])
+        ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin)
 
     assert virt_helper.create_base_vm(vm_name=vm_name, add_disk=add_disk)
+
+
+@pytest.fixture()
+def start_stop_fixture(request):
+    """
+    Start vm
+    """
+
+    vm_name = request.cls.vm_name
+
+    def fin():
+        """
+        Stop vm
+        """
+        ll_vms.stop_vms_safely(vms_list=[vm_name])
+
+    request.addfinalizer(fin)
+
+    ll_vms.start_vms(
+        vm_list=[vm_name],
+        wait_for_ip=False,
+        wait_for_status=config.VM_UP
+    )
 
 
 @pytest.fixture()
@@ -165,7 +188,7 @@ def add_vm_from_template_fixture(request):
     vm_parameters = request.cls.vm_parameters
 
     def fin():
-        assert ll_vms.safely_remove_vms([vm_name])
+        ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin)
 
@@ -187,7 +210,7 @@ def vm_display_fixture(request):
     display_types = request.cls.display_types
 
     def fin():
-        assert ll_vms.safely_remove_vms(vm_names)
+        ll_vms.safely_remove_vms(vm_names)
 
     request.addfinalizer(fin)
 

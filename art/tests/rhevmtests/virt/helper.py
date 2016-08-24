@@ -597,10 +597,12 @@ def create_base_vm(
             storagedomain=storage_domain,
             type=disk_type,
             format=config.DISK_FORMAT_COW,
-            interface=config.INTERFACE_VIRTIO
+            interface=config.INTERFACE_VIRTIO,
+            bootable=True
         ):
             logger.error("Failed to add disk to vm %s" % vm_name)
             return False
+
     if vm_parameters:
         if not ll_vms.updateVm(
             positive=True, vm=vm_name, **vm_parameters

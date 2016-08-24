@@ -387,7 +387,7 @@ class UpdateVm(VirtTest):
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
-                display_monitors=2
+                monitors=2
             )
         )
         testflow.step("Positive: Update vm number of monitors to 1")
@@ -395,7 +395,7 @@ class UpdateVm(VirtTest):
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
-                display_monitors=1
+                monitors=1
             )
         )
 
@@ -422,7 +422,7 @@ class UpdateVm(VirtTest):
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
-                display_monitors=2
+                monitors=2
             )
         )
 

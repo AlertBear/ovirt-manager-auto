@@ -244,7 +244,7 @@ class AddVm(VirtTest):
         testflow.step("Negative: Add vm with wrong number of displays")
         vm_parameters = self.vm_parameters.copy()
         vm_parameters['name'] = self.vm_name
-        vm_parameters['display_monitors'] = 36
+        vm_parameters['monitors'] = 36
         self.assertFalse(
             ll_vms.addVm(True, **vm_parameters)
         )
