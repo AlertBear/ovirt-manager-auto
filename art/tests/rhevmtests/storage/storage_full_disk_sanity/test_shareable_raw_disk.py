@@ -18,6 +18,9 @@ from art.test_handler.settings import opts
 from rhevmtests.storage.fixtures import (
     add_disk, attach_disk, create_snapshot, create_vm, delete_disks,
 )
+from rhevmtests.storage.storage_full_disk_sanity.fixtures import (
+    create_second_vm,
+)
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -291,7 +294,6 @@ class TestCase16685(TestCase):
     # Gluster doesn't support shareable disks
     __test__ = NOT_GLUSTER
     storages = STORAGES
-    polarion_test_case = '16685'
     installation = False
     add_disk_params = {
         'format': config.RAW_DISK,
@@ -306,6 +308,40 @@ class TestCase16685(TestCase):
         assert ll_vms.updateDisk(
             True, vmName=self.vm_name, alias=self.disk_name, shareable=True
         ), "Failed to update disk sharable flag to 'True'"
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disk.__name__,
+    attach_disk.__name__
+)
+class TestCase16783(TestCase):
+    """
+    Update disk to shareable when the VM is powering up - Should fail
+    """
+    # Gluster doesn't support shareable disks
+    __test__ = NOT_GLUSTER
+    storages = STORAGES
+    installation = False
+    add_disk_params = {
+        'format': config.RAW_DISK,
+        'sparse': False,
+    }
+
+    @polarion("RHEVM3-16783")
+    def test_update_disk_to_shared_when_vm_is_powering_up(self):
+        """
+        Update non sharable disk to be shareable when the VM is powering up
+        """
+        assert ll_vms.startVm(True, self.vm_name)
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=self.disk_name, shareable=True
+        ), (
+            "Succeeded to update disk's %s sharable flag to 'True' when the "
+            "VM is powering up" % self.disk_name
+        )
+        ll_vms.stop_vms_safely([self.vm_name])
 
 
 @attr(tier=2)
@@ -361,3 +397,38 @@ class TestCase16740(TestCase):
         ), "Succeeded to attach non shared disk to second VM %s" % (
             self.vm_name
         )
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    create_second_vm.__name__,
+    add_disk.__name__,
+    attach_disk.__name__,
+)
+class TestCase16781(TestCase):
+    """
+    Update sharable disk of 2 VMs to be non shareable - should fail
+    """
+    __test__ = True
+    installation = False
+    add_disk_params = {
+        'shareable': True,
+        'format': config.RAW_DISK,
+        'sparse': False,
+    }
+
+    @polarion("RHEVM3-16781")
+    def test_update_shared_disk_of_2_vms_to_non_shared(self):
+        """
+        Update sharable disk of 2 VMs to be non shareable
+        """
+        assert ll_disks.attachDisk(
+            True, alias=self.disk_name, vm_name=self.second_vm_name
+        ), "Failed to attach shared disk to second VM %s" % (
+            self.second_vm_name
+        )
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=self.disk_name, shareable=False
+        ), ("Succeeded to update disk that is shared between 2 VMs to be non "
+            "shareable")

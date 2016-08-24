@@ -50,6 +50,7 @@ CL_API = get_api('cluster', 'clusters')
 VM_API = get_api('vm', 'vms')
 NIC_API = get_api('nic', 'nics')
 DISKS_API = get_api('disk', 'disks')
+DISK_ATTACHMENTS_API = get_api('disk_attachment', 'diskattachments')
 WATCHDOG_API = get_api('watchdog', 'watchdogs')
 CLUSTER_API = get_api('cluster', 'clusters')
 
@@ -1165,29 +1166,34 @@ def check_template_existence(template_name):
     return True
 
 
-def copy_template_disks(positive, template, disks, storagedomain, async=True):
+def copy_template_disks(template_name, storage_domains, wait=True):
     """
-    Description: Copies disks of given template to target storage domain
-    Author: ratamir
-    Parameters:
-    * template - name of the template
-    * disks - list of disks separated by comma
-    * storagedomain - target storage domain name
-    * async -
+    Copies a template disks to target storage domains
+
+    Arguments:
+        template_name (str): Template name
+        storage_domains (list): List of target storage domains
+        wait (bool): True in case we should wait for the copy to complete,
+            False otherwise
     """
-    disks_names = split(disks)
-    storage_domain = SD_API.find(storagedomain)
-    all_disks = getTemplateDisks(template)
-    relevant_disks = [disk for disk in all_disks if
-                      (disk.get_name() in disks_names)]
-    for disk in relevant_disks:
-        if not TEMPLATE_API.syncAction(
-                disk, action='copy', positive=positive, async=async,
-                storage_domain=storage_domain
-        ):
-            raise exceptions.TemplateException(
-                "Copying of disk %s of template %s to storage domain %s "
-                "failed." % (disk.name, template, storagedomain))
+    template_disks = [
+        x.get_name() for x in getTemplateDisks(template_name)
+    ]
+    disk_sd = ll_disks.get_disk_storage_domain_name(
+        template_disks[0], template_name=template_name
+    )
+    for sd in storage_domains:
+        if sd not in disk_sd:
+            for disk in template_disks:
+                wait_for_template_disks_state(template_name)
+                logging.info(
+                    "Copy disk: %s of template %s to storage domain: %s",
+                    disk, template_name, sd
+                )
+                copyTemplateDisk(template_name, disk, sd)
+
+            if wait:
+                wait_for_template_disks_state(template_name)
 
 
 def get_template_from_cluster(cluster):
@@ -1346,3 +1352,44 @@ def get_template_obj_from_export_domain(
             return template_object
     logger.error(log_error)
     return None
+
+
+def get_template_disk_by_id(template_name, disk_id):
+    """
+    Get Disk object from template by disk ID
+
+    Arguments:
+        template_name (str): Name of template we want disk from
+        disk_id (str): Disk ID
+    Returns:
+        Disk object: Disk object with given ID, or None
+    """
+    disks = getTemplateDisks(template_name)
+    found = [disk for disk in disks if disk.get_id() == disk_id]
+    return found[0] if found else None
+
+
+def remove_template_disk_from_storagedomain(
+        positive, template_name, storage_domain, disk_id, force=False
+):
+    """
+    Remove a copy of template disk from storage domain
+
+    Arguments:
+        positive (bool): Expected result
+        template_name (str): Name of the template which it's disk needs
+        to be removed
+        storage_domain (str): Name of the storage domain
+        disk_id (str): Disk ID
+        force (bool): True in case we should remove the disk forcibly
+
+    Returns:
+        bool: True if disk removed successfully, False otherwise
+    """
+    disk_obj = get_template_disk_by_id(template_name, disk_id)
+    operations = ['storage_domain=%s' % storage_domain]
+    if force:
+        operations.append('force=true')
+    return DISK_ATTACHMENTS_API.delete(
+        disk_obj, positive, operations=operations
+    )

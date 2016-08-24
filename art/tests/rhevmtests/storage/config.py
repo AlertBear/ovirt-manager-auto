@@ -259,6 +259,12 @@ disk_args = {
     'alias': '',
     'description': '',
 }
+attach_disk_params = {
+    'active': True,
+    'read_only': False,
+    'interface': VIRTIO,
+    'bootable': False,
+}
 create_vm_args = {
     'positive': True,
     'vmName': '',

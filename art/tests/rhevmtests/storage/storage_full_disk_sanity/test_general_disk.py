@@ -4,18 +4,23 @@ Polarion plan: https://polarion.engineering.redhat.com/polarion/#/project/
 RHEVM3/wiki/Storage_3_6/3_6_Storage_Disk_General
 """
 import logging
+
 import pytest
+
 import config
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms,
+    templates as ll_template,
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
+import rhevmtests.helpers as helpers
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
-    add_disk, create_snapshot, create_vm, delete_disks,
-    poweroff_vm, preview_snapshot, undo_snapshot
+    add_disk, attach_disk, create_snapshot, create_vm, create_template,
+    deactivate_domain, delete_disks, initialize_storage_domains, poweroff_vm,
+    preview_snapshot, undo_snapshot
 )
 from rhevmtests.storage.storage_full_disk_sanity.fixtures import (
     create_second_vm, poweroff_vm_and_wait_for_stateless_to_remove
@@ -35,7 +40,7 @@ class NegativeAttachDetach(TestCase):
     disk_size = 20 * config.GB
     installation = False
 
-    @polarion("RHEVM3-16713")
+    @polarion("RHEVM3-16776")
     def test_attach_locked_disk_to_vm(self):
         """
         Attach disk to VM when the disk is in locked state
@@ -58,7 +63,7 @@ class NegativeAttachDetach(TestCase):
         )
         self.disks_to_remove.append(self.disk_name)
 
-    @polarion("RHEVM3-16714")
+    @polarion("RHEVM3-16775")
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_detach_disk_from_powering_up_vm(self):
         """
@@ -262,3 +267,218 @@ class TestCase16743(TestCase):
             "Succeeded to detach snapshot's disk %s from VM %s" %
             (snapshot_disk.get_alias(), self.vm_name)
         )
+
+
+@attr(tier=2)
+class TestCase16774(TestCase):
+    """
+    Remove OVF store disk - should fail
+    """
+    __test__ = True
+
+    @polarion("RHEVM3-16774")
+    def test_remove_ovf_disk(self):
+        """
+        Remove OVF disk - should fail
+        """
+        ovf_disk = None
+        all_disks = ll_disks.get_all_disks()
+        for disk in all_disks:
+            if disk.get_alias() == config.OVF_DISK_ALIAS:
+                ovf_disk = disk
+                break
+
+        assert ll_disks.deleteDisk(False, disk_id=ovf_disk.get_id()), (
+            "Succeeded to delete OVF disk %s" % (ovf_disk.get_alias())
+        )
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    add_disk.__name__,
+)
+class TestCase16777(TestCase):
+    """
+    Remove locked disk - should fail
+    """
+    __test__ = True
+
+    @polarion("RHEVM3-16777")
+    @helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
+    def test_remove_locked_disk(self):
+        """
+        Try to remove locked disk - should fail
+        """
+        target_sd = ll_disks.get_other_storage_domain(self.disk_name)
+        assert ll_disks.move_disk(
+            disk_name=self.disk_name, target_domain=target_sd, wait=False
+        ), (
+            "Failed move disk %s to storage domain %s" %
+            (self.disk_name, target_sd)
+        )
+        assert ll_disks.deleteDisk(False, self.disk_name), (
+            "Succeeded to delete locked disk %s" % self.disk_name
+        )
+
+
+@bz({'1370075': {}})
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    create_template.__name__,
+)
+class TestCase16780(TestCase):
+    """
+    Remove template's disk of locked template - should fail
+    """
+    __test__ = True
+
+    @polarion("RHEVM3-16780")
+    def test_delete_disk_of_locked_template(self):
+        """
+        Try Remove template's disk of locked template - should fail
+        """
+        template_disk = ll_template.getTemplateDisks(self.template_name)[0]
+        ll_disks.copy_template_disks(
+            self.template_name, [self.storage_domain[1]], False
+        )
+        assert ll_template.remove_template_disk_from_storagedomain(
+            False, self.template_name, self.storage_domain,
+            disk_id=template_disk.get_id(),
+        ), (
+            "Succeeded to delete disk %s of locked template %s" % (
+                template_disk.get_alias(), self.template_name
+            )
+        )
+
+
+@bz({'1370075': {}})
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    create_template.__name__,
+)
+class TestCase16782(TestCase):
+    """
+    Remove template's disk
+    """
+    __test__ = True
+
+    @polarion("RHEVM3-16782")
+    def test_delete_disk_of_template(self):
+        """
+        Remove template's disk
+        """
+        template_disk = ll_template.getTemplateDisks(self.template_name)[0]
+        assert ll_template.copy_template_disks(
+            self.template_name, [self.storage_domain[1]]
+        ), "Failed to copy template's %s disk" % self.template_name
+        assert ll_template.remove_template_disk_from_storagedomain(
+            False, self.template_name, self.storage_domain[1],
+            disk_id=template_disk.get_id(),
+        ), ("Failed to delete disk %s of template %s from storage domain %s"
+            % (template_disk.get_alias(), self.template_name,
+               self.storage_domain))
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disk.__name__,
+    attach_disk.__name__
+)
+class TestCase16784(TestCase):
+    """
+    Update disk size of read only disk - should fail
+    """
+    __test__ = True
+    installation = False
+    update_attach_params = {
+        'read_only': True,
+    }
+
+    @polarion("RHEVM3-16784")
+    def test_update_disk_size_of_RO_disk(self):
+        """
+        Update disk size of read only disk
+        """
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=self.disk_name,
+            provisioned_size=2 * config.GB
+        ), "Failed to update disk size of read-only disk"
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    create_snapshot.__name__,
+)
+class TestCase16785(TestCase):
+    """
+    Update snapshot's disk size
+    """
+    __test__ = True
+    installation = False
+
+    @polarion("RHEVM3-16785")
+    def test_resize_snapshot_disk(self):
+        """
+        Resize a snapshot's disk
+        """
+        snapshot_disk = ll_vms.get_snapshot_disks(
+            self.vm_name, self.snapshot_description
+        )[0]
+        assert ll_vms.updateDisk(
+            True, vmName=self.vm_name, alias=snapshot_disk.get_alias(),
+            provisioned_size=10 * config.GB
+        ), "Failed to update snapshot's disk size of VM" % self.vm_name
+        ll_vms.waitForDisksStat(self.vm_name)
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+)
+class TestCase16786(TestCase):
+    """
+    Update disk size to smaller size (6GB -> 1 GB)
+    """
+    __test__ = True
+    installation = False
+
+    @polarion("RHEVM3-16786")
+    def test_update_disk_size_to_smaller_size(self):
+        """
+        Update disk size to smaller size - should fail
+        """
+        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=vm_disk,
+            provisioned_size=1 * config.GB
+        ), "Succeeded to update disk size from 6G to 1GB"
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    create_vm.__name__,
+    deactivate_domain.__name__,
+)
+class TestCase16787(TestCase):
+    """
+    Update disk size of disk on inactive storage domain
+    """
+    __test__ = True
+    installation = False
+    sd_to_deactivate_index = 0
+
+    @polarion("RHEVM3-16787")
+    def test_update_disk_size_to_smaller_size(self):
+        """
+        Update disk size of disk on inactive storage domain - should fail
+        """
+        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=vm_disk,
+            provisioned_size=10 * config.GB
+        ), "Succeeded to update disk size on storage domain in maintenance"

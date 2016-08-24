@@ -40,7 +40,9 @@ def create_vm(request):
                 self.vm_name
             )
             self.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
         self.teardown_exception()
+
     request.addfinalizer(finalizer)
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
@@ -89,27 +91,23 @@ def add_disk(request):
                 self.test_failed = True
         self.teardown_exception()
     request.addfinalizer(finalizer)
+    disk_params = config.disk_args.copy()
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-    if not hasattr(self, 'disk_size'):
-        self.disk_size = config.DISK_SIZE
-    if not hasattr(self, 'add_disk_params'):
-        self.add_disk_params = {
-            'format': config.COW_DISK,
-            'sparse': True,
-        }
+    disk_params['storagedomain'] = self.storage_domain
+    if hasattr(self, 'add_disk_params'):
+        disk_params.update(self.add_disk_params)
+    if hasattr(self, 'disk_size'):
+        disk_params['provisioned_size'] = self.disk_size
 
     self.disk_name = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_DISK
     )
+    disk_params['alias'] = self.disk_name
 
-    if not ll_disks.addDisk(
-        True, provisioned_size=self.disk_size,
-        storagedomain=self.storage_domain, alias=self.disk_name,
-        **self.add_disk_params
-    ):
+    if not ll_disks.addDisk(True, **disk_params):
         raise exceptions.DiskException(
             "Failed to create disk %s" % self.disk_name
         )
@@ -122,9 +120,12 @@ def attach_disk(request):
     Attach a disk to VM
     """
     self = request.node.cls
+    attach_kwargs = config.attach_disk_params.copy()
+    if hasattr(self, 'update_attach_params'):
+        attach_kwargs.update(self.update_attach_params)
 
     if not ll_disks.attachDisk(
-        True, alias=self.disk_name, vm_name=self.vm_name
+        True, alias=self.disk_name, vm_name=self.vm_name, **attach_kwargs
     ):
         raise exceptions.DiskException(
             "Failed to attach disk %s to VM %s" %
@@ -304,8 +305,12 @@ def deactivate_domain(request):
             )
 
     request.addfinalizer(finalizer)
-    if not hasattr(self, 'sd_to_deactivate'):
-        self.sd_to_deactivate = self.storage_domain_1
+    if not hasattr(self, 'sd_to_deactivate_index'):
+        self.sd_to_deactivate = self.storage_domains[1]
+    else:
+        self.sd_to_deactivate = self.storage_domains[
+            self.sd_to_deactivate_index
+        ]
     wait_for_tasks(
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )

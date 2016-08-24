@@ -404,8 +404,7 @@ class TestCase5993(BaseTestCase):
                 "Failed to create template '%s'" % self.test_templates[1]
             )
         ll_templates.copy_template_disks(
-            True, self.test_templates[1], "%s_Disk1" % self.base_vm,
-            self.second_domain
+            self.test_templates[1], self.second_domain
         )
         if not ll_templates.waitForTemplatesStates(
             names=",".join(self.test_templates)
