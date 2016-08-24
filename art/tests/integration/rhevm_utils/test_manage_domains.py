@@ -13,6 +13,7 @@ from utilities import sshConnection
 from base import RHEVMUtilsTestCase
 
 import unittest_conf
+import pytest
 
 NAME = 'manage-domains'
 TABLE_NAME = 'vdc_options'
@@ -116,11 +117,14 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     def test_manage_domains_add_missing_options(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user=self.domainUser)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=22)
+        with pytest.raises(errors.MissingDmainError):
+            self.ut.autoTest(rc=22)
         self.ut(action='add', domain=self.domainName, provider=self.provider)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=1)
+        with pytest.raises(errors.MissingDmainError):
+            self.ut.autoTest(rc=1)
         self.ut(action='add', domain=self.domainName)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=1)
+        with pytest.raises(errors.MissingDmainError):
+            self.ut.autoTest(rc=1)
         self.ut(action='add')
         self.ut.autoTest(rc=1)
 
@@ -129,7 +133,8 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user=self.domainUser, password_file=self.emptyFile)
         assert 'cannot be empty' in self.ut.out
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=22)
+        with pytest.raises(errors.MissingDmainError):
+            self.ut.autoTest(rc=22)
 
         # -interactive cannot be tested now since manage-domains cannot read
         # from a pipe
@@ -303,7 +308,8 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
     def test_time_skew(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user=self.domainUser, password_file=self.passwordFile)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=8)
+        with pytest.raises(errors.MissingDmainError):
+            self.ut.autoTest(rc=8)
 
 
 class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
@@ -430,7 +436,8 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user='chucknorris', password_file=self.passwordFile)
         assert 'Authentication Failed' in self.ut.out
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
+        with pytest.raises(errors.MissingDmainError):
+            self.ut.autoTest()
 
     @polarion("RHEVM3-11368")
     def test_manage_domains_nonexistent_domain(self):
@@ -444,8 +451,9 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
         self.ut(action='add', domain=self.domainName,
                 provider='~!@#$%^*_+=-[]', user=self.domainUser,
                 password_file=self.passwordFile)
-        assert "Invalid argument value. Details: Invalid provider" \
-               in self.ut.out
+        assert "Invalid argument value. Details: Invalid provider" in (
+            self.ut.out
+        )
 
 
 class ManageDomainsBug1037894(ManageDomainsTestCaseBase):

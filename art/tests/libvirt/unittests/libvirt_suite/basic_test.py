@@ -233,28 +233,28 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         sd_state = config.SD_STATE_ACTIVE
 
         LOGGER.info("Waiting for master domain to become active")
-        self.assertTrue(
-            ll_sds.waitForStorageDomainStatus(
-                True, dataCenterName=dc_name,
-                storageDomainName=sd_name,
-                expectedStatus=sd_state,
-                timeOut=1800))
+        assert ll_sds.waitForStorageDomainStatus(
+            True, dataCenterName=dc_name,
+            storageDomainName=sd_name,
+            expectedStatus=sd_state,
+            timeOut=1800
+        )
 
         LOGGER.info("Waiting until DC is up")
-        self.assertTrue(ll_dcs.waitForDataCenterState(dc_name))
+        assert ll_dcs.waitForDataCenterState(dc_name)
 
         LOGGER.info("Validating that host is up")
         host_obj = HOST_API.find(self.host)
-        self.assertTrue(host_obj.get_status() == ht_state)
+        assert host_obj.get_status() == ht_state
 
         LOGGER.info("Validate master domain %s is UP", sd_name)
         sd_obj = ll_sds.getDCStorage(dc_name, sd_name)
-        self.assertTrue(sd_obj.get_status() == sd_state)
+        assert sd_obj.get_status() == sd_state
 
         LOGGER.info("Validate that DC is UP")
         dc_obj = DC_API.find(dc_name)
         LOGGER.info("DC is %s", dc_obj.get_status())
-        self.assertTrue(dc_obj.get_status() == dc_state)
+        assert dc_obj.get_status() == dc_state
 
     def test_disconnect_host_from_storage(self):
         """
@@ -279,10 +279,8 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         LOGGER.info("Master domain ip found : %s", self.sd_address)
 
         # Block connection from host to storage domain
-        self.assertTrue(
-            common.block_storage(
-                self.host, self.ht_user, self.ht_pwd, self.sd_address
-            )
+        assert common.block_storage(
+            self.host, self.ht_user, self.ht_pwd, self.sd_address
         )
         # Sleep 60s then stop VM
         time.sleep(60)
@@ -291,10 +289,8 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         # Wait for VM down
         ll_vms.waitForVMState(self.vm_name, 'down')
         # Unblock connection
-        self.assertTrue(
-            common.unblock_storage(
-                self.host, self.ht_user, self.ht_pwd, self.sd_address
-            )
+        assert common.unblock_storage(
+            self.host, self.ht_user, self.ht_pwd, self.sd_address
         )
         # Wait for DC, SD and host recovery
         self.wait_for_dc_host_sd_up()
@@ -322,10 +318,8 @@ class TestKillVMWithMultipleSnapshots(BaseTestCase):
             self.vm_name, iter_num
         )
         # Kill vms
-        self.assertTrue(
-            common.kill_all_vms(
-                config.FIRST_HOST, config.VDS_USER, config.VDS_PASSWORD[0]
-            )
+        assert common.kill_all_vms(
+            config.FIRST_HOST, config.VDS_USER, config.VDS_PASSWORD[0]
         )
         # Wait for vm down
         ll_vms.waitForVMState(self.vm_name, 'down')
@@ -348,7 +342,7 @@ class TestMigrateVMWithMultipleSnapshots(BaseTestCase):
         """
         snapshots = common.get_vm_snapshots(self.vm_name, False)
         for snapshot in snapshots:
-            self.assertTrue(snapshot.snapshot_status == self.snap_state)
+            assert snapshot.snapshot_status == self.snap_state
 
     def test_live_migration_vm_with_multiple_snapshots(self):
         """
@@ -373,10 +367,8 @@ class TestMigrateVMWithMultipleSnapshots(BaseTestCase):
 
         # Migrate VM more than once
         iter_num = 2
-        self.assertTrue(
-            common.migrate_vm_more_than_once(
-                self.vm_name, orig_host, ht_nic, src, dst, iter_num
-            )
+        assert common.migrate_vm_more_than_once(
+            self.vm_name, orig_host, ht_nic, src, dst, iter_num
         )
         # Check VM snapshots state
         self.check_snapshots_state()
@@ -431,10 +423,8 @@ class TestMigrationWithInactiveISODomain(BaseTestCase):
 
         # Migrate VM more than once
         iter_num = 2
-        self.assertTrue(
-            common.migrate_vm_more_than_once(
-                self.vm_name, orig_host, ht_nic, src, dst, iter_num
-            )
+        assert common.migrate_vm_more_than_once(
+            self.vm_name, orig_host, ht_nic, src, dst, iter_num
         )
 
 
@@ -481,15 +471,11 @@ class TestLiveStorageMigration(BaseTestCase):
         self.disk_name = '%s%s' % (self.vm_name, '_Disk1')
 
         # live storage migrate vm's disk
-        self.assertTrue(
-            common.move_vm_disk(
-                self.vm_name, self.disk_name, self.sd_name2
-            )
+        assert common.move_vm_disk(
+            self.vm_name, self.disk_name, self.sd_name2
         )
 
         # migrate back
-        self.assertTrue(
-            common.move_vm_disk(
-                self.vm_name, self.disk_name, self.sd_name1
-            )
+        assert common.move_vm_disk(
+            self.vm_name, self.disk_name, self.sd_name1
         )

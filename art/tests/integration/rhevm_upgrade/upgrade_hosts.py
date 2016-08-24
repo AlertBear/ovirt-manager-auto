@@ -49,13 +49,10 @@ class UpgradeHosts(TestCase):
         FIXME: rewrite this method once there is support to forcibly check
                available upgrade of host
         """
-        self.assertTrue(
-            test_utils.set_engine_properties(
-                config.ENGINE,
-                ['HostPackagesUpdateTimeInHours=0.01'],
-            ),
-            'Failed to change HostPackagesUpdateTimeInHours config'
-        )
+        assert test_utils.set_engine_properties(
+            config.ENGINE,
+            ['HostPackagesUpdateTimeInHours=0.01'],
+        ), 'Failed to change HostPackagesUpdateTimeInHours config'
         # Wait until upgrade is available to engine
         for available in TimeoutingSampler(
             timeout=120,
@@ -68,10 +65,9 @@ class UpgradeHosts(TestCase):
 
     def _upgrade(self, host, image=None):
         logger.info("Upgrading host '%s'", host.ip)
-        self.assertTrue(
-            hosts.upgrade_host(host.ip, image),
-            "Upgrade of host '%s' failed" % host.ip
-        )
+        assert hosts.upgrade_host(
+            host.ip, image
+        ), "Upgrade of host '%s' failed" % host.ip
 
     def _upgrade_rhel_host(self, host):
         logger.info("Adding new repos to host '%s' ", host.ip)
@@ -102,10 +98,7 @@ class UpgradeHosts(TestCase):
             '|', 'tail', '-n', '1',
             '|', 'awk', '{print \$1}',
         ])
-        self.assertTrue(
-            not rc,
-            "Failed to obtain latest rhev-h info: %s" % err
-        )
+        assert not rc, "Failed to obtain latest rhev-h info: %s" % err
         rhevh = rhevh.strip()
         if not rhevh.endswith(config.EL7_SUFFIX):
             rhevh = '%s.%s' % (rhevh, config.EL7_SUFFIX)
@@ -113,15 +106,13 @@ class UpgradeHosts(TestCase):
         rc, _, err = config.ENGINE_HOST.executor().run_cmd([
             'brew', 'download-build', '-q', '--arch', 'noarch', rhevh,
         ])
-        self.assertTrue(
-            not rc,
-            "Failed to download latest rhev-h package '%s': %s" % (rhevh, err)
+        assert not rc, "Failed to download latest rhev-h package '%s': %s" % (
+            rhevh, err
         )
         rhevh_rpm = '%s.noarch.rpm' % rhevh
-        self.assertTrue(
-            config.ENGINE_HOST.package_manager.install(rhevh_rpm),
-            "Failed to install latest rhev-h '%s': %s" % (rhevh_rpm, err)
-        )
+        assert config.ENGINE_HOST.package_manager.install(
+            rhevh_rpm
+        ), "Failed to install latest rhev-h '%s': %s" % (rhevh_rpm, err)
 
         self._check_for_upgrade(host)
         self._upgrade(
@@ -153,19 +144,13 @@ class UpgradeHosts(TestCase):
     @polarion('RHEVM3-14441')
     def test_zz_upgrade_cluster_dc_version(self):
         """ Change cluster/dc compatibility version to current """
-        self.assertTrue(
-            clusters.updateCluster(
-                True,
-                config.CLUSTER_NAME,
-                version=config.TO_VERSION,
-            ),
-            "Failed to upgrade compatibility version of cluster"
-        )
-        self.assertTrue(
-            datacenters.update_datacenter(
-                True,
-                config.DC_NAME,
-                version=config.TO_VERSION
-            ),
-            "Failed to upgrade compatibility version of datacenter"
-        )
+        assert clusters.updateCluster(
+            True,
+            config.CLUSTER_NAME,
+            version=config.TO_VERSION,
+        ), "Failed to upgrade compatibility version of cluster"
+        assert datacenters.update_datacenter(
+            True,
+            config.DC_NAME,
+            version=config.TO_VERSION
+        ), "Failed to upgrade compatibility version of datacenter"

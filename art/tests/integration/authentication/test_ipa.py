@@ -75,11 +75,11 @@ class IPACase93880(TestCase):
         msg_t = "%s user can't log in."
 
         loginAsUser(config.IPA_EXPIRED_PSW_NAME, True)
-        self.assertFalse(connectionTest(), msg_f % 'Expired')
+        assert not connectionTest(), msg_f % 'Expired'
         LOGGER.info(msg_t % 'Expired')
 
         loginAsUser(config.IPA_DISABLED_NAME, True)
-        self.assertFalse(connectionTest(), msg_f % 'Disabled')
+        assert not connectionTest(), msg_f % 'Disabled'
         LOGGER.info(msg_t % 'Disabled')
 
     def tearDown(self):
@@ -117,12 +117,12 @@ class IPACase93879(TestCase):
         """ Authenticate users """
         # Login as regular user
         loginAsUser(config.IPA_REGULAR_NAME, True)
-        self.assertTrue(connectionTest(), "Regular user can't log in.")
+        assert connectionTest(), "Regular user can't log in."
         LOGGER.info("Regular user can log in.")
 
         # Login as user from group
         loginAsUser(config.IPA_WITH_GROUP_NAME, True)
-        self.assertTrue(connectionTest(), "User from group can't log in.")
+        assert connectionTest(), "User from group can't log in."
         LOGGER.info("User from group can log in.")
 
     def tearDown(self):
@@ -160,7 +160,7 @@ class IPACase93881(TestCase):
 
         for format in [config.REGULAR_FORMAT1, config.REGULAR_FORMAT2]:
             users.loginAsUser(format, None, config.USER_PASSWORD, True)
-            self.assertTrue(connectionTest(), msg_f % format)
+            assert connectionTest(), msg_f % format
             LOGGER.info(msg_t % format)
 
     def tearDown(self):
@@ -185,8 +185,9 @@ class IPACase109871(TestCase):
     def userWithManyGroups(self):
         """ User with many groups """
         loginAsUser(config.IPA_WITH_MANY_GROUPS_NAME, True)
-        self.assertTrue(
-            connectionTest(), "User with many groups can't connect to system")
+        assert connectionTest(), (
+            "User with many groups can't connect to system"
+        )
 
     def tearDown(self):
         loginAsAdmin()
@@ -211,14 +212,15 @@ class IPACase109146(TestCase):
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
         loginAsUser(config.IPA_WITH_GROUP_NAME, False)
-        self.assertTrue(connectionTest(), "User from group can't login.")
+        assert connectionTest(), "User from group can't login."
         LOGGER.info("User from group can login.")
         loginAsAdmin()
-        self.assertTrue(users.removeUser(True, user=config.IPA_WITH_GROUP_NAME,
-                        domain=config.IPA_DOMAIN))
-        self.assertTrue(
-            users.groupExists(True, config.IPA_GROUP),
-            "Group was removed with user")
+        assert users.removeUser(
+            True, user=config.IPA_WITH_GROUP_NAME, domain=config.IPA_DOMAIN
+        )
+        assert users.groupExists(
+            True, config.IPA_GROUP
+        ), "Group was removed with user"
         LOGGER.info("Group persisted after user from group was removed.")
 
     def tearDown(self):
@@ -247,17 +249,17 @@ class IPACase93882(TestCase):
                                                      link_name='groups',
                                                      attr='group',
                                                      get_href=False)
-        self.assertTrue(len(groups_in_domain) > 0)
+        assert len(groups_in_domain) > 0
 
         users_in_domain = util.getElemFromLink(domain_obj, link_name='users',
                                                attr='user', get_href=False)
-        self.assertTrue(len(users_in_domain) > 0)
+        assert len(users_in_domain) > 0
         name = "{0}={1}".format('name', 'uzivatel')
         user = util.query(name, href=query)[0]
-        self.assertTrue(user.get_name().lower() == 'uzivatel')
+        assert user.get_name().lower() == 'uzivatel'
         lastname = "{0}={1}".format('lastname', 'bezskupiny')
         user = util.query(lastname, href=query)[0]
-        self.assertTrue(user.get_last_name().lower() == 'bezskupiny')
+        assert user.get_last_name().lower() == 'bezskupiny'
         LOGGER.info("Searching for users and groups works correctly.")
 
 
@@ -279,11 +281,11 @@ class IPACase93883(TestCase):
     def setUp(self):
         addUser(config.IPA_TESTING_USER_NAME)
         self.user = self._find_user_in_directory(config.IPA_TESTING_USER_NAME)
-        self.assertTrue(
-            runMachineCommand(True, ip=config.IPA_DOMAIN.lower(),
-                              cmd=KINIT % config.USER_PASSWORD,
-                              user=config.HOSTS_USER,
-                              password=config.IPA_PASSWORD)[0])
+        assert runMachineCommand(
+            True, ip=config.IPA_DOMAIN.lower(),
+            cmd=KINIT % config.USER_PASSWORD, user=config.HOSTS_USER,
+            password=config.IPA_PASSWORD
+        )[0]
 
     @istest
     @polarion("RHEVM3-8956")
@@ -293,15 +295,14 @@ class IPACase93883(TestCase):
         new_name = 'new_name'
         new_last_name = 'new_last_name'
 
-        self.assertTrue(
-            runMachineCommand(True, ip=config.IPA_DOMAIN.lower(),
-                              cmd=UPDATE_USER % (config.IPA_TESTING_USER_NAME,
-                                                 new_last_name, new_name),
-                              user=config.HOSTS_USER,
-                              password=config.IPA_PASSWORD)[0])
+        assert runMachineCommand(
+            True, ip=config.IPA_DOMAIN.lower(), cmd=UPDATE_USER %
+            (config.IPA_TESTING_USER_NAME, new_last_name, new_name),
+            user=config.HOSTS_USER, password=config.IPA_PASSWORD
+        )[0]
         user = self._find_user_in_directory(new_name)
-        self.assertTrue(user.get_name() == new_name)
-        self.assertTrue(user.get_last_name() == new_last_name)
+        assert user.get_name() == new_name
+        assert user.get_last_name() == new_last_name
 
     def tearDown(self):
         runMachineCommand(True, ip=config.IPA_DOMAIN.lower(),

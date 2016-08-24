@@ -82,7 +82,8 @@ class ActiveDirectory(TestCase):
         assert users.addGroup(True, config.GROUP(cls.domain))
         assert mla.addClusterPermissionsToGroup(
             True, config.GROUP(cls.domain),
-            config.MAIN_CLUSTER_NAME)
+            config.MAIN_CLUSTER_NAME
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -111,7 +112,7 @@ class ActiveDirectory(TestCase):
     def disabledAccount(self):
         """ Disabled account """
         self._loginAsUser(config.DISABLED_ACC(self.domain))
-        self.assertFalse(connectionTest(), "User with disabled acc can login.")
+        assert not connectionTest(), "User with disabled acc can login."
         LOGGER.info("User with disabled acc can't login.")
 
     @istest
@@ -120,7 +121,7 @@ class ActiveDirectory(TestCase):
     def expiredPassword(self):
         """ Expired password """
         self._loginAsUser(config.EXPIRED_PSW_NAME(self.domain))
-        self.assertFalse(connectionTest(), "User with expired psw can login.")
+        assert not connectionTest(), "User with expired psw can login."
         LOGGER.info("User with expired password can't login.")
 
     @istest
@@ -129,7 +130,7 @@ class ActiveDirectory(TestCase):
     def expiredUser(self):
         """ Expired user """
         self._loginAsUser(config.EXPIRED_ACC_NAME(self.domain))
-        self.assertFalse(connectionTest(), "Expired user can login.")
+        assert not connectionTest(), "Expired user can login."
         LOGGER.info("Expired user can't login.")
 
     @istest
@@ -139,7 +140,7 @@ class ActiveDirectory(TestCase):
         """ Test if user from group can login """
         user_name = config.USER_FROM_GROUP(self.domain)
         self._loginAsUser(user_name, filter=False)
-        self.assertTrue(connectionTest())
+        assert connectionTest()
         LOGGER.info("User from group can login")
 
     def _checkEnc(self, auth, result):
@@ -147,28 +148,25 @@ class ActiveDirectory(TestCase):
 
         set_sasl_qop(auth)
 
-        self.assertTrue(
-            runMachineCommand(True, ip=config.VDC_HOST,
-                              cmd=TCP_DUMP,
-                              user=config.HOSTS_USER,
-                              password=config.VDC_PASSWORD)[0],
-            "Run cmd %s failed." % TCP_DUMP)
+        assert runMachineCommand(
+            True, ip=config.VDC_HOST, cmd=TCP_DUMP, user=config.HOSTS_USER,
+            password=config.VDC_PASSWORD
+        )[0], "Run cmd %s failed." % TCP_DUMP
 
         users.loginAsUser(user, domain, self.PASSWORD, True)
-        self.assertTrue(connectionTest())
+        assert connectionTest()
         time.sleep(20)
 
         status = runMachineCommand(True, ip=config.VDC_HOST,
                                    cmd=CHECK_DUMP % user,
                                    user=config.HOSTS_USER,
                                    password=config.VDC_PASSWORD)
-        self.assertTrue(status[0] == result, "Run cmd %s failed." % CHECK_DUMP)
+        assert status[0] == result, "Run cmd %s failed." % CHECK_DUMP
 
-        self.assertTrue(
-            runMachineCommand(True, ip=config.VDC_HOST, cmd=CLEAN,
-                              user=config.HOSTS_USER,
-                              password=config.VDC_PASSWORD)[0],
-            "Run cmd %s failed." % CLEAN)
+        assert runMachineCommand(
+            True, ip=config.VDC_HOST, cmd=CLEAN, user=config.HOSTS_USER,
+            password=config.VDC_PASSWORD
+        )[0], "Run cmd %s failed." % CLEAN
         LOGGER.info("Authentication passed.")
 
     @istest
@@ -183,11 +181,11 @@ class ActiveDirectory(TestCase):
     def multipleDomains(self):
         """ Multiple domains: Two ADs, using FQDN names """
         self._loginAsUser(config.TEST_USER(self.domain))
-        self.assertTrue(connectionTest())
+        assert connectionTest()
         user_name, password = config.TEST_USER_DIFFERENT_AD(self.domain)
         name, domain = user_name.split('@')
         users.loginAsUser(name, domain, password, True)
-        self.assertTrue(connectionTest())
+        assert connectionTest()
         LOGGER.info("User with same name from different domains can login.")
 
 

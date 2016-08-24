@@ -22,7 +22,7 @@ class TestApplianceDeploySanityNFS(base_deploy.BaseDeployOverNFS):
         """
         Deploy hosted engine, check that all HE services and engine up
         """
-        self.assertTrue(self.deploy_and_check_he_status_on_hosts())
+        assert self.deploy_and_check_he_status_on_hosts()
 
 
 class TestApplianceDeploySanityISCSI(base_deploy.BaseDeployOverISCSI):
@@ -43,7 +43,7 @@ class TestApplianceDeploySanityISCSI(base_deploy.BaseDeployOverISCSI):
         """
         Deploy hosted engine, check that all HE services and engine up
         """
-        self.assertTrue(self.deploy_and_check_he_status_on_hosts())
+        assert self.deploy_and_check_he_status_on_hosts()
 
 
 class TestApplianceDeploySanityGluster(base_deploy.BaseDeployOverGluster):
@@ -64,4 +64,4 @@ class TestApplianceDeploySanityGluster(base_deploy.BaseDeployOverGluster):
         """
         Deploy hosted engine, check that all HE services and engine up
         """
-        self.assertTrue(self.deploy_and_check_he_status_on_hosts())
+        assert self.deploy_and_check_he_status_on_hosts()

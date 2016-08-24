@@ -23,10 +23,9 @@ class ServiceTest(TestCase):
         :param service: (string) service that should run
         """
         LOGGER.info("Test if %s service is running", service)
-        self.assertTrue(
-            machine.service(service).status(),
-            "%s is not running" % service
-        )
+        assert machine.service(
+            service
+        ).status(), "%s is not running" % service
 
     def assert_files_exist(self, machine, files):
         """
@@ -37,10 +36,9 @@ class ServiceTest(TestCase):
         filesystem = machine.fs
         for filename in files:
             LOGGER.info("Test if %s exists", filename)
-            self.assertTrue(
-                filesystem.isfile(filename),
-                'File %s does not exist' % filename
-            )
+            assert filesystem.isfile(
+                filename
+            ), 'File %s does not exist' % filename
 
     def assert_service_is_enabled(self, machine, service):
         """
@@ -49,10 +47,9 @@ class ServiceTest(TestCase):
         :param service: (string) service name
         """
         LOGGER.info("Test if %s service is enabled", service)
-        self.assertTrue(
-            machine.service(service).is_enabled(),
-            "%s is not enabled" % service
-        )
+        assert machine.service(
+            service
+        ).is_enabled(), "%s is not enabled" % service
 
     def assert_service_restart(self, machine, service):
         """
@@ -61,8 +58,7 @@ class ServiceTest(TestCase):
         :param service: (string) service name
         """
         LOGGER.info("Restart service %s and check if it is running", service)
-        self.assertTrue(
-            machine.service(service).restart(),
-            "Unable to restart service %s" % service
-        )
+        assert machine.service(
+            service
+        ).restart(), "Unable to restart service %s" % service
         self.assert_service_is_running(machine, service)

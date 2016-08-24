@@ -477,25 +477,19 @@ class GeneralSetupTeardownClass(HostedEngineTest):
         :type timeout: int
         """
         logger.info("Check if vm started on host %s", self.second_host)
-        self.assertTrue(
-            self._wait_for_host_vm_state(
-                executor=self.second_host_executor,
-                host_resource=self.second_host,
-                timeout=timeout,
-                vm_state=conf.VM_STATE_UP
-            ),
-            conf.VM_NOT_STARTED_ON_SECOND_HOST
-        )
+        assert self._wait_for_host_vm_state(
+            executor=self.second_host_executor,
+            host_resource=self.second_host,
+            timeout=timeout,
+            vm_state=conf.VM_STATE_UP
+        ), conf.VM_NOT_STARTED_ON_SECOND_HOST
         logger.info("Check if engine started on host %s", self.second_host)
-        self.assertTrue(
-            self._wait_for_host_vm_health(
-                executor=self.second_host_executor,
-                host_resource=self.second_host,
-                timeout=timeout,
-                vm_health=conf.ENGINE_HEALTH_GOOD
-            ),
-            conf.ENGINE_NOT_STARTED_ON_SECOND_HOST
-        )
+        assert self._wait_for_host_vm_health(
+            executor=self.second_host_executor,
+            host_resource=self.second_host,
+            timeout=timeout,
+            vm_health=conf.ENGINE_HEALTH_GOOD
+        ), conf.ENGINE_NOT_STARTED_ON_SECOND_HOST
 
     @classmethod
     def setup_class(cls):
@@ -715,14 +709,11 @@ class TestHostWithVmLostConnection(GeneralSetupTeardownClass):
         except socket.timeout as ex:
             logger.warning("Host unreachable, %s", ex)
         logger.info("Check if vm started on host %s", self.second_host)
-        self.assertTrue(
-            self._wait_for_host_vm_state(
-                executor=self.second_host_executor,
-                host_resource=self.second_host,
-                vm_state=conf.VM_STATE_UP
-            ),
-            conf.VM_NOT_STARTED_ON_SECOND_HOST
-        )
+        assert self._wait_for_host_vm_state(
+            executor=self.second_host_executor,
+            host_resource=self.second_host,
+            vm_state=conf.VM_STATE_UP
+        ), conf.VM_NOT_STARTED_ON_SECOND_HOST
 
     @classmethod
     def teardown_class(cls):
@@ -859,12 +850,8 @@ class TestStopEngineService(GeneralSetupTeardownClass):
         """
         cmd = ["service", "ovirt-engine", "stop"]
         self._get_output_from_run_cmd(self.engine_vm_executor, cmd)
-        self.assertTrue(
-            self._wait_until_engine_down(), conf.ENGINE_UP
-        )
-        self.assertTrue(
-            self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
-        )
+        assert self._wait_until_engine_down(), conf.ENGINE_UP
+        assert self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
 
 
 class TestStopPostgresqlService(GeneralSetupTeardownClass):
@@ -881,12 +868,8 @@ class TestStopPostgresqlService(GeneralSetupTeardownClass):
         """
         cmd = ["service", "postgresql", "stop"]
         self._get_output_from_run_cmd(self.engine_vm_executor, cmd)
-        self.assertTrue(
-            self._wait_until_engine_down(), conf.ENGINE_UP
-        )
-        self.assertTrue(
-            self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
-        )
+        assert self._wait_until_engine_down(), conf.ENGINE_UP
+        assert self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
 
 
 class TestKernelPanicOnEngineVm(GeneralSetupTeardownClass):
@@ -906,12 +889,8 @@ class TestKernelPanicOnEngineVm(GeneralSetupTeardownClass):
         self._get_output_from_run_cmd(
             executor=self.engine_vm_executor, cmd=cmd, negative=True
         )
-        self.assertTrue(
-            self._wait_until_engine_down(), conf.ENGINE_UP
-        )
-        self.assertTrue(
-            self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
-        )
+        assert self._wait_until_engine_down(), conf.ENGINE_UP
+        assert self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
 
 #############################################################################
 
@@ -928,10 +907,9 @@ class TestSanlockStatusOnHosts(GeneralSetupTeardownClass):
         Check if sanlock status equal to shared on host with HE vm
         """
         logger.info("Check status equal to shared on host with HE vm")
-        self.assertTrue(
-            self._is_sanlock_share(self.engine_vm_host_executor),
-            "Host with HE vm has sanlock free, but should be shared"
-        )
+        assert self._is_sanlock_share(
+            self.engine_vm_host_executor
+        ), "Host with HE vm has sanlock free, but should be shared"
 
     @tools.polarion("RHEVM3-5532")
     def test_check_sanlock_status_on_host_without_he_vm(self):
@@ -939,10 +917,9 @@ class TestSanlockStatusOnHosts(GeneralSetupTeardownClass):
         Check if sanlock status equal to free on host without HE vm
         """
         logger.info("Check status equal to free on host with HE vm")
-        self.assertFalse(
-            self._is_sanlock_share(self.second_host_executor),
-            "Host without HE vm has shared sanlock, but should have it free"
-        )
+        assert not self._is_sanlock_share(
+            self.second_host_executor
+        ), "Host without HE vm has shared sanlock, but should have it free"
 
 
 class TestStartTwoEngineVmsOnHost(GeneralSetupTeardownClass):
@@ -963,7 +940,7 @@ class TestStartTwoEngineVmsOnHost(GeneralSetupTeardownClass):
             self.engine_vm_host_executor, self.command, negative=True
         )
         logger.info("Command hosted-engine --vm-start output: %s", out)
-        self.assertEqual(out.strip('\n'), correct_message)
+        assert out.strip('\n') == correct_message
 
     @tools.polarion("RHEVM3-5513")
     def test_start_he_vm_on_second_host_when_it_already_run_on_first(self):
@@ -972,11 +949,9 @@ class TestStartTwoEngineVmsOnHost(GeneralSetupTeardownClass):
         runs on first host and check return message
         """
         self._get_output_from_run_cmd(self.second_host_executor, self.command)
-        self.assertTrue(
-            self._check_he_vm_via_vdsClient(
-                self.second_host,
-                status=conf.VM_UP
-            )
+        assert self._check_he_vm_via_vdsClient(
+            self.second_host,
+            status=conf.VM_UP
         )
 
 
@@ -1003,8 +978,7 @@ class TestSynchronizeStateBetweenHosts(GeneralSetupTeardownClass):
             )
             statuses.append(out)
         logger.info("Check if status on both hosts the same")
-        self.assertEqual(
-            statuses[0], statuses[1],
+        assert statuses[0] == statuses[1], (
             "Hosts have different HE status: %s and %s" %
             (statuses[0], statuses[1])
         )
@@ -1064,12 +1038,10 @@ class TestHostGatewayProblem(GeneralSetupTeardownClass):
             "Wait util host %s score will dropped to %s",
             self.engine_vm_host, conf.GATEWAY_SCORE
         )
-        self.assertTrue(
-            self._wait_for_host_score(
-                self.second_host_executor,
-                self.engine_vm_host,
-                conf.GATEWAY_SCORE
-            )
+        assert self._wait_for_host_score(
+            self.second_host_executor,
+            self.engine_vm_host,
+            conf.GATEWAY_SCORE
         )
         logger.info(
             "Wait until HE vm will migrate to host %s", self.second_host
@@ -1122,11 +1094,9 @@ class TestHostCpuLoadProblem(GeneralSetupTeardownClass):
             "Wait util host %s score will drop to %d",
             self.engine_vm_host, conf.CPU_LOAD_SCORE
         )
-        self.assertTrue(
-            self._wait_for_host_score(
-                self.second_host_executor, self.engine_vm_host,
-                conf.CPU_LOAD_SCORE, timeout=conf.CPU_SCORE_TIMEOUT
-            )
+        assert self._wait_for_host_score(
+            self.second_host_executor, self.engine_vm_host,
+            conf.CPU_LOAD_SCORE, timeout=conf.CPU_SCORE_TIMEOUT
         )
         logger.info(
             "Wait until HE vm will migrate to host %s", self.second_host
@@ -1183,12 +1153,10 @@ class TestGlobalMaintenance(GeneralSetupTeardownClass):
         cmd = [conf.HOSTED_ENGINE_CMD, "--vm-poweroff"]
         self._get_output_from_run_cmd(self.engine_vm_host_executor, cmd)
         logger.info("Check if HE vm not start on host %s", self.second_host)
-        self.assertFalse(
-            self._wait_for_host_vm_state(
-                executor=self.second_host_executor,
-                host_resource=self.second_host,
-                vm_state=conf.VM_STATE_UP
-            )
+        assert not self._wait_for_host_vm_state(
+            executor=self.second_host_executor,
+            host_resource=self.second_host,
+            vm_state=conf.VM_STATE_UP
         )
 
     @classmethod
@@ -1238,10 +1206,8 @@ class TestLocalMaintenance(GeneralSetupTeardownClass):
         that HE vm migrated to second host
         """
         logger.info("Check that host %s, have score 0", self.engine_vm_host)
-        self.assertTrue(
-            self._wait_for_host_score(
-                self.second_host_executor, self.engine_vm_host, conf.ZERO_SCORE
-            )
+        assert self._wait_for_host_score(
+            self.second_host_executor, self.engine_vm_host, conf.ZERO_SCORE
         )
         logger.info("Check if HE vm migrated on host %s", self.second_host)
         self._is_vm_and_engine_run_on_second_host()
@@ -1378,11 +1344,9 @@ class TestStopBrokerService(StopServices):
         """
         Check that HE vm not started on second host
         """
-        self.assertTrue(
-            self._check_he_vm_via_vdsClient(
-                self.second_host,
-                status=conf.VM_UP
-            )
+        assert self._check_he_vm_via_vdsClient(
+            self.second_host,
+            status=conf.VM_UP
         )
 
 
@@ -1400,11 +1364,9 @@ class TestStopAgentService(StopServices):
         """
         Check that HE vm not started on second host
         """
-        self.assertTrue(
-            self._check_he_vm_via_vdsClient(
-                self.second_host,
-                status=conf.VM_UP
-            )
+        assert self._check_he_vm_via_vdsClient(
+            self.second_host,
+            status=conf.VM_UP
         )
 
 
@@ -1422,9 +1384,7 @@ class TestStopAgentAndBrokerServices(StopServices):
         """
         Check that HE vm not started on second host
         """
-        self.assertTrue(
-            self._check_he_vm_via_vdsClient(
-                self.second_host,
-                status=conf.VM_UP
-            )
+        assert self._check_he_vm_via_vdsClient(
+            self.second_host,
+            status=conf.VM_UP
         )

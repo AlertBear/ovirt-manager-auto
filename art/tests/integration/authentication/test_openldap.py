@@ -63,11 +63,11 @@ class LDAPCase289010(TestCase):
         msg_t = "%s user can log in."
 
         loginAsUser(config.LDAP_REGULAR_NAME, True)
-        self.assertTrue(connectionTest(), msg_f % 'Regular')
+        assert connectionTest(), msg_f % 'Regular'
         LOGGER.info(msg_t % 'Regular')
 
         loginAsUser(config.LDAP_USER_FROM_GROUP, True)
-        self.assertTrue(connectionTest(), msg_f % 'Group')
+        assert connectionTest(), msg_f % 'Group'
         LOGGER.info(msg_t % 'Group')
 
     def tearDown(self):
@@ -99,7 +99,7 @@ class LDAPCase289066(TestCase):
         """ Login as user with disabled account """
         msg = "User with expired psw can login."
         loginAsUser(config.LDAP_EXPIRED_PSW_NAME, True)
-        self.assertTrue(not connectionTest(), msg)
+        assert not connectionTest(), msg
         LOGGER.info("User with expired password can't login.")
 
     def tearDown(self):
@@ -126,7 +126,7 @@ class LDAPCase289068(TestCase):
         """ Login as user with expired password """
         msg = "User with expired acc can login."
         loginAsUser(config.LDAP_EXPIRED_ACC_NAME, True)
-        self.assertTrue(not connectionTest(), msg)
+        assert not connectionTest(), msg
         LOGGER.info("User with expired account can't login.")
 
     def tearDown(self):
@@ -152,17 +152,17 @@ class LDAPCase289069(TestCase):
     @bz({'1177367': {'engine': ['cli'], 'version': ['3.5']}})
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
-        self.assertTrue(
-            users.groupUtil.query('', href=self.query % 'groups') is not None)
+        assert users.groupUtil.query(
+            '', href=self.query % 'groups'
+        ) is not None
 
-        self.assertTrue(
-            len(users.util.query('', href=self.query % 'users')) > 0)
+        assert len(users.util.query('', href=self.query % 'users')) > 0
         user = users.util.query("{0}={1}".format('name', 'user2'),
                                 href=self.query % 'users')[0]
-        self.assertTrue(user.get_name().lower() == 'user2')
+        assert user.get_name().lower() == 'user2'
         user = users.util.query("{0}={1}".format('lastname', 'user2'),
                                 href=self.query % 'users')[0]
-        self.assertTrue(user.get_name().lower() == 'user2')
+        assert user.get_name().lower() == 'user2'
         LOGGER.info("Searching for users and groups works correctly.")
 
 
@@ -193,18 +193,17 @@ class LDAPCase289071(TestCase):
     @bz({'1125161': {}})
     def updateInformation(self):
         """ Update information """
-        self.assertTrue(
-            runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                              cmd=CMD % (CN, config.LDAP_PASSWORD,
-                                         self.UPDATE_USER1),
-                              user=config.HOSTS_USER,
-                              password=config.LDAP_PASSWORD)[0])
+        assert runMachineCommand(
+            True, ip=config.LDAP_DOMAIN, cmd=CMD %
+            (CN, config.LDAP_PASSWORD, self.UPDATE_USER1),
+            user=config.HOSTS_USER, password=config.LDAP_PASSWORD
+        )[0]
         user = self._find_user_in_directory(self.new_name)
-        self.assertTrue(user.get_name() == self.new_name)
+        assert user.get_name() == self.new_name
         LOGGER.info("User name was updated correctly.")
-        self.assertTrue(user.get_last_name() == self.new_last_name)
+        assert user.get_last_name() == self.new_last_name
         LOGGER.info("User last name was updated correctly.")
-        self.assertTrue(user.get_email() == self.new_email)
+        assert user.get_email() == self.new_email
         LOGGER.info("User email was updated correctly.")
 
     def tearDown(self):
@@ -235,14 +234,14 @@ class LDAPCase289072(TestCase):
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
         loginAsUser(config.LDAP_USER_FROM_GROUP, True)
-        self.assertTrue(connectionTest(), "User from group can't log in")
+        assert connectionTest(), "User from group can't log in"
         LOGGER.info('User from group logged in')
         loginAsAdmin()
         users.removeUser(positive=True, user=config.LDAP_USER_FROM_GROUP,
                          domain=config.LDAP_DOMAIN)
-        self.assertTrue(
-            users.groupExists(True, config.LDAP_GROUP),
-            "Group was removed with user")
+        assert users.groupExists(
+            True, config.LDAP_GROUP
+        ), "Group was removed with user"
         LOGGER.info("Group persisted after user from group was removed.")
 
     def tearDown(self):
@@ -266,8 +265,9 @@ class LDAPCase289076(TestCase):
     def userWithManyGroups(self):
         """ User with many groups """
         loginAsUser(config.LDAP_WITH_MANY_GROUPS_NAME, True)
-        self.assertTrue(
-            connectionTest(), "User with many groups can't connect to system")
+        assert connectionTest(), (
+            "User with many groups can't connect to system"
+        )
 
     def tearDown(self):
         loginAsAdmin()
@@ -301,7 +301,7 @@ class LDAPCase289078(TestCase):
         """ remove user from OpenLDAP """
         msg = "After group del, user can login."
         loginAsUser(config.LDAP_TESTING_USER_NAME, True)
-        self.assertTrue(connectionTest(), "User from group can't log in.")
+        assert connectionTest(), "User from group can't log in."
         LOGGER.info("User from group can log in.")
         # Remove group from user
         runMachineCommand(True, ip=config.LDAP_DOMAIN,
@@ -312,7 +312,7 @@ class LDAPCase289078(TestCase):
         users.removeUser(True, config.LDAP_TESTING_USER_NAME)
         addUser(config.LDAP_TESTING_USER_NAME)
         loginAsUser(config.LDAP_TESTING_USER_NAME, True)
-        self.assertTrue(not connectionTest(), msg)
+        assert not connectionTest(), msg
         LOGGER.info("User can't login after group removal.")
         # Add group to user
         runMachineCommand(True, ip=config.LDAP_DOMAIN,
@@ -323,7 +323,7 @@ class LDAPCase289078(TestCase):
         users.removeUser(True, config.LDAP_TESTING_USER_NAME)
         addUser(config.LDAP_TESTING_USER_NAME)
         loginAsUser(config.LDAP_TESTING_USER_NAME, True)
-        self.assertTrue(connectionTest(), "User from group can't log in.")
+        assert connectionTest(), "User from group can't log in."
         LOGGER.info("User from group can log in.")
 
         # Remove group from OpenLDAP
@@ -336,7 +336,7 @@ class LDAPCase289078(TestCase):
         users.removeUser(True, config.LDAP_TESTING_USER_NAME)
         addUser(config.LDAP_TESTING_USER_NAME)
         loginAsUser(config.LDAP_TESTING_USER_NAME, True)
-        self.assertTrue(not connectionTest(), msg)
+        assert not connectionTest(), msg
         LOGGER.info("User can't login after group removal.")
 
     def tearDown(self):

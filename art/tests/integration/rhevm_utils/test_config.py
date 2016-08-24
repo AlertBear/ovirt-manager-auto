@@ -49,19 +49,19 @@ class ConfigTestCase(base.RHEVMUtilsTestCase):
         # set it to known value
         current = self.ut.getValue('SSLEnabled')
         self.ut.autoTest()
-        self.assertEqual(current, 'false')
+        assert current == 'false'
 
         self.ut(set='SSLEnabled=true')
         # change value
         current = self.ut.getValue('SSLEnabled')
         self.ut.autoTest()
-        self.assertEqual(current, 'true')
+        assert current == 'true'
 
         self.ut(set='SSLEnabled=true')
         # try if it works when new value is same as old
         current = self.ut.getValue('SSLEnabled')
         self.ut.autoTest()
-        self.assertEqual(current, 'true')
+        assert current == 'true'
 
     def test_config_all(self):
         """

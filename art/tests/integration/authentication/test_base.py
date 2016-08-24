@@ -62,11 +62,11 @@ class BaseNormalUserAndGroupUser(TestCase):
         msg_t = "%s user can log in."
 
         loginAsUser(config.REGULAR_NAME(self.domain), self.domain)
-        self.assertTrue(connectionTest(), msg_f % 'Regular')
+        assert connectionTest(), msg_f % 'Regular'
         LOGGER.info(msg_t % 'Regular')
 
         loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain)
-        self.assertTrue(connectionTest(), msg_f % 'Group')
+        assert connectionTest(), msg_f % 'Group'
         LOGGER.info(msg_t % 'Group')
 
     def tearDown(self):
@@ -97,7 +97,7 @@ class BaseExpiredAccount(TestCase):
         """ Login as user with expired password """
         msg = "User with expired acc can login."
         loginAsUser(config.EXPIRED_ACC_NAME(self.domain), self.domain)
-        self.assertTrue(not connectionTest(), msg)
+        assert not connectionTest(), msg
         LOGGER.info("User with expired account can't login.")
 
     def tearDown(self):
@@ -125,7 +125,7 @@ class BaseExpiredPassword(TestCase):
         """ Login as user with disabled account """
         msg = "User with expired psw can login."
         loginAsUser(config.EXPIRED_PSW_NAME(self.domain), self.domain, True)
-        self.assertTrue(not connectionTest(), msg)
+        assert not connectionTest(), msg
         LOGGER.info("User with expired password can't login.")
 
     def tearDown(self):
@@ -152,14 +152,15 @@ class BaseGroupsPersistency(TestCase):
     def basePersistencyOfGroupRights(self):
         """ After user removal, check that his group persist """
         loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain, False)
-        self.assertTrue(connectionTest(), 'User from group cant log in')
+        assert connectionTest(), 'User from group cant log in'
         LOGGER.info('User from group logged in')
         loginAsAdmin()
         users.removeUser(positive=True,
                          user=config.USER_FROM_GROUP(self.domain),
                          domain=self.domain)
-        self.assertTrue(users.groupExists(True, config.GROUP(self.domain)),
-                        "Group was removed with user")
+        assert users.groupExists(
+            True, config.GROUP(self.domain)
+        ), "Group was removed with user"
         LOGGER.info("Group persisted after user from group was removed.")
 
     def tearDown(self):
@@ -183,8 +184,9 @@ class BaseUserWithManyGroups(TestCase):
     def userWithManyGroups(self):
         """ Check that user with many groups can login """
         loginAsUser(config.WITH_MANY_GROUPS_NAME(self.domain), self.domain)
-        self.assertTrue(connectionTest(),
-                        "User with many groups can't connect to system")
+        assert connectionTest(), (
+            "User with many groups can't connect to system"
+        )
 
     def tearDown(self):
         loginAsAdmin()
@@ -210,16 +212,16 @@ class BaseSearchForUsersAndGroups(TestCase):
     @bz({'1177367': {'engine': ['cli'], 'version': ['3.5']}})
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
-        self.assertTrue(
-            users.groupUtil.query('', href=self.query % 'groups') is not None)
+        assert users.groupUtil.query(
+            '', href=self.query % 'groups'
+        ) is not None
 
-        self.assertTrue(
-            len(users.util.query('', href=self.query % 'users')) > 0)
+        assert len(users.util.query('', href=self.query % 'users')) > 0
         user = users.util.query("{0}={1}".format('name', self.name),
                                 href=self.query % 'users')[0]
-        self.assertTrue(user.get_name().lower() == self.name)
+        assert user.get_name().lower() == self.name
         LOGGER.info("Searching for users by name works OK.")
         user = users.util.query("{0}={1}".format('lastname', self.last_name),
                                 href=self.query % 'users')[0]
-        self.assertTrue(user.get_name().lower() == self.last_name)
+        assert user.get_name().lower() == self.last_name
         LOGGER.info("Searching for users by lastname works OK.")
