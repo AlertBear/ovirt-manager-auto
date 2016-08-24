@@ -5,6 +5,7 @@
 
 import logging
 import pytest
+from art.test_handler.settings import opts
 from art.unittest_lib import attr, VirtTest, testflow
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
@@ -17,11 +18,13 @@ from rhevmtests.virt.reg_vms.fixtures import (
 import config
 
 logger = logging.getLogger("vm_mix_cases")
+NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
 
 
 class TestMixCases(VirtTest):
 
     __test__ = True
+    storages = set([NFS])
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
     vm_name = 'mix_cases'
