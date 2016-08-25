@@ -1,311 +1,205 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 """
 Virt - Payloads Test
 Check different cases for adding payloads to vm, via creation or update, also
 check mount of different types of payloads, cdrom, floppy.
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Compute/Virt_Payload
+NOTE: Not support CLI API, BZ: 1198677
 """
-import os
-import logging
+
 import pytest
 from art.unittest_lib import attr
-from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import polarion, bz
-from art.test_handler.settings import opts
-import art.test_handler.exceptions as errors
-import art.rhevm_api.tests_lib.low_level.vms as vms
-import art.rhevm_api.tests_lib.high_level.vms as high_vms
-from art.rhevm_api.tests_lib.low_level.hooks import \
-    checkForFileExistenceAndContent
-from art.rhevm_api.utils.resource_utils import runMachineCommand
-from rhevmtests.virt import config
+from art.unittest_lib import VirtTest, testflow
+from art.test_handler.tools import polarion
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from rhevmtests.virt.fixtures import (
+    start_vms, remove_vm_fixture
+)
+from rhevmtests.virt.payload.fixtures import (
+    create_vm_with_payloads, remove_payload_files
+)
+import helper
+import config
 
 
-logger = logging.getLogger(__name__)
-
-ENUMS = opts['elements_conf']['RHEVM Enums']
-PAYLOADS_TYPE = [ENUMS['payload_type_cdrom'], ENUMS['payload_type_floppy']]
-PAYLOADS_DEVICES = ['/dev/sr1', '/dev/fd0']
-PAYLOADS_FILENAME = ['payload.cdrom', 'payload.floppy']
-PAYLOADS_CONTENT = ['cdrom payload via create',
-                    'cdrom payload via update',
-                    'floppy payload via create',
-                    'floppy payload via update',
-                    'complex\npayload\nfor\nuse']
-VM_DSC = 'payload test'
-TMP_DIR = '/tmp'
-TIMEOUT = 60
-CONN_TIMEOUT = 30
-
-
-@attr(tier=2)
-class Payloads(TestCase):
-    """
-    Base class for Payloads Test
-    """
-    __test__ = False
-    payload_filename = None
-    payload_content = None
-    payload_type = None
-    vm_name = "payloads_vm"
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Stop and remove vm after each test case
-        """
-        if vms.get_vm_state(cls.vm_name) not in (ENUMS['vm_state_down'],):
-            logging.info("Stop vm %s", cls.vm_name)
-            if not vms.stopVm(True, cls.vm_name):
-                raise errors.VMException("Failed to stop vm %s" %
-                                         cls.vm_name)
-        logging.info("Remove vm %s", cls.vm_name)
-        if not vms.removeVm(True, cls.vm_name):
-            raise errors.VMException("Failed to remove vm %s" %
-                                     cls.vm_name)
-        logging.info("Clean files from engine machine after existence check")
-        filename = os.path.join(TMP_DIR, cls.payload_filename)
-        cmd = "rm -f %s" % filename
-        logging.info("Remove file %s from engine machine" % filename)
-        status, out = runMachineCommand(True, ip=config.VDC_HOST,
-                                        user=config.VDC_ROOT_USER,
-                                        password=config.VDC_ROOT_PASSWORD,
-                                        cmd=cmd)
-        if not status:
-            raise errors.VMException("Failed to run command %s on engine %s" %
-                                     (cmd, config.VDC_HOST))
-
-    @classmethod
-    def _create_vm_with_payloads(cls):
-        """
-        Create new vm with given payload
-        """
-        logging.info("Add new vm %s with payloads"
-                     "(type=%s, filename=%s,"" content=%s)",
-                     cls.vm_name, cls.payload_type,
-                     cls.payload_filename, cls.payload_content)
-        if not vms.addVm(True, name=cls.vm_name,
-                         cluster=config.CLUSTER_NAME[0],
-                         template=config.TEMPLATE_NAME[0],
-                         os_type=config.VM_OS_TYPE,
-                         display_type=config.VM_DISPLAY_TYPE,
-                         payloads=[(cls.payload_type, cls.payload_filename,
-                                    cls.payload_content)]):
-            raise errors.VMException("Failed to add vm %s" %
-                                     cls.vm_name)
-
-    @classmethod
-    def _update_vm_with_payloads(cls):
-        """
-        First create vm without payloads and after it update it with payloads
-        """
-        logging.info("Add new vm %s without payloads", cls.vm_name)
-        if not vms.addVm(True, name=cls.vm_name,
-                         cluster=config.CLUSTER_NAME[0],
-                         template=config.TEMPLATE_NAME[0],
-                         os_type=config.VM_OS_TYPE,
-                         display_type=config.VM_DISPLAY_TYPE):
-            raise errors.VMException("Failed to add vm %s" %
-                                     cls.vm_name)
-        logging.info("Update vm %s with payloads"
-                     "(type=%s, filename=%s,"" content=%s)",
-                     cls.vm_name, cls.payload_type,
-                     cls.payload_filename, cls.payload_content)
-        if not vms.updateVm(True, cls.vm_name,
-                            payloads=[(cls.payload_type,
-                                       cls.payload_filename,
-                                       cls.payload_content)]):
-            raise errors.VMException("Failed to update vm %s with payloads" %
-                                     cls.vm_name)
-
-    @classmethod
-    def _get_vm_ip(cls):
-        """
-        Start vm and return vm ip
-        """
-        return high_vms.get_vm_ip(cls.vm_name)
-
-    @classmethod
-    def _check_existence_of_payload(cls, payload_device):
-        """
-        Start vm, mount payload and check if payload content exist
-        """
-        payload_dir = os.path.join(TMP_DIR, cls.payload_type)
-        ip = cls._get_vm_ip()
-        logging.info("Create new directory %s on vm %s and modprobe device",
-                     payload_dir, cls.vm_name)
-        cmd = 'mkdir %s && modprobe %s' % (payload_dir, cls.payload_type)
-        status, out = runMachineCommand(True, ip=ip,
-                                        user=config.VMS_LINUX_USER,
-                                        password=config.VMS_LINUX_PW, cmd=cmd)
-        if not status:
-            raise errors.VMException("Failed to run command %s on vm %s: %s" %
-                                     (cmd, cls.vm_name, out))
-        logging.info("Mount device %s to directory %s",
-                     payload_device, payload_dir)
-        cmd = 'mount %s %s' % (payload_device, payload_dir)
-        status, out = runMachineCommand(True, ip=ip,
-                                        user=config.VMS_LINUX_USER,
-                                        password=config.VMS_LINUX_PW,
-                                        cmd=cmd, timeout=TIMEOUT,
-                                        conn_timeout=CONN_TIMEOUT)
-        if not status:
-            raise errors.VMException("Failed to run command %s on vm %s: %s" %
-                                     (cmd, cls.vm_name, out))
-        logging.info("Check if file content exist on vm %s",
-                     cls.vm_name)
-        filename = os.path.join(payload_dir, cls.payload_filename)
-        if not checkForFileExistenceAndContent(True, ip=ip,
-                                               user=config.VMS_LINUX_USER,
-                                               password=config.VMS_LINUX_PW,
-                                               filename=filename,
-                                               content=cls.payload_content):
-            logging.error("File %s does not exist on vm %s",
-                          filename, cls.vm_name)
-            return False
-        return True
-
-
-class PayloadViaCreate(Payloads):
-    """
-    Base class for payloads via create
-    """
-    __test__ = False
-    payload_filename = None
-    payload_content = None
-    payload_type = None
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create new vm with payload
-        """
-        cls._create_vm_with_payloads()
-
-
-class PayloadViaUpdate(Payloads):
-    """
-    Base class for payloads via update
-    """
-    __test__ = False
-    payload_filename = None
-    payload_content = None
-    payload_type = None
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create new vm and update it with payload
-        """
-        cls._update_vm_with_payloads()
-
-
-class TestCreateVmWithCdromPayload(PayloadViaCreate):
+@attr(tier=1)
+@pytest.mark.usefixtures(
+    create_vm_with_payloads.__name__,
+    start_vms.__name__,
+    remove_vm_fixture.__name__,
+    remove_payload_files.__name__
+)
+class TestCreateVmWithCdromPayload(VirtTest):
     """
     Create new vm with cdrom payload via create and check if payload exist,
     also check if payload object exist under vm
     """
     __test__ = True
+    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CreateVmWithCdromPayload'
-    payload_filename = PAYLOADS_FILENAME[0]
-    payload_content = PAYLOADS_CONTENT[0]
-    payload_type = PAYLOADS_TYPE[0]
+    payload_filename = config.PAYLOADS_FILENAME[0]
+    payload_content = config.PAYLOADS_CONTENT[0]
+    payload_type = config.PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-10061")
-    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
         """
-        assert self._check_existence_of_payload(PAYLOADS_DEVICES[0])
+        testflow.setup("Check if CD-ROM payload exist on VM")
+        assert helper.check_existence_of_payload(
+            vm_name=self.vm_name,
+            payload_filename=self.payload_filename,
+            payload_content=self.payload_content,
+            payload_type=self.payload_type,
+            payload_device=config.PAYLOADS_DEVICES[0]
+        )
 
     @polarion("RHEVM3-10074")
-    @bz({'1198677': {'engine': ['cli']}})
     def test_check_object_existence(self):
         """
         Check if payload object exist under vm
         """
-        assert vms.getVmPayloads(True, self.vm_name)[0]
+        testflow.setup("Check if payload object exist")
+        assert ll_vms.getVmPayloads(True, self.vm_name)[0]
 
 
-class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_with_payloads.__name__,
+    start_vms.__name__,
+    remove_vm_fixture.__name__,
+    remove_payload_files.__name__
+)
+class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
     """
     Create new vm with cdrom payload via update and check if payload exist
     """
     __test__ = True
+    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'UpdateVmWithCdromPayload'
-    payload_filename = PAYLOADS_FILENAME[0]
-    payload_content = PAYLOADS_CONTENT[1]
-    payload_type = PAYLOADS_TYPE[0]
+    payload_filename = config.PAYLOADS_FILENAME[0]
+    payload_content = config.PAYLOADS_CONTENT[1]
+    payload_type = config.PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-10063")
-    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
         """
-        assert self._check_existence_of_payload(PAYLOADS_DEVICES[0])
+        testflow.setup("Check if cdrom payload exist on VM")
+        assert helper.check_existence_of_payload(
+            vm_name=self.vm_name,
+            payload_filename=self.payload_filename,
+            payload_content=self.payload_content,
+            payload_type=self.payload_type,
+            payload_device=config.PAYLOADS_DEVICES[0]
+        )
 
 
 @attr(tier=2)
-class TestCdromPayloadComplexContent(PayloadViaUpdate):
+@pytest.mark.usefixtures(
+    create_vm_with_payloads.__name__,
+    start_vms.__name__,
+    remove_vm_fixture.__name__,
+    remove_payload_files.__name__
+)
+class TestCdromPayloadComplexContent(VirtTest):
     """
     Create new vm with cdrom payload, that have complex content via update
     and check if payload exist
     """
     __test__ = True
+    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CdromPayloadComplexContent'
-    payload_filename = PAYLOADS_FILENAME[0]
-    payload_content = PAYLOADS_CONTENT[4]
-    payload_type = PAYLOADS_TYPE[0]
+    payload_filename = config.PAYLOADS_FILENAME[0]
+    payload_content = config.PAYLOADS_CONTENT[4]
+    payload_type = config.PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-12155")
-    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
         """
-        assert self._check_existence_of_payload(PAYLOADS_DEVICES[0])
+        testflow.setup("Check if cdrom payload exist on VM")
+        assert helper.check_existence_of_payload(
+            vm_name=self.vm_name,
+            payload_filename=self.payload_filename,
+            payload_content=self.payload_content,
+            payload_type=self.payload_type,
+            payload_device=config.PAYLOADS_DEVICES[0]
+        )
 
 
-class TestCreateVmWithFloppyPayload(PayloadViaCreate):
+@attr(tier=1)
+@pytest.mark.usefixtures(
+    create_vm_with_payloads.__name__,
+    start_vms.__name__,
+    remove_vm_fixture.__name__,
+    remove_payload_files.__name__
+)
+class TestCreateVmWithFloppyPayload(VirtTest):
     """
     Create new vm with floppy payload via create and check if payload exist
     """
     __test__ = True
+    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CreateVmWithFloppyPayload'
-    payload_filename = PAYLOADS_FILENAME[1]
-    payload_content = PAYLOADS_CONTENT[2]
-    payload_type = PAYLOADS_TYPE[1]
+    payload_filename = config.PAYLOADS_FILENAME[1]
+    payload_content = config.PAYLOADS_CONTENT[2]
+    payload_type = config.PAYLOADS_TYPE[1]
 
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10070")
-    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if floppy payload exist on vm
         """
-        assert self._check_existence_of_payload(PAYLOADS_DEVICES[1])
+        testflow.setup("Check if floppy payload exist on VM")
+        assert helper.check_existence_of_payload(
+            vm_name=self.vm_name,
+            payload_filename=self.payload_filename,
+            payload_content=self.payload_content,
+            payload_type=self.payload_type,
+            payload_device=config.PAYLOADS_DEVICES[1]
+        )
 
 
-class TestUpdateVmWithFloppyPayload(PayloadViaUpdate):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_vm_with_payloads.__name__,
+    start_vms.__name__,
+    remove_vm_fixture.__name__,
+    remove_payload_files.__name__
+)
+class TestUpdateVmWithFloppyPayload(VirtTest):
     """
     Create new vm with floppy payload via update and check if payload exist
     """
     __test__ = True
+    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'UpdateVmWithFloppyPayload'
-    payload_filename = PAYLOADS_FILENAME[1]
-    payload_content = PAYLOADS_CONTENT[3]
-    payload_type = PAYLOADS_TYPE[1]
+    payload_filename = config.PAYLOADS_FILENAME[1]
+    payload_content = config.PAYLOADS_CONTENT[3]
+    payload_type = config.PAYLOADS_TYPE[1]
 
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10072")
-    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if floppy payload exist on vm
         """
-        assert self._check_existence_of_payload(PAYLOADS_DEVICES[1])
+        testflow.setup("Check if floppy payload exist on VM")
+        assert helper.check_existence_of_payload(
+            vm_name=self.vm_name,
+            payload_filename=self.payload_filename,
+            payload_content=self.payload_content,
+            payload_type=self.payload_type,
+            payload_device=config.PAYLOADS_DEVICES[1]
+        )
