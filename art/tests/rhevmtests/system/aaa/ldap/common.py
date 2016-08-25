@@ -10,7 +10,6 @@ from art.rhevm_api.tests_lib.low_level import users, mla, general
 from art.rhevm_api.utils.aaa import copy_extension_file
 from art.rhevm_api.utils.test_utils import restart_engine
 
-
 logger = logging.getLogger(__name__)
 SKIP_MESSAGE = 'Configuration was not setup for this test. Skipping.'
 INTERVAL = 5
@@ -102,7 +101,9 @@ def check(ext=None):
                 logger.warn(SKIP_MESSAGE)
                 raise SkipTest(SKIP_MESSAGE)
             return method(self, *args, **kwargs)
+
         return f
+
     return decorator
 
 
@@ -268,6 +269,7 @@ def extend(properties={}):
     """
     Extend current properties file of extension with values in properties param
     """
+
     def decorator(method):
         @wraps(method)
         def f(self, *args, **kwargs):
@@ -275,18 +277,38 @@ def extend(properties={}):
             try:
                 x = self.extended_properties.copy()
                 x.update(properties)
-                with self.executor.session() as ss:
-                    with ss.open_file(self.ext_file, 'w') as f:
-                        for k, v in x.iteritems():
-                            f.write('%s = %s\n' % (k, v))
+                append_to_file(self.executor, self.ext_file, x)
 
                 ret = method(self, *args, **kwargs)
             finally:
-                with self.executor.session() as ss:
-                    with ss.open_file(self.ext_file, 'w') as f:
-                        for k, v in self.extended_properties.iteritems():
-                            f.write('%s = %s\n' % (k, v))
+                append_to_file(
+                    self.executor, self.ext_file, self.extended_properties
+                )
 
                 return ret
+
         return f
+
     return decorator
+
+
+def append_to_file(executor, file_path, properties={}, mode='w'):
+    """
+    Append properties to configuration file
+    :param executor: Host executor
+    :type executor: Instance of RemoteExecutor
+    :param file_path: Absolute path to file
+    :type file_path: string
+    :param properties: Key value pair with properties to be appended to file
+    :type properties: dict
+    :param mode: Open file mode: {'w', 'w+', 'a', 'a+'}
+    :type mode: string
+    """
+    try:
+        with executor.session() as ss:
+            with ss.open_file(file_path, mode) as f:
+                f.write('\n')
+                for k, v in properties.iteritems():
+                    f.write('%s = %s\n' % (k, v))
+    except IOError as ex:
+        logger.error("Failed to update file %s: %s" % (file_path, ex.message))
