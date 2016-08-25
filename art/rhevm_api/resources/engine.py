@@ -130,3 +130,58 @@ class Engine(Service):
             time.sleep(20)
             if self.health_page_status:
                 return
+
+    def engine_config(self, action, param=None):
+        """
+        Runs engine-config command with given action
+        :param action: list, get, set, all
+        :param param: parameter given to the command
+        :return: result of the the command
+        """
+        res = {
+            "results": dict()
+        }
+        version = None
+
+        cmd = ["engine-config"]
+        actions = ["list", "get", "set", "all"]
+        if action not in actions:
+            raise TypeError("Action %s is not supported", action)
+
+        cmd.extend(["--%s" % action])
+        if param:
+            cmd.extend([param])
+
+        executor = self.host.executor()
+        rc, out, _ = executor.run_cmd(cmd)
+        if rc:
+            res["results"] = False
+            return res
+
+        if out:
+            out_list = out.splitlines()
+            for out_line in out_list:
+                try:
+                    out_split = out_line.split(":", 1)
+                    key = out_split[0].strip()
+                    out_split = out_split[1].strip()
+                    if 'version:' in out_split:
+                        value = out_split.split('version:')[0].strip()
+                        version = out_split.split('version:')[-1].strip()
+                    else:
+                        value = out_split
+                    if key:
+                        res["results"].update(
+                            {key: {'value': value, 'version': version}}
+                        )
+
+                except IndexError:
+                    self.logger.info(
+                        "Output that we couldn't split by ':' or "
+                        "'version:' >> %s", out_line
+                    )
+                    continue
+        else:
+            res["results"] = True
+
+        return res
