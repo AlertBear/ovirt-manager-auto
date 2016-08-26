@@ -122,7 +122,7 @@ class TestPortMirroringCase02(Base):
     """
 
     __test__ = True
-    nic_name_2 = pm_conf.PM_NIC_NAME[1][1]
+    nic_name_2 = pm_conf.PM_NIC_NAME[0]
     net_1 = pm_conf.PM_NETWORK[1]
     net1_ip2 = pm_conf.NET1_IPS[2]
     net1_ip3 = pm_conf.NET1_IPS[3]
@@ -199,7 +199,7 @@ class TestPortMirroringCase04(Base):
     """
     __test__ = True
     nic_name_1 = conf.NIC_NAME[0]
-    nic_name_2 = pm_conf.PM_NIC_NAME[1][1]
+    nic_name_2 = pm_conf.PM_NIC_NAME[0]
     net_1 = pm_conf.PM_NETWORK[0]
     mgmt_ips = pm_conf.MGMT_IPS
     net1_ip = pm_conf.NET1_IPS[0]
