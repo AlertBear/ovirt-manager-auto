@@ -446,7 +446,7 @@ def check_ip_rule(vds_resource, subnet):
     logger.info("The output of ip rule command is:\n %s", out)
     if rc:
         return False
-    return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
+    return len(re.findall(subnet.replace('.', '[.]'), out)) >= 2
 
 
 def update_vnic_profile(name, network, **kwargs):
