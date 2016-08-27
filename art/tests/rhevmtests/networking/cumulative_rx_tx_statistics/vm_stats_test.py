@@ -10,6 +10,7 @@ import logging
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as rx_tx_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
@@ -37,16 +38,18 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
         Change the vNIC network to conf.NETWORK_2
         """
         profile_dict = {
-            "network": conf.NETWORK_2
+            "network": rx_tx_conf.NETWORK_2
         }
-        testflow.step("Change %s profile to %s", conf.VM_NIC_1, conf.NETWORK_2)
+        testflow.step(
+            "Change %s profile to %s", conf.VM_NIC_1, rx_tx_conf.NETWORK_2
+        )
         assert ll_vms.updateNic(
             positive=True, vm=conf.VM_1, nic=conf.VM_NIC_1, **profile_dict
         )
         testflow.step("Check that statistics remains the same")
         assert helper.compare_nic_stats(
-            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-            total_tx=conf.TOTAL_TX
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=rx_tx_conf.TOTAL_RX,
+            total_tx=rx_tx_conf.TOTAL_TX
         )
 
     @polarion("RHEVM3-13581")
@@ -63,8 +66,8 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
         )
         testflow.step("Check that statistics remains the same")
         assert helper.compare_nic_stats(
-            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-            total_tx=conf.TOTAL_TX
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=rx_tx_conf.TOTAL_RX,
+            total_tx=rx_tx_conf.TOTAL_TX
         )
 
     @polarion("RHEVM3-6639")
@@ -78,8 +81,8 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
         )
         testflow.step("Check that statistics remains the same")
         assert helper.compare_nic_stats(
-            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-            total_tx=conf.TOTAL_TX
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=rx_tx_conf.TOTAL_RX,
+            total_tx=rx_tx_conf.TOTAL_TX
         )
 
     @polarion("RHEVM3-13512")
@@ -93,6 +96,6 @@ class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
         )
         testflow.step("Check that statistics remains the same")
         assert helper.compare_nic_stats(
-            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=conf.TOTAL_RX,
-            total_tx=conf.TOTAL_TX
+            nic=conf.VM_NIC_1, vm=conf.VM_1, total_rx=rx_tx_conf.TOTAL_RX,
+            total_tx=rx_tx_conf.TOTAL_TX
         )

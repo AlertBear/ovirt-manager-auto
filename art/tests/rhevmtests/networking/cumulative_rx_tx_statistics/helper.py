@@ -10,8 +10,9 @@ import operator
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.networking.config as conf
+import config as rx_tx_conf
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Helper")
@@ -52,7 +53,7 @@ def config_ip(vms_and_ips):
         ip = vm_and_ip[1]
         vm_resource = get_vm_resource(vm)
         interface = network_helper.get_vm_interfaces_list(
-            vm_resource, exclude_nics=[conf.ETH0]
+            vm_resource, exclude_nics=[rx_tx_conf.ETH0]
         )
         if not interface:
             raise conf.NET_EXCEPTION("Failed to get interface from %s" % vm)
@@ -102,7 +103,7 @@ def compare_nic_stats(
     """
     # logger.info("Get %s statistics on %s", nic, vm)
     nic_stat = hl_networks.get_nic_statistics(
-        nic=nic, vm=vm, host=host, keys=conf.STAT_KEYS
+        nic=nic, vm=vm, host=host, keys=rx_tx_conf.STAT_KEYS
     )
     comp_oper = operator.ge if oper == ">=" else operator.gt
     logger.info("--------------------------------------------------")

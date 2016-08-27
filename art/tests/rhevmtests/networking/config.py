@@ -144,24 +144,5 @@ BRIDGELESS_NET_DICT = {
     }
 }
 
-# cumulative_rx_tx_statistics
-HOST_IPS = None  # Filled in test
-VM_IPS = None  # Filled in test
-NIC_STAT = None  # Filled in test
-TOTAL_RX = None  # Filled in test
-TOTAL_TX = None  # Filled in test
-NETWORK_0 = "rx_tx_net_0"
-NETWORK_1 = "rx_tx_net_1"
-NETWORK_2 = "rx_tx_net_2"
-STAT_KEYS = ["data.total.rx", "data.total.tx"]
-ETH0 = VM_NICS[0]
-BASIC_IP_DICT_NETMASK = {
-    "ip_prefix": {
-        "address": "",
-        "netmask": "255.255.0.0",
-        "boot_protocol": "static"
-    }
-}
-
 # Network Filter
 VDSM_NO_MAC_SPOOFING = "vdsm-no-mac-spoofing"

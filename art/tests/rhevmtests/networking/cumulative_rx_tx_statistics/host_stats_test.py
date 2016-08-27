@@ -10,6 +10,7 @@ import time
 
 import pytest
 
+import config as rx_tx_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
@@ -37,14 +38,15 @@ class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
         testflow.step("Increase rx/tx statistics on Host NICs by sending ICMP")
         helper.send_icmp(
             [
-                (conf.VDS_1_HOST, conf.HOST_IPS[0]),
-                (conf.VDS_0_HOST, conf.HOST_IPS[1])
+                (conf.VDS_1_HOST, rx_tx_conf.HOST_IPS[0]),
+                (conf.VDS_0_HOST, rx_tx_conf.HOST_IPS[1])
             ]
         )
         time.sleep(20)
         assert helper.compare_nic_stats(
             nic=conf.HOST_0_NICS[1], host=conf.HOST_0_NAME,
-            total_rx=conf.TOTAL_RX, total_tx=conf.TOTAL_TX, oper=">"
+            total_rx=rx_tx_conf.TOTAL_RX, total_tx=rx_tx_conf.TOTAL_TX,
+            oper=">"
         )
 
 
@@ -68,5 +70,5 @@ class CumulativeNetworkUsageHostStatisticsCase2(NetworkTest):
         )
         assert helper.compare_nic_stats(
             nic=conf.HOST_0_NICS[1], host=conf.HOST_0_NAME,
-            total_rx=conf.TOTAL_RX, total_tx=conf.TOTAL_TX
+            total_rx=rx_tx_conf.TOTAL_RX, total_tx=rx_tx_conf.TOTAL_TX
         )

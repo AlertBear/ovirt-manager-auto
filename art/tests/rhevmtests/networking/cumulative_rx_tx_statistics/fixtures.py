@@ -7,10 +7,11 @@ Fixtures for cumulative_rx_tx_statistics
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as rx_tx_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
@@ -23,7 +24,7 @@ class CumulativeRxTxStatistics(NetworkFixtures):
     """
     def __init__(self):
         super(CumulativeRxTxStatistics, self).__init__()
-        self.ip_dict = conf.BASIC_IP_DICT_NETMASK
+        self.ip_dict = rx_tx_conf.BASIC_IP_DICT_NETMASK
 
     def create_networks_on_setup(self, networks_dict):
         """
@@ -41,16 +42,16 @@ class CumulativeRxTxStatisticsHost(CumulativeRxTxStatistics):
     """
     def __init__(self):
         super(CumulativeRxTxStatisticsHost, self).__init__()
-        self.net_0 = conf.NETWORK_0
-        self.stat_keys = conf.STAT_KEYS
+        self.net_0 = rx_tx_conf.NETWORK_0
+        self.stat_keys = rx_tx_conf.STAT_KEYS
         self.host_ips = None
 
     def generate_host_ips(self):
         """
         Generate host IPs
         """
-        conf.HOST_IPS = network_helper.create_random_ips()
-        self.host_ips = conf.HOST_IPS
+        rx_tx_conf.HOST_IPS = network_helper.create_random_ips()
+        self.host_ips = rx_tx_conf.HOST_IPS
 
     def host_create_networks_on_setup(self):
         """
@@ -91,16 +92,16 @@ class CumulativeRxTxStatisticsVm(CumulativeRxTxStatistics):
     def __init__(self):
         super(CumulativeRxTxStatisticsVm, self).__init__()
         self.vm_nic_1 = conf.VM_NIC_1
-        self.net_1 = conf.NETWORK_1
-        self.net_2 = conf.NETWORK_2
+        self.net_1 = rx_tx_conf.NETWORK_1
+        self.net_2 = rx_tx_conf.NETWORK_2
         self.vm_ips = None
 
     def generate_vm_ips(self):
         """
         Generate host IPs
         """
-        conf.VM_IPS = network_helper.create_random_ips()
-        self.vm_ips = conf.VM_IPS
+        rx_tx_conf.VM_IPS = network_helper.create_random_ips()
+        self.vm_ips = rx_tx_conf.VM_IPS
 
     def vm_create_networks_on_setup(self):
         """
@@ -217,8 +218,8 @@ def rx_tx_stat_host_setup_class(request, rx_tx_stat_host_prepare_setup):
         keys=rx_tx_stat_host.stat_keys
     )
 
-    conf.TOTAL_RX = conf.NIC_STAT["data.total.rx"]
-    conf.TOTAL_TX = conf.NIC_STAT["data.total.tx"]
+    conf.TOTAL_RX = rx_tx_conf.NIC_STAT["data.total.rx"]
+    conf.TOTAL_TX = rx_tx_conf.NIC_STAT["data.total.tx"]
 
 
 @pytest.fixture(scope="class")
@@ -283,8 +284,8 @@ def rx_tx_stat_vm_prepare_setup(request):
 
     rx_tx_stat_vm.vm_create_networks_on_setup()
     rx_tx_stat_vm.attach_networks_on_hosts()
-    rx_tx_stat_vm.add_vnic_to_vms()
     rx_tx_stat_vm.run_vms()
+    rx_tx_stat_vm.add_vnic_to_vms()
     rx_tx_stat_vm.set_ips_on_vms_nic()
 
 
@@ -294,31 +295,28 @@ def rx_tx_stat_vm_case01(request, rx_tx_stat_vm_prepare_setup):
     Fixture for CumulativeNetworkUsageStatisticsCase1
     """
     rx_tx_stat_vm = CumulativeRxTxStatisticsVm()
-    conf.NIC_STAT = hl_networks.get_nic_statistics(
-        nic=rx_tx_stat_vm.vm_nic_1, vm=rx_tx_stat_vm.vm_1, keys=conf.STAT_KEYS
-    )
     err_msg = "Failed to get %s statistics on %s" % (
         rx_tx_stat_vm.vm_nic_1, rx_tx_stat_vm.vm_1
     )
-    assert conf.NIC_STAT, err_msg
-
     vms_ips = [
-        (helper.get_vm_resource(rx_tx_stat_vm.vm_0), conf.VM_IPS[0]),
-        (helper.get_vm_resource(rx_tx_stat_vm.vm_1), conf.VM_IPS[1])
+        (helper.get_vm_resource(rx_tx_stat_vm.vm_0), rx_tx_conf.VM_IPS[0]),
+        (helper.get_vm_resource(rx_tx_stat_vm.vm_1), rx_tx_conf.VM_IPS[1])
     ]
 
     nic_state_attempts = 10
-    while not all([int(conf.NIC_STAT[x]) > 1000 for x in conf.STAT_KEYS]):
+    while not all(
+        [int(rx_tx_conf.NIC_STAT[x]) > 1000 for x in rx_tx_conf.STAT_KEYS]
+    ):
         helper.send_icmp(vms_ips)
-        conf.NIC_STAT = hl_networks.get_nic_statistics(
+        rx_tx_conf.NIC_STAT = hl_networks.get_nic_statistics(
             nic=rx_tx_stat_vm.vm_nic_1, vm=rx_tx_stat_vm.vm_1,
-            keys=conf.STAT_KEYS
+            keys=rx_tx_conf.STAT_KEYS
         )
         nic_state_attempts -= 1
-        assert conf.NIC_STAT, err_msg
+        assert rx_tx_conf.NIC_STAT, err_msg
 
         if nic_state_attempts == 0:
             assert False, "Timeout waiting for get NIC stats > 1000"
 
-    conf.TOTAL_RX = conf.NIC_STAT["data.total.rx"]
-    conf.TOTAL_TX = conf.NIC_STAT["data.total.tx"]
+    conf.TOTAL_RX = rx_tx_conf.NIC_STAT["data.total.rx"]
+    conf.TOTAL_TX = rx_tx_conf.NIC_STAT["data.total.tx"]
