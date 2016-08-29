@@ -142,8 +142,8 @@ class TestCase11588(TestCase):
             )
             ll_templates.import_template(
                 True, self.template_name, self.export_domain,
-                self.storage_domain, config.CLUSTER_NAME, template_import,
-                async=True
+                self.storage_domain, cluster=config.CLUSTER_NAME,
+                name=template_import, async=True
             )
 
         if not ll_templates.waitForTemplatesStates(

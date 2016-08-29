@@ -77,7 +77,7 @@ def get_job_object(description, job_status=ENUMS['job_finished']):
     return None
 
 
-def get_job_execution_time(description):
+def get_job_execution_time(job_object):
     """
     Get the execution time of the job
 
@@ -89,9 +89,10 @@ def get_job_execution_time(description):
     Returns:
         float: Execution time of requested job in seconds
     """
-    job = get_job_object(description)
-    time = (job.get_last_updated() - job.get_start_time()).total_seconds()
-    logger.info("JOB '%s' TOOK %s seconds", job.get_description(), time)
+    time = (
+        job_object.get_last_updated() - job_object.get_start_time()
+    ).total_seconds()
+    logger.info("JOB '%s' TOOK %s seconds", job_object.get_description(), time)
     return time
 
 
@@ -161,7 +162,7 @@ def wait_for_jobs(
                 for job_description in job_descriptions:
                     job = get_job_object(job_description)
                     if job:
-                        get_job_execution_time(job.get_description())
+                        get_job_execution_time(job)
             logger.info("All jobs are gone")
             return
 

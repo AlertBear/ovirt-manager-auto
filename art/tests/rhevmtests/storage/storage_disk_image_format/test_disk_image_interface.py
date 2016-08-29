@@ -681,7 +681,7 @@ class TestCase14948(BaseTestCase):
         """
         disk_obj = ll_disks.get_disk_obj(self.disk_alias)
         assert ll_disks.attachDisk(
-            positive=True, alias=disk_obj.get_alias(),
+            positive=False, alias=disk_obj.get_alias(),
             vm_name=self.vm_name, active=False, disk_id=disk_obj.get_id(),
             interface=None
         ), (

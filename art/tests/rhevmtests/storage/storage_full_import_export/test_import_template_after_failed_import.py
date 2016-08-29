@@ -109,7 +109,8 @@ class TestCase11628(TestCase):
         logger.info("Start importing template")
         assert templates.import_template(
             True, self.templ_name, self.export_domain, self.storage_domain,
-            config.CLUSTER_NAME, async=True)
+            cluster=config.CLUSTER_NAME, async=True
+        )
 
         logger.info("Waiting for migration to start")
         # importing should start right away, timeout=10 is more than enough
@@ -133,7 +134,8 @@ class TestCase11628(TestCase):
         logger.info("Importing second time")
         assert templates.import_template(
             True, self.templ_name, self.export_domain, self.storage_domain,
-            config.CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME
+        )
 
     def tearDown(self):
         """

@@ -6,7 +6,7 @@ Storage/3_2_Storage_Disk_Image_Format
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import config
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -376,6 +376,7 @@ class ExportVms(BaseTestDiskImageVms):
         TestCase.teardown_exception()
 
 
+@bz({'1371024': {}})
 @attr(tier=2)
 class TestCase11618(ExportVms):
     """ Polarion case 11618 """
@@ -397,6 +398,7 @@ class TestCase11618(ExportVms):
         self.check_disks()
 
 
+@bz({'1371024': {}})
 @attr(tier=2)
 class TestCase11617(ExportVms):
     """ Polarion case 11617 """
@@ -420,6 +422,7 @@ class TestCase11617(ExportVms):
         self.check_disks({self.vm_prealloc: True})
 
 
+@bz({'1371024': {}})
 @attr(tier=2)
 class TestCase11616(ExportVms):
     """ Polarion case 11616 """
