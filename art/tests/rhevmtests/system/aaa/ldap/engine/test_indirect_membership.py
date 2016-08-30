@@ -11,7 +11,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @attr(tier=1)
@@ -42,7 +42,7 @@ class IndirectMembership(TestCase):
         user = self.USER
         users.loginAsUser(user, self.conf['authn_name'], self.PASSWORD, True)
         assert common.connectionTest(), "%s can't login" % user
-        LOGGER.info("User %s can login and is indirect member of group %s.",
+        logger.info("User %s can login and is indirect member of group %s.",
                     user, self.GROUP)
 
 

@@ -14,21 +14,21 @@ import logging
 
 LOG_COLLECTOR_TEST_PLAN = 3748
 NAME = 'log_collector'
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 DISK_SIZE = 6 * 1024 * 1024 * 1024
 ISCSI = unittest_conf.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
     if unittest_conf.GOLDEN_ENV:
-        LOGGER.info("Golden environment - skipping setup_module")
+        logger.info("Golden environment - skipping setup_module")
         return
     base.setup_module()
 
 
 def teardown_module():
     if unittest_conf.GOLDEN_ENV:
-        LOGGER.info("Golden environment - skipping teardown_module")
+        logger.info("Golden environment - skipping teardown_module")
         return
     base.teardown_module()
 
@@ -48,7 +48,7 @@ class LogCollectorTestCaseBase(base.RHEVMUtilsTestCase):
         self.kwargs = {}
         if unittest_conf.OUTPUT_DIR:
             self.kwargs = {'output': unittest_conf.OUTPUT_DIR}
-            LOGGER.info("Output directory specified: %s.",
+            logger.info("Output directory specified: %s.",
                         unittest_conf.OUTPUT_DIR)
         self.host = unittest_conf.HOSTS[0]
         self.vm_name = unittest_conf.VM_NAME
@@ -224,7 +224,7 @@ class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
             unittest_conf.DC_NAME
         )
         assert storage_domain
-        LOGGER.info('Adding VM to SD: %s' % storage_domain)
+        logger.info('Adding VM to SD: %s' % storage_domain)
         assert llvms.createVm(
             True, self.vm_name, 'description does not matter',
             cluster=self.cluster, provisioned_size=DISK_SIZE, nic='nic0',
@@ -236,7 +236,7 @@ class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
             return
         if not llvms.removeVm(positive=True, vm=self.vm_name, stopVM='true'):
             raise VMException("Cannot remove vm %s" % self.vm_name)
-        LOGGER.info("Successfully removed %s.", self.vm_name)
+        logger.info("Successfully removed %s.", self.vm_name)
 
         super(LogCollectorRegressionBz1058894, self).tearDown()
 

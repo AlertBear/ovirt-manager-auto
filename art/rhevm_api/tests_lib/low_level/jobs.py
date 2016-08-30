@@ -8,7 +8,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 JOBS_API = get_api('job', 'jobs')
 STEPS_API = get_api('step', 'steps')
-LOGGER = logging.getLogger("art.ll_lib.jobs")
+logger = logging.getLogger("art.ll_lib.jobs")
 TASK_TIMEOUT = 600
 JOB_TIMEOUT = 1200
 TASK_POLL = 5
@@ -29,7 +29,7 @@ def check_recent_job(positive, description, last_jobs_num=None,
     """
     jobs = JOBS_API.get(absLink=False)[:last_jobs_num]
     if not description:
-        LOGGER.warn("Description is empty")
+        logger.warn("Description is empty")
         return False, None, None
 
     job_status = job_status.lower()
@@ -91,7 +91,7 @@ def get_job_execution_time(description):
     """
     job = get_job_object(description)
     time = (job.get_last_updated() - job.get_start_time()).total_seconds()
-    LOGGER.info("JOB '%s' TOOK %s seconds", job.get_description(), time)
+    logger.info("JOB '%s' TOOK %s seconds", job.get_description(), time)
     return time
 
 
@@ -110,7 +110,7 @@ def get_active_jobs(job_descriptions=None):
     # returning 400, just return a list of objects so wait_for_jobs() will
     # continue to call this funcion until the time out
     if jobs is None:
-        LOGGER.warning("GET /api/jobs returned 400")
+        logger.warning("GET /api/jobs returned 400")
         return [True]
 
     jobs = filter(
@@ -128,7 +128,7 @@ def get_active_jobs(job_descriptions=None):
                     break
         jobs = relevant_jobs
 
-    LOGGER.info("Active jobs: %s", [job.get_description() for job in jobs])
+    logger.info("Active jobs: %s", [job.get_description() for job in jobs])
     return jobs
 
 
@@ -151,7 +151,7 @@ def wait_for_jobs(
     :type exec_time: bool
     :raise: TimeoutExpiredError
     """
-    LOGGER.info("Waiting for jobs %s", job_descriptions)
+    logger.info("Waiting for jobs %s", job_descriptions)
     sampler = TimeoutingSampler(
         timeout, sleep, get_active_jobs, job_descriptions
     )
@@ -162,7 +162,7 @@ def wait_for_jobs(
                     job = get_job_object(job_description)
                     if job:
                         get_job_execution_time(job.get_description())
-            LOGGER.info("All jobs are gone")
+            logger.info("All jobs are gone")
             return
 
 
@@ -215,10 +215,10 @@ def add_step(job_description, step_description,
             else:
                 break
     if not job_obj:
-        LOGGER.error("No job with given description found")
+        logger.error("No job with given description found")
         return False
     if parent_step_description and not parent_step_obj:
-        LOGGER.error("No parent step with given description found")
+        logger.error("No parent step with given description found")
         return False
     steps_obj = STEPS_API.getElemFromLink(job_obj, get_href=True)
     status_obj = data_st.Status(state=step_state)
@@ -246,7 +246,7 @@ def step_by_description(job, step_description):
                                           get_href=False)
     if not steps_obj:
         warn_msg = 'No step with description %s under job with description %s'
-        LOGGER.warn(warn_msg, step_description, job.get_description())
+        logger.warn(warn_msg, step_description, job.get_description())
     for step in steps_obj:
         if step_description in step.get_description():
             return step
@@ -270,7 +270,7 @@ def end_job(job_description, job_status, end_status):
                                job_description,
                                job_status=job_status)[1]
     if not job_obj:
-        LOGGER.warn("Job with given description not exist")
+        logger.warn("Job with given description not exist")
         return False
     if not JOBS_API.syncAction(job_obj, "end", True, status=status_obj):
         return False
@@ -292,7 +292,7 @@ def end_step(job_description, job_status, step_description, end_status):
                                job_description,
                                job_status=job_status)[1]
     if not job_obj:
-        LOGGER.warn("Job with given description not exist")
+        logger.warn("Job with given description not exist")
         return False
     step_obj = step_by_description(job_obj, step_description)
     if not STEPS_API.syncAction(
@@ -305,9 +305,9 @@ def end_step(job_description, job_status, step_description, end_status):
 def clear_job(job_description, job_status):
     job_obj = check_recent_job(True, job_description, job_status=job_status)[1]
     if not job_obj:
-        LOGGER.warn("Job with given description not exist")
+        logger.warn("Job with given description not exist")
         return False
     status = JOBS_API.syncAction(job_obj, "clear", True)
     if not status:
-        LOGGER.warn("Clearing of job failed")
+        logger.warn("Clearing of job failed")
     return True

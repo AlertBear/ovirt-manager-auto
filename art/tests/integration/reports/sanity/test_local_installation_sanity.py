@@ -14,11 +14,11 @@ class SanityServicesLogs(ServiceTest):
     __test__ = True
 
     def setUp(self):
-        config.LOGGER.info("class SanityServicesLogs "
+        config.logger.info("class SanityServicesLogs "
                            "setUp")
 
     def tearDown(self):
-        config.LOGGER.info("class SanityServicesLogs "
+        config.logger.info("class SanityServicesLogs "
                            "tearDown")
 
     def test_dwh_service_is_running(self):

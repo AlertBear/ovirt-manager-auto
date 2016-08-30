@@ -22,7 +22,7 @@ from art.rhevm_api.resources import VDS, storage
 import art.test_handler.exceptions as errors
 
 import golden_env.config as config
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 GB = 1024 * 1024 * 1024
@@ -228,9 +228,9 @@ class CreateDC(TestCase):
                     vds_objs, version=comp_version,
                 )
             except cpumodel.CpuModelError as ex:
-                LOGGER.error("Can not determine the best cpu_model: %s", ex)
+                logger.error("Can not determine the best cpu_model: %s", ex)
             else:
-                LOGGER.info(
+                logger.info(
                     "Cpu info %s for cluster: %s", cpu_info, cluster_name
                 )
                 cpu_name = cpu_info['cpu']
@@ -250,10 +250,10 @@ class CreateDC(TestCase):
                 version=comp_version
             ):
                 raise errors.ClusterException("Failed to %s" % msg)
-            LOGGER.info("Succeed to %s", msg)
+            logger.info("Succeed to %s", msg)
 
         if not hosts_def:
-            LOGGER.info("No hosts in cluster")
+            logger.info("No hosts in cluster")
             return
 
         for host_name, vds_obj in zip(hosts_names, vds_objs):
@@ -316,11 +316,11 @@ class CreateDC(TestCase):
                             self.connect_openstack_ep(cinder, datacenter_name)
                             break
                     else:
-                        LOGGER.warning(
+                        logger.warning(
                             "No cinder EP with name %s found", sd_name
                         )
                 else:
-                    LOGGER.warning("No external provider defined")
+                    logger.warning("No external provider defined")
 
             elif storage_type == ENUMS['storage_type_fcp']:
                 fcp = storage_conf.get_fcp_share()
@@ -332,7 +332,7 @@ class CreateDC(TestCase):
                     override_luns=True,
                 )
             else:
-                LOGGER.warning("unknown type: %s", storage_type)
+                logger.warning("unknown type: %s", storage_type)
 
     @staticmethod
     def _is_he_builder():
@@ -346,7 +346,7 @@ class CreateDC(TestCase):
         testflow.step("Creating vm %s", vm_name)
         vm_description = vm_name
         storage_domain_name = ll_sd.getDCStorages(dc_name, False)[0].name
-        LOGGER.info("storage domain: %s" % storage_domain_name)
+        logger.info("storage domain: %s" % storage_domain_name)
         sparse = vm['disk_sparse']
         volume_format = vm['disk_format']
         vm_type = vm['type']
@@ -371,15 +371,15 @@ class CreateDC(TestCase):
         if vm_state == ENUMS['vm_state_down']:
             ll_vms.startVm(True, vm_name, wait_for_status=ENUMS['vm_state_up'])
 
-        LOGGER.info("Waiting for IP of %s", vm_name)
+        logger.info("Waiting for IP of %s", vm_name)
         status, result = ll_vms.waitForIP(vm_name)
         assert status
 
-        LOGGER.info("Sealing: set persistent network for %s", vm_name)
+        logger.info("Sealing: set persistent network for %s", vm_name)
 
         assert test_utils.setPersistentNetwork(
             result['ip'], vm_password)
-        LOGGER.info("Stopping %s to create template", vm_name)
+        logger.info("Stopping %s to create template", vm_name)
         assert ll_vms.stopVm(True, vm_name)
 
     def _create_and_seal_vm(self, vm, dc_name, cl_name):
@@ -388,7 +388,7 @@ class CreateDC(TestCase):
 
     def _is_vms_state_down(self, cloned_vms):
         for cloned_vm in cloned_vms:
-            LOGGER.info("Waiting until %s state is down...", cloned_vm)
+            logger.info("Waiting until %s state is down...", cloned_vm)
             assert ll_vms.waitForVMState(
                 cloned_vm,
                 state=ENUMS['vm_state_down']
@@ -404,7 +404,7 @@ class CreateDC(TestCase):
             number_of_vms = 1
 
         while suffix_num < number_of_vms:
-            LOGGER.info(
+            logger.info(
                 "Creating VM: %s from Template: %s",
                 vm_description['name'],
                 vm_description['clone_from']
@@ -439,7 +439,7 @@ class CreateDC(TestCase):
     def _add_multiple_vms_from_template(
             self, vm_description, cloned_vms, dc_name, cl_name
     ):
-        LOGGER.info(
+        logger.info(
             "Creating a template and clone %s vms out of it",
             vm_description['number_of_vms']
         )
@@ -464,7 +464,7 @@ class CreateDC(TestCase):
             vm_description['name'] = prefix_vm_name
             vm_description['name'] += repr(suffix_num)
             suffix_num += 1
-            LOGGER.info(
+            logger.info(
                 "Cloning vm %s from template %s",
                 vm_description['name'], tmp_template
             )
@@ -495,7 +495,7 @@ class CreateDC(TestCase):
             return
 
         for vm_description in vms_def:
-            LOGGER.info(vm_description)
+            logger.info(vm_description)
             cloned_vms = []
 
             if 'clone_from' in vm_description:
@@ -513,7 +513,7 @@ class CreateDC(TestCase):
                     cl_name
                 )
             else:
-                LOGGER.info("Creating a new vm")
+                logger.info("Creating a new vm")
                 self._create_and_seal_vm(
                     vm_description,
                     dc_name,
@@ -532,7 +532,7 @@ class CreateDC(TestCase):
             if sd not in disk_sd:
                 for disk in template_disks:
                     templates.wait_for_template_disks_state(template)
-                    LOGGER.info(
+                    logger.info(
                         "Copy disk: %s from template %s to sd: %s", disk,
                         template, sd
                     )
@@ -607,7 +607,7 @@ class CreateDC(TestCase):
             if status:
                 break
             else:
-                LOGGER.info(
+                logger.info(
                     "Wait for import template: %s from glance has completed",
                     template_name
                 )
@@ -656,10 +656,10 @@ class CreateDC(TestCase):
             self.build_cluster(
                 cluster, datacenter_name, comp_version, host_conf
             )
-        LOGGER.info("Added all clusters")
+        logger.info("Added all clusters")
 
         if clusters[0]['hosts']:
-            LOGGER.info("Adding storage domains")
+            logger.info("Adding storage domains")
             storages = dc_def['storage_domains']
             host = clusters[0]['hosts'][0]['name']
             if storages is not None:
@@ -667,24 +667,24 @@ class CreateDC(TestCase):
                     storages, host, datacenter_name, storage_conf, ep_conf
                 )
             else:
-                LOGGER.info("No storage_domains on yaml description file")
+                logger.info("No storage_domains on yaml description file")
 
             export_domains = dc_def['export_domains']
             if export_domains is None:
-                LOGGER.info("No export_domains to add")
+                logger.info("No export_domains to add")
             else:
                 for export_domain in export_domains:
                     self.add_export_domain(
                         export_domain, storage_conf, datacenter_name, host
                     )
         else:
-            LOGGER.info("No hosts, so not adding storage domains")
+            logger.info("No hosts, so not adding storage domains")
 
         for cluster in clusters:
             if cluster['external_templates']:
                 for external_template in cluster['external_templates']:
                     if external_template['glance']:
-                        LOGGER.info("Adding glance templates")
+                        logger.info("Adding glance templates")
                         testflow.step(
                             "Import Glance template %s",
                             external_template['glance'][0]['name']
@@ -695,30 +695,30 @@ class CreateDC(TestCase):
                             cluster['name']
                         )
                     if external_template['export_domain']:
-                        LOGGER.info("Adding export templates")
+                        logger.info("Adding export templates")
                         self.add_export_templates(
                             external_template['export_domain'],
                             datacenter_name,
                             cluster['name']
                         )
                 else:
-                    LOGGER.info("No templates to add")
+                    logger.info("No templates to add")
 
             vms_def = cluster['vms']
             if vms_def:
-                LOGGER.info("Adding vms")
+                logger.info("Adding vms")
                 self.add_vms(
                     vms_def, datacenter_name, cluster['name']
                 )
             else:
-                LOGGER.info("No vms to add")
+                logger.info("No vms to add")
 
             templ_def = cluster['templates']
             if templ_def:
-                LOGGER.info("Adding templates")
+                logger.info("Adding templates")
                 self.add_templates(templ_def, cluster['name'], datacenter_name)
             else:
-                LOGGER.info("No templates to add")
+                logger.info("No templates to add")
 
     def add_export_domain(self, export_domain, storage_conf, dc, host):
         if export_domain['name']:
@@ -742,26 +742,26 @@ class CreateDC(TestCase):
                 True, datacenter=dc, storagedomain=name
             )
             # Attach storage domain
-            LOGGER.info("Export SD %s has been successfully attached", name)
+            logger.info("Export SD %s has been successfully attached", name)
         else:
-            LOGGER.info("Please provide name to your export domain")
+            logger.info("Please provide name to your export domain")
 
     def import_shared_iso_domain(self, storage_conf, host):
         address, path = storage_conf.get_shared_iso()
-        LOGGER.info("Importing iso domain %s:%s", address, path)
+        logger.info("Importing iso domain %s:%s", address, path)
         testflow.step("Importing iso domain %s:%s", address, path)
         assert ll_sd.importStorageDomain(
             True, ENUMS['storage_dom_type_iso'], ENUMS['storage_type_nfs'],
             address[0], path[0], host)
 
     def connect_openstack_ep(self, external_provider_def, dc_name=None):
-        LOGGER.info(
+        logger.info(
             "Connecting %s to environment", external_provider_def.name
         )
         testflow.step(
             "Connecting %s to environment", external_provider_def.name
         )
-        LOGGER.info(
+        logger.info(
             "%s %s %s %s %s %s %s",
             external_provider_def.ep_type,
             external_provider_def.name,
@@ -800,7 +800,7 @@ class CreateDC(TestCase):
         assert external_provider.add()
 
     def _create_users_groups(self, golden_env):
-        LOGGER.info("Creating users and groups")
+        logger.info("Creating users and groups")
         testflow.step("Creating users and groups")
         with config.ENGINE_HOST.executor().session() as ss:
             for group in golden_env['groups']:
@@ -857,7 +857,7 @@ class CreateDC(TestCase):
         iso_domains = GOLDEN_ENV['iso_domains']
         host = (hosts.get_host_list()[0]).get_name()
         if not host or iso_domains is None:
-            LOGGER.info(
+            logger.info(
                 "There are no hosts or no iso domain described in yaml,"
                 "can't add shared_iso_domain!"
             )

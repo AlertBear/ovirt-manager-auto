@@ -22,7 +22,7 @@ from art.rhevm_api.utils.test_utils import getStat
 
 from utilities.timeout import TimeoutingSampler
 
-LOGGER = logging.getLogger("art.hl_lib.vms")
+logger = logging.getLogger("art.hl_lib.vms")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CLUSTER_API = get_api('cluster', 'clusters')
 
@@ -58,12 +58,12 @@ def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
     vm_obj = VM_API.find(vm_name)
     if vm_obj.get_status() == ENUMS['vm_state_up']:
         start = True
-        LOGGER.info("Shutting down vm %s to add disk", vm_name)
+        logger.info("Shutting down vm %s to add disk", vm_name)
         if not vms.shutdownVm(True, vm_name):
             raise errors.VMException("Shutdown of vm %s failed" % vm_name)
     vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'], timeout=60)
 
-    LOGGER.info("AddDisk to vm %s", vm_name)
+    logger.info("AddDisk to vm %s", vm_name)
     if not vms.addDisk(True, vm_name, 5 * GB, storagedomain=storage_domain,
                        format=format_, interface=interface, sparse=sparse,
                        **kwargs):
@@ -245,20 +245,20 @@ def migrate_by_maintenance(
     :rtype: bool
     """
     status = True
-    LOGGER.info("Setting %s into maintenance", src_host)
+    logger.info("Setting %s into maintenance", src_host)
     if not hosts.deactivateHost(positive=True, host=src_host):
-        LOGGER.error("Failed to set %s into maintenance", src_host)
+        logger.error("Failed to set %s into maintenance", src_host)
         return False
-    LOGGER.info("Checking VMs after migration")
+    logger.info("Checking VMs after migration")
     if connectivity_check:
         if not check_vms_after_migration(
             vms_list=vms_list, src_host=src_host, vm_os_type=vm_os_type,
             vm_user=vm_user, vm_password=vm_password
         ):
             status = False
-    LOGGER.info("Activating %s", src_host)
+    logger.info("Activating %s", src_host)
     if not hosts.activateHost(True, host=src_host):
-        LOGGER.error("Couldn't activate host %s", src_host)
+        logger.error("Couldn't activate host %s", src_host)
         return False
     return status
 
@@ -287,35 +287,35 @@ def migrate_by_nic_down(
     :rtype: bool
     """
     status = True
-    LOGGER.info("Setting %s down on %s", nic, src_host)
+    logger.info("Setting %s down on %s", nic, src_host)
     host_ip = hosts.get_host_ip_from_engine(host=src_host)
     vds_resource = resources.VDS(ip=host_ip, root_password=password)
     if not hosts.set_host_non_operational_nic_down(
         host_resource=vds_resource, nic=nic
     ):
-        LOGGER.error(
+        logger.error(
             "Couldn't start migration by disconnecting the NIC with "
             "required network on it"
         )
         return False
 
-    LOGGER.info("Checking VMs after migration")
+    logger.info("Checking VMs after migration")
     if not check_vms_after_migration(
         vms_list=vms_list, src_host=src_host, vm_os_type=vm_os_type,
         vm_user=vm_user, vm_password=vm_password
     ):
         status = False
 
-    LOGGER.info(
+    logger.info(
         "Put the %s in the UP state and activate the %s", nic, src_host
     )
     if not vds_resource.network.if_up(nic=nic):
-        LOGGER.error("Couldn't put NIC %s in up state on %s", nic, src_host)
+        logger.error("Couldn't put NIC %s in up state on %s", nic, src_host)
         return False
 
-    LOGGER.info("Activating %s", src_host)
+    logger.info("Activating %s", src_host)
     if not hosts.activateHost(True, host=src_host):
-        LOGGER.error("Couldn't activate host %s", src_host)
+        logger.error("Couldn't activate host %s", src_host)
         return False
     return status
 
@@ -344,40 +344,40 @@ def check_vms_after_migration(
     """
     vms_host = []
     for vm in vms_list:
-        LOGGER.info("Waiting for %s to be UP after migration", vm)
+        logger.info("Waiting for %s to be UP after migration", vm)
         vm_obj = VM_API.find(vm)
         if not VM_API.waitForElemStatus(vm_obj, "up", MIGRATION_TIMEOUT):
-            LOGGER.info("%s is not UP after migration", vm)
+            logger.info("%s is not UP after migration", vm)
             return False
 
-        LOGGER.info("Check %s connectivity after migration finished", vm)
+        logger.info("Check %s connectivity after migration finished", vm)
         if not vms.checkVMConnectivity(
             True, vm=vm, osType=vm_os_type, attempt=ATTEMPTS,
             interval=INTERVAL, user=vm_user, password=vm_password,
             timeout=MIGRATION_TIMEOUT
         ):
-            LOGGER.error("Check connectivity to %s failed", vm)
+            logger.error("Check connectivity to %s failed", vm)
             return False
 
-        LOGGER.info("Checking that the %s switched hosts", vm)
+        logger.info("Checking that the %s switched hosts", vm)
         vms_host.append(vms.getVmHost(vm)[1]["vmHoster"])
 
     if dst_host:
-        LOGGER.info(
+        logger.info(
             "Checking that all VMs moved to destination host (%s)", dst_host
         )
         if not all([True if i == dst_host else False for i in vms_host]):
-            LOGGER.error(
+            logger.error(
                 "Not all VMs are located on destination host (%s)", dst_host
             )
             return False
     else:
-        LOGGER.info(
+        logger.info(
             "Checking that all VMs are not located on the source host (%s)",
             src_host
         )
         if not all([True if i != src_host else False for i in vms_host]):
-            LOGGER.error("Some VMs are located on source host (%s)", src_host)
+            logger.error("Some VMs are located on source host (%s)", src_host)
             return False
     return True
 
@@ -410,14 +410,14 @@ def migrate_vms(
     max_workers = len(vms_list) if not max_workers else max_workers
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for machine in vms_list:
-            LOGGER.info("migrating vm %s", machine)
+            logger.info("migrating vm %s", machine)
             results.append(
                 executor.submit(
                     vms.migrateVm, True, machine, dst_host, True, False)
             )
     for machine, res in zip(vms_list, results):
         if res.exception():
-            LOGGER.error(
+            logger.error(
                 "Got exception while migrate vm %s: %s",
                 machine, res.exception()
             )
@@ -425,7 +425,7 @@ def migrate_vms(
         if not res.result():
             raise exceptions.VMException("Cannot migrate vm %s" % machine)
 
-    LOGGER.info("Checking VMs after migration")
+    logger.info("Checking VMs after migration")
     if not check_vms_after_migration(
         vms_list=vms_list, src_host=src_host, vm_os_type=vm_os_type,
         vm_user=vm_user, vm_password=vm_password, dst_host=dst_host
@@ -445,12 +445,12 @@ def get_vms_os_type(test_vms):
     :rtype: list
     """
     try:
-        LOGGER.info("Get VMs os type")
+        logger.info("Get VMs os type")
         vms_obj = [vms.get_vm(vm) for vm in test_vms]
         return [vm.get_os().get_type().lower() for vm in vms_obj]
     except Exception, e:
-        LOGGER.error("Failed to get os type for vms: %s" % test_vms)
-        LOGGER.error("Failed to get os type, reason: %s" % e)
+        logger.error("Failed to get os type for vms: %s" % test_vms)
+        logger.error("Failed to get os type, reason: %s" % e)
         return None
 
 
@@ -464,13 +464,13 @@ def update_os_type(os_type, test_vms):
     :return: True if os type set in vms
     :rtype bool
     """
-    LOGGER.info(
+    logger.info(
         "Set VMs %s os type to %s",
         test_vms,
         os_type
     )
     for vm in test_vms:
-        LOGGER.info(
+        logger.info(
             "update vm %s to os type: %s",
             vm,
             os_type
@@ -480,7 +480,7 @@ def update_os_type(os_type, test_vms):
             vm=vm,
             os_type=os_type
         ):
-            LOGGER.error(
+            logger.error(
                 "Failed to update os type to vm %s",
                 vm
             )
@@ -497,9 +497,9 @@ def get_vm_memory(vm):
     :return: vm memory
     :rtype: str
     """
-    LOGGER.info("store vm %s memory", vm)
+    logger.info("store vm %s memory", vm)
     vm_obj = vms.get_vm(vm)
-    LOGGER.info("vm memory: %s", vm_obj.get_memory())
+    logger.info("vm memory: %s", vm_obj.get_memory())
     return vm_obj.get_memory()
 
 
@@ -519,7 +519,7 @@ def set_vms_with_host_memory_by_percentage(
     :return: True/False if vms memory updated , index of host with max memory
     :rtype: tuple {bool,int}
     """
-    LOGGER.info(
+    logger.info(
         'update vms %s memory with %s percent of host memory'
         'for hosts: %s.' %
         (
@@ -533,11 +533,11 @@ def set_vms_with_host_memory_by_percentage(
         for host in test_hosts
     ]
     host_index_max_mem = hosts_memory.index(max(hosts_memory))
-    LOGGER.info(
+    logger.info(
         "The host with the maximum memory: %s",
         test_hosts[host_index_max_mem]
     )
-    LOGGER.info(
+    logger.info(
         "update vms: %s  memory to host memory",
         test_vms
     )
@@ -549,9 +549,9 @@ def set_vms_with_host_memory_by_percentage(
                     (float(percentage) / float(100))
                 )
             )
-            LOGGER.info("normalization memory to MB: %s", str(new_memory))
+            logger.info("normalization memory to MB: %s", str(new_memory))
             new_memory = (long(new_memory / MB)) * MB
-            LOGGER.info(
+            logger.info(
                 "update vm: %s memory to %s",
                 vm,
                 str(new_memory)
@@ -561,7 +561,7 @@ def set_vms_with_host_memory_by_percentage(
                 vm=vm,
                 memory=new_memory
             ):
-                LOGGER.error(
+                logger.error(
                     "Failed to update memory to vm %s",
                     vm
                 )
@@ -581,7 +581,7 @@ def update_vms_memory(vms_list, memory):
     :rtype: bool
     """
     for vm in vms_list:
-        LOGGER.info(
+        logger.info(
             "update vm: %s memory to %d",
             vm,
             memory
@@ -592,7 +592,7 @@ def update_vms_memory(vms_list, memory):
             memory=memory,
             memory_guaranteed=memory / 2
         ):
-            LOGGER.error(
+            logger.error(
                 "Failed to update memory to vm %s",
                 vm
             )
@@ -613,14 +613,14 @@ def create_vm_using_glance_image(
     :return: True on success, False otherwise
     :rtype: bool
     """
-    LOGGER.info(
+    logger.info(
         "Verifies whether image %s exists in glance repository %s",
         glance_image, glance_storage_domain_name
     )
     if not storagedomains.verify_image_exists_in_storage_domain(
         glance_storage_domain_name, glance_image
     ):
-        LOGGER.error(
+        logger.error(
             "Glance image %s is not in glance storage domain %s",
             glance_image, glance_storage_domain_name
         )
@@ -641,36 +641,36 @@ def create_vm_using_glance_image(
         glance_image, glance_storage_domain_name
     )
     disk_alias = "{0}_Disk_glance".format(vm_name)
-    LOGGER.info("Importing image from %s", glance_storage_domain_name)
+    logger.info("Importing image from %s", glance_storage_domain_name)
     if not glance.import_image(
         destination_storage_domain=target_storage_domain,
         cluster_name=kwargs.get('cluster'),
         new_disk_alias=disk_alias,
     ):
-        LOGGER.error(
+        logger.error(
             "Failed to import image %s from glance repository", glance_image
         )
         return False
-    LOGGER.info("Creating vm %s with nic", vm_name)
+    logger.info("Creating vm %s with nic", vm_name)
     if not vms.createVm(
         positive=positive, vmName=vm_name,
         vmDescription=vm_description, **kwargs
     ):
-        LOGGER.error("Failed to add vm %s", vm_name)
+        logger.error("Failed to add vm %s", vm_name)
         return False
-    LOGGER.info("Attaching imported disk to vm")
+    logger.info("Attaching imported disk to vm")
     if not disks.attachDisk(True, disk_alias, vm_name):
-        LOGGER.error(
+        logger.error(
             "Failed to attach disk %s to vm %s", glance_image, vm_name
         )
         return False
     disk_interface = kwargs.get('diskInterface')
-    LOGGER.info("Updating disk's interface to: %s", disk_interface)
+    logger.info("Updating disk's interface to: %s", disk_interface)
     if not disks.updateDisk(
         positive=True, vmName=vm_name, alias=disk_alias,
         interface=disk_interface, bootable=True
     ):
-        LOGGER.error("Failed to update disk's attributes")
+        logger.error("Failed to update disk's attributes")
         return False
     return True
 
@@ -690,21 +690,21 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
 
     vm_obj = VM_API.find(vm)
     source_host_name = vms.get_vm_host(vm)
-    LOGGER.info("Cancel migration on VM %s", vm)
+    logger.info("Cancel migration on VM %s", vm)
     log_err = "Failed to cancel migration on VM %s"
     if not VM_API.syncAction(vm_obj, "cancelmigration", True):
-        LOGGER.error(log_err, vm)
+        logger.error(log_err, vm)
         return False
 
     if not wait:
-        LOGGER.warning("Not going to wait till Cancel VM migration completes.")
+        logger.warning("Not going to wait till Cancel VM migration completes.")
         return True
 
     if not VM_API.waitForElemStatus(vm_obj, ENUMS["vm_state_up"], timeout):
-        LOGGER.error(log_err, vm)
+        logger.error(log_err, vm)
         return False
     destination_host_name = vms.get_vm_host(vm)
-    LOGGER.info(
+    logger.info(
         "Check that vm stay on the same host "
         "source host: %s destination host: %s",
         source_host_name, destination_host_name
@@ -742,12 +742,12 @@ def check_vm_memory(vm_resource, expected_mem_size):
     """
     expected_memory = expected_mem_size / KB
     actual_memory = get_memory_on_vm(vm_resource)
-    LOGGER.info("Expected memory(kb): %s", expected_memory)
-    LOGGER.info("Actual memory(kb): %s", actual_memory)
+    logger.info("Expected memory(kb): %s", expected_memory)
+    logger.info("Actual memory(kb): %s", actual_memory)
     if expected_memory * 0.90 <= actual_memory <= expected_memory:
         return True
     else:
-        LOGGER.error("memory check failed")
+        logger.error("memory check failed")
         return False
 
 
@@ -767,20 +767,20 @@ def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
 
     memory_size_before = int(get_vm_memory(vm_name))
     new_memory_size = memory_size_before
-    LOGGER.info("VM memory before: %s", memory_size_before)
+    logger.info("VM memory before: %s", memory_size_before)
     for i in range(0, number_of_times):
         new_memory_size += mem_size_to_expand
-        LOGGER.info("Update vm memory to: %s", new_memory_size)
+        logger.info("Update vm memory to: %s", new_memory_size)
         if not vms.updateVm(
             positive=True,
             vm=vm_name,
             memory=new_memory_size
         ):
-            LOGGER.error("Failed to update memory")
+            logger.error("Failed to update memory")
             return memory_size_before, -1, -1
 
     memory_size_after = get_vm_memory(vm_name)
-    LOGGER.info(
+    logger.info(
         "VM was update to %s:\n"
         "VM memory size before(on engine):%s \n"
         "VM memory size after(on engine): %s \n",
@@ -824,7 +824,7 @@ def create_windows_vm(
         max_time=WGT_INSTALL_TIMEOUT
     ):
         request = None
-        LOGGER.info("Quering for WGT installation status")
+        logger.info("Quering for WGT installation status")
 
         for request in TimeoutingSampler(
             max_time,
@@ -836,9 +836,9 @@ def create_windows_vm(
             if status == 200:
                 break
             elif status == 404:
-                LOGGER.info('Still waiting for results...')
+                logger.info('Still waiting for results...')
             else:
-                LOGGER.error("Got invalid status: '%s'", status)
+                logger.error("Got invalid status: '%s'", status)
                 request = None
                 break
 
@@ -873,7 +873,7 @@ def create_windows_vm(
 
     # Reset vm
     vm_id = vms.get_vm(vm_name).get_id()
-    LOGGER.info("Resseting vm '%s' record", vm_name)
+    logger.info("Resseting vm '%s' record", vm_name)
     request = urllib.urlopen(
         agent_url.format(
             action='reset',
@@ -905,7 +905,7 @@ def create_windows_vm(
             "RHEV Tools installation completed with code: '%s'" % status_code
         )
     vms.wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']])
-    LOGGER.info("RHEV Tools installation completed successfully")
+    logger.info("RHEV Tools installation completed successfully")
     return True, "Vm '%s' successfully created" % vm_name
 
 
@@ -967,7 +967,7 @@ def get_vm_cluster(vm_name):
     :return:cluster name
     :rtype: str
     """
-    LOGGER.info("Get VM %s cluster name", vm_name)
+    logger.info("Get VM %s cluster name", vm_name)
     vm_obj = VM_API.find(vm_name)
     cluster_id = vm_obj.cluster.id
     return CLUSTER_API.find(cluster_id, attribute='id').name
@@ -982,7 +982,7 @@ def get_vm_cpu_consumption_on_the_host(vm_name):
     :return: VM CPU consumption on the host
     :rtype: int
     """
-    LOGGER.info("Get VM %s cpu consumption", vm_name)
+    logger.info("Get VM %s cpu consumption", vm_name)
     stats = getStat(vm_name, "vm", "vms", ["cpu.current.total"])
     vm_cpus = vms.get_vm_processing_units_number(vm_name)
     return int(stats["cpu.current.total"]) / vm_cpus
@@ -1071,11 +1071,11 @@ def get_memory_on_vm(vm_resource):
     Returns:
         str: VM memory in KB
     """
-    LOGGER.info("Getting vm actual memory with free command")
+    logger.info("Getting vm actual memory with free command")
     rc, out, _ = vm_resource.run_command(shlex.split(CHECK_MEMORY_COMMAND))
     if rc:
-        LOGGER.error("Failed to get VM memory")
+        logger.error("Failed to get VM memory")
         return ""
     actual_memory = int(shlex.split(out)[1]) * KB
-    LOGGER.info("VM actual memory: %s", actual_memory)
+    logger.info("VM actual memory: %s", actual_memory)
     return actual_memory

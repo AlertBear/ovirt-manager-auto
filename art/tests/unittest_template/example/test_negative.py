@@ -9,7 +9,7 @@ from unittest2 import TestCase
 
 import art.test_handler.exceptions as exceptions
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 # Some helping function

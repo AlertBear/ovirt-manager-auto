@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import templates
 from rhevmtests.storage.storage_async_tasks import config
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def setup_package():
@@ -33,8 +33,8 @@ def setup_package():
     vm_name = config.VM_NAME[0]
     storage_domain_name = storagedomains.getDCStorages(
         config.DATA_CENTER_NAME, False)[0].name
-    LOGGER.info("Storage domain: %s" % storage_domain_name)
-    LOGGER.info("Creating VM %s" % vm_name)
+    logger.info("Storage domain: %s" % storage_domain_name)
+    logger.info("Creating VM %s" % vm_name)
     assert vms.createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,

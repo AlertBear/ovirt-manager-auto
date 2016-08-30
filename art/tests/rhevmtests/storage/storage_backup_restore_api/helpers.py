@@ -13,7 +13,7 @@ from utilities.machine import Machine
 DISKS_API = get_api('disk', 'disks')
 COPY_DISK_TIMEOUT = 2000
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 TRANSIENT_DIR_PATH = "/var/lib/vdsm/transient"
 DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=4096 conv=noerror,sync'
@@ -26,7 +26,7 @@ def is_transient_directory_empty(host):
     return:
         True if the directory is empty, False otherwise
     """
-    LOGGER.info("Checking transient directory")
+    logger.info("Checking transient directory")
     vdsm_machine = Machine(
         host=host, user=config.HOSTS_USER, password=config.HOSTS_PW
     ).util('linux')
@@ -53,13 +53,13 @@ def copy_backup_disk(
 
     command = DD_COMMAND % (source_disk, destination_disk)
 
-    LOGGER.info(
+    logger.info(
         "copying data from %s to %s on vm %s",
         source_disk, destination_disk, vm_ip
     )
 
     rc, out = vm_machine.runCmd(shlex.split(command), timeout=timeout)
-    LOGGER.debug(
+    logger.debug(
         "The dd output is: '%s', return code is '%s'", out.strip(), rc
     )
     return rc

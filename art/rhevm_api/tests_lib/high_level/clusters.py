@@ -4,7 +4,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
-LOGGER = logging.getLogger("art.hl_lib.cls")
+logger = logging.getLogger("art.hl_lib.cls")
 
 
 def remove_templates_connected_cluster(cluster_name):
@@ -16,7 +16,7 @@ def remove_templates_connected_cluster(cluster_name):
     templates_in_cluster = ll_templates.get_template_from_cluster(cluster_name)
     for template in templates_in_cluster:
         if not ll_templates.removeTemplate(True, template):
-            LOGGER.error("Remove template:%s failed", template)
+            logger.error("Remove template:%s failed", template)
 
 
 def remove_vms_and_templates_from_cluster(cluster_name):
@@ -25,10 +25,10 @@ def remove_vms_and_templates_from_cluster(cluster_name):
     :param cluster: cluster name
     :type cluster: str
     """
-    LOGGER.info('Remove VMs connected to cluster: %s', cluster_name)
+    logger.info('Remove VMs connected to cluster: %s', cluster_name)
     ll_vms.remove_all_vms_from_cluster(cluster_name)
 
-    LOGGER.info('Remove Templates from cluster: %s', cluster_name)
+    logger.info('Remove Templates from cluster: %s', cluster_name)
     remove_templates_connected_cluster(cluster_name)
 
 

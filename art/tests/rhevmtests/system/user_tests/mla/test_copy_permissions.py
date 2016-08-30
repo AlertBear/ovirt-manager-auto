@@ -14,7 +14,7 @@ from rhevmtests.system.user_tests.mla.roles import role
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import vms, users, templates, mla
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 USER1_VM_ROLES = [role.UserRole, role.PowerUserRole]
 USER2_VM_ROLES = [role.TemplateAdmin]
@@ -107,7 +107,7 @@ def tearDownModule():
 
 def _compare(exists, user_name, roles_list, predefined):
     msg = "\nPermission copied for user %s are:\n%s\nshould be:\n%s"
-    LOGGER.info(
+    logger.info(
         msg % (user_name, roles_list[user_name], predefined if exists else [])
     )
     if not exists:

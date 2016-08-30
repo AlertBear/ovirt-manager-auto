@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains
 )
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 # Predefined role for creation of VM as non-admin user
 VM_PREDEFINED = role.UserVmManager
 # Predefined role for creation of Disk as non-admin user
@@ -120,7 +120,7 @@ class PermissionsCase54408(TestCase):
             obj = self.OBJS[k].find(k)
             href = '%s/permissions' % obj.get_href()
             assert self.OBJS[k].get(href=href) is not None
-            LOGGER.info(msg % obj.get_name())
+            logger.info(msg % obj.get_name())
 
 
 @attr(tier=1)
@@ -149,7 +149,7 @@ class PermissionsCase54409(TestCase):
             network=config.MGMT_BRIDGE
         )
         assert vms.removeVm(True, config.VM_NAME1)
-        LOGGER.info("User can create/remove vm with vm permissions.")
+        logger.info("User can create/remove vm with vm permissions.")
 
         loginAsAdmin()
         common.removeUser(True, config.USER_NAME)
@@ -166,7 +166,7 @@ class PermissionsCase54409(TestCase):
             False, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        LOGGER.info("User can't create/remove vm without vm permissions.")
+        logger.info("User can't create/remove vm without vm permissions.")
 
 
 # Check that in the object Permissions sub tab you will see all permissions
@@ -186,7 +186,7 @@ class PermissionsCase5441054414(TestCase):
 
         u1 = users.util.find(config.USER_NAME)
         u2 = users.util.find(config.USER_NAME2)
-        LOGGER.info("Testing object %s" % config.VM_NAME)
+        logger.info("Testing object %s" % config.VM_NAME)
         mla.addVMPermissionsToUser(
             True, config.USER_NAME, config.VM_NAME, role=role.UserRole
         )
@@ -197,7 +197,7 @@ class PermissionsCase5441054414(TestCase):
         rolePermits = mla.permisUtil.getElemFromLink(vm,  get_href=False)
         users_id = [perm.user.get_id() for perm in rolePermits if perm.user]
         assert u1.get_id() in users_id and u2.get_id() in users_id
-        LOGGER.info(msg)
+        logger.info(msg)
         mla.removeUserPermissionsFromVm(True, config.VM_NAME, config.USER1)
         mla.removeUserPermissionsFromVm(True, config.VM_NAME, config.USER2)
 
@@ -228,7 +228,7 @@ class PermissionsCase5441854419(TestCase):
         assert mla.removeUserRoleFromDataCenter(
             False, config.DC_NAME[0], 'admin@internal', role.SuperUser
         )
-        LOGGER.info(
+        logger.info(
             'Unable to remove admin@internal or his SuperUser permissions.'
         )
 
@@ -265,7 +265,7 @@ class PermissionsCase54425(TestCase):
         # Test SuperUser that he can add permissions
         for role_obj in mla.util.get(absLink=False):
             r = role_obj.get_name()
-            LOGGER.info("Testing role - %s" % r)
+            logger.info("Testing role - %s" % r)
             # Get roles perms, to check for manipulate_permissions
             role_obj = mla.util.find(r)  # multi user switching hack
             rolePermits = mla.util.getElemFromLink(
@@ -273,7 +273,7 @@ class PermissionsCase54425(TestCase):
             )
             perms = [p.get_name() for p in rolePermits]
             if 'login' not in perms:
-                LOGGER.info("User not tested, because don't have login perms.")
+                logger.info("User not tested, because don't have login perms.")
                 continue
 
             users.addRoleToUser(True, config.USER_NAME, r)
@@ -295,22 +295,22 @@ class PermissionsCase54425(TestCase):
                         )
                     except:  # Ignore, user should not add perms
                         pass
-                    LOGGER.info("'%s' can't add admin permissions." % r)
+                    logger.info("'%s' can't add admin permissions." % r)
                     assert mla.addVMPermissionsToUser(
                         True, config.USER_NAME, config.VM_NAME1
                     )
-                    LOGGER.info("'%s' can add user permissions." % r)
+                    logger.info("'%s' can add user permissions." % r)
                 else:
                     assert mla.addVMPermissionsToUser(
                         True, config.USER_NAME, config.VM_NAME1,
                         role.UserRole
                     )
-                    LOGGER.info("'%s' can add user permissions." % r)
+                    logger.info("'%s' can add user permissions." % r)
                     assert mla.addVMPermissionsToUser(
                         True, config.USER_NAME, config.VM_NAME1,
                         role.TemplateAdmin
                     )
-                    LOGGER.info("'%s' can add admin permissions." % r)
+                    logger.info("'%s' can add admin permissions." % r)
             else:
                 try:
                     mla.addVMPermissionsToUser(
@@ -318,7 +318,7 @@ class PermissionsCase54425(TestCase):
                     )
                 except:  # Ignore, user should not add perms
                     pass
-                LOGGER.info("'%s' can't manipulate permisisons." % r)
+                logger.info("'%s' can't manipulate permisisons." % r)
 
             loginAsAdmin()
             common.removeUser(True, config.USER_NAME)
@@ -334,7 +334,7 @@ class PermissionsCase54425(TestCase):
     def test_newObjectCheckPerms(self):
         """ Adding new business entity/new object. """
         msg = "This functionality tests modules admin_tests and user_tests"
-        LOGGER.info(msg)
+        logger.info(msg)
 
 
 # Check if user is under some Group if it has permissions of its group
@@ -410,10 +410,10 @@ class PermissionsCase54420(TestCase):
             )
             loginAsUser(config.USER_NAME, filter=not role_obj.administrative)
 
-            LOGGER.info("Testing role - " + role_obj.get_name())
+            logger.info("Testing role - " + role_obj.get_name())
             # Create vm,template, disk and check permissions of it
             if 'create_vm' in r_permits:
-                LOGGER.info("Testing create_vm.")
+                logger.info("Testing create_vm.")
                 vms.createVm(
                     True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
                     network=config.MGMT_BRIDGE
@@ -426,7 +426,7 @@ class PermissionsCase54420(TestCase):
                 loginAsAdmin()
                 vms.removeVm(True, config.VM_NAME1)
             if 'create_template' in r_permits:
-                LOGGER.info("Testing create_template.")
+                logger.info("Testing create_template.")
                 templates.createTemplate(
                     True, vm=config.VM_NAME, name=config.TEMPLATE_NAME2,
                     cluster=config.CLUSTER_NAME[0]
@@ -438,7 +438,7 @@ class PermissionsCase54420(TestCase):
                 loginAsAdmin()
                 templates.removeTemplate(True, config.TEMPLATE_NAME2)
             if 'create_disk' in r_permits:
-                LOGGER.info("Testing create_disk.")
+                logger.info("Testing create_disk.")
                 disks.addDisk(
                     True, alias=config.DISK_NAME1,
                     interface='virtio', format='cow',
@@ -497,7 +497,7 @@ class PermissionsCase108233(TestCase):
 
         loginAsAdmin()
         users.util.find(config.GROUP_USER)
-        LOGGER.info("User was added.")
+        logger.info("User was added.")
 
 
 # Check that data-center has a user with UserRole permission

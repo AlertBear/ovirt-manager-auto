@@ -16,7 +16,7 @@ from art.unittest_lib import CoreSystemTest as TestCase
 from rhevmtests.system.hooks import config
 import logging
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 HOOK_VALUE = '1234'
 CUSTOM_HOOK = 'auto_custom_hook=%s' % HOOK_VALUE
 REMOVE_HOOKS = 'rm -f /var/tmp/*.hook'
@@ -76,7 +76,7 @@ class TestCaseVm(TestCase):
 
     def check_for_file(self, positive):
         """ Check for file created by vdsm_stop hook """
-        LOGGER.info("Checking for existence of file %s/%s", TMP, self.NAME)
+        logger.info("Checking for existence of file %s/%s", TMP, self.NAME)
         return hooks.checkForFileExistenceAndContent(
             positive, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
             filename=path.join(TMP, self._hook_name()), content=HOOK_VALUE)
@@ -112,7 +112,7 @@ class TestCaseVdsm(TestCase):
 
     def check_for_file(self, positive):
         """ Check for file created by vdsm_stop hook """
-        LOGGER.info("Checking for existence of file %s/%s", TMP, self.NAME)
+        logger.info("Checking for existence of file %s/%s", TMP, self.NAME)
         return hooks.checkForFileExistenceAndContent(
             True, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
             filename=path.join(TMP, self._hook_name()))

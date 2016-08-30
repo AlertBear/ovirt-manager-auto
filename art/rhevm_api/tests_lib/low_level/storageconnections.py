@@ -30,7 +30,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 api = test_utils.get_api('storage_connection', 'storageconnections')
 hostApi = test_utils.get_api('host', 'hosts')
 
-LOGGER = logging.getLogger("art.ll_lib.storageconnections")
+logger = logging.getLogger("art.ll_lib.storageconnections")
 
 
 def _prepare_connection_object(**kwargs):
@@ -130,7 +130,7 @@ def update_connection(conn_id, **kwargs):
                  host will lead to just update the details in engine db."
     Return: status of the operation
     """
-    LOGGER.debug("Changing connection %s", conn_id)
+    logger.debug("Changing connection %s", conn_id)
     old_conn = api.find(conn_id, attribute='id')
     new_conn = _prepare_connection_object(**kwargs)
     result = api.update(old_conn, new_conn, True)
@@ -150,7 +150,7 @@ def remove_storage_connection(conn_id, host=None):
     :rtype: bool
     """
     conn_obj = api.find(conn_id, attribute='id')
-    LOGGER.debug("Removing connection %s", conn_id)
+    logger.debug("Removing connection %s", conn_id)
     if host:
         conn_obj.href += ";host=%s" % host
     return api.delete(conn_obj, True)

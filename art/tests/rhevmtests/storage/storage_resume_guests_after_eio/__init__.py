@@ -9,7 +9,7 @@ from art.test_handler import exceptions
 from rhevmtests.storage.storage_resume_guests_after_eio import config
 from rhevmtests.storage.helpers import create_vm_or_clone
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def setup_package():
@@ -18,7 +18,7 @@ def setup_package():
     """
     for storage_type in config.STORAGE_SELECTOR:
         vm_name = "%s_%s" % (config.VM_NAME, storage_type)
-        LOGGER.info("Creating VM %s" % vm_name)
+        logger.info("Creating VM %s" % vm_name)
         storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type)[0]
         vm_args = config.create_vm_args.copy()
@@ -37,7 +37,7 @@ def teardown_package():
     for storage_type in config.STORAGE_SELECTOR:
         vm_name = "%s_%s" % (config.VM_NAME, storage_type)
         if not vms.safely_remove_vms([vm_name]):
-            LOGGER.error("Failed to remove vm %s", vm_name)
+            logger.error("Failed to remove vm %s", vm_name)
             test_failed = True
     if test_failed:
         raise exceptions.TearDownException("Test failed during teardown")

@@ -12,7 +12,7 @@ import test_utils
 
 from art.test_handler import find_test_file
 
-LOGGER = logging.getLogger("art.utils.aaa")
+logger = logging.getLogger("art.utils.aaa")
 
 
 def copy_extension_file(host, ext_file, target_file, chown='ovirt'):
@@ -36,7 +36,7 @@ def copy_extension_file(host, ext_file, target_file, chown='ovirt'):
             ]
             res = ss.run_cmd(chown_cmd)
             assert not res[0], res[1]
-    LOGGER.info('Configuration "%s" has been copied.', ext_file)
+    logger.info('Configuration "%s" has been copied.', ext_file)
 
 
 class Extension(object):
@@ -68,14 +68,14 @@ class Extension(object):
         :param apply: if true ovirt engine will be restarted
         :type apply: boolean
         """
-        LOGGER.info(self.module_name)
+        logger.info(self.module_name)
         for conf in self.__get_confs():
             ext_file = os.path.join(self.module_dir, conf)
             target_file = os.path.join(self.EXTENSIONS_DIR, conf)
             try:
                 copy_extension_file(self.host, ext_file, target_file)
             except AssertionError as e:
-                LOGGER.error(
+                logger.error(
                     'Configuration "%s" has NOT been copied. Tests with '
                     'this configuration should be skipped. %s', conf, e
                 )

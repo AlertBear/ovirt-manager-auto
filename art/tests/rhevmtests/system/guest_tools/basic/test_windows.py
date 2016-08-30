@@ -16,7 +16,7 @@ from art.unittest_lib.windows import WindowsGuest
 from functools import wraps
 from rhevmtests.system.guest_tools import config
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 VM_API = utils.get_api('vm', 'vms')
 WIN_IMAGES = []
 GLANCE_IMAGE = None
@@ -135,7 +135,7 @@ class Windows(TestCase):
         mac = vms.getVmMacAddress(
             True, vm=cls.diskName, nic=config.NIC_NAME
         )[1].get('macAddress', None)
-        LOGGER.info("Mac address is %s", mac)
+        logger.info("Mac address is %s", mac)
 
         ip = utils.convertMacToIpAddress(
             True, mac, subnetClassB=config.SUBNET_CLASS
@@ -170,7 +170,7 @@ class Windows(TestCase):
         if not self.products:
             self.products = self.machine.get_all_products()
         assert product in self.products, '%s was not installed' % product
-        LOGGER.info('%s is installed', product)
+        logger.info('%s is installed', product)
 
     @checkIfSupported
     def test_checkProductQemuAgent(self):
@@ -236,7 +236,7 @@ class Windows(TestCase):
         assert self.services[service]['StartMode'] == 'Auto', (
             '%s is not enabled' % service
         )
-        LOGGER.info('Service %s is running/enabled', service)
+        logger.info('Service %s is running/enabled', service)
 
     @checkIfSupported
     def test_checkServiceQemuGA(self):
@@ -268,7 +268,7 @@ class Windows(TestCase):
         """ Check guest applications are reported """
         vm = VM_API.find(self.diskName)
         apps = vms.get_vm_applications(vm.get_name())
-        LOGGER.info("Windows '%s' apps are: %s", self.diskName, apps)
+        logger.info("Windows '%s' apps are: %s", self.diskName, apps)
         assert len(apps) > 0, "Applications are empty"
 
     def test_guest_os(self):
@@ -276,10 +276,10 @@ class Windows(TestCase):
         # TODO: distribution, kernel
         vm = VM_API.find(self.diskName)
         guest_os = vm.get_guest_operating_system()
-        LOGGER.info("Guest '%s' os info:", self.diskName)
-        LOGGER.info("Architecture: '%s'", guest_os.get_architecture())
-        LOGGER.info("Codename: '%s'", guest_os.get_codename())
-        LOGGER.info("Family: '%s'", guest_os.get_family())
+        logger.info("Guest '%s' os info:", self.diskName)
+        logger.info("Architecture: '%s'", guest_os.get_architecture())
+        logger.info("Codename: '%s'", guest_os.get_codename())
+        logger.info("Family: '%s'", guest_os.get_family())
         assert self.architecture == guest_os.get_architecture(), (
             "Windows has wrong arch '%s', should be '%s'" %
             (guest_os.get_architecture(), self.architecture)
@@ -296,7 +296,7 @@ class Windows(TestCase):
         """ Check guest timezone reported """
         vm = VM_API.find(self.diskName)
         guest_timezone = vm.get_guest_time_zone()
-        LOGGER.info(
+        logger.info(
             "Guest timezone name is '%s', offset: '%s'",
             guest_timezone.get_name(),
             guest_timezone.get_utc_offset()

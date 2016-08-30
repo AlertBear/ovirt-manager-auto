@@ -6,7 +6,7 @@ from rrmngmnt import Host, RootUser
 
 import logging
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 TEST_NAME = "SanityServicesLogs"
 PARAMETERS = ART_CONFIG['PARAMETERS']

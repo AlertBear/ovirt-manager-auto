@@ -10,7 +10,7 @@ from rhevmtests.system.guest_tools.linux_guest_agent import config
 
 from art.rhevm_api.tests_lib.low_level import vms
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 NAME = 'ovirt-guest-agent'
 DISK_NAME = 'ubuntu-12.04_Disk1'
 
@@ -26,7 +26,7 @@ def setup_module():
         '>>', '/etc/apt/sources.list',
     ])
     assert not rc, "Failed to add repo to vm '%s': %s" % (machine, err)
-    LOGGER.info(
+    logger.info(
         "Vm's '%s' repo '%s' enabled", machine, config.UBUNTU_REPOSITORY
     )
     rc, _, err = executor.run_cmd([
@@ -39,7 +39,7 @@ def setup_module():
         'gpg', '--export', '--armor', '73A1A299', '|', 'apt-key', 'add', '-'
     ])
     assert not rc, "Failed to import apt key to vm '%s': %s" % (machine, err)
-    LOGGER.info('Gpg keys exported.')
+    logger.info('Gpg keys exported.')
 
     assert machine.package_manager.update(), 'Failed to update system'
 

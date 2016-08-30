@@ -19,7 +19,7 @@ from art.test_handler.tools import polarion
 from test_base import connectionTest
 from art.core_api.apis_utils import TimeoutingSampler
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 MB = 1024 * 1024
 AUTH = 'auth'
 AUTH_CONF = 'auth-conf'
@@ -113,7 +113,7 @@ class ActiveDirectory(TestCase):
         """ Disabled account """
         self._loginAsUser(config.DISABLED_ACC(self.domain))
         assert not connectionTest(), "User with disabled acc can login."
-        LOGGER.info("User with disabled acc can't login.")
+        logger.info("User with disabled acc can't login.")
 
     @istest
     @polarion("RHEVM3-7353")
@@ -122,7 +122,7 @@ class ActiveDirectory(TestCase):
         """ Expired password """
         self._loginAsUser(config.EXPIRED_PSW_NAME(self.domain))
         assert not connectionTest(), "User with expired psw can login."
-        LOGGER.info("User with expired password can't login.")
+        logger.info("User with expired password can't login.")
 
     @istest
     @polarion("RHEVM3-7355")
@@ -131,7 +131,7 @@ class ActiveDirectory(TestCase):
         """ Expired user """
         self._loginAsUser(config.EXPIRED_ACC_NAME(self.domain))
         assert not connectionTest(), "Expired user can login."
-        LOGGER.info("Expired user can't login.")
+        logger.info("Expired user can't login.")
 
     @istest
     @polarion("RHEVM3-7349")
@@ -141,7 +141,7 @@ class ActiveDirectory(TestCase):
         user_name = config.USER_FROM_GROUP(self.domain)
         self._loginAsUser(user_name, filter=False)
         assert connectionTest()
-        LOGGER.info("User from group can login")
+        logger.info("User from group can login")
 
     def _checkEnc(self, auth, result):
         user, domain = config.NORMAL_USER(self.domain).split('@')
@@ -167,7 +167,7 @@ class ActiveDirectory(TestCase):
             True, ip=config.VDC_HOST, cmd=CLEAN, user=config.HOSTS_USER,
             password=config.VDC_PASSWORD
         )[0], "Run cmd %s failed." % CLEAN
-        LOGGER.info("Authentication passed.")
+        logger.info("Authentication passed.")
 
     @istest
     @polarion("RHEVM3-7348")
@@ -186,7 +186,7 @@ class ActiveDirectory(TestCase):
         name, domain = user_name.split('@')
         users.loginAsUser(name, domain, password, True)
         assert connectionTest()
-        LOGGER.info("User with same name from different domains can login.")
+        logger.info("User with same name from different domains can login.")
 
 
 class AD(ActiveDirectory):

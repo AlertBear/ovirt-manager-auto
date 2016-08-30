@@ -23,7 +23,7 @@ from sys import modules
 import config
 import common
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 __THIS_MODULE = modules[__name__]
 
@@ -46,7 +46,7 @@ def setup_module():
         luns = config.LUNS
         config.PARAMETERS['lun'] = [luns[0]]
 
-    LOGGER.info("Preparing datacenter %s with hosts %s",
+    logger.info("Preparing datacenter %s with hosts %s",
                 config.DATA_CENTER_NAME, config.VDC)
 
     hl_dcs.build_setup(
@@ -90,14 +90,14 @@ class BaseTestCase(TestCase):
         Create VM w/ or w/o OS installation
         """
         if cls.installation:
-            LOGGER.info('Creating vm and installing OS on it')
+            logger.info('Creating vm and installing OS on it')
             if not common.install_vm(
                     vm_name=cls.vm_name, vm_description=cls.vm_name,
                     disk_interface=cls.disk_iface
             ):
                 raise exceptions.VMException("Failed to create VM")
         else:
-            LOGGER.info('Creating vm without installing OS on it')
+            logger.info('Creating vm without installing OS on it')
             # Add a VM w/ a network interface
             common.add_vm_with_nic(cls.vm_name, cls.net_name, cls.boot_options)
 
@@ -112,7 +112,7 @@ class BaseTestCase(TestCase):
         """
         Removes disks and vm
         """
-        LOGGER.info("Removing the VMs: %s", cls.vms_list)
+        logger.info("Removing the VMs: %s", cls.vms_list)
         assert ll_vms.removeVms(True, cls.vms_list, stop='true')
 
 
@@ -127,7 +127,7 @@ class TestInstallVMWithDisplayType(BaseTestCase):
         """
         Testing install vm with spice or vnc display type
         """
-        LOGGER.info("Booting up a %s vm and installing "
+        logger.info("Booting up a %s vm and installing "
                     "OS on it", config.DISPLAY_TYPE)
 
 
@@ -156,7 +156,7 @@ class TestSuspendVMWithDiskless(BaseTestCase):
         for action in action_list:
             common.perform_actions(self.vm_name, action)
 
-        LOGGER.info("Test finished successfully")
+        logger.info("Test finished successfully")
 
 
 class TestSuspendStartVMWithDiskNoSystem(BaseTestCase):
@@ -179,7 +179,7 @@ class TestSuspendStartVMWithDiskNoSystem(BaseTestCase):
         for action in action_list:
             common.perform_actions(self.vm_name, action)
 
-        LOGGER.info("Test finished successfully")
+        logger.info("Test finished successfully")
 
 
 class TestDisconnectHostFromStorageDomain(BaseTestCase):
@@ -206,21 +206,21 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         )
         common.add_disk_into_vm(vm_name=self.new_vm_name)
 
-        LOGGER.info("Successfully add new VM: %s.", self.new_vm_name)
+        logger.info("Successfully add new VM: %s.", self.new_vm_name)
 
     @classmethod
     def teardown_class(cls):
         """
         unblock all connections that were blocked during the test
         """
-        LOGGER.info('Unblocking connections')
+        logger.info('Unblocking connections')
         try:
             # Unblock connection
             common.unblock_storage(
                 cls.host, cls.ht_user, cls.ht_pwd, cls.sd_address
             )
         except exceptions.NetworkException as msg:
-            LOGGER.info("Connection already unblocked. reason: %s", msg)
+            logger.info("Connection already unblocked. reason: %s", msg)
 
     def wait_for_dc_host_sd_up(self):
         """
@@ -232,7 +232,7 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         dc_state = config.DC_STATE_UP
         sd_state = config.SD_STATE_ACTIVE
 
-        LOGGER.info("Waiting for master domain to become active")
+        logger.info("Waiting for master domain to become active")
         assert ll_sds.waitForStorageDomainStatus(
             True, dataCenterName=dc_name,
             storageDomainName=sd_name,
@@ -240,20 +240,20 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
             timeOut=1800
         )
 
-        LOGGER.info("Waiting until DC is up")
+        logger.info("Waiting until DC is up")
         assert ll_dcs.waitForDataCenterState(dc_name)
 
-        LOGGER.info("Validating that host is up")
+        logger.info("Validating that host is up")
         host_obj = HOST_API.find(self.host)
         assert host_obj.get_status() == ht_state
 
-        LOGGER.info("Validate master domain %s is UP", sd_name)
+        logger.info("Validate master domain %s is UP", sd_name)
         sd_obj = ll_sds.getDCStorage(dc_name, sd_name)
         assert sd_obj.get_status() == sd_state
 
-        LOGGER.info("Validate that DC is UP")
+        logger.info("Validate that DC is UP")
         dc_obj = DC_API.find(dc_name)
-        LOGGER.info("DC is %s", dc_obj.get_status())
+        logger.info("DC is %s", dc_obj.get_status())
         assert dc_obj.get_status() == dc_state
 
     def test_disconnect_host_from_storage(self):
@@ -276,7 +276,7 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         elif config.DATA_CENTER_TYPE == 'iscsi':
             self.sd_address = config.LUN_ADDRESS[0]
 
-        LOGGER.info("Master domain ip found : %s", self.sd_address)
+        logger.info("Master domain ip found : %s", self.sd_address)
 
         # Block connection from host to storage domain
         assert common.block_storage(
@@ -294,7 +294,7 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         )
         # Wait for DC, SD and host recovery
         self.wait_for_dc_host_sd_up()
-        LOGGER.info("Test finished successfully")
+        logger.info("Test finished successfully")
 
 
 class TestKillVMWithMultipleSnapshots(BaseTestCase):

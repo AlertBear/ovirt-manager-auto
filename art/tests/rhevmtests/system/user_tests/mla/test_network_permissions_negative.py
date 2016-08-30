@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (mla, networks, users, vms,
 import pytest
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 VM_NAME = config.VM_NAME
 TEMPLATE_NAME1 = config.TEMPLATE_NAME1
 NIC_NAME = 'nic1'
@@ -123,7 +123,7 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
         assert networks.remove_network(
             False, network=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        LOGGER.info(msg, config.USER, role.ClusterAdmin)
+        logger.info(msg, config.USER, role.ClusterAdmin)
 
 
 class NegativeNetworkPermissions231916(NetworkingNegative):
@@ -158,7 +158,7 @@ class NegativeNetworkPermissions231916(NetworkingNegative):
             False, network=config.NETWORK_NAME1,
             data_center=config.DC_NAME[0], usages='VM'
         )
-        LOGGER.info(msg, config.USER, role.ClusterAdmin)
+        logger.info(msg, config.USER, role.ClusterAdmin)
 
 
 class NegativeNetworkPermissions231917(NetworkingNegative):
@@ -419,7 +419,7 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
                 interface='virtio'
             )
         nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
-        LOGGER.info("User can see networks: '%s'", nets)
+        logger.info("User can see networks: '%s'", nets)
         # User can see network2 and default rhevm network, because has
         # Everyone VnicProfileUser permissons, None network is not count
         # (is not shown in /api/networks) + Default DC
@@ -435,5 +435,5 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
         except EntityNotFound:
             pass  # SDK/java/rest raise EntityNotFound
         except Exception as e:
-            LOGGER.error(e)
+            logger.error(e)
             raise e

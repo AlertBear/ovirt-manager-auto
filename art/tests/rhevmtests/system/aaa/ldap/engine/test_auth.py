@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 CONF_NAME = '99-krb_ipa.conf'
 KRB_CONF = 'krb_ipa.conf'
 

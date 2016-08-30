@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
 import pytest
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 VM_NAME = config.VM_NAME
 TEMPLATE_NAME1 = config.TEMPLATE_NAME1
 NIC_NAME = 'nic1'
@@ -152,7 +152,7 @@ class PositiveNetworkPermissions231823(NetworkingPossitive):
         assert networks.add_network_to_cluster(
             False, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
-        LOGGER.info("ClusterAdmin can't attach network to cluster.")
+        logger.info("ClusterAdmin can't attach network to cluster.")
 
 
 class TestSwitching(NetworkingPossitive):
@@ -294,7 +294,7 @@ class PositiveNetworkPermissions231827(NetworkingPossitive):
             )
             assert vms.updateNic(True, VM_NAME, net, name='%s-x' % net)
         nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
-        LOGGER.info("User can see networks: '%s'" % nets)
+        logger.info("User can see networks: '%s'" % nets)
         if not config.GOLDEN_ENV:
             assert len(nets) == 6
         assert vms.removeNic(True, VM_NAME, NIC_NAME)

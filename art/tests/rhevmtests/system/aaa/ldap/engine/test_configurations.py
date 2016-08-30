@@ -11,7 +11,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 DOMAIN_NAMES = []
 
 
@@ -20,14 +20,14 @@ def setup_module():
     DOMAIN_NAMES = [
         domain.get_name() for domain in mla.domUtil.get(absLink=False)
     ]
-    LOGGER.info('Enabled domains are:\n%s', '\n'.join(DOMAIN_NAMES))
+    logger.info('Enabled domains are:\n%s', '\n'.join(DOMAIN_NAMES))
 
 
 class Configuration(TestCase):
     __test__ = False
 
     def _isExtensionAvailable(self, extName):
-        LOGGER.info('Checking for existence of %s.', extName)
+        logger.info('Checking for existence of %s.', extName)
         return extName in DOMAIN_NAMES
 
 

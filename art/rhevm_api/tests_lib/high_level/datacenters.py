@@ -25,7 +25,7 @@ from art.test_handler.settings import opts
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 
-LOGGER = logging.getLogger("art.hl_lib.dcs")
+logger = logging.getLogger("art.hl_lib.dcs")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 SPM_TIMEOUT = 300
 SPM_SLEEP = 5
@@ -58,7 +58,7 @@ def build_setup(config, storage, storage_type, basename="testname",
             "Add DataCenter %s version %s failed." %
             (datacenter_name, version)
         )
-    LOGGER.info("Datacenter %s was created successfully", datacenter_name)
+    logger.info("Datacenter %s was created successfully", datacenter_name)
 
     if not clusters.addCluster(
             positive=True, name=cluster_name, cpu=config['cpu_name'],
@@ -69,7 +69,7 @@ def build_setup(config, storage, storage_type, basename="testname",
             "to datacenter %s failed" %
             (cluster_name, config['cpu_name'], version, datacenter_name)
         )
-    LOGGER.info("Cluster %s was created successfully", cluster_name)
+    logger.info("Cluster %s was created successfully", cluster_name)
 
     hosts.add_hosts(config.as_list('vds'), config.as_list('vds_password'),
                     cluster_name)
@@ -82,11 +82,11 @@ def build_setup(config, storage, storage_type, basename="testname",
             hosts_obj, version=version,
         )
     except CpuModelError as ex:
-        LOGGER.error("Can not determine the best cpu_model: %s", ex)
+        logger.error("Can not determine the best cpu_model: %s", ex)
     else:
-        LOGGER.info("Cpu info %s for cluster: %s", cpu_info, cluster_name)
+        logger.info("Cpu info %s for cluster: %s", cpu_info, cluster_name)
         if not clusters.updateCluster(True, cluster_name, cpu=cpu_info['cpu']):
-            LOGGER.error(
+            logger.error(
                 "Can not update cluster cpu_model to: %s", cpu_info['cpu'],
             )
 
@@ -106,7 +106,7 @@ def clean_all_disks_from_dc(datacenter, exception_list=None):
     sdObjList = ll_storagedomains.getDCStorages(datacenter, False)
 
     for storage_domain in sdObjList:
-        LOGGER.info('Find any floating disks in storage domain %s',
+        logger.info('Find any floating disks in storage domain %s',
                     storage_domain.get_name())
         floating_disks = getStorageDomainDisks(storage_domain.get_name(),
                                                False)
@@ -115,14 +115,14 @@ def clean_all_disks_from_dc(datacenter, exception_list=None):
                                    floating_disks if
                                    (disk.get_alias() not in exception_list)]
             for disk in floating_disks_list:
-                LOGGER.info('Removing floating disk %s', disk)
+                logger.info('Removing floating disk %s', disk)
                 if not deleteDisk(True, alias=disk, async=False, disk_id=disk):
                     return False
-            LOGGER.info('Ensuring all disks are removed')
+            logger.info('Ensuring all disks are removed')
             wait_for_jobs()
-            LOGGER.info('All floating disks removed successfully')
+            logger.info('All floating disks removed successfully')
         else:
-            LOGGER.info('No floating disks found in storage domain %s',
+            logger.info('No floating disks found in storage domain %s',
                         storage_domain.get_name())
 
 
@@ -138,7 +138,7 @@ def get_spm_host(positive, datacenter):
     is_spm_exists, spm_host = ll_hosts.getHost(positive, datacenter, True)
 
     if not is_spm_exists:
-        LOGGER.error("No SPM found in data center %s, storage", datacenter)
+        logger.error("No SPM found in data center %s, storage", datacenter)
         return None
 
     return ll_hosts.HOST_API.find(spm_host['hostName'])
@@ -215,7 +215,7 @@ def clean_datacenter(
 
     if sds:
         for sd in sds:
-            LOGGER.info(
+            logger.info(
                 "Remove floating disks from storage domain: %s",
                 sd.get_name()
             )
@@ -230,10 +230,10 @@ def clean_datacenter(
                 db_user=db_user
             )
 
-        LOGGER.info("Deactivate and detach non-master storage domains")
+        logger.info("Deactivate and detach non-master storage domains")
         for sd in sds:
             if not sd.get_master():
-                LOGGER.info("Detach and deactivate %s", sd.get_name())
+                logger.info("Detach and deactivate %s", sd.get_name())
                 if not storagedomains.detach_and_deactivate_domain(
                     dc_obj.get_name(), sd.get_name()
                 ):
@@ -251,7 +251,7 @@ def clean_datacenter(
                 db_user=db_user
             )
 
-        LOGGER.info("Deactivate master storage domain")
+        logger.info("Deactivate master storage domain")
         status = ll_storagedomains.deactivate_master_storage_domain(
             positive, datacenter
         )
@@ -265,29 +265,29 @@ def clean_datacenter(
                 db_user=db_user
             )
 
-    LOGGER.info("Remove data center")
+    logger.info("Remove data center")
     if not datacenters.remove_datacenter(positive, datacenter):
-        LOGGER.error("Remove data center %s failed", datacenter)
+        logger.error("Remove data center %s failed", datacenter)
         status = False
 
     if sds and spm_host_obj:
-        LOGGER.info("Remove storage domains")
+        logger.info("Remove storage domains")
         status = ll_storagedomains.remove_storage_domains(
             sds, spm_host_obj.get_name(),
             formatExpStorage,
             formatIsoStorage
         )
 
-    LOGGER.info("Remove hosts")
+    logger.info("Remove hosts")
     for host in hosts_to_remove:
-        LOGGER.info("Put %s to maintenance & remove it", host.get_name())
+        logger.info("Put %s to maintenance & remove it", host.get_name())
         if not ll_hosts.removeHost(True, host.get_name(), deactivate=True):
-            LOGGER.error("Failed to remove %s", host.get_name())
+            logger.error("Failed to remove %s", host.get_name())
 
-    LOGGER.info("Remove cluster")
+    logger.info("Remove cluster")
     for cluster_obj in clusters_to_remove:
         if not clusters.removeCluster(positive, cluster_obj.get_name()):
-            LOGGER.error(
+            logger.error(
                 "Remove cluster %s Failed",
                 cluster_obj.get_name()
             )
@@ -308,7 +308,7 @@ def ensure_data_center_and_sd_are_active(
     :param exclude_states: List of storage domains statuses that can be ignored
     :type exclude_states: list
     """
-    LOGGER.info("Wait for the Data center to become active")
+    logger.info("Wait for the Data center to become active")
     if not datacenters.waitForDataCenterState(datacenter):
         raise errors.DataCenterException(
             "The Data center was not up within 3 minutes, aborting test"
@@ -323,7 +323,7 @@ def ensure_data_center_and_sd_are_active(
     for sd in ll_storagedomains.getDCStorages(datacenter, False):
         if sd.get_status() in exclude_states:
             continue
-        LOGGER.info(
+        logger.info(
             "Waiting up to %s seconds for sd %s to be active",
             SD_STATUS_OK_TIMEOUT, sd.get_name()
         )

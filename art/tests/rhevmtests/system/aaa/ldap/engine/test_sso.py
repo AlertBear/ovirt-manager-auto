@@ -12,7 +12,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 APACHE_EXTENSIONS = {}
 KRB5_CONF = 'krb5.conf'
 KEYTAB = '/etc/http.keytab'
@@ -35,7 +35,7 @@ def setup_module():
             with openldap.open_file(KEYTAB, 'rb') as ldap_kt:
                 with engine.open_file(KEYTAB, 'wb') as engine_kt:
                     engine_kt.write(ldap_kt.read())
-                    LOGGER.info('%s was created.' % KEYTAB)
+                    logger.info('%s was created.' % KEYTAB)
             openldap.run_cmd(['rm', '-f', KEYTAB])
 
     users.addUser(True, user_name=config.SSO_USER,
@@ -97,4 +97,4 @@ class SSOLogin(TestCase):
         with self.executor.session() as ss:
             login_ret = ss.run_cmd(login)
             assert not login_ret[0], login_ret[1]
-            LOGGER.info(login_ret[2])
+            logger.info(login_ret[2])

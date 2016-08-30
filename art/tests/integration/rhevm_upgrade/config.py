@@ -1,13 +1,9 @@
 __test__ = False
 
-import logging
-
 from art.rhevm_api import resources
 from art.rhevm_api.utils import test_utils
 from art.test_handler.settings import opts
 from art.test_handler.settings import ART_CONFIG
-
-LOGGER = logging.getLogger(__name__)
 
 
 TEST_NAME = "UpgradeSanity"

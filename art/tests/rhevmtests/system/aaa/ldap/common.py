@@ -11,7 +11,7 @@ from art.rhevm_api.utils.aaa import copy_extension_file
 from art.rhevm_api.utils.test_utils import restart_engine
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 SKIP_MESSAGE = 'Configuration was not setup for this test. Skipping.'
 INTERVAL = 5
 ATTEMPTS = 25
@@ -22,7 +22,7 @@ __test__ = False
 # Extensions utils
 def enableExtensions(service, host):
     """ restart service """
-    LOGGER.info('Restarting service %s.' % service)
+    logger.info('Restarting service %s.' % service)
     if service == config.OVIRT_SERVICE:
         restart_engine(config.ENGINE, INTERVAL, INTERVAL * ATTEMPTS)
     else:
@@ -70,7 +70,7 @@ def prepareExtensions(module_name, ext_dir, extensions, clean=True,
         cleanExtDirectory(ext_dir)
 
     ext_path = os.path.dirname(os.path.abspath(__file__))
-    LOGGER.info(module_name)
+    logger.info(module_name)
     dir_from = os.path.join(
         ext_path,
         config.FIXTURES,
@@ -85,7 +85,7 @@ def prepareExtensions(module_name, ext_dir, extensions, clean=True,
             copy_extension_file(host, ext_file, target_file, chown)
             extensions[conf] = True
         except AssertionError as e:
-            LOGGER.error('Configuration "%s" has NOT been copied. Tests with '
+            logger.error('Configuration "%s" has NOT been copied. Tests with '
                          'this configuration will be skipped. %s', conf, e)
             extensions[conf] = False
 
@@ -99,7 +99,7 @@ def check(ext=None):
         @wraps(method)
         def f(self, *args, **kwargs):
             if ext and not ext.get(self.conf['authz_file'], False):
-                LOGGER.warn(SKIP_MESSAGE)
+                logger.warn(SKIP_MESSAGE)
                 raise SkipTest(SKIP_MESSAGE)
             return method(self, *args, **kwargs)
         return f
@@ -254,13 +254,13 @@ def setup_ldap(host, conf_file):
     tempconf = tempfile.mkstemp()[1]
     copy_extension_file(host, conf_file, tempconf, None)
     with host.executor().session() as ss:
-        LOGGER.info("Setting up ldap with conf file %s", conf_file)
+        logger.info("Setting up ldap with conf file %s", conf_file)
         rc, out, err = ss.run_cmd([
             'ovirt-engine-extension-aaa-ldap-setup',
             '--config-append=%s' % tempconf,
         ])
         ss.run_cmd(['rm', '-f', tempconf])
-        LOGGER.info(out)
+        logger.info(out)
     return not rc
 
 

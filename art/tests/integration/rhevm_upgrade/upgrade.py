@@ -14,7 +14,7 @@ from art.unittest_lib import attr
 
 from rhevm_upgrade import config
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @attr(tier=2)
@@ -33,11 +33,11 @@ class UpgradeSanityUpgrade(TestCase):
         with cls.ut.setup.ssh as ssh:
             _, tempfile, _ = ssh.runCmd(['mktemp'])
             cls.answerfile = tempfile.rstrip('\n')
-        LOGGER.debug("setUpClass: verify engine running")
+        logger.debug("setUpClass: verify engine running")
 
     @classmethod
     def teardown_class(cls):
-        LOGGER.debug("tearDownClass: verify engine running")
+        logger.debug("tearDownClass: verify engine running")
         with cls.ut.setup.ssh as ssh:
             ssh.runCmd(['rm', '-f', cls.answerfile])
 
@@ -45,7 +45,7 @@ class UpgradeSanityUpgrade(TestCase):
         params = self.ut.setup.getInstallParams('__default__',
                                                 config.ANSWERS)
         self.ut.setup.fillAnswerFile(self.answerfile, **params)
-        LOGGER.info("%s: install setup with %s", config.VDC, pformat(params))
+        logger.info("%s: install setup with %s", config.VDC, pformat(params))
 
     @polarion('RHEVM3-8125')
     def test_upgrade(self):

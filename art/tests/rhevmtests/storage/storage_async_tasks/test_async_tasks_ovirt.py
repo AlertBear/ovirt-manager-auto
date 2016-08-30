@@ -14,7 +14,7 @@ from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.test_utils import wait_for_tasks, restart_engine
 from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 VDSM_LOG = '/var/log/vdsm/vdsm.log'
 ALL_TASKS_FINISHED = 'Number of running tasks: 0'
 TIMEOUT = 300
@@ -37,13 +37,13 @@ class RestartOvirt(TestCase):
                 restart_engine, config.ENGINE, 10, 75)
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
-        LOGGER.info("checking if action failed")
+        logger.info("checking if action failed")
         self.check_action_failed()
 
     def _wait_for_first_sent_and_restart_ovirt(self, action_name):
         global OPERATION_FINISHED
         OPERATION_FINISHED = False
-        LOGGER.info("Waiting for the first task to be sent")
+        logger.info("Waiting for the first task to be sent")
         regex = "Adding task .*Parent Command %s.*" % action_name
         watch_logs(
             files_to_watch=config.ENGINE_LOG, regex=regex,
@@ -52,7 +52,7 @@ class RestartOvirt(TestCase):
         )
         OPERATION_FINISHED = True
         restart_engine(config.ENGINE, 10, 75)
-        LOGGER.info("ovirt-engine restarted")
+        logger.info("ovirt-engine restarted")
 
     def _timeouting_thread(self, operation, timeout=300):
         time.sleep(timeout)
@@ -75,7 +75,7 @@ class RestartOvirt(TestCase):
 
     def restart_after_finish_before_notified(self):
         self.perform_action()
-        LOGGER.info("Waiting for function to finish")
+        logger.info("Waiting for function to finish")
         regex = ALL_TASKS_FINISHED
         watch_logs(
             files_to_watch=VDSM_LOG, regex=regex,
@@ -83,7 +83,7 @@ class RestartOvirt(TestCase):
             password=config.HOSTS_PW, time_out=TIMEOUT
         )
         restart_engine(config.ENGINE, 10, 75)
-        LOGGER.info("ovirt-engine restarted")
+        logger.info("ovirt-engine restarted")
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
         self.check_action_failed()
@@ -109,16 +109,16 @@ class TestCase6160(RestartOvirt):
     def tearDown(self):
         super(TestCase6160, self).tearDown()
         if validateSnapshot(True, config.VM_NAME[0], self.snapshot_name):
-            LOGGER.info("Stopping vm %s", config.VM_NAME[0])
+            logger.info("Stopping vm %s", config.VM_NAME[0])
             stop_vms_safely([config.VM_NAME[0]])
             waitForVMState(config.VM_NAME[0], config.VM_DOWN)
 
-            LOGGER.info("Removing snapshot %s", self.snapshot_name)
+            logger.info("Removing snapshot %s", self.snapshot_name)
             assert removeSnapshot(
                 True, config.VM_NAME[0], self.snapshot_name
             ), "Removing snapshot %s failed" % self.snapshot_name
 
-            LOGGER.info("Starting vm %s", config.VM_NAME[0])
+            logger.info("Starting vm %s", config.VM_NAME[0])
             startVm(True, config.VM_NAME[0], config.VM_UP)
 
         wait_for_tasks(
@@ -126,7 +126,7 @@ class TestCase6160(RestartOvirt):
         assert waitForHostsStates(True, config.HOSTS[0])
 
     def perform_action(self):
-        LOGGER.info("Create snapshot %s", self.snapshot_name)
+        logger.info("Create snapshot %s", self.snapshot_name)
         assert addSnapshot(
             True, config.VM_NAME[0], self.snapshot_name, False
         ), "Adding snapshot %s failed" % self.snapshot_name
@@ -188,7 +188,7 @@ class TestCase6161(RestartOvirt):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
     def perform_action(self):
-        LOGGER.info("Suspending vm %s", config.VM_NAME[0])
+        logger.info("Suspending vm %s", config.VM_NAME[0])
         assert suspendVm(True, config.VM_NAME[0], False)
 
     def check_action_failed(self):
@@ -250,7 +250,7 @@ class TestCase6162(RestartOvirt):
         assert waitForVmsGone(True, self.cloned_vm, 600)
 
     def perform_action(self):
-        LOGGER.info("Cloning vm %s from template %s", self.cloned_vm,
+        logger.info("Cloning vm %s from template %s", self.cloned_vm,
                     config.TEMPLATE_NAME)
 
         return cloneVmFromTemplate(

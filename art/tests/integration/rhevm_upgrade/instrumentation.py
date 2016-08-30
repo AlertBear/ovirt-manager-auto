@@ -12,7 +12,7 @@ from art.test_handler.exceptions import StorageDomainException
 
 import config as cfg
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def setup_module():
@@ -23,7 +23,7 @@ def setup_module():
     build_setup(config=params, storage=params,
                 storage_type=params.get('storage_type'),
                 basename=params.get('basename'))
-    LOGGER.debug("setup_module: adding hosts and so on")
+    logger.debug("setup_module: adding hosts and so on")
 
 
 class UpgradeSanityInstrumentation(TestCase):
@@ -32,7 +32,7 @@ class UpgradeSanityInstrumentation(TestCase):
 
     @classmethod
     def setup_class(cls):
-        LOGGER.debug("setUpClass: adding VMs")
+        logger.debug("setUpClass: adding VMs")
 
     def run_tests(self):
         """ create a vm on master storage domain """
@@ -57,7 +57,7 @@ class UpgradeSanityInstrumentation(TestCase):
         ), "Failed to create vm '%s'" % cfg.VM_NAME
 
     def test_pre_upgrade(self):
-        LOGGER.debug("pre-upgrade tests")
+        logger.debug("pre-upgrade tests")
         assert ll_vms.checkVMConnectivity(
             True,
             cfg.VM_NAME,

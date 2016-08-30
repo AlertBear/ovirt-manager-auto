@@ -22,7 +22,7 @@ import logging
 
 __test__ = False
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 __THIS_MODULE = modules[__name__]
 
@@ -58,7 +58,7 @@ def install_vm(vm_name, vm_description, disk_interface,
     helper function for creating vm (passes common arguments, mostly taken
     from the configuration file)
     """
-    LOGGER.info("Creating VM %s" % vm_name)
+    logger.info("Creating VM %s" % vm_name)
     return vms.createVm(True, vm_name, vm_description, cluster=cluster,
                         nic=nic, storageDomainName=sd_name,
                         provisioned_size=provisioned_size,
@@ -86,13 +86,13 @@ def add_vm_with_nic(vm_name, net_name, boot_options='hd network',
                      cluster=cluster,
                      os_type=os_type, boot=boot_options):
         raise exceptions.VMException("Cannot add VM %s" % vm_name)
-    LOGGER.info("Successfully added VM: %s." % vm_name)
+    logger.info("Successfully added VM: %s." % vm_name)
 
     if not vms.addNic(positive=True, vm=vm_name, name=net_name,
                       interface=interface,
                       network=network):
         raise exceptions.VMException("Cannot add NICs into VM %s" % vm_name)
-    LOGGER.info("Successfully added NIC into VM: %s." % vm_name)
+    logger.info("Successfully added NIC into VM: %s." % vm_name)
 
     if vm_name not in vms_list:
         vms_list.append(vm_name)
@@ -114,7 +114,7 @@ def add_disk_into_vm(vm_name, disk_size=1*GB,
                        wait='True', storagedomain=storage_domain,
                        type=disk_type, format=disk_format,
                        sparse='true', interface=interface)
-    LOGGER.info("Successfully added disk into VM: %s." % vm_name)
+    logger.info("Successfully added disk into VM: %s." % vm_name)
 
     if storage_domain not in disk_list:
         disk_list.append(storage_domain)
@@ -158,7 +158,7 @@ def block_storage(host, user, password, sd_address, block_network=False):
     if not host or not user or not password or not sd_address:
         return False
 
-    LOGGER.info("Blocking connection from %s to %s" % (host, sd_address))
+    logger.info("Blocking connection from %s to %s" % (host, sd_address))
     if block_network:
         st_api.blockOutgoingConnection(host, user, password, sd_address)
     else:
@@ -175,7 +175,7 @@ def unblock_storage(host, user, password, sd_address, unblock_network=False):
     if not host or not user or not password or not sd_address:
         return False
 
-    LOGGER.info("Unblocking connection from %s to %s" % (host, sd_address))
+    logger.info("Unblocking connection from %s to %s" % (host, sd_address))
     if unblock_network:
         st_api.unblockOutgoingConnection(host, user, password, sd_address)
     else:
@@ -225,7 +225,7 @@ def perform_actions(vm_name, action):
                     'shutdown': vms.shutdownVm}
 
     if action in action_types.keys():
-        LOGGER.info("Prepare to %s %s" % (action, vm_name))
+        logger.info("Prepare to %s %s" % (action, vm_name))
         assert action_types[action](True, vm_name)
 
     return True
@@ -296,7 +296,7 @@ def create_one_more_sd(sd_args, i=1, status=True):
         sd_args['lun_target'] = config.LUN_TARGET[i]
         sd_args['lun_port'] = config.LUN_PORT
 
-    LOGGER.info('Creating storage domain with parameters: %s', sd_args)
+    logger.info('Creating storage domain with parameters: %s', sd_args)
     return ll_st_domains.addStorageDomain(True, **sd_args) and status
 
 
@@ -325,10 +325,10 @@ def migrate_vm_more_than_once(vm_name, orig_host, ht_nic, src, dst,
         return False
 
     for num in range(int(iter_num)):
-        LOGGER.info("Start %s time(s) migration from %s ", num, orig_host)
+        logger.info("Start %s time(s) migration from %s ", num, orig_host)
         if not checkICMPConnectivity(host=orig_host, user=ht_user,
                                      password=ht_pwd, ip=dst):
-            LOGGER.error("ICMP wasn't established")
+            logger.error("ICMP wasn't established")
         with TrafficMonitor(machine=orig_host, user=ht_user,
                             password=ht_pwd,
                             nic=ht_nic,

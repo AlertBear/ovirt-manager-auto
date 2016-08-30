@@ -15,7 +15,7 @@ from reports.sanity.test_local_installation_sanity import SanityServicesLogs
 
 from rhevm_upgrade import config
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 domUtil = get_api('domain', 'domains')
 userUtil = get_api('user', 'users')
 
@@ -28,7 +28,7 @@ def teardown_module():
         True, config.DC_NAME, vdc=config.VDC,
         vdc_password=config.VDC_PASSWORD
     )
-    LOGGER.debug("tearDownClass: cleaned the DC")
+    logger.debug("tearDownClass: cleaned the DC")
 
 
 @attr(tier=2)
@@ -40,12 +40,12 @@ class UpgradeSanityVerification(TestCase):
     def teardown_class(cls):
         if not removeVm(positive=True, vm=config.VM_NAME, stopVM='true'):
             raise VMException("Cannot remove vm %s" % config.VM_NAME)
-        LOGGER.info("Successfully removed %s.", config.VM_NAME)
+        logger.info("Successfully removed %s.", config.VM_NAME)
 
     @polarion('RHEVM3-8127')
     def test_post_upgrade(self):
         """ Run tests after the upgrade """
-        LOGGER.debug("post-upgrade tests")
+        logger.debug("post-upgrade tests")
         assert checkVMConnectivity(True, config.VM_NAME, 'rhel',
                                    nic=config.NIC_NAME,
                                    user=config.VM_LINUX_USER,
@@ -56,16 +56,16 @@ class UpgradeSanityVerification(TestCase):
         """ test if legacy providers are accessible after upgrade """
         domains = domUtil.get(absLink=False)
         for domain in domains:
-            LOGGER.info("Fetching users from domain %s", domain.name)
+            logger.info("Fetching users from domain %s", domain.name)
             users = userUtil.getElemFromLink(
                 domain,
                 link_name='users',
                 attr='user',
                 get_href=False
             )
-            LOGGER.debug(users)
+            logger.debug(users)
             assert len(users) > 0, "Domain %s is not accesible." % domain.name
-            LOGGER.info("Domain %s is accessible.", domain.name)
+            logger.info("Domain %s is accessible.", domain.name)
 
     @polarion('RHEVM3-12080')
     def test_aaa_jdbc(self):

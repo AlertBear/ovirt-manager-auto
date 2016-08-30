@@ -23,7 +23,7 @@ from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
 import pytest
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 ALT_HOST_ID = None
 
 
@@ -146,7 +146,7 @@ class VmUserInfoTests(TestCase):
             if e is None:
                 continue
 
-            LOGGER.info(e.get_description())
+            logger.info(e.get_description())
             for obj_name in [
                 'vm', 'storage_domain', 'cluster', 'data_center', 'template'
             ]:
@@ -221,14 +221,14 @@ class VmUserInfoTests2(TestCase):
         assert dc is not None, msgBlind % ('datacenter', DC)
         cluster = clusters.util.find(CLUSTER)
         assert cluster is not None, msgBlind % ('cluster', CLUSTER)
-        LOGGER.info("User can see object where he has permissions.")
+        logger.info("User can see object where he has permissions.")
 
         # is user forbidden to see other objects?
         with pytest.raises(EntityNotFound):
             datacenters.util.find(config.DC_NAME_B)
         with pytest.raises(EntityNotFound):
             clusters.util.find(config.CLUSTER_NAME[1])
-        LOGGER.info("User can't see object where he has permissions.")
+        logger.info("User can't see object where he has permissions.")
 
         assert len(dcs) == 1, msgVisible % ('datacenters', dcs)
         assert len(cls) == 1, msgVisible % ('clusters', cls)
@@ -246,7 +246,7 @@ class VmUserInfoTests2(TestCase):
             vms.VM_API.find(config.VM_NAME2)
         myvms = vms.VM_API.get(absLink=False)
         assert len(myvms) == 1, msgVisible
-        LOGGER.info(msgVisible)
+        logger.info(msgVisible)
 
         loginAsAdmin()
         mla.removeUserPermissionsFromVm(True, config.VM_NAME1, config.USER1)
@@ -254,7 +254,7 @@ class VmUserInfoTests2(TestCase):
         loginAsUser()
         with pytest.raises(EntityNotFound):
             vms.VM_API.find(config.VM_NAME1)
-        LOGGER.info(msg_info)
+        logger.info(msg_info)
 
         loginAsAdmin()
         mla.addVMPermissionsToUser(
@@ -272,7 +272,7 @@ class VmUserInfoTests2(TestCase):
         vms.startVm(True, config.VM_NAME2)
         vms.stopVm(True, config.VM_NAME1)
         vms.stopVm(True, config.VM_NAME2)
-        LOGGER.info("Events on VMs generated")
+        logger.info("Events on VMs generated")
 
         loginAsUser()
         lst_of_vms = set()
@@ -281,10 +281,10 @@ class VmUserInfoTests2(TestCase):
                 lst_of_vms.add(e.get_vm().get_id())
 
         assert self.id1 in lst_of_vms, msgBlind
-        LOGGER.info(msgVissible % lst_of_vms)
+        logger.info(msgVissible % lst_of_vms)
 
         assert self.id2 in lst_of_vms, msgVissible % lst_of_vms
-        LOGGER.info(msgBlind)
+        logger.info(msgBlind)
 
     @polarion("RHEVM3-7643")
     def test_specificId(self):
@@ -294,10 +294,10 @@ class VmUserInfoTests2(TestCase):
         vms_api = '/api/vms/%s'
 
         assert vms.VM_API.get(href=vms_api % self.id1) is not None, msgBlind
-        LOGGER.info(msgVissible)
+        logger.info(msgVissible)
 
         assert vms.VM_API.get(href=vms_api % self.id2) is None, msgVissible
-        LOGGER.info(msgBlind)
+        logger.info(msgBlind)
 
     @polarion("RHEVM3-7644")
     def test_accessDenied(self):
@@ -314,20 +314,20 @@ class VmUserInfoTests2(TestCase):
         assert len(sds) == 1, msg % ('storages', sds)
         # User should se Blank template
         assert len(tms) == 1, msg % ('templates', tms)
-        LOGGER.info("User see and don't see resources he can/can't.")
+        logger.info("User see and don't see resources he can/can't.")
 
     @polarion("RHEVM3-7645")
     def test_hostInfo(self):
         """ testHostPowerManagementInfo """
         with pytest.raises(EntityNotFound):
             hosts.HOST_API.find(config.HOSTS[0])
-        LOGGER.info("User can't see any host info")
+        logger.info("User can't see any host info")
         vms.startVm(True, config.VM_NAME1)
         vm = vms.VM_API.find(config.VM_NAME1)
         assert vm.get_host() is None
-        LOGGER.info("User can't see any host info in /api/vms")
+        logger.info("User can't see any host info in /api/vms")
         assert vm.get_placement_policy() is None
-        LOGGER.info("User can't see any placement_policy info in /api/vms")
+        logger.info("User can't see any placement_policy info in /api/vms")
         vms.stopVm(True, config.VM_NAME1)
 
 
@@ -371,7 +371,7 @@ class ViewviewChildrenInfoTests(TestCase):
         """ CanViewChildren """
         err_msg = "User can't see vms"
         for role_can in self.roles_can:
-            LOGGER.info("Testing role: %s", role_can)
+            logger.info("Testing role: %s", role_can)
             mla.addClusterPermissionsToUser(
                 True, config.USER_NAME, config.CLUSTER_NAME[0], role_can
             )
@@ -381,13 +381,13 @@ class ViewviewChildrenInfoTests(TestCase):
             mla.removeUserPermissionsFromCluster(
                 True, config.CLUSTER_NAME[0], config.USER1
             )
-            LOGGER.info("%s can see children", role_can)
+            logger.info("%s can see children", role_can)
 
     @polarion("RHEVM3-7637")
     def test_cantViewChildren(self):
         """ CantViewChildren """
         for role_can in self.roles_cant:
-            LOGGER.info("Testing role: %s", role_can)
+            logger.info("Testing role: %s", role_can)
             mla.addClusterPermissionsToUser(
                 True, config.USER_NAME, config.CLUSTER_NAME[0], role_can
             )
@@ -397,7 +397,7 @@ class ViewviewChildrenInfoTests(TestCase):
             mla.removeUserPermissionsFromCluster(
                 True, config.CLUSTER_NAME[0], config.USER1
             )
-            LOGGER.info("%s can see children", role_can)
+            logger.info("%s can see children", role_can)
 
 
 # extra_reqs={'clusters_count': 2}
@@ -448,7 +448,7 @@ class VmCreatorClusterAdminInfoTests(TestCase):
         err_msg_can = "User can see %s"
         err_msg_cant = "User can't see %s"
         loginAsUser()
-        LOGGER.info("Checking right permission on vms.")
+        logger.info("Checking right permission on vms.")
         myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
         assert config.VM_NAME1 in myvms, err_msg_cant % config.VM_NAME1
         assert config.VM_NAME2 in myvms, err_msg_cant % config.VM_NAME2
@@ -488,7 +488,7 @@ class VmCreatorInfoTests(TestCase):
         loginAsUser()
         myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
         assert len(myvms) == 0, msg % myvms
-        LOGGER.info("User can't see vms where he has not perms. %s" % myvms)
+        logger.info("User can't see vms where he has not perms. %s" % myvms)
 
         vms.createVm(
             True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME[0],
@@ -496,7 +496,7 @@ class VmCreatorInfoTests(TestCase):
         )
         myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
         assert len(myvms) == 1, msg % myvms
-        LOGGER.info("User can see only his vms %s" % myvms)
+        logger.info("User can see only his vms %s" % myvms)
 
 
 @attr(tier=2)
@@ -548,31 +548,31 @@ class TemplateCreatorInfoTests(TestCase):
         msgCan = "User can see %s '%s' which shouldn't see"
 
         loginAsUser()
-        LOGGER.info("Checking right permissions for all vms")
+        logger.info("Checking right permissions for all vms")
 
         myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
         assert config.VM_NAME1 in myvms, msgCant % ('VM', config.VM_NAME1)
         assert config.VM_NAME2 not in myvms, msgCan % ('VM', config.VM_NAME2)
-        LOGGER.info("User can see %s" % myvms)
+        logger.info("User can see %s" % myvms)
 
-        LOGGER.info("Checking right permissions for all templates")
+        logger.info("Checking right permissions for all templates")
         tms = [t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)]
         err_msg = msgCan % ('Template', config.TEMPLATE_NAME1)
         assert config.TEMPLATE_NAME1 not in tms, err_msg
         err_msg = msgCan % ('Template', config.TEMPLATE_NAME2)
         assert config.TEMPLATE_NAME2 not in tms, err_msg
-        LOGGER.info("User can see %s" % tms)
+        logger.info("User can see %s" % tms)
 
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME3,
             cluster=config.CLUSTER_NAME[0]
         )
-        LOGGER.info("Checking right permission for %s" % config.TEMPLATE_NAME3)
+        logger.info("Checking right permission for %s" % config.TEMPLATE_NAME3)
         tms = [t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)]
         # tms == 2(blank + newly created)
         err_msg = msgCan % ('Templates', tms)
         assert config.TEMPLATE_NAME3 in tms and len(tms) == 2, err_msg
-        LOGGER.info("User can see %s" % tms)
+        logger.info("User can see %s" % tms)
 
 
 # Create some templates in Datacenter1.
@@ -704,8 +704,8 @@ class ComplexCombinationTest(TestCase):
             vms.VM_API.find(config.VM_NAME3)
         with pytest.raises(EntityNotFound):
             vms.VM_API.find(config.VM_NAME4)
-        LOGGER.info("User can see %s" % config.VM_NAME1)
-        LOGGER.info(
+        logger.info("User can see %s" % config.VM_NAME1)
+        logger.info(
             "User can't see %s, %s, %s" % (
                 config.VM_NAME1, config.VM_NAME2, config.VM_NAME3
             )
@@ -719,7 +719,7 @@ class ComplexCombinationTest(TestCase):
             templates.TEMPLATE_API.find(config.TEMPLATE_NAME3)
         with pytest.raises(EntityNotFound):
             templates.TEMPLATE_API.find(config.TEMPLATE_NAME4)
-        LOGGER.info(
+        logger.info(
             "User can't see %s, %s, %s, %s" % (
                 config.TEMPLATE_NAME1, config.TEMPLATE_NAME2,
                 config.TEMPLATE_NAME3, config.TEMPLATE_NAME4

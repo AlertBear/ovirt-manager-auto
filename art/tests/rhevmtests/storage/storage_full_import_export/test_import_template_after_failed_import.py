@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler.tools import polarion
 import rhevmtests.storage.helpers as helpers
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 GB = config.GB
 
 ENUMS = config.ENUMS
@@ -54,7 +54,7 @@ class TestCase11628(TestCase):
         self.export_domain = storagedomains.findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
 
-        LOGGER.info("Create a VM")
+        logger.info("Create a VM")
         vm_args = config.create_vm_args.copy()
         vm_args['storageDomainName'] = self.storage_domain
         vm_args['vmName'] = self.vm_name
@@ -66,7 +66,7 @@ class TestCase11628(TestCase):
                 'Unable to create vm %s for test' % self.vm_name
             )
 
-        LOGGER.info("Create second VM disk")
+        logger.info("Create second VM disk")
         disk_name, disk_size = "disk_%s_1" % self.polarion_test_case, GB
 
         assert disks.addDisk(
@@ -83,7 +83,7 @@ class TestCase11628(TestCase):
         assert templates.createTemplate(
             True, vm=self.vm_name, name=self.templ_name)
 
-        LOGGER.info("Remove the VM")
+        logger.info("Remove the VM")
         assert vms.removeVm(True, self.vm_name)
 
     @polarion("RHEVM3-11628")
@@ -96,41 +96,41 @@ class TestCase11628(TestCase):
         * tries to import the template again
         """
 
-        LOGGER.info("Export the template")
+        logger.info("Export the template")
         assert templates.exportTemplate(
             True, self.templ_name, self.export_domain, wait=True)
 
         assert templates.removeTemplate(True, self.templ_name)
 
-        LOGGER.info("Get SPM and password")
+        logger.info("Get SPM and password")
         host = hosts.getSPMHost(config.HOSTS)
         host_ip = hosts.getHostIP(host)
 
-        LOGGER.info("Start importing template")
+        logger.info("Start importing template")
         assert templates.import_template(
             True, self.templ_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME, async=True)
 
-        LOGGER.info("Waiting for migration to start")
+        logger.info("Waiting for migration to start")
         # importing should start right away, timeout=10 is more than enough
         assert templates.waitForTemplatesStates(
             self.templ_name, state=ENUMS['template_state_locked'],
             timeout=10, sleep=1)
 
-        LOGGER.info("Restarting VDSM")
+        logger.info("Restarting VDSM")
         assert test_utils.restartVdsmd(host_ip, config.HOSTS_PW)
 
-        LOGGER.info("Waiting for host %s to be down", host)
+        logger.info("Waiting for host %s to be down", host)
         assert hosts.waitForHostsStates(False, host)
 
-        LOGGER.info("Waiting for host %s to get up", host)
+        logger.info("Waiting for host %s to get up", host)
         assert hosts.waitForHostsStates(True, host)
 
-        LOGGER.info("Wait until import fail")
+        logger.info("Wait until import fail")
         assert templates.waitForTemplatesGone(True, self.templ_name,
                                               timeout=1200)
 
-        LOGGER.info("Importing second time")
+        logger.info("Importing second time")
         assert templates.import_template(
             True, self.templ_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME)

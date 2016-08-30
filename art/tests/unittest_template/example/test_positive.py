@@ -12,7 +12,7 @@ from art.rhevm_api.utils.test_utils import get_api
 import art.test_handler.exceptions as exceptions
 import config
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 VM_API = get_api('vms', 'vm')
 
 SKIP_THAT_TEST = True
@@ -49,7 +49,7 @@ class PositiveTestCase(TestCase):
     @classmethod
     def setup_class(cls):
         "setup class"
-        LOGGER.info("Setting up class %s with class attribute %s",
+        logger.info("Setting up class %s with class attribute %s",
                     cls.__name__, cls.my_variable)
 
     @classmethod
@@ -62,7 +62,7 @@ class PositiveTestCase(TestCase):
         """
         Tests only if SKIP_THAT_TEST is False
         """
-        LOGGER.info("This is statement is False: %s", SKIP_THAT_TEST)
+        logger.info("This is statement is False: %s", SKIP_THAT_TEST)
 
     @istest
     def test_true(self):
@@ -120,12 +120,12 @@ class ParallelTestCase(TestCase):
             from time import sleep
             sleep(3)
 
-            LOGGER.info("Checking that %d isn't 9", num)
+            logger.info("Checking that %d isn't 9", num)
             if num == 9:
                 raise exceptions.RHEVMEntityException("%d isn't 9" % num)
             if num == 5:
                 return False
-            LOGGER.info("OK, %d isn't 9", num)
+            logger.info("OK, %d isn't 9", num)
 
         results = list()
 
@@ -137,4 +137,4 @@ class ParallelTestCase(TestCase):
             if res.exception():
                 raise res.exception()
             if not res.result():
-                LOGGER.warn("Number %d seems like five", index)
+                logger.warn("Number %d seems like five", index)

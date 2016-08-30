@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 DETACH_TIMEOUT = 5
 
 
@@ -158,7 +158,7 @@ def ienf(method, *args, **kwargs):
     try:
         method(*args, **kwargs)
     except EntityNotFound:
-        LOGGER.warn('Entity not found: %s%s', method.__name__, args)
+        logger.warn('Entity not found: %s%s', method.__name__, args)
 
 
 def login_as_user(user, filter_):
@@ -190,7 +190,7 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
         def wrapper(self, *args, **kwargs):
             self.positive = func.__name__[5:] in self.perms
             func.__dict__['role'] = kwargs_glob.get('role')
-            LOGGER.info('Running %s %s action',
+            logger.info('Running %s %s action',
                         'positive' if self.positive else 'negative',
                         func.__name__)
             if self.last_logged_in != login_as:
@@ -345,14 +345,14 @@ class CaseRoleActions(TestCase):
         for user in config.USERS:
             assert users.removeUser(True, user, config.USER_DOMAIN)
 
-        LOGGER.info('Running cleanup functions: %s', cls.cleanup_functions)
+        logger.info('Running cleanup functions: %s', cls.cleanup_functions)
         for cleanup in cls.cleanup_functions:
             try:
                 cleanup['func'](**cleanup['params'])
             except EntityNotFound as e:
-                LOGGER.warn('Entity was not found: %s', e)
+                logger.warn('Entity was not found: %s', e)
             except Exception as e:  # Continue with execution all functions.
-                LOGGER.error(e)
+                logger.error(e)
 
         del cls.cleanup_functions[:]
 

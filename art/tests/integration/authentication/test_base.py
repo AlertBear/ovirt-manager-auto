@@ -11,7 +11,7 @@ from art.core_api.apis_exceptions import APIException
 from art.test_handler.tools import bz
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 USERROLE = 'UserRole'
 
 
@@ -63,11 +63,11 @@ class BaseNormalUserAndGroupUser(TestCase):
 
         loginAsUser(config.REGULAR_NAME(self.domain), self.domain)
         assert connectionTest(), msg_f % 'Regular'
-        LOGGER.info(msg_t % 'Regular')
+        logger.info(msg_t % 'Regular')
 
         loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain)
         assert connectionTest(), msg_f % 'Group'
-        LOGGER.info(msg_t % 'Group')
+        logger.info(msg_t % 'Group')
 
     def tearDown(self):
         loginAsAdmin()
@@ -98,7 +98,7 @@ class BaseExpiredAccount(TestCase):
         msg = "User with expired acc can login."
         loginAsUser(config.EXPIRED_ACC_NAME(self.domain), self.domain)
         assert not connectionTest(), msg
-        LOGGER.info("User with expired account can't login.")
+        logger.info("User with expired account can't login.")
 
     def tearDown(self):
         loginAsAdmin()
@@ -126,7 +126,7 @@ class BaseExpiredPassword(TestCase):
         msg = "User with expired psw can login."
         loginAsUser(config.EXPIRED_PSW_NAME(self.domain), self.domain, True)
         assert not connectionTest(), msg
-        LOGGER.info("User with expired password can't login.")
+        logger.info("User with expired password can't login.")
 
     def tearDown(self):
         loginAsAdmin()
@@ -153,7 +153,7 @@ class BaseGroupsPersistency(TestCase):
         """ After user removal, check that his group persist """
         loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain, False)
         assert connectionTest(), 'User from group cant log in'
-        LOGGER.info('User from group logged in')
+        logger.info('User from group logged in')
         loginAsAdmin()
         users.removeUser(positive=True,
                          user=config.USER_FROM_GROUP(self.domain),
@@ -161,7 +161,7 @@ class BaseGroupsPersistency(TestCase):
         assert users.groupExists(
             True, config.GROUP(self.domain)
         ), "Group was removed with user"
-        LOGGER.info("Group persisted after user from group was removed.")
+        logger.info("Group persisted after user from group was removed.")
 
     def tearDown(self):
         loginAsAdmin()
@@ -220,8 +220,8 @@ class BaseSearchForUsersAndGroups(TestCase):
         user = users.util.query("{0}={1}".format('name', self.name),
                                 href=self.query % 'users')[0]
         assert user.get_name().lower() == self.name
-        LOGGER.info("Searching for users by name works OK.")
+        logger.info("Searching for users by name works OK.")
         user = users.util.query("{0}={1}".format('lastname', self.last_name),
                                 href=self.query % 'users')[0]
         assert user.get_name().lower() == self.last_name
-        LOGGER.info("Searching for users by lastname works OK.")
+        logger.info("Searching for users by lastname works OK.")

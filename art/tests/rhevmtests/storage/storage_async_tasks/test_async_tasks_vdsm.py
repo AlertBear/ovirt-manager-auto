@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
     wait_for_datacenter_state_api,
 )
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 SPM_TIMEOUT = 1200
 TIMEOUT = 300
 DATA_CENTER_INIT_TIMEOUT = 1200
@@ -37,10 +37,10 @@ class RestartVDSM(TestCase):
 
     def restart_before_tasks_start(self):
         self.perform_action()
-        LOGGER.info("Restarting VDSM")
+        logger.info("Restarting VDSM")
         assert restartVdsmd(
             config.HOSTS[0], config.HOSTS_PW)
-        LOGGER.info("VDSM restarted")
+        logger.info("VDSM restarted")
 
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
@@ -52,7 +52,7 @@ class RestartVDSM(TestCase):
         """
         We are waiting for the first task to finish and then restart VDSM
         """
-        LOGGER.info("Waiting for the first task to finish")
+        logger.info("Waiting for the first task to finish")
         regex = 'Parent Command %s.*ended successfully' % action_name
         cmd = 'service vdsmd restart'
 
@@ -67,7 +67,7 @@ class RestartVDSM(TestCase):
 
         self.perform_action()
 
-        LOGGER.info("VDSM restarted")
+        logger.info("VDSM restarted")
 
         t.join()
         wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
@@ -97,16 +97,16 @@ class TestCase6157(RestartVDSM):
     def tearDown(self):
         super(TestCase6157, self).tearDown()
         if validateSnapshot(True, config.VM_NAME[0], self.snapshot_name):
-            LOGGER.info("Stopping vm %s", config.VM_NAME[0])
+            logger.info("Stopping vm %s", config.VM_NAME[0])
             stop_vms_safely([config.VM_NAME[0]])
             waitForVMState(config.VM_NAME[0], config.VM_DOWN)
 
-            LOGGER.info("Removing snapshot %s", self.snapshot_name)
+            logger.info("Removing snapshot %s", self.snapshot_name)
             assert removeSnapshot(
                 True, config.VM_NAME[0], self.snapshot_name
             ), "Removing snapshot %s failed" % self.snapshot_name
 
-            LOGGER.info("Starting vm %s", config.VM_NAME[0])
+            logger.info("Starting vm %s", config.VM_NAME[0])
             startVm(True, config.VM_NAME[0], config.VM_UP)
 
         wait_for_tasks(

@@ -1,5 +1,5 @@
 from art.unittest_lib import CoreSystemTest as TestCase
-from config import LOGGER
+from config import logger
 
 
 class ServiceTest(TestCase):
@@ -22,7 +22,7 @@ class ServiceTest(TestCase):
         :param machine: (Host object) host where service should run
         :param service: (string) service that should run
         """
-        LOGGER.info("Test if %s service is running", service)
+        logger.info("Test if %s service is running", service)
         assert machine.service(
             service
         ).status(), "%s is not running" % service
@@ -35,7 +35,7 @@ class ServiceTest(TestCase):
         """
         filesystem = machine.fs
         for filename in files:
-            LOGGER.info("Test if %s exists", filename)
+            logger.info("Test if %s exists", filename)
             assert filesystem.isfile(
                 filename
             ), 'File %s does not exist' % filename
@@ -46,7 +46,7 @@ class ServiceTest(TestCase):
         :param machine: (Host object) host where service should be enabled
         :param service: (string) service name
         """
-        LOGGER.info("Test if %s service is enabled", service)
+        logger.info("Test if %s service is enabled", service)
         assert machine.service(
             service
         ).is_enabled(), "%s is not enabled" % service
@@ -57,7 +57,7 @@ class ServiceTest(TestCase):
         :param machine: (Host object) host where service should restarted
         :param service: (string) service name
         """
-        LOGGER.info("Restart service %s and check if it is running", service)
+        logger.info("Restart service %s and check if it is running", service)
         assert machine.service(
             service
         ).restart(), "Unable to restart service %s" % service

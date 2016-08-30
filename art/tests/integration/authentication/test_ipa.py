@@ -21,7 +21,7 @@ from art.core_api.apis_utils import getDS
 from art.test_handler.tools import polarion, bz
 from test_base import connectionTest
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 KINIT = 'kinit nonascii <<< %s'
 UPDATE_USER = 'ipa user-mod %s --last=%s --first=%s'
 USER_ROLE = 'UserRole'
@@ -76,11 +76,11 @@ class IPACase93880(TestCase):
 
         loginAsUser(config.IPA_EXPIRED_PSW_NAME, True)
         assert not connectionTest(), msg_f % 'Expired'
-        LOGGER.info(msg_t % 'Expired')
+        logger.info(msg_t % 'Expired')
 
         loginAsUser(config.IPA_DISABLED_NAME, True)
         assert not connectionTest(), msg_f % 'Disabled'
-        LOGGER.info(msg_t % 'Disabled')
+        logger.info(msg_t % 'Disabled')
 
     def tearDown(self):
         loginAsAdmin()
@@ -118,12 +118,12 @@ class IPACase93879(TestCase):
         # Login as regular user
         loginAsUser(config.IPA_REGULAR_NAME, True)
         assert connectionTest(), "Regular user can't log in."
-        LOGGER.info("Regular user can log in.")
+        logger.info("Regular user can log in.")
 
         # Login as user from group
         loginAsUser(config.IPA_WITH_GROUP_NAME, True)
         assert connectionTest(), "User from group can't log in."
-        LOGGER.info("User from group can log in.")
+        logger.info("User from group can log in.")
 
     def tearDown(self):
         loginAsAdmin()
@@ -161,7 +161,7 @@ class IPACase93881(TestCase):
         for format in [config.REGULAR_FORMAT1, config.REGULAR_FORMAT2]:
             users.loginAsUser(format, None, config.USER_PASSWORD, True)
             assert connectionTest(), msg_f % format
-            LOGGER.info(msg_t % format)
+            logger.info(msg_t % format)
 
     def tearDown(self):
         loginAsAdmin()
@@ -213,7 +213,7 @@ class IPACase109146(TestCase):
         """ Persistency of group rights """
         loginAsUser(config.IPA_WITH_GROUP_NAME, False)
         assert connectionTest(), "User from group can't login."
-        LOGGER.info("User from group can login.")
+        logger.info("User from group can login.")
         loginAsAdmin()
         assert users.removeUser(
             True, user=config.IPA_WITH_GROUP_NAME, domain=config.IPA_DOMAIN
@@ -221,7 +221,7 @@ class IPACase109146(TestCase):
         assert users.groupExists(
             True, config.IPA_GROUP
         ), "Group was removed with user"
-        LOGGER.info("Group persisted after user from group was removed.")
+        logger.info("Group persisted after user from group was removed.")
 
     def tearDown(self):
         loginAsAdmin()
@@ -260,7 +260,7 @@ class IPACase93882(TestCase):
         lastname = "{0}={1}".format('lastname', 'bezskupiny')
         user = util.query(lastname, href=query)[0]
         assert user.get_last_name().lower() == 'bezskupiny'
-        LOGGER.info("Searching for users and groups works correctly.")
+        logger.info("Searching for users and groups works correctly.")
 
 
 @attr(tier=2)

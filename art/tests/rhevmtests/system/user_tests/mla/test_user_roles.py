@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import pytest
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 INVALID_CHARS = '&^$%#*+/\\`~\"\':?!()[]}{=|><'
 
@@ -104,7 +104,7 @@ class RoleCase54413(TestCase):
         size = len(roles)
 
         for index, curr_role in enumerate(roles, start=1):
-            LOGGER.info(
+            logger.info(
                 "Role named ({0}/{1}): {2}".format(
                     index, size, curr_role.get_name()
                 )
@@ -119,12 +119,12 @@ class RoleCase54413(TestCase):
             role_permits = _get_role_permits(curr_role)
             permit_list = [temp_role.get_name() for temp_role in role_permits]
             if 'login' not in permit_list:
-                LOGGER.info(cantLogin, curr_role.get_name())
+                logger.info(cantLogin, curr_role.get_name())
                 continue
 
             assert users.addRoleToUser(
                 True, config.USER_NAME, curr_role.get_name())
-            LOGGER.info(
+            logger.info(
                 "Testing if role %s can add new role.", curr_role.get_name()
             )
             users.loginAsUser(
@@ -143,7 +143,7 @@ class RoleCase54413(TestCase):
                     administrative='true'
                 )
                 assert mla.removeRole(True, config.ADMIN_ROLE)
-                LOGGER.info(
+                logger.info(
                     "%s can manipulate with roles.", curr_role.get_name()
                 )
             else:
@@ -153,7 +153,7 @@ class RoleCase54413(TestCase):
                 assert mla.addRole(
                     False, name=config.ADMIN_ROLE, permits='login'
                 )
-                LOGGER.info(
+                logger.info(
                     "%s can't manipulate with roles.", curr_role.get_name()
                 )
             loginAsAdmin()
@@ -260,7 +260,7 @@ class RoleCase54415(TestCase):
         size = len(roles)
 
         for index, curr_role in enumerate(roles, start=1):
-            LOGGER.info(
+            logger.info(
                 "Role named ({0}/{1}): {2}".format(
                     index, size, curr_role.get_name()
                 )
@@ -274,7 +274,7 @@ class RoleCase54415(TestCase):
             curr_role = _retrieve_current_role(curr_role)
             role_permits = _get_role_permits(curr_role)
             if 'login' not in [p.get_name() for p in role_permits]:
-                LOGGER.info(msg, curr_role.get_name())
+                logger.info(msg, curr_role.get_name())
                 continue
 
             assert common.addUser(
@@ -288,7 +288,7 @@ class RoleCase54415(TestCase):
                 filter=not curr_role.administrative
             )
             assert len(mla.util.get(absLink=False)) == size
-            LOGGER.info(
+            logger.info(
                 "User with role %s can see all roles.", curr_role.get_name()
             )
             loginAsAdmin()
@@ -328,7 +328,7 @@ class RoleCase54402(TestCase):
         assert mla.removeRole(True, config.ADMIN_ROLE)
         # Try to remove role that is associated with user.
         assert mla.removeRole(False, config.USER_ROLE)
-        LOGGER.info(msg, config.USER_ROLE)
+        logger.info(msg, config.USER_ROLE)
         assert mla.removeUserPermissionsFromVm(
             True, config.VM_NAME, config.USER1
         )
@@ -355,7 +355,7 @@ class RoleCase54366(TestCase):
         """ Try to create role name with invalid characters """
         for char in INVALID_CHARS:
             assert mla.addRole(False, name=char, permits='login')
-            LOGGER.info("Role with char '%s' can't be created.", char)
+            logger.info("Role with char '%s' can't be created.", char)
 
 
 @attr(tier=2)
@@ -368,7 +368,7 @@ class RoleCase54540(TestCase):
         """ Test that pre-defined roles can not be removed. """
         for role in mla.util.get(absLink=False):
             assert mla.util.delete(role, False)
-            LOGGER.info(
+            logger.info(
                 "Predefined role %s can't be removed.",
                 role.get_name()
             )
@@ -387,7 +387,7 @@ class RoleCase54411(TestCase):
         """ Check if rhevm return still same predefined roles """
         l = len(mla.util.get(absLink=False))
         assert len(mla.util.get(absLink=False)) == l
-        LOGGER.info("There are still same predefined roles.")
+        logger.info("There are still same predefined roles.")
 
 
 @attr(tier=2)
@@ -455,14 +455,14 @@ class RolesCase54412(TestCase):
 
         b = False
         for k in l.keys():
-            LOGGER.info("Testing propagated permissions from %s", k)
+            logger.info("Testing propagated permissions from %s", k)
             mla.addUserPermitsForObj(
                 True, config.USER_NAME, role_e.UserRole, l[k].find(k)
             )
             for key, val in h[k].items():
-                LOGGER.info("Checking inherited permissions for '%s'" % key)
+                logger.info("Checking inherited permissions for '%s'" % key)
                 a = not checkIfObjectHasRole(val.find(key), role_e.UserRole)
-                LOGGER.error(msg_f) if a else LOGGER.info(msg_t)
+                logger.error(msg_f) if a else logger.info(msg_t)
                 b = b or a
 
             mla.removeUsersPermissionsFromObject(

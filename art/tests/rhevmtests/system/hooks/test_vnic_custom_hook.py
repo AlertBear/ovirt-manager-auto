@@ -19,7 +19,7 @@ from os import path
 from rhevmtests.system.hooks import config
 import logging
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 SPEED = '1000'
 CUSTOM_PROPERTIES = 'speed=%s;port_mirroring=True;bandwidth=10000' % SPEED
 CUSTOM_PROPERTIES2 = 'port_mirroring=True;bandwidth=10000'
@@ -116,14 +116,14 @@ class TestCaseVnic(TestCase):
             elif t == SCRIPT_TYPE.SHELL:
                 self._create_one_line_shell_script(n)
             else:
-                LOGGER.error("Unsupported script type.")
+                logger.error("Unsupported script type.")
 
     def check_for_files(self):
         """ Check for file created by hook """
         result = False
         for name, t in self.HOOK_NAMES.iteritems():
             my_hook = '%s.hook' % name
-            LOGGER.info("Checking existence of %s%s", TMP, my_hook)
+            logger.info("Checking existence of %s%s", TMP, my_hook)
             ret = hooks.checkForFileExistenceAndContent(
                 True, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
                 filename=path.join(TMP, my_hook),

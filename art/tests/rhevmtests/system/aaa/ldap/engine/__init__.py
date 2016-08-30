@@ -4,7 +4,7 @@ import os
 from rhevmtests.system.aaa.ldap import config, common
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def setup_package():

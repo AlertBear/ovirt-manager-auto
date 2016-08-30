@@ -1,5 +1,3 @@
-import logging
-
 from art.unittest_lib import BaseTestCase, testflow
 
 from art.rhevm_api.tests_lib.low_level import (
@@ -14,9 +12,6 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 
 import golden_env.config as config
-
-
-LOGGER = logging.getLogger(__name__)
 
 
 class CleanGoldenEnv(BaseTestCase):
