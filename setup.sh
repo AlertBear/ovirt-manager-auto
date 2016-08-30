@@ -2,18 +2,27 @@
 
 # This script helps you install all deps of ART test framework.
 #
-# You have to export two env variables:
+# You have to export two env variables with existing paths to your
+# copies of rhevm-qe-utils and storage-api repositories:
 #   export RHEVM_QE_UTILS_PATH=/path/to/rhevm-qe-utils/repo
 #   export STORAGE_API_PATH=/path/to/storage_api/repo
 #
-# Then run script
+# Then run script from art repository. Note you are supposed to run it from
+# the root of repository, that means from same directory where the setup.sh
+# script is located.
 #   bash setup.sh
 #
-# Activate virtualenv
+# Activate virtualenv by running folowing command
 #   source .art/bin/activate
 #
 # Run pytest
 #   py.test -p art --help
+#
+# When you want to deactivate virtual environment for your session just run:
+#   deactivate
+#
+# In case you need additional informations related to virtual env, please
+# visit documentation: https://virtualenv.pypa.io/en/stable
 
 set -e
 set +x
@@ -35,18 +44,35 @@ RHEVM_QE_UTILS_PATH=${RHEVM_QE_UTILS_PATH:-}
 
 if [ -z "$STORAGE_API_PATH" ] ;
 then
-  echo "STORAGE_API_PATH is required!"
+  echo "STORAGE_API_PATH variable is not exported into environment!"
+  exit 1
+fi
+# NOTE: eval because of possible unexpanded variables, what we do on jenkins
+if [ ! -d "$( eval echo $STORAGE_API_PATH )" ] ;
+then
+  echo "$STORAGE_API_PATH is not existing directory";
   exit 1
 fi
 if [ -z "$RHEVM_QE_UTILS_PATH" ] ;
 then
-  echo "RHEVM_QE_UTILS_PATH is required!"
+  echo "RHEVM_QE_UTILS_PATH variable is not exported into environment!"
+  exit 1
+fi
+if [ ! -d "$( eval echo $RHEVM_QE_UTILS_PATH )" ] ;
+then
+  echo "$RHEVM_QE_UTILS_PATH is not existing directory";
   exit 1
 fi
 if [ -z "$ART_PATH" ] ;
 then
   ART_PATH=`pwd`
 fi
+if [ ! -d "$( eval echo $ART_PATH )" ] ;
+then
+  echo "$ART_PATH is not existing directory";
+  exit 1
+fi
+
 
 $YUM install -y \
     python-virtualenv \
@@ -61,7 +87,8 @@ $YUM install -y \
     expect \
     vdsm-cli \
     autofs \
-    krb5-workstation
+    krb5-workstation \
+    redhat-rpm-config
 
 rm -rf .art
 virtualenv --system-site-packages .art
