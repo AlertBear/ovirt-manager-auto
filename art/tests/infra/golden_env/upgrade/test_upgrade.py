@@ -5,7 +5,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import golden_env.config as config
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api import resources
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import BaseTestCase as TestCase, testflow
 logger = logging.getLogger(__name__)
 
 
@@ -113,27 +113,35 @@ class TestUpgrade(TestCase):
         self._passwd = config.PASSWORDS[0]
 
         # stop all vms
+        testflow.step("Stop all VMs")
         assert self.stop_all_vms()
 
         # put all hosts to maintenance
+        testflow.step("Put hosts in maintenance")
         hl_hosts.deactivate_hosts_if_up(host_name_list)
 
         # Get not RHEV-H
         self.rhel_hosts_ip = self.get_rhel_hosts_ip(host_list)
 
         # update rhel hosts if any
+        testflow.step("Update hosts repositories and vdsm")
         for host_ip in self.rhel_hosts_ip:
             self.update_repos_and_vdsm(host_ip)
 
         # update engine
         executor = config.ENGINE_HOST.executor()
+        testflow.step("Update engine repositories")
         self.update_engine_repositories(executor)
+        testflow.step("Update engine packages")
         self.update_engine_packages(executor)
+        testflow.step("Update engine - run engine-setup")
         self.update_engine(executor)
 
         # wait for engine to start
+        testflow.step("Wait for engine to restart")
         self.wait_for_engine()
 
         # activate all hosts
+        testflow.step("Activate hosts")
         for host_name in host_name_list:
             hl_hosts.activate_host_if_not_up(host_name)
