@@ -24,7 +24,6 @@ import pytest
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
-POLARION_PROJECT = "RHEVM3-"
 WAIT_FOR_SPM_TIMEOUT = 100
 RETRY_INTERVAL = 10
 
@@ -229,7 +228,7 @@ class TestCase6220(BasicEnvironment):
                 "Failed to remove host %s" % self.removed_host
             )
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6220")
     def test_default_spm_priority(self):
         """
         * Remove host from the environment
@@ -265,7 +264,7 @@ class TestCase6212(BasicEnvironment):
     """
     __test__ = True
 
-    @polarion(POLARION_PROJECT, '6212')
+    @polarion("RHEVM3-6212")
     def test_legal_value_range_validation(self):
         """
         * Change and validate SPM priority to '-1, 10'
@@ -282,7 +281,7 @@ class TestCase6212(BasicEnvironment):
             priorities=valid_priorities, hosts=self.hsm_hosts[:2]
         )
 
-    @polarion(POLARION_PROJECT, '6213')
+    @polarion("RHEVM3-6213")
     def test_illegal_value_range_validation(self):
         """
         * Change and validate SPM priority to '-2, 11'
@@ -314,7 +313,7 @@ class TestCase6212(BasicEnvironment):
             self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY
         )
 
-    @polarion(POLARION_PROJECT, '6209')
+    @polarion("RHEVM3-6209")
     def test_illegal_spm_priority_value(self):
         """
         * Change and validate SPM priority to '#'
@@ -337,7 +336,7 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
     __test__ = True
     polarion_test_case = '6217'
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6217")
     def test_all_hosts_with_minus_one_spm_priority(self):
         """
         * Set all host's SPM priority to '-1'
@@ -365,7 +364,7 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
         super(TestCase6205, self).setUp()
         self.deactivate_and_verify_hosts(hosts=self.hsm_hosts)
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6205")
     def test_all_hosts_with_minus_one_spm_priority(self):
         """
         * Switch all host except the SPM host to maintenance
@@ -439,7 +438,7 @@ class TestCase6206(BasicEnvironment):
             config.DEFAULT_SPM_PRIORITY, config.DEFAULT_SPM_PRIORITY - 1
         ]
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6206")
     def test_two_hosts_swap_priorities(self):
         """
         * Set all hosts to maintenance
@@ -527,7 +526,7 @@ class TestCase6224(BasicEnvironment):
         test_utils.restartVdsmd(host_ip, config.HOSTS_PW)
         self.activate_and_verify_hosts(hosts=[host_name])
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6224")
     def test_restart_stop_vdsm(self):
         """
         * Set HSM hosts with '-1' SPM priority, and the SPM host with '2'
@@ -565,7 +564,7 @@ class TestCase6222(BasicEnvironment):
     polarion_test_case = '6222'
     master_domain = None
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6222")
     def test_migrate_master_storage_domain(self):
         """
         * Switch Master domain to maintenance
@@ -611,7 +610,7 @@ class TestCase6221(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6221'
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6221")
     def test_db_illegal_spm_priority_value(self):
         """
         * Set illegal SPM priority on the DB (-2, 11)
@@ -673,7 +672,7 @@ class TestCase6215(BasicEnvironment):
             self.max_spm_priority_host, self.second_spm_priority_host
         )
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6215")
     def test_highest_spm_priority_host_non_responsive(self):
         """
         * Set different SPM priority to each host
@@ -782,7 +781,7 @@ class TestCase6219(BasicEnvironment):
             )
         self.non_master_storage_domain_ip = non_master_domain['address']
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-6219")
     def test_storage_disconnection_and_spm_reelection(self):
         """
         * Set HSM hosts SPM priorities to '-1' and SPM host

@@ -21,7 +21,6 @@ from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
-POLARION_PROJECT = "RHEVM3-"
 RETRY_INTERVAL = 10
 WAIT_FOR_SPM_TIMEOUT = 120
 WAIT_FOR_DC_TIMEOUT = 360
@@ -248,7 +247,7 @@ class TestCase5815(BasicEnvironment):
     __test__ = True
     polarion_test_case = '5815'
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-5815")
     def test_reassign_spm(self):
         """
         * Select HSM to be SPM
@@ -271,7 +270,7 @@ class TestCase5823(BasicEnvironment):
     __test__ = True
     polarion_test_case = '5823'
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-5823")
     def test_reassign_spm_when_deactivate_spm_host(self):
         """
         * Put SPM host in maintenance
@@ -310,7 +309,7 @@ class TestCase5818(BasicEnvironment):
     polarion_test_case = '5818'
     disk_alias = None
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-5818")
     def test_select_new_host_as_spm_during_async_task(self):
         """
         *  Run an async task (such as adding a disk)
@@ -372,7 +371,7 @@ class TestCase5819(BasicEnvironment):
             'Non-master storage domain %s selected', self.non_master_domain
         )
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-5819")
     def test_reassign_spm_during_deactivate_domain(self):
         """
         * Deactivate storage domain
@@ -465,7 +464,7 @@ class TestCase14812(BasicEnvironment):
                 (self.vm_name, self.vm_host)
             )
 
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-14812")
     def test_reassign_spm_to_host_with_vm_and_perform_storage_operation(self):
         """
         * Create VM and run it on HSM host
@@ -527,7 +526,7 @@ class TestCase5820(ReassignSPMWithStorageBlocked):
     # to Master/Non-master Storage Domain
     # https://bugzilla.redhat.com/show_bug.cgi?id=1326009
     @bz({'1326009': {}})
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-5820")
     def test_set_spm_with_blocked_non_master_domain(self):
         """
         * Block connection between SPM and non-master domain
@@ -553,7 +552,7 @@ class TestCase5821(ReassignSPMWithStorageBlocked):
     # to Master/Non-master Storage Domain
     # https://bugzilla.redhat.com/show_bug.cgi?id=1326009
     @bz({'1326009': {}})
-    @polarion(POLARION_PROJECT, polarion_test_case)
+    @polarion("RHEVM3-5821")
     def test_set_spm_with_blocked_master_domain(self):
         """
         * Block connection between SPM and master domain

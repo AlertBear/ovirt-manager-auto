@@ -71,12 +71,12 @@ class BaseExportImportTestCase(TestCase):
 
 
 @attr(tier=2)
-class TestCase4665(BaseExportImportTestCase):
+class TestCase11976(BaseExportImportTestCase):
     """
     Test Force Override option
     """
     __test__ = True
-    polarion_test_case = '4665'
+    polarion_test_case = '11976'
     # Bugzilla history:
     # 1254230: Operation of exporting template to Export domain stucks
 
@@ -84,7 +84,7 @@ class TestCase4665(BaseExportImportTestCase):
         """
         Creates a template from the vm
         """
-        super(TestCase4665, self).setUp()
+        super(TestCase11976, self).setUp()
         self.template_name = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
         )
@@ -96,7 +96,7 @@ class TestCase4665(BaseExportImportTestCase):
             )
 
     @bz({'1365384': {}})
-    @polarion("RHEVM3-4665")
+    @polarion("RHEVM3-11976")
     def test_import_force_override(self):
         """
         Export VM with force override enabled/disabled
@@ -191,19 +191,19 @@ class TestCase4665(BaseExportImportTestCase):
             BaseExportImportTestCase.test_failed = True
 
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_TEMPLATE])
-        super(TestCase4665, self).tearDown()
+        super(TestCase11976, self).tearDown()
 
 
 @attr(tier=2)
-class TestCase4684(BaseExportImportTestCase):
+class TestCase11995(BaseExportImportTestCase):
     """
     Collapse Snapshots
     """
     __test__ = True
-    polarion_test_case = '4684'
+    polarion_test_case = '11995'
     snap_desc = 'snap_%s' % polarion_test_case
 
-    @polarion("RHEVM3-4684")
+    @polarion("RHEVM3-11995")
     def test_collapse_snapshots(self):
         """
         Test export/import with collapse snapshots option works
@@ -257,7 +257,7 @@ class TestCase4684(BaseExportImportTestCase):
                 "Failed to remove VM %s from export domain", self.imported_vm
             )
             BaseExportImportTestCase.test_failed = True
-        super(TestCase4684, self).tearDown()
+        super(TestCase11995, self).tearDown()
 
 
 @attr(tier=1)

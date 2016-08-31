@@ -479,14 +479,14 @@ class TestCase6026(BasicEnvironment):
 
 
 @attr(tier=2)
-class TestCase6027(BasicEnvironment):
+class TestCase6007(BasicEnvironment):
     """
     Create snapshot of first disk out of 4, preview it and undo the snapshot
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    polarion_test_case = '6027'
+    polarion_test_case = '6007'
     file_name = '/root/test_file'
     cmd_create = 'echo "test_txt" > %s' % file_name
     cm_del = 'rm -f %s' % file_name
@@ -498,9 +498,9 @@ class TestCase6027(BasicEnvironment):
         Prepares the environment
         """
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6027, self).setUp()
+        super(TestCase6007, self).setUp()
 
-    @polarion("RHEVM3-6027")
+    @polarion("RHEVM3-6007")
     def test_preview_snapshot(self):
         """
         - Create VM with 4 disks
@@ -550,7 +550,7 @@ class TestCase6027(BasicEnvironment):
             ll_vms.wait_for_vm_snapshots(
                 self.vm_name, [config.SNAPSHOT_OK]
             )
-        super(TestCase6027, self).tearDown()
+        super(TestCase6007, self).tearDown()
 
 
 @attr(tier=2)
@@ -597,14 +597,14 @@ class TestCase6013(BasicEnvironment):
 
 
 @attr(tier=2)
-class TestCase6030(BasicEnvironment):
+class TestCase6010(BasicEnvironment):
     """
     Custom preview of vm configuration and 2 disks
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    polarion_test_case = '6030'
+    polarion_test_case = '6010'
     disks_for_custom_preview = 2
     previewed = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
@@ -614,10 +614,10 @@ class TestCase6030(BasicEnvironment):
         Prepares the environment
         """
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6030, self).setUp()
+        super(TestCase6010, self).setUp()
         assert self._prepare_fs_on_devs()
 
-    @polarion("RHEVM3-6030")
+    @polarion("RHEVM3-6010")
     def test_custom_preview_with_configuration_and_two_disks(self):
         """
         - Create a Vm with 4 disks (file system on all of them)
@@ -672,7 +672,7 @@ class TestCase6030(BasicEnvironment):
             ll_vms.wait_for_vm_snapshots(
                 self.vm_name, [config.SNAPSHOT_OK]
             )
-        super(TestCase6030, self).tearDown()
+        super(TestCase6010, self).tearDown()
 
 
 @attr(tier=4)
@@ -748,14 +748,14 @@ class TestCase6006(BasicEnvironment):
 
 
 @attr(tier=2)
-class TestCase6032(BasicEnvironment):
+class TestCase16779(BasicEnvironment):
     """
     Create snapshot only from VM configuration.
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    polarion_test_case = '6032'
+    polarion_test_case = '16779'
     nic = 'nic_%s' % polarion_test_case
     commit = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
@@ -764,7 +764,7 @@ class TestCase6032(BasicEnvironment):
         """
         Prepares the environment
         """
-        super(TestCase6032, self).setUp()
+        super(TestCase16779, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         profile = config.MGMT_BRIDGE
         if not ll_vms.addNic(
@@ -776,7 +776,7 @@ class TestCase6032(BasicEnvironment):
 
         assert self._prepare_fs_on_devs()
 
-    @polarion("RHEVM3-6032")
+    @polarion("RHEVM3-16779")
     def test_create_snapshot_from_vm_configuration(self):
         """
         - Create VM with a disk and 2 NICs
@@ -817,18 +817,18 @@ class TestCase6032(BasicEnvironment):
             ll_vms.wait_for_vm_snapshots(
                 self.vm_name, [config.SNAPSHOT_OK]
             )
-        super(TestCase6032, self).tearDown()
+        super(TestCase16779, self).tearDown()
 
 
 @attr(tier=2)
-class TestCase6033(BasicEnvironment):
+class TestCase14399(BasicEnvironment):
     """
     Create 3 snapshot and delete the second
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    polarion_test_case = '6033'
+    polarion_test_case = '14399'
     snap_1 = 'snapshot_1'
     snap_2 = 'snapshot_2'
     snap_3 = 'snapshot_3'
@@ -839,11 +839,11 @@ class TestCase6033(BasicEnvironment):
         """
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         self.snaps = [self.snap_1, self.snap_2, self.snap_3]
-        super(TestCase6033, self).setUp()
+        super(TestCase14399, self).setUp()
         assert self._prepare_fs_on_devs()
         self.cmd_create = 'echo "test_txt" > %s/test_file_%s'
 
-    @polarion("RHEVM3-6033")
+    @polarion("RHEVM3-14399")
     def test_delete_second_snapshot_out_of_three(self):
         """
         - Create VM with 4 disks

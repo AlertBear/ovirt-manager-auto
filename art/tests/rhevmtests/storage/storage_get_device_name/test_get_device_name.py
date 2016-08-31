@@ -24,8 +24,6 @@ NON_SHARED_DISK = "non_sharable_disk_%s"
 
 ALIAS = "alias"
 
-POLARION_PROJECT = "RHEVM3-"
-
 # Global list to hold VMs with VirtIO-SCSI Enabled set to False
 VMS_WITH_VIRTIO_SCSI_FALSE = list()
 
@@ -287,7 +285,7 @@ class TestCase4572(BasicEnvironment):
     polarion_test_case = '4572'
     create_disk_permutations = True
 
-    @polarion(POLARION_PROJECT + polarion_test_case)
+    @polarion("RHEVM3-4572")
     def test_basic_flow_get_device_name(self):
         """ Polarion case 4572"""
         self.attach_disk_permutations_and_verify_in_os()
@@ -312,7 +310,7 @@ class TestCase4573(BasicEnvironment):
     polarion_test_case = '4573'
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
-    @polarion(POLARION_PROJECT + polarion_test_case)
+    @polarion("RHEVM3-4573")
     def test_one_shared_disk_on_2_vms(self):
         """ Polarion case 4573"""
         self.create_and_attach_disk_to_vms_performing_os_validation(
@@ -339,7 +337,7 @@ class TestCase4574(BasicEnvironment):
     polarion_test_case = '4574'
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
-    @polarion(POLARION_PROJECT + polarion_test_case)
+    @polarion("RHEVM3-4574")
     def test_one_non_shared_one_shared_disk_on_2_vms(self):
         """ Polarion case 4574"""
         self.create_and_attach_disk_to_vms_performing_os_validation(
@@ -366,7 +364,7 @@ class TestCase4575(BasicEnvironment):
     polarion_test_case = '4575'
     create_disk_permutations = True
 
-    @polarion(POLARION_PROJECT + polarion_test_case)
+    @polarion("RHEVM3-4575")
     def test_basic_flow_get_device_name(self):
         """ Polarion case 4575"""
         self.attach_disk_permutations_and_verify_in_os(hot_plug=True)
@@ -390,7 +388,7 @@ class TestCase4576(BasicEnvironment):
     polarion_test_case = '4576'
     create_disk_permutations = True
 
-    @polarion(POLARION_PROJECT + polarion_test_case)
+    @polarion("RHEVM3-4576")
     def test_basic_flow_get_device_name(self):
         """ Polarion case 4576"""
         self.attach_disk_permutations_and_verify_in_os(
