@@ -4,7 +4,6 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Import_Template_Entities
 """
 import logging
-from unittest2 import SkipTest
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -48,9 +47,6 @@ class BasicEnvironment(BaseTestCase):
         """
         Prepare the environment for test
         """
-        # Disable glance tests for PPC architecture
-        if config.PPC_ARCH:
-            raise SkipTest("Glance is not supported on PPC")
         self.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )

@@ -393,8 +393,7 @@ def create_vm_or_clone(
                     interface=disk_interface, bootable=boot
                 )
         # Create VM using image imported from Glance
-        # Don't copy from glance for PPC_ARCH
-        elif not config.PPC_ARCH and not clone_from_template and (
+        elif not clone_from_template and (
             config.GLANCE_DOMAIN in storage_domains and (
                 config.GOLDEN_GLANCE_IMAGE in ([
                     image.get_name() for image in
