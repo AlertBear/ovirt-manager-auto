@@ -16,7 +16,7 @@ from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def update_vnic_profile(request,):
+def update_vnic_profile(request):
     """
     Config and update queue value on vNIC profile for exiting
     network (vNIC CustomProperties).
@@ -75,6 +75,7 @@ def create_vm(request):
     """
     multiple_queue_nics = NetworkFixtures()
     vm_name = request.node.cls.vm_name
+    template = conf.TEMPLATE_NAME[0]
 
     def fin():
         """
@@ -84,17 +85,17 @@ def create_vm(request):
         ll_vms.removeVm(positive=True, vm=vm_name, stopVM="True", wait=True)
     request.addfinalizer(fin)
 
-    testflow.setup("Creating VM: %s", vm_name)
+    testflow.setup("Creating VM: %s from template: %s", vm_name, template)
     assert ll_vms.createVm(
         positive=True, vmName=vm_name, cluster=multiple_queue_nics.cluster_0,
-        vmDescription="from_template", template=conf.TEMPLATE_NAME[0]
+        vmDescription="from_template", template=template
     )
 
 
 @pytest.fixture(scope="class")
 def attach_vnic_profile_to_vm(request):
     """
-    Attach plugged vNIC with custom queues property a VM (in shutdown state)
+    Attach plugged vNIC with custom queues property to a VM (in shutdown state)
     """
     multiple_queue_nics = NetworkFixtures()
     vm_name = request.node.cls.vm_name

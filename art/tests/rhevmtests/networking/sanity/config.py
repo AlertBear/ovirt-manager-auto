@@ -24,7 +24,7 @@ VNIC_PROFILES = global_helper.generate_object_names(
 )
 
 VLAN_IDS = [str(i) for i in xrange(2, 20)]
-DUMMYS = ["dummy_%s" % i for i in xrange(12)]
+DUMMIES = ["dummy_%s" % i for i in xrange(12)]
 
 BASIC_IP_DICT_NETMASK = {
     "ip_netmask": {

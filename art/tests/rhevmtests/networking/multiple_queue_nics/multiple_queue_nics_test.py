@@ -15,7 +15,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
     update_vnic_profile, run_vm, create_vm, attach_vnic_profile_to_vm
@@ -95,7 +95,6 @@ class TestMultipleQueueNics01(NetworkTest):
             num_queues=self.num_queues_1
         )
 
-    @bz({"1349461": {}})
     @polarion("RHEVM3-4311")
     def test_03_multiple_queue_nics_vm_migration(self):
         """
@@ -128,7 +127,8 @@ class TestMultipleQueueNics01(NetworkTest):
 )
 class TestMultipleQueueNics02(NetworkTest):
     """
-    Check queue exists for VM from template
+    1.  Check queue exists for VM from template
+    2.  Check hot-unplug vNIC with custom queues property
     """
     __test__ = True
 
@@ -136,7 +136,7 @@ class TestMultipleQueueNics02(NetworkTest):
     vm_nic = multiple_queue_conf.VM_NIC
     num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
 
-    @bz({"1359520": {}})
+    @polarion("RHEVM-16866")
     def test_hot_unplug_with_custom_queues(self):
         """
         Check hot-unplug vNIC with custom queues property

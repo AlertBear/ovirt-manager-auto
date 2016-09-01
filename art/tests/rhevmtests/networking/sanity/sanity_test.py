@@ -5,8 +5,6 @@
 Testing Sanity for the network features.
 """
 
-import logging
-
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -33,8 +31,6 @@ from fixtures import (
     case_06_fixture, case_07_fixture, case_08_fixture, add_labels,
     deactivate_hosts, set_host_nic_down
 )
-
-logger = logging.getLogger("Sanity_Cases")
 
 
 @attr(tier=1)
@@ -139,7 +135,7 @@ class TestSanity02(TestSanityCaseBase):
                 },
                 "4": {
                     "nic": self.bond_1,
-                    "slaves": sanity_conf.DUMMYS[:2]
+                    "slaves": sanity_conf.DUMMIES[:2]
                 },
                 "5": {
                     "nic": self.bond_1,
@@ -152,15 +148,15 @@ class TestSanity02(TestSanityCaseBase):
                 },
                 "7": {
                     "nic": self.bond_2,
-                    "slaves": sanity_conf.DUMMYS[2:4]
+                    "slaves": sanity_conf.DUMMIES[2:4]
                 },
                 "8": {
                     "nic": self.bond_3,
-                    "slaves": sanity_conf.DUMMYS[6:9]
+                    "slaves": sanity_conf.DUMMIES[6:9]
                 },
                 "9": {
                     "nic": self.bond_4,
-                    "slaves": sanity_conf.DUMMYS[9:11]
+                    "slaves": sanity_conf.DUMMIES[9:11]
                 }
 
             }
@@ -191,7 +187,7 @@ class TestSanity02(TestSanityCaseBase):
                     "network": self.net[1],
                 },
                 "2": {
-                    "nic": sanity_conf.DUMMYS[11],
+                    "nic": sanity_conf.DUMMIES[11],
                     "network": self.net[2],
                     "ip": sanity_conf.BASIC_IP_DICT_PREFIX
                 },
@@ -201,11 +197,11 @@ class TestSanity02(TestSanityCaseBase):
                 },
                 "4": {
                     "nic": self.bond_2,
-                    "slaves": [sanity_conf.DUMMYS[4]]
+                    "slaves": [sanity_conf.DUMMIES[4]]
                 },
                 "5": {
                     "nic": self.bond_3,
-                    "slaves": [sanity_conf.DUMMYS[8]]
+                    "slaves": [sanity_conf.DUMMIES[8]]
                 },
             },
             "remove": {
@@ -361,7 +357,7 @@ class TestSanity04(TestSanityCaseBase):
             "add": {
                 "1": {
                     "nic": self.bond,
-                    "slaves": sanity_conf.DUMMYS[:2]
+                    "slaves": sanity_conf.DUMMIES[:2]
                 },
                 "2": {
                     "nic": self.bond,
@@ -433,7 +429,7 @@ class TestSanity05(TestSanityCaseBase):
             "add": {
                 "1": {
                     "nic": self.bond_1,
-                    "slaves": sanity_conf.DUMMYS[:2]
+                    "slaves": sanity_conf.DUMMIES[:2]
                 },
                 "2": {
                     "nic": self.bond_1,
@@ -455,7 +451,7 @@ class TestSanity05(TestSanityCaseBase):
             "add": {
                 "1": {
                     "nic": self.bond_2,
-                    "slaves": sanity_conf.DUMMYS[2:4]
+                    "slaves": sanity_conf.DUMMIES[2:4]
                 },
                 "2": {
                     "nic": self.bond_2,
