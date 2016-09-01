@@ -7,7 +7,7 @@
 import logging
 import time
 import pytest
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, VirtTest, testflow
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.helpers as helper
@@ -117,8 +117,9 @@ class TestPauseVM(VirtTest):
             wait_for_status=config.ENUMS['vm_state_paused']
         ), "Failed to start vm in pause mode"
 
-    @attr(tier=2)
+    @attr(tier=1)
     @polarion("RHEVM3-9964")
+    @bz({"1273720": {}})
     @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
     def test_migrate_paused_vm(self):
         """
@@ -133,11 +134,11 @@ class TestPauseVM(VirtTest):
         host_before = ll_vms.get_vm_host(self.vm_name)
         # set time to '0', need only to check if vm is up since it in pause
         # mode
-        assert not ll_vms.migrateVm(
+        assert ll_vms.migrateVm(
             positive=True, vm=self.vm_name, timeout=0
         ), "pause vm has migrate"
         host_after = ll_vms.get_vm_host(self.vm_name)
-        assert host_before == host_after, "vm didn't stay on the same host"
+        assert host_before != host_after, "vm did stay on the same host"
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
