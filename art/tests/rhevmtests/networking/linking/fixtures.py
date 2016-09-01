@@ -2,215 +2,92 @@
 # -*- coding: utf-8 -*-
 
 """
-Fixtures for linking
+Fixtures for Network Linking test cases
 """
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as linking_conf
 import rhevmtests.networking.helper as network_helper
+from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
-@pytest.fixture(scope="module")
-def prepare_setup_linking(request):
-    """
-    Prepare setup
-    """
-    linking = NetworkFixtures()
-
-    def fin2():
-        """
-        Remove networks from setup
-        """
-        linking.remove_networks_from_setup(hosts=linking.host_0_name)
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Stop VM
-        """
-        ll_vms.stopVm(positive=True, vm=linking.vm_0)
-    request.addfinalizer(fin1)
-
-    assert network_helper.run_vm_once_specific_host(
-        vm=linking.vm_0, host=linking.host_0_name, wait_for_up_status=True
-    )
-    assert hl_networks.createAndAttachNetworkSN(
-        data_center=linking.dc_0, cluster=linking.cluster_0,
-        host=linking.vds_0_host, network_dict=linking_conf.VLAN_NET_DICT,
-        auto_nics=[0, 1]
-    )
-
-
 @pytest.fixture(scope="class")
-def teardown_all_cases_linking(request, prepare_setup_linking):
+def add_vnics_to_vms(request):
     """
-    Teardown for all cases
+    Add vNIC(s) with properties to a VM(s)
     """
-    linking = NetworkFixtures()
-    nic_list = request.node.cls.nic_list
-    vm = request.node.cls.vm
+    NetworkFixtures()
+    vnic_props_list = request.node.cls.add_vnics_vms_params
 
     def fin():
         """
-        Update vNIC and remove vNICs from VM
+        Remove vNIC(s) from a VM(s)
         """
-        for nic in nic_list:
-            if vm == linking.vm_0:
-                ll_vms.updateNic(
-                    positive=True, vm=vm, nic=nic, plugged=False
-                )
-            ll_vms.removeNic(positive=True, vm=vm, nic=nic)
+        for props in vnic_props_list:
+            vm = props.get("vm")
+            nic = props.get("name")
+            testflow.teardown("Removing vNIC: %s from VM: %s", nic, vm)
+            assert ll_vms.removeNic(positive=True, vm=vm, nic=nic)
     request.addfinalizer(fin)
 
-
-@pytest.fixture(scope="class")
-def fixture_case_01(request, teardown_all_cases_linking):
-    """
-    Fixture for case01
-    """
-    vm = request.node.cls.vm
-    nic1 = request.node.cls.nic1
-    net = request.node.cls.net
-    assert ll_vms.addNic(
-        positive=True, vm=vm, name=nic1, network=net
-    )
-
-
-@pytest.fixture(scope="class")
-def fixture_case_02(request, teardown_all_cases_linking):
-    """
-    Fixture for case02
-    """
-    vm = request.node.cls.vm
-    nic_list = request.node.cls.nic_list
-    int_type_list = request.node.cls.int_type_list
-    net_list = request.node.cls.net_list
-    plug_values = request.node.cls.plug_values
-    link_values = request.node.cls.link_values
-    for int_type, nic, net, plug_value, link_value in zip(
-        int_type_list, nic_list, net_list, plug_values, link_values
-    ):
-        assert ll_vms.addNic(
-            positive=True, vm=vm, name=nic, network=net,
-            interface=int_type, plugged=plug_value, linked=link_value
+    for props in vnic_props_list:
+        testflow.setup(
+            "Adding vNIC: %s to VM: %s", props.get("name"), props.get("vm")
         )
+        assert ll_vms.addNic(positive=True, **props)
 
 
 @pytest.fixture(scope="class")
-def fixture_case_03(request, teardown_all_cases_linking):
+def add_vnic_profile(request):
     """
-    Fixture for case03
+    Add vNIC profile with properties
     """
     linking = NetworkFixtures()
-    vm = request.node.cls.vm
-    net = request.node.cls.net
-    nic1 = request.node.cls.nic1
-
-    def fin():
-        """
-        Remove network
-        """
-        ll_networks.remove_network(
-            positive=True, network=net, data_center=linking.dc_0
-        )
-    request.addfinalizer(fin)
-
-    local_dict = {
-        net: {
-            "required": "false"
-        }
-    }
-    assert hl_networks.createAndAttachNetworkSN(
-        data_center=linking.dc_0, cluster=linking.cluster_0,
-        network_dict=local_dict
-    )
-    assert ll_vms.addNic(
-        positive=True, vm=vm, name=nic1, network=net
-    )
-
-
-@pytest.fixture(scope="class")
-def fixture_case_04(request, teardown_all_cases_linking):
-    """
-    Fixture for case04
-    """
-    linking = NetworkFixtures()
-    vm = request.node.cls.vm
-    net = request.node.cls.net
-    nic1 = request.node.cls.nic1
-    vprofile = request.node.cls.vprofile
+    vnic_params = request.node.cls.add_vnic_profile_params
+    name = vnic_params.get("name")
+    cl = vnic_params.get("cluster", linking.cluster_0)
+    net = vnic_params.get("network")
+    pm = vnic_params.get("port_mirror", True)
 
     def fin():
         """
         Remove vNIC profile
         """
-        ll_networks.remove_vnic_profile(
-            positive=True, vnic_profile_name=vprofile, network=net
+        testflow.teardown("Removing vNIC profile: %s", name)
+        assert ll_networks.remove_vnic_profile(
+            positive=True, vnic_profile_name=name, network=net
         )
     request.addfinalizer(fin)
 
+    testflow.setup("Adding vNIC profile: %s", name)
     assert ll_networks.add_vnic_profile(
-        positive=True, name=vprofile, cluster=linking.cluster_0,
-        network=net, port_mirroring=True
-    )
-    assert ll_vms.addNic(
-        positive=True, vm=vm, name=nic1, vnic_profile=vprofile, network=net
+        positive=True, name=name, cluster=cl, network=net, port_mirroring=pm
     )
 
 
 @pytest.fixture(scope="class")
-def fixture_case_05(request, teardown_all_cases_linking):
+def start_vm(request):
     """
-    Fixture for case05
-    """
-    vm = request.node.cls.vm
-    net = request.node.cls.net
-    nic_list = request.node.cls.nic_list
-    plug_states = request.node.cls.plug_states
-
-    for nic, plug_state in zip(nic_list, plug_states):
-        assert ll_vms.addNic(
-            positive=True, vm=vm, name=nic, network=net, plugged=plug_state
-        )
-
-
-@pytest.fixture(scope="class")
-def fixture_case_06(request, teardown_all_cases_linking):
-    """
-    Fixture for case06
+    Starts a VM
     """
     linking = NetworkFixtures()
+    host = getattr(request.node.cls, "start_vm_host", linking.host_0_name)
     vm = request.node.cls.vm
-    nic1 = request.node.cls.nic1
-    net1 = request.node.cls.net1
-    net2 = request.node.cls.net2
-    vprofile = request.node.cls.vprofile
+    start_flag = getattr(request.node.cls, "start_vm", True)
 
-    def fin2():
+    def fin():
         """
-        Stop VM
+        Stops a VM
         """
-        ll_vms.stopVm(positive=True, vm=vm)
-    request.addfinalizer(fin2)
+        testflow.teardown("Stopping VM: %s", vm)
+        assert ll_vms.stopVm(positive=True, vm=vm)
+    request.addfinalizer(fin)
 
-    def fin1():
-        """
-        Remove vNIC profile
-        """
-        ll_networks.remove_vnic_profile(
-            positive=True, vnic_profile_name=vprofile, network=net2
+    if start_flag:
+        testflow.setup("Starting VM: %s on host: %s", vm, host)
+        assert network_helper.run_vm_once_specific_host(
+            vm=vm, host=host, wait_for_up_status=True
         )
-    request.addfinalizer(fin1)
-
-    assert ll_vms.addNic(
-        positive=True, vm=vm, name=nic1, network=net1
-    )
-    assert ll_networks.add_vnic_profile(
-        positive=True, name=vprofile, cluster=linking.cluster_0,
-        network=net2, port_mirroring=True
-    )

@@ -2,36 +2,81 @@
 # -*- coding: utf-8 -*-
 
 """
-Config for Linking tests
+Config for Network Linking feature tests
 """
 
-VLAN_IDS = [str(i) for i in xrange(30, 34)]
-NET_1 = "linking_net_1"
-NET_2 = "linking_net_2"
-NET_3 = "linking_net_3"
-NET_4 = "linking_net_4"
-NET_5 = "linking_net_5"
-NET_LIST = [NET_1, NET_2, NET_3, NET_4]
+import rhevmtests.helpers as global_helper
 
-VLAN_NET_DICT = {
-    NET_1: {
+VNIC_PROFILES = global_helper.generate_object_names(
+    num_of_cases=6, num_of_objects=10, prefix="linking_vnic_profile"
+)
+VNICS = global_helper.generate_object_names(
+    num_of_cases=6, num_of_objects=10, prefix="linking_vnic"
+)
+NETS = global_helper.generate_object_names(
+    num_of_cases=6, num_of_objects=10, prefix="linking_net"
+)
+
+VLAN_IDS = [str(i) for i in range(30, 36)]
+
+# vNICS
+CASE_01_VNIC_1 = VNICS[1][0]
+CASE_02_VNIC_1 = VNICS[2][0]
+CASE_02_VNIC_2 = VNICS[2][1]
+CASE_03_VNIC_1 = VNICS[3][0]
+CASE_04_VNIC_1 = VNICS[4][0]
+CASE_04_VNIC_2 = VNICS[4][1]
+CASE_04_VNIC_1_REN = "%s_rename" % VNICS[4][0]
+CASE_04_VNIC_2_REN = "%s_rename" % VNICS[4][1]
+CASE_04_VNIC_3 = VNICS[4][2]
+CASE_05_VNIC_1 = VNICS[5][0]
+
+# vNIC profiles
+CASE_04_VNIC_PROFILE_1 = VNIC_PROFILES[4][0]
+CASE_05_VNIC_PROFILE_1 = VNIC_PROFILES[5][0]
+CASE_05_VNIC_PROFILE_2 = VNIC_PROFILES[5][1]
+
+# Networks
+CASE_01_NET_1 = NETS[1][0]
+CASE_02_NET_1 = NETS[2][0]
+CASE_02_NET_2 = NETS[2][1]
+CASE_03_NET_1 = NETS[3][0]
+CASE_04_NET_1 = NETS[4][0]
+CASE_05_NET_1 = NETS[5][0]
+CASE_05_NET_2 = NETS[5][1]
+
+NET_DICT = {
+    CASE_01_NET_1: {
         "vlan_id": VLAN_IDS[0],
         "required": "false",
         "nic": 1
     },
-    NET_2: {
+    CASE_02_NET_1: {
         "vlan_id": VLAN_IDS[1],
         "required": "false",
         "nic": 1
     },
-    NET_3: {
+    CASE_02_NET_2: {
         "vlan_id": VLAN_IDS[2],
         "required": "false",
         "nic": 1
     },
-    NET_4: {
+    CASE_03_NET_1: {
+        "required": "false"
+    },
+    CASE_04_NET_1: {
         "vlan_id": VLAN_IDS[3],
         "required": "false",
         "nic": 1
     },
+    CASE_05_NET_1: {
+        "vlan_id": VLAN_IDS[4],
+        "required": "false",
+        "nic": 1
+    },
+    CASE_05_NET_2: {
+        "vlan_id": VLAN_IDS[5],
+        "required": "false",
+        "nic": 1
+    }
 }
