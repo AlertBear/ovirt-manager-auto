@@ -8,8 +8,6 @@ MultiHost will be tested for untagged, tagged, MTU, VM/non-VM and bond
 scenarios.
 """
 
-import logging
-
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -20,21 +18,45 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as multi_host_conf
 import helper
 import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
 from art.core_api import apis_utils
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    fixture_case_03, fixture_case_04, fixture_case_05, fixture_case_06,
-    fixture_case_01_02, fixture_case_07
+    add_vnics_to_vms, add_vnic_to_tamplate, move_host_to_cluster, start_vm
 )
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
+)  # flake8: noqa
 
-logger = logging.getLogger("MultiHost_Cases")
+
+@pytest.fixture(scope="module", autouse=True)
+def multi_host_prepare_setup(request):
+    """
+    Add networks
+    Run VM
+    """
+    multi_host = NetworkFixtures()
+
+    def fin():
+        """
+        Remove networks from setup
+        """
+        testflow.teardown("Remove networks from setup")
+        network_helper.remove_networks_from_setup(hosts=multi_host.host_0_name)
+    request.addfinalizer(fin)
+
+    testflow.setup("Create networks on setup")
+    network_helper.prepare_networks_on_setup(
+        networks_dict=multi_host_conf.NETS_DICT, dc=multi_host.dc_0,
+        cluster=multi_host.cluster_0
+    )
 
 
 @attr(tier=2)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(fixture_case_01_02.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestMultiHostCase01(NetworkTest):
     """
     Update untagged network with VLAN
@@ -52,9 +74,27 @@ class TestMultiHostCase01(NetworkTest):
     vlan_2 = multi_host_conf.VLAN_IDS[1]
     mtu_9000 = conf.MTU[0]
     mtu_1500 = conf.MTU[-1]
+    hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=1, net=net)
+
+    @polarion("RHEVM3-4072")
+    def test_01_update_with_non_vm_non_vm(self):
+        """
+        1) Update network to be non-VM network
+        2) Check that the Host was updated accordingly
+        3) Update network to be VM network
+        4) Check that the Host was updated accordingly
+        """
+        testflow.step("Update network to be non-VM network")
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=False
+        )
+        testflow.step("Update network to be VM network")
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=True
+        )
 
     @polarion("RHEVM3-4067")
-    def test_update_with_vlan(self):
+    def test_02_update_with_vlan(self):
         """
         1) Update network with VLAN 162
         2) Check that the Host was updated with VLAN 162
@@ -73,7 +113,7 @@ class TestMultiHostCase01(NetworkTest):
         )
 
     @polarion("RHEVM3-4080")
-    def test_update_with_mtu(self):
+    def test_03_update_with_mtu(self):
         """
         1) Update network with MTU 9000
         2) Check that the Host was updated with MTU 9000
@@ -89,26 +129,9 @@ class TestMultiHostCase01(NetworkTest):
             net=self.net, mtu=self.mtu_1500
         )
 
-    @polarion("RHEVM3-4072")
-    def test_update_with_non_vm_nonvm(self):
-        """
-        1) Update network to be non-VM network
-        2) Check that the Host was updated accordingly
-        3) Update network to be VM network
-        4) Check that the Host was updated accordingly
-        """
-        testflow.step("Update network to be non-VM network")
-        assert helper.update_network_and_check_changes(
-            net=self.net, bridge=False
-        )
-        testflow.step("Update network to be VM network")
-        assert helper.update_network_and_check_changes(
-            net=self.net, bridge=True
-        )
-
 
 @attr(tier=2)
-@pytest.mark.usefixtures(fixture_case_01_02.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestMultiHostCase02(NetworkTest):
     """
     Update network name:
@@ -124,6 +147,7 @@ class TestMultiHostCase02(NetworkTest):
     new_net_name = "multihost_net"
     vnic_2_name = conf.NIC_NAME[1]
     dc = conf.DC_0
+    hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=1, net=net)
 
     @polarion("RHEVM3-4079")
     def test_update_net_name(self):
@@ -144,7 +168,8 @@ class TestMultiHostCase02(NetworkTest):
             name=self.new_net_name
         )
         assert hl_host_network.clean_host_interfaces(
-            host_name=conf.HOST_0_NAME)
+            host_name=conf.HOST_0_NAME
+        )
         assert ll_vms.addNic(
             positive=True, vm=conf.VM_1, name=self.vnic_2_name,
             network=self.net
@@ -185,7 +210,11 @@ class TestMultiHostCase02(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(fixture_case_03.__name__)
+@pytest.mark.usefixtures(
+    setup_networks_fixture.__name__,
+    add_vnics_to_vms.__name__,
+    start_vm.__name__
+)
 class TestMultiHostCase03(NetworkTest):
     """
     Update network on running/non-running VM:
@@ -201,9 +230,10 @@ class TestMultiHostCase03(NetworkTest):
     mtu_9000 = conf.MTU[0]
     mtu_1500 = conf.MTU[-1]
     vlan = multi_host_conf.VLAN_IDS[2]
-    vm_nic = conf.NIC_NAME[1]
+    vm_nic = "multi_host_vNIC_case_03"
     vm_list = conf.VM_NAME[:2]
     vm_0 = conf.VM_0
+    hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=1, net=net)
 
     @polarion("RHEVM3-4074")
     def test_update_net_on_vm(self):
@@ -243,32 +273,36 @@ class TestMultiHostCase03(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(fixture_case_04.__name__)
+@pytest.mark.usefixtures(
+    setup_networks_fixture.__name__,
+    add_vnic_to_tamplate.__name__
+)
 class TestMultiHostCase04(NetworkTest):
     """
     Update network when template is using it:
     1) Negative: Try to update network from VM to non-VM when template is
     using it
-    2) Positive: Try to change MTU on net when template is using it
-    3) Positive: Try to change VLAN on net when template is using it
+    2) Positive: Change MTU on net when template is using it
+    3) Positive: Change VLAN on net when template is using it
     """
     __test__ = True
     restore_mtu = True
     net = multi_host_conf.NETS[4][0]
-    vm_nic = conf.NIC_NAME[1]
+    vm_nic = "multi_host_vNIC_case_04"
     mtu_9000 = conf.MTU[0]
     mtu_1500 = conf.MTU[-1]
     vlan = multi_host_conf.VLAN_IDS[3]
     dc = conf.DC_0
     template = conf.TEMPLATE_NAME[0]
+    hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=1, net=net)
 
     @polarion("RHEVM3-4073")
     def test_update_net_on_template(self):
         """
         1) Negative: Try to update network from VM to non-VM when template is
         using it
-        2) Positive: Try to change MTU on net when template is using it
-        3) Positive: Try to change VLAN on net when template is using it
+        2) Positive: Change MTU on net when template is using it
+        3) Positive: Change VLAN on net when template is using it
         """
         testflow.step(
             "Negative: Try to update network from VM to non-VM when template "
@@ -278,18 +312,18 @@ class TestMultiHostCase04(NetworkTest):
             positive=False, network=self.net, data_center=conf.DC_0,
             usages=""
         )
-        testflow.step("Try to change MTU on net when template is using it")
+        testflow.step("Change MTU on net when template is using it")
         assert helper.update_network_and_check_changes(
             net=self.net, mtu=self.mtu_9000
         )
-        testflow.step("Try to change VLAN on net when template is using it")
+        testflow.step("Change VLAN on net when template is using it")
         assert helper.update_network_and_check_changes(
             net=self.net, vlan_id=self.vlan
         )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(fixture_case_05.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestMultiHostCase05(NetworkTest):
     """
     Update untagged network with VLAN and MTU when several hosts reside under
@@ -302,6 +336,7 @@ class TestMultiHostCase05(NetworkTest):
     mtu_9000 = conf.MTU[0]
     mtu_1500 = conf.MTU[-1]
     vlan = multi_host_conf.VLAN_IDS[4]
+    hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=2, net=net)
 
     @polarion("RHEVM3-4078")
     def test_update_with_vlan_mtu(self):
@@ -310,6 +345,7 @@ class TestMultiHostCase05(NetworkTest):
         3) Update network with MTU 9000
         4) Check that the both Hosts were updated with VLAN 162 and MTU 9000
         """
+        testflow.step("Update network with VLAN and MTU")
         assert helper.update_network_and_check_changes(
             net=self.net, vlan_id=self.vlan, mtu=self.mtu_9000,
             hosts=conf.HOSTS_LIST, vds_hosts=conf.VDS_HOSTS_LIST, matches=2
@@ -317,7 +353,10 @@ class TestMultiHostCase05(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(fixture_case_06.__name__)
+@pytest.mark.usefixtures(
+    move_host_to_cluster.__name__,
+    setup_networks_fixture.__name__
+)
 class TestMultiHostCase06(NetworkTest):
     """
     Update untagged network with VLAN and MTU when several hosts reside under
@@ -328,11 +367,12 @@ class TestMultiHostCase06(NetworkTest):
     net = multi_host_conf.NETS[6][0]
     mtu_1500 = conf.MTU[-1]
     restore_mtu = True
-    cl_name2 = "new_CL_case08"
+    cl_name2 = "multi_host_cluster_case_06"
     dc = conf.DC_0
     cpu = conf.CPU_NAME
     version = conf.COMP_VERSION
     cl = conf.CL_0
+    hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=2, net=net)
 
     @polarion("RHEVM3-4077")
     def test_update_with_vlan_mtu(self):
@@ -359,12 +399,9 @@ class TestMultiHostCase06(NetworkTest):
         ):
             sample1.append(
                 apis_utils.TimeoutingSampler(
-                    timeout=conf.SAMPLER_TIMEOUT,
-                    sleep=1,
-                    func=hl_networks.check_host_nic_params,
-                    host=host,
-                    nic=nic,
-                    **mtu_dict1
+                    timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+                    func=hl_networks.check_host_nic_params, host=host,
+                    nic=nic, **mtu_dict1
                 )
             )
         for i in range(2):
@@ -389,7 +426,7 @@ class TestMultiHostCase06(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(fixture_case_07.__name__)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestMultiHostCase07(NetworkTest):
     """
     Update network with VLAN/VM/Non-VM/MTU on BOND
@@ -399,12 +436,38 @@ class TestMultiHostCase07(NetworkTest):
     net = multi_host_conf.NETS[7][0]
     mtu_1500 = conf.MTU[-1]
     mtu_9000 = conf.MTU[0]
-    bond = conf.BOND[0]
+    bond = "bond70"
     vlan_1 = multi_host_conf.VLAN_IDS[6]
     vlan_2 = multi_host_conf.VLAN_IDS[7]
+    hosts_nets_nic_dict = {
+        0: {
+            net: {
+                "nic": bond,
+                "network": net,
+                "slaves": [-1, -2]
+            }
+        }
+    }
+
+    @polarion("RHEVM3-4081")
+    def test_01_update_with_vm_to_non_vm_to_vm_bond(self):
+        """
+        1) Update network to be non-VM network
+        2) Check that the Host was updated accordingly
+        3) Update network to be VM network
+        4) Check that the Host was updated accordingly
+        """
+        testflow.step("Update network to be non-VM network on BOND")
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=False, nic=self.bond
+        )
+        testflow.step("Update network to be VM network on BOND")
+        assert helper.update_network_and_check_changes(
+            net=self.net, bridge=True, nic=self.bond
+        )
 
     @polarion("RHEVM3-4069")
-    def test_update_with_vlan_bond(self):
+    def test_02_update_with_vlan_bond(self):
         """
         There is a bz for updating network to be tagged - 1081489
 
@@ -423,7 +486,7 @@ class TestMultiHostCase07(NetworkTest):
         )
 
     @polarion("RHEVM3-4068")
-    def test_update_with_mtu_bond(self):
+    def test_03_update_with_mtu_bond(self):
         """
         1) Update network with MTU 9000
         2) Check that the Host was updated with MTU 9000
@@ -437,21 +500,4 @@ class TestMultiHostCase07(NetworkTest):
         testflow.step("Update network with MTU 1500 on BOND")
         assert helper.update_network_and_check_changes(
             net=self.net, mtu=self.mtu_1500, nic=self.bond
-        )
-
-    @polarion("RHEVM3-4081")
-    def test_update_with_non_vm_nonvm_bond(self):
-        """
-        1) Update network to be non-VM network
-        2) Check that the Host was updated accordingly
-        3) Update network to be VM network
-        4) Check that the Host was updated accordingly
-        """
-        testflow.step("Update network to be non-VM network on BOND")
-        assert helper.update_network_and_check_changes(
-            net=self.net, bridge=False, nic=self.bond
-        )
-        testflow.step("Update network to be VM network on BOND")
-        assert helper.update_network_and_check_changes(
-            net=self.net, bridge=True, nic=self.bond
         )

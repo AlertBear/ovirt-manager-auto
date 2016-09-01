@@ -8,7 +8,7 @@ Config for MultiHost
 import rhevmtests.helpers as global_helper
 
 NETS = global_helper.generate_object_names(
-    num_of_cases=11, prefix="multi"
+    num_of_cases=11, prefix="MultiHost"
 )
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
 UPDATE_CHANGES_ENGINE = "Check that the host nic was updated via engine"

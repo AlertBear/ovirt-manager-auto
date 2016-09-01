@@ -25,7 +25,7 @@ def update_network_and_check_changes(
 
     Args:
         net (str): Network name
-        nic (int): Host NIC index
+        nic (int or str): Host NIC index
         hosts (list): Hosts list to check the changes on
         vds_hosts (list): VDS resources list to check the changes on
         matches (int): Number of matches to find in events
@@ -178,3 +178,24 @@ def check_bridge(net, bridge, nic, host, vds_host):
         vds_resource=vds_host, net_name=net,
     )
     return res == bridge
+
+
+def prepare_dict_for_sn_fixture(hosts, net):
+    """
+    Prepare dict for setup_networks_fixture
+
+    Args:
+        hosts (int): Number of hosts
+        net (str): Network name
+
+    Returns:
+        dict: Dict for setup_networks fixture
+    """
+    sn_dict = dict()
+    for i in range(hosts):
+        i_str = str(i)
+        sn_dict[i] = dict()
+        sn_dict[i][i_str] = dict()
+        sn_dict[i][i_str]["nic"] = 1
+        sn_dict[i][i_str]["network"] = net
+    return sn_dict
