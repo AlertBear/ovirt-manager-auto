@@ -58,6 +58,10 @@ class Ubuntu1204TestCase(common.GABaseTestCase):
         'ovirt-guest-agent', 'linux-image', 'xserver-xorg-video-qxl'
     ]
 
+    @classmethod
+    def teardown_class(cls):
+        vms.stop_vms_safely([cls.disk_name])
+
     @polarion("RHEVM3-9331")
     def test_aa_install_guest_agent(self):
         """ Ubuntu rhevm-guest-agent install """
