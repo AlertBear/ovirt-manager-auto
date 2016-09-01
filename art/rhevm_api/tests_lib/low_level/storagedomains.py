@@ -81,6 +81,8 @@ connUtil = get_api('storage_connection', 'storageconnections')
 
 OVF_STORE_DISK_NAME = "OVF_STORE"
 HOSTED_STORAGE = "hosted_storage"
+FIND_SDS_TIMEOUT = 10
+SD_STATUS_OK_TIMEOUT = 120
 
 
 def _prepareStorageDomainObject(positive, **kwargs):
@@ -1880,6 +1882,24 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
         return False
 
     sdObjList = getDCStorages(datacenter_name, False)
+    for sd in getDCStorages(datacenter_name, False):
+        if sd.get_status() in ENUMS['storage_domain_state_maintenance']:
+            continue
+        util.logger.info(
+            "Waiting up to %s seconds for sd %s to be active",
+            SD_STATUS_OK_TIMEOUT, sd.get_name()
+        )
+        if not waitForStorageDomainStatus(
+            True, datacenter_name, sd.get_name(),
+            ENUMS['storage_domain_state_active'], SD_STATUS_OK_TIMEOUT, 1
+        ):
+            util.logger.error(
+                "NFS domain '%s' has not reached %s state after %s seconds" %
+                (
+                    sd.get_name(), ENUMS['storage_domain_state_active'],
+                    SD_STATUS_OK_TIMEOUT
+                )
+            )
     return [sdObj.get_name() for sdObj in sdObjList if
             validate_domain_storage_type(sdObj, storage_type)]
 
