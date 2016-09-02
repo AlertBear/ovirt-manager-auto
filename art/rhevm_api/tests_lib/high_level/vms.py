@@ -837,6 +837,8 @@ def create_windows_vm(
             urllib.urlopen,
             agent_url.format(action='query', vm_id=vm_id),
         ):
+            if vms.waitForIP(vm_name, timeout=1)[0]:
+                break
             status = request.getcode()
             if status == 200:
                 break

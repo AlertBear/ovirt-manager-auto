@@ -5,6 +5,7 @@ product/services/drivers relevant to windows machine are installed/running.
 import inspect
 import logging
 import sys
+import pytest
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
@@ -69,8 +70,10 @@ class Windows(TestCase):
             polarion(pid)(m.__func__)
 
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(scope='class', autouse=True)
+    def setup_vm(cls, request):
         # Windows VMs have a naming limitation of 15 characters
+        request.addfinalizer(cls.teardown_vm)
         cls.vm_name = '%s' % ((cls.disk_name[:9] + cls.disk_name[-6:]) if
                               len(cls.disk_name) > 15 else cls.disk_name)
         import_image(cls.disk_name)
@@ -92,9 +95,10 @@ class Windows(TestCase):
             os_type=cls.os_type,
         )
         assert ret[0], "Failed to create vm with windows: '%s'" % ret[1]
+        ll_vms.waitForIP(cls.vm_name)
 
     @classmethod
-    def teardown_class(cls):
+    def teardown_vm(cls):
         assert ll_vms.removeVm(positive=True, vm=cls.vm_name, stopVM='true')
 
     def test_vm_ip_fqdn_info(self):
@@ -196,8 +200,8 @@ class Win2008R2_CI_core_64b(Windows):
 
     # Windows2008 Core needs restart after GT installation to work properly
     @classmethod
-    def setup_class(cls):
-        super(Win2008R2_CI_core_64b, cls).setup_class()
+    @pytest.fixture(scope='class', autouse=True)
+    def setup_w2008r2_core(cls):
         ll_vms.restartVm(cls.vm_name, wait_for_ip=True)
 
 
@@ -218,11 +222,6 @@ class Win2012R2_CI_64b(Windows):
         'test_guest_timezone': 'RHEVM3-14407',
         'test_guest_os': 'RHEVM3-14408',
     }
-
-    @classmethod
-    def setup_class(cls):
-        super(Win2012R2_CI_64b, cls).setup_class()
-        ll_vms.waitForIP(cls.vm_name)
 
 
 class Win2012R2_CI_core_64b(Windows):

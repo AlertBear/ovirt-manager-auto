@@ -6,6 +6,7 @@ import copy
 import inspect
 import logging
 import sys
+import pytest
 
 from unittest2 import SkipTest
 from art.rhevm_api.tests_lib.low_level import vms, disks, storagedomains
@@ -108,7 +109,9 @@ class Windows(TestCase):
             GLANCE_IMAGE = None
 
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(scope='class', autouse=True)
+    def setup_vm(cls, request):
+        request.addfinalizer(cls.teardown_vm)
         cls.__prepare_image()
         assert vms.createVm(
             positive=True,
@@ -159,7 +162,7 @@ class Windows(TestCase):
         return 'x86_64' if self.machine.platf == '64-bit' else 'x86'
 
     @classmethod
-    def teardown_class(cls):
+    def teardown_vm(cls):
         assert vms.removeVm(positive=True, vm=cls.diskName, stopVM='true')
 
     def test_a00_install_guest_tools(self):
