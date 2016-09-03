@@ -9,6 +9,7 @@ bond scenarios and for VM and non-VM networks
 """
 
 import pytest
+import time
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -967,6 +968,8 @@ class TestNetLabels07(NetworkTest):
             assert ll_hosts.updateHost(
                 positive=True, host=conf.HOST_1_NAME, cluster=cluster
             )
+            # Sleep until setupNetworks is done when moving host
+            time.sleep(self.sleep_timeout)
             dummies = conf.HOST_1_NICS[-4:]
             for lb, net, dummy in zip(self.labels, self.nets, dummies):
                 label_dict = {
