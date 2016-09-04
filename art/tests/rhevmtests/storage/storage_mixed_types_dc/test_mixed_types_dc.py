@@ -21,7 +21,7 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 import rhevmtests.storage.helpers as storage_helpers
 from art.test_handler.settings import opts
 
@@ -767,7 +767,6 @@ class TestCase4566(IscsiNfsSD):
         super(TestCase4566, self).tearDown()
 
 
-@bz({'1358271': {}})
 @attr(tier=1)
 class TestCase4564(IscsiNfsSD):
     """

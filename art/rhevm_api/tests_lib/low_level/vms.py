@@ -5228,9 +5228,11 @@ def get_vm_disk_logical_name(
     """
     def get_logical_name(vm_name, disk_alias=None, disk_id=None):
         if disk_id:
-            return getVmDisk(vm_name, disk_id=disk_id).get_logical_name()
+            return get_disk_attachment(vm_name, disk_id).get_logical_name()
         else:
-            return getVmDisk(vm_name, disk_alias).get_logical_name()
+            return get_disk_attachment(
+                vm_name, disk_alias, attr='name'
+            ).get_logical_name()
 
     if key == 'id':
         disk_alias = None

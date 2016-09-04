@@ -495,7 +495,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     __test__ = True
 
     @polarion("RHEVM3-11246")
-    @bz({'1334726': {'ppc': config.PPC_ARCH}, '1358271': {}})
+    @bz({'1334726': {'ppc': config.PPC_ARCH}})
     def test_same_domain_same_alias(self):
         """
         Copy existing disk to the same storage domain with the same alias
@@ -509,7 +509,6 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         testflow.step("Check the data exists")
         self.check_file_existence(self.test_vm_name)
 
-    @bz({'1358271': {}})
     @attr(tier=2)
     @polarion("RHEVM3-11248")
     def test_same_domain_different_alias(self):
@@ -520,7 +519,6 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         self.check_file_existence(self.test_vm_name)
 
-    @bz({'1358271': {}})
     @attr(tier=2)
     @polarion("RHEVM3-11242")
     def test_different_domain_same_alias(self):
@@ -531,7 +529,6 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         self.check_file_existence(self.test_vm_name)
 
-    @bz({'1358271': {}})
     @attr(tier=2)
     @polarion("RHEVM3-11247")
     def test_different_domain_different_alias(self):
