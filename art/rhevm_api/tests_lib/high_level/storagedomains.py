@@ -168,9 +168,10 @@ def import_iscsi_storage_domain(host, lun_address, lun_target):
     host_obj = ll_sd.hostUtil.find(host)
     host_obj_id = ll_sd.Host(id=host_obj.get_id())
     iscsi = ll_sd.IscsiDetails(address=lun_address)
+    iscsi_target = ll_sd.iscsi_targetsType([lun_target])
     response = ll_sd.hostUtil.syncAction(
         host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
-        iscsi_target=[lun_target]
+        iscsi_targets=iscsi_target
     )
     return import_block_storage_domain(
         host_obj_id, response, ENUMS['storage_type_iscsi']

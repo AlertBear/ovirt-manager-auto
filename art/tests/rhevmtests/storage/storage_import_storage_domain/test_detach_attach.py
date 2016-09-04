@@ -484,8 +484,8 @@ class DomainImportWithTemplate(BasicEnvironment):
             template_to_register[0], cluster=config.CLUSTER_NAME
         )
         assert self.template_exists, "Template registration failed"
-        assert ll_vms.createVm(
-            True, self.vm_from_template, self.vm_from_template,
+        assert ll_vms.cloneVmFromTemplate(
+            positive=True, name=self.vm_from_template,
             template=self.template_name, cluster=config.CLUSTER_NAME
         ), "Unable to create vm %s from template %s" % (
             self.vm_from_template, self.template_name
