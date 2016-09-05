@@ -67,7 +67,7 @@ def setup_package():
         host_type = host.get_type()
         if host_type == 'rhel':
             config.HOSTS_RHEL.append(host)
-        elif host_type == 'rhev-h':
+        elif host_type == 'ovirt_node':
             config.HOSTS_RHEVH.append(host)
         hosts_type.append(host_type)
 
