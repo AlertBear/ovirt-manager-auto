@@ -5,9 +5,9 @@ import ConfigParser
 import io
 import logging
 import os
-import pytest
 import tempfile
 import time
+
 
 import config
 from art.rhevm_api.tests_lib.high_level import (
@@ -22,6 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.unittest_lib import StorageTest as TestCase
+from concurrent.futures import ThreadPoolExecutor
 from utilities import sshConnection
 
 logger = logging.getLogger(__name__)
@@ -205,37 +206,6 @@ class TestCaseNFSOptions(TestCase):
     host_for_dc = None
     storages = set([NFS])
 
-    def initialize_parameters(self):
-        self.sds_for_cleanup = []
-        self.host = ll_hosts.getSPMHost(config.HOSTS)
-        self.host_ip = ll_hosts.getHostIP(self.host)
-        self.password = config.HOSTS_PW
-
-    def cleanup_class(self):
-        logger.info("Cleanup - removing storage domains")
-        for storage_domain in self.sds_for_cleanup:
-            logger.info("Removing storage domain %s", storage_domain)
-            if ll_sd.checkIfStorageDomainExist(True, storage_domain):
-                test_utils.wait_for_tasks(
-                    config.VDC, config.VDC_PASSWORD,
-                    config.DATA_CENTER_NAME
-                )
-                if not hl_sd.remove_storage_domain(
-                        storage_domain, config.DATA_CENTER_NAME,
-                        self.host, True
-                ):
-                    logger.error(
-                        "Unable to remove storage domain %s",
-                        storage_domain
-                    )
-
-    @pytest.fixture(scope='class')
-    def initializer_TestCaseNFSOptions(self, request):
-        def finalizer_TestCaseNFSOptions():
-            self.cleanup_class()
-        request.addfinalizer(finalizer_TestCaseNFSOptions)
-        self.initialize_parameters()
-
     def create_nfs_domain_and_verify_options(self, domain_list, host=None,
                                              password=None, datacenter=None):
         """
@@ -266,13 +236,31 @@ class TestCaseNFSOptions(TestCase):
         if datacenter is None:
             datacenter = config.DATA_CENTER_NAME
 
-        for domain in domain_list:
-            logger.info("Creating nfs domain %s", domain.name)
-            hl_sd.create_nfs_domain_with_options(
-                domain.name, domain.sd_type, host, domain.address,
-                domain.path, retrans=domain.retrans_to_set,
-                version=domain.vers_to_set, timeo=domain.timeout_to_set,
-                datacenter=datacenter
+        results = list()
+        with ThreadPoolExecutor(
+            max_workers=len(domain_list)
+        ) as executor:
+            for domain in domain_list:
+                logger.info("Creating nfs domain %s", domain.name)
+                results.append(
+                    executor.submit(
+                        hl_sd.create_nfs_domain_with_options,
+                        domain.name, domain.sd_type, host, domain.address,
+                        domain.path, retrans=domain.retrans_to_set,
+                        version=domain.vers_to_set,
+                        timeo=domain.timeout_to_set, datacenter=datacenter
+                    )
+                )
+        for index, result in enumerate(results):
+            if result.exception():
+                raise result.exception()
+            if not result.result:
+                raise exceptions.StorageDomainException(
+                    "Creation of storage domain %s failed." %
+                    domain_list[index]
+                )
+            logger.info(
+                "creation of storage domain %s succeeded", domain_list[index]
             )
 
         logger.info("Getting info about mounted resources")

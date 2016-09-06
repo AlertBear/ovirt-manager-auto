@@ -1896,7 +1896,7 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
 
     sdObjList = getDCStorages(datacenter_name, False)
     for sd in getDCStorages(datacenter_name, False):
-        if sd.get_status() in ENUMS['storage_domain_state_maintenance']:
+        if sd.get_status() == ENUMS['storage_domain_state_maintenance']:
             continue
         util.logger.info(
             "Waiting up to %s seconds for sd %s to be active",

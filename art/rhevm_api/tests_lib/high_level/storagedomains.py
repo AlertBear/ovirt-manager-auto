@@ -834,7 +834,8 @@ def create_nfs_domain_with_options(
             positive, name=name, type=sd_type, host=host, address=address,
             storage_type=ENUMS['storage_type_nfs'], path=path,
             nfs_version=version, nfs_retrans=retrans, nfs_timeo=timeo,
-            mount_options=mount_options):
+            mount_options=mount_options
+    ):
         ll_sd.HostStorage = old_storage  # just in case...
         raise errors.StorageDomainException(
             "Cannot add storage domain %s" % name)
@@ -946,7 +947,7 @@ def detach_and_deactivate_domain(datacenter, domain):
             'Unable to detach domain %s from dc %s', domain, datacenter
         )
         return False
-    logger.info('Domain %s detached to dc %s', domain, datacenter)
+    logger.info('Domain %s detached from dc %s', domain, datacenter)
     return True
 
 

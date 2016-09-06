@@ -2,6 +2,7 @@ import pytest
 import logging
 import config
 from art.test_handler import exceptions
+from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
@@ -14,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
+from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
 
 
@@ -34,14 +36,11 @@ def create_vm(request):
     self = request.node.cls
 
     def finalizer():
-        if not ll_vms.safely_remove_vms([self.vm_name]):
-            logger.error(
-                "Failed to power off and remove VM %s",
-                self.vm_name
-            )
-            self.test_failed = True
+        testflow.teardown("Removing VM %s", self.vm_name)
+        assert ll_vms.safely_remove_vms([self.vm_name]), (
+            "Failed to power off and remove VM %s" % self.vm_name
+        )
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
-        self.teardown_exception()
 
     request.addfinalizer(finalizer)
     if not hasattr(self, 'storage_domain'):
@@ -57,10 +56,10 @@ def create_vm(request):
     vm_args['storageDomainName'] = self.storage_domain
     vm_args['vmName'] = self.vm_name
     vm_args['installation'] = self.installation
-    if not storage_helpers.create_vm_or_clone(**vm_args):
-        raise exceptions.VMException(
-            "Failed to create VM %s" % self.vm_name
-        )
+    testflow.setup("Creating VM %s", self.vm_name)
+    assert storage_helpers.create_vm_or_clone(**vm_args), (
+        "Failed to create VM %s" % self.vm_name
+    )
 
 
 @pytest.fixture(scope='class')
@@ -73,8 +72,10 @@ def start_vm(request):
     wait_for_ip = False
     if hasattr(self, 'installation'):
         wait_for_ip = True if self.installation else False
-    if not ll_vms.startVm(True, self.vm_name, config.VM_UP, wait_for_ip):
-        raise exceptions.VMException("Failed to start VM %s" % self.vm_name)
+    testflow.setup("Starting VM %s", self.vm_name)
+    assert ll_vms.startVm(True, self.vm_name, config.VM_UP, wait_for_ip), (
+        "Failed to start VM %s" % self.vm_name
+    )
 
 
 @pytest.fixture(scope='class')
@@ -87,9 +88,10 @@ def add_disk(request):
     def finalizer():
         if ll_disks.checkDiskExists(True, self.disk_name):
             ll_disks.wait_for_disks_status([self.disk_name])
-            if not ll_disks.deleteDisk(True, self.disk_name):
-                self.test_failed = True
-        self.teardown_exception()
+            testflow.teardown("Deleting disk %s", self.disk_name)
+            assert ll_disks.deleteDisk(True, self.disk_name), (
+                "Failed to delete disk %s" % self.disk_name
+            )
     request.addfinalizer(finalizer)
     disk_params = config.disk_args.copy()
     if not hasattr(self, 'storage_domain'):
@@ -107,10 +109,10 @@ def add_disk(request):
     )
     disk_params['alias'] = self.disk_name
 
-    if not ll_disks.addDisk(True, **disk_params):
-        raise exceptions.DiskException(
-            "Failed to create disk %s" % self.disk_name
-        )
+    testflow.setup("Creating disk %s", self.disk_name)
+    assert ll_disks.addDisk(True, **disk_params), (
+        "Failed to create disk %s" % self.disk_name
+    )
     ll_disks.wait_for_disks_status([self.disk_name])
 
 
@@ -124,13 +126,10 @@ def attach_disk(request):
     if hasattr(self, 'update_attach_params'):
         attach_kwargs.update(self.update_attach_params)
 
-    if not ll_disks.attachDisk(
+    testflow.setup("Attach disk %s to VM %s", self.disk_name, self.vm_name)
+    assert ll_disks.attachDisk(
         True, alias=self.disk_name, vm_name=self.vm_name, **attach_kwargs
-    ):
-        raise exceptions.DiskException(
-            "Failed to attach disk %s to VM %s" %
-            (self.disk_name, self.vm_name)
-        )
+    ), ("Failed to attach disk %s to VM %s" % (self.disk_name, self.vm_name))
     ll_disks.wait_for_disks_status([self.disk_name])
 
 
@@ -142,9 +141,8 @@ def update_vm(request):
     self = request.node.cls
 
     if not ll_vms.updateVm(True, self.vm_name, **self.update_vm_params):
-        raise exceptions.VMException(
-            "Failed to update vm %s with params %s" %
-            (self.disk_name, self.update_vm_params)
+        assert "Failed to update vm %s with params %s" % (
+            self.disk_name, self.update_vm_params
         )
 
 
@@ -159,10 +157,13 @@ def create_snapshot(request):
         self.snapshot_description = storage_helpers.create_unique_object_name(
             self.__name__, config.OBJECT_TYPE_SNAPSHOT
         )
-    if not ll_vms.addSnapshot(True, self.vm_name, self.snapshot_description):
-        raise exceptions.VMException(
-            "Failed to create snapshot of VM %s" % self.vm_name
-        )
+    testflow.setup(
+        "Creating snapshot %s of VM %s",
+        self.snapshot_description, self.vm_name
+    )
+    assert ll_vms.addSnapshot(True, self.vm_name, self.snapshot_description), (
+        "Failed to create snapshot of VM %s" % self.vm_name
+    )
     ll_vms.wait_for_vm_snapshots(
         self.vm_name, [config.SNAPSHOT_OK], self.snapshot_description
     )
@@ -176,12 +177,12 @@ def preview_snapshot(request):
     """
     self = request.node.cls
 
-    if not ll_vms.preview_snapshot(
+    testflow.setup(
+        "Preview snapshot %s of VM %s", self.snapshot_description, self.vm_name
+    )
+    assert ll_vms.preview_snapshot(
         True, self.vm_name, self.snapshot_description
-    ):
-        raise exceptions.SnapshotException(
-            "Failed to preview snapshot %s" % self.snapshot_description
-        )
+    ), ("Failed to preview snapshot %s" % self.snapshot_description)
     ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
 
 
@@ -193,13 +194,11 @@ def undo_snapshot(request):
     self = request.node.cls
 
     def finalizer():
-        if not ll_vms.undo_snapshot_preview(
-            True, self.vm_name
-        ):
-            raise exceptions.SnapshotException(
-                "Failed to undo previewed snapshot %s" %
-                self.snapshot_description
-            )
+        testflow.teardown("Undoing snapshot of VM %s", self.vm_name)
+        assert ll_vms.undo_snapshot_preview(True, self.vm_name), (
+            "Failed to undo previewed snapshot %s" %
+            self.snapshot_description
+        )
         ll_vms.wait_for_vm_snapshots(self.vm_name, [config.SNAPSHOT_OK])
     request.addfinalizer(finalizer)
 
@@ -212,12 +211,29 @@ def delete_disks(request):
     self = request.node.cls
 
     def finalizer():
-        for disk in self.disks_to_remove:
-            if ll_disks.checkDiskExists(True, disk):
-                ll_disks.wait_for_disks_status([disk])
-                if not ll_disks.deleteDisk(True, disk):
-                    self.test_failed = True
-        self.teardown_exception()
+        results = list()
+        with ThreadPoolExecutor(
+            max_workers=len(self.disks_to_remove)
+        ) as executor:
+            for disk in self.disks_to_remove:
+                if ll_disks.checkDiskExists(True, disk):
+                    ll_disks.wait_for_disks_status([disk])
+                    testflow.teardown("Deleting disk %s", disk)
+                    results.append(
+                        executor.submit(
+                            ll_disks.deleteDisk, True, disk
+                        )
+                    )
+        for index, result in enumerate(results):
+            if result.exception():
+                raise result.exception()
+            if not result.result:
+                raise exceptions.HostException(
+                    "Delete disk %s failed." % self.disks_to_remove[index]
+                )
+            logger.info(
+                "Delete disk %s succeeded", self.disks_to_remove[index]
+            )
     request.addfinalizer(finalizer)
     if not hasattr(self, 'disk_name'):
         self.disk_name = storage_helpers.create_unique_object_name(
@@ -227,7 +243,7 @@ def delete_disks(request):
         self.disks_to_remove = list()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def poweroff_vm(request):
     """
     Power off VM
@@ -235,6 +251,7 @@ def poweroff_vm(request):
     self = request.node.cls
 
     def finalizer():
+        testflow.teardown("Power off VM %s", self.vm_name)
         if not ll_vms.stop_vms_safely([self.vm_name]):
             logger.error("Failed to power off VM %s", self.vm_name)
             self.test_failed = True
@@ -251,8 +268,10 @@ def create_template(request):
 
     def finalizer():
         if ll_templates.check_template_existence(self.template_name):
-            if not ll_templates.removeTemplate(True, self.template_name):
-                self.test_failed = True
+            testflow.teardown("Remove template %s", self.template_name)
+            assert ll_templates.removeTemplate(True, self.template_name), (
+                "Failed to remove template %s" % self.template_name
+            )
 
     request.addfinalizer(finalizer)
     if not hasattr(self, 'template_name'):
@@ -263,14 +282,12 @@ def create_template(request):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-    if not ll_templates.createTemplate(
+    testflow.setup("Creating template %s", self.template_name)
+    assert ll_templates.createTemplate(
         True, vm=config.VM_NAME[0], name=self.template_name,
         cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain
-    ):
-        exceptions.TemplateException(
-            "Failed to create template %s from VM %s" %
-            (self.template_name, config.VM_NAME[0])
-        )
+    ), ("Failed to create template %s from VM %s" %
+        (self.template_name, config.VM_NAME[0]))
 
 
 @pytest.fixture(scope='class')
@@ -296,13 +313,12 @@ def deactivate_domain(request):
     self = request.node.cls
 
     def finalizer():
-        if not ll_sd.activateStorageDomain(
+        testflow.teardown(
+            "Activating storage domain %s", self.sd_to_deactivate
+        )
+        assert ll_sd.activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_to_deactivate
-        ):
-            self.test_failed = True
-            logging.error(
-                "Failed to activate storage domain %s", self.sd_to_deactivate
-            )
+        ), ("Failed to activate storage domain %s" % self.sd_to_deactivate)
 
     request.addfinalizer(finalizer)
     if not hasattr(self, 'sd_to_deactivate_index'):
@@ -314,12 +330,12 @@ def deactivate_domain(request):
     wait_for_tasks(
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
-    if not ll_sd.deactivateStorageDomain(
+    testflow.setup(
+        "Deactivating storage domain %s", self.sd_to_deactivate
+    )
+    assert ll_sd.deactivateStorageDomain(
         True, config.DATA_CENTER_NAME, self.sd_to_deactivate
-    ):
-        exceptions.StorageDomainException(
-            "Failed to deactivate storage domain %s" % self.sd_to_deactivate
-        )
+    ), ("Failed to deactivate storage domain %s" % self.sd_to_deactivate)
 
 
 @pytest.fixture(scope='class')
@@ -330,15 +346,13 @@ def create_storage_domain(request):
     self = request.node.cls
 
     def finalizer():
-        if not hl_sd.remove_storage_domain(
+        testflow.teardown(
+            "Remove storage domain %s", self.new_storage_domain
+        )
+        assert hl_sd.remove_storage_domain(
             self.new_storage_domain, config.DATA_CENTER_NAME,
             config.HOSTS[0], True
-        ):
-            self.test_failed = True
-            logging.error(
-                "Failed to remove storage domain %s",
-                self.new_storage_domain
-            )
+        ), ("Failed to remove storage domain %s" % self.new_storage_domain)
     request.addfinalizer(finalizer)
     if not hasattr(self, 'new_storage_domain'):
         self.new_storage_domain = (
@@ -350,6 +364,9 @@ def create_storage_domain(request):
         self.index = 0
     name = self.new_storage_domain
     spm = ll_hosts.getSPMHost(config.HOSTS)
+    testflow.setup(
+        "Create new storage domain %s", self.new_storage_domain
+    )
     if self.storage == ISCSI:
         status = hl_sd.addISCSIDataDomain(
             spm,
@@ -410,11 +427,9 @@ def create_storage_domain(request):
             vfs_type=CEPH,
             mount_options=config.CEPH_MOUNT_OPTIONS
         )
-    if not status:
-        raise exceptions.StorageDomainException(
-            "Creating %s storage domain '%s' failed"
-            % (self.storage, name)
-        )
+    assert status, (
+        "Creating %s storage domain '%s' failed" % (self.storage, name)
+    )
     ll_jobs.wait_for_jobs(
         [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
     )
@@ -425,3 +440,21 @@ def create_storage_domain(request):
     wait_for_tasks(
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
+
+
+@pytest.fixture()
+def remove_storage_domain(request):
+    """
+    Remove storage domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if ll_sd.checkIfStorageDomainExist(True, self.storage_domain):
+            testflow.teardown("Remove storage domain %s", self.storage_domain)
+            assert hl_sd.remove_storage_domain(
+                self.storage_domain, config.DATA_CENTER_NAME,
+                config.HOSTS[0], True
+            ), ("Failed to remove storage domain %s", self.storage_domain)
+    request.addfinalizer(finalizer)
+    self.storage_domain = None
