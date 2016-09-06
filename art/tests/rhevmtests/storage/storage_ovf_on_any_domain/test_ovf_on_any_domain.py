@@ -83,9 +83,9 @@ def setup_module():
     """
     logger.info("Changing the ovirt-engine service with "
                 "OvfUpdateIntervalInMinutes to 1 minute, restarting engine")
-    if not test_utils.set_engine_properties(
-            config.ENGINE, [UPDATE_OVF_INTERVAL_CMD % {'minutes': 1}]
-    ):
+
+    cmd = UPDATE_OVF_INTERVAL_CMD % {'minutes': 1}
+    if not config.ENGINE.engine_config(action='set', param=cmd).get('results'):
         raise exceptions.UnkownConfigurationException(
             "Update OVF interval failed to execute on '%s'" % config.VDC
         )
@@ -133,9 +133,8 @@ def teardown_module():
     ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
     logger.info("Changing the ovirt-engine service with "
                 "OvfUpdateIntervalInMinutes to 60 minutes, restarting engine")
-    if not test_utils.set_engine_properties(
-            config.ENGINE, [UPDATE_OVF_INTERVAL_CMD % {'minutes': 60}]
-    ):
+    cmd = UPDATE_OVF_INTERVAL_CMD % {'minutes': 60}
+    if not config.ENGINE.engine_config(action='set', param=cmd).get('results'):
         raise exceptions.HostException("Update OVF interval failed to "
                                        "execute on '%s'" % config.VDC)
     if test_failed:
@@ -1347,10 +1346,10 @@ class TestCase6261(BasicEnvironment):
         logger.info("Changing the ovirt-engine service with "
                     "StorageDomainOvfStoreCount set to %s, restarting "
                     "engine", UPDATED_NUM_OVF_STORES_PER_SD)
-        if not test_utils.set_engine_properties(
-                config.ENGINE,
-                [UPDATE_OVF_NUM_OVF_STORES_CMD % {
-                    'num_ovf_stores': UPDATED_NUM_OVF_STORES_PER_SD}]
+        cmd = UPDATE_OVF_NUM_OVF_STORES_CMD % {
+            'num_ovf_stores': UPDATED_NUM_OVF_STORES_PER_SD}
+        if not config.ENGINE.engine_config(action='set', param=cmd).get(
+            'results'
         ):
             raise exceptions.UnkownConfigurationException(
                 "Update number of OVF stores failed to execute on '%s'" %
@@ -1371,10 +1370,11 @@ class TestCase6261(BasicEnvironment):
             "StorageDomainOvfStoreCount set to %s, restarting engine",
             DEFAULT_NUM_OVF_STORES_PER_SD
         )
-        if not test_utils.set_engine_properties(
-                config.ENGINE,
-                [UPDATE_OVF_NUM_OVF_STORES_CMD % {
-                    'num_ovf_stores': DEFAULT_NUM_OVF_STORES_PER_SD}]
+        cmd = UPDATE_OVF_NUM_OVF_STORES_CMD % {
+            'num_ovf_stores': DEFAULT_NUM_OVF_STORES_PER_SD
+        }
+        if not config.ENGINE.engine_config(action='set', param=cmd).get(
+            'results'
         ):
             raise exceptions.UnkownConfigurationException(
                 "Update number of OVF stores failed to execute on '%s'" %

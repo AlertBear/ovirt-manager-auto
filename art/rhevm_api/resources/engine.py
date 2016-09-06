@@ -131,12 +131,17 @@ class Engine(Service):
             if self.health_page_status:
                 return
 
-    def engine_config(self, action, param=None):
-        """
-        Runs engine-config command with given action
-        :param action: list, get, set, all
-        :param param: parameter given to the command
-        :return: result of the the command
+    def engine_config(self, action, param=None, restart=True):
+        """ Runs engine-config command with given action
+        Args:
+             action (str): list, get, set, all
+             param (str): parameter given to the command
+            restart (bool): True to restart engine False otherwise
+        Returns:
+            dict: Command returned output
+
+        Raises:
+            TypeError: if user send non supported action
         """
         res = {
             "results": dict()
@@ -183,5 +188,8 @@ class Engine(Service):
                     continue
         else:
             res["results"] = True
+
+        if restart and action == 'set':
+            self.restart()
 
         return res

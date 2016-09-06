@@ -327,8 +327,10 @@ def set_vm_pool_monitor_interval(interval):
         "setting 'VmPoolMonitorIntervalInMinutes' parameter to %d "
         "via engine-config", interval
     )
-    param = ["VmPoolMonitorIntervalInMinutes=%d" % interval]
-    if not test_utils.set_engine_properties(config.ENGINE, param):
+    param = "VmPoolMonitorIntervalInMinutes=%d" % interval
+    if not config.ENGINE.engine_config(action='set', param=param).get(
+        'results'
+    ):
         raise exceptions.RHEVMEntityException(
             "Failed to set value of parameter: VmPoolMonitorIntervalInMinutes "
             "to %d via engine-config" % interval
@@ -347,11 +349,12 @@ def get_vm_pool_monitor_interval():
         "Get 'VmPoolMonitorIntervalInMinutes' parameter value "
         "via engine-config"
     )
-    param = ["VmPoolMonitorIntervalInMinutes"]
+    param = "VmPoolMonitorIntervalInMinutes"
     value, version = test_utils.get_engine_properties(
         config.ENGINE.host, param
     )
-    if value is None:
+    res = config.ENGINE.engine_config(action='get', param=param)
+    if res.get('results', {}).get(param, {}).get('value') is None:
         logger.error(
             "Failed to get value of parameter: VmPoolMonitorIntervalInMinutes "
             "via engine-config"

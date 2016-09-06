@@ -8,7 +8,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
-from art.rhevm_api.utils import test_utils
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +92,7 @@ def change_engine_config_low_utilization_value(value):
     cmd = [
         "{0}={1}".format(conf.ENGINE_CONFIG_LOW_UTILIZATION, value)
     ]
-    if not test_utils.set_engine_properties(conf.ENGINE, cmd):
+    if not conf.ENGINE.engine_config(action='set', param=cmd).get('results'):
         logger.error(
             "Failed to set %s option to %s",
             conf.ENGINE_CONFIG_LOW_UTILIZATION, value

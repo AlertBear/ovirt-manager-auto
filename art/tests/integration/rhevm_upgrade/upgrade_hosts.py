@@ -7,7 +7,6 @@ import os.path
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import hosts, clusters, datacenters
-from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 from art.unittest_lib import CoreSystemTest as TestCase
@@ -49,10 +48,11 @@ class UpgradeHosts(TestCase):
         FIXME: rewrite this method once there is support to forcibly check
                available upgrade of host
         """
-        assert test_utils.set_engine_properties(
-            config.ENGINE,
-            ['HostPackagesUpdateTimeInHours=0.01'],
+        cmd = 'HostPackagesUpdateTimeInHours=0.01'
+        assert (
+            config.ENGINE.engine_config(action='set', param=cmd).get('results')
         ), 'Failed to change HostPackagesUpdateTimeInHours config'
+
         # Wait until upgrade is available to engine
         for available in TimeoutingSampler(
             timeout=120,

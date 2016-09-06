@@ -12,7 +12,6 @@ import art.unittest_lib as u_libs
 import pytest
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
-from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
@@ -45,7 +44,7 @@ def change_arem_state(enable):
     arem_state = "true" if enable else "false"
     logger.info("%s AREM manager via engine-config", state_msg)
     cmd = ["{0}={1}".format(conf.AREM_OPTION, arem_state)]
-    if not test_utils.set_engine_properties(conf.ENGINE, cmd):
+    if not conf.ENGINE.engine_config(action='set', param=cmd).get('results'):
         logger.error("Failed to set %s option to false", conf.AREM_OPTION)
         return False
     if not rhevm_helpers.wait_for_engine_api():

@@ -47,9 +47,9 @@ class TestMacPoolRange01(NetworkTest):
 
         for cmd in (cmd1, cmd2):
             testflow.step("Negative: use dep cmd: %s ", cmd.split("=")[0])
-            assert not conf.test_utils.set_engine_properties(
-                conf.ENGINE, [cmd], restart=False
-            )
+            assert not conf.ENGINE.engine_config(
+                action='set', param=cmd, restart=False
+            ).get('results')
 
 
 @attr(tier=2)

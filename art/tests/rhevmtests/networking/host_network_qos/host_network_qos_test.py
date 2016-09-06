@@ -179,14 +179,14 @@ class TestHostNetQOSCase03(NetworkTest):
             conf.UPDATED_SHARE, conf.UPDATED_SHARE
         )
         cmd1 = "=".join([conf.QOS_SHARE, conf.UPDATED_SHARE])
-        assert net_conf.test_utils.set_engine_properties(
-            net_conf.ENGINE, [cmd1], restart=False
-        )
+        assert net_conf.ENGINE.engine_config(
+            action='set', param=cmd1, restart=False
+        ).get('results')
 
         cmd2 = "=".join([conf.RATE_LIMIT, conf.UPDATED_RATE])
-        assert net_conf.test_utils.set_engine_properties(
-            net_conf.ENGINE, [cmd2]
-        )
+        assert net_conf.ENGINE.engine_config(
+            action='set', param=cmd2
+        ).get('results')
 
         testflow.step(
             "Configuring %s on %s to have weighted share and rate limit to be "

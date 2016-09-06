@@ -137,9 +137,8 @@ def set_default_engine_properties(request):
         share and rate limit
         """
         cmd1 = "%s=%s" % (host_qos_conf.QOS_SHARE, host_qos_conf.DEFAULT_SHARE)
-        conf.test_utils.set_engine_properties(
-            conf.ENGINE, [cmd1], restart=False
-        )
+        conf.ENGINE.engine_config(action='set', param=cmd1, restart=False)
+
         cmd2 = "%s=%s" % (host_qos_conf.RATE_LIMIT, host_qos_conf.DEFAULT_RATE)
-        conf.test_utils.set_engine_properties(conf.ENGINE, [cmd2])
+        conf.ENGINE.engine_config(action='set', param=cmd2)
     request.addfinalizer(fin)
