@@ -52,6 +52,10 @@ class BaseNumaAwareKsm(u_libs.SlaTest):
         """
         1) Update cluster merge_across_node_parameters
         """
+        u_libs.testflow.step(
+            "Update cluster %s merge_across_nodes parameter",
+            sla_conf.CLUSTER_NAME[0]
+        )
         assert ll_clusters.updateCluster(
             positive=True,
             cluster=sla_conf.CLUSTER_NAME[0],
@@ -70,11 +74,17 @@ class BaseNumaAwareKsm(u_libs.SlaTest):
         Args:
             ksm_merge_across_nodes (bool): NUMA aware KSM parameter
         """
+        u_libs.testflow.step("Deactivate the host %s", sla_conf.HOSTS[0])
         assert ll_hosts.deactivateHost(positive=True, host=sla_conf.HOSTS[0])
         cls.update_merge_across_nodes_parameter(
             ksm_merge_across_nodes=ksm_merge_across_nodes
         )
+        u_libs.testflow.step("Activate the host %s", sla_conf.HOSTS[0])
         assert ll_hosts.activateHost(positive=True, host=sla_conf.HOSTS[0])
+        u_libs.testflow.step(
+            "%s: wait until KSM merge across nodes will be equal to %s",
+            sla_conf.VDS_HOSTS[0], ksm_merge_across_nodes
+        )
         assert sla_helpers.wait_for_numa_aware_ksm_status(
             resource=sla_conf.VDS_HOSTS[0],
             expected_value=ksm_merge_across_nodes
