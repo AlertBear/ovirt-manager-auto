@@ -7,6 +7,7 @@ import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as sla_config
@@ -52,6 +53,7 @@ def stop_vms(request):
         """
         1) Stop VM's
         """
+        u_libs.testflow.teardown("Stop VM's %s", vms_to_stop)
         ll_vms.stop_vms_safely(vms_list=vms_to_stop)
     request.addfinalizer(fin)
 
@@ -78,7 +80,10 @@ def run_once_vms(request):
             run_once_params[
                 sla_config.VM_RUN_ONCE_HOST
             ] = sla_config.HOSTS[host]
-    u_libs.testflow.setup("Run once VM's %s", vms_to_run.keys())
+    u_libs.testflow.setup(
+        "Run VM's once %s with params: %s",
+        temp_vms_to_run.keys(), temp_vms_to_run.values()
+    )
     ll_vms.run_vms_once(vms=temp_vms_to_run.keys(), **temp_vms_to_run)
 
 
@@ -94,6 +99,9 @@ def update_vms(request):
         1) Update VM's to default parameters
         """
         for vm_name in vms_to_params.iterkeys():
+            u_libs.testflow.teardown(
+                "Update the VM %s to default parameters", vm_name
+            )
             ll_vms.updateVm(
                 positive=True, vm=vm_name, **sla_config.DEFAULT_VM_PARAMETERS
             )
@@ -110,6 +118,9 @@ def update_vms(request):
             vm_params[sla_config.VM_PLACEMENT_HOST] = sla_config.HOSTS[
                 vm_params[sla_config.VM_PLACEMENT_HOST]
             ]
+        u_libs.testflow.setup(
+            "Update the VM %s with params %s", vm_name, vm_params
+        )
         assert ll_vms.updateVm(
             positive=True, vm=vm_name, **vm_params
         )
@@ -141,6 +152,9 @@ def update_vms_to_default_parameters(request):
         1) Update VM's to default parameters
         """
         for vm_name in update_to_default_params:
+            u_libs.testflow.teardown(
+                "Update the VM %s to default parameters", vm_name
+            )
             ll_vms.updateVm(
                 positive=True, vm=vm_name, **sla_config.DEFAULT_VM_PARAMETERS
             )
@@ -162,10 +176,12 @@ def deactivate_hosts(request):
         1) Activate hosts
         """
         for host_name in hosts_to_deactivate:
+            u_libs.testflow.teardown("Activate the host %s", host_name)
             hl_hosts.activate_host_if_not_up(host=host_name)
     request.addfinalizer(fin)
 
     for host_name in hosts_to_deactivate:
+        u_libs.testflow.setup("Deactivate the host %s", host_name)
         assert ll_hosts.deactivateHost(positive=True, host=host_name)
 
 
@@ -184,11 +200,14 @@ def update_vms_memory_to_hosts_memory(request):
             sla_config.VM_MEMORY: vm_memory,
             sla_config.VM_MEMORY_GUARANTEED: vm_memory
         }
+        u_libs.testflow.setup(
+            "Update the VM %s with params %s", vm_name, vm_params
+        )
         assert ll_vms.updateVm(positive=True, vm=vm_name, **vm_params)
 
 
 @pytest.fixture(scope="class")
-def create_cluster_for_affinity_test(request):
+def create_additional_cluster(request):
     """
     1) Create additional cluster
     """
@@ -198,11 +217,17 @@ def create_cluster_for_affinity_test(request):
         """
         1) Remove additional cluster
         """
+        u_libs.testflow.teardown(
+            "Remove the additional cluster %s", additional_cluster_name
+        )
         ll_clusters.removeCluster(
             positive=True, cluster=additional_cluster_name
         )
     request.addfinalizer(fin)
 
+    u_libs.testflow.setup(
+        "Create the additional cluster %s", additional_cluster_name
+    )
     assert ll_clusters.addCluster(
         positive=True,
         name=additional_cluster_name,
@@ -215,7 +240,7 @@ def create_cluster_for_affinity_test(request):
 @pytest.fixture(scope="class")
 def stop_guest_agent_service(request):
     """
-    1) Stop the agent service
+    1) Stop the guest agent service
     """
     stop_guest_agent_vm = request.node.cls.stop_guest_agent_vm
     vm_resource = rhevm_helpers.get_host_resource(
@@ -225,13 +250,15 @@ def stop_guest_agent_service(request):
 
     def fin():
         """
-        1) Start the agent service
+        1) Start guest the agent service
         """
-        logger.info("Start %s service", sla_config.SERVICE_GUEST_AGENT)
+        u_libs.testflow.teardown(
+            "Start %s service", sla_config.SERVICE_GUEST_AGENT
+        )
         vm_resource.service(name=sla_config.SERVICE_GUEST_AGENT).start()
     request.addfinalizer(fin)
 
-    logger.info("Stop %s service", sla_config.SERVICE_GUEST_AGENT)
+    u_libs.testflow.setup("Stop %s service", sla_config.SERVICE_GUEST_AGENT)
     assert vm_resource.service(name=sla_config.SERVICE_GUEST_AGENT).stop()
 
 
@@ -241,6 +268,10 @@ def update_cluster_to_default_parameters(request):
         """
         1) Update cluster to default parameters
         """
+        u_libs.testflow.teardown(
+            "Update cluster %s to default parameters",
+            sla_config.CLUSTER_NAME[0]
+        )
         ll_clusters.updateCluster(
             positive=True,
             cluster=sla_config.CLUSTER_NAME[0],
@@ -262,10 +293,17 @@ def create_vms(request):
         """
         1) Remove VM's
         """
-        ll_vms.safely_remove_vms(vms=vms_create_params.iterkeys())
+        u_libs.testflow.teardown(
+            "Remove VM's %s", vms_create_params.keys()
+        )
+        ll_vms.safely_remove_vms(vms=vms_create_params.keys())
     request.addfinalizer(fin)
 
     results = []
+    u_libs.testflow.setup(
+        "Create VM's %s with parameters: %s",
+        vms_create_params.keys(), vms_create_params.items()
+    )
     with ThreadPoolExecutor(max_workers=len(vms_create_params)) as executor:
         for vm_name, vm_params in vms_create_params.iteritems():
             if sla_config.VM_PLACEMENT_HOSTS in vm_params:
@@ -311,4 +349,126 @@ def choose_specific_host_as_spm(request):
         positive=True,
         host=sla_config.HOSTS[host_as_spm],
         data_center=sla_config.DC_NAME[0]
+    )
+
+
+@pytest.fixture(scope="class")
+def export_vm(request):
+    """
+    1) Export VM
+    """
+    vm_to_export = request.node.cls.vm_to_export
+
+    def fin():
+        """
+        1) Remove VM from export domain
+        """
+        u_libs.testflow.teardown(
+            "Remove VM %s from the export domain", vm_to_export
+        )
+        ll_vms.remove_vm_from_export_domain(
+            positive=True,
+            vm=vm_to_export,
+            datacenter=sla_config.DC_NAME[0],
+            export_storagedomain=sla_config.EXPORT_DOMAIN_NAME
+        )
+
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup("Export the VM %s", vm_to_export)
+    assert ll_vms.exportVm(
+        positive=True,
+        vm=vm_to_export,
+        storagedomain=sla_config.EXPORT_DOMAIN_NAME
+    )
+
+
+@pytest.fixture(scope="class")
+def import_vm(request):
+    """
+    1) Import VM
+    """
+    vm_to_import = request.node.cls.vm_to_import
+    vm_import_name = request.node.cls.vm_import_name
+
+    def fin():
+        """
+        1) Remove imported VM
+        """
+        u_libs.testflow.teardown("Remove the VM %s", vm_import_name)
+        ll_vms.removeVm(positive=True, vm=vm_import_name)
+
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup(
+        "Import the VM %s from the export domain as %s",
+        vm_to_import, vm_import_name
+    )
+    assert ll_vms.importVm(
+        positive=True,
+        vm=vm_to_import,
+        export_storagedomain=sla_config.EXPORT_DOMAIN_NAME,
+        import_storagedomain=sla_config.STORAGE_NAME[0],
+        cluster=sla_config.CLUSTER_NAME[0],
+        name=vm_import_name
+    )
+
+
+@pytest.fixture(scope="class")
+def make_template_from_vm(request):
+    """
+    1) Make template from VM
+    """
+    vm_for_template = request.node.cls.vm_for_template
+    template_name = request.node.cls.template_name
+
+    def fin():
+        """
+        1) Remove template
+        """
+        u_libs.testflow.teardown("Remove the template %s", template_name)
+        ll_templates.removeTemplate(
+            positive=True, template=template_name
+        )
+
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup(
+        "Create the template %s from the VM %s", template_name, vm_for_template
+    )
+    assert ll_templates.createTemplate(
+        positive=True,
+        vm=vm_for_template,
+        name=template_name,
+        cluster=sla_config.CLUSTER_NAME[0],
+        storagedomain=sla_config.STORAGE_NAME[0]
+    )
+
+
+@pytest.fixture(scope="class")
+def make_vm_from_template(request):
+    """
+    1) Make VM from template
+    """
+    vm_template = request.node.cls.vm_for_template
+    vm_from_template_name = request.node.cls.vm_from_template_name
+
+    def fin():
+        """
+        1) Remove VM
+        """
+        u_libs.testflow.teardown("Remove the VM %s", vm_from_template_name)
+        ll_vms.removeVm(positive=True, vm=vm_from_template_name)
+
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup(
+        "Create the VM %s from the template %s",
+        vm_from_template_name, vm_template
+    )
+    assert ll_vms.addVm(
+        positive=True,
+        cluster=sla_config.CLUSTER_NAME[0],
+        name=vm_from_template_name,
+        template=vm_template
     )

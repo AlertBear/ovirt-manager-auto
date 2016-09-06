@@ -117,7 +117,7 @@ class BaseHAReservation(u_libs.SlaTest):
     update_vms.__name__,
     start_vms.__name__
 )
-class PutHostToMaintenance(BaseHAReservation):
+class TestPutHostToMaintenance(BaseHAReservation):
     """
     Moving host to maintenance should make cluster not HA safe
     """
@@ -168,7 +168,7 @@ class PutHostToMaintenance(BaseHAReservation):
     update_vms_memory_to_hosts_memory.__name__,
     start_vms.__name__
 )
-class NotCompatibleHost(BaseHAReservation):
+class TestNotCompatibleHost(BaseHAReservation):
     """
     Cluster failing HA reservation check based on
     insufficient resources
@@ -224,7 +224,7 @@ class NotCompatibleHost(BaseHAReservation):
     start_vms.__name__,
     activate_hosts.__name__
 )
-class MultiVM(BaseHAReservation):
+class TestMultiVM(BaseHAReservation):
     """
     Create 8 HA VMS in HA safe cluster and put one host to maintenance
     """

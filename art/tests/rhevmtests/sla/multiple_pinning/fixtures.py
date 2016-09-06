@@ -4,8 +4,8 @@ Multiple pinning fixtures
 import logging
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.unittest_lib as u_libs
 import config as conf
 import helpers as pinning_helpers
 import pytest
@@ -37,6 +37,9 @@ def numa_pinning(request):
         """
         1) Remove NUMA node from VM
         """
+        u_libs.testflow.teardown(
+            "Remove NUMA node with index %s from the VM %s", 0, conf.VM_NAME[0]
+        )
         ll_vms.remove_numa_node_from_vm(
             vm_name=conf.VM_NAME[0], numa_node_index=0
         )
@@ -59,11 +62,18 @@ def attach_host_device(request):
         1) Remove host device from VM
         """
         if ll_vms.get_vm_host_devices(vm_name=conf.VM_NAME[0]):
+            u_libs.testflow.teardown(
+                "Detach the host device %s from VM %s",
+                host_device_name, conf.VM_NAME[0]
+            )
             ll_vms.remove_vm_host_device(
                 vm_name=conf.VM_NAME[0], device_name=host_device_name
             )
     request.addfinalizer(fin)
 
+    u_libs.testflow.setup(
+        "Attach the host device %s to VM %s", host_device_name, conf.VM_NAME[0]
+    )
     assert ll_vms.add_vm_host_device(
         vm_name=conf.VM_NAME[0],
         device_name=host_device_name,
@@ -71,7 +81,7 @@ def attach_host_device(request):
     )
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def create_vm_for_export_and_template_checks(request):
     """
     1) Create VM that pinned to two hosts
@@ -80,102 +90,20 @@ def create_vm_for_export_and_template_checks(request):
         """
         1) Remove VM
         """
+        u_libs.testflow.teardown(
+            "Remove the VM %s", conf.VM_IMPORT_EXPORT_TEMPLATE
+        )
         ll_vms.safely_remove_vms([conf.VM_IMPORT_EXPORT_TEMPLATE])
     request.addfinalizer(fin)
 
+    u_libs.testflow.setup(
+        "Create VM %s with placement hosts %s",
+        conf.VM_IMPORT_EXPORT_TEMPLATE, conf.HOSTS[:2]
+    )
     assert ll_vms.addVm(
         positive=True,
         name=conf.VM_IMPORT_EXPORT_TEMPLATE,
         cluster=conf.CLUSTER_NAME[0],
         template=conf.BLANK_TEMPlATE,
         placement_hosts=conf.HOSTS[:2]
-    )
-
-
-@pytest.fixture()
-def export_vm(request):
-    """
-    1) Export VM
-    """
-    def fin():
-        """
-        1) Remove VM from export domain
-        """
-        ll_vms.remove_vm_from_export_domain(
-            positive=True,
-            vm=conf.VM_IMPORT_EXPORT_TEMPLATE,
-            datacenter=conf.DC_NAME[0],
-            export_storagedomain=conf.EXPORT_DOMAIN_NAME
-        )
-    request.addfinalizer(fin)
-
-    assert ll_vms.exportVm(
-        positive=True,
-        vm=conf.VM_IMPORT_EXPORT_TEMPLATE,
-        storagedomain=conf.EXPORT_DOMAIN_NAME
-    )
-
-
-@pytest.fixture()
-def import_vm(request):
-    """
-    1) Import VM
-    """
-    def fin():
-        """
-        1) Remove imported VM
-        """
-        ll_vms.removeVm(positive=True, vm=conf.VM_IMPORTED)
-    request.addfinalizer(fin)
-
-    assert ll_vms.importVm(
-        positive=True,
-        vm=conf.VM_IMPORT_EXPORT_TEMPLATE,
-        export_storagedomain=conf.EXPORT_DOMAIN_NAME,
-        import_storagedomain=conf.STORAGE_NAME[0],
-        cluster=conf.CLUSTER_NAME[0],
-        name=conf.VM_IMPORTED
-    )
-
-
-@pytest.fixture()
-def make_template_from_vm(request):
-    """
-    1) Make template from VM
-    """
-    def fin():
-        """
-        1) Remove template
-        """
-        ll_templates.removeTemplate(
-            positive=True, template=conf.VM_IMPORT_EXPORT_TEMPLATE
-        )
-    request.addfinalizer(fin)
-
-    assert ll_templates.createTemplate(
-        positive=True,
-        vm=conf.VM_IMPORT_EXPORT_TEMPLATE,
-        name=conf.VM_IMPORT_EXPORT_TEMPLATE,
-        cluster=conf.CLUSTER_NAME[0],
-        storagedomain=conf.STORAGE_NAME[0]
-    )
-
-
-@pytest.fixture()
-def make_vm_from_template(request):
-    """
-    1) Make VM from template
-    """
-    def fin():
-        """
-        1) Remove VM
-        """
-        ll_vms.removeVm(positive=True, vm=conf.VM_FROM_TEMPLATE)
-    request.addfinalizer(fin)
-
-    assert ll_vms.addVm(
-        positive=True,
-        cluster=conf.CLUSTER_NAME[0],
-        name=conf.VM_FROM_TEMPLATE,
-        template=conf.VM_IMPORT_EXPORT_TEMPLATE
     )

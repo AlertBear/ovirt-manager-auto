@@ -15,7 +15,7 @@ import rhevmtests.sla.config as conf
 from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
-    create_cluster_for_affinity_test,
+    create_additional_cluster,
     deactivate_hosts,
     run_once_vms,
     start_vms,
@@ -453,7 +453,7 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(BaseMigrateVm):
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     create_affinity_groups.__name__,
-    create_cluster_for_affinity_test.__name__,
+    create_additional_cluster.__name__,
     update_vms.__name__
 )
 class TestRemoveVmFromAffinityGroupOnClusterChange(BaseAffinity):

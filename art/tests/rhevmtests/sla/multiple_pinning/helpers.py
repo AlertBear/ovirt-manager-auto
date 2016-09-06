@@ -7,6 +7,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
+import art.unittest_lib as u_libs
 
 
 def add_one_numa_node_to_vm(negative=False):
@@ -22,6 +23,7 @@ def add_one_numa_node_to_vm(negative=False):
     host_numa_node_index = ll_hosts.get_numa_nodes_indexes(
         host_name=conf.HOSTS[0]
     )[0]
+    u_libs.testflow.step("Add one NUMA node to VM %s", conf.VM_NAME[0])
     assert ll_vms.add_numa_node_to_vm(
         vm_name=conf.VM_NAME[0],
         host_name=conf.HOSTS[0],
