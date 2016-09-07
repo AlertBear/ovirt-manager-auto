@@ -2,7 +2,6 @@ import pytest
 import logging
 import config
 from art.test_handler import exceptions
-from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
@@ -17,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
-
+from art.unittest_lib import testflow
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -288,6 +287,23 @@ def create_template(request):
         cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain
     ), ("Failed to create template %s from VM %s" %
         (self.template_name, config.VM_NAME[0]))
+
+
+@pytest.fixture(scope='class')
+def remove_template(request):
+    """
+    Remove a template
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if ll_templates.check_template_existence(self.template_name):
+            testflow.teardown("Remove template %s", self.template_name)
+            assert ll_templates.removeTemplate(True, self.template_name), (
+                "Failed to remove template %s" % self.template_name
+            )
+
+    request.addfinalizer(finalizer)
 
 
 @pytest.fixture(scope='class')

@@ -4,13 +4,13 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_3_Storage_Backup_API
 """
 import logging
+import pytest
 import helpers
 from unittest2 import SkipTest
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     disks as ll_disks,
     hosts as ll_hosts,
-    jobs as ll_jobs,
     storagedomains as ll_sd,
     templates as ll_templates,
     vms as ll_vms,
@@ -19,11 +19,18 @@ from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers
+from rhevmtests.storage.fixtures import (
+    remove_template,
+)
+from rhevmtests.storage.storage_backup_restore_api.fixtures import (
+    initialize_params, create_source_vm, create_backup_vm, attach_backup_disk,
+    finalizer
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,93 +40,21 @@ BACKUP_DISK_SIZE = 10 * config.GB
 LIVE_MIGRATE_DISK_TIMEOUT = 1800
 
 
+@pytest.mark.usefixtures(
+    initialize_params.__name__,
+    create_source_vm.__name__,
+    create_backup_vm.__name__,
+    attach_backup_disk.__name__,
+    finalizer.__name__,
+)
 class BaseTestCase(TestCase):
     """
-    This class implements setup and teardowns of common things
     """
     __test__ = False
     attach_backup_disk = True
 
-    def setUp(self):
-        """
-        1) Create 2 VMs using Glance image
-        2) Take a snapshot of the first VM
-        3) Attach the snapshot disk from the first VM to the second VM (
-        unless requested otherwise)
-        """
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-        self.vm_names = []
-        for idx in range(VM_COUNT):
-            vm_name = storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_VM)
-            logger.info(
-                "Creating vm %s on storage domain %s",
-                vm_name, self.storage_domain
-            )
-            args = config.create_vm_args.copy()
-            args['storageDomainName'] = self.storage_domain
-            args['vmName'] = vm_name
-            args['deep_copy'] = True
-            if not storage_helpers.create_vm_or_clone(**args):
-                raise exceptions.VMException(
-                    "Failed to create or clone VM '%s'" % vm_name
-                )
-            self.vm_names.append(vm_name)
 
-        self.template_name = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
-        )
-        self.first_snapshot_description = (
-            storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
-            )
-        )
-        # Create snapshot for the first vm only
-        if not ll_vms.addSnapshot(
-            True, self.vm_names[0], self.first_snapshot_description
-        ):
-            raise exceptions.VMException(
-                "Failed to create snapshot on VM '%s'" % self.vm_names[0]
-            )
-
-        if self.attach_backup_disk:
-            if not ll_vms.attach_backup_disk_to_vm(
-                self.vm_names[0], self.vm_names[1],
-                self.first_snapshot_description
-            ):
-                raise exceptions.DiskException(
-                    "Failed to attach backup disk to backup vm %s" %
-                    self.vm_names[1]
-                )
-
-    def tearDown(self):
-        """
-        Remove created VMs
-        """
-        if not ll_vms.stop_vms_safely(self.vm_names):
-            logger.error(
-                "Failed to power off vms %s", ', '.join(self.vm_names)
-            )
-            BaseTestCase.test_failed = True
-        for disk in ll_vms.getVmDisks(self.vm_names[1]):
-            if not ll_vms.removeDisk(True, self.vm_names[1], disk.get_alias()):
-                logger.error(
-                    "Failed to remove disk '%s' from VM '%s'",
-                    disk.get_alias(), self.vm_names[1]
-                )
-                BaseTestCase.test_failed = True
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
-        if not ll_vms.safely_remove_vms(self.vm_names):
-            logger.error(
-                "Failed to power off and remove vms %s",
-                ', '.join(self.vm_names)
-            )
-            BaseTestCase.test_failed = True
-        BaseTestCase.teardown_exception()
-
-
+@pytest.mark.usefixtures(remove_template.__name__,)
 class CreateTemplateFromVM(BaseTestCase):
     """
     Create a template of a backup VM
@@ -140,15 +75,6 @@ class CreateTemplateFromVM(BaseTestCase):
             True, vm=self.vm_name_for_template, name=self.template_name
         ), "Failed to create template '%s'" % self.template_name
 
-    def tearDown(self):
-        """
-        Remove template and restoring environment
-        """
-        if not ll_templates.removeTemplate(True, self.template_name):
-            logger.error("Failed to remove template %s", self.template_name)
-            BaseTestCase.test_failed = True
-        super(CreateTemplateFromVM, self).tearDown()
-
 
 @attr(tier=2)
 class TestCase6178(BaseTestCase):
@@ -160,30 +86,29 @@ class TestCase6178(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6178'
 
     @polarion("RHEVM3-6178")
     def test_shutdown_backup_vm_with_attached_snapshot(self):
         """
         Shutdown backup VM with attached snapshot
         """
-        ll_vms.startVm(True, self.vm_names[1], config.VM_UP, True)
-        backup_vm_vdsm_host = ll_vms.get_vm_host(self.vm_names[1])
+        ll_vms.startVm(True, self.backup_vm, config.VM_UP, True)
+        backup_vm_vdsm_host = ll_vms.get_vm_host(self.backup_vm)
         backup_vm_vdsm_host_ip = ll_hosts.get_host_ip_from_engine(
             backup_vm_vdsm_host
         )
         assert not (
             helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip)
         ), "Transient directory is empty"
-        ll_vms.stop_vms_safely([self.vm_names[1]])
-        logger.info("Succeeded to stop vm %s", self.vm_names[1])
+        ll_vms.stop_vms_safely([self.backup_vm])
+        logger.info("Succeeded to stop vm %s", self.backup_vm)
 
         assert helpers.is_transient_directory_empty(backup_vm_vdsm_host_ip), (
             "Transient directory still contains backup disk volumes"
         )
 
-        source_vm_disks = ll_vms.getVmDisks(self.vm_names[0])
-        backup_vm_disks = ll_vms.getVmDisks(self.vm_names[1])
+        source_vm_disks = ll_vms.getVmDisks(self.src_vm)
+        backup_vm_disks = ll_vms.getVmDisks(self.backup_vm)
         disk_id = source_vm_disks[0].get_id()
         is_disk_attached = disk_id in [disk.get_id() for disk in
                                        backup_vm_disks]
@@ -199,21 +124,20 @@ class TestCase6182(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6182'
 
     @polarion("RHEVM3-6182")
     def test_restart_VDSM_and_engine_while_disk_attached_to_backup_vm(self):
         """
         Restart vdsm and engine
         """
-        ll_vms.startVm(True, self.vm_names[1], config.VM_UP, True)
+        ll_vms.startVm(True, self.backup_vm, config.VM_UP, True)
         disk_objects = ll_vms.get_snapshot_disks(
-            self.vm_names[0], self.first_snapshot_description
+            self.src_vm, self.first_snapshot_description
         )
         snapshot_disk = disk_objects[0]
 
         dc_obj = ll_dc.get_data_center(config.DATA_CENTER_NAME)
-        backup_vm_vdsm_host = ll_vms.get_vm_host(self.vm_names[1])
+        backup_vm_vdsm_host = ll_vms.get_vm_host(self.backup_vm)
         backup_vm_vdsm_host_ip = ll_hosts.get_host_ip_from_engine(
             backup_vm_vdsm_host
         )
@@ -229,7 +153,7 @@ class TestCase6182(BaseTestCase):
         ll_hosts.waitForHostsStates(True, self.host)
         logger.info("Successfully restarted VDSM service")
 
-        vm_disks = ll_vms.getVmDisks(self.vm_names[1])
+        vm_disks = ll_vms.getVmDisks(self.backup_vm)
         status = disk_objects[0].get_alias() in (
             [disk.get_alias() for disk in vm_disks]
         )
@@ -243,7 +167,7 @@ class TestCase6182(BaseTestCase):
         utils.restart_engine(config.ENGINE, 5, 30)
         logger.info("Successfully restarted ovirt-engine")
 
-        vm_disks = ll_vms.getVmDisks(self.vm_names[1])
+        vm_disks = ll_vms.getVmDisks(self.backup_vm)
         status = disk_objects[0].get_alias() in (
             [disk.get_alias() for disk in vm_disks]
         )
@@ -256,7 +180,7 @@ class TestCase6182(BaseTestCase):
         logger.info("Transient directory contains backup disk")
 
         disk_objects = ll_vms.get_snapshot_disks(
-            self.vm_names[0], self.first_snapshot_description
+            self.src_vm, self.first_snapshot_description
         )
 
         snapshot_disk = disk_objects[0]
@@ -282,7 +206,6 @@ class TestCase6183(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6183'
 
     @polarion("RHEVM3-6183")
     def test_temporary_snapshot_is_created_after_backup_vm_starts(self):
@@ -298,26 +221,26 @@ class TestCase6183(BaseTestCase):
         vdsm_host_name = config.HOSTS[0]
         vdsm_host_ip = ll_hosts.get_host_ip_from_engine(vdsm_host_name)
         logger.info(
-            "Updating vm %s to placement host %s", self.vm_names[1],
+            "Updating vm %s to placement host %s", self.backup_vm,
             vdsm_host_name
         )
         if not ll_vms.updateVm(
-            True, self.vm_names[1], placement_host=vdsm_host_name
+            True, self.backup_vm, placement_host=vdsm_host_name
         ):
             raise exceptions.VMException(
-                "Failed to update VM '%s'" % self.vm_names[1]
+                "Failed to update VM '%s'" % self.backup_vm
             )
         assert helpers.is_transient_directory_empty(vdsm_host_ip), (
             "Transient directory contains backup disk volumes before backup "
-            "vm '%s' is powered on" % self.vm_names[1]
+            "vm '%s' is powered on" % self.backup_vm
         )
         logger.info("%s is empty", helpers.TRANSIENT_DIR_PATH)
 
-        logger.info("Starting vm %s", self.vm_names[1])
+        logger.info("Starting vm %s", self.backup_vm)
         assert ll_vms.startVm(
-            True, self.vm_names[1], config.VM_UP, True
-        ), "Failed to start vm %s" % self.vm_names[1]
-        logger.info("vm %s started successfully", self.vm_names[1])
+            True, self.backup_vm, config.VM_UP, True
+        ), "Failed to start vm %s" % self.backup_vm
+        logger.info("vm %s started successfully", self.backup_vm)
         assert not helpers.is_transient_directory_empty(vdsm_host_ip), (
             "Transient directory should contain backup disk volumes"
         )
@@ -333,7 +256,6 @@ class TestCase6176(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6176'
     attach_backup_disk = False
 
     @polarion("RHEVM3-6176")
@@ -344,14 +266,14 @@ class TestCase6176(BaseTestCase):
         after hotplug, the backup volumes will be created
         """
         disk_objects = ll_vms.get_snapshot_disks(
-            self.vm_names[0], self.first_snapshot_description
+            self.src_vm, self.first_snapshot_description
         )
         ll_vms.attach_backup_disk_to_vm(
-            self.vm_names[0], self.vm_names[1],
+            self.src_vm, self.backup_vm,
             self.first_snapshot_description, activate=False
         )
-        ll_vms.startVm(True, self.vm_names[1], config.VM_UP, True)
-        backup_vm_vdsm_host = ll_vms.get_vm_host(self.vm_names[1])
+        ll_vms.startVm(True, self.backup_vm, config.VM_UP, True)
+        backup_vm_vdsm_host = ll_vms.get_vm_host(self.backup_vm)
         backup_vm_vdsm_host_ip = ll_hosts.get_host_ip_from_engine(
             backup_vm_vdsm_host
         )
@@ -361,9 +283,9 @@ class TestCase6176(BaseTestCase):
         logger.info("%s is empty on vdsm host", helpers.TRANSIENT_DIR_PATH)
 
         assert ll_vms.activateVmDisk(
-            True, self.vm_names[1], disk_objects[0].get_alias()
+            True, self.backup_vm, disk_objects[0].get_alias()
         ), "Failed to activate disk %s of vm %s" % (
-            disk_objects[0].get_alias(), self.vm_names[1]
+            disk_objects[0].get_alias(), self.backup_vm
         )
 
         assert not (
@@ -376,7 +298,6 @@ class TestCase6176(BaseTestCase):
 
 
 @attr(tier=2)
-@bz({'1342783': {}})
 class TestCase6174(BaseTestCase):
     """
     Create source VM snapshot, attach snapshot to backup VM
@@ -385,7 +306,6 @@ class TestCase6174(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6174'
 
     @polarion("RHEVM3-6174")
     def test_delete_original_snapshot_while_attached_to_another_vm(self):
@@ -394,7 +314,7 @@ class TestCase6174(BaseTestCase):
         backup VM
         """
         status = ll_vms.removeSnapshot(
-            False, self.vm_names[0], self.first_snapshot_description
+            False, self.src_vm, self.first_snapshot_description
         )
         if not status:
             raise exceptions.VMException(
@@ -414,7 +334,6 @@ class TestCase6165(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6165'
 
     @polarion("RHEVM3-6165")
     def test_operations_with_attached_snapshot(self):
@@ -430,10 +349,10 @@ class TestCase6165(BaseTestCase):
         """
         logger.info("Previewing snapshot %s", self.first_snapshot_description)
         assert ll_vms.preview_snapshot(
-            True, self.vm_names[0], self.first_snapshot_description
+            True, self.src_vm, self.first_snapshot_description
         ), "Failed to preview snapshot %s" % self.first_snapshot_description
         ll_vms.wait_for_vm_snapshots(
-            self.vm_names[0], config.SNAPSHOT_IN_PREVIEW,
+            self.src_vm, config.SNAPSHOT_IN_PREVIEW,
             self.first_snapshot_description
         )
 
@@ -441,18 +360,18 @@ class TestCase6165(BaseTestCase):
             "Undoing Previewed snapshot %s", self.first_snapshot_description
         )
         assert ll_vms.undo_snapshot_preview(
-            True, self.vm_names[0], self.first_snapshot_description
+            True, self.src_vm, self.first_snapshot_description
         ), "Failed to undo previewed snapshot %s" % (
             self.first_snapshot_description
         )
-        ll_vms.wait_for_vm_snapshots(self.vm_names[0], config.SNAPSHOT_OK)
+        ll_vms.wait_for_vm_snapshots(self.src_vm, config.SNAPSHOT_OK)
 
         logger.info("Previewing snapshot %s", self.first_snapshot_description)
         assert ll_vms.preview_snapshot(
-            True, self.vm_names[0], self.first_snapshot_description
+            True, self.src_vm, self.first_snapshot_description
         ), "Failed to preview snapshot %s" % self.first_snapshot_description
         ll_vms.wait_for_vm_snapshots(
-            self.vm_names[0], config.SNAPSHOT_IN_PREVIEW,
+            self.src_vm, config.SNAPSHOT_IN_PREVIEW,
             self.first_snapshot_description
         )
 
@@ -460,7 +379,7 @@ class TestCase6165(BaseTestCase):
             "Committing Previewed snapshot %s", self.first_snapshot_description
         )
         assert ll_vms.commit_snapshot(
-            False, self.vm_names[0], self.first_snapshot_description
+            False, self.src_vm, self.first_snapshot_description
         ), "Succeeded to commit previewed snapshot %s" % (
             self.first_snapshot_description
         )
@@ -469,11 +388,11 @@ class TestCase6165(BaseTestCase):
             "Undoing Previewed snapshot %s", self.first_snapshot_description
         )
         assert ll_vms.undo_snapshot_preview(
-            True, self.vm_names[0], self.first_snapshot_description
+            True, self.src_vm, self.first_snapshot_description
         ), "Failed to undo previewed snapshot %s" % (
             self.first_snapshot_description
         )
-        ll_vms.wait_for_vm_snapshots(self.vm_names[0], config.SNAPSHOT_OK)
+        ll_vms.wait_for_vm_snapshots(self.src_vm, config.SNAPSHOT_OK)
 
 
 @attr(tier=2)
@@ -484,11 +403,6 @@ class TestCase6166(CreateTemplateFromVM):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6166'
-
-    def setUp(self):
-        super(CreateTemplateFromVM, self).setUp()
-        self.vm_name_for_template = self.vm_names[1]
 
     @polarion("RHEVM3-6166")
     def test_create_template_of_backup_vm(self):
@@ -496,6 +410,7 @@ class TestCase6166(CreateTemplateFromVM):
         Create a template of a backup VM after attaching snapshot disk of
         source VM to backup VM
         """
+        self.vm_name_for_template = self.backup_vm
         self._create_template()
 
 
@@ -507,11 +422,6 @@ class TestCase6167(CreateTemplateFromVM):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6167'
-
-    def setUp(self):
-        super(TestCase6167, self).setUp()
-        self.vm_name_for_template = self.vm_names[0]
 
     @polarion("RHEVM3-6167")
     def test_create_template_of_source_vm(self):
@@ -519,6 +429,7 @@ class TestCase6167(CreateTemplateFromVM):
         Create a template of source VM after attaching snapshot disk of
         source VM to backup VM
         """
+        self.vm_name_for_template = self.src_vm
         self._create_template()
 
 
@@ -561,11 +472,11 @@ class TestCase6168(BaseTestCase):
                 self.storage_domains[0]
             )
 
-        ll_vms.stop_vms_safely([self.vm_names[1]])
-        logger.info("Succeeded to stop vm %s", self.vm_names[1])
-        hl_vms.move_vm_disks(self.vm_names[1], self.storage_domains[1])
+        ll_vms.stop_vms_safely([self.backup_vm])
+        logger.info("Succeeded to stop vm %s", self.backup_vm)
+        hl_vms.move_vm_disks(self.backup_vm, self.storage_domains[1])
         ll_vms.attach_backup_disk_to_vm(
-            self.vm_names[0], self.vm_names[1], self.first_snapshot_description
+            self.src_vm, self.backup_vm, self.first_snapshot_description
         )
 
     @polarion("RHEVM3-6168")
@@ -575,7 +486,7 @@ class TestCase6168(BaseTestCase):
         containing the snapshot of attached disk, cause the backup
         vm enter to paused status
         """
-        ll_vms.start_vms([self.vm_names[1]], 1, config.VM_UP, True)
+        ll_vms.start_vms([self.backup_vm], 1, config.VM_UP, True)
 
         logger.info(
             "Blocking connectivity from host %s to storage domain %s",
@@ -592,11 +503,11 @@ class TestCase6168(BaseTestCase):
 
         assert status, "block connectivity to master domain failed"
 
-        ll_vms.waitForVMState(self.vm_names[1], config.VM_PAUSED)
+        ll_vms.waitForVMState(self.backup_vm, config.VM_PAUSED)
 
-        vm_state = ll_vms.get_vm_state(self.vm_names[1])
+        vm_state = ll_vms.get_vm_state(self.backup_vm)
         assert vm_state == config.VM_PAUSED, (
-            "vm %s should be in state paused" % self.vm_names[1]
+            "vm %s should be in state paused" % self.backup_vm
         )
 
     def tearDown(self):
@@ -635,18 +546,7 @@ class TestCase6169(BaseTestCase):
     # 1231849: Creating a vm with configuration fails (like ovf data)
     # 1211670: The CLI doesn't provide a mechanism to escape characters
     # in string literals
-    polarion_test_case = '6169'
-
-    def setUp(self):
-        super(TestCase6169, self).setUp()
-        self.source_vm = self.vm_names[0]
-        self.backup_vm = self.vm_names[1]
-        self.storage_domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
-        self.restored_vm = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_VM
-        )
+    deep_copy = True
 
     @polarion("RHEVM3-6169")
     def test_full_flow_of_backup_restore(self):
@@ -661,9 +561,12 @@ class TestCase6169(BaseTestCase):
         - Restore source VM that has backup to newly created VMs
 
         """
-        logger.info("Get ovf configuration file of vm %s", self.source_vm)
+        self.restored_vm = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        logger.info("Get ovf configuration file of vm %s", self.src_vm)
         ovf = ll_vms.get_vm_snapshot_ovf_obj(
-            self.source_vm, self.first_snapshot_description
+            self.src_vm, self.first_snapshot_description
         )
         status = ovf is None
         assert not status, "OVF object wasn't found"
@@ -674,7 +577,7 @@ class TestCase6169(BaseTestCase):
         )
         assert ll_vms.addDisk(
             True, self.backup_vm, BACKUP_DISK_SIZE, True,
-            self.storage_domains[0], interface=config.INTERFACE_VIRTIO,
+            self.storage_domain, interface=config.INTERFACE_VIRTIO,
             alias=self.backup_disk_alias,
         ), "Failed to add backup disk to backup vm %s" % self.backup_vm
 
@@ -694,7 +597,7 @@ class TestCase6169(BaseTestCase):
         backup_disk_device = ll_vms.get_vm_disk_logical_name(
             self.backup_vm, self.backup_disk_alias
         ).split('/')[-1]
-        source_vm_disk_alias = ll_vms.getVmDisks(self.source_vm)[0].get_alias()
+        source_vm_disk_alias = ll_vms.getVmDisks(self.src_vm)[0].get_alias()
         source_vm_device = ll_vms.get_vm_disk_logical_name(
             self.backup_vm, source_vm_disk_alias
         ).split('/')[-1]
@@ -713,26 +616,26 @@ class TestCase6169(BaseTestCase):
         logger.info("Succeeded to stop vms %s", ', '.join(self.vm_names))
 
         disk_objects = ll_vms.get_snapshot_disks(
-            self.source_vm, self.first_snapshot_description
+            self.src_vm, self.first_snapshot_description
         )
 
         testflow.step(
             "Detaching snapshot's disk %s, of source vm %s, from backup vm %s",
-            disk_objects[0].get_alias(), self.source_vm, self.backup_vm
+            disk_objects[0].get_alias(), self.src_vm, self.backup_vm
         )
         assert ll_disks.detachDisk(
             True, disk_objects[0].get_alias(), self.backup_vm
         ), "Failed to detach disk %s" % disk_objects[0].get_alias()
 
-        testflow.step("Remove source vm %s", self.source_vm)
-        if not ll_vms.safely_remove_vms([self.source_vm]):
+        testflow.step("Remove source vm %s", self.src_vm)
+        if not ll_vms.safely_remove_vms([self.src_vm]):
             raise exceptions.VMException(
-                "Failed to power off and remove VM '%s'" % self.source_vm
+                "Failed to power off and remove VM '%s'" % self.src_vm
             )
-        self.vm_names.remove(self.source_vm)
+        self.vm_names.remove(self.src_vm)
 
         testflow.step(
-            "Restoring source vm %s from ovf file", self.source_vm
+            "Restoring source vm %s from ovf file", self.src_vm
         )
         status = ll_vms.create_vm_from_ovf(
             self.restored_vm, config.CLUSTER_NAME, ovf
@@ -758,15 +661,15 @@ class TestCase6169(BaseTestCase):
             disk_objects[1].get_alias()
         )
 
-        assert ll_vms.updateVm(True, self.restored_vm, name=self.source_vm), (
+        assert ll_vms.updateVm(True, self.restored_vm, name=self.src_vm), (
             "Failed to update VM '%s' to use name '%s'" %
-            (self.restored_vm, self.source_vm)
+            (self.restored_vm, self.src_vm)
         )
         self.vm_names.remove(self.restored_vm)
-        self.vm_names.append(self.source_vm)
+        self.vm_names.append(self.src_vm)
         testflow.step("Start restored vm %s and wait for IP", self.restored_vm)
-        assert ll_vms.startVm(True, self.source_vm, config.VM_UP, True), (
-            "Failed to power on source VM '%s'" % self.source_vm
+        assert ll_vms.startVm(True, self.src_vm, config.VM_UP, True), (
+            "Failed to power on source VM '%s'" % self.src_vm
         )
 
 
@@ -778,7 +681,6 @@ class TestCase6170(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6170'
     attach_backup_disk = False
 
     @polarion("RHEVM3-6170")
@@ -788,14 +690,14 @@ class TestCase6170(BaseTestCase):
         snapshot disks to backup VM
         """
         storage_domain = ll_vms.get_vms_disks_storage_domain_name(
-            self.vm_names[0]
+            self.src_vm
         )
         if not ll_vms.addDisk(
-            True, self.vm_names[0], 1 * config.GB, True, storage_domain,
+            True, self.src_vm, 1 * config.GB, True, storage_domain,
             interface=config.INTERFACE_VIRTIO
         ):
             raise exceptions.DiskException(
-                "Failed to add disk to vm %s" % self.vm_names[0]
+                "Failed to add disk to vm %s" % self.src_vm
             )
 
         self.second_snapshot_description = (
@@ -804,14 +706,14 @@ class TestCase6170(BaseTestCase):
             )
         )
         assert ll_vms.addSnapshot(
-            True, self.vm_names[0], self.second_snapshot_description
-        ), "Failed to create snapshot for VM '%s'" % self.vm_names[0]
+            True, self.src_vm, self.second_snapshot_description
+        ), "Failed to create snapshot for VM '%s'" % self.src_vm
 
         assert ll_vms.attach_backup_disk_to_vm(
-            self.vm_names[0], self.vm_names[1],
+            self.src_vm, self.backup_vm,
             self.second_snapshot_description
         ), "Failed to attach second snapshot disks to backup vm '%s'" % (
-            self.vm_names[1]
+            self.backup_vm
         )
 
 
@@ -823,21 +725,7 @@ class TestCase6171(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6171'
     attach_backup_disk = False
-
-    def setUp(self):
-        super(TestCase6171, self).setUp()
-        self.vm_disks = ll_vms.getVmDisks(self.vm_names[0])
-        self.original_sd = ll_vms.get_vms_disks_storage_domain_name(
-            self.vm_names[0], self.vm_disks[0].get_alias()
-        )
-        storage_domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
-        self.destination_sd = [
-            sd for sd in storage_domains if sd != self.original_sd
-        ][0]
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     @polarion("RHEVM3-6171")
@@ -847,8 +735,12 @@ class TestCase6171(BaseTestCase):
         - During the disk movement, try to attach the snapshot disk to the
           backup VM (while the disk is locked)
         """
+        self.vm_disks = ll_vms.getVmDisks(self.src_vm)
+        self.destination_sd = ll_vms.get_other_storage_domain(
+            self.vm_disks[0].get_alias(), self.src_vm
+        )
         ll_vms.move_vm_disk(
-            self.vm_names[0], self.vm_disks[0].get_alias(),
+            self.src_vm, self.vm_disks[0].get_alias(),
             self.destination_sd, False
         )
 
@@ -857,7 +749,7 @@ class TestCase6171(BaseTestCase):
         )
 
         status = ll_vms.attach_backup_disk_to_vm(
-            self.vm_names[0], self.vm_names[1], self.first_snapshot_description
+            self.src_vm, self.backup_vm, self.first_snapshot_description
         )
         ll_disks.wait_for_disks_status(disks=self.vm_disks[0].get_alias())
         assert not status, (
@@ -874,7 +766,6 @@ class TestCase6172(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6172'
 
     @polarion("RHEVM3-6172")
     def test_attach_the_same_disk_twice_to_a_VM(self):
@@ -882,7 +773,7 @@ class TestCase6172(BaseTestCase):
         Attach the snapshot disk of source VM to backup VM and do it again
         """
         status = ll_vms.attach_backup_disk_to_vm(
-            self.vm_names[0], self.vm_names[1], self.first_snapshot_description
+            self.src_vm, self.backup_vm, self.first_snapshot_description
         )
         assert not status, (
             "Succeeded to attach backup snapshot disk to backup vm"
@@ -898,18 +789,14 @@ class TestCase6173(BaseTestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    polarion_test_case = '6173'
     attach_backup_disk = False
+    deep_copy = True
     # Bugzilla history:
     # 1176673/1196049:[Rhel7.1] After live storage migration on block storage
     # vdsm # extends migrated drive using all free space in the vg
     # 1251956: Live storage migration is broken
     # 1259785: Error 'Unable to find org.ovirt.engine.core.common.job.Step with
     # id' after live migrate a Virtio RAW disk, job stays in status STARTED
-
-    def setUp(self):
-        super(TestCase6173, self).setUp()
-        ll_vms.start_vms(self.vm_names, 2, config.VM_UP, True)
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     @polarion("RHEVM3-6173")
@@ -919,29 +806,23 @@ class TestCase6173(BaseTestCase):
         Attach the migrated snapshot disk to a backup VM while the migration
         is taking place
         """
-        vm_disks = ll_vms.getVmDisks(self.vm_names[0])
+        ll_vms.start_vms(self.vm_names, 2, config.VM_UP, True)
+        vm_disks = ll_vms.getVmDisks(self.src_vm)
         snapshot_disk_name = vm_disks[0].get_alias()
-        self.original_sd = ll_vms.get_vms_disks_storage_domain_name(
-            self.vm_names[0], snapshot_disk_name
+        self.destination_sd = ll_vms.get_other_storage_domain(
+            snapshot_disk_name, self.src_vm
         )
-        storage_domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
-        self.destination_sd = [
-            sd for sd in storage_domains if sd != self.original_sd
-        ][0]
-
         ll_vms.live_migrate_vm_disk(
-            self.vm_names[0], snapshot_disk_name, self.destination_sd,
+            self.src_vm, snapshot_disk_name, self.destination_sd,
             wait=False
         )
         ll_disks.wait_for_disks_status(
             [snapshot_disk_name], status=config.DISK_LOCKED
         )
         status = ll_vms.attach_backup_disk_to_vm(
-            self.vm_names[0], self.vm_names[1], self.first_snapshot_description
+            self.src_vm, self.backup_vm, self.first_snapshot_description
         )
-        ll_vms.wait_for_vm_snapshots(self.vm_names[0], config.SNAPSHOT_OK)
+        ll_vms.wait_for_vm_snapshots(self.src_vm, config.SNAPSHOT_OK)
         ll_disks.wait_for_disks_status(
             [snapshot_disk_name], timeout=LIVE_MIGRATE_DISK_TIMEOUT
         )
