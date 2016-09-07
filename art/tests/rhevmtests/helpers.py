@@ -445,16 +445,16 @@ def wait_for_engine_api(
     sampler_sleep=config.SAMPLER_SLEEP
 ):
     """
-    Sample host API until it can reach it
+    Sample datacenter API until it can reach it
 
     Returns:
-        bool: True, if host API reachable before timeout happen,
+        bool: True, if datacenter API reachable before timeout happen,
             otherwise False
     """
     sampler = apis_utils.TimeoutingSampler(
         timeout=sampler_timeout,
         sleep=sampler_sleep,
-        func=ll_hosts.HOST_API.get,
+        func=ll_sd.dcUtil.get,
         absLink=False
     )
     logger.info("Sample engine host API")
