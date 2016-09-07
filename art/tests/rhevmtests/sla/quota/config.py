@@ -3,8 +3,6 @@ Configuration file for Quota test
 """
 from rhevmtests.sla.config import *  # flake8: noqa
 
-DC_NAME_0 = DC_NAME[0]
-
 # Limit constants
 LIMIT_TYPE_STORAGE = "storage_domain"
 LIMIT_TYPE_CLUSTER = "cluster"
@@ -16,25 +14,14 @@ MINIMAL_CPU_LIMIT = 1
 DEFAULT_MEMORY_LIMIT = 1
 
 VM_NAME = "quota__vm"
-VM_DESC = "quota"
 TMP_VM_NAME = "quota__tpm_vm"
 DISK_NAME = "quota_disk"
 TEMPLATE_NAME = "quota__template"
-TMP_TEMPLATE_NAME = "quota__template_tmp"
 VM_SNAPSHOT = "quota_vm__snapshot"
 QUOTA_NAME = "quota_1"
 QUOTA_DESC = "quota_1_desc"
 QUOTA2_NAME = "quota_2"
 QUOTA2_DESC = "quota_2_desc"
-QUOTA_NONE_MODE = "NONE"
-QUOTA_AUDIT_MODE = "AUDIT"
-QUOTA_ENFORCED_MODE = "ENFORCED"
-QUOTA_MODES = {
-    QUOTA_NONE_MODE: "disabled",
-    QUOTA_AUDIT_MODE: "audit",
-    QUOTA_ENFORCED_MODE: "enabled"
-}
-NONE_TYPE = "NONE"
 GRACE_TYPE = "GRACE"
 EXCEED_TYPE = "EXCEED"
 GRACE_MSG = "limit exceeded and entered the grace zone"
@@ -54,7 +41,6 @@ NUM_OF_CPUS = {
     GRACE_TYPE: 2,
     EXCEED_TYPE: 3
 }
-EVENT_TIMEOUT = 10
 MEMORY_USAGE = "memory_usage"
 VCPU_USAGE = "vcpu_usage"
 STORAGE_USAGE = "usage"
@@ -80,3 +66,14 @@ DEFAULT_CPU_USAGE = 1.0
 DEFAULT_DISK_USAGE = 10.0
 FULL_DISK_USAGE = 20.0
 ZERO_USAGE = 0.0
+DEFAULT_USAGES = {
+    VCPU_USAGE: DEFAULT_CPU_USAGE,
+    MEMORY_USAGE: DEFAULT_MEMORY_USAGE
+}
+ZERO_USAGES = {
+    VCPU_USAGE: ZERO_USAGE,
+    MEMORY_USAGE: ZERO_USAGE
+}
+
+QUOTA_CLUSTER_LIMIT = "quota_cluster_limit"
+QUOTA_STORAGE_LIMIT = "quota_storage_limit"

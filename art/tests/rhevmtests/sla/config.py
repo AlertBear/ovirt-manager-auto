@@ -37,6 +37,12 @@ VM_WATCHDOG_MODEL = "watchdog_model"
 VM_CPU_SHARES = "cpu_shares"
 VM_TEMPLATE = "template"
 VM_BALLOONING = "ballooning"
+VM_QUOTA = "vm_quota"
+VM_DISK_QUOTA = "disk_quota"
+VM_STORAGE_DOMAIN = "storageDomainName"
+VM_DISK_SIZE = "provisioned_size"
+VM_NIC = "nic"
+VM_NETWORK = "network"
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
@@ -55,6 +61,20 @@ DEFAULT_VM_PARAMETERS = {
     VM_CPU_SHARES: 0,
     VM_CPU_MODE: "custom"  # W/A for 1337181
 }
+
+DC_QUOTA_MODE = "quota_mode"
+QUOTA_NONE_MODE = "NONE"
+QUOTA_AUDIT_MODE = "AUDIT"
+QUOTA_ENFORCED_MODE = "ENFORCED"
+QUOTA_MODES = {
+    QUOTA_NONE_MODE: "disabled",
+    QUOTA_AUDIT_MODE: "audit",
+    QUOTA_ENFORCED_MODE: "enabled"
+}
+DEFAULT_DC_PARAMETERS = {
+    DC_QUOTA_MODE: QUOTA_MODES[QUOTA_NONE_MODE]
+}
+
 
 HOST = "host"
 RESOURCE = "resource"

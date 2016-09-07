@@ -6,6 +6,7 @@ import copy
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -302,7 +303,7 @@ def create_vms(request):
     results = []
     u_libs.testflow.setup(
         "Create VM's %s with parameters: %s",
-        vms_create_params.keys(), vms_create_params.items()
+        vms_create_params.keys(), vms_create_params.values()
     )
     with ThreadPoolExecutor(max_workers=len(vms_create_params)) as executor:
         for vm_name, vm_params in vms_create_params.iteritems():
@@ -315,6 +316,13 @@ def create_vms(request):
                 vm_params[sla_config.VM_PLACEMENT_HOST] = sla_config.HOSTS[
                     vm_params[sla_config.VM_PLACEMENT_HOST]
                 ]
+            for quota_type in (sla_config.VM_QUOTA, sla_config.VM_DISK_QUOTA):
+                if quota_type in vm_params:
+                    quota_id = ll_datacenters.get_quota_id_by_name(
+                        dc_name=sla_config.DC_NAME[0],
+                        quota_name=vm_params[quota_type]
+                    )
+                    vm_params[quota_type] = quota_id
             results.append(
                 executor.submit(
                     ll_vms.createVm, True, vm_name, **vm_params
@@ -426,10 +434,11 @@ def make_template_from_vm(request):
         """
         1) Remove template
         """
-        u_libs.testflow.teardown("Remove the template %s", template_name)
-        ll_templates.removeTemplate(
-            positive=True, template=template_name
-        )
+        if ll_templates.check_template_existence(template_name=template_name):
+            u_libs.testflow.teardown("Remove the template %s", template_name)
+            ll_templates.removeTemplate(
+                positive=True, template=template_name
+            )
 
     request.addfinalizer(fin)
 
@@ -472,3 +481,30 @@ def make_vm_from_template(request):
         name=vm_from_template_name,
         template=vm_template
     )
+
+
+@pytest.fixture(scope="class")
+def update_datacenter(request):
+    """
+    1) Update datacenter
+    """
+    dcs_to_update = request.node.cls.dcs_to_update
+
+    def fin():
+        u_libs.testflow.teardown(
+            "Update DC %s with default parameters", sla_config.DC_NAME[0]
+        )
+        ll_datacenters.update_datacenter(
+            positive=True,
+            datacenter=dc_name,
+            **sla_config.DEFAULT_DC_PARAMETERS
+        )
+    request.addfinalizer(fin)
+
+    for dc_name, dc_params in dcs_to_update.iteritems():
+        u_libs.testflow.setup(
+            "Update DC %s with parameters: %s", dc_name, dc_params
+        )
+        assert ll_datacenters.update_datacenter(
+            positive=True, datacenter=dc_name, **dc_params
+        )
