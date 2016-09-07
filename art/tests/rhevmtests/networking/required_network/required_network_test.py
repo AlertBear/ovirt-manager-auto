@@ -6,32 +6,48 @@ Testing RequiredNetwork network feature.
 1 DC, 1 Cluster, 1 Hosts will be created for testing.
 """
 
-import logging
-
 import pytest
 
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as required_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
-from fixtures import (
-    case_02_fixture, case_03_fixture, all_classes_teardown
-)
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, NetworkFixtures, clean_host_interfaces
+)  # flake8: noqa
+from fixtures import activate_host, create_network_on_setup
 
-logger = logging.getLogger("Required_Network_Cases")
+
+@pytest.fixture(scope="module", autouse=True)
+def required_network_prepare_setup(request):
+    """
+    Deactivate hosts
+    """
+    NetworkFixtures()
+
+    def fin1():
+        """
+        Activate hosts
+        """
+        testflow.teardown("Activate hosts")
+        for host in conf.HOSTS:
+            hl_hosts.activate_host_if_not_up(host=host)
+    request.addfinalizer(fin1)
+
+    testflow.setup("Deactivate hosts")
+    assert helper.deactivate_hosts()
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(all_classes_teardown.__name__)
 class TestRequiredNetwork01(NetworkTest):
     """
     Check that management network is required by default
     Try to set it to non required.
     """
     __test__ = True
-    net = None
     cluster = conf.CL_0
     mgmt = conf.MGMT_BRIDGE
 
@@ -55,7 +71,11 @@ class TestRequiredNetwork01(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(case_02_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_network_on_setup.__name__,
+    setup_networks_fixture.__name__,
+    activate_host.__name__
+)
 class TestRequiredNetwork02(NetworkTest):
     """
     Attach required non-VM network to host
@@ -64,7 +84,20 @@ class TestRequiredNetwork02(NetworkTest):
     """
     __test__ = True
     net = required_conf.NETS[2][0]
-    networks = [net]
+    net_dict = {
+        net: {
+            "required": "true",
+            "usages": ""
+        }
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net: {
+                "nic": 1,
+                "network": net
+            }
+        }
+    }
 
     @polarion("RHEVM3-3744")
     def test_nonoperational(self):
@@ -83,7 +116,11 @@ class TestRequiredNetwork02(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(case_03_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_network_on_setup.__name__,
+    setup_networks_fixture.__name__,
+    activate_host.__name__
+)
 class TestRequiredNetwork03(NetworkTest):
     """
     Attach required VLAN network over BOND.
@@ -94,8 +131,22 @@ class TestRequiredNetwork03(NetworkTest):
     """
     __test__ = True
     net = required_conf.NETS[3][0]
+    net_dict = {
+        net: {
+            "required": "true",
+            "vlan_id": required_conf.VLAN_ID
+        }
+    }
     bond = "bond4"
-    vlan = required_conf.VLAN_IDS[0]
+    hosts_nets_nic_dict = {
+        0: {
+            net: {
+                "nic": bond,
+                "network": net,
+                "slaves": [2, 3],
+            }
+        }
+    }
 
     @polarion("RHEVM3-3752")
     def test_1_nonoperational_bond_down(self):
@@ -120,6 +171,5 @@ class TestRequiredNetwork03(NetworkTest):
         """
         testflow.step("Set bond slaves up and check that host is operatinal")
         assert helper.set_nics_and_wait_for_host_status(
-            nics=conf.HOST_0_NICS[2:4],
-            nic_status=required_conf.NIC_STATE_UP
+            nics=conf.HOST_0_NICS[2:4], nic_status=required_conf.NIC_STATE_UP
         )

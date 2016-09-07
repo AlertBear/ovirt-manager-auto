@@ -5,11 +5,8 @@
 Helper for required network job
 """
 
-import logging
-import rhevmtests.networking.config as conf
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-
-logger = logging.getLogger("Required_Network_Helper")
+import rhevmtests.networking.config as conf
 
 
 def deactivate_hosts(host=None):
@@ -21,8 +18,8 @@ def deactivate_hosts(host=None):
         host (str): Host name.
 
     Returns:
-        bool: True if deactivate host succeeded, False if failed to deactivate
-            host.
+        bool: True if deactivate hosts succeeded, False if failed to deactivate
+            hosts.
     """
     host = host if host else conf.HOST_0_NAME
     if not ll_hosts.checkHostSpmStatus(positive=True, hostName=host):
@@ -39,14 +36,6 @@ def deactivate_hosts(host=None):
     return True
 
 
-def activate_hosts():
-    """
-    Activating all hosts in setup besides the first host
-    """
-    for host in conf.HOSTS[1:]:
-        ll_hosts.activateHost(positive=True, host=host)
-
-
 def set_nics_and_wait_for_host_status(nics, nic_status, host_status="up"):
     """
     Set host NICs state and check for host status
@@ -61,9 +50,7 @@ def set_nics_and_wait_for_host_status(nics, nic_status, host_status="up"):
     """
     func = getattr(conf.VDS_0_HOST.network, "if_%s" % nic_status)
     for nic in nics:
-        logger.info("Set %s %s", nic, nic_status)
         if not func(nic=nic):
-            logger.error("Failed to set %s %s", nic, nic_status)
             return False
 
     if not ll_hosts.waitForHostsStates(

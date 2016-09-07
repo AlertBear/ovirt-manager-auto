@@ -8,6 +8,7 @@ Fixtures for sanity
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
@@ -314,7 +315,8 @@ def deactivate_hosts(request):
         """
         Activate hosts
         """
-        required_network_helper.activate_hosts()
+        for host in conf.HOSTS:
+            hl_hosts.activate_host_if_not_up(host=host)
     request.addfinalizer(fin)
 
     assert required_network_helper.deactivate_hosts(host=sanity.host_0_name)

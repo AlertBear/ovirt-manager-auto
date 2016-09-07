@@ -9,18 +9,7 @@ import rhevmtests.helpers as global_helper
 
 NIC_STATE_DOWN = "down"
 NIC_STATE_UP = "up"
-VLAN_IDS = [str(i) for i in xrange(2, 20)]
+VLAN_ID = "999"
 NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=10, prefix="req"
+    num_of_cases=3, num_of_objects=1, prefix="req_net"
 )
-
-NETS_DICT = {
-    NETS[2][0]: {
-        "required": "true",
-        "usages": ""
-    },
-    NETS[3][0]: {
-        "required": "true",
-        "vlan_id": VLAN_IDS[0]
-    },
-}

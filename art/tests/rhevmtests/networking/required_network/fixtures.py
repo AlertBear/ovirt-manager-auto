@@ -2,133 +2,54 @@
 # -*- coding: utf-8 -*-
 
 """
-Fixtures for required network
+Fixtures for required_network
 """
 
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import config as required_conf
-import helper
-import rhevmtests.networking.config as conf
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import rhevmtests.networking.helper as network_helper
+from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
-@pytest.fixture(scope="module")
-def requird_network_prepare_setup(request):
+@pytest.fixture(scope="class", autouse=True)
+def activate_host(request):
     """
-    prepare setup
+    Activate host if the host is not up
     """
     required_network = NetworkFixtures()
 
-    def fin2():
-        """
-        Finalizer for remove networks
-        """
-        required_network.remove_networks_from_setup(
-            hosts=required_network.host_0_name
-        )
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Finalizer for activate all hosts
-        """
-        helper.activate_hosts()
-    request.addfinalizer(fin1)
-
-    required_network.prepare_networks_on_setup(
-        networks_dict=required_conf.NETS_DICT, dc=required_network.dc_0,
-        cluster=required_network.cluster_0
-    )
-    assert helper.deactivate_hosts()
-
-
-@pytest.fixture(scope="class")
-def all_classes_teardown(request, requird_network_prepare_setup):
-    """
-    Teardown fixture for all cases
-    """
-    net = request.node.cls.net
-    required_network = NetworkFixtures()
-
-    def fin3():
+    def fin():
         """
         Activate host if not up
         """
+        testflow.teardown("Activate host %s", required_network.host_0_name)
         hl_hosts.activate_host_if_not_up(host=required_network.host_0_name)
-    request.addfinalizer(fin3)
+    request.addfinalizer(fin)
 
-    def fin2():
+
+@pytest.fixture(scope="class", autouse=True)
+def create_network_on_setup(request):
+    """
+    Create network on setup
+    """
+    required_network = NetworkFixtures()
+    net_dict = getattr(request.node.cls, "net_dict", dict())
+
+    def fin():
         """
         Remove network from setup
         """
-        if net:
-            hl_networks.remove_net_from_setup(
-                host=required_network.host_0_name,
-                data_center=required_network.dc_0, network=[net]
-            )
-    request.addfinalizer(fin2)
+        if net_dict:
+            net = net_dict.keys()[0]
+            testflow.teardown("Remove network %s", net)
+            assert ll_networks.remove_network(positive=True, network=net)
+    request.addfinalizer(fin)
 
-    def fin1():
-        """
-        Set host NICs up if needed
-        """
-        for nic in required_network.host_0_nics[1:]:
-            if "dummy" in nic:
-                continue
-
-            if not ll_hosts.check_host_nic_status(
-                host_resource=conf.VDS_0_HOST, nic=nic,
-                status=required_conf.NIC_STATE_UP
-            ):
-                assert conf.VDS_0_HOST.network.if_up(nic=nic)
-    request.addfinalizer(fin1)
-
-
-@pytest.fixture(scope="class")
-def case_02_fixture(request, all_classes_teardown):
-    """
-    Fixture for case02:
-    Attach required non-VM network to host
-    """
-    required_network = NetworkFixtures()
-    net = request.node.cls.net
-
-    local_dict = {
-        net: {
-            "nic": 1,
-        }
-    }
-    assert hl_networks.createAndAttachNetworkSN(
-        host=required_network.vds_0_host, network_dict=local_dict,
-        auto_nics=[0]
-    )
-
-
-@pytest.fixture(scope="class")
-def case_03_fixture(request, all_classes_teardown):
-    """
-    Attach required network over BOND.
-    """
-    required_network = NetworkFixtures()
-    net = request.node.cls.net
-    bond = request.node.cls.bond
-    vlan = request.node.cls.vlan
-
-    local_dict = {
-        None: {
-            "nic": bond,
-            "slaves": [2, 3]
-        },
-        net: {
-            "nic": bond,
-            "vlan_id": vlan
-        }
-    }
-    assert hl_networks.createAndAttachNetworkSN(
-        host=required_network.vds_0_host, network_dict=local_dict,
-        auto_nics=[0]
-    )
+    if net_dict:
+        network_helper.prepare_networks_on_setup(
+            networks_dict=net_dict, dc=required_network.dc_0,
+            cluster=required_network.cluster_0
+        )
