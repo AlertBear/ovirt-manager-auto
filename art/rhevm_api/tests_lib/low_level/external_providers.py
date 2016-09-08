@@ -320,6 +320,15 @@ def get_glance_ep_objs():
     return osip.get_openstack_ep_objects()
 
 
+def get_glance_ep_objs_names():
+    """
+    Get glance ep objects names from engine.
+
+    :return: list of glance ep objects names
+    """
+    return [ep.name for ep in get_glance_ep_objs()]
+
+
 def remove_glance_ep(glance_ep, key='name'):
     """
     Remove glance ep object from engine by name or id
@@ -359,6 +368,15 @@ def get_cinder_ep_objs():
     """
     osvp = OpenStackVolumeProvider()
     return osvp.get_openstack_ep_objects()
+
+
+def get_cinder_ep_objs_names():
+    """
+    Get cinder ep objects names from engine.
+
+    :return: list of cinder ep objects names
+    """
+    return [ep.name for ep in get_cinder_ep_objs()]
 
 
 def remove_cinder_ep(cinder_ep, key='name'):

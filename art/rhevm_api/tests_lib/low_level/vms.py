@@ -5692,6 +5692,16 @@ def get_all_vms():
     return VM_API.get(absLink=False)
 
 
+def get_all_vms_names():
+    """
+    Get list of all VMs names from API
+
+    Returns:
+        list: all VMs names
+    """
+    return [vm.get_name() for vm in get_all_vms()]
+
+
 def is_bootable_disk(vm, disk, attr='id'):
     """
     Gets the disk bootable flag

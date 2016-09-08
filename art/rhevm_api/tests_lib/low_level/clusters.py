@@ -737,3 +737,27 @@ def get_cluster_list():
     :rtype: list
     """
     return util.get(absLink=False)
+
+
+def get_cluster_names_list():
+    """
+    Get list of cluster names
+
+    :return: List of cluster names
+    :rtype: list
+    """
+    return [cl.get_name() for cl in get_cluster_list()]
+
+
+def get_rng_sources_from_cluster(cluster_name):
+    """
+    Get list of random number generator sources from cluster
+
+    Args:
+        cluster_name (str): Name of the Cluster
+
+    Returns:
+        list of str: Rng sources
+    """
+    cl_obj = get_cluster_object(cluster_name)
+    return cl_obj.get_required_rng_sources().get_required_rng_source()

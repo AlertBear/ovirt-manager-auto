@@ -1202,6 +1202,15 @@ def get_all_template_objects():
     return TEMPLATE_API.get(absLink=False)
 
 
+def get_all_template_objects_names():
+    """
+    Get all templates objects names from engine
+    :return: List of template objects names
+    :rtype: list
+    """
+    return [template.name for template in get_all_template_objects()]
+
+
 def get_template_nics_objects(template):
     """
     Get all NICs objects from template

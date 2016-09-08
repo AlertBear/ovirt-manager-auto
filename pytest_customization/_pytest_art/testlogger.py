@@ -63,6 +63,22 @@ class TestFlowInterface(object):
             tl.log_teststep(msg, *args, **kwargs)
 
     @staticmethod
+    def skip(msg, *args, **kwargs):
+        """
+        This function add single skip step into console.
+
+        :param msg: step description
+        :type msg: str
+        :param args: arguments used to format message
+        :type args: tuple
+        :param kwargs: keywords used to format message
+        :type kwargs: dict
+        """
+        tl = TestFlowInterface._get_logger()
+        if tl:
+            tl.log_test_skip_step(msg, *args, **kwargs)
+
+    @staticmethod
     def setup(msg, *args, **kwargs):
         """
         This function add single setup step into console.
@@ -290,44 +306,39 @@ class ARTLogging(object):
     def pytest_unconfigure(self, config):
         flow_logger.removeFilter(self.log_filter)
 
+    def print_flow_logger(self, log_level, log_type, msg, *args, **kwargs):
+        self.step_id += 1
+        self.log_filter.toggle(False)
+        msg = "      Test {0}  {1:2}: {2}".format(log_type, self.step_id, msg)
+        try:
+            # we may want to check length of message
+            flow_logger.log(log_level, msg, *args, **kwargs)
+        finally:
+            self.log_filter.toggle(True)
+
     def log_teststep(self, msg, *args, **kwargs):
         """
         User interface to add the Test Step into console.
         """
-        self.step_id += 1
-        self.log_filter.toggle(False)
-        try:
-            msg = "   Test step     {0:2}: {1}".format(self.step_id, msg)
-            # we may want to check length of message
-            flow_logger.info(msg, *args, **kwargs)
-        finally:
-            self.log_filter.toggle(True)
+        self.print_flow_logger(logging.INFO, "Step", msg, *args, **kwargs)
+
+    def log_test_skip_step(self, msg, *args, **kwargs):
+        """
+        User interface to add Warning to Test skip into console.
+        """
+        self.print_flow_logger(logging.WARN, "Skip", msg, *args, **kwargs)
 
     def log_testsetup(self, msg, *args, **kwargs):
         """
         User interface to add the Test setup into console.
         """
-        self.step_id += 1
-        self.log_filter.toggle(False)
-        try:
-            msg = "   Test setup    {0:2}: {1}".format(self.step_id, msg)
-            # we may want to check length of message
-            flow_logger.info(msg, *args, **kwargs)
-        finally:
-            self.log_filter.toggle(True)
+        self.print_flow_logger(logging.INFO, "Setup", msg, *args, **kwargs)
 
     def log_testteardown(self, msg, *args, **kwargs):
         """
         User interface to add the Test teardown into console.
         """
-        self.step_id += 1
-        self.log_filter.toggle(False)
-        try:
-            msg = "   Test teardown {0:2}: {1}".format(self.step_id, msg)
-            # we may want to check length of message
-            flow_logger.info(msg, *args, **kwargs)
-        finally:
-            self.log_filter.toggle(True)
+        self.print_flow_logger(logging.INFO, "Teardown", msg, *args, **kwargs)
 
 
 def pytest_artconf_ready(config):

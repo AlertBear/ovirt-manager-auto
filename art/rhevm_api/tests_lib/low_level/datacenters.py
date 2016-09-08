@@ -899,3 +899,13 @@ def get_datacenters_list():
     :rtype: list
     """
     return util.get(absLink=False)
+
+
+def get_datacenters_names_list():
+    """
+    Get list of all datacenters names
+
+    :return: datacenters names
+    :rtype: list
+    """
+    return [cl.get_name() for cl in get_datacenters_list()]
