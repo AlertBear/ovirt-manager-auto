@@ -15,6 +15,7 @@ CASE_7_IPS = None
 CASE_IPS = None
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
 REAL_VLANS = [str(i) for i in xrange(162, 169)]
+VMS_RESOURCES = dict()
 VNICS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=5, prefix="vnic_jumbo_frame_"
 )

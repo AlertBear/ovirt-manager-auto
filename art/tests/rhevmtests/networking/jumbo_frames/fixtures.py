@@ -11,6 +11,7 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.jumbo_frames.config as jumbo_conf
@@ -62,6 +63,9 @@ def prepare_setup_jumbo_frame(request):
         assert network_helper.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )
+        vm_resource = global_helper.get_vm_resource(vm=vm)
+        assert vm_resource
+        jumbo_conf.VMS_RESOURCES[vm] = vm_resource
 
 
 @pytest.fixture(scope="class")

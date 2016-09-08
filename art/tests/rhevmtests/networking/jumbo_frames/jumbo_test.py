@@ -13,7 +13,6 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as jumbo_conf
 import helper
-import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.utils import test_utils
@@ -248,7 +247,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         """
         Send ping with MTU 4500 between the two VMS
         """
-        vm_resource = global_helper.get_vm_resource(vm=self.vm)
+        vm_resource = jumbo_conf.VMS_RESOURCES.get(self.vm)
         testflow.step("Send ping with MTU 4500 between the two VMS")
         assert network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.vms_ips[1],
@@ -372,7 +371,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         Send ping with MTU 8500 between the two VMs
         """
         testflow.step("Send ping with MTU 8500 between the two VMs")
-        vm_resource = global_helper.get_vm_resource(vm=self.vm)
+        vm_resource = jumbo_conf.VMS_RESOURCES.get(self.vm)
         assert network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.vms_ips[1],
             size=self.mtu_8500
@@ -435,7 +434,7 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
         """
         Send ping between 2 VMS
         """
-        vm_resource = global_helper.get_vm_resource(vm=self.vm)
+        vm_resource = jumbo_conf.VMS_RESOURCES.get(self.vm)
         testflow.step("Send ping with size 4500 between 2 VMS")
         assert network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.vms_ips[1],
@@ -551,7 +550,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         """
         Send ping between 2 VMs
         """
-        vm_resource = global_helper.get_vm_resource(vm=self.vm_0)
+        vm_resource = jumbo_conf.VMS_RESOURCES.get(self.vm_0)
         testflow.step("Send ping between 2 VMs")
         assert network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.vms_ips[1],

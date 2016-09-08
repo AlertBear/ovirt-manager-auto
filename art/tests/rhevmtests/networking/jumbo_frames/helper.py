@@ -10,7 +10,6 @@ import logging
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as jumbo_conf
-import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 from art.rhevm_api.utils import test_utils
 
@@ -106,7 +105,7 @@ def add_vnics_to_vms(ips, mtu, network, nic_name, set_ip=True):
     """
     mtu = str(mtu)
     for vm_name, ip in zip(conf.VM_NAME[:2], ips):
-        vm_resource = global_helper.get_vm_resource(vm=vm_name)
+        vm_resource = jumbo_conf.VMS_RESOURCES.get(vm_name)
         if not ll_vms.addNic(
             positive=True, vm=vm_name, name=nic_name, network=network
         ):
