@@ -136,7 +136,7 @@ class TestTemplateSanity(VirtTest):
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
-    @polarion("RHEVM3-15182")
+    @polarion("RHEVM3-15183")
     def test_06_template_inheritance(self):
         """
         1. Verify that the template has inherited all the parameters values
@@ -306,7 +306,7 @@ class TestTemplateSanity(VirtTest):
     )
     @pytest.mark.template_marker(template_versions=[2])
     @pytest.mark.vm_marker(vm_name=conf.VM_NO_DISK_2)
-    @polarion("RHEVM3-15190")
+    @polarion("RHEVM3-15191")
     def test_14_create_vm_copy_template_permission(self):
         """
         1. Create vm from template - copy template permissions.
