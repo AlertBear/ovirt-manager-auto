@@ -18,7 +18,7 @@ from rhevmtests.virt.migration.fixtures import (
 import config
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__,
     move_host_to_other_cluster.__name__
@@ -41,7 +41,7 @@ class TestMigrateNegativeCase1(VirtTest):
         'no available host on cluster'
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migrate_to_diff_dc.__name__
@@ -63,7 +63,7 @@ class TestMigrateNegativeCase2(VirtTest):
         'migration between data centers is not supported'
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__
 )
@@ -84,7 +84,7 @@ class TestMigrateNegativeCase3(VirtTest):
         'migration to the same host is NOT supported'
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     migration_init.__name__,
@@ -118,7 +118,7 @@ class TestMigrateNegativeCase4(VirtTest):
         ), "not all VMs are up"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migration_options_test.__name__

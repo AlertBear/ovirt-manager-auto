@@ -5,16 +5,22 @@
 Test migration feature mix cases.
 """
 import logging
+import time
 import pytest
 from art.test_handler.tools import polarion
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.unittest_lib import attr, VirtTest, testflow
-import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import rhevmtests.virt.helper as virt_helper
 from rhevmtests.virt.migration.fixtures import (
-    start_vms_on_specific_host, migration_load_test,
-    migration_with_two_disks, migration_init,
+    migration_init,
+    restore_default_policy_on_cluster,
+    restore_default_policy_on_vm,
+    start_vms_on_specific_host,
+    migration_load_test,
+    migration_with_two_disks,
 )
 import config
+import migration_helper
 
 logger = logging.getLogger("virt_migration_mix_cases")
 
@@ -40,7 +46,7 @@ class TestMigrationMixCase1(VirtTest):
         ), "Failed to migration all VMs"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migration_load_test.__name__
@@ -64,12 +70,12 @@ class TestMigrationMixCase2(VirtTest):
             vm_name=self.vm_name, load=self.load_of_2_gb,
             time_to_run=self.time_to_run_load
         )
-        assert ll_vm.migrateVm(
+        assert ll_vms.migrateVm(
             positive=True, vm=self.vm_name
         ), "Failed to migrate VM with large memory"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migration_with_two_disks.__name__
@@ -85,7 +91,7 @@ class TestMigrationMixCase3(VirtTest):
     @polarion("RHEVM3-5647")
     def test_migrate_vm_with_more_then_one_disk(self):
         testflow.step("Migrate VM with more then one disk")
-        assert ll_vm.migrateVm(
+        assert ll_vms.migrateVm(
             positive=True,
             vm=self.vm_name,
             wait=True
@@ -120,7 +126,7 @@ class TestMigrationMixCase4(VirtTest):
             "Resource status before migration, \nResults: %s", table_before
         )
         testflow.step("Start vm migration")
-        assert ll_vm.migrateVm(
+        assert ll_vms.migrateVm(
             positive=True,
             vm=self.vm_name
         ), "Failed to migration VM: %s " % self.vm_name
@@ -132,3 +138,124 @@ class TestMigrationMixCase4(VirtTest):
         assert virt_helper.compare_resources_lists(
             table_before, table_after
         ), "Found resource that are pended to hosts"
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    restore_default_policy_on_cluster.__name__
+)
+class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
+    """
+    Update migration policy and bandwidth on cluster lever
+    And migrate VM.
+    """
+
+    __test__ = True
+
+    @polarion("RHEVM-16922")
+    def test_migration_with_policy_bandwidth_auto(self):
+        """
+        Migrate with bandwidth auto and all policies
+        """
+        for migration_policy in config.MIGRATION_POLICY_NAME:
+            testflow.step(
+                "Migrate vm with policy: %s and bandwidth: %s",
+                migration_policy, config.MIGRATION_BANDWIDTH_AUTO
+            )
+            assert migration_helper.migrate_vm_with_policy(
+                migration_policy=migration_policy,
+                bandwidth_method=config.MIGRATION_BANDWIDTH_AUTO,
+                cluster_name=config.CLUSTER_NAME[0]
+            ), "Failed to migrate VM: %s with policy %s" % (
+                config.MIGRATION_VM, migration_policy
+            )
+            time.sleep(15)
+
+    @polarion("RHEVM-16923")
+    def test_migration_with_policy_bandwidth_hypervisor_default(self):
+        """
+        Migrate with bandwidth hypervisor default (52 Mbps) and all policies,
+        check bandwidth with visrh domjobinfo
+        """
+        for migration_policy in config.MIGRATION_POLICY_NAME:
+            testflow.step(
+                "Migrate vm with policy: %s and bandwidth: %s, and check "
+                "bandwidth",
+                migration_policy, config.MIGRATION_BANDWIDTH_HYPERVISOR_DEFAULT
+            )
+            assert migration_helper.migrate_vm_with_policy(
+                migration_policy=migration_policy,
+                bandwidth_method=config.MIGRATION_BANDWIDTH_HYPERVISOR_DEFAULT,
+                expected_bandwidth=config.HYPERVISOR_DEFAULT_BANDWIDTH,
+                cluster_name=config.CLUSTER_NAME[0]
+            ), "Failed to migrate VM: %s with policy %s" % (
+                config.MIGRATION_VM, migration_policy
+            )
+            time.sleep(15)
+
+    @polarion("RHEVM-16924")
+    def test_migration_with_policy_custom_bandwidth_32_mbps(self):
+        """
+        Migrate with custom bandwidth 32 Mbps and all policies,
+        check bandwidth with visrh domjobinfo
+        """
+        for migration_policy in config.MIGRATION_POLICY_NAME:
+            testflow.step(
+                "Migrate vm with policy: %s and BW custom: 32 Mbps and check "
+                "bandwidth",
+                migration_policy
+            )
+            assert migration_helper.migrate_vm_with_policy(
+                migration_policy=migration_policy,
+                bandwidth_method=config.MIGRATION_BANDWIDTH_CUSTOM,
+                custom_bandwidth=config.CUSTOM_BW_32_MBPS,
+                expected_bandwidth=config.CUSTOM_BW_32_MBPS / 2,
+                cluster_name=config.CLUSTER_NAME[0]
+            ), "Failed to migrate VM: %s with policy %s" % (
+                config.MIGRATION_VM, migration_policy
+            )
+            time.sleep(15)
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    restore_default_policy_on_vm.__name__
+)
+class TestVMLevelMigrationPolicies(VirtTest):
+    """
+    Set migration policy on VM lever and migrate VM.
+    """
+
+    __test__ = True
+
+    @polarion("RHEVM-17042")
+    def test_all_policy(self):
+        """
+        Set policy and migration vm
+        """
+        for migration_policy in config.MIGRATION_POLICY_NAME:
+            testflow.step("Migrate vm with policy: %s", migration_policy)
+            assert migration_helper.migrate_vm_with_policy(
+                migration_policy=config.MIGRATION_POLICY_LEGACY,
+            ), "Failed to migrate VM: %s with policy %s" % (
+                config.MIGRATION_VM, migration_policy
+            )
+        time.sleep(15)
+
+    @polarion("RHEVM3-10444")
+    def test_legacy_policy_and_optimize_features(self):
+        """
+        Set policy to legacy and enable auto converge and compression and
+        migrate VM
+        """
+        testflow.step("Set policy to legacy and enable auto converge and "
+                      "compression, migrate VM")
+        assert migration_helper.migrate_vm_with_policy(
+            migration_policy=config.MIGRATION_POLICY_LEGACY,
+            auto_converge=True,
+            compressed=True
+        ), "Failed to migrate VM: %s with policy %s" % (
+            config.MIGRATION_VM, config.MIGRATION_POLICY_LEGACY
+        )

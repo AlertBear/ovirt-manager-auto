@@ -8,7 +8,7 @@ import os
 import shlex
 import time
 import logging
-
+import xmltodict
 from utilities import jobs
 from art import test_handler
 from rhevmtests import helpers
@@ -42,6 +42,9 @@ RUN_SCRIPT_COMMAND = (
 LOAD_VM_COMMAND = (
     '/home/loadTool -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
 )
+VIRSH_VM_LIST_CMD = "virsh -r list | grep "
+VIRSH_VM_DUMP_XML_CMD = "virsh -r dumpxml "
+
 test_handler.find_test_file.__test__ = False
 
 
@@ -661,3 +664,55 @@ def get_err_msg(action=None, vm_name=None):
         return "Failed to %s on VM: %s", action, vm_name
     else:
         return "Failed to %s", action
+
+
+def get_vm_id(vm_name):
+    """
+    Get running vm id from virsh
+
+    Args:
+        vm_name (str): VM name
+
+    Return:
+        str: vm id
+
+    Raise:
+         HostException: If failed to run command
+    """
+    host_resource = helpers.get_host_resource_of_running_vm(vm_name)
+    cmd = shlex.split(" ".join((VIRSH_VM_LIST_CMD, vm_name)))
+    rc, out, err = host_resource.executor().run_cmd(cmd)
+    if rc:
+        raise exceptions.HostException(
+            "Failed to run virsh cmd: %s on: %s, err: %s"
+            % (host_resource, cmd,  err)
+        )
+    vm_id = out.split()[0]
+    logger.info("VM pid is %s", vm_id)
+    return vm_id
+
+
+def get_dump_xml_as_dict(vm_name):
+    """
+    Return VM dump xml as dict
+
+    Args:
+        vm_name (str): VM name
+
+    Returns:
+        dict: VM dump xml info as disc
+
+    Raise:
+         HostException: If failed to run command
+    """
+
+    host_resource = helpers.get_host_resource_of_running_vm(vm_name)
+    vm_id = get_vm_id(vm_name)
+    cmd = shlex.split(" ".join((VIRSH_VM_DUMP_XML_CMD, vm_id)))
+    rc, out, err = host_resource.executor().run_cmd(cmd)
+    if rc:
+        raise exceptions.HostException(
+            "Failed to run virsh cmd: %s on: %s, err: %s"
+            % (host_resource, VIRSH_VM_LIST_CMD, err)
+        )
+    return xmltodict.parse(out)

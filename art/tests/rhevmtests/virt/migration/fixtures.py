@@ -40,6 +40,7 @@ def migration_init(request):
         migration_helper.activate_hosts()
         testflow.teardown("Stop VM %s", config.MIGRATION_VM)
         ll_vms.stop_vms_safely(vms_list=[config.MIGRATION_VM])
+
     request.addfinalizer(fin)
 
     testflow.setup(
@@ -500,4 +501,37 @@ def restart_vm(request):
             host=config.HOSTS[0],
             wait_for_ip=True
         )
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def restore_default_policy_on_cluster(request):
+    def fin():
+        """
+        update cluster migration policy and bandwidth to default
+        (minimal_downtime, auto)
+        """
+        testflow.teardown("update cluster migration policy to default")
+        migration_helper.update_migration_policy_on_cluster(
+            migration_policy=config.MIGRATION_POLICY_NAME[0],
+            cluster_name=config.CLUSTER_NAME[0],
+            bandwidth=config.MIGRATION_BANDWIDTH_AUTO
+        )
+
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def restore_default_policy_on_vm(request):
+    def fin():
+        """
+        update vm migration policy to default
+        (policy=minimal_downtime, auto_converge=false,compressed=false)
+        """
+        testflow.teardown("update vm migration policy to default")
+        migration_helper.update_migration_policy_on_vm(
+            vm_name=config.MIGRATION_VM,
+            migration_policy=config.MIGRATION_POLICY_INHERIT
+        )
+
     request.addfinalizer(fin)

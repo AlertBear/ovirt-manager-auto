@@ -51,6 +51,9 @@ from art.test_handler.settings import opts
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
+Migration_Options = getDS('MigrationOptions')
+Migration_Policy = getDS('MigrationPolicy')
+
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
@@ -237,6 +240,12 @@ def _prepareVmObject(**kwargs):
     :type time_zone_offset: str
     :param template_version: template version of the specified template
     :type template_version: int
+    :param migration_policy: Migration policy name
+    :type migration_policy: str
+    :param auto_converge: Enable auto converge (only with Legacy policy)
+    :type auto_converge: bool
+    :param compressed: Enable compressed (only with Legacy policy)
+    :type compressed: bool
     :returns: vm object
     :rtype: instance of VM
     """
@@ -568,6 +577,22 @@ def _prepareVmObject(**kwargs):
     if start_paused:
         vm.set_start_paused(start_paused)
 
+    # migration policy
+    if 'migration_policy_id' in kwargs:
+        migration_policy_id = kwargs.pop('migration_policy_id')
+        if migration_policy_id == 'inherit':
+            logger.info("setting empty policy (restore default)")
+            migration_policy = Migration_Policy()
+        else:
+            migration_policy = Migration_Policy(id=migration_policy_id)
+        auto_converge = str(kwargs.pop("auto_converge", "inherit")).lower()
+        compressed = str(kwargs.pop("compressed", "inherit")).lower()
+        migration_options = Migration_Options(
+            policy=migration_policy,
+            auto_converge=auto_converge,
+            compressed=compressed
+        )
+        vm.set_migration(migration_options)
     return vm
 
 
@@ -699,6 +724,12 @@ def addVm(positive, wait=True, **kwargs):
     :type start_in_pause: bool
     :param template_version: template version of the specified template
     :type template_version: int
+    :param migration_policy: Migration policy name
+    :type migration_policy: str
+    :param auto_converge: Enable auto converge (only with Legacy policy)
+    :type auto_converge: bool
+    :param compressed: Enable compressed (only with Legacy policy)
+    :type compressed: bool
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -835,6 +866,12 @@ def updateVm(positive, vm, **kwargs):
     :type start_in_pause: bool
     :param comment: vm comment
     :type comment: str
+    :param migration_policy: Migration policy name
+    :type migration_policy: str
+    :param auto_converge: Enable auto converge (only with Legacy policy)
+    :type auto_converge: bool
+    :param compressed: Enable compressed (only with Legacy policy)
+    :type compressed: bool
     :returns: True, if update success, otherwise False
     :rtype: bool
     """

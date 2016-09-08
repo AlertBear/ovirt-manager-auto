@@ -50,6 +50,9 @@ CLUSTER_API = get_api('cluster', 'clusters')
 AFFINITY_API = get_api('affinity_group', 'affinity_groups')
 CPU_PROFILE_API = get_api('cpu_profile', 'cpu_profiles')
 VM_API = get_api('vm', 'vms')
+Migration_Options = getDS('MigrationOptions')
+Migration_Policy = getDS('MigrationPolicy')
+MigrationBandwidth = getDS('MigrationBandwidth')
 
 CLUSTER_NAME = "cluster"
 AFFINITY_GROUP_NAME = "affinity group"
@@ -170,6 +173,31 @@ def _prepareClusterObject(**kwargs):
 
     if 'ha_reservation' in kwargs:
         cl.set_ha_reservation(kwargs.pop('ha_reservation'))
+    # migration policy and bandwidth
+    migration_policy_id = kwargs.pop('migration_policy_id', None)
+    migration_bandwidth = kwargs.pop('migration_bandwidth', None)
+    custom_bw = kwargs.pop('migration_custom_bandwidth', None)
+    if migration_policy_id:
+        migration_policy = Migration_Policy(id=migration_policy_id)
+    else:
+        migration_policy = Migration_Policy()
+    if migration_bandwidth:
+        if custom_bw:  # with custom bandwidth
+            bandwidth = MigrationBandwidth(
+                assignment_method=migration_bandwidth,
+                custom_value=custom_bw
+            )
+        else:  # without custom bandwidth, method only
+            bandwidth = MigrationBandwidth(
+                assignment_method=migration_bandwidth
+            )
+        migration_options = Migration_Options(
+            policy=migration_policy,
+            bandwidth=bandwidth
+        )
+    else:  # without bandwidth
+        migration_options = Migration_Options(policy=migration_policy)
+    cl.set_migration(migration_options)
 
     return cl
 
@@ -207,6 +235,9 @@ def addCluster(positive, **kwargs):
         ksm_enabled (bool): If True, enables KSM on cluster
         ksm_merge_across_nodes (bool): Merge KSM pages across NUMA nodes
         rng_sources (list of str): Random number generator sources
+        migration_policy_id (str): Migration policy name
+        migration_bandwidth (str): Bandwidth assignment method
+        migration_custom_bandwidth (int): Custom bandwidth
 
     Returns:
         bool: True if cluster was created properly, False otherwise
@@ -248,6 +279,9 @@ def updateCluster(positive, cluster, **kwargs):
         ha_reservation (bool): Enables HA Reservation on cluster
         ksm_merge_across_nodes (bool): Merge KSM pages across NUMA nodes
         rng_sources (list of str): Random number generator sources
+        migration_policy_id (str): Migration policy name
+        migration_bandwidth (str): Bandwidth assignment method
+        migration_custom_bandwidth (int): Custom bandwidth
 
     Returns:
         bool: True, if update succeed, otherwise False
