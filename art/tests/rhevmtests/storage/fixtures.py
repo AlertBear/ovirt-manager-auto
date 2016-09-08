@@ -2,8 +2,10 @@ import pytest
 import logging
 import config
 from art.test_handler import exceptions
+from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
+    disks as hl_disks,
 )
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -16,8 +18,6 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
-from art.unittest_lib.common import testflow
-
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -54,6 +54,39 @@ def create_vm(request, remove_vm):
     assert storage_helpers.create_vm_or_clone(**vm_args), (
         "Failed to create VM %s" % self.vm_name
     )
+
+
+@pytest.fixture()
+def add_disk_permutations(request):
+    """
+    Creating all possible combinations of disks for test
+    """
+    self = request.node.cls
+
+    if not hasattr(self, 'shared'):
+        self.shared = None
+
+    testflow.setup("Creating all disk permutations")
+    block = self.storage in config.BLOCK_TYPES
+    self.disk_names = hl_disks.create_all_legal_disk_permutations(
+        self.storage_domain, shared=self.shared,
+        block=block, size=config.DISK_SIZE,
+        interfaces=storage_helpers.INTERFACES
+    )
+    assert ll_disks.wait_for_disks_status(self.disk_names), (
+        "At least one of the disks %s was not in the expected state 'OK"
+        % self.disk_names
+    )
+
+
+@pytest.fixture()
+def attach_and_activate_disks(request):
+    """
+    Attach and activate disks to a VM
+    """
+    self = request.node.cls
+
+    storage_helpers.prepare_disks_for_vm(self.vm_name, self.disk_names)
 
 
 @pytest.fixture(scope='class')
