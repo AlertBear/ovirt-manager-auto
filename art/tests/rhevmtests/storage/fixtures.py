@@ -16,7 +16,8 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
-from art.unittest_lib import testflow
+from art.unittest_lib.common import testflow
+
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI
