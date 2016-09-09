@@ -5,17 +5,17 @@ installation of supervdsm when adding the host to the Data Center
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_3_Storage_SuperVdsm
 """
-import config
 import logging
 import time
+import pytest
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
 
 from art.test_handler.tools import polarion
 
+from rhevmtests.storage import config
 from utilities.machine import LINUX, Machine
 
 logger = logging.getLogger(__name__)
@@ -68,51 +68,65 @@ def isSupervdsmRunning(machine):
         return False
 
 
-def setup_module():
-    """ creates datacenter, adds hosts, clusters, storages according to
-    the config file
+@pytest.fixture()
+def check_host_up(request):
     """
-    if not config.GOLDEN_ENV:
-        datacenters.build_setup(
-            config=config.PARAMETERS, storage=config.PARAMETERS,
-            storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
-
-
-def teardown_module():
-    """ removes created datacenter, storages etc.
+    Check the host is in status UP and get the host ip
     """
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
+    self = request.node.cls
+
+    # Wait a few seconds for host to be up
+    hosts.waitForHostsStates(
+        True, config.HOSTS[0], states=config.HOST_UP, timeout=30
+    )
+    # If there's a problem with vdsm the host switches between
+    # non_operational - non_responsive status
+    if not hosts.isHostUp(True, config.HOSTS[0]):
+        logger.error(
+            "Host %s was down unexpectedly. Starting it up" %
+            config.HOSTS[0]
         )
+        assert hosts.activateHost(
+            True, config.HOSTS[0]
+        ), "Host %s was not activated" % config.HOSTS[0]
+    host_ip = hosts.getHostIP(config.HOSTS[0])
+    self.machine = Machine(
+        host_ip, config.HOSTS_USER,
+        config.HOSTS_PW).util(LINUX)
+    self.machine.enableServiceSupport()
 
 
-class SuperVDSMTestBase(TestCase):
+@pytest.fixture()
+def restore_supervdsm_files(request):
     """
-    Base test for SuperVDSM
+    Make sure to restore supervdsm log file
     """
+    self = request.node.cls
 
-    def setUp(self, startvdsm=True):
-        # If there's a problem with vdsm the host switches between
-        # non_operational - non_responsive status
-        if not hosts.isHostUp(True, config.FIRST_HOST):
-            logger.error(
-                "Host %s was down unexpectedly. Starting it up" %
-                config.FIRST_HOST
-            )
-            assert hosts.activateHost(
-                True, config.FIRST_HOST
-            ), "Host %s was not activated" % config.FIRST_HOST
-        host_ip = hosts.getHostIP(config.FIRST_HOST)
-        self.machine = Machine(
-            host_ip, config.HOSTS_USER,
-            config.HOSTS_PW).util(LINUX)
-        self.machine.enableServiceSupport()
+    def finalizer():
+        self.machine.stopService(SUPERVDSMD)
+        self.machine.runCmd(["touch", SUPERVDSM_LOG])
+        self.machine.runCmd(["chmod", "0644", SUPERVDSM_LOG])
+        self.machine.runCmd(["chown", "vdsm:kvm", SUPERVDSM_LOG])
+        self.machine.startService(SUPERVDSMD)
+        # for supporting rhel versions that stopping supervdsm stopps vdsm
+        # (rhel7 and up)
+        self.machine.startService(VDSMD)
+        # After start vdsm wait for host to be up
+        hosts.waitForHostsStates(True, config.HOSTS[0], states=config.HOST_UP,
+                                 timeout=60)
+
+        # after restarting supervdsm, run vdsm command that requires
+        # supervdsm in order to trigger reconnection between supervdsm and vdsm
+        self.machine.runCmd(HW_INFO_COMMAND)
+    request.addfinalizer(finalizer)
 
 
+@pytest.mark.usefixtures(
+    check_host_up.__name__,
+)
 @attr(tier=2)
-class TestCase6269(SuperVDSMTestBase):
+class TestCase6269(TestCase):
     """
     supervdsm test case, sanity
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -120,7 +134,6 @@ class TestCase6269(SuperVDSMTestBase):
     """
     __test__ = True
     storages = config.NOT_APPLICABLE
-    polarion_test_case = '6269'
 
     @polarion("RHEVM3-6269")
     def test_supervdsm_sanity(self):
@@ -144,18 +157,20 @@ class TestCase6269(SuperVDSMTestBase):
         )
 
 
+@pytest.mark.usefixtures(
+    check_host_up.__name__,
+)
 @attr(tier=4)
-class TestCase6270(SuperVDSMTestBase):
+class TestCase6270(TestCase):
     """
     supervdsm test case, command options
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    polarion_test_case = '6270'
 
     @polarion("RHEVM3-6270")
-    def command_options_test(self):
+    def test_command_options_test(self):
         """
         Test command options
         """
@@ -194,15 +209,17 @@ class TestCase6270(SuperVDSMTestBase):
             ), ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm")
 
 
+@pytest.mark.usefixtures(
+    check_host_up.__name__,
+)
 @attr(tier=4)
-class TestCase6271(SuperVDSMTestBase):
+class TestCase6271(TestCase):
     """
     supervdsm test case, communication between supervdsm and vdsm
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    polarion_test_case = '6271'
 
     @polarion("RHEVM3-6271")
     def test_communication(self):
@@ -221,7 +238,7 @@ class TestCase6271(SuperVDSMTestBase):
         assert self.machine.startService(VDSMD), "vdsm didn't start"
         # After restart vdsm wait for host to be up
         assert hosts.waitForHostsStates(
-            True, config.FIRST_HOST, states='up', timeout=60
+            True, config.HOSTS[0], states=config.HOST_UP, timeout=60
         ), "Host never activated after vdsm restarted."
         time.sleep(SLEEP_SERVICE)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
@@ -238,25 +255,27 @@ class TestCase6271(SuperVDSMTestBase):
         self.machine.startService(VDSMD)
         # After restart vdsm wait for host to be up
         assert hosts.waitForHostsStates(
-            True, config.FIRST_HOST, states='up', timeout=60
+            True, config.HOSTS[0], states=config.HOST_UP, timeout=60
         ), "Host never activated after vdsm restarted."
         time.sleep(SLEEP_SERVICE)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
         assert success, ERROR_HW_OUTPUT % output
 
 
+@pytest.mark.usefixtures(
+    check_host_up.__name__,
+)
 @attr(tier=4)
-class TestCase6272(SuperVDSMTestBase):
+class TestCase6272(TestCase):
     """
     supervdsm test case, supervdsm stress test
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    polarion_test_case = '6272'
 
     @polarion("RHEVM3-6272")
-    def supervdsm_stress_test(self):
+    def test_supervdsm_stress_test(self):
         """
         supervdsm stress tests
         """
@@ -280,15 +299,18 @@ class TestCase6272(SuperVDSMTestBase):
         )
 
 
+@pytest.mark.usefixtures(
+    check_host_up.__name__,
+    restore_supervdsm_files.__name__,
+)
 @attr(tier=4)
-class TestCase6273(SuperVDSMTestBase):
+class TestCase6273(TestCase):
     """
     deleting supervdsm log and changing log file permissions
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    polarion_test_case = '6273'
 
     @polarion("RHEVM3-6273")
     def test_change_supervdsm_log(self):
@@ -322,23 +344,3 @@ class TestCase6273(SuperVDSMTestBase):
         assert success, (
             "Supervdsm didn't recover from changing log file's permissions"
         )
-
-    def tearDown(self):
-        """
-        Make sure to restore supervdsm log file
-        """
-        self.machine.stopService(SUPERVDSMD)
-        self.machine.runCmd(["touch", SUPERVDSM_LOG])
-        self.machine.runCmd(["chmod", "0644", SUPERVDSM_LOG])
-        self.machine.runCmd(["chown", "vdsm:kvm", SUPERVDSM_LOG])
-        self.machine.startService(SUPERVDSMD)
-        # for supporting rhel versions that stopping supervdsm stopps vdsm
-        # (rhel7 and up)
-        self.machine.startService(VDSMD)
-        # After start vdsm wait for host to be up
-        hosts.waitForHostsStates(True, config.FIRST_HOST, states='up',
-                                 timeout=60)
-
-        # after restarting supervdsm, run vdsm command that requires
-        # supervdsm in order to trigger reconnection between supervdsm and vdsm
-        self.machine.runCmd(HW_INFO_COMMAND)
