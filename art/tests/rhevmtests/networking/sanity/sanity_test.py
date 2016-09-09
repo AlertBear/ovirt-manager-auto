@@ -135,7 +135,7 @@ class TestSanity02(TestSanityCaseBase):
                 },
                 "4": {
                     "nic": self.bond_1,
-                    "slaves": sanity_conf.DUMMIES[:2]
+                    "slaves": conf.HOST_0_NICS[2:4]
                 },
                 "5": {
                     "nic": self.bond_1,
@@ -148,15 +148,15 @@ class TestSanity02(TestSanityCaseBase):
                 },
                 "7": {
                     "nic": self.bond_2,
-                    "slaves": sanity_conf.DUMMIES[2:4]
+                    "slaves": conf.HOST_0_NICS[4:6]
                 },
                 "8": {
                     "nic": self.bond_3,
-                    "slaves": sanity_conf.DUMMIES[6:9]
+                    "slaves": conf.HOST_0_NICS[6:9]
                 },
                 "9": {
                     "nic": self.bond_4,
-                    "slaves": sanity_conf.DUMMIES[9:11]
+                    "slaves": conf.HOST_0_NICS[9:11]
                 }
 
             }
@@ -187,7 +187,7 @@ class TestSanity02(TestSanityCaseBase):
                     "network": self.net[1],
                 },
                 "2": {
-                    "nic": sanity_conf.DUMMIES[11],
+                    "nic": conf.HOST_0_NICS[11],
                     "network": self.net[2],
                     "ip": sanity_conf.BASIC_IP_DICT_PREFIX
                 },
@@ -197,11 +197,11 @@ class TestSanity02(TestSanityCaseBase):
                 },
                 "4": {
                     "nic": self.bond_2,
-                    "slaves": [sanity_conf.DUMMIES[4]]
+                    "slaves": [conf.HOST_0_NICS[12]]
                 },
                 "5": {
                     "nic": self.bond_3,
-                    "slaves": [sanity_conf.DUMMIES[8]]
+                    "slaves": [conf.HOST_0_NICS[8]]
                 },
             },
             "remove": {
@@ -357,7 +357,7 @@ class TestSanity04(TestSanityCaseBase):
             "add": {
                 "1": {
                     "nic": self.bond,
-                    "slaves": sanity_conf.DUMMIES[:2]
+                    "slaves": conf.HOST_0_NICS[4:6]
                 },
                 "2": {
                     "nic": self.bond,
@@ -429,7 +429,7 @@ class TestSanity05(TestSanityCaseBase):
             "add": {
                 "1": {
                     "nic": self.bond_1,
-                    "slaves": sanity_conf.DUMMIES[:2]
+                    "slaves": conf.HOST_0_NICS[2:4]
                 },
                 "2": {
                     "nic": self.bond_1,
@@ -451,7 +451,7 @@ class TestSanity05(TestSanityCaseBase):
             "add": {
                 "1": {
                     "nic": self.bond_2,
-                    "slaves": sanity_conf.DUMMIES[2:4]
+                    "slaves": conf.HOST_0_NICS[4:6]
                 },
                 "2": {
                     "nic": self.bond_2,
