@@ -8,60 +8,49 @@ Fixtures for predictable_vnic_order
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as vnic_order_conf
 import helper
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
 def prepare_setup_predictable_vnic_order(request):
     """
-    Seal the VM
-    Remove all vNICs from the VM
+    Create VM from template
+    Remove nic1 from VM
+    Add 4 vNICs to VM
+    Reorder vNICs mac addresses
     """
     NetworkFixtures()
-
-    def fin():
-        """
-        Add vNIC to the VM
-        Seal the VM
-        """
-        ll_vms.addNic(
-            positive=True, vm=conf.LAST_VM, name=conf.NIC_NAME[0],
-            network=conf.MGMT_BRIDGE
-        )
-
-        network_helper.seal_vm(
-            vm=conf.LAST_VM, root_password=conf.VMS_LINUX_PW
-        )
-    request.addfinalizer(fin)
-
-    assert helper.seal_last_vm_and_remove_vnics()
-
-
-@pytest.fixture(scope="class")
-def fixture_case01(request, prepare_setup_predictable_vnic_order):
-    """
-    Add 4 vNICs to the VM
-    Reorder the vNICs
-    """
-    NetworkFixtures()
+    vm = vnic_order_conf.VM_NAME
+    template = conf.TEMPLATE_NAME[0]
+    nic_1 = conf.NIC_NAME[0]
 
     def fin2():
         """
-        Seal the VM
-        Remove vNICs from the VM
+        remove VM
         """
-        helper.seal_last_vm_and_remove_vnics()
+        testflow.teardown("Remove VM %s", vm)
+        ll_vms.removeVm(positive=True, vm=vm)
     request.addfinalizer(fin2)
 
     def fin1():
         """
         Stop VM
         """
-        ll_vms.stopVm(positive=True, vm=conf.LAST_VM)
+        testflow.teardown("Stop Vm %s", vm)
+        ll_vms.stopVm(positive=True, vm=vm)
     request.addfinalizer(fin1)
 
+    testflow.setup("Create VM %s from template %s", vm, template)
+    assert ll_vms.addVm(
+        positive=True, name=vm, cluster=conf.CL_0, template=template,
+    )
+    testflow.setup("Remove vNIC %s from VM %s", nic_1, vm)
+    assert ll_vms.removeNic(positive=True, vm=vm, nic=nic_1)
+    testflow.setup("Add 4 vNICs to VM %s", vm)
     assert helper.add_vnics_to_vm()
-    assert ll_vms.reorder_vm_mac_address(vm_name=conf.LAST_VM)
+    testflow.setup("Reorder MACs on VM %s", vm)
+    assert ll_vms.reorder_vm_mac_address(vm_name=vm)

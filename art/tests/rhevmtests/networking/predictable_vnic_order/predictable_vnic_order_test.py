@@ -10,22 +10,24 @@ import logging
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as vnic_order_conf
 import helper
-import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from fixtures import fixture_case01
+from fixtures import prepare_setup_predictable_vnic_order
+import rhevmtests.networking.config as conf
 
 logger = logging.getLogger("Predictable_vNIC_Order_Cases")
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(fixture_case01.__name__)
+@pytest.mark.usefixtures(prepare_setup_predictable_vnic_order.__name__)
 class TestPredictableVnicOrder01(NetworkTest):
     """
     Check vNICs order for new VM
     """
     __test__ = True
+    vm = vnic_order_conf.VM_NAME
 
     @polarion("RHEVM3-4095")
     def test_check_vnics_order_vm(self):
@@ -34,12 +36,10 @@ class TestPredictableVnicOrder01(NetworkTest):
         Start the VM
         Check vNICs MAC order
         """
-        setup_dict = helper.get_vnics_names_and_macs_from_last_vm()
+        setup_dict = helper.get_vnics_names_and_macs_from_vm()
         assert ll_vms.startVm(
-            positive=True, vm=conf.LAST_VM, wait_for_ip=True
+            positive=True, vm=self.vm, wait_for_status=conf.VM_UP
         )
-        case_dict = helper.get_vnics_names_and_macs_from_last_vm()
-        testflow.step("Check vNICs MAC ordering on VM %s", conf.LAST_VM)
-        assert setup_dict == case_dict, (
-            "vNICs not in order on %s" % conf.LAST_VM
-        )
+        case_dict = helper.get_vnics_names_and_macs_from_vm()
+        testflow.step("Check vNICs MAC ordering on VM %s", self.vm)
+        assert setup_dict == case_dict, "vNICs not in order on %s" % self.vm
