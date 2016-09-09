@@ -25,6 +25,11 @@ else
   YUM=yum
 fi
 
+if [ "$EUID" != "0" ];
+then
+  YUM="sudo $YUM"
+fi
+
 STORAGE_API_PATH=${STORAGE_API_PATH:-}
 RHEVM_QE_UTILS_PATH=${RHEVM_QE_UTILS_PATH:-}
 
@@ -38,8 +43,12 @@ then
   echo "RHEVM_QE_UTILS_PATH is required!"
   exit 1
 fi
+if [ -z "$ART_PATH" ] ;
+then
+  ART_PATH=`pwd`
+fi
 
-sudo $YUM install -y \
+$YUM install -y \
     python-virtualenv \
     gcc \
     libffi-devel \
@@ -55,11 +64,15 @@ sudo $YUM install -y \
     krb5-workstation
 
 rm -rf .art
-virtualenv .art
+virtualenv --system-site-packages .art
 
-echo "export PYTHONPATH=`pwd`:`pwd`/pytest_customization:$RHEVM_QE_UTILS_PATH:$STORAGE_API_PATH" | tee -a ./.art/bin/activate
+echo "export PYTHONPATH=$ART_PATH:$ART_PATH/pytest_customization:$RHEVM_QE_UTILS_PATH:$STORAGE_API_PATH" | tee -a ./.art/bin/activate
 
 source ./.art/bin/activate
 pip install -U -rrequirements.txt
-python setup_pytest.py build
+# WA for https://github.com/pyca/cryptography/issues/2838
+pip install cryptography==1.2.1
+python setup_pytest.py install
+
+virtualenv --relocatable .art
 echo "Run 'source ./.art/bin/activate' to load the virtualenv"
