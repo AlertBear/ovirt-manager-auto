@@ -8,6 +8,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
+import art.unittest_lib as u_libs
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,8 @@ def is_balancing_happen(
         conf.BALANCE_LOG_MSG_NEGATIVE
         if negative else conf.BALANCE_LOG_MSG_POSITIVE
     )
-    logger.info(log_msg, host_name)
+    u_libs.testflow.step(log_msg, host_name)
+
     return sla_helpers.wait_for_active_vms_on_host(
         host_name=host_name,
         expected_num_of_vms=expected_num_of_vms,

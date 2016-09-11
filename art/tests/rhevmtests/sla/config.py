@@ -131,9 +131,11 @@ ENGINE_POLICIES = [
 ]
 
 BALANCE_LOG_MSG_POSITIVE = (
-    "Wait until balance module will migrate VM's on host %s"
+    "Wait until balance module will migrate VM's on the host %s"
 )
-BALANCE_LOG_MSG_NEGATIVE = "Check that no migration happen on or from host %s"
+BALANCE_LOG_MSG_NEGATIVE = (
+    "Check that no migration happens on or from the host %s"
+)
 
 ENGINE_CONFIG_LOW_UTILIZATION = "LowUtilizationForEvenlyDistribute"
 SERVICE_PUPPET = "puppet"

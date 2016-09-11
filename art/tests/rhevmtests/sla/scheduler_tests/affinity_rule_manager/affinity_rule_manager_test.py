@@ -3,6 +3,8 @@ AREM test - check automatic migration of VM's under different affinity rules
 """
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.unittest_lib as u_libs
+
+
 import pytest
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
@@ -34,9 +36,11 @@ def deactivate_third_host(request):
         """
         1) Activate third host in the cluster
         """
+        u_libs.testflow.teardown("Activate the host %s", conf.HOSTS[2])
         ll_hosts.activateHost(positive=True, host=conf.HOSTS[2])
     request.addfinalizer(fin)
 
+    u_libs.testflow.setup("Deactivate the host %s", conf.HOSTS[2])
     assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[2])
 
 
