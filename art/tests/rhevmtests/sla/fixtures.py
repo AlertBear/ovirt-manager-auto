@@ -2,6 +2,7 @@
 SLA fixtures
 """
 import copy
+import socket
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -17,7 +18,6 @@ import rhevmtests.helpers as rhevm_helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
-
 
 logger = sla_config.logging.getLogger(__name__)
 
@@ -563,4 +563,94 @@ def update_cluster(request, update_cluster_to_default_parameters):
         positive=True,
         cluster=sla_config.CLUSTER_NAME[0],
         **cluster_to_update_params
+    )
+
+
+@pytest.fixture(scope="class")
+def configure_hosts_power_management(request):
+    """
+    1) Add power management to the hosts
+    """
+    hosts_to_pms = request.node.cls.hosts_to_pms
+
+    def fin():
+        """
+        1) Remove power management from the hosts
+        """
+        results = []
+        for host_index in hosts_to_pms:
+            u_libs.testflow.teardown(
+                "Remove PM from the host %s", sla_config.HOSTS[host_index]
+            )
+            results.append(
+                hl_hosts.remove_power_management(
+                    host_name=sla_config.HOSTS[host_index]
+                )
+            )
+        assert all(results)
+    request.addfinalizer(fin)
+
+    for host_index in hosts_to_pms:
+        host_fqdn = sla_config.VDS_HOSTS[host_index].fqdn
+        host_pm = rhevm_helpers.get_pm_details(host_fqdn).get(host_fqdn)
+        if not host_pm:
+            pytest.skip(
+                "The host %s does not have power management" % host_fqdn
+            )
+        agent_option = {
+            "slot": host_pm[sla_config.PM_SLOT]
+        } if sla_config.PM_SLOT in host_pm else None
+        agent = {
+            "agent_type": host_pm.get(sla_config.PM_TYPE),
+            "agent_address": host_pm.get(sla_config.PM_ADDRESS),
+            "agent_username": host_pm.get(sla_config.PM_USERNAME),
+            "agent_password": host_pm.get(sla_config.PM_PASSWORD),
+            "concurrent": False,
+            "order": 1,
+            "options": agent_option
+        }
+        u_libs.testflow.setup(
+            "Add the PM %s to the host %s",
+            host_pm, sla_config.HOSTS[host_index]
+        )
+        assert hl_hosts.add_power_management(
+            host_name=sla_config.HOSTS[host_index],
+            pm_automatic=True,
+            pm_agents=[agent],
+            **host_pm
+        )
+
+
+@pytest.fixture(scope="class")
+def stop_host_network(request):
+    """
+    1) Stop the host network
+    2) Wait until the host will have 'Non-Responsive' state
+    """
+    stop_network_on_host = request.node.cls.stop_network_on_host
+    host_name = sla_config.HOSTS[stop_network_on_host]
+    host_resource = sla_config.VDS_HOSTS[stop_network_on_host]
+
+    def fin():
+        """
+        1) Wait until the host will have 'Up' state
+        """
+        u_libs.testflow.teardown(
+            "Wait until the host %s will have 'Up' state",
+            host_name
+        )
+        ll_hosts.waitForHostsStates(positive=True, names=host_name)
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup("Stop network service on the host %s", host_name)
+    try:
+        host_resource.service("network").stop()
+    except socket.timeout as ex:
+        logger.warning("Host unreachable, %s", ex)
+    u_libs.testflow.teardown(
+        "Wait until the host %s will have 'Non-Responsive' state",
+        host_name
+    )
+    assert ll_hosts.waitForHostsStates(
+        positive=True, names=host_name, states=sla_config.HOST_NONRESPONSIVE
     )
