@@ -38,9 +38,16 @@ def setup_default_policies(request):
         """
         1) Change engine-config LowUtilizationForEvenlyDistribute to 0
         """
+        u_libs.testflow.teardown(
+            "Change LowUtilizationForEvenlyDistribute via engine-config to 0"
+        )
         sch_helpers.change_engine_config_low_utilization_value(0)
     request.addfinalizer(fin)
 
+    u_libs.testflow.setup(
+        "Change LowUtilizationForEvenlyDistribute via engine-config to %s",
+        sla_conf.LOW_UTILIZATION_VALUE
+    )
     assert sch_helpers.change_engine_config_low_utilization_value(
         sla_conf.LOW_UTILIZATION_VALUE
     )
@@ -162,6 +169,10 @@ class TestPowerSavingWeightModule1(BaseDefaultPolicies):
         """
         Check if VM migrate on the normalutilized host
         """
+        u_libs.testflow.step(
+            "Check that VM %s migrates on the host %s",
+            sla_conf.VM_NAME[0], sla_conf.HOSTS[1]
+        )
         assert (
             sch_helpers.migrate_vm_by_maintenance_and_get_destination_host(
                 src_host=sla_conf.HOSTS[0], vm_name=sla_conf.VM_NAME[0]
@@ -245,6 +256,10 @@ class TestEvenDistributedWeightModule1(BaseDefaultPolicies):
         """
         Check if VM migrated on the normalutilized host
         """
+        u_libs.testflow.step(
+            "Check that VM %s migrates on the host %s",
+            sla_conf.VM_NAME[0], sla_conf.HOSTS[1]
+        )
         assert (
             sch_helpers.migrate_vm_by_maintenance_and_get_destination_host(
                 src_host=sla_conf.HOSTS[0], vm_name=sla_conf.VM_NAME[0]
@@ -292,6 +307,10 @@ class TestCheckClusterPoliciesParameters(u_libs.SlaTest):
             }
         }
         for policy, properties in policies_params.iteritems():
+            u_libs.testflow.step(
+                "Update the cluster %s to the policy %s with parameters %s",
+                sla_conf.CLUSTER_NAME[0], policy, properties
+            )
             assert ll_clusters.updateCluster(
                 positive=True,
                 cluster=sla_conf.CLUSTER_NAME[0],
