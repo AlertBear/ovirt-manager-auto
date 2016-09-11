@@ -3,6 +3,7 @@ Clone Vm From Snapshot
 """
 import config
 import logging
+import pytest
 from art.unittest_lib.common import attr, StorageTest as TestCase, testflow
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
@@ -11,18 +12,64 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms,
 )
+from art.test_handler import exceptions
 import rhevmtests.storage.helpers as helpers
+from rhevmtests.storage.fixtures import (
+    initialize_storage_domains, remove_vms, delete_disks
+)
+from rhevmtests.storage.storage_clone_vm_from_snapshot.fixtures import (
+    initialize_vm, VM_NAMES, remove_additional_nic, remove_additional_snapshot,
+    create_server_vm_with_snapshot, remove_cloned_vm
+)
+
 
 logger = logging.getLogger(__name__)
 
 # DON'T REMOVE THIS, larger disk size are needed when cloning multiple
 # disks since new snapshots will be bigger than the minimum size
 DISK_SIZE = 3 * config.GB
+SNAPSHOT_NAME = None
 
 
-# TODO: If the test fails with error = low level Image copy failed, code = 261
-# re-open https://bugzilla.redhat.com/show_bug.cgi?id=1201268 and uncomment:
-# @attr(config.DO_NOT_RUN)
+@pytest.fixture(scope='module', autouse=True)
+def create_vm_with_snapshot(request):
+    """
+    creates datacenter, adds hosts, clusters, storages according to
+    the config file
+    """
+    global VM_NAMES, SNAPSHOT_NAME
+
+    def finalizer_module():
+        ll_vms.safely_remove_vms(VM_NAMES.values())
+
+    request.addfinalizer(finalizer_module)
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type
+        )[0]
+        vm_name = "base_vm_%s" % storage_type
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['vmName'] = vm_name
+        vm_args['vmDescription'] = vm_name
+
+        if not helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % vm_name
+            )
+        VM_NAMES[storage_type] = vm_name
+        SNAPSHOT_NAME = helpers.create_unique_object_name(
+            "base_%s" % storage_type, config.OBJECT_TYPE_SNAPSHOT
+        )
+        testflow.setup("Creating snapshot of for VM %s", vm_name)
+        assert ll_vms.addSnapshot(True, vm_name, SNAPSHOT_NAME)
+
+
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    initialize_vm.__name__,
+    remove_vms.__name__,
+)
 class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot
@@ -32,39 +79,40 @@ class BaseTestCase(TestCase):
     # Disable cli, check ticket RHEVM-2238
     jira = {'RHEVM-2238': None}
 
-    def setUp(self):
-        """
-        Get all the storage domains available.
-        """
-        self.storage_domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
-        self.storage_domain_0 = self.storage_domains[0]
-        self.storage_domain_1 = self.storage_domains[1]
-        self.vm = config.VM_NAME % self.storage
-
     def add_disk(self, disk_alias):
         """
         Add disk with alias 'disk_alias' to vm
         """
         assert ll_disks.addDisk(
             True, alias=disk_alias, provisioned_size=DISK_SIZE,
-            storagedomain=self.storage_domain_0,
-            sparse=False, interface=config.VIRTIO_SCSI,
-            format=config.RAW_DISK
+            storagedomain=self.storage_domain,
+            sparse=True, interface=config.VIRTIO_SCSI,
+            format=config.COW_DISK
         )
 
         assert ll_disks.wait_for_disks_status(disks=[disk_alias])
-        assert ll_disks.attachDisk(True, disk_alias, self.vm)
+        assert ll_disks.attachDisk(True, disk_alias, self.vm_name)
         assert ll_disks.wait_for_disks_status(disks=[disk_alias])
         assert ll_vms.wait_for_vm_disk_active_status(
-            self.vm, True, diskAlias=disk_alias, sleep=1)
+            self.vm_name, True, diskAlias=disk_alias, sleep=1
+        )
 
-    def tearDown(self):
-        """
-        Remove the cloned vm
-        """
-        ll_vms.safely_remove_vms([self.cloned_vm])
+    def clone_vm_from_snapshot(
+        self, cloned_vm_name, snapshot, sparse=True, vol_format=config.COW_DISK
+    ):
+        testflow.step(
+            "Cloning vm %s from snapshot %s", cloned_vm_name, snapshot
+        )
+        assert ll_vms.cloneVmFromSnapshot(
+            True, name=cloned_vm_name, cluster=config.CLUSTER_NAME,
+            vm=self.vm_name, snapshot=snapshot,
+            storagedomain=self.storage_domain_1, vol_format=vol_format,
+            sparse=sparse, compare=False
+        )
+        assert ll_vms.waitForVMState(cloned_vm_name, state=config.VM_DOWN), (
+            "VM %s is not in status down" % cloned_vm_name
+        )
+        self.vm_names.append(cloned_vm_name)
 
 
 @attr(tier=2)
@@ -78,30 +126,20 @@ class TestCase6103(BaseTestCase):
     """
     __test__ = True
     polarion_case_id = "6103"
-    cloned_vm = "vm_%s" % polarion_case_id
 
     @polarion("RHEVM3-6103")
     def test_clone_vm_from_snapshot(self):
         """
         Test that Clone from a vm snapshot works.
         """
-        testflow.step(
-            "Cloning vm %s from snapshot %s",
-            self.cloned_vm, config.SNAPSHOT_NAME
+        self.cloned_vm = helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False
-        ), "Failed to clone vm from snapshot %s" % config.SNAPSHOT_NAME
-
-        assert ll_vms.waitForVMState(
-            self.cloned_vm, state=config.VM_DOWN
-        ), "VM %s is not in status down" % self.cloned_vm
-        testflow.step("Starting vm %s and waiting for IP", self.cloned_vm)
-        assert ll_vms.startVm(
-            True, self.cloned_vm, wait_for_ip=True
-        ), "Starting vn %s encounter issues" % self.cloned_vm
+        self.clone_vm_from_snapshot(self.cloned_vm, SNAPSHOT_NAME)
+        testflow.step("Starting VM %s and waiting for IP", self.cloned_vm)
+        assert ll_vms.startVm(True, self.cloned_vm, wait_for_ip=True), (
+            "Starting VM %s encounter issues" % self.cloned_vm
+        )
 
 
 @attr(tier=2)
@@ -116,27 +154,26 @@ class TestCase6119(BaseTestCase):
     """
     __test__ = True
     polarion_case_id = "6119"
-    cloned_vm = "vm_%s" % polarion_case_id
 
     @polarion("RHEVM3-6119")
     def test_clone_vm_from_snapshot_select_storage(self):
         """
         Test the sd, type and format can be selected
         """
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, sparse=False,
-            vol_format=config.RAW_DISK, compare=False)
-
-        assert ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN)
+        self.cloned_vm = helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        self.clone_vm_from_snapshot(
+            self.cloned_vm, SNAPSHOT_NAME, sparse=False,
+            vol_format=config.RAW_DISK
+        )
 
 
 @attr(tier=2)
 class TestCase6120(BaseTestCase):
     """
-    Create VM from snapshot while original VM is Down    ->  Success
-    Create VM from snapshot while original VM is Up      ->  Success
+    Create VM from snapshot while original VM is Down ->  Success
+    Create VM from snapshot while original VM is Up   ->  Success
 
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_2_Storage_Clone_VM_From_Snapshot
@@ -152,33 +189,17 @@ class TestCase6120(BaseTestCase):
         """
         Try to clone vm's snapshot from different states
         """
-        ll_vms.stop_vms_safely([self.vm])
-        assert ll_vms.waitForVMState(self.vm, config.VM_DOWN)
+        self.cloned_vm_down = helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        self.clone_vm_from_snapshot(self.cloned_vm_down, SNAPSHOT_NAME)
 
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm_down, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False)
+        assert ll_vms.startVm(True, self.vm_name, wait_for_status=config.VM_UP)
 
-        assert ll_vms.waitForVMState(self.cloned_vm_down, state=config.VM_DOWN)
-
-        assert ll_vms.startVm(True, self.vm)
-        ll_vms.waitForVMState(self.vm)
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm_up, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False)
-
-        assert ll_vms.waitForVMState(self.cloned_vm_up, state=config.VM_DOWN)
-
-        assert ll_vms.stopVm(True, self.vm)
-        ll_vms.waitForVMState(self.vm, config.VM_DOWN)
-
-    def tearDown(self):
-        """
-        Remove created vms and make sure the original vm is unlocked
-        """
-        ll_vms.safely_remove_vms([self.cloned_vm_down, self.cloned_vm_up])
+        self.cloned_vm_up = helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        self.clone_vm_from_snapshot(self.cloned_vm_up, SNAPSHOT_NAME)
 
 
 @attr(tier=2)
@@ -193,42 +214,43 @@ class TestCase6122(BaseTestCase):
     """
     __test__ = True
     polarion_case_id = "6122"
-    cloned_vm = "vm_%s" % polarion_case_id
 
     @polarion("RHEVM3-6122")
     def test_clone_vm_name_validation(self):
         """
         Test for vm name property and duplicity
         """
-        assert ll_vms.searchForVm(False, 'name', self.cloned_vm, 'name')
-
-        logger.info("Creating vm %s from snapshot %s", self.cloned_vm,
-                    self.snapshot)
-
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False)
-
+        self.cloned_vm = helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        self.clone_vm_from_snapshot(self.cloned_vm, SNAPSHOT_NAME)
         assert ll_vms.searchForVm(True, 'name', self.cloned_vm, 'name')
 
-        logger.info("Trying to clone a vm's snapshot with the same name")
+        testflow.step("Trying to clone a vm's snapshot with the same name")
 
         assert ll_vms.cloneVmFromSnapshot(
             False, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False)
+            vm=self.vm_name, snapshot=SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, compare=False
+        )
 
-        logger.info("Trying to clone a vm's snapshot with invalid characters")
+        testflow.step(
+            "Trying to clone a vm's snapshot with invalid characters"
+        )
         illegal_characters = "* are not allowed"
 
         assert ll_vms.cloneVmFromSnapshot(
             False, name=illegal_characters, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False)
+            vm=self.vm_name, snapshot=SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, compare=False
+        )
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    remove_additional_nic.__name__,
+    remove_additional_snapshot.__name__,
+)
 class TestCase6108(BaseTestCase):
     """
     Clone a vm with multiple nics.
@@ -239,50 +261,39 @@ class TestCase6108(BaseTestCase):
     """
     __test__ = True
     polarion_case_id = "6108"
-    cloned_vm = "vm_%s" % polarion_case_id
-    snapshot_two_nics = "snapshot with two nics"
+    snapshot_to_remove = "snapshot_with_two_nics"
 
     @polarion("RHEVM3-6108")
     def test_clone_vm_multiple_nics(self):
         """
-        Add a new nic to the self.vm, make a snapshot and clone it.
+        Add a new nic to the self.vm_name, make a snapshot and clone it.
         """
-        logger.info("Adding nic to %s", self.vm)
+        testflow.step("Adding nic to %s", self.vm_name)
         assert ll_vms.addNic(
-            True, self.vm, name="nic2", network=config.MGMT_BRIDGE,
+            True, self.vm_name, name="nic2", network=config.MGMT_BRIDGE,
             interface=config.NIC_TYPE_VIRTIO
         )
-
         assert len(
-            ll_vms.get_vm_nics_obj(self.vm)
-        ) == 2, "VM %s should have 2 nics" % self.vm
-
-        logger.info("Making a snapshot %s from %s",
-                    self.snapshot_two_nics, self.vm)
-
-        assert ll_vms.addSnapshot(True, self.vm, self.snapshot_two_nics)
-
-        logger.info("Cloning vm %s", self.vm)
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=self.snapshot_two_nics,
-            storagedomain=self.storage_domain_1, compare=False)
-
-        assert ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN)
-
+            ll_vms.get_vm_nics_obj(self.vm_name)
+        ) == 2, "VM %s should have 2 nics" % self.vm_name
+        testflow.step(
+            "Taking a snapshot %s from VM %s",
+            self.snapshot_to_remove, self.vm_name
+        )
+        assert ll_vms.addSnapshot(True, self.vm_name, self.snapshot_to_remove)
+        self.cloned_vm = helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        self.clone_vm_from_snapshot(self.cloned_vm, self.snapshot_to_remove)
         assert len(ll_vms.get_vm_nics_obj(self.cloned_vm)) == 2
-
-    def tearDown(self):
-        """
-        * Removing created nic and the cloned vm
-        """
-        ll_vms.stop_vms_safely([self.cloned_vm, self.vm])
-        ll_vms.removeNic(True, self.vm, "nic2")
-        ll_vms.removeSnapshot(True, self.vm, self.snapshot_two_nics)
-        super(TestCase6108, self).tearDown()
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    remove_additional_snapshot.__name__,
+    delete_disks.__name__,
+    remove_cloned_vm.__name__,
+)
 class TestCase6109(BaseTestCase):
     """
     Clone a vm with multiple disks.
@@ -293,8 +304,7 @@ class TestCase6109(BaseTestCase):
     """
     __test__ = True
     polarion_case_id = "6109"
-    cloned_vm = "cloned_vm_%s" % polarion_case_id
-    snapshot_two_disks = "snapshot_%s" % polarion_case_id
+    snapshot_to_remove = "snapshot_%s" % polarion_case_id
     disk_alias = "second_disk_%s" % polarion_case_id
 
     @polarion("RHEVM3-6109")
@@ -302,37 +312,25 @@ class TestCase6109(BaseTestCase):
         """
         Verify the cloned vm contains multiple disks
         """
-        logger.info("Adding disk to vm %s", self.vm)
-        assert 1 == len(ll_vms.getVmDisks(self.vm))
+        testflow.step("Adding disk to vm %s", self.vm_name)
+        assert 1 == len(ll_vms.getVmDisks(self.vm_name))
         self.add_disk(self.disk_alias)
+        self.disks_to_remove.append(self.disk_alias)
 
-        logger.info("Making a snapshot %s from %s",
-                    self.snapshot_two_disks, self.vm)
+        testflow.step(
+            "Taking a snapshot %s from VM %s",
+            self.snapshot_to_remove, self.vm_name
+        )
+        assert ll_vms.addSnapshot(True, self.vm_name, self.snapshot_to_remove)
+        self.clone_vm_from_snapshot(self.cloned_vm, self.snapshot_to_remove)
 
-        assert ll_vms.addSnapshot(True, self.vm, self.snapshot_two_disks)
-
-        logger.info("Cloning vm %s", self.vm)
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=self.snapshot_two_disks,
-            storagedomain=self.storage_domain_1, compare=False)
-
-        assert ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN)
         assert len(ll_vms.getVmDisks(self.cloned_vm)) == 2
-
-    def tearDown(self):
-        """
-        Remove created disk and cloned vm
-        """
-        ll_vms.stop_vms_safely([self.vm])
-        ll_vms.removeSnapshot(True, self.vm, self.snapshot_two_disks)
-        ll_vms.wait_for_vm_snapshots(self.vm, [config.SNAPSHOT_OK])
-        ll_vms.removeDisk(True, self.vm, self.disk_alias)
-        ll_jobs.wait_for_jobs([config.ENUMS['job_remove_disk']])
-        super(TestCase6109, self).tearDown()
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    create_server_vm_with_snapshot.__name__,
+)
 class TestCase6111(BaseTestCase):
     """
     Clone a desktop and a server VM.
@@ -341,38 +339,28 @@ class TestCase6111(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
-    polarion_case_id = "6111"
     __test__ = True
+    polarion_case_id = "6111"
     cloned_vm_desktop = "cloned_desktop_%s" % polarion_case_id
-
     vm_server = "vm_server_%s" % polarion_case_id
     snapshot_server = "snapshot_server_%s" % polarion_case_id
     cloned_vm_server = "cloned_server_%s" % polarion_case_id
-
-    def setUp(self):
-        """
-        Create a server type vm
-        """
-        super(TestCase6111, self).setUp()
-        helpers.create_vm_or_clone(
-            True, self.vm_server, diskInterface=config.VIRTIO_SCSI,
-            type=config.VM_TYPE_SERVER, installation=False
-        )
-        ll_vms.addSnapshot(True, self.vm_server, self.snapshot_server)
 
     @polarion("RHEVM3-6111")
     def test_clone_vm_type_desktop_server(self):
         """
         Verify that desktop and server types are preserved after cloning
-       """
+        """
         # Base vm should be type desktop
-        assert config.VM_TYPE_DESKTOP == ll_vms.get_vm(self.vm).get_type()
-        logger.info("Cloning vm %s", self.vm)
+        assert config.VM_TYPE_DESKTOP == ll_vms.get_vm(self.vm_name).get_type()
+        testflow.step("Cloning vm %s", self.vm_name)
 
         assert ll_vms.cloneVmFromSnapshot(
             True, name=self.cloned_vm_desktop, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.storage_domain_1, compare=False)
+            vm=self.vm_name, snapshot=SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, compare=False
+        )
+        self.vm_names.append(self.cloned_vm_desktop)
 
         assert config.VM_TYPE_DESKTOP == ll_vms.get_vm(
             self.cloned_vm_desktop
@@ -381,27 +369,24 @@ class TestCase6111(BaseTestCase):
         assert config.VM_TYPE_SERVER == ll_vms.get_vm(
             self.vm_server
         ).get_type()
-        logger.info("Cloning vm %s", self.vm_server)
+        testflow.step("Cloning vm %s", self.vm_server)
 
         assert ll_vms.cloneVmFromSnapshot(
             True, name=self.cloned_vm_server, cluster=config.CLUSTER_NAME,
             vm=self.vm_server, snapshot=self.snapshot_server,
             storagedomain=self.storage_domain_1, compare=False)
-
+        self.vm_names.append(self.cloned_vm_server)
         assert config.VM_TYPE_SERVER == ll_vms.get_vm(
             self.cloned_vm_server
         ).get_type()
 
-    def tearDown(self):
-        """
-        Remove created vms
-        """
-        ll_vms.safely_remove_vms(
-            [self.cloned_vm_desktop, self.cloned_vm_server, self.vm_server]
-        )
-
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    remove_additional_snapshot.__name__,
+    delete_disks.__name__,
+    remove_cloned_vm.__name__,
+)
 class TestCase6112(BaseTestCase):
     """
     Make a snapshot of a vm with three disks.
@@ -413,98 +398,45 @@ class TestCase6112(BaseTestCase):
     """
     __test__ = True
     polarion_case_id = "6112"
-
-    def setUp(self):
-        super(TestCase6112, self).setUp()
-        self.cloned_vm = "cloned_vm_%s_%s" % (
-            self.polarion_case_id, self.storage
-        )
-        self.disk_alias = "second_disk_%s_%s" % (
-            self.polarion_case_id, self.storage
-        )
-        self.disk_alias2 = "third_disk_%s_%s" % (
-            self.polarion_case_id, self.storage
-        )
-        self.snapshot_multiple_disks = "snapshot_%s" % self.polarion_case_id
+    cloned_vm = "cloned_vm_%s" % polarion_case_id
+    disk_alias = "second_disk_%s" % polarion_case_id
+    disk_alias2 = "third_disk_%s" % polarion_case_id
+    snapshot_to_remove = "snapshot_multiple_disks_%s" % polarion_case_id
 
     @polarion("RHEVM3-6112")
     def test_clone_vm_after_deleting_disk(self):
         """
         Test only existing disks are cloned even if it were snapshoted.
         """
-        assert 1 == len(ll_vms.getVmDisks(self.vm))
+        assert 1 == len(ll_vms.getVmDisks(self.vm_name))
+        testflow.step("Adding 2 disks to VM %s", self.vm_name)
         self.add_disk(self.disk_alias)
+        self.disks_to_remove.append(self.disk_alias)
         self.add_disk(self.disk_alias2)
-        assert 3 == len(ll_vms.getVmDisks(self.vm))
+        self.disks_to_remove.append(self.disk_alias2)
+        assert 3 == len(ll_vms.getVmDisks(self.vm_name))
         self.disk_obj = ll_disks.get_disk_obj(self.disk_alias)
         self.disk_obj_2 = ll_disks.get_disk_obj(self.disk_alias2)
 
-        logger.info("Making a snapshot %s from %s",
-                    self.snapshot_multiple_disks, self.vm)
-        assert ll_vms.addSnapshot(True, self.vm, self.snapshot_multiple_disks)
-        logger.info("Removing disk %s", self.disk_alias)
+        testflow.step(
+            "Taking a snapshot %s from VM %s",
+            self.snapshot_to_remove, self.vm_name
+        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, self.snapshot_to_remove
+        )
+        testflow.step("Removing disk %s", self.disk_alias)
         ll_vms.delete_snapshot_disks(
-            self.vm, self.snapshot_multiple_disks, self.disk_obj.get_id()
+            self.vm_name, self.snapshot_to_remove, self.disk_obj.get_id()
         )
         ll_jobs.wait_for_jobs([config.ENUMS['job_remove_snapshots_disk']])
 
-        logger.info("Cloning vm %s", self.vm)
-        assert ll_vms.cloneVmFromSnapshot(
-            True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm, snapshot=self.snapshot_multiple_disks,
-            storagedomain=self.storage_domain_1, compare=False)
-
-        assert ll_vms.waitForVMState(self.cloned_vm, state=config.VM_DOWN)
-
+        testflow.step("Cloning VM %s", self.vm_name)
+        self.clone_vm_from_snapshot(
+            self.cloned_vm, self.snapshot_to_remove
+        )
         cloned_disks = ll_vms.getVmDisks(self.cloned_vm)
         disks = [disk.name for disk in cloned_disks]
         assert len(disks) == 2
         assert self.disk_alias2 in disks
         assert not (self.disk_alias in disks)
-
-    def tearDown(self):
-        """
-        Remove vm, disk and snapshot
-        """
-        if not ll_vms.safely_remove_vms([self.cloned_vm]):
-            logger.error(
-                "Failed to power off and remove vm %s", self.cloned_vm
-            )
-            BaseTestCase.test_failed = True
-        if not ll_vms.delete_snapshot_disks(
-            self.vm, self.snapshot_multiple_disks, self.disk_obj.get_id()
-        ):
-            logger.error(
-                "Failed to remove snapshot's disk %s belonging to vm %s",
-                self.disk_obj.get_id(), self.vm
-            )
-            BaseTestCase.test_failed = True
-        if not ll_vms.delete_snapshot_disks(
-            self.vm, self.snapshot_multiple_disks, self.disk_obj_2.get_id()
-        ):
-            logger.error(
-                "Failed to remove snapshot's disk %s belonging to vm %s",
-                self.disk_obj_2.get_id(), self.vm
-            )
-            BaseTestCase.test_failed = True
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOTS_DISK])
-        if not ll_vms.removeSnapshot(
-            True, self.vm, self.snapshot_multiple_disks
-        ):
-            logger.error(
-                "Failed to remove snapshot %s belonging to vm %s",
-                self.snapshot_multiple_disks, self.cloned_vm
-            )
-            BaseTestCase.test_failed = True
-        ll_vms.wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
-        if not ll_vms.removeDisk(True, self.vm, self.disk_alias):
-            logger.error(
-                "Failed to remove disk %s", self.disk_alias
-            )
-            BaseTestCase.test_failed = True
-        if not ll_vms.removeDisk(True, self.vm, self.disk_alias2):
-            logger.error(
-                "Failed to remove disk %s", self.disk_alias2
-            )
-            BaseTestCase.test_failed = True
-        BaseTestCase.teardown_exception()

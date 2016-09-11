@@ -474,3 +474,20 @@ def remove_storage_domain(request):
             ), ("Failed to remove storage domain %s", self.storage_domain)
     request.addfinalizer(finalizer)
     self.storage_domain = None
+
+
+@pytest.fixture(scope='class')
+def remove_vms(request):
+    """
+    Remove VM
+    """
+    self = request.node.cls
+
+    def finalizer():
+        testflow.teardown("Remove VMs %s", ', '.join(self.vm_names))
+        assert ll_vms.safely_remove_vms(self.vm_names), (
+            "Failed to remove VM from %s" % self.vm_names
+        )
+    request.addfinalizer(finalizer)
+    if not hasattr(self, 'vm_names'):
+        self.vm_names = list()
