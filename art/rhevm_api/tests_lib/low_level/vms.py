@@ -106,6 +106,7 @@ CAP_API = get_api('version', 'capabilities')
 NUMA_NODE_API = get_api("vm_numa_node", "vm_numa_nodes")
 HOST_DEVICE_API = get_api("host_device", "host_devices")
 DISK_ATTACHMENTS_API = get_api("disk_attachment", "diskattachments")
+INSTANCE_TYPE_API = get_api("instance_type", "instancetypes")
 
 Snapshots = getDS('Snapshots')
 NUMA_NODE_LINK = "numanodes"
@@ -246,6 +247,8 @@ def _prepareVmObject(**kwargs):
     :type auto_converge: bool
     :param compressed: Enable compressed (only with Legacy policy)
     :type compressed: bool
+    :param instance_type: name of instance_type to be used for the vm
+    :type instance_type: str
     :returns: vm object
     :rtype: instance of VM
     """
@@ -300,6 +303,12 @@ def _prepareVmObject(**kwargs):
     if cluster_name:
         cluster = CLUSTER_API.find(cluster_name, search_by)
         vm.set_cluster(cluster)
+
+    # instance type
+    instance_type_name = kwargs.get("instance_type")
+    if instance_type_name:
+        instance_type = INSTANCE_TYPE_API.find(instance_type_name)
+        vm.set_instance_type(instance_type)
 
     # memory
     vm.memory = kwargs.pop("memory", None)
@@ -730,6 +739,8 @@ def addVm(positive, wait=True, **kwargs):
     :type auto_converge: bool
     :param compressed: Enable compressed (only with Legacy policy)
     :type compressed: bool
+    :param instance_type: name of instance_type to be used for the vm
+    :type instance_type: str
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -871,6 +882,8 @@ def updateVm(positive, vm, **kwargs):
     :type auto_converge: bool
     :param compressed: Enable compressed (only with Legacy policy)
     :type compressed: bool
+    :param instance_type: name of instance_type to be used for the vm
+    :type instance_type: str
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
@@ -5691,16 +5704,6 @@ def get_all_vms():
         list: VM objects
     """
     return VM_API.get(absLink=False)
-
-
-def get_all_vms_names():
-    """
-    Get list of all VMs names from API
-
-    Returns:
-        list: all VMs names
-    """
-    return [vm.get_name() for vm in get_all_vms()]
 
 
 def is_bootable_disk(vm, disk, attr='id'):
