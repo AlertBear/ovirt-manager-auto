@@ -5,8 +5,6 @@ Testing Network Custom properties feature.
 It will cover scenarios for VM/non-VM networks.
 """
 
-import logging
-
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -15,14 +13,36 @@ import config as custom_prop_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow, NetworkTest
-from fixtures import attach_networks_to_host
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
+)  # flake8: noqa
 
-logger = logging.getLogger("Network_Custom_Properties_Cases")
+
+@pytest.fixture(scope="module", autouse=True)
+def prepare_setup(request):
+    """
+    Create networks on engine
+    """
+    custom_properties = NetworkFixtures()
+
+    def fin():
+        """
+        Remove networks from engine
+        """
+        custom_properties.remove_networks_from_setup(
+            hosts=custom_properties.host_0_name
+        )
+    request.addfinalizer(fin)
+
+    custom_properties.prepare_networks_on_setup(
+        networks_dict=custom_prop_conf.NETS_DICT, dc=custom_properties.dc_0,
+        cluster=custom_properties.cluster_0
+    )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase01(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase01(NetworkTest):
     """
     Verify bridge_opts exists for VM network
     Verify bridge_opts doesn't exist for the non-VM network
@@ -30,17 +50,32 @@ class TestNetCustPrCase01(NetworkTest):
     Verify bridge_opts doesn't exist for the non-VM VLAN network over BOND
     """
     __test__ = True
-    clear_custom_properties = False
     net_1 = custom_prop_conf.NETS[1][0]
     net_2 = custom_prop_conf.NETS[1][1]
     net_3 = custom_prop_conf.NETS[1][2]
     net_4 = custom_prop_conf.NETS[1][3]
     bond_1 = "bond10"
-    net_nic_list = [(net_1, 1), (net_2, 2), (net_3, bond_1), (net_4, bond_1)]
-    ethtool_properties = None
-    bridge_opts_properties = None
-    ethtool_checksums = None
-    slaves = False
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+            },
+            net_2: {
+                "nic": 2,
+                "network": net_2,
+            },
+            net_3: {
+                "nic": bond_1,
+                "network": net_3,
+                "slaves": [-1, -2]
+            },
+            net_4: {
+                "nic": bond_1,
+                "network": net_4,
+            }
+        }
+    }
 
     @polarion("RHEVM3-4178")
     def test_check_bridge_opts_exist(self):
@@ -88,8 +123,8 @@ class TestNetCustPrCase01(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase02(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase02(NetworkTest):
     """
     Configure bridge_opts with non-default value
     Verify bridge_opts were updated
@@ -97,17 +132,25 @@ class TestNetCustPrCase02(NetworkTest):
     Verify bridge_opts were updated with the default value
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = False
-    ethtool_properties = None
-    ethtool_checksums = None
-    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
     net_1 = custom_prop_conf.NETS[2][0]
-    net_nic_list = [(net_1, 1)]
-    priority_opts = conf.KEY1
-    priority_value = conf.BRIDGE_OPTS.get(priority_opts)[1]
-    priority_default = conf.DEFAULT_PRIORITY
-    priority_default_value = conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+    priority_opts = custom_prop_conf.KEY1
+    priority_value = custom_prop_conf.BRIDGE_OPTS.get(priority_opts)[1]
+    priority_default = custom_prop_conf.DEFAULT_PRIORITY
+    priority_default_value = custom_prop_conf.BRIDGE_OPTS.get(
+        custom_prop_conf.KEY1
+    )[0]
+    properties_dict = {
+        "bridge_opts": custom_prop_conf.PRIORITY
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+                "properties": properties_dict
+            }
+        }
+    }
 
     @polarion("RHEVM3-4180")
     def test_update_bridge_opts(self):
@@ -133,7 +176,7 @@ class TestNetCustPrCase02(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "bridge_opts": conf.DEFAULT_PRIORITY
+                        "bridge_opts": self.priority_default
                     }
                 }
             }
@@ -147,13 +190,13 @@ class TestNetCustPrCase02(NetworkTest):
         )
         assert ll_networks.check_bridge_opts(
             vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
-            opts=conf.KEY1, value=self.priority_default_value
+            opts=self.priority_opts, value=self.priority_default_value
         )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase03(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase03(NetworkTest):
     """
     Configure bridge_opts with non-default value
     Verify bridge_opts was updated
@@ -163,22 +206,38 @@ class TestNetCustPrCase03(NetworkTest):
     Verify bridge_opts were updated accordingly
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = False
     bond_1 = "bond30"
-    ethtool_properties = None
-    ethtool_checksums = None
-    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
     net_1 = custom_prop_conf.NETS[3][0]
     net_2 = custom_prop_conf.NETS[3][1]
-    net_nic_list = [(net_1, 1), (net_2, bond_1)]
-    querier_opts = conf.KEY2
+    bridge_opts_items = custom_prop_conf.BRIDGE_OPTS.iteritems()
+    querier_opts = custom_prop_conf.KEY2
     default_bridge_opts = " ".join(
-        [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
+        [
+            custom_prop_conf.DEFAULT_PRIORITY,
+            custom_prop_conf.DEFAULT_MULT_QUERIER
+        ]
     )
     non_default_bridge_opts = " ".join(
-        [conf.PRIORITY, conf.MULT_QUERIER]
+        [custom_prop_conf.PRIORITY, custom_prop_conf.MULT_QUERIER]
     )
+    properties_dict = {
+        "bridge_opts": custom_prop_conf.PRIORITY
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+                "properties": properties_dict
+            },
+            net_2: {
+                "nic": bond_1,
+                "network": net_2,
+                "slaves": [-1, -2],
+                "properties": properties_dict
+            }
+        }
+    }
 
     @polarion("RHEVM3-4181")
     def test_check_several_bridge_opts_exist_nic(self):
@@ -210,7 +269,7 @@ class TestNetCustPrCase03(NetworkTest):
             "Check that bridge_opts parameter %s have been updated "
             "to %s", self.querier_opts, self.non_default_bridge_opts
         )
-        for key, value in conf.BRIDGE_OPTS.iteritems():
+        for key, value in self.bridge_opts_items:
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
                 opts=key, value=value[1]
@@ -236,7 +295,7 @@ class TestNetCustPrCase03(NetworkTest):
             "Check that bridge_opts parameter %s have been updated "
             "to %s", self.querier_opts, self.default_bridge_opts
         )
-        for key, value in conf.BRIDGE_OPTS.items():
+        for key, value in self.bridge_opts_items:
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
                 opts=key, value=value[0]
@@ -272,7 +331,7 @@ class TestNetCustPrCase03(NetworkTest):
             "Check that bridge_opts parameter %s have been updated "
             "to %s over BOND", self.querier_opts, self.non_default_bridge_opts
         )
-        for key, value in conf.BRIDGE_OPTS.iteritems():
+        for key, value in self.bridge_opts_items:
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_2,
                 opts=key, value=value[1]
@@ -298,7 +357,7 @@ class TestNetCustPrCase03(NetworkTest):
             "Check that bridge_opts parameter %s have been updated "
             "to %s over BOND", self.querier_opts, self.default_bridge_opts
         )
-        for key, value in conf.BRIDGE_OPTS.items():
+        for key, value in self.bridge_opts_items:
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_2,
                 opts=key, value=value[0]
@@ -306,8 +365,8 @@ class TestNetCustPrCase03(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase04(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase04(NetworkTest):
     """
     Configure bridge_opts with non-default value for VLAN network over NIC
     Configure bridge_opts with non-default value for network over bond
@@ -318,19 +377,31 @@ class TestNetCustPrCase04(NetworkTest):
     values)
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = False
     bond_1 = "bond40"
-    ethtool_properties = None
-    ethtool_checksums = None
-    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
-    priority_opts = conf.KEY1
-    priority_value = conf.BRIDGE_OPTS.get(priority_opts)[1]
-    priority_default = conf.DEFAULT_PRIORITY
-    priority_default_value = conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+    priority_opts = custom_prop_conf.KEY1
+    priority_value = custom_prop_conf.BRIDGE_OPTS.get(priority_opts)[1]
+    priority_default = custom_prop_conf.DEFAULT_PRIORITY
+    priority_default_value = custom_prop_conf.BRIDGE_OPTS.get(priority_opts)[0]
     net_1 = custom_prop_conf.NETS[4][0]
     net_2 = custom_prop_conf.NETS[4][1]
-    net_nic_list = [(net_1, bond_1), (net_2, 1)]
+    properties_dict = {
+        "bridge_opts": custom_prop_conf.PRIORITY
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": bond_1,
+                "slaves": [2, 3],
+                "network": net_1,
+                "properties": properties_dict
+            },
+            net_2: {
+                "nic": 1,
+                "network": net_2,
+                "properties": properties_dict
+            }
+        }
+    }
 
     @polarion("RHEVM3-4183")
     def test_check_reattach_network(self):
@@ -361,14 +432,15 @@ class TestNetCustPrCase04(NetworkTest):
         network_host_api_dict = {
             "add": {
                 "1": {
+                    "slaves": conf.VDS_0_HOST.nics[2:4],
                     "network": self.net_1,
-                    "nic": conf.VDS_0_HOST.nics[1]
+                    "nic": self.bond_1
                 },
                 "2": {
-                    "slaves": conf.VDS_0_HOST.nics[-2:],
                     "network": self.net_2,
-                    "nic": self.bond_1
-                }
+                    "nic": conf.VDS_0_HOST.nics[1]
+                },
+
             }
         }
         assert hl_host_network.setup_networks(
@@ -381,14 +453,14 @@ class TestNetCustPrCase04(NetworkTest):
         for network in self.net_1, self.net_2:
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=network,
-                opts=self.priority_opts, value=self.priority_default
+                opts=self.priority_opts, value=self.priority_default_value
             )
 
 
 @attr(tier=2)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase05(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase05(NetworkTest):
     """
     Configure ethtool with non-default value
     Verify ethtool_opts were updated
@@ -396,14 +468,33 @@ class TestNetCustPrCase05(NetworkTest):
     Verify ethtool_opts were updated with the default value
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = False
-    bridge_opts_properties = None
-    ethtool_properties = {"ethtool_opts": "off"}
-    ethtool_checksums = [conf.TX_CHECKSUM]
+    ethtool_checksums = [custom_prop_conf.TX_CHECKSUM]
     net_1 = custom_prop_conf.NETS[5][0]
     net_2 = custom_prop_conf.NETS[5][1]
-    net_nic_list = [(net_1, 1), (net_2, 2)]
+    properties_dict_1 = {
+        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
+            nic=1, state="off"
+        )
+    }
+    properties_dict_2 = {
+        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
+            nic=2, state="off"
+        )
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+                "properties": properties_dict_1
+            },
+            net_2: {
+                "nic": 2,
+                "network": net_2,
+                "properties": properties_dict_2
+            }
+        }
+    }
 
     @polarion("RHEVM3-4187")
     def test_01_update_ethtool_opts(self):
@@ -429,7 +520,7 @@ class TestNetCustPrCase05(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
                             nic=conf.HOST_0_NICS[1], state="on"
                         )
                     }
@@ -456,18 +547,22 @@ class TestNetCustPrCase05(NetworkTest):
         4) Verify ethtool_opts have updated default value
         """
         default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[1], state="on"
-            ), conf.RX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[1], state="on"
-            )]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[1], state="on"
+                ), custom_prop_conf.RX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[1], state="on"
+                )
+            ]
         )
         non_default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[1], state="off"
-            ), conf.RX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[1], state="off"
-            )]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[1], state="off"
+                ), custom_prop_conf.RX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[1], state="off"
+                )
+            ]
         )
         testflow.step(
             "Update ethtool_opts with additional parameters"
@@ -527,18 +622,22 @@ class TestNetCustPrCase05(NetworkTest):
         4) Verify ethtool_opts have updated default value
         """
         default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[2], state="on"
-            ), conf.RX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[2], state="on"
-            )]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[2], state="on"
+                ), custom_prop_conf.RX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[2], state="on"
+                )
+            ]
         )
         non_default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[2], state="off"
-            ), conf.RX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[2], state="off"
-            )]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[2], state="off"
+                ), custom_prop_conf.RX_CHECKSUM.format(
+                    nic=conf.HOST_0_NICS[2], state="off"
+                )
+            ]
         )
 
         testflow.step(
@@ -642,8 +741,8 @@ class TestNetCustPrCase05(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase06(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase06(NetworkTest):
     """
     Configure ethtool and bridge opts with non-default value
     Verify ethtool and bridge_opts were updated with non-default values
@@ -651,13 +750,23 @@ class TestNetCustPrCase06(NetworkTest):
     Verify ethtool and bridge_opts were updated with the default value
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = False
-    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
-    ethtool_properties = {"ethtool_opts": "off"}
-    ethtool_checksums = [conf.TX_CHECKSUM]
+    ethtool_checksums = [custom_prop_conf.TX_CHECKSUM]
     net_1 = custom_prop_conf.NETS[6][0]
-    net_nic_list = [(net_1, 1)]
+    properties_dict = {
+        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
+            nic=1, state="off"
+        ),
+        "bridge_opts": custom_prop_conf.PRIORITY
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+                "properties": properties_dict
+            }
+        }
+    }
 
     @polarion("RHEVM3-4192")
     def test_update_ethtool_bridge_opts(self):
@@ -681,7 +790,8 @@ class TestNetCustPrCase06(NetworkTest):
         )
         assert ll_networks.check_bridge_opts(
             vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
-            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[1]
+            opts=custom_prop_conf.KEY1,
+            value=custom_prop_conf.BRIDGE_OPTS.get(custom_prop_conf.KEY1)[1]
         )
 
         testflow.step(
@@ -693,10 +803,10 @@ class TestNetCustPrCase06(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
                             nic=conf.HOST_0_NICS[1], state="on"
                         ),
-                        "bridge_opts": conf.DEFAULT_PRIORITY
+                        "bridge_opts": custom_prop_conf.DEFAULT_PRIORITY
                     }
                 }
             }
@@ -716,13 +826,14 @@ class TestNetCustPrCase06(NetworkTest):
         )
         assert ll_networks.check_bridge_opts(
             vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
-            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+            opts=custom_prop_conf.KEY1,
+            value=custom_prop_conf.BRIDGE_OPTS.get(custom_prop_conf.KEY1)[0]
         )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase07(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase07(NetworkTest):
     """
     Create a network without ethtool or bridge opts configured
     Configure ethtool and bridge opts with non-default value
@@ -731,13 +842,15 @@ class TestNetCustPrCase07(NetworkTest):
     Verify ethtool and bridge_opts were updated with the default value
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = False
-    bridge_opts_properties = None
-    ethtool_properties = None
-    ethtool_checksums = None
     net_1 = custom_prop_conf.NETS[7][0]
-    net_nic_list = [(net_1, 1)]
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+            }
+        }
+    }
 
     @polarion("RHEVM3-4193")
     def test_update_bridge_ethtool_opts(self):
@@ -757,10 +870,10 @@ class TestNetCustPrCase07(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
                             nic=conf.HOST_0_NICS[1], state="off"
                         ),
-                        "bridge_opts": conf.PRIORITY
+                        "bridge_opts": custom_prop_conf.PRIORITY
                     }
                 }
             }
@@ -783,7 +896,8 @@ class TestNetCustPrCase07(NetworkTest):
         )
         assert ll_networks.check_bridge_opts(
             vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
-            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[1]
+            opts=custom_prop_conf.KEY1,
+            value=custom_prop_conf.BRIDGE_OPTS.get(custom_prop_conf.KEY1)[1]
         )
         testflow.step(
             "Update ethtool and bridge opts for tx_checksum and priority "
@@ -794,10 +908,10 @@ class TestNetCustPrCase07(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
                             nic=conf.HOST_0_NICS[1], state="on"
                         ),
-                        "bridge_opts": conf.DEFAULT_PRIORITY
+                        "bridge_opts": custom_prop_conf.DEFAULT_PRIORITY
                     }
                 }
             }
@@ -817,13 +931,14 @@ class TestNetCustPrCase07(NetworkTest):
         )
         assert ll_networks.check_bridge_opts(
             vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
-            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+            opts=custom_prop_conf.KEY1,
+            value=custom_prop_conf.BRIDGE_OPTS.get(custom_prop_conf.KEY1)[0]
         )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase08(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase08(NetworkTest):
     """
     Configure several ethtool_opts  with non-default value for the NIC with
      attached Network (different key:value)
@@ -833,13 +948,15 @@ class TestNetCustPrCase08(NetworkTest):
     Test on the Host that bridge_opts values were updated correctly
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = False
-    bridge_opts_properties = None
-    ethtool_properties = None
-    ethtool_checksums = None
     net_1 = custom_prop_conf.NETS[7][0]
-    net_nic_list = [(net_1, 1)]
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+            }
+        }
+    }
 
     @polarion("RHEVM3-4194")
     def test_check_several_bridge_ethtool_opts_exist(self):
@@ -851,19 +968,27 @@ class TestNetCustPrCase08(NetworkTest):
         3) Test on the Host that the ethtool values were updated correctly
         4) Test on the Host that bridge_opts values were updated correctly
         """
+        host_nic = conf.HOST_0_NICS[1]
         default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on"),
-             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on")]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(nic=host_nic, state="on"),
+                custom_prop_conf.RX_CHECKSUM.format(nic=host_nic, state="on")
+            ]
         )
         non_default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off"),
-             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off")]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(nic=host_nic, state="off"),
+                custom_prop_conf.RX_CHECKSUM.format(nic=host_nic, state="off")
+            ]
         )
         default_bridge_opts = " ".join(
-            [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
+            [
+                custom_prop_conf.DEFAULT_PRIORITY,
+                custom_prop_conf.DEFAULT_MULT_QUERIER
+            ]
         )
         non_default_bridge_opts = " ".join(
-            [conf.PRIORITY, conf.MULT_QUERIER]
+            [custom_prop_conf.PRIORITY, custom_prop_conf.MULT_QUERIER]
         )
         testflow.step(
             "Update ethtool_opts with non-default parameters for tx checksum "
@@ -886,11 +1011,11 @@ class TestNetCustPrCase08(NetworkTest):
         testflow.step("Check that ethtool_opts parameter has an updated value")
         for prop in "rx-checksumming", "tx-checksumming":
             assert ll_networks.check_ethtool_opts(
-                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                vds_resource=conf.VDS_0_HOST, nic=host_nic,
                 opts=prop, value="off"
             )
         testflow.step("Check that bridge_opts parameter has an updated value ")
-        for key, value in conf.BRIDGE_OPTS.iteritems():
+        for key, value in custom_prop_conf.BRIDGE_OPTS.iteritems():
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
                 opts=key, value=value[1]
@@ -919,13 +1044,13 @@ class TestNetCustPrCase08(NetworkTest):
         )
         for prop in "tx-checksumming", "rx-checksumming":
             assert ll_networks.check_ethtool_opts(
-                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                vds_resource=conf.VDS_0_HOST, nic=host_nic,
                 opts=prop, value="on"
             )
         testflow.step(
             "Check that bridge_opts parameter has an updated default value"
         )
-        for key, value in conf.BRIDGE_OPTS.items():
+        for key, value in custom_prop_conf.BRIDGE_OPTS.items():
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1, opts=key,
                 value=value[0]
@@ -933,8 +1058,8 @@ class TestNetCustPrCase08(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase09(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase09(NetworkTest):
     """
     Create several ethtool and bridge opts while adding network to the Host
     Configure several ethtool_opts  with non-default value for the NIC with
@@ -945,16 +1070,40 @@ class TestNetCustPrCase09(NetworkTest):
     Test on the Host that bridge_opts values were updated correctly
     """
     __test__ = True
-    slaves = False
-    clear_custom_properties = True
     default_bridge_opts = " ".join(
-        [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
+        [
+            custom_prop_conf.DEFAULT_PRIORITY,
+            custom_prop_conf.DEFAULT_MULT_QUERIER
+        ]
     )
     bridge_opts_properties = {"bridge_opts": default_bridge_opts}
-    ethtool_checksums = [conf.TX_CHECKSUM, conf.RX_CHECKSUM]
-    ethtool_properties = {"ethtool_opts": "on"}
+    ethtool_checksums = " ".join(
+        [
+            custom_prop_conf.TX_CHECKSUM.format(
+                nic=1, state="off"
+            ),
+            custom_prop_conf.RX_CHECKSUM.format(
+                nic=1, state="off"
+            )
+        ]
+    )
     net_1 = custom_prop_conf.NETS[9][0]
     net_nic_list = [(net_1, 1)]
+    properties_dict = {
+        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
+            nic=1, state="on"
+        ),
+        "bridge_opts": default_bridge_opts
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+                "properties": properties_dict
+            }
+        }
+    }
 
     @polarion("RHEVM3-4195")
     def test_check_several_bridge_ethtool_opts_exist(self):
@@ -974,21 +1123,28 @@ class TestNetCustPrCase09(NetworkTest):
         7) Test on the Host that the ethtool values were updated correctly
         8) Test for the network on the the Host that the bridge values were
         updated correctly
-
         """
+        host_nic = conf.HOST_0_NICS[1]
         default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on"),
-             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on")]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(nic=host_nic, state="on"),
+                custom_prop_conf.RX_CHECKSUM.format(nic=host_nic, state="on")
+            ]
         )
         non_default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off"),
-             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off")]
+            [
+                custom_prop_conf.TX_CHECKSUM.format(nic=host_nic, state="off"),
+                custom_prop_conf.RX_CHECKSUM.format(nic=host_nic, state="off")
+            ]
         )
         default_bridge_opts = " ".join(
-            [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
+            [
+                custom_prop_conf.DEFAULT_PRIORITY,
+                custom_prop_conf.DEFAULT_MULT_QUERIER
+            ]
         )
         non_default_bridge_opts = " ".join(
-            [conf.PRIORITY, conf.MULT_QUERIER]
+            [custom_prop_conf.PRIORITY, custom_prop_conf.MULT_QUERIER]
         )
         testflow.step(
             "Update ethtool_opts with non-default parameters for tx, "
@@ -1013,13 +1169,13 @@ class TestNetCustPrCase09(NetworkTest):
         )
         for prop in ("rx-checksumming", "tx-checksumming"):
             assert ll_networks.check_ethtool_opts(
-                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
-                opts=prop, value="off"
+                vds_resource=conf.VDS_0_HOST, nic=host_nic, opts=prop,
+                value="off"
             )
         testflow.step(
             "Check that bridge_opts parameter has an updated value "
         )
-        for key, value in conf.BRIDGE_OPTS.iteritems():
+        for key, value in custom_prop_conf.BRIDGE_OPTS.iteritems():
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1, opts=key,
                 value=value[1]
@@ -1048,13 +1204,13 @@ class TestNetCustPrCase09(NetworkTest):
         )
         for prop in "rx-checksumming", "tx-checksumming":
             assert ll_networks.check_ethtool_opts(
-                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
-                opts=prop, value="on"
+                vds_resource=conf.VDS_0_HOST, nic=host_nic, opts=prop,
+                value="on"
             )
         testflow.step(
             "Check that bridge_opts parameter has an updated default value"
         )
-        for key, value in conf.BRIDGE_OPTS.items():
+        for key, value in custom_prop_conf.BRIDGE_OPTS.items():
             assert ll_networks.check_bridge_opts(
                 vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1, opts=key,
                 value=value[0]
@@ -1062,8 +1218,8 @@ class TestNetCustPrCase09(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase10(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase10(NetworkTest):
     """
     Configure ethtool with non-default value over bond
     Verify ethtool_opts were updated for each slave of the bond
@@ -1072,14 +1228,17 @@ class TestNetCustPrCase10(NetworkTest):
     of the bond
     """
     __test__ = True
-    clear_custom_properties = False
-    bridge_opts_properties = None
-    ethtool_properties = None
-    ethtool_checksums = None
     bond = "bond100"
     net_1 = custom_prop_conf.NETS[10][0]
-    net_nic_list = [(net_1, bond)]
-    slaves = True
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": bond,
+                "network": net_1,
+                "slaves": [2, 3]
+            }
+        }
+    }
 
     @polarion("RHEVM3-4190")
     def test_update_ethtool_opts_bond(self):
@@ -1091,6 +1250,15 @@ class TestNetCustPrCase10(NetworkTest):
         3) Verify ethtool_opts have updated default value for tx_checksum
         opts for each slave of the bond
         """
+        bond_nics = conf.HOST_0_NICS[2:4]
+        eth_tool_off = ""
+        eth_tool_on = ""
+        for nic in bond_nics:
+            val_off = custom_prop_conf.TX_CHECKSUM.format(nic=nic, state="off")
+            eth_tool_off += "{val} ".format(val=val_off)
+            val_on = custom_prop_conf.TX_CHECKSUM.format(nic=nic, state="on")
+            eth_tool_on += "{val} ".format(val=val_on)
+
         testflow.step(
             "Update ethtool_opts for tx_checksum with the non-default "
             "parameter "
@@ -1100,9 +1268,7 @@ class TestNetCustPrCase10(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
-                            nic="*", state="off"
-                        )
+                        "ethtool_opts": eth_tool_off
                     }
                 }
             }
@@ -1114,7 +1280,7 @@ class TestNetCustPrCase10(NetworkTest):
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value for both slaves"
         )
-        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+        for interface in bond_nics:
             assert ll_networks.check_ethtool_opts(
                 vds_resource=conf.VDS_0_HOST, nic=interface,
                 opts="tx-checksumming", value="off"
@@ -1127,9 +1293,7 @@ class TestNetCustPrCase10(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
-                            nic="*", state="on"
-                        )
+                        "ethtool_opts": eth_tool_on
                     }
                 }
             }
@@ -1141,7 +1305,7 @@ class TestNetCustPrCase10(NetworkTest):
             "Check that ethtool_opts parameter has an updated default "
             "value for both slaves of the bond "
         )
-        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+        for interface in bond_nics:
             assert ll_networks.check_ethtool_opts(
                 vds_resource=conf.VDS_0_HOST, nic=interface,
                 opts="tx-checksumming", value="on"
@@ -1149,8 +1313,8 @@ class TestNetCustPrCase10(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase11(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase11(NetworkTest):
     """
     Configure ethtool_opts with non-default value
     Verify ethtool_opts was updated
@@ -1160,14 +1324,17 @@ class TestNetCustPrCase11(NetworkTest):
     Verify ethtool_opts were updated accordingly
     """
     __test__ = True
-    clear_custom_properties = False
-    bridge_opts_properties = None
-    ethtool_properties = None
-    ethtool_checksums = None
     bond = "bond110"
     net_1 = custom_prop_conf.NETS[11][0]
-    net_nic_list = [(net_1, bond)]
-    slaves = True
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": bond,
+                "network": net_1,
+                "slaves": [2, 3]
+            }
+        }
+    }
 
     @polarion("RHEVM3-4189")
     def test_check_several_ethtool_opts_exist_bond(self):
@@ -1179,18 +1346,33 @@ class TestNetCustPrCase11(NetworkTest):
         3) Update ethtool_opts with the default value for both keys
         4) Verify ethtool_opts have updated default value
         """
+        bond_nics = conf.HOST_0_NICS[2:4]
+        tx_checksum = custom_prop_conf.TX_CHECKSUM
+        rx_checksum = custom_prop_conf.RX_CHECKSUM
+        rx_eth_tool_off = ""
+        rx_eth_tool_on = ""
+        tx_eth_tool_off = ""
+        tx_eth_tool_on = ""
+        for nic in bond_nics:
+            tx_val_off = tx_checksum.format(nic=nic, state="off")
+            tx_val_on = tx_checksum.format(nic=nic, state="on")
+            rx_val_off = rx_checksum.format(nic=nic, state="off")
+            rx_val_on = rx_checksum.format(nic=nic, state="on")
+            rx_eth_tool_off += "{val} ".format(val=tx_val_off)
+            rx_eth_tool_on += "{val} ".format(val=tx_val_on)
+            tx_eth_tool_off += "{val} ".format(val=rx_val_off)
+            tx_eth_tool_on += "{val} ".format(val=rx_val_on)
+
         testflow.step(
             "Update ethtool_opts for tx_checksum with the non-default "
-            "parameter "
+            "parameter"
         )
         network_host_api_dict = {
             "update": {
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
-                            nic="*", state="off"
-                        )
+                        "ethtool_opts": rx_eth_tool_off
                     }
                 }
             }
@@ -1202,18 +1384,11 @@ class TestNetCustPrCase11(NetworkTest):
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value for both slaves"
         )
-        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+        for interface in bond_nics:
             assert ll_networks.check_ethtool_opts(
-                conf.VDS_0_HOST, interface, "tx-checksumming", "off"
+                vds_resource=conf.VDS_0_HOST, nic=interface,
+                opts="tx-checksumming", value="off"
             )
-        default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(nic="*", state="on"),
-             conf.RX_CHECKSUM.format(nic="*", state="on")]
-        )
-        non_default_ethtool_opts = " ".join(
-            [conf.TX_CHECKSUM.format(nic="*", state="off"),
-             conf.RX_CHECKSUM.format(nic="*", state="off")]
-        )
 
         testflow.step(
             "Update ethtool_opts with additional parameter for rx checksum"
@@ -1224,7 +1399,7 @@ class TestNetCustPrCase11(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": non_default_ethtool_opts
+                        "ethtool_opts": tx_eth_tool_off
                     }
                 }
             }
@@ -1237,9 +1412,10 @@ class TestNetCustPrCase11(NetworkTest):
             "for rx_checksum and tx_checksum for both slaves of the bond"
         )
         for prop in "rx-checksumming", "tx-checksumming":
-            for interface in (conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]):
+            for interface in bond_nics:
                 assert ll_networks.check_ethtool_opts(
-                    conf.VDS_0_HOST, interface, prop, "off"
+                    vds_resource=conf.VDS_0_HOST, nic=interface, opts=prop,
+                    value="off"
                 )
         testflow.step(
             "Update ethtool_opts with the default parameters for both "
@@ -1251,7 +1427,9 @@ class TestNetCustPrCase11(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": default_ethtool_opts
+                        "ethtool_opts": "{rx} {tx}".format(
+                            rx=rx_eth_tool_on, tx=tx_eth_tool_on
+                        )
                     }
                 }
             }
@@ -1264,15 +1442,16 @@ class TestNetCustPrCase11(NetworkTest):
             "for rx and tx checksum"
         )
         for prop in "rx-checksumming", "tx-checksumming":
-            for interface in (conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]):
+            for interface in bond_nics:
                 assert ll_networks.check_ethtool_opts(
-                    conf.VDS_0_HOST, interface, prop, "on"
+                    vds_resource=conf.VDS_0_HOST, nic=interface, opts=prop,
+                    value="on"
                 )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(attach_networks_to_host.__name__)
-class TestNetCustPrCase12(NetworkTest):
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestNetworkCustomPropertiesCase12(NetworkTest):
     """
     Configure ethtool and bridge opts with non-default value over Bond
     Verify ethtool and bridge_opts were updated with non-default values
@@ -1280,14 +1459,27 @@ class TestNetCustPrCase12(NetworkTest):
     Verify ethtool and bridge_opts were updated with the default value
     """
     __test__ = True
-    clear_custom_properties = False
-    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
+    bridge_opts_properties = {"bridge_opts": custom_prop_conf.PRIORITY}
     ethtool_properties = {"ethtool_opts": "off"}
-    ethtool_checksums = [conf.TX_CHECKSUM]
+    ethtool_checksums = [custom_prop_conf.TX_CHECKSUM]
     bond = "bond110"
     net_1 = custom_prop_conf.NETS[11][0]
-    net_nic_list = [(net_1, bond)]
-    slaves = True
+    properties_dict = {
+        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
+            nic="*", state="off"
+        ),
+        "bridge_opts": custom_prop_conf.PRIORITY
+    }
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": bond,
+                "network": net_1,
+                "slaves": [2, 3],
+                "properties": properties_dict
+            }
+        }
+    }
 
     @polarion("RHEVM3-4196")
     def test_update_ethtool_bridge_opts_bond(self):
@@ -1296,11 +1488,12 @@ class TestNetCustPrCase12(NetworkTest):
         2) Update ethtool and bridge_opts with the default value over Bond
         3) Verify ethtool_and bridge opts have been updated with default values
         """
+        bond_nics = conf.HOST_0_NICS[2:4]
         testflow.step(
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value for every slave of the Bond"
         )
-        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+        for interface in bond_nics:
             assert ll_networks.check_ethtool_opts(
                 vds_resource=conf.VDS_0_HOST, nic=interface,
                 opts="tx-checksumming", value="off"
@@ -1311,7 +1504,8 @@ class TestNetCustPrCase12(NetworkTest):
         )
         assert ll_networks.check_bridge_opts(
             vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
-            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[1]
+            opts=custom_prop_conf.KEY1,
+            value=custom_prop_conf.BRIDGE_OPTS.get(custom_prop_conf.KEY1)[1]
         )
         testflow.step(
             "Update ethtool_opts for tx_checksum and bridge_opts for "
@@ -1322,10 +1516,10 @@ class TestNetCustPrCase12(NetworkTest):
                 "1": {
                     "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                        "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
                             nic="*", state="on"
                         ),
-                        "bridge_opts": conf.DEFAULT_PRIORITY
+                        "bridge_opts": custom_prop_conf.DEFAULT_PRIORITY
                     }
                 }
             }
@@ -1337,7 +1531,7 @@ class TestNetCustPrCase12(NetworkTest):
             "Check that ethtool_opts parameter has an updated default value "
             "for both slaves of the Bond"
         )
-        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+        for interface in bond_nics:
             assert ll_networks.check_ethtool_opts(
                 vds_resource=conf.VDS_0_HOST, nic=interface,
                 opts="tx-checksumming", value="on"
@@ -1348,5 +1542,6 @@ class TestNetCustPrCase12(NetworkTest):
         )
         assert ll_networks.check_bridge_opts(
             vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
-            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+            opts=custom_prop_conf.KEY1,
+            value=custom_prop_conf.BRIDGE_OPTS.get(custom_prop_conf.KEY1)[0]
         )

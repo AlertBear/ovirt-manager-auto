@@ -21,8 +21,9 @@ import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
-import rhevmtests.networking.network_filter.config as nf_conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
+import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
+import rhevmtests.networking.network_filter.config as nf_conf
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
@@ -113,8 +114,8 @@ class TestSanity02(TestSanityCaseBase):
         Create empty BOND
         """
         properties_dict = {
-            "bridge_opts": conf.PRIORITY,
-            "ethtool_opts": conf.TX_CHECKSUM.format(
+            "bridge_opts": custom_pr_conf.PRIORITY,
+            "ethtool_opts": custom_pr_conf.TX_CHECKSUM.format(
                 nic=conf.HOST_0_NICS[2], state="off"
             )
         }
@@ -823,8 +824,8 @@ class TestSanity12(TestSanityCaseBase):
         Attach network with bridge_opts and ethtool_opts to host NIC
         """
         properties_dict = {
-            "bridge_opts": conf.PRIORITY,
-            "ethtool_opts": conf.TX_CHECKSUM.format(
+            "bridge_opts": custom_pr_conf.PRIORITY,
+            "ethtool_opts": custom_pr_conf.TX_CHECKSUM.format(
                 nic=conf.HOST_0_NICS[1], state="off"
             )
         }

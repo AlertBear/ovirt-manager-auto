@@ -1213,11 +1213,13 @@ def check_bridge_opts(vds_resource, bridge_name, opts, value):
     if rc:
         logger.error("Bridge %s not found", bridge_name)
         return False
+
     res = out.strip() == value
     if not res:
         logger.error(
             "Bridge %s opts %s doesn't have value %s", bridge_name, opts, value
         )
+        return False
     return True
 
 

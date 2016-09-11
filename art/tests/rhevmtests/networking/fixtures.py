@@ -6,6 +6,7 @@ Networking fixtures
 """
 
 import pytest
+import re
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -124,6 +125,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
     """
     NetworkFixtures()
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
+    ethtool_opts_str = "ethtool_opts"
 
     sn_dict = {
         "add": {}
@@ -140,6 +142,15 @@ def setup_networks_fixture(request, clean_host_interfaces):
             datacenter = value.get("datacenter")
             ip_dict = value.get("ip")
             mode = value.get("mode")
+            properties = value.get("properties")
+            if properties and ethtool_opts_str in properties.keys():
+                val = properties.get(ethtool_opts_str)
+                match = re.findall(r'\d', val)
+                if match:
+                    host_nic_idx = match[0]
+                    properties[ethtool_opts_str] = val.replace(
+                        host_nic_idx, host_resource.nics[int(host_nic_idx)]
+                    )
             if slaves:
                 for nic_ in slaves:
                     slaves_list.append(host_resource.nics[nic_])
@@ -153,6 +164,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
                 "datacenter": datacenter,
                 "slaves": slaves_list,
                 "mode": mode,
+                "properties": properties
             }
             if ip_dict:
                 for k, v in ip_dict.iteritems():

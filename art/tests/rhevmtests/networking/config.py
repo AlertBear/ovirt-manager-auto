@@ -5,8 +5,6 @@
 Consolidated network config module
 """
 
-from collections import OrderedDict
-
 import art.test_handler.exceptions as exceptions
 import rhevmtests.helpers as global_helper
 from rhevmtests.config import *  # flake8: noqa
@@ -63,17 +61,10 @@ CLEAN_HOSTS_DICT = {
     0: {}
 }
 
-# Network Custom Priority parameters
-BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
-                           "multicast_querier": ["0", "1"]})
-KEY1 = BRIDGE_OPTS.keys()[0]
-KEY2 = BRIDGE_OPTS.keys()[1]
-PRIORITY = "=".join([KEY1, BRIDGE_OPTS[KEY1][1]])
-DEFAULT_PRIORITY = "=".join([KEY1, BRIDGE_OPTS[KEY1][0]])
-MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][1]])
-DEFAULT_MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][0]])
-TX_CHECKSUM = "-K {nic} tx {state}"
-RX_CHECKSUM = "-K {nic} rx {state}"
+# MultiHost and multiple_gw parameters
+SUBNET = "5.5.5.0"
+MG_GATEWAY = "5.5.5.254"
+MG_IP_ADDR = "5.5.5.1"
 
 # Jumbo frame parameters
 INTER_SUBNET = '3.3.3.'
