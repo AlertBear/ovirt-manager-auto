@@ -75,11 +75,6 @@ DEFAULT_MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][0]])
 TX_CHECKSUM = "-K {nic} tx {state}"
 RX_CHECKSUM = "-K {nic} rx {state}"
 
-# MultiHost and multiple_gw parameters
-SUBNET = "5.5.5.0"
-MG_GATEWAY = "5.5.5.254"
-MG_IP_ADDR = "5.5.5.1"
-
 # Jumbo frame parameters
 INTER_SUBNET = '3.3.3.'
 IPS = ['3.3.3.1', '3.3.3.2']

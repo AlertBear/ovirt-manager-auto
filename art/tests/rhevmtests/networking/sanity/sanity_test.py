@@ -16,6 +16,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
 import rhevmtests.networking.config as conf
+import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
@@ -736,9 +737,9 @@ class TestSanity10(TestSanityCaseBase):
     Verify you can remove network configured with gateway
     """
     __test__ = True
-    gateway = conf.MG_GATEWAY
+    gateway = multiple_gw_conf.GATEWAY
     netmask = conf.NETMASK
-    subnet = conf.SUBNET
+    subnet = multiple_gw_conf.SUBNET
     net = sanity_conf.NETS[10][0]
     nets = [net]
     nic = 1
