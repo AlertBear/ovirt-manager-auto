@@ -5,9 +5,10 @@ Storage/3_6_Storage_Create_Disk_From_Existing_Disk
 """
 import config
 import logging
-import os
+import pytest
+import helpers
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import bz, polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -19,13 +20,18 @@ from art.test_handler import exceptions
 from concurrent.futures import ThreadPoolExecutor
 from rhevmtests.networking.helper import seal_vm
 from rhevmtests.storage import helpers as storage_helpers
+from rhevmtests.storage.fixtures import (
+    initialize_storage_domains
+)
+from rhevmtests.storage.storage_copy_disk.fixtures import (
+    initialize_vm, create_disks, remove_disks,
+    create_test_vm, remove_template, remove_vm
+)
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
-VM_NAMES = dict()
 CMD_CREATE_FILE = 'touch %s/test_file_copy_disk'
-TEST_FILE_TEMPLATE = 'test_file_copy_disk'
 POLL_TIMEOUT = 20
 COPY_DISK_TIMEOUT = 600
 REMOVE_TEMPLATE_TIMEOUT = 300
@@ -50,11 +56,22 @@ copy_args = {
 }
 
 
-def setup_module():
+@pytest.fixture(scope='module', autouse=True)
+def create_vms_per_storage(request):
     """
     Prepares environment
     """
-    global VM_NAMES
+    def finalizer_module():
+        """
+        Remove vm
+        """
+        testflow.teardown(
+            "Removing VMs %s", ', '.join(config.VM_NAMES.values())
+        )
+        ll_vms.safely_remove_vms(config.VM_NAMES.values())
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+
+    request.addfinalizer(finalizer_module)
     for storage_type in config.STORAGE_SELECTOR:
         storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type
@@ -65,217 +82,41 @@ def setup_module():
         vm_args['vmName'] = vm_name
         vm_args['vmDescription'] = vm_name
 
+        testflow.setup("Creating base VM %s", vm_name)
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % vm_name
             )
-        VM_NAMES[storage_type] = vm_name
+        config.VM_NAMES[storage_type] = vm_name
+        helpers.prepare_disks_for_test(vm_name, storage_type, storage_domain)
+        ll_vms.shutdownVm(True, vm_name, 'false')
 
 
-def teardown_module():
-    """
-    Remove vm
-    """
-    ll_vms.safely_remove_vms(VM_NAMES.values())
-    ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
-
-
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    initialize_vm.__name__,
+)
 class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    test_case = None
-    vm_name = None
     new_alias = "new_copy_disk_alias"
-    mount_points = list()
-    disks_before_copy = list()
     disks_after_copy = list()
-    new_disks = list()
-    disks_for_test = list()
-    checksum_files = dict()
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Prepare the environment for testing
-        """
-        cls.vm_name = VM_NAMES[cls.storage]
-        cls.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage
-        )[0]
-
-    @classmethod
-    def create_files_on_vm_disks(cls, vm_name):
-        """
-        Files will be created on vm's disks with name:
-        'test_file_<iteration_number>'
-        """
-        if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
-            assert ll_vms.startVm(
-                True, vm_name, config.VM_UP, wait_for_ip=True
-            )
-        for mount_dir in cls.mount_points:
-            logger.info("Creating file in %s", mount_dir)
-            full_path = os.path.join(mount_dir, TEST_FILE_TEMPLATE)
-            rc = storage_helpers.create_file_on_vm(
-                vm_name, TEST_FILE_TEMPLATE, mount_dir
-            )
-            if not rc:
-                logger.error(
-                    "Failed to create file test_file_%s under %s on vm %s",
-                    mount_dir, vm_name
-                )
-                return False
-            if not storage_helpers.write_content_to_file(
-                vm_name, full_path
-            ):
-                logger.error(
-                    "Failed to write content to file %s on vm %s",
-                    full_path, vm_name
-                )
-            cls.checksum_files[full_path] = storage_helpers.checksum_file(
-                vm_name, full_path
-            )
-        return True
-
-    def check_file_existence(
-            self, vm_name, file_name=TEST_FILE_TEMPLATE, should_exist=True
-    ):
-        """
-        Determines whether file exists on mounts
-        """
-        ll_vms.start_vms([vm_name], 1, wait_for_ip=True)
-        result_list = []
-        state = not should_exist
-        # For each mount point, check if the corresponding file exists
-        for mount_dir in self.mount_points:
-            full_path = os.path.join(mount_dir, file_name)
-            logger.info("Checking if file %s exists", full_path)
-            result = storage_helpers.does_file_exist(
-                vm_name, full_path
-            )
-            logger.info(
-                "File %s %s",
-                file_name, 'exists' if result else 'does not exist'
-            )
-            if result:
-                checksum = storage_helpers.checksum_file(
-                    vm_name, full_path
-                )
-                if checksum != self.checksum_files[full_path]:
-                    logger.error(
-                        "File exists but it's content changed since it's "
-                        "creation!"
-                    )
-                    result = False
-            result_list.append(result)
-
-        if state in result_list:
-            return False
-        return True
-
-    def get_disk_storage_domain_name(self, disk_object):
-        """
-        Get the disk's storage domain name
-
-        :param disk_object: Disk object
-        :type disk_object: Disk object
-        :return: Storage domain name
-        :rtype: str
-        """
-        storage_id = (
-            disk_object.get_storage_domains().get_storage_domain()[0].get_id()
-        )
-        storage_domain_object = ll_sd.get_storage_domain_obj(
-            storage_domain=storage_id, key='id'
-        )
-        return storage_domain_object.get_name()
-
-    def get_new_disks(self, disks_before_copy, disks_after_copy):
-        """
-        Get new disks copied during the test
-
-        :param disks_before_copy: List of disks before the test starts
-        :type disks_before_copy: list
-        :param disks_after_copy: List of disks after the test finishes
-        :type disks_after_copy: list
-        :return: List of newly created disks
-        :rtype: list
-        """
-        return list(set(disks_after_copy) - set(disks_before_copy))
-
-    @classmethod
-    def get_non_ovf_disks(cls):
-        """
-        :return: List of disks that are not OVF_STORE
-        :rtype: list
-        """
-        return [
-            d.get_id() for d in ll_disks.DISKS_API.get(absLink=False) if (
-                d.get_alias() != config.OVF_DISK_ALIAS
-            )
-        ]
-
-    @classmethod
-    def clean_all_copied_disks(cls, disks_to_clean):
-        """
-        Delete all newly created disks
-        """
-        results = []
-        for disk in disks_to_clean:
-            results.append(ll_disks.deleteDisk(
-                True, disk_id=disk
-            ))
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_disk']])
-        if False in results:
-            raise exceptions.DiskException(
-                "Failed to delete disk"
-            )
-
-    def attach_new_disks_to_vm(self, vm_name, disks_to_attach):
-        """
-        Attach newly copied disks to test vm
-
-        :param vm_name: Name of the VM into which disks will be attached
-        :type vm_name: str
-        :param disks_to_attach: List of the disks to be attached to the
-        specified VM
-        :type disks_to_attach: list
-        """
-        for disk in disks_to_attach:
-            ll_disks.attachDisk(True, disk, vm_name, disk_id=disk)
+    new_disks = []
 
 
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    create_disks.__name__,
+    remove_disks.__name__,
+)
 class CopyDiskWithoutContent(BasicEnvironment):
     """
     A base class for cases that require floating disks
     """
-
     @classmethod
-    def setup_class(cls):
-        super(CopyDiskWithoutContent, cls).setup_class()
-        cls.disks_for_test = list()
-        disk_names = (
-            storage_helpers.start_creating_disks_for_test(
-                sd_name=cls.storage_domain, sd_type=cls.storage
-            )
-        )
-        ll_disks.wait_for_disks_status(disk_names)
-        for disk_alias in disk_names:
-            cls.disks_for_test.append(
-                ll_disks.get_disk_obj(disk_alias).get_id()
-            )
-        cls.disks_before_copy = cls.get_non_ovf_disks()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.clean_all_copied_disks(cls.disks_for_test)
-
-    def tearDown(self):
-        self.clean_all_copied_disks(self.new_disks)
-
-    def basic_copy(self, positive=True, same_domain=True, new_alias=None):
+    def basic_copy(cls, positive=True, same_domain=True, new_alias=None):
         """
         Copy disk to target storage domain
 
@@ -297,12 +138,15 @@ class CopyDiskWithoutContent(BasicEnvironment):
 
         disk_objects = [
             d for d in ll_disks.DISKS_API.get(absLink=False)
-            if d.get_id() in self.disks_for_test
+            if d.get_id() in config.FLOATING_DISKS
         ]
+        testflow.step(
+            "Copy disks %s", ', '.join([d.get_alias() for d in disk_objects])
+        )
         with ThreadPoolExecutor(max_workers=len(disk_objects)) as executor:
             for disk_obj in disk_objects:
                 if same_domain:
-                    target_sd = self.get_disk_storage_domain_name(disk_obj)
+                    target_sd = helpers.get_disk_storage_domain_name(disk_obj)
                 else:
                     target_sd = ll_disks.get_other_storage_domain(
                         disk_obj.get_alias()
@@ -313,69 +157,24 @@ class CopyDiskWithoutContent(BasicEnvironment):
                 executors.append(
                     executor.submit(ll_disks.copy_disk, **copy_args)
                 )
-        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
-        self.disks_after_copy = self.get_non_ovf_disks()
-        self.new_disks = self.get_new_disks(
-            self.disks_before_copy, self.disks_after_copy
+        ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+        cls.disks_after_copy = ll_disks.get_non_ovf_disks()
+        cls.new_disks = helpers.get_new_disks(
+            config.DISKS_BEFORE_COPY, cls.disks_after_copy
         )
         ll_disks.wait_for_disks_status(
-            self.new_disks, key='id', timeout=COPY_DISK_TIMEOUT
+            cls.new_disks, key='id', timeout=COPY_DISK_TIMEOUT
         )
 
 
+@pytest.mark.usefixtures(
+    create_test_vm.__name__,
+)
 class CopyDiskWithContent(BasicEnvironment):
     """
     A base class for cases that require data on vm's disks
     """
     test_vm_name = "copy_disk_test_vm"
-
-    @classmethod
-    def setup_class(cls):
-        super(CopyDiskWithContent, cls).setup_class()
-        cls.disks_for_test, cls.mount_points = (
-            storage_helpers.prepare_disks_with_fs_for_vm(
-                cls.storage_domain, cls.storage, cls.vm_name
-            )
-        )
-        disk_objects = ll_vms.getVmDisks(cls.vm_name)
-        for disk in disk_objects:
-            new_vm_disk_name = (
-                "%s_%s" % (disk.get_alias(), config.TESTNAME)
-            )
-            ll_disks.updateDisk(
-                True, vmName=cls.vm_name, id=disk.get_id(),
-                alias=new_vm_disk_name
-            )
-        if not cls.create_files_on_vm_disks(cls.vm_name):
-            raise exceptions.DiskException(
-                "Failed to create files on vm's disks"
-            )
-        cls.disks_before_copy = cls.get_non_ovf_disks()
-
-    @classmethod
-    def teardown_class(cls):
-        ll_vms.stop_vms_safely([cls.vm_name])
-        cls.clean_all_copied_disks(cls.disks_for_test)
-
-    def setUp(self):
-        """
-        Create vm to test the content of copied disks
-        """
-        ll_vms.createVm(
-            True, self.test_vm_name, self.test_vm_name,
-            cluster=config.CLUSTER_NAME, nic=config.NIC_NAME[0],
-            user=config.VM_USER, password=config.VM_PASSWORD,
-            network=config.MGMT_BRIDGE, useAgent=True,
-            display_type=config.DISPLAY_TYPE,
-            type=config.VM_TYPE_DESKTOP,
-        )
-
-    def tearDown(self):
-        """
-        Remove vm for testing files and all new copied disks
-        """
-        ll_vms.safely_remove_vms([self.test_vm_name])
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
 
     def basic_copy(self, vm_name, same_domain=True, new_alias=None):
         """
@@ -390,31 +189,35 @@ class CopyDiskWithContent(BasicEnvironment):
         :type new_alias: str
         """
         executors = []
-        copy_disk_args = copy_args.copy()
-        copy_disk_args['new_disk_alias'] = new_alias
         vm_disks = ll_vms.getVmDisks(vm_name)
         ll_vms.shutdownVm(positive=True, vm=vm_name, async='false')
         sealed = seal_vm(vm_name, config.VM_PASSWORD)
         if not sealed:
             logger.error("Failed to seal vm %s", vm_name)
+        testflow.step(
+            "Copying disks %s", ', '.join([d.get_alias() for d in vm_disks])
+        )
         with ThreadPoolExecutor(max_workers=len(vm_disks)) as executor:
             for disk_obj in vm_disks:
+                copy_disk_args = copy_args.copy()
+                copy_disk_args['new_disk_alias'] = new_alias
                 if same_domain:
-                    target_sd = self.get_disk_storage_domain_name(disk_obj)
+                    target_sd = helpers.get_disk_storage_domain_name(disk_obj)
                 else:
                     target_sd = ll_disks.get_other_storage_domain(
                         disk_obj.get_alias()
                     )
                 copy_disk_args['target_domain'] = target_sd
                 copy_disk_args['disk_id'] = disk_obj.get_id()
-
+                if ll_vms.is_bootable_disk(vm_name, disk_obj.get_id()):
+                    copy_disk_args['new_disk_alias'] = 'bootable_copy_disk'
                 executors.append(
                     executor.submit(ll_disks.copy_disk, **copy_disk_args)
                 )
-        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
-        self.disks_after_copy = self.get_non_ovf_disks()
-        self.new_disks = self.get_new_disks(
-            self.disks_before_copy, self.disks_after_copy
+        ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+        self.disks_after_copy = ll_disks.get_non_ovf_disks()
+        self.new_disks = helpers.get_new_disks(
+            config.DISKS_BEFORE_COPY, self.disks_after_copy
         )
         ll_disks.wait_for_disks_status(
             self.new_disks, key='id', timeout=COPY_DISK_TIMEOUT
@@ -425,18 +228,15 @@ class CopyDiskWithContent(BasicEnvironment):
         Copy disks from a VM that was created from a template
         """
         ll_vms.stop_vms_safely([self.vm_name])
-        if not seal_vm(self.vm_name, config.VM_PASSWORD):
-            raise exceptions.VMException(
-                "Failed to seal vm %s" % self.vm_name
-            )
-        if not ll_templates.createTemplate(
-                positive=True, timeout=CREATE_TEMPLATE_TIMEOUT,
-                vm=self.vm_name, name=self.template_name,
-                cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain
-        ):
-            raise exceptions.TemplateException(
-                "Failed to create template from vm %s" % self.vm_name
-            )
+        assert seal_vm(self.vm_name, config.VM_PASSWORD), (
+            "Failed to seal vm %s" % self.vm_name
+        )
+        testflow.step("Creating template from VM %s", self.vm_name)
+        assert ll_templates.createTemplate(
+            positive=True, timeout=CREATE_TEMPLATE_TIMEOUT,
+            vm=self.vm_name, name=self.template_name,
+            cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain
+        ), ("Failed to create template from vm %s" % self.vm_name)
 
         args_for_clone = {
             'positive': True,
@@ -450,41 +250,17 @@ class CopyDiskWithContent(BasicEnvironment):
             'storagedomain': self.storage_domain,
             'virtio_scsi': True,
         }
-        if not ll_vms.cloneVmFromTemplate(**args_for_clone):
-            raise exceptions.VMException(
-                "Failed to clone vm %s from template %s" % (
-                    self.cloned_vm, self.template_name
-                )
+        testflow.step("Cloning VM from template %s", self.template_name)
+        assert ll_vms.cloneVmFromTemplate(**args_for_clone), (
+            "Failed to clone vm %s from template %s" % (
+                self.cloned_vm, self.template_name
             )
-        self.disks_before_copy = self.get_non_ovf_disks()
+        )
+        config.VMS_TO_REMOVE.append(self.cloned_vm)
+        config.DISKS_BEFORE_COPY = ll_disks.get_non_ovf_disks()
         self.basic_copy(self.cloned_vm)
-        self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        self.check_file_existence(self.test_vm_name)
-
-
-class CopyDiskClonedFromTemplate(CopyDiskWithContent):
-    """
-    A base class for cases that require data on vm's disks and create template
-    from the vm with the disks
-    """
-    def tearDown(self):
-        """
-        Remove vm for testing files and all new copied disks, template
-        created during the test and a cloned vm from that template
-        """
-        if not ll_vms.safely_remove_vms([self.test_vm_name, self.cloned_vm]):
-            logger.error("Failed to remove vms")
-            self.test_failed = True
-        if not ll_templates.removeTemplate(
-                True, self.template_name, timeout=REMOVE_TEMPLATE_TIMEOUT
-        ):
-            logger.error("Failed to remove template %s", self.template_name)
-            self.test_failed = True
-
-        if self.test_failed:
-            raise exceptions.TearDownException(
-                "Test failed during tearDown"
-            )
+        helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
+        helpers.check_file_existence(self.test_vm_name)
 
 
 @attr(tier=2)
@@ -500,32 +276,9 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         """
         Copy existing disk to the same storage domain with the same alias
         """
-        testflow.step("Copying vm %s disks", self.vm_name)
         self.basic_copy(self.vm_name)
-        testflow.step(
-            "Attach the newly copied disks to vm %s", self.test_vm_name
-        )
-        self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        testflow.step("Check the data exists")
-        self.check_file_existence(self.test_vm_name)
-
-    @polarion("RHEVM3-11248")
-    def test_same_domain_different_alias(self):
-        """
-        Copy existing disk to the same storage domain with different alias
-        """
-        self.basic_copy(self.vm_name, new_alias=self.new_alias)
-        self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        self.check_file_existence(self.test_vm_name)
-
-    @polarion("RHEVM3-11242")
-    def test_different_domain_same_alias(self):
-        """
-        Copy existing disk to different storage domain with the same alias
-        """
-        self.basic_copy(self.vm_name, same_domain=False)
-        self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        self.check_file_existence(self.test_vm_name)
+        helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
+        helpers.check_file_existence(self.test_vm_name)
 
     @polarion("RHEVM3-11247")
     def test_different_domain_different_alias(self):
@@ -535,16 +288,34 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         self.basic_copy(
             self.vm_name, same_domain=False, new_alias=self.new_alias
         )
-        self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        self.check_file_existence(self.test_vm_name)
+        helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
+        helpers.check_file_existence(self.test_vm_name)
+
+    @polarion("RHEVM3-11242")
+    def test_different_domain_same_alias(self):
+        """
+        Copy existing disk to different storage domain with the same alias
+        """
+        self.basic_copy(self.vm_name, same_domain=False)
+        helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
+        helpers.check_file_existence(self.test_vm_name)
+
+    @polarion("RHEVM3-11248")
+    def test_same_domain_different_alias(self):
+        """
+        Copy existing disk to the same storage domain with different alias
+        """
+        self.basic_copy(self.vm_name, new_alias=self.new_alias)
+        helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
+        helpers.check_file_existence(self.test_vm_name)
 
 
-@attr(tier=1)
 class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
     """
     Copy floating disk - basic flow
     """
     __test__ = True
+    new_disks = list()
 
     @polarion("RHEVM3-11252")
     @bz({'1334726': {'ppc': config.PPC_ARCH}})
@@ -552,26 +323,8 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         Copy existing disk to the same storage domain with the same alias
         """
-        testflow.step("Copying disks %s", self.disks_for_test)
         self.basic_copy()
 
-    @attr(tier=2)
-    @polarion("RHEVM3-11254")
-    def test_same_domain_different_alias(self):
-        """
-        Copy existing disk to the same storage domain with different alias
-        """
-        self.basic_copy(new_alias=self.new_alias)
-
-    @attr(tier=2)
-    @polarion("RHEVM3-11251")
-    def test_different_domain_same_alias(self):
-        """
-        Copy existing disk to different storage domain with the same alias
-        """
-        self.basic_copy(same_domain=False)
-
-    @attr(tier=2)
     @polarion("RHEVM3-11253")
     def test_different_domain_different_alias(self):
         """
@@ -579,8 +332,21 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         self.basic_copy(same_domain=False, new_alias=self.new_alias)
 
+    @polarion("RHEVM3-11254")
+    def test_same_domain_different_alias(self):
+        """
+        Copy existing disk to the same storage domain with different alias
+        """
+        self.basic_copy(new_alias=self.new_alias)
 
-@attr(tier=2)
+    @polarion("RHEVM3-11251")
+    def test_different_domain_same_alias(self):
+        """
+        Copy existing disk to different storage domain with the same alias
+        """
+        self.basic_copy(same_domain=False)
+
+
 class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
     """
     Copy floating disk -  Not enough space on target domain
@@ -625,7 +391,7 @@ class TestCase11264(CopyDiskWithContent):
         """
         disk_objects = [
             d for d in ll_disks.DISKS_API.get(absLink=False)
-            if d.get_id() in self.disks_for_test
+            if d.get_id() in config.DISKS_FOR_TEST
         ]
         copy_disk_args = copy_args.copy()
         copy_disk_args['new_disk_alias'] = self.new_alias
@@ -634,16 +400,22 @@ class TestCase11264(CopyDiskWithContent):
             "Starting vm %s before performing copy disk, this should fail",
             self.vm_name
         )
-        ll_vms.start_vms([self.vm_name])
+        ll_vms.start_vms([self.vm_name], wait_for_ip=False)
         for disk_obj in disk_objects:
-            target_sd = self.get_disk_storage_domain_name(disk_obj)
+            target_sd = helpers.get_disk_storage_domain_name(disk_obj)
             copy_disk_args['target_domain'] = target_sd
             copy_disk_args['disk_id'] = disk_obj.get_id()
-            ll_disks.copy_disk(**copy_disk_args)
-
-        self.basic_copy(self.vm_name)
-        self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        self.check_file_existence(self.test_vm_name)
+            assert ll_disks.copy_disk(**copy_disk_args), (
+                "Succeeded to copy disk of powering up VM %s" % self.vm_name
+            )
+        ll_vms.waitForVMState(self.vm_name)
+        for disk_obj in disk_objects:
+            target_sd = helpers.get_disk_storage_domain_name(disk_obj)
+            copy_disk_args['target_domain'] = target_sd
+            copy_disk_args['disk_id'] = disk_obj.get_id()
+            assert ll_disks.copy_disk(**copy_disk_args), (
+                "Succeeded to copy disk of running VM %s" % self.vm_name
+            )
 
 
 @attr(tier=2)
@@ -662,21 +434,23 @@ class TestCase11339(CopyDiskWithContent):
         """
         Copy existing disk when vm is with snapshot
         """
-        if not ll_vms.addSnapshot(
-                True, self.vm_name, self.snapshot_description
-        ):
-            raise exceptions.SnapshotException(
-                "Failed to create snapshot for vm %s" % self.vm_name
-            )
-        ll_jobs.wait_for_jobs([ENUMS['job_create_snapshot']])
+        testflow.step("Taking snapshot of VM %s", self.vm_name)
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, self.snapshot_description
+        ), ("Failed to create snapshot for vm %s" % self.vm_name)
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
         self.basic_copy(self.vm_name)
-        self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        self.check_file_existence(self.test_vm_name)
+        helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
+        helpers.check_file_existence(self.test_vm_name)
 
 
 @attr(tier=2)
-class TestCase11140(CopyDiskClonedFromTemplate):
+@pytest.mark.usefixtures(
+    remove_template.__name__,
+    remove_vm.__name__,
+)
+class TestCase11140(CopyDiskWithContent):
     """
     Copy disk - Vm cloned from template as clone
     """
@@ -693,7 +467,11 @@ class TestCase11140(CopyDiskClonedFromTemplate):
 
 
 @attr(tier=2)
-class TestCase11141(CopyDiskClonedFromTemplate):
+@pytest.mark.usefixtures(
+    remove_template.__name__,
+    remove_vm.__name__,
+)
+class TestCase11141(CopyDiskWithContent):
     """
     Copy disk - Vm cloned from template as thin
     """

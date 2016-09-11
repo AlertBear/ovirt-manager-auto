@@ -1044,3 +1044,16 @@ def get_disk_attachment(name, disk, attr='id', object_type='vm'):
         if disk.get_id() == disk_id:
             return disk
     return None
+
+
+def get_non_ovf_disks():
+    """
+    Get all disks in the system except the OVF store disks
+    Returns:
+        list: List of disks that are not OVF_STORE
+    """
+    return [
+        d.get_id() for d in DISKS_API.get(absLink=False) if (
+            d.get_alias() != ENUMS['ovf_disk_alias']
+        )
+    ]
