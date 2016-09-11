@@ -534,7 +534,7 @@ class TestCase6168(BaseTestCase):
         super(TestCase6168, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6169(BaseTestCase):
     """
     Full flow of backup/restore API

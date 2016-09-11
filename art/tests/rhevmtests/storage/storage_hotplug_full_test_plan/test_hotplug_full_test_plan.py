@@ -277,7 +277,7 @@ class HotplugHookTest(TestCase):
         self.verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5033(HotplugHookTest):
     """
@@ -298,7 +298,7 @@ class TestCase5033(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5034(HotplugHookTest):
     """
@@ -319,7 +319,7 @@ class TestCase5034(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5035(HotplugHookTest):
     """
@@ -340,7 +340,7 @@ class TestCase5035(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5036(HotplugHookTest):
     """
@@ -703,7 +703,7 @@ class BasePlugDiskTest(TestCase):
         utils.raise_if_exception(results)
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures("initializer_plug_disk")
 class TestCase6231(BasePlugDiskTest):
     """

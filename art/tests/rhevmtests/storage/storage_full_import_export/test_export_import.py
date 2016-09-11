@@ -260,7 +260,7 @@ class TestCase11995(BaseExportImportTestCase):
         super(TestCase11995, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 @bz({'1339673': {}})
 class TestCase11987(BaseExportImportTestCase):
     """
@@ -371,7 +371,7 @@ class TestCase11987(BaseExportImportTestCase):
         BaseExportImportTestCase.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11986(BaseExportImportTestCase):
     """
     Export a template sanity

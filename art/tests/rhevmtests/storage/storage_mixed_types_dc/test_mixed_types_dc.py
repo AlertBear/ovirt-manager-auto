@@ -767,7 +767,7 @@ class TestCase4566(IscsiNfsSD):
         super(TestCase4566, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4564(IscsiNfsSD):
     """
     * Create a shared DC

@@ -272,7 +272,7 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
         ), 'Process %s not running on vm %s' % (self.pids[0], self.vm)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5139(ReturnToSnapshot):
     """
     Polarion Test Case 5139 - Preview to RAM Snapshot

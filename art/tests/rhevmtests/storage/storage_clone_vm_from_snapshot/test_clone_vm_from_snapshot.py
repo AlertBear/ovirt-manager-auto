@@ -67,7 +67,7 @@ class BaseTestCase(TestCase):
         ll_vms.safely_remove_vms([self.cloned_vm])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6103(BaseTestCase):
     """
     Clone a vm from snapshot.

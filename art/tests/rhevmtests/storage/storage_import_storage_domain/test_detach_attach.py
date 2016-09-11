@@ -1381,7 +1381,7 @@ class TestCase5200(DomainImportWithTemplate):
         self.new_vm_from_imported_domain_template()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5297(DomainImportWithTemplate):
     """
     Create vm from a template from an imported data domain

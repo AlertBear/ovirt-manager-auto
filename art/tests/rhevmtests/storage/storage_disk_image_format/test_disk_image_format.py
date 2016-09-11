@@ -243,7 +243,7 @@ class TestCase11604(BaseTestDiskImageVms):
         self.check_disks({self.vm_prealloc: True})
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11621(BaseTestDiskImageVms):
     """ Polarion case 11621 """
     # Bugzilla history:

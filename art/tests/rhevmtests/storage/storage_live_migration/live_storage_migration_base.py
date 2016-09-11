@@ -223,7 +223,7 @@ class AllPermutationsDisks(BaseTestCase):
             ), "%s to live migrate vm disk %s" % (disk, failure_str)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6004(AllPermutationsDisks):
     """
     live migrate

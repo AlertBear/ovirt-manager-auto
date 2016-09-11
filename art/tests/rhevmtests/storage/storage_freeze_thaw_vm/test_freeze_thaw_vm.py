@@ -180,7 +180,7 @@ class BaseTestCase(TestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase14677(BaseTestCase):
     """
     RHEVM3-14677 - Basic freeze and thaw flow

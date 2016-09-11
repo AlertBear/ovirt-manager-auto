@@ -204,7 +204,7 @@ class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6220(BasicEnvironment):
     """
     RHEVM3-6220 - Default SPM priority value

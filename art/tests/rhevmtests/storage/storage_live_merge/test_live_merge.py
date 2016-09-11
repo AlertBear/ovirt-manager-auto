@@ -350,7 +350,7 @@ class BasicEnvironment(BaseTestCase):
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6038(BasicEnvironment):
     """
     Basic live delete and merge of snapshots

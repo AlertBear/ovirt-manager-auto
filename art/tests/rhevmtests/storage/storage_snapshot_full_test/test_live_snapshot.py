@@ -132,7 +132,7 @@ class BasicEnvironmentSetUp(BaseTestCase):
         return True
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11660(BasicEnvironmentSetUp):
     """
     Full flow Live snapshot

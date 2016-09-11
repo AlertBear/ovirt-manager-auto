@@ -203,7 +203,7 @@ class BaseCaseIsoDomains(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 @bz({'1340164': {}})
 class TestCase11576Shared(BaseCaseIsoDomains):
     """

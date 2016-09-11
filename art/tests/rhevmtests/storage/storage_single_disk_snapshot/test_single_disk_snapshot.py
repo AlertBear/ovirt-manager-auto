@@ -228,7 +228,7 @@ class BasicEnvironment(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6022(BasicEnvironment):
     """
     Create snapshot of first disk out of 4 and verify that the

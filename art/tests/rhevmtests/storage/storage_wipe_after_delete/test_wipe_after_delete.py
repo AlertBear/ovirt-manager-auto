@@ -184,7 +184,7 @@ class TestCase10443(CommonUsage):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5113(CommonUsage):
     """
     Checking functionality - checked box

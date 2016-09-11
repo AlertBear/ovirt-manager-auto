@@ -239,7 +239,7 @@ class ReassignSPMWithStorageBlocked(BasicEnvironment):
         super(ReassignSPMWithStorageBlocked, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5815(BasicEnvironment):
     """
     RHEVM3-5815 - Assign HSM host to be SPM while another host is SPM of DC
@@ -262,7 +262,7 @@ class TestCase5815(BasicEnvironment):
         ), 'Unable to set host %s as SPM' % self.hsm_hosts[0]
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5823(BasicEnvironment):
     """
     RHEVM3-5823 - Reassign of SPM server when entering maintenance mode
