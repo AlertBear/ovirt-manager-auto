@@ -25,6 +25,8 @@ BLANK = 'Blank'
 UNASSIGNED = ENUMS['unassigned']
 RHEL6 = ENUMS['rhel6']
 WINDOWS7 = ENUMS['windows7']
+PPC_RHEL7 = ENUMS['rhel7ppc64']
+PPC_RHEL6 = ENUMS['rhel6ppc64']
 STATLESS_VM = True
 START_IN_PAUSE = True
 DELETE_PROTECTED = True
@@ -41,7 +43,9 @@ VM_2_SOCKETS = 2
 VM_2_CORES = 2
 VM_2_THREADS = 1
 CUSTOM_EMULATED_MACHINE = 'pc'
+PPC_EMULATED_MACHINE = 'pseries'
 CUSTOM_CPU_MODEL = 'Penryn'
+PPC_CPU_MODEL = 'POWER8'
 TIMEZONE_MOSCOW_LINUX = 'Europe/Moscow'
 TIMEZONE_TOKYO_WINDOWS = 'Tokyo Standard Time'
 DISCONNECT_ACTION_1 = 'LOGOUT'
@@ -72,16 +76,18 @@ BASE_VM_1_PARAMETERS = {
     'stateless': STATLESS_VM,
     'protected': DELETE_PROTECTED,
     'start_paused': START_IN_PAUSE,
-    'display_type': SPICE,
-    'monitors': DISPLAY_MONITOR_1,
-    'os_type': RHEL6,
+    'display_type': SPICE if not PPC_ARCH else VNC,
+    'monitors': DISPLAY_MONITOR_1 if not PPC_ARCH else None,
+    'os_type': RHEL6 if not PPC_ARCH else PPC_RHEL6,
     'serial_number': SERIAL_NUMBER,
     # 'usb_type': USB_TYPE_1,  # BZ#1327278
     'cpu_cores': VM_1_CORES,
     'cpu_sockets': VM_1_SOCKETS,
     'cpu_threads': VM_1_THREADS,
-    'custom_emulated_machine': CUSTOM_EMULATED_MACHINE,
-    'custom_cpu_model': CUSTOM_CPU_MODEL,
+    'custom_emulated_machine': (
+        CUSTOM_EMULATED_MACHINE if not PPC_ARCH else PPC_EMULATED_MACHINE
+    ),
+    'custom_cpu_model': CUSTOM_CPU_MODEL if not PPC_ARCH else PPC_CPU_MODEL,
     'time_zone': TIMEZONE_MOSCOW_LINUX,
     'disconnect_action': DISCONNECT_ACTION_1,
     'migration_downtime': MIGRATION_DOWN_TIME,
@@ -99,19 +105,19 @@ BASE_VM_2_PARAMETERS = {
     'memory': MEMORY_SIZE_2,
     'display_type': VNC,
     'monitors': DISPLAY_MONITOR_2,
-    'os_type': WINDOWS7,
-    'domainName': DOMAIN_NAME,
+    'os_type': WINDOWS7 if not PPC_ARCH else PPC_RHEL7,
+    'domainName': DOMAIN_NAME if not PPC_ARCH else None,
     'cpu_cores': VM_2_CORES,
     'cpu_sockets': VM_2_SOCKETS,
     'cpu_threads': VM_2_THREADS,
-    'time_zone': TIMEZONE_TOKYO_WINDOWS,
+    'time_zone': TIMEZONE_TOKYO_WINDOWS if not PPC_ARCH else None,
     'disconnect_action': DISCONNECT_ACTION_1,
     'highly_available': HA,
     'availablity_priority': MEDIUM_HA,
     'cpu_shares': CPU_SHARE_LOW,
     'memory_guaranteed': MEMORY_SIZE_2,
     'boot': BOOT_SEQUENCE_2,
-    'file_transfer_enabled': FILE_TRANSFER_OFF,
+    'file_transfer_enabled': FILE_TRANSFER_OFF if not PPC_ARCH else None,
 }
 
 BASE_VM_MAP = {
