@@ -163,6 +163,7 @@ class TestManualPoolRecycleVm(VirtTest):
 
     pool_name = 'Virt_manual_pool_recycle_vm'
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    pool_params['size'] = 1
     pool_params['type_'] = 'manual'
     users = [config.USER, config.VDC_ADMIN_USER]
 
