@@ -14,7 +14,7 @@ from art.unittest_lib import VirtTest, testflow
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from rhevmtests.virt.fixtures import (
-    start_vms, remove_vm_fixture
+    start_vms, remove_vm
 )
 from rhevmtests.virt.payload.fixtures import (
     create_vm_with_payloads, remove_payload_files
@@ -27,7 +27,7 @@ import config
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
-    remove_vm_fixture.__name__,
+    remove_vm.__name__,
     remove_payload_files.__name__
 )
 class TestCreateVmWithCdromPayload(VirtTest):
@@ -70,7 +70,7 @@ class TestCreateVmWithCdromPayload(VirtTest):
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
-    remove_vm_fixture.__name__,
+    remove_vm.__name__,
     remove_payload_files.__name__
 )
 class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
@@ -104,7 +104,7 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
-    remove_vm_fixture.__name__,
+    remove_vm.__name__,
     remove_payload_files.__name__
 )
 class TestCdromPayloadComplexContent(VirtTest):
@@ -139,7 +139,7 @@ class TestCdromPayloadComplexContent(VirtTest):
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
-    remove_vm_fixture.__name__,
+    remove_vm.__name__,
     remove_payload_files.__name__
 )
 class TestCreateVmWithFloppyPayload(VirtTest):
@@ -174,7 +174,7 @@ class TestCreateVmWithFloppyPayload(VirtTest):
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
-    remove_vm_fixture.__name__,
+    remove_vm.__name__,
     remove_payload_files.__name__
 )
 class TestUpdateVmWithFloppyPayload(VirtTest):
