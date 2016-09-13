@@ -232,6 +232,17 @@ def find_network(network, data_center=None, cluster=None):
         EntityNotFound: If network was not found
     """
     logger.info("Find desired network %s", network)
+    if cluster:
+        cluster_object = ll.clusters.get_cluster_object(cluster_name=cluster)
+        data_center_id = cluster_object.data_center.id
+        data_center_name = ll.general.get_object_name_by_id(
+            object_api=DC_API, object_id=data_center_id
+        )
+        if data_center and data_center_name != data_center:
+            return None
+
+        data_center = data_center_name
+
     if data_center:
         dc_obj = DC_API.find(data_center)
         nets = NET_API.get(absLink=False)
@@ -244,8 +255,7 @@ def find_network(network, data_center=None, cluster=None):
         raise apis_exceptions.EntityNotFound(
             '%s network does not exists!' % network
         )
-    elif cluster:
-        return get_dc_network_by_cluster(cluster=cluster, network=network)
+
     else:
         return NET_API.find(network)
 
