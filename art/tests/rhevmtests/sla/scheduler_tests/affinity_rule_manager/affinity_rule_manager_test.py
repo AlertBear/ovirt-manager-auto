@@ -12,13 +12,14 @@ from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
     run_once_vms,
-    start_vms
+    start_vms,
+    update_vms_memory_to_hosts_memory,
+    update_vms_to_default_parameters
 )
 from rhevmtests.sla.scheduler_tests.fixtures import (
     create_affinity_groups,
     load_hosts_cpu,
     update_cluster_overcommitment,
-    update_vms_memory,
     update_cluster_policy_to_even_distributed,
     update_cluster_policy_to_power_saving,
     wait_for_scheduling_memory_update
@@ -225,7 +226,8 @@ class TestAREM4(BaseAREM):
 @pytest.mark.usefixtures(
     update_cluster_overcommitment.__name__,
     wait_for_scheduling_memory_update.__name__,
-    update_vms_memory.__name__,
+    update_vms_memory_to_hosts_memory.__name__,
+    update_vms_to_default_parameters.__name__,
     start_vms.__name__,
     create_affinity_groups.__name__
 )
@@ -241,7 +243,8 @@ class TestAREM5(BaseAREM):
     """
     __test__ = True
     vms_to_start = conf.VM_NAME[:2]
-    vms_to_update = conf.VM_NAME[:2]
+    update_vms_memory = conf.VM_NAME[:2]
+    update_to_default_params = conf.VM_NAME[:2]
     vms_to_stop = conf.VM_NAME[:2]
     affinity_groups = {
         "test_arem_5": {
@@ -267,7 +270,8 @@ class TestAREM5(BaseAREM):
 @pytest.mark.usefixtures(
     update_cluster_overcommitment.__name__,
     wait_for_scheduling_memory_update.__name__,
-    update_vms_memory.__name__,
+    update_vms_memory_to_hosts_memory.__name__,
+    update_vms_to_default_parameters.__name__,
     run_once_vms.__name__,
     create_affinity_groups.__name__
 )
@@ -289,7 +293,8 @@ class TestAREM6(BaseAREM):
         conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1},
         conf.VM_NAME[2]: {conf.VM_RUN_ONCE_HOST: 1}
     }
-    vms_to_update = [conf.VM_NAME[0]]
+    update_vms_memory = conf.VM_NAME[:1]
+    update_to_default_params = conf.VM_NAME[:1]
     vms_to_stop = conf.VM_NAME[:3]
     affinity_groups = {
         "test_arem_6": {

@@ -52,6 +52,7 @@ UNIT_ATTR = {
 }
 
 SCHEDULING_POLICY = "scheduling policy"
+SCHEDULING_POLICY_UNIT = "scheduling policy unit"
 
 logger = logging.getLogger("art.ll_lib.scheduling_policies")
 
@@ -97,42 +98,63 @@ def _prepare_scheduling_policy_object(**kwargs):
 
 def add_new_scheduling_policy(**kwargs):
     """
-    Add new scheduling policy to engine
+    Add new scheduling policy to the engine
 
-    :param name: new name
-    :type name: str
-    :param description: description of new policy
-    :type description: str
-    :param properties: properties of new policy
-    :type properties: dict
-    :returns: True, if policy created successfully, otherwise False
-    :rtype: bool
+    Keyword Args:
+        name (str): Scheduling policy name
+        description (str): Scheduling policy description
+        properties (dict): Scheduling policy properties
+
+    Returns:
+        bool: True, if succeeds to create the scheduling policy,
+            otherwise False
     """
+    policy_name = kwargs.get("name")
+    log_info, log_error = ll_general.get_log_msg(
+        action="Create", obj_type=SCHEDULING_POLICY, obj_name=policy_name
+    )
     sch_pol_obj = _prepare_scheduling_policy_object(**kwargs)
 
-    _, status = SCH_POL_API.create(sch_pol_obj, True)
+    logger.info(log_info)
+    status = SCH_POL_API.create(sch_pol_obj, True)[1]
+
+    if not status:
+        logger.error(log_error)
     return status
 
 
 def update_scheduling_policy(policy_name, **kwargs):
     """
-    Update scheduling policy
+    Update the scheduling policy
 
-    :param policy_name: policy name
-    :type policy_name: str
-    :param name: new name
-    :type name: str
-    :param description: policy description
-    :type description: str
-    :param properties: policy properties
-    :type properties: dict
-    :returns: True, if policy updated successfully, otherwise False
-    :rtype: bool
+    Args:
+        policy_name (str): Scheduling policy name
+
+    Keyword Args:
+        name (str): New scheduling policy name
+        description (str): Scheduling policy description
+        properties (dict): Scheduling policy properties
+
+    Returns:
+        bool: True, if succeeds to update the scheduling policy,
+            otherwise False
     """
     old_sch_pol_obj = SCH_POL_API.find(policy_name)
     new_sch_pol_obj = _prepare_scheduling_policy_object(**kwargs)
 
-    _, status = SCH_POL_API.update(old_sch_pol_obj, new_sch_pol_obj, True)
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update",
+        obj_type=SCHEDULING_POLICY,
+        obj_name=policy_name,
+        **kwargs
+    )
+
+    logger.info(log_info)
+    status = SCH_POL_API.update(old_sch_pol_obj, new_sch_pol_obj, True)[1]
+
+    if not status:
+        logger.error(log_error)
+
     return status
 
 
@@ -201,24 +223,22 @@ def _get_policy_units(policy_name, unit_type, attr=None, get_href=False):
 
 
 def add_scheduling_policy_unit(
-        policy_name, unit_name, unit_type, position=None, factor=None
+    policy_name, unit_name, unit_type, position=None, factor=None
 ):
     """
-    Add new scheduling policy unit to scheduling policy
+    Add the scheduling policy unit to the scheduling policy
 
-    :param policy_name: scheduling policy name
-    :type policy_name: str
-    :param unit_name: scheduling policy unit name
-    :type unit_name: str
-    :param unit_type: scheduling policy unit type
-    (filter, weight, load_balancing)
-    :type unit_type: str
-    :param position: position of filter
-    :type position: int
-    :param factor: factor of weight module
-    :type factor: int
-    :returns: True, if policy unit added successfully, otherwise False
-    :rtype: bool
+    Args:
+        policy_name (str): Scheduling policy name
+        unit_name (str): Scheduling policy unit name
+        unit_type (str): Scheduling policy unit type
+            (filter, weight, load_balancing)
+        position (int): Filter position
+        factor (int): Weight unit factor
+
+    Returns:
+        bool: True, if succeeds to add scheduling policy unit
+            to the scheduling policy, otherwise False
     """
     policy_unit_id = _get_policy_unit(unit_name, unit_type).get_id()
     policy_units_link = _get_policy_units(
@@ -237,9 +257,20 @@ def add_scheduling_policy_unit(
     else:
         unit_obj = UNIT_CLASS.get(unit_type)(scheduling_policy_unit=pl_unit)
 
-    _, status = UNIT_API.get(unit_type).create(
-        unit_obj, True, async=True, collection=policy_units_link
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add",
+        obj_type=SCHEDULING_POLICY_UNIT,
+        obj_name=unit_name,
+        extra_txt="to the scheduling policy %s" % policy_name
     )
+    logger.info(log_info)
+    status = UNIT_API.get(unit_type).create(
+        unit_obj, True, async=True, collection=policy_units_link
+    )[1]
+
+    if not status:
+        logger.error(log_error)
+
     return status
 
 

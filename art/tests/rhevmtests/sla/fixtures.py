@@ -508,3 +508,25 @@ def update_datacenter(request):
         assert ll_datacenters.update_datacenter(
             positive=True, datacenter=dc_name, **dc_params
         )
+
+
+@pytest.fixture(scope="class")
+def update_vms_cpus_to_hosts_cpus(request):
+    """
+    1) Update VM's CPU's number to be equal to hosts CPU's number
+    """
+    vms_to_hosts_cpus = request.node.cls.vms_to_hosts_cpus
+    double_vms_cpus = getattr(request.node.cls, "double_vms_cpus", False)
+
+    for vm_name, host_index in vms_to_hosts_cpus.iteritems():
+        host_name = sla_config.HOSTS[host_index]
+        host_topology = ll_hosts.get_host_topology(host_name=host_name)
+        multiplier = 2 if double_vms_cpus else 1
+        vm_params = {
+            sla_config.VM_CPU_SOCKET: host_topology.sockets,
+            sla_config.VM_CPU_CORES: host_topology.cores * multiplier
+        }
+        u_libs.testflow.setup(
+            "Update the VM %s with params %s", vm_name, vm_params
+        )
+        assert ll_vms.updateVm(positive=True, vm=vm_name, **vm_params)

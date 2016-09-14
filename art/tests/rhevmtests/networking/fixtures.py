@@ -104,7 +104,6 @@ def clean_host_interfaces(request):
     """
     Clean hosts interfaces.
     """
-    NetworkFixtures()
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
 
     def fin():
@@ -123,7 +122,6 @@ def setup_networks_fixture(request, clean_host_interfaces):
     """
     perform network operation to host via setup network
     """
-    NetworkFixtures()
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
     ethtool_opts_str = "ethtool_opts"
 

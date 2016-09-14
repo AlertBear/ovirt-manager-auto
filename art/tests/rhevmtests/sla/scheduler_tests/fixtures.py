@@ -4,15 +4,12 @@ Scheduler tests fixtures
 import logging
 from time import sleep
 
-import pytest
-
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.affinitylabels as ll_afflabels
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.unittest_lib as u_libs
+import pytest
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.helpers as sla_helpers
-import art.unittest_lib as u_libs
 
 logger = logging.getLogger("scheduler_fixtures")
 
@@ -156,38 +153,6 @@ def create_affinity_groups(request):
 
 
 @pytest.fixture(scope="class")
-def update_vms_memory(request):
-    """
-    1) Update VM's memory to be near host's memory
-    """
-    vms_to_update = request.node.cls.vms_to_update
-
-    def fin():
-        """
-        1) Update VM's memory to default values
-        """
-        for vm in vms_to_update:
-            ll_vms.updateVm(
-                positive=True,
-                vm=vm,
-                memory=sla_conf.GB,
-                memory_guaranteed=sla_conf.GB
-            )
-    request.addfinalizer(fin)
-
-    hosts_memory = hl_vms.calculate_memory_for_memory_filter(
-        hosts_list=sla_conf.HOSTS[:2], difference=50
-    )
-    for i, vm in enumerate(vms_to_update):
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=vm,
-            memory=hosts_memory[i],
-            memory_guaranteed=hosts_memory[i]
-        )
-
-
-@pytest.fixture(scope="class")
 def update_cluster_overcommitment(request):
     """
     1) Update cluster overcommitment to 100
@@ -292,3 +257,41 @@ def assign_affinity_label_to_element(request):
                     assert ll_afflabels.AffinityLabels.add_label_to_vm(
                         label_name=label_name, vm_name=element
                     )
+
+
+@pytest.fixture(scope="class")
+def update_cluster_policy(request):
+    """
+    1) Update the cluster scheduling policy
+    """
+    cluster_policy = request.node.cls.cluster_policy
+
+    def fin():
+        """
+        1) Update the cluster scheduling policy to None
+        """
+        u_libs.testflow.teardown(
+            "Update the cluster %s scheduling policy to %s",
+            sla_conf.CLUSTER_NAME[0], sla_conf.POLICY_NONE
+        )
+        ll_clusters.updateCluster(
+            positive=True,
+            cluster=sla_conf.CLUSTER_NAME[0],
+            scheduling_policy=sla_conf.POLICY_NONE
+        )
+    request.addfinalizer(fin)
+
+    for policy_name, policy_params in cluster_policy.iteritems():
+        cluster_params = {}
+        if policy_params:
+            cluster_params["properties"] = policy_params
+        u_libs.testflow.setup(
+            "Update the cluster %s scheduling policy to %s with parameters %s",
+            sla_conf.CLUSTER_NAME[0], policy_name, policy_params
+        )
+        assert ll_clusters.updateCluster(
+            positive=True,
+            cluster=sla_conf.CLUSTER_NAME[0],
+            scheduling_policy=policy_name,
+            **cluster_params
+        )
