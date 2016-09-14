@@ -9,63 +9,37 @@ import logging
 import operator
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as rx_tx_conf
-import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Helper")
 
 
-def get_vm_resource(vm):
-    """
-    Get VM executor
-
-    :param vm: VM name
-    :type vm: str
-    :return: VM executor
-    :rtype: resource_vds
-    """
-    logger.info("Get IP for: %s", vm)
-    rc, ips = ll_vms.waitForIP(vm=vm, timeout=conf.TIMEOUT, get_all_ips=True)
-    if not rc:
-        raise conf.NET_EXCEPTION("Failed to get IP for: %s" % vm)
-    ips = ips["ip"]
-    ip = [ip for ip in ips if "5.5" not in ip][0]
-    return global_helper.get_host_resource(ip, conf.VMS_LINUX_PW)
-
-
-def config_ip(vms_and_ips):
+def config_ip():
     """
     Configure temp IP on VMs
-
-    :param vms_and_ips: List of VMs and IPs (list of tuples)
-    :type vms_and_ips: list
-    :raise: Network exception
     """
     ifcfg_params = {
         "ONBOOT": "yes",
         "NETMASK": "255.255.0.0"
     }
-    for vm_and_ip in vms_and_ips:
-        vm = vm_and_ip[0]
-        ip = vm_and_ip[1]
-        vm_resource = get_vm_resource(vm)
+    for vm, params in rx_tx_conf.VMS_IPS_PARAMS.iteritems():
+        mgmt_ip = params.get("mgmt_ip")
+        temp_ip = params.get("temp_ip")
+        vm_resource = params.get("resource")
+        mgmt_interface = vm_resource.network.find_int_by_ip(ip=mgmt_ip)
         interface = network_helper.get_vm_interfaces_list(
-            vm_resource, exclude_nics=[rx_tx_conf.ETH0]
+            vm_resource=vm_resource, exclude_nics=[mgmt_interface]
         )
-        if not interface:
-            raise conf.NET_EXCEPTION("Failed to get interface from %s" % vm)
+        assert interface, "Failed to get interface from %s" % vm
         interface = interface[0]
 
-        ifcfg_params["IPADDR"] = ip
-        logger.info("Setting IP %s on %s for %s", ip, interface, vm)
+        ifcfg_params["IPADDR"] = temp_ip
+        logger.info("Setting IP %s on %s for %s", temp_ip, interface, vm)
         vm_resource.network.create_ifcfg_file(
             nic=interface, params=ifcfg_params
         )
-        if vm_resource.run_command(command=["ifup", interface])[0]:
-            raise conf.NET_EXCEPTION()
+        assert not vm_resource.run_command(command=["ifup", interface])[0]
 
 
 def send_icmp(device_and_ips):
@@ -74,8 +48,8 @@ def send_icmp(device_and_ips):
     send [ (vm1/host1, ip1) (vm2/host2, ip2) ] to ping from
     vm1/host1 to vm2/host2 and from vm2 to vm1
 
-    :param device_and_ips: List of devices and IPs (list of tuples)
-    :type device_and_ips: list
+    Args:
+        device_and_ips (list): List of devices and IPs (list of tuples)
     """
     device_and_ips[0][0].network.send_icmp(dst=device_and_ips[1][1])
     device_and_ips[1][0].network.send_icmp(dst=device_and_ips[0][1])
@@ -87,19 +61,16 @@ def compare_nic_stats(
     """
     Compare NIC statistics for VM or Host
 
-    :param nic: NIC name
-    :type nic: str
-    :param vm: VM name
-    :type vm: str
-    :param host: Host name
-    :type host: str
-    :param total_rx: Total RX stats to check against
-    :type total_rx: int
-    :param total_tx: Total TX stats to check against
-    :type total_tx: int
-    :param oper: The operator to compare with
-    :type oper: str
-    :raise: Network exception
+    Args:
+        nic (str): NIC name
+        vm (str): VM name
+        host (str): Host name
+        total_rx (int): Total RX stats to check against
+        total_tx (int): Total TX stats to check against
+        oper (str): The operator to compare with
+
+    Raises:
+        AssertionError: if comparing NIC statistics failed
     """
     # logger.info("Get %s statistics on %s", nic, vm)
     nic_stat = hl_networks.get_nic_statistics(

@@ -14,7 +14,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as pm_conf
 import helper
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as networking_helper
+import rhevmtests.networking.helper as network_helper
 from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -68,13 +68,15 @@ def port_mirroring_prepare_setup(request):
         """
         Remove ifcfg files from VMs
         """
-        if pm_conf.VMS_NETWORKS_PARAMS:
-            networking_helper.remove_ifcfg_files(
-                vms=conf.VM_NAME[:pm_conf.NUM_VMS]
+        vms_resources = list()
+        for vm in conf.VM_NAME[:pm_conf.NUM_VMS]:
+            vms_resources.append(
+                pm_conf.VMS_IPS_PARAMS.get(vm).get("resource")
             )
+        assert network_helper.remove_ifcfg_files(vms_resources=vms_resources)
     request.addfinalizer(fin1)
 
-    networking_helper.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=pm_conf.NETS_DICT, dc=port_mirroring.dc_0,
         cluster=port_mirroring.cluster_0
     )

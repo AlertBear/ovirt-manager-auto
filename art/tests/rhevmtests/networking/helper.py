@@ -6,10 +6,10 @@ Helper for networking jobs
 """
 
 import logging
+import random
 import re
 import shlex
 import uuid
-import random
 
 from utilities import jobs
 
@@ -21,7 +21,6 @@ import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
-import rhevmtests.helpers as global_helper
 from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import events
 from art.rhevm_api.utils import test_utils
@@ -451,20 +450,19 @@ def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
     )
 
 
-def remove_ifcfg_files(vms, exclude_nics=list()):
+def remove_ifcfg_files(vms_resources, exclude_nics=list()):
     """
     Remove all ifcfg files beside exclude_nics from vms
 
     Args:
-        vms (list): List of VMs
+        vms_resources (list): List of VMs resources
         exclude_nics (list): NICs to exclude from remove
 
     Returns:
         bool: True if operation succeed, False otherwise
     """
     exclude_nics = exclude_nics if exclude_nics else EXCLUDE_NICS
-    for vm in vms:
-        vm_resource = global_helper.get_vm_resource(vm=vm)
+    for vm_resource in vms_resources:
         rc, out, _ = vm_resource.run_command(["ls", "%s/ifcfg-*" % IFCFG_PATH])
         if rc:
             return False
@@ -473,9 +471,9 @@ def remove_ifcfg_files(vms, exclude_nics=list()):
             lambda x: x.rsplit("/")[-1] not in exclude_nics, out.splitlines()
         )
         for ifcfg in ifcfg_files:
-            logger.info("Remove %s from %s", ifcfg, vm)
+            logger.info("Remove %s from %s", ifcfg, vm_resource)
             if not vm_resource.fs.remove(path=ifcfg):
-                logger.error("Fail to remove %s for %s", ifcfg, vm)
+                logger.error("Fail to remove %s for %s", ifcfg, vm_resource)
     return True
 
 

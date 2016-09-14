@@ -5,7 +5,6 @@
 Cumulative Network Usage Statistics for Host
 """
 
-import logging
 import time
 
 import pytest
@@ -15,13 +14,16 @@ import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
-from fixtures import rx_tx_stat_host_case02, rx_tx_stat_host_setup_class
-
-logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
+from fixtures import (
+    host_prepare_setup, update_host_nics_stats, move_host_to_another_cluster
+)
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(rx_tx_stat_host_setup_class.__name__)
+@pytest.mark.usefixtures(
+    host_prepare_setup.__name__,
+    update_host_nics_stats.__name__
+)
 class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
     """
    Check that sending ICMP traffic on the host increases its statistics
@@ -51,7 +53,11 @@ class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(rx_tx_stat_host_case02.__name__)
+@pytest.mark.usefixtures(
+    host_prepare_setup.__name__,
+    update_host_nics_stats.__name__,
+    move_host_to_another_cluster.__name__
+)
 class CumulativeNetworkUsageHostStatisticsCase2(NetworkTest):
     """
    Move the host to another compatible cluster and check that statistics

@@ -590,7 +590,11 @@ def get_nic_statistics(nic, host=None, vm=None, keys=None):
     for stat in stats:
         stat_name = stat.get_name()
         if stat_name in keys:
-            res[stat_name] = stat.get_values().get_value()[0].get_datum()
+            stat_list = stat.get_values().get_value()
+            if not stat_list:
+                res[stat_name] = 0
+            else:
+                res[stat_name] = stat_list[0].get_datum()
     return res
 
 
