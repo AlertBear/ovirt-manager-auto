@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import config as net_api_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+import rhevmtests.networking.network_custom_properties.config as cust_prop_conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -276,8 +277,8 @@ class TestHostNetworkApiHost01(NetworkTest):
         Attach network with custom properties to host NIC
         """
         properties_dict = {
-            "bridge_opts": conf.PRIORITY,
-            "ethtool_opts": conf.TX_CHECKSUM.format(
+            "bridge_opts": cust_prop_conf.PRIORITY,
+            "ethtool_opts": cust_prop_conf.TX_CHECKSUM.format(
                 nic=conf.HOST_0_NICS[10], state="off"
             )
         }
@@ -556,8 +557,8 @@ class TestHostNetworkApiHost03(NetworkTest):
         Attach network with custom properties to BOND
         """
         properties_dict = {
-            "bridge_opts": conf.PRIORITY,
-            "ethtool_opts": conf.TX_CHECKSUM.format(
+            "bridge_opts": cust_prop_conf.PRIORITY,
+            "ethtool_opts": cust_prop_conf.TX_CHECKSUM.format(
                 nic=conf.HOST_0_NICS[1], state="off"
             )
         }
