@@ -68,7 +68,7 @@ def initializer_module(request):
     config.HOSTS.remove(host_name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4831(helpers.TestCaseNFSOptions):
     """
     Tests if data center with NFS storage domains with custom NFS options works

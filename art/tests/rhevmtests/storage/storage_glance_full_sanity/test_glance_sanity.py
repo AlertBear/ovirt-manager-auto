@@ -181,7 +181,7 @@ class BasicEnvironment(BaseTestCase):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5734(BasicEnvironment):
     """
     Import a glance image as a template, then create a VM from this template
@@ -209,7 +209,7 @@ class TestCase5734(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10689(BasicEnvironment):
     """
     RHEVM3-10689 - Override template name when importing an image from glance
@@ -239,7 +239,7 @@ class TestCase10689(BasicEnvironment):
         ), "Template with name %s does not exist" % self.new_template_name
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5735(BasicEnvironment):
     """
     Import multiple disks as templates
@@ -276,7 +276,7 @@ class TestCase5735(BasicEnvironment):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5736(BasicEnvironment):
     """
     Import a glance template multiple times
@@ -312,7 +312,7 @@ class TestCase5736(BasicEnvironment):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5738(BasicEnvironment):
     """
     Import the same image both as a template and as disk
@@ -376,7 +376,7 @@ class TestCase5738(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5739(BasicEnvironment):
     """
     Import glance image multiple times as a template
@@ -407,7 +407,7 @@ class TestCase5739(BasicEnvironment):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5741(BasicEnvironment):
     """
     Create multiple VMs using import from a glance template
@@ -479,7 +479,7 @@ class TestCase5743(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5746(BasicEnvironment):
     """
     Change disk interface
@@ -596,7 +596,7 @@ class TestCase5683(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10696(BasicEnvironment):
     """
     Import a glance image as template

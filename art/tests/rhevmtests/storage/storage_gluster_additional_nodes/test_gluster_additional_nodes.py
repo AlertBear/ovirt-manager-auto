@@ -377,7 +377,7 @@ class TestBlockingNodesWithNoBackupVolFile(BaseTestBlockingNodes):
     backup_vol_file_server = False
 
 
-@attr(tier=2)
+@attr(tier=3)
 class Test12320(BaseGlusterMount):
     """
     Test Gulester setup with Unavailable Master and 2 Available secondary
@@ -405,7 +405,7 @@ class Test12320(BaseGlusterMount):
         self.verify_add_storage_domain(positive=True)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class Test12322(BaseGlusterMount):
     """
     Test Gluster setup with Available Master and 1 Available Secondary
@@ -423,7 +423,7 @@ class Test12322(BaseGlusterMount):
         self.verify_add_storage_domain(positive=True)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class Test12323(BaseGlusterMount):
     """
     Test Gluster setup with Unavailable Master and 1 Available Secondary
@@ -461,7 +461,7 @@ class Test12324(BaseGlusterMount):
         self.verify_add_storage_domain(positive=True)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class Test12325(BaseGlusterMount):
     """
     Test a Gluster setup with an Available master and 2 Unavailable
@@ -499,7 +499,7 @@ class Test12326(BaseGlusterMount):
         self.verify_add_storage_domain(positive=False)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class VerifyGlusterMountParameteres(BaseGlusterMount):
     """
     Test the backup-volfile-servers parameter works as expected.

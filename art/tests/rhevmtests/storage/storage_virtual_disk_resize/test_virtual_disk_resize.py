@@ -298,7 +298,7 @@ class BasicResize(BaseClass):
         super(BasicResize, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5061(DisksPermutationEnvironment):
     """
     Resize virtual disk after snapshot creation
@@ -345,7 +345,7 @@ class TestCase5061(DisksPermutationEnvironment):
             assert int(size) == (self.new_size / config.GB)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5060(DisksPermutationEnvironment):
     """
     Commit snapshot after resizing the disk

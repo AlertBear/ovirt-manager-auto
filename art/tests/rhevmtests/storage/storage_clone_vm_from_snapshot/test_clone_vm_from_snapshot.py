@@ -169,7 +169,7 @@ class TestCase6119(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6120(BaseTestCase):
     """
     Create VM from snapshot while original VM is Down ->  Success
@@ -202,7 +202,7 @@ class TestCase6120(BaseTestCase):
         self.clone_vm_from_snapshot(self.cloned_vm_up, SNAPSHOT_NAME)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6122(BaseTestCase):
     """
     Clone vm from snapshot:
@@ -246,7 +246,7 @@ class TestCase6122(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_additional_nic.__name__,
     remove_additional_snapshot.__name__,
@@ -327,7 +327,7 @@ class TestCase6109(BaseTestCase):
         assert len(ll_vms.getVmDisks(self.cloned_vm)) == 2
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_server_vm_with_snapshot.__name__,
 )
@@ -381,7 +381,7 @@ class TestCase6111(BaseTestCase):
         ).get_type()
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_additional_snapshot.__name__,
     delete_disks.__name__,

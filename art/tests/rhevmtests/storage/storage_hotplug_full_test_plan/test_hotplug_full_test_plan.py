@@ -361,7 +361,7 @@ class TestCase5036(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5037(HotplugHookTest):
     """
@@ -394,7 +394,7 @@ class TestCase5037(HotplugHookTest):
         assert len(result) == len(DISKS_TO_PLUG[self.storage]), result
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5038(HotplugHookTest):
     """
@@ -427,7 +427,7 @@ class TestCase5038(HotplugHookTest):
         assert len(result) == len(DISKS_TO_PLUG[self.storage]), result
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5039(HotplugHookTest):
     """
     Check if before_disk_hotplug is called when attaching & activating
@@ -474,7 +474,7 @@ class TestCase5039(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5044(HotplugHookTest):
     """
@@ -562,7 +562,7 @@ class TestCase5041(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5040(HotplugHookTest):
     """
@@ -783,7 +783,7 @@ class TestCase6231(BasePlugDiskTest):
             assert status
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures("initializer_plug_disk")
 class TestCase6243(BasePlugDiskTest):
     """ Hotplug floating disk (shareable and non-shareable) """
@@ -859,7 +859,7 @@ class TestCase6243(BasePlugDiskTest):
                 )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6230(TestCase):
     """
     2 vms, 1 shareable disk attached to both of them, ensure hotplug works
@@ -1043,7 +1043,7 @@ class TestCase6234(TestCase):
         self.disks_to_remove.append(vm_boot_disk.get_alias())
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,

@@ -420,7 +420,7 @@ class TestCase5819(BasicEnvironment):
         super(TestCase5819, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14812(BasicEnvironment):
     """
     RHEVM3-14812 - Bug 1319987 - Storage activities are failing with error

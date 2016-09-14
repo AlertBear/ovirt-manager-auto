@@ -204,7 +204,7 @@ class TestCase11598(BaseTestCase):
         cls.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11784(TestCase):
     """
     Create storage domains from all types and attache them to datacenter

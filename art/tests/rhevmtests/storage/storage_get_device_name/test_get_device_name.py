@@ -291,7 +291,7 @@ class TestCase4572(BasicEnvironment):
         self.attach_disk_permutations_and_verify_in_os()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4573(BasicEnvironment):
     """
     Device name of shared disk - 1 disk

@@ -415,7 +415,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         super(TestCase11679, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11676(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -470,7 +470,7 @@ class TestCase11676(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11665(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -520,7 +520,7 @@ class TestCase11665(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11680(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -611,7 +611,7 @@ class TestCase11674(BaseTestCase):
         assert snap_descs == current_snap_descs
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11684(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/

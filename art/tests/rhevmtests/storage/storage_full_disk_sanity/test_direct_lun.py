@@ -149,7 +149,7 @@ class TestCase5927(DirectLunAttachTestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5920(DirectLunAttachTestCase):
     """
     Suspend vm with direct lun attached
@@ -221,7 +221,7 @@ class TestCase5930(DirectLunAttachTestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5931(DirectLunAttachTestCase):
     """
     Attach lun vm, create a template and verify the direct lun will not be
@@ -260,7 +260,7 @@ class TestCase5931(DirectLunAttachTestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 @bz({'1245630': {}})
 class TestCase5932(DirectLunAttachTestCase):
     """
@@ -305,7 +305,7 @@ class TestCase5932(DirectLunAttachTestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5933(DirectLunAttachTestCase):
     """
     Attach lun to vm and verify the direct lun will not be
@@ -447,7 +447,7 @@ class TestCase5939(DirectLunAttachTestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5940(DirectLunAttachTestCase):
     """
     move vm with direct lun
@@ -564,7 +564,7 @@ class TestCase5911(DirectLunAttachTestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5913(DirectLunAttachTestCase):
     """
     Direct lun - wipe after delete

@@ -124,7 +124,7 @@ class NegativeAttachDetach(TestCase):
         self.disks_to_remove.append(self.disk_name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(create_vm.__name__)
 class TestCase16737(TestCase):
     """
@@ -154,7 +154,7 @@ class TestCase16737(TestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_snapshot.__name__,
@@ -180,7 +180,7 @@ class TestCase16738(TestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     poweroff_vm_and_wait_for_stateless_to_remove.__name__
@@ -208,7 +208,7 @@ class TestCase16741(TestCase):
         ), "Succeeded to attach a stateless snapshot's disk to vm"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
@@ -234,7 +234,7 @@ class TestCase16742(TestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_snapshot.__name__,
@@ -269,7 +269,7 @@ class TestCase16743(TestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16774(TestCase):
     """
     Remove OVF store disk - should fail
@@ -293,7 +293,7 @@ class TestCase16774(TestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     add_disk.__name__,
 )
@@ -322,7 +322,7 @@ class TestCase16777(TestCase):
 
 
 @bz({'1370075': {}})
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     initialize_storage_domains.__name__,
     create_template.__name__,
@@ -381,7 +381,7 @@ class TestCase16782(TestCase):
                self.storage_domain))
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
@@ -408,7 +408,7 @@ class TestCase16784(TestCase):
         ), "Failed to update disk size of read-only disk"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_snapshot.__name__,
@@ -458,7 +458,7 @@ class TestCase16786(TestCase):
         ), "Succeeded to update disk size from 6G to 1GB"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     initialize_storage_domains.__name__,
     create_vm.__name__,

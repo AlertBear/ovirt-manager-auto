@@ -346,7 +346,7 @@ class TestCase11586(TestCase):
 @pytest.mark.usefixtures(
     remove_vms.__name__,
 )
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11830(TestCase):
     """
     Create 2 VMs from template at once.

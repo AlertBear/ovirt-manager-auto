@@ -100,7 +100,7 @@ class TestCase4816(helpers.TestCaseNFSOptions):
             self.fail("NFS option %s not as expected %s, real %s" % result)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     initializer_class.__name__,
     remove_storage_domain.__name__,
@@ -256,7 +256,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         self._create_and_check(ENUMS['storage_dom_type_iso'], 'iso', 1)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(initializer_class.__name__,)
 class TestCase4822(helpers.TestCaseNFSOptions):
     """
@@ -298,7 +298,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options(nfs_resources)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     detach_export_domain.__name__,
     initializer_class.__name__,
@@ -371,7 +371,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
         logger.info("Test passed")
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(initializer_class.__name__,)
 @bz({'1373581': {}})
 class TestCase4815(helpers.TestCaseNFSOptions):
@@ -523,7 +523,7 @@ class TestCase4817(helpers.TestCaseNFSOptions):
         self.sds_for_cleanup.append(self.name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     detach_export_domain.__name__,
     initializer_class.__name__,

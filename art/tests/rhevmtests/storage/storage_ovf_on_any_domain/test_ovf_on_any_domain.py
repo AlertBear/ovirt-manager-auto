@@ -865,7 +865,7 @@ class TestCase6248(BasicEnvironment):
         self.validate_ovf_contents(vm_name=VM1_NAME)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6250(BasicEnvironment):
     """
     Several Disks from several VMs on one storage domain
@@ -890,7 +890,7 @@ class TestCase6250(BasicEnvironment):
         self.validate_ovf_contents(vm_name=VM2_NAME)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6251(BasicEnvironment):
     """
     VM with disks on 2 storage domains
@@ -915,7 +915,7 @@ class TestCase6251(BasicEnvironment):
         self.validate_ovf_contents(vm_name=VM1_NAME)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6252(BasicEnvironment):
     """
     Actions on OVF store
@@ -982,7 +982,7 @@ class TestCase6252(BasicEnvironment):
         self.delete_ovf_stores(VM1_NAME)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6253File(BasicEnvironment):
     """
     VM with an attached shareable disk
@@ -1007,7 +1007,7 @@ class TestCase6253File(BasicEnvironment):
         self.validate_ovf_contents(vm_name=VM1_NAME, positive=False)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6253Block(BasicEnvironment):
     """
     VM with attached disks: shared disk and direct LUN
@@ -1180,7 +1180,7 @@ class TestCase6256(EnvironmentWithNewVm):
         assert OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6257(EnvironmentWithNewVm):
     """
     Check tar file after VM name change
@@ -1431,7 +1431,7 @@ class TestCase6261(BasicEnvironment):
 
 
 @bz({'1357259': {}})
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6262(EnvironmentWithNewVm):
     """
     Large number of OVFs

@@ -253,7 +253,7 @@ class TestCase6004(AllPermutationsDisks):
         self.verify_lsm()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5990(BaseTestCase):
     """
     vm in paused mode
@@ -532,7 +532,7 @@ class TestCase5993(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5992(BaseTestCase):
     """
     snapshots and move vm
@@ -671,7 +671,7 @@ class TestCase5991(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5989(BaseTestCase):
     """
     suspended vm
@@ -724,7 +724,7 @@ class TestCase5989(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5988(AllPermutationsDisks):
     """
     Create live snapshot during live storage migration
@@ -912,7 +912,7 @@ class TestCase5995(AllPermutationsDisks):
             self._perform_action(self.vm_name, disk)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5996(BaseTestCase):
     """
     hot plug disk
@@ -1180,7 +1180,7 @@ class TestCase5972(BaseTestCase):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5970(BaseTestCase):
     """
     Wipe after delete
@@ -1429,7 +1429,7 @@ class TestCase5968(AllPermutationsDisks):
 
 
 @bz({'1368203': {}})
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5967(AllPermutationsDisks):
     """
     Auto-Shrink - Live Migration failure
@@ -1487,7 +1487,7 @@ class TestCase5967(AllPermutationsDisks):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5979(BaseTestCase):
     """
     offline migration for disk attached to running vm
@@ -1548,7 +1548,7 @@ class TestCase5979(BaseTestCase):
         assert len(LSM_snapshots) == self.expected_lsm_snap_count
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5976(BaseTestCase):
     """
     Deactivate vm disk during live migrate
@@ -1607,7 +1607,7 @@ class TestCase5976(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5977(BaseTestCase):
     """
     migrate a vm between hosts + LSM
@@ -2277,7 +2277,7 @@ class TestCase5971(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5980(BaseTestCase):
     """
     offline migration + LSM
@@ -2399,7 +2399,7 @@ class TestCase5966(BaseTestCase):
         host_machine.kill_vdsm_service()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5981(AllPermutationsDisks):
     """
     merge after a failure in LSM

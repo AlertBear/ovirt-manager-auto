@@ -602,7 +602,7 @@ class TestCase4913(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4914(DefaultEnvironment):
     """
     Migrate a vm with read-only disk, and check the disk is still
@@ -655,7 +655,7 @@ class TestCase4914(DefaultEnvironment):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4915(DefaultEnvironment):
     """
     Checks that suspending a vm with read-only disk shouldn't
@@ -687,7 +687,7 @@ class TestCase4915(DefaultEnvironment):
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4917(DefaultEnvironment):
     """
     Import more than once VM with read-only disk, and verify that it's
@@ -843,7 +843,7 @@ class TestCase4918(DefaultSnapshotEnvironment):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4919(DefaultSnapshotEnvironment):
     """
     Check that the read-only disk is part of vm snapshot, and the disk
@@ -974,7 +974,7 @@ class TestCase4920(DefaultSnapshotEnvironment):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4921(DefaultSnapshotEnvironment):
     """
     Checks that deleting a snapshot with read-only disk shouldn't effect
@@ -1181,7 +1181,7 @@ class TestCase4923(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4924(DefaultEnvironment):
     """
     Checks that moving read-only disk to a second storage domain will
@@ -1245,7 +1245,7 @@ class TestCase4924(DefaultEnvironment):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4925(DefaultEnvironment):
     """
     Checks that Live Storage Migration of read-only disk should be possible
@@ -1324,7 +1324,7 @@ class TestCase4927(BaseTestCase):
         pass
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4926(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RW disk should be possible, even

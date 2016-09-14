@@ -497,7 +497,7 @@ class TestCase11230(BasicDeactivateStorageDomain):
         self.deactivate_last_iscsi_domain()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11201(BaseTestCaseNewDC):
     """
     RHEVM3-11201 - Deactivate one of multiple domain

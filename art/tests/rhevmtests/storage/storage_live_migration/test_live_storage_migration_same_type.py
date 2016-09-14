@@ -38,7 +38,7 @@ class TestCase6004(basePlan.TestCase6004):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5990(basePlan.TestCase5990):
     """
     vm in paused mode
@@ -73,7 +73,7 @@ class TestCase5993(basePlan.TestCase5993):
     __test__ = False
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5992(basePlan.TestCase5992):
     """
     snapshots and move vm
@@ -97,7 +97,7 @@ class TestCase5991(basePlan.TestCase5991):
     )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5989(basePlan.TestCase5989):
     """
     suspended vm
@@ -107,7 +107,7 @@ class TestCase5989(basePlan.TestCase5989):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5988(basePlan.TestCase5988):
     """
     Create live snapshot during live storage migration
@@ -138,7 +138,7 @@ class TestCase5995(basePlan.TestCase5995):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5996(basePlan.TestCase5996):
     """
     hot plug disk
@@ -187,7 +187,7 @@ class TestCase5972(basePlan.TestCase5972):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5970(basePlan.TestCase5970):
     """
     Wipe after delete
@@ -234,7 +234,7 @@ class TestCase5968(basePlan.TestCase5968):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5967(basePlan.TestCase5967):
     """
     Auto-Shrink - Live Migration failure
@@ -245,7 +245,7 @@ class TestCase5967(basePlan.TestCase5967):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5979(basePlan.TestCase5979):
     """
     offline migration for disk attached to running vm
@@ -255,7 +255,7 @@ class TestCase5979(basePlan.TestCase5979):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5976(basePlan.TestCase5976):
     """
     Deactivate vm disk during live migrate
@@ -266,7 +266,7 @@ class TestCase5976(basePlan.TestCase5976):
     __test__ = False
 
 
-@attr(tier=2)
+@attr(tier=3)
 @bz({'1258219': {}})
 class TestCase5977(basePlan.TestCase5977):
     """
@@ -369,7 +369,7 @@ class TestCase5971(basePlan.TestCase5971):
     __test__ = True
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5980(basePlan.TestCase5980):
     """
     offline migration + LSM
@@ -390,7 +390,7 @@ class TestCase5966(basePlan.TestCase5966):
     __test__ = False
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5981(basePlan.TestCase5981):
     """
     merge after a failure in LSM

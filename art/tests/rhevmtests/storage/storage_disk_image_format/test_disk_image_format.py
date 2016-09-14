@@ -210,7 +210,7 @@ class TestCase11621(BaseTestDiskImageVms):
         self.check_disks()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11620(BaseTestDiskImageVms):
     """
     Polarion case 11620
@@ -401,7 +401,7 @@ class TestCase11615(ExportVms):
         self.check_disks()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11614(ExportVms):
     """
     Polarion case 11614
@@ -464,7 +464,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
     config.retrieve_disk_obj = lambda x: ll_vms.getVmDisks(x)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11612(TestCasesImportVmLinked):
     """
     Polarion case 11612
@@ -494,7 +494,7 @@ class TestCase11612(TestCasesImportVmLinked):
         self.check_disks()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11611(TestCasesImportVmLinked):
     """
     Polarion case 11611
@@ -581,7 +581,7 @@ class TestCase11610(TestCasesImportVmWithNewName):
         self.import_vm_with_new_name()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11609(TestCasesImportVmWithNewName):
     """
     Polarion case 11609
@@ -655,7 +655,7 @@ class TestCase11608(TestCasesCreateTemplate):
         self.create_template_from_vm()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11607(TestCasesCreateTemplate):
     """
     Polarion case 11607
@@ -681,7 +681,7 @@ class TestCase11607(TestCasesCreateTemplate):
     clean_export_domain.__name__,
     remove_template.__name__,
 )
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11606(BaseTestDiskImage):
     """
     Test vm with both disk formats

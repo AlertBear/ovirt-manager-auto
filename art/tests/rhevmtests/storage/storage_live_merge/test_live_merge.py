@@ -438,7 +438,7 @@ class TestCase16287(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase12215(BasicEnvironment):
     """
     Deleting all snapshots
@@ -470,7 +470,7 @@ class TestCase12215(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6044(BasicEnvironment):
     """
     Live delete and merge after deleting the base snapshot
@@ -532,7 +532,7 @@ class TestCase6045(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6043(BasicEnvironment):
     """
     Live delete and merge after deleting the last created snapshot
@@ -593,7 +593,7 @@ class TestCase6046(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6048(BasicEnvironment):
     """
     Consecutive delete and merge of snapshots
@@ -631,7 +631,7 @@ class TestCase6048(BasicEnvironment):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6050(BasicEnvironment):
     """
     Delete a 2nd live snapshot during a delete and merge of another
@@ -731,7 +731,7 @@ class TestCase6058(BasicEnvironment):
         assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6062(BasicEnvironment):
     """
     Live delete and merge of snapshot during Live Storage Migration

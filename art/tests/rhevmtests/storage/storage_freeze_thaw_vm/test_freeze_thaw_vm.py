@@ -195,7 +195,7 @@ class TestCase14677(BaseTestCase):
         self.freeze_thaw_basic_flow()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14717(BaseTestCase):
     """
     RHEVM3-14717 - Multiple freeze/thaw calls
@@ -212,7 +212,7 @@ class TestCase14717(BaseTestCase):
             self.freeze_thaw_basic_flow()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14713(BaseTestCase):
     """
     RHEVM3-14713 - Freeze and thaw a vm with multiple disks
@@ -259,7 +259,7 @@ class TestCase14713(BaseTestCase):
         self.freeze_thaw_basic_flow()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14716(BaseTestCase):
     """
     RHEVM3-14716 - Freeze a vm and create a memory snapshot
@@ -285,7 +285,7 @@ class TestCase14716(BaseTestCase):
         ), "Taking a snapshot while the vm's filesystems are frozen failed"
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14715(BaseTestCase):
     """
     RHEVM3-14715 - Negative cases

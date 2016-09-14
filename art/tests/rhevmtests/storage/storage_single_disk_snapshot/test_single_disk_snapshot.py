@@ -325,7 +325,7 @@ class TestCase6023(BasicEnvironment):
         super(TestCase6023, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6024(BasicEnvironment):
     """
     Preview snapshot of 2 disks out of 4 and verify that the
@@ -405,7 +405,7 @@ class TestCase6024(BasicEnvironment):
         super(TestCase6024, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6026(BasicEnvironment):
     """
     Create snapshot of all vm's disks, preview it and undo the snapshot
@@ -478,7 +478,7 @@ class TestCase6026(BasicEnvironment):
         super(TestCase6026, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6007(BasicEnvironment):
     """
     Create snapshot of first disk out of 4, preview it and undo the snapshot
@@ -820,7 +820,7 @@ class TestCase16779(BasicEnvironment):
         super(TestCase16779, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14399(BasicEnvironment):
     """
     Create 3 snapshot and delete the second

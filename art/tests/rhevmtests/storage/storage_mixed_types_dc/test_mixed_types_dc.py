@@ -230,7 +230,7 @@ class TestCase4561(IscsiNfsSD):
                                self.nfs, self.cluster_name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4562(IscsiNfsSD):
     """
     * Create a shared DC
@@ -302,7 +302,7 @@ class TestCase4562(IscsiNfsSD):
         add_snapshot_and_clone(self.vm_name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4563(IscsiNfsSD):
     """
     * Create a shared DC
@@ -593,7 +593,7 @@ class TestCase4555(IscsiNfsSD):
         # Make matrix...
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4554(BaseCaseDCMixed):
     """
     * Create DataCenter of shared type
@@ -829,7 +829,7 @@ class TestCase4564(IscsiNfsSD):
         assert success, "Failed to create filesystem: %s" % output
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase4551(IscsiNfsSD):
     """
     * Create a shared DC with two Storage Domains - ISCSI and NFS

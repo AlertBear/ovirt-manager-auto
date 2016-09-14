@@ -11,8 +11,6 @@ from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import (
-    datacenters as ll_dc,
-    disks as ll_disks,
     hosts as ll_hosts,
     storagedomains as ll_sds,
     templates as ll_templates,
@@ -100,84 +98,6 @@ class EnvironmentWithTwoHosts(TestCase):
             if not ll_hosts.isHostUp(True, host):
                 logger.info("Activating host %s", host)
                 ll_hosts.activateHost(True, host)
-
-
-@attr(tier=2)
-class TestCase11909(TestCase):
-    """
-    Test case 11909 - Test that exposes BZ1066834
-
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_0_Storage_Virtual_Machines_Vdisks
-    """
-    polarion_test_case = '11909'
-    expected_disk_number = 2
-    bz_id = '1066834'
-    __test__ = True
-
-    def setUp(self):
-        """
-        Create a vm with a bootable disk
-        """
-        self.storage_domain = ll_sds.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage,
-        )[0]
-        self.vm_name = self.vm_name_base = (
-            storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_VM
-            )
-        )
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.storage_domain
-        vm_args['installation'] = False
-        vm_args['vmName'] = self.vm_name
-
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.vm_name
-            )
-
-    @polarion("RHEVM3-11909")
-    def test_add_multiple_bootable_disks(self):
-        """
-        Verify adding a second bootable disk should fail
-        """
-        disks = ll_vms.getVmDisks(self.vm_name)
-        assert len(disks) == 1
-        assert ll_vms.is_bootable_disk(self.vm_name, disks[0].get_id())
-
-        # Could add a non bootable disk
-        logger.info("Adding a new non bootable disk works")
-        self.second_disk = "second_disk_%s" % self.bz_id
-        assert ll_vms.addDisk(
-            True, self.vm_name, GB, wait=True,
-            storagedomain=self.storage_domain, bootable=False,
-            alias=self.second_disk)
-
-        disks = ll_vms.getVmDisks(self.vm_name)
-        assert len(disks) == self.expected_disk_number
-        assert False in [
-            ll_vms.is_bootable_disk(self.vm_name, disk.get_id()) for disk in
-            disks
-        ]
-
-        logger.info("Adding a second bootable disk to vm %s should fail",
-                    self.vm_name)
-        self.bootable_disk = "bootable_disk_%s" % self.bz_id
-        assert ll_vms.addDisk(
-            False, self.vm_name, GB, wait=True, alias=self.bootable_disk,
-            storagedomain=self.storage_domain, bootable=True
-        ), "Shouldn't be possible to add a second bootable disk"
-
-    def tearDown(self):
-        """
-        Remove created vm
-        """
-        # If it fails, the disk are still being added, wait for them
-        disks_aliases = [disk.get_alias() for disk in ll_vms.getVmDisks(
-            self.vm_name)]
-        ll_disks.wait_for_disks_status(disks=disks_aliases)
-        assert ll_vms.removeVm(True, self.vm_name)
 
 
 @attr(tier=4)
@@ -466,77 +386,7 @@ class TestCase11907(TestCase):
             raise exceptions.TestException("Test failed during tearDown")
 
 
-@attr(tier=2)
-class TestCase11956(EnvironmentWithTwoHosts):
-    """
-    test exposing https://bugzilla.redhat.com/show_bug.cgi?id=986961
-    scenario:
-        * on 2 host cluster with connected pool and running VM on SPM
-        * maintenance SPM
-
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/2_2_Storage_Hosts_Spm_General
-    """
-    __test__ = True
-    storages = config.NOT_APPLICABLE
-    polarion_test_case = '11956'
-    # Bugzilla history:
-    # 1248035
-    # 1254582: Failed to created vm pinned to specific host
-
-    def setUp(self):
-        """
-        create a VM on SPM
-        """
-        self.storage_domain = ll_sds.get_master_storage_domain_name(
-            config.DATA_CENTER_NAME
-        )
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        self.vm_name_base = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_VM
-        )
-        vm_args = config.create_vm_args.copy()
-        vm_args['vmName'] = self.vm_name_base
-        vm_args['storageDomainName'] = self.storage_domain
-        vm_args['placement_host'] = self.spm_host
-        vm_args['highly_available'] = True
-        vm_args['start'] = 'true'
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                "Failed to create vm %s" % self.vm_name_base
-            )
-
-    @polarion("RHEVM3-11956")
-    def test_maintenance_spm_with_running_vm(self):
-        """
-            * maintenance SPM
-        """
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
-        logger.info("Deactivating SPM host %s", self.spm_host)
-        assert ll_hosts.deactivateHost(
-            True, self.spm_host
-        ), "Failed to deactivate SPM with running vm"
-        ll_hosts.waitForHostsStates(
-            True, self.spm_host, config.HOST_MAINTENANCE
-        )
-
-        logger.info("Waiting DC state to be up with the new spm")
-        ll_dc.wait_for_datacenter_state_api(config.DATA_CENTER_NAME)
-
-        assert ll_hosts.waitForSPM(
-            config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
-        )
-        new_spm = ll_hosts.getSPMHost(self.hosts)
-        logger.info("New SPM is: %s", new_spm)
-
-    def tearDown(self):
-        """Delete the vm"""
-        assert ll_vms.removeVm(True, self.vm_name_base, **{'stopVM': 'true'})
-
-
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11625(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=962549
 

@@ -38,7 +38,7 @@ def setup_module():
     rhevm_helpers.storage_cleanup()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11843(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1000789

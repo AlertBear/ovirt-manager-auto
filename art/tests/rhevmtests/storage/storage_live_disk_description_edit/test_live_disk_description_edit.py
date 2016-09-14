@@ -151,7 +151,7 @@ class BaseClassEditDescription(BasicEnvironment):
             ll_disks.detachDisk(True, disk_alias, self.vm1_name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11500(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a block domain
@@ -178,7 +178,7 @@ class TestCase11500(BaseClassEditDescription):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11501(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a file domain
@@ -208,7 +208,7 @@ class TestCase11501(BaseClassEditDescription):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11503(BasicEnvironment):
     """
     Hot plug disk from one running VM to another, ensuring that the
@@ -294,7 +294,7 @@ class TestCase11503(BasicEnvironment):
             ll_disks.detachDisk(True, disk_alias, self.vm2_name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11504(BasicEnvironment):
     """
     Attempt to edit a disk's description on a running VM while running a

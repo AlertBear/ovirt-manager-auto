@@ -742,7 +742,7 @@ class TestCase5302(BasicEnvironment):
         super(TestCase5302, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5193(BasicEnvironment):
     """
     test mounted meta-data files when attaching a file domain
@@ -783,7 +783,7 @@ class TestCase5193(BasicEnvironment):
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5194(BasicEnvironment):
     """
     test lv's existence when importing a block domain
@@ -1244,7 +1244,7 @@ class TestCase10951(BasicEnvironment):
         super(TestCase10951, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class BaseTestCase5192(BasicEnvironment):
     """
     Attach storage domain from older version into 3.5 data center
@@ -1325,7 +1325,7 @@ class TestCase5192_3_6(BaseTestCase5192):
 # Bugzilla history:
 # BZ1328071: Unexpected flow when importing a domain with a template with
 # multiple disks on different domains
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5200(DomainImportWithTemplate):
     """
     Create vm from a template with two disks, one on a block domain

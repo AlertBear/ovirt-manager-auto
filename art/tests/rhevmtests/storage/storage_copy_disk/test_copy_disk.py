@@ -292,6 +292,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         helpers.check_file_existence(self.test_vm_name)
 
     @polarion("RHEVM3-11242")
+    @attr(tier=3)
     def test_different_domain_same_alias(self):
         """
         Copy existing disk to different storage domain with the same alias
@@ -301,6 +302,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         helpers.check_file_existence(self.test_vm_name)
 
     @polarion("RHEVM3-11248")
+    @attr(tier=3)
     def test_same_domain_different_alias(self):
         """
         Copy existing disk to the same storage domain with different alias
@@ -332,6 +334,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         self.basic_copy(same_domain=False, new_alias=self.new_alias)
 
+    @attr(tier=3)
     @polarion("RHEVM3-11254")
     def test_same_domain_different_alias(self):
         """
@@ -339,6 +342,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         self.basic_copy(new_alias=self.new_alias)
 
+    @attr(tier=3)
     @polarion("RHEVM3-11251")
     def test_different_domain_same_alias(self):
         """
@@ -347,6 +351,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         self.basic_copy(same_domain=False)
 
 
+@attr(tier=3)
 class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
     """
     Copy floating disk -  Not enough space on target domain
@@ -377,7 +382,7 @@ class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
         self.basic_copy(positive=False, same_domain=False)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11264(CopyDiskWithContent):
     """
     Copy disk - VM in various states
@@ -418,7 +423,7 @@ class TestCase11264(CopyDiskWithContent):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11339(CopyDiskWithContent):
     """
     Copy disk - Vm with snapshot
@@ -445,7 +450,7 @@ class TestCase11339(CopyDiskWithContent):
         helpers.check_file_existence(self.test_vm_name)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_template.__name__,
     remove_vm.__name__,
@@ -466,7 +471,7 @@ class TestCase11140(CopyDiskWithContent):
         self.copy_with_template()
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_template.__name__,
     remove_vm.__name__,

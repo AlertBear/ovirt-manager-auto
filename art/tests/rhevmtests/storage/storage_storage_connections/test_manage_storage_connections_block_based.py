@@ -247,7 +247,7 @@ class TestCase(StorageTest):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5243(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -314,7 +314,7 @@ class TestCase5243(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5247(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -412,7 +412,7 @@ class TestCase5247(TestCase):
             ll_storageconnections.remove_storage_connection(self.conn.id)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5248(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -500,7 +500,7 @@ class TestCase5248(TestCase):
         ll_storageconnections.remove_storage_connection(cls.conn_2.id)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5246(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -647,7 +647,7 @@ class TestCase5246(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5240(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -729,7 +729,7 @@ class TestCase5240(TestCase):
             ll_storageconnections.remove_storage_connection(conn.id)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5242(TestCase):
     """
     Verify the GET call works for various storage connection/storage domains
@@ -943,7 +943,7 @@ class TestCase5242(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5245(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1074,7 +1074,7 @@ class TestCase5245(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5244(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1202,7 +1202,7 @@ class TestCase5244(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5241(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1371,7 +1371,7 @@ class TestCase5241(TestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5249(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/

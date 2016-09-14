@@ -39,7 +39,7 @@ class TestCase10348(basePlan.TestCase6004):
     polarion_test_case = '10348'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase5990(basePlan.TestCase5990):
     """
     vm in paused mode
@@ -73,7 +73,7 @@ class TestCase10337(basePlan.TestCase5993):
     polarion_test_case = '10337'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10336(basePlan.TestCase5992):
     """
     snapshots and move vm
@@ -99,7 +99,7 @@ class TestCase10335(basePlan.TestCase5991):
     polarion_test_case = '10335'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10333(basePlan.TestCase5989):
     """
     suspended vm
@@ -110,7 +110,7 @@ class TestCase10333(basePlan.TestCase5989):
     polarion_test_case = '10333'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10332(basePlan.TestCase5988):
     """
     Create live snapshot during live storage migration
@@ -145,7 +145,7 @@ class TestCase10339(basePlan.TestCase5995):
     polarion_test_case = '10339'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10340(basePlan.TestCase5996):
     """
     hot plug disk
@@ -191,7 +191,7 @@ class TestCase10316(basePlan.TestCase5972):
     polarion_test_case = '10316'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10314(basePlan.TestCase5970):
     """
     Wipe after delete
@@ -222,7 +222,7 @@ class TestCase10313Shutdown(basePlan.TestCase5969Shutdown):
         vms.shutdownVm(True, self.vm_name, 'false')
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10311(basePlan.TestCase5967):
     """
     Space Reclamation after Deleting snapshot after- Live Migration failure
@@ -234,7 +234,7 @@ class TestCase10311(basePlan.TestCase5967):
     polarion_test_case = '10311'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10323(basePlan.TestCase5979):
     """
     offline migration for disk attached to running vm
@@ -245,7 +245,7 @@ class TestCase10323(basePlan.TestCase5979):
     polarion_test_case = '10323'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10320(basePlan.TestCase5976):
     """
     Deactivate vm disk during live migrate
@@ -257,7 +257,7 @@ class TestCase10320(basePlan.TestCase5976):
     polarion_test_case = '10320'
 
 
-@attr(tier=2)
+@attr(tier=3)
 @bz({'1258219': {}})
 class TestCase10321(basePlan.TestCase5977):
     """
@@ -375,7 +375,7 @@ class TestCase10315(basePlan.TestCase5971):
     polarion_test_case = '10315'
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase10324(basePlan.TestCase5980):
     """
     offline migration + LSM
@@ -398,7 +398,7 @@ class TestCase10310(basePlan.TestCase5966):
     polarion_test_case = '10310'
 
 
-@attr(tier=2)
+@attr(tier=3)
 @bz({'11313744': {}})
 class TestCase10325(basePlan.TestCase5981):
     """

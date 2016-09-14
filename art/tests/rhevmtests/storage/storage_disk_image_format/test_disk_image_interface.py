@@ -530,7 +530,7 @@ class TestCase14945(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14946(BaseTestCase):
     """
     RHEVM-14946 - Change disks to IDE for a large number of PCI devices
@@ -593,7 +593,7 @@ class TestCase14946(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14947(BaseOneDiskAttachedTestCase):
     """
     RHEVM_14947 - Negative - Try to change disk interface attach to a running
@@ -621,7 +621,7 @@ class TestCase14947(BaseOneDiskAttachedTestCase):
         self.update_disk_interface(positive=False)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14948(BaseTestCase):
     """
     RHEVM_14948 - Negative - Try to attach disk to a VM without the interface
@@ -690,7 +690,7 @@ class TestCase14948(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14949(BaseOneDiskAttachedTestCase):
     """
     RHEVM_14949 - Disk interface after restore snapshot
@@ -724,7 +724,7 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
         self.check_guest_os_disk_interface(self.base_interface)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase14955(BaseOneDiskAttachedTestCase):
     """
     RHEVM_14955 - Change disk interface for a suspended VM
@@ -753,7 +753,7 @@ class TestCase14955(BaseOneDiskAttachedTestCase):
         self.update_disk_interface(positive=False)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__, update_vm.__name__, add_disk.__name__
 )

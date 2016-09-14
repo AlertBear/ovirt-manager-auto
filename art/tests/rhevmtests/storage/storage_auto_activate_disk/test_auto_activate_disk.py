@@ -125,7 +125,7 @@ class TestCase4936(VmWithOs):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     delete_disks.__name__,

@@ -234,7 +234,7 @@ class TestCase16405(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16407(BaseTestCase):
     """
     Create a VM from a QCOW2 template as QCOW2
@@ -269,7 +269,7 @@ class TestCase16407(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16408(BaseTestCase):
     """
     Create a VM from QCOW2 template as RAW
@@ -303,7 +303,7 @@ class TestCase16408(BaseTestCase):
         self.vms.append(self.vm_name_3)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16406(BaseTestCase):
     """
     Create a template with RAW format disks
@@ -329,7 +329,7 @@ class TestCase16406(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16410(BaseTestCase):
     """
     Create a VM from a RAW template as RAW
@@ -364,7 +364,7 @@ class TestCase16410(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16411(BaseTestCase):
     """
     Create a VM from a RAW template as QCOW2
@@ -399,7 +399,7 @@ class TestCase16411(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16409(BaseTestCase):
     """
     Create a template with RAW disk from a VM with a asnapshot.
@@ -459,7 +459,7 @@ class TestCase16409(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase16412(BaseTestCase):
     """
     Create a template with QCOW2 disk from a VM with snapshot.

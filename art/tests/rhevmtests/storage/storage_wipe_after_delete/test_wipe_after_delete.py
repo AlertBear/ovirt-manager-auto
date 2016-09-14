@@ -235,7 +235,7 @@ class TestCase5115(CommonUsage):
     create_vm.__name__,
     add_disk_start_vm.__name__
 )
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11864(CommonUsage):
     """
     Wipe after delete with LSM

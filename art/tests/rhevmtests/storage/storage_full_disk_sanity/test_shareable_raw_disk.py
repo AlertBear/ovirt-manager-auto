@@ -228,7 +228,7 @@ class TestCase5897(TestCase):
         ), "Succeeded to create shared disk with format COW"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(add_disk.__name__)
 class TestCase16687(TestCase):
     """
@@ -256,7 +256,7 @@ class TestCase16687(TestCase):
         ), "Succeeded to move shared disk to Gluster storage domain"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(delete_disks.__name__)
 class TestCase16688(TestCase):
     """
@@ -310,7 +310,7 @@ class TestCase16685(TestCase):
         ), "Failed to update disk sharable flag to 'True'"
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
@@ -344,7 +344,7 @@ class TestCase16783(TestCase):
         ll_vms.stop_vms_safely([self.vm_name])
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
@@ -376,7 +376,7 @@ class TestCase16686(TestCase):
             "shareable")
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(create_vm.__name__)
 class TestCase16740(TestCase):
     """

@@ -419,7 +419,7 @@ class TestCase11546(BaseCase):
         self.run_scenario()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase11541(BaseCase):
     """
     Polarion Test Case 11541 - Create template and check storage details

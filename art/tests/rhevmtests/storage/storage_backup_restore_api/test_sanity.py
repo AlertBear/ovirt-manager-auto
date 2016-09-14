@@ -76,7 +76,7 @@ class CreateTemplateFromVM(BaseTestCase):
         ), "Failed to create template '%s'" % self.template_name
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6178(BaseTestCase):
     """
     Shutdown backup VM with attached snapshot of source vm and verify
@@ -247,7 +247,7 @@ class TestCase6183(BaseTestCase):
         logger.info("%s contain backup volume", helpers.TRANSIENT_DIR_PATH)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6176(BaseTestCase):
     """
     Attach snapshot disk of source VM to running backup VM and Hotplug the
@@ -297,7 +297,7 @@ class TestCase6176(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6174(BaseTestCase):
     """
     Create source VM snapshot, attach snapshot to backup VM
@@ -323,7 +323,7 @@ class TestCase6174(BaseTestCase):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6165(BaseTestCase):
     """
     Try to perform snapshot operations on the source VM:
@@ -717,7 +717,7 @@ class TestCase6170(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6171(BaseTestCase):
     """
     During a vm disk migration, try to attach the snapshot disk to backup vm
@@ -758,7 +758,7 @@ class TestCase6171(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6172(BaseTestCase):
     """
     Attach snapshot disk to backup vm more than once
@@ -780,7 +780,7 @@ class TestCase6172(BaseTestCase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase6173(BaseTestCase):
     """
     During a vm disk live migration, try to attach the snapshot disk to
