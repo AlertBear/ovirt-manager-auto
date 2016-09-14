@@ -46,7 +46,7 @@ def host_vm_prepare_setup(request):
 
 @pytest.fixture(scope="module")
 def host_prepare_setup(
-    request, host_vm_prepare_setup, host_attache_networks_to_hosts
+    request, host_vm_prepare_setup, host_attach_networks_to_hosts
 ):
     """
     Send ICMP to increase host NICs stats
@@ -85,9 +85,9 @@ def clean_hosts_interfaces(request):
 
 
 @pytest.fixture(scope="module")
-def host_attache_networks_to_hosts(request, clean_hosts_interfaces):
+def host_attach_networks_to_hosts(request, clean_hosts_interfaces):
     """
-    Attache networks with IP to hosts
+    Attach networks with IP to hosts
     """
     NetworkFixtures()
     ip_dict = rx_tx_conf.BASIC_IP_DICT_NETMASK
@@ -104,14 +104,14 @@ def host_attache_networks_to_hosts(request, clean_hosts_interfaces):
         host = conf.HOSTS[i]
         sn_dict["add"]["1"]["nic"] = conf.VDS_HOSTS[i].nics[1]
         ip_dict["ip_prefix"]["address"] = rx_tx_conf.HOST_IPS[i]
-        testflow.setup("Attache: %s to host %s", sn_dict, host)
+        testflow.setup("Attach: %s to host %s", sn_dict, host)
         assert hl_host_network.setup_networks(host_name=host, **sn_dict)
 
 
 @pytest.fixture(scope="module")
-def vm_attache_networks_to_hosts(request, clean_hosts_interfaces):
+def vm_attach_networks_to_hosts(request, clean_hosts_interfaces):
     """
-    Attache networks to hosts
+    Attach networks to hosts
     """
     sn_dict = {
         "add": {
@@ -130,13 +130,13 @@ def vm_attache_networks_to_hosts(request, clean_hosts_interfaces):
         host = conf.HOSTS[i]
         sn_dict["add"]["1"]["nic"] = conf.VDS_HOSTS[i].nics[1]
         sn_dict["add"]["2"]["nic"] = conf.VDS_HOSTS[i].nics[1]
-        testflow.setup("Attache: %s to host %s", sn_dict, host)
+        testflow.setup("Attach: %s to host %s", sn_dict, host)
         assert hl_host_network.setup_networks(host_name=host, **sn_dict)
 
 
 @pytest.fixture(scope="module")
 def vm_prepare_setup(
-    request, host_vm_prepare_setup, vm_attache_networks_to_hosts
+    request, host_vm_prepare_setup, vm_attach_networks_to_hosts
 ):
     """
     Add vNICs to VMs
