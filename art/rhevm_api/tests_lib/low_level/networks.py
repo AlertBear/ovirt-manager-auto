@@ -233,7 +233,10 @@ def find_network(network, data_center=None, cluster=None):
     """
     logger.info("Find desired network %s", network)
     if cluster:
-        cluster_object = ll.clusters.get_cluster_object(cluster_name=cluster)
+        from art.rhevm_api.tests_lib.low_level.clusters import (
+            get_cluster_object
+        )
+        cluster_object = get_cluster_object(cluster_name=cluster)
         data_center_id = cluster_object.data_center.id
         data_center_name = ll.general.get_object_name_by_id(
             object_api=DC_API, object_id=data_center_id
