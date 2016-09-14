@@ -367,12 +367,11 @@ class TestMigrationCase10(NetworkTest):
             "Replace migration from the network %s with display network",
             config.NETS[10][0]
         )
-        assert (ll_networks.update_cluster_network(
+        assert ll_networks.update_cluster_network(
             True, cluster=config.CLUSTER_NAME[0],
             network=config.NETS[10][0],
             usages="display"
         ), "Cannot update network usages param"
-        )
 
         testflow.step("Make sure the migration is over mgmt network")
         helper.migrate_vms_and_check_traffic(

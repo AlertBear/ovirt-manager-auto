@@ -290,14 +290,12 @@ class TestTemplateSanity(VirtTest):
         testflow.step(
             "Using API query to get templates named: %s", conf.TEMPLATE_LIST[0]
         )
-        assert (
-            ll_templates.searchForTemplate(
-                True,
-                expected_count=2,
-                query_key='name',
-                query_val=conf.TEMPLATE_LIST[0],
-                key_name='name',
-            )
+        assert ll_templates.searchForTemplate(
+            True,
+            expected_count=2,
+            query_key='name',
+            query_val=conf.TEMPLATE_LIST[0],
+            key_name='name',
         )
 
     @pytest.mark.usefixtures(
