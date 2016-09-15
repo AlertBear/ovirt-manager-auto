@@ -513,7 +513,7 @@ def remove_networks_from_host(hosts=None):
 
 
 def send_icmp_sampler(
-    host_resource, dst, count="5", size="1500", extra_args=None,
+    host_resource, dst, count="5", size="1470", extra_args=None,
     timeout=conf.SAMPLER_TIMEOUT, sleep=1
 ):
     """

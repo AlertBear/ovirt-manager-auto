@@ -42,14 +42,14 @@ def update_vnic_driver(driver, vnic_profile):
     return True
 
 
-def check_connectivity(vm=True, flags=list()):
+def check_connectivity(vm=True, flags=None):
     """
     Check connectivity for VM and non-VM networks
 
     :param vm: Check connectivity to VM network if True, False for non-VM
     :type vm: bool
     :param flags: extra flags for ping command (for example -I eth1)
-    :type flags: list
+    :type flags: str
     :return: True in case of success/False otherwise
     :rtype: bool
     """
@@ -58,7 +58,8 @@ def check_connectivity(vm=True, flags=list()):
         return ip[0]
 
     return network_helper.send_icmp_sampler(
-        host_resource=config.VDS_0_HOST, dst=config.DST_HOST_IP
+        host_resource=config.VDS_0_HOST, dst=config.DST_HOST_IP,
+        extra_args=flags
     )
 
 
@@ -90,7 +91,7 @@ def check_connectivity_log(
 
 
 def check_vm_connect_and_log(
-    driver=None, mode=None, vlan=False, vm=True, flags=list()
+    driver=None, mode=None, vlan=False, vm=True, flags=None
 ):
     """
     Check VM connectivity with logger info and raise error if fails
@@ -104,7 +105,7 @@ def check_vm_connect_and_log(
     :param vm: Check connectivity to VM network if True, False for non-VM
     :type vm: bool
     :param flags: extra flags for ping command (for example -I eth1)
-    :type flags: list
+    :type flags: str
     :return: True or raise exception
     :rtype: bool
     """

@@ -290,7 +290,7 @@ class TestTopologiesCase05(NetworkTest):
         """
         testflow.step("Check connectivity to BOND mode 3 network")
         assert helper.check_vm_connect_and_log(
-            mode=self.mode, vm=False, flags=["-r"]
+            mode=self.mode, vm=False, flags="-r"
         )
 
 
@@ -322,7 +322,7 @@ class TestTopologiesCase06(NetworkTest):
         """
         testflow.step("Check connectivity to BOND mode 0 network")
         assert helper.check_vm_connect_and_log(
-            mode=self.mode, vm=False, flags=["-r"]
+            mode=self.mode, vm=False, flags="-r"
         )
 
 
@@ -354,7 +354,7 @@ class TestTopologiesCase07(NetworkTest):
         """
         testflow.step("Check connectivity to BOND mode 5 network")
         assert helper.check_vm_connect_and_log(
-            mode=self.mode, vm=False, flags=["-r"]
+            mode=self.mode, vm=False, flags="-r"
         )
 
 
@@ -386,5 +386,5 @@ class TestTopologiesCase08(NetworkTest):
         """
         testflow.step("Check connectivity to BOND mode 6 network")
         assert helper.check_vm_connect_and_log(
-            mode=self.mode, vm=False, flags=["-r"]
+            mode=self.mode, vm=False, flags="-r"
         )
