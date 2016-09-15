@@ -5772,3 +5772,13 @@ def remove_affinity_label(vm_name, affinity_label_name):
         element_type="VM",
         affinity_label_name=affinity_label_name
     )
+
+
+def get_vms():
+    """
+    Get list of VMs
+
+    Returns:
+        list: VMs objects from the engine
+    """
+    return VM_API.get(absLink=False)

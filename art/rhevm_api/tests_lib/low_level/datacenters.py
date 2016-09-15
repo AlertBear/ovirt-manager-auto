@@ -270,18 +270,19 @@ def checkSupportedVersions(name):
     return True
 
 
-def get_data_center(dc_name):
+def get_data_center(datacenter, key='name'):
     """
-    Get data center object by name
+    Get data center object by key
 
     Args:
-        dc_name (str): Data Center name
+        datacenter (str): Data Center name or id
+        key (str): Key to look for data center by, it can be name or id
 
     Returns:
         DataCenter: Datacenter object
     """
-    logger.info("Get datacenter %s", dc_name)
-    dc_obj = util.find(dc_name)
+    logger.info("Get datacenter %s by %s", datacenter, key)
+    dc_obj = util.find(datacenter, attribute=key)
     return dc_obj
 
 

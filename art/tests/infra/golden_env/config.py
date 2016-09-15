@@ -25,6 +25,8 @@ STORAGE_TYPE = PARAMETERS['storage_type']
 # Enums
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
+RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
+
 BASENAME = PARAMETERS.get('basename', 'golden_env')
 
 DATA_CENTER_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % BASENAME)
@@ -103,3 +105,6 @@ PPC_ARCH = True if CPU_NAME in PPC_CPUS else False
 # Hosted engine constants
 HOSTED_ENGINE_SD_NAME = "hosted_storage"
 HOSTED_ENGINE_CLUSTER = "golden_env_mixed_1"
+
+DB_NAME = RHEVM_UTILS_ENUMS['RHEVM_DB_NAME']
+DB_USER = RHEVM_UTILS_ENUMS['RHEVM_DB_USER']

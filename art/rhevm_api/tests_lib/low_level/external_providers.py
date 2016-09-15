@@ -470,7 +470,7 @@ class ExternalNetworkProvider(OpenStackProvider):
             "Import network %s from External Network Provider %s",
             network, self.osp_obj.name
         )
-        datacenter_obj = ll_datacenters.get_data_center(dc_name=datacenter)
+        datacenter_obj = ll_datacenters.get_data_center(datacenter=datacenter)
         if not datacenter_obj:
             logger.error("Datacenter %s not found", datacenter)
             return False

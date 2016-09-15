@@ -569,7 +569,7 @@ def remove_unneeded_vnic_profiles(dc_name):
         True if remove was successful, False if one or more profiles removal(s)
         failed.
     """
-    dc_id = ll_datacenters.get_data_center(dc_name=dc_name).get_id()
+    dc_id = ll_datacenters.get_data_center(datacenter=dc_name).get_id()
     clusters = hl_datacenters.get_clusters_connected_to_datacenter(
         dc_id=dc_id
     )

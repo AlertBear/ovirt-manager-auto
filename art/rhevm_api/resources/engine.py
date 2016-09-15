@@ -193,3 +193,37 @@ class Engine(Service):
             self.restart()
 
         return res
+
+    def ovirt_aaa_jdbc_tool(self, action, what, name='*'):
+        """
+        Function allows you execute some actions of ovirt-aaa-jdbc-tool.
+
+        Args:
+            action (str): action you want to call:
+                list - list of users/groups
+                delete - delete user/group
+            what (str): on which object do action: user or group
+            name (str): name or pattern in list action case
+        Returns:
+            tuple: (rc, out, err)
+        """
+        JDBC_TOOL = 'ovirt-aaa-jdbc-tool'
+        what_param = '--what=%s' % what
+
+        # we can later implement more actions like add, edit
+        actions = ['delete', 'list']
+        if action not in actions:
+            raise NotImplementedError("Action %s is not implemented" % action)
+        if action == 'list':
+            cmd = [
+                JDBC_TOOL, 'query', '--pattern=name=%s' % name, what_param,
+                '|', 'grep', '^Name:', '|', 'cut', '-d', ' ', '-f', '2'
+            ]
+        elif action == 'delete':
+            cmd = [
+                JDBC_TOOL, what, action, name
+            ]
+
+        executor = self.host.executor()
+        with executor.session() as ss:
+            return ss.run_cmd(cmd)
