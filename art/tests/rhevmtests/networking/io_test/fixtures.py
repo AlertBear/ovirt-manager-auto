@@ -31,10 +31,12 @@ def io_fixture_prepare_setup(request):
         """
         Finalizer for remove networks
         """
-        io_fixture.remove_networks_from_setup(io_fixture.host_0_name)
+        assert network_helper.remove_networks_from_setup(
+            hosts=io_fixture.host_0_name
+        )
     request.addfinalizer(fin1)
 
-    io_fixture.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=io_conf.NET_DICT, dc=io_fixture.dc_0,
         cluster=io_fixture.cluster_0
     )

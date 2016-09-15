@@ -5,14 +5,13 @@
 Networking fixtures
 """
 
-import pytest
 import re
 
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-from rhevmtests.networking import helper as network_helper
 
 
 class NetworkFixtures(object):
@@ -49,54 +48,6 @@ class NetworkFixtures(object):
         self.mgmt_bridge = conf.MGMT_BRIDGE
         conf.HOSTS_LIST = self.hosts_list
         conf.VDS_HOSTS_LIST = self.vds_list
-
-    def prepare_networks_on_setup(self, networks_dict, dc=None, cluster=None):
-        """
-        Create networks on setup
-
-        Args:
-            networks_dict (dict): Networks to create
-            dc (str): Datacenter name
-            cluster (str): Cluster name
-        """
-        network_helper.prepare_networks_on_setup(
-            networks_dict=networks_dict, dc=dc, cluster=cluster
-        )
-
-    def remove_networks_from_setup(self, hosts):
-        """
-        Remove network from setup
-
-        Args:
-            hosts (list or str): Host name or hosts list
-        """
-        network_helper.remove_networks_from_setup(hosts=hosts)
-
-    def run_vm_once_specific_host(self, vm, host, wait_for_up_status):
-        """
-        Run VM once on specific host
-
-        Args:
-            vm (str): VM name.
-            host (str): Host name.
-            wait_for_up_status (bool): Wait for VM to be up
-
-        Returns:
-            bool: True if action succeeded, False otherwise
-        """
-        return network_helper.run_vm_once_specific_host(
-            vm=vm, host=host, wait_for_up_status=wait_for_up_status
-        )
-
-    def stop_vm(self, positive, vm):
-        """
-        Stop VM
-
-        Args:
-            positive (bool): Expected status.
-            vm (str): Name of vm.
-        """
-        ll_vms.stopVm(positive=positive, vm=vm)
 
 
 @pytest.fixture(scope="class")

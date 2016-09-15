@@ -14,6 +14,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as nf_conf
 import rhevmtests.networking.config as conf
 from rhevmtests import networking
+from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -28,12 +29,12 @@ def network_filter_prepare_setup(request):
         """
         Remove networks from setup
         """
-        network_filter.remove_networks_from_setup(
+        assert network_helper.remove_networks_from_setup(
             hosts=network_filter.host_0_name
         )
     request.addfinalizer(fin)
 
-    network_filter.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=nf_conf.NETS_DICT, dc=network_filter.dc_0,
         cluster=network_filter.cluster_0
     )
@@ -116,12 +117,11 @@ def start_vm(request):
         """
         Stop VM
         """
-        network_filter.stop_vm(positive=True, vm=vm)
+        assert ll_vms.stopVm(positive=True, vm=vm)
     request.addfinalizer(fin1)
 
-    assert network_filter.run_vm_once_specific_host(
-        vm=vm, host=network_filter.host_0_name,
-        wait_for_up_status=True
+    assert network_helper.run_vm_once_specific_host(
+        vm=vm, host=network_filter.host_0_name, wait_for_up_status=True
     )
 
 

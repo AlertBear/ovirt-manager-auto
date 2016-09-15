@@ -27,12 +27,12 @@ def host_network_qos_prepare_setup(request):
         """
         Remove networks from setup
         """
-        host_network_qos.remove_networks_from_setup(
+        assert network_helper.remove_networks_from_setup(
             hosts=host_network_qos.host_0_name
         )
     request.addfinalizer(fin)
 
-    host_network_qos.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=host_qos_conf.NETS_DICT, dc=host_network_qos.dc_0,
         cluster=host_network_qos.cluster_0
     )

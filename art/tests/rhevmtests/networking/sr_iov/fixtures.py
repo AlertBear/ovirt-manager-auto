@@ -99,12 +99,12 @@ def prepare_setup_general(request):
         """
         Remove networks from setup
         """
-        sriov_general.remove_networks_from_setup(
+        assert network_helper.remove_networks_from_setup(
             hosts=sriov_general.host_0_name
         )
     request.addfinalizer(fin)
 
-    sriov_general.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=sriov_conf.GENERAL_DICT, dc=sriov_general.dc_0,
         cluster=sriov_general.cluster_0
     )
@@ -132,7 +132,7 @@ def prepare_setup_import_export(request):
         """
         Remove networks from setup
         """
-        sriov_import_export.remove_networks_from_setup(
+        assert network_helper.remove_networks_from_setup(
             hosts=sriov_import_export.host_0_name
         )
     request.addfinalizer(fin6)
@@ -143,7 +143,7 @@ def prepare_setup_import_export(request):
         """
         ll_templates.removeTemplateFromExportDomain(
             positive=True, template=export_template_name,
-            datacenter=dc, export_storagedomain=export_domain
+            export_storagedomain=export_domain
         )
     request.addfinalizer(fin5)
 
@@ -176,7 +176,7 @@ def prepare_setup_import_export(request):
         ll_vms.stop_vms_safely(vms_list=vms_list)
     request.addfinalizer(fin1)
 
-    sriov_import_export.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=sriov_conf.IMPORT_EXPORT_DICT,
         dc=sriov_import_export.dc_0, cluster=sriov_import_export.cluster_0
     )
@@ -212,10 +212,12 @@ def prepare_setup_vm(request):
         """
         Remove networks from setup
         """
-        sriov_vm.remove_networks_from_setup(hosts=sriov_vm.host_0_name)
+        assert network_helper.remove_networks_from_setup(
+            hosts=sriov_vm.host_0_name
+        )
     request.addfinalizer(fin)
 
-    sriov_vm.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=sriov_conf.VM_DICT, dc=sriov_vm.dc_0,
         cluster=sriov_vm.cluster_0
     )

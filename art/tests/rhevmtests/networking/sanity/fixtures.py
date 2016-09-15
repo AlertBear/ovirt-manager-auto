@@ -33,10 +33,12 @@ def create_networks(request):
         """
         Remove networks from setup
         """
-        sanity.remove_networks_from_setup(hosts=sanity.host_0_name)
+        assert network_helper.remove_networks_from_setup(
+            hosts=sanity.host_0_name
+        )
     request.addfinalizer(fin1)
 
-    sanity.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=sanity_conf.SN_DICT, dc=sanity.dc_0,
         cluster=sanity.cluster_0
     )

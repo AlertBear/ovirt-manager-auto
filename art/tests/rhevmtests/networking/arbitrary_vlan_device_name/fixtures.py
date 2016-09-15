@@ -7,10 +7,11 @@ Fixtures for arbitrary_vlan_device_name
 
 import pytest
 
-import helper
-from art.unittest_lib import testflow
 import config as vlan_name_conf
+import helper
 import rhevmtests.networking.helper as net_helper
+from art.unittest_lib import testflow
+from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -25,12 +26,12 @@ def create_networks_on_engine(request):
         """
         Remove the VLAN from the setup
         """
-        arbitrary_vlan_device_name.remove_networks_from_setup(
+        assert network_helper.remove_networks_from_setup(
             hosts=arbitrary_vlan_device_name.host_0_name
         )
     request.addfinalizer(fin)
 
-    arbitrary_vlan_device_name.prepare_networks_on_setup(
+    net_helper.prepare_networks_on_setup(
         networks_dict=vlan_name_conf.ARBITRARY_NET_DICT,
         dc=arbitrary_vlan_device_name.dc_0,
         cluster=arbitrary_vlan_device_name.cluster_0

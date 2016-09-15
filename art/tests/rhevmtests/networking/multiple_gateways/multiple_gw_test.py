@@ -18,6 +18,7 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest as TestCase
 from art.unittest_lib import attr, testflow
+from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces, NetworkFixtures
 )
@@ -35,10 +36,12 @@ def multiple_gw_prepare_setup(request):
         """
         Remove networks from setup
         """
-        multiple_gw.remove_networks_from_setup(hosts=multiple_gw.host_0_name)
+        assert network_helper.remove_networks_from_setup(
+            hosts=multiple_gw.host_0_name
+        )
     request.addfinalizer(fin)
 
-    multiple_gw.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=multiple_gw_conf.NETS_DICT, dc=multiple_gw.dc_0,
         cluster=multiple_gw.cluster_0
     )

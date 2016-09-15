@@ -61,7 +61,7 @@ def import_export_prepare_setup(request):
         """
         Finalizer for remove networks from setup
         """
-        import_export.remove_networks_from_setup(
+        assert networking_helper.remove_networks_from_setup(
             hosts=import_export.host_0_name
         )
     request.addfinalizer(fin3)

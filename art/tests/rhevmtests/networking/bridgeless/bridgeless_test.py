@@ -11,7 +11,9 @@ bond scenarios.
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+from rhevmtests.networking import helper as network_helper
 import rhevmtests.networking.config as conf
+import config as bridgeless_conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from rhevmtests.networking.fixtures import (
@@ -30,11 +32,13 @@ def prepare_setup(request):
         """
         Finalizer for remove networks
         """
-        bridgeless.remove_networks_from_setup(hosts=bridgeless.host_0_name)
+        assert network_helper.remove_networks_from_setup(
+            hosts=bridgeless.host_0_name
+        )
     request.addfinalizer(fin)
 
-    bridgeless.prepare_networks_on_setup(
-        networks_dict=conf.BRIDGELESS_NET_DICT, dc=bridgeless.dc_0,
+    network_helper.prepare_networks_on_setup(
+        networks_dict=bridgeless_conf.BRIDGELESS_NET_DICT, dc=bridgeless.dc_0,
         cluster=bridgeless.cluster_0
     )
 
@@ -73,12 +77,11 @@ class TestBridgelessCase1(NetworkTest):
         local_dict = {
             "add": {
                 "1": {
-                    "network": conf.BRIDGELESS_NETS[1][0],
+                    "network": bridgeless_conf.BRIDGELESS_NETS[1][0],
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **local_dict
         )
@@ -92,12 +95,11 @@ class TestBridgelessCase1(NetworkTest):
         local_dict = {
             "add": {
                 "1": {
-                    "network": conf.BRIDGELESS_NETS[2][0],
+                    "network": bridgeless_conf.BRIDGELESS_NETS[2][0],
                     "nic": conf.HOST_0_NICS[2]
                 }
             }
         }
-
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **local_dict
         )
@@ -111,12 +113,11 @@ class TestBridgelessCase1(NetworkTest):
         local_dict = {
             "add": {
                 "1": {
-                    "network": conf.BRIDGELESS_NETS[3][0],
+                    "network": bridgeless_conf.BRIDGELESS_NETS[3][0],
                     "nic": self.bond_1
                 }
             }
         }
-
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **local_dict
         )
@@ -130,12 +131,11 @@ class TestBridgelessCase1(NetworkTest):
         local_dict = {
             "add": {
                 "1": {
-                    "network": conf.BRIDGELESS_NETS[4][0],
+                    "network": bridgeless_conf.BRIDGELESS_NETS[4][0],
                     "nic": self.bond_2
                 }
             }
         }
-
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **local_dict
         )

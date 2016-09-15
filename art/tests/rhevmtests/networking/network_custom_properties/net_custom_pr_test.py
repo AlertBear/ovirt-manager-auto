@@ -13,6 +13,7 @@ import config as custom_prop_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow, NetworkTest
+from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces, NetworkFixtures
 )  # flake8: noqa
@@ -29,12 +30,12 @@ def prepare_setup(request):
         """
         Remove networks from engine
         """
-        custom_properties.remove_networks_from_setup(
+        assert network_helper.remove_networks_from_setup(
             hosts=custom_properties.host_0_name
         )
     request.addfinalizer(fin)
 
-    custom_properties.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=custom_prop_conf.NETS_DICT, dc=custom_properties.dc_0,
         cluster=custom_properties.cluster_0
     )

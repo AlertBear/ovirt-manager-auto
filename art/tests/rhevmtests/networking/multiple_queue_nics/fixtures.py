@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 from art.unittest_lib import testflow
+from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -63,7 +64,7 @@ def run_vm(request):
     request.addfinalizer(fin)
 
     testflow.setup("Running once VM: %s on host: %s", vm_name, host_0)
-    assert multiple_queue_nics.run_vm_once_specific_host(
+    assert network_helper.run_vm_once_specific_host(
         vm=vm_name, host=host_0, wait_for_up_status=True
     )
 

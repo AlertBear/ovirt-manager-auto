@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as qos_conf
 import helper
 from rhevmtests import networking
+from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -64,7 +65,7 @@ def case_01_fixture(request):
     assert helper.add_qos_profile_to_nic(
         qos_name=qos_name_1, vnic_profile_name=vnic_profile_1
     )
-    assert network_qos.run_vm_once_specific_host(
+    assert network_helper.run_vm_once_specific_host(
         vm=network_qos.vm_0, host=network_qos.host_0_name,
         wait_for_up_status=True
     )
