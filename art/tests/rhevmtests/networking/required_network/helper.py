@@ -7,6 +7,7 @@ Helper for required network job
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.networking.config as conf
+from art.rhevm_api.utils import test_utils
 
 
 def deactivate_hosts(host=None):
@@ -22,6 +23,10 @@ def deactivate_hosts(host=None):
             hosts.
     """
     host = host if host else conf.HOST_0_NAME
+    test_utils.wait_for_tasks(
+        vdc=conf.VDC_HOST, vdc_password=conf.VDC_ROOT_PASSWORD,
+        datacenter=conf.DC_0
+    )
     if not ll_hosts.checkHostSpmStatus(positive=True, hostName=host):
         if not ll_hosts.select_host_as_spm(
             positive=True, host=host, data_center=conf.DC_0
