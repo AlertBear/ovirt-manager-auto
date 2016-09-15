@@ -497,61 +497,81 @@ class RestUtil(APIUtil):
                                   on url '%s'." % (val, href))
         return results[0]
 
-    def query(self, constraint, expected_status=[200, 201], href=None,
-              event_id=None, all_content=False, **params):
-        '''
-        Description: run search query
-        Author: edolinin
-        Parameters:
-           * constraint - query for search
-           * expected_status - list of expected statuses for positive request
-           * href - base href for search
-           * event_id - even id
-           * all_content - all content header
-        Return: query results
-        '''
+    def query(
+        self, constraint, expected_status=None, href=None,
+        event_id=None, all_content=False, **params
+    ):
+        """
+        Run search query
+
+        Args:
+            constraint (str): Query for search
+            expected_status (list): Expected statuses for positive request
+            href (str): Base href for search
+            event_id (str): Event id
+            all_content (bool): All content header
+            params (dict): Extra keys to send to query
+
+        Returns:
+            list: Query results
+
+        Examples:
+            NET_API.query(constraint=conf.MGMT_BRIDGE, datacenter=conf.DC_0)
+        """
+        expected_status = expected_status if expected_status else [200, 201]
         if not href:
-            href = self.links[self.collection_name + '/search']
+            href = self.links["%s/search" % self.collection_name]
 
-        beforeSearch, afterSearch = href.split('?')
-        searchParams = [beforeSearch]
+        search_params = list()
+        if self.collection_name == "events":
+            before_search, after_search = href.split('?')
+            search_params.append(before_search)
+
         for p, val in params.iteritems():
-            searchParams.append("{0}={1}".format(p, val))
+            search_params.append("{0}={1}".format(p, val))
 
-        href = "{0}?{1}".format(";".join(searchParams), afterSearch)
+        if self.collection_name == "events":
+            href = "{0}?{1}".format(";".join(search_params), after_search)
 
-        templ = template_parser.URITemplate(href)
-        qhref = templ.sub({"query": constraint})
+        elif search_params:
+            href = "{0} {1}".format(href, " ".join(search_params))
+
+        query_template = template_parser.URITemplate(href)
+        query_href = query_template.sub({"query": constraint})
+        query_href = query_href.replace(" ", "%20")
         if event_id:
-            qhref = templ.sub({"query": constraint, "event_id": event_id})
+            query_href = query_template.sub(
+                {"query": constraint, "event_id": event_id}
+            )
         else:
-            qhref = qhref.replace("from=", '')
+            query_href = query_href.replace("from=", '')
 
         self.logger.debug(
-            "SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
+            "SEARCH request content is --  url:%(uri)s" % {'uri': query_href})
 
         if all_content:
             self.api.headers['All-content'] = all_content
 
         try:
             with measure_time('GET'):
-                ret = self.api.GET(qhref)
+                ret = self.api.GET(query_href)
         finally:
             if all_content:
                 self.api.headers.pop('All-content')
 
         self.logger.debug(
-            "Response body for QUERY request is: %s " % ret[RespKey.body])
-
-        if not validator.compareResponseCode(ret[RespKey.status],
-                                             expected_status,
-                                             self.logger):
+            "Response body for QUERY request is: %s " % ret[RespKey.body]
+        )
+        if not validator.compareResponseCode(
+            ret[RespKey.status], expected_status, self.logger
+        ):
             return None
 
         self.validateResponseViaXSD(href, ret)
 
-        return getattr(parse(ret[RespKey.body], silence=True),
-                       self.element_name)
+        return getattr(
+            parse(ret[RespKey.body], silence=True), self.element_name
+        )
 
     def syncAction(
             self, entity, action, positive, async=False,
