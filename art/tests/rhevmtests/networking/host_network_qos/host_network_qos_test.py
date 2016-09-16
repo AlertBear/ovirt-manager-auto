@@ -20,6 +20,7 @@ from fixtures import (
     attach_network_to_host, remove_qos_from_dc, create_host_net_qos,
     set_default_engine_properties, update_network_in_datacenter
 )
+from rhevmtests import helpers
 
 
 @attr(tier=2)
@@ -187,7 +188,7 @@ class TestHostNetQOSCase03(NetworkTest):
         assert net_conf.ENGINE.engine_config(
             action='set', param=cmd2
         ).get('results')
-
+        assert helpers.wait_for_engine_api()
         testflow.step(
             "Configuring %s on %s to have weighted share and rate limit to be "
             "above their original default values", self.nets[0],

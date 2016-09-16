@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as host_qos_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+from rhevmtests import helpers
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -141,4 +142,5 @@ def set_default_engine_properties(request):
 
         cmd2 = "%s=%s" % (host_qos_conf.RATE_LIMIT, host_qos_conf.DEFAULT_RATE)
         conf.ENGINE.engine_config(action='set', param=cmd2)
+        assert helpers.wait_for_engine_api()
     request.addfinalizer(fin)
