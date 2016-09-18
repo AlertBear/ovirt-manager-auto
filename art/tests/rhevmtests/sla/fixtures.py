@@ -265,20 +265,18 @@ def stop_guest_agent_service(request):
 
 @pytest.fixture(scope="class")
 def update_cluster_to_default_parameters(request):
+    """
+    1) Update cluster to default parameters
+    """
     def fin():
-        """
-        1) Update cluster to default parameters
-        """
         u_libs.testflow.teardown(
-            "Update cluster %s to default parameters",
-            sla_config.CLUSTER_NAME[0]
+            "Update cluster %s to default parameters %s",
+            sla_config.CLUSTER_NAME[0], sla_config.DEFAULT_CLUSTER_PARAMETERS
         )
         ll_clusters.updateCluster(
             positive=True,
             cluster=sla_config.CLUSTER_NAME[0],
-            ksm_enabled=False,
-            ballooning_enabled=False,
-            mem_ovrcmt_prc=sla_config.CLUSTER_OVERCOMMITMENT_DESKTOP
+            **sla_config.DEFAULT_CLUSTER_PARAMETERS
         )
     request.addfinalizer(fin)
 
@@ -517,16 +515,38 @@ def update_vms_cpus_to_hosts_cpus(request):
     """
     vms_to_hosts_cpus = request.node.cls.vms_to_hosts_cpus
     double_vms_cpus = getattr(request.node.cls, "double_vms_cpus", False)
+    threads_on = getattr(request.node.cls, "threads_on", False)
 
     for vm_name, host_index in vms_to_hosts_cpus.iteritems():
         host_name = sla_config.HOSTS[host_index]
         host_topology = ll_hosts.get_host_topology(host_name=host_name)
         multiplier = 2 if double_vms_cpus else 1
+        vm_cores = host_topology.cores
+        if threads_on:
+            vm_cores *= host_topology.threads
         vm_params = {
-            sla_config.VM_CPU_SOCKET: host_topology.sockets,
-            sla_config.VM_CPU_CORES: host_topology.cores * multiplier
+            sla_config.VM_CPU_SOCKET: host_topology.sockets * multiplier,
+            sla_config.VM_CPU_CORES: vm_cores
         }
         u_libs.testflow.setup(
             "Update the VM %s with params %s", vm_name, vm_params
         )
         assert ll_vms.updateVm(positive=True, vm=vm_name, **vm_params)
+
+
+@pytest.fixture(scope="class")
+def update_cluster(request):
+    """
+    Update the cluster
+    """
+    cluster_to_update_params = request.node.cls.cluster_to_update_params
+
+    u_libs.testflow.setup(
+        "Update the cluster %s with parameters %s",
+        sla_config.CLUSTER_NAME[0], cluster_to_update_params
+    )
+    assert ll_clusters.updateCluster(
+        positive=True,
+        cluster=sla_config.CLUSTER_NAME[0],
+        **cluster_to_update_params
+    )

@@ -839,15 +839,15 @@ def updateVm(positive, vm, **kwargs):
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
-    log_info, log_error = ll_general.get_log_msg(
-        action="update", obj_type=VM, obj_name=vm, positive=positive,
-        **kwargs
-    )
     vm_obj = VM_API.find(vm)
     vm_new_obj = _prepareVmObject(**kwargs)
     compare = kwargs.get("compare", True)
     log_info, log_error = ll_general.get_log_msg(
-        'update', 'vm', vm, **kwargs
+        action="update",
+        obj_type=VM,
+        obj_name=vm,
+        positive=positive,
+        **kwargs
     )
     logger.info(log_info)
     vm_new_obj, status = VM_API.update(

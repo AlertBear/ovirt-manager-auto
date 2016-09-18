@@ -2,672 +2,420 @@
 General test of some SLA features: CPU pinning, CPU host, delete protection,
 count threads as cores and placement policy
 """
-
-
-import re
 import random
-import logging
-import pytest
 
-from unittest2 import SkipTest
-import art.unittest_lib as u_lib
-import rhevmtests.sla.config as conf
-from art.test_handler.tools import polarion
-import art.test_handler.exceptions as errors
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-
-logger = logging.getLogger(__name__)
-
-MINUTE = 60
-CPUPIN_ITER = 4
-HOST_PASSTHROUGH = "host_passthrough"
-# TODO: add type as W/A for bug
-# https://bugzilla.redhat.com/show_bug.cgi?id=1253261
-# add display_type as W/A for bug
-# https://bugzilla.redhat.com/show_bug.cgi?id=1253263
-# must remove both after bugs fixed
-VM_BASIC_PARAMETERS = {
-    "cluster": conf.CLUSTER_NAME[0],
-    "storageDomainName": conf.STORAGE_NAME[0],
-    "provisioned_size": conf.GB, "nic": conf.NIC_NAME[0],
-    "network": conf.MGMT_BRIDGE,
-    "display_type": conf.VM_DISPLAY_TYPE,
-    "type": conf.VM_TYPE_SERVER
-}
-
-# Bugs
-# 1) Bug 1111128 - If I have vm with domain(also when it empty),
-#    update vm via python SDK failed
-# 2) Bug 1088914 - Not possible change vm cpu pinning via cli
-# 3) Bug 1135976 - Edit pinned vm placement option clear vm cpu pinning options
-#    without any error message
-
-########################################################################
-
-
-def adapt_vcpu_pinning_to_cli(vcpu_pinning):
-    """
-    Adapt vcpu pinning format to cli engine
-
-    :param vcpu_pinning: vcpu pinning list
-    :type vcpu_pinning: list
-    :returns: adapted to cli vcpu pinning list
-    :rtype: list
-    """
-    if conf.opts["engine"] == "cli":
-        cli_vcpu_pinning = []
-        for pinning in vcpu_pinning:
-            for key, value in pinning.iteritems():
-                cli_value = value.replace(",", "\,")
-                pinning[key] = cli_value
-            cli_vcpu_pinning.append(pinning)
-        return cli_vcpu_pinning
-    return vcpu_pinning
-
-
-def get_pinned_cpu_info(host_resource, vm, vcpu):
-    """
-    Gets the pCPU which vCPU is running on
-
-    :param host_resource: host resource object
-    :type host_resource: instance of VDS
-    :param vm: name of the vm
-    :type vm: str
-    :param vcpu: number of virtual CPU
-    :type vcpu: int
-    :returns: returns the number of the pcpu that the vcpu
-    is running on and it's pinning affinity
-    :rtype: tuple
-    :raises: HostException
-    """
-    rc, out, err = host_resource.executor().run_cmd(
-        ["virsh", "-r", "list", "|grep", vm]
-    )
-    if rc:
-        raise errors.HostException(
-            "Can't read 'virsh -r list' on %s, err: %s" % (host_resource, err)
-        )
-    vm_id = out.split()[0]
-    logger.info("VM pid is %s", vm_id)
-    rc, out, err = host_resource.executor().run_cmd(
-        ["virsh", "-r", "vcpuinfo", vm_id]
-    )
-    if rc:
-        raise errors.HostException(
-            "Can't read 'virsh -r vcpuinfo %s' on %s" % (vm_id, host_resource)
-        )
-    regex = r"VCPU:\s+%s\s+CPU:\s+(\d+)" % str(vcpu)
-    running = re.search(regex, out).group(1)
-    regex = r"VCPU:\s+%s[\w\W]+?CPU Affinity:\s+([-y]+)" % str(vcpu)
-    affinity = re.search(regex, out).group(1)
-    logger.info(
-        "VCPU %s of VM %s pinned to physical CPU %s, and has affinity of %s",
-        vcpu, vm, running, affinity
-    )
-    return running, affinity
-
-
-def get_qemu_value(host_resource, vm, arg):
-    """
-    Gets the relevant QEMU argument
-
-    :param host_resource: host resource object
-    :type host_resource: instance of VDS
-    :param vm: name of the vm
-    :type vm: str
-    :param arg: argument to be checked
-    :type arg: str
-    :returns: returns a list of CPU flags
-    :rtype: str
-    :raises: HostException
-    """
-    rc, out, err = host_resource.executor().run_cmd(
-        ["ps", "-F", "-C", "qemu-kvm", "|grep", vm]
-    )
-    if rc:
-        raise errors.HostException(
-            "Can't read 'ps' on %s, err: %s" % (host_resource, err)
-        )
-    regex = r"[\w\W]+ -%s ([\w]+) [\w\W]+" % arg
-    res = re.search(regex, out).group(1)
-    return res
-########################################################################
-#                             Test Cases                               #
-########################################################################
+import art.rhevm_api.tests_lib.low_level.sla as ll_sla
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.unittest_lib as u_lib
+import config as conf
+import helpers
+import pytest
+from art.test_handler.tools import polarion
+from rhevmtests.sla.fixtures import (
+    create_vms,
+    start_vms,
+    stop_vms,
+    update_cluster,
+    update_vms,
+    update_vms_to_default_parameters,
+    update_vms_cpus_to_hosts_cpus
+)
 
 
 @u_lib.attr(tier=1)
-class BasicSlaClass(u_lib.SlaTest):
+class BasicSlaSanity(u_lib.SlaTest):
     """
-    Create and delete after test new vm with different parameters
+    Base class for all sla sanity tests
     """
-    __test__ = False
-    vm_name = None
-    vm_desc = None
-    vm_basic_parameters = None
-    protected = None
 
-    @classmethod
-    def setup_class(cls):
+    @staticmethod
+    def _update_vm_vcpu_pinning(vcpu_pinning, positive=True, compare=True):
         """
-        Create new vm with given parameters
-        """
-        logger.info("Create new vm %s", cls.vm_name)
-        if not ll_vms.createVm(
-                True, cls.vm_name, cls.vm_desc, **cls.vm_basic_parameters
-        ):
-            raise errors.VMException("Cannot create vm")
+        Update the VM VCPU pinning
 
-    @classmethod
-    def teardown_class(cls):
+        Args:
+            vcpu_pinning (list): VCPU pinning
+            positive (bool): Positive test behaviour
+            compare (bool): Enable validator
         """
-        Remove protected flag if needed and remove vm
-        """
-        logger.info("Stop vm %s if need", cls.vm_name)
-        ll_vms.stop_vms_safely([cls.vm_name])
-        if cls.protected:
-            logger.info("Remove protected flag from vm %s", cls.vm_name)
-            if not ll_vms.updateVm(True, cls.vm_name, protected='false'):
-                raise errors.VMException("Cannot update vm")
-        logger.info("Remove vm %s", cls.vm_name)
-        if not ll_vms.removeVm(True, cls.vm_name):
-            raise errors.VMException("Cannot remove vm")
+        u_lib.testflow.step(
+            "Set VM %s VCPU pinning to %s", conf.VM_NAME[0], vcpu_pinning
+        )
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=conf.VM_NAME[0],
+            vcpu_pinning=vcpu_pinning,
+            compare=compare
+        ) == positive
 
 
 @u_lib.attr(tier=2)
-class TestProtectedVmCase1(BasicSlaClass):
+@pytest.mark.usefixtures(
+    create_vms.__name__,
+    update_vms_to_default_parameters.__name__
+)
+class TestProtectedVm(BasicSlaSanity):
     """
-    Negative: Remove protected VM
+    1) Remove the protected VM
+    2) Force remove the protected VM
     """
     __test__ = True
-    vm_name = "protected_vm1"
-    vm_desc = "Delete protected VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters["protected"] = True
-    protected = True
+    vms_create_params = {
+        conf.PROTECTED_VM_NAME: {
+            conf.VM_CLUSTER: conf.CLUSTER_NAME[0],
+            conf.VM_STORAGE_DOMAIN: conf.STORAGE_NAME[0],
+            conf.VM_DISK_SIZE: conf.GB,
+            conf.VM_NIC: conf.NIC_NAME[0],
+            conf.VM_NETWORK: conf.MGMT_BRIDGE,
+            conf.VM_PROTECTED: True
+        }
+    }
+    update_to_default_params = [conf.PROTECTED_VM_NAME]
 
     @polarion("RHEVM3-9512")
     def test_remove_protected_vm(self):
         """
-        Attempt to remove the protected VM
+        Remove the protected VM
         """
-        logger.info(
-            "Attempting to remove the protected VM %s", self.vm_name
+        u_lib.testflow.step(
+            "Remove the protected VM %s", conf.PROTECTED_VM_NAME
         )
-        assert not ll_vms.removeVm(True, self.vm_name)
-        logger.info("Failed to remove protected VM %s", self.vm_name)
-
-########################################################################
-
-
-@u_lib.attr(tier=2)
-class TestProtectedVmCase2(BasicSlaClass):
-    """
-    Negative: Force remove protected VM
-    """
-    __test__ = True
-    vm_name = "protected_vm2"
-    vm_desc = "Delete protected VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters["protected"] = True
-    protected = True
+        assert not ll_vms.removeVm(positive=True, vm=conf.PROTECTED_VM_NAME)
 
     @polarion("RHEVM3-9519")
     def test_force_remove_protected_vm(self):
         """
         Attempt to force remove the protected VM
         """
-        logger.info(
-            "Attempting to force remove the protected VM %s", self.vm_name
+        u_lib.testflow.step(
+            "Force remove the protected VM %s", conf.PROTECTED_VM_NAME
         )
-        assert not ll_vms.removeVm(True, self.vm_name, force=True)
-        logger.info("Failed to force remove protected VM %s", self.vm_name)
-
-########################################################################
+        assert not ll_vms.removeVm(
+            positive=True, vm=conf.PROTECTED_VM_NAME, force=True
+        )
 
 
 @u_lib.attr(tier=2)
-class TestCPUHostCase1(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
+class TestCPUHostCase1(BasicSlaSanity):
     """
-    Negative: Change migratable VM to use CPU host
+    Update the migratable VM to use CPU host
     """
     __test__ = True
-    vm_name = "cpuhost_vm1"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    protected = False
+    update_to_default_params = conf.VM_NAME[:1]
 
     @polarion("RHEVM3-9527")
-    def test_set_migratable_cpuhost(self):
+    def test_update_migratable_vm_to_use_cpu_host(self):
         """
-        Negative: Attempt to set a migratable VM to use CPU host
+        Update the migratable VM to use CPU host
         """
-        logger.info("Attempting to update VM to use CPU host")
-        assert ll_vms.updateVm(False, self.vm_name, cpu_mode=HOST_PASSTHROUGH)
-        logger.info("Failed to change a migratable VM to use CPU host")
-
-########################################################################
+        u_lib.testflow.step(
+            "Update the migratable VM %s CPU passthrough to 'host'",
+            conf.VM_NAME[0]
+        )
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=conf.VM_NAME[0],
+            cpu_mode=conf.VM_HOST_PASS_THROUGH
+        )
 
 
 @u_lib.attr(tier=2)
-class TestCPUHostCase2(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
+class TestCPUHostCase2(BasicSlaSanity):
     """
-    Set CPU host to a user migratable VM
+    Update the user migratable VM to use CPU host
     """
     __test__ = True
-    vm_name = "cpuhost_vm2"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    protected = False
+    update_to_default_params = conf.VM_NAME[:1]
 
     @polarion("RHEVM3-9531")
-    def test_set_cpuhost_user_migratable(self):
+    def test_update_user_migratable_vm_to_use_cpu_host(self):
         """
-        Negative: Attempt to change a VM to use CPU host + user migratable
+        Update the user migratable VM to use CPU host
         """
-        logger.info("Attempting to change VM to migratable")
+        u_lib.testflow.step(
+            "Update the user migratable VM %s CPU passthrough to 'host'",
+            conf.VM_NAME[0]
+        )
         assert not ll_vms.updateVm(
-            True, self.vm_name,
+            positive=True,
+            vm=conf.VM_NAME[0],
             placement_affinity=conf.VM_USER_MIGRATABLE,
-            cpu_mode=HOST_PASSTHROUGH
-        ), "Successfully changed a CPU host vm placement affinity"
-
-########################################################################
+            cpu_mode=conf.VM_HOST_PASS_THROUGH
+        )
 
 
 @u_lib.attr(tier=2)
-class TestCPUHostCase3(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms.__name__)
+class TestCPUHostCase3(BasicSlaSanity):
     """
-    Negative: Change VM with CPU host mode (pinned) to migratable
+    Update the VM with host_passthrough to migratable
     """
     __test__ = True
-    vm_name = "cpuhost_vm3"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
-            "cpu_mode": HOST_PASSTHROUGH
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
         }
-    )
-    protected = False
-
-    @classmethod
-    def setup_class(cls):
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUHostCase3, cls).setup_class()
+    }
 
     @polarion("RHEVM3-9523")
-    def test_set_pinned_cpuhost_vm_migratable(self):
+    def test_update_vm_with_host_passthrough_to_migratable(self):
         """
-        Attempt to change a non migratable VM with CPU host
-        to migratable
+        Update the VM with host_passthrough to migratable
         """
-        logger.info("Attempting to change VM to migratable.")
-        assert ll_vms.updateVm(
-            False, self.vm_name, placement_affinity=conf.VM_MIGRATABLE,
-            placement_host=conf.VM_ANY_HOST
+        u_lib.testflow.step(
+            "Update the VM %s with host_passthrough to migratable",
+            conf.VM_NAME[0]
         )
-        logger.info(
-            "Failed to change a CPU host VM placement affinity "
-            "from pinned to migratable"
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=conf.VM_NAME[0],
+            placement_affinity=conf.VM_MIGRATABLE
         )
-
-########################################################################
-
-
-class TestCPUHostCase4(BasicSlaClass):
-    """
-    Set a CPU host non migratable VM to have no host specified to run on
-    """
-    __test__ = True
-    vm_name = "cpuhost_vm4"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
-            "cpu_mode": HOST_PASSTHROUGH
-        }
-    )
-
-    @classmethod
-    def setup_class(cls):
-        if conf.PPC_ARCH:
-            pytest.skip(
-                "PPC host does not support host-passthrough function"
-            )
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUHostCase4, cls).setup_class()
-
-    @polarion("RHEVM3-9533")
-    def test_set_non_migratable_cpuhost_no_host(self):
-        """
-        Attempt to change a non migratable VM with CPU host
-        to have no specific host to run on
-        """
-        logger.info(
-            "Attempting to change VM to have no specific host to run on"
-        )
-        assert ll_vms.updateVm(
-            True, self.vm_name, placement_host=conf.VM_ANY_HOST
-        )
-        logger.info(
-            "Successfully change a CPU host VM to "
-            "non migratable with no specific host to run on"
-        )
-
-########################################################################
-
-
-class TestCPUHostCase5(BasicSlaClass):
-    """
-    Change CPU host vm"s placement affinity from pinned
-    to user migratable
-    """
-    __test__ = True
-    vm_name = "cpuhost_vm5"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
-            "cpu_mode": HOST_PASSTHROUGH
-        }
-    )
-
-    @classmethod
-    def setup_class(cls):
-        if conf.PPC_ARCH:
-            pytest.skip(
-                "PPC host does not support host-passthrough function"
-            )
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUHostCase5, cls).setup_class()
-
-    @polarion("RHEVM3-9535")
-    def test_set_pinned_cpuhost_vm_user_migratable(self):
-        """
-        Attempt to change a non migratable VM with CPU host
-        to user migratable
-        """
-        logger.info("Attempting to change VM to user migratable")
-        assert ll_vms.updateVm(
-            True, self.vm_name,
-            placement_affinity=conf.VM_USER_MIGRATABLE,
-            placement_host=conf.VM_ANY_HOST, cpu_mode=""
-        )
-        logger.info(
-            "Successfully change a CPU host VM placement affinity "
-            "from pinned to user migratable"
-        )
-
-########################################################################
 
 
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
-class TestCPUHostCase6(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms.__name__)
+class TestCPUHostCase4(BasicSlaSanity):
     """
-    Check if VM with CPU host is running with correct QEMU values
+    Unpin the VM with host_passthrough
     """
     __test__ = True
-    vm_name = "cpuhost_vm6"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
-            "cpu_mode": HOST_PASSTHROUGH
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
         }
-    )
+    }
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUHostCase6, cls).setup_class()
+    @polarion("RHEVM3-9533")
+    def test_unpin_vm_with_host_passthrough(self):
+        """
+        Unpin the VM with host_passthrough
+        """
+        u_lib.testflow.step(
+            "Unpin the VM %s with host_passthrough", conf.VM_NAME[0]
+        )
+        assert ll_vms.updateVm(
+            positive=True, vm=conf.VM_NAME[0], placement_host=conf.VM_ANY_HOST
+        )
+
+
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
+@pytest.mark.usefixtures(update_vms.__name__)
+class TestCPUHostCase5(BasicSlaSanity):
+    """
+    Update the VM with host_passthrough to user migratable
+    """
+    __test__ = True
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
+        }
+    }
+
+    @polarion("RHEVM3-9535")
+    def test_update_vm_with_host_passthrough_to_user_migratable(self):
+        """
+        Update the VM with host_passthrough to user migratable
+        """
+        u_lib.testflow.step(
+            "Update the VM %s with host_passthrough to user migratable",
+            conf.VM_NAME[0]
+        )
+        assert not ll_vms.updateVm(
+            positive=True,
+            vm=conf.VM_NAME[0],
+            placement_affinity=conf.VM_USER_MIGRATABLE
+        )
+
+
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
+@pytest.mark.usefixtures(
+    update_vms.__name__,
+    start_vms.__name__
+)
+class TestCPUHostCase6(BasicSlaSanity):
+    """
+    Check that VM with CPU host is running with correct QEMU values
+    """
+    __test__ = True
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
+        }
+    }
+    vms_to_start = conf.VM_NAME[:1]
+    wait_for_vms_ip = False
 
     @polarion("RHEVM3-9536")
     def test_check_qemu_params(self):
         """
-        Check if VM is running with correct "-cpu" value on QEMU
+        Check that VM runs with the correct "-cpu" value on QEMU
         """
-        logger.info("Starting VM")
-        assert ll_vms.startVm(
-            True, self.vm_name
-        ), "Cannot start vm %s" % self.vm_name
-        assert ll_vms.waitForVMState(
-            self.vm_name, state=conf.VM_UP
-        ), "Cannot start vm %s" % self.vm_name
-        logger.info("Successfully started VM")
-        value = get_qemu_value(conf.VDS_HOSTS[0], self.vm_name, "cpu")
-        assert value == "host", "-cpu value is not 'host'"
-        logger.info("VM is running with '-cpu host'")
-
-########################################################################
-
-
-class BasicThreadSlaClass(BasicSlaClass):
-    """
-    Basic Sla class for hyper-threading tests
-    """
-    __test__ = False
-
-    cpu_cores = None
-    cpu_threads = None
-    cpu_sockets = None
-    negative = False
-    thread_on = False
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create new vm with given parameters, define class variables,
-        update cluster with threads and update vm with define number of cores
-        """
-        super(BasicThreadSlaClass, cls).setup_class()
-        if cls.cpu_cores:
-            cls.cpu_cores = ll_hosts.get_host_topology(conf.HOSTS[0]).cores
-            logger.info("Number of cores on host: %s", cls.cpu_cores)
-        if cls.cpu_sockets:
-            cls.cpu_sockets = ll_hosts.get_host_topology(conf.HOSTS[0]).sockets
-            logger.info(
-                "Number of cores per socket on host: %s", cls.cpu_sockets
-            )
-        if cls.cpu_threads:
-            cls.cpu_threads = ll_hosts.get_host_topology(conf.HOSTS[0]).threads
-            logger.info(
-                "Number of threads per core on host: %s", cls.cpu_threads
-            )
-        logger.info(
-            "Update cluster with threads_as_cores=%s", cls.thread_on
+        expected_value = "host"
+        u_lib.testflow.step(
+            "Check that the VM %s QEMU process has arg '-cpu' equal to '%s'",
+            conf.VM_NAME[0], expected_value
         )
-        if not ll_clusters.updateCluster(
-                True, conf.CLUSTER_NAME[0], threads_as_cores=cls.thread_on
-        ):
-            raise errors.ClusterException("Failed to update cluster")
-        total_cores_number = cls.cpu_cores
-        if cls.cpu_threads:
-            total_cores_number *= cls.cpu_threads
-        # In 3.5 we have limit on number of cores per socket, 16 for one socket
-        if cls.negative:
-            cls.cpu_sockets *= 2
-        logger.info(
-            "Updating vm %s to have %s cores",
-            cls.vm_name, total_cores_number * cls.cpu_sockets
+        value = helpers.get_vm_qemu_argument_from_host(
+            host_resource=conf.VDS_HOSTS[0],
+            vm_name=conf.VM_NAME[0],
+            qemu_arg_name="cpu"
         )
-        if not ll_vms.updateVm(
-                True, cls.vm_name, cpu_socket=cls.cpu_sockets,
-                cpu_cores=total_cores_number
-        ):
-            raise errors.VMException("Failed to update vm %s", cls.vm_name)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Update cluster with threads option off and remove vm
-        """
-        logger.info("Update cluster with threads_as_cores=%s", cls.thread_on)
-        if not ll_clusters.updateCluster(
-                True, conf.CLUSTER_NAME[0], threads_as_cores=False
-        ):
-            raise errors.ClusterException("Failed to update cluster")
-        super(BasicThreadSlaClass, cls).teardown_class()
+        assert value == expected_value
 
 
-class TestThreadsOff(BasicThreadSlaClass):
+@pytest.mark.usefixtures(
+    update_cluster.__name__,
+    update_vms_cpus_to_hosts_cpus.__name__,
+    update_vms.__name__,
+    stop_vms.__name__
+)
+class BasicThreadSla(BasicSlaSanity):
     """
-    Verify number of cores on host when threads off
+    Basic class for all tests connect to thread_as_core option
+    """
+    cluster_to_update_params = None
+    vms_to_hosts_cpus = {conf.VM_NAME[0]: 0}
+    double_vms_cpus = None
+    threads_on = None
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
+        }
+    }
+    vms_to_stop = conf.VM_NAME[:1]
+
+
+class TestThreadsOff(BasicThreadSla):
+    """
+    Check that VM with the number of CPU's equals to
+    the host number of CPU's(without threads) succeeds to start,
+    in the cluster with the threads_as_core option disabled
     """
     __test__ = True
-    vm_name = "threads_off_vm"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    cpu_cores = 1
-    cpu_sockets = 1
+    cluster_to_update_params = {
+        conf.CLUSTER_THREADS_AS_CORE: False
+    }
+    double_vms_cpus = False
+    threads_on = False
 
     @polarion("RHEVM3-9518")
     def test_cores_as_threads_off(self):
         """
-        Setting VM with number of cores equal to number of
-        the host"s physical cores, while cluster policy "count
-        threads as cores" is off
+        Start the VM
         """
-        assert ll_vms.startVm(True, self.vm_name)
+        u_lib.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
 @u_lib.attr(tier=2)
-class TestNegativeThreadsOff(BasicThreadSlaClass):
+class TestNegativeThreadsOff(BasicThreadSla):
     """
-    Negative: Verify number of cores on host when threads off
+    Check that VM with the number of CPU's greater than
+    the host number of CPU's(without threads) failed to start,
+    in the cluster with the threads_as_core option disabled
     """
     __test__ = True
-    vm_name = "threads_off_negative_vm"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    cpu_cores = 1
-    cpu_sockets = 1
-    negative = True
+    cluster_to_update_params = {
+        conf.CLUSTER_THREADS_AS_CORE: False
+    }
+    double_vms_cpus = True
+    threads_on = False
 
     @polarion("RHEVM3-9517")
     def test_cores_as_threads_off(self):
         """
-        Negative: Setting VM with number of cores equal to double the number of
-        the host"s physical cores, while cluster policy "count
-        threads as cores" is off
+        Start the VM
         """
-        assert not ll_vms.startVm(True, self.vm_name)
+        u_lib.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        assert not ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
-class TestThreadsOn(BasicThreadSlaClass):
+class TestThreadsOn(BasicThreadSla):
     """
-    Verify number of cores on host when threads on
+    Check that VM with the number of CPU's equals to
+    the host number of CPU's(include threads) succeeds to start,
+    in the cluster with the threads_as_core option disabled
     """
     __test__ = True
-    vm_name = "threads_on_vm"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    cpu_cores = 1
-    cpu_sockets = 1
-    cpu_threads = 1
-    thread_on = True
+    cluster_to_update_params = {
+        conf.CLUSTER_THREADS_AS_CORE: True
+    }
+    double_vms_cpus = False
+    threads_on = True
 
     @polarion("RHEVM3-9515")
-    def test_cores_as_threads_on1(self):
+    def test_cores_as_threads_on(self):
         """
-        Setting VM with number of cores equal to double the number of
-        the host"s physical cores, while cluster policy "count
-        threads as cores" is on
+        Start the VM
         """
-        assert ll_vms.startVm(True, self.vm_name)
+        u_lib.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
 @u_lib.attr(tier=2)
-class TestThreadsOnNegative(BasicThreadSlaClass):
+class TestThreadsOnNegative(BasicThreadSla):
     """
-    Negative: Verify number of cores on host when threads on
+    Check that VM with the number of CPU's greater than
+    the host number of CPU's(include threads) failed to start,
+    in the cluster with the threads_as_core option disabled
     """
     __test__ = True
-    vm_name = "threads_on_negative_vm"
-    vm_desc = "CPU Host VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    cpu_cores = 1
-    cpu_sockets = 1
-    cpu_threads = 1
-    negative = True
-    thread_on = True
+    cluster_to_update_params = {
+        conf.CLUSTER_THREADS_AS_CORE: True
+    }
+    double_vms_cpus = True
+    threads_on = True
 
     @polarion("RHEVM3-9516")
-    def test_cores_as_threads_on2(self):
+    def test_cores_as_threads_on(self):
         """
-        Negative: Setting VM with number of cores equal to double the number of
-        the host"s physical cores, while cluster policy "count
-        threads as cores" is on
+        Start the VM
         """
-        assert not ll_vms.startVm(True, self.vm_name)
+        u_lib.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        assert not ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
-########################################################################
 
-
-class TestCPUPinCase1(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms.__name__)
+class TestCPUPinCase1(BasicSlaSanity):
     """
-    Check CPU pinning format correctness
+    Check CPU pinning format
     """
     __test__ = True
-    vm_name = "cpupin_vm1"
-    vm_desc = "CPU Pin Vm"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
         }
-    )
-    cores = 1
-    sockets = 1
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a non migratable VM and count number of cores on host
-        """
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUPinCase1, cls).setup_class()
-        cls.sockets = ll_hosts.get_host_topology(conf.HOSTS[0]).sockets
-        logger.info("Number of sockets on host: %s" % cls.sockets)
-        cls.cores = ll_hosts.get_host_topology(conf.HOSTS[0]).cores
-        logger.info("Number of cores per socket on host: %s" % cls.cores)
+    }
 
     @polarion("RHEVM3-9541")
     def test_cpupin_format1(self):
         """
         Set pinning to 0#0
         """
-        logger.info("Setting VCPU pinning to 0#0")
-        assert ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": "0"}]
-        ), "Failed to change VCPU pinning"
-        logger.info("Successfully changed VCPU pinning to 0#0.")
+        self._update_vm_vcpu_pinning(vcpu_pinning=conf.DEFAULT_VCPU_PINNING)
 
     @polarion("RHEVM3-12221")
     def test_cpupin_format2(self):
         """
-        Set pinning to 0#0-(number of cores-1)
+        Set pinning to 0#0-16
         """
-        upper = self.sockets * self.cores - 1
-        logger.info("Setting VCPU pinning to 0#0-%s", upper)
-        assert ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": "0-%s" % upper}]
-        ), "Failed to change VCPU pinning"
-        logger.info(
-            "Successfully changed VCPU pinning to 0#1-%s", upper
-        )
+        self._update_vm_vcpu_pinning(vcpu_pinning=[{"0": "0-16"}])
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12222")
@@ -675,11 +423,9 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Set pinning to 0#^1
         """
-        logger.info("Setting VCPU pinning to 0#^1")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": "^1"}]
-        ), "Successfully changed VCPU pinning"
-        logger.info("Unable to change VCPU pinning to 0#^1")
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=[{"0": "^1"}], positive=False
+        )
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12223")
@@ -687,57 +433,51 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Set pinning to 0#^1,^2
         """
-        vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "^1,^2"}])
-        logger.info("Setting VCPU pinning to 0#^1,^2")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=vcpu_pinning
-        ), "Successfully changed VCPU pinning"
-        logger.info("Unable to change VCPU pinning to 0#^1,^2")
+        vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
+            vcpu_pinning=[{"0": "^1,^2"}]
+        )
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=vcpu_pinning, positive=False
+        )
 
     @polarion("RHEVM3-12224")
     def test_cpupin_format5(self):
         """
         Set pinning to 0#0-3,^1
         """
-        if (self.cores * self.sockets) < 4:
-            raise SkipTest("Too few CPU cores")
-        vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-3,^1"}])
-        logger.info("Setting VCPU pinning to 0#0-3,^1")
+        vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
+            vcpu_pinning=[{"0": "0-3,^1"}]
+        )
         compare = conf.opts["engine"] != "cli"
-        assert ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=vcpu_pinning, compare=compare
-        ), "Failed to change VCPU pinning"
-        logger.info("Successfully changed VCPU pinning to 0#0-3,^1")
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=vcpu_pinning, compare=compare
+        )
 
     @polarion("RHEVM3-12225")
     def test_cpupin_format6(self):
         """
         Set pinning to 0#0-3,^1,^2
         """
-        if (self.cores * self.sockets) < 4:
-            raise SkipTest("Too few CPU cores")
-        vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-3,^1,^2"}])
-        logger.info("Setting VCPU pinning to 0#0-3,^1,^2")
+        vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
+            vcpu_pinning=[{"0": "0-3,^1,^2"}]
+        )
         compare = conf.opts["engine"] != "cli"
-        assert ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=vcpu_pinning, compare=compare
-        ), "Failed to change VCPU pinning"
-        logger.info("Successfully changed VCPU pinning to 0#0-3,^1,^2")
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=vcpu_pinning, compare=compare
+        )
 
     @polarion("RHEVM3-12226")
     def test_cpupin_format7(self):
         """
         Set pinning to 0#1,2,3
         """
-        if (self.cores * self.sockets) < 4:
-            raise SkipTest("Too few CPU cores")
-        vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "1,2,3"}])
-        logger.info("Setting VCPU pinning to 0#1,2,3")
+        vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
+            vcpu_pinning=[{"0": "1,2,3"}]
+        )
         compare = conf.opts["engine"] != "cli"
-        assert ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=vcpu_pinning, compare=compare
-        ), "Failed to change VCPU pinning"
-        logger.info("Successfully changed VCPU pinning to 0#1,2,3")
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=vcpu_pinning, compare=compare
+        )
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12227")
@@ -745,13 +485,12 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Set pinning to 0#0_0#1
         """
-        if (self.cores * self.sockets) < 2:
-            raise SkipTest("Too few CPU cores")
-        vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0"}, {"0": "1"}])
-        logger.info("Setting VCPU pinning to 0#0_0#1")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=vcpu_pinning)
-        logger.info("Successfully changed VCPU pinning to 0#0_0#1.")
+        vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
+            vcpu_pinning=[{"0": "0"}, {"0": "1"}]
+        )
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=vcpu_pinning, positive=False
+        )
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12228")
@@ -759,11 +498,9 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Letter instead of pCPU
         """
-        logger.info("Setting VCPU pinning to 0#A")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": "A"}]
-        ), "Successfully changed VCPU pinning"
-        logger.info("Unable to change VCPU pinning to 0#A.")
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=[{"0": "A"}], positive=False
+        )
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12229")
@@ -772,10 +509,11 @@ class TestCPUPinCase1(BasicSlaClass):
         Negative: Letter instead of pCPU
         """
         try:
-            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"A": "0"}])
-            assert False, "Successfully changed VCPU pinning to A#0"
+            self._update_vm_vcpu_pinning(
+                vcpu_pinning=[{"A": "0"}], positive=False
+            )
         except (TypeError, ValueError):
-            logger.info("Unable to change VCPU pinning to A#0")
+            pass
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12230")
@@ -783,12 +521,12 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Pinning to empty range
         """
-        vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-1,^0,^1"}])
-        logger.info("Setting VCPU pinning to 0#0-1,^0,^1")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=vcpu_pinning
-        ), "Successfully changed VCPU pinning"
-        logger.info("Unable to change VCPU pinning to 0#0-1,^0,^1")
+        vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
+            vcpu_pinning=[{"0": "0-1,^0,^1"}]
+        )
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=vcpu_pinning, positive=False
+        )
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12231")
@@ -796,15 +534,11 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Pinning to non-existing pCPU
         """
-        logger.info("Setting VCPU pinning to 0#4096")
-        assert ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": "4096"}]
-        ), "Unable changed VCPU pinning"
-        logger.info("Successfully to change VCPU pinning to 0#4096")
-        logger.info("Try to start vm %s", self.vm_name)
+        self._update_vm_vcpu_pinning(vcpu_pinning=[{"0": "4096"}])
+        u_lib.testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert not ll_vms.startVm(
-            True, self.vm_name, timeout=MINUTE
-        ), "Success to run vm"
+            positive=True, vm=conf.VM_NAME[0], timeout=conf.CONNECT_TIMEOUT
+        )
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12232")
@@ -812,11 +546,9 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Pinning to an empty string
         """
-        logger.info("Setting VCPU pinning to 0#")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": ""}]
-        ), "Successfully changed VCPU pinning"
-        logger.info("Unable to change VCPU pinning to 0#")
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=[{"0": ""}], positive=False
+        )
 
     @u_lib.attr(tier=2)
     @polarion("RHEVM3-12233")
@@ -824,446 +556,354 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Negative: Pinning non-existing vCPU
         """
-        logger.info("Setting VCPU pinning to 4096#0")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"4096": "0"}]
-        ), "Successfully changed VCPU pinning"
-        logger.info("Unable to change VCPU pinning to 4096#0")
-
-########################################################################
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=[{"4096": "0"}], positive=False
+        )
 
 
 @u_lib.attr(tier=2)
-class TestCPUPinCase2(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
+class TestCPUPinCase2(BasicSlaSanity):
     """
-    Negative: Set CPU pinning to a migratable VM
+    Set VCPU pinning on the migratable VM
     """
     __test__ = True
-    vm_name = "cpupin_vm2"
-    vm_desc = "CPU Pin Vm"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
+    update_to_default_params = conf.VM_NAME[:1]
 
     @polarion("RHEVM3-9532")
-    def test_set_migratable_cpupin(self):
+    def test_update_vcpu_pinning(self):
         """
-        Attempt to set a migratable VM to use CPU pinning
+        Update the VM VCPU pinning
         """
-        logger.info("Attempting to update VM to use CPU pinning")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": "0"}])
-        logger.info("Failed to change a migratable VM to use CPU pinning")
-
-########################################################################
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=conf.DEFAULT_VCPU_PINNING, positive=False
+        )
 
 
 @u_lib.attr(tier=2)
-class TestCPUPinCase3(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms.__name__)
+class TestCPUPinCase3(BasicSlaSanity):
     """
-    Negative: Change CPU pinned VM to migratable
+    Change the VM with VCPU pinning to migratable
     """
     __test__ = True
-    vm_name = "cpupin_vm3"
-    vm_desc = "CPU Pin Vm"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
-            "vcpu_pinning": [{"0": "0"}]
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_PINNING: conf.DEFAULT_VCPU_PINNING
         }
-    )
-
-    @classmethod
-    def setup_class(cls):
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUPinCase3, cls).setup_class()
+    }
 
     @polarion("RHEVM3-9534")
-    def test_set_pinned_cpupin_vm_migratable(self):
+    def test_update_vm_to_migratable(self):
         """
-        Attempt to change a non migratable VM with CPU pinning
-        to migratable.
+        Update the VM to migratable
         """
-        logger.info("Attempting to change VM to migratable")
+        u_lib.testflow.step("Update the VM %s", conf.VM_NAME[0])
         assert not ll_vms.updateVm(
-            True, self.vm_name, placement_affinity=conf.VM_MIGRATABLE,
+            positive=True,
+            vm=conf.VM_NAME[0],
+            placement_affinity=conf.VM_MIGRATABLE,
             placement_host=conf.VM_ANY_HOST
         )
-        logger.info(
-            "Failed to change a CPU host VM placement affinity "
-            "from pinned to migratable"
-        )
-
-########################################################################
 
 
 @u_lib.attr(tier=2)
-class TestCPUPinCase4(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms.__name__)
+class TestCPUPinCase4(BasicSlaSanity):
     """
-    Negative: Set CPU pinning to a user migratable VM
+    Set VCPU pinning on the user migratable VM
     """
     __test__ = True
-    vm_name = "cpupin_vm4"
-    vm_desc = "CPU Pin Vm"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {"placement_affinity": conf.VM_USER_MIGRATABLE}
-    )
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_USER_MIGRATABLE
+        }
+    }
 
     @polarion("RHEVM3-9543")
-    def test_set_user_migratable_cpupin(self):
+    def test_update_vcpu_pinning(self):
         """
-        Attempt to set a user migratable VM to use CPU pinning
+        Update the VM VCPU pinning
         """
-        logger.info("Attempting to update VM to use CPU pinning")
-        assert not ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=[{"0": "0"}])
-        logger.info(
-            "Failed to change a user migratable VM to use CPU pinning"
+        self._update_vm_vcpu_pinning(
+            vcpu_pinning=conf.DEFAULT_VCPU_PINNING, positive=False
         )
-
-########################################################################
 
 
 @u_lib.attr(tier=2)
-class TestCPUPinCase5(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms.__name__)
+class TestCPUPinCase5(BasicSlaSanity):
     """
-    Negative: Change CPU pinned VM to user migratable
+    Change the VM with VCPU pinning to user migratable
     """
     __test__ = True
-    vm_name = "cpupin_vm5"
-    vm_desc = "CPU Pin Vm"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
-            "vcpu_pinning": [{"0": "0"}]
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_PINNING: conf.DEFAULT_VCPU_PINNING
         }
-    )
-
-    @classmethod
-    def setup_class(cls):
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUPinCase5, cls).setup_class()
+    }
 
     @polarion("RHEVM3-9542")
-    def set_pinned_cpupin_vm_user_migratable(self):
+    def test_update_vm_to_user_migratable(self):
         """
-        Attempt to change a non migratable VM with CPU pinning
-        to user migratable
+        Update the VM to user migratable
         """
-        logger.info("Attempting to change VM to user migratable")
+        u_lib.testflow.step("Update the VM %s", conf.VM_NAME[0])
         assert not ll_vms.updateVm(
-            True, self.vm_name,
-            placement_affinity=conf.VM_USER_MIGRATABLE,
+            positive=True,
+            vm=conf.VM_NAME[0],
+            placement_affinity=conf.VM_MIGRATABLE,
             placement_host=conf.VM_ANY_HOST
         )
-        logger.info(
-            "Failed to change a CPU host VM placement affinity "
-            "from pinned to user migratable"
-        )
-
-########################################################################
 
 
 @u_lib.attr(tier=2)
-class TestCPUPinCase6(BasicSlaClass):
+@pytest.mark.usefixtures(
+    update_vms.__name__,
+    stop_vms.__name__
+)
+class TestCPUPinCase6(BasicSlaSanity):
     """
-    Check if pinning holds on random pCPU"s
+    Check VCPU pinning to the random host CPU
     """
     __test__ = True
-    vm_name = "cpupin_vm6"
-    vm_desc = "CPU Pin Vm"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
-            "vcpu_pinning": [{"0": "0"}]
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_CPU_PINNING: conf.DEFAULT_VCPU_PINNING
         }
-    )
-    total_cores = 1
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a non migratable
-        """
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUPinCase6, cls).setup_class()
-        sockets = ll_hosts.get_host_topology(conf.HOSTS[0]).sockets
-        logger.info("Number of sockets on host: %s" % sockets)
-        cores = ll_hosts.get_host_topology(conf.HOSTS[0]).cores
-        logger.info("Number of cores per socket on host: %s" % cores)
-        cls.total_cores = sockets * cores
+    }
+    vms_to_stop = conf.VM_NAME[:1]
 
     @polarion("RHEVM3-9529")
-    def test_check_random_pinning(self):
+    def test_random_vcpu_pinning(self):
         """
-        Set CPU pinning to random pCPU cores and check if pining holds
+        Update the VM with the random VCPU pinning
         """
-        iterations = CPUPIN_ITER if self.total_cores > 1 else 1
-        for n in range(iterations):
-            logger.info("Attempt %s:" % (n + 1))
-            online_cpus = ll_sla.get_list_of_online_cpus_on_resource(
-                conf.VDS_HOSTS[0]
-            )
-            total_online_cpus = online_cpus[-1] + online_cpus[1]
+        online_cpus = ll_sla.get_list_of_online_cpus_on_resource(
+            resource=conf.VDS_HOSTS[0]
+        )
+        host_cpus = online_cpus[-1] + online_cpus[1]
+        for n in range(5):
             expected_pin = str(random.choice(online_cpus))
             hyp_exp = "-" * int(expected_pin)
-            hyp_cores = "-" * (total_online_cpus - int(expected_pin) - 1)
+            hyp_cores = "-" * (host_cpus - int(expected_pin) - 1)
             expected_affinity = "%sy%s" % (hyp_exp, hyp_cores)
 
-            logger.info("Setting CPU pinning to 0#%s" % expected_pin)
-            assert ll_vms.updateVm(
-                True, self.vm_name, vcpu_pinning=[{"0": expected_pin}]
-            ), "Failed to update VM"
-            assert ll_vms.startVm(True, self.vm_name), "Failed to start VM"
-            res = get_pinned_cpu_info(conf.VDS_HOSTS[0], self.vm_name, 0)
-            assert ll_vms.stopVm(True, self.vm_name), "Failed to stop VM"
-            logger.info(
-                "vCPU #0 is expected to be pinned to pCPU #%s, "
-                "and is actually pinned to pCPU #%s",
-                expected_pin, res[0]
-            )
-            assert expected_pin == res[0], (
-                "Actual CPU pinning does not match expectation"
-            )
-            logger.info(
-                "vCPU #0 is expected to have pinning affinity of %s, "
-                "and actually has %s",
-                expected_affinity, res[1][:total_online_cpus]
-            )
-            assert expected_affinity == res[1][:total_online_cpus], (
-                "Actual CPU affinity does not match expectation"
-            )
+            self._update_vm_vcpu_pinning(vcpu_pinning=[{"0": expected_pin}])
 
-########################################################################
+            u_lib.testflow.step("Start the VM %s", conf.VM_NAME[0])
+            assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
+
+            res = helpers.get_vcpu_pinning_info_from_host(
+                host_resource=conf.VDS_HOSTS[0],
+                vm_name=conf.VM_NAME[0],
+                vcpu=0
+            )
+            u_lib.testflow.step(
+                "Check that VCPU 0 is pinned to the CPU %s", expected_pin
+            )
+            assert expected_pin == res[0]
+
+            u_lib.testflow.step(
+                "Check that VCPU 0 has pinning affinity %s",
+                expected_affinity
+            )
+            assert expected_affinity == res[1][:host_cpus]
+
+            u_lib.testflow.step("Stop the VM %s", conf.VM_NAME[0])
+            assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
 
 
-class TestCPUPinCase7(BasicSlaClass):
+@pytest.mark.usefixtures(
+    update_vms_cpus_to_hosts_cpus.__name__,
+    update_vms.__name__,
+    stop_vms.__name__
+)
+class TestCPUPinCase7(BasicSlaSanity):
     """
-    Check if pinning holds when all vCPU"s are running on the same pCPU
+    Test VCPU pinning of all VM CPU's to the one host CPU
     """
     __test__ = True
-    vm_name = "cpupin_vm7"
-    vm_desc = "CPU Pin Vm"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "placement_affinity": conf.VM_PINNED,
-            "placement_host": None,
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0]
         }
-    )
-    total_cores = 1
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a non migratable VM
-        """
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestCPUPinCase7, cls).setup_class()
-        sockets = ll_hosts.get_host_topology(conf.HOSTS[0]).sockets
-        logger.info("Number of sockets on host: %s" % sockets)
-        cores = ll_hosts.get_host_topology(conf.HOSTS[0]).cores
-        logger.info("Number of cores per socket on host: %s" % cores)
-        logger.info("Update vm")
-        if not ll_vms.updateVm(
-                True, cls.vm_name, cpu_cores=cores, cpu_socket=sockets
-        ):
-            raise errors.VMException("Failed to update vm")
-        cls.total_cores = sockets * cores
+    }
+    vms_to_hosts_cpus = {conf.VM_NAME[0]: 0}
+    vms_to_stop = conf.VM_NAME[:1]
 
     @polarion("RHEVM3-9539")
-    def test_check_pinning_load(self):
+    def test_pinning_load(self):
         """
-        Set CPU pinning to random pCPU cores and check if pining holds
+        Check VCPU pinning
         """
-        if self.total_cores < 1:
-            raise SkipTest("Too few cores")
         host_online_cpu = str(
-            ll_sla.get_list_of_online_cpus_on_resource(conf.VDS_HOSTS[0])[0]
+            ll_sla.get_list_of_online_cpus_on_resource(
+                resource=conf.VDS_HOSTS[0]
+            )[0]
         )
-        pinning = [
-            {str(i): host_online_cpu} for i in xrange(self.total_cores)
+        host_topology = ll_hosts.get_host_topology(host_name=conf.HOSTS[0])
+        host_cpus = host_topology.cores * host_topology.sockets
+        vcpu_pinning = [
+            {i: host_online_cpu} for i in xrange(host_cpus)
         ]
-        logger.info("Pinning all VCPU's to pCPU #%s", host_online_cpu)
-        assert ll_vms.updateVm(
-            True, self.vm_name, vcpu_pinning=pinning
-        ), "Failed to update VM"
-        assert ll_vms.startVm(True, self.vm_name), "Failed to start VM"
-        for i in range(self.total_cores):
-            pin_info = get_pinned_cpu_info(
-                conf.VDS_HOSTS[0], self.vm_name, i
-            )
-            assert pin_info[0], "Could not retrieve VM pinning information"
-            assert pin_info[0] == host_online_cpu, (
-                "VCPU #%d is not running on pCPU #%s" % (i, host_online_cpu)
-            )
-        logger.info("All VCPU's are running on pCPU #%s", host_online_cpu)
 
-########################################################################
+        u_lib.testflow.step(
+            "Update the VM %s VCPU pinning", conf.VM_NAME[0]
+        )
+        assert ll_vms.updateVm(
+            positive=True, vm=conf.VM_NAME[0], vcpu_pinning=vcpu_pinning
+        )
+
+        u_lib.testflow.step("Update the VM %s", conf.VM_NAME[0])
+        assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
+
+        for i in range(host_cpus):
+            vcpu_pinning_info = helpers.get_vcpu_pinning_info_from_host(
+                host_resource=conf.VDS_HOSTS[0],
+                vm_name=conf.VM_NAME[0],
+                vcpu=i
+            )
+            u_lib.testflow.step(
+                "Check that VM %s VCPU %s pinned to the host %s CPU %s",
+                conf.VM_NAME[0], i, conf.HOSTS[0], host_online_cpu
+            )
+            assert vcpu_pinning_info[0] == host_online_cpu
 
 
 @u_lib.attr(tier=2)
-class TestCPUPinCase8(BasicSlaClass):
+@pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
+class TestCPUPinCase8(BasicSlaSanity):
     """
-    Negative: Set CPU pinning to a non migratable VM with no host
-    specified to run on
+    Set VCPU pinning to the non migratable VM with no specified host to run on
     """
     __test__ = True
-    vm_name = "cpupin_vm8"
-    vm_desc = "Placement policy VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
+    update_to_default_params = conf.VM_NAME[:1]
 
     @polarion("RHEVM3-9544")
     def test_set_pinned_cpupin_vm_a(self):
         """
-        Negative: Attempt to change VM to use CPU pinning, be non-migratable
-        with no host specified to run on
+        Update the VM with VCPU pinning without specific host to run on
         """
-        logger.info("Attempting to change VM to user migratable")
+        u_lib.testflow.step("Update the VM %s", conf.VM_NAME[0])
         assert not ll_vms.updateVm(
-            True, self.vm_name, placement_affinity=conf.VM_PINNED,
-            placement_host=conf.VM_ANY_HOST, vcpu_pinning=[{"0": "0"}]
+            positive=True,
+            vm=conf.VM_NAME[0],
+            placement_affinity=conf.VM_PINNED,
+            placement_host=conf.VM_ANY_HOST,
+            vcpu_pinning=conf.DEFAULT_VCPU_PINNING
         )
-        logger.info(
-            "As expected, failed to change a VM to use CPU pinning, "
-            "be non migratable with no host specified to run on"
-        )
 
 
-########################################################################
-
-
-class TestPlacementPolicyCase1(BasicSlaClass):
+@pytest.mark.usefixtures(
+    update_vms.__name__,
+    start_vms.__name__
+)
+class TestPlacementPolicyCase1(BasicSlaSanity):
     """
     Migrate a migratable VM
     """
     __test__ = True
-    vm_name = "placement_vm1"
-    vm_desc = "Placement policy VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "start": "true",
-            "placement_host": None,
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_HOSTS: [0]
         }
-    )
-
-    @classmethod
-    def setup_class(cls):
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestPlacementPolicyCase1, cls).setup_class()
+    }
+    vms_to_start = conf.VM_NAME[:1]
+    wait_for_vms_ip = False
 
     @polarion("RHEVM3-9522")
-    def test_migrate_migratable(self):
+    def test_migrate_migratable_vm(self):
         """
         Migrate a migratable VM
         """
-        if (len(conf.HOSTS)) < 2:
-            raise SkipTest("Too few hosts")
-        logger.info("Attempting to migratable a migratable VM")
-        assert ll_vms.migrateVm(
-            True, self.vm_name, host=conf.HOSTS[1]
-        ), "Error migrating VM"
-        logger.info("Successfully migrated VM")
-
-########################################################################
+        u_lib.testflow.step("Migrate the VM %s", conf.VM_NAME[0])
+        assert ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0])
 
 
-class TestPlacementPolicyCase2(BasicSlaClass):
+@pytest.mark.usefixtures(
+    update_vms.__name__,
+    start_vms.__name__
+)
+class TestPlacementPolicyCase2(BasicSlaSanity):
     """
     Migrate a user-migratable VM
     """
     __test__ = True
-    vm_name = "placement_vm2"
-    vm_desc = "Placement policy VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "start": "true",
-            "placement_host": None,
-            "placement_affinity": conf.VM_USER_MIGRATABLE
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_USER_MIGRATABLE
         }
-    )
-
-    @classmethod
-    def setup_class(cls):
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestPlacementPolicyCase2, cls).setup_class()
+    }
+    vms_to_start = conf.VM_NAME[:1]
+    wait_for_vms_ip = False
 
     @polarion("RHEVM3-9525")
-    def test_migrate_user_migratable(self):
+    def test_migrate_user_migratable_vm(self):
         """
         Migrate a user-migratable VM
         """
-        if (len(conf.HOSTS)) < 2:
-            raise SkipTest("Too few hosts")
-        logger.info("Attempting to migratable a migratable VM")
-        assert ll_vms.migrateVm(
-            True, self.vm_name, host=conf.HOSTS[1], force=True
-        ), "Error migrating VM"
-        logger.info("Successfully migrated VM")
-
-########################################################################
+        u_lib.testflow.step("Migrate the VM %s", conf.VM_NAME[0])
+        assert ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0], force=True)
 
 
-class TestPlacementPolicyCase3(BasicSlaClass):
+@pytest.mark.usefixtures(
+    update_vms.__name__,
+    start_vms.__name__
+)
+class TestPlacementPolicyCase3(BasicSlaSanity):
     """
     Migrate a non-migratable VM
     """
     __test__ = True
-    vm_name = "placement_vm3"
-    vm_desc = "Placement policy VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update(
-        {
-            "start": "true",
-            "placement_host": None,
-            "placement_affinity": conf.VM_PINNED
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED
         }
-    )
-
-    @classmethod
-    def setup_class(cls):
-        cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
-        super(TestPlacementPolicyCase3, cls).setup_class()
+    }
+    vms_to_start = conf.VM_NAME[:1]
+    wait_for_vms_ip = False
 
     @polarion("RHEVM3-9526")
-    def test_migrate_non_migratable(self):
+    def test_migrate_non_migratable_vm(self):
         """
         Migrate a non-migratable VM
         """
-        if (len(conf.HOSTS)) < 2:
-            raise SkipTest("Too few hosts")
-        logger.info("Attempting to migratable a migratable VM")
-        assert not ll_vms.migrateVm(
-            True, self.vm_name, host=conf.HOSTS[1]
-        ), "Successfully migrated VM"
-        logger.info("Failed to to migrate VM")
-
-########################################################################
+        u_lib.testflow.step("Migrate the VM %s", conf.VM_NAME[0])
+        assert not ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0])
 
 
-class TestPlacementPolicyCase4(BasicSlaClass):
+@pytest.mark.usefixtures(
+    update_vms.__name__,
+    stop_vms.__name__
+)
+class TestPlacementPolicyCase4(BasicSlaSanity):
     """
     Run non migratable VM with no specific host
     """
     __test__ = True
-    vm_name = "placement_vm4"
-    vm_desc = "Placement policy VM"
-    vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update({"placement_affinity": conf.VM_PINNED})
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED
+        }
+    }
+    vms_to_stop = conf.VM_NAME[:1]
 
     @polarion("RHEVM3-9530")
     def test_run_non_migratable_no_specific(self):
         """
         Start a non-migratable VM with no specific host to run on
         """
+        u_lib.testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert ll_vms.startVm(
-            True, self.vm_name, wait_for_status=conf.VM_UP
-        ), "Cannot start vm %s" % self.vm_name
-        logger.info("Successfully started VM")
+            positive=True, vm=conf.VM_NAME[0], wait_for_status=conf.VM_UP
+        )

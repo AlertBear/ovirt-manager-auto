@@ -43,6 +43,7 @@ VM_STORAGE_DOMAIN = "storageDomainName"
 VM_DISK_SIZE = "provisioned_size"
 VM_NIC = "nic"
 VM_NETWORK = "network"
+VM_PROTECTED = "protected"
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
@@ -59,7 +60,8 @@ DEFAULT_VM_PARAMETERS = {
     VM_HIGHLY_AVAILABLE: False,
     VM_CPU_PINNING: [],
     VM_CPU_SHARES: 0,
-    VM_CPU_MODE: "custom"  # W/A for 1337181
+    VM_CPU_MODE: "custom",
+    VM_PROTECTED: False
 }
 
 DC_QUOTA_MODE = "quota_mode"
@@ -166,3 +168,19 @@ AREM_OPTION = "AffinityRulesEnforcementManagerEnabled"
 AFFINITY_GROUP_POSITIVE = "positive"
 AFFINITY_GROUP_ENFORCING = "enforcing"
 AFFINITY_GROUP_VMS = "vms"
+
+# Cluster constants
+CLUSTER_OVERCOMMITMENT = "mem_ovrcmt_prc"
+CLUSTER_BALLOONING = "ballooning_enabled"
+CLUSTER_KSM = "ksm_enabled"
+CLUSTER_SCHEDULING_POLICY = "scheduling_policy"
+CLUSTER_SCHEDULING_POLICY_PROPERTIES = "properties"
+CLUSTER_THREADS_AS_CORE = "threads_as_cores"
+
+DEFAULT_CLUSTER_PARAMETERS = {
+    CLUSTER_OVERCOMMITMENT: CLUSTER_OVERCOMMITMENT_DESKTOP,
+    CLUSTER_BALLOONING: False,
+    CLUSTER_KSM: False,
+    CLUSTER_SCHEDULING_POLICY: POLICY_NONE,
+    CLUSTER_THREADS_AS_CORE: False
+}
