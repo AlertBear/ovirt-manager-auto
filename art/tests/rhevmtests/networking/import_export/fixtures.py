@@ -31,11 +31,14 @@ class ImportExport(NetworkFixtures):
                 datacenter_name=self.dc_0, storage_type=conf.STORAGE_TYPE
             )[0]
         )
-        self.ie_vm = import_export_conf.IE_VM
-        self.ie_template = import_export_conf.IE_TEMPLATE
         self.export_domain = conf.EXPORT_DOMAIN_NAME
-        self.more_then_once_vm = conf.IMP_MORE_THAN_ONCE_VM
-        self.more_then_once_template = conf.IMP_MORE_THAN_ONCE_TEMP
+        self.ie_vm = import_export_conf.IE_VM_NAME
+        self.ie_vm_2 = import_export_conf.IE_VM_2_NAME
+        self.ie_template = import_export_conf.IE_TEMPLATE_NAME
+        self.more_then_once_vm = import_export_conf.IMP_MORE_THAN_ONCE_VM_NAME
+        self.more_then_once_template = (
+            import_export_conf.IMP_MORE_THAN_ONCE_TEMP_NAME
+        )
 
 
 @pytest.fixture(scope="module")
@@ -120,7 +123,6 @@ def import_export_prepare_setup(request):
         [import_export.mgmt_bridge] + import_export_conf.NETS[:3] + [None]
     )
     helper.add_nics_to_vm(net_list=net_list)
-
     assert ll_templates.createTemplate(
         positive=True, vm=import_export.ie_vm, cluster=import_export.cluster_0,
         name=import_export.ie_template
@@ -129,7 +131,6 @@ def import_export_prepare_setup(request):
         positive=True, template=import_export.ie_template,
         storagedomain=import_export.export_domain
     )
-
     assert ll_vms.exportVm(
         positive=True, vm=import_export.ie_vm,
         storagedomain=import_export.export_domain
@@ -137,7 +138,6 @@ def import_export_prepare_setup(request):
     assert ll_vms.removeVm(
         positive=True, vm=import_export.ie_vm, stopVM="true"
     )
-
     assert ll_templates.removeTemplate(
         positive=True, template=import_export.ie_template
     )

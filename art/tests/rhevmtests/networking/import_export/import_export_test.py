@@ -27,10 +27,10 @@ class TestImportExportCase01(NetworkTest):
     Check that VM imported more than once keeps all it's network configuration
     """
     __test__ = True
-    vms_list = [
-        import_export_conf.IE_VM, import_export_conf.IMP_MORE_THAN_ONCE_VM
-    ]
-    vms_to_import = [None, vms_list[1]]
+    import_vm = import_export_conf.IE_VM_NAME
+    more_then_once_vm = import_export_conf.IMP_MORE_THAN_ONCE_VM_NAME
+    vms_list = [import_vm, more_then_once_vm]
+    vms_to_import = [None, more_then_once_vm]
     net1 = import_export_conf.NETS[0]
     net2 = import_export_conf.NETS[1]
 
@@ -41,7 +41,7 @@ class TestImportExportCase01(NetworkTest):
         """
         testflow.step("Check that the VM is imported with all VNIC profiles")
         assert helper.check_imported_vm_or_templates(
-            net1=self.net1, net2=self.net2, vm=self.vms_list[0]
+            net1=self.net1, net2=self.net2, vm=self.import_vm
         )
 
     @polarion("RHEVM3-3769")
@@ -54,7 +54,7 @@ class TestImportExportCase01(NetworkTest):
             "profiles"
         )
         assert helper.check_imported_vm_or_templates(
-            net1=self.net1, net2=self.net2, vm=self.vms_list[1]
+            net1=self.net1, net2=self.net2, vm=self.more_then_once_vm
         )
 
 
@@ -68,11 +68,10 @@ class TestImportExportCase02(NetworkTest):
     configuration
     """
     __test__ = True
-    template_list = [
-        import_export_conf.IMP_MORE_THAN_ONCE_TEMP,
-        import_export_conf.IE_TEMPLATE
-    ]
-    templates_to_import = [None, template_list[0]]
+    import_template = import_export_conf.IE_TEMPLATE_NAME
+    more_then_once_template = import_export_conf.IMP_MORE_THAN_ONCE_TEMP_NAME
+    template_list = [more_then_once_template, import_template]
+    templates_to_import = [None, more_then_once_template]
     net1 = import_export_conf.NETS[0]
     net2 = import_export_conf.NETS[1]
 
@@ -85,7 +84,7 @@ class TestImportExportCase02(NetworkTest):
             "Check that the Template is imported with all VNIC profiles"
         )
         assert helper.check_imported_vm_or_templates(
-            net1=self.net1, net2=self.net2, template=self.template_list[1]
+            net1=self.net1, net2=self.net2, template=self.import_template
         )
 
     @polarion("RHEVM3-3764")
@@ -99,7 +98,8 @@ class TestImportExportCase02(NetworkTest):
             "profiles"
         )
         assert helper.check_imported_vm_or_templates(
-            net1=self.net1, net2=self.net2, template=self.template_list[0]
+            net1=self.net1, net2=self.net2,
+            template=self.more_then_once_template
         )
 
 
@@ -126,10 +126,12 @@ class TestImportExportCase03(NetworkTest):
        Start VM should succeed after remove of nic 4 from VM.
     """
     __test__ = True
-    vms_list = [import_export_conf.IE_VM, import_export_conf.IE_VM_2]
-    templates_to_import = [import_export_conf.IE_TEMPLATE]
+    vm_1 = import_export_conf.IE_VM_NAME
+    vm_2 = import_export_conf.IE_VM_2_NAME
+    vms_list = [vm_1, vm_2]
+    templates_to_import = [import_export_conf.IE_TEMPLATE_NAME]
     template_list = templates_to_import
-    vms_to_import = [vms_list[0]]
+    vms_to_import = [vm_1]
     nic_name = import_export_conf.VNICS[3]
     net_list = import_export_conf.NETS
     net1 = net_list[0]
@@ -148,7 +150,7 @@ class TestImportExportCase03(NetworkTest):
             "completed"
         )
         assert helper.check_imported_vm_or_templates(
-            net1=None, net2=None, vm=self.vms_list[0]
+            net1=None, net2=None, vm=self.vm_1
         )
 
     @polarion("RHEVM3-3765")
@@ -164,7 +166,7 @@ class TestImportExportCase03(NetworkTest):
             "import completed"
         )
         assert helper.check_imported_vm_or_templates(
-            net1=None, net2=None, template=import_export_conf.IE_TEMPLATE
+            net1=None, net2=None, template=self.templates_to_import[0]
         )
 
     @polarion("RHEVM3-3761")
@@ -179,16 +181,16 @@ class TestImportExportCase03(NetworkTest):
             "Negative - Start VM when one of the networks attached to it "
             "doesn't reside on any host in the setup"
         )
-        assert ll_vms.startVm(positive=False, vm=self.vms_list[0])
+        assert ll_vms.startVm(positive=False, vm=self.vm_1)
         assert ll_vms.removeNic(
-            positive=True, vm=self.vms_list[0], nic=self.nic_name
+            positive=True, vm=self.vm_1, nic=self.nic_name
         )
         testflow.step(
             "Positive - Start VM after removing network that doesn't reside "
             "on any host in the setup"
         )
         assert ll_vms.startVm(
-            positive=True, vm=self.vms_list[0], wait_for_status="up"
+            positive=True, vm=self.vm_1, wait_for_status="up"
         )
 
     @polarion("RHEVM3-3772")
@@ -201,22 +203,22 @@ class TestImportExportCase03(NetworkTest):
         that doesn't reside on any host in the setup
         """
         assert ll_vms.addVm(
-            positive=True, name=self.vms_list[1], cluster=net_conf.CL_0,
-            template=import_export_conf.IE_TEMPLATE,
+            positive=True, name=self.vm_2, cluster=net_conf.CL_0,
+            template=self.templates_to_import[0],
             display_type=net_conf.DISPLAY_TYPE
         )
         testflow.step(
             "Negative - Start VM, created from template when one of the "
             "networks, attached to it doesn't reside on any host in the setup"
         )
-        assert ll_vms.startVm(positive=False, vm=self.vms_list[1])
+        assert ll_vms.startVm(positive=False, vm=self.vm_2)
         assert ll_vms.removeNic(
-            positive=True, vm=self.vms_list[1], nic=self.nic_name
+            positive=True, vm=self.vm_2, nic=self.nic_name
         )
         testflow.step(
             "Positive - Start VM, created from template after removing network"
             "that doesn't reside on any host in the setup"
         )
         assert ll_vms.startVm(
-            positive=True, vm=self.vms_list[1], wait_for_status="up"
+            positive=True, vm=self.vm_2, wait_for_status="up"
         )

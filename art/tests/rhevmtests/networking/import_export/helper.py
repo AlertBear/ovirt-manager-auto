@@ -25,8 +25,8 @@ def add_nics_to_vm(net_list):
     """
     for net, nic in zip(net_list, import_export_conf.VNICS):
         assert ll_vms.addNic(
-            positive=True, vm=import_export_conf.IE_VM, name=nic, network=net,
-            vnic_profile=net
+            positive=True, vm=import_export_conf.IE_VM_NAME, name=nic,
+            network=net, vnic_profile=net
         )
 
 
@@ -47,8 +47,8 @@ def check_imported_vm_or_templates(net1, net2, vm=None, template=None):
     :rtype: bool
     """
     log = (
-        "more than once" if vm is not import_export_conf.IE_VM and
-        template is not import_export_conf.IE_TEMPLATE else ""
+        "more than once" if vm is not import_export_conf.IE_VM_NAME and
+        template is not import_export_conf.IE_TEMPLATE_NAME else ""
     )
     vm_template_log = "VM" if vm else "Template"
     logger.info(
