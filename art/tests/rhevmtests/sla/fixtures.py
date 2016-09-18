@@ -338,24 +338,25 @@ def choose_specific_host_as_spm(request):
     """
     host_as_spm = request.node.module.host_as_spm
 
-    u_libs.testflow.setup(
-        "Wait until all async tasks will be gone from the engine"
-    )
-    try:
-        test_utils.wait_for_tasks(
-            vdc=sla_config.VDC_HOST,
-            vdc_password=sla_config.VDC_ROOT_PASSWORD,
-            datacenter=sla_config.DC_NAME[0]
+    if not sla_config.PPC_ARCH or host_as_spm != 2:
+        u_libs.testflow.setup(
+            "Wait until all async tasks will be gone from the engine"
         )
-    except apis_exceptions.APITimeout:
-        logger.error("Engine has async tasks that still running")
-        return False
-    u_libs.testflow.setup("Choose the host %s as SPM", host_as_spm)
-    assert ll_hosts.select_host_as_spm(
-        positive=True,
-        host=sla_config.HOSTS[host_as_spm],
-        data_center=sla_config.DC_NAME[0]
-    )
+        try:
+            test_utils.wait_for_tasks(
+                vdc=sla_config.VDC_HOST,
+                vdc_password=sla_config.VDC_ROOT_PASSWORD,
+                datacenter=sla_config.DC_NAME[0]
+            )
+        except apis_exceptions.APITimeout:
+            logger.error("Engine has async tasks that still running")
+            return False
+        u_libs.testflow.setup("Choose the host %s as SPM", host_as_spm)
+        assert ll_hosts.select_host_as_spm(
+            positive=True,
+            host=sla_config.HOSTS[host_as_spm],
+            data_center=sla_config.DC_NAME[0]
+        )
 
 
 @pytest.fixture(scope="class")

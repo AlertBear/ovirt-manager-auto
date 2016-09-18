@@ -70,12 +70,14 @@ def init_scheduler_sanity_test(request):
                 "Remove the scheduling policy %s", policy_name
             )
             ll_sch.remove_scheduling_policy(policy_name=policy_name)
-        u_libs.testflow.teardown("Activate the host %s", conf.HOSTS[2])
-        ll_hosts.activateHost(positive=True, host=conf.HOSTS[2])
+        if not conf.PPC_ARCH:
+            u_libs.testflow.teardown("Activate the host %s", conf.HOSTS[2])
+            ll_hosts.activateHost(positive=True, host=conf.HOSTS[2])
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup("Deactivate the host %s", conf.HOSTS[2])
-    assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[2])
+    if not conf.PPC_ARCH:
+        u_libs.testflow.setup("Deactivate the host %s", conf.HOSTS[2])
+        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[2])
 
 
 @attr(tier=2)
