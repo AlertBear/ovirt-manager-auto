@@ -534,7 +534,7 @@ class RestUtil(APIUtil):
             href = "{0}?{1}".format(";".join(search_params), after_search)
 
         elif search_params:
-            href = "{0} {1}".format(href, " ".join(search_params))
+            href = "{0}&{1}".format(href, "&".join(search_params))
 
         query_template = template_parser.URITemplate(href)
         query_href = query_template.sub({"query": constraint})

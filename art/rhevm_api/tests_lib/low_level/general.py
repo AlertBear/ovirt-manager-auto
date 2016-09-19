@@ -17,6 +17,7 @@
 
 import inspect
 from collections import namedtuple
+from distutils.version import StrictVersion
 
 import art.test_handler.exceptions as exceptions
 from art.core_api import validator
@@ -30,19 +31,9 @@ domUtil = get_api('domain', 'domains')
 userUtil = get_api('user', 'users')
 sdUtil = get_api('storage_domain', 'storagedomains')
 dcUtil = get_api('data_center', 'datacenters')
-permitUtil = get_api('permit', 'capabilities')
-
-# TODO remove the comments below when capabilities issue would fix
-versionCaps = None
-# try:
-#     versionCaps = permitUtil.get(absLink=False)
-# except KeyError:
-#     util.logger.warn("Can't get list of permissions from capabilities")
-#     pass
-
+permitUtil = get_api('cluster_level', 'clusterlevels')
 
 VM = getDS('VM')
-
 
 ProductVersion = namedtuple('ProductVersion', ['major',
                                                'minor',
@@ -54,7 +45,7 @@ def checkSystemVersionTag(positive):
     '''
     Checks whether there are attributes named:
         revision build minor major
-    in the api->system_version tag, whether it is unique and whether the
+    in the api->product_version tag, whether it is unique and whether the
     subtags are unique and their values converts to integer numbers.
 
     Author: jhenner
@@ -69,14 +60,24 @@ def checkSystemVersionTag(positive):
     # Check whether positive is sane for this test case.
     assert positive
 
-    system_version = util.get(href='',
-                              absLink=False).get_product_info().get_version()
-    system_major = system_version.get_major()
-    system_minor = system_version.get_minor()
-    system_revision = system_version.get_revision()
-    system_build = system_version.get_build()
+    try:
+        version_caps = permitUtil.get(absLink=False)
+    except KeyError:
+        util.logger.warn("Can't get list of permissions from capabilities")
+        pass
 
-    if not system_version:
+    product_version = util.get(href='',
+                               absLink=False).get_product_info().get_version()
+    system_version = StrictVersion(
+        '.'.join(
+            (
+                str(product_version.get_major()),
+                str(product_version.get_minor())
+            )
+        )
+    )
+
+    if not product_version:
         ERR = "The tag product_info->version is either not unique or is not"
         " present."
         util.logger.error(ERR)
@@ -84,44 +85,30 @@ def checkSystemVersionTag(positive):
     MSG = "The tag product_info->version is unique and present."
     util.logger.info(MSG)
 
-    # find the declared values for that.
-    error_found = False
-    version_caps = versionCaps
-    if not isinstance(versionCaps, list):
-        version_caps = versionCaps.get_version()
-    for version in version_caps:
-        if version.get_current() in [True, 'true']:
-            major = version.get_major()
-            minor = version.get_minor()
+    ERR1 = "Current version: '{0}' not found under clusterlevels node"
 
-            ERR1 = "Current {0}: '{1}' in not the same as in capabilities: {2}"
-            ERR2 = "'{0}' not found in product info"
-            if system_major != major or not convToInt(system_major,
-                                                      'major version'):
-                util.logger.error(ERR1.format('major version', system_major,
-                                              major))
-                error_found = True
+    version_caps_list = (
+        version_caps
+        if isinstance(version_caps, list)
+        else [version_caps]
+    )
+    for version in version_caps_list:
+        try:
+            cluster_version = StrictVersion(
+                version.get_id()
+            )
+        except ValueError as ex:
+            util.logger.error("Bad version format: %s", ex)
+            return False
 
-            if system_minor != minor or not convToInt(system_minor,
-                                                      'minor version'):
-                util.logger.error(ERR1.format('minor version', system_minor,
-                                              minor))
-                error_found = True
+        if system_version == cluster_version:
+            return True
 
-            if system_revision is None or not convToInt(system_revision,
-                                                        'revision'):
-                util.logger.error(ERR2.format('revision'))
-                error_found = True
-
-            if system_build is None or not convToInt(system_build, 'build'):
-                util.logger.error(ERR2.format('build'))
-                error_found = True
-
-    return not error_found
+    util.logger.error(ERR1.format(system_version))
+    return False
 
 
 def convToInt(num, attr):
-
     try:
         int(num)
     except ValueError as e:
@@ -310,7 +297,7 @@ def get_object_name_by_id(object_api, object_id):
 
 
 def get_log_msg(
-    action, obj_type="", obj_name="", positive=True, extra_txt="", **kwargs
+        action, obj_type="", obj_name="", positive=True, extra_txt="", **kwargs
 ):
     """
     Generate info and error logs for action on object.
@@ -373,6 +360,7 @@ def generate_logs(func):
     Returns:
         any: The function return
     """
+
     def inner(*args, **kwargs):
         """
         The call for the function
@@ -390,4 +378,5 @@ def generate_logs(func):
         if not res:
             util.logger.error(log_err)
         return res
+
     return inner

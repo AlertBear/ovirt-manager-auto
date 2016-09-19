@@ -17,8 +17,6 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     clusters as ll_cluster,
 )
-from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.core_api.apis_exceptions import EngineTypeError
 from rhevmtests import config
 import rhevmtests.sla.config as sla_conf
 
@@ -232,31 +230,6 @@ class TestCaseCluster(TestCase):
         assert status, 'Check cluster - Revert memory overcommit'
 
     @attr(tier=2)
-    @bz({'1301353': {}})
-    def test_update_cluster_memory_overcommit_to_negative_value(self):
-        """
-        Negative - verify update cluster functionality
-        update cluster specific memory overcommit & revert the change
-        should fail - only positive numbers are allowed
-        """
-        cluster = ll_cluster.get_cluster_object(self.cluster_name)
-        old_over_commit_obj = cluster.get_memory_policy().get_over_commit()
-        old_over_commit_val = old_over_commit_obj.get_percent()
-        logger.info('Update cluster - memory overcommit')
-        status = ll_cluster.updateCluster(
-            positive=False, cluster=self.cluster_name,
-            data_center=self.dc_name, mem_ovrcmt_prc=-7
-        )
-        assert status, 'Update cluster memory overcommit'
-        logger.info('Check cluster - memory overcommit')
-        status = ll_cluster.check_cluster_params(
-            positive=False, cluster=self.cluster_name,
-            over_commit=old_over_commit_val
-        )
-
-        assert status, 'Check cluster - memory overcommit'
-
-    @attr(tier=2)
     @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     def test_update_cluster_high_threshold_out_of_range(self):
         """
@@ -422,25 +395,3 @@ class TestCaseCluster(TestCase):
         assert self.set_thresholds_to_default(), (
             'Revert cluster - bad threshold range'
         )
-
-    @attr(tier=1)
-    def test_check_cluster_capabilities(self):
-        """
-        Positive - check cluster capabilities property functionality
-        """
-        logger.info(
-            "Check cluster capabilities property contains "
-            "\'Transparent-Huge-Pages Memory Policy\'"
-        )
-        version_major = str(config.COMP_VERSION).split(".")[0]
-        version_minor = str(config.COMP_VERSION).split(".")[1]
-        xpathMatch = XPathMatch(ll_cluster.CLUSTER_API)
-        expr = 'count(/capabilities/version[@major=' + version_major + \
-               ' and @minor=' + version_minor + ']/ \
-               features/feature/name \
-               [text()="Transparent-Huge-Pages Memory Policy"])'
-        try:
-            status = xpathMatch(True, 'capabilities', expr)
-            assert status, 'Check cluster capabilities property'
-        except EngineTypeError:
-            logger.info('xPath is only supported for rest')

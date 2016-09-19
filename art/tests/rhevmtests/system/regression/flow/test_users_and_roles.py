@@ -8,8 +8,6 @@ test_users_and_roles
 
 import logging
 
-from art.test_handler.tools import bz
-
 from art.unittest_lib import (
     attr,
     CoreSystemTest as TestCase,
@@ -55,18 +53,17 @@ class TestCaseUserAndRoles(TestCase):
         logger.info('Remove user')
         ll_users.removeUser(positive=True, user=config.USERNAME_NAME)
 
-    @bz({'1302034': {}})
     @attr(tier=1)
-    def test_remove_all_permissions_for_user(self):
+    def test_remove_inherited_permissions_for_user(self):
         """
-        verify permissions functionality
-        remove all permissions for a given user
+        Verify impossibility of removing inherited permissions
         """
-        logger.info('Remove permissions for user')
-        status = ll_mla.removeAllPermissionsFromUser(
-            positive=True, user=config.USERNAME_NAME
-        )
-        assert status, 'Remove permissions for user'
+        logger.info("Trying to remove inherited permissions")
+        assert ll_mla.removeAllPermissionsFromUser(
+            positive=False,
+            user=config.USERNAME_NAME
+        ), "Something gone wrong"
+        logger.info("Can't remove inheried permissions as expected")
 
     @attr(tier=2)
     def test_delete_everyone_group(self):
@@ -153,7 +150,7 @@ class TestCaseUserAndRoles(TestCase):
         logger.info('Check definition of blank template')
         xpathMatch = XPathMatch(ll_general.util)
         expr = (
-            'count(/api/special_objects/link[@rel="templates/blank" and '
+            'count(/api/special_objects/blank_template['
             '@href="/%s/templates/00000000-0000-0000-0000-000000000000"])' %
             config.ENGINE_ENTRY_POINT
         )
@@ -171,7 +168,7 @@ class TestCaseUserAndRoles(TestCase):
         logger.info('Check definition of tag root object')
         xpathMatch = XPathMatch(ll_general.util)
         expr = (
-            'count(/api/special_objects/link[@rel="tags/root" and '
+            'count(/api/special_objects/root_tag['
             '@href="/%s/tags/00000000-0000-0000-0000-000000000000"])' %
             config.ENGINE_ENTRY_POINT
         )
