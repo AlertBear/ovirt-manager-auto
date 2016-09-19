@@ -29,20 +29,12 @@ CEPH = config.STORAGE_TYPE_CEPH
 
 
 @pytest.fixture(scope='class')
-def create_vm(request):
+def create_vm(request, remove_vm):
     """
     Create VM and initialize parameters
     """
     self = request.node.cls
 
-    def finalizer():
-        testflow.teardown("Removing VM %s", self.vm_name)
-        assert ll_vms.safely_remove_vms([self.vm_name]), (
-            "Failed to power off and remove VM %s" % self.vm_name
-        )
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
-
-    request.addfinalizer(finalizer)
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
@@ -52,14 +44,32 @@ def create_vm(request):
     )
     if not hasattr(self, 'installation'):
         self.installation = True
+    clone = getattr(self, 'deep_copy', False)
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
     vm_args['vmName'] = self.vm_name
     vm_args['installation'] = self.installation
+    vm_args['deep_copy'] = clone
     testflow.setup("Creating VM %s", self.vm_name)
     assert storage_helpers.create_vm_or_clone(**vm_args), (
         "Failed to create VM %s" % self.vm_name
     )
+
+
+@pytest.fixture(scope='class')
+def remove_vm(request):
+    """
+    Remove VM
+    """
+    self = request.node.cls
+
+    def finalizer():
+        testflow.teardown("Remove VM %s", self.vm_name)
+        assert ll_vms.safely_remove_vms([self.vm_name]), (
+            "Failed to power off and remove VM %s" % self.vm_name
+        )
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+    request.addfinalizer(finalizer)
 
 
 @pytest.fixture(scope='class')
@@ -282,12 +292,13 @@ def create_template(request):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
+    base_vm_for_snapshot = getattr(self, 'vm_name', config.VM_NAME[0])
     testflow.setup("Creating template %s", self.template_name)
     assert ll_templates.createTemplate(
-        True, vm=config.VM_NAME[0], name=self.template_name,
+        True, vm=base_vm_for_snapshot, name=self.template_name,
         cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain
     ), ("Failed to create template %s from VM %s" %
-        (self.template_name, config.VM_NAME[0]))
+        (self.template_name, base_vm_for_snapshot))
 
 
 @pytest.fixture(scope='class')
@@ -492,3 +503,18 @@ def remove_vms(request):
     request.addfinalizer(finalizer)
     if not hasattr(self, 'vm_names'):
         self.vm_names = list()
+
+
+@pytest.fixture()
+def clean_export_domain(request):
+    """
+    Clean export domain from exported entities
+    """
+    def finalizer():
+        testflow.teardown(
+            "Cleaning Export Domain %s", config.EXPORT_DOMAIN_NAME
+        )
+        storage_helpers.clean_export_domain(
+            config.EXPORT_DOMAIN_NAME, config.DATA_CENTER_NAME
+        )
+    request.addfinalizer(finalizer)

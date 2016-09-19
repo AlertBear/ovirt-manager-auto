@@ -15,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     jobs as ll_jobs,
     storagedomains as ll_sd,
+    templates as ll_templates,
     vms as ll_vms,
 )
 from art.rhevm_api.utils.resource_utils import runMachineCommand
@@ -1106,3 +1107,32 @@ def get_vms_for_storage(storage_type):
         return config.FCP_VMS
     else:
         return None
+
+
+def clean_export_domain(export_domain, datacenter):
+    """
+    Remove VMs/Templates from export domain
+
+    Arguments:
+        export_domain (str): The export storage domain name
+        datacenter (str): Datacenter name
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    export_domain_obj = ll_sd.util.find(export_domain)
+    sd_vms = ll_sd.vmUtil.getElemFromLink(
+        export_domain_obj, link_name='vms', attr='vm', get_href=False,
+    )
+    sd_templates = ll_sd.templUtil.getElemFromLink(
+        export_domain_obj, link_name='templates', attr='template',
+        get_href=False,
+    )
+    for template in [temp.get_name() for temp in sd_templates]:
+        ll_templates.removeTemplateFromExportDomain(
+            True, template, export_domain
+        )
+    for vm in [vm.get_name() for vm in sd_vms]:
+        ll_vms.remove_vm_from_export_domain(
+            True, vm, datacenter, export_domain
+        )

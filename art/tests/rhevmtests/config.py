@@ -576,12 +576,16 @@ JOB_ADD_TEMPLATE = ENUMS['job_add_template']
 JOB_ADD_VM_FROM_TEMPLATE = ENUMS['job_add_vm_from_template']
 JOB_IMPORT_TEMPLATE = ENUMS['job_import_vm_template']
 JOB_REMOVE_TEMPLATE = ENUMS['job_remove_vm_template']
+JOB_REMOVE_TEMPLATE_FROM_EXPORT = ENUMS[
+    'job_remove_vm_template_from_export_domain'
+]
 # VM section
 JOB_ADD_VM = ENUMS['job_add_vm']
 JOB_EXPORT_VM = ENUMS['job_export_vm']
 JOB_IMPORT_VM = ENUMS['job_import_vm']
 JOB_MIGRATE_VM = ENUMS['job_migrate_vm']
 JOB_REMOVE_VM = ENUMS['job_remove_vm']
+JOB_REMOVE_VM_FROM_EXPORT = ENUMS['job_remove_vm_from_export_domain']
 JOB_STOP_VM = ENUMS['job_stop_vm']
 
 # agent URL for guest tools testing
