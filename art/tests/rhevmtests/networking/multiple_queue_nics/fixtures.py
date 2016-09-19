@@ -30,7 +30,7 @@ def update_vnic_profile(request):
         Remove custom properties on MGMT.
         """
         testflow.teardown("Setting vNIC: %s properties to default", bridge)
-        ll_networks.update_vnic_profile(
+        assert ll_networks.update_vnic_profile(
             name=bridge, network=bridge,
             data_center=multiple_queue_nics.dc_0, custom_properties="clear"
         )
@@ -60,7 +60,7 @@ def run_vm(request):
         Stop VM.
         """
         testflow.teardown("Stopping VM: %s", vm_name)
-        ll_vms.stopVm(positive=True, vm=vm_name)
+        assert ll_vms.stopVm(positive=True, vm=vm_name)
     request.addfinalizer(fin)
 
     testflow.setup("Running once VM: %s on host: %s", vm_name, host_0)
@@ -83,7 +83,9 @@ def create_vm(request):
         Remove vm
         """
         testflow.teardown("Removing VM: %s", vm_name)
-        ll_vms.removeVm(positive=True, vm=vm_name, stopVM="True", wait=True)
+        assert ll_vms.removeVm(
+            positive=True, vm=vm_name, stopVM="True", wait=True
+        )
     request.addfinalizer(fin)
 
     testflow.setup("Creating VM: %s from template: %s", vm_name, template)

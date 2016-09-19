@@ -30,7 +30,6 @@ from fixtures import (
 
 
 @attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_basic_setup.__name__
 )
@@ -67,7 +66,6 @@ class TestMGMTNetRole01(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
     remove_all_networks.__name__,
     add_clusters_to_dcs.__name__,
@@ -123,7 +121,6 @@ class TestMGMTNetRole02(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_basic_setup.__name__,
     add_clusters_to_dcs.__name__,
@@ -206,7 +203,6 @@ class TestMGMTNetRole03(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
     remove_all_networks.__name__,
     add_clusters_to_dcs.__name__,
@@ -258,7 +254,6 @@ class TestMGMTNetRole04(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_network.__name__,
     remove_all_networks.__name__,
@@ -433,7 +428,6 @@ class TestMGMTNetRole06(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_basic_setup.__name__,
     create_and_attach_network.__name__,

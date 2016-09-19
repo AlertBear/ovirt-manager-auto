@@ -27,7 +27,6 @@ class JumboFrame(NetworkFixtures):
     def __init__(self):
         super(JumboFrame, self).__init__()
         self.vms_list = [self.vm_0, self.vm_1]
-        self.host_nics_list = [self.host_0_nics, self.host_1_nics]
 
 
 @pytest.fixture(scope="module")
@@ -41,7 +40,7 @@ def prepare_setup_jumbo_frame(request):
         """
         Remove networks from setup
         """
-        hl_networks.remove_net_from_setup(
+        assert hl_networks.remove_net_from_setup(
             host=jumbo_frame.hosts_list, data_center=jumbo_frame.dc_0,
             mgmt_network=jumbo_frame.mgmt_bridge, all_net=True
         )
@@ -51,7 +50,7 @@ def prepare_setup_jumbo_frame(request):
         """
         Stop VMs
         """
-        ll_vms.stopVms(vms=jumbo_frame.vms_list)
+        assert ll_vms.stopVms(vms=jumbo_frame.vms_list)
     request.addfinalizer(fin1)
 
     network_helper.prepare_networks_on_setup(
@@ -134,7 +133,7 @@ def update_cluster_network(request):
             "Update cluster network %s as display,vm,migration,management",
             jumbo_frame.mgmt_bridge
         )
-        ll_networks.update_cluster_network(
+        assert ll_networks.update_cluster_network(
             positive=True, cluster=jumbo_frame.cluster_0,
             network=jumbo_frame.mgmt_bridge,
             usages="display,vm,migration,management"

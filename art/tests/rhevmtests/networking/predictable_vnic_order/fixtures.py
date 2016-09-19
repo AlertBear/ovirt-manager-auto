@@ -33,7 +33,7 @@ def prepare_setup_predictable_vnic_order(request):
         remove VM
         """
         testflow.teardown("Remove VM %s", vm)
-        ll_vms.removeVm(positive=True, vm=vm)
+        assert ll_vms.removeVm(positive=True, vm=vm)
     request.addfinalizer(fin2)
 
     def fin1():
@@ -41,7 +41,7 @@ def prepare_setup_predictable_vnic_order(request):
         Stop VM
         """
         testflow.teardown("Stop Vm %s", vm)
-        ll_vms.stopVm(positive=True, vm=vm)
+        assert ll_vms.stopVm(positive=True, vm=vm)
     request.addfinalizer(fin1)
 
     testflow.setup("Create VM %s from template %s", vm, template)

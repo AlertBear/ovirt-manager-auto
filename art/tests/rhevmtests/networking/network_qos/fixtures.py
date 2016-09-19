@@ -46,7 +46,7 @@ def case_01_fixture(request):
         """
         Stop VM_1
         """
-        ll_vms.stop_vms_safely(vms_list=vms)
+        assert ll_vms.stop_vms_safely(vms_list=vms)
     request.addfinalizer(fin1)
 
     for qos_name, vnic_profile in zip(

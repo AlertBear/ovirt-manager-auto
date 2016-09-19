@@ -97,8 +97,8 @@ class TestNetworkFilterCase02(NetworkTest):
     network_filter_prepare_setup.__name__,
     restore_vnic_profile_filter.__name__,
     remove_vnic_from_vm.__name__,
-    start_vm.__name__,
     attach_network_to_host.__name__,
+    start_vm.__name__,
 )
 class TestNetworkFilterCase03(NetworkTest):
     """

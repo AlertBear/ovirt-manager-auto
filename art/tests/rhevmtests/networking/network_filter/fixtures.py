@@ -66,7 +66,9 @@ def create_dc_cluster(request):
         """
         Remove DC and cluster
         """
-        hl_networks.remove_basic_setup(datacenter=ext_dc, cluster=ext_cl)
+        assert hl_networks.remove_basic_setup(
+            datacenter=ext_dc, cluster=ext_cl
+        )
     request.addfinalizer(fin)
 
     assert hl_networks.create_basic_setup(
@@ -87,7 +89,7 @@ def attach_network_to_host(request):
         """
         Clean host interfaces
         """
-        hl_host_network.clean_host_interfaces(
+        assert hl_host_network.clean_host_interfaces(
             host_name=network_filter.host_0_name
         )
     request.addfinalizer(fin)
@@ -137,7 +139,7 @@ def restore_vnic_profile_filter(request):
         """
         Update vNIC profile with default network filter
         """
-        ll_networks.update_vnic_profile(
+        assert ll_networks.update_vnic_profile(
             name=net, network=net, network_filter=conf.VDSM_NO_MAC_SPOOFING
         )
         request.addfinalizer(fin)
@@ -156,7 +158,7 @@ def remove_vnic_from_vm(request):
         """
         Remove vNIC from VM
         """
-        ll_vms.removeNic(positive=True, vm=vm, nic=nic1)
+        assert ll_vms.removeNic(positive=True, vm=vm, nic=nic1)
     request.addfinalizer(fin)
 
 

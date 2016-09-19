@@ -22,7 +22,7 @@ def case_01_fixture(request):
         """
         Finalizer for remove all networks from the DC.
         """
-        hl_networks.remove_all_networks(
+        assert hl_networks.remove_all_networks(
             datacenter=misc.dc_0, mgmt_network=misc.mgmt_bridge
         )
     request.addfinalizer(fin)

@@ -98,7 +98,7 @@ def update_host_to_another_cluster(request):
             "Move host %s to original cluster %s", network_api.host_0_name,
             network_api.cluster_0
         )
-        ll_hosts.updateHost(
+        assert ll_hosts.updateHost(
             positive=True, host=network_api.host_0_name,
             cluster=network_api.cluster_0
         )

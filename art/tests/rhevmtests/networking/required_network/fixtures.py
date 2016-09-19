@@ -26,7 +26,9 @@ def activate_host(request):
         Activate host if not up
         """
         testflow.teardown("Activate host %s", required_network.host_0_name)
-        hl_hosts.activate_host_if_not_up(host=required_network.host_0_name)
+        assert hl_hosts.activate_host_if_not_up(
+            host=required_network.host_0_name
+        )
     request.addfinalizer(fin)
 
 

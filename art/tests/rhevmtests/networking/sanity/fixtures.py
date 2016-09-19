@@ -55,7 +55,9 @@ def clean_host_interfaces(request):
         """
         Clean host interfaces
         """
-        hl_host_network.clean_host_interfaces(host_name=sanity.host_0_name)
+        assert hl_host_network.clean_host_interfaces(
+            host_name=sanity.host_0_name
+        )
     request.addfinalizer(fin)
 
 
@@ -107,7 +109,7 @@ def add_vnic_profile(request):
         """
         Remove vNIC profile
         """
-        ll_networks.remove_vnic_profile(
+        assert ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=vnic_profile, network=net
         )
     request.addfinalizer(fin)
@@ -146,7 +148,7 @@ def start_vm(request):
         """
         Stop VM
         """
-        ll_vms.stopVm(positive=True, vm=vm)
+        assert ll_vms.stopVm(positive=True, vm=vm)
     request.addfinalizer(fin)
 
     assert network_helper.run_vm_once_specific_host(
@@ -168,7 +170,7 @@ def case_06_fixture(request):
         Remove vNICs from VM
         """
         for nic in conf.NIC_NAME[1:6]:
-            ll_vms.removeNic(positive=True, vm=vm, nic=nic)
+            assert ll_vms.removeNic(positive=True, vm=vm, nic=nic)
     request.addfinalizer(fin)
 
     plug_link_param_list = [
@@ -203,7 +205,7 @@ def case_07_fixture(request):
         """
         Remove datacenter
         """
-        ll_dc.remove_datacenter(positive=True, datacenter=ext_dc)
+        assert ll_dc.remove_datacenter(positive=True, datacenter=ext_dc)
     request.addfinalizer(fin)
 
     mac_pool_helper.create_dc_with_mac_pool(mac_pool_name="")
@@ -225,7 +227,7 @@ def case_08_fixture(request):
         """
         Remove datacenter
         """
-        ll_dc.remove_datacenter(positive=True, datacenter=dc)
+        assert ll_dc.remove_datacenter(positive=True, datacenter=dc)
     request.addfinalizer(fin2)
 
     def fin1():
@@ -233,7 +235,7 @@ def case_08_fixture(request):
         Remove clusters
         """
         for cl in (cluster_1, cluster_2):
-            ll_clusters.removeCluster(positive=True, cluster=cl)
+            assert ll_clusters.removeCluster(positive=True, cluster=cl)
     request.addfinalizer(fin1)
 
     net_dict = {
@@ -263,7 +265,7 @@ def update_vnic_profile(request):
         """
         Remove queue from vNIC profile
         """
-        ll_networks.update_vnic_profile(
+        assert ll_networks.update_vnic_profile(
             name=mgmt_bridge, network=mgmt_bridge,
             data_center=dc, custom_properties="clear"
         )
@@ -335,7 +337,7 @@ def set_host_nic_down(request):
         """
         Set host NIC up
         """
-        sanity.vds_0_host.network.if_up(nic=sanity.host_0_nics[1])
+        assert sanity.vds_0_host.network.if_up(nic=sanity.host_0_nics[1])
     request.addfinalizer(fin)
 
     assert sanity.vds_0_host.network.if_down(nic=sanity.host_0_nics[1])

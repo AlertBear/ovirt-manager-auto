@@ -73,6 +73,7 @@ def clean_hosts_interfaces(request):
     Clean hosts interfaces
     """
     rx_tx_state = NetworkFixtures()
+    result_list = list()
 
     def fin():
         """
@@ -80,7 +81,10 @@ def clean_hosts_interfaces(request):
         """
         for host_name in rx_tx_state.hosts_list:
             testflow.teardown("Clean host %s interfaces", host_name)
-            hl_host_network.clean_host_interfaces(host_name=host_name)
+            result_list.append(
+                hl_host_network.clean_host_interfaces(host_name=host_name)
+            )
+        assert not (False in result_list)
     request.addfinalizer(fin)
 
 
@@ -147,6 +151,7 @@ def vm_prepare_setup(
     vms_list = [rx_tx_state.vm_0, rx_tx_state.vm_1]
     nic_name = rx_tx_conf.VM_NIC_NAME
     network = rx_tx_conf.NETWORK_1
+    result_list = list()
 
     def fin3():
         """
@@ -154,7 +159,10 @@ def vm_prepare_setup(
         """
         for vm in vms_list:
             testflow.teardown("Remove vNIC %s from VM %s", nic_name, vm)
-            ll_vms.removeNic(positive=True, vm=vm, nic=nic_name)
+            result_list.append(
+                ll_vms.removeNic(positive=True, vm=vm, nic=nic_name)
+            )
+        assert not (False in result_list)
     request.addfinalizer(fin3)
 
     def fin2():

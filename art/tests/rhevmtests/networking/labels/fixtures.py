@@ -78,7 +78,9 @@ def create_datacenter(request):
         Remove datacenter
         """
         testflow.teardown("Remove datacenter %s", dc_name2)
-        ll_datacenters.remove_datacenter(positive=True, datacenter=dc_name2)
+        assert ll_datacenters.remove_datacenter(
+            positive=True, datacenter=dc_name2
+        )
     request.addfinalizer(fin)
 
     testflow.setup("Create datacenter %s", dc_name2)
@@ -135,11 +137,11 @@ def move_host_to_another_cluster(request):
         testflow.teardown(
             "Move host %s to cluster %s", labels.host_1_name, labels.cluster_0
         )
-        hl_host.deactivate_host_if_up(host=labels.host_1_name)
-        ll_hosts.updateHost(
+        assert hl_host.deactivate_host_if_up(host=labels.host_1_name)
+        assert ll_hosts.updateHost(
             positive=True, host=labels.host_1_name, cluster=labels.cluster_0
         )
-        ll_hosts.activateHost(positive=True, host=labels.host_1_name)
+        assert ll_hosts.activateHost(positive=True, host=labels.host_1_name)
     request.addfinalizer(fin)
 
     testflow.setup("Deactivate host %s", labels.host_1_name)

@@ -49,7 +49,7 @@ def start_vm_fixture(request, topologies_prepare_setup):
         """
         Stop VM
         """
-        ll_vms.stopVm(positive=True, vm=topologies.vm_0)
+        assert ll_vms.stopVm(positive=True, vm=topologies.vm_0)
     request.addfinalizer(fin)
 
     assert network_helper.run_vm_once_specific_host(
@@ -116,7 +116,9 @@ def attach_bond(request, topologies_prepare_setup):
         """
         Clean host interfaces
         """
-        hl_host_network.clean_host_interfaces(host_name=topologies.host_0_name)
+        assert hl_host_network.clean_host_interfaces(
+            host_name=topologies.host_0_name
+        )
     request.addfinalizer(fin)
 
     sn_dict = {

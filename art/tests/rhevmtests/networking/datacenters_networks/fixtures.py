@@ -21,13 +21,17 @@ def datacenter_networks_prepare_setup(request):
     """
     NetworkFixtures()
     dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
+    result_list = list()
 
     def fin():
         """
         Remove basic setup
         """
         for dc_name in dc_list:
-            hl_networks.remove_basic_setup(datacenter=dc_name)
+            result_list.append(
+                hl_networks.remove_basic_setup(datacenter=dc_name)
+            )
+        assert not (False in result_list)
     request.addfinalizer(fin)
 
     for dc in dc_list:

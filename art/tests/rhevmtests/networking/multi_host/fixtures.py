@@ -34,7 +34,7 @@ def restore_hosts_mtu_interfaces(request):
             testflow.teardown("Restore hosts interfaces MTU to 1500")
             net = request.node.cls.net
             mtu_1500 = request.node.cls.mtu_1500
-            helper.update_network_and_check_changes(
+            assert helper.update_network_and_check_changes(
                 net=net, mtu=mtu_1500, hosts=conf.HOSTS_LIST,
                 vds_hosts=conf.VDS_HOSTS_LIST
             )
