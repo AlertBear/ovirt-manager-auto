@@ -53,13 +53,13 @@ class NetworkFixtures(object):
 @pytest.fixture(scope="class")
 def clean_host_interfaces(request):
     """
-    Clean hosts interfaces.
+    Clean host(s) interfaces networks (except the management network)
     """
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
 
     def fin():
         """
-        Clean hosts interfaces
+        Clean host(s) interfaces networks (except the management network)
         """
         for key in hosts_nets_nic_dict.iterkeys():
             host_name = conf.HOSTS[key]
@@ -71,7 +71,7 @@ def clean_host_interfaces(request):
 @pytest.fixture(scope="class")
 def setup_networks_fixture(request, clean_host_interfaces):
     """
-    perform network operation to host via setup network
+    Perform network operation on host via setup network
     """
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
     ethtool_opts_str = "ethtool_opts"
@@ -91,6 +91,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
             datacenter = value.get("datacenter")
             ip_dict = value.get("ip")
             mode = value.get("mode")
+            qos = value.get("qos")
             properties = value.get("properties")
             if properties and ethtool_opts_str in properties.keys():
                 val = properties.get(ethtool_opts_str)
@@ -103,7 +104,6 @@ def setup_networks_fixture(request, clean_host_interfaces):
             if slaves:
                 for nic_ in slaves:
                     slaves_list.append(host_resource.nics[nic_])
-
             if isinstance(nic, int):
                 nic = host_resource.nics[nic]
 
@@ -115,6 +115,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
                 "mode": mode,
                 "properties": properties
             }
+            sn_dict["add"][net]["qos"] = qos
             if ip_dict:
                 for k, v in ip_dict.iteritems():
                     ip_dict[k]["netmask"] = v.get("netmask", "24")

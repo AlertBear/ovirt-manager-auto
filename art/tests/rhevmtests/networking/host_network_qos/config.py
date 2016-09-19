@@ -9,13 +9,12 @@ import rhevmtests.helpers as global_helper
 
 MB_CONVERTER = 1000000
 QOS_NAME = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=6, prefix="HostQoS"
+    num_of_cases=7, num_of_objects=6, prefix="host_net_qos_name"
 )
 NETS = global_helper.generate_object_names(
-    num_of_cases=15, num_of_objects=6, prefix="HostQoS"
+    num_of_cases=7, num_of_objects=6, prefix="ho_net_qos"
 )
 VLAN_IDS = [str(i) for i in xrange(2, 50)]
-
 
 QOS_SHARE = "MaxHostNetworkQosShares"
 DEFAULT_SHARE = 100
@@ -25,6 +24,10 @@ DEFAULT_RATE = 1024
 UPDATED_RATE = "2048"
 HOST_NET_QOS_TYPE = "hostnetwork"
 TEST_VALUE = 10
+SHARE_OVERLIMIT_C3 = DEFAULT_SHARE + 5
+SHARE_OVERLIMIT_C4 = DEFAULT_SHARE + 1
+RATE_OVERLIMIT = DEFAULT_RATE + 1
+
 
 QOS_1 = {
     "type_": HOST_NET_QOS_TYPE,
@@ -46,6 +49,9 @@ NETS_DICT = {
     },
     NETS[1][1]: {
         "vlan_id": VLAN_IDS[16],
+        "required": "false"
+    },
+    NETS[1][2]: {
         "required": "false"
     },
     NETS[2][0]: {
@@ -74,17 +80,10 @@ NETS_DICT = {
         "required": "false"
     },
     NETS[7][0]: {
-        "vlan_id": VLAN_IDS[12],
-        "required": "false"
-    },
-    NETS[8][0]: {
-        "required": "false"
-    },
-    NETS[9][0]: {
         "vlan_id": VLAN_IDS[13],
         "required": "false"
     },
-    NETS[9][1]: {
+    NETS[7][1]: {
         "vlan_id": VLAN_IDS[14],
         "required": "false"
     },
