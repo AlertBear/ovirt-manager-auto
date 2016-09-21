@@ -560,11 +560,10 @@ def wait_for_sn(content, last_event, matches=1):
     :type matches: int
     :raise: NetworkException
     """
-    if not ll_events.find_event(
+    assert ll_events.find_event(
         last_event=last_event, event_code=APPLY_NETWORK_CHANGES_EVENT_CODE,
         content=content, matches=matches
-    ):
-        raise conf.NET_EXCEPTION()
+    )
 
 
 def call_function_and_wait_for_sn(func, content, matches=1, **func_kwargs):
@@ -582,11 +581,9 @@ def call_function_and_wait_for_sn(func, content, matches=1, **func_kwargs):
     :type func_kwargs: dict
     :raise: NetworkException
     """
+    err_log = "Failed to call %s with %s" % (func.__name__, func_kwargs)
     last_event = ll_events.get_last_event(APPLY_NETWORK_CHANGES_EVENT_CODE)
-    if not func(**func_kwargs):
-        raise conf.NET_EXCEPTION(
-            "Failed to call %s with %s" % (func.__name__, func_kwargs)
-        )
+    assert func(**func_kwargs), err_log
     wait_for_sn(content=content, last_event=last_event, matches=matches)
 
 

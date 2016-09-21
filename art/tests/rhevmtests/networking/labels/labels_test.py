@@ -863,8 +863,9 @@ class TestNetLabels06(NetworkTest):
             "Remove labeled network %s from cluster %s",
             self.net_1, self.cl_1
         )
-        assert ll_networks.remove_network_from_cluster(
-            positive=True, network=self.net_1, cluster=self.cl_1
+        network_helper.call_function_and_wait_for_sn(
+            func=ll_networks.remove_network_from_cluster, content=self.net_1,
+            positive=True, cluster=self.cl_1, network=self.net_1
         )
         testflow.step(
             "Check that the network %s is not attached to host NIC %s",
@@ -876,24 +877,23 @@ class TestNetLabels06(NetworkTest):
         testflow.step(
             "Reassign network %s to the Cluster %s", self.net_1, self.cl_1
         )
-        assert ll_networks.add_network_to_cluster(
-            positive=True, network=self.net_1, cluster=self.cl_1,
+        network_helper.call_function_and_wait_for_sn(
+            func=ll_networks.add_network_to_cluster, content=self.net_1,
+            positive=True, cluster=self.cl_1, network=self.net_1,
             required=False
         )
         testflow.step(
             "Check that the network %s is attached to the interface after"
             "reattaching it to the Cluster %s", self.net_1, self.cl_1
         )
-        sample = apis_utils.TimeoutingSampler(
-            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-            func=hl_host_network.check_network_on_nic,
+        assert hl_host_network.check_network_on_nic(
             network=self.net_1, host=conf.HOST_0_NAME, nic=conf.HOST_0_NICS[1]
         )
-        assert sample.waitForFuncStatus(result=True)
         testflow.step(
             "Remove network %s from the DC %s", self.net_1, self.dc_1
         )
-        assert ll_networks.remove_network(
+        network_helper.call_function_and_wait_for_sn(
+            func=ll_networks.remove_network, content=self.net_1,
             positive=True, network=self.net_1, data_center=self.dc_1
         )
         testflow.step(
