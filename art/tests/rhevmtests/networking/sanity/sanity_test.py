@@ -10,17 +10,18 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
+import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
 import rhevmtests.networking.network_filter.config as nf_conf
@@ -253,8 +254,9 @@ class TestSanity03(TestSanityCaseBase):
         Create new Host Network QoS profile under DC
         """
         testflow.step("Create new Host Network QoS profile under DC")
-        assert network_helper.create_host_net_qos(
-            qos_name=self.qos_name,
+        assert ll_dc.add_qos_to_datacenter(
+            datacenter=conf.DC_0, qos_name=self.qos_name,
+            qos_type=conf.HOST_NET_QOS_TYPE,
             outbound_average_linkshare=conf.QOS_TEST_VALUE
         )
 

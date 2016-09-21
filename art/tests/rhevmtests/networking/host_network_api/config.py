@@ -9,10 +9,8 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 
-SYNC_DC = "Sync_DC"
-SYNC_CL = "Sync_cluster"
 QOS_NAME = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=4, prefix="QoS"
+    num_of_cases=20, num_of_objects=6, prefix="QoS"
 )
 NIC_NETS = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=15, prefix="nic"
@@ -29,6 +27,9 @@ SN_NETS = global_helper.generate_object_names(
 IPV6_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="ipv6_"
 )
+
+SYNC_DC = "Sync_DC"
+SYNC_CL = "Sync_cluster"
 NUM_DUMMYS = 15
 DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 VLAN_STR = "vlan"
@@ -481,7 +482,6 @@ SYNC_DICT_1 = {
         "required": "false",
         "usages": ""
     },
-
     SYNC_NETS_DC_1[2][8]: {
         "required": "false",
         "usages": ""
@@ -540,7 +540,30 @@ SYNC_DICT_1 = {
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
-
+    },
+    SYNC_NETS_DC_1[5][3]: {
+        "vlan_id": VLAN_IDS[13],
+        "required": "false",
+        "qos": {
+            "datacenter": conf.DC_0,
+            "qos_name": QOS_NAME[5][3],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": None,
+            "outbound_average_realtime": None
+        }
+    },
+    SYNC_NETS_DC_1[5][4]: {
+        "vlan_id": VLAN_IDS[14],
+        "required": "false",
+        "qos": {
+            "datacenter": conf.DC_0,
+            "qos_name": QOS_NAME[5][4],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": None,
+            "outbound_average_realtime": None
+        }
     },
     SYNC_NETS_DC_1[6][0]: {
         "required": "false",
@@ -566,7 +589,6 @@ SYNC_DICT_1 = {
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
-
     },
 }
 
@@ -665,6 +687,30 @@ SYNC_DICT_2 = {
     },
     SYNC_NETS_DC_1[5][2]: {
         "required": "false",
+    },
+    SYNC_NETS_DC_1[5][3]: {
+        "vlan_id": VLAN_IDS[13],
+        "required": "false",
+        "qos": {
+            "datacenter": SYNC_DC,
+            "qos_name": QOS_NAME[5][3],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": None,
+            "outbound_average_realtime": None
+        }
+    },
+    SYNC_NETS_DC_1[5][4]: {
+        "vlan_id": VLAN_IDS[14],
+        "required": "false",
+        "qos": {
+            "datacenter": SYNC_DC,
+            "qos_name": QOS_NAME[5][4],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": None,
+            "outbound_average_realtime": None
+        }
     },
     SYNC_NETS_DC_1[6][0]: {
         "required": "false",

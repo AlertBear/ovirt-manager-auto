@@ -11,6 +11,7 @@ Host NICs, networks, network QoS, engine QoS values
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as qos_conf
 import helper
@@ -403,9 +404,9 @@ class TestHostNetQOSCase05(NetworkTest):
             "Negative: try to create new Network QoS profile under DC"
             "with committed rate value higher than rate limit value"
         )
-        assert net_helper.create_host_net_qos(
-            qos_name=self.qos_name_1,
-            positive=False,
+        assert not ll_dc.add_qos_to_datacenter(
+            datacenter=conf.DC_0, qos_name=self.qos_name_1,
+            qos_type=conf.HOST_NET_QOS_TYPE,
             outbound_average_linkshare=qos_conf.TEST_VALUE,
             outbound_average_upperlimit=qos_conf.TEST_VALUE,
             outbound_average_realtime=qos_conf.TEST_VALUE + 2
@@ -415,8 +416,9 @@ class TestHostNetQOSCase05(NetworkTest):
             "Create new Network QoS profile under DC with committed rate "
             "value lower than rate limit value"
         )
-        assert net_helper.create_host_net_qos(
-            qos_name=self.qos_name_1,
+        assert ll_dc.add_qos_to_datacenter(
+            datacenter=conf.DC_0, qos_name=self.qos_name_1,
+            qos_type=conf.HOST_NET_QOS_TYPE,
             outbound_average_linkshare=qos_conf.TEST_VALUE,
             outbound_average_upperlimit=qos_conf.TEST_VALUE,
             outbound_average_realtime=qos_conf.TEST_VALUE - 2
@@ -542,60 +544,4 @@ class TestHostNetQOSCase06(NetworkTest):
         )
         assert not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(
-    create_host_net_qos.__name__,
-    update_network_in_datacenter.__name__,
-    setup_networks_fixture.__name__
-)
-class TestHostNetQOSCase07(NetworkTest):
-    """
-    Remove host network QoS when several networks with QoS are attached
-    to the host (named)
-    """
-    __test__ = True
-    net_1 = qos_conf.NETS[7][0]
-    net_2 = qos_conf.NETS[7][1]
-    nets = [net_1, net_2]
-    hosts_nets_nic_dict = {
-        0: {
-            net_1: {
-                "network": net_1,
-                "nic": 1
-            },
-            net_2: {
-                "network": net_2,
-                "nic": 1
-            }
-        }
-    }
-    qos_names = [qos_conf.QOS_NAME[7][0], qos_conf.QOS_NAME[7][1]]
-    qos_names_fin_remove = False
-
-    @polarion("RHEVM3-6538")
-    def test_remove_qos_sync(self):
-        """
-        1) Remove host network QoS that is attached to the first network
-        on the host
-        2) Check that the first network is unsynced
-        3) Remove host network QoS that is attached to the second network
-        on the host
-        4) Check that the second network is unsynced
-        5) Sync both networks on the host
-        """
-        for qos_name, net in zip(self.qos_names, self.nets):
-            testflow.step("Removing QoS: %s from DC", qos_name)
-            net_helper.remove_qos_from_dc(qos_name=qos_name)
-
-            testflow.step("Check the network %s is unsynced", net)
-            assert not net_helper.networks_sync_status(
-                host=conf.HOST_0_NAME, networks=[net]
-            )
-
-        testflow.step("Sync both networks")
-        assert net_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=self.nets
         )

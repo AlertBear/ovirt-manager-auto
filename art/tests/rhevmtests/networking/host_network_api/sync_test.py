@@ -1298,6 +1298,8 @@ class TestHostNetworkApiSync05(NetworkTest):
     net_case_3 = net_api_conf.SYNC_NETS_DC_1[5][2]
     net_case_3_qos_expected = None
     net_case_3_qos_actual = "10"
+    net_case_4_1 = net_api_conf.SYNC_NETS_DC_1[5][3]
+    net_case_4_2 = net_api_conf.SYNC_NETS_DC_1[5][4]
     expected_actual_dict_1 = {
         "expected": net_case_1_qos_expected,
         "actual": net_case_1_qos_actual
@@ -1327,7 +1329,16 @@ class TestHostNetworkApiSync05(NetworkTest):
                 "network": net_case_3,
                 "datacenter": conf.DC_0
             },
-
+            net_case_4_1: {
+                "nic": 4,
+                "network": net_case_4_1,
+                "datacenter": conf.DC_0
+            },
+            net_case_4_2: {
+                "nic": 4,
+                "network": net_case_4_2,
+                "datacenter": conf.DC_0
+            }
         }
     }
 
@@ -1405,6 +1416,38 @@ class TestHostNetworkApiSync05(NetworkTest):
         testflow.step("Sync the network %s", self.net_case_3)
         assert network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_3]
+        )
+
+    @polarion("RHEVM3-6538")
+    def test_remove_qos_unsync_network(self):
+        """
+        1.  Remove host network QoS that is attached to the first network
+            on the host
+        2.  Check that the first network is unsynced
+        3.  Remove host network QoS that is attached to the second network
+            on the host
+        4.  Check that the second network is unsynced
+        5.  Sync both networks on the host
+        """
+        qos_names = net_api_conf.QOS_NAME[5][3:5]
+        nets = [self.net_case_4_1, self.net_case_4_2]
+
+        for qos_name, net in zip(qos_names, nets):
+            testflow.step(
+                "Removing QoS: %s from DC: %s", qos_name, net_api_conf.SYNC_DC
+            )
+            network_helper.remove_qos_from_dc(
+                qos_name=qos_name, datacenter=net_api_conf.SYNC_DC
+            )
+
+            testflow.step("Check the network: %s is unsynced", net)
+            assert not network_helper.networks_sync_status(
+                host=conf.HOST_0_NAME, networks=[net]
+            )
+
+        testflow.step("Sync both networks")
+        assert network_helper.sync_networks(
+            host=conf.HOST_0_NAME, networks=nets
         )
 
 

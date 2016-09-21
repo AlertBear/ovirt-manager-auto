@@ -242,41 +242,6 @@ def remove_qos_from_dc(qos_name, datacenter=conf.DC_NAME[0], teardown=True):
             raise conf.NET_EXCEPTION(msg)
 
 
-def create_host_net_qos(
-    qos_name, positive=True, datacenter=conf.DC_NAME[0], **qos_dict
-):
-    """
-    Create a host network qos with provided parameters
-
-    :param qos_name: Name of the host network QoS
-    :type qos_name: str
-    :param positive: Flag if the test is positive or not
-    :type positive: bool
-    :param datacenter: Datacenter to create QoS on
-    :type datacenter: str
-    :param qos_dict: Dict of host network qos values to create QoS with
-    :type qos_dict: dict
-    :return: True/False
-    :rtype: bool
-    """
-    result = ll_dc.add_qos_to_datacenter(
-        datacenter=datacenter, qos_name=qos_name,
-        qos_type=conf.HOST_NET_QOS_TYPE, **qos_dict
-    )
-    if not result and positive:
-        logger.error(
-            "Couldn't create Host Network QOS under DC when should"
-        )
-        return False
-
-    if result and not positive:
-        logger.error(
-            "Could create Host Network QOS under DC when shouldn't"
-        )
-        return False
-    return True
-
-
 def update_host_net_qos(qos_name, datacenter=conf.DC_NAME[0], **qos_dict):
     """
     Update host network qos parameters with given dict parameters

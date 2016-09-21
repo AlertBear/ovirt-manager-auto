@@ -8,6 +8,7 @@ Fixtures for Host Network QoS
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import config as host_qos_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
@@ -42,8 +43,10 @@ def create_host_net_qos(request, remove_qos_from_dc):
 
     for qos in qos_names:
         testflow.setup("Creating network QoS: %s", qos)
-        network_helper.create_host_net_qos(
-            qos_name=qos, outbound_average_linkshare=host_qos_conf.TEST_VALUE,
+        assert ll_dc.add_qos_to_datacenter(
+            datacenter=conf.DC_0, qos_name=qos,
+            qos_type=conf.HOST_NET_QOS_TYPE,
+            outbound_average_linkshare=host_qos_conf.TEST_VALUE,
             outbound_average_upperlimit=upper_limit,
             outbound_average_realtime=realtime
         )
