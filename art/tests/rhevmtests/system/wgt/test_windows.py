@@ -69,11 +69,15 @@ class Windows(TestCase):
             m = getattr(self, self._testMethodName)
             polarion(pid)(m.__func__)
 
-    @classmethod
     @pytest.fixture(scope='class', autouse=True)
-    def setup_vm(cls, request):
+    def setup_vm(self, request):
         # Windows VMs have a naming limitation of 15 characters
-        request.addfinalizer(cls.teardown_vm)
+        cls = request.cls
+
+        def fin():
+            ll_vms.removeVm(positive=True, vm=cls.vm_name, stopVM='true')
+        request.addfinalizer(fin)
+
         cls.vm_name = '%s' % ((cls.disk_name[:9] + cls.disk_name[-6:]) if
                               len(cls.disk_name) > 15 else cls.disk_name)
         import_image(cls.disk_name)
@@ -96,10 +100,6 @@ class Windows(TestCase):
         )
         assert ret[0], "Failed to create vm with windows: '%s'" % ret[1]
         ll_vms.waitForIP(cls.vm_name)
-
-    @classmethod
-    def teardown_vm(cls):
-        assert ll_vms.removeVm(positive=True, vm=cls.vm_name, stopVM='true')
 
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """

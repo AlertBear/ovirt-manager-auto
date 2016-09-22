@@ -98,8 +98,8 @@ class Windows(TestCase):
                 wrapper.__dict__['bz'] = bz
             setattr(self, self._testMethodName, wrapper)
 
-    @classmethod
-    def __prepare_image(self):
+    @staticmethod
+    def __prepare_image():
         global GLANCE_IMAGE
         if GLANCE_IMAGE:
             assert GLANCE_IMAGE._is_import_success()
@@ -108,10 +108,14 @@ class Windows(TestCase):
         except IndexError:
             GLANCE_IMAGE = None
 
-    @classmethod
     @pytest.fixture(scope='class', autouse=True)
-    def setup_vm(cls, request):
-        request.addfinalizer(cls.teardown_vm)
+    def setup_vm(self, request):
+        cls = request.cls
+
+        def fin():
+            vms.removeVm(positive=True, vm=cls.diskName, stopVM='true')
+        request.addfinalizer(fin)
+
         cls.__prepare_image()
         assert vms.createVm(
             positive=True,
@@ -160,10 +164,6 @@ class Windows(TestCase):
     @property
     def architecture(self):
         return 'x86_64' if self.machine.platf == '64-bit' else 'x86'
-
-    @classmethod
-    def teardown_vm(cls):
-        assert vms.removeVm(positive=True, vm=cls.diskName, stopVM='true')
 
     def test_a00_install_guest_tools(self):
         """ Install all supported apps of Windows version """
