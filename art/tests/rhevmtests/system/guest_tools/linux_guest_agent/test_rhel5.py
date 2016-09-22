@@ -1,6 +1,7 @@
 """
 Sanity test of guest agent of rhel 5 32/64b
 """
+import pytest
 from art.test_handler.tools import polarion
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
@@ -12,13 +13,13 @@ DISKx64_NAME = 'rhel5_x64_Disk1'
 DISKx86_NAME = 'rhel5_x86_Disk1'
 
 
-def setup_module():
+@pytest.fixture(scope="module", autouse=True)
+def setup_vms(request):
+    def fin():
+        for vm in [DISKx64_NAME, DISKx86_NAME]:
+            assert vms.removeVm(True, vm, stopVM='true')
+    request.addfinalizer(fin)
     common.prepare_vms([DISKx64_NAME, DISKx86_NAME])
-
-
-def teardown_module():
-    for vm in [DISKx64_NAME, DISKx86_NAME]:
-        vms.removeVm(True, vm, stopVM='true')
 
 
 class RHEL5GATest(common.GABaseTestCase):
@@ -35,9 +36,17 @@ class RHEL5GATest(common.GABaseTestCase):
         '|', 'egrep', '3:on',
     ]
 
-    @classmethod
-    def setup_class(cls):
-        super(RHEL5GATest, cls).setup_class()
+    @pytest.fixture(scope="class")
+    def rhel5_setup(self, request):
+        cls = request.cls
+
+        def fin():
+            assert vms.stop_vms_safely([cls.disk_name])
+            assert vms.undo_snapshot_preview(True, cls.disk_name)
+            vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
+        request.addfinalizer(fin)
+
+        super(RHEL5GATest, cls).ga_base_setup()
         assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
         vms.wait_for_vm_snapshots(
             cls.disk_name,
@@ -46,12 +55,6 @@ class RHEL5GATest(common.GABaseTestCase):
         )
         assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
-
-    @classmethod
-    def teardown_class(cls):
-        vms.stop_vms_safely([cls.disk_name])
-        vms.undo_snapshot_preview(True, cls.disk_name)
-        vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
 
 
 class RHEL532bGATest(RHEL5GATest):
@@ -62,8 +65,8 @@ class RHEL532bGATest(RHEL5GATest):
     disk_name = DISKx86_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(RHEL532bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def rhel532_setup(cls, rhel5_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,
@@ -112,8 +115,8 @@ class RHEL564bGATest(RHEL5GATest):
     disk_name = DISKx64_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(RHEL564bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def rhel564_setup(cls, rhel5_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,
@@ -162,8 +165,8 @@ class UpgradeRHEL564bGATest(RHEL5GATest):
     disk_name = DISKx64_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(UpgradeRHEL564bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def upgrade_rhel564_setup(cls, rhel5_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,
@@ -187,8 +190,8 @@ class UpgradeRHEL532bGATest(RHEL5GATest):
     disk_name = DISKx86_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(UpgradeRHEL532bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def upgrade_rhel532_setup(cls, rhel5_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,

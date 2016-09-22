@@ -1,6 +1,7 @@
 """
 Sanity test of guest agent of rhel 6 32/64b
 """
+import pytest
 from art.test_handler.tools import polarion
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
@@ -12,13 +13,13 @@ DISKx64_NAME = 'rhel6_x64_Disk1'
 DISKx86_NAME = 'rhel6_x86_Disk1'
 
 
-def setup_module():
+@pytest.fixture(scope="module", autouse=True)
+def setup_vms(request):
+    def fin():
+        for vm in [DISKx64_NAME, DISKx86_NAME]:
+            assert vms.removeVm(True, vm, stopVM='true')
+    request.addfinalizer(fin)
     common.prepare_vms([DISKx64_NAME, DISKx86_NAME])
-
-
-def teardown_module():
-    for vm in [DISKx64_NAME, DISKx86_NAME]:
-        vms.removeVm(True, vm, stopVM='true')
 
 
 class RHEL6GATest(common.GABaseTestCase):
@@ -31,9 +32,17 @@ class RHEL6GATest(common.GABaseTestCase):
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
                    'ovirt', '|', 'egrep', '3:on']
 
-    @classmethod
-    def setup_class(cls):
-        super(RHEL6GATest, cls).setup_class()
+    @pytest.fixture(scope="class")
+    def rhel6_setup(self, request):
+        cls = request.cls
+
+        def fin():
+            assert vms.stop_vms_safely([cls.disk_name])
+            assert vms.undo_snapshot_preview(True, cls.disk_name)
+            vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
+        request.addfinalizer(fin)
+
+        super(RHEL6GATest, cls).ga_base_setup()
         assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
         vms.wait_for_vm_snapshots(
             cls.disk_name,
@@ -43,12 +52,6 @@ class RHEL6GATest(common.GABaseTestCase):
         assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
-    @classmethod
-    def teardown_class(cls):
-        vms.stop_vms_safely([cls.disk_name])
-        vms.undo_snapshot_preview(True, cls.disk_name)
-        vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
-
 
 class RHEL664bGATest(RHEL6GATest):
     ''' test installation of guest agent on rhel 6 64b '''
@@ -56,8 +59,8 @@ class RHEL664bGATest(RHEL6GATest):
     disk_name = DISKx64_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(RHEL664bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def rhel664_setup(cls, rhel6_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,
@@ -119,8 +122,8 @@ class RHEL632bGATest(RHEL6GATest):
     disk_name = DISKx86_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(RHEL632bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def rhel632_setup(cls, rhel6_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,
@@ -182,8 +185,8 @@ class UpgradeRHEL664bGATest(RHEL6GATest):
     disk_name = DISKx64_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(UpgradeRHEL664bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def upgrade_rhel664_setup(cls, rhel6_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,
@@ -205,8 +208,8 @@ class UpgradeRHEL632bGATest(RHEL6GATest):
     disk_name = DISKx86_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(UpgradeRHEL632bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def upgrade_rhel632_setup(cls, rhel6_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,

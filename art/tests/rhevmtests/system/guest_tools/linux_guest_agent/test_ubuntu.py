@@ -2,6 +2,7 @@
 Ubuntu guest agent test
 '''
 import logging
+import pytest
 
 from art.test_handler.tools import polarion
 
@@ -15,7 +16,12 @@ NAME = 'ovirt-guest-agent'
 DISK_NAME = 'ubuntu-12.04_Disk1'
 
 
-def setup_module():
+@pytest.fixture(scope="module", autouse=True)
+def setup_vms(request):
+    def fin():
+        assert vms.removeVm(True, DISK_NAME, stopVM='true')
+    request.addfinalizer(fin)
+
     common.prepare_vms([DISK_NAME])
     assert vms.startVm(True, DISK_NAME, wait_for_status=config.VM_UP)
     machine = config.TEST_IMAGES[DISK_NAME]['machine']
@@ -44,11 +50,6 @@ def setup_module():
     assert machine.package_manager.update(), 'Failed to update system'
 
 
-def teardown_module():
-    for vm in [DISK_NAME]:
-        vms.removeVm(True, vm, stopVM='true')
-
-
 class Ubuntu1204TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
     __test__ = True
@@ -59,8 +60,12 @@ class Ubuntu1204TestCase(common.GABaseTestCase):
     ]
 
     @classmethod
-    def teardown_class(cls):
-        vms.stop_vms_safely([cls.disk_name])
+    @pytest.fixture(scope="class", autouse=True)
+    def ubuntu_setup(cls, request):
+        def fin():
+            assert vms.stop_vms_safely([cls.disk_name])
+        request.addfinalizer(fin)
+        super(Ubuntu1204TestCase, cls).ga_base_setup()
 
     @polarion("RHEVM3-9331")
     def test_aa_install_guest_agent(self):

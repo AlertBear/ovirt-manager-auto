@@ -2,6 +2,7 @@
 Sanity test of guest agent of rhel 7 64b
 """
 import shlex
+import pytest
 
 from art.test_handler.tools import polarion
 
@@ -13,12 +14,12 @@ from art.rhevm_api.tests_lib.low_level import vms
 DISK_NAME = 'rhel7_x64_Disk1'
 
 
-def setup_module():
+@pytest.fixture(scope="module", autouse=True)
+def setup_module(request):
+    def fin():
+        assert vms.removeVm(True, DISK_NAME, stopVM='true')
+    request.addfinalizer(fin)
     common.prepare_vms([DISK_NAME])
-
-
-def teardown_module():
-    vms.removeVm(True, DISK_NAME, stopVM='true')
 
 
 class RHEL7GATest(common.GABaseTestCase):
@@ -35,9 +36,17 @@ class RHEL7GATest(common.GABaseTestCase):
         'grep', 'enabled',
     ]
 
-    @classmethod
-    def setup_class(cls):
-        super(RHEL7GATest, cls).setup_class()
+    @pytest.fixture(scope="class")
+    def rhel7_setup(self, request):
+        cls = request.cls
+
+        def fin():
+            assert vms.stop_vms_safely([cls.disk_name])
+            assert vms.undo_snapshot_preview(True, cls.disk_name)
+            vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
+        request.addfinalizer(fin)
+
+        super(RHEL7GATest, cls).ga_base_setup()
         assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
         vms.wait_for_vm_snapshots(
             cls.disk_name,
@@ -46,12 +55,6 @@ class RHEL7GATest(common.GABaseTestCase):
         )
         assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
-
-    @classmethod
-    def teardown_class(cls):
-        vms.stop_vms_safely([cls.disk_name])
-        vms.undo_snapshot_preview(True, cls.disk_name)
-        vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
 
     def _check_guestIP(self):
         ip = [
@@ -83,8 +86,8 @@ class RHEL764bGATest(RHEL7GATest):
     disk_name = DISK_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(RHEL764bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def rhel764_setup(cls, rhel7_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,
@@ -148,8 +151,8 @@ class UpgradeRHEL764bGATest(RHEL7GATest):
     disk_name = DISK_NAME
 
     @classmethod
-    def setup_class(cls):
-        super(UpgradeRHEL764bGATest, cls).setup_class()
+    @pytest.fixture(scope="class", autouse=True)
+    def upgrade_rhel764_setup(cls, rhel7_setup):
         if not config.UPSTREAM:
             vms.add_repo_to_vm(
                 vm_host=cls.machine,

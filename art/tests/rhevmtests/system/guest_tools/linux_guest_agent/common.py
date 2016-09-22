@@ -85,7 +85,7 @@ class GABaseTestCase(TestCase):
     stats = 'vdsClient -s 0 getVmStats'
 
     @classmethod
-    def setup_class(cls):
+    def ga_base_setup(cls):
         image = config.TEST_IMAGES[cls.disk_name]
         cls.vm_id = image['id']
         cls.machine = image['machine']
