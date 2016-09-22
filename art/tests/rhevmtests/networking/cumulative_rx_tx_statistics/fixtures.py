@@ -84,7 +84,7 @@ def clean_hosts_interfaces(request):
             result_list.append(
                 hl_host_network.clean_host_interfaces(host_name=host_name)
             )
-        assert not (False in result_list)
+        assert all(result_list)
     request.addfinalizer(fin)
 
 
@@ -162,7 +162,7 @@ def vm_prepare_setup(
             result_list.append(
                 ll_vms.removeNic(positive=True, vm=vm, nic=nic_name)
             )
-        assert not (False in result_list)
+        assert all(result_list)
     request.addfinalizer(fin3)
 
     def fin2():

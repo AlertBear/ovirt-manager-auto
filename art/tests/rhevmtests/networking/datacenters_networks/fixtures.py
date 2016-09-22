@@ -31,7 +31,7 @@ def datacenter_networks_prepare_setup(request):
             result_list.append(
                 hl_networks.remove_basic_setup(datacenter=dc_name)
             )
-        assert not (False in result_list)
+        assert all(result_list)
     request.addfinalizer(fin)
 
     for dc in dc_list:
