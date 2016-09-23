@@ -7,16 +7,17 @@ MAC pool range per DC networking feature helper
 
 import logging
 
+from utilities import utils
+
 import art.core_api.apis_exceptions as api_exc
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import config as conf
 import rhevmtests.networking.config as network_conf
-from utilities import utils
 
-logger = logging.getLogger("MAC_Pool_Range_Per_DC_Helper")
+logger = logging.getLogger("MAC_Pool_Range_Per_cluster_Helper")
 
 
 def update_mac_pool_range_size(
@@ -69,7 +70,7 @@ def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
     macs = [i[0] for i in mac_ranges]
     for i in range(start_idx, end_idx):
         nic_mac = ll_vm.get_vm_nic_mac_address(
-            vm=network_conf.VM_0, nic=conf.NICS_NAME[i]
+            vm=conf.MP_VM_0, nic=conf.NICS_NAME[i]
         )
         if nic_mac in macs:
             macs.remove(nic_mac)
@@ -82,21 +83,21 @@ def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
     return True
 
 
-def create_dc_with_mac_pool(
-    dc_name=conf.EXT_DC_1, mac_pool_name=conf.MAC_POOL_NAME_0,
-    mac_pool_ranges=list(), version=network_conf.COMP_VERSION
+def create_cluster_with_mac_pool(
+    cluster_name=conf.EXT_CL_1, mac_pool_name=conf.MAC_POOL_NAME_0,
+    mac_pool_ranges=list()
 ):
     """
-    Create a new DC with MAC pool
+    Create a new cluster with MAC pool
 
     Args:
-        dc_name (str): DC name
+        cluster_name (str): Cluster name
         mac_pool_name (str): MAC pool name
         mac_pool_ranges (list, optional): MAC pool ranges
-        version (str, optional): Version of DC
 
     Returns:
-        bool: True dc created successfully, False if failed in dc creation
+        bool: True if cluster created successfully, False if cluster
+            creation failed
     """
     if not mac_pool_name:
         mac_pool_obj = None
@@ -109,9 +110,10 @@ def create_dc_with_mac_pool(
             )
             mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
 
-    return ll_dc.addDataCenter(
-        positive=True, name=dc_name, version=version,
-        local=False, mac_pool=mac_pool_obj
+    return ll_clusters.addCluster(
+        positive=True, name=cluster_name,
+        cpu=network_conf.CPU_NAME, mac_pool=mac_pool_obj,
+        data_center=network_conf.DC_0
     )
 
 

@@ -6,15 +6,10 @@ Fixtures for MAC pool per DC test cases
 """
 import pytest
 
-import art.rhevm_api.resources.storage as storage_rsc
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.storagedomains as hl_storagedomains
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as mac_pool_conf
@@ -27,9 +22,9 @@ from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
-def mac_pool_per_dc_prepare_setup(request):
+def mac_pool_per_cl_prepare_setup(request):
     """
-    Prepare environment for MAC pool per DC tests:
+    Prepare environment for MAC pool per cluster tests:
 
     1.  Create extra DC, extra cluster and custom MAC pool
     2.  Move host_1 to the new cluster
@@ -38,33 +33,9 @@ def mac_pool_per_dc_prepare_setup(request):
     5.  Create VM template with the custom MAC pool
     """
     mac_pool = NetworkFixtures()
-
-    def fin8():
-        """
-        Clean NFS mount points from host
-        """
-        testflow.teardown("Clean host: %s mount points", mac_pool.host_1_name)
-        assert storage_rsc.clean_mount_point(
-            host=mac_pool.host_1_name,
-            src_ip=conf.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-            src_path=conf.UNUSED_DATA_DOMAIN_PATHS[0],
-            opts=global_helper.NFS_MNT_OPTS
-        )
-    request.addfinalizer(fin8)
-
-    @networking.ignore_exception
-    def fin7():
-        """
-        Remove storage domain
-        """
-        testflow.teardown(
-            "Removing host: %s storage domain", mac_pool.host_1_name
-        )
-        ll_storagedomains.removeStorageDomain(
-            positive=True, storagedomain=mac_pool_conf.MP_STORAGE,
-            host=mac_pool.host_1_name, force=True
-        )
-    request.addfinalizer(fin7)
+    template = mac_pool_conf.MP_TEMPLATE
+    vm = mac_pool_conf.MP_VM_0
+    cluster = mac_pool_conf.MAC_POOL_CL
 
     def fin6():
         """
@@ -78,7 +49,7 @@ def mac_pool_per_dc_prepare_setup(request):
         """
         Set default MAC pools for DCs
         """
-        testflow.teardown("Setting default MAC pools for DCs")
+        testflow.teardown("Setting default MAC pools")
         curr_mac_pool_values = ll_mac_pool.get_mac_range_values(
             ll_mac_pool.get_mac_pool(pool_name=mac_pool_conf.DEFAULT_MAC_POOL)
         )
@@ -90,23 +61,11 @@ def mac_pool_per_dc_prepare_setup(request):
         """
         Remove cluster
         """
-        testflow.teardown("Removing cluster: %s", mac_pool_conf.MAC_POOL_CL)
-        assert ll_clusters.removeCluster(
-            positive=True, cluster=mac_pool_conf.MAC_POOL_CL
-        )
+        testflow.teardown("Removing cluster: %s", cluster)
+        assert ll_clusters.removeCluster(positive=True, cluster=cluster)
     request.addfinalizer(fin4)
 
     def fin3():
-        """
-        Remove Data-Center (removes storage also)
-        """
-        testflow.teardown("Removing DC: %s", mac_pool_conf.EXT_DC_0)
-        assert ll_dc.remove_datacenter(
-            positive=True, datacenter=mac_pool_conf.EXT_DC_0, force=True
-        )
-    request.addfinalizer(fin3)
-
-    def fin2():
         """
         Move host to original cluster
         """
@@ -116,6 +75,14 @@ def mac_pool_per_dc_prepare_setup(request):
         assert hl_hosts.move_host_to_another_cluster(
             host=mac_pool.host_1_name, cluster=conf.CL_0
         )
+    request.addfinalizer(fin3)
+
+    def fin2():
+        """
+        Remove template
+        """
+        testflow.teardown("Remove template %s", template)
+        assert ll_templates.removeTemplate(positive=True, template=template)
     request.addfinalizer(fin2)
 
     @global_helper.wait_for_jobs_deco(["Removing VM"])
@@ -123,42 +90,32 @@ def mac_pool_per_dc_prepare_setup(request):
         """
         Remove VM
         """
-        testflow.teardown("Removing VM: %s", mac_pool_conf.MP_VM_0)
-        assert ll_vms.removeVm(positive=True, vm=mac_pool_conf.MP_VM_0)
+        testflow.teardown("Removing VM: %s", vm)
+        assert ll_vms.removeVm(positive=True, vm=vm)
     request.addfinalizer(fin1)
 
-    testflow.setup("Creating basic setup")
-    assert hl_networks.create_basic_setup(
-        datacenter=mac_pool_conf.EXT_DC_0, version=conf.COMP_VERSION,
-        cluster=mac_pool_conf.MAC_POOL_CL, cpu=conf.CPU_NAME
+    testflow.setup(
+        "Add cluster %s to datacenter %s", cluster, mac_pool.dc_0
+    )
+    assert ll_clusters.addCluster(
+        positive=True, data_center=mac_pool.dc_0, cpu=conf.CPU_NAME,
+        name=cluster,
     )
     testflow.setup(
-        "Moving host: %s to cluster: %s", mac_pool.host_1_name,
-        mac_pool_conf.MAC_POOL_CL
+        "Moving host: %s to cluster: %s", mac_pool.host_1_name, cluster
     )
     assert hl_hosts.move_host_to_another_cluster(
-        host=conf.HOST_1_NAME, cluster=mac_pool_conf.MAC_POOL_CL
+        host=conf.HOST_1_NAME, cluster=cluster
     )
-    testflow.setup(
-        "Add NFS storage domain: %s to host: %s", mac_pool_conf.MP_STORAGE,
-        mac_pool.host_1_name
-    )
-    assert hl_storagedomains.addNFSDomain(
-        host=mac_pool.host_1_name, storage=mac_pool_conf.MP_STORAGE,
-        data_center=mac_pool_conf.EXT_DC_0,
-        path=conf.UNUSED_DATA_DOMAIN_PATHS[0],
-        address=conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-    )
-    testflow.setup("Create new VM: %s", mac_pool_conf.MP_VM_0)
+    testflow.setup("Create new VM: %s", vm)
     assert ll_vms.createVm(
-        positive=True, vmName=mac_pool_conf.MP_VM_0,
-        cluster=mac_pool_conf.MAC_POOL_CL, provisioned_size=conf.VM_DISK_SIZE,
-        storageDomainName=mac_pool_conf.MP_STORAGE
+        positive=True, vmName=vm, cluster=cluster,
+        provisioned_size=conf.VM_DISK_SIZE,
+        storageDomainName=conf.STORAGE_NAME[0]
     )
-    testflow.setup("Create new template: %s", mac_pool_conf.MP_TEMPLATE)
+    testflow.setup("Create new template: %s", template)
     assert ll_templates.createTemplate(
-        positive=True, vm=mac_pool_conf.MP_VM_0,
-        cluster=mac_pool_conf.MAC_POOL_CL, name=mac_pool_conf.MP_TEMPLATE
+        positive=True, vm=vm, cluster=cluster, name=template
     )
 
 
@@ -173,9 +130,8 @@ def create_mac_pools(request):
         """
         Remove MAC pool(s)
         """
-        for pool_name in pools.keys():
-            testflow.teardown("Removing MAC pool: %s", pool_name)
-            ll_mac_pool.remove_mac_pool(mac_pool_name=pool_name)
+        testflow.teardown("Removing unneeded MAC pools")
+        networking.remove_unneeded_mac_pools()
     request.addfinalizer(fin)
 
     for pool_name, params in pools.iteritems():
@@ -187,56 +143,61 @@ def create_mac_pools(request):
 
 
 @pytest.fixture(scope="class")
-def create_dc_with_mac_pools(request):
+def create_cluster_with_mac_pools(request):
     """
-    Create a new Data-Center(s) with a specified name, version, MAC pool name
+    Create a new cluster(s) with a specified name, version, MAC pool name
         and MAC pool range(s)
     """
-    mac_pools = getattr(request.cls, "create_dc_with_mac_pools_params", dict())
+    mac_pools = getattr(request.cls, "create_cl_with_mac_pools_params", dict())
 
     def fin():
         """
-        Remove Data-Center
+        Remove clusters
         """
-        for dc, params in mac_pools.iteritems():
+        for cl, params in mac_pools.iteritems():
             if params[1]:
-                testflow.teardown("Removing DC: %s", dc)
-                assert ll_dc.remove_datacenter(positive=True, datacenter=dc)
+                testflow.teardown("Removing cluster: %s", cl)
+                assert ll_clusters.removeCluster(positive=True, cluster=cl)
     request.addfinalizer(fin)
 
-    for dc, params in mac_pools.iteritems():
-        testflow.setup("Creating DC: %s with MAC pool: %s ", dc, params[0])
-        assert helper.create_dc_with_mac_pool(
-            dc_name=dc, mac_pool_name=params[0]
+    for cl, params in mac_pools.iteritems():
+        testflow.setup(
+            "Creating cluster: %s with MAC pool: %s ", cl, params[0]
+        )
+        assert helper.create_cluster_with_mac_pool(
+            cluster_name=cl, mac_pool_name=params[0]
         )
 
 
 @pytest.fixture(scope="class")
-def update_dcs_mac_pool(request):
+def update_clusters_mac_pool(request):
     """
     Update Data-Center(s) to contain MAC pool
     """
-    dcs_pools = getattr(request.cls, "update_dcs_mac_pool_params", dict())
+    cls_pools = getattr(request.cls, "update_cls_mac_pool_params", dict())
 
     def fin():
         """
         Set Data-Center(s) MAC pool to default
         """
         default = mac_pool_conf.DEFAULT_MAC_POOL
-        for dc_name in dcs_pools.iterkeys():
+        for cl_name in cls_pools.iterkeys():
             testflow.teardown(
-                "Updating DC: %s MAC pool to default: %s", dc_name, default
+                "Updating cluster: %s MAC pool to default: %s", cl_name,
+                default
             )
-            assert ll_dc.update_datacenter(
-                positive=True, datacenter=dc_name,
+            assert ll_clusters.updateCluster(
+                positive=True, cluster=cl_name,
                 mac_pool=ll_mac_pool.get_mac_pool(pool_name=default)
             )
     request.addfinalizer(fin)
 
-    for dc_name, pool_name in dcs_pools.iteritems():
-        testflow.setup("Updating DC: %s MAC pool to: %s", dc_name, pool_name)
-        assert ll_dc.update_datacenter(
-            positive=True, datacenter=dc_name,
+    for cl_name, pool_name in cls_pools.iteritems():
+        testflow.setup(
+            "Updating cluster: %s MAC pool to: %s", cl_name, pool_name
+        )
+        assert ll_clusters.updateCluster(
+            positive=True, cluster=cl_name,
             mac_pool=ll_mac_pool.get_mac_pool(pool_name=pool_name)
         )
 
@@ -286,16 +247,6 @@ def add_vnics_to_template(request):
     Add vNIC(s) to template(s)
     """
     vnic_temp = getattr(request.cls, "add_vnics_to_template_params", dict())
-
-    def fin():
-        """
-        Remove template(s)
-        """
-        for temp in vnic_temp.iterkeys():
-            testflow.teardown("Removing template: %s", temp)
-            assert ll_templates.removeTemplate(positive=True, template=temp)
-    request.addfinalizer(fin)
-
     for temp, vnics in vnic_temp.iteritems():
         for vnic in vnics:
             testflow.setup("Adding vNIC: %s to template: %s", vnic, temp)

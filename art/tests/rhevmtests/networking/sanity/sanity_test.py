@@ -517,14 +517,14 @@ class TestSanity06(TestSanityCaseBase):
 @pytest.mark.usefixtures(case_07_fixture.__name__)
 class TestSanity07(TestSanityCaseBase):
     """
-    1. Create a new DC and check it was created with updated Default
+    1. Create a new cluster and check it was created with updated Default
     MAC pool values
     2. Extend the default range values of Default MAC pool
     3. Add new ranges to the Default MAC pool
     4. Remove added ranges from the Default MAC pool
     """
     __test__ = True
-    ext_dc = mac_pool_conf.EXT_DC_1
+    ext_cl = mac_pool_conf.EXT_CL_1
 
     @polarion("RHEVM3-14507")
     def test_check_default_mac_new_dc(self):
@@ -535,8 +535,10 @@ class TestSanity07(TestSanityCaseBase):
             "Check that the new DC was created with default MAC pool"
         )
         default_mac_id = ll_mac_pool.get_default_mac_pool().get_id()
-        ext_dc_mac_id = ll_mac_pool.get_mac_pool_from_dc(self.ext_dc).get_id()
-        assert default_mac_id == ext_dc_mac_id
+        ext_cl_mac_id = ll_mac_pool.get_mac_pool_from_cluster(
+            cluster=self.ext_cl
+        ).get_id()
+        assert default_mac_id == ext_cl_mac_id
 
     @polarion("RHEVM3-14509")
     def test_extend_default_mac_range(self):

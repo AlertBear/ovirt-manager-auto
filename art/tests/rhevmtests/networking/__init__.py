@@ -348,11 +348,13 @@ def set_default_mac_pool_for_dcs():
     """
     Set 'Default' MAC pool for DCs
     """
-    for dc in config.DC_NAME:
-        mac_pool_name = ll_mac_pool.get_mac_pool_from_dc(dc).name
+    for cluster in config.CLUSTER_NAME:
+        mac_pool_name = ll_mac_pool.get_mac_pool_from_cluster(
+            cluster=cluster
+        ).name
         if mac_pool_name != "Default":
-            ll_datacenters.update_datacenter(
-                positive=True, datacenter=dc,
+            ll_clusters.updateCluster(
+                positive=True, cluster=cluster,
                 mac_pool=ll_mac_pool.get_mac_pool(pool_name="Default")
             )
 

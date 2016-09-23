@@ -135,7 +135,6 @@ def update_datacenter(positive, datacenter, **kwargs):
         description (str): New DC description
         storage_type (str): New storage type
         version (str): New DC version
-        mac_pool (str): New MAC pool for the DC
         quota_mode (str): Datacenter quota mode(disabled, audit, enabled)
 
     Returns:

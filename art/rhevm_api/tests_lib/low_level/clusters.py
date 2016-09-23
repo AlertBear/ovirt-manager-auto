@@ -199,6 +199,10 @@ def _prepareClusterObject(**kwargs):
         migration_options = Migration_Options(policy=migration_policy)
     cl.set_migration(migration_options)
 
+    mac_pool = kwargs.get('mac_pool')
+    if mac_pool:
+        cl.set_mac_pool(mac_pool)
+
     return cl
 
 
@@ -238,6 +242,7 @@ def addCluster(positive, **kwargs):
         migration_policy_id (str): Migration policy name
         migration_bandwidth (str): Bandwidth assignment method
         migration_custom_bandwidth (int): Custom bandwidth
+        mac_pool (str): New MAC pool for the cluster
 
     Returns:
         bool: True if cluster was created properly, False otherwise
@@ -282,6 +287,7 @@ def updateCluster(positive, cluster, **kwargs):
         migration_policy_id (str): Migration policy name
         migration_bandwidth (str): Bandwidth assignment method
         migration_custom_bandwidth (int): Custom bandwidth
+        mac_pool (str): New MAC pool for the DC
 
     Returns:
         bool: True, if update succeed, otherwise False

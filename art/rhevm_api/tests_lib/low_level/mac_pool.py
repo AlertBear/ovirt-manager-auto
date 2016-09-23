@@ -20,7 +20,7 @@
 import logging
 from art.core_api.apis_utils import data_st
 import art.rhevm_api.utils.test_utils as utils
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
 logger = logging.getLogger("art.ll_lib.mac_pool")
@@ -42,19 +42,19 @@ def get_mac_pool(pool_name):
     return MACPOOL_API.find(pool_name)
 
 
-def get_mac_pool_from_dc(dc_name):
+def get_mac_pool_from_cluster(cluster):
     """
     Get MAC pool from the given DC
 
     Args:
-        dc_name (str): Name of the DC
+        cluster (str): Name of the cluster
 
     Returns:
         MacPool: MAC pool object for that DC
     """
-    logger.info("Get MAC pool from datacenter %s", dc_name)
-    dc_obj = ll_dc.get_data_center(dc_name)
-    return MACPOOL_API.find(dc_obj.get_mac_pool().get_id(), "id")
+    logger.info("Get MAC pool from cluster %s", cluster)
+    cluster_obj = ll_clusters.get_cluster_object(cluster)
+    return MACPOOL_API.find(cluster_obj.get_mac_pool().get_id(), "id")
 
 
 def get_mac_pool_ranges_list(mac_pool_obj):

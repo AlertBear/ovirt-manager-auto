@@ -196,19 +196,19 @@ def case_06_fixture(request):
 @pytest.fixture(scope="class")
 def case_07_fixture(request):
     """
-    Create new datacenter
+    Create new cluster
     """
     NetworkFixtures()
-    ext_dc = request.node.cls.ext_dc
+    ext_cl = request.node.cls.ext_cl
 
     def fin():
         """
-        Remove datacenter
+        Remove cluster
         """
-        assert ll_dc.remove_datacenter(positive=True, datacenter=ext_dc)
+        assert ll_clusters.removeCluster(positive=True, cluster=ext_cl)
     request.addfinalizer(fin)
 
-    mac_pool_helper.create_dc_with_mac_pool(mac_pool_name="")
+    mac_pool_helper.create_cluster_with_mac_pool(mac_pool_name="")
 
 
 @pytest.fixture(scope="class")

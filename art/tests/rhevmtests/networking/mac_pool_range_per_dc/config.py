@@ -15,14 +15,13 @@ MAX_COUNT_POOL_CMD = "MaxMacCountPool"
 DEFAULT_MAC_POOL_VALUES = None
 
 MAC_POOL_NAME = ["_".join(["mac_pool_name", str(i)]) for i in range(3)]
-EXT_DC_NAME = ["_".join(["mac_pool_dc", str(i)]) for i in range(4)]
+EXT_CL_NAME = ["_".join(["mac_pool_cluster", str(i)]) for i in range(4)]
 NICS_NAME = ["_".join(["mac_pool_vnic", str(i)]) for i in range(7)]
 
 # Prepare setup fixture
 MAC_POOL_CL = "mac_pool_cluster_setup"
 MP_STORAGE = "mac_pool_storage_setup"
 MP_TEMPLATE = "mac_pool_template_setup"
-EXT_DC_0 = "mac_pool_dc_setup"
 
 # Common use for all tests
 MAC_POOL_RANGE_LIST = [
@@ -37,9 +36,9 @@ MAC_POOL_NAME_0 = MAC_POOL_NAME[0]
 MAC_POOL_NAME_1 = MAC_POOL_NAME[1]
 MAC_POOL_NAME_2 = MAC_POOL_NAME[2]
 
-EXT_DC_1 = EXT_DC_NAME[1]
-EXT_DC_2 = EXT_DC_NAME[2]
-EXT_DC_3 = EXT_DC_NAME[3]
+EXT_CL_1 = EXT_CL_NAME[1]
+EXT_CL_2 = EXT_CL_NAME[2]
+EXT_CL_3 = EXT_CL_NAME[3]
 
 MP_VM_0 = "mac_pool_vm_0"
 MP_VM_1 = "mac_pool_vm_1"
