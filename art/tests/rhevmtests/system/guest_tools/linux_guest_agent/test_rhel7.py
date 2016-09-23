@@ -5,6 +5,7 @@ import shlex
 import pytest
 
 from art.test_handler.tools import polarion
+from art.unittest_lib import attr
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
@@ -78,6 +79,7 @@ class RHEL7GATest(common.GABaseTestCase):
             )
 
 
+@attr(tier=2)
 class RHEL764bGATest(RHEL7GATest):
     """
     Cover basic testing of GA of rhel 7 64b
@@ -143,6 +145,7 @@ class RHEL764bGATest(RHEL7GATest):
         self.function_continuity(self.application_list, self.list_app)
 
 
+@attr(tier=2)
 class UpgradeRHEL764bGATest(RHEL7GATest):
     """
     Cover basic testing upgrade of GA of rhel 7 64b

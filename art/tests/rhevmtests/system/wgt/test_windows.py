@@ -50,7 +50,6 @@ def setup_module():
     logger.info("Windows images to test: %s", WIN_IMAGES)
 
 
-@attr(tier=2)
 class Windows(TestCase):
     """
     Class that implements testing of windows guest tools.
@@ -101,7 +100,7 @@ class Windows(TestCase):
         assert ret[0], "Failed to create vm with windows: '%s'" % ret[1]
         ll_vms.waitForIP(cls.vm_name)
 
-    def test_vm_ip_fqdn_info(self):
+    def check_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         vm = ll_vms.get_vm(self.vm_name)
         assert len(
@@ -109,14 +108,14 @@ class Windows(TestCase):
         ) > 0, "No ip found in guest info"
         assert vm.get_fqdn() and len(vm.get_fqdn()) > 0
 
-    def test_guest_applications(self):
+    def check_guest_applications(self):
         """ Check guest applications are reported """
         vm = ll_vms.get_vm(self.vm_name)
         apps = ll_vms.get_vm_applications(vm.get_name())
         logger.info("Windows '%s' apps are: %s", self.disk_name, apps)
         assert len(apps) > 0, "Applications are empty"
 
-    def test_guest_os(self):
+    def check_guest_os(self):
         """ Check guest OS info is reported """
         vm = ll_vms.get_vm(self.vm_name)
         TimeoutingSampler(
@@ -140,7 +139,7 @@ class Windows(TestCase):
             (guest_os.get_codename(), self.codename)
         )
 
-    def test_guest_timezone(self):
+    def check_guest_timezone(self):
         """ Check guest timezone reported """
         vm = ll_vms.get_vm(self.vm_name)
         TimeoutingSampler(
@@ -161,6 +160,7 @@ class Windows(TestCase):
 # If in doubt run $grep '^class ' test_windows.py | sort
 
 
+@attr(tier=3)
 class Win2008R2_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -179,7 +179,24 @@ class Win2008R2_CI_64b(Windows):
         'test_guest_os': 'RHEVM3-14432',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win2008R2_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -204,7 +221,24 @@ class Win2008R2_CI_core_64b(Windows):
     def setup_w2008r2_core(cls):
         ll_vms.restartVm(cls.vm_name, wait_for_ip=True)
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=2)
 class Win2012R2_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -223,7 +257,24 @@ class Win2012R2_CI_64b(Windows):
         'test_guest_os': 'RHEVM3-14408',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win2012R2_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -242,7 +293,24 @@ class Win2012R2_CI_core_64b(Windows):
         'test_guest_os': 'RHEVM3-14772',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win2012_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -261,7 +329,24 @@ class Win2012_CI_64b(Windows):
         'test_guest_os': 'RHEVM3-14436',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win2012_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -280,7 +365,24 @@ class Win2012_CI_core_64b(Windows):
         'test_guest_os': 'RHEVM-14787',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win7_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -299,7 +401,24 @@ class Win7_CI_32b(Windows):
         'test_guest_os': 'RHEVM3-14428',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=2)
 class Win7_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -318,7 +437,24 @@ class Win7_CI_64b(Windows):
         'test_guest_os': 'RHEVM3-14440',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win8_1_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -337,7 +473,24 @@ class Win8_1_CI_32b(Windows):
         'test_guest_os': 'RHEVM3-14412',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=2)
 class Win8_1_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -356,7 +509,24 @@ class Win8_1_CI_64b(Windows):
         'test_guest_os': 'RHEVM3-14420',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win8_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -375,7 +545,24 @@ class Win8_CI_32b(Windows):
         'test_guest_os': 'RHEVM-14795',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
 class Win8_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -394,7 +581,24 @@ class Win8_CI_64b(Windows):
         'test_guest_os': 'RHEVM-14791',
     }
 
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
 
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=2)
 @bz({'1300959': {}})
 class Windows10_64b(Windows):
     """
@@ -413,3 +617,19 @@ class Windows10_64b(Windows):
         'test_guest_timezone': 'RHEVM3-14415',
         'test_guest_os': 'RHEVM3-14416',
     }
+
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
+
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()

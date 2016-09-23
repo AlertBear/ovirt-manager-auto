@@ -5,6 +5,7 @@ import logging
 import pytest
 
 from art.test_handler.tools import polarion
+from art.unittest_lib import attr
 
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from rhevmtests.system.guest_tools.linux_guest_agent import config
@@ -50,6 +51,7 @@ def setup_vms(request):
     assert machine.package_manager.update(), 'Failed to update system'
 
 
+@attr(tier=3)
 class Ubuntu1204TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
     __test__ = True

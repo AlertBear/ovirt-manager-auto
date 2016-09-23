@@ -3,6 +3,7 @@ Sanity test of guest agent of rhel 6 32/64b
 """
 import pytest
 from art.test_handler.tools import polarion
+from art.unittest_lib import attr
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
@@ -53,6 +54,7 @@ class RHEL6GATest(common.GABaseTestCase):
         common.wait_for_connective(cls.machine)
 
 
+@attr(tier=2)
 class RHEL664bGATest(RHEL6GATest):
     ''' test installation of guest agent on rhel 6 64b '''
     __test__ = True
@@ -116,6 +118,7 @@ class RHEL664bGATest(RHEL6GATest):
         self.function_continuity(self.application_list, self.list_app)
 
 
+@attr(tier=2)
 class RHEL632bGATest(RHEL6GATest):
     ''' test installation of guest agent on rhel 6 32b '''
     __test__ = True
@@ -179,6 +182,7 @@ class RHEL632bGATest(RHEL6GATest):
         self.function_continuity(self.application_list, self.list_app)
 
 
+@attr(tier=2)
 class UpgradeRHEL664bGATest(RHEL6GATest):
     ''' test of upgrade guest agent on rhel 6 64b '''
     __test__ = True
@@ -202,6 +206,7 @@ class UpgradeRHEL664bGATest(RHEL6GATest):
         self.agent_data(self.application_list, self.list_app)
 
 
+@attr(tier=2)
 class UpgradeRHEL632bGATest(RHEL6GATest):
     ''' test of upgrade guest agent on rhel 6 32b '''
     __test__ = True

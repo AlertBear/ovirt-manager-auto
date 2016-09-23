@@ -3,6 +3,7 @@ Sanity test of guest agent of rhel 5 32/64b
 """
 import pytest
 from art.test_handler.tools import polarion
+from art.unittest_lib import attr
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
@@ -57,6 +58,7 @@ class RHEL5GATest(common.GABaseTestCase):
         common.wait_for_connective(cls.machine)
 
 
+@attr(tier=3)
 class RHEL532bGATest(RHEL5GATest):
     """
     Cover basic testing of GA of rhel 5 32b
@@ -107,6 +109,7 @@ class RHEL532bGATest(RHEL5GATest):
         self.function_continuity(self.application_list, self.list_app_cmd)
 
 
+@attr(tier=3)
 class RHEL564bGATest(RHEL5GATest):
     """
     Cover basic testing of GA of rhel 5 64b
@@ -157,6 +160,7 @@ class RHEL564bGATest(RHEL5GATest):
         self.function_continuity(self.application_list, self.list_app_cmd)
 
 
+@attr(tier=3)
 class UpgradeRHEL564bGATest(RHEL5GATest):
     """
     Cover basic testing of upgrade GA of rhel 5 64b
@@ -182,6 +186,7 @@ class UpgradeRHEL564bGATest(RHEL5GATest):
         self.agent_data(self.application_list, self.list_app_cmd)
 
 
+@attr(tier=3)
 class UpgradeRHEL532bGATest(RHEL5GATest):
     """
     Cover basic testing of upgrade GA of rhel 5 32b

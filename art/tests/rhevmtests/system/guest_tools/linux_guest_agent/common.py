@@ -3,7 +3,7 @@ import logging
 import shlex
 
 from art.core_api.apis_utils import TimeoutingSampler
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, hosts, disks
 from art.rhevm_api.utils import test_utils
 
@@ -78,7 +78,6 @@ def prepare_vms(vm_disks):
             assert vms.addSnapshot(True, image, image)
 
 
-@attr(tier=2)
 class GABaseTestCase(TestCase):
     """ Base class handles preparation of glance image """
     __test__ = False
