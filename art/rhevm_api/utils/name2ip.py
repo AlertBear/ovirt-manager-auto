@@ -133,13 +133,13 @@ class LookUpVMIpByName(LookUpIpByEntityName):
         self.nic = nic
 
     def get_ip(self, src_val):
-        ip = self._get_ip_from_vm(src_val)
+        ip = self.get_ip_from_vm(src_val)
         ip = ip[0] if ip else None
         if ip is None:
             ip = self._get_ip_from_mac(src_val)
         return ip
 
-    def _get_ip_from_vm(self, vm_name, ip_version='v4'):
+    def get_ip_from_vm(self, vm_name, ip_version='v4'):
         ip_list = list()
         import art.rhevm_api.tests_lib.low_level.vms as ll_vms
         nics = ll_vms.get_vm_nics_obj(vm_name)
