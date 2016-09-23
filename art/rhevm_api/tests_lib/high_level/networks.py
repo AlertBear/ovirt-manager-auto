@@ -69,33 +69,25 @@ def remove_networks(positive, networks, data_center=None):
     """
     for net in networks:
         logger.info("Removing %s", net)
-        if not ll_networks.remove_network(positive, net, data_center):
+        if not ll_networks.remove_network(
+            positive=positive, network=net, data_center=data_center
+        ):
             logger.error("Failed to remove %s", net)
             return False
     return True
 
 
-def createAndAttachNetworkSN(
-    data_center=None, cluster=None, host=list(), auto_nics=list(),
-    save_config=False, network_dict=None, vlan_auto_nics=None,
+def create_and_attach_networks(
+    data_center=None, cluster=None, network_dict=None
 ):
     """
-    Function that creates and attach the network to the:
-    a) DC, b) Cluster, c) Hosts with SetupNetworks
-
-    __author__: 'gcheresh'
+    Function that creates networks on datacenter and attach the networks to
+    a cluster
 
     Args:
         data_center (str): DC name.
         cluster (str): Cluster name.
-        host (list): List of resources.VDS objects.
-        auto_nics (list): A list of nics indexes to preserve.
-        save_config (bool): Flag for saving configuration.
         network_dict (dict): Dictionary of dictionaries.
-        vlan_auto_nics (dict): Dictionary for auto_nics with vlan.
-
-    vlan_auto_nics example: {162: 0} where 162 is the vlan ID and
-    0 is the host_nic index. (all int)
 
     network_dict parameters:
         Logical network name as the key for the following:
@@ -106,16 +98,6 @@ def createAndAttachNetworkSN(
             vlan_id (str): Network vlan id.
             mtu (int): Network mtu.
             required (bool): required/non-required network.
-            bond (str): Bond name to create.
-            slaves (list): Interfaces that the bond will be composed from.
-            mode (int): The mode of the bond.
-            bootproto (str): Boot protocol (none, dhcp, static).
-            address (list): List of IP addresses of the network if bootproto
-                is Static.
-            netmask (list): List of netmasks of the  network if bootproto
-                is Static.
-            gateway (list): List of gateways of the network if bootproto
-                is Static.
             profile_required (bool): Flag to create or not VNIC profile
                 for the network.
             properties (str): Property of bridge_opts and/or ethtool_opts.
@@ -123,12 +105,8 @@ def createAndAttachNetworkSN(
 
     Returns:
         bool: True value if succeeded in creating and adding net list
-            to DC/Cluster and Host with all the parameters.
+            to DC/Cluster with all the parameters.
     """
-    # Makes sure host_list is always a list
-    sn_dict = dict()
-    host_list = [host] if not isinstance(host, list) else host
-
     for net, net_param in network_dict.items():
         if data_center and net:
             if not ll_networks.add_network(
@@ -146,63 +124,8 @@ def createAndAttachNetworkSN(
             if not ll_networks.add_network_to_cluster(
                 positive=True, network=net, cluster=cluster,
                 required=net_param.get("required", "true"),
-                usages=net_param.get("cluster_usages", None),
+                usages=net_param.get("cluster_usages"),
                 data_center=data_center
-            ):
-                return False
-
-    for host in host_list:
-        host_name = ll_hosts.get_host_name_from_engine(host)
-        logger.info("Found host name: %s", host_name)
-
-        host_auto_nics = []
-        for index in auto_nics:
-            host_auto_nics.append(host.nics[index])
-
-        if vlan_auto_nics:
-            for key, val in vlan_auto_nics.iteritems():
-                host_int = host.nics[val]
-                host_vlan_int = ".".join([host_int, str(key)])
-                host_auto_nics.append(host_vlan_int)
-
-        idx = 0
-        setup_network_dict = {"add": {}}
-        for net, net_param in network_dict.items():
-            param_nic = net_param.get("nic")
-            if not param_nic:
-                continue
-            vlan_interface = None
-            slaves = None
-            param_slaves = net_param.get("slaves")
-            param_vlan = net_param.get("vlan_id")
-            idx += 1
-
-            if param_slaves:
-                slaves = [host.nics[s] for s in param_slaves]
-
-            nic = (
-                param_nic if "bond" in str(param_nic) else host.nics[param_nic]
-            )
-
-            if "vlan_id" in net_param:
-                vlan_interface = "{0}.{1}".format(nic, param_vlan)
-
-            nic = (
-                vlan_interface if "vlan_id" in net_param else nic
-            )
-            sn_dict = convert_old_sn_dict_to_new_api_dict(
-                new_dict=setup_network_dict, old_dict=net_param, idx=idx,
-                nic=nic, network=net, slaves=slaves
-            )
-
-        if not network_dict:
-            if not hl_host_network.clean_host_interfaces(
-                host_name=host_name
-            ):
-                return False
-        else:
-            if not hl_host_network.setup_networks(
-                host_name=host_name, **sn_dict
             ):
                 return False
     return True
@@ -229,7 +152,7 @@ def remove_net_from_setup(
     hosts_list = [host] if not isinstance(host, list) else host
     try:
         for host_name in hosts_list:
-            if not hl_host_network.clean_host_interfaces(host_name):
+            if not hl_host_network.clean_host_interfaces(host_name=host_name):
                 return False
 
     except Exception as ex:
@@ -237,12 +160,12 @@ def remove_net_from_setup(
         return False
 
     if all_net:
-        if not remove_all_networks(
-                datacenter=data_center, mgmt_network=mgmt_network
-        ):
+        if not remove_all_networks(datacenter=data_center):
             return False
     else:
-        if not remove_networks(True, network, data_center):
+        if not remove_networks(
+            positive=True, networks=network, data_center=data_center
+        ):
             return False
     return True
 
@@ -305,7 +228,7 @@ def delete_dummy_interfaces(host):
     )
 
 
-def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
+def remove_all_networks(datacenter=None, cluster=None):
     """
     Remove all networks from DC/CL or from entire setup
 
@@ -317,22 +240,12 @@ def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
     Args:
         datacenter (str): name of the datacenter.
         cluster (str): name of the cluster.
-        mgmt_netowrk (str): name of management network (to be excluded from
-            removal)
 
     Returns:
         bool: True if removing networks succeeded, otherwise False
     """
-    networks_to_remove = []
-    cluster_obj = (
-        ll_clusters.get_cluster_object(cluster_name=cluster) if cluster else
-        None
-    )
-    mgmt_networks_ids = (
-        get_clusters_managements_networks_ids(
-            cluster=[cluster_obj] if cluster else None
-        )
-    )
+    networks_to_remove = list()
+    mgmt_networks_ids = get_clusters_managements_networks_ids(cluster=cluster)
     if cluster:
         networks_list = ll_networks.get_cluster_networks(
             cluster=cluster, href=False
@@ -598,51 +511,6 @@ def get_nic_statistics(nic, host=None, vm=None, keys=None):
     return res
 
 
-def convert_old_sn_dict_to_new_api_dict(
-    new_dict, old_dict, idx, nic, network, slaves=list()
-):
-    """
-    Convert old CreateAndAttachSN call dict to new network API dict to use
-    in setup_networks()
-
-    Args:
-        new_dict (dict): New SN dict
-        old_dict (dict): Network dict
-        idx (int): Index number for new API dict
-        nic (str): NIC name
-        network (str): Network name
-        slaves (list): BOND slaves list
-
-    Returns:
-        dict: New dict for new API function (setup_networks())
-    """
-    ip_dict = None
-    properties = old_dict.get("properties")
-    address = old_dict.get("address")
-    netmask = old_dict.get("netmask")
-    gateway = old_dict.get("gateway")
-    boot_protocol = old_dict.get("bootproto")
-    if address and boot_protocol:
-        ip_dict = {
-            "ip_1": {
-                "address": address[0],
-                "netmask": netmask[0] if netmask else None,
-                "gateway": gateway[0] if gateway else None,
-                "boot_protocol": boot_protocol,
-            }
-        }
-
-    new_dict["add"][str(idx)] = {
-        "nic": nic.rsplit(".")[0],
-        "slaves": slaves,
-        "network": network,
-        "properties": properties,
-    }
-    if ip_dict:
-        new_dict["add"][str(idx)]["ip"] = ip_dict
-    return new_dict
-
-
 def get_clusters_managements_networks_ids(cluster=None):
     """
     Get clusters managements networks IDs for all clusters in the engine if
@@ -654,8 +522,9 @@ def get_clusters_managements_networks_ids(cluster=None):
     Returns:
         list: Managements networks ids
     """
-    clusters = (
-        ll_clusters.CLUSTER_API.get(absLink=False) if not cluster else cluster
+    all_clusters = ll_clusters.CLUSTER_API.get(absLink=False)
+    clusters = filter(
+        lambda x: x.name == cluster if cluster else x, all_clusters
     )
     logger.info(
         "Get management networks id from %s", [cl.name for cl in clusters]

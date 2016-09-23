@@ -61,7 +61,7 @@ def create_network_on_dc(request):
     testflow.setup(
         "Create network: %s in datacenter %s", network_dict, labels.dc_0
     )
-    assert hl_networks.createAndAttachNetworkSN(
+    assert hl_networks.create_and_attach_networks(
         data_center=labels.dc_0, network_dict=network_dict
     )
 
@@ -117,7 +117,7 @@ def create_clusters_and_networks(request):
             "Add networks: %s to datacenter %s and cluster %s",
             label_conf.local_dict, dc_name2, cluster
         )
-        assert hl_networks.createAndAttachNetworkSN(
+        assert hl_networks.create_and_attach_networks(
             data_center=dc_name2, cluster=cluster,
             network_dict=label_conf.local_dict
         )

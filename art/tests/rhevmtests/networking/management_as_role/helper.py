@@ -133,7 +133,7 @@ def add_host_new_mgmt(
         bool: True if add host succeeded, otherwise False
     """
     if new_setup:
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             data_center=dc,  cluster=cl, network_dict=net_setup
         ):
             return False

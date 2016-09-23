@@ -64,7 +64,7 @@ def create_network_in_dc_and_cluster(request):
         "Create network %s in datacenter %s and cluster %s",
         net, network_api.dc_0, network_api.cluster_0
     )
-    assert hl_networks.createAndAttachNetworkSN(
+    assert hl_networks.create_and_attach_networks(
         data_center=network_api.dc_0, cluster=network_api.cluster_0,
         network_dict=network_dict
     )

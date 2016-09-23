@@ -112,7 +112,7 @@ def import_export_prepare_setup(request):
             }
         }
     }
-    assert hl_networks.createAndAttachNetworkSN(
+    assert hl_networks.create_and_attach_networks(
         data_center=import_export.dc_0, cluster=import_export.cluster_0,
         network_dict=import_export_conf.LOCAL_DICT
     )

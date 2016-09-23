@@ -95,7 +95,7 @@ class TestNicFault02(TestNicFaultTestCaseBase):
             }
         }
 
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             host=conf.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise conf.NET_EXCEPTION()
@@ -133,7 +133,7 @@ class TestNicFault03(TestNicFaultTestCaseBase):
             }
         }
 
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             host=conf.VDS_HOSTS_0, network_dict=local_dict1, auto_nics=[0]
         ):
             raise conf.NET_EXCEPTION()
@@ -178,7 +178,7 @@ class TestNicFault04(TestNicFaultTestCaseBase):
             }
         }
 
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             host=conf.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise conf.NET_EXCEPTION()
@@ -210,7 +210,7 @@ class TestNicFault05(TestNicFaultTestCaseBase):
                 "nic": 1,
             }
         }
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             host=conf.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise conf.NET_EXCEPTION()
@@ -247,7 +247,7 @@ class TestNicFault06(TestNicFaultTestCaseBase):
                 "slaves": [2, 3],
             }
         }
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             host=conf.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise conf.NET_EXCEPTION()
@@ -280,7 +280,7 @@ class TestNicFault07(TestNicFaultTestCaseBase):
             }
         }
 
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             host=conf.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise conf.NET_EXCEPTION()
@@ -318,7 +318,7 @@ class TestNicFault8(TestNicFaultTestCaseBase):
             }
         }
 
-        if not hl_networks.createAndAttachNetworkSN(
+        if not hl_networks.create_and_attach_networks(
             host=conf.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise conf.NET_EXCEPTION()

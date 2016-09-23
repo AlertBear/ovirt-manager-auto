@@ -102,7 +102,7 @@ def create_network(request):
         "Create new network %s and attach it to the cluster %s",
         network_name, conf.CLUSTER_NAME[0]
     )
-    assert hl_networks.createAndAttachNetworkSN(
+    assert hl_networks.create_and_attach_networks(
         data_center=conf.DC_NAME[0],
         cluster=conf.CLUSTER_NAME[0],
         network_dict={network_name: {}}
