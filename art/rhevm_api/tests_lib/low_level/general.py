@@ -15,10 +15,12 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import inspect
 from collections import namedtuple
+
+import art.test_handler.exceptions as exceptions
 from art.core_api import validator
 from art.core_api.apis_utils import getDS
-import art.test_handler.exceptions as exceptions
 from art.rhevm_api.utils.test_utils import get_api
 
 util = get_api('', '')
@@ -334,7 +336,7 @@ def get_object_name_by_id(object_api, object_id):
 
 
 def get_log_msg(
-    action, obj_type, obj_name, positive=True, extra_txt="", **kwargs
+    action, obj_type="", obj_name="", positive=True, extra_txt="", **kwargs
 ):
     """
     Generate info and error logs for action on object.
@@ -381,3 +383,36 @@ def prepare_kwargs_for_log(**kwargs):
             continue
         new_kwargs[k] = v.name if hasattr(v, 'name') else v
     return new_kwargs
+
+
+def generate_logs(func):
+    """
+    Decorator to generate log info and log error for function
+
+    The action is the first line of the function docstring and all kwargs
+    after that.
+    If the function fail log error is printed as well.
+
+    Args:
+        func (Function): Function
+
+    Returns:
+        any: The function return
+    """
+    def inner(*args, **kwargs):
+        """
+        The call for the function
+        """
+        func_doc = inspect.getdoc(func)
+        func_args = inspect.getargspec(func).args
+        for arg, val in zip(func_args, args):
+            if not kwargs.get(arg):
+                kwargs[arg] = val
+
+        action = func_doc.split("\n")[0]
+        log_info, log_err = get_log_msg(action=action, **kwargs)
+        util.logger.info(log_info)
+        res = func(**kwargs)
+        if not res:
+            util.logger.error(log_err)
+    return inner
