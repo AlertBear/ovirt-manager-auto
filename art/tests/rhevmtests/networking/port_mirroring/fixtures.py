@@ -71,7 +71,7 @@ def port_mirroring_prepare_setup(request):
         vms_resources = list()
         for vm in conf.VM_NAME[:pm_conf.NUM_VMS]:
             vms_resources.append(
-                pm_conf.VMS_IPS_PARAMS.get(vm).get("resource")
+                pm_conf.VMS_NETWORKS_PARAMS.get(vm).get("resource")
             )
         assert network_helper.remove_ifcfg_files(vms_resources=vms_resources)
     request.addfinalizer(fin1)
