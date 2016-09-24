@@ -7,37 +7,14 @@ Fixtures for network filter
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as nf_conf
 import rhevmtests.networking.config as conf
+from art.unittest_lib import testflow
 from rhevmtests import networking
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
-
-
-@pytest.fixture(scope="module")
-def network_filter_prepare_setup(request):
-    """
-    Prepare setup
-    """
-    network_filter = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert network_helper.remove_networks_from_setup(
-            hosts=network_filter.host_0_name
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=nf_conf.NETS_DICT, dc=network_filter.dc_0,
-        cluster=network_filter.cluster_0
-    )
 
 
 @pytest.fixture(scope="class")
@@ -50,6 +27,7 @@ def remove_vnic_profiles(request):
         """
         Remove NIC from VM
         """
+        testflow.teardown("Remove unneeded vNIC profiles")
         networking.remove_unneeded_vnic_profiles()
     request.addfinalizer(fin)
 
@@ -66,44 +44,18 @@ def create_dc_cluster(request):
         """
         Remove DC and cluster
         """
+        testflow.teardown(
+            "Remove datacenter %s and cluster %s", ext_dc, ext_cl
+        )
         assert hl_networks.remove_basic_setup(
             datacenter=ext_dc, cluster=ext_cl
         )
     request.addfinalizer(fin)
 
+    testflow.setup("Create datacenter %s and cluster %s", ext_dc, ext_cl)
     assert hl_networks.create_basic_setup(
         datacenter=ext_dc, cluster=ext_cl,
         version=conf.COMP_VERSION_4_0[0], cpu=conf.CPU_NAME
-    )
-
-
-@pytest.fixture(scope="class")
-def attach_network_to_host(request):
-    """
-    Attach network to host NIC
-    """
-    network_filter = NetworkFixtures()
-    net = request.node.cls.net
-
-    def fin():
-        """
-        Clean host interfaces
-        """
-        assert hl_host_network.clean_host_interfaces(
-            host_name=network_filter.host_0_name
-        )
-    request.addfinalizer(fin)
-
-    sn_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": network_filter.host_0_nics[1]
-            }
-        }
-    }
-    assert hl_host_network.setup_networks(
-        host_name=network_filter.host_0_name, **sn_dict
     )
 
 
@@ -114,16 +66,19 @@ def start_vm(request):
     """
     network_filter = NetworkFixtures()
     vm = request.node.cls.vm
+    host = network_filter.host_0_name
 
     def fin1():
         """
         Stop VM
         """
+        testflow.teardown("Stop VM %s", vm)
         assert ll_vms.stopVm(positive=True, vm=vm)
     request.addfinalizer(fin1)
 
+    testflow.setup("Start VM %s on host %s", vm, host)
     assert network_helper.run_vm_once_specific_host(
-        vm=vm, host=network_filter.host_0_name, wait_for_up_status=True
+        vm=vm, host=host, wait_for_up_status=True
     )
 
 
@@ -134,13 +89,15 @@ def restore_vnic_profile_filter(request):
     """
     NetworkFixtures()
     net = request.node.cls.net
+    no_spoof = conf.VDSM_NO_MAC_SPOOFING
 
     def fin():
         """
         Update vNIC profile with default network filter
         """
+        testflow.teardown("Set vNIC profile %s with filter %s", net, no_spoof)
         assert ll_networks.update_vnic_profile(
-            name=net, network=net, network_filter=conf.VDSM_NO_MAC_SPOOFING
+            name=net, network=net, network_filter=no_spoof
         )
         request.addfinalizer(fin)
 
@@ -158,6 +115,7 @@ def remove_vnic_from_vm(request):
         """
         Remove vNIC from VM
         """
+        testflow.teardown("Remove vNIC %s from VM %s", nic1, vm)
         assert ll_vms.removeNic(positive=True, vm=vm, nic=nic1)
     request.addfinalizer(fin)
 
@@ -171,4 +129,5 @@ def add_vnic_to_vm(request):
     vm = request.node.cls.vm
     nic1 = request.node.cls.nic1
     net = request.node.cls.net
+    testflow.setup("Add vNIC %s to VM %s", nic1, vm)
     assert ll_vms.addNic(positive=True, vm=vm, name=nic1, network=net)

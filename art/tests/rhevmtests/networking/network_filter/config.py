@@ -11,7 +11,7 @@ NETS = global_helper.generate_object_names(
     num_of_cases=10, prefix="nf_net"
 )
 VNIC_PROFILES = global_helper.generate_object_names(
-    num_of_cases=10, prefix="nf_v_pro"
+    num_of_cases=10, prefix="network-filter-vnic-profile"
 )
 NETWORK_FILTER_STR = "network_filter"
 ARP_FILTER = "allow-arp"

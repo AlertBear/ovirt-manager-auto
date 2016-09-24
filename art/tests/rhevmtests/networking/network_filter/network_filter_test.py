@@ -19,14 +19,40 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
-    network_filter_prepare_setup, attach_network_to_host, start_vm,
-    restore_vnic_profile_filter, create_dc_cluster, add_vnic_to_vm,
-    remove_vnic_from_vm, remove_vnic_profiles
+    start_vm, restore_vnic_profile_filter, create_dc_cluster,
+    add_vnic_to_vm, remove_vnic_from_vm, remove_vnic_profiles
 )
+from rhevmtests.networking import helper as network_helper
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
+)  # flake8: noqa
+
+
+@pytest.fixture(scope="module", autouse=True)
+def network_filter_prepare_setup(request):
+    """
+    Prepare setup
+    """
+    network_filter = NetworkFixtures()
+
+    def fin():
+        """
+        Remove networks from setup
+        """
+        testflow.teardown("Remove networks from setup")
+        assert network_helper.remove_networks_from_setup(
+            hosts=network_filter.host_0_name
+        )
+    request.addfinalizer(fin)
+
+    testflow.setup("Add network to setup")
+    network_helper.prepare_networks_on_setup(
+        networks_dict=nf_conf.NETS_DICT, dc=network_filter.dc_0,
+        cluster=network_filter.cluster_0
+    )
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(network_filter_prepare_setup.__name__)
 class TestNetworkFilterCase01(NetworkTest):
     """
     Check that network filter (vdsm-no-mac-spoofing) is enabled by default for
@@ -54,7 +80,6 @@ class TestNetworkFilterCase01(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(network_filter_prepare_setup.__name__)
 class TestNetworkFilterCase02(NetworkTest):
     """
     Check the vdsm-no-mac-spoofing in on virsh nwfilter-list
@@ -94,10 +119,9 @@ class TestNetworkFilterCase02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    network_filter_prepare_setup.__name__,
     restore_vnic_profile_filter.__name__,
     remove_vnic_from_vm.__name__,
-    attach_network_to_host.__name__,
+    setup_networks_fixture.__name__,
     start_vm.__name__,
 )
 class TestNetworkFilterCase03(NetworkTest):
@@ -109,6 +133,14 @@ class TestNetworkFilterCase03(NetworkTest):
     nic0 = conf.VM_NIC_0
     nic1 = conf.VM_NIC_1
     net = nf_conf.NETS[3][0]
+    hosts_nets_nic_dict = {
+        0: {
+            net: {
+                "nic": 1,
+                "network": net,
+            }
+        }
+    }
 
     @polarion("RHEVM-15098")
     def test_01_check_vm_xml_with_network_filter(self):
@@ -181,7 +213,6 @@ class TestNetworkFilterCase03(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    network_filter_prepare_setup.__name__,
     remove_vnic_from_vm.__name__,
     add_vnic_to_vm.__name__
 )
@@ -281,8 +312,8 @@ class TestNetworkFilterCase06(NetworkTest):
     filter and default network filter
     """
     __test__ = True
-    ext_dc = "NF_DC_3_6"
-    ext_cl = "NF_CL_3_6"
+    ext_dc = "NetworkFilter-DC-3-6"
+    ext_cl = "NetworkFilter-CL-3-6"
     vnic_pro_1 = nf_conf.VNIC_PROFILES[6][0]
     vnic_pro_2 = nf_conf.VNIC_PROFILES[6][1]
     vnic_pro_3 = nf_conf.VNIC_PROFILES[6][2]
