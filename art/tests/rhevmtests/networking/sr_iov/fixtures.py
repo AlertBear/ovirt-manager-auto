@@ -7,7 +7,6 @@ Fixtures for SR-IOV
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
@@ -71,21 +70,6 @@ def init_fixture():
     Prepare SR-IOV params
     """
     SRIOV().init()
-
-
-@pytest.fixture(scope="class")
-def clear_hosts_interfaces(request):
-    """
-    Clean hosts interfaces
-    """
-    sriov = SRIOV()
-
-    def fin():
-        """
-        Clean host interfaces
-        """
-        hl_host_network.clean_host_interfaces(host_name=sriov.host_0_name)
-    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="module")
@@ -221,28 +205,6 @@ def prepare_setup_vm(request):
         networks_dict=sriov_conf.VM_DICT, dc=sriov_vm.dc_0,
         cluster=sriov_vm.cluster_0
     )
-
-
-@pytest.fixture(scope="class")
-def attach_networks_to_host(request):
-    """
-    Attach networks to host NICs
-    """
-    sriov = SRIOV()
-    bond_1 = request.node.cls.bond_1
-    sn_nets = request.node.cls.sn_nets
-    pf_slaves = sriov_conf.HOST_0_PF_NAMES[:2] if bond_1 else None
-    nic = sriov.host_0_nics[1] if not bond_1 else bond_1
-    sn_dict = {
-        "add": {}
-    }
-    for net in sn_nets:
-        sn_dict["add"][net] = {
-            "nic": nic,
-            "slaves": pf_slaves,
-            "network": net
-        }
-    assert hl_host_network.setup_networks(sriov.host_0_name, **sn_dict)
 
 
 @pytest.fixture(scope="class")

@@ -10,6 +10,7 @@ import re
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
 
@@ -74,6 +75,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
     Perform network operation on host via setup network
     """
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
+    sriov_nics = getattr(request.node.cls, "sriov_nics", False)
     ethtool_opts_str = "ethtool_opts"
 
     sn_dict = {
@@ -83,6 +85,12 @@ def setup_networks_fixture(request, clean_host_interfaces):
     for key, val in hosts_nets_nic_dict.iteritems():
         host = conf.HOSTS[key]
         host_resource = conf.VDS_HOSTS[key]
+        if sriov_nics:
+            sriov_host_object = ll_sriov.SriovHostNics(host=host)
+            host_nics_list = sriov_host_object.get_all_pf_nics_names()
+        else:
+            host_nics_list = host_resource.nics
+
         for net, value in val.iteritems():
             slaves_list = list()
             slaves = value.get("slaves")
@@ -99,13 +107,13 @@ def setup_networks_fixture(request, clean_host_interfaces):
                 if match:
                     host_nic_idx = match[0]
                     properties[ethtool_opts_str] = val.replace(
-                        host_nic_idx, host_resource.nics[int(host_nic_idx)]
+                        host_nic_idx, host_nics_list[int(host_nic_idx)]
                     )
             if slaves:
                 for nic_ in slaves:
-                    slaves_list.append(host_resource.nics[nic_])
+                    slaves_list.append(host_nics_list[nic_])
             if isinstance(nic, int):
-                nic = host_resource.nics[nic]
+                nic = host_nics_list[nic]
 
             sn_dict["add"][net] = {
                 "network": network,

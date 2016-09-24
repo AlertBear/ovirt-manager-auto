@@ -16,16 +16,16 @@ import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    prepare_setup_import_export, clear_hosts_interfaces, init_fixture,
-    reset_host_sriov_params
+    prepare_setup_import_export, init_fixture, reset_host_sriov_params
 )
+from rhevmtests.networking.fixtures import clean_host_interfaces
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
     init_fixture.__name__,
     reset_host_sriov_params.__name__,
-    clear_hosts_interfaces.__name__,
+    clean_host_interfaces.__name__,
     prepare_setup_import_export.__name__,
 )
 @pytest.mark.skipif(
@@ -55,6 +55,9 @@ class TestSriovImportExport01(NetworkTest):
     sd_name = ll_storagedomains.getStorageDomainNamesForType(
         datacenter_name=dc, storage_type=conf.STORAGE_TYPE
     )[0]
+    hosts_nets_nic_dict = {
+        0: {}
+    }
 
     @polarion("RHEVM3-10676")
     def test_01_export_vm_with_vf(self):

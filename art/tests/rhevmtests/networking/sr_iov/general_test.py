@@ -17,17 +17,19 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    attach_networks_to_host, create_qos, add_update_vnic_profile,
-    set_num_of_vfs, prepare_setup_general, add_vnics_to_vm, init_fixture,
-    clear_hosts_interfaces, reset_host_sriov_params, remove_vnics_from_vm
+    create_qos, add_update_vnic_profile, set_num_of_vfs,
+    prepare_setup_general, add_vnics_to_vm, init_fixture,
+    reset_host_sriov_params, remove_vnics_from_vm
+)
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces
 )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
     init_fixture.__name__,
-    clear_hosts_interfaces.__name__,
-    attach_networks_to_host.__name__
+    setup_networks_fixture.__name__
 )
 @pytest.mark.skipif(
     conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
@@ -40,9 +42,15 @@ class TestSriov01(NetworkTest):
     """
     __test__ = True
     bond_1 = "bond1"
-    net_1 = None
-    pf_slaves = True
-    sn_nets = [net_1]
+    sriov_nics = True
+    hosts_nets_nic_dict = {
+        0: {
+            bond_1: {
+                "nic": bond_1,
+                "slaves": [0, 1],
+            }
+        }
+    }
 
     @polarion("RHEVM3-6550")
     def test_bond_sriov_config(self):
@@ -199,7 +207,7 @@ class TestSriov02(NetworkTest):
 @pytest.mark.usefixtures(
     init_fixture.__name__,
     reset_host_sriov_params.__name__,
-    clear_hosts_interfaces.__name__,
+    clean_host_interfaces.__name__,
     set_num_of_vfs.__name__
 )
 @pytest.mark.skipif(
@@ -213,6 +221,9 @@ class TestSriov03(NetworkTest):
     """
     __test__ = True
     num_of_vfs = 2
+    hosts_nets_nic_dict = {
+        0: {}
+    }
 
     @polarion("RHEVM3-6318")
     def test_same_vf_number_engine_host(self):
@@ -266,7 +277,7 @@ class TestSriov03(NetworkTest):
 @pytest.mark.usefixtures(
     init_fixture.__name__,
     reset_host_sriov_params.__name__,
-    clear_hosts_interfaces.__name__,
+    clean_host_interfaces.__name__,
     prepare_setup_general.__name__,
     set_num_of_vfs.__name__
 )
@@ -280,6 +291,9 @@ class TestSriov04(NetworkTest):
     __test__ = True
     net1 = sriov_conf.GENERAL_NETS[4][0]
     num_of_vfs = 3
+    hosts_nets_nic_dict = {
+        0: {}
+    }
 
     @polarion("RHEVM3-14637")
     def test_01_change_vf_num_for_occupied_vf_network(self):
@@ -322,11 +336,10 @@ class TestSriov04(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     init_fixture.__name__,
-    clear_hosts_interfaces.__name__,
-    remove_vnics_from_vm.__name__,
     prepare_setup_general.__name__,
-    attach_networks_to_host.__name__,
+    setup_networks_fixture.__name__,
     add_update_vnic_profile.__name__,
+    remove_vnics_from_vm.__name__,
     add_vnics_to_vm.__name__,
 )
 @pytest.mark.skipif(
@@ -339,17 +352,23 @@ class TestSriov05(NetworkTest):
     """
     __test__ = True
     net_1 = sriov_conf.GENERAL_NETS[5][0]
-    sn_nets = [net_1]
     pt_vnic = conf.VNIC_PROFILE[0]
     vnic_p_list = [pt_vnic]
     dc = conf.DC_0
     update_vnic = False
-    bond_1 = None
     pass_through = True
     nics = conf.NIC_NAME[1:3]
     pass_through_vnic = [True, False]
     profiles = [vnic_p_list[0], net_1]
     nets = [net_1, net_1]
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+            }
+        }
+    }
 
     @polarion("RHEVM3-10630")
     def test_01_update_vnic_with_passthrough(self):

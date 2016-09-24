@@ -19,9 +19,12 @@ from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     reset_host_sriov_params, update_vnic_profiles, add_vnics_to_vm,
     init_fixture, prepare_setup_vm, stop_vms, start_vm, set_num_of_vfs,
-    create_qos, vm_case_03, attach_networks_to_host, remove_vnics_from_vm,
-    add_labels, vm_case_05, vm_case_04
+    create_qos, vm_case_03, remove_vnics_from_vm, add_labels, vm_case_05,
+    vm_case_04
 )
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces
+)  # flake8: noqa
 
 
 @attr(tier=2)
@@ -255,7 +258,7 @@ class TestSriovVm02(NetworkTest):
     create_qos.__name__,
     vm_case_03.__name__,
     update_vnic_profiles.__name__,
-    attach_networks_to_host.__name__,
+    setup_networks_fixture.__name__,
     add_vnics_to_vm.__name__,
 )
 @pytest.mark.skipif(
@@ -285,10 +288,20 @@ class TestSriovVm03(NetworkTest):
     nics = [vm_nic_1, vm_nic_2, vm_nic_3]
     pass_through_vnic = [True, False, False]
     profiles = net_list
-    bond_1 = None
-    sn_nets = [net_2, net_3]
     nets = net_list
     net_qos = sriov_conf.NETWORK_QOS
+    hosts_nets_nic_dict = {
+        0: {
+            net_2: {
+                "nic": 1,
+                "network": net_2,
+            },
+            net_3: {
+                "nic": 1,
+                "network": net_3,
+            }
+        }
+    }
 
     @polarion("RHEVM3-10632")
     def test_01_edit_interface_passthrough(self):
