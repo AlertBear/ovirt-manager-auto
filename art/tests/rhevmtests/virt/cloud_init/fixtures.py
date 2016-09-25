@@ -81,6 +81,7 @@ def case_setup(request, cloud_init_setup):
     request.node.cls.initialization = init_dict["initialization"]
     if init_dict["per_condition"]["set_authorized_ssh_keys"]:
         logger.info("Set authorized ssh keys")
+        config.VM_USER_CLOUD_INIT = config.VM_USER_CLOUD_INIT_1
         initialization.set_authorized_ssh_keys(
             config.ENGINE_HOST.get_ssh_public_key()
         )

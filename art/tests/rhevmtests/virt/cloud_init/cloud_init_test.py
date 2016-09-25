@@ -109,6 +109,7 @@ class TestCloudInit(VirtTest):
         to vm without password
         """
         testflow.step("Start vm %s", self.vm_name)
+        logger.info("initialization parameters: %s", vars(self.initialization))
         assert ll_vms.startVm(
             positive=True, vm=self.vm_name, wait_for_ip=True,
             use_cloud_init=True, wait_for_status=config.VM_UP

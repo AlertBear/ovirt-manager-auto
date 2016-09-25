@@ -69,7 +69,9 @@ def check_data_on_vm(command_to_run, expected_output):
             ip=config.VM_IP, password=config.VDC_ROOT_PASSWORD
         )
     elif config.USER_PKEY:
-        logger.info("connect without password")
+        logger.info(
+            "connect without password, user: %s", config.VM_USER_CLOUD_INIT
+        )
         host = helpers.Host(ip=config.VM_IP)
         host.users.append(config.VM_USER_CLOUD_INIT)
         user_root = helpers.User(
