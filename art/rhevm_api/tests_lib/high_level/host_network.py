@@ -31,43 +31,6 @@ MIIMON = "miimon"
 SETUPNETWORKS = "setupnetworks"
 
 
-def get_network_attachment_reported_values(
-    host_name, network, nic=None, values=list()
-):
-    """
-    Get network attachment values
-
-    :param host_name: Host name
-    :type host_name: str
-    :param network: Network name
-    :type network: str
-    :param nic: NIC name
-    :type nic: str
-    :param values: Values to get example: ["mtu", "vlan", "bridged"]
-    :type values: list
-    :return: Network attachment values
-    :rtype: dict
-    """
-    res = dict()
-    attachment = ll_host_network.get_networks_attachments(
-        host_name, [network], nic
-    )
-    if not attachment:
-        return res
-
-    reported = ll_host_network.get_attachment_reported_configurations(
-        attachment[0]
-    )
-
-    for report in reported:
-        key = report.get_name()
-        res[key] = report.get_value()
-
-    if values:
-        return dict((i, res[i]) for i in values)
-    return res
-
-
 def remove_networks_from_host(host_name, networks, nic=None):
     """
     Remove network attachments from host
@@ -419,31 +382,6 @@ def get_attached_networks_names_from_host_nic(host_name, nic):
             ll_networks.NET_API, att.get_network().get_id()
         ) for att in attachments
     ]
-
-
-def get_host_nic_name_from_network_attachment(host_name, network):
-    """
-    Get host NIC name from network attachment
-
-    :param host_name: Host name
-    :type host_name: str
-    :param network: Network name
-    :type network: str
-    :return: Host NIC name
-    :rtype: str
-    """
-    attachment = ll_host_network.get_networks_attachments(
-        host_name, [network]
-    )
-    if not attachment:
-        return None
-
-    host_nics = ll_hosts.get_host_nics_list(host_name)
-    attachment_id = attachment[0].get_host_nic().get_id()
-    names = [
-        i.get_name() for i in host_nics if attachment_id == i.get_id()
-    ]
-    return names[0] if names else None
 
 
 def get_host_unmanaged_networks_info(host_name):

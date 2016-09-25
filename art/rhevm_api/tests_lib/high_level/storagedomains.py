@@ -881,53 +881,6 @@ def attach_and_activate_domain(datacenter, domain):
     return True
 
 
-def create_nfs_domain_and_verify_options(domain_list, host=None,
-                                         password=None, datacenter=None):
-    """
-    Creates NFS domains with specified options, if datacenter is not
-    None - attaches them to this datacenter, then check that the specified
-    NFS resources are mounted on given host with required options.
-
-    **Author**: Katarzyna Jachim
-
-    **Parameters**:
-     * *domain_list*: list of objects of class NFSStorage, each of them
-                      describes one storage domain
-     * *host*: name of host on which storage domain should be mounted
-     * *password*: root password on the host
-     * *datacenter*: if not None - datacenter to which NFS storage domain
-                     should be attached
-
-    **Returns**: nothing, raise StorageDomainException exception if the
-                 verification phase of this function fails
-    """
-
-    for domain in domain_list:
-        logger.info("Creating nfs domain %s" % domain.name)
-        create_nfs_domain_with_options(
-            domain.name, domain.sd_type, host, domain.address,
-            domain.path, retrans=domain.retrans_to_set,
-            version=domain.vers_to_set, timeo=domain.timeout_to_set,
-            mount_options=domain.mount_options_to_set,
-            datacenter=datacenter)
-
-    logger.info("Getting info about mounted resources")
-    host_ip = hosts.getHostIP(host)
-    mounted_resources = ll_sd.get_mounted_nfs_resources(host_ip, password)
-
-    logger.info("verifying nfs options")
-    for domain in domain_list:
-        nfs_timeo, nfs_retrans, nfs_vers, nfs_sync = mounted_resources[
-            (domain.address, domain.path)]
-        result = ll_sd.verify_nfs_options(
-            domain.expected_timeout, domain.expected_retrans,
-            domain.expected_vers, domain.expected_mount_options, nfs_timeo,
-            nfs_retrans, nfs_vers, nfs_sync)
-        if result:
-            raise errors.StorageDomainException(
-                "Wrong NFS options! Expected %s: %s, real: %s" % result)
-
-
 def detach_and_deactivate_domain(datacenter, domain):
     """
     Deactivates and detaches a storage domain

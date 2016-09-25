@@ -3,27 +3,25 @@
 """
 High-level functions above virtual machines
 """
-from art.core_api.apis_exceptions import APITimeout
-from art.rhevm_api import resources
 import logging
 import shlex
 import urllib
 
 from concurrent.futures import ThreadPoolExecutor
-import art.rhevm_api.tests_lib.low_level.vms as vms
-import art.rhevm_api.tests_lib.low_level.hosts as hosts
+from utilities.timeout import TimeoutingSampler
+
 import art.rhevm_api.tests_lib.low_level.disks as disks
-import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 import art.rhevm_api.tests_lib.low_level.general as ll_general
-from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
+import art.rhevm_api.tests_lib.low_level.hosts as hosts
+import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
+import art.rhevm_api.tests_lib.low_level.vms as vms
+import art.test_handler.exceptions as errors
+from art.core_api.apis_exceptions import APITimeout
+from art.rhevm_api import resources
+from art.rhevm_api.utils.test_utils import getStat
+from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-import art.test_handler.exceptions as errors
-
-from art.rhevm_api.utils.test_utils import getStat
-
-
-from utilities.timeout import TimeoutingSampler
 
 logger = logging.getLogger("art.hl_lib.vms")
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -42,90 +40,6 @@ WGT_INSTALL_TIMEOUT = 600
 CHECK_MEMORY_COMMAND = "free -m | grep Mem | awk '{ print $2 }'"
 
 ProvisionContext = vms.ProvisionContext
-
-
-def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
-                        **kwargs):
-    """
-    Description: Adds disk to a running VM by shuting VM down, adding disk
-    and turing it on again
-    Params:
-        * vm_name - name of the VM
-        * interface - disk interface type (ide, virtio)
-        * format_ - disk type (raw, cow)
-        * sparse - whether disk should be sparse
-        * host - hsm or spm
-        * storage_domain - on which storage domain should be disk placed
-    """
-    start = False
-    vm_obj = VM_API.find(vm_name)
-    if vm_obj.get_status() == ENUMS['vm_state_up']:
-        start = True
-        logger.info("Shutting down vm %s to add disk", vm_name)
-        if not vms.shutdownVm(True, vm_name):
-            raise errors.VMException("Shutdown of vm %s failed" % vm_name)
-    vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'], timeout=60)
-
-    logger.info("AddDisk to vm %s", vm_name)
-    if not vms.addDisk(True, vm_name, 5 * GB, storagedomain=storage_domain,
-                       format=format_, interface=interface, sparse=sparse,
-                       **kwargs):
-        raise errors.VMException("addDisk to vm %s failed" % vm_name)
-
-    vm_obj = VM_API.find(vm_name)
-    if start and vm_obj.get_status == ENUMS['vm_state_down'] and \
-            not vms.startVm(True, vm_name, wait_for_ip=True):
-        raise errors.VMException("startVm of vm %s failed" % vm_name)
-
-
-def shutdown_vm_if_up(vm_name):
-    """
-    Description: Shutdowns vm if it's in up status
-    Parameters:
-        * vm_name - name of the vm
-    """
-    vm_obj = VM_API.find(vm_name)
-    if (
-        vm_obj.get_status() == ENUMS['vm_state_up'] and
-        not vms.shutdownVm(True, vm_name)
-    ):
-        raise errors.VMException("Shutdown of vm %s failed" % vm_name)
-    return vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'])
-
-
-def prepare_vm_for_rhel_template(vm_name, vm_password, image):
-    """
-    Prepare vm to create rhel with agent template from it
-    **Author**: alukiano
-
-    **Parameters**:
-        * *vm_name* - vm to prepare
-        * *vm_password* - vm connection password
-        * *image* - image to install on vm
-    **Returns**: True if method success, otherwise False
-    """
-    logging.info("Install image %s on vm %s", vm_name, image)
-    try:
-        if not vms.unattendedInstallation(True, vm_name, image):
-            logging.error("Installation of image %s on vm %s failed",
-                          image, vm_name)
-            return False
-        logging.info("Wait for vm %s ip", vm_name)
-        status, result = vms.waitForIP(vm_name)
-        if not status:
-            logging.error("Vm %s still not have ip", vm_name)
-            return False
-    finally:
-        ProvisionContext.clear()
-    logging.info("Seal vm %s", vm_name)
-    if not setPersistentNetwork(result.get('ip'), vm_password):
-        logging.error("Failed to seal vm %s", vm_name)
-        return False
-    logging.info("Stop vm %s")
-    if not vms.stopVm(True, vm_name):
-        logging.error("Failed to stop vm %s", vm_name)
-        return False
-    return True
 
 
 def get_vm_ip(vm_name, start_vm=True):
@@ -439,26 +353,6 @@ def migrate_vms(
     return True
 
 
-def get_vms_os_type(test_vms):
-    """
-     get vms list and returns the os type of the vms as list
-     if VM has no os the value return for this VM will be "Other"
-     in case of exception return empty None
-    :param test_vms: list of vms
-    :type  test_vms: list
-    :return: list of os type per vm
-    :rtype: list
-    """
-    try:
-        logger.info("Get VMs os type")
-        vms_obj = [vms.get_vm(vm) for vm in test_vms]
-        return [vm.get_os().get_type().lower() for vm in vms_obj]
-    except Exception, e:
-        logger.error("Failed to get os type for vms: %s" % test_vms)
-        logger.error("Failed to get os type, reason: %s" % e)
-        return None
-
-
 def update_os_type(os_type, test_vms):
     """
     update os type for vms in list
@@ -734,28 +628,6 @@ def get_vms_objects_from_cluster(cluster):
     return vms_in_cluster
 
 
-def check_vm_memory(vm_resource, expected_mem_size):
-    """
-    Check VM memory, and compare to expected result
-
-    :param vm_resource: vm resource
-    :type vm_resource: Host
-    :param expected_mem_size: the expected value in bytes
-    :type expected_mem_size: int
-    :return: True if memory as expected else False
-    :rtype: bool
-    """
-    expected_memory = expected_mem_size / KB
-    actual_memory = get_memory_on_vm(vm_resource)
-    logger.info("Expected memory(kb): %s", expected_memory)
-    logger.info("Actual memory(kb): %s", actual_memory)
-    if expected_memory * 0.90 <= actual_memory <= expected_memory:
-        return True
-    else:
-        logger.error("memory check failed")
-        return False
-
-
 def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
     """
     Expand memory in multiple of given memory size
@@ -969,21 +841,6 @@ def stop_stateless_vm(vm):
     return True
 
 
-def get_vm_cluster(vm_name):
-    """
-    Get the VM cluster name
-
-    :param vm_name: vm name
-    :type vm_name: str
-    :return:cluster name
-    :rtype: str
-    """
-    logger.info("Get VM %s cluster name", vm_name)
-    vm_obj = VM_API.find(vm_name)
-    cluster_id = vm_obj.cluster.id
-    return CLUSTER_API.find(cluster_id, attribute='id').name
-
-
 def get_vm_cpu_consumption_on_the_host(vm_name):
     """
     Get the VM CPU consumption on the host
@@ -997,32 +854,6 @@ def get_vm_cpu_consumption_on_the_host(vm_name):
     stats = getStat(vm_name, "vm", "vms", ["cpu.current.total"])
     vm_cpus = vms.get_vm_processing_units_number(vm_name)
     return int(stats["cpu.current.total"]) / vm_cpus
-
-
-def get_vms_for_storage_type(datacenter_name, cluster_name, storage_type):
-    """
-    Returns a list of vm names with disks on storage domains of storage_type
-
-    IMPORTANT: This function will check only the first vm's disk
-
-    :param datacenter_name: Name of datacenter
-    :type datacenter_name: str
-    :param cluster_name: Name of cluster
-    :type cluster_name: str
-    :param storage_type: Type of storage (nfs, iscsi, glusterfs, fcp, ...)
-    :type storage_type: str
-    :return: List of vm names
-    :rtype: list
-    """
-    vms_in_cluster = vms.get_vms_from_cluster(cluster_name)
-    domains = storagedomains.getStorageDomainNamesForType(
-        datacenter_name, storage_type
-    )
-    return [
-        vm for vm in vms_in_cluster if (
-            vms.get_vms_disks_storage_domain_name(vm) in domains
-        )
-    ]
 
 
 def get_vm_macs(vm, nics):

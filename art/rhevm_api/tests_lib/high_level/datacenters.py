@@ -4,25 +4,19 @@ High-level functions above data-center
 
 import logging
 
-
+import art.rhevm_api.tests_lib.high_level.clusters as hl_clusters
+import art.rhevm_api.tests_lib.high_level.hosts as hosts
+import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
+import art.rhevm_api.tests_lib.high_level.storagedomains as storagedomains
 import art.rhevm_api.tests_lib.low_level.clusters as clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hosts
-import art.rhevm_api.tests_lib.high_level.storagedomains as storagedomains
-import art.rhevm_api.tests_lib.high_level.clusters as hl_clusters
-import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-from art.rhevm_api.tests_lib.low_level.disks import (
-    getStorageDomainDisks,
-    deleteDisk,
-)
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
-from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
-from art.rhevm_api.resources import Host  # This import is not good here
 import art.test_handler.exceptions as errors
-from art.test_handler.settings import opts
+from art.rhevm_api.resources import Host  # This import is not good here
+from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
 from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.test_handler.settings import opts
 
 
 logger = logging.getLogger("art.hl_lib.dcs")
@@ -92,38 +86,6 @@ def build_setup(config, storage, storage_type, basename="testname",
 
     return storagedomains.create_storages(
         storage, storage_type, config.as_list('vds')[0], datacenter_name)
-
-
-def clean_all_disks_from_dc(datacenter, exception_list=None):
-    """
-    Description: Removes all disks in DC's storage domain. If exception_list
-    is given, the disks names in that list will remain in the setup
-    Author: ratamir
-    Parameters:
-    * datacenter - data center name
-    * exception_list - List of disks names that should remain in the setup
-    """
-    sdObjList = ll_storagedomains.getDCStorages(datacenter, False)
-
-    for storage_domain in sdObjList:
-        logger.info('Find any floating disks in storage domain %s',
-                    storage_domain.get_name())
-        floating_disks = getStorageDomainDisks(storage_domain.get_name(),
-                                               False)
-        if floating_disks:
-            floating_disks_list = [disk.get_id() for disk in
-                                   floating_disks if
-                                   (disk.get_alias() not in exception_list)]
-            for disk in floating_disks_list:
-                logger.info('Removing floating disk %s', disk)
-                if not deleteDisk(True, alias=disk, async=False, disk_id=disk):
-                    return False
-            logger.info('Ensuring all disks are removed')
-            wait_for_jobs()
-            logger.info('All floating disks removed successfully')
-        else:
-            logger.info('No floating disks found in storage domain %s',
-                        storage_domain.get_name())
 
 
 def get_spm_host(positive, datacenter):
