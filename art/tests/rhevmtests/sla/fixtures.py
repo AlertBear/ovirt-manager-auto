@@ -100,12 +100,19 @@ def update_vms(request):
         1) Update VM's to default parameters
         """
         for vm_name in vms_to_params.iterkeys():
+            temp_default_params = copy.deepcopy(
+                sla_config.DEFAULT_VM_PARAMETERS
+            )
+            if sla_config.VM_CPU_PROFILE in vm_params:
+                cpu_profile_id = ll_clusters.get_cpu_profile_id_by_name(
+                    cluster_name=sla_config.CLUSTER_NAME[0],
+                    cpu_profile_name=sla_config.CLUSTER_NAME[0]
+                )
+                temp_default_params[sla_config.VM_CPU_PROFILE] = cpu_profile_id
             u_libs.testflow.teardown(
                 "Update the VM %s to default parameters", vm_name
             )
-            ll_vms.updateVm(
-                positive=True, vm=vm_name, **sla_config.DEFAULT_VM_PARAMETERS
-            )
+            ll_vms.updateVm(positive=True, vm=vm_name, **temp_default_params)
     request.addfinalizer(fin)
 
     temp_vms_to_params = copy.deepcopy(vms_to_params)
@@ -119,6 +126,12 @@ def update_vms(request):
             vm_params[sla_config.VM_PLACEMENT_HOST] = sla_config.HOSTS[
                 vm_params[sla_config.VM_PLACEMENT_HOST]
             ]
+        if sla_config.VM_CPU_PROFILE in vm_params:
+            cpu_profile_id = ll_clusters.get_cpu_profile_id_by_name(
+                cluster_name=sla_config.CLUSTER_NAME[0],
+                cpu_profile_name=vm_params[sla_config.VM_CPU_PROFILE]
+            )
+            vm_params[sla_config.VM_CPU_PROFILE] = cpu_profile_id
         u_libs.testflow.setup(
             "Update the VM %s with params %s", vm_name, vm_params
         )
@@ -194,7 +207,7 @@ def update_vms_memory_to_hosts_memory(request):
     update_vms_memory = request.node.cls.update_vms_memory
 
     hosts_memory = hl_vms.calculate_memory_for_memory_filter(
-        hosts_list=sla_config.HOSTS[:len(update_vms_memory)]
+        hosts_list=sla_config.HOSTS[:len(update_vms_memory)], difference=20
     )
     for vm_name, vm_memory in zip(update_vms_memory, hosts_memory):
         vm_params = {
@@ -536,7 +549,7 @@ def update_vms_cpus_to_hosts_cpus(request):
 
 
 @pytest.fixture(scope="class")
-def update_cluster(request):
+def update_cluster(request, update_cluster_to_default_parameters):
     """
     Update the cluster
     """

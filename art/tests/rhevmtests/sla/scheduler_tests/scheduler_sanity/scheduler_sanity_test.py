@@ -22,19 +22,20 @@ from rhevmtests.networking.fixtures import (
     setup_networks_fixture,
     clean_host_interfaces  # flake8: noqa
 )
-from rhevmtests.sla.fixtures import choose_specific_host_as_spm
 from rhevmtests.sla.fixtures import (
+    choose_specific_host_as_spm,
     deactivate_hosts,
     start_vms,
     stop_vms,
+    update_cluster,
+    update_cluster_to_default_parameters,  # flake8: noqa
     update_vms,
     update_vms_cpus_to_hosts_cpus,
     update_vms_memory_to_hosts_memory,
     update_vms_to_default_parameters,
 )
 from rhevmtests.sla.scheduler_tests.fixtures import (
-    update_cluster_policy,
-    update_cluster_overcommitment
+    wait_for_scheduling_memory_update
 )
 
 host_as_spm = 1
@@ -85,7 +86,7 @@ def init_scheduler_sanity_test(request):
     choose_specific_host_as_spm.__name__,
     init_scheduler_sanity_test.__name__,
     create_new_scheduling_policy.__name__,
-    update_cluster_policy.__name__
+    update_cluster.__name__
 )
 class BaseSchedulerSanity(u_libs.SlaTest):
     """
@@ -135,8 +136,8 @@ class TestDeletePolicyInUse(BaseSchedulerSanity):
     """
     __test__ = True
     policy_name = "delete_policy_in_use"
-    cluster_policy = {
-        "delete_policy_in_use": None
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: "delete_policy_in_use"
     }
 
     @polarion("RHEVM3-9477")
@@ -179,8 +180,8 @@ class TestPinToHostFilter(BaseSchedulerSanity):
     """
     __test__ = True
     policy_name = "check_pin_to_host"
-    cluster_policy = {
-        "check_pin_to_host": None
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: "check_pin_to_host"
     }
     policy_units = {conf.FILTER_PIN_TO_HOST: conf.FILTER_TYPE}
     vms_to_params = {
@@ -218,8 +219,8 @@ class TestNegativePinToHostFilter(BaseSchedulerSanity):
     """
     __test__ = True
     policy_name = "negative_check_pin_to_host"
-    cluster_policy = {
-        "negative_check_pin_to_host": None
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: "negative_check_pin_to_host"
     }
     policy_units = {conf.FILTER_PIN_TO_HOST: conf.FILTER_TYPE}
     vms_to_params = {
@@ -241,7 +242,7 @@ class TestNegativePinToHostFilter(BaseSchedulerSanity):
 
 
 @pytest.mark.usefixtures(
-    update_cluster_overcommitment.__name__,
+    wait_for_scheduling_memory_update.__name__,
     update_vms_memory_to_hosts_memory.__name__,
     update_vms_to_default_parameters.__name__,
     start_vms.__name__
@@ -252,8 +253,9 @@ class TestMemoryFilter(BaseSchedulerSanity):
     """
     __test__ = True
     policy_name = "memory_filter"
-    cluster_policy = {
-        "memory_filter": None
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: "memory_filter",
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
     policy_units = {conf.FILTER_MEMORY: conf.FILTER_TYPE}
     update_vms_memory = conf.VM_NAME[:2]
@@ -291,8 +293,8 @@ class TestCpuFilter(BaseSchedulerSanity):
     """
     __test__ = True
     policy_name = "cpu_filter"
-    cluster_policy = {
-        "cpu_filter": None
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: "cpu_filter"
     }
     policy_units = {
         conf.FILTER_CPU: conf.FILTER_TYPE,
@@ -341,8 +343,8 @@ class TestNegativeCpuFilter(BaseSchedulerSanity):
     """
     __test__ = True
     policy_name = "negative_cpu_filter"
-    cluster_policy = {
-        "negative_cpu_filter": None
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: "negative_cpu_filter"
     }
     policy_units = {
         conf.FILTER_CPU: conf.FILTER_TYPE,
@@ -385,8 +387,8 @@ class TestNetworkFilter(BaseSchedulerSanity):
     __test__ = True
     apis = set(["rest", "java", "sdk"])
     policy_name = conf.NETWORK_FILTER_NAME
-    cluster_policy = {
-        conf.NETWORK_FILTER_NAME: None
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.NETWORK_FILTER_NAME
     }
     policy_units = {
         conf.FILTER_NETWORK: conf.FILTER_TYPE,

@@ -36,20 +36,6 @@ def update_vms_for_ksm_test():
 
 
 @pytest.fixture(scope="class")
-def update_cluster_for_ksm_test():
-    """
-    1) Update cluster for KSM test
-    """
-    assert ll_clusters.updateCluster(
-        positive=True,
-        cluster=conf.CLUSTER_NAME[0],
-        ksm_enabled=True,
-        ballooning_enabled=False,
-        mem_ovrcmt_prc=conf.CLUSTER_OVERCOMMITMENT_DESKTOP
-    )
-
-
-@pytest.fixture(scope="class")
 def stop_memory_allocation(request):
     """
     1) Stop memory allocation on the host

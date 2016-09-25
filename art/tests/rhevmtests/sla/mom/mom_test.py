@@ -23,13 +23,13 @@ from art.test_handler.tools import polarion
 from fixtures import (
     prepare_env_for_ballooning_test,
     stop_memory_allocation,
-    update_cluster_for_ksm_test,
     update_vms_for_ksm_test
 )
 from rhevmtests.sla.fixtures import (
     start_vms,
     stop_guest_agent_service,
     stop_vms,
+    update_cluster,
     update_cluster_to_default_parameters,
     update_vms,
     update_vms_to_default_parameters
@@ -76,8 +76,7 @@ def prepare_env_for_mom_test(request):
 @pytest.mark.usefixtures(
     update_vms_for_ksm_test.__name__,
     update_vms_to_default_parameters.__name__,
-    update_cluster_for_ksm_test.__name__,
-    update_cluster_to_default_parameters.__name__,
+    update_cluster.__name__,
     stop_vms.__name__
 )
 class TestKSM(u_libs.SlaTest):
@@ -88,6 +87,11 @@ class TestKSM(u_libs.SlaTest):
     update_to_default_params = conf.MOM_VMS
     threshold_list = []
     vms_to_stop = []
+    cluster_to_update_params = {
+        conf.CLUSTER_KSM: True,
+        conf.CLUSTER_BALLOONING: False,
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_DESKTOP
+    }
 
     @polarion("RHEVM3-4969")
     def test_a_ksm_progressive(self):

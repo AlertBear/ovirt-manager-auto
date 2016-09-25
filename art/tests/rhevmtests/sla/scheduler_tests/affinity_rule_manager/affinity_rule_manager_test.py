@@ -14,14 +14,13 @@ from rhevmtests.sla.fixtures import (
     run_once_vms,
     start_vms,
     update_vms_memory_to_hosts_memory,
-    update_vms_to_default_parameters
+    update_vms_to_default_parameters,
+    update_cluster,
+    update_cluster_to_default_parameters  # flake8: noqa
 )
 from rhevmtests.sla.scheduler_tests.fixtures import (
     create_affinity_groups,
     load_hosts_cpu,
-    update_cluster_overcommitment,
-    update_cluster_policy_to_even_distributed,
-    update_cluster_policy_to_power_saving,
     wait_for_scheduling_memory_update
 )
 
@@ -224,7 +223,7 @@ class TestAREM4(BaseAREM):
 
 
 @pytest.mark.usefixtures(
-    update_cluster_overcommitment.__name__,
+    update_cluster.__name__,
     wait_for_scheduling_memory_update.__name__,
     update_vms_memory_to_hosts_memory.__name__,
     update_vms_to_default_parameters.__name__,
@@ -242,6 +241,9 @@ class TestAREM5(BaseAREM):
     4) Check that VM's stay on the old hosts because memory constraint
     """
     __test__ = True
+    cluster_to_update_params = {
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
+    }
     vms_to_start = conf.VM_NAME[:2]
     update_vms_memory = conf.VM_NAME[:2]
     update_to_default_params = conf.VM_NAME[:2]
@@ -268,7 +270,7 @@ class TestAREM5(BaseAREM):
 
 
 @pytest.mark.usefixtures(
-    update_cluster_overcommitment.__name__,
+    update_cluster.__name__,
     wait_for_scheduling_memory_update.__name__,
     update_vms_memory_to_hosts_memory.__name__,
     update_vms_to_default_parameters.__name__,
@@ -285,6 +287,9 @@ class TestAREM6(BaseAREM):
     4) Check that VM's stay on the old hosts because memory constraint
     """
     __test__ = True
+    cluster_to_update_params = {
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
+    }
     vms_to_run = {
         conf.VM_NAME[0]: {
             conf.VM_RUN_ONCE_HOST: 0,
@@ -321,7 +326,7 @@ class TestAREM6(BaseAREM):
     wait_for_scheduling_memory_update.__name__,
     run_once_vms.__name__,
     create_affinity_groups.__name__,
-    update_cluster_policy_to_power_saving.__name__,
+    update_cluster.__name__,
     load_hosts_cpu.__name__,
 )
 class TestAREM7(BaseAREM):
@@ -337,6 +342,10 @@ class TestAREM7(BaseAREM):
      migrate VM from overutilized host
     """
     __test__ = True
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_POWER_SAVING,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_PARAMS
+    }
     vms_to_run = {
         conf.VM_NAME[0]: {
             conf.VM_RUN_ONCE_HOST: 0,
@@ -371,7 +380,7 @@ class TestAREM7(BaseAREM):
     run_once_vms.__name__,
     create_affinity_groups.__name__,
     load_hosts_cpu.__name__,
-    update_cluster_policy_to_even_distributed.__name__,
+    update_cluster.__name__,
 )
 class TestAREM8(BaseAREM):
     """
@@ -402,6 +411,10 @@ class TestAREM8(BaseAREM):
         }
     }
     load_d = {conf.CPU_LOAD_100: [0]}
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_EVEN_DISTRIBUTION,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_ED_PARAMS
+    }
 
     @polarion("RHEVM3-10932")
     def test_check_balancing(self):

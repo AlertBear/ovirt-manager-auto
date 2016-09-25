@@ -1,7 +1,6 @@
 """
 Scheduler tests fixtures
 """
-import logging
 from time import sleep
 
 import art.rhevm_api.tests_lib.low_level.affinitylabels as ll_afflabels
@@ -10,71 +9,6 @@ import art.unittest_lib as u_libs
 import pytest
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.helpers as sla_helpers
-
-logger = logging.getLogger("scheduler_fixtures")
-
-
-@pytest.fixture(scope="class")
-def update_cluster_policy_to_none(request):
-    def fin():
-        """
-        1) Update cluster policy to none
-        """
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=sla_conf.CLUSTER_NAME[0],
-            scheduling_policy=sla_conf.POLICY_NONE
-        )
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def update_cluster_policy_to_power_saving(request):
-    """
-    1) Update cluster policy to PowerSaving
-    """
-    def fin():
-        """
-        1) Update cluster policy to none
-        """
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=sla_conf.CLUSTER_NAME[0],
-            scheduling_policy=sla_conf.POLICY_NONE
-        )
-    request.addfinalizer(fin)
-
-    assert ll_clusters.updateCluster(
-        positive=True,
-        cluster=sla_conf.CLUSTER_NAME[0],
-        scheduling_policy=sla_conf.POLICY_POWER_SAVING,
-        properties=sla_conf.DEFAULT_PS_PARAMS
-    )
-
-
-@pytest.fixture(scope="class")
-def update_cluster_policy_to_even_distributed(request):
-    """
-    1) Update cluster policy to EvenlyDistributed
-    """
-    def fin():
-        """
-        1) Update cluster policy to none
-        """
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=sla_conf.CLUSTER_NAME[0],
-            scheduling_policy=sla_conf.POLICY_NONE
-        )
-
-    request.addfinalizer(fin)
-
-    assert ll_clusters.updateCluster(
-        positive=True,
-        cluster=sla_conf.CLUSTER_NAME[0],
-        scheduling_policy=sla_conf.POLICY_EVEN_DISTRIBUTION,
-        properties=sla_conf.DEFAULT_ED_PARAMS
-    )
 
 
 @pytest.fixture(scope="class")
@@ -150,29 +84,6 @@ def create_affinity_groups(request):
                 cluster_name=sla_conf.CLUSTER_NAME[0],
                 vms=vms
             )
-
-
-@pytest.fixture(scope="class")
-def update_cluster_overcommitment(request):
-    """
-    1) Update cluster overcommitment to 100
-    """
-    def fin():
-        """
-        1) Update cluster overcommitment to 200
-        """
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=sla_conf.CLUSTER_NAME[0],
-            mem_ovrcmt_prc=sla_conf.CLUSTER_OVERCOMMITMENT_DESKTOP
-        )
-    request.addfinalizer(fin)
-
-    assert ll_clusters.updateCluster(
-        positive=True,
-        cluster=sla_conf.CLUSTER_NAME[0],
-        mem_ovrcmt_prc=sla_conf.CLUSTER_OVERCOMMITMENT_NONE
-    )
 
 
 @pytest.fixture(scope="class")
@@ -257,41 +168,3 @@ def assign_affinity_label_to_element(request):
                     assert ll_afflabels.AffinityLabels.add_label_to_vm(
                         label_name=label_name, vm_name=element
                     )
-
-
-@pytest.fixture(scope="class")
-def update_cluster_policy(request):
-    """
-    1) Update the cluster scheduling policy
-    """
-    cluster_policy = request.node.cls.cluster_policy
-
-    def fin():
-        """
-        1) Update the cluster scheduling policy to None
-        """
-        u_libs.testflow.teardown(
-            "Update the cluster %s scheduling policy to %s",
-            sla_conf.CLUSTER_NAME[0], sla_conf.POLICY_NONE
-        )
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=sla_conf.CLUSTER_NAME[0],
-            scheduling_policy=sla_conf.POLICY_NONE
-        )
-    request.addfinalizer(fin)
-
-    for policy_name, policy_params in cluster_policy.iteritems():
-        cluster_params = {}
-        if policy_params:
-            cluster_params["properties"] = policy_params
-        u_libs.testflow.setup(
-            "Update the cluster %s scheduling policy to %s with parameters %s",
-            sla_conf.CLUSTER_NAME[0], policy_name, policy_params
-        )
-        assert ll_clusters.updateCluster(
-            positive=True,
-            cluster=sla_conf.CLUSTER_NAME[0],
-            scheduling_policy=policy_name,
-            **cluster_params
-        )

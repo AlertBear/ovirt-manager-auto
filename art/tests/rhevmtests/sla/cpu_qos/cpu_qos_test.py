@@ -11,17 +11,16 @@ import pytest
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion
 from fixtures import (
-    attach_cpu_profiles_to_vms,
     create_cpu_profile,
     create_cpu_qoss,
     create_template_for_cpu_qos_test,
-    create_vm_from_template_for_cpu_qos_test,
-    update_vms_cpu
+    create_vm_from_template_for_cpu_qos_test
 )
 from rhevmtests.sla.fixtures import (
     start_vms,
     stop_guest_agent_service,
-    update_vms_to_default_parameters
+    update_vms,
+    update_vms_cpus_to_hosts_cpus
 )
 
 logger = conf.logging.getLogger(__name__)
@@ -31,23 +30,18 @@ logger = conf.logging.getLogger(__name__)
 def init_constants():
     """
     Setup:
-    1. Create 3 VMS for QOS test
-    2. Set the default CPU profile ID for each cluster
-
-    Teardown:
-    1. Remove all CPU profile except the Default
-    2. Remove all CPU QoS
-    3. Remove all VMS created in the test
-    4. Remove QOS template
+    1. Set the default CPU profile ID for each cluster
     """
     conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_0 = (
         ll_clusters.get_cpu_profile_id_by_name(
-            conf.CLUSTER_NAME[0], conf.CLUSTER_NAME[0]
+            cpu_profile_name=conf.CLUSTER_NAME[0],
+            cluster_name=conf.CLUSTER_NAME[0]
         )
     )
     conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_1 = (
         ll_clusters.get_cpu_profile_id_by_name(
-            conf.CLUSTER_NAME[1], conf.CLUSTER_NAME[1]
+            cpu_profile_name=conf.CLUSTER_NAME[1],
+            cluster_name=conf.CLUSTER_NAME[1]
         )
     )
 
@@ -177,7 +171,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     create_cpu_qoss.__name__,
     create_cpu_profile.__name__,
-    attach_cpu_profiles_to_vms.__name__
+    update_vms.__name__
 )
 class BaseCpuQoSAndCpuProfile(u_libs.SlaTest):
     """
@@ -212,7 +206,9 @@ class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
     __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
-    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_params = {
+        conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
+    }
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
@@ -239,7 +235,9 @@ class TestRemoveAttachedCpuProfile(BaseCpuQoSAndCpuProfile):
     __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
-    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_params = {
+        conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
+    }
 
     @polarion("RHEVM-14708")
     def test_remove_cpu_profile(self):
@@ -265,7 +263,9 @@ class TestCreateQoSVmFromTemplate(BaseCpuQoSAndCpuProfile):
     __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
-    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_params = {
+        conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
+    }
 
     @polarion("RHEVM3-14939")
     def test_template_cpu_profile(self):
@@ -293,7 +293,9 @@ class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
     __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
-    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_params = {
+        conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
+    }
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
@@ -316,10 +318,7 @@ class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
 
 
 @u_libs.attr(tier=2)
-@pytest.mark.usefixtures(
-    update_vms_to_default_parameters.__name__,
-    start_vms.__name__
-)
+@pytest.mark.usefixtures(start_vms.__name__)
 class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
     """
     Check VM CPU limitation after CPU hotplug
@@ -327,8 +326,9 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
     __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
-    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
-    update_to_default_params = conf.QOS_VMS[:1]
+    vms_to_params = {
+        conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
+    }
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
@@ -349,8 +349,7 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    update_vms_to_default_parameters.__name__,
-    update_vms_cpu.__name__,
+    update_vms_cpus_to_hosts_cpus.__name__,
     start_vms.__name__
 )
 class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
@@ -360,9 +359,12 @@ class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
     __test__ = True
     cpu_qoss = conf.QOSS
     cpu_profiles = conf.CPU_PROFILES
-    vms_to_cpu_profiles = conf.VMS_CPU_PROFILES
-    update_to_default_params = conf.QOS_VMS
-    update_vms_cpu = conf.QOS_VMS
+    vms_to_params = dict(
+        (
+            vm_name, {conf.VM_CPU_PROFILE: cpu_profile}
+        ) for vm_name, cpu_profile in conf.VMS_CPU_PROFILES.iteritems()
+    )
+    vms_to_hosts_cpus = dict((vm_name, 0) for vm_name in conf.QOS_VMS)
     vms_to_start = conf.QOS_VMS
     load_dict = dict(zip(conf.QOS_VMS, sorted(conf.QOSS.values())))
 
@@ -387,7 +389,9 @@ class TestVmCpuLimitationWithoutGuestAgent(BaseCpuQoSAndCpuProfile):
     __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
-    vms_to_cpu_profiles = {conf.QOS_VMS[0]: conf.CPU_PROFILE_10}
+    vms_to_params = {
+        conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
+    }
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
     stop_guest_agent_vm = conf.QOS_VMS[0]

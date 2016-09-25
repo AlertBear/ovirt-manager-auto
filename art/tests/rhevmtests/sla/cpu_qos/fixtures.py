@@ -3,7 +3,6 @@ CPU QoS fixtures
 """
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
@@ -66,35 +65,6 @@ def create_cpu_profile(request):
 
 
 @pytest.fixture(scope="class")
-def attach_cpu_profiles_to_vms(request):
-    """
-    1) Attach CPU profiles to VM's
-    """
-    vms_to_cpu_profiles = request.node.cls.vms_to_cpu_profiles
-
-    def fin():
-        """
-        1) Attach default CPU profile to VM's
-        """
-        for vm_name in vms_to_cpu_profiles.iterkeys():
-            ll_vms.updateVm(
-                positive=True,
-                vm=vm_name,
-                cpu_profile_id=conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_0
-            )
-    request.addfinalizer(fin)
-
-    for vm_name, cpu_profile_name in vms_to_cpu_profiles.iteritems():
-        cpu_profile_id = ll_clusters.get_cpu_profile_id_by_name(
-            cluster_name=conf.CLUSTER_NAME[0],
-            cpu_profile_name=cpu_profile_name
-        )
-        assert ll_vms.updateVm(
-            positive=True, vm=vm_name, cpu_profile_id=cpu_profile_id
-        )
-
-
-@pytest.fixture(scope="class")
 def create_template_for_cpu_qos_test(request):
     """
     1) Create template from VM
@@ -138,17 +108,3 @@ def create_vm_from_template_for_cpu_qos_test(request):
         cluster=conf.CLUSTER_NAME[1],
         template=conf.QOS_TEMPLATE
     )
-
-
-@pytest.fixture(scope="class")
-def update_vms_cpu(request):
-    """
-    Update number of VM's CPU's to be equal to number of host CPU's
-    """
-    update_vms_cpu = request.node.cls.update_vms_cpu
-
-    for vm_name in update_vms_cpu:
-        host_cpu = ll_hosts.get_host_processing_units_number(
-            host_name=conf.HOSTS[0]
-        )
-        assert ll_vms.updateVm(positive=True, vm=vm_name, cpu_socket=host_cpu)
