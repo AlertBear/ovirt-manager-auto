@@ -19,16 +19,11 @@
 
 import logging
 import time
-from Queue import Queue
 
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.test_handler.exceptions as exceptions
-from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
-from art.rhevm_api.tests_lib.low_level.hosts import(
-    activateHost, deactivateHost,
-)
 from art.rhevm_api.tests_lib.low_level.scheduling_policies import (
     get_scheduling_policy_id
 )
@@ -297,23 +292,6 @@ def removeCluster(positive, cluster):
     return res
 
 
-def removeClusterAsynch(positive, tasksQ, resultsQ):
-    '''
-    Removes the cluster. It's supposed to be a worker of Thread.
-    '''
-
-    cl = tasksQ.get(True)
-    status = False
-    try:
-        clObj = util.find(cl)
-        status = util.delete(clObj, positive)
-    except EntityNotFound as e:
-        util.logger.error(str(e))
-    finally:
-        resultsQ.put((cl, status))
-        tasksQ.task_done()
-
-
 def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
     '''
     Wait for clusters to disappear from the setup. This function will block up
@@ -352,32 +330,6 @@ def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
     return not positive
 
 
-def removeClusters(positive, clusters):
-    '''
-    Removes the clusters specified by `clusters` commas separated list of
-    cluster names.
-    Author: jhenner
-    Parameters:
-        * clusters - Comma (no space) separated list of cluster names.
-    '''
-
-    resultsQ = Queue()
-    clsList = split(clusters)
-    for cl in clsList:
-        resultsQ.put((cl, removeCluster(positive, cl)))
-
-    status = True
-    while not resultsQ.empty():
-        cl, removalOK = resultsQ.get()
-        if removalOK:
-            util.logger.info("Cluster '%s' deleted.", cl)
-        else:
-            util.logger.error("Failed to remove cluster '%s'.", cl)
-            status = False
-
-    return status and waitForClustersGone(positive, clusters)
-
-
 def searchForCluster(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for clusters by desired property
@@ -392,83 +344,6 @@ def searchForCluster(positive, query_key, query_val, key_name, **kwargs):
     '''
 
     return searchForObj(util, query_key, query_val, key_name, **kwargs)
-
-
-def isHostAttachedToCluster(positive, host, cluster):
-    """
-    Function checks if host attached to cluster.
-        host       = host name
-        cluster    = cluster name
-    """
-    # Find cluster
-    try:
-        clId = util.find(cluster).get_id()
-        hostObj = hostUtil.find(host)
-    except EntityNotFound:
-        return not positive
-
-    # Check if host connected to cluster
-    return hostObj.get_cluster().get_id() == clId
-
-
-def connectClusterToDataCenter(positive, cluster, datacenter):
-    """
-    Function connects cluster to dataCenter
-    If cluster already connected to datacenter, it will just return true
-    If cluster's "datacenter" field is empty, it will be updated with
-    datacenter else, function will return False, since cluster's
-    datacenter field cannot be updated, if not empty
-        cluster    = cluster name
-        datacenter = data center name
-    """
-    hostList = []
-    dcFieldExist = True
-
-    # Search for datacenter
-    try:
-        dcId = dcUtil.find(datacenter).get_id()
-        util.logger.info("Looking for cluster %s" % cluster)
-        clusterObj = util.find(cluster)
-    except EntityNotFound:
-        return not positive
-
-    clId = clusterObj.get_id()
-
-    # Check if datacenter field exist in cluster object
-    try:
-        clusterdcId = clusterObj.get_data_center().get_id()
-    except:
-        dcFieldExist = False
-
-    # Check if cluster already connected to datacenter
-    if dcFieldExist and clusterdcId == dcId:
-        return positive
-    # Get all hosts in setup
-    try:
-        hostObjList = hostUtil.get(absLink=False)
-    except EntityNotFound:
-        return not positive
-
-    # Deactivate all "UP" hosts, which are connected to cluster
-    hosts = filter(lambda hostObj: hostObj.get_cluster().get_id() == clId and
-                   hostObj.get_status() == "up", hostObjList)
-    for hostObj in hosts:
-        if not deactivateHost(positive, hostObj.get_name()):
-            util.logger.error('deactivateHost Failed')
-            return False
-        hostList.append(hostObj)
-
-    # Update cluster: will work only in case data center is empty
-    if not updateCluster(positive, cluster=cluster, data_center=datacenter):
-        util.logger.error('updateCluster with dataCenter failed')
-        return False
-
-    # Activate the hosts that were deactivated earlier
-    for hostObj in hostList:
-        if not activateHost(positive, hostObj.get_name()):
-            util.logger.error('activateHost Failed')
-            return False
-    return True
 
 
 def check_cluster_params(positive, cluster, **kwargs):
@@ -570,23 +445,6 @@ def _prepare_affinity_group_object(**kwargs):
     return ll_general.prepare_ds_object('AffinityGroup', **kwargs)
 
 
-def get_affinity_groups_from_cluster(cluster_name):
-    """
-    Get list of affinity groups objects from cluster
-
-    Args:
-        cluster_name (str): Cluster name
-
-    Returns:
-        list: Affinity Groups
-    """
-    logger.info("Get all affinity groups from cluster %s", cluster_name)
-    cluster_obj = get_cluster_object(cluster_name=cluster_name)
-    return CLUSTER_API.getElemFromLink(
-        elm=cluster_obj, link_name="affinitygroups", attr="affinity_group"
-    )
-
-
 def get_affinity_group_obj(affinity_name, cluster_name):
     """
     Get affinity group object by name.
@@ -646,43 +504,6 @@ def create_affinity_group(cluster_name, **kwargs):
     if not status:
         logger.error(log_error)
     return status
-
-
-def update_affinity_group(cluster_name, affinity_name, **kwargs):
-    """
-    Update affinity group
-
-    Args:
-        cluster_name (str): Cluster name
-        affinity_name (str): Affinity group name
-
-    Keyword Args:
-        name (str): Affinity group name
-        description (str): Affinity group description
-        positive (bool): Affinity group positive behaviour
-        enforcing (bool): Affinity group enforcing behaviour
-
-    Returns:
-        bool: True, if update affinity group action succeed, otherwise False
-    """
-    old_aff_group_obj = get_affinity_group_obj(cluster_name, affinity_name)
-    log_info, log_error = ll_general.get_log_msg(
-        action="Update", obj_type=AFFINITY_GROUP_NAME, obj_name=affinity_name,
-        extra_txt="on cluster %s" % cluster_name, **kwargs
-    )
-    if not old_aff_group_obj:
-        return False
-    try:
-        new_aff_group_obj = _prepare_affinity_group_object(**kwargs)
-    except exceptions.RHEVMEntityException:
-        return False
-
-    logger.info(log_info)
-    status = AFFINITY_API.update(
-        old_aff_group_obj, new_aff_group_obj, True
-    )[1]
-    if not status:
-        logger.error(log_error)
 
 
 def remove_affinity_group(affinity_name, cluster_name):
@@ -774,22 +595,6 @@ def _prepare_cpu_profile_object(**kwargs):
     return ll_general.prepare_ds_object('CpuProfile', **kwargs)
 
 
-def get_all_cpu_profile_names(cluster_name):
-    """
-    Get all CPU profile from a specific cluster
-
-    :param cluster_name: cluster name
-    :type cluster_name: str
-    :return: list with CPUs instances
-    :rtype: CPUs instances
-    """
-    cluster_obj = get_cluster_object(cluster_name)
-    cpu_profiles = CLUSTER_API.getElemFromLink(
-        cluster_obj, link_name='cpuprofiles', attr='cpu_profile'
-    )
-    return [cpu_profile.get_name() for cpu_profile in cpu_profiles]
-
-
 def get_cpu_profile_obj(cluster_name, cpu_prof_name):
     """
     Get cpu profile by name from specific cluster
@@ -843,29 +648,6 @@ def add_cpu_profile(cluster_name, **kwargs):
     return status
 
 
-def update_cpu_profile(cluster_name, cpu_prof_name, **kwargs):
-    """
-    Update cpu profile
-
-    :param cluster_name: cpu profile cluster
-    :param cpu_prof_name: name of cpu profile to update
-    :param kwargs: name: type=str
-                   description: type=str
-                   qos: type=QOS instance
-    :return: True, if cpu profile updated, otherwise False
-    """
-    old_cpu_profile_obj = get_cpu_profile_obj(cluster_name, cpu_prof_name)
-    if not old_cpu_profile_obj:
-        return False
-    try:
-        new_cpu_profile_obj = _prepare_cpu_profile_object(**kwargs)
-    except exceptions.RHEVMEntityException:
-        return False
-
-    return CPU_PROFILE_API.update(
-        old_cpu_profile_obj, new_cpu_profile_obj, True)[1]
-
-
 def remove_cpu_profile(cluster_name, cpu_prof_name):
     """
     Remove cpu profile from cluster
@@ -917,17 +699,3 @@ def get_cluster_list():
     :rtype: list
     """
     return util.get(absLink=False)
-
-
-def get_rng_sources_from_cluster(cluster_name):
-    """
-    Get list of random number generator sources from cluster
-
-    Args:
-        cluster_name (str): Name of the Cluster
-
-    Returns:
-        list of str: Rng sources
-    """
-    cl_obj = get_cluster_object(cluster_name)
-    return cl_obj.get_required_rng_sources().get_required_rng_source()

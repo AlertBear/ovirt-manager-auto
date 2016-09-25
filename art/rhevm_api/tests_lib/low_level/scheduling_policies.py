@@ -274,44 +274,6 @@ def add_scheduling_policy_unit(
     return status
 
 
-def remove_scheduling_policy_unit(policy_name, unit_name, unit_type):
-    """
-    Remove scheduling policy unit from scheduling policy
-
-    :param policy_name: scheduling policy name
-    :type policy_name: str
-    :param unit_name: scheduling policy unit name
-    :type unit_name: str
-    :param unit_type: scheduling policy unit type
-    (filter, weight, load_balancing)
-    :type unit_type: str
-    :returns: True, if policy unit removed successfully, otherwise False
-    :rtype: bool
-    """
-    policy_unit_id = _get_policy_unit(unit_name, unit_type).get_id()
-    policy_units = _get_policy_units(
-        policy_name, unit_type, attr=UNIT_ATTR.get(unit_type)
-    )
-    policy_units_link = _get_policy_units(
-        policy_name, unit_type, get_href=True
-    )
-    if not isinstance(policy_units, list):
-        policy_units = [policy_units]
-
-    for policy_unit in policy_units:
-        if policy_unit.get_id() == policy_unit_id:
-            # WA until bug 1144080 will fixed
-            policy_unit_href = r'%s/%s' % (
-                policy_units_link, policy_unit.get_id()
-            )
-            logger.info(policy_unit_href)
-            policy_unit_obj = UNIT_CLASS.get(unit_type)(href=policy_unit_href)
-            return SCH_POL_UNITS_API.delete(policy_unit_obj, True)
-
-    logger.error("No policy unit %s under policy %s", unit_name, policy_name)
-    return False
-
-
 def get_scheduling_policy_id(scheduling_policy_name):
     """
     Get scheduling policy ID by name

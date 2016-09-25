@@ -664,38 +664,6 @@ def add_watchdog(template_name, model, action, version=BASE_TEMPLATE_VERSION):
     return status
 
 
-def update_watchdog(template_name, **kwargs):
-    """
-    Update template watchdog card
-
-    Args:
-        template_name (str): Template name
-
-    Keyword Args:
-        model (str): Watchdog card model
-        action (str): Watchdog action
-
-    Returns:
-        bool: True, if update watchdog card action succeed, otherwise False
-    """
-    watchdog_collection = get_watchdog_collection(template_name=template_name)
-    if not watchdog_collection:
-        return False
-    old_watchdog_obj = watchdog_collection[0]
-    log_info, log_error = ll_general.get_log_msg(
-        action="Update",
-        obj_type="watchdog",
-        obj_name=old_watchdog_obj.get_model(),
-        extra_txt="with parameters %s on template %s" % (template_name, kwargs)
-    )
-    new_watchdog_obj = prepare_watchdog_obj(**kwargs)
-    logger.info(log_info)
-    status = WATCHDOG_API.update(old_watchdog_obj, new_watchdog_obj, True)[1]
-    if not status:
-        logger.error(log_error)
-    return status
-
-
 def delete_watchdog(template_name):
     """
     Delete watchdog card from template
@@ -881,21 +849,6 @@ def validateTemplate(positive, template, version=BASE_TEMPLATE_VERSION):
         ), templates
     )
     return bool(templates) == positive
-
-
-def getTemplateId(positive, template):
-    '''
-    Description: Get template id
-    Author: egerman
-    Parameters:
-       * template - template name
-    Return: True and template id or False and None
-    '''
-    try:
-        templObj = TEMPLATE_API.find(template)
-    except EntityNotFound:
-        return False, {'templateId': None}
-    return True, {'templateId': templObj.get_id()}
 
 
 def exportTemplate(

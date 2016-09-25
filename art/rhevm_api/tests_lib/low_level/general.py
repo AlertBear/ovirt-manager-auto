@@ -50,20 +50,6 @@ ProductVersion = namedtuple('ProductVersion', ['major',
                                                'revision'])
 
 
-def getSystemVersion():
-    '''
-    Description: Gets the version of current system
-    Author: cmestreg
-    Return: named tuple ProductVersion(major, minor, build, revision)
-    '''
-    system_version = util.get(
-        href='', absLink=False).get_product_info().get_version()
-
-    fields = (getattr(system_version, "get_%s" % field)()
-              for field in ProductVersion._fields)
-    return ProductVersion(*fields)
-
-
 def checkSystemVersionTag(positive):
     '''
     Checks whether there are attributes named:
@@ -229,18 +215,6 @@ def checkSummary(positive, domain):
         status = False
 
     return status
-
-
-def removeNonExistingVm(positive, entity_id='non_existing_object_id'):
-    '''
-    Description: Tries to remove non-existing object
-    Author: jvorcak
-    Return: True if http request returned 404 status, False otherwise
-    '''
-    vm = VM()
-    vm.set_id(entity_id)
-    vm.set_href('vms/' + entity_id)
-    return vmUtil.delete(vm, False)
 
 
 def checkResponsesAreXsdValid():

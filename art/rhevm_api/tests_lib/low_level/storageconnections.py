@@ -156,19 +156,6 @@ def remove_storage_connection(conn_id, host=None):
     return api.delete(conn_obj, True)
 
 
-def remove_all_storage_connections():
-    """
-    Description: removes all storage connections
-    Author: kjachim
-    Return: status of the operation
-    """
-    connections = api.get(absLink=False)
-    result = True
-    for connection in connections:
-        result = remove_storage_connection(connection.id) and result
-    return result
-
-
 def get_all_storage_connections():
     """
     Return all storage connections

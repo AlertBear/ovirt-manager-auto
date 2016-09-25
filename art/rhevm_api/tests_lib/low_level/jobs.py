@@ -301,14 +301,3 @@ def end_step(job_description, job_status, step_description, end_status):
     ):
         return False
     return True
-
-
-def clear_job(job_description, job_status):
-    job_obj = check_recent_job(True, job_description, job_status=job_status)[1]
-    if not job_obj:
-        logger.warn("Job with given description not exist")
-        return False
-    status = JOBS_API.syncAction(job_obj, "clear", True)
-    if not status:
-        logger.warn("Clearing of job failed")
-    return True

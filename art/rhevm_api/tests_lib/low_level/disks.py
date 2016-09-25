@@ -554,19 +554,6 @@ def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
     )
 
 
-def compareDisksCount(name, expected_count, is_template=False):
-    """
-    Description: Compares counts of disks attached to given VM/template
-    Author: jlibosva
-    Parameters:
-        * name - name of object you want disks from
-        * expected_count - expected count of attached disks
-    Return: expected_count == count_of_disks(name)
-    """
-    disks = getObjDisks(name, is_template=is_template, get_href=False)
-    return len(disks) == expected_count
-
-
 def checkDiskExists(positive, disk, attr='name'):
     """
     Checks that disk is in system

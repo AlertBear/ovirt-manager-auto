@@ -18,15 +18,17 @@
 import logging
 import os
 import re
-import shlex
 from Queue import Queue
 from threading import Thread
+
+from concurrent.futures import ThreadPoolExecutor
+from utilities.jobs import Job, JobsSet
+from utilities.machine import Machine, LINUX
 
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_exceptions import (APITimeout, EntityNotFound)
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api import resources
-from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
     wait_for_disks_status, get_disk_storage_domain_name,
@@ -41,14 +43,11 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import (
     searchForObj, getImageByOsType, convertMacToIpAddress,
     checkHostConnectivity, update_vm_status_in_database, get_api, split,
-    waitUntilPingable, waitUntilGone,
+    waitUntilGone,
 )
 from art.test_handler import exceptions
 from art.test_handler.exceptions import CanNotFindIP
 from art.test_handler.settings import opts
-from concurrent.futures import ThreadPoolExecutor
-from utilities.jobs import Job, JobsSet
-from utilities.machine import Machine, LINUX
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
@@ -1510,27 +1509,6 @@ def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
     return status
 
 
-def removeDisks(positive, vm, num_of_disks, wait=True):
-    '''
-    Description: remove certain number of disks from vm
-    Parameters:
-      * vm - vm name
-      * num_of_disks - number of disks that should be removed
-      * wait - wait until finish if True
-    Return: status (True if disks were removed properly, False otherwise)
-    '''
-    rc = True
-    disks = getVmDisks(vm)
-    if disks:
-        cnt = int(num_of_disks)
-        actual_cnt = len(disks)
-        cnt_rm = actual_cnt if actual_cnt < cnt else cnt
-        for i in xrange(cnt_rm):
-            disk = disks.pop()
-            rc = rc and removeDisk(positive, vm, disk.name, wait)
-    return rc
-
-
 def waitForDisksStat(vm, stat=ENUMS['disk_state_ok'],
                      timeout=VM_IMAGE_OPT_TIMEOUT):
     '''
@@ -1682,41 +1660,6 @@ def addNic(positive, vm, **kwargs):
             vm_obj, expected_status, VM_ACTION_TIMEOUT
         )
     return status
-
-
-def updateVmDisk(positive, vm, disk, **kwargs):
-    """
-    Update already existing vm disk
-
-    :param positive: Determines whether the case is positive or negative
-    :type positive: bool
-    :param vm: VM where disk should be updated
-    :type vm: str
-    :param disk: Name of the disk that should be updated
-    :type disk: str
-    :param alias: New name of the disk
-    :type alias: str
-    :param interface: IDE, virtio or virtio_scsi
-    :type interface: str
-    :param bootable: Specifies whether the disk should be marked as bootable
-    :type bootable: bool
-    :param shareable: Specifies whether the disk should be shareable
-    :type shareable: bool
-    :param provisioned_size: New disk provisioned_size in bytes
-    :type size: int
-    :param quota: The disk's quote in bytes
-    :type quota: str
-    :param disk_id: ID of the disk that should be updated
-    :type disk_id: str
-    :return: Status of the operation's result dependent on positive value
-    :rtype: bool
-    """
-    if kwargs.get('disk_id', None) is not None:
-        disk_obj = getVmDisk(vm, disk_id=kwargs.pop('disk_id'))
-    else:
-        disk_obj = getVmDisk(vm, alias=disk)
-    new_disk = _prepareDiskObject(**kwargs)
-    return DISKS_API.update(disk_obj, new_disk, positive)[1]
 
 
 def updateNic(positive, vm, nic, **kwargs):
@@ -2563,18 +2506,6 @@ def getCdRomsObjList(vm_name, href=False):
                                      attr='cdrom', get_href=href)
 
 
-def remove_cdrom_vm(positive, vm_name):
-    """
-    Description: Removes the cdrom object from the vm
-    Author: cmestreg
-    Parameters:
-        * vm_name: name of the vm to remove the cdrom from
-    Returns: True is action succeeded, False otherwise
-    """
-    cdroms = getCdRomsObjList(vm_name)
-    return CDROM_API.delete(cdroms[0], positive)
-
-
 def _createVmForClone(
     name, template=None, cluster=None, vol_sparse=None,
     vol_format=None, storagedomain=None, snapshot=None, vm_name=None,
@@ -3182,20 +3113,6 @@ def waitForSystemIsReady(mac, interval=60, timeout=VM_INSTALL_TIMEOUT):
     return True
 
 
-def removeSystem(mac, cobblerAddress=None, cobblerUser=None,
-                 cobblerPasswd=None):
-    '''
-    Description: remove system from provisioning provider:
-    Author: imeerovi
-    Parameters:
-       * mac - mac address of system to remove
-       * cobbler* - backward compatibility with cobbler provisioning,
-                    should be removed
-    Return: True if remove succseeded and False otherwise.
-    '''
-    return ProvisionProvider.remove_system(mac)
-
-
 def unattendedInstallation(positive, vm, image, nic='nic1', hostname=None,
                            floppyImage=None, cobblerAddress=None,
                            cobblerUser=None, cobblerPasswd=None):
@@ -3432,19 +3349,6 @@ def getVmHost(vm):
     return True, {"vmHoster": host_obj.get_name()}
 
 
-def getVmNicPortMirroring(positive, vm, nic='nic1'):
-    '''
-    Get nic port mirror network
-    Author: gcheresh
-    Parameters:
-        * vm - vm name
-        * nic - nic name
-    Return: True if port_mirroring is enabled on NIC, otherwise False
-    '''
-    nic_obj = get_vm_nic(vm, nic)
-    return bool(nic_obj.get_port_mirroring()) == positive
-
-
 def get_vm_nic_plugged(vm, nic='nic1', positive=True):
     """
     Get nic plugged parameter value of the NIC
@@ -3509,21 +3413,6 @@ def is_vm_nic_have_profile(vm, nic='nic1'):
     """
     nic_obj = get_vm_nic(vm, nic)
     return bool(nic_obj.get_vnic_profile())
-
-
-def get_vm_nic_vnic_profile(vm, nic):
-    """
-    Get vNIC vNIC_profile object
-
-    Args:
-        vm (str): VM name
-        nic (str): vNIC name
-
-    Returns:
-        VnicProfile: vVnicProfile object if vNIC have one else None
-    """
-    nic_obj = get_vm_nic(vm, nic)
-    return nic_obj.get_vnic_profile()
 
 
 def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
@@ -3712,23 +3601,6 @@ def getVmPayloads(positive, vm, **kwargs):
         return False, {'property_object': None}
 
     return True, {'property_object': property_object}
-
-
-@LookUpVMIpByName('vm_ip', 'name_vm')
-def pingVm(vm_ip=None):
-    '''
-    Ping VM.
-
-    retreives ip for vmName using LookUpVMIpByName and sends
-    totally VM_PING_ATTEMPTS_COUNT ICMP Echo requests, expecting at least one
-    ICMP Echo reply.
-
-    returns: True iff at least one reply per IP is received,
-             False otherwise.
-    '''
-
-    ips = [vm_ip]
-    return waitUntilPingable(ips)
 
 
 def move_vm_disk(
@@ -4182,26 +4054,6 @@ def run_cmd_on_vm(vm_name, cmd, user, password, timeout=15):
     return rc, out
 
 
-def check_VM_disk_state(vm_name, disk_alias):
-    """
-    Description: Check disk state
-    Author: ratamir
-    Parameters:
-        * vm_name - string containing vm name
-        * disk_alias - string containing disk name
-
-    Return: True if the disk is active, False otherwise
-    """
-
-    disks = getVmDisks(vm_name)
-    disks = [disk for disk in disks if disk.get_alias() == disk_alias]
-    if not disks:
-        raise DiskNotFound('Disk %s not found in vm %s' %
-                           (disk_alias, vm_name))
-    disk = disks[0]
-    return is_active_disk(vm_name, disk.get_id())
-
-
 def get_vm_state(vm_name):
     """
     Description: Get vm state
@@ -4213,22 +4065,6 @@ def get_vm_state(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     return vm_obj.get_status()
-
-
-def is_vm_run_on_host(vm_name, host_name, **kwargs):
-    """
-    Check if vm run on given host
-
-    :param vm_name: vm name
-    :type vm_name: str
-    :param host_name: vm must run on given host
-    :type host_name: str
-    :param kwargs: timeout: type=int
-                   sleep: type=int
-    :return: True, if vm run on given host, otherwise False
-    """
-    query = "name={0} and host={1}".format(vm_name, host_name.lower().strip())
-    return VM_API.waitForQuery(query, **kwargs)
 
 
 def get_snapshot_disks(vm, snapshot):
@@ -4564,26 +4400,6 @@ def get_vm_obj(vm_name, all_content=False):
     if all_content:
         return VM_API.query(vm_name_query, all_content=all_content)[0]
     return VM_API.query(vm_name_query)[0]
-
-
-# Create this function as duplicate for function removeDisk
-# with additional functionality to remove all disks from vm
-def remove_vm_disks(vm_name, disk_name=None):
-    """
-    Remove all disks from given vm, if disk name not specified,
-    else remove only given disk from vm
-    **Author**: alukiano
-
-    **Parameters**:
-        * *vm_name* - vm name
-        * *disk_name - disk name to remove,
-                       if specified method will remove just this disk
-    **Returns**: True, if removed all disks successfully, otherwise False
-    """
-    vm_disks = [disk.get_name() for disk in getVmDisks(vm_name)]
-    if disk_name:
-        vm_disks = [disk for disk in vm_disks if disk == disk_name]
-    return delete_disks(vm_disks)
 
 
 def prepare_watchdog_obj(**kwargs):
@@ -4990,79 +4806,6 @@ def get_vm_bootable_disk(vm):
     if boot_disk:
         return boot_disk[0].get_alias()
     return None
-
-
-def verify_write_operation_to_disk(vm_name, user_name, password,
-                                   disk_number=0):
-    """
-    Function that perform dd command to disk
-    Author: ratamir
-    Parameters:
-        * vm_name - name of vm which write operation should occur on
-        * user_name - user name
-        * password - password
-        * disk_number - disk number from devices list
-    Return: ecode and output, or raise EntityNotFound if error occurs
-    """
-    vm_devices, boot_disk = get_vm_storage_devices(vm_name, user_name,
-                                                   password,
-                                                   ensure_vm_on=True)
-
-    command = DD_COMMAND % (boot_disk, vm_devices[disk_number])
-
-    ecode, out = run_cmd_on_vm(
-        vm_name, shlex.split(command), user_name, password, DD_TIMEOUT)
-
-    return ecode, out
-
-
-def get_volume_size(hostname, user, password, disk_object, dc_obj):
-    """
-    Get volume size in GB
-    Author: ratamir
-    Parameters:
-        * hostname - name of host
-        * user - user name for host
-        * password - password for host
-        * disk_object - disk object that need checksum
-        * dc_obj - data center that the disk belongs to
-    Return:
-        Volume size (integer), or raise exception otherwise
-    """
-    host_machine = Machine(host=hostname, user=user,
-                           password=password).util(LINUX)
-
-    vol_id = disk_object.get_image_id()
-    sd_id = disk_object.get_storage_domains().get_storage_domain()[0].get_id()
-    image_id = disk_object.get_id()
-    sp_id = dc_obj.get_id()
-
-    lv_size = host_machine.get_volume_size(sd_id, sp_id, image_id, vol_id)
-    logger.info("Volume size of disk %s is %s GB",
-                disk_object.get_alias(), lv_size)
-
-    return lv_size
-
-
-def get_vm_device_size(vm_name, user, password, device_name):
-    """
-    Get vm device size in GB
-    Author: ratamir
-    Parameters:
-        * vm_name - name of vm
-        * user - user name
-        * password - password
-        * device_name - name of device
-
-    Return:
-        VM device size (integer) output, or raise exception otherwise
-    """
-    vm_machine = get_vm_machine(vm_name, user, password)
-
-    device_size = vm_machine.get_storage_device_size(device_name)
-    logger.info("Device %s size: %s GB", device_name, device_size)
-
-    return device_size
 
 
 def get_vms_from_cluster(cluster):
@@ -5563,61 +5306,6 @@ def add_numa_node_to_vm(
     return status
 
 
-def update_numa_node_on_vm(
-    vm_name, host_name, old_index, **kwargs
-):
-    """
-    Update vm numa node
-
-    :param vm_name: vm, where to update numa node
-    :type vm_name: str
-    :param host_name: host, where to pin virtual numa node
-    :type host_name: str
-    :param old_index: index of vm numa node to update
-    :type old_index: int
-    :param new_index: new index of virtual numa node
-    :type new_index: int
-    :param memory: amount of memory to attach to numa node(MB)
-    :type memory: int
-    :param cores: list of cores to attach to numa node
-    :type cores: list
-    :param pin_list: list of host numa nodes to pin virtual numa node
-    :type pin_list: list
-    :returns: True, if action success, otherwise False
-    :rtype: bool
-    """
-    old_numa_node_obj = get_vm_numa_node_by_index(vm_name, old_index)
-    if not old_numa_node_obj:
-        logger.error(
-            "Failed to get numa node with index %d from vm %s",
-            old_index, vm_name
-        )
-        return False
-    new_numa_node_obj = __prepare_numa_node_object(
-        host_name=host_name, **kwargs
-    )
-    if not new_numa_node_obj:
-        logger.error(
-            "Failed to create virtual numa node object with parameters: %s",
-            kwargs
-        )
-        return False
-    log_info, log_error = ll_general.get_log_msg(
-        action="Update",
-        obj_type="numa node",
-        obj_name=str(old_index),
-        extra_txt="on VM %s" % vm_name,
-        **kwargs
-    )
-    logger.info(log_info)
-    status = NUMA_NODE_API.update(
-        old_numa_node_obj, new_numa_node_obj, True
-    )[1]
-    if not status:
-        logger.error(log_error)
-    return status
-
-
 def remove_numa_node_from_vm(vm_name, numa_node_index):
     """
     Remove numa node from vm
@@ -5732,21 +5420,6 @@ def reorder_vm_mac_address(vm_name):
     if not res:
         logger.error("Failed to reorder MACs on VM %s", vm_name)
     return res
-
-
-def is_disk_attached_to_vm(vm_name, disk_alias):
-    """
-    Check whether the disk specified is attached to the VM provided
-
-    :param vm_name: The name of the VM where the input disk may be attached
-    :type vm_name: str
-    :param disk_alias: The alias of the disk that will be checked with the
-    input VM
-    :type disk_alias: str
-    :returns: True if disk is attached to VM, False otherwise
-    :rtype: bool
-    """
-    return disk_alias in [disk.get_alias() for disk in getVmDisks(vm_name)]
 
 
 def get_vm_applications(vm_name):
@@ -6012,21 +5685,6 @@ def is_active_disk(vm, disk, attr='id'):
     :rtype: bool
     """
     return get_disk_attachment(vm, disk, attr).get_active()
-
-
-def get_vm_snapshot_type(vm, snapshot):
-    """
-    Get snapshot_type parameter
-
-    :param vm: vm name
-    :type vm: str
-    :param snapshot: snapshot description
-    :type snapshot: str
-    :return: snapshot_type: regular | active | stateless | preview
-    :rtype: str
-    """
-    snapshot_obj = _getVmSnapshot(vm, snapshot)
-    return snapshot_obj.get_snapshot_type()
 
 
 def create_vms(vms_params, max_workers=None):

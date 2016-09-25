@@ -18,9 +18,11 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import re
 import shlex
 import time
+
+from utilities import machine
+from utilities.utils import getIpAddressByHostName, getHostName
 
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
@@ -30,7 +32,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState
 )
 from art.rhevm_api.tests_lib.low_level.networks import (
-    get_cluster_network, create_properties
+    create_properties
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     stopVm, getVmHost, get_vm_state
@@ -40,8 +42,6 @@ from art.rhevm_api.utils.test_utils import (
     startVdsmd
 )
 from art.test_handler import settings
-from utilities import machine
-from utilities.utils import getIpAddressByHostName, getHostName
 
 ELEMENT = "host"
 COLLECTION = "hosts"
@@ -122,19 +122,6 @@ def get_host_status(host):
     return HOST_API.find(host).get_status()
 
 
-def get_host_type(host_name):
-    """
-    Returns type of specific host name
-
-    :param host_name: host name in rhevm to check his type
-    :type host_name: str
-    :return: the host type 'rhev-h'/'rhel'
-    :rtype: str
-    :raises: EntityNotFound
-    """
-    return HOST_API.find(host_name).get_type()
-
-
 def getHostIP(host):
     """
     Description: Returns IP of a host with given name in RHEVM
@@ -157,22 +144,6 @@ def getHostCluster(host):
     host_obj = HOST_API.find(host)
     cluster = CL_API.find(host_obj.get_cluster().get_id(), attribute='id')
     return cluster.get_name()
-
-
-def getHostDC(host):
-    """
-    Returns the name of the data center that contains the input host
-
-    :param host: host name
-    :type host: str
-    :returns: Returns the data center name or raises EntityNotFound
-    :rtype: str
-    """
-    HOST_API.logger.info("Host: %s", host)
-    cl_name = getHostCluster(host)
-    cl_obj = CL_API.find(cl_name)
-    dc = DC_API.find(cl_obj.get_data_center().get_id(), attribute='id')
-    return dc.get_name()
 
 
 def isHostUp(positive, host):
@@ -915,104 +886,6 @@ def get_host_nics_list(host, all_content=False):
     )
 
 
-def attachHostNic(positive, host, nic, network):
-    """
-    Description: attach network interface card to host
-    Author: edolinin
-    Parameters:
-        * host - name of a host to attach nic to
-        * nic - nic name to be attached
-        * network - network name
-    Return: status (True if nic was attached properly to host, False otherwise)
-    """
-
-    host_obj = HOST_API.find(host)
-    cluster = CL_API.find(host_obj.cluster.id, 'id').get_name()
-
-    host_nic = get_host_nic(host, nic)
-    cl_net = get_cluster_network(cluster, network)
-
-    return bool(
-        HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)
-    )
-
-
-def updateHostNic(positive, host, nic, **kwargs):
-    """
-    Description: update nic of host
-    Author: atal
-    Parameters:
-        * host - host where nic should be updated
-        * nic - nic name that should be updated
-        * network - network name
-        * boot_protocol - static, none or dhcp
-        * address - ip address incase of static protocol
-        * netmask - netmask incase of static protocol
-        * gateway - gateway address incase of static protocol
-        * slaves - bonding slaves list as a string with commas
-        * mode - bonding mode (int), added as option
-        * miimon - another int for bonding options
-        * check_connectivity - boolean and working only for management int.
-    Return: status (True if nic was updated properly, False otherwise)
-    """
-
-    nic_obj = get_host_nic(host, nic)
-    kwargs.update([('nic', nic_obj)])
-    nic_new = _prepareHostNicObject(**kwargs)
-    nic, status = HOST_NICS_API.update(nic_obj, nic_new, positive)
-
-    return status
-
-
-# FIXME: network param is deprecated.
-def detachHostNic(positive, host, nic, network=None):
-    """
-    Description: detach network interface card from host
-    Author: edolinin
-    Parameters:
-       * host - name of a host to attach nic to
-       * nic - nic name to be detached
-    Return: status (True if nic was detach properly from host, False otherwise)
-    """
-    nicObj = get_host_nic(host, nic)
-
-    return bool(
-        HOST_API.syncAction(
-            nicObj, "detach", positive, network=nicObj.get_network()
-        )
-    )
-
-
-def generate_sn_nic(nic, **kwargs):
-    """
-    generate a host_nic element of types regular or VLAN
-
-    Args:
-        nic (str): NIC name that should be generated
-
-    Keyword Args:
-        host (str): Host where nic should be generated
-        network (str): Network name
-        boot_protocol (str): Static, none or DHCP
-        address (str): IP address in case of static protocol
-        netmask (str): Netmask in case of static protocol
-        gateway (str): Gateway address in case of static protocol
-
-    Returns:
-        dict: Dict with host NIC element
-    """
-    log_info, log_error = ll_general.get_log_msg(
-        action="Generate", obj_name=nic, obj_type="SetupNetwork NIC", **kwargs
-    )
-    logger.info(log_info)
-    kwargs.update({'name': nic})
-    nic_obj = _prepareHostNicObject(**kwargs)
-    if not nic_obj:
-        logger.error(log_error)
-
-    return {'host_nic': nic_obj}
-
-
 def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
     """
     Description: search for a host by desired property
@@ -1301,94 +1174,6 @@ def set_spm_priority_in_db(host_name, spm_priority, engine):
     return True
 
 
-def checkHostsForSPM(positive, hosts, expected_spm_host):
-    """
-    Description: checks whether SPM is expected host or not
-    Author: pdufek
-    Parameters:
-    * hosts - the list of hosts to be searched through
-    * expected_spm_host - host which should be SPM
-    Returns: True (success - SPM is expected host) / False (failure)
-    """
-    for host in hosts.split(','):
-        if checkHostSpmStatus(True, host):
-            return (host == expected_spm_host) == positive
-    return not positive
-
-
-def checkSPMPresence(positive, hosts):
-    """
-    Description: checks whether SPM is set within the set of hosts
-    Author: pdufek
-    Parameters:
-    * hosts - the list of hosts to be searched through
-    Returns: True (success - SPM is present on any host from list)
-             False (failure - SPM not present)
-    """
-    if isinstance(hosts, str):
-        hosts_list = split(',')
-    else:
-        hosts_list = hosts[:]
-    for host in hosts_list:
-        if checkHostSpmStatus(True, host):
-            return positive
-    else:
-        return not positive
-
-
-def _getSPMHostname(hosts):
-    """
-    Description: get SPM host from the list of hosts
-    Author: pdufek
-    Parameters:
-    * hosts - the list of hosts to be searched through
-    Returns: hostName (success) / raises EntityNotFound exception
-    """
-    status, spmHostDict = returnSPMHost(hosts)
-    if status:
-        return spmHostDict['spmHost']
-    else:
-        raise EntityNotFound('SPM not found among these hosts: %s'
-                             % (str(hosts),))
-
-
-def deactivateHosts(positive, hosts):
-    """
-    Description: deactivates the set of hosts. If host deactivation is not
-                 successful, waits 30 seconds before the second attempt
-                 - due to possible contending for SPM
-    Author: pdufek
-    Parameters:
-    * hosts - hosts to be deactivated
-    Returns: True (success) / False (failure)
-    """
-    if isinstance(hosts, str):
-        hosts = hosts.split(',')
-
-    sorted_hosts = _sort_hosts_by_priority(hosts, False)
-
-    for host in sorted_hosts:
-        status = deactivateHost(True, host)
-        if not status:
-            return status == positive
-    return True == positive
-
-
-def reactivateHost(positive, host):
-    """
-    Description: reactivates host (puts it to 'Maintenance' state first,
-                 then to 'UP' state)
-    Author: pdufek
-    Parameters:
-    * host - the name of the host to be reactivated
-    Returns: True (success) / False (failure)
-    """
-    status = deactivateHost(True, host)
-    if status:
-        status = activateHost(True, host)
-    return status == positive
-
-
 def getSPMHost(hosts):
     """
     Description: get SPM host from the list of hosts
@@ -1539,49 +1324,6 @@ def getHostCompatibilityVersion(host):
 
     cluster = clObj.get_name()
     return getClusterCompatibilityVersion(cluster)
-
-
-def waitForHostNicState(host, nic, state, interval=1, attempts=1):
-    """
-    Waiting for Host's nic state
-    Author: atal
-    params:
-        * host - host name
-        * nic - nic name
-        * state - state we would like to achive
-        * interval - time between checks
-        * attempts - number of attempts before returning False
-    return True/False
-    """
-    regex = re.compile(state, re.I)
-    while attempts:
-        res, out = getHostNicAttr(host, nic, 'status')
-        if res and regex.match(out['attrValue']):
-            return True
-        time.sleep(interval)
-        attempts -= 1
-    return False
-
-
-def getOsInfo(host, root_password=''):
-    """
-    Description: get OS info wrapper.
-    Author: atal
-    Parameters:
-       * host - ip or fqdn
-       * root_password - password of root user (required, can be empty only
-         for negative tests)
-    Return: True with OS info string if succeeded, False and None otherwise
-    """
-    host_obj = machine.Machine(host, 'root', root_password).util(machine.LINUX)
-    if not host_obj.isAlive():
-        HOST_API.logger.error("No connectivity to the host %s" % host)
-        return False, {'osName': None}
-    osName = host_obj.getOsInfo()
-    if not osName:
-        return False, {'osName': None}
-
-    return True, {'osName': osName}
 
 
 def getClusterCompatibilityVersion(cluster):
@@ -1767,37 +1509,6 @@ def check_network_filtering_ebtables(host_obj, vm_macs):
             logger.info("%s MACs found instead of 2", num_macs_ebtable)
             return False
     return True
-
-
-def cleanHostStorageSession(hostObj, **kwargs):
-    """
-    Description: Runs few commands on a given host to clean storage related
-                 session and dev maps.
-    **Author**: talayan
-    **Parameters**:
-      **hostObj* - Object represnts the hostObj
-    """
-    # check if there is an active session
-    check_iscsi_active_session = ['iscsiadm', '-m', 'session']
-    HOST_API.logger.info("Run %s to check if there are active iscsi sessions"
-                         % " ".join(check_iscsi_active_session))
-    res, out = hostObj.runCmd(check_iscsi_active_session)
-    if not res:
-        HOST_API.logger.info("Run %s Res: %s",
-                             " ".join(check_iscsi_active_session), out)
-        return
-
-    HOST_API.logger.info("There are active session, perform clean and logout")
-
-    commands = [['iscsiadm', '-m', 'session', '-u'],
-                ['multipath', '-F'],
-                ['dmsetup', 'remove_all']]
-
-    for cmd in commands:
-        HOST_API.logger.info("Run %s" % " ".join(cmd))
-        res, out = hostObj.runCmd(cmd)
-        if not res:
-            HOST_API.logger.info(str(out))
 
 
 def killProcesses(hostObj, procName, **kwargs):
@@ -2027,29 +1738,6 @@ def check_host_nic_status(host_resource, nic, status):
     return False
 
 
-def wait_for_host_nic_status(
-    host_resource, nic, status, interval=1, attempts=1
-):
-    """
-    Wait for host NIC status
-
-    Args:
-        host_resource (Host): Host resource
-        nic (str): Host NIC name
-        status (str): Status to check for
-        interval (int): Time to sleep between attempts
-        attempts (int): How many attempts before return False
-
-    Returns:
-        bool: True/False
-    """
-    sample = TimeoutingSampler(
-        timeout=attempts, sleep=interval, func=check_host_nic_status,
-        host_resource=host_resource, nic=nic, status=status
-    )
-    return sample.waitForFuncStatus(result=True)
-
-
 def get_host_name_from_engine(vds_resource):
     """
     Get host name from engine by host IP
@@ -2122,36 +1810,6 @@ def get_cluster_hosts(cluster_name, host_status=ENUMS['host_state_up']):
         return [host.get_name() for host in hosts
                 if host.get_status() == host_status]
     return []
-
-
-def get_linux_machine_obj(host, host_user, host_passwd, by_ip=True):
-    """
-    Get linux machine object
-
-    :param host: name of host
-    :type host: str
-    :param host_user: user name to login to host
-    :type host_user: str
-    :param host_passwd: user password to login to host
-    :type host_passwd: str
-    :param by_ip: if get linux machine by ip
-    :type by_ip: bool
-    :returns: object of linux machine
-    """
-    host_ip = getHostIP(host) if by_ip else host
-    return machine.Machine(host_ip, host_user, host_passwd).util(machine.LINUX)
-
-
-def get_host_memory(host_name):
-    """
-    Get host memory
-
-    :param host_name: host name
-    :type host_name: str
-    :returns: total host memory
-    """
-    stats = getStat(host_name, ELEMENT, COLLECTION, ["memory.total"])
-    return stats["memory.total"]
 
 
 def get_host_max_scheduling_memory(host_name):
@@ -2249,24 +1907,6 @@ def get_numa_node_index(numa_node_obj):
     return numa_node_obj.get_index()
 
 
-def get_numa_node_statistics(numa_node_obj):
-    """
-    Get numa node statistics
-
-    :param numa_node_obj: object of NumaNode
-    :type numa_node_obj: instance of NumaNode
-    :returns: dictionary of numa node statistics
-    :rtype: dict
-    """
-    numa_statistics = {}
-    statistics = numa_node_obj.get_statistics()
-    for statistic in statistics:
-        numa_statistics[statistic.name] = []
-        for value in statistic.values:
-            numa_statistics[statistic.name].append(value.datum)
-    return numa_statistics
-
-
 def get_numa_node_by_index(host_name, index):
     """
     Get numa node by index
@@ -2361,35 +2001,6 @@ def get_host_vm_run_on(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     return HOST_API.find(vm_obj.host.id, 'id').get_address()
-
-
-def wait_for_host_spm(host_name, timeout=HOST_STATE_TIMEOUT, sleep=10):
-    """
-    Wait until host will be SPM
-
-    :param host_name: host name
-    :type host_name: str
-    :param timeout: sampler timeout
-    :type timeout: int
-    :param sleep: sampler sleep
-    :type sleep: int
-    :return: True, if host receive SPM, before timeout, otherwise False
-    :rtype: bool
-    """
-    sampler = TimeoutingSampler(
-        timeout, sleep, checkHostSpmStatus, True, host_name
-    )
-    HOST_API.logger.info("Wait until host %s will be SPM", host_name)
-    try:
-        for sample in sampler:
-            HOST_API.logger.info(
-                "Host %s SPM state equal to %s", host_name, sample
-            )
-            if sample:
-                return True
-    except APITimeout:
-        HOST_API.logger.error("Host %s still not SPM", host_name)
-        return False
 
 
 def get_host_cpu_load(host_name):
@@ -2723,21 +2334,6 @@ def get_host_device_id_by_name(host_name, device_name):
     )
     if host_device_obj:
         return host_device_obj.get_id()
-
-
-def get_supported_rng_sources_from_host(host_name):
-    """
-    Get list of supported random number generator sources from host
-
-    Args:
-        host_name (str): Name of the host
-
-    Returns:
-        list of str: List of rng sources
-    """
-    host_obj = get_host_object(host_name)
-    hw_info = host_obj.get_hardware_information()
-    return hw_info.get_supported_rng_sources().get_supported_rng_source()
 
 
 def get_hosted_engine_obj(host_name):

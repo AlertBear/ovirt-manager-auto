@@ -1226,28 +1226,6 @@ def check_bridge_opts(vds_resource, bridge_name, opts, value):
     return True
 
 
-def check_bond_mode(vds_resource, interface, mode):
-    """
-    Check BOND mode on BOND interface
-
-    Args:
-        vds_resource (VDS): VDS resource
-        interface (str):name of the BOND interface
-        mode (int): The BOND mode
-
-    Returns:
-        bool: True if correct BOND mode was found, False otherwise
-    """
-    mode_file = os.path.join(
-        test_utils.SYS_CLASS_NET_DIR, interface, "bonding/mode"
-    )
-    rc, out, _ = vds_resource.run_command(["cat", mode_file])
-    if rc:
-        return False
-    bond_mode = out.split()[1]
-    return bond_mode == str(mode)
-
-
 def check_ethtool_opts(vds_resource, nic, opts, value):
     """
     Checks the ethtool_opts of specific network interface
@@ -1322,29 +1300,6 @@ def create_properties(**kwargs):
             property_obj = apis_utils.data_st.Property(name=key, value=val)
             properties_obj.add_property(property_obj)
     return properties_obj
-
-
-def get_dc_network_by_cluster(cluster, network):
-    """
-    Find network on cluster and return the DC network object
-
-    Args:
-        cluster (str): Name of the cluster in which the network is located.
-        network (str): Name of the network.
-
-    Returns:
-        Network: DC network object if network found, None otherwise
-    """
-    logger.info("Find network %s on cluster %s", cluster, network)
-    cluster_obj = CL_API.find(cluster)
-    cluster_net = get_cluster_network(cluster=cluster, network=network)
-    dc_id = cluster_obj.get_data_center().get_id()
-    dc_name = DC_API.find(dc_id, attribute='id').get_name()
-    dc_net = get_network_in_datacenter(network=network, datacenter=dc_name)
-    if dc_net.get_id() == cluster_net.get_id():
-        return dc_net
-    logger.error("Network %s not found on cluster %s", network, cluster)
-    return None
 
 
 def update_qos_on_vnic_profile(

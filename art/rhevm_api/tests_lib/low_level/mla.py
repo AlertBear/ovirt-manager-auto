@@ -180,21 +180,6 @@ def addRolePermissions(positive, role, permit):
     return status
 
 
-def removeRolePermissions(positive, role, permit):
-    '''
-    Description: remove permission from role
-    Author: edolinin
-    Parameters:
-       * role - name of role that should be updated
-       * permit - name of permission that should be removed
-    Return: status (True if permission was removed properly, False otherwise)
-    '''
-
-    roleObj = util.find(role)
-    permitObj = util.getElemFromElemColl(roleObj, permit, 'permits', 'permit')
-    return util.delete(permitObj, positive)
-
-
 def removeRole(positive, role):
     '''
     Description: remove role
@@ -282,23 +267,6 @@ def addVMPermissionsToUser(
 
     vmObj = vmUtil.find(vm)
     return addPermitsToUser(positive, user, domain, role, vmObj, 'vm')
-
-
-def addHostPermissionsToUser(positive, user, host, role="HostAdmin",
-                             domain=None):
-    '''
-    Description: add host permissios to user
-    Author: edolinin
-    Parameters:
-       * user - name of user
-       * host - name of host
-       * role - role to add
-       * domain - domain of user
-    Return: status (True if permission was added properly, False otherwise)
-    '''
-
-    hostObj = hostUtil.find(host)
-    return addPermitsToUser(positive, user, domain, role, hostObj, 'host')
 
 
 def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin",
@@ -470,21 +438,6 @@ def addTemplatePermissionsToGroup(positive, group, template,
     return addUserPermitsForObj(positive, group, role, templObj, True)
 
 
-def addPermissionsForTemplateToGroup(positive, group, template,
-                                     role="TemplateAdmin"):
-    '''
-    Description: add template permissions to group using group link
-    Author: jvorcak
-    Parameters:
-       * group - name of group
-       * template - name of template
-       * role - role to add
-    Return: status (True if permission was added properly, False otherwise)
-    '''
-    templateObj = templUtil.find(template)
-    return addPermitsToGroup(positive, group, role, templateObj, 'template')
-
-
 def addPermissionsForDataCenter(positive, user, data_center,
                                 role="TemplateAdmin"):
     '''
@@ -613,24 +566,6 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
             status = False
 
     return status
-
-
-def removeUsersPermissionsFromVnicProfile(positive, vnicprofile, network,
-                                          data_center, user_names):
-    '''
-    Description: remove all permissions from vnicprofile of specified users
-    Author: omachace
-    Parameters:
-       * vnicprofile - vnicprofile where permissions should be removed
-       * network - network which is associated with vnicprofile
-       * data_center - name of datacenter of network/vnicprofile
-       * user_names - list with user names (ie.['user1@..', 'user2@..'])
-    Return: status (True if permissions was removed, False otherwise)
-    '''
-    vnicObj = get_vnic_profile_obj(
-        vnicprofile, network, data_center=data_center
-    )
-    return removeUsersPermissionsFromObject(positive, vnicObj, user_names)
 
 
 def removeUserPermissionsFromVnicProfile(positive, vnicprofile, network,
@@ -780,19 +715,6 @@ def removeUserPermissionsFromTemplate(positive, template, user_name):
     return removeUsersPermissionsFromTemplate(positive, template, [user_name])
 
 
-def removeUserPermissionsFromDisk(positive, disk, user_name):
-    '''
-    Description: remove all permissions on disk of specified user
-    Author: omachace
-    Parameters:
-       * disk - disk where permissions should be removed
-       * user_name - user name
-    Return: status (True if permissions was removed, False otherwise)
-    '''
-    diskObj = diskUtil.find(disk)
-    return removeUsersPermissionsFromObject(positive, diskObj, [user_name])
-
-
 def removeUserRoleFromDataCenter(positive, datacenter, user_name, role_name):
     '''
     Description: remove specific user's role from datacenter
@@ -842,38 +764,6 @@ def removeUserRoleFromVm(positive, vm, user_name, role_name):
     '''
     vmObj = vmUtil.find(vm)
     return removeUserRoleFromObject(positive, vmObj, user_name, role_name)
-
-
-def checkDomainsId():
-    '''
-    Check whether domain resource in domains collection is displayed
-    correctly, in order to make this test meaningful, there should be at
-    least two domains in /domains collection
-    Author: jvorcak
-    return (True/False)
-    '''
-
-    domains = domUtil.get(absLink=False)
-
-    if len(domains) < 2:
-        util.logger.warn("Size of the domains collection is < 2, \
-                test case should have at least 2 domains in \
-                the domains collection availible")
-
-    ret = True
-
-    for domain in domains:
-        domainId = domain.get_id()
-        domainHref = domain.get_href()
-        domainHrefId = domainHref.split('/')[-1]
-
-        if domainHrefId != domainId:
-            util.logger.error(
-                "Domain resource %s has wrong id, %s found but %s expected"
-                % (domain.get_name(), domainId, domainHrefId))
-            ret = False
-
-    return ret
 
 
 def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):

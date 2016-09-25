@@ -17,11 +17,12 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import logging
-from art.core_api.apis_utils import getDS
-from art.rhevm_api.utils.test_utils import get_api
-from art.core_api.validator import compareElements, compareCollectionSize
-from art.test_handler.settings import opts  # noqa
+
 import art.rhevm_api.tests_lib.low_level.general as ll_general
+from art.core_api.apis_utils import getDS
+from art.core_api.validator import compareElements
+from art.rhevm_api.utils.test_utils import get_api
+from art.test_handler.settings import opts  # noqa
 
 ELEMENT = 'user'
 COLLECTION = 'users'
@@ -219,40 +220,6 @@ def search_user(authz, key, value):
         return query_users[0]
 
     return None
-
-
-def searchForUserInAD(positive, query_key, query_val, key_name, domain):
-    '''
-    Description: search for users by desired property in active directory
-    Parameters:
-       * query_key - name of property to search for
-       * query_val - value of the property to search for
-       * key_name - name of the property in user object equivalent to
-                   query_key, required if expected_count is not set
-       * domain - name of active directory domain
-    Return: status (True if expected number of users equal to found by search,
-            False otherwise)
-    '''
-    # Get what's needed.
-    domainObj = domUtil.find(domain)
-    users = util.getElemFromLink(domainObj)
-
-    # Do the matching.
-    matches = []
-    for user in users:
-        try:
-            if query_val == getattr(user, key_name):
-                matches.append(user)
-        except AttributeError:
-            pass
-
-    # query for all existed users, for debug purpose
-    util.query("")
-
-    # Compare it with the RHEVM results.
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_users = util.query(contsraint)
-    return compareCollectionSize(query_users, len(matches), util.logger)
 
 
 def groupExists(positive, group_name):

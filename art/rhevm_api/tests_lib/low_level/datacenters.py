@@ -17,19 +17,18 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import logging
 import os
 import time
-import Queue
-import logging
+
+import art.rhevm_api.tests_lib.low_level.general as ll_general
+import art.test_handler.exceptions as exceptions
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
-from art.rhevm_api.utils.test_utils import get_api, split
+from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
+from art.rhevm_api.utils.test_utils import get_api
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.test_handler.settings import opts
-import art.test_handler.exceptions as exceptions
-import art.rhevm_api.tests_lib.low_level.general as ll_general
-from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
-
 
 ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
@@ -207,53 +206,6 @@ def searchForDataCenter(positive, query_key, query_val, key_name, **kwargs):
     '''
 
     return searchForObj(util, query_key, query_val, key_name, **kwargs)
-
-
-def removeDataCenterAsynch(positive, datacenter, queue):
-    '''
-     Description: Remove existed data center, using threading for removing
-     of multiple objects
-     Parameters:
-        * datacenter - name of a data center that should removed
-        * queue - queue of threads
-     Return: status (True if data center was removed properly, False otherwise)
-     '''
-
-    try:
-        dc = util.find(datacenter)
-    except EntityNotFound:
-        util.logger.error('Failed to find DC %s', datacenter)
-        queue.put(False)
-        return False
-
-    status = util.delete(dc, positive)
-    time.sleep(30)
-
-    queue.put(status)
-
-
-def removeDataCenters(positive, datacenters):
-    '''
-     Description: Remove several data centers, using threading
-     Parameters:
-        * datacenters - name of data centers that should removed
-                        separated by comma
-     Return: status:
-          True if all data centers were removed properly
-          False otherwise
-     '''
-    resultsQ = Queue.Queue()
-    datacentersList = split(datacenters)
-    for dc in datacentersList:
-        resultsQ.put(remove_datacenter(positive, dc))
-    status = True
-
-    while not resultsQ.empty():
-        dcStatus = resultsQ.get()
-        if not dcStatus:
-            status = False
-
-    return status
 
 
 def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
@@ -465,19 +417,6 @@ def get_qoss_from_datacenter(datacenter):
     return util.getElemFromLink(
         dc, link_name="qoss", attr="qos", get_href=False
     )
-
-
-def get_cpu_qoss_from_data_center(datacenter):
-    """
-    Get all CPU QoSs in datacenter
-
-    :param datacenter: Datacenter name
-    :type datacenter: str
-    :return: List of QoSs
-    :rtype: list
-    """
-    qoss = get_qoss_from_datacenter(datacenter)
-    return [qos.get_name() for qos in qoss if qos.get_type() == 'cpu']
 
 
 def get_qos_from_datacenter(datacenter, qos_name):

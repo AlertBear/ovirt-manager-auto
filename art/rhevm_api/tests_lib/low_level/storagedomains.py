@@ -16,10 +16,11 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-import re
 
 from rrmngmnt.host import Host as HostResource
 from rrmngmnt.user import User
+from utilities import sshConnection, machine
+from utilities.utils import getIpAddressByHostName
 
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
@@ -32,18 +33,10 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 from art.rhevm_api.tests_lib.low_level.hosts import (
     getHostCompatibilityVersion,
 )
-from art.rhevm_api.utils.storage_api import (
-    getVmsInfo, getImagesList, getVolumeInfo, getVolumesList,
-)
 from art.rhevm_api.utils.test_utils import (
-    validateElementStatus, get_api, searchForObj, getImageAndVolumeID,
-    getAllImages,
-)
-from utilities.utils import getIpAddressByHostName
-from art.test_handler.settings import opts
+    validateElementStatus, get_api, )
 from art.test_handler import exceptions
-from utilities import sshConnection, machine
-
+from art.test_handler.settings import opts
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 ACTIVE_DOMAIN = ENUMS['storage_domain_state_active']
@@ -277,21 +270,6 @@ def extendStorageDomain(positive, storagedomain, **kwargs):
     return status
 
 
-def searchForStorageDomain(positive, query_key, query_val, key_name, **kwargs):
-    '''
-    Description: search for storage domains by desired property
-    Author: edolinin
-    Parameters:
-       * query_key - name of property to search for
-       * query_val - value of the property to search for
-       * key_name - name of the property in object equivalent to query_key
-    Return: status (True if expected number is equal to found by search,
-                    False otherwise)
-    '''
-
-    return searchForObj(util, query_key, query_val, key_name, **kwargs)
-
-
 def getDCStorages(datacenter, get_href=True):
 
     dcObj = dcUtil.find(datacenter)
@@ -515,25 +493,6 @@ def iscsiLogin(
     return True
 
 
-def teardownStorageDomain(positive, storagedomain, host):
-    '''
-    Description: tear down storage domain before removing
-    Author: edolinin
-    Parameters:
-       * storagedomain - storage domain that should be teared down
-       * host - host to use
-    Return: status (True if tear down succeeded, False otherwise)
-    '''
-
-    storDomObj = get_storage_domain_obj(storagedomain)
-    hostObj = hostUtil.find(host)
-
-    sdHost = Host(id=hostObj.get_id())
-    return bool(
-        util.syncAction(storDomObj.actions, "teardown", positive, host=sdHost)
-    )
-
-
 def removeStorageDomain(positive, storagedomain, host, format='false',
                         destroy=False, force=False):
     """
@@ -717,31 +676,6 @@ def waitForStorageDomainStatus(
     return not positive
 
 
-def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
-    '''
-    The function isStorageDomainMaster checking if storage domain is a master
-        dataCenterName = The name of datacenter
-        storageDomainName = The name or ip address of storage domain
-    return values : Boolean value (True/False ) True in case storage domain is
-                    a master,otherwise False
-    '''
-
-    storDomObj = getDCStorage(dataCenterName, storageDomainName)
-    attribute = 'master'
-    if not hasattr(storDomObj, attribute):
-        util.logger.error("Storage Domain %s doesn't have attribute %s",
-                          storageDomainName, attribute)
-        return False
-
-    util.logger.info("isStorageDomainMaster - Master status of Storage Domain "
-                     "%s is: %s", storageDomainName, storDomObj.master)
-    isMaster = storDomObj.get_master()
-    if positive:
-        return isMaster
-    else:
-        return not isMaster
-
-
 def remove_floating_disks(storage_domain):
     """
     Description: remove floating disks from storage domain
@@ -857,51 +791,6 @@ def remove_storage_domains(
             return False
 
     return True
-
-
-def execOnNonMasterDomains(positive, datacenter, operation, type):
-    '''
-    Description: Run operation on all storage domains that match type in
-                 datacenter.
-    Author: istein
-    Parameters:
-       * datacenter - datacenter name
-       * operation  - 'activate' \ 'deactivate' \ 'detach'
-       * type - storage domain type ('all', ENUMS[storage_dom_type_data],
-                ENUMS[storage_dom_type_export], ENUMS[storage_dom_type_iso])
-    Return: status (True if opearation suceeded, False otherwise)
-    '''
-
-    status = True
-
-    sdObjList = getDCStorages(datacenter, False)
-
-    # Find the Non-master & type storage domains.
-    if type == 'all':
-        sdObjects = filter(lambda sdObj: not sdObj.get_master(), sdObjList)
-    else:
-        sdObjects = filter(
-            lambda sdObj: sdObj.get_type() == type and not sdObj.get_master(),
-            sdObjList)
-
-    dispatch_map = {
-        'activate': activateStorageDomain,
-        'deactivate': deactivateStorageDomain,
-        'detach': detachStorageDomain,
-    }
-
-    # Get the right function to perform the operation.
-    func = dispatch_map.get(operation, None)
-    if not func:
-        raise Exception("Unknown operation %s." % operation)
-
-    # Do the operations.
-    for sd in sdObjects:
-        func_result = func(positive, datacenter, sd.name)
-        if not func_result:
-            status = False
-            util.logger.error("Function %s failed", func)
-    return status
 
 
 def getDomainAddress(positive, storageDomain):
@@ -1033,155 +922,6 @@ def get_iso_domain_files(iso_domain_name):
     return util.getElemFromLink(iso_domain_object, 'files', attr='file')
 
 
-def getStorageDomainFile(positive, storagedomain, file):
-    '''
-     Description: fetch file in iso storage domain by name
-     Author: edolinin
-     Parameters:
-        * storagedomain - name of storage domain
-        * file - file name
-     Return: status (True if file exists, False otherwise)
-     '''
-
-    storDomObj = get_storage_domain_obj(storagedomain)
-
-    fileObj = None
-    if storDomObj:
-        fileObj = fileUtil.getElemFromElemColl(storDomObj, file, 'files',
-                                               'file')
-
-    if fileObj:
-        return positive
-    else:
-        return not positive
-
-
-def getTemplateImageId(positive, vdsName, username, passwd, dataCenter,
-                       storageDomain):
-    '''
-    Description: get template disk entrence, which is not exposed to REST.
-    Author: istein
-    Parameters:
-       * vdsName - host name
-       * username - user name
-       * passwd - password
-       * dataCenter - data center name
-       * storageDomain - name of the storage domain
-    Return: template Image Id, if found, False otherwise)
-    '''
-
-    vmIdList = []
-    diskIdList = []
-
-    # Get vms list on storageDomain
-    dcObj = dcUtil.find(dataCenter)
-    dcId = dcObj.get_id()
-    storDomObj = get_storage_domain_obj(storageDomain)
-    storDomId = storDomObj.get_id()
-    vmObjList = util.getElemFromLink(storDomObj, 'vms', attr='vm',
-                                     get_href=True)
-    for vmObj in vmObjList:
-        vmIdList.append(vmObj.get_id())
-
-    # Get vms info
-    vmInfo = getVmsInfo(vdsName, username, passwd, dcId, storDomId)
-
-    if vmInfo:
-        # Get vms disk Id, by parsing vmInfo
-        for vmId in vmIdList:
-            vmInfoEntry = vmInfo[vmId]
-            # Search for VM's disk ID inside VM Info
-            found = re.search('<References>(.*)</References>', vmInfoEntry)
-            found = found.group(1)
-            found = re.match('(.*)/(.*)/(.*)', found)
-            found = found.group(1)
-            found = re.match('(.*)"(.*)', found)
-            diskFound = found.group(2)
-            diskIdList.append(diskFound)
-
-        # Get Image Id list
-        imageIdList = getImagesList(vdsName, username, passwd, storDomId)
-        if imageIdList:
-            # Search for the template image Id
-            for imageId in imageIdList:
-                found = False
-                for diskId in diskIdList:
-                    if imageId == diskId:
-                        found = True
-                if not found:
-                    return imageId
-    return False
-
-
-def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
-                        storageDomain, template, fake, noImages):
-    """
-    Description: Checks first volume on given storage domain of specified
-                 template
-    Author: istein, jlibosva
-    Parameters:
-       * vdsName - host name
-       * username - user name
-       * passwd - user password
-       * dataCenter - data center name
-       * storageDomain - name of the storage domain
-       * template - template name
-       * fake - If template is expected to be fake set it to True, otherwise
-                to False
-       * noImage - set True, in case no image is expected to be in the storage
-                   domain
-    Return: True if volume Lagality is as expected \ No image is expected and
-               it doesn't exist
-            False otherwise
-    """
-    domain = get_storage_domain_obj(storageDomain)
-    templates = util.getElemFromLink(domain, 'templates', attr='template')
-    dc = dcUtil.find(dataCenter)
-
-    try:
-        templateObj = [t for t in templates if t.get_name() == template][0]
-    except IndexError:
-        util.logger.error("Template %s was not found on storage domain %s",
-                          template, storageDomain)
-        return not positive
-
-    template_id = templateObj.get_id()
-    dc_id = dc.get_id()
-    domain_id = domain.get_id()
-
-    image_id, volume_id = getImageAndVolumeID(vdsName, username, passwd,
-                                              dc_id, domain_id,
-                                              template_id, 0)
-
-    if noImages == 'true':
-        if image_id is not None:
-            util.logger.error("There are image(-s) on domain %s!",
-                              storageDomain)
-            return False
-        return True
-    elif image_id is None:
-        util.logger.error("There are no images on domain %s", storageDomain)
-        return False
-
-    # Get volume Info
-    volInfo = getVolumeInfo(vdsName, username, passwd, dc_id, domain_id,
-                            image_id, volume_id)
-
-    if not volInfo:
-        msg = "failed to get volume info; DC {0}, SD{1}, Image {2}, Volume {3}"
-        util.logger.error(msg.format(dc_id, domain.get_id(), image_id,
-                                     volume_id))
-        return False
-
-    # Check volume info legality field
-    legality = volInfo['legality']
-    if ((fake == 'true' and legality != 'FAKE') or (fake == 'false' and
-                                                    legality != 'LEGAL')):
-        util.logger.error("Template legality is wrong: %s", legality)
-        return False
-    return True
-
-
 def checkIfStorageDomainExist(positive, storagedomain):
     '''
     Description: Check if storagedomain exist.
@@ -1199,28 +939,6 @@ def checkIfStorageDomainExist(positive, storagedomain):
     return (len(sdObj) == 1) == positive
 
 
-def checkStorageDomainParameters(positive, storagedomain, **kwargs):
-    """
-    Description: Checks whether given xpath is True
-    Parameters:
-        * storagedomain - domain's name
-    Author: jlibosva
-    Return: True if all keys and values matches given storage domain attributes
-            False if any attribute is missing or if the attribute's value
-            differs
-    """
-    domainObj = get_storage_domain_obj(storagedomain)
-
-    for attr in kwargs:
-        if not hasattr(domainObj.storage, attr) or \
-           getattr(domainObj.storage, attr) != kwargs[attr]:
-            util.logger.debug("Attribute \"%s\" doesn't match with storage "
-                              "domain \"%s\"", attr, storagedomain)
-            return not positive
-
-    return positive
-
-
 def checkStorageFormatVersion(positive, storagedomain, version):
     """
     Description: Checks storage format version on given storage domain
@@ -1235,57 +953,6 @@ def checkStorageFormatVersion(positive, storagedomain, version):
     return (domainObj.storage_format == version) == positive
 
 
-def checkVmVolume(positive, vdsName, username, passwd, dataCenter,
-                  storageDomain, vm, fake, noImages, exists=True):
-    """
-    Description: Checks first volume on given storage domain of specified
-                 VM
-    Author: jlibosva
-    Parameters:
-       * vdsName - host name
-       * username - user name
-       * passwd - user password
-       * dataCenter - data center name
-       * storageDomain - name of the storage domain
-       * vm - name of vm
-       * fake - If volume is expected to be fake set it to True, otherwise
-                to False
-       * noImage - set True, in case no image is expected to be in the storage
-                   domain
-    Return: True if volume Lagality is as expected \ No image is expected and
-               it doesn't exist
-            False otherwise
-    """
-    return checkVolume(positive, vdsName, username, passwd, dataCenter,
-                       storageDomain, vm, fake, noImages, exists)
-
-
-def checkTemplateVolume(positive, vdsName, username, passwd, dataCenter,
-                        storageDomain, template, fake, noImages, exists=True):
-    """
-    Description: Checks first volume on given storage domain of specified
-                 template
-    Author: jlibosva
-    Parameters:
-       * vdsName - host name
-       * username - user name
-       * passwd - user password
-       * dataCenter - data center name
-       * storageDomain - name of the storage domain
-       * template - name of template
-       * fake - If volume is expected to be fake set it to True, otherwise
-                to False
-       * noImage - set True, in case no image is expected to be in the storage
-                   domain
-    Return: True if volume Lagality is as expected \ No image is expected and
-               it doesn't exist
-            False otherwise
-    """
-    return checkVolume(positive, vdsName, username, passwd, dataCenter,
-                       storageDomain, template, fake, noImages, exists,
-                       'templates')
-
-
 def getObjList(sd, coll):
     """
     Description: Returns list of objects specified by coll
@@ -1298,82 +965,6 @@ def getObjList(sd, coll):
     attr = coll[:-1]
     return util.getElemFromLink(sd, link_name=coll, attr=attr,
                                 get_href=False)
-
-
-def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
-                name, fake, noImages, exists, coll='vms'):
-    """
-    Description: Checks first volume on given storage domain of specified
-                 name
-    Author: istein, jlibosva
-    Parameters:
-       * vdsName - host name
-       * username - user name
-       * passwd - user password
-       * dataCenter - data center name
-       * storageDomain - name of the storage domain
-       * name - name of vm/template
-       * fake - If volume is expected to be fake set it to True, otherwise
-                to False
-       * noImage - set True, in case no image is expected to be in the storage
-                   domain
-       * isVm - if True, checks for vm, False checks template
-    Return: True if volume Lagality is as expected \ No image is expected and
-               it doesn't exist
-            False otherwise
-    """
-    domainObj = get_storage_domain_obj(storageDomain)
-    dcObj = dcUtil.find(dataCenter)
-    objCollection = getObjList(domainObj, coll)
-
-    try:
-        Obj = [o for o in objCollection if o.name == name][0]
-    except IndexError:
-        if exists:
-            util.logger.error("%s was not found on storage domain %s",
-                              name, storageDomain)
-            return not positive
-        else:
-            return positive
-
-    obj_id = Obj.id
-    dc_id = dcObj.id
-    domain_id = domainObj.id
-
-    images = getAllImages(vdsName, username, passwd, dc_id, domain_id, obj_id)
-
-    if noImages:
-        if images is not []:
-            util.logger.error("There are image(-s) on domain %s!",
-                              storageDomain)
-            return not positive
-        return positive
-    elif images is []:
-        util.logger.error("There are no images on domain %s",
-                          storageDomain)
-        return not positive
-
-    image = images[0]
-    try:
-        volInfo = getVolumesList(vdsName, username, passwd, dc_id, domain_id,
-                                 [image])[0]
-    except IndexError:
-        util.logger.error(
-            "Can't find any volume of image DC %s, SD %s, Image %s",
-            dataCenter, storageDomain, image)
-        return not positive
-
-    parentInfo = getVolumeInfo(vdsName, username, passwd, dc_id, domain_id,
-                               image, volInfo['parent'])
-
-    legality = parentInfo.get('legality', None)
-    if legality is None:
-        legality = volInfo['legality']
-
-    if ((fake and legality != 'FAKE') or (not fake and legality != 'LEGAL')):
-        util.logger.error("Template/Vm legality is wrong: %s", legality)
-        return not positive
-    return positive
 
 
 def is_storage_domain_active(datacenter, domain):
