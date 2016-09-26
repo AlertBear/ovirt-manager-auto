@@ -826,7 +826,7 @@ class TestHostNetworkApiSync03(NetworkTest):
 
     # Test 04 parameters
     net_4 = net_api_conf.SYNC_NETS_DC_1[3][3]
-    actual_ip_net_4 = "10.10.10.10"
+    actual_ip_net_4 = "10.10.10.11"
     net_case_4_boot_proto_expected = "NONE"
     net_case_4_boot_proto_actual = "STATIC_IP"
 
@@ -1039,7 +1039,7 @@ class TestHostNetworkApiSync04(NetworkTest):
     ip_netmask_net_1 = SYNC_IPS[0]
     net_1 = net_api_conf.SYNC_NETS_DC_1[4][0]
     net_case_1_ip_expected = ip_netmask_net_1
-    actual_ip_net_1 = "10.10.10.10"
+    actual_ip_net_1 = "10.10.10.12"
     bond_1 = "bond041"
 
     # Test 02 parameters
@@ -1058,7 +1058,7 @@ class TestHostNetworkApiSync04(NetworkTest):
 
     # Test 04 parameters
     net_4 = net_api_conf.SYNC_NETS_DC_1[4][3]
-    actual_ip_net_4 = "10.10.10.10"
+    actual_ip_net_4 = "10.10.10.13"
     net_case_4_boot_proto_expected = "NONE"
     net_case_4_boot_proto_actual = "STATIC_IP"
     bond_4 = "bond044"

@@ -9,6 +9,7 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as network_api_conf
@@ -124,12 +125,17 @@ def manage_ip_and_refresh_capabilities(request):
         request.node.cls.manage_ip_list
     ):
         testflow.setup(
-            "Set temporary IP %s on interface %s and refresh capabilities",
+            "Set temporary IP %s on interface %s",
             actual_ip, net
         )
         if not actual_netmask:
             actual_netmask = "24"
 
-        helper.manage_ip_and_refresh_capabilities(
+        helper.manage_host_ip(
             interface=net, ip=actual_ip, netmask=actual_netmask, set_ip=set_ip
         )
+    last_event = ll_events.get_max_event_id(query="")
+    testflow.setup("Refresh host %s capabilities", conf.HOST_0_NAME)
+    ll_hosts.refresh_host_capabilities(
+        host=conf.HOST_0_NAME, start_event_id=last_event
+    )

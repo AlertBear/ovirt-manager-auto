@@ -8,8 +8,6 @@ helper file for Host Network API
 import logging
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.low_level.events as ll_events
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.utils.test_utils as test_utils
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
@@ -51,9 +49,7 @@ def get_networks_sync_status_and_unsync_reason(net_sync_reason):
     return True
 
 
-def manage_ip_and_refresh_capabilities(
-    interface, ip=None, netmask="24", set_ip=True
-):
+def manage_host_ip(interface, ip=None, netmask="24", set_ip=True):
     """
     Set temporary IP on interface and refresh capabilities
 
@@ -79,12 +75,6 @@ def manage_ip_and_refresh_capabilities(
     if set_ip:
         ip = int_ip if not ip else ip
         set_ip_on_interface(ip=ip, netmask=netmask, interface=interface)
-
-    last_event = ll_events.get_max_event_id(query="")
-    logger.info("Refresh capabilities for %s", conf.HOST_0_NAME)
-    ll_hosts.refresh_host_capabilities(
-        host=conf.HOST_0_NAME, start_event_id=last_event
-    )
 
 
 def remove_ip_from_interface(ip, interface):
