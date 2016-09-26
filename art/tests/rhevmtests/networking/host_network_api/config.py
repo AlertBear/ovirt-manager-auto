@@ -47,6 +47,7 @@ IPS = network_helper.create_random_ips(num_of_ips=50, mask=24)
 IPV6_IPS = network_helper.create_random_ips(
     num_of_ips=50, mask=24, ip_version=6
 )
+IPV4_IPS = network_helper.create_random_ips(num_of_ips=50, mask=24)
 BASIC_IP_DICT_NETMASK = {
     "ip": {
         "address": None,
@@ -69,6 +70,20 @@ BASIC_IPV6_DICT = {
         "netmask": "24",
         "boot_protocol": "static",
         "version": "v6"
+    }
+}
+
+BASIC_IPV4_AND_IPV6_DICT = {
+    "ipv6": {
+        "address": None,
+        "netmask": "24",
+        "boot_protocol": "static",
+        "version": "v6"
+    },
+    "ipv4": {
+        "address": None,
+        "netmask": "24",
+        "boot_protocol": "static"
     }
 }
 
