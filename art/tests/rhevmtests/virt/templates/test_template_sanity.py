@@ -32,7 +32,7 @@ class TestTemplateSanity(VirtTest):
     @pytest.mark.usefixtures(
         init_module.__name__, remove_existing_templates.__name__
     )
-    @polarion("RHEVM3-15177")
+    @polarion("RHEVM-15177")
     def test_01_create_template(self):
         """
         1. Create template from VM
@@ -46,7 +46,7 @@ class TestTemplateSanity(VirtTest):
         )
 
     @pytest.mark.usefixtures(add_user_role_permission_for_base_vm.__name__)
-    @polarion("RHEVM3-15179")
+    @polarion("RHEVM-15179")
     def test_02_create_template_copy_vm_permission(self):
         """
         1. Create template from VM + copy vm's permissions
@@ -92,7 +92,7 @@ class TestTemplateSanity(VirtTest):
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
-    @polarion("RHEVM3-15182")
+    @polarion("RHEVM-15182")
     def test_04_remove_template(self):
         """
         1. Template is delete protected - created as such in setup
@@ -136,7 +136,7 @@ class TestTemplateSanity(VirtTest):
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
-    @polarion("RHEVM3-15183")
+    @polarion("RHEVM-15183")
     def test_06_template_inheritance(self):
         """
         1. Verify that the template has inherited all the parameters values
@@ -158,7 +158,7 @@ class TestTemplateSanity(VirtTest):
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1, 2])
-    @polarion("RHEVM3-15186")
+    @polarion("RHEVM-15186")
     def test_07_template_version_inheritance(self):
         """
         1. Verify that the template version (2) has inherited all the
@@ -215,7 +215,7 @@ class TestTemplateSanity(VirtTest):
     )
     @pytest.mark.template_marker(template_versions=[1])
     @pytest.mark.vm_marker(vm_name=conf.VM_NO_DISK_1, template_version=1)
-    @polarion("RHEVM3-15188")
+    @polarion("RHEVM-15188")
     def test_10_vm_inheritance_from_template(self):
         """
         1. Verify that the vm has inherited all the parameters values from
@@ -241,7 +241,7 @@ class TestTemplateSanity(VirtTest):
     )
     @pytest.mark.template_marker(template_versions=[2])
     @pytest.mark.vm_marker(vm_name=conf.VM_NO_DISK_2, template_version=2)
-    @polarion("RHEVM3-15189")
+    @polarion("RHEVM-15189")
     def test_11_vm_inheritance_from_template_version(self):
         """
         1. Verify that the vm has inherited all the parameters values from
@@ -267,7 +267,7 @@ class TestTemplateSanity(VirtTest):
     )
     @pytest.mark.template_marker(template_versions=[2])
     @pytest.mark.vm_marker(vm_name=conf.VM_NO_DISK_2, template_version=2)
-    @polarion("RHEVM3-15190")
+    @polarion("RHEVM-15190")
     def test_12_negative_remove_template_used_by_vm(self):
         """
         1. Attempt to remove a template that is being used by a vm
@@ -304,7 +304,7 @@ class TestTemplateSanity(VirtTest):
     )
     @pytest.mark.template_marker(template_versions=[2])
     @pytest.mark.vm_marker(vm_name=conf.VM_NO_DISK_2)
-    @polarion("RHEVM3-15191")
+    @polarion("RHEVM-15191")
     def test_14_create_vm_copy_template_permission(self):
         """
         1. Create vm from template - copy template permissions.

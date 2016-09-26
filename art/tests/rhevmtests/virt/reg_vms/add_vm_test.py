@@ -220,7 +220,7 @@ class AddVm(VirtTest):
         vm_parameters['monitors'] = 36
         assert not ll_vms.addVm(True, **vm_parameters)
 
-    @polarion("RHEVM3-14952")
+    @polarion("RHEVM-14952")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
     def test_add_vm_with_wrong_name(self):
         """
@@ -234,7 +234,7 @@ class AddVm(VirtTest):
         vm_parameters['name'] = vm_name
         assert not ll_vms.addVm(True, **vm_parameters)
 
-    @polarion("RHEVM3-14953")
+    @polarion("RHEVM-14953")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_add_and_remove_win_vm_name_long(self):
@@ -252,7 +252,7 @@ class AddVm(VirtTest):
         testflow.step("Remove vm with long name")
         assert ll_vms.safely_remove_vms([vm_name])
 
-    @polarion("RHEVM3-14953")
+    @polarion("RHEVM-17023")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
     def test_vm_with_wrong_length_name(self):
         """
@@ -264,7 +264,7 @@ class AddVm(VirtTest):
         vm_parameters['name'] = vm_name
         assert not ll_vms.addVm(True, **vm_parameters)
 
-    @polarion("RHEVM3-15002")
+    @polarion("RHEVM-15002")
     def test_add_vm_with_long_name_crud(self):
         """
         Positive: Add vm with name equals to 64 characters
