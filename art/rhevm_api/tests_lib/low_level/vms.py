@@ -3099,7 +3099,6 @@ def waitForIP(
         for ip in TimeoutingSampler(
             timeout, sleep, _get_ip, vm, vds_resource
         ):
-            ip = ip or LookUpVMIpByName('', '').get_ip_from_vm(vm)
             if ip:
                 return True, {'ip': ip}
     except APITimeout:
