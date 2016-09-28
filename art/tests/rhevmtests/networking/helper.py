@@ -723,5 +723,25 @@ def virsh_is_network_exists(vds_resource, network):
     return network in out
 
 
+def remove_none_from_dict(dict_):
+    """
+    Remove all None values from nested dict()
+
+    Args:
+        dict_: Dict to process
+
+    Returns:
+        dict: Dict without None values
+
+    """
+    if isinstance(dict_, dict):
+        return dict(
+            (remove_none_from_dict(k), remove_none_from_dict(v))
+            for k, v in dict_.items() if k is not None and v is not None
+        )
+    else:
+        return dict_
+
+
 if __name__ == "__main__":
     pass

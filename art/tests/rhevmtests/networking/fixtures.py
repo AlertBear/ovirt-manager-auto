@@ -13,6 +13,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
+from rhevmtests.networking import helper
 
 
 class NetworkFixtures(object):
@@ -132,6 +133,9 @@ def setup_networks_fixture(request, clean_host_interfaces):
                     )
                     sn_dict["add"][net]["ip"] = ip_dict
 
-        testflow.setup("Create %s via setup_network on host %s", sn_dict, host)
+        log_dict = helper.remove_none_from_dict(sn_dict)
+        testflow.setup(
+            "Create %s via setup_network on host %s", log_dict, host
+        )
         assert hl_host_network.setup_networks(host_name=host, **sn_dict)
         sn_dict["add"] = dict()
