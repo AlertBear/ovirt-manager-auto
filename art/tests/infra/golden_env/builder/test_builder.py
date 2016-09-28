@@ -803,29 +803,31 @@ class CreateDC(TestCase):
         logger.info("Creating users and groups")
         testflow.step("Creating users and groups")
         with config.ENGINE_HOST.executor().session() as ss:
-            for group in golden_env['groups']:
-                cmd = list(ADD_GROUP_CMD)
-                cmd.append(group['name'])
-                assert not ss.run_cmd(cmd)[0], 'Failed to add group'
+            if golden_env.get('groups'):
+                for group in golden_env['groups']:
+                    cmd = list(ADD_GROUP_CMD)
+                    cmd.append(group['name'])
+                    assert not ss.run_cmd(cmd)[0], 'Failed to add group'
 
-            for user in golden_env['users']:
-                cmd = list(ADD_USER_CMD)
-                cmd.append(user['name'])
-                cmd.append('--attribute=firstName=%s' % user['name'])
-                cmd.append('--attribute=department=Quality Assurance')
-                assert not ss.run_cmd(cmd)[0], 'Failed to add user'
+            if golden_env.get('users'):
+                for user in golden_env['users']:
+                    cmd = list(ADD_USER_CMD)
+                    cmd.append(user['name'])
+                    cmd.append('--attribute=firstName=%s' % user['name'])
+                    cmd.append('--attribute=department=Quality Assurance')
+                    assert not ss.run_cmd(cmd)[0], 'Failed to add user'
 
-                cmd = list(PASSWORD_RESET_CMD)
-                cmd.append(user['name'])
-                cmd.append('--password=pass:%s' % user['passwd'])
-                cmd.append('--password-valid-to=2050-01-01 00:00:00Z')
-                assert not ss.run_cmd(cmd)[0], 'Failed to reset password'
+                    cmd = list(PASSWORD_RESET_CMD)
+                    cmd.append(user['name'])
+                    cmd.append('--password=pass:%s' % user['passwd'])
+                    cmd.append('--password-valid-to=2050-01-01 00:00:00Z')
+                    assert not ss.run_cmd(cmd)[0], 'Failed to reset password'
 
-                if user.get('group', None):
-                    cmd = list(GROUP_MANAGE_ADD_USER_CMD)
-                    cmd.append(user['group'])
-                    cmd.append('--user=%s' % user['name'])
-                    assert not ss.run_cmd(cmd)[0], 'Failed to assign group'
+                    if user.get('group', None):
+                        cmd = list(GROUP_MANAGE_ADD_USER_CMD)
+                        cmd.append(user['group'])
+                        cmd.append('--user=%s' % user['name'])
+                        assert not ss.run_cmd(cmd)[0], 'Failed to assign group'
 
     def test_build_env(self):
         hl_mac_pool.update_default_mac_pool()
