@@ -201,14 +201,14 @@ class TestHostNetQOSCase02(NetworkTest):
         testflow.step(
             "Update network: %s with QoS: %s", self.net_1, self.qos_name_1
         )
-        assert ll_networks.update_network_in_datacenter(
+        net_helper.call_function_and_wait_for_sn(
+            func=ll_networks.update_network_in_datacenter, content=self.net_1,
             positive=True, network=self.net_1, datacenter=conf.DC_0,
             qos_dict={
                 "qos_name": self.qos_name_1,
                 "datacenter": conf.DC_0
             }
         )
-
         testflow.step("Check on VDSCaps that the QoS values are correct")
         assert helper.cmp_qos_with_vdscaps(
             host_resource=conf.VDS_HOSTS[0], net=self.net_1,
