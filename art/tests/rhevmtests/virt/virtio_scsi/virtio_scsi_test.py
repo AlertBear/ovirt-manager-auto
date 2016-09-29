@@ -20,7 +20,7 @@ from fixtures import (
 from rhevmtests.virt import config  # flake8:  noqa
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures(create_vm_for_virtio_scsi.__name__)
 class TestVirtioScsiDefaultInterface(VirtTest):
     """

@@ -66,7 +66,7 @@ class TestAdminStartVmAndPrestartedVms(VirtTest):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -122,7 +122,7 @@ class TestPoolSizeMoreThanPrestartedUserTakeVms(VirtTest):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -281,11 +281,11 @@ class TestUpdatePoolWithPrestartedVms(VirtTest):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestUpdatePoolWithTooManyPrestartedVms(VirtTest):
     """
-    Negative - Tests update of prestarted vms parametr with an invalid value.
+    Negative - Tests update of prestarted vms parameter with an invalid value.
     """
     __test__ = True
 
@@ -296,7 +296,7 @@ class TestUpdatePoolWithTooManyPrestartedVms(VirtTest):
     @polarion("RHEVM3-12740")
     def test_create_pool_with_too_many_prestarted_vms(self):
         """
-        Negative - update of prestarted vms parametr with an invalid value:
+        Negative - update of prestarted vms parameter with an invalid value:
 
         1. Attempt to set number of prestarted vms to 3 - should fail (there
         are only 2 vms in the pool).

@@ -59,7 +59,7 @@ class TestCreatePoolSetNumberOfVmsPerUser(VirtTest):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(vm_pool_teardown.__name__)
 class TestCreatePoolSetInvalidNumberOfVmsPerUser(VirtTest):
     """
@@ -126,7 +126,7 @@ class TestUpdatePoolNumberOfVmsPerUser(VirtTest):
             )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestUpdatePoolWithInvalidNumberOfVmsPerUser(VirtTest):
     """

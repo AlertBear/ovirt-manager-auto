@@ -20,7 +20,7 @@ from fixtures import (
 import config
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm_for_search.__name__,
 )

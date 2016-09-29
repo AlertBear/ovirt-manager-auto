@@ -56,7 +56,7 @@ class CloneVMSanityTestCase1(VirtTest):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     create_file_on_vm.__name__,
@@ -89,7 +89,7 @@ class CloneVMSanityTestCase2(VirtTest):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures(
     add_vm_fixture.__name__,
     basic_teardown_fixture.__name__,

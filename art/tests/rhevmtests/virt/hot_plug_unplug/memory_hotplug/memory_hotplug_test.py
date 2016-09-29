@@ -98,7 +98,7 @@ class TestMemoryHotplug(VirtTest):
             multiplier=5
         )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-14606")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_e_suspend_resume_vm(self):
@@ -127,7 +127,7 @@ class TestMemoryHotplug(VirtTest):
             vm_name=self.vm_name, expected_memory=new_memory
         ), "Memory check on VM failed"
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-14607")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_f_reboot_vm(self):
@@ -153,7 +153,7 @@ class TestMemoryHotplug(VirtTest):
             threshold=0.85
         ), "Memory check on VM failed"
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-14608")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_vm_migration_after_memory_hotplug(self):

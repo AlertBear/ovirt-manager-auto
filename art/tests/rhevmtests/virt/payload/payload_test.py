@@ -23,7 +23,7 @@ import helper
 import config
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -100,7 +100,7 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -135,7 +135,7 @@ class TestCdromPayloadComplexContent(VirtTest):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,

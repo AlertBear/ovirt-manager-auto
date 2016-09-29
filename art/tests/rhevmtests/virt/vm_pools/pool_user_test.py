@@ -138,7 +138,7 @@ class TestTwoUsersTakeVmFromPool(VirtTest):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestNoAvailableVmsForUser(VirtTest):
     """
@@ -162,7 +162,7 @@ class TestNoAvailableVmsForUser(VirtTest):
         helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,

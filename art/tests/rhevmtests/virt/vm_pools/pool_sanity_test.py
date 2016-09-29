@@ -109,7 +109,7 @@ class TestAddVmsToPool(VirtTest):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestAdminStartedVmNotStateless(VirtTest):
     """

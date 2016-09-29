@@ -80,7 +80,7 @@ class VmSnapshots(VirtTest):
                 timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
             )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-12581")
     @pytest.mark.usefixtures(test_snapshot_and_import_export_fixture.__name__)
     def test_basic_vm_snapshots_with_memory(self):

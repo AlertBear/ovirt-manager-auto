@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVirtConsoleSanityClass(VirtTest):
 
     vm_name = vcons_conf.VIRT_CONSOLE_VM_SANITY

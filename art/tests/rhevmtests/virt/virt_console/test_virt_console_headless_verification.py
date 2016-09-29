@@ -12,7 +12,7 @@ from art.unittest_lib import testflow
 import helper
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestVirtConsoleHeadlessInheritanceClass(VirtTest):
 
     @pytest.mark.usefixtures(
@@ -49,7 +49,7 @@ class TestVirtConsoleHeadlessInheritanceClass(VirtTest):
 
 class TestVirtConsoleHeadlessClass(VirtTest):
 
-    @attr(tier=1)
+    @attr(tier=2)
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__
     )

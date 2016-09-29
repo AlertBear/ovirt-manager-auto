@@ -21,7 +21,7 @@ class TestUrandom(common.VirtTest):
     vm_name = config.VM_NAME[0]
     rng_device = config.URANDOM_RNG
 
-    @attr(tier=1)
+    @attr(tier=2)
     @pytest.mark.usefixtures(enable_rng_on_vm.__name__, start_vms.__name__,)
     @polarion("RHEVM-19286")
     def test_urandom(self):
@@ -42,7 +42,7 @@ class TestHwrng(common.VirtTest):
     vm_name = config.VM_NAME[0]
     rng_device = config.HW_RNG
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-6485")
     @pytest.mark.usefixtures(
         update_vm_host.__name__,

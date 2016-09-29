@@ -9,7 +9,6 @@ from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 import fixtures
 
 
-@attr(tier=1)
 class SerialConsoleClass(VirtTest):
 
     __test__ = True
@@ -21,6 +20,7 @@ class SerialConsoleClass(VirtTest):
     }
 
     @polarion('RHEVM-19068')
+    @attr(tier=2)
     def test_1_verify_services_on_nodes(self):
         """
         Verify necessary services running on engine and hosts.
@@ -55,6 +55,7 @@ class SerialConsoleClass(VirtTest):
                 )
             )
 
+    @attr(tier=3)
     @polarion('RHEVM-19069')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(fixtures.setup_env.__name__)
@@ -78,6 +79,7 @@ class SerialConsoleClass(VirtTest):
             ' Actual output is:\n{out}'.format(out=out)
         )
 
+    @attr(tier=3)
     @polarion('RHEVM-19071')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(fixtures.setup_env.__name__)
@@ -108,6 +110,7 @@ class SerialConsoleClass(VirtTest):
             '\n{proxy_key}\nOut:{out}'.format(proxy_key=proxy_key, out=out)
         )
 
+    @attr(tier=2)
     @polarion('RHEVM-19070')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(fixtures.setup_env.__name__)
@@ -139,6 +142,7 @@ class SerialConsoleClass(VirtTest):
             )
         )
 
+    @attr(tier=2)
     @polarion('RHEVM-19073')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(
@@ -162,6 +166,7 @@ class SerialConsoleClass(VirtTest):
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
 
+    @attr(tier=3)
     @polarion('RHEVM-19072')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(
@@ -201,6 +206,7 @@ class SerialConsoleClass(VirtTest):
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
 
+    @attr(tier=3)
     @polarion('RHEVM-19074')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(
@@ -232,6 +238,7 @@ class SerialConsoleClass(VirtTest):
         )
         helper.verify_sc(child)
 
+    @attr(tier=3)
     @polarion('RHEVM19075')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(
