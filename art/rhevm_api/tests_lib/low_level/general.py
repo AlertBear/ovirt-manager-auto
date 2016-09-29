@@ -337,7 +337,7 @@ def get_log_msg(
         action, obj_type, obj_name, with_kwargs, extra_txt
     )
     log_info_txt = info_text if positive else "Negative: %s" % info_text
-    log_error_txt = ("%s %s" % (state, info_text))
+    log_error_txt = "%s %s" % (state, info_text)
     return log_info_txt, log_error_txt
 
 
@@ -389,4 +389,5 @@ def generate_logs(func):
         res = func(**kwargs)
         if not res:
             util.logger.error(log_err)
+        return res
     return inner

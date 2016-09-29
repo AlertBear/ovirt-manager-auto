@@ -31,18 +31,18 @@ MIIMON = "miimon"
 SETUPNETWORKS = "setupnetworks"
 
 
+@ll_general.generate_logs
 def remove_networks_from_host(host_name, networks, nic=None):
     """
     Remove network attachments from host
 
-    :param host_name: Host name
-    :type host_name: str
-    :param networks: Networks to remove
-    :type networks: list
-    :param nic: NIC name
-    :type nic: str
-    :return: True/False
-    :rtype: bool
+    Args:
+        host_name (str): Host name
+        networks (list): Networks to remove
+        nic (str): NIC name
+
+    Returns:
+        bool: True if success, otherwise False
     """
     attachments = ll_host_network.get_networks_attachments(
         host_name, networks, nic
@@ -50,74 +50,53 @@ def remove_networks_from_host(host_name, networks, nic=None):
     if not attachments:
         return False
 
-    logger.info(
-        "Remove networks %s attachments from host %s", networks, host_name
-    )
     for att in attachments:
         if not ll_host_network.NETWORK_ATTACHMENT_API.delete(att, True):
-            logger.error(
-                "Failed to remove networks %s attachments from host %s",
-                networks, host_name
-            )
             return False
     return True
 
 
+@ll_general.generate_logs
 def add_network_to_host(host_name, nic_name=None, **kwargs):
     """
     Attach network to host/host NIC
 
-    :param host_name: Host name
-    :type host_name: str
-    :param nic_name: NIC name
-    :type nic_name: str
-    :param kwargs: Network attachment kwargs
-    :type kwargs: dict
-    :return: True/False
-    :rtype: bool
+    Args:
+        host_name (str): Host name
+        nic_name (str): NIC name
+        kwargs (dict): Network attachment kwargs
+
+    Returns:
+        bool: True if success, otherwise False
     """
-    nic_log = "to host NIC %s" % nic_name if nic_name else ""
-    network = kwargs.get("network")
-    log_info, log_error = ll_general.get_log_msg(
-        action="Attach", obj_type="network", obj_name=network,
-        extra_txt=nic_log, **kwargs
-    )
     network_attachment_obj = ll_host_network.prepare_network_attachment_obj(
         host_name, **kwargs
     )
     attachments_href = ll_host_network.get_attachment_href(host_name, nic_name)
 
-    logger.info(log_info)
     res = ll_host_network.NETWORK_ATTACHMENT_API.create(
         entity=network_attachment_obj,
         positive=True,
         collection=attachments_href,
         coll_elm_name=ll_host_network.NETWORK_ATTACHMENT
     )[1]
-    if not res:
-        logger.error(log_error)
     return res
 
 
+@ll_general.generate_logs
 def update_network_on_host(host_name, nic_name=None, **kwargs):
     """
     Update network on host/host NIC
 
-    :param host_name: Host name
-    :type host_name: str
-    :param nic_name: NIC name
-    :type nic_name: str
-    :param kwargs: Network attachment kwargs
-    :type kwargs: dict
-    :return: True/False
-    :rtype: bool
+    Args:
+        host_name (str): Host name
+        nic_name (str): NIC name
+        kwargs (dict): Network attachment kwargs
+
+    Returns:
+        bool: True if success, otherwise False
     """
     network_name = kwargs.get("network")
-    nic_log = "to host NIC %s" if nic_name else ""
-    log_info, log_error = ll_general.get_log_msg(
-        action="Update", obj_type="network", obj_name=network_name,
-        extra_txt=nic_log, **kwargs
-    )
     orig_attachment_obj = ll_host_network.get_networks_attachments(
         host_name, [network_name], nic_name
     )
@@ -127,15 +106,13 @@ def update_network_on_host(host_name, nic_name=None, **kwargs):
     network_attachment_obj = ll_host_network.prepare_network_attachment_obj(
         host_name, **kwargs
     )
-    logger.info(log_info)
     res = ll_host_network.NETWORK_ATTACHMENT_API.update(
         orig_attachment_obj[0], network_attachment_obj, True
     )[1]
-    if not res:
-        logger.error(log_error)
     return res
 
 
+@ll_general.generate_logs
 def setup_networks(host_name, **kwargs):
     """
     Sends setupNetwork action request to VDS host
@@ -280,7 +257,6 @@ def setup_networks(host_name, **kwargs):
         )
         synchronized_network_attachments.set_network_attachment(nets_to_sync)
 
-    logger.info("Sending SetupNetworks to %s with %s", host_name, kwargs)
     res = bool(
         ll_hosts.HOST_API.syncAction(
             entity=host, action=SETUPNETWORKS, positive=True,
@@ -294,24 +270,23 @@ def setup_networks(host_name, **kwargs):
         )
     )
 
-    if not res:
-        logger.error("Failed to send SetupNetworks to %s", host_name)
     if persist and res:
             res = ll_hosts.commit_network_config(host=host_name)
 
     return res
 
 
+@ll_general.generate_logs
 def clean_host_interfaces(host_name):
     """
     Remove all networks beside management network from host
 
-    :param host_name: Host name
-    :type host_name: str
-    :return: True/False
-    :rtype: bool
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        bool: True if success, otherwise False
     """
-    logger.info("Clean %s interfaces", host_name)
     networks = []
     bonds = []
     labels = []
@@ -358,21 +333,21 @@ def clean_host_interfaces(host_name):
         }
         res = setup_networks(host_name, **kwargs)
         if not res:
-            logger.error("Failed to clean %s interfaces", host_name)
             return False
     return True
 
 
+@ll_general.generate_logs
 def get_attached_networks_names_from_host_nic(host_name, nic):
     """
     Get attached networks names from host NIC
 
-    :param host_name: Host name
-    :type host_name: str
-    :param nic: NIC name
-    :type nic: str
-    :return: Networks names from host NIC
-    :rtype: list
+    Args:
+        host_name (str): Host name
+        nic (str): NIC name
+
+    Returns:
+        list: Networks names from host NIC
     """
     attachments = ll_host_network.get_host_nic_network_attachments(
         host_name, nic
@@ -384,14 +359,16 @@ def get_attached_networks_names_from_host_nic(host_name, nic):
     ]
 
 
+@ll_general.generate_logs
 def get_host_unmanaged_networks_info(host_name):
     """
-    Get unmanaged host networks info (name and host_nic)
+    Get un-managed host networks info (name and host_nic)
 
-    :param host_name: Host name
-    :type host_name: str
-    :return: unmanaged networks info
-    :rtype: dict
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        dict: un-managed networks info
     """
     res = dict()
     unmanaged_networks = ll_host_network.get_host_unmanaged_objects(host_name)
@@ -402,16 +379,17 @@ def get_host_unmanaged_networks_info(host_name):
     return res
 
 
+@ll_general.generate_logs
 def get_unsync_network_attachments(host_name, networks=None):
     """
-    Get unsynced network attachment
+    Get un-synced network attachment
 
-    :param host_name: Host name
-    :type host_name: str
-    :param networks: Networks names
-    :type networks: list
-    :return: Unsynced attachments list
-    :rtype: list
+    Args:
+        host_name (str): Host name
+        networks (list): Networks names
+
+    Returns:
+        list: Un-synced attachments list
     """
     if networks:
         attachments = ll_host_network.get_networks_attachments(
@@ -425,16 +403,17 @@ def get_unsync_network_attachments(host_name, networks=None):
     ]
 
 
+@ll_general.generate_logs
 def get_networks_unsync_reason(host_name, networks=None):
     """
-    Get unsynced network reason
+    Get un-synced network reason
 
-    :param host_name: Host name
-    :type host_name: str
-    :param networks: Networks names
-    :type networks: list
-    :return: Unsynced reasons for each network
-    :rtype: dict
+    Args:
+        host_name (str): Host name
+        networks (list): Networks names
+
+    Returns:
+        dict: Un-synced reasons for each network
     """
     res = dict()
     report_name_dict = dict()
@@ -452,6 +431,7 @@ def get_networks_unsync_reason(host_name, networks=None):
     return res
 
 
+@ll_general.generate_logs
 def check_network_on_nic(network, host, nic):
     """
     Checks if network resides on Host NIC via NIC attachments
@@ -464,11 +444,9 @@ def check_network_on_nic(network, host, nic):
     Returns:
         bool: True if network resides on Host NIC, otherwise False
     """
-    logger.info("Check if network %s is resides on NIC %s", network, nic)
     networks = get_attached_networks_names_from_host_nic(
         host_name=host, nic=nic
     )
     if network not in networks:
-        logger.error("Network %s doesn't exist on NIC %s", network, nic)
         return False
     return True
