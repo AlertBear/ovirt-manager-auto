@@ -107,6 +107,10 @@ def create_clusters_and_networks(request):
             ll_clusters.removeCluster(positive=True, cluster=cl)
     request.addfinalizer(fin)
 
+    assert hl_networks.create_and_attach_networks(
+        data_center=dc_name2, network_dict=label_conf.local_dict
+    )
+
     for index, cluster in enumerate(comp_cl_names):
         testflow.setup("Create cluster %s", cluster)
         assert ll_clusters.addCluster(
@@ -118,8 +122,7 @@ def create_clusters_and_networks(request):
             label_conf.local_dict, dc_name2, cluster
         )
         assert hl_networks.create_and_attach_networks(
-            data_center=dc_name2, cluster=cluster,
-            network_dict=label_conf.local_dict
+            cluster=cluster, network_dict=label_conf.local_dict
         )
 
 

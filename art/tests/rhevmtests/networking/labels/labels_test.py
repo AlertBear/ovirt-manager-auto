@@ -910,7 +910,6 @@ class TestNetLabels06(NetworkTest):
     create_datacenter.__name__,
     create_clusters_and_networks.__name__,
     move_host_to_another_cluster.__name__,
-    add_label_nic_and_network.__name__
 )
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestNetLabels07(NetworkTest):
@@ -922,35 +921,16 @@ class TestNetLabels07(NetworkTest):
     __test__ = True
 
     labels = label_conf.LABEL_NAME[7][:4]
-    dc_name2 = "new_DC_3_6_case07"
+    dc_name2 = "Label_DC_%s_case07" % conf.COMP_VERSION_4_0[-2].replace(
+        ".", "_"
+    )
     comp_cl_names = [
-        "Cluster_%s_case07" % conf.COMP_VERSION_4_0[i]
+        "Label_cluster_%s_case07" % conf.COMP_VERSION_4_0[i]
         for i in range(len(conf.COMP_VERSION_4_0) - 1)
     ]
     nets = label_conf.NETS[7][:4]
     vlan_id_list = label_conf.VLAN_IDS[9:11]
     sleep_timeout = 30
-    label_dict_1 = {
-        "label": labels[0],
-        "host": 1,
-        "nic": -4
-    }
-    label_dict_2 = {
-        "label": labels[1],
-        "host": 1,
-        "nic": -3
-    }
-    label_dict_3 = {
-        "label": labels[2],
-        "host": 1,
-        "nic": -2
-    }
-    label_dict_4 = {
-        "label": labels[3],
-        "host": 1,
-        "nic": -1
-    }
-    labels_list = [label_dict_1, label_dict_2, label_dict_3, label_dict_4]
 
     @polarion("RHEVM3-4124")
     def test_move_host_supported_cl(self):
@@ -972,6 +952,17 @@ class TestNetLabels07(NetworkTest):
             time.sleep(self.sleep_timeout)
             dummies = conf.HOST_1_NICS[-4:]
             for lb, net, dummy in zip(self.labels, self.nets, dummies):
+                testflow.step(
+                    "Add label %s to host %s NIC %s", lb, conf.HOST_1_NAME,
+                    dummy
+                )
+                host_label_dict = {
+                    lb: {
+                        "host": conf.HOST_1_NAME,
+                        "nic": dummy
+                    }
+                }
+                assert ll_networks.add_label(**host_label_dict)
                 label_dict = {
                     lb: {
                         "networks": [net]
@@ -1000,6 +991,8 @@ class TestNetLabels07(NetworkTest):
                     host_name=conf.HOST_1_NAME, **remove_label
                 )
                 assert sample.waitForFuncStatus(result=False)
+                testflow.step("Remove label %s from network %s", lb, net)
+                assert ll_networks.remove_label(labels=[lb], networks=[net])
 
 
 @attr(tier=2)
