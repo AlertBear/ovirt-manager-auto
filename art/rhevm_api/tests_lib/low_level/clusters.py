@@ -124,20 +124,18 @@ def _prepareClusterObject(**kwargs):
         scheduling_policy_id = get_scheduling_policy_id(
             scheduling_policy_name=scheduling_policy
         )
-        properties = None
-        if 'properties' in kwargs:
-            properties = getDS('Properties')()
-            for name, value in kwargs.get('properties').iteritems():
-                properties.add_property(
-                    getDS('Property')(name=name, value=value)
-                )
-
-        scheduling_policy = SchedulingPolicy(
-            id=scheduling_policy_id,
-            properties=properties
-        )
+        scheduling_policy = SchedulingPolicy(id=scheduling_policy_id)
 
         cl.set_scheduling_policy(scheduling_policy)
+
+    custom_sch_policy_properties = kwargs.pop('properties', None)
+    if custom_sch_policy_properties:
+        properties = getDS('Properties')()
+        for name, value in custom_sch_policy_properties.iteritems():
+            properties.add_property(
+                getDS('Property')(name=name, value=value)
+            )
+        cl.set_custom_scheduling_policy_properties(properties)
 
     ballooning_enabled = kwargs.pop('ballooning_enabled', None)
     if ballooning_enabled is not None:
