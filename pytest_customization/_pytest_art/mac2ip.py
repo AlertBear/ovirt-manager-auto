@@ -61,9 +61,12 @@ class Mac2IpConvertor(object):
         def wrapper(mac=None, subnetClass=None, vlan=None):
             for _ in range(my_self.attempts):  # noqa
                 try:
-                    return my_self.leases.get_ip(mac)  # noqa
-                except KeyError:
-                    time.sleep(my_self.wait_interval)  # noqa
+                    ip = my_self.leases.get_ip(mac)  # noqa
+                    if ip:
+                        return ip
+                except Exception as e:
+                    logger.warn("Caught exception: %s", e)
+                time.sleep(my_self.wait_interval)  # noqa
             else:
                 raise CanNotFindIP(mac)
 

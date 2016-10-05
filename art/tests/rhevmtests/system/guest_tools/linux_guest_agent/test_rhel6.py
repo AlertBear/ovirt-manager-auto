@@ -38,19 +38,19 @@ class RHEL6GATest(common.GABaseTestCase):
         cls = request.cls
 
         def fin():
-            assert vms.stop_vms_safely([cls.disk_name])
-            assert vms.undo_snapshot_preview(True, cls.disk_name)
-            vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
+            assert vms.stop_vms_safely([cls.vm_name])
+            assert vms.undo_snapshot_preview(True, cls.vm_name)
+            vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
         super(RHEL6GATest, cls).ga_base_setup()
-        assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
+        assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
         vms.wait_for_vm_snapshots(
-            cls.disk_name,
+            cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
-            cls.disk_name
+            cls.vm_name
         )
-        assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
+        assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
 
@@ -58,7 +58,7 @@ class RHEL6GATest(common.GABaseTestCase):
 class RHEL664bGATest(RHEL6GATest):
     ''' test installation of guest agent on rhel 6 64b '''
     __test__ = True
-    disk_name = DISKx64_NAME
+    vm_name = disk_name = DISKx64_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -122,7 +122,7 @@ class RHEL664bGATest(RHEL6GATest):
 class RHEL632bGATest(RHEL6GATest):
     ''' test installation of guest agent on rhel 6 32b '''
     __test__ = True
-    disk_name = DISKx86_NAME
+    vm_name = disk_name = DISKx86_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -186,7 +186,7 @@ class RHEL632bGATest(RHEL6GATest):
 class UpgradeRHEL664bGATest(RHEL6GATest):
     ''' test of upgrade guest agent on rhel 6 64b '''
     __test__ = True
-    disk_name = DISKx64_NAME
+    vm_name = disk_name = DISKx64_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -210,7 +210,7 @@ class UpgradeRHEL664bGATest(RHEL6GATest):
 class UpgradeRHEL632bGATest(RHEL6GATest):
     ''' test of upgrade guest agent on rhel 6 32b '''
     __test__ = True
-    disk_name = DISKx86_NAME
+    vm_name = disk_name = DISKx86_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)

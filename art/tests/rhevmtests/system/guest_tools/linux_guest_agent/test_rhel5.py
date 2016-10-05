@@ -42,19 +42,19 @@ class RHEL5GATest(common.GABaseTestCase):
         cls = request.cls
 
         def fin():
-            assert vms.stop_vms_safely([cls.disk_name])
-            assert vms.undo_snapshot_preview(True, cls.disk_name)
-            vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
+            assert vms.stop_vms_safely([cls.vm_name])
+            assert vms.undo_snapshot_preview(True, cls.vm_name)
+            vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
         super(RHEL5GATest, cls).ga_base_setup()
-        assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
+        assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
         vms.wait_for_vm_snapshots(
-            cls.disk_name,
+            cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
-            cls.disk_name
+            cls.vm_name
         )
-        assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
+        assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
 
@@ -64,7 +64,7 @@ class RHEL532bGATest(RHEL5GATest):
     Cover basic testing of GA of rhel 5 32b
     """
     __test__ = True
-    disk_name = DISKx86_NAME
+    vm_name = disk_name = DISKx86_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -115,7 +115,7 @@ class RHEL564bGATest(RHEL5GATest):
     Cover basic testing of GA of rhel 5 64b
     """
     __test__ = True
-    disk_name = DISKx64_NAME
+    vm_name = disk_name = DISKx64_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -141,22 +141,22 @@ class RHEL564bGATest(RHEL5GATest):
 
     @polarion("RHEVM3-7431")
     def test_post_install(self):
-        """ RHEL6_64b rhevm-guest-agent post-install """
+        """ RHEL5_64b rhevm-guest-agent post-install """
         self.post_install([self.cmd_chkconf])
 
     @polarion("RHEVM3-7432")
     def test_service_test(self):
-        """ RHEL6_64b rhevm-guest-agent start-stop-restart-status """
+        """ RHEL5_64b rhevm-guest-agent start-stop-restart-status """
         self.services(config.AGENT_SERVICE_NAME)
 
     @polarion("RHEVM3-7433")
     def test_agent_data(self):
-        """ RHEL6_64b rhevm-guest-agent data """
+        """ RHEL5_64b rhevm-guest-agent data """
         self.agent_data(self.application_list, self.list_app_cmd)
 
     @polarion("RHEVM3-7435")
     def test_function_continuity(self):
-        """ RHEL6_64b, rhevm-guest-agent function continuity """
+        """ RHEL5_64b, rhevm-guest-agent function continuity """
         self.function_continuity(self.application_list, self.list_app_cmd)
 
 
@@ -166,7 +166,7 @@ class UpgradeRHEL564bGATest(RHEL5GATest):
     Cover basic testing of upgrade GA of rhel 5 64b
     """
     __test__ = True
-    disk_name = DISKx64_NAME
+    vm_name = disk_name = DISKx64_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -192,7 +192,7 @@ class UpgradeRHEL532bGATest(RHEL5GATest):
     Cover basic testing of upgrade GA of rhel 5 32b
     """
     __test__ = True
-    disk_name = DISKx86_NAME
+    vm_name = disk_name = DISKx86_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)

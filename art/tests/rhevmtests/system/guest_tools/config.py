@@ -9,8 +9,6 @@ from rhevmtests.system.config import *  # flake8: noqa
 
 log = logging.getLogger('setup')
 
-GLANCE_NAME = 'rhevm-qe-infra-glance'
-
 WIN7_DISK_64b = 'Windows7_64b_Disk1'
 WIN7_DISK_32b = 'Windows7_32b_Disk1'
 WIN8_DISK_64b = 'windows8_x64_Disk1'

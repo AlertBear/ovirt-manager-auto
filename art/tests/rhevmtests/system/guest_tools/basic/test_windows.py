@@ -12,7 +12,7 @@ from unittest2 import SkipTest
 from art.rhevm_api.tests_lib.low_level import vms, disks, storagedomains
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler.tools import bz
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 from art.unittest_lib.windows import WindowsGuest
 from functools import wraps
 from rhevmtests.system.guest_tools import config
@@ -167,6 +167,7 @@ class Windows(TestCase):
 
     def test_a00_install_guest_tools(self):
         """ Install all supported apps of Windows version """
+        testflow.step("Installing guest tools")
         assert self.machine.install_guest_tools(), (
             'Installation of guest tools failed.'
         )
@@ -174,6 +175,7 @@ class Windows(TestCase):
     def _checkProduct(self, product):
         if not self.products:
             self.products = self.machine.get_all_products()
+        testflow.step("Check if product %s is installed", product)
         assert product in self.products, '%s was not installed' % product
         logger.info('%s is installed', product)
 
@@ -235,9 +237,11 @@ class Windows(TestCase):
     def _checkService(self, service):
         if not self.services:
             self.services = self.machine.get_all_services()
+        testflow.step("Check if service %s is running", service)
         assert self.services[service]['State'] == 'Running', (
             '%s is not running' % service
         )
+        testflow.step("Check if service %s is enabled", service)
         assert self.services[service]['StartMode'] == 'Auto', (
             '%s is not enabled' % service
         )
@@ -274,6 +278,7 @@ class Windows(TestCase):
         vm = VM_API.find(self.diskName)
         apps = vms.get_vm_applications(vm.get_name())
         logger.info("Windows '%s' apps are: %s", self.diskName, apps)
+        testflow.step("Check if guest agent is reporting applications")
         assert len(apps) > 0, "Applications are empty"
 
     def test_guest_os(self):
@@ -285,13 +290,16 @@ class Windows(TestCase):
         logger.info("Architecture: '%s'", guest_os.get_architecture())
         logger.info("Codename: '%s'", guest_os.get_codename())
         logger.info("Family: '%s'", guest_os.get_family())
+        testflow.step("Check if guest agent reports correct architecture")
         assert self.architecture == guest_os.get_architecture(), (
             "Windows has wrong arch '%s', should be '%s'" %
             (guest_os.get_architecture(), self.architecture)
         )
+        testflow.step("Check if guest agent reports correct OS family")
         assert GUEST_FAMILY == guest_os.get_family(), (
             "Guest os family is windows: '%s'" % guest_os.get_family()
         )
+        testflow.step("Check if guest agent reports correct OS codename")
         assert self.codename == guest_os.get_codename(), (
             "Guest codename '%s' should be '%s'" %
             (guest_os.get_codename(), self.codename)
@@ -308,7 +316,9 @@ class Windows(TestCase):
         )
         # TODO: obtain this info for windows machine via pywin and check
         # for correct versions
+        testflow.step("Check if guest agent reports timezone name")
         assert len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
+        testflow.step("Check if guest agent reports UTC offset")
         assert len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
 
     def _checkDeviceManager(self, deviceName):
@@ -374,6 +384,7 @@ class Windows(TestCase):
         assert self.machine.wait_for_machine_ready(), (
             'Windows machine is not ready, timeout expired.'
         )
+        testflow.step("Uninstalling guest tools")
         assert self.machine.uninstall_guest_tools(), (
             "GT failed to uninstall"
         )

@@ -19,12 +19,14 @@ DISK_NAME = 'ubuntu-12.04_Disk1'
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_vms(request):
+    vm_name = DISK_NAME
+
     def fin():
-        assert vms.removeVm(True, DISK_NAME, stopVM='true')
+        assert vms.removeVm(True, vm_name, stopVM='true')
     request.addfinalizer(fin)
 
     common.prepare_vms([DISK_NAME])
-    assert vms.startVm(True, DISK_NAME, wait_for_status=config.VM_UP)
+    assert vms.startVm(True, vm_name, wait_for_status=config.VM_UP)
     machine = config.TEST_IMAGES[DISK_NAME]['machine']
 
     executor = machine.executor()
@@ -55,7 +57,7 @@ def setup_vms(request):
 class Ubuntu1204TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
     __test__ = True
-    disk_name = DISK_NAME
+    vm_name = disk_name = DISK_NAME
     list_app = ['dpkg --list']
     application_list = [
         'ovirt-guest-agent', 'linux-image', 'xserver-xorg-video-qxl'
@@ -65,7 +67,7 @@ class Ubuntu1204TestCase(common.GABaseTestCase):
     @pytest.fixture(scope="class", autouse=True)
     def ubuntu_setup(cls, request):
         def fin():
-            assert vms.stop_vms_safely([cls.disk_name])
+            assert vms.stop_vms_safely([cls.vm_name])
         request.addfinalizer(fin)
         super(Ubuntu1204TestCase, cls).ga_base_setup()
 

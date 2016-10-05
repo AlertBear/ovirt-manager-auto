@@ -7,6 +7,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, hosts, disks
 from art.rhevm_api.utils import test_utils
+from art.unittest_lib import testflow
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 
@@ -20,7 +21,8 @@ logger = logging.getLogger(__name__)
 def import_image(diskName, async=True):
     glance_image = storagedomains.GlanceImage(
         image_name=diskName,
-        glance_repository_name=config.GLANCE_NAME,
+        glance_repository_name=config.GLANCE_DOMAIN,
+        timeout=1800
     )
     glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
@@ -57,8 +59,8 @@ def prepare_vms(vm_disks):
         config.TEST_IMAGES[image]['id'] = VM_API.find(image).id
 
     for image in vm_disks:
-        if config.TEST_IMAGES[image]['image']._is_import_success(5400):
-            assert disks.attachDisk(True, image, image)
+        if config.TEST_IMAGES[image]['image']._is_import_success(3600):
+            disks.attachDisk(True, image, image)
             assert vms.startVm(True, image, wait_for_status=config.VM_UP)
             mac = vms.getVmMacAddress(
                 True, vm=image, nic=config.NIC_NAME
@@ -91,7 +93,9 @@ class GABaseTestCase(TestCase):
         cls.machine = image['machine']
 
     def upgrade_guest_agent(self, package):
+        testflow.step("Installing package %s", package)
         self.install_guest_agent(package)
+        testflow.step("Update repo to newer version")
         vms.add_repo_to_vm(
             vm_host=self.machine,
             repo_name=config.GA_REPO_NAME,
@@ -99,15 +103,19 @@ class GABaseTestCase(TestCase):
                 config.PRODUCT_BUILD, self.disk_name[2:5]
             ),
         )
+        testflow.step("Updating package %s", package)
         assert self.machine.package_manager.update(
             [package]
         ), "Failed to update package '%s'" % package
 
     def install_guest_agent(self, package):
+        testflow.step("Installing package %s", package)
         assert self.machine.package_manager.install(
             package
         ), "Failed to install '%s' on machine '%s'" % (package, self.machine)
+        testflow.step("Starting %s service", config.AGENT_SERVICE_NAME)
         self.machine.service(config.AGENT_SERVICE_NAME).start()
+        vms.waitForIP(self.vm_name)
 
     def post_install(self, commands=None):
         """
@@ -118,14 +126,18 @@ class GABaseTestCase(TestCase):
         :type command: list
         """
         executor = self.machine.executor()
+        testflow.step("Check that there is ovirt-guest-agent.conf directory")
         rc, _, err = executor.run_cmd(
             ['ls', '-l', '/etc/ovirt-guest-agent.conf']
         )
         assert not rc, "Failed to check guest agent config: %s" % err
+        testflow.step("Check that ovirtagent user and group exists")
         rc, _, err = executor.run_cmd(
             ['grep', 'ovirtagent', '/etc/{passwd,group}']
         )
         assert not rc, 'User/Group ovirtagent was no found: %s' % err
+        testflow.step(
+            "Check ownership of /dev/virtio-ports/com.redhat.rhevm.vdsm file")
         rc, out, err = executor.run_cmd([
             'stat',
             '--format=%U:%G',
@@ -140,6 +152,7 @@ class GABaseTestCase(TestCase):
         )
         if commands:
             for command in commands:
+                testflow.step("Running command: %s", command)
                 rc, _, err = executor.run_cmd(command)
                 assert not rc, (
                     "Failed to run command '%s': %s" % (command, err)
@@ -147,6 +160,7 @@ class GABaseTestCase(TestCase):
 
     def uninstall(self, package):
         """ uninstall guest agent """
+        testflow.step("Removing package %s", package)
         assert self.machine.package_manager.remove(
             package
         ), "Failed to remove '%s' on machine '%s'" % (package, self.machine)
@@ -155,8 +169,11 @@ class GABaseTestCase(TestCase):
         """ rhevm-guest-agent start-stop-restart-status """
         ga_service = self.machine.service(service_name)
         ga_service.stop()
+        testflow.step("Starting service %s", service_name)
         assert ga_service.start()
+        testflow.step("Stopping service %s", service_name)
         assert ga_service.stop()
+        testflow.step("Restarting service %s", service_name)
         assert ga_service.restart()
 
     def _check_fqdn(self):
@@ -166,12 +183,13 @@ class GABaseTestCase(TestCase):
                     self.stats, self.vm_id, 'FQDN'
                 )
             ),
-            self.disk_name,
+            self.vm_name,
         )
         rc, fqdn_real, err = self.machine.executor().run_cmd([
             'hostname', '--fqdn'
         ])
 
+        testflow.step("Check that FQDN is the same on host and inside the VM")
         if (not fqdn_agent.startswith("localhost") and
                 not fqdn_real.startswith("localhost")):
             assert fqdn_real.strip() == fqdn_agent, (
@@ -187,7 +205,7 @@ class GABaseTestCase(TestCase):
                 'netIfaces',
             )
         )
-        iface_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
+        iface_agent = self._run_cmd_on_hosts_vm(cmd, self.vm_name)
         logger.info(iface_agent)
         assert iface_agent is not None
         return ast.literal_eval(iface_agent)
@@ -197,6 +215,9 @@ class GABaseTestCase(TestCase):
             'ip', 'addr', 'show'
         ])
         iface_real = iface_real.strip()
+        testflow.step(
+            "Check that network interfaces on the host correspond "
+            "to the ones inside the VM")
         for it in self.get_ifaces():
             assert it['name'] in iface_real
             assert it['hw'] in iface_real
@@ -209,6 +230,7 @@ class GABaseTestCase(TestCase):
         df_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
         df_dict = ast.literal_eval(df_agent)
 
+        testflow.step("Check that disk usage is correct")
         for fs in df_dict:
             rc, df_real, err = self.machine.executor().run_cmd([
                 'df', '-B', '1', fs['path']]
@@ -219,7 +241,7 @@ class GABaseTestCase(TestCase):
     def _check_applist(self, application_list, list_app_cmd):
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
         cmd = shlex.split(cmd % (self.stats, self.vm_id, 'appsList'))
-        app_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
+        app_agent = self._run_cmd_on_hosts_vm(cmd, self.vm_name)
         app_list = ast.literal_eval(app_agent)
         for app in app_list:
             while app and app[0] not in digits:
@@ -236,6 +258,7 @@ class GABaseTestCase(TestCase):
         app_real = app_real.strip()
         app_real_list = app_real.split('\n')
 
+        testflow.step("Check that all apps are reported correctly")
         for app_real in app_real_list:
             if app_real.endswith(('i686', 'x86_64', 'noarch')):
                 app_real = app_real[:app_real.rfind('.')]
@@ -246,10 +269,11 @@ class GABaseTestCase(TestCase):
               '-f2', '|', 'cut', '-d', ' ', '-f', '1']
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
         cmd = shlex.split(cmd % (self.stats, self.vm_id, 'guestIPs'))
-        ip_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
+        ip_agent = self._run_cmd_on_hosts_vm(cmd, self.vm_name)
         ip_list = ip_agent.split(' ')
         ip_check_ran = False
 
+        testflow.step("Check that IP reported is correct")
         for iface in self.get_ifaces():
             ip.insert(1, iface['name'])
             rc, ip_real, err = self.machine.executor().run_cmd(ip)
@@ -274,8 +298,11 @@ class GABaseTestCase(TestCase):
 
     def function_continuity(self, application_list, list_app_cmd):
         """ rhevm-guest-agent function continuity """
+        testflow.step("Check that agent is running")
         assert self.is_agent_running()
-        assert vms.migrateVm(True, self.disk_name)
+        testflow.step("Migrating the VM")
+        assert vms.migrateVm(True, self.vm_name)
+        testflow.step("Check that agent is running")
         assert self.is_agent_running()
         self.agent_data(application_list, list_app_cmd)
 

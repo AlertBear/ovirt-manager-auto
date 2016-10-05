@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     storagedomains as ll_storagedomains,
 )
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 from rhevmtests.system.wgt import config
 
 logger = logging.getLogger(__name__)
@@ -103,9 +103,11 @@ class Windows(TestCase):
     def check_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         vm = ll_vms.get_vm(self.vm_name)
+        testflow.step("Check if guest agent is reporting IP address")
         assert len(
             LookUpVMIpByName('', '').get_ip(self.vm_name)
         ) > 0, "No ip found in guest info"
+        testflow.step("Check if guest agent is reporting FQDN")
         assert vm.get_fqdn() and len(vm.get_fqdn()) > 0
 
     def check_guest_applications(self):
@@ -113,6 +115,7 @@ class Windows(TestCase):
         vm = ll_vms.get_vm(self.vm_name)
         apps = ll_vms.get_vm_applications(vm.get_name())
         logger.info("Windows '%s' apps are: %s", self.disk_name, apps)
+        testflow.step("Check if guest agent is reporting applications")
         assert len(apps) > 0, "Applications are empty"
 
     def check_guest_os(self):
@@ -127,13 +130,16 @@ class Windows(TestCase):
         logger.info("Architecture: '%s'", guest_os.get_architecture())
         logger.info("Codename: '%s'", guest_os.get_codename())
         logger.info("Family: '%s'", guest_os.get_family())
+        testflow.step("Check if guest agent reports correct architecture")
         assert self.architecture == guest_os.get_architecture(), (
             "Windows has wrong arch '%s', should be '%s'" %
             (guest_os.get_architecture(), self.architecture)
         )
+        testflow.step("Check if guest agent reports correct OS family")
         assert GUEST_FAMILY == guest_os.get_family(), (
             "Guest os family is windows: '%s'" % guest_os.get_family()
         )
+        testflow.step("Check if guest agent reports correct OS codename")
         assert self.codename == guest_os.get_codename(), (
             "Guest codename '%s' should be '%s'" %
             (guest_os.get_codename(), self.codename)
@@ -151,7 +157,9 @@ class Windows(TestCase):
             guest_timezone.get_name(),
             guest_timezone.get_utc_offset()
         )
+        testflow.step("Check if guest agent reports timezone name")
         assert len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
+        testflow.step("Check if guest agent reports UTC offset")
         assert len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
 
 # **IMPORTANT**

@@ -5,7 +5,7 @@ import shlex
 import pytest
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import attr, testflow
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
@@ -42,19 +42,19 @@ class RHEL7GATest(common.GABaseTestCase):
         cls = request.cls
 
         def fin():
-            assert vms.stop_vms_safely([cls.disk_name])
-            assert vms.undo_snapshot_preview(True, cls.disk_name)
-            vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
+            assert vms.stop_vms_safely([cls.vm_name])
+            assert vms.undo_snapshot_preview(True, cls.vm_name)
+            vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
         super(RHEL7GATest, cls).ga_base_setup()
-        assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
+        assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
         vms.wait_for_vm_snapshots(
-            cls.disk_name,
+            cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
-            cls.disk_name
+            cls.vm_name
         )
-        assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
+        assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
     def _check_guestIP(self):
@@ -70,6 +70,7 @@ class RHEL7GATest(common.GABaseTestCase):
         )
         ip_list = self._run_cmd_on_hosts_vm(cmd, self.disk_name).split(' ')
 
+        testflow.step("Check that IP reported is correct")
         for iface in self.get_ifaces():
             ip.insert(1, iface['name'])
             rc, ip_real, err = self.machine.executor().run_cmd(ip)
@@ -85,7 +86,7 @@ class RHEL764bGATest(RHEL7GATest):
     Cover basic testing of GA of rhel 7 64b
     """
     __test__ = True
-    disk_name = DISK_NAME
+    vm_name = disk_name = DISK_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -151,7 +152,7 @@ class UpgradeRHEL764bGATest(RHEL7GATest):
     Cover basic testing upgrade of GA of rhel 7 64b
     """
     __test__ = True
-    disk_name = DISK_NAME
+    vm_name = disk_name = DISK_NAME
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
