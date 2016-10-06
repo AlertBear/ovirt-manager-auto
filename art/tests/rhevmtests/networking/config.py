@@ -75,12 +75,6 @@ GATEWAY = '3.3.3.254'
 TRAFFIC_TIMEOUT = 120
 VM_IP_LIST = []
 
-# Topologies parameters
-# Due to the switch configuration with specific IP
-# https://engineering.redhat.com/rt/Ticket/Display.html?id=336074
-ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
-DST_HOST_IP = "10.35.147.62"
-
 # PPC
 VM_DISPLAY_TYPE = ENUMS[
     "display_type_vnc"

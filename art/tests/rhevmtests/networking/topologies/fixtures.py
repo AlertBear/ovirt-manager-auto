@@ -7,137 +7,57 @@ Fixtures for topologies test
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as topologies_conf
-import helper
 import rhevmtests.networking.config as conf
+from art.unittest_lib import testflow
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
-@pytest.fixture(scope="module")
-def topologies_prepare_setup(request):
-    """
-    prepare setup
-    """
-    topologies = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert network_helper.remove_networks_from_setup(
-            hosts=topologies.host_0_name
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=topologies_conf.NETS_DICT, dc=topologies.dc_0,
-        cluster=topologies.cluster_0
-    )
-
-
-@pytest.fixture(scope="module")
-def start_vm_fixture(request, topologies_prepare_setup):
+@pytest.fixture(scope="class")
+def start_vm(request):
     """
     Start VM
     """
     topologies = NetworkFixtures()
+    vm = topologies.vm_0
 
     def fin():
         """
         Stop VM
         """
-        assert ll_vms.stopVm(positive=True, vm=topologies.vm_0)
+        testflow.teardown("Stop VM %s", vm)
+        assert ll_vms.stopVm(positive=True, vm=vm)
     request.addfinalizer(fin)
 
+    testflow.setup("Start VM %s", vm)
     assert network_helper.run_vm_once_specific_host(
-        vm=topologies.vm_0, host=topologies.host_0_name,
-        wait_for_up_status=True
+        vm=vm, host=topologies.host_0_name, wait_for_up_status=True
     )
 
 
 @pytest.fixture(scope="class")
-def attach_network_and_update_vnic(request, start_vm_fixture):
+def update_vnic_network(request):
     """
-    Attach network to host, update vNIC on VM
-    """
-    topologies = NetworkFixtures()
-    net = request.node.cls.net
-    bond = request.node.cls.bond
-    mode = request.node.cls.mode
-
-    def fin3():
-        """
-        Clean host interfaces
-        """
-        hl_host_network.clean_host_interfaces(host_name=topologies.host_0_name)
-    request.addfinalizer(fin3)
-
-    def fin2():
-        """
-        Update VM vNIC to default one
-        """
-        assert helper.update_vnic_driver(
-            driver=conf.NIC_TYPE_VIRTIO, vnic_profile=conf.MGMT_BRIDGE
-        )
-    request.addfinalizer(fin2)
-
-    sn_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": topologies.host_0_nics[1] if not bond else bond,
-                "slaves": topologies.host_0_nics[2:4] if bond else None,
-                "mode": mode
-            }
-        }
-    }
-    assert hl_host_network.setup_networks(
-        host_name=topologies.host_0_name, **sn_dict
-    )
-    assert helper.update_vnic_driver(
-        driver=conf.INTERFACE_VIRTIO, vnic_profile=net
-    )
-
-
-@pytest.fixture(scope="class")
-def attach_bond(request, topologies_prepare_setup):
-    """
-    Attach BOND to host
+    Update vNIC network on VM
     """
     topologies = NetworkFixtures()
     net = request.node.cls.net
-    bond = request.node.cls.bond
-    mode = request.node.cls.mode
+    vm = topologies.vm_0
+    nic = conf.VM_NIC_0
+    mgmt = conf.MGMT_BRIDGE
 
     def fin():
         """
-        Clean host interfaces
+        Update vNIC to management network
         """
-        assert hl_host_network.clean_host_interfaces(
-            host_name=topologies.host_0_name
+        testflow.teardown("Update vNIC %s on VM %s to %s", nic, vm, mgmt)
+        assert ll_vms.updateNic(
+            positive=True, vm=vm, nic=nic, vnic_profile=mgmt, network=mgmt
         )
     request.addfinalizer(fin)
 
-    sn_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": bond,
-                "slaves": topologies.host_0_nics[2:4],
-                "mode": mode,
-                "ip": {
-                    "1": {
-                        "address": conf.ADDR_AND_MASK[0],
-                        "netmask": conf.ADDR_AND_MASK[1],
-                        "boot_protocol": "static"
-                    }
-                }
-            }
-        }
-    }
-    assert hl_host_network.setup_networks(
-        host_name=topologies.host_0_name, **sn_dict
+    testflow.setup("Update vNIC %s on VM %s to %s", nic, vm, net)
+    assert ll_vms.updateNic(
+        positive=True, vm=vm, nic=nic, vnic_profile=net, network=net
     )

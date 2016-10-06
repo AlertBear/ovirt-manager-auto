@@ -8,38 +8,13 @@ Helper for topologies job
 import logging
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as topologies_conf
 import rhevmtests.networking.helper as network_helper
 from rhevmtests.networking import config
 
 logger = logging.getLogger("topologies_helper")
 
 TIMEOUT = 300
-
-
-def update_vnic_driver(driver, vnic_profile):
-    """
-    Update vNIC driver for VM
-
-    :param driver: driver to update the vNIC (virtio, e1000, rtl8139)
-    :type driver: str
-    :param vnic_profile: vnic_profile name
-    :type vnic_profile: str
-    :return: True in case of success/False otherwise
-    :rtype: bool
-    """
-    if not ll_vms.updateNic(
-        positive=True, vm=config.VM_0, nic=config.VM_NIC_0,
-        plugged=False, vnic_profile=vnic_profile, network=vnic_profile
-    ):
-        return False
-
-    if not ll_vms.updateNic(
-        positive=True, vm=config.VM_0, nic=config.VM_NIC_0,
-        interface=driver, plugged=True, vnic_profile=vnic_profile,
-        network=vnic_profile
-    ):
-        return False
-    return True
 
 
 def check_connectivity(vm=True, flags=None):
@@ -58,7 +33,7 @@ def check_connectivity(vm=True, flags=None):
         return ip[0]
 
     return network_helper.send_icmp_sampler(
-        host_resource=config.VDS_0_HOST, dst=config.DST_HOST_IP,
+        host_resource=config.VDS_0_HOST, dst=topologies_conf.DST_HOST_IP,
         extra_args=flags
     )
 

@@ -8,9 +8,20 @@ Config for topologies test
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 
+NETMASK = "255.255.255.240"
+SRC_ADDRESS = "10.35.147.50"
+DST_HOST_IP = "10.35.147.62"
 NETS = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=10, prefix="topo"
 )
+
+NON_VM_BOND_IP = {
+    "1": {
+        "address": SRC_ADDRESS,
+        "netmask": NETMASK,
+        "boot_protocol": "static"
+    }
+}
 
 NETS_DICT = {
     NETS[1][0]: {
