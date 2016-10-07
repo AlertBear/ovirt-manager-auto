@@ -9,7 +9,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 
-@attr(tier=1)
+@attr(tier=2)
 class ADTLS(TestCase):
     """
     Test if start tls connection to AD succeed.
@@ -43,7 +43,7 @@ class ADTLS(TestCase):
             assert common.connectionTest(), "User %s can't login." % principal
 
 
-@attr(tier=1)
+@attr(tier=2)
 class ADGroupWithSpacesInName(TestCase):
     """
     test login as user which is part of group with spaces in name

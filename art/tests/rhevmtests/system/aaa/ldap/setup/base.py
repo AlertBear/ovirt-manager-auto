@@ -9,7 +9,7 @@ from rhevmtests.system.aaa.ldap import config, common
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class AuthBaseCase(TestCase):
     """ test login with user """
     __test__ = False
@@ -108,7 +108,7 @@ class BaseDisabledAccount(AuthBaseCase):
         assert not self.login()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseSpecialCharsSearch(TestCase):
     """ Test search of special characters """
     __test__ = False
