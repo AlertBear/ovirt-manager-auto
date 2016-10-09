@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-OpenStack network provider tests
+OpenStack Neutron network provider tests
 """
+
 import shlex
 
 import pytest
@@ -16,7 +17,7 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    add_neutron_provider, ExternalNetworkProviderFixtures,
+    add_neutron_provider, OpenStackNetworkProviderFixtures,
     get_provider_networks, import_openstack_network, run_packstack,
     add_vnic_to_vm, stop_vm, create_network
 )
@@ -52,7 +53,7 @@ class TestOsnp01(NetworkTest):
         """
         Import network from OpenStack network provider
         """
-        neut = ExternalNetworkProviderFixtures()
+        neut = OpenStackNetworkProviderFixtures()
         neut.init()
         testflow.step("Import networks from Neutron provider")
         assert neut.neut.import_network(

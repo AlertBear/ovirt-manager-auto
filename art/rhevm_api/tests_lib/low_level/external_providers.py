@@ -456,7 +456,7 @@ class ExternalNetworkProvider(OpenStackProvider):
 
     @property
     def read_only(self):
-        """Set external provider read/write access"""
+        """Set external provider read_only or read_write access"""
         return self._read_only
 
     @read_only.setter
