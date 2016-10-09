@@ -153,8 +153,8 @@ def add_host_new_mgmt(
         if not hl_networks.remove_basic_setup(datacenter=dc, cluster=cl):
             return False
 
-    return ll_hosts.addHost(
-        positive=True, name=host_name, root_password=conf.HOSTS_PW,
+    return ll_hosts.add_host(
+        name=host_name, root_password=conf.HOSTS_PW,
         cluster=dest_cl, address=host_rsc.fqdn, comment=host_rsc.ip
     )
 

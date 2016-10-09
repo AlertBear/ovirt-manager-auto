@@ -57,9 +57,9 @@ def _add_host_if_missing():
         ll_hosts.get_host_object(HOST)
     except EntityNotFound:
         logger.info("adding host %s", HOST)
-        if not ll_hosts.addHost(
-                True, name=HOST, address=HOST_IP, root_password=HOST_PW,
-                port=54321, cluster=config.CLUSTER_NAME[0], wait=False,
+        if not ll_hosts.add_host(
+            name=HOST, address=HOST_IP, root_password=HOST_PW,
+            port=54321, cluster=config.CLUSTER_NAME[0], wait=False,
         ):
             raise HostException("Add host %s failed" % HOST)
 
@@ -352,9 +352,10 @@ class ReinstallHost(TestHostInMaintenance):
     @polarion("RHEVM3-8421")
     def test_reinstall_host(self):
         logger.info("reinstall host: %s", HOST)
-        if not ll_hosts.installHost(
-                True, host=HOST, root_password=HOST_PW,
-                iso_image=config.ISO_IMAGE
+        if not ll_hosts.install_host(
+            host=HOST,
+            root_password=HOST_PW,
+            image=config.ISO_IMAGE
         ):
             raise HostException("re installation of host: %s failed" % HOST)
 
@@ -401,9 +402,10 @@ class ReinstallActiveHost(TestActiveHost):
     @polarion("RHEVM3-8423")
     def test_reinstall_active_host(self):
         logger.info("attempting to re install host: %s ", HOST)
-        if not ll_hosts.installHost(
-                False, host=HOST, root_password=HOST_PW,
-                iso_image=config.ISO_IMAGE
+        if ll_hosts.install_host(
+            host=HOST,
+            root_password=HOST_PW,
+            image=config.ISO_IMAGE
         ):
             raise HostException(
                 "re install host: %s worked although host is active" % HOST
@@ -422,9 +424,10 @@ class CreateHostWithWrongIPAddress(TestCase):
     @polarion("RHEVM3-8424")
     def test_create_host_with_wrong_IP_address(self):
         logger.info("attempting to add a host with an invalid ip address")
-        if not ll_hosts.addHost(
-                False, name=self.name, address=HOST_FALSE_IP,
-                root_password=HOST_PW
+        if ll_hosts.add_host(
+            name=self.name,
+            address=HOST_FALSE_IP,
+            root_password=HOST_PW
         ):
             raise HostException("added a host with an invalid ip address")
 
@@ -447,8 +450,8 @@ class CreateHostWithEmptyRootPassword(TestCase):
     @polarion("RHEVM3-8425")
     def test_create_host_with_empty_root_password(self):
         logger.info("attempting to add a host without root password")
-        if not ll_hosts.addHost(
-                False, name=self.name, root_password='', address=HOST2_IP
+        if ll_hosts.add_host(
+            name=self.name, root_password='', address=HOST2_IP
         ):
             raise HostException("added a host without providing root password")
 

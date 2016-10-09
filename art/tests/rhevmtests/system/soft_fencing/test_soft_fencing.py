@@ -6,7 +6,7 @@ on host with pm and without,
 
 from art.rhevm_api.tests_lib.low_level.hosts import \
     runDelayedControlService, waitForHostsStates,\
-    deactivateHost, removeHost, addHost, isHostUp, activateHost
+    deactivateHost, removeHost, add_host, isHostUp, activateHost
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.utils.test_utils import get_api
@@ -217,9 +217,12 @@ class SoftFencingToHostNoProxies(SoftFencing):
     def teardown_class(cls):
         super(SoftFencingToHostNoProxies, cls).teardown_class()
         logger.info("Add host that was removed")
-        if not addHost(True, config.host_without_pm,
-                       root_password=config.HOSTS_PW,
-                       cluster=config.CLUSTER_NAME[0]):
+        if not add_host(
+            name=config.host_without_pm,
+            address=config.VDS_HOSTS[1].fqdn,
+            root_password=config.HOSTS_PW,
+            cluster=config.CLUSTER_NAME[0]
+        ):
             raise errors.HostException("Add host %s was failed"
                                        % config.host_without_pm)
         logger.info("Wait for host %s", config.host_without_pm)

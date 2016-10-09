@@ -48,8 +48,8 @@ def initializer_module(request):
         logger.info(
             "Attaching host %s with ip %s to cluster %s",
             host_name, host_ip, config.CLUSTER_NAME)
-        if not ll_hosts.addHost(
-            True, name=host_name, root_password=config.HOSTS_PW,
+        if not ll_hosts.add_host(
+            name=host_name, root_password=config.HOSTS_PW,
             cluster=config.CLUSTER_NAME, address=host_ip,
         ):
             raise exceptions.HostException("Failed to add host %s" % host_name)
@@ -236,8 +236,10 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             True, vm=self.vm_1, name=self.template,
             cluster=config.CLUSTER_NAME)
 
-        assert ll_hosts.addHost(
-            True, name=self.host_for_dc, root_password=self.password,
+        assert ll_hosts.add_host(
+            name=self.host_for_dc,
+            address=self.host_for_dc,
+            root_password=self.password,
             cluster=config.CLUSTER_NAME,
         ), "Unable to add host %s to cluster %s" % (
             self.host_for_dc, config.CLUSTER_NAME)
