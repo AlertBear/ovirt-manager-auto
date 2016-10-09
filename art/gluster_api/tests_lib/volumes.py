@@ -409,9 +409,12 @@ def addBrickToVolume(positive, cluster, volume, bricks):
                                          get_href=True)
     volBricks = _prepareBricks(bricks)
 
-    volBricks, status = bricksUtil.create(volBricks, positive,
-                        collection=volBricksColl, coll_elm_name='brick',
-                        incrementBy=len(bricks), async=True)
+    volBricks, status = bricksUtil.create(
+        volBricks, positive,
+        collection=volBricksColl,
+        coll_elm_name='brick',
+        async=True
+    )
     return status
 
 
