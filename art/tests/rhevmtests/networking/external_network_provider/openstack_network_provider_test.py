@@ -8,21 +8,24 @@ import shlex
 
 import pytest
 
-import rhevmtests.networking.config as conf
-import config as osnp_conf
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as osnp_conf
+import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     add_neutron_provider, ExternalNetworkProviderFixtures,
     get_provider_networks, import_openstack_network, run_packstack,
-    add_vnic_to_vm, stop_vm
+    add_vnic_to_vm, stop_vm, create_network
 )
-import rhevmtests.helpers as global_helper
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, clean_host_interfaces
+)  # flake8: noqa
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     add_neutron_provider.__name__,
@@ -67,9 +70,11 @@ class TestOsnp01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_network.__name__,
+    setup_networks_fixture.__name__,
     add_neutron_provider.__name__,
     import_openstack_network.__name__,
     run_packstack.__name__,
@@ -84,6 +89,35 @@ class TestOsnp02(NetworkTest):
     vm = conf.VM_0
     nic = osnp_conf.VM_NIC
     network = osnp_conf.PROVIDER_NETWORKS_NAME[0]
+    net = osnp_conf.OVS_TUNNEL_BRIDGE
+    hosts_nets_nic_dict = {
+        0: {
+            net: {
+                "nic": 4,
+                "network": net,
+                "ip": {
+                    "1": {
+                        "address": osnp_conf.OVS_TUNNEL_IPS[0],
+                        "netmask": 24,
+                        "boot_protocol": "static"
+                    }
+                }
+            }
+        },
+        1: {
+            net: {
+                "nic": 4,
+                "network": net,
+                "ip": {
+                    "1": {
+                        "address": osnp_conf.OVS_TUNNEL_IPS[1],
+                        "netmask": 24,
+                        "boot_protocol": "static"
+                    }
+                }
+            }
+        }
+    }
 
     @polarion("RHEVM-14832")
     def test_01_run_vm_with_openstack_network(self):

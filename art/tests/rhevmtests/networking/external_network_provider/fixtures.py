@@ -10,11 +10,11 @@ import shlex
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as osnp_conf
+from art.unittest_lib import testflow
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.tests_lib.low_level import external_providers
@@ -34,9 +34,6 @@ class ExternalNetworkProviderFixtures(NetworkFixtures):
         )
         self.neut = None
         self.neutron_password = None
-        self.neutron_reaource = global_helper.get_host_resource(
-            ip=osnp_conf.PROVIDER_IP, password=osnp_conf.ROOT_PASSWORD
-        )
 
     def get_neutron_password(self):
         """
@@ -59,7 +56,9 @@ class ExternalNetworkProviderFixtures(NetworkFixtures):
         self.get_neutron_password()
         osnp_conf.NEUTRON_PARAMS["password"] = self.neutron_password
         osnp_conf.NEUTRON_PARAMS["network_mapping"] = (
-            osnp_conf.NETWORK_MAPPING.format(interface=self.host_0_nics[-1])
+            osnp_conf.NETWORK_MAPPING.format(
+                interface=self.host_0_nics[-1], br_ext=osnp_conf.BR_EXT
+            )
         )
         self.neut = external_providers.OpenStackNetworkProvider(
             **osnp_conf.NEUTRON_PARAMS
@@ -90,16 +89,19 @@ def add_neutron_provider(request):
     """
     external_network_provider = ExternalNetworkProviderFixtures()
     external_network_provider.set_neut_params()
+    provider_name = osnp_conf.PROVIDER_NAME
 
     def fin():
         """
         Remove neutron provider
         """
-        external_network_provider.neut.remove(
-            openstack_ep=osnp_conf.PROVIDER_NAME
+        testflow.teardown("Remove Neutron provider %s", provider_name)
+        assert external_network_provider.neut.remove(
+            openstack_ep=provider_name
         )
     request.addfinalizer(fin)
 
+    testflow.setup("Add Neutron provider %s", provider_name)
     assert external_network_provider.neut.add()
 
 
@@ -109,6 +111,7 @@ def get_provider_networks(request):
     Get all provider networks
     """
     external_network_provider = ExternalNetworkProviderFixtures()
+    testflow.setup("Get all Neutron provider networks")
     external_network_provider.get_all_provider_networks()
 
 
@@ -120,20 +123,25 @@ def import_openstack_network(request, get_provider_networks):
     external_network_provider = ExternalNetworkProviderFixtures()
     external_network_provider.init()
     net = osnp_conf.PROVIDER_NETWORKS_NAME[0]
+    cluster = external_network_provider.cluster_0
 
     def fin():
         """
         Remove imported network
         """
-        hl_networks.remove_networks(positive=True, networks=[net])
+        testflow.teardown("Remove network %s", net)
+        assert hl_networks.remove_networks(positive=True, networks=[net])
     request.addfinalizer(fin)
 
+    testflow.setup(
+        "Import networks from Neutron provider %s", osnp_conf.PROVIDER_NAME
+    )
     assert external_network_provider.neut.import_network(
         network=net, datacenter=external_network_provider.dc_0
     )
+    testflow.setup("Attach network %s to cluster %s", net, cluster)
     assert ll_networks.add_network_to_cluster(
-        positive=True, network=net, required=False,
-        cluster=external_network_provider.cluster_0
+        positive=True, network=net, required=False, cluster=cluster
     )
 
 
@@ -146,13 +154,21 @@ def prepare_hosts_for_neutron(request):
     Delete "reject ICMP" iptable rule from hosts
     """
     external_network_provider = ExternalNetworkProviderFixtures()
+    vdsm_hook = osnp_conf.OSNP_VDSM_HOOK
+    iptable_rule = osnp_conf.DELETE_IPTABLE_RULE
+    rhos_cmd = osnp_conf.RHOS_CMD
+    cmd = "yum reinstall %s -y" % osnp_conf.RHOS_LATEST
+    testflow.setup(
+        "Install %s and %s on hosts and delete REJECT ICMP iptable rule",
+        vdsm_hook, rhos_cmd
+    )
     for vds in external_network_provider.vds_list:
         assert vds.package_manager.install(
-            package=osnp_conf.OSNP_VDSM_HOOK
+            package=vdsm_hook
         )
-        vds.package_manager.install(package=osnp_conf.RHOS_LATEST)
-        assert not vds.run_command(command=shlex.split(osnp_conf.RHOS_CMD))[0]
-        vds.run_command(command=shlex.split(osnp_conf.DELETE_IPTABLE_RULE))
+        vds.run_command(shlex.split(cmd))
+        assert not vds.run_command(command=shlex.split(rhos_cmd))[0]
+        vds.run_command(command=shlex.split(iptable_rule))
 
 
 @pytest.fixture(scope="module")
@@ -161,6 +177,7 @@ def prepare_packstack_answer_file(request):
     Prepare packstack answer file
     """
     external_network_provider = ExternalNetworkProviderFixtures()
+    testflow.setup("Prepare packstack answer file for deploy")
     hosts_cmd = list()
     ifaces_cmd = list()
     sed_cmd = "sed -i s/{old_value}/{new_value}/g %s" % osnp_conf.ANSWER_FILE
@@ -168,12 +185,14 @@ def prepare_packstack_answer_file(request):
         host_ip_0=external_network_provider.host_0_ip,
         host_ip_1=external_network_provider.host_1_ip
     )
-    before_last_interface = external_network_provider.host_0_nics[-2]
-    last_interface = external_network_provider.host_0_nics[-1]
+    hosts_interrfaces = [
+        i for i in external_network_provider.host_0_nics if "dummy" not in i
+        ]
+    before_last_interface, last_interface = hosts_interrfaces[-2:]
     # Set hosts IPs as compute hosts in neutron answer file
     for val in osnp_conf.ANSWER_FILE_HOSTS_PARAMS:
         if val == osnp_conf.NETWORK_HOSTS:
-            # Only the first host is networker host
+            # Only the first host is 'networker' host
             hosts_ips = external_network_provider.host_0_ip
 
         new_val = "{old_val}{new_val}".format(
@@ -201,15 +220,14 @@ def prepare_packstack_answer_file(request):
         )
 
     for cmd in hosts_cmd + ifaces_cmd:
-        assert not external_network_provider.neutron_reaource.run_command(
+        assert not external_network_provider.neutron_resource.run_command(
             command=cmd
         )[0]
 
 
 @pytest.fixture(scope="module")
 def run_packstack(
-    request, create_attach_network_to_hosts, prepare_hosts_for_neutron,
-    prepare_packstack_answer_file
+    request, prepare_hosts_for_neutron, prepare_packstack_answer_file
 ):
     """
     Run packstack
@@ -220,6 +238,7 @@ def run_packstack(
         """
         Stop openvswitch service
         """
+        testflow.teardown("Stop openvswitch service")
         for vds in external_network_provider.vds_list:
             vds.service("openvswitch").stop()
     request.addfinalizer(fin3)
@@ -228,6 +247,7 @@ def run_packstack(
         """
         Kill dnsmasq process
         """
+        testflow.teardown("Kill dnsmasq process")
         for vds in external_network_provider.vds_list:
             vds.run_command(command=shlex.split("killall dnsmasq"))
     request.addfinalizer(fin2)
@@ -236,6 +256,7 @@ def run_packstack(
         """
         Remove Neutron RPMs
         """
+        testflow.teardown("Remove all Neutron packages")
         for vds in external_network_provider.vds_list:
             neutron_packages = vds.run_command(
                 command=shlex.split("rpm -qa | grep neutron")
@@ -244,12 +265,14 @@ def run_packstack(
                 vds.package_manager.remove(package=pkg)
     request.addfinalizer(fin1)
 
+    testflow.setup("Set passwordless SSH from Neutron to hosts")
     for vds in external_network_provider.vds_list:
         assert global_helper.set_passwordless_ssh(
-            src_host=external_network_provider.neutron_reaource, dst_host=vds
+            src_host=external_network_provider.neutron_resource, dst_host=vds
         )
 
-    assert not external_network_provider.neutron_reaource.run_command(
+    testflow.setup("Run packstack")
+    assert not external_network_provider.neutron_resource.run_command(
         command=shlex.split(osnp_conf.PACKSTACK_CMD)
     )[0]
     # Set other-config:forward-bpdu=true to all ovs bridges
@@ -257,36 +280,34 @@ def run_packstack(
         command=shlex.split(osnp_conf.OVS_SHOW_CMD)
     )[1]
     ovs_bridges = [i for i in ovs_bridges_out.split()]
+    testflow.setup("set other-config:forward-bpdu=true on all ovs bridges")
     for br in ovs_bridges:
         cmd = shlex.split(osnp_conf.PBDU_FORWARD.format(bridge=br))
         assert not external_network_provider.vds_0_host.run_command(
             command=cmd
         )[0]
+    testflow.setup("Restart neutron-server service")
+    external_network_provider.neutron_resource.service(
+        name="neutron-server"
+    ).restart()
 
 
-@pytest.fixture(scope="module")
-def create_attach_network_to_hosts(request):
+@pytest.fixture(scope="class")
+def create_network(request):
     """
-    Attach br-ext network to hosts interface
+    Create networks on datacenter
     """
     external_network_provider = ExternalNetworkProviderFixtures()
 
-    def fin2():
+    def fin():
         """
         Remove network from setup
         """
-        hl_networks.remove_all_networks(
+        testflow.teardown("Remove all networks")
+        assert hl_networks.remove_all_networks(
             datacenter=external_network_provider.dc_0
         )
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Clean hosts interfaces
-        """
-        for host in external_network_provider.hosts_list:
-            hl_host_network.clean_host_interfaces(host_name=host)
-    request.addfinalizer(fin1)
+    request.addfinalizer(fin)
 
     net_dict = {
         osnp_conf.OVS_TUNNEL_BRIDGE: {
@@ -294,31 +315,11 @@ def create_attach_network_to_hosts(request):
             "required": "false"
         }
     }
+    testflow.setup("Create network %s", osnp_conf.OVS_TUNNEL_BRIDGE)
     network_helper.prepare_networks_on_setup(
         networks_dict=net_dict, dc=external_network_provider.dc_0,
         cluster=external_network_provider.cluster_0
     )
-    for host, vds, ip in zip(
-        external_network_provider.hosts_list,
-        external_network_provider.vds_list,
-        osnp_conf.OVS_TUNNEL_IPS
-    ):
-        sn_dict = {
-            "add": {
-                "1": {
-                    "network": osnp_conf.OVS_TUNNEL_BRIDGE,
-                    "nic": vds.nics[-1],
-                    "ip": {
-                        "1": {
-                            "address": ip,
-                            "netmask": 24,
-                            "boot_protocol": "static"
-                        }
-                    }
-                }
-            }
-        }
-        assert hl_host_network.setup_networks(host_name=host, **sn_dict)
 
 
 @pytest.fixture(scope="class")
@@ -335,9 +336,11 @@ def add_vnic_to_vm(request):
         """
         Remove vNIC from VM
         """
+        testflow.teardown("Remove vNIC %s from VM %s", nic, vm)
         assert ll_vms.removeNic(positive=True, vm=vm, nic=nic)
     request.addfinalizer(fin)
 
+    testflow.setup("Add vNIC %s to VM %s", nic, vm)
     assert ll_vms.addNic(positive=True, vm=vm, name=nic, network=network)
 
 
@@ -352,5 +355,6 @@ def stop_vm(request):
         """
         Stop VM
         """
+        testflow.teardown("Stop VM %s", vm)
         assert ll_vms.stop_vms_safely(vms_list=[vm])
     request.addfinalizer(fin)

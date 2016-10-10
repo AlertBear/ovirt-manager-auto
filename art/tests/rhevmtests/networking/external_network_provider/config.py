@@ -13,8 +13,8 @@ DELETE_IPTABLE_RULE = (
     "--reject-with icmp-host-prohibited"
 )
 OSNP_VDSM_HOOK = "vdsm-hook-openstacknet"
-ANSWER_FILE = "/root/neutron_answer5"
-RHOS_CMD = "rhos-release 8"
+ANSWER_FILE = "/root/packstack-answer-file"
+RHOS_CMD = "rhos-release 9"
 RHOS_LATEST = (
     "http://rhos-release.virt.bos.redhat.com/repos/rhos-release/"
     "rhos-release-latest.noarch.rpm"
@@ -31,15 +31,14 @@ OVS_SHOW_CMD = "ovs-vsctl list-br"
 OVS_TUNNEL_IPS = ["172.16.0.200", "172.16.0.201"]
 
 # Provider params
-PROVIDER_MOCK_GIT = "https://github.com/mmirecki/ovirt-provider-mock.git"
 PROVIDER_NAME = "neutron_network_provider"
-PROVIDER_IP = "10.35.128.196"
+PROVIDER_IP = "10.35.128.98"
 PROVIDER_URL = "http://{ip}".format(ip=PROVIDER_IP)
 PROVIDER_URL_PORT = "{url}:9696".format(url=PROVIDER_URL)
 PROVIDER_PLUGIN_TYPE = "open_vswitch"
-NETWORK_MAPPING = "{interface}:br-ext"
+BR_EXT = "br-ext"
+NETWORK_MAPPING = "{interface}:{br_ext}"
 PROVIDER_BROKER_TYPE = "rabbit_mq"
-PROVIDER_PORT = 9999
 AGENT_PORT = 5672
 AGENT_ADDRESS = PROVIDER_IP
 PROVIDER_USERNAME = "neutron"
@@ -69,6 +68,5 @@ NEUTRON_PARAMS = {
 
 PROVIDER_NETWORKS = None
 OVS_TUNNEL_BRIDGE = "ovs-tunnel"
-BR_EXT = "br-ext"
 VM_NIC = "neutron_vnic"
 PROVIDER_NETWORKS_NAME = ["onp1", "onp2", "onp3", "onp4", "onp5"]

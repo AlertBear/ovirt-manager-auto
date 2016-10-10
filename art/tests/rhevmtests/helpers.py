@@ -21,6 +21,7 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     templates as ll_templates,
     storagedomains as ll_sd,
+    general as ll_general
 )
 from art.rhevm_api.utils import cpumodel
 from art.rhevm_api.utils.test_utils import wait_for_tasks
@@ -52,22 +53,18 @@ def get_golden_template_name(cluster=config.CLUSTER_NAME[0]):
     return None
 
 
+@ll_general.generate_logs
 def set_passwordless_ssh(src_host, dst_host):
     """
     Set passwordless SSH to remote host
 
-    :param src_host: Source host resource object
-    :type src_host: Host
-    :param dst_host: Destination host resource object
-    :type dst_host: Host
-    :return: True/False
-    :rtype: bool
+    Args:
+        src_host (Host): Source host resource object
+        dst_host (Host): Destination host resource object
+
+    Returns:
+        bool: True/False
     """
-    logger.info(
-        "Setting passwordless ssh from engine (%s) to host (%s)",
-        src_host.ip, dst_host.ip
-    )
-    error = "Failed to set passwordless SSH to %s" % dst_host.ip
     ssh_keyscan = ["ssh-keyscan", "-t", "rsa"]
     known_hosts = ssh.KNOWN_HOSTS % os.path.expanduser(
         "~%s" % src_host.root_user.name
@@ -78,12 +75,10 @@ def set_passwordless_ssh(src_host, dst_host):
 
     # Remove old keys from local KNOWN_HOSTS file
     if not src_host.remove_remote_host_ssh_key(dst_host):
-        logger.error(error)
         return False
 
     # Remove local key from remote host AUTHORIZED_KEYS file
     if not dst_host.remove_remote_key_from_authorized_keys():
-        logger.error(error)
         return False
 
     # Get local SSH key and add it to remote host AUTHORIZED_KEYS file
@@ -92,7 +87,6 @@ def set_passwordless_ssh(src_host, dst_host):
     remote_cmd = ["echo", local_key, ">>", authorized_keys]
     rc = dst_host.run_command(remote_cmd)[0]
     if rc:
-        logger.error(error)
         return False
 
     # Adding remote host SSH key to local KNOWN_HOSTS file
@@ -101,7 +95,6 @@ def set_passwordless_ssh(src_host, dst_host):
         local_cmd = ["echo", remote_key, ">>", known_hosts]
         rc2 = src_host.run_command(local_cmd)[0]
         if rc1 or rc2:
-            logger.error(error)
             return False
     return True
 
