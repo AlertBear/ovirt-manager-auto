@@ -49,6 +49,10 @@ LOAD_VM_COMMAND = (
 )
 VIRSH_VM_LIST_CMD = "virsh -r list | grep "
 VIRSH_VM_DUMP_XML_CMD = "virsh -r dumpxml "
+VIRSH_VM_IOTHREADS_NUMBER_CMD = (
+    "virsh -r dumpxml %s | grep -oP '(?<=<iothreads>).*?(?=</iothreads>)'"
+)
+VIRSH_VM_IOTHREADS_DRIVERS_CMD = "virsh -r dumpxml %s | grep 'iothread='"
 
 test_handler.find_test_file.__test__ = False
 
@@ -691,7 +695,7 @@ def get_vm_id(vm_name):
     if rc:
         raise exceptions.HostException(
             "Failed to run virsh cmd: %s on: %s, err: %s"
-            % (host_resource, cmd,  err)
+            % (host_resource, cmd, err)
         )
     vm_id = out.split()[0]
     logger.info("VM pid is %s", vm_id)
@@ -788,3 +792,127 @@ def wait_for_vm_fqdn(
                 return True
     except APITimeout:
         return False
+
+
+def check_iothreads_of_vm(vm_name, number_of_disks, number_of_threads):
+    """
+    Check io threads on VM with 'virsh' command.
+    1. Check total io threads
+    2. Check each disk driver
+
+    Args:
+        vm_name (str): VM name
+        number_of_disks (int): Number of disks on VM
+        number_of_threads (int): expected number of io threads
+
+    Returns:
+        bool: True if check succeeded, False otherwise
+    """
+    logger.info(
+        "Expected number of disks: %s, Expected number of threads: %s",
+        number_of_disks, number_of_threads
+    )
+    host_resource = helpers.get_host_resource_of_running_vm(vm_name)
+    vm_id = get_vm_id(vm_name)
+    cmd = shlex.split(VIRSH_VM_IOTHREADS_NUMBER_CMD % vm_id, posix=False)
+    total_threads_output = run_command_on_host(cmd, host_resource)
+    total_threads = int(total_threads_output) if total_threads_output else -1
+    cmd = shlex.split(VIRSH_VM_IOTHREADS_DRIVERS_CMD % vm_id, posix=False)
+    logger.info(
+        "Expected disk:%d, Expected threads:%d, Actual threads:%d" %
+        (number_of_disks, number_of_threads, total_threads)
+    )
+    drivers_check = check_drivers(
+        run_command_on_host(cmd, host_resource),
+        number_of_disks,
+        number_of_threads
+    )
+    return total_threads == number_of_threads and drivers_check
+
+
+def run_command_on_host(cmd, host_resource):
+    """
+    Run command on host resource and return output, in case of error
+    return None.
+
+    Args:
+        cmd (str): command to run
+        host_resource (Host): host resource
+
+    Returns:
+        str: return command out, in case of error returns None.
+    """
+    rc, out, err = host_resource.executor().run_cmd(cmd)
+    if rc:
+        logger.error(
+            "Failed to run cmd: %s on: %s, err: %s"
+            % (cmd, host_resource, err)
+        )
+        return None
+    return out
+
+
+def check_drivers(driver_list_input, number_of_disks, number_of_threads):
+    """
+    Check thread allocation for disks.
+
+    Args:
+        driver_list_input (str): 'virsh' command output
+        number_of_disks (int): expected number of disks
+        number_of_threads (int): configure number of threads
+
+    Returns:
+        bool: True if thread allocate to each disk and number of disks is
+              as expected, otherwise False
+    """
+
+    counter = 1
+    drivers_list = []
+    drivers = driver_list_input.strip().split("\n")
+    logger.info("Disk drivers lists: %s", drivers)
+    for driver_info in drivers:
+        drivers_list.append(
+            int(shlex.split(driver_info)[6].split("=")[1].split("/")[0])
+        )
+    actual_number_of_disks = len(drivers_list)
+    if number_of_disks != actual_number_of_disks:
+        logger.error(
+            "Number of disks is not as expected\n"
+            "[Disk numbers: actual#:%d ,expected#:%d]",
+            actual_number_of_disks, number_of_disks
+        )
+        return False
+    if number_of_threads >= actual_number_of_disks:
+        for driver in drivers_list:
+            if check_thread_number(disk_id=driver, counter=counter):
+                counter += 1
+            else:
+                return False
+    else:  # number of threads is less then disks
+        for driver in drivers_list:
+            if check_thread_number(disk_id=driver, counter=counter):
+                counter += 1
+            else:
+                return False
+            if counter > number_of_threads:
+                counter = 1
+    return True
+
+
+def check_thread_number(disk_id, counter):
+    """
+    check that disk is attached to expected thread number.
+
+    Args:
+        disk_id (int): disk id
+        counter (int): thread number
+
+    Returns:
+        bool: Return True if disk is attached to expected thread number,
+        otherwise False
+
+    """
+    if disk_id != counter:
+        logger.error("Thread not attached to disk")
+        return False
+    return True
