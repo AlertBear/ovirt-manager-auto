@@ -1,56 +1,89 @@
-'''
-Testing vmdsm hooks and vm hooks: before_vm_start, after_vm_pause,
+"""
+Testing vdsm hooks and vm hooks: before_vm_start, after_vm_pause,
 before_vdsm_start, after_vdsm_stop
-'''
+"""
+
+import logging
+
+import pytest
+from os import path
+
+from art.rhevm_api.tests_lib.low_level import hooks, vms, hosts
+from art.rhevm_api.utils import test_utils
+from art.rhevm_api.utils.resource_utils import runMachineCommand
+from art.test_handler.tools import polarion
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
+from art.unittest_lib import attr
+from rhevmtests.system.hooks import config
+
+HOOK_VALUE = "1234"
+CUSTOM_HOOK = "auto_custom_hook={0}".format(HOOK_VALUE)
+REMOVE_HOOKS = "rm -f /var/tmp/*.hook"
+HOOK_DIR = "/usr/libexec/vdsm/hooks"
+TMP = "/var/tmp"
 
 __test__ = True
 
-from art.rhevm_api.tests_lib.low_level import hooks, vms, hosts
-from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion
-from art.unittest_lib import attr
-from os import path
-from art.unittest_lib import CoreSystemTest as TestCase
-
-from rhevmtests.system.hooks import config
-import logging
-
 logger = logging.getLogger(__name__)
-HOOK_VALUE = '1234'
-CUSTOM_HOOK = 'auto_custom_hook=%s' % HOOK_VALUE
-REMOVE_HOOKS = 'rm -f /var/tmp/*.hook'
-HOOK_DIR = '/usr/libexec/vdsm/hooks'
-TMP = '/var/tmp'
 
 
-def setup_module():
-    assert vms.createVm(True, config.HOOKS_VM_NAME, '',
-                        cluster=config.CLUSTER_NAME[0],
-                        display_type=config.DISPLAY_TYPE,
-                        template=config.TEMPLATE_NAME[0],
-                        custom_properties=CUSTOM_HOOK)
+@pytest.fixture(autouse=True, scope="module")
+def setup_module(request):
+    testflow.setup("Setting up module %s.", __name__)
 
+    testflow.step("Creating a VM with name %s", config.HOOKS_VM_NAME)
+    assert vms.createVm(
+        positive=True,
+        vmName=config.HOOKS_VM_NAME,
+        cluster=config.CLUSTER_NAME[0],
+        display_type=config.DISPLAY_TYPE,
+        template=config.TEMPLATE_NAME[0],
+        custom_properties=CUSTOM_HOOK
+    )
 
-def teardown_module():
-    assert runMachineCommand(True, ip=config.HOSTS_IP[0],
-                             user=config.HOSTS_USER,
-                             password=config.HOSTS_PW,
-                             cmd=REMOVE_HOOKS)[0]
-    assert vms.removeVm(True, config.HOOKS_VM_NAME, stopVM='true')
+    def finalize():
+        testflow.teardown("Tearing down module %s.", __name__)
+
+        testflow.step("Removing all hooks from %s host.", config.HOSTS_IP[0])
+        assert runMachineCommand(
+            positive=True,
+            ip=config.HOSTS_IP[0],
+            user=config.HOSTS_USER,
+            password=config.HOSTS_PW,
+            cmd=REMOVE_HOOKS
+        )[0]
+
+        testflow.step("Removing a VM with name %s.", config.HOOKS_VM_NAME)
+        assert vms.removeVm(
+            positive=True,
+            vm=config.HOOKS_VM_NAME,
+            stopVM='true'
+        )
+
+    request.addfinalizer(finalize)
 
 
 def check_vdsmd():
-    if not test_utils.isVdsmdRunning(config.HOSTS_IP[0], config.HOSTS_USER,
-                                     config.HOSTS_PW):
-        hosts.start_vdsm(config.HOSTS[0], config.HOSTS_PW,
-                         config.DC_NAME[0])
+    if not test_utils.isVdsmdRunning(
+            config.HOSTS_IP[0],
+            config.HOSTS_USER,
+            config.HOSTS_PW
+    ):
+        hosts.start_vdsm(
+            config.HOSTS[0],
+            config.HOSTS_PW,
+            config.DC_NAME[0]
+        )
 
 
 def check_vm():
-    if not vms.checkVmState(True, config.HOOKS_VM_NAME, config.VM_UP):
+    if not vms.checkVmState(
+            positive=True,
+            vmName=config.HOOKS_VM_NAME,
+            state=config.VM_UP
+    ):
         vms.restartVm(
-            config.HOOKS_VM_NAME,
+            vm=config.HOOKS_VM_NAME,
             wait_for_ip=True,
             placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
         )
@@ -59,89 +92,181 @@ def check_vm():
 class TestCaseVm(TestCase):
     """ vm hooks """
     __test__ = False
-    CUSTOM_HOOK = 'auto_custom_hook'
-    PY = 'py'
+    CUSTOM_HOOK = "auto_custom_hook"
+    PY = "py"
 
-    def setUp(self):
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
         """ create shell script """
+        testflow.setup("Setting up %s class", cls.__name__)
+
+        testflow.step(
+            "Checking for %s VM state",
+            config.HOOKS_VM_NAME
+        )
         check_vm()
-        hooks.createPythonScriptToVerifyCustomHook(
+
+        testflow.step(
+            "Creating a Python script with name %s "
+            "on host %s to verify %s hook",
+            cls._hook_name(ext=cls.PY),
+            config.HOSTS_IP[0],
+            cls.CUSTOM_HOOK
+        )
+        hooks.create_python_script_to_verify_custom_hook(
             ip=config.HOSTS_IP[0],
             password=config.HOSTS_PW,
-            scriptName=self._hook_name(ext=self.PY),
-            customHook=self.CUSTOM_HOOK,
-            target=path.join(HOOK_DIR, self.NAME),
-            outputFile=path.join(TMP, self._hook_name()),
+            script_name=cls._hook_name(ext=cls.PY),
+            custom_hook=cls.CUSTOM_HOOK,
+            target=path.join(HOOK_DIR, cls.NAME),
+            output_file=path.join(TMP, cls._hook_name()),
         )
 
-    def check_for_file(self, positive):
+        def finalize():
+            """ remove created script """
+            testflow.teardown("Tearing down %s class", cls.__name__)
+
+            testflow.step("Setting python script name...")
+            hook_name = path.join(cls.NAME, cls._hook_name(ext=cls.PY))
+            testflow.step("\tPython script name now equals %s.", hook_name)
+
+            testflow.step(
+                "Removing python script %s from host %s.",
+                hook_name,
+                config.HOSTS_IP[0]
+            )
+            test_utils.removeFileOnHost(
+                positive=True,
+                ip=config.HOSTS_IP[0],
+                password=config.HOSTS_PW,
+                filename=path.join(HOOK_DIR, hook_name)
+            )
+            testflow.step("Checking %s VM's state", config.HOOKS_VM_NAME)
+            check_vm()
+
+        request.addfinalizer(finalize)
+
+    @classmethod
+    def check_for_file(cls, positive):
         """ Check for file created by vdsm_stop hook """
-        logger.info("Checking for existence of file %s/%s", TMP, self.NAME)
-        return hooks.checkForFileExistenceAndContent(
-            positive, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
-            filename=path.join(TMP, self._hook_name()), content=HOOK_VALUE)
+        logger.info("Checking for existence of file %s/%s.", TMP, cls.NAME)
+        return hooks.check_for_file_existence_and_content(
+            positive,
+            ip=config.HOSTS_IP[0],
+            password=config.HOSTS_PW,
+            filename=path.join(TMP, cls._hook_name()),
+            content=HOOK_VALUE
+        )
 
-    def _hook_name(self, ext='hook'):
-        return '%s.%s' % (self.NAME, ext)
-
-    def tearDown(self):
-        """ remove created script """
-        hook_name = path.join(self.NAME, self._hook_name(ext=self.PY))
-        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS_IP[0],
-                                    password=config.HOSTS_PW,
-                                    filename=path.join(HOOK_DIR, hook_name))
-        check_vm()
+    @classmethod
+    def _hook_name(cls, ext="hook"):
+        return "{0}.{1}".format(cls.NAME, ext)
 
 
 class TestCaseVdsm(TestCase):
     """ vdsm hooks """
     __test__ = False
-    SHELL = 'sh'
 
-    def setUp(self):
+    SHELL = "sh"
+
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
         """ create shell script """
-        check_vdsmd()
-        script_name = self._hook_name(ext=self.SHELL)
-        hooks.createOneLineShellScript(ip=config.HOSTS_IP[0],
-                                       password=config.HOSTS_PW,
-                                       scriptName=script_name,
-                                       command='touch',
-                                       arguments=path.join(TMP,
-                                                           self._hook_name()),
-                                       target=path.join(HOOK_DIR, self.NAME))
+        testflow.setup("Setting up %s class.", cls.__name__)
 
-    def check_for_file(self, positive):
+        testflow.step("Checking if vdsmd is running.")
+        check_vdsmd()
+
+        testflow.step("Setting script name.")
+        script_name = cls._hook_name(ext=cls.SHELL)
+        testflow.step("\tScript name now equals %s.", script_name)
+
+        testflow.step(
+            "Creating shell script %s on %s host.",
+            script_name,
+            config.HOSTS_IP[0]
+        )
+        hooks.create_one_line_shell_script(
+            ip=config.HOSTS_IP[0],
+            password=config.HOSTS_PW,
+            script_name=script_name,
+            command='touch',
+            arguments=path.join(TMP, cls._hook_name()),
+            target=path.join(HOOK_DIR, cls.NAME)
+        )
+
+        def finalize():
+            """ remove created script """
+            testflow.teardown("Tearing down class %s.", cls.__name__)
+
+            testflow.step("Setting shell script's name.")
+            hook_name = path.join(cls.NAME, cls._hook_name(ext=cls.SHELL))
+            testflow.step("\tShell script name now equals %s.", hook_name)
+
+            testflow.step(
+                "Removing shell script %s from host %s.",
+                hook_name,
+                config.HOSTS_IP[0]
+            )
+            test_utils.removeFileOnHost(
+                positive=True,
+                ip=config.HOSTS_IP[0],
+                password=config.HOSTS_PW,
+                filename=path.join(HOOK_DIR, hook_name)
+            )
+
+            testflow.step(
+                "Removing hook %s from host %s.",
+                cls._hook_name(),
+                config.HOSTS_IP[0]
+            )
+            test_utils.removeFileOnHost(
+                positive=True,
+                ip=config.HOSTS_IP[0],
+                password=config.HOSTS_PW,
+                filename=path.join(TMP, cls._hook_name())
+            )
+            testflow.step("Checking if vdsmd is running.")
+            check_vdsmd()
+
+        request.addfinalizer(finalize)
+
+    @classmethod
+    def check_for_file(cls, positive):
         """ Check for file created by vdsm_stop hook """
-        logger.info("Checking for existence of file %s/%s", TMP, self.NAME)
-        return hooks.checkForFileExistenceAndContent(
-            True, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
-            filename=path.join(TMP, self._hook_name()))
+        logger.info("Checking for existence of file %s/%s", TMP, cls.NAME)
+        return hooks.check_for_file_existence_and_content(
+            positive=positive,
+            ip=config.HOSTS_IP[0],
+            password=config.HOSTS_PW,
+            filename=path.join(TMP, cls._hook_name())
+        )
 
-    def _hook_name(self, ext='hook'):
-        return '%s.%s' % (self.NAME, ext)
-
-    def tearDown(self):
-        """ remove created script """
-        hook_name = path.join(self.NAME, self._hook_name(ext=self.SHELL))
-        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS_IP[0],
-                                    password=config.HOSTS_PW,
-                                    filename=path.join(HOOK_DIR, hook_name))
-        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS_IP[0],
-                                    password=config.HOSTS_PW,
-                                    filename=path.join(TMP, self._hook_name()))
-        check_vdsmd()
+    @classmethod
+    def _hook_name(cls, ext="hook"):
+        return "{0}.{1}".format(cls.NAME, ext)
 
 
 @attr(tier=2)
 class TestCaseAfterVdsmStop(TestCaseVdsm):
     """ after_vdsm_stop hook """
     __test__ = True
+
     NAME = 'after_vdsm_stop'
 
     @polarion("RHEVM3-8482")
     def test_after_vdsm_stop(self):
         """ test_after_vdsm_stop """
+        testflow.step("Stopping vdsm on %s.", config.HOSTS_IP[0])
         hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
+
+        testflow.step(
+            "Checking for presence of %s on %s.",
+            self._hook_name(),
+            config.HOSTS_IP[0]
+        )
         assert self.check_for_file(positive=True)
 
 
@@ -149,15 +274,34 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
 class TestCaseBeforeVdsmStart(TestCaseVdsm):
     """ before_vdsm_start hook """
     __test__ = True
-    NAME = 'before_vdsm_start'
+
+    NAME = "before_vdsm_start"
 
     @polarion("RHEVM3-8483")
     def test_before_vdsm_start(self):
         """ test_before_vdsm_start """
+        testflow.step("Stopping vdsm on %s.", config.HOSTS_IP[0])
         hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
+
+        testflow.step(
+            "Checking the %s is not at %s.",
+            self._hook_name(),
+            config.HOSTS_IP[0]
+        )
         assert not self.check_for_file(positive=False)
-        hosts.start_vdsm(config.HOSTS[0], config.HOSTS_PW,
-                         config.DC_NAME[0])
+
+        testflow.step("Starting vdsm on %s.", config.HOSTS_IP[0])
+        hosts.start_vdsm(
+            config.HOSTS[0],
+            config.HOSTS_PW,
+            config.DC_NAME[0]
+        )
+
+        testflow.step(
+            "Checking for presence of %s on %s.",
+            self._hook_name(),
+            config.HOSTS_IP[0]
+        )
         assert self.check_for_file(positive=True)
 
 
@@ -165,19 +309,35 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
 class TestCaseBeforeVmStart(TestCaseVm):
     """ before_vm_start hook """
     __test__ = True
-    NAME = 'before_vm_start'
+
+    NAME = "before_vm_start"
 
     @polarion("RHEVM3-8484")
     def test_before_vm_start(self):
         """ Check for file created by before_vm_start hook """
+        testflow.step("Stopping VM %s.", config.HOOKS_VM_NAME)
         assert vms.stopVm(True, vm=config.HOOKS_VM_NAME)
+
+        testflow.step(
+            "Checking the %s is not at %s.",
+            self._hook_name(),
+            config.HOSTS_IP[0]
+        )
         assert not self.check_for_file(positive=False)
+
+        testflow.step("Starting VM %s.", config.HOOKS_VM_NAME)
         assert vms.startVm(
-            True,
+            positive=True,
             vm=config.HOOKS_VM_NAME,
             wait_for_status=config.VM_UP,
             wait_for_ip=True,
             placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
+        )
+
+        testflow.step(
+            "Checking for presence of %s on %s.",
+            self._hook_name(),
+            config.HOSTS_IP[0]
         )
         assert self.check_for_file(positive=True)
 
@@ -186,10 +346,17 @@ class TestCaseBeforeVmStart(TestCaseVm):
 class TestCaseAfterVmPause(TestCaseVm):
     """ after_vm_pause hook """
     __test__ = True
-    NAME = 'after_vm_pause'
+    NAME = "after_vm_pause"
 
     @polarion("RHEVM3-8485")
     def test_after_vm_pause(self):
         """ Check for file created by after_vm_pause hook """
+        testflow.step("Suspending VM %s.", config.HOOKS_VM_NAME)
         assert vms.suspendVm(True, vm=config.HOOKS_VM_NAME, wait=True)
+
+        testflow.step(
+            "Checking for presence of %s on %s.",
+            self._hook_name(),
+            config.HOSTS_IP[0]
+        )
         assert self.check_for_file(positive=True)

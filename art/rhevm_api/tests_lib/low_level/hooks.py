@@ -17,9 +17,11 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import os
-import tempfile
 import logging
+import tempfile
+
+from os import path
+
 from utilities.machine import Machine
 
 logger = logging.getLogger("art.ll_lib.hooks")
@@ -27,21 +29,28 @@ logger = logging.getLogger("art.ll_lib.hooks")
 CHMOD = "/bin/chmod"
 
 
-def checkForFileExistenceAndContent(positive, ip, password, filename,
-                                    content=None, user='root'):
-    '''
+def check_for_file_existence_and_content(
+        positive, ip, password,
+        filename, content=None,
+        user="root"
+):
+    """
     Checks for file existence and content on given address
     Author: jvorcak
-    Parameters:
-       * ip - address of the machine
-       * password - password for accessing the machine
-       * filename - file name
-       * content - content of the remote file
-       * user - username for accessing the machine
-    '''
+    Args:
+        positive (bool): expected result
+        ip (str): address of the machine
+        password (str): password for accessing th machine
+        filename (str): file name
+        content (str): expected content of the remote file
+    Kwargs:
+        user (str): username for accessing the machine
+    Returns:
+        bool. True if there were no errors while checking file existence
+    """
+    vm = Machine(ip, user, password).util("linux")
 
-    vm = Machine(ip, user, password).util('linux')
-    new_filename = tempfile.gettempdir() + os.sep + os.path.basename(filename)
+    new_filename = path.join(tempfile.gettempdir(), path.basename(filename))
 
     if not vm.copyFrom(filename, new_filename):
         logger.error("Couldn't copy filename %s from address %s", filename, ip)
@@ -53,79 +62,119 @@ def checkForFileExistenceAndContent(positive, ip, password, filename,
             file_content = f.read().strip()
 
         if file_content != content:
-            logger.error("Content of the file differs from expected content")
-            logger.error("Expected content: %s" % content)
-            logger.error("Actual content: %s" % file_content)
+            logger.error(
+                (
+                    "Content of the file differs from expected content:"
+                    "\tExpected content: {0}"
+                    "\tActual content: {1}"
+                ).format(content, file_content)
+            )
             return False
 
     return positive
 
 
-def createOneLineShellScript(ip, password, scriptName, command,
-                             arguments, target, user='root', osType='linux'):
-    '''
+def create_one_line_shell_script(
+        ip, password, script_name,
+        command, arguments, target,
+        user="root", os_type="linux"
+):
+    """
     This function creates a shell script with the given command and args.
     Author: talayan
-    Parameters:
-       * ip - IP of the machine where the script should be injected.
-       * password - the users' password to connect to the machine
-       * scriptName - the name of the file to be created
-       * command - the command which the script file will hold
-       * arguments - the args for the command
-       * target - target directory to place the script on the destination
-                  machine
-       * user - username to access the destination machine
-       * osType - Type of the destination machine
-    '''
-    with open(scriptName, 'w+') as fd:
-        fd.write('''#!/bin/bash\n%s %s\n''' % (command, arguments))
+    Args:
+        ip (str): IP of the machine where the script should be injected.
+        password (str): the users' password to connect to the machine
+        script_name (str): the name of the file to be created
+        command (str): the command which the script file will hold
+        arguments (str): the args for the command
+        target (str): target directory to place the script on the destination
+        host
+    Kwargs:
+        user (str): username to access the destination machine
+        os_type (str): Type of the destination machine
+    Returns:
+        bool. True if script was created successfully, False if there were
+            any errors
+    """
+    content = (
+        "#!/usr/bin/env bash\n\n"
+        "{0} {1}\n"
+    ).format(command, arguments)
+
+    with open(script_name, "w+") as fd:
+        fd.write(content)
     try:
-        host = Machine(ip, user, password).util(osType)
-        host.copyTo(scriptName, target, 300)
+        host = Machine(ip, user, password).util(os_type)
+        host.copyTo(script_name, target, 300)
+        cmd = [CHMOD, "755", path.join(target, script_name)]
+        host.runCmd(cmd)
+
+        return True
+
     except IOError as err:
-        logger.error("Copy data to %s : %s" % (ip, err))
+        logger.error("Copy data to %s : %s", ip, err)
+
     except Exception as err:
-        logger.error("Oops! something went wrong in"
-                     " connecting or copying data to %s" % (ip, err))
-    cmd = [CHMOD, "755", os.path.join(target, scriptName)]
-    host.runCmd(cmd)
+        logger.error(
+            "Oops! something went wrong in"
+            " connecting or copying data to %s : %s",
+            ip,
+            err
+        )
+    return False
 
-    return True
 
-
-def createPythonScriptToVerifyCustomHook(ip, password, scriptName, customHook,
-                                         target, outputFile, user='root',
-                                         osType='linux'):
+def create_python_script_to_verify_custom_hook(
+        ip, password, script_name,
+        custom_hook, target, output_file,
+        user="root", os_type="linux"
+):
     """
     This function creates an ad-hoc python script which creates
      a file on host to test hook mechanism.
     Author: talayan
-    Parameters:
-       * ip - IP of the machine where th script should be injected.
-       * password - the users' password to connect to the machine
-       * scriptName - the name of the file to be created
-       * customHook - the name of the custom hook that we are willing to test
-       * target - target directory to place
-          the script on the destination machine
-       * outputFile - the name and path where the file to be created
-       * user - username to access the destination machine
-       * osType - Type of the destination machine
+    Args:
+        ip (str): IP of the machine where th script should be injected
+        password (str): the users' password to connect to the machine
+        script_name (str): the name of the file to be created
+        custom_hook (str): the name of the custom hook will testing
+        target (str): target directory to place the script on the destination
+            machine
+        output_file (str): the name and path where the file to be created
+    Kwargs:
+        user (str): username to access the destination machine
+        os_type (str): Type of the destination machine
+    Returns:
+        bool. True if script was created successfully and False if there were
+            any errors
     """
-    with open(scriptName, 'w+') as fd:
-        fd.write("""#!/usr/bin/python\nimport os\n"""
-                 """with open("%s", 'w') as fo:\n"""
-                 """\tfo.write(os.environ['%s'])\n"""
-                 % (outputFile, customHook))
+
+    content = (
+        "#!/usr/bin/env python2\n\n"
+        "import os\n\n"
+        "with open(\"{0}\", \"w\") as fo:\n"
+        "\tfo.write(os.environ[\"{1}\"])\n"
+    ).format(output_file, custom_hook)
+
+    with open(script_name, "w+") as fd:
+        fd.write(content)
     try:
-        host = Machine(ip, user, password).util(osType)
-        host.copyTo(scriptName, target, 300)
+        host = Machine(ip, user, password).util(os_type)
+        host.copyTo(script_name, target, 300)
+        cmd = [CHMOD, "755", path.join(target, script_name)]
+        host.runCmd(cmd)
+
+        return True
+
     except IOError as err:
-        logger.error("Copy data to %s : %s" % (ip, err))
+        logger.error("Copy data to %s : %s", ip, err)
+
     except Exception as err:
-        logger.error("Oops! something went wrong "
-                     "in connecting or copying data to %s" % (ip, err))
-
-    cmd = [CHMOD, "755", os.path.join(target, scriptName)]
-    host.runCmd(cmd)
-
-    return True
+        logger.error(
+            "Oops! something went wrong "
+            "in connecting or copying data to %s : %s",
+            ip,
+            err
+        )
+    return False
