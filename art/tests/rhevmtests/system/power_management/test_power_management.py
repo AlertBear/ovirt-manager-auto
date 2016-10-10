@@ -68,8 +68,9 @@ def _waitForHostPmOperation():
 
 def _fence_host(positive, fence_type):
     _waitForHostPmOperation()
-    if not ll_hosts.fenceHost(positive=positive, host=HOST_WITH_PM,
-                              fence_type=fence_type):
+    if ll_hosts.fence_host(
+        host=HOST_WITH_PM, fence_type=fence_type
+    ) != positive:
         raise HostException("Cannot %s host: %s using power management" %
                             (fence_type, HOST_WITH_PM))
     _waitForHostPmOperation()

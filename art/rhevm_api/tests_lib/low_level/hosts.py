@@ -590,48 +590,40 @@ def commit_network_config(host):
     return res
 
 
-def fenceHost(positive, host, fence_type, timeout=500):
+@ll_general.generate_logs()
+def fence_host(host, fence_type, timeout=500):
     """
-    Description: host fencing
-    Author: edolinin
-    Parameters:
-       * host - name of a host to be fenced
-       * fence_type - fence action (start/stop/restart/status)
-    Return: status (True if host was fenced properly, False otherwise)
-    """
+    Fence host
 
-    host_obj = HOST_API.find(host)
-    # this is meant to differentiate between fencing a host in maintenance
-    # and fencing a host in down state. since 3.4 fencing a host in maintenance
-    # will result with the host staying in maintenance and not up state.
+    Args:
+        host (str): Host name
+        fence_type (str): Fence type(start/stop/restart/status/manual)
+        timeout (int): Wait for the host status timeout
+
+    Returns:
+        bool: True, if fence action succeeds and host receives expected state
+            before timeout, otherwise False
+    """
+    host_obj = get_host_object(host_name=host)
     host_in_maintenance = (
-        get_host_status(host) == ENUMS['host_state_maintenance']
+        get_host_status(host=host) == ENUMS['host_state_maintenance']
     )
-    status = bool(
-        HOST_API.syncAction(
-            host_obj, "fence", positive, fence_type=fence_type.upper()
-        )
-    )
-
-    # if test type is negative, we don't have to wait for element status,
-    # since host state will not be changed
-    if status and not positive:
+    if not HOST_API.syncAction(
+        entity=host_obj,
+        action="fence",
+        positive=True,
+        fence_type=fence_type.upper()
+    ):
+        return False
+    if fence_type in ("restart", "start"):
+        status = "maintenance" if host_in_maintenance else "up"
+    elif fence_type == "stop":
+        status = "down"
+    else:
         return True
-    test_host_status = True
-    if fence_type == "restart" or fence_type == "start":
-        if host_in_maintenance:
-            test_host_status = HOST_API.waitForElemStatus(
-                host_obj, "maintenance", timeout
-            )
-        else:
-            test_host_status = HOST_API.waitForElemStatus(
-                host_obj, "up", timeout
-            )
-    if fence_type == "stop":
-        test_host_status = HOST_API.waitForElemStatus(
-            host_obj, "down", timeout
-        )
-    return (test_host_status and status) == positive
+    return HOST_API.waitForElemStatus(
+        host_obj, status=status, timeout=timeout
+    )
 
 
 def _prepareHostNicObject(**kwargs):

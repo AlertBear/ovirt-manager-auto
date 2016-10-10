@@ -3,9 +3,11 @@ Helper for scheduler tests
 """
 import logging
 
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
+import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
 
@@ -73,3 +75,51 @@ def stop_cpu_load_on_all_hosts():
             {conf.RESOURCE: conf.VDS_HOSTS[:3], conf.HOST: conf.HOSTS[:3]}
         ]
     )
+
+
+def configure_pm_on_hosts(hosts):
+    """
+    Configure power management on hosts
+
+    Args:
+        hosts (dict): {host_name: host_resource,...}
+
+    Returns:
+        bool: True, if power management configuration succeeds, otherwise False
+    """
+    for host_name, host_resource in hosts.iteritems():
+        host_fqdn = host_resource.fqdn
+        host_pm = (
+            conf.PMS.get(host_fqdn) or
+            rhevm_helpers.get_pm_details(host_fqdn).get(host_fqdn)
+        )
+        if not host_pm:
+            logger.error("Host %s does not have PM" % host_name)
+            return False
+        options = {
+            "slot": host_pm.get(conf.PM_SLOT),
+            "port": host_pm.get(conf.PM_PORT)
+        }
+        agent_options = {}
+        for option_name, option_value in options.iteritems():
+            if option_value:
+                agent_options[option_name] = option_value
+        agent = {
+            "agent_type": host_pm.get(conf.PM_TYPE),
+            "agent_address": host_pm.get(conf.PM_ADDRESS),
+            "agent_username": host_pm.get(conf.PM_USERNAME),
+            "agent_password": host_pm.get(conf.PM_PASSWORD),
+            "concurrent": False,
+            "order": 1,
+            "options": agent_options
+        }
+        u_libs.testflow.setup(
+            "Add power management agent %s to the host %s", agent, host_name
+        )
+        if not hl_hosts.add_power_management(
+            host_name=host_name,
+            pm_automatic=True,
+            pm_agents=[agent]
+        ):
+            return False
+    return True

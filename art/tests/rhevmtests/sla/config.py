@@ -5,18 +5,47 @@ Configuration file for sla tests package
 from rhevmtests.config import *  # flake8: noqa
 
 # Power management constants
-PM_ADDRESS = 'pm_address'
-PM_PASSWORD = 'pm_password'
-PM_USERNAME = 'pm_username'
-PM_TYPE = 'pm_type'
-PM_SLOT = 'pm_slot'
+PM_ADDRESS = "pm_address"
+PM_PASSWORD = "pm_password"
+PM_USERNAME = "pm_username"
+PM_TYPE = "pm_type"
+PM_SLOT = "pm_slot"
+PM_PORT = "pm_port"
 
+APC_SNMP = "apc_snmp"
+APC_SNMP_ADDRESS = "rack04-pdu01-lab4.tlv.redhat.com"
+APC_SNMP_USERNAME = "alukiano"
+APC_SNMP_PASSWORD = "Al123456"
+
+PMS = {
+    "master-vds10.qa.lab.tlv.redhat.com": {
+        PM_ADDRESS: "qabc3-mgmt.qa.lab.tlv.redhat.com",
+        PM_USERNAME: "USERID",
+        PM_PASSWORD: "PASSW0RD",
+        PM_TYPE: "bladecenter",
+        PM_SLOT: 5
+    },
+    "cyan-vdsf.qa.lab.tlv.redhat.com": {
+        PM_ADDRESS: APC_SNMP_ADDRESS,
+        PM_USERNAME: APC_SNMP_USERNAME,
+        PM_PASSWORD: APC_SNMP_PASSWORD,
+        PM_TYPE: APC_SNMP,
+        PM_PORT: 13
+    },
+    "cyan-vdsg.qa.lab.tlv.redhat.com": {
+        PM_ADDRESS: APC_SNMP_ADDRESS,
+        PM_USERNAME: APC_SNMP_USERNAME,
+        PM_PASSWORD: APC_SNMP_PASSWORD,
+        PM_TYPE: APC_SNMP,
+        PM_PORT: 12
+    }
+}
 
 # PPC constants
-VM_OS_TYPE = ENUMS['rhel7ppc64'] if PPC_ARCH else ENUMS['rhel6x64']
+VM_OS_TYPE = ENUMS["rhel7ppc64"] if PPC_ARCH else ENUMS["rhel6x64"]
 VM_DISPLAY_TYPE = ENUMS[
-    'display_type_vnc'
-] if PPC_ARCH else ENUMS['display_type_spice']
+    "display_type_vnc"
+] if PPC_ARCH else ENUMS["display_type_spice"]
 
 # VM parameters
 VM_MEMORY = "memory"
@@ -91,9 +120,9 @@ CLUSTER_OVERCOMMITMENT_DESKTOP = 200
 
 # Scheduler policies
 POLICY_NONE = "none"
-POLICY_POWER_SAVING = ENUMS['scheduling_policy_power_saving']
-POLICY_EVEN_DISTRIBUTION = ENUMS['scheduling_policy_evenly_distributed']
-POLICY_EVEN_VM_DISTRIBUTION = ENUMS['scheduling_policy_vm_evenly_distributed']
+POLICY_POWER_SAVING = ENUMS["scheduling_policy_power_saving"]
+POLICY_EVEN_DISTRIBUTION = ENUMS["scheduling_policy_evenly_distributed"]
+POLICY_EVEN_VM_DISTRIBUTION = ENUMS["scheduling_policy_vm_evenly_distributed"]
 POLICY_IN_CLUSTER_UPGRADE = "InClusterUpgrade"
 
 # Scheduling policies constants
@@ -102,6 +131,7 @@ HIGH_UTILIZATION = "HighUtilization"
 LOW_UTILIZATION = "LowUtilization"
 MAX_FREE_MEMORY = "MaxFreeMemoryForOverUtilized"
 MIN_FREE_MEMORY = "MinFreeMemoryForUnderUtilized"
+HOSTS_IN_RESERVE = "HostsInReserve"
 
 CPU_LOAD_0 = 0
 CPU_LOAD_25 = 25
@@ -120,6 +150,10 @@ DEFAULT_PS_PARAMS = {
     HIGH_UTILIZATION: HIGH_UTILIZATION_VALUE,
     LOW_UTILIZATION: LOW_UTILIZATION_VALUE,
 }
+DEFAULT_PS_WITH_PM_PARAMS = copy.deepcopy(DEFAULT_PS_PARAMS)
+DEFAULT_PS_WITH_PM_PARAMS.update(
+    {HOSTS_IN_RESERVE: 1, "EnableAutomaticHostPowerManagement": "true"}
+)
 DEFAULT_ED_PARAMS = {
     OVER_COMMITMENT_DURATION: OVER_COMMITMENT_DURATION_VALUE,
     HIGH_UTILIZATION: HIGH_UTILIZATION_VALUE
@@ -127,6 +161,7 @@ DEFAULT_ED_PARAMS = {
 
 LONG_BALANCE_TIMEOUT = 600
 SHORT_BALANCE_TIMEOUT = 180
+POWER_MANAGEMENT_TIMEOUT = 900
 
 ENGINE_POLICIES = [
     POLICY_NONE,
@@ -188,3 +223,10 @@ DEFAULT_CLUSTER_PARAMETERS = {
     CLUSTER_SCH_POLICY: POLICY_NONE,
     CLUSTER_THREADS_AS_CORE: False
 }
+
+VMS_TO_RUN_0 = vms_to_run = dict(
+    (VM_NAME[i], {VM_RUN_ONCE_HOST: i}) for i in xrange(1, 3)
+)
+VMS_TO_RUN_1 = dict(
+    (VM_NAME[i], {VM_RUN_ONCE_HOST: i}) for i in xrange(2)
+)

@@ -18,6 +18,8 @@ import rhevmtests.helpers as rhevm_helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
+import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
+
 
 logger = sla_config.logging.getLogger(__name__)
 
@@ -594,35 +596,10 @@ def configure_hosts_power_management(request):
         assert all(results)
     request.addfinalizer(fin)
 
-    for host_index in hosts_to_pms:
-        host_fqdn = sla_config.VDS_HOSTS[host_index].fqdn
-        host_pm = rhevm_helpers.get_pm_details(host_fqdn).get(host_fqdn)
-        if not host_pm:
-            pytest.skip(
-                "The host %s does not have power management" % host_fqdn
-            )
-        agent_option = {
-            "slot": host_pm[sla_config.PM_SLOT]
-        } if sla_config.PM_SLOT in host_pm else None
-        agent = {
-            "agent_type": host_pm.get(sla_config.PM_TYPE),
-            "agent_address": host_pm.get(sla_config.PM_ADDRESS),
-            "agent_username": host_pm.get(sla_config.PM_USERNAME),
-            "agent_password": host_pm.get(sla_config.PM_PASSWORD),
-            "concurrent": False,
-            "order": 1,
-            "options": agent_option
-        }
-        u_libs.testflow.setup(
-            "Add the PM %s to the host %s",
-            host_pm, sla_config.HOSTS[host_index]
-        )
-        assert hl_hosts.add_power_management(
-            host_name=sla_config.HOSTS[host_index],
-            pm_automatic=True,
-            pm_agents=[agent],
-            **host_pm
-        )
+    pm_hosts = dict(
+        (sla_config.HOSTS[i], sla_config.VDS_HOSTS[i]) for i in hosts_to_pms
+    )
+    assert sch_helpers.configure_pm_on_hosts(hosts=pm_hosts)
 
 
 @pytest.fixture(scope="class")

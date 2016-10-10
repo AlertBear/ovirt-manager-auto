@@ -374,7 +374,7 @@ class ManualFenceForHost(TestHostInMaintenance):
     @polarion("RHEVM3-8835")
     def test_manual_fence_for_host(self):
         logger.info("Manual fence host: %s", HOST)
-        if not ll_hosts.fenceHost(True, host=HOST, fence_type='manual'):
+        if not ll_hosts.fence_host(host=HOST, fence_type='manual'):
             raise HostException("Manual fence for host: %s failed" % HOST)
 
 
