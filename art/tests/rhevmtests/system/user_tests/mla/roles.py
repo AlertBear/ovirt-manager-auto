@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ Enums of roles in RHEVM """
 
 
@@ -12,11 +11,13 @@ class Enum(set):
     >>> print Animals.DOG
     DOG
     """
+
     def __getattr__(self, name):
         if name in self:
             return name
         else:
             raise AttributeError("Unknown Enum item")
+
 
 # Could be changed in future
 role = Enum([
@@ -41,4 +42,4 @@ role = Enum([
     "PowerUserRole",
     "VnicProfileUser",
     "ExternalEventsCreator"
-    ])
+])

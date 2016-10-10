@@ -145,7 +145,7 @@ def addRole(positive, administrative="false", **kwargs):
 def updateRole(positive, role, **kwargs):
     '''
     Description: update existed role
-    Author: edolinin
+
     Parameters:
        * role - name of role that should be updated
        * name - new role name
@@ -159,24 +159,36 @@ def updateRole(positive, role, **kwargs):
     return status
 
 
-def addRolePermissions(positive, role, permit):
-    '''
-    Description: add permission to role
-    Author: edolinin
+def add_permission_to_role(positive, permission, role):
+    """
+    Description:
+        Adds given permission to role given role
     Parameters:
-       * role - name of role that should be updated
-       * permit - name of permission that should be added
-    Return: status (True if permission was added properly, False otherwise)
-    '''
-
-    roleObj = util.find(role)
-    permitObj = permitUtil.find(permit, collection=getPermits())
-    rolePermits = util.getElemFromLink(roleObj, link_name='permits',
-                                       attr='permit', get_href=True)
-    rolePermit = Permit()
-    rolePermit.set_id(permitObj.get_id())
-    role, status = permitUtil.create(rolePermit, positive,
-                                     collection=rolePermits)
+        positive (bool): expected result
+        permission (str): name of permission should be added
+        role (str): name of role should be updated
+    Returns:
+        bool: True if permission was added properly, False otherwise
+    """
+    role_object = util.find(role)
+    permission_object = permitUtil.find(
+        permission,
+        collection=getPermits()
+    )
+    role_permissions = util.getElemFromLink(
+        role_object,
+        link_name='permits',
+        attr='permit',
+        get_href=True
+    )
+    role_permission = Permit()
+    role_permission.set_id(permission_object.get_id())
+    role, status = permitUtil.create(
+        role_permission,
+        positive,
+        collection=role_permissions,
+        coll_elm_name='permit'
+    )
     return status
 
 

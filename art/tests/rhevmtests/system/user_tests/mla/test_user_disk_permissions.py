@@ -1,44 +1,61 @@
-'''
+"""
 Testing disk permissions feauture.
 1 Host, 1 DC, 1 Cluster, 1 SD will be created.
 Testing if permissions are correctly assigned/removed/viewed on disks.
-'''
-
-__test__ = True
-
+"""
 import logging
 import time
+import pytest
+
 import art.test_handler.exceptions as errors
 from art.core_api.apis_exceptions import EntityNotFound
-
-from rhevmtests.system.user_tests.mla import config, common
-from rhevmtests.system.user_tests.mla.roles import role
-from art.unittest_lib import attr, CoreSystemTest as TestCase
-
-from art.test_handler.tools import polarion, bz
-from art.rhevm_api.tests_lib.high_level import storagedomains
-from art.rhevm_api.tests_lib.high_level import disks as h_disks
-from art.rhevm_api.tests_lib.low_level import users, vms, disks, mla
-from art.rhevm_api.tests_lib.low_level import storagedomains as low_sd
+from art.rhevm_api.tests_lib.high_level import (
+    disks as hl_disks,
+    storagedomains as hl_sd
+)
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    storagedomains as ll_sd,
+    mla,
+    vms
+)
 from art.rhevm_api.utils import test_utils
+from art.test_handler.tools import bz, polarion
+from art.unittest_lib import attr
 
+from rhevmtests.system.user_tests.mla import common, config
 
 logger = logging.getLogger(__name__)
 
 
-def loginAsAdmin():
-    users.loginAsUser(
-        config.VDC_ADMIN_USER,
-        config.VDC_ADMIN_DOMAIN,
-        config.VDC_PASSWORD,
-        filter=False
+@pytest.fixture(autouse=True, scope="module")
+def setup(request):
+    def finalize():
+        common.login_as_admin()
+
+        common.remove_user(True, config.USER_NAMES[0])
+
+        if not config.GOLDEN_ENV:
+            test_utils.wait_for_tasks(
+                config.VDC_HOST,
+                config.VDC_ROOT_PASSWORD,
+                config.DC_NAME[0],
+            )
+            hl_sd.remove_storage_domain(
+                config.STORAGE_NAME[1],
+                config.DC_NAME[0],
+                config.HOSTS[0],
+            )
+
+    request.addfinalizer(finalize)
+
+    common.add_user(
+        True,
+        user_name=config.USER_NAMES[0],
+        domain=config.USER_DOMAIN
     )
-
-
-def setUpModule():
-    common.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
     if not config.GOLDEN_ENV:
-        storagedomains.addNFSDomain(
+        hl_sd.addNFSDomain(
             config.HOSTS[0],
             config.STORAGE_NAME[1],
             config.DC_NAME[0],
@@ -47,24 +64,8 @@ def setUpModule():
         )
 
 
-def tearDownModule():
-    loginAsAdmin()
-    common.removeUser(True, config.USER_NAME)
-    if not config.GOLDEN_ENV:
-        test_utils.wait_for_tasks(
-            config.VDC_HOST,
-            config.VDC_ROOT_PASSWORD,
-            config.DC_NAME[0],
-        )
-        storagedomains.remove_storage_domain(
-            config.STORAGE_NAME[1],
-            config.DC_NAME[0],
-            config.HOSTS[0],
-        )
-
-
 @attr(tier=2)
-class DPCase147121(TestCase):
+class DPCase147121(common.BaseTestCase):
     """
     Check if SD has assigned permissions, then all disks in SD has inherit
     these permissions, Also check if disks is attached to VM, then disks,
@@ -72,94 +73,130 @@ class DPCase147121(TestCase):
     """
     __test__ = True
 
-    def setUp(self):
-        disks.addDisk(
-            True, alias=config.DISK_NAME, interface='virtio',
-            format='cow', provisioned_size=config.GB,
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147121, cls).setup_class(request)
+
+        def finalize():
+            vms.removeVm(True, config.VM_NO_DISK)
+            hl_disks.delete_disks([config.DISK_NAME])
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
+        ll_disks.addDisk(
+            True,
+            alias=config.DISK_NAME,
+            interface='virtio',
+            format='cow',
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         )
-        disks.wait_for_disks_status(config.DISK_NAME)
+        ll_disks.wait_for_disks_status(config.DISK_NAME)
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE,
-            role=role.DiskOperator
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.DiskOperator
         )
+
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            positive=True,
+            vmName=config.VM_NO_DISK,
+            cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
+
+        mla.addVMPermissionsToUser(
+            True,
+            config.USER_NAMES[0],
+            config.VM_NO_DISK
+        )
 
     @polarion("RHEVM3-7613")
-    def test_diskInheritedPermissions(self):
+    def test_disk_inherited_permissions(self):
         """ Check inheritance of disk permissions """
         # Check inheritance from SD
         assert mla.hasUserPermissionsOnObject(
-            config.USER1, disks.DISKS_API.find(config.DISK_NAME),
-            role=role.DiskOperator
+            config.USERS[0],
+            ll_disks.DISKS_API.find(config.DISK_NAME),
+            role=config.role.DiskOperator
         ), "Permissions from SD was not delegated to disk."
         logger.info("Disk inherit permissions from SD.")
         # Check inheritance from vm
-        disk_name = "%s%s" % (config.VM_NO_DISK, '_Disk1')
+        disk_name = "{0}{1}".format(config.VM_NO_DISK, "_Disk1")
         assert vms.addDisk(
-            True, config.VM_NO_DISK, config.GB,
+            True,
+            config.VM_NO_DISK,
+            config.GB,
             storagedomain=config.MASTER_STORAGE,
-            interface='virtio', format='cow'
+            interface='virtio',
+            format='cow'
         ), "Unable to attach disk to vm."
         assert mla.hasUserPermissionsOnObject(
-            config.USER1, disks.DISKS_API.find(disk_name),
-            role=role.UserVmManager
+            config.USERS[0],
+            ll_disks.DISKS_API.find(disk_name),
+            role=config.role.UserVmManager
         ), "Permissions from vm was not delegated to disk."
         logger.info("Disk inherit permissions from vm.")
 
-    def tearDown(self):
-        vms.removeVm(True, config.VM_NO_DISK)
-        h_disks.delete_disks([config.DISK_NAME])
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
-
 
 @attr(tier=2)
-class DPCase14722_2(TestCase):
+class DPCase14722_2(common.BaseTestCase):
     """
     User should not be able to create disk if he has not create disk AG
     """
     __test__ = True
 
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase14722_2, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            try:
+                hl_disks.delete_disks([config.DISK_NAME])
+            except EntityNotFound:
+                pass
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE, role=role.UserRole
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.UserRole
         )
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
+        common.login_as_user()
 
     @polarion("RHEVM3-12079")
-    def test_createDiskWithoutPermissions(self):
+    def test_create_disk_without_permissions(self):
         """ Create disk without permissions """
         # Check if user has not StorageAdmin perms on SD he can't create Disk
-        assert disks.addDisk(
-            False, alias=config.DISK_NAME, interface='virtio',
-            format='cow', provisioned_size=config.GB,
+        assert ll_disks.addDisk(
+            False,
+            alias=config.DISK_NAME,
+            interface='virtio',
+            format='cow',
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         ), "User without StorageAdmin permissions can create disk."
         logger.info("User without StorageAdmin perms on SD can't create disk.")
 
-    def tearDown(self):
-        loginAsAdmin()
-        try:
-            h_disks.delete_disks([config.DISK_NAME])
-        except EntityNotFound:
-            pass
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
-
 
 @attr(tier=2)
-class DPCase147122(TestCase):
+class DPCase147122(common.BaseTestCase):
     """
     If user want create disks, he needs to have permissions on SD.
     Try to assign permissions on SD and create disk
@@ -167,90 +204,123 @@ class DPCase147122(TestCase):
     __test__ = True
 
     @classmethod
-    def setup_class(cls):
-        mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE,
-            role=role.StorageAdmin
-        )
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147122, cls).setup_class(request)
 
-    def setUp(self):
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=False
+        def finalize():
+            # Remove permissions from SD
+            common.login_as_admin()
+            if ll_disks.checkDiskExists(True, config.DISK_NAME):
+                hl_disks.delete_disks([config.DISK_NAME])
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
+        mla.addStoragePermissionsToUser(
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.StorageAdmin
         )
 
     @polarion("RHEVM3-7625")
-    def test_createDisk(self):
+    def test_create_disk(self):
         """ Create disk with permissions """
         # Check if user has StorageAdmin perms on SD he can create Disk
-        assert disks.addDisk(
-            True, alias=config.DISK_NAME, interface='virtio',
-            format='cow', provisioned_size=config.GB,
+        common.login_as_user(filter_=False)
+        assert ll_disks.addDisk(
+            True,
+            alias=config.DISK_NAME,
+            interface='virtio',
+            format='cow',
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         ), "User with StorageAdmin permissions can't create disk."
-        h_disks.delete_disks([config.DISK_NAME])
+        hl_disks.delete_disks([config.DISK_NAME])
         logger.info("User with StorageAdmin perms on SD can create disk.")
-
-    def tearDown(self):
-        # Remove permissions from SD
-        loginAsAdmin()
-        if disks.checkDiskExists(True, config.DISK_NAME):
-            h_disks.delete_disks([config.DISK_NAME])
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
 
 
 @attr(tier=2)
-class DPCase147123(TestCase):
+class DPCase147123(common.BaseTestCase):
     """ General subcalss for TestCase 147123 """
     __test__ = False
+
     disk_role = None
     vm_role = None
     pos = None
 
-    def setUp(self):
-        disks.addDisk(
-            True, alias=config.DISK_NAME, interface='virtio',
-            format='cow', provisioned_size=config.GB,
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147123, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+
+            hl_disks.delete_disks([config.DISK_NAME])
+
+            vms.removeVm(True, config.VM_NO_DISK, wait=True)
+
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
+        ll_disks.addDisk(
+            True,
+            alias=config.DISK_NAME,
+            interface='virtio',
+            format='cow',
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         )
-        disks.wait_for_disks_status(config.DISK_NAME)
+        ll_disks.wait_for_disks_status(config.DISK_NAME)
+
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE, role=self.disk_role
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=cls.disk_role
         )
+
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            positive=True,
+            vmName=config.VM_NO_DISK,
+            cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
+
         mla.addVMPermissionsToUser(
-            True, config.USER_NAME, config.VM_NO_DISK, role=self.vm_role
+            True,
+            config.USER_NAMES[0],
+            config.VM_NO_DISK,
+            role=cls.vm_role
         )
 
     @polarion("RHEVM3-7626")
-    def test_attachDiskToVM(self):
+    def test_attach_disk_to_vm(self):
         """ Attach disk to vm """
         # Attach disk need perm on disk and on VM.
         msg = (
             'User with UserVmManager on vm and DiskOperator on disk can'
             'attach disk.'
         )
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
-        assert disks.attachDisk(
-            self.pos, config.DISK_NAME, config.VM_NO_DISK
+        common.login_as_user()
+
+        assert ll_disks.attachDisk(
+            self.pos,
+            config.DISK_NAME,
+            config.VM_NO_DISK
         ), "Unable to attach disk to vm."
         logger.info(msg)
-
-    def tearDown(self):
-        loginAsAdmin()
-        h_disks.delete_disks([config.DISK_NAME])
-        vms.removeVm(True, config.VM_NO_DISK)
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
 
 
 class DPCase147123_1(DPCase147123):
@@ -258,8 +328,9 @@ class DPCase147123_1(DPCase147123):
     User should not be able to attach disk to vm if he has not perms on vm
     """
     __test__ = True
-    disk_role = role.DiskOperator
-    vm_role = role.UserRole
+
+    disk_role = config.role.DiskOperator
+    vm_role = config.role.UserRole
     pos = False
 
 
@@ -268,8 +339,9 @@ class DPCase147123_2(DPCase147123):
     User should not be able to attach disk to vm if he has not perms on disk
     """
     __test__ = True
-    disk_role = role.UserRole
-    vm_role = role.UserVmManager
+
+    disk_role = config.role.UserRole
+    vm_role = config.role.UserVmManager
     pos = False
 
 
@@ -279,47 +351,60 @@ class DPCase147123_3(DPCase147123):
     disk and an appropriate permission on VM.
     """
     __test__ = True
-    disk_role = role.DiskOperator
-    vm_role = role.UserVmManager
+    disk_role = config.role.DiskOperator
+    vm_role = config.role.UserVmManager
     pos = True
 
 
 @attr(tier=2)
-class DPCase147124(TestCase):
+class DPCase147124(common.BaseTestCase):
     """
     General case for detach disk
     """
     __test__ = False
     tested_role = None
-    pos = None
+    positive = None
 
-    def setUp(self):
-        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147124, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            hl_disks.delete_disks([cls.disk_name])
+            vms.removeVm(True, config.VM_NAME)
+
+        request.addfinalizer(finalize)
+
+        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
+
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            positive=True,
+            vmName=config.VM_NAME,
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE,
+            provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
+
         mla.addVMPermissionsToUser(
-            True, config.USER_NAME, config.VM_NAME, role=self.tested_role
+            True,
+            config.USER_NAMES[0],
+            config.VM_NAME,
+            role=cls.tested_role
         )
 
     @polarion("RHEVM3-7627")
-    def test_detachDisk(self):
+    def test_detach_disk(self):
         """ Detach disk from vm """
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
-        assert disks.detachDisk(
-            self.pos, self.disk_name, config.VM_NAME
+        common.login_as_user()
+        assert ll_disks.detachDisk(
+            self.positive,
+            self.disk_name,
+            config.VM_NAME
         ), "User with UserVmManager can't detach disk from VM."
         logger.info("User who has UserVmManager perms on vm can detach disk.")
-
-    def tearDown(self):
-        loginAsAdmin()
-        h_disks.delete_disks([self.disk_name])
-        vms.removeVm(True, config.VM_NAME)
 
 
 class DPCase147124_1(DPCase147124):
@@ -327,8 +412,8 @@ class DPCase147124_1(DPCase147124):
     Detach disk from VM requires permissions on the VM only.
     """
     __test__ = True
-    tested_role = role.UserVmManager
-    pos = True
+    tested_role = config.role.UserVmManager
+    positive = True
 
 
 class DPCase147124_2(DPCase147124):
@@ -336,405 +421,523 @@ class DPCase147124_2(DPCase147124):
     Negative: Detach disk from VM requires permissions on the VM only.
     """
     __test__ = True
-    tested_role = role.UserRole
-    pos = False
+    tested_role = config.role.UserRole
+    positive = False
 
 
 @attr(tier=2)
-class DPCase147125(TestCase):
+class DPCase147125(common.BaseTestCase):
     """
     To activate/deactivate user must have an manipulate permissions on VM.
     """
     __test__ = True
 
-    def setUp(self):
-        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147125, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            vms.removeVm(True, config.VM_NAME)
+
+        request.addfinalizer(finalize)
+
+        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
+
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            positive=True,
+            vmName=config.VM_NAME,
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE,
+            provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
+
+        mla.addVMPermissionsToUser(True, config.USER_NAMES[0], config.VM_NAME)
 
     @polarion("RHEVM3-7628")
-    def test_activateDeactivateDisk(self):
-        """ ActivateDeactivateDisk """
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
+    def test_activate_deactivate_disk(self):
+        """ Activate/Deactivate Disk """
+        common.login_as_user()
         assert vms.deactivateVmDisk(
-            True, config.VM_NAME, diskAlias=self.disk_name
+            True,
+            config.VM_NAME,
+            diskAlias=self.disk_name
         ), "User with UserVmManager role can't deactivate vm disk"
         logger.info("User with UserVmManager perms can deactivate vm disk.")
+
         assert vms.activateVmDisk(
-            True, config.VM_NAME, diskAlias=self.disk_name
+            True,
+            config.VM_NAME,
+            diskAlias=self.disk_name
         ), "User with UserVmManager role can't activate vm disk"
         logger.info("User with UserVmManager permissions can active vm disk.")
 
-    def tearDown(self):
-        loginAsAdmin()
-        vms.removeVm(True, config.VM_NAME)
-
 
 @attr(tier=2)
-class DPCase147126(TestCase):
+class DPCase147126(common.BaseTestCase):
     """
     User has to have delete_disk action group in order to remove disk.
     """
     __test__ = True
 
-    def setUp(self):
-        disks.addDisk(
-            True, alias=config.DISK_NAME, interface='virtio',
-            format='cow', provisioned_size=config.GB,
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147126, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            if ll_disks.checkDiskExists(True, config.DISK_NAME):
+                ll_disks.deleteDisk(True, config.DISK_NAME)
+            ll_disks.waitForDisksGone(True, config.DISK_NAME)
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
+        ll_disks.addDisk(
+            True,
+            alias=config.DISK_NAME,
+            interface='virtio',
+            format='cow',
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         )
-        disks.wait_for_disks_status(config.DISK_NAME)
+        ll_disks.wait_for_disks_status(config.DISK_NAME)
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE, role=role.UserRole
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.UserRole
         )
 
     @polarion("RHEVM3-7629")
-    def test_removeDisk(self):
+    def test_remove_disk(self):
         """ Remove disk as user with and without permissions """
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
-        assert disks.deleteDisk(
-            False, config.DISK_NAME
+        common.login_as_user()
+        assert ll_disks.deleteDisk(
+            False,
+            config.DISK_NAME
         ), "User without delete_disk action group can remove disk."
         logger.info("User without delete_disk action group can't remove disk.")
 
-        loginAsAdmin()
+        common.login_as_admin()
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE,
-            role=role.DiskOperator
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.DiskOperator
         )
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
-        assert disks.deleteDisk(
-            True, config.DISK_NAME
+        common.login_as_user()
+        assert ll_disks.deleteDisk(
+            True,
+            config.DISK_NAME
         ), "User with delete_disk action group can't remove disk."
         logger.info("User with delete_disk action group can remove disk.")
 
-    def tearDown(self):
-        loginAsAdmin()
-        if disks.checkDiskExists(True, config.DISK_NAME):
-            disks.deleteDisk(True, config.DISK_NAME)
-        disks.waitForDisksGone(True, config.DISK_NAME)
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
-
 
 @attr(tier=2)
-class DPCase147127(TestCase):
+class DPCase147127(common.BaseTestCase):
     """
     User has to have edit_disk_properties action group in order to remove disk.
     """
     __test__ = True
 
-    def setUp(self):
-        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147127, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            vms.removeVm(True, config.VM_NAME)
+
+        request.addfinalizer(finalize)
+
+        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
+
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            positive=True,
+            vmName=config.VM_NAME,
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE,
+            provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
+
+        mla.addVMPermissionsToUser(True, config.USER_NAMES[0], config.VM_NAME)
 
     @polarion("RHEVM3-7630")
-    def test_updateVmDisk(self):
+    def test_update_vm_disk(self):
         """ Update vm disk """
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
-        assert disks.updateDisk(
-            True, vmName=config.VM_NAME, alias=self.disk_name,
+        common.login_as_user()
+        assert ll_disks.updateDisk(
+            True,
+            vmName=config.VM_NAME,
+            alias=self.disk_name,
             interface='ide'
         ), "User can't update vm disk."
         logger.info("User can update vm disk.")
 
-    def tearDown(self):
-        loginAsAdmin()
-        vms.removeVm(True, config.VM_NAME)
-
 
 @attr(tier=2)
-class DPCase147128(TestCase):
+class DPCase147128(common.BaseTestCase):
     """
     Move or copy disk requires permissions on the disk and on the target sd.
     """
     __test__ = True
 
-    def setUp(self):
-        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147128, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            ll_sd.waitForStorageDomainStatus(
+                True,
+                config.DC_NAME[0],
+                config.STORAGE_NAME[1],
+                'active'
+            )
+            hl_disks.delete_disks([cls.disk_name])
+            vms.removeVm(True, config.VM_NAME)
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.STORAGE_NAME[1],
+                config.USERS[0]
+            )
+            test_utils.wait_for_tasks(
+                config.VDC_HOST,
+                config.VDC_ROOT_PASSWORD,
+                config.DC_NAME[0]
+            )
+
+        request.addfinalizer(finalize)
+
+        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
+
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            positive=True,
+            vmName=config.VM_NAME,
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE,
+            provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
+
         mla.addVMPermissionsToUser(
-            True, config.USER_NAME, config.VM_NAME, role=role.StorageAdmin
+            True,
+            config.USER_NAMES[0],
+            config.VM_NAME,
+            role=config.role.StorageAdmin
         )
 
     @polarion("RHEVM3-7631")
     @bz({'1209505': {}})
-    def test_moveDisk(self):
+    def test_move_disk(self):
         """ Move disk with and without having permissions on sds """
         # Move disk without permissions
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=False
-        )
-
+        common.login_as_user(filter_=False)
         try:
             vms.move_vm_disk(
-                config.VM_NAME, self.disk_name, config.STORAGE_NAME[1]
+                config.VM_NAME,
+                self.disk_name,
+                config.STORAGE_NAME[1]
             )
         except errors.DiskException:
             logger.info("User without perms on sds can't move disk.")
         # Move disk with permissions only on destination sd
-        loginAsAdmin()
+        common.login_as_admin()
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE,
-            role=role.StorageAdmin
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.StorageAdmin
         )
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=False
-        )
+        common.login_as_user(filter_=False)
         try:
             vms.move_vm_disk(
-                config.VM_NAME, self.disk_name, config.STORAGE_NAME[1]
+                config.VM_NAME,
+                self.disk_name,
+                config.STORAGE_NAME[1]
             )
         except errors.DiskException:
             logger.info("User without perms on target sd can't move disk.")
 
         # Move disk with permissions on both sds
-        loginAsAdmin()
+        common.login_as_admin()
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.STORAGE_NAME[1],
-            role=role.DiskCreator
+            True,
+            config.USER_NAMES[0],
+            config.STORAGE_NAME[1],
+            role=config.role.DiskCreator
         )
 
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=False
-        )
+        common.login_as_user(filter_=False)
         vms.move_vm_disk(
-            config.VM_NAME, self.disk_name,
+            config.VM_NAME,
+            self.disk_name,
             config.STORAGE_NAME[1]
         )
         time.sleep(5)
-        disks.wait_for_disks_status(self.disk_name)
+        ll_disks.wait_for_disks_status([self.disk_name])
         test_utils.wait_for_tasks(
-            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+            config.VDC_HOST,
+            config.VDC_ROOT_PASSWORD,
+            config.DC_NAME[0]
         )
         logger.info("User with perms on target sd and disk can move disk.")
 
-    def tearDown(self):
-        loginAsAdmin()
-        low_sd.waitForStorageDomainStatus(
-            True, config.DC_NAME[0], config.STORAGE_NAME[1], 'active'
-        )
-        h_disks.delete_disks([self.disk_name])
-        vms.removeVm(True, config.VM_NAME)
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
-        mla.removeUserPermissionsFromSD(
-            True, config.STORAGE_NAME[1], config.USER1
-        )
-        test_utils.wait_for_tasks(
-            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
-        )
-
 
 @attr(tier=2)
-class DPCase147129(TestCase):
+class DPCase147129(common.BaseTestCase):
     """
     Add disk to VM requires both permissions on the VM and on the sd
     """
     __test__ = True
 
-    def setUp(self):
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147129, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            vms.removeVm(True, config.VM_NO_DISK)
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            positive=True,
+            vmName=config.VM_NO_DISK,
+            cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
+
         mla.addVMPermissionsToUser(
-            True, config.USER_NAME, config.VM_NO_DISK, role=role.UserRole
+            True,
+            config.USER_NAMES[0],
+            config.VM_NO_DISK,
+            role=config.role.UserRole
         )
 
     @polarion("RHEVM3-7632")
     @bz({'1209505': {}})
-    def test_addDiskToVm(self):
+    def test_add_disk_to_vm(self):
         """ add disk to vm with and without permissions """
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
+        common.login_as_user()
         assert vms.addDisk(
-            False, config.VM_NO_DISK, config.GB,
+            False,
+            config.VM_NO_DISK,
+            config.GB,
             storagedomain=config.MASTER_STORAGE,
-            interface='virtio', format='cow'
+            interface='virtio',
+            format='cow'
         ), "UserRole can add disk to vm."
         logger.info("User without permissions on vm, can't add disk to vm.")
 
-        loginAsAdmin()
+        common.login_as_admin()
         mla.addVMPermissionsToUser(
-            True, config.USER_NAME, config.VM_NO_DISK, role=role.UserVmManager
+            True,
+            config.USER_NAMES[0],
+            config.VM_NO_DISK,
+            role=config.role.UserVmManager
         )
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
+
+        common.login_as_user()
         assert vms.addDisk(
-            False, config.VM_NO_DISK, config.GB,
+            False,
+            config.VM_NO_DISK,
+            config.GB,
             storagedomain=config.MASTER_STORAGE,
-            interface='virtio', format='cow'
+            interface='virtio',
+            format='cow'
         ), "User without permissions on sd can add disk to vm."
         logger.info("User without permissions on sd, can't add disk to vm.")
 
-        loginAsAdmin()
+        common.login_as_admin()
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE,
-            role=role.DiskCreator
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.DiskCreator
         )
 
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
+        common.login_as_user()
         assert vms.addDisk(
-            True, config.VM_NO_DISK, config.GB,
+            True,
+            config.VM_NO_DISK,
+            config.GB,
             storagedomain=config.MASTER_STORAGE,
-            interface='virtio', format='cow'
+            interface='virtio',
+            format='cow'
         ), "User with permissions on sd and vm can't add disk to vm."
         logger.info("User with permissions on sd and vm, can add disk to vm.")
 
-    def tearDown(self):
-        loginAsAdmin()
-        vms.removeVm(True, config.VM_NO_DISK)
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
-
 
 @attr(tier=2)
-class DPCase147130(TestCase):
+class DPCase147130(common.BaseTestCase):
     """
     If disks are marked for deletion requires permissions on the removed
     disks and on the vm.
     """
     __test__ = True
 
-    def setUp(self):
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147130, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            vms.waitForVmsGone(True, config.VM_NAME)
+            mla.removeUserPermissionsFromCluster(
+                True,
+                config.CLUSTER_NAME[0],
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            positive=True,
+            vmName=config.VM_NAME,
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE,
+            provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
+
         mla.addVMPermissionsToUser(
-            True, config.USER_NAME, config.VM_NAME, role=role.DiskOperator
+            True,
+            config.USER_NAMES[0],
+            config.VM_NAME,
+            role=config.role.DiskOperator
         )
         mla.addClusterPermissionsToUser(
-            True, config.USER_NAME, config.CLUSTER_NAME[0], role=role.UserRole
-        )
-
-    def tearDown(self):
-        loginAsAdmin()
-        vms.waitForVmsGone(True, config.VM_NAME)
-        mla.removeUserPermissionsFromCluster(
-            True, config.CLUSTER_NAME[0], config.USER1
+            True,
+            config.USER_NAMES[0],
+            config.CLUSTER_NAME[0],
+            role=config.role.UserRole
         )
 
     @polarion("RHEVM3-7624")
-    def test_removeVm(self):
+    def test_remove_vm(self):
         """ remove vm with disk without/with having apprirate permissions """
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
+        common.login_as_user()
         assert vms.removeVm(
-            False, config.VM_NAME
+            False,
+            config.VM_NAME
         ), "User can remove vm as DiskOperator."
         logger.info("User can't remove vm as DiskOperator.")
 
-        loginAsAdmin()
+        common.login_as_admin()
         mla.addVMPermissionsToUser(
-            True, config.USER_NAME, config.VM_NAME, role=role.UserVmManager
+            True,
+            config.USER_NAMES[0],
+            config.VM_NAME,
+            role=config.role.UserVmManager
         )
 
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
+        common.login_as_user()
         assert vms.removeVm(
-            True, config.VM_NAME, wait=False
+            True,
+            config.VM_NAME,
+            wait=False
         ), "User can't remove vm as DiskOperator and UserVmManager on vm."
         logger.info("User can remove vm as UserVmManager, DiskOperator on vm")
 
 
 @attr(tier=2)
-class DPCase147137(TestCase):
+class DPCase147137(common.BaseTestCase):
     """
     Create/attach/edit/delete shared disk.
     """
     __test__ = True
 
-    def setUp(self):
-        disks.addDisk(
-            True, alias=config.DISK_NAME, interface='virtio',
-            format='raw', provisioned_size=config.GB,
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(DPCase147137, cls).setup_class(request)
+
+        def finalize():
+            common.login_as_admin()
+            ll_disks.waitForDisksGone(True, config.DISK_NAME)
+            vms.removeVm(True, config.VM_NO_DISK),
+            mla.removeUserPermissionsFromSD(
+                True,
+                config.MASTER_STORAGE,
+                config.USERS[0]
+            )
+
+        request.addfinalizer(finalize)
+
+        ll_disks.addDisk(
+            True,
+            alias=config.DISK_NAME,
+            interface='virtio',
+            format='raw',
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE,
             shareable=True
         )
-        disks.wait_for_disks_status(config.DISK_NAME)
+        ll_disks.wait_for_disks_status(config.DISK_NAME)
         mla.addStoragePermissionsToUser(
-            True, config.USER_NAME, config.MASTER_STORAGE,
-            role=role.DiskOperator
+            True,
+            config.USER_NAMES[0],
+            config.MASTER_STORAGE,
+            role=config.role.DiskOperator
         )
 
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            positive=True,
+            vmName=config.VM_NO_DISK,
+            cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
+        mla.addVMPermissionsToUser(
+            True,
+            config.USER_NAMES[0],
+            config.VM_NO_DISK
+        )
 
     @polarion("RHEVM3-7616")
-    def test_sharedDisk(self):
+    def test_shared_disk(self):
         """ Basic operations with shared disk """
-        users.loginAsUser(
-            config.USER_NAME, config.PROFILE,
-            config.USER_PASSWORD, filter=True
-        )
-        assert disks.attachDisk(
-            True, config.DISK_NAME, config.VM_NO_DISK
+        common.login_as_user()
+        assert ll_disks.attachDisk(
+            True,
+            config.DISK_NAME,
+            config.VM_NO_DISK
         ), "Unable to attach disk to vm."
         logger.info("Shared disk was attached by user.")
 
-        assert disks.updateDisk(
-            True, vmName=config.VM_NO_DISK, alias=config.DISK_NAME,
+        assert ll_disks.updateDisk(
+            True,
+            vmName=config.VM_NO_DISK,
+            alias=config.DISK_NAME,
             interface='ide'
         ), "User can't update vm shared disk."
         logger.info("User can update vm shared disk.")
 
-        assert disks.deleteDisk(
-            True, config.DISK_NAME
+        assert ll_disks.deleteDisk(
+            True,
+            config.DISK_NAME
         ), "User can't remove shared disk."
         logger.info("User can remove shared disk.")
-
-    def tearDown(self):
-        loginAsAdmin()
-        disks.waitForDisksGone(True, config.DISK_NAME)
-        vms.removeVm(True, config.VM_NO_DISK),
-        mla.removeUserPermissionsFromSD(
-            True, config.MASTER_STORAGE, config.USER1
-        )
