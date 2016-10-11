@@ -9,14 +9,13 @@ polarion:
 """
 
 import logging
+import pytest
 
 from art.rhevm_api.utils.enginecli import EngineCLI
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 
 from rhevmtests.system.aaa.ldap import config
-
-__test__ = True
 
 logger = logging.getLogger('test_info')
 
@@ -27,7 +26,9 @@ class ExttoolInfo(TestCase):
     __test__ = True
 
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        testflow.setup("Setting up class %s", cls.__name__)
         cls.info_cli = EngineCLI(
             tool=config.TOOL,
             session=config.ENGINE_HOST.executor().session(),
@@ -39,17 +40,22 @@ class ExttoolInfo(TestCase):
     @polarion('RHEVM3-14041')
     def test_list_extensions(self):
         """ test list of existing extensions """
+
+        testflow.step("Listing extensions")
         rc, out = self.info_cli.run('list-extensions', format='{instance}')
         extensions = out.split('\n')[:-1]
         logger.info('Enabled extensions: %s', extensions)
         assert rc, 'Failed to run info list-extensions'
 
+        testflow.step("Checking for internal extensions")
         for extension in ['internal-authz', 'internal-authn']:
             assert extension in extensions, '%s was not found' % extension
 
     @polarion('RHEVM3-14042')
     def test_configuration(self):
         """ test of listing configuration of authz/authn """
+
+        testflow.step("Listing configuration of authz/authn")
         for extension in ['internal-authz', 'internal-authn']:
             rc, out = self.info_cli.run(
                 'configuration',
@@ -63,6 +69,8 @@ class ExttoolInfo(TestCase):
     @polarion('RHEVM3-14043')
     def test_context(self):
         """ test of listing context of authz/authn """
+
+        testflow.step("Listing context of authz/authn")
         for extension in ['internal-authz', 'internal-authn']:
             rc, out = self.info_cli.run('context', extension_name=extension)
             logger.info('Extension context : %s', out)

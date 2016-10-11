@@ -12,6 +12,7 @@ from art.rhevm_api.utils.test_utils import restart_engine
 
 logger = logging.getLogger(__name__)
 SKIP_MESSAGE = 'Configuration was not setup for this test. Skipping.'
+TARGET_FILE = "/etc/pki/w2k12r2.pem"
 INTERVAL = 5
 ATTEMPTS = 25
 
@@ -110,7 +111,7 @@ def check(ext=None):
 # -- MLA utils --
 def assignUserPermissionsOnCluster(user_name, provider, principal=None,
                                    role=config.USERROLE,
-                                   cluster=config.DEFAULT_CLUSTER_NAME,
+                                   cluster=config.CLUSTER_NAME[0],
                                    create_user=True):
     '''
     Assign user permissions on cluster.
@@ -156,21 +157,23 @@ def import_certificate_to_truststore(host, cert_path, truststore, password):
     '''
     Import certificate from url into truststore.
 
-    :param host: host with truststore
-    :type host: resources.Host
-    :param cert_path: path to certificate
-    :type cert_path: str
-    :param truststore: trustore to store certificate
-    :type truststore: str
-    :param password: password of trustore
-    :type password: str
+    Args:
+        host (resources.Host): host with truststore
+        cert_path (str): path to certificate
+        truststore (str): trustore to store certificate
+        password (str): password of trustore
     '''
+    with host.executor().session() as ss:
+        with open(cert_path) as fhs:
+            with ss.open_file(TARGET_FILE, 'w') as fhd:
+                fhd.write(fhs.read())
+    logger.info('Certificate "%s" has been copied.', TARGET_FILE)
     with host.executor().session() as session:
         return session.run_cmd([
             'keytool', '-import', '-noprompt',
             '-storepass', password,
-            '-file', cert_path,
-            '-alias', cert_path,
+            '-file', TARGET_FILE,
+            '-alias', TARGET_FILE,
             '-keystore', truststore,
         ])
 
@@ -263,6 +266,63 @@ def setup_ldap(host, conf_file):
         ss.run_cmd(['rm', '-f', tempconf])
         logger.info(out)
     return not rc
+
+
+def enable_aaa_debug_logs(host, disable=False):
+    """
+    Enable aaa debug logs
+
+    Args:
+        host (resources.Host): Host executor
+        disable (boolean): Disable logs flag
+    """
+    JBOSS_CLI = '/opt/rh/eap7/root/usr/share/wildfly/bin/jboss-cli.sh'
+    SUBSYSTEMS = [
+        "/subsystem=logging/logger=org.ovirt.engineextensions.aaa.ldap",
+        "/subsystem=logging/logger=org.ovirt.engine.api.extensions.aaa",
+        "/subsystem=logging/logger=org.ovirt.engine.core.aaa",
+    ]
+    if not disable:
+        for subsystem in SUBSYSTEMS:
+            add_action = ("'%s:add'" % subsystem)
+            level_action = (
+                "'%s:write-attribute(name=level,value=DEBUG)'" % subsystem
+            )
+            with host.executor().session() as ss:
+                logger.info("Enabling AAA debug log: %s" % subsystem)
+                rc, out, err = ss.run_cmd([
+                    JBOSS_CLI,
+                    '--controller=localhost:8706',
+                    '--connect',
+                    '--user=admin@internal',
+                    '--password=123456',
+                    add_action
+                ])
+                logger.info(out)
+                logger.info("Setting debug level for: %s" % subsystem)
+                rc, out, err = ss.run_cmd([
+                    JBOSS_CLI,
+                    '--controller=localhost:8706',
+                    '--connect',
+                    '--user=admin@internal',
+                    '--password=123456',
+                    level_action
+                ])
+                logger.info(out)
+    else:
+        for subsystem in SUBSYSTEMS:
+            remove_action = ("'%s:remove'" % subsystem)
+            with host.executor().session() as ss:
+                logger.info("Disabling AAA debug log: %s" % subsystem)
+                rc, out, err = ss.run_cmd([
+                    JBOSS_CLI,
+                    '--controller=localhost:8706',
+                    '--connect',
+                    '--user=admin@internal',
+                    '--password=123456',
+                    remove_action
+                ])
+                logger.info(out)
 
 
 def extend(properties={}):

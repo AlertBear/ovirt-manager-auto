@@ -2,12 +2,13 @@
 Test possible configuration option of properties file.
 """
 
-from rhevmtests.system.aaa.ldap import config, common
+import pytest
+
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 
-__test__ = True
+from rhevmtests.system.aaa.ldap import config, common
 
 
 @attr(tier=2)
@@ -18,20 +19,40 @@ class ADTLS(TestCase):
     __test__ = True
     conf = config.ADTLS_EXTENSION
 
-    def setUp(self):
-        for domain in config.ADW2K12_DOMAINS:
-            principal = '%s@%s' % (config.ADW2k12_USER1, domain)
-            common.assignUserPermissionsOnCluster(principal,
-                                                  self.conf['authz_name'],
-                                                  principal)
-
     @classmethod
-    def teardown_class(cls):
-        users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
-                          config.VDC_PASSWORD, False)
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Tearing down class %s", cls.__name__)
+            testflow.teardown("Login as user %s", config.VDC_ADMIN_USER)
+            users.loginAsUser(
+                config.VDC_ADMIN_USER,
+                config.VDC_ADMIN_DOMAIN,
+                config.VDC_PASSWORD,
+                False,
+            )
+            testflow.teardown("Removing user %s", config.ADW2k12_USER1)
+            for domain in config.ADW2K12_DOMAINS:
+                principal = '%s@%s' % (config.ADW2k12_USER1, domain)
+                assert users.removeUser(
+                    True,
+                    principal,
+                    cls.conf['authz_name'],
+                )
+
+        request.addfinalizer(finalize)
+
+        testflow.setup("Setting up class %s", cls.__name__)
+        testflow.setup(
+            "Assigning user permissions to user %s", config.ADW2k12_USER1
+        )
         for domain in config.ADW2K12_DOMAINS:
             principal = '%s@%s' % (config.ADW2k12_USER1, domain)
-            assert users.removeUser(True, principal, cls.conf['authz_name'])
+            common.assignUserPermissionsOnCluster(
+                principal,
+                cls.conf['authz_name'],
+                principal,
+            )
 
     @polarion('RHEVM3-8099')
     @common.check(config.EXTENSIONS)
@@ -39,8 +60,16 @@ class ADTLS(TestCase):
         """ active directory start tsl """
         for domain in config.ADW2K12_DOMAINS:
             principal = '%s@%s' % (config.ADW2k12_USER1, domain)
-            users.loginAsUser(principal, self.conf['authn_name'],
-                              config.ADW2k12_USER_PASSWORD, True)
+            testflow.step("Login as user %s", config.ADW2k12_USER1)
+            users.loginAsUser(
+                principal,
+                self.conf['authn_name'],
+                config.ADW2k12_USER_PASSWORD,
+                True,
+            )
+            testflow.step(
+                "Testing connection with user %s", config.ADW2k12_USER1
+            )
             assert common.connectionTest(), "User %s can't login." % principal
 
 
@@ -58,29 +87,44 @@ class ADGroupWithSpacesInName(TestCase):
     princ = '%s@%s' % (config.ADW2k12_USER_SPACE, config.ADW2K12_DOMAINS[0])
 
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Tearing down class %s", cls.__name__)
+            testflow.teardown("Login as user %s", config.VDC_ADMIN_USER)
+            users.loginAsUser(
+                config.VDC_ADMIN_USER,
+                config.VDC_ADMIN_DOMAIN,
+                config.VDC_PASSWORD,
+                False,
+            )
+            testflow.teardown("Removing user %s", cls.princ)
+            users.removeUser(True, cls.princ, cls.conf['authz_name'])
+            testflow.teardown("Removing group %s", cls.group)
+            users.deleteGroup(True, cls.group)
+
+        request.addfinalizer(finalize)
+
+        testflow.setup("Setting up class %s", cls.__name__)
+        testflow.setup("Adding group %s", cls.group)
         assert users.addGroup(True, cls.group, cls.conf['authz_name'])
+        testflow.setup("Adding cluster permissions to group %s", cls.group)
         assert mla.addClusterPermissionsToGroup(
             True,
             cls.group,
-            config.DEFAULT_CLUSTER_NAME
+            config.CLUSTER_NAME[0]
         )
-
-    @classmethod
-    def teardown_class(cls):
-        users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
-                          config.VDC_PASSWORD, False)
-        users.removeUser(True, cls.princ, cls.conf['authz_name'])
-        users.deleteGroup(True, cls.group)
 
     @polarion('RHEVM3-12865')
     @common.check(config.EXTENSIONS)
     def test_group_with_spaces(self):
         """ test login as user which is part of group with spaces in name """
+        testflow.step("Login as user %s", self.princ)
         users.loginAsUser(
             self.princ,
             self.conf['authn_name'],
             config.ADW2k12_USER_PASSWORD,
             True,
         )
+        testflow.step("Testing connection with user %s", self.princ)
         assert common.connectionTest(), "User %s can't login." % self.princ

@@ -3,11 +3,13 @@ Test indirect membership. Recursive and non-recursive. (AD and IPA)
 """
 
 import logging
+import pytest
 
-from rhevmtests.system.aaa.ldap import config, common
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+
+from rhevmtests.system.aaa.ldap import config, common
 
 __test__ = True
 
@@ -27,16 +29,28 @@ class IndirectMembership(TestCase):
     PASSWORD = None
     NAMESPACE = None
 
-    def setUp(self):
-        assert users.addGroup(True, self.GROUP, self.conf['authz_name'],
-                              self.NAMESPACE)
-        assert mla.addClusterPermissionsToGroup(True, self.GROUP,
-                                                config.DEFAULT_CLUSTER_NAME)
-
     @classmethod
-    def teardown_class(cls):
-        common.loginAsAdmin()
-        assert users.deleteGroup(True, cls.GROUP)
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Tearing down class %s", cls.__name__)
+            common.loginAsAdmin()
+            assert users.deleteGroup(True, cls.GROUP)
+
+        request.addfinalizer(finalize)
+
+        testflow.setup("Setting up class %s", cls.__name__)
+        assert users.addGroup(
+            True,
+            cls.GROUP,
+            cls.conf['authz_name'],
+            cls.NAMESPACE,
+        )
+        assert mla.addClusterPermissionsToGroup(
+            True,
+            cls.GROUP,
+            config.CLUSTER_NAME[0]
+        )
 
     def indirect_group_membership(self):
         user = self.USER
@@ -92,30 +106,43 @@ class GroupRecursion(TestCase):
     USER = config.IPA_GROUP_USER
     PASSWORD = config.IPA_PASSWORD
 
-    def setUp(self):
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Tearing down class %s", cls.__name__)
+            testflow.teardown("Login as admin user")
+            common.loginAsAdmin()
+            testflow.teardown("Deleting group %s", config.IPA_GROUP_LOOP2)
+            assert users.deleteGroup(True, config.IPA_GROUP_LOOP2)
+
+        request.addfinalizer(finalize)
+
+        testflow.setup("Setting up class %s", cls.__name__)
+        testflow.setup("Adding group %s", config.IPA_GROUP_LOOP2)
         assert users.addGroup(
             True,
             config.IPA_GROUP_LOOP2,
-            self.conf['authz_name']
+            cls.conf['authz_name']
+        )
+        testflow.setup(
+            "Adding cluster permissions to group %s", config.IPA_GROUP_LOOP2
         )
         assert mla.addClusterPermissionsToGroup(
             True,
             config.IPA_GROUP_LOOP2,
-            config.DEFAULT_CLUSTER_NAME
+            config.CLUSTER_NAME[0]
         )
-
-    @classmethod
-    def teardown_class(cls):
-        common.loginAsAdmin()
-        assert users.deleteGroup(True, config.IPA_GROUP_LOOP2)
 
     @polarion('RHEVM3-12861')
     def test_group_recursion(self):
         """  test if engine can handle group recursion """
+        testflow.step("Login as user %s", self.USER)
         users.loginAsUser(
             self.USER,
             self.conf['authn_name'],
             self.PASSWORD,
             True
         )
+        testflow.step("Testing connection with user %s", self.USER)
         assert common.connectionTest(), "%s can't login" % self.USER

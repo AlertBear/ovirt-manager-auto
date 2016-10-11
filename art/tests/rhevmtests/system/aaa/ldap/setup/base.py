@@ -1,6 +1,7 @@
 import logging
+import pytest
 
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 from art.rhevm_api.tests_lib.low_level import mla, users
 
 from rhevmtests.system.aaa.ldap import config, common
@@ -18,18 +19,31 @@ class AuthBaseCase(TestCase):
     user = None
     namespace = None
 
-    def setUp(self):
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(self, request):
+        def finalize():
+            testflow.teardown("Tearing down class %s", self.__name__)
+
+            common.loginAsAdmin()
+            testflow.teardown("Removing user %s", self.user)
+            users.removeUser(True, self.user)
+
+        request.addfinalizer(finalize)
+
+        testflow.setup("Setting up class %s", self.__name__)
         authz = '%s-authz' % self.domain
+        testflow.setup("Adding user %s", self.user)
         assert users.addExternalUser(
             True,
             '%s@%s' % (self.user, authz),
             authz,
             namespace=self.namespace,
         )
+        testflow.setup("Adding cluster permissions to user %s", self.user)
         assert mla.addClusterPermissionsToUser(
             True,
             self.user,
-            config.DEFAULT_CLUSTER_NAME,
+            config.CLUSTER_NAME[0],
             role='UserRole',
         )
 
@@ -45,10 +59,6 @@ class AuthBaseCase(TestCase):
         )
         return connected
 
-    def tearDown(self):
-        common.loginAsAdmin()
-        users.removeUser(True, self.user)
-
 
 class BaseUserFromGroup(AuthBaseCase):
     """ Login as user from group. """
@@ -56,16 +66,22 @@ class BaseUserFromGroup(AuthBaseCase):
     group = 'automation_users_group'
     user = 'automation_user_with_group'
 
-    def setUp(self):
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(self, request):
+        testflow.setup("Setting up class %s", self.__name__)
+
+        testflow.setup("Adding group %s", self.group)
         assert users.addGroup(
             True,
             self.group,
             domain='%s-authz' % self.domain
         )
+
+        testflow.setup("Adding cluster permissions to group %s", self.group)
         assert mla.addClusterPermissionsToGroup(
             True,
             self.group,
-            config.DEFAULT_CLUSTER_NAME,
+            config.CLUSTER_NAME[0],
             role='UserRole',
         )
 

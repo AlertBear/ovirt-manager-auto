@@ -1,5 +1,3 @@
-__test__ = False
-
 from rhevmtests.system.config import *  # flake8: noqa
 from art.test_handler.settings import opts
 from art.rhevm_api import resources
@@ -13,8 +11,8 @@ KRB_JAVA = 'java.security.krb5.conf'
 PROPERTIES_DIRECTORY = '/etc/ovirt-engine/engine.conf.d'
 APACHE_EXTENSIONS = '/etc/httpd/conf.d'
 MISC_PKG = 'ovirt-engine-extension-aaa-misc'
-KRB_MODULE = 'mod_auth_kerb'
-DEFAULT_CLUSTER_NAME = 'Default'
+GSSAPI_MODULE = 'mod_auth_gssapi'
+SESSION_MODULE = 'mod_session'
 USERROLE = ENUMS['role_name_user_role']
 EXTENSIONS = {}
 TRUSTSTORE = '/tmp/adw2k12r2.ts'
