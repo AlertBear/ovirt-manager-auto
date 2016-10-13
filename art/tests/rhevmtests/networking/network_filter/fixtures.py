@@ -13,7 +13,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
 from rhevmtests import networking
-from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -60,29 +59,6 @@ def create_dc_cluster(request):
 
 
 @pytest.fixture(scope="class")
-def start_vm(request):
-    """
-    Start VM
-    """
-    network_filter = NetworkFixtures()
-    vm = request.node.cls.vm
-    host = network_filter.host_0_name
-
-    def fin1():
-        """
-        Stop VM
-        """
-        testflow.teardown("Stop VM %s", vm)
-        assert ll_vms.stopVm(positive=True, vm=vm)
-    request.addfinalizer(fin1)
-
-    testflow.setup("Start VM %s on host %s", vm, host)
-    assert network_helper.run_vm_once_specific_host(
-        vm=vm, host=host, wait_for_up_status=True
-    )
-
-
-@pytest.fixture(scope="class")
 def restore_vnic_profile_filter(request):
     """
     Restore vNIC profile network filter
@@ -108,7 +84,7 @@ def remove_vnic_from_vm(request):
     Remove vNIC from VM
     """
     NetworkFixtures()
-    vm = request.node.cls.vm
+    vm = request.node.cls.vm_name
     nic1 = request.node.cls.nic1
 
     def fin():
@@ -126,7 +102,7 @@ def add_vnic_to_vm(request):
     Add vNIC to VM
     """
     NetworkFixtures()
-    vm = request.node.cls.vm
+    vm = request.node.cls.vm_name
     nic1 = request.node.cls.nic1
     net = request.node.cls.net
     testflow.setup("Add vNIC %s to VM %s", nic1, vm)

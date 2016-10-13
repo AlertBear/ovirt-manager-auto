@@ -14,7 +14,8 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
-from fixtures import start_vm, update_vnic_network
+from fixtures import update_vnic_network
+from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, setup_networks_fixture, clean_host_interfaces
 )  # flake8: noqa
@@ -56,12 +57,18 @@ class TestTopologiesCase01(NetworkTest):
     """
     __test__ = True
     net = topologies_conf.NETS[1][0]
+    vm_name = conf.VM_0
     hosts_nets_nic_dict = {
         0: {
             net: {
                 "nic": 1,
                 "network": net
             }
+        }
+    }
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
         }
     }
 
@@ -95,6 +102,7 @@ class TestTopologiesCase02(NetworkTest):
     """
     __test__ = True
     net = topologies_conf.NETS[2][0]
+    vm_name = conf.VM_0
     mode = 1
     hosts_nets_nic_dict = {
         0: {
@@ -104,6 +112,11 @@ class TestTopologiesCase02(NetworkTest):
                 "slaves": [2, 3],
                 "mode": mode
             }
+        }
+    }
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
         }
     }
 
@@ -138,6 +151,7 @@ class TestTopologiesCase03(NetworkTest):
 
     __test__ = False  # disabled until we deal with NIC plugin for 6 NICs hosts
     net = topologies_conf.NETS[3][0]
+    vm_name = conf.VM_0
     mode = 2
     hosts_nets_nic_dict = {
         0: {
@@ -147,6 +161,11 @@ class TestTopologiesCase03(NetworkTest):
                 "slaves": [2, 3],
                 "mode": mode
             }
+        }
+    }
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
         }
     }
 
@@ -178,6 +197,7 @@ class TestTopologiesCase04(NetworkTest):
     """
     __test__ = True
     net = topologies_conf.NETS[4][0]
+    vm_name = conf.VM_0
     mode = 4
     hosts_nets_nic_dict = {
         0: {
@@ -187,6 +207,11 @@ class TestTopologiesCase04(NetworkTest):
                 "slaves": [2, 3],
                 "mode": mode
             }
+        }
+    }
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
         }
     }
 

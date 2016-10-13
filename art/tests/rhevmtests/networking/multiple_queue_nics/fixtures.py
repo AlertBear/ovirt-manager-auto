@@ -12,7 +12,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 from art.unittest_lib import testflow
-from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -43,29 +42,6 @@ def update_vnic_profile(request):
     assert ll_networks.update_vnic_profile(
         name=bridge, network=bridge, data_center=multiple_queue_nics.dc_0,
         custom_properties=multiple_queue_conf.PROP_QUEUES[0]
-    )
-
-
-@pytest.fixture(scope="class")
-def run_vm(request):
-    """
-    Start VM.
-    """
-    multiple_queue_nics = NetworkFixtures()
-    vm_name = request.node.cls.vm_name
-    host_0 = multiple_queue_nics.host_0_name
-
-    def fin():
-        """
-        Stop VM.
-        """
-        testflow.teardown("Stopping VM: %s", vm_name)
-        assert ll_vms.stopVm(positive=True, vm=vm_name)
-    request.addfinalizer(fin)
-
-    testflow.setup("Running once VM: %s on host: %s", vm_name, host_0)
-    assert network_helper.run_vm_once_specific_host(
-        vm=vm_name, host=host_0, wait_for_up_status=True
     )
 
 

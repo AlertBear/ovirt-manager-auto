@@ -30,10 +30,11 @@ from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     add_vnic_profile, create_networks, clean_host_interfaces,
-    remove_qos, attach_networks, update_vnic_profile, start_vm,
-    case_06_fixture, case_07_fixture, case_08_fixture, add_labels,
+    remove_qos, attach_networks, update_vnic_profile, case_06_fixture,
+    case_07_fixture, case_08_fixture, add_labels,
     deactivate_hosts, set_host_nic_down
 )
+from rhevmtests.fixtures import start_vm
 
 
 @attr(tier=1)
@@ -483,10 +484,15 @@ class TestSanity06(TestSanityCaseBase):
     __test__ = True
     nets = sanity_conf.NETS[6][:4]
     nic = 1
-    vm = conf.VM_0
+    vm_name = conf.VM_0
     ip = None
     ip_addr_dict = None
     bond = None
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
+        }
+    }
 
     @polarion("RHEVM3-3829")
     def test_check_combination_plugged_linked_values(self):
@@ -499,18 +505,18 @@ class TestSanity06(TestSanityCaseBase):
         for nic_name in (
             conf.NIC_NAME[1], conf.NIC_NAME[3], conf.NIC_NAME[5]
         ):
-            assert ll_vms.get_vm_nic_linked(vm=self.vm, nic=nic_name)
+            assert ll_vms.get_vm_nic_linked(vm=self.vm_name, nic=nic_name)
 
         for nic_name in (
             conf.NIC_NAME[1], conf.NIC_NAME[2], conf.NIC_NAME[5]
         ):
-            assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic_name)
+            assert ll_vms.get_vm_nic_plugged(vm=self.vm_name, nic=nic_name)
 
         for nic_name in (conf.NIC_NAME[2], conf.NIC_NAME[4]):
-            assert not ll_vms.get_vm_nic_linked(vm=self.vm, nic=nic_name)
+            assert not ll_vms.get_vm_nic_linked(vm=self.vm_name, nic=nic_name)
 
         for nic_name in (conf.NIC_NAME[3], conf.NIC_NAME[4]):
-            assert not ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic_name)
+            assert not ll_vms.get_vm_nic_plugged(vm=self.vm_name, nic=nic_name)
 
 
 @bz({"1344284": {}})
@@ -794,11 +800,16 @@ class TestSanity11(TestSanityCaseBase):
     Configure queue on existing network
     """
     __test__ = True
-    vm = conf.VM_0
+    vm_name = conf.VM_0
     num_queues = multiple_queue_conf.NUM_QUEUES[0]
     prop_queue = multiple_queue_conf.PROP_QUEUES[0]
     dc = conf.DC_0
     mgmt_bridge = conf.MGMT_BRIDGE
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
+        }
+    }
 
     @polarion("RHEVM3-4309")
     def test_multiple_queue_nics(self):
@@ -807,7 +818,8 @@ class TestSanity11(TestSanityCaseBase):
         """
         testflow.step("Check that queue exists in qemu process")
         assert network_helper.check_queues_from_qemu(
-            vm=self.vm, host_obj=conf.VDS_0_HOST, num_queues=self.num_queues
+            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
+            num_queues=self.num_queues
         )
 
 
@@ -858,8 +870,13 @@ class TestSanity13(TestSanityCaseBase):
     Check that Network Filter is enabled by default
     """
     __test__ = True
-    vm = conf.VM_0
+    vm_name = conf.VM_0
     mgmt_profile = conf.MGMT_BRIDGE
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
+        }
+    }
 
     @polarion("RHEVM3-3775")
     def test_check_filter_status_engine(self):
@@ -898,7 +915,7 @@ class TestSanity13(TestSanityCaseBase):
             "Check that Network Filter is enabled by default via dumpxml"
         )
         assert ll_hosts.check_network_filtering_dumpxml(
-            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm,
+            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm_name,
             nics="1"
         )
 

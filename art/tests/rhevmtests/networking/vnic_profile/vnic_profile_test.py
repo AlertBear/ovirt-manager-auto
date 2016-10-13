@@ -19,9 +19,10 @@ import rhevmtests.networking.config as conf
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
+from rhevmtests.fixtures import start_vm
 from fixtures import (
-    vnic_profile_prepare_setup, create_dc, start_vm,
-    remove_nic_from_template, clean_host_interfaces, remove_nic_from_vm
+    vnic_profile_prepare_setup, create_dc, remove_nic_from_template,
+    clean_host_interfaces, remove_nic_from_vm
 )
 
 
@@ -69,8 +70,13 @@ class TestVNICProfileCase02(NetworkTest):
     __test__ = True
 
     dc = conf.DC_0
-    vm = conf.VM_0
+    vm_name = conf.VM_0
     cluster = conf.CLUSTER_NAME[0]
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
+        }
+    }
 
     # Test-01
     net_1 = vnic_conf.NETS[2][0]
@@ -245,8 +251,8 @@ class TestVNICProfileCase02(NetworkTest):
             'not attached to the host'
         )
         assert ll_vms.addNic(
-            positive=False, vm=self.vm, name=self.vnic, network=self.net_9,
-            vnic_profile=self.net_9
+            positive=False, vm=self.vm_name, name=self.vnic,
+            network=self.net_9, vnic_profile=self.net_9
         )
 
     @polarion("RHEVM3-3981")
@@ -283,22 +289,22 @@ class TestVNICProfileCase02(NetworkTest):
                 network=self.net_11, port_mirroring=port_mirroring
             )
         assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vnic, network=self.net_10,
-            plugged="false"
+            positive=True, vm=self.vm_name, name=self.vnic,
+            network=self.net_10, plugged="false"
         )
 
         testflow.step(
             'Update vNIC profile on nic2 with profile from different network'
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, network=self.net_11,
+            positive=True, vm=self.vm_name, nic=self.vnic, network=self.net_11,
             vnic_profile=self.vnic_profile_10
         )
         testflow.step(
             'Update vNIC profile on nic2 with profile from the same network'
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, network=self.net_11,
+            positive=True, vm=self.vm_name, nic=self.vnic, network=self.net_11,
             vnic_profile=self.net_11
         )
         testflow.step(
@@ -306,7 +312,7 @@ class TestVNICProfileCase02(NetworkTest):
             'but with port mirroring enabled'
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, network=self.net_11,
+            positive=True, vm=self.vm_name, nic=self.vnic, network=self.net_11,
             vnic_profile=self.vnic_profile_10_2
         )
         testflow.step(
@@ -314,11 +320,11 @@ class TestVNICProfileCase02(NetworkTest):
             'enabled to different network with port mirroring disabled'
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, network=self.net_10,
+            positive=True, vm=self.vm_name, nic=self.vnic, network=self.net_10,
             vnic_profile=self.net_10
         )
         testflow.step('Remove vNIC from VM')
-        assert ll_vms.removeNic(positive=True, vm=self.vm, nic=self.vnic)
+        assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=self.vnic)
         testflow.step('Clean host interfaces')
         assert hl_host_networks.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
@@ -357,7 +363,7 @@ class TestVNICProfileCase02(NetworkTest):
             [self.vnic_2, self.vnic_3], [self.net_12, self.net_13]
         ):
             assert ll_vms.addNic(
-                positive=True, vm=self.vm, name=nic, network=net
+                positive=True, vm=self.vm_name, name=nic, network=net
             )
         testflow.step(
             'Update vNIC profile on nic3 to have port mirroring disabled'
@@ -369,9 +375,9 @@ class TestVNICProfileCase02(NetworkTest):
         testflow.step('Remove vNICs from VM')
         for nic in [self.vnic_2, self.vnic_3]:
             assert ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=nic, plugged="false"
+                positive=True, vm=self.vm_name, nic=nic, plugged="false"
             )
-            assert ll_vms.removeNic(positive=True, vm=self.vm, nic=nic)
+            assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=nic)
         testflow.step('Clean host interfaces')
         assert hl_host_networks.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
@@ -408,19 +414,18 @@ class TestVNICProfileCase02(NetworkTest):
         )
         testflow.step('Hotplug vNIC profile to the VMs nic2')
         assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vnic, network=self.net_15,
-            plugged="true"
+            positive=True, vm=self.vm_name, name=self.vnic,
+            network=self.net_15, plugged="true"
         )
         testflow.step('Unlink nic2')
         sample = apis_utils.TimeoutingSampler(
             timeout=conf.SAMPLER_TIMEOUT, sleep=1, func=ll_vms.updateNic,
-            positive=True, vm=self.vm,  nic=self.vnic,
-            linked="false"
+            positive=True, vm=self.vm_name, nic=self.vnic, linked="false"
         )
         assert sample.waitForFuncStatus(result=True)
         testflow.step('Link nic2')
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, linked="true"
+            positive=True, vm=self.vm_name, nic=self.vnic, linked="true"
         )
 
     @polarion("RHEVM3-3985")
@@ -439,10 +444,10 @@ class TestVNICProfileCase02(NetworkTest):
         )
         testflow.step('2. Unplug vNIC from the VM')
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, plugged="false"
+            positive=True, vm=self.vm_name, nic=self.vnic, plugged="false"
         )
         testflow.step('3. Remove vNIC from the VM')
-        assert ll_vms.removeNic(positive=True, vm=self.vm, nic=self.vnic)
+        assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=self.vnic)
 
     @polarion("RHEVM3-3986")
     @pytest.mark.usefixtures(
@@ -483,15 +488,15 @@ class TestVNICProfileCase02(NetworkTest):
                 network=self.net_18, port_mirroring=port_mirroring
             )
         assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vnic, network=self.net_17,
-            plugged="true"
+            positive=True, vm=self.vm_name, name=self.vnic,
+            network=self.net_17, plugged="true"
         )
         testflow.step(
             'Update vNIC profile on nic2 with profile from different network'
         )
         sample = apis_utils.TimeoutingSampler(
             timeout=conf.SAMPLER_TIMEOUT, sleep=1, func=ll_vms.updateNic,
-            positive=True, vm=self.vm, nic=self.vnic, network=self.net_18,
+            positive=True, vm=self.vm_name, nic=self.vnic, network=self.net_18,
             vnic_profile=self.vnic_profile_17
         )
         assert sample.waitForFuncStatus(result=True)
@@ -499,7 +504,7 @@ class TestVNICProfileCase02(NetworkTest):
             'Update vNIC profile on nic2 with profile from the same network'
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, network=self.net_18,
+            positive=True, vm=self.vm_name, nic=self.vnic, network=self.net_18,
             vnic_profile=self.net_18
         )
         testflow.step(
@@ -507,37 +512,37 @@ class TestVNICProfileCase02(NetworkTest):
             'network but with port mirroring enabled (negative case)'
         )
         assert ll_vms.updateNic(
-            positive=False, vm=self.vm, nic=self.vnic, network=self.net_18,
-            vnic_profile=self.vnic_profile_17_2
+            positive=False, vm=self.vm_name, nic=self.vnic,
+            network=self.net_18, vnic_profile=self.vnic_profile_17_2
         )
         testflow.step('Update vNIC profile on nic2 with empty profile')
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, network=None
+            positive=True, vm=self.vm_name, nic=self.vnic, network=None
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, plugged="false"
+            positive=True, vm=self.vm_name, nic=self.vnic, plugged="false"
         )
         testflow.step(
             'Update vNIC profile on nic2 with profile having port mirroring '
             'enabled (first unplug and after the action plug nic2)'
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, network=self.net_18,
+            positive=True, vm=self.vm_name, nic=self.vnic, network=self.net_18,
             vnic_profile=self.vnic_profile_17_2
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, plugged="true"
+            positive=True, vm=self.vm_name, nic=self.vnic, plugged="true"
         )
         testflow.step(
             'Try to update vNIC profile on nic2 with profile from the same '
             'network but with port mirroring disabled (negative case)'
         )
         assert ll_vms.updateNic(
-            positive=False, vm=self.vm, nic=self.vnic, network=self.net_18,
-            vnic_profile=self.vnic_profile_17
+            positive=False, vm=self.vm_name, nic=self.vnic,
+            network=self.net_18, vnic_profile=self.vnic_profile_17
         )
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, plugged="false"
+            positive=True, vm=self.vm_name, nic=self.vnic, plugged="false"
         )
 
 

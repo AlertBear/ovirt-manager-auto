@@ -9,7 +9,6 @@ import pytest
 
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.networking.helper as network_helper
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -66,28 +65,3 @@ def add_vnic_profile(request):
     assert ll_networks.add_vnic_profile(
         positive=True, name=name, cluster=cl, network=net, port_mirroring=pm
     )
-
-
-@pytest.fixture(scope="class")
-def start_vm(request):
-    """
-    Starts a VM
-    """
-    linking = NetworkFixtures()
-    host = getattr(request.node.cls, "start_vm_host", linking.host_0_name)
-    vm = request.node.cls.vm
-    start_flag = getattr(request.node.cls, "start_vm", True)
-
-    def fin():
-        """
-        Stops a VM
-        """
-        testflow.teardown("Stopping VM: %s", vm)
-        assert ll_vms.stopVm(positive=True, vm=vm)
-    request.addfinalizer(fin)
-
-    if start_flag:
-        testflow.setup("Starting VM: %s on host: %s", vm, host)
-        assert network_helper.run_vm_once_specific_host(
-            vm=vm, host=host, wait_for_up_status=True
-        )

@@ -50,26 +50,6 @@ def vnic_profile_prepare_setup(request):
 
 
 @pytest.fixture(scope="class")
-def start_vm(request):
-    """
-    Start a VM on a specified host
-    """
-    vnic_profile = NetworkFixtures()
-
-    def fin():
-        """
-        Stops the VM
-        """
-        assert ll_vms.stopVm(positive=True, vm=vnic_profile.vm_0)
-    request.addfinalizer(fin)
-
-    assert network_helper.run_vm_once_specific_host(
-        vm=vnic_profile.vm_0, host=vnic_profile.host_0_name,
-        wait_for_up_status=True
-    )
-
-
-@pytest.fixture(scope="class")
 def create_dc(request):
     """
     Creates a new Data Center with specific name and version
@@ -118,7 +98,8 @@ def remove_nic_from_vm(request):
         Remove vNIC from VM
         """
         assert ll_vms.removeNic(
-            positive=True, vm=request.node.cls.vm, nic=request.node.cls.vnic
+            positive=True, vm=request.node.cls.vm_name,
+            nic=request.node.cls.vnic
         )
     request.addfinalizer(fin)
 

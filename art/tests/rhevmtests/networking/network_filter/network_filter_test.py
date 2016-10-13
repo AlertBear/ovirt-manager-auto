@@ -19,9 +19,10 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
-    start_vm, restore_vnic_profile_filter, create_dc_cluster,
+    restore_vnic_profile_filter, create_dc_cluster,
     add_vnic_to_vm, remove_vnic_from_vm, remove_vnic_profiles
 )
+from rhevmtests.fixtures import start_vm
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces, NetworkFixtures
@@ -129,7 +130,7 @@ class TestNetworkFilterCase03(NetworkTest):
     Check that Network Filter is enabled for via dumpxml
     """
     __test__ = True
-    vm = conf.VM_0
+    vm_name = conf.VM_0
     nic0 = conf.VM_NIC_0
     nic1 = conf.VM_NIC_1
     net = nf_conf.NETS[3][0]
@@ -139,6 +140,11 @@ class TestNetworkFilterCase03(NetworkTest):
                 "nic": 1,
                 "network": net,
             }
+        }
+    }
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
         }
     }
 
@@ -151,7 +157,8 @@ class TestNetworkFilterCase03(NetworkTest):
             "Check that Network Filter is enabled for via dumpxml"
         )
         assert ll_hosts.check_network_filtering_dumpxml(
-            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm, nics="1"
+            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm_name,
+            nics="1"
         )
 
     @polarion("RHEVM-15104")
@@ -159,7 +166,7 @@ class TestNetworkFilterCase03(NetworkTest):
         """
         Check that VM NIC has network filter via ebtables
         """
-        vm_macs = hl_vms.get_vm_macs(vm=self.vm, nics=[self.nic0])
+        vm_macs = hl_vms.get_vm_macs(vm=self.vm_name, nics=[self.nic0])
         testflow.step("Check ebtables rules for running VM")
         assert ll_hosts.check_network_filtering_ebtables(
             host_obj=conf.VDS_0_HOST, vm_macs=vm_macs
@@ -175,10 +182,11 @@ class TestNetworkFilterCase03(NetworkTest):
             "NIC"
         )
         assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.nic1, network=self.net
+            positive=True, vm=self.vm_name, name=self.nic1, network=self.net
         )
         assert ll_hosts.check_network_filtering_dumpxml(
-            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm, nics="2"
+            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm_name,
+            nics="2"
         )
 
     @polarion("RHEVM-15106")
@@ -186,7 +194,7 @@ class TestNetworkFilterCase03(NetworkTest):
         """
         Check that VM NIC has network filter via ebtables for hot-plugged NIC
         """
-        vm_macs = hl_vms.get_vm_macs(vm=self.vm, nics=[self.nic1])
+        vm_macs = hl_vms.get_vm_macs(vm=self.vm_name, nics=[self.nic1])
         testflow.step("Check ebtables rules for running VM")
         assert ll_hosts.check_network_filtering_ebtables(
             host_obj=conf.VDS_0_HOST, vm_macs=vm_macs
@@ -205,9 +213,10 @@ class TestNetworkFilterCase03(NetworkTest):
         assert ll_networks.update_vnic_profile(
             name=self.net, network=self.net, network_filter="None"
         )
-        assert ll_vms.restartVm(vm=self.vm)
+        assert ll_vms.restartVm(vm=self.vm_name)
         assert not ll_hosts.check_network_filtering_dumpxml(
-            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm, nics="2"
+            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm_name,
+            nics="2"
         )
 
 
@@ -222,7 +231,7 @@ class TestNetworkFilterCase04(NetworkTest):
     """
     __test__ = True
     nic1 = nf_conf.VNICS[4][0]
-    vm = conf.VM_0
+    vm_name = conf.VM_0
     net = nf_conf.NETS[4][0]
 
     @polarion("RHEVM-15102")

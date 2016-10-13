@@ -17,9 +17,8 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from fixtures import (
-    add_vnics_to_vms, add_vnic_profile, start_vm
-)
+from fixtures import add_vnics_to_vms, add_vnic_profile
+from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -246,7 +245,7 @@ class TestLinkedCase04(NetworkTest):
     """
     __test__ = True
 
-    vm = conf.VM_0
+    vm_name = conf.VM_0
     vnic_1 = linking_conf.CASE_04_VNIC_1
     vnic_2 = linking_conf.CASE_04_VNIC_2
     vnic_3 = linking_conf.CASE_04_VNIC_3
@@ -256,22 +255,27 @@ class TestLinkedCase04(NetworkTest):
     nic_names = [
         linking_conf.CASE_04_VNIC_1_REN, linking_conf.CASE_04_VNIC_2_REN
     ]
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
+        }
+    }
 
     add_vnics_vms_params = [
         {
-            "vm": vm,
+            "vm": vm_name,
             "name": vnic_1,
             "network": net_1,
             "plugged": True
         },
         {
-            "vm": vm,
+            "vm": vm_name,
             "name": vnic_2,
             "network": net_1,
             "plugged": False
         },
         {
-            "vm": vm,
+            "vm": vm_name,
             "name": vnic_3,
             "network": net_1,
             "vnic_profile": linking_conf.CASE_04_VNIC_PROFILE_1
@@ -292,7 +296,7 @@ class TestLinkedCase04(NetworkTest):
         testflow.step("Check network parameters changes for vNICs")
         for nic, plug_state in zip(self.nic_list, self.plug_states):
             assert ll_vms.get_vm_nic_plugged(
-                vm=self.vm, nic=nic, positive=plug_state
+                vm=self.vm_name, nic=nic, positive=plug_state
             )
 
         testflow.step(
@@ -303,7 +307,7 @@ class TestLinkedCase04(NetworkTest):
             self.nic_list, self.nic_names, plug_states
         ):
             assert ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=nic, name=name,
+                positive=True, vm=self.vm_name, nic=nic, name=name,
                 network=self.net_1, vnic_profile=self.net_1, plugged=plug_state
             )
 
@@ -311,34 +315,34 @@ class TestLinkedCase04(NetworkTest):
             prefix = "Negative: " if plug_state else ""
             testflow.step("%sCheck vNIC: %s plugged state", prefix, nic)
             assert ll_vms.get_vm_nic_plugged(
-                vm=self.vm, nic=nic, positive=plug_state
+                vm=self.vm_name, nic=nic, positive=plug_state
             )
 
         for nic_name in self.nic_names:
             testflow.step("Update vNIC: %s to be unplugged", nic_name)
             assert ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=nic_name, network=self.net_1,
-                vnic_profile=self.net_1, plugged=False
+                positive=True, vm=self.vm_name, nic=nic_name,
+                network=self.net_1, vnic_profile=self.net_1, plugged=False
             )
 
         for nic_name in self.nic_names:
             testflow.step(
-                "Check if VM: %s vNIC: %s has vNIC profile", self.vm,
+                "Check if VM: %s vNIC: %s has vNIC profile", self.vm_name,
                 nic_name
             )
-            assert ll_vms.is_vm_nic_have_profile(vm=self.vm, nic=nic_name)
+            assert ll_vms.is_vm_nic_have_profile(vm=self.vm_name, nic=nic_name)
             testflow.step(
-                "Negative: check if VM: %s vNIC: %s is plugged", self.vm,
+                "Negative: check if VM: %s vNIC: %s is plugged", self.vm_name,
                 nic_name
             )
             assert ll_vms.get_vm_nic_plugged(
-                vm=self.vm, nic=nic_name, positive=False
+                vm=self.vm_name, nic=nic_name, positive=False
             )
 
         testflow.step("Remove and return network from the vNIC")
         for nic_name, orig_nic in zip(self.nic_names, self.nic_list):
             assert ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=nic_name, name=orig_nic
+                positive=True, vm=self.vm_name, nic=nic_name, name=orig_nic
             )
 
     @polarion("RHEVM3-3823")
@@ -347,19 +351,20 @@ class TestLinkedCase04(NetworkTest):
         Check scenarios for port mirroring network
         """
         testflow.step(
-            "Negative: unlink vNIC: %s on VM: %s", self.vnic_3, self.vm
+            "Negative: unlink vNIC: %s on VM: %s", self.vnic_3, self.vm_name
         )
         assert ll_vms.updateNic(
-            positive=False, vm=self.vm, nic=self.vnic_3, linked=False
+            positive=False, vm=self.vm_name, nic=self.vnic_3, linked=False
         )
 
         for plugged in (False, True):
             testflow.step(
                 "Set plugged=%s on vNIC: %s on VM: %s", plugged, self.vnic_3,
-                self.vm
+                self.vm_name
             )
             assert ll_vms.updateNic(
-                positive=True, vm=self.vm, nic=self.vnic_3, plugged=plugged
+                positive=True, vm=self.vm_name, nic=self.vnic_3,
+                plugged=plugged
             )
 
 
@@ -379,6 +384,7 @@ class TestLinkedCase05(NetworkTest):
     __test__ = True
 
     vm = conf.VM_1
+    vms_to_stop = [vm]
     vnic = linking_conf.CASE_05_VNIC_1
     net_1 = linking_conf.CASE_05_NET_1
     net_2 = linking_conf.CASE_05_NET_2
@@ -397,7 +403,6 @@ class TestLinkedCase05(NetworkTest):
         "name": linking_conf.CASE_05_VNIC_PROFILE_1,
         "network": net_2
     }
-    start_vm = False
 
     @polarion("RHEVM3-3826")
     def test_change_net_param_values(self):
@@ -427,9 +432,11 @@ class TestLinkedCase05(NetworkTest):
             vm=self.vm, nic=self.vnic, positive=False
         )
 
-        testflow.step("Run once VM: %s on host: %s", self.vm, conf.HOSTS[0])
+        testflow.step(
+            "Run once VM: %s on host: %s", self.vm, conf.HOST_0_NAME
+        )
         assert network_helper.run_vm_once_specific_host(
-            vm=self.vm, host=conf.HOSTS[0], wait_for_up_status=True
+            vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
         testflow.step(
@@ -457,6 +464,6 @@ class TestLinkedCase05(NetworkTest):
 
         testflow.step("Update interface type and MAC address")
         assert ll_vms.updateNic(
-            positive=True, vm=self.vm, nic=self.vnic, interface=self.rtl_int,
-            mac_address=self.mac_addr
+            positive=True, vm=self.vm, nic=self.vnic,
+            interface=self.rtl_int, mac_address=self.mac_addr
         )

@@ -24,8 +24,9 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    add_vnics_to_vms, add_vnic_to_tamplate, move_host_to_cluster, start_vm
+    add_vnics_to_vms, add_vnic_to_tamplate, move_host_to_cluster
 )
+from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces, NetworkFixtures
 )  # flake8: noqa
@@ -232,8 +233,13 @@ class TestMultiHostCase03(NetworkTest):
     vlan = multi_host_conf.VLAN_IDS[2]
     vm_nic = multi_host_conf.VNICS[3][0]
     vm_list = conf.VM_NAME[:2]
-    vm_0 = conf.VM_0
+    vm_name = conf.VM_0
     hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=1, net=net)
+    start_vms_dict = {
+        vm_name: {
+            "host": 0,
+        }
+    }
 
     @polarion("RHEVM3-4074")
     def test_update_net_on_vm(self):

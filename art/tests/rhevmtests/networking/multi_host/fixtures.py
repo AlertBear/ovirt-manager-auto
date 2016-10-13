@@ -14,7 +14,6 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -50,7 +49,7 @@ def add_vnics_to_vms(request):
     net = request.node.cls.net
     vm_nic = request.node.cls.vm_nic
     vm_list = request.node.cls.vm_list
-    vm_0 = request.node.cls.vm_0
+    vm_0 = request.node.cls.vm_name
 
     def fin():
         """
@@ -146,26 +145,4 @@ def move_host_to_cluster(request):
     )
     assert hl_hosts.move_host_to_another_cluster(
         host=multi_host.host_1_name, cluster=cl_name2
-    )
-
-
-@pytest.fixture(scope="class")
-def start_vm(request):
-    """
-    Run VM
-    """
-    multi_host = NetworkFixtures()
-    vm_0 = request.node.cls.vm_0
-
-    def fin():
-        """
-        Stop VM
-        """
-        testflow.teardown("Stop VM %s", vm_0)
-        assert ll_vms.stopVm(positive=True, vm=vm_0)
-    request.addfinalizer(fin)
-
-    testflow.setup("Start VM %s", vm_0)
-    assert network_helper.run_vm_once_specific_host(
-        vm=vm_0, host=multi_host.host_0_name, wait_for_up_status=True
     )

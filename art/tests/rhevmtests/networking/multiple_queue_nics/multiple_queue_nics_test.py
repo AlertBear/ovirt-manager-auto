@@ -17,8 +17,9 @@ import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, testflow, attr
+from rhevmtests.fixtures import start_vm
 from fixtures import (
-    update_vnic_profile, run_vm, create_vm, attach_vnic_profile_to_vm
+    update_vnic_profile, create_vm, attach_vnic_profile_to_vm
 )
 
 
@@ -26,7 +27,7 @@ from fixtures import (
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
-    run_vm.__name__
+    start_vm.__name__
 )
 class TestMultipleQueueNics01(NetworkTest):
     """
@@ -41,6 +42,11 @@ class TestMultipleQueueNics01(NetworkTest):
     num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
     num_queues_1 = multiple_queue_conf.NUM_QUEUES[1]
     prop_queues = multiple_queue_conf.PROP_QUEUES[1]
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
+        }
+    }
 
     @polarion("RHEVM3-4310")
     def test_01_multiple_queue_nics_update(self):
@@ -124,7 +130,7 @@ class TestMultipleQueueNics01(NetworkTest):
     update_vnic_profile.__name__,
     create_vm.__name__,
     attach_vnic_profile_to_vm.__name__,
-    run_vm.__name__
+    start_vm.__name__
 )
 class TestMultipleQueueNics02(NetworkTest):
     """
@@ -136,6 +142,11 @@ class TestMultipleQueueNics02(NetworkTest):
     vm_name = multiple_queue_conf.VM_FROM_TEMPLATE
     vm_nic = multiple_queue_conf.VM_NIC
     num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
+    start_vms_dict = {
+        vm_name: {
+            "host": 0
+        }
+    }
 
     @polarion("RHEVM-16866")
     def test_hot_unplug_with_custom_queues(self):

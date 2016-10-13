@@ -137,33 +137,13 @@ def remove_qos(request):
 
 
 @pytest.fixture(scope="class")
-def start_vm(request):
-    """
-    Start VM
-    """
-    NetworkFixtures()
-    vm = request.node.cls.vm
-
-    def fin():
-        """
-        Stop VM
-        """
-        assert ll_vms.stopVm(positive=True, vm=vm)
-    request.addfinalizer(fin)
-
-    assert network_helper.run_vm_once_specific_host(
-        vm=vm, host=conf.HOST_0_NAME, wait_for_up_status=True
-    )
-
-
-@pytest.fixture(scope="class")
 def case_06_fixture(request):
     """
     Create 5 VNICs on VM with different params for plugged/linked
     """
     NetworkFixtures()
     nets = request.node.cls.nets
-    vm = request.node.cls.vm
+    vm = request.node.cls.vm_name
 
     def fin():
         """
