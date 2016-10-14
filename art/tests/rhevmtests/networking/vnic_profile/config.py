@@ -16,7 +16,7 @@ VNIC_PROFILES = global_helper.generate_object_names(
 )
 
 VNICS = global_helper.generate_object_names(
-    num_of_cases=3, num_of_objects=20, prefix="vnic-profile_vnics"
+    num_of_cases=3, num_of_objects=20, prefix="vnic-profile_vnic"
 )
 
 NETS_DICT = {

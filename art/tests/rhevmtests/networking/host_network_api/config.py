@@ -10,10 +10,10 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 
 QOS_NAME = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=6, prefix="QoS"
+    num_of_cases=20, num_of_objects=6, prefix="host_net_qos"
 )
 NIC_NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=15, prefix="nic"
+    num_of_cases=20, num_of_objects=15, prefix="host_net"
 )
 HOST_NETS = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=15, prefix="host"

@@ -221,7 +221,7 @@ class TestNetworkFilterCase04(NetworkTest):
     Remove network filter from vNIC profile while profile attach to stopped VM
     """
     __test__ = True
-    nic1 = conf.VM_NIC_1
+    nic1 = nf_conf.VNICS[4][0]
     vm = conf.VM_0
     net = nf_conf.NETS[4][0]
 

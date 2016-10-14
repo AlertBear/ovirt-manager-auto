@@ -2,25 +2,25 @@
 # -*- coding: utf-8 -*-
 
 """
-config file for sanity test
+Config file for sanity test
 """
 
 from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
-# host network QoS
+# Host network QoS
 QOS_NAME = global_helper.generate_object_names(
-    num_of_cases=3, num_of_objects=1, prefix="QoS"
+    num_of_cases=3, num_of_objects=1, prefix="sanity_qos"
 )
 
-# Network
+# Networks
 NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=10, prefix="sanity"
+    num_of_cases=20, num_of_objects=10, prefix="sanity_net"
 )
 
-# vnic_profile
+# vNIC profiles
 VNIC_PROFILES = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=1, prefix="v_pro"
+    num_of_cases=20, num_of_objects=1, prefix="sanity_vnic"
 )
 
 VLAN_IDS = [str(i) for i in xrange(2, 20)]

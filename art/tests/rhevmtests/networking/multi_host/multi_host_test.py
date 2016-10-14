@@ -145,7 +145,7 @@ class TestMultiHostCase02(NetworkTest):
     restore_mtu = False
     net = multi_host_conf.NETS[2][0]
     new_net_name = "multihost_net"
-    vnic_2_name = conf.NIC_NAME[1]
+    vnic_2_name = multi_host_conf.VNICS[2][0]
     dc = conf.DC_0
     hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=1, net=net)
 
@@ -230,7 +230,7 @@ class TestMultiHostCase03(NetworkTest):
     mtu_9000 = conf.MTU[0]
     mtu_1500 = conf.MTU[-1]
     vlan = multi_host_conf.VLAN_IDS[2]
-    vm_nic = "multi_host_vNIC_case_03"
+    vm_nic = multi_host_conf.VNICS[3][0]
     vm_list = conf.VM_NAME[:2]
     vm_0 = conf.VM_0
     hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=1, net=net)
@@ -288,7 +288,7 @@ class TestMultiHostCase04(NetworkTest):
     __test__ = True
     restore_mtu = True
     net = multi_host_conf.NETS[4][0]
-    vm_nic = "multi_host_vNIC_case_04"
+    vm_nic = multi_host_conf.VNICS[4][0]
     mtu_9000 = conf.MTU[0]
     mtu_1500 = conf.MTU[-1]
     vlan = multi_host_conf.VLAN_IDS[3]

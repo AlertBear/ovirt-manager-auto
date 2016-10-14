@@ -9,7 +9,7 @@ import rhevmtests.helpers as global_helper
 
 BRIDGELESS_VLAN_IDS = [str(i) for i in xrange(2, 4)]
 BRIDGELESS_NETS = global_helper.generate_object_names(
-    num_of_cases=4, num_of_objects=3, prefix="br"
+    num_of_cases=4, num_of_objects=3, prefix="bridge_net"
 )
 
 BRIDGELESS_NET_DICT = {

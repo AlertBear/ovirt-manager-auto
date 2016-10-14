@@ -6,6 +6,16 @@ SR_IOV feature config
 """
 import rhevmtests.helpers as global_helper
 
+GENERAL_TEST_VNICS = global_helper.generate_object_names(
+    num_of_cases=5, num_of_objects=5, prefix="general_sriov_vnic"
+)
+VM_TEST_VNICS = global_helper.generate_object_names(
+    num_of_cases=5, num_of_objects=5, prefix="vm_sriov_vnic"
+)
+TEMPLATE_TEST_VNICS = global_helper.generate_object_names(
+    num_of_cases=5, num_of_objects=5, prefix="template_sriov_vnic"
+)
+
 HOST_O_SRIOV_NICS_OBJ = None  # Filled in setup_package
 HOST_1_SRIOV_NICS_OBJ = None  # Filled in setup_package
 HOST_0_PF_LIST = list()  # Filled in setup_package

@@ -34,7 +34,7 @@ class TestNetQOSCase01(NetworkTest):
     __test__ = True
     qos_name_1 = qos_conf.QOS_NAME[1][0]
     qos_name_2 = qos_conf.QOS_NAME[1][1]
-    new_qos_name = "newQoS"
+    new_qos_name = "network_qos_new_qos"
     vnic_profile_1 = conf.VNIC_PROFILE[0]
     vnic_profile_2 = conf.VNIC_PROFILE[1]
     vms = [conf.VM_0, conf.VM_1]

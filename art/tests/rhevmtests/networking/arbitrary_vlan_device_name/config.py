@@ -9,7 +9,7 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 
 ARBITRARY_NETS = global_helper.generate_object_names(
-    num_of_cases=6, num_of_objects=3, prefix="avdn"
+    num_of_cases=6, num_of_objects=3, prefix="avdn_net"
 )
 VLAN_NAMES = ["vlan10", "vlan20", "vlan30"]
 ARBITRARY_VLAN_IDS = ["10", "20", "30"]

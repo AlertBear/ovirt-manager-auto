@@ -357,7 +357,7 @@ class TestSriov05(NetworkTest):
     dc = conf.DC_0
     update_vnic = False
     pass_through = True
-    nics = conf.NIC_NAME[1:3]
+    nics = sriov_conf.GENERAL_TEST_VNICS[5][1:3]
     pass_through_vnic = [True, False]
     profiles = [vnic_p_list[0], net_1]
     nets = [net_1, net_1]

@@ -37,8 +37,8 @@ class TestSriovImportExport01(NetworkTest):
     """
     __test__ = True
     vm = "sriov_export_vm"
-    vm_nic_1 = conf.NIC_NAME[1]
-    vm_nic_2 = conf.NIC_NAME[2]
+    vm_nic_1 = sriov_conf.TEMPLATE_TEST_VNICS[1][0]
+    vm_nic_2 = sriov_conf.TEMPLATE_TEST_VNICS[1][1]
     net_1 = sriov_conf.IMPORT_EXPORT_NETS[1][0]
     net_2 = sriov_conf.IMPORT_EXPORT_NETS[1][1]
     dc = conf.DC_0

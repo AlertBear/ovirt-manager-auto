@@ -49,8 +49,8 @@ class TestSriovVm01(NetworkTest):
     vm = conf.VM_0
     vms_list = [vm]
     extra_vm = conf.VM_1
-    vm_nic = conf.NIC_NAME[1]
-    extra_vm_nic = conf.NIC_NAME[2]
+    vm_nic = sriov_conf.VM_TEST_VNICS[1][0]
+    extra_vm_nic = sriov_conf.VM_TEST_VNICS[1][1]
     nics = [vm_nic, extra_vm_nic]
     net_1 = sriov_conf.VM_NETS[1][0]
     net_2 = sriov_conf.VM_NETS[1][1]
@@ -223,7 +223,7 @@ class TestSriovVm02(NetworkTest):
     __test__ = True
     vm = conf.VM_0
     vms_list = [vm]
-    vm_nic = conf.NIC_NAME[1]
+    vm_nic = sriov_conf.VM_TEST_VNICS[2][0]
     net_1 = sriov_conf.VM_NETS[2][0]
     vlan_id = sriov_conf.VLAN_IDS[2]
     dc = conf.DC_0
@@ -273,10 +273,10 @@ class TestSriovVm03(NetworkTest):
     __test__ = True
     vm = conf.VM_0
     vms_list = [vm]
-    vm_nic_1 = conf.NIC_NAME[1]
-    vm_nic_2 = conf.NIC_NAME[2]
-    vm_nic_3 = conf.NIC_NAME[3]
-    vm_nic_4 = conf.NIC_NAME[4]
+    vm_nic_1 = sriov_conf.VM_TEST_VNICS[3][0]
+    vm_nic_2 = sriov_conf.VM_TEST_VNICS[3][1]
+    vm_nic_3 = sriov_conf.VM_TEST_VNICS[3][2]
+    vm_nic_4 = sriov_conf.VM_TEST_VNICS[3][3]
     net_1 = sriov_conf.VM_NETS[3][0]
     net_2 = sriov_conf.VM_NETS[3][1]
     net_3 = sriov_conf.VM_NETS[3][2]
@@ -362,7 +362,7 @@ class TestSriovVm04(NetworkTest):
     __test__ = True
     vm = conf.VM_0
     vms_list = [vm]
-    vm_nic_1 = conf.NIC_NAME[1]
+    vm_nic_1 = sriov_conf.VM_TEST_VNICS[4][0]
     net_1 = sriov_conf.VM_NETS[4][0]
     net_2 = sriov_conf.VM_NETS[4][1]
     net_3 = sriov_conf.VM_NETS[4][2]
