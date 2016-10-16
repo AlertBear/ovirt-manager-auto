@@ -617,3 +617,6 @@ WIN8_1_64B = opts['elements_conf']['Win8_1_64b']
 WIN8_32B = opts['elements_conf']['Win8_32b']
 WIN8_64B = opts['elements_conf']['Win8_64b']
 WIN10_64B = opts['elements_conf']['Win10_64b']
+
+# Misc
+SSH_TYPE = "ssh"

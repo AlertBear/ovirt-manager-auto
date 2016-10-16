@@ -27,6 +27,9 @@ SN_NETS = global_helper.generate_object_names(
 IPV6_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="ipv6_"
 )
+PERSIST_NETS = global_helper.generate_object_names(
+    num_of_cases=1, num_of_objects=2, prefix="persist_"
+)
 
 SYNC_DC = "Sync_DC"
 SYNC_CL = "Sync_cluster"
@@ -778,4 +781,26 @@ IPV6_NETS_DICT = {
         "usages": "",
         "vlan_id": VLAN_IDS[58]
     },
+}
+
+PERSIST_NETS_DICT = {
+    PERSIST_NETS[1][0]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[57],
+        "mtu": conf.MTU[0]
+
+    },
+    PERSIST_NETS[1][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[58],
+        "mtu": conf.MTU[0]
+    }
+}
+
+QOS_VAL = 10
+QOS = {
+    "type_": "hostnetwork",
+    "outbound_average_linkshare": QOS_VAL,
+    "outbound_average_realtime": QOS_VAL,
+    "outbound_average_upperlimit": QOS_VAL
 }

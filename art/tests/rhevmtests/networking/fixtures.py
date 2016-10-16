@@ -78,6 +78,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
     sriov_nics = getattr(request.node.cls, "sriov_nics", False)
     ethtool_opts_str = "ethtool_opts"
+    persist = getattr(request.node.cls, "persist", False)
 
     sn_dict = {
         "add": {}
@@ -137,5 +138,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
         testflow.setup(
             "Create %s via setup_network on host %s", log_dict, host
         )
-        assert hl_host_network.setup_networks(host_name=host, **sn_dict)
+        assert hl_host_network.setup_networks(
+            host_name=host, persist=persist, **sn_dict
+        )
         sn_dict["add"] = dict()

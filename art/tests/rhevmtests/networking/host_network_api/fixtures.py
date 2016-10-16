@@ -8,6 +8,7 @@ Fixtures for host_network_api
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -134,8 +135,26 @@ def manage_ip_and_refresh_capabilities(request):
         helper.manage_host_ip(
             interface=net, ip=actual_ip, netmask=actual_netmask, set_ip=set_ip
         )
-    last_event = ll_events.get_max_event_id(query="")
+    last_event = ll_events.get_max_event_id()
     testflow.setup("Refresh host %s capabilities", conf.HOST_0_NAME)
     ll_hosts.refresh_host_capabilities(
         host=conf.HOST_0_NAME, start_event_id=last_event
     )
+
+
+@pytest.fixture(scope="class")
+def reboot_host(request):
+    """
+    Reboot host
+    """
+    host = conf.HOST_0_NAME
+    testflow.setup("Reboot host %s", host)
+    assert hl_hosts.deactivate_host_if_up(host=host)
+    conf.VDS_0_HOST.add_power_manager(pm_type=conf.SSH_TYPE)
+    conf.VDS_0_HOST.get_power_manager().restart()
+    for is_connective in (False, True):
+        conf.VDS_0_HOST.executor().wait_for_connectivity_state(
+            positive=is_connective
+        )
+
+    assert hl_hosts.activate_host_if_not_up(host=host)

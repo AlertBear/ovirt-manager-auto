@@ -331,7 +331,7 @@ def clean_host_interfaces(host_name):
                 LABELS: labels
             }
         }
-        res = setup_networks(host_name, **kwargs)
+        res = setup_networks(host_name, persist=True, **kwargs)
         if not res:
             return False
     return True
