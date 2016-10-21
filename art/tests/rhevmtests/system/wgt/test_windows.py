@@ -98,7 +98,7 @@ class Windows(TestCase):
             os_type=cls.os_type,
         )
         assert ret[0], "Failed to create vm with windows: '%s'" % ret[1]
-        ll_vms.waitForIP(cls.vm_name)
+        ll_vms.waitForIP(cls.vm_name, timeout=60)
 
     def check_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """

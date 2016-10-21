@@ -16,6 +16,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as hosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.test_handler.exceptions as errors
+from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api import resources
 from art.rhevm_api.utils.test_utils import getStat
@@ -694,11 +695,25 @@ def create_windows_vm(
     :return: Tuple with status and failure message
     :rtype: tuple
     """
+    WGT_SUCCESS_CODE = "3010"
+
     def __get_install_status(
         vm_id,
         sleep_time=SLEEP_TIME,
         max_time=WGT_INSTALL_TIMEOUT
     ):
+        """
+        Wait until installation is complete and check return code
+
+        Args:
+            vm_id (str): ID of a VM
+            sleep_time (int): Sleep time between checks
+            max_time (int): Maximum time to sleep
+
+        Returns:
+            str: WGT installation status code or None if something nasty
+            happened (request returned neither 200 nor 404)
+        """
         request = None
         logger.info("Quering for WGT installation status")
 
@@ -722,7 +737,14 @@ def create_windows_vm(
             request = urllib.urlopen(
                 agent_url.format(action='query', vm_id=vm_id))
 
-        return request
+        if request.getcode() == 200:
+            return request.read()
+        elif request.getcode() == 404 and (
+            vms.waitForIP(vm_name, timeout=60) or
+            LookUpVMIpByName('', '').get_ip(vm_name)
+        ):
+            return WGT_SUCCESS_CODE
+        return None
 
     # import image from glance
     if glance_domain and storage_name:
@@ -771,15 +793,14 @@ def create_windows_vm(
         return False, "Failed to change CD to %s" % iso_name
 
     # Get install status and verify
-    request = __get_install_status(vm_id)
-    if request is None:
+    status_code = __get_install_status(vm_id)
+    if status_code is None:
         return (
             False,
             "There was an error installing RHEV tools, please examine logs"
         )
 
-    status_code = request.read()
-    if status_code != '3010':
+    if status_code != WGT_SUCCESS_CODE:
         return (
             False,
             "RHEV Tools installation completed with code: '%s'" % status_code
