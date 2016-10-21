@@ -7,7 +7,7 @@ import shlex
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import rhevmtests.helpers as helpers
 from art.rhevm_api.tests_lib.low_level.hooks import (
-    checkForFileExistenceAndContent
+    check_for_file_existence_and_content
 )
 from art.unittest_lib.common import testflow
 import config
@@ -63,7 +63,7 @@ def check_existence_of_payload(
 
     testflow.step("Check if file content exist on vm %s", vm_name)
     filename = os.path.join(payload_dir, payload_filename)
-    return checkForFileExistenceAndContent(
+    return check_for_file_existence_and_content(
         True, ip=vm_ip,
         user=config.VMS_LINUX_USER,
         password=config.VMS_LINUX_PW,
