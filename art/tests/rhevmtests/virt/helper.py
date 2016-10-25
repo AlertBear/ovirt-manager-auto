@@ -20,11 +20,15 @@ import art.rhevm_api.resources as resources
 import art.unittest_lib.network as lib_network
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-from art.rhevm_api.tests_lib.low_level import hosts
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    networks as ll_networks,
+    storagedomains as ll_sd,
+    vms as ll_vms,
+    vmpools as ll_vmpools,
+    clusters as ll_clusters,
+    general as ll_general
+)
 import config as config_virt
 
 logger = logging.getLogger("Virt_Helper")
@@ -62,7 +66,7 @@ def get_origin_host(vm):
     if orig_host not in config.HOSTS[:2]:
         logger.error("VM doesn't reside on provided hosts")
         return None, None
-    orig_host_ip = hosts.get_host_ip_from_engine(orig_host)
+    orig_host_ip = ll_hosts.get_host_ip_from_engine(orig_host)
     orig_host_obj = resources.VDS(orig_host_ip, config.HOSTS_PW)
     return orig_host_obj, orig_host
 
@@ -80,7 +84,7 @@ def get_dst_host(orig_host_obj):
     dst_host_obj = filter(
         lambda x: x.ip != orig_host_obj.ip, config.VDS_HOSTS[:2]
     )[0]
-    dst_host = hosts.get_host_name_from_engine(dst_host_obj)
+    dst_host = ll_hosts.get_host_name_from_engine(dst_host_obj)
     return dst_host_obj, dst_host
 
 
@@ -169,7 +173,7 @@ def set_host_status(activate=False):
             host=config.HOSTS[0],
             data_center=config.DC_NAME[0]
         )
-    call_func = getattr(hosts, func)
+    call_func = getattr(ll_hosts, func)
     logger.info("Putting hosts besides first two to %s", host_state)
     for host in config.HOSTS[2:]:
         err = "Couldn't put %s into %s" % (host, host_state)
@@ -599,7 +603,7 @@ def reboot_stateless_vm(vm_name):
 
 def get_storage_domains():
     """
-    Returns the storage domains: master,export,non master
+    Get the storage domains: master,export,non master
 
     Returns
         tuple: returns storage domains (master,export,non master)
@@ -634,8 +638,9 @@ def get_all_vm_in_cluster(cluster_name, skip=None):
     """
     Get all vms in cluster except skip
 
-    cluster_name (str): cluster name
-    skip (list): list of vms to skip
+    Args:
+        cluster_name (str): cluster name
+        skip (list): list of vms to skip
 
     Returns:
          list: List of VMs in cluster
@@ -651,7 +656,7 @@ def get_all_vm_in_cluster(cluster_name, skip=None):
 
 def get_err_msg(action=None, vm_name=None):
     """
-    Return error massage according to action and vm name, or action
+    Get error massage according to action and vm name, or action
 
     Args:
         action (str): action name
@@ -737,3 +742,21 @@ def compare_dictionaries(expected, actual):
             k, expected[k], actual[k]
         )
     return not diff_keys
+
+
+@ll_general.generate_logs()
+def remove_all_pools_from_cluster(cluster):
+    """
+    Removes all pools in a given cluster
+
+    Args:
+        cluster (str): Name of the chosen cluster.
+    """
+    vm_pools_in_cluster = ll_clusters.get_all_vm_pools_in_cluster(cluster)
+    all_vms_in_cluster_pools = list()
+    for pool in vm_pools_in_cluster:
+        vms_in_pool = ll_vmpools.get_vms_in_pool_by_name(pool)
+        if not ll_vmpools.removeVmPool(True, pool):
+            continue
+        all_vms_in_cluster_pools.extend(vms_in_pool)
+    ll_vms.waitForVmsGone(True, all_vms_in_cluster_pools)

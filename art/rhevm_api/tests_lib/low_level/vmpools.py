@@ -400,3 +400,14 @@ def get_vm_pool_object(vm_pool):
     except exceptions.EntityNotFound:
         return None
     return vm_pool_obj
+
+
+def get_all_vm_pools():
+    """
+    Get list of vm pool objects from API
+
+    Returns:
+        list: Vm pool objects
+    """
+    logger.info("Getting all vm pools in the system")
+    return UTIL.get(absLink=False)

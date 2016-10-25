@@ -19,9 +19,11 @@
 
 import logging
 import time
-
-import art.rhevm_api.tests_lib.low_level.general as ll_general
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    general as ll_general,
+    networks as ll_networks,
+    vmpools as ll_vmpools
+)
 import art.test_handler.exceptions as exceptions
 from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.tests_lib.low_level.scheduling_policies import (
@@ -761,3 +763,25 @@ def get_rng_sources_from_cluster(cluster_name):
     """
     cl_obj = get_cluster_object(cluster_name)
     return cl_obj.get_required_rng_sources().get_required_rng_source()
+
+
+def get_all_vm_pools_in_cluster(cluster_name):
+    """
+    Get a list of vm pools in the cluster
+
+    Args:
+        cluster_name (str): cluster name
+
+    Returns:
+        list: List of vm pools names in the cluster
+    """
+    all_vm_pools = ll_vmpools.get_all_vm_pools()
+    cluster_obj = get_cluster_object(cluster_name)
+    cluster_vm_pools = [
+        pool_obj.get_name() for pool_obj in all_vm_pools if
+        pool_obj.get_cluster().get_id() == cluster_obj.get_id()
+    ]
+    logger.info(
+        "Existing vm pools in cluster %s: %s", cluster_name, cluster_vm_pools
+    )
+    return cluster_vm_pools

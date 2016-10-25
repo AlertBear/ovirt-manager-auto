@@ -1,6 +1,6 @@
 import logging
 from art.rhevm_api.utils.inventory import Inventory
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 import config
 import helper
 
@@ -14,6 +14,7 @@ def setup_package():
     3. Remove all redundant VMs
     """
     logger.info("VIRT cleanup")
+    helper.remove_all_pools_from_cluster(config.CLUSTER_NAME[0])
     none_ge_vms_in_cluster = helper.get_all_vm_in_cluster(
         cluster_name=config.CLUSTER_NAME[0],
         skip=config.VM_NAME
