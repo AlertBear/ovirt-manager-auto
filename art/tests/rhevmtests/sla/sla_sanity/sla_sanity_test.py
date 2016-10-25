@@ -17,6 +17,7 @@ from rhevmtests.sla.fixtures import (
     start_vms,
     stop_vms,
     update_cluster,
+    update_cluster_to_default_parameters,  # flake8: noqa
     update_vms,
     update_vms_to_default_parameters,
     update_vms_cpus_to_hosts_cpus
@@ -292,8 +293,7 @@ class BasicThreadSla(BasicSlaSanity):
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
-            conf.VM_PLACEMENT_HOSTS: [0],
-            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
+            conf.VM_PLACEMENT_HOSTS: [0]
         }
     }
     vms_to_stop = conf.VM_NAME[:1]
@@ -398,8 +398,7 @@ class TestCPUPinCase1(BasicSlaSanity):
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
-            conf.VM_PLACEMENT_HOSTS: [0],
-            conf.VM_CPU_MODE: conf.VM_HOST_PASS_THROUGH
+            conf.VM_PLACEMENT_HOSTS: [0]
         }
     }
 
