@@ -342,6 +342,14 @@ class CaseRoleActions(TestCase):
         Call cleanup functions.
         """
         login_as_admin()
+        for vm in [config.DELETE_VM, config.CREATE_VM, config.RUNNING_VM]:
+            vms.wait_for_vm_states(
+                vm,
+                states=[
+                    config.ENUMS['vm_state_up'],
+                    config.ENUMS['vm_state_down']
+                ]
+            )
         for user in config.USERS:
             assert users.removeUser(True, user, config.USER_DOMAIN)
 
