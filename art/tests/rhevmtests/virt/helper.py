@@ -716,3 +716,24 @@ def get_dump_xml_as_dict(vm_name):
             % (host_resource, VIRSH_VM_LIST_CMD, err)
         )
     return xmltodict.parse(out)
+
+
+def compare_dictionaries(expected, actual):
+    """
+    Gets two dictionaries with similar keys and compares the values.
+    Returns True if the dictionaries are similar and False otherwise.
+
+    Args:
+        expected (dict): The dictionary with expected values.
+        actual (dict): The dictionary with actual values.
+
+    Returns:
+        True if expected == actual, False otherwise.
+    """
+    diff_keys = [k for k in expected if expected[k] != actual[k]]
+    for k in diff_keys:
+        logger.error(
+            "Wrong result for key: %s. Expected: %s, Actual: %s.",
+            k, expected[k], actual[k]
+        )
+    return not diff_keys
