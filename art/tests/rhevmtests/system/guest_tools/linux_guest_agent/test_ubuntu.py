@@ -56,7 +56,7 @@ class Ubuntu1204TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
     __test__ = True
     disk_name = DISK_NAME
-    list_app = ['dpkg', '--list']
+    list_app = ['dpkg --list']
     application_list = [
         'ovirt-guest-agent', 'linux-image', 'xserver-xorg-video-qxl'
     ]

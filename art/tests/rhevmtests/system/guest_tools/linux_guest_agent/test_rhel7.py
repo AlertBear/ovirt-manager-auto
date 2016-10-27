@@ -29,7 +29,7 @@ class RHEL7GATest(common.GABaseTestCase):
     """
     __test__ = False
     package = config.GA_NAME
-    list_app = ['rpm', '-qa']
+    list_app = ['rpm -qa']
     application_list = ['kernel', config.PACKAGE_NAME]
     cmd_chkconf = [
         'systemctl', 'list-unit-files', '|',

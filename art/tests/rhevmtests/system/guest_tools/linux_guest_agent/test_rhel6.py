@@ -28,7 +28,7 @@ class RHEL6GATest(common.GABaseTestCase):
     Cover basic testing of GA of rhel 6
     """
     __test__ = False
-    list_app = ['rpm', '-qa']
+    list_app = ['rpm -qa']
     application_list = ['kernel', 'rhevm-guest-agent-common']
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
                    'ovirt', '|', 'egrep', '3:on']

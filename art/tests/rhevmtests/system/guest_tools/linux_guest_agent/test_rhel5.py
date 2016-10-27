@@ -29,7 +29,7 @@ class RHEL5GATest(common.GABaseTestCase):
     """
     __test__ = False
     package = config.GA_NAME
-    list_app_cmd = ['rpm', '-qa']
+    list_app_cmd = ['rpm -qa']
     application_list = ['kernel', 'rhevm-guest-agent']
     cmd_chkconf = [
         'chkconfig', '--list',
