@@ -1,13 +1,10 @@
-'''
+"""
 Test actions of all user roles positive & negative.
-'''
-
+"""
+import pytest
 from rhevmtests.system.user_tests import test_actions
 
 
-def setup_module():
-    test_actions.setup_module()
-
-
-def teardown_module():
-    test_actions.teardown_module()
+@pytest.fixture(autouse=True, scope="module")
+def setup_module(request):
+    test_actions.setup_module(request)

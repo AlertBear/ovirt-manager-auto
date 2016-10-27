@@ -1,64 +1,133 @@
-#!/usr/bin/env python
-
 import uuid
 import logging
 import random
+import pytest
 
 from functools import wraps
-from art.unittest_lib import attr
+from art.unittest_lib import attr, testflow
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import CoreSystemTest as TestCase
-from rhevmtests.system.user_tests import config
 from art.rhevm_api.tests_lib.high_level import vmpools as hl_vmpools
 from art.rhevm_api.tests_lib.low_level import (
     disks, users, vms, vmpools, mla, templates,
     datacenters, clusters, hosts, storagedomains
 )
+from rhevmtests.system.user_tests import config
 
 
 logger = logging.getLogger(__name__)
 DETACH_TIMEOUT = 5
 
 
-def setup_module():
+@pytest.fixture(autouse=True, scope="module")
+def setup_module(request):
     """ Prepare testing setup """
-    assert vms.createVm(
+    def finalize():
+        """ Clean testing setup """
+        testflow.teardown("Tearing down module %s", __name__)
+
+        testflow.step("Removing vm %s", config.CREATE_VM)
+        vms.removeVm(
+            True,
+            config.CREATE_VM
+        )
+        testflow.step("Removing vm %s", config.RUNNING_VM)
+        vms.removeVm(
+            True,
+            config.RUNNING_VM,
+            stopVM='true'
+        )
+        testflow.step("Removing vmpool %s", config.CREATE_POOL)
+        vmpools.removeVmPool(
+            True,
+            vmpool=config.CREATE_POOL
+        )
+        testflow.step("Removing disk %s", config.DELETE_DISK)
+        disks.deleteDisk(
+            True,
+            config.DELETE_DISK,
+            async=False
+        )
+        testflow.step("Removing cluster %s", config.DELETE_CLUSTER)
+        clusters.removeCluster(
+            True,
+            config.DELETE_CLUSTER
+        )
+        testflow.step("Removing vm %s", config.DELETE_VM)
+        vms.removeVm(
+            True,
+            config.DELETE_VM
+        )
+        testflow.step("Removing vmpool %s", config.DELETE_POOL)
+        vmpools.removeVmPool(
+            True,
+            vmpool=config.DELETE_POOL,
+            wait=True
+        )
+        testflow.step("Removing template %s", config.CREATE_TEMPLATE)
+        templates.removeTemplate(
+            True,
+            config.CREATE_TEMPLATE
+        )
+        testflow.step("Removing template %s", config.DELETE_TEMPLATE)
+        templates.removeTemplate(
+            True,
+            config.DELETE_TEMPLATE
+        )
+        testflow.step("Removing datacenter %s", config.DELETE_DC)
+        datacenters.remove_datacenter(
+            True,
+            config.DELETE_DC,
+            force=True
+        )
+
+    request.addfinalizer(finalize)
+
+    testflow.setup("Setting up module %s", __name__)
+
+    testflow.step("Creating vm %s", config.CREATE_VM)
+    vms.createVm(
         True,
-        config.CREATE_VM, '',
+        config.CREATE_VM,
         cluster=config.CLUSTER_NAME[0],
         network=config.MGMT_BRIDGE,
         storageDomainName=config.MASTER_STORAGE,
         provisioned_size=config.GB,
     )
-    assert vms.createVm(
+    testflow.step("Creating vm %s", config.RUNNING_VM)
+    vms.createVm(
         True,
-        config.RUNNING_VM, '',
+        config.RUNNING_VM,
         cluster=config.CLUSTER_NAME[0],
         network=config.MGMT_BRIDGE,
         storageDomainName=config.MASTER_STORAGE,
         provisioned_size=config.GB,
         start='true'
     )
-    assert templates.createTemplate(
+    testflow.step("Creating template %s", config.CREATE_TEMPLATE)
+    templates.createTemplate(
         True,
         vm=config.CREATE_VM,
         name=config.CREATE_TEMPLATE
     )
-    assert templates.addTemplateNic(
+    testflow.step("Creating template's nic %s", config.CREATE_TEMPLATE_NIC1)
+    templates.addTemplateNic(
         True,
         config.CREATE_TEMPLATE,
         name=config.CREATE_TEMPLATE_NIC1,
         network=config.MGMT_BRIDGE,
         interface='virtio'
     )
-    assert vmpools.addVmPool(
+    testflow.step("Adding vmpool %s", config.CREATE_POOL)
+    vmpools.addVmPool(
         True,
         name=config.CREATE_POOL,
         cluster=config.CLUSTER_NAME[0],
         template=config.CREATE_TEMPLATE,
         size=1
     )
-    assert disks.addDisk(
+    testflow.step("Adding disk %s", config.DELETE_DISK)
+    disks.addDisk(
         True,
         alias=config.DELETE_DISK,
         interface='virtio',
@@ -66,37 +135,44 @@ def setup_module():
         provisioned_size=config.GB,
         storagedomain=config.MASTER_STORAGE
     )
-    assert clusters.addCluster(
+    testflow.step("Adding cluster %s", config.DELETE_CLUSTER)
+    clusters.addCluster(
         True,
         name=config.DELETE_CLUSTER,
         cpu=config.CPU_NAME,
         data_center=config.DC_NAME[0],
         version=config.COMP_VERSION
     )
-    assert vms.createVm(
+    testflow.step("Creating vm %s", config.DELETE_VM)
+    vms.createVm(
         True,
-        config.DELETE_VM, '',
+        config.DELETE_VM,
         cluster=config.CLUSTER_NAME[0],
         network=config.MGMT_BRIDGE,
     )
-    assert templates.createTemplate(
+    testflow.step("Creating template %s", config.DELETE_TEMPLATE)
+    templates.createTemplate(
         True,
         vm=config.CREATE_VM,
         name=config.DELETE_TEMPLATE
     )
-    assert vmpools.addVmPool(
+    testflow.step("Adding vmpool %s", config.DELETE_POOL)
+    vmpools.addVmPool(
         True,
         name=config.DELETE_POOL,
         cluster=config.CLUSTER_NAME[0],
         template=config.CREATE_TEMPLATE,
         size=1
     )
-    assert datacenters.addDataCenter(
+    testflow.step("Adding datacenter %s", config.DELETE_DC)
+    datacenters.addDataCenter(
         True,
         name=config.DELETE_DC,
-        version=config.COMP_VERSION
+        version=config.COMP_VERSION,
+        local=True
     )
-    assert mla.addTemplatePermissionsToGroup(
+    testflow.step("Adding permissions to group %s", config.EVERYONE_GROUP)
+    mla.addTemplatePermissionsToGroup(
         True,
         config.EVERYONE_GROUP,
         config.CREATE_TEMPLATE,
@@ -104,61 +180,26 @@ def setup_module():
     )
 
 
-def teardown_module():
-    """ Clean testing setup """
-    vms.removeVm(
-        True,
-        config.CREATE_VM
-    )
-    vms.removeVm(
-        True,
-        config.RUNNING_VM,
-        stopVM='true'
-    )
-    vmpools.removeVmPool(
-        True,
-        vmpool=config.CREATE_POOL
-    )
-    disks.deleteDisk(
-        True,
-        config.DELETE_DISK
-    )
-    clusters.removeCluster(
-        True,
-        config.DELETE_CLUSTER
-    )
-    vms.removeVm(
-        True,
-        config.DELETE_VM
-    )
-    vmpools.removeVmPool(
-        True,
-        vmpool=config.DELETE_POOL,
-    )
-    templates.removeTemplate(
-        True,
-        config.CREATE_TEMPLATE
-    )
-    templates.removeTemplate(
-        True,
-        config.DELETE_TEMPLATE
-    )
-    datacenters.remove_datacenter(
-        True,
-        config.DELETE_DC
-    )
-
-
 def ienf(method, *args, **kwargs):
     """
-    Ignore EntityNotFound exception I need this function,
-    because I have generic test, where I don't know if action succedd or not.
-    So at the end I remove all objects which could be created or not.
+    Description:
+        Ignore EntityNotFound exception. We need this function,
+    because these tests are so generic, where we don't know if
+    action succeeded or not. So in the end we remove all objects
+    which could be created or not.
+    Args:
+        method (function): function to invoke
+        *args: arguments of the function
+    Kwargs:
+        **kwargs: keyword arguments of the function
+    Returns:
+        None: this function returns nothing as we don't need any
+    result.
     """
     try:
         method(*args, **kwargs)
     except EntityNotFound:
-        logger.warn('Entity not found: %s%s', method.__name__, args)
+        logger.warn('Entity not found: %s%s', method.__name__, str(args))
 
 
 def login_as_user(user, filter_):
@@ -180,19 +221,26 @@ def login_as_admin():
 
 def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
     """
-    Perform test case as user. When method finished, run cleanup.
-    :param login_as: user who should perform case
-    :param cleanup_func: function which should cleanup case
-    :param cleanup_params: parameters of cleanup function
+    Description:
+        Perform test case as user. When the method is finished, run cleanup.
+    Args:
+        login_as (str): user who should perform case
+        cleanup_func (function): function which should cleanup case
+    Kwargs:
+        cleanup_params: parameters of cleanup function
+    Returns:
+        function: decorator for a test case
     """
     def decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             self.positive = func.__name__[5:] in self.perms
             func.__dict__['role'] = kwargs_glob.get('role')
-            logger.info('Running %s %s action',
-                        'positive' if self.positive else 'negative',
-                        func.__name__)
+            testflow.step(
+                'Running %s %s action',
+                'positive' if self.positive else 'negative',
+                func.__name__
+            )
             if self.last_logged_in != login_as:
                 self.last_logged_in = login_as
                 login_as_user(login_as, self.filter_)
@@ -216,8 +264,8 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
 @attr(tier=2)
 class CaseRoleActions(TestCase):
     """
-    This class include all test actions, which role can have.
-    Every test action is one test case method.
+    This class includes all test actions role can have.
+    Every test action is the one test case method.
     User is authenticated at the start of the test,
     and never log out during test. Clean up is done
     by admin@internal at the end of test.
@@ -227,62 +275,209 @@ class CaseRoleActions(TestCase):
     cleanup_functions = []  # List of dictionaries of cleanup functions
 
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
         """
         Prepare users with roles on objects.
         """
+        def finalize():
+            """
+            Call cleanup functions.
+            """
+            testflow.teardown("Finalizing class %s", cls.__name__)
+            login_as_admin()
+
+            for vm in [
+                    config.DELETE_VM,
+                    config.CREATE_VM,
+                    config.RUNNING_VM
+            ]:
+                testflow.step("Waiting for vm %s", vm)
+                ienf(
+                    vms.wait_for_vm_states,
+                    vm, states=[
+                        config.ENUMS['vm_state_up'],
+                        config.ENUMS['vm_state_down']
+                    ]
+                )
+            for user in config.USERS:
+                testflow.step(
+                    "Removing %s user permissions from %s cluster",
+                    user, config.CLUSTER_NAME[0]
+                )
+                ienf(
+                    mla.removeUserPermissionsFromCluster,
+                    True, config.CLUSTER_NAME[0], user
+                )
+                testflow.step(
+                    "Removing %s user permissions from %s datacenter",
+                    user, config.DC_NAME[0]
+                )
+                ienf(
+                    mla.removeUserPermissionsFromDatacenter,
+                    True, config.DC_NAME[0], user
+                )
+                testflow.step(
+                    "Removing %s permissions from %s storage domain",
+                    user, config.MASTER_STORAGE
+                )
+                ienf(
+                    mla.removeUserPermissionsFromSD,
+                    True, config.MASTER_STORAGE, user
+                )
+                testflow.step(
+                    "Removing all permissions from user %s", user
+                )
+                ienf(
+                    mla.removeAllPermissionsFromUser,
+                    True,
+                    user
+                )
+                testflow.step("Removing user %s", user)
+                ienf(
+                    users.removeUser,
+                    True,
+                    user,
+                    config.USER_DOMAIN
+                )
+
+            for cleanup in cls.cleanup_functions:
+                testflow.step(
+                    "Running %s cleanup function",
+                    cleanup['func'].__name__
+                )
+                try:
+                    cleanup['func'](**cleanup['params'])
+                except EntityNotFound as e:
+                    logger.warn('Entity was not found: %s', str(e))
+                # Continue with execution of all functions.
+                except Exception as e:
+                    logger.error(str(e))
+
+            del cls.cleanup_functions[:]
+
+            testflow.step("Removing role %s", config.UPDATE_ROLE)
+            ienf(
+                mla.removeRole,
+                True,
+                config.UPDATE_ROLE
+            )
+            testflow.step("Removing user %s", config.REMOVE_USER)
+            ienf(
+                users.removeUser,
+                True,
+                config.REMOVE_USER
+            )
+            testflow.step(
+                "Adding %s nic to template %s",
+                config.CREATE_TEMPLATE_NIC1,
+                config.CREATE_TEMPLATE
+            )
+            ienf(
+                templates.addTemplateNic,
+                True,
+                config.CREATE_TEMPLATE,
+                name=config.CREATE_TEMPLATE_NIC1,
+                network=config.MGMT_BRIDGE,
+                interface='virtio'
+            )
+
+        request.addfinalizer(finalize)
+
+        testflow.setup("Setting up class %s", cls.__name__)
+
         for user in config.USERS:
-            assert users.addUser(
+            testflow.step("Adding user %s", user)
+            users.addExternalUser(
                 True,
                 user_name=user,
                 domain=config.USER_DOMAIN
             )
-        assert mla.addVMPermissionsToUser(
+        testflow.step(
+            "Adding %s permissions to %s user",
+            config.CREATE_VM,
+            config.USER_TEST
+        )
+        mla.addVMPermissionsToUser(
             True,
             config.USER_TEST,
             config.CREATE_VM,
             config.UserRole
         )
-        assert mla.addRole(
+
+        testflow.step("Adding role %s", config.UPDATE_ROLE)
+        ienf(
+            mla.addRole,
             True,
             name=config.UPDATE_ROLE,
             permits=config.PERMIT_LOGIN
         )
-        assert users.addUser(
+        testflow.step("Adding user %s", config.REMOVE_USER)
+        users.addExternalUser(
             True,
             user_name=config.REMOVE_USER,
             domain=config.USER_DOMAIN
         )
-        assert users.addRoleToUser(
+        testflow.step(
+            "Adding %s role to %s user",
+            cls.role,
+            config.USER_SYSTEM
+        )
+        users.addRoleToUser(
             True,
             config.USER_SYSTEM,
             cls.role
         )
-        assert mla.addClusterPermissionsToUser(
+        testflow.step(
+            "Adding %s cluster permissions to %s user",
+            config.CLUSTER_NAME[0],
+            config.USER_CLUSTER
+        )
+        mla.addClusterPermissionsToUser(
             True,
             config.USER_CLUSTER,
             config.CLUSTER_NAME[0],
             cls.role
         )
-        assert mla.addPermissionsForDataCenter(
+        testflow.step(
+            "Adding %s datacenter permission to %s user",
+            config.DC_NAME[0],
+            config.USER_DC
+        )
+        mla.addPermissionsForDataCenter(
             True,
             config.USER_DC,
             config.DC_NAME[0],
             cls.role
         )
-        assert mla.addStoragePermissionsToUser(
+        testflow.step(
+            "Adding %s storage permissions to %s user",
+            config.MASTER_STORAGE,
+            config.USER_STORAGE
+        )
+        mla.addStoragePermissionsToUser(
             True,
             config.USER_STORAGE,
             config.MASTER_STORAGE,
             cls.role
         )
-        assert mla.addPermissionsForTemplate(
+        testflow.step(
+            "Adding %s template permissions to %s user",
+            config.CREATE_TEMPLATE,
+            config.USER_DC
+        )
+        mla.addPermissionsForTemplate(
             True,
             config.USER_DC,
             config.CREATE_TEMPLATE,
             config.UserTemplateBasedVm
         )
-        assert mla.addVMPermissionsToUser(
+        testflow.step(
+            "Adding %s vm permissions to %s user",
+            config.CREATE_VM,
+            config.USER_VM
+        )
+        mla.addVMPermissionsToUser(
             True,
             config.USER_VM,
             config.CREATE_VM,
@@ -329,58 +524,12 @@ class CaseRoleActions(TestCase):
             for user, func_obj_maps, in user_object_perm_map.iteritems():
                 for func, obj_names in func_obj_maps.iteritems():
                     for obj_name in obj_names:
-                        assert func(
+                        func(
                             True,
                             user,
                             obj_name,
                             role=config.UserTemplateBasedVm
                         )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Call cleanup functions.
-        """
-        login_as_admin()
-        for vm in [config.DELETE_VM, config.CREATE_VM, config.RUNNING_VM]:
-            vms.wait_for_vm_states(
-                vm,
-                states=[
-                    config.ENUMS['vm_state_up'],
-                    config.ENUMS['vm_state_down']
-                ]
-            )
-        for user in config.USERS:
-            assert users.removeUser(True, user, config.USER_DOMAIN)
-
-        logger.info('Running cleanup functions: %s', cls.cleanup_functions)
-        for cleanup in cls.cleanup_functions:
-            try:
-                cleanup['func'](**cleanup['params'])
-            except EntityNotFound as e:
-                logger.warn('Entity was not found: %s', e)
-            except Exception as e:  # Continue with execution all functions.
-                logger.error(e)
-
-        del cls.cleanup_functions[:]
-
-        ienf(
-            mla.removeRole,
-            True,
-            config.UPDATE_ROLE
-        )
-        ienf(
-            users.removeUser,
-            True,
-            config.REMOVE_USER
-        )
-        templates.addTemplateNic(
-            True,
-            config.CREATE_TEMPLATE,
-            name=config.CREATE_TEMPLATE_NIC1,
-            network=config.MGMT_BRIDGE,
-            interface='virtio'
-        )
 
     # ======================= CREATE ACTIONS ================================
 
@@ -395,7 +544,8 @@ class CaseRoleActions(TestCase):
         assert datacenters.addDataCenter(
             self.positive,
             name=config.USER_SYSTEM,
-            version=config.COMP_VERSION
+            version=config.COMP_VERSION,
+            local=True
         )
 
     @user_case(
@@ -409,7 +559,6 @@ class CaseRoleActions(TestCase):
         assert vms.createVm(
             self.positive,
             config.USER_CLUSTER,
-            vmDescription='',
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
@@ -819,7 +968,8 @@ class CaseRoleActions(TestCase):
         cleanup_func=datacenters.addDataCenter,
         positive=True,
         name=config.DELETE_DC,
-        version=config.COMP_VERSION
+        version=config.COMP_VERSION,
+        local=True
     )
     def test_delete_storage_pool(self):
         """ delete_storage_pool """

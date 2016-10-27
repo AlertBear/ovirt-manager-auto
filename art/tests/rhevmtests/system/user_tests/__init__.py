@@ -1,3 +1,5 @@
+import logging
+
 from art.rhevm_api.utils.enginecli import EngineCLI
 from art.rhevm_api.tests_lib.low_level import mla as ll_mla
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
@@ -8,6 +10,8 @@ from rhevmtests.system.user_tests import (
     test_admin,
     test_actions,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_action_groups(role_name):
@@ -86,6 +90,11 @@ def setup_package():
     with config.ENGINE_HOST.executor().session() as ss:
         user_cli = EngineCLI(tool=TOOL, session=ss).setup_module('user')
         for user in config.USERS[:-1]:
+            # Workaround if environment is not clean
+            try:
+                user_cli.run("delete", user, )[0]
+            except Exception as e:
+                logger.warn("Caught exception %s" % e)
             assert user_cli.run(
                 'add',
                 user,
