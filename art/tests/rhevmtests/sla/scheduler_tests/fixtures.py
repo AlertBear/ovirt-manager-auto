@@ -16,28 +16,35 @@ def load_hosts_cpu(request):
     """
     1) Load hosts CPU
     """
-    load_d = request.node.cls.load_d
-    load_to_resources = {}
-    for load_value, host_indexes in load_d.iteritems():
-        load_to_resources[load_value] = {}
-        load_to_resources[load_value][sla_conf.HOST] = []
-        load_to_resources[load_value][sla_conf.RESOURCE] = []
-        for host_index in host_indexes:
-            load_to_resources[load_value][sla_conf.HOST].append(
-                sla_conf.HOSTS[host_index]
-            )
-            load_to_resources[load_value][sla_conf.RESOURCE].append(
-                sla_conf.VDS_HOSTS[host_index]
-            )
+    hosts_cpu_load = getattr(request.node.cls, "hosts_cpu_load", None)
+    if hosts_cpu_load:
+        load_to_resources = {}
+        for load_value, host_indexes in hosts_cpu_load.iteritems():
+            load_to_resources[load_value] = {}
+            load_to_resources[load_value][sla_conf.HOST] = []
+            load_to_resources[load_value][sla_conf.RESOURCE] = []
+            for host_index in host_indexes:
+                load_to_resources[load_value][sla_conf.HOST].append(
+                    sla_conf.HOSTS[host_index]
+                )
+                load_to_resources[load_value][sla_conf.RESOURCE].append(
+                    sla_conf.VDS_HOSTS[host_index]
+                )
 
-    def fin():
-        """
-        1) Stop CPU load on hosts
-        """
-        sla_helpers.stop_load_on_resources(load_to_resources.values())
-    request.addfinalizer(fin)
+        def fin():
+            """
+            1) Stop CPU load on hosts
+            """
+            u_libs.testflow.teardown(
+                "Release hosts from CPU load: %s", load_to_resources.values()
+            )
+            sla_helpers.stop_load_on_resources(load_to_resources.values())
+        request.addfinalizer(fin)
 
-    sla_helpers.start_and_wait_for_cpu_load_on_resources(load_to_resources)
+        u_libs.testflow.setup(
+            "Create CPU load on the hosts: %s", load_to_resources
+        )
+        sla_helpers.start_and_wait_for_cpu_load_on_resources(load_to_resources)
 
 
 @pytest.fixture(scope="class")

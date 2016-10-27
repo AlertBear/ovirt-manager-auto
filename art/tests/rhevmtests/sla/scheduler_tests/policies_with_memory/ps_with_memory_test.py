@@ -1,906 +1,558 @@
 """
 Test power saving scheduler policy under different cpu and memory conditions
 """
-import logging
-
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import base_class as base_c
-import config as conf
-import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from art.test_handler.tools import polarion, bz
-
-logger = logging.getLogger(__name__)
+from art.test_handler.tools import polarion
+from base_class import *  # flake8: noqa
+from rhevmtests.sla.fixtures import stop_vms
 
 
-class BaseTestPSWithMemory(base_c.StartVms):
+class BasePSWithMemory(BaseStartVmsUnderPolicyWithMemory):
     """
-    Base class for scheduler tests with memory load
+    Base class for PS scheduler tests with the memory load
     """
-    cluster_policy = {
-        conf.CLUSTER_POLICY_NAME: conf.POLICY_POWER_SAVING,
-        conf.CLUSTER_POLICY_PARAMS: conf.DEFAULT_PS_PARAMS
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_POWER_SAVING,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_PARAMS,
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad1(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad1(BasePSWithMemory):
     """
-    Host_1 CPU and memory under utilized
-    Host_2 CPU under utilized and memory normal utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU and memory under utilized
+    Host_1 CPU under utilized and memory normal utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad1, cls).setup_class()
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_0
 
     @polarion("RHEVM3-11388")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad2(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad2(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory over utilized
-    Host_2 CPU under utilized and memory normal utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU under utilized and memory over utilized
+    Host_1 CPU under utilized and memory normal utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad2, cls).setup_class()
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
 
     @polarion("RHEVM3-11390")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad3(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad3(BasePSWithMemory):
     """
-    Host_1 CPU normal utilized and memory under utilized
-    Host_2 CPU under utilized and memory normal utilized
-    Vm from Host_2 must migrate on Host_1
+    Host_0 CPU normal utilized and memory under utilized
+    Host_1 CPU under utilized and memory normal utilized
+    VM from the Host_1 must migrate on the Host_0
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad3, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_0
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_0
 
     @polarion("RHEVM3-11391")
     def test_vm_migration(self):
         """
-        Check if vm from Host_2 migrated on Host_1
+        Check if VM from the Host_1 migrated on the Host_0
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad4(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad4(BasePSWithMemory):
     """
-    Host_1 CPU normal utilized and memory over utilized
-    Host_2 CPU under utilized and memory normal utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU normal utilized and memory over utilized
+    Host_1 CPU under utilized and memory normal utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad4, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_0
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
 
     @polarion("RHEVM3-11393")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad5(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad5(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory under utilized
-    Host_2 CPU under utilized and memory normal utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU over utilized and memory under utilized
+    Host_1 CPU under utilized and memory normal utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad5, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_1
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_0
 
     @polarion("RHEVM3-11394")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad6(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad6(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory over utilized
-    Host_2 CPU under utilized and memory normal utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU over utilized and memory over utilized
+    Host_1 CPU under utilized and memory normal utilized
+    VM from the Host_0 must migrate the on Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad6, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_1
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
 
     @polarion("RHEVM3-11396")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad7(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad7(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory under utilized
-    Host_2 CPU normal utilized and memory under utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU under utilized and memory under utilized
+    Host_1 CPU normal utilized and memory under utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            }
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad7, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_2
+    vms_to_run = conf.DEFAULT_VMS_TO_RUN_0
 
     @polarion("RHEVM3-11397")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad8(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad8(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory over utilized
-    Host_2 CPU normal utilized and memory under utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU under utilized and memory over utilized
+    Host_1 CPU normal utilized and memory under utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad8, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_2
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_2
 
     @polarion("RHEVM3-11399")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad9(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad9(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory under utilized
-    Host_2 CPU normal utilized and memory under utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU over utilized and memory under utilized
+    Host_1 CPU normal utilized and memory under utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            },
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad9, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_3
+    vms_to_run = conf.DEFAULT_VMS_TO_RUN_0
 
     @polarion("RHEVM3-11400")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad10(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad10(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory normal utilized
-    Host_2 CPU normal utilized and memory under utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU over utilized and memory normal utilized
+    Host_1 CPU normal utilized and memory under utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            },
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_NORMALUTILIZED_VMS[0]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad10, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_3
+    vms_to_run = {
+        conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0},
+        conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1},
+        conf.LOAD_NORMALUTILIZED_VMS[0]: {conf.VM_RUN_ONCE_HOST: 0}
+    }
 
     @polarion("RHEVM3-11401")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad11(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad11(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory over utilized
-    Host_2 CPU normal utilized and memory under utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU over utilized and memory over utilized
+    Host_1 CPU normal utilized and memory under utilized
+    VM from Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            },
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad11, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_3
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_2
 
     @polarion("RHEVM3-11402")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad12(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad12(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory normal utilized
-    Host_2 CPU normal utilized and memory normal utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU under utilized and memory normal utilized
+    Host_1 CPU normal utilized and memory normal utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_NORMALUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad12, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_2
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_3
 
     @polarion("RHEVM3-11404")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad13(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad13(BasePSWithMemory):
     """
-    Host_1 CPU normal utilized and memory under utilized
-    Host_2 CPU normal utilized and memory normal utilized
-    Vm from Host_1 must migrate on Host_2
+    Host_0 CPU normal utilized and memory under utilized
+    Host_1 CPU normal utilized and memory normal utilized
+    VM from the Host_0 must migrate on the Host_1
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: conf.VDS_HOSTS[:2],
-                conf.HOST: conf.HOSTS[:2]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad13, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_4
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_0
 
     @polarion("RHEVM3-11406")
     def test_vm_migration(self):
         """
-        Check if vm from Host_1 migrated on Host_2
+        Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1], expected_num_of_vms=2
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad14(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad14(BasePSWithMemory):
     """
+    Host_0 CPU normal utilized and memory normal utilized
     Host_1 CPU normal utilized and memory normal utilized
-    Host_2 CPU normal utilized and memory normal utilized
-    All VMS must stay on old hosts
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: conf.VDS_HOSTS[:2],
-                conf.HOST: conf.HOSTS[:2]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_NORMALUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad14, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_4
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_3
 
     @polarion("RHEVM3-11407")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad15(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad15(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory under utilized
-    Host_2 CPU normal utilized and memory over utilized
-    All VMS must stay on old hosts
+    Host_0 CPU under utilized and memory under utilized
+    Host_1 CPU normal utilized and memory over utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_OVERUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad15, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_2
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_5
 
     @polarion("RHEVM3-11412")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad16(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad16(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory over utilized
-    Host_2 CPU normal utilized and memory over utilized
-    All VMS must stay on old hosts
+    Host_0 CPU under utilized and memory over utilized
+    Host_1 CPU normal utilized and memory over utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_OVERUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad16, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_2
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_4
 
     @polarion("RHEVM3-11414")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad17(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad17(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory under utilized
-    Host_2 CPU normal utilized and memory over utilized
-    All VMS must stay on old hosts
+    Host_0 CPU over utilized and memory under utilized
+    Host_1 CPU normal utilized and memory over utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            },
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_OVERUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad17, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_3
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_5
 
     @polarion("RHEVM3-11415")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad18(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad18(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory normal utilized
-    Host_2 CPU normal utilized and memory over utilized
-    All VMS must stay on old hosts
+    Host_0 CPU over utilized and memory normal utilized
+    Host_1 CPU normal utilized and memory over utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            },
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_NORMALUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_OVERUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad18, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_3
+    vms_to_run = {
+        conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0},
+        conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1},
+        conf.LOAD_NORMALUTILIZED_VMS[0]: {conf.VM_RUN_ONCE_HOST: 0},
+        conf.LOAD_OVERUTILIZED_VMS[1]: {conf.VM_RUN_ONCE_HOST: 1}
+    }
 
     @polarion("RHEVM3-11416")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad19(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad19(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory over utilized
-    Host_2 CPU normal utilized and memory over utilized
-    All VMS must stay on old hosts
+    Host_0 CPU over utilized and memory over utilized
+    Host_1 CPU normal utilized and memory over utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            },
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[0]],
-                conf.HOST: [conf.HOSTS[0]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_OVERUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad19, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_3
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_4
 
     @polarion("RHEVM3-11417")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad20(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad20(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory under utilized
-    Host_2 CPU over utilized and memory normal utilized
-    All VMS must stay on old hosts
+    Host_0 CPU under utilized and memory under utilized
+    Host_1 CPU over utilized and memory normal utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad20, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_5
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_0
 
     @polarion("RHEVM3-11418")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad21(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad21(BasePSWithMemory):
     """
-    Host_1 CPU under utilized and memory over utilized
-    Host_2 CPU over utilized and memory normal utilized
-    All VMS must stay on old hosts
+    Host_0 CPU under utilized and memory over utilized
+    Host_1 CPU over utilized and memory normal utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: [conf.VDS_HOSTS[1]],
-                conf.HOST: [conf.HOSTS[1]]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad21, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_5
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
 
     @polarion("RHEVM3-11419")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
-class TestPSBalanceModuleUnderMemoryAndCPULoad22(BaseTestPSWithMemory):
+class TestPSBalanceModuleUnderMemoryAndCPULoad22(BasePSWithMemory):
     """
-    Host_1 CPU over utilized and memory over utilized
-    Host_2 CPU over utilized and memory normal utilized
-    All VMS must stay on old hosts
+    Host_0 CPU over utilized and memory over utilized
+    Host_1 CPU over utilized and memory normal utilized
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Override class parameters
-        """
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_100: {
-                conf.RESOURCE: conf.VDS_HOSTS[:2],
-                conf.HOST: conf.HOSTS[:2]
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[0]: conf.LOAD_OVERUTILIZED_VMS[0],
-            conf.HOSTS[1]: conf.LOAD_NORMALUTILIZED_VMS[1]
-        }
-        super(TestPSBalanceModuleUnderMemoryAndCPULoad22, cls).setup_class()
+    hosts_cpu_load = conf.HOST_CPU_LOAD_6
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
 
     @polarion("RHEVM3-11423")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
         )
 
 
-class StartAndMigrateVmPSBase(base_c.StartAndMigrateVmBase):
+class BaseUpdateAndStartVmPS(BaseUpdateAndStartVmsUnderPolicyWithMemory):
     """
-    Base class for start and migrate of VM under PS scheduler policy
+    Base class for VM start and migration under PS scheduler policy
     """
-    cluster_policy = {
-        conf.CLUSTER_POLICY_NAME: conf.POLICY_POWER_SAVING,
-        conf.CLUSTER_POLICY_PARAMS: conf.DEFAULT_PS_PARAMS
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_POWER_SAVING,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_PARAMS,
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
-    update_vm_d = {
+    vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_MEMORY: 2 * conf.GB,
             conf.VM_MEMORY_GUARANTEED: 2 * conf.GB
         }
     }
+    vms_to_run = conf.DEFAULT_VMS_TO_RUN_1
 
 
-class TestStartVm(StartAndMigrateVmPSBase):
+@pytest.mark.usefixtures(stop_vms.__name__)
+class TestStartVmPS(BaseUpdateAndStartVmPS):
     """
-    Host_1, Host_2 and Host_3 CPU normal utilized
-    Load additional one GB of memory on Host_1
-    Start additional VM, VM must start on Host_1
+    Host_0, Host_1 and Host_2 CPU normal utilized
+    Load additional one GB of memory on the Host_0
+    Start additional VM, VM must start on the Host_0
     """
     __test__ = True
-    vm_to_start = conf.VM_NAME[3]
+    vms_to_stop = [conf.VM_NAME[3]]
 
-    @bz({"1260381": {}})
     @polarion("RHEVM3-11645")
     def test_start_vm(self):
         """
-        1) Start vm
-        2) Check that vm started on correct host
+        1) Start VM
+        2) Check that VM started on the correct host
         """
-        assert ll_vms.startVm(
-            positive=True, vm=self.vm_to_start
-        ), "Failed to start vm %s" % self.vm_to_start
-        vm_host = ll_vms.get_vm_host(vm_name=self.vm_to_start)
-        assert vm_host == conf.HOSTS[0], (
-            "Vm %s started on wrong host %s" % (self.vm_to_start, vm_host)
+        u_libs.testflow.step("Start the VM %s", conf.VM_NAME[3])
+        assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[3])
+
+        vm_host = ll_vms.get_vm_host(vm_name=conf.VM_NAME[3])
+        u_libs.testflow.step(
+            "Check that VM %s started on the host %s",
+            conf.VM_NAME[3], conf.HOSTS[0]
         )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Stop additional vm
-        """
-        logger.info("Stop vm %s", cls.vm_to_start)
-        if not ll_vms.stopVm(positive=True, vm=cls.vm_to_start):
-            logger.error("Failed to stop vm %s", cls.vm_to_start)
-        super(TestStartVm, cls).teardown_class()
+        assert vm_host == conf.HOSTS[0]
 
 
-class TestMigrateVm(StartAndMigrateVmPSBase):
+class TestMigrateVmPS(BaseUpdateAndStartVmPS):
     """
-    Host_1, Host_2 and Host_3 CPU normal utilized
-    Load additional one GB of memory on Host_1
-    Migrate VM from Host_3, VM must migrate to Host_1
+    Host_0, Host_1 and Host_2 CPU normal utilized
+    Load additional one GB of memory on the Host_0
+    Migrate VM from the Host_2, VM must migrate on the Host_0
     """
     __test__ = True
-    vm_to_migrate = conf.VM_NAME[2]
 
     @polarion("RHEVM3-11646")
     def test_migrate_vm(self):
         """
-        1) Migrate vm
-        2) Check that vm migrated to correct host
+        1) Migrate the VM
+        2) Check that VM migrated on correct host
         """
-        assert ll_vms.migrateVm(
-            positive=True, vm=self.vm_to_migrate
-        ), "Failed to migrate vm %s" % self.vm_to_migrate
-        vm_host = ll_vms.get_vm_host(vm_name=self.vm_to_migrate)
-        assert vm_host == conf.HOSTS[0], (
-            "Vm %s migrated to wrong host %s" % (self.vm_to_migrate, vm_host)
+        u_libs.testflow.step("Migrate the VM %s", conf.VM_NAME[2])
+        assert ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[2])
+
+        vm_host = ll_vms.get_vm_host(vm_name=conf.VM_NAME[2])
+        u_libs.testflow.step(
+            "Check that VM %s migrated on the host %s",
+            conf.VM_NAME[2], conf.HOSTS[0]
         )
+        assert vm_host == conf.HOSTS[0]
 
 
-class TestTakeInAccountVmMemory(StartAndMigrateVmPSBase):
+class TestTakeInAccountVmMemoryPS(BaseUpdateAndStartVmPS):
     """
-    Host_1 and Host_2 CPU normal utilized
-    Host_2 memory overutilized
-    Host_1 has memory near overutilized value,
-     so if engine will migrate additional vm on Host_1,
-     it will overutilized host memory
-    All vms must stay on old hosts
+    Host_0 and Host_1 CPU normal utilized
+    Host_1 memory overutilized
+    Host_0 has memory near overutilized value,
+     so if the engine will migrate additional VM on the Host_0,
+     it will overutilized the host memory
+    All VM's must stay on old hosts
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Override vm update parameters
-        2) Override memory load parameters
-        """
-        cls.update_vm_d = {
-            conf.VM_NAME[0]: {
-                conf.VM_MEMORY: (
-                    conf.DEFAULT_PS_PARAMS[
-                        conf.MIN_FREE_MEMORY
-                    ] * conf.MB - conf.GB / 2
-                ),
-                conf.VM_MEMORY_GUARANTEED: (
-                    conf.DEFAULT_PS_PARAMS[
-                        conf.MIN_FREE_MEMORY
-                    ] * conf.MB - conf.GB / 2
-                )
-            }
-        }
-        cls.load_memory_d = {
-            conf.HOSTS[1]: conf.LOAD_OVERUTILIZED_VMS[1]
-        }
-        super(TestTakeInAccountVmMemory, cls).setup_class()
+    vms_to_params = {
+        conf.VM_NAME[0]: conf.MEMORY_NEAR_OVERUTILIZED
+    }
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_6
 
     @polarion("RHEVM3-12339")
     def test_vm_migration(self):
         """
-        Check if all vms stay on old hosts
+        Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True

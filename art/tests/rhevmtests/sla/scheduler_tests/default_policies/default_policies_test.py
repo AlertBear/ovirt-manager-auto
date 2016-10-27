@@ -86,7 +86,7 @@ class TestPowerSavingBalanceModule1(BasePowerSavingPolicy):
         sla_conf.VM_NAME[2]: {sla_conf.VM_RUN_ONCE_HOST: 2}
     }
     vms_to_stop = sla_conf.VM_NAME[:3]
-    load_d = {sla_conf.CPU_LOAD_50: [1]}
+    hosts_cpu_load = {sla_conf.CPU_LOAD_50: [1]}
 
     @polarion("RHEVM3-9498")
     def test_power_saving_balance_module_1(self):
@@ -113,7 +113,7 @@ class TestPowerSavingBalanceModule2(BasePowerSavingPolicy):
         sla_conf.VM_NAME[2]: {sla_conf.VM_RUN_ONCE_HOST: 2}
     }
     vms_to_stop = sla_conf.VM_NAME[:3]
-    load_d = {sla_conf.CPU_LOAD_100: [1]}
+    hosts_cpu_load = {sla_conf.CPU_LOAD_100: [1]}
 
     @polarion("RHEVM3-9489")
     def test_power_saving_balance_module_2(self):
@@ -137,7 +137,7 @@ class TestPowerSavingBalanceModule3(BasePowerSavingPolicy):
         sla_conf.VM_NAME[2]: {sla_conf.VM_RUN_ONCE_HOST: 2}
     }
     vms_to_stop = sla_conf.VM_NAME[:3]
-    load_d = {sla_conf.CPU_LOAD_50: [1], sla_conf.CPU_LOAD_100: [2]}
+    hosts_cpu_load = {sla_conf.CPU_LOAD_50: [1], sla_conf.CPU_LOAD_100: [2]}
 
     @polarion("RHEVM3-9490")
     def test_power_saving_balance_module_3(self):
@@ -162,7 +162,7 @@ class TestPowerSavingWeightModule1(BasePowerSavingPolicy):
         sla_conf.VM_NAME[2]: {sla_conf.VM_RUN_ONCE_HOST: 2}
     }
     vms_to_stop = sla_conf.VM_NAME[:3]
-    load_d = {sla_conf.CPU_LOAD_50: range(2)}
+    hosts_cpu_load = {sla_conf.CPU_LOAD_50: range(2)}
     hosts_to_activate_indexes = [0]
 
     @polarion("RHEVM3-9492")
@@ -202,7 +202,7 @@ class TestEvenDistributedBalanceModule1(BasePowerEvenDistribution):
         sla_conf.VM_NAME[2]: {sla_conf.VM_RUN_ONCE_HOST: 2}
     }
     vms_to_stop = sla_conf.VM_NAME[:3]
-    load_d = {sla_conf.CPU_LOAD_100: range(2)}
+    hosts_cpu_load = {sla_conf.CPU_LOAD_100: range(2)}
 
     @polarion("RHEVM3-9493")
     def test_even_distributed_balance_module_1(self):
@@ -229,7 +229,7 @@ class TestEvenDistributedBalanceModule2(BasePowerEvenDistribution):
         sla_conf.VM_NAME[2]: {sla_conf.VM_RUN_ONCE_HOST: 2}
     }
     vms_to_stop = sla_conf.VM_NAME[:3]
-    load_d = {sla_conf.CPU_LOAD_100: range(3)}
+    hosts_cpu_load = {sla_conf.CPU_LOAD_100: range(3)}
 
     @polarion("RHEVM3-9494")
     def test_even_distributed_balance_module_2(self):
@@ -254,7 +254,7 @@ class TestEvenDistributedWeightModule1(BasePowerEvenDistribution):
         sla_conf.VM_NAME[2]: {sla_conf.VM_RUN_ONCE_HOST: 2}
     }
     vms_to_stop = sla_conf.VM_NAME[:3]
-    load_d = {sla_conf.CPU_LOAD_100: [2]}
+    hosts_cpu_load = {sla_conf.CPU_LOAD_100: [2]}
     hosts_to_activate_indexes = [0]
 
     @polarion("RHEVM3-9496")

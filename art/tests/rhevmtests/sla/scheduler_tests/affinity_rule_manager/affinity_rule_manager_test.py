@@ -368,7 +368,7 @@ class TestAREM7(BaseAREM):
             conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
         }
     }
-    load_d = {conf.CPU_LOAD_50: [0]}
+    hosts_cpu_load = {conf.CPU_LOAD_50: [0]}
 
     @polarion("RHEVM3-10931")
     def test_check_balancing(self):
@@ -417,7 +417,7 @@ class TestAREM8(BaseAREM):
             conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
         }
     }
-    load_d = {conf.CPU_LOAD_100: [0]}
+    hosts_cpu_load = {conf.CPU_LOAD_100: [0]}
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: conf.POLICY_EVEN_DISTRIBUTION,
         conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_ED_PARAMS

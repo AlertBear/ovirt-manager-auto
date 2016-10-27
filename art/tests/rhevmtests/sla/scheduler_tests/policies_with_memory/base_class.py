@@ -1,156 +1,166 @@
 """
 Base module for scheduler tests with memory load
 """
-import logging
-
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.test_handler.exceptions as errors
-import art.unittest_lib as libs
+import art.unittest_lib as u_libs
 import config as conf
-from art.test_handler.tools import bz
-from rhevmtests.sla import helpers
+import pytest
+import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
+from rhevmtests.sla.fixtures import (
+    run_once_vms,
+    update_cluster,
+    update_cluster_to_default_parameters,  # flake8: noqa
+    update_vms
+)
+from rhevmtests.sla.scheduler_tests.fixtures import (
+    load_hosts_cpu,
+    wait_for_scheduling_memory_update
+)
 
-logger = logging.getLogger(__name__)
 
-
-@libs.attr(tier=2)
-@bz({'1316456': {}})
-class BaseTestPolicyWithMemory(libs.SlaTest):
+def update_configuration_constants():
     """
-    Base class for scheduler tests with memory load
+    Update configuration file constants according to the host memory
     """
-    load_cpu_d = None
-    load_memory_d = None
-    cluster_policy = None
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Setup:
-        1) Load hosts cpu if need
-        2) Load hosts memory if need
-        3) Change cluster policy
-        """
-        if cls.load_cpu_d:
-            helpers.start_and_wait_for_cpu_load_on_resources(cls.load_cpu_d)
-        if cls.load_memory_d:
-            vm_host_d = dict(
-                (vm_name, {"host": host_name, "wait_for_state": conf.VM_UP})
-                for host_name, vm_name in cls.load_memory_d.iteritems()
-            )
-            ll_vms.run_vms_once(
-                vms=cls.load_memory_d.values(), **vm_host_d
-            )
-        if not ll_clusters.updateCluster(
-            positive=True,
-            cluster=conf.CLUSTER_NAME[0],
-            scheduling_policy=cls.cluster_policy.get("name"),
-            properties=cls.cluster_policy.get("params")
-        ):
-            raise errors.ClusterException()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Teardown:
-        1) Update cluster policy to default
-        2) Stop memory load on hosts
-        3) Stop CPU load on hosts
-        """
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=conf.CLUSTER_NAME[0],
-            scheduling_policy=conf.POLICY_NONE
+    first_host_sch_memory = ll_hosts.get_host_max_scheduling_memory(
+        host_name=conf.HOSTS[0]
+    )
+    for host_name in conf.HOSTS[1:3]:
+        host_sch_memory = ll_hosts.get_host_max_scheduling_memory(
+            host_name=host_name
         )
-        if cls.load_memory_d:
-            logger.info("Stop memory load on hosts")
-            ll_vms.stop_vms_safely(vms_list=cls.load_memory_d.values())
-        if cls.load_cpu_d:
-            helpers.stop_load_on_resources(cls.load_cpu_d.values())
-
-
-class StartVms(BaseTestPolicyWithMemory):
-    """
-    Base class for tests, that need start vms first
-    """
-    @classmethod
-    def setup_class(cls):
-        """
-        Start one vm on each host
-        """
-        vm_host_d = dict(
-            (vm_name, {"host": host_name})
-            for vm_name, host_name in zip(conf.VM_NAME[:2], conf.HOSTS[:2])
-        )
-        ll_vms.run_vms_once(vms=conf.VM_NAME[:2], **vm_host_d)
-        if not helpers.wait_for_active_vms_on_hosts(
-            hosts=conf.HOSTS[:2], expected_num_of_vms=1
+        if (
+            first_host_sch_memory - 512 * conf.MB > host_sch_memory or
+            host_sch_memory > first_host_sch_memory + 512 * conf.MB
         ):
-            raise errors.HostException()
-        super(StartVms, cls).setup_class()
+            pytest.skip(
+                "Host %s scheduling memory %s does not equal "
+                "to the host %s scheduling memory %s",
+                host_name, host_sch_memory,
+                conf.HOSTS[0], first_host_sch_memory
+            )
+    half_host_memory = first_host_sch_memory / 2
+    conf.DEFAULT_PS_PARAMS[
+        conf.MIN_FREE_MEMORY
+    ] = (half_host_memory + 2 * conf.GB) / conf.MB
+    conf.DEFAULT_PS_PARAMS[
+        conf.MAX_FREE_MEMORY
+    ] = (half_host_memory - 2 * conf.GB) / conf.MB
+    conf.DEFAULT_ED_PARAMS[
+        conf.MAX_FREE_MEMORY
+    ] = (half_host_memory - 2 * conf.GB) / conf.MB
+    overutilized_memory = (
+        half_host_memory + 3 * conf.GB - half_host_memory % conf.MB
+    )
+    normalutilized_memory = (
+        half_host_memory - conf.GB - half_host_memory % conf.MB
+    )
+    for normalutilized_vm, overutilized_vm in zip(
+        conf.LOAD_NORMALUTILIZED_VMS, conf.LOAD_OVERUTILIZED_VMS
+    ):
+        conf.LOAD_MEMORY_VMS.update(
+            {
+                normalutilized_vm: {
+                    conf.VM_MEMORY: normalutilized_memory,
+                    conf.VM_MEMORY_GUARANTEED: normalutilized_memory
+                },
+                overutilized_vm: {
+                    conf.VM_MEMORY: overutilized_memory,
+                    conf.VM_MEMORY_GUARANTEED: overutilized_memory
+                }
+            }
+        )
+    memory_near_overutilized = conf.DEFAULT_PS_PARAMS[
+        conf.MIN_FREE_MEMORY
+    ] * conf.MB - conf.GB / 2
+    conf.MEMORY_NEAR_OVERUTILIZED[conf.VM_MEMORY] = memory_near_overutilized
+    conf.MEMORY_NEAR_OVERUTILIZED[
+        conf.VM_MEMORY_GUARANTEED
+    ] = memory_near_overutilized
 
-    @classmethod
-    def teardown_class(cls):
+
+@pytest.fixture(scope="module")
+def prepare_environment_for_tests(request):
+    """
+    1) Update cluster overcommitment to NONE
+    2) Update memory parameters for EvenDistribution and PowerSaving policies
+    3) Create VM's for the memory load
+    """
+    def fin():
         """
-        Stop vms
+        1) Remove memory load VM's
+        2) Stop CPU load on all hosts
         """
-        ll_vms.stop_vms_safely(conf.VM_NAME[:2])
-        super(StartVms, cls).teardown_class()
+        u_libs.testflow.teardown(
+            "Remove VM's: %s", conf.LOAD_MEMORY_VMS.keys()
+        )
+        ll_vms.safely_remove_vms(conf.LOAD_MEMORY_VMS.keys())
+        u_libs.testflow.teardown("Stop CPU load on all hosts")
+        sch_helpers.stop_cpu_load_on_all_hosts()
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup(
+        "Update the cluster %s overcommitment to %s",
+        conf.CLUSTER_NAME[0], conf.CLUSTER_OVERCOMMITMENT_NONE
+    )
+    assert ll_clusters.updateCluster(
+        positive=True,
+        cluster=conf.CLUSTER_NAME[0],
+        mem_ovrcmt_prc=conf.CLUSTER_OVERCOMMITMENT_NONE
+    )
+
+    u_libs.testflow.setup("Update configuration constants")
+    update_configuration_constants()
+
+    for vm_name, vm_params in conf.LOAD_MEMORY_VMS.iteritems():
+        u_libs.testflow.setup(
+            "Create VM %s with parameters: %s", vm_name, vm_params
+        )
+        assert ll_vms.createVm(
+            positive=True,
+            vmName=vm_name,
+            cluster=conf.CLUSTER_NAME[0],
+            storageDomainName=conf.STORAGE_NAME[0],
+            provisioned_size=conf.GB,
+            nic=conf.NIC_NAME[0],
+            network=conf.MGMT_BRIDGE,
+            **vm_params
+        )
 
 
-class StartAndMigrateVmBase(StartVms):
+@u_libs.attr(tier=3)
+@pytest.mark.usefixtures(
+    prepare_environment_for_tests.__name__,
+    run_once_vms.__name__,
+    load_hosts_cpu.__name__,
+    wait_for_scheduling_memory_update.__name__,
+    update_cluster.__name__
+)
+class BaseStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
+    """
+    Base class for scheduler tests with the memory load
+    """
+    hosts_cpu_load = None
+    vms_to_run = None
+    cluster_to_update_params = None
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    prepare_environment_for_tests.__name__,
+    update_vms.__name__,
+    run_once_vms.__name__,
+    load_hosts_cpu.__name__,
+    wait_for_scheduling_memory_update.__name__,
+    update_cluster.__name__
+)
+class BaseUpdateAndStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
     """
     Base class for start and migrate vm test
     """
-    update_vm_d = None
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Update VM_NAME[0] memory to new value
-        2) Start VM on HOSTS[2]
-        3) Override load parameters
-        """
-        if cls.update_vm_d:
-            for vm_name, vm_params in cls.update_vm_d.iteritems():
-                logger.info(
-                    "Update vm %s with parameters: %s", vm_name, vm_params
-                )
-                if not ll_vms.updateVm(positive=True, vm=vm_name, **vm_params):
-                    raise errors.VMException(
-                        "Failed to update vm %s" % vm_name
-                    )
-        logger.info("Start vm %s on host %s", conf.VM_NAME[2], conf.HOSTS[2])
-        if not ll_vms.runVmOnce(
-            positive=True,
-            vm=conf.VM_NAME[2],
-            host=conf.HOSTS[2],
-            wait_for_state=conf.VM_UP
-        ):
-            raise errors.VMException("Failed to start vm %s" % conf.VM_NAME[2])
-        cls.load_cpu_d = {
-            conf.CPU_LOAD_50: {
-                conf.RESOURCE: conf.VDS_HOSTS[:3],
-                conf.HOST: conf.HOSTS[:3]
-            }
-        }
-        super(StartAndMigrateVmBase, cls).setup_class()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        1) Stop VM on HOSTS[2]
-        2) Update VM_NAME[0] to have default parameters
-        """
-        logger.info("Stop vm %s", conf.VM_NAME[2])
-        if not ll_vms.stopVm(positive=True, vm=conf.VM_NAME[2]):
-            logger.error("Failed to stop vm %s", conf.VM_NAME[2])
-        super(StartAndMigrateVmBase, cls).teardown_class()
-        if cls.update_vm_d:
-            for vm_name in cls.update_vm_d.iterkeys():
-                logger.info("Update vm %s with default parameters", vm_name)
-                if not ll_vms.updateVm(
-                    positive=True, vm=vm_name, **conf.DEFAULT_VM_PARAMETERS
-                ):
-                    logger.error("Failed to update vm %s", vm_name)
+    vms_to_params = None
+    hosts_cpu_load = {conf.CPU_LOAD_50: xrange(3)}
+    vms_to_run = None
+    cluster_to_update_params = None
