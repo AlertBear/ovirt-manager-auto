@@ -504,6 +504,7 @@ HOST_MAINTENANCE = ENUMS["host_state_maintenance"]
 SNAPSHOT_OK = ENUMS['snapshot_state_ok']
 SNAPSHOT_IN_PREVIEW = ENUMS['snapshot_state_in_preview']
 STATELESS_SNAPSHOT = ENUMS['snapshot_stateless_description']
+SNAPSHOT_LOCKED = ENUMS['snapshot_state_locked']
 
 # Import/Export parameters
 IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM"

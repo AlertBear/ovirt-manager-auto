@@ -410,7 +410,7 @@ class TestCase5060(DisksPermutationEnvironment):
         ll_vms.waitForVMState(self.vm_name)
         vm_disks = ll_vms.getVmDisks(self.vm_name)
         disks_sizes = [
-            disk.get_size() for disk in vm_disks if not
+            disk.get_provisioned_size() for disk in vm_disks if not
             ll_vms.is_bootable_disk(self.vm_name, disk.get_id())
         ]
         for size in disks_sizes:

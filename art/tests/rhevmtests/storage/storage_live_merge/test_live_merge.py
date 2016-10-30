@@ -828,7 +828,7 @@ class TestCase12216(BasicEnvironment):
 
         for disk in vm_disks:
             logger.info("Resizing disk %s", disk)
-            size_before = disk.get_size()
+            size_before = disk.get_provisioned_size()
             new_size = size_before + (1 * config.GB)
             status = ll_vms.extend_vm_disk_size(
                 True, self.vm_name, disk=disk.get_alias(),
@@ -839,7 +839,7 @@ class TestCase12216(BasicEnvironment):
             )
             assert ll_disks.wait_for_disks_status(disk.get_alias())
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
-            assert disk_obj.get_size() == new_size
+            assert disk_obj.get_provisioned_size() == new_size
 
         self.live_delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[0]

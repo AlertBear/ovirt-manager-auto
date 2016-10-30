@@ -303,7 +303,7 @@ class ExportVms(BaseTestDiskImageVms):
     pass
 
 
-@bz({'1371024': {}})
+@bz({'1383264': {}})
 @attr(tier=2)
 class TestCase11618(ExportVms):
     """
@@ -327,7 +327,7 @@ class TestCase11618(ExportVms):
         self.check_disks()
 
 
-@bz({'1371024': {}})
+@bz({'1383264': {}})
 @attr(tier=2)
 class TestCase11617(ExportVms):
     """
@@ -353,7 +353,7 @@ class TestCase11617(ExportVms):
         self.check_disks({self.vm_prealloc: True})
 
 
-@bz({'1371024': {}})
+@bz({'1383264': {}})
 @attr(tier=2)
 class TestCase11616(ExportVms):
     """

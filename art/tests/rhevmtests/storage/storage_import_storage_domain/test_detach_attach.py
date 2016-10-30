@@ -284,7 +284,7 @@ class BasicEnvironment(BaseTestCase):
             [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
         )
         ll_sd.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, name,
+            True, data_center, name,
             config.SD_ACTIVE
         )
         test_utils.wait_for_tasks(

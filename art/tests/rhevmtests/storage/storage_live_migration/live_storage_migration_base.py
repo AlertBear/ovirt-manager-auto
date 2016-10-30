@@ -7,7 +7,6 @@ import logging
 from multiprocessing import Process, Queue
 from time import sleep
 
-
 import config
 import helpers
 from art.core_api.apis_exceptions import APITimeout
@@ -59,6 +58,7 @@ DD_TIMEOUT = 40
 # the extent metadata
 EXTENT_METADATA_SIZE = 128 * config.MB
 FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
+AUTO_GENERATED_SNAPSHOT_DESC = ENUMS['live_snapshot_description']
 DISK_NAMES = dict()
 LOCAL_LUN = []
 LOCAL_LUN_ADDRESS = []
@@ -402,12 +402,9 @@ class TestCase5993(BaseTestCase):
             raise exceptions.TemplateException(
                 "Failed to create template '%s'" % self.test_templates[1]
             )
-        template_disks = ll_disks.getObjDisks(
-            self.test_templates[1], get_href=False, is_template=True
-        )
+
         ll_templates.copy_template_disks(
-            True, self.test_templates[1], template_disks[0].get_alias(),
-            self.second_domain
+            self.test_templates[1], [self.second_domain]
         )
         if not ll_templates.waitForTemplatesStates(
             names=",".join(self.test_templates)
@@ -1031,6 +1028,10 @@ class TestCase6003(BaseTestCase):
         )
 
         logger.info("Wait until the LSM locks disk '%s'", self.vm_disk_name)
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, config.SNAPSHOT_LOCKED,
+            snapshots_description=AUTO_GENERATED_SNAPSHOT_DESC
+        )
         ll_disks.wait_for_disks_status(
             [self.vm_disk_name], status=config.DISK_LOCKED
         )

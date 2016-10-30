@@ -759,9 +759,8 @@ def addVm(positive, wait=True, **kwargs):
             logger.error(log_error)
         return status
 
-    disk_clone = kwargs.pop('disk_clone', None)
-
     wait_timeout = kwargs.pop('timeout', VM_ACTION_TIMEOUT)
+
     if disk_clone and disk_clone.lower() == 'true':
         expected_vm.set_template(data_st.Template(id=BLANK_TEMPLATE))
         wait_timeout = VM_DISK_CLONE_TIMEOUT

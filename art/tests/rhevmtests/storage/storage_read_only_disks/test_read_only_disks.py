@@ -187,6 +187,7 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
         )
 
 
+@bz({'1390498': {}})
 @attr(tier=2)
 class TestCase4906(DefaultEnvironment):
     """
@@ -328,6 +329,7 @@ class TestCase4908(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=2)
 class TestCase4909(DefaultEnvironment):
     """
@@ -602,6 +604,7 @@ class TestCase4913(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=3)
 class TestCase4914(DefaultEnvironment):
     """
@@ -655,6 +658,7 @@ class TestCase4914(DefaultEnvironment):
             )
 
 
+@bz({'1390498': {}})
 @attr(tier=3)
 class TestCase4915(DefaultEnvironment):
     """
@@ -687,6 +691,7 @@ class TestCase4915(DefaultEnvironment):
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
+@bz({'1390498': {}})
 @attr(tier=3)
 class TestCase4917(DefaultEnvironment):
     """
@@ -782,6 +787,7 @@ class TestCase4917(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=2)
 class TestCase4918(DefaultSnapshotEnvironment):
     """
@@ -843,6 +849,7 @@ class TestCase4918(DefaultSnapshotEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=3)
 class TestCase4919(DefaultSnapshotEnvironment):
     """
@@ -913,6 +920,7 @@ class TestCase4919(DefaultSnapshotEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=2)
 class TestCase4920(DefaultSnapshotEnvironment):
     """
@@ -974,6 +982,7 @@ class TestCase4920(DefaultSnapshotEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=3)
 class TestCase4921(DefaultSnapshotEnvironment):
     """
@@ -1084,6 +1093,7 @@ class TestCase4922(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=2)
 class TestCase4923(DefaultEnvironment):
     """
@@ -1181,6 +1191,7 @@ class TestCase4923(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1390498': {}})
 @attr(tier=3)
 class TestCase4924(DefaultEnvironment):
     """
@@ -1338,6 +1349,7 @@ class TestCase4926(DefaultEnvironment):
     # 1196049, 1176673: After live storage migration on block storage vdsm
     # extends migrated drive using all free space in the vg
 
+    @rhevm_helpers.wait_for_jobs_deco([config.JOB_REMOVE_SNAPSHOT])
     @polarion("RHEVM3-4926")
     def test_live_migrate_RW_disk(self):
         """
