@@ -1,455 +1,272 @@
 """
-Testing watchdog card on VMS and their actions
-Prerequisites: 1 DC, 2 hosts, 1 SD (NFS)
 Tests covers:
-    Vm CRUD and template CRUD tests
+    VM and template CRUD tests
     Installation of watchdog software
     Watchdog event in event tab of webadmin portal
-    test on watchdog card with action poweroff that is highly available
+    Watchdog poweroff action on HA VM
     Watchdog action with migration of VM
     Triggering watchdog actions (dump, none, pause, poweroff, reset)
 """
-import logging
 import re
 import time
 
-from unittest2 import SkipTest
-
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.test_handler.exceptions as errors
-import rhevmtests.helpers as helpers
-import rhevmtests.sla as sla
-from art.test_handler.tools import polarion, bz
-from art.unittest_lib import SlaTest as TestCase, attr
-from rhevmtests.sla.watchdog import config
+import art.unittest_lib as u_libs
+import config as conf
+import helpers
+import pytest
+from art.test_handler.tools import polarion
+from fixtures import (
+    add_watchdog_device_to_vm,
+    add_watchdog_device_to_template,
+    backup_engine_log,
+    install_watchdog_on_vm
+)
+from rhevmtests.sla.fixtures import (
+    make_vm_from_template,
+    start_vms,
+    stop_vms,
+    update_vms
+)
 
-logger = logging.getLogger(__name__)
 
-########################################################################
-#                        Base classes                                  #
-########################################################################
-
-
-def setup_module():
+@u_libs.attr(tier=1)
+@pytest.mark.usefixtures(stop_vms.__name__)
+class TestWatchdogCRUDVm(u_libs.SlaTest):
     """
-    Prepare environment for Watchdog test
-    """
-    config.GENERAL_VM_PARAMS['placement_host'] = config.HOSTS[0]
-    params = dict(config.GENERAL_VM_PARAMS)
-    for vm in config.VM_NAME[:2]:
-        logger.info("Update vm %s with parameters: %s", vm, params)
-        if not ll_vms.updateVm(True, vm, **params):
-            raise errors.VMException("Failed to update vm %s" % vm)
-
-
-def teardown_module():
-    """
-    SLA teardown
-    """
-    sla.sla_cleanup()
-    for vm_name in config.VM_NAME[:2]:
-        if ll_vms.get_watchdog_collection(vm_name=vm_name):
-            ll_vms.delete_watchdog(vm_name=vm_name)
-
-
-class WatchdogMixin(object):
-    """
-    Base class for vm watchdog operations
-    """
-
-    @classmethod
-    def kill_watchdog(cls, vm_name, sleep_time=config.WATCHDOG_TIMER):
-        """
-        Kill watchdog process on given vm
-
-        :param vm_name: vm name
-        :type vm_name: str
-        :param sleep_time: sleep time
-        :type sleep_time: int
-        """
-
-        vm_resource = helpers.get_vm_resource(vm=vm_name)
-        if not vm_resource.package_manager.install(config.KILLALL_PACKAGE):
-            return False
-        cmd = ['killall', '-9', 'watchdog']
-        logger.info("Kill watchdog service on vm %s", vm_name)
-        if vm_resource.run_command(command=cmd)[0]:
-            raise errors.VMException(
-                "Failed to kill watchdog process on vm %s", vm_name
-            )
-        logger.info("Watchdog process killed, waiting %d seconds", sleep_time)
-        time.sleep(sleep_time)
-
-    @staticmethod
-    def detect_watchdog(positive, vm_name):
-        """
-        Detect watchdog device on given vm
-
-        :param positive: positive or negative test
-        :type positive: bool
-        :param vm_name: vm name
-        :type vm_name: str
-        """
-        vm_resource = helpers.get_vm_resource(vm=vm_name, start_vm=False)
-        get_dev_package = (
-            config.LSHW_PACKAGE if config.PPC_ARCH else config.LSPCI_PACKAGE
-        )
-        if config.PPC_ARCH:
-            if not vm_resource.package_manager.install(get_dev_package):
-                return False
-
-        logger.info(
-            "Check if vm %s have watchdog device %s",
-            vm_name, config.WATCHDOG_MODEL[1:]
-        )
-        cmd = [get_dev_package, '|', 'grep', '-i', config.WATCHDOG_MODEL[1:]]
-        status = vm_resource.run_command(command=cmd)[0]
-        if positive:
-            assert not status
-        else:
-            assert status
-        logger.info("Watchdog detected - %s", positive)
-
-    @classmethod
-    def change_action(cls, vm_name, action):
-        """
-        Change watchdog action and start given vm
-
-        :param vm_name: vm name
-        :type vm_name: str
-        :param action: watchdog action
-        :type action: str
-        :return: True, if success to change watchdog action, otherwise False
-        """
-        watchdog_col = ll_vms.get_watchdog_collection(vm_name=vm_name)
-        if watchdog_col:
-            # Add watchdog model as W/A for bz #1338502
-            assert ll_vms.update_watchdog(
-                vm_name=vm_name, model=config.WATCHDOG_MODEL, action=action
-            )
-        else:
-            assert ll_vms.add_watchdog(
-                vm_name=vm_name, model=config.WATCHDOG_MODEL, action=action
-            )
-        assert ll_vms.startVm(
-            positive=True, vm=vm_name, wait_for_status=config.VM_UP
-        )
-
-    @classmethod
-    def install_watchdog(cls, vm_resource):
-        """
-        Install watchdog and enable watchdog service
-
-        :param vm_resource: vm resource
-        :type vm_resource: Host
-        """
-        if not vm_resource.package_manager.install(config.WATCHDOG_PACKAGE):
-            return False
-
-        logger.info(
-            "Enable watchdog in configuration file %s on resource %s",
-            config.WATCHDOG_CONFIG_FILE, vm_resource
-        )
-        cmd = [
-            'sed',
-            '-i',
-            '\'s/#watchdog-device/watchdog-device/\'',
-            config.WATCHDOG_CONFIG_FILE
-        ]
-        if vm_resource.run_command(command=cmd)[0]:
-            return False
-
-        watchdog_service = vm_resource.service('watchdog')
-        if not watchdog_service.is_enabled():
-            logger.info("Enable watchdog service on resource %s", vm_resource)
-            if not watchdog_service.enable():
-                logger.error(
-                    "Failed to enable watchdog service on resource %s",
-                    vm_resource
-                )
-                return False
-
-        logger.info("Start watchdog service on resource %s", vm_resource)
-        if not watchdog_service.start():
-            logger.error("Can't start service watchdog")
-            return False
-
-        logger.info("Watchdog successfully installed")
-        return True
-
-    @classmethod
-    def run_watchdog_service(cls, vm_name):
-        """
-        Start vm, if vm down and install and start watchdog service on it
-
-        :param vm_name: vm name
-        :type vm_name: str
-        :raises: VMException
-        """
-        if ll_vms.checkVmState(True, vm_name, config.VM_DOWN):
-            logger.warning("Vm %s was not running, starting VM", vm_name)
-            if not ll_vms.startVm(
-                positive=True, vm=vm_name, wait_for_status=config.VM_UP
-            ):
-                raise errors.VMException("Failed to start vm %s" % vm_name)
-
-        vm_resource = helpers.get_vm_resource(vm=vm_name, start_vm=False)
-        try:
-            watchdog_service = vm_resource.service('watchdog')
-        except Exception as ex:
-            logger.warning("Failed to create watchdog service %s", ex)
-            if not cls.install_watchdog(vm_resource):
-                raise errors.VMException(
-                    "Watchdog installation failed on vm %s" % vm_resource
-                )
-        else:
-            if not watchdog_service.status() and not watchdog_service.start():
-                raise errors.VMException(
-                    "Failed to run watchdog service on vm %s" % vm_resource
-                )
-
-
-@attr(tier=2)
-class WatchdogVM(TestCase, WatchdogMixin):
-    __test__ = False
-
-
-########################################################################
-#                             Test Cases                               #
-########################################################################
-
-
-@attr(tier=1)
-class TestWatchdogCRUD(TestCase, WatchdogMixin):
-    """
-    Create Vm with watchdog
+    1) Add watchdog device to the VM
+    2) Check that watchdog device appears under the VM
+    3) Remove watchdog device from the VM
     """
     __test__ = True
+    vms_to_stop = [conf.VM_NAME[0]]
+
+    @staticmethod
+    def start_vm_and_check_watchdog_device(positive):
+        """
+        1) Start the VM
+        2) Check that watchdog device exists under the VM
+
+        Args:
+            positive (bool): Positive or negative behaviour
+        """
+        u_libs.testflow.step("Start VM %s", conf.VM_NAME[0])
+        assert ll_vms.startVm(
+            positive=True, wait_for_status=conf.VM_UP, vm=conf.VM_NAME[0]
+        )
+
+        log_msg = "appears under" if positive else "disappears from"
+        u_libs.testflow.step(
+            "Check that watchdog device %s VM %s OS",
+            log_msg, conf.VM_NAME[0]
+        )
+        assert helpers.detect_watchdog_on_vm(
+            positive=positive, vm_name=conf.VM_NAME[0]
+        )
 
     @polarion("RHEVM3-4953")
     def test_add_watchdog(self):
         """
-        Add watchdog to clean VM
+        Add watchdog device to VM and start the VM
         """
+        u_libs.testflow.step("Add watchdog device to VM %s", conf.VM_NAME[0])
         assert ll_vms.add_watchdog(
-            vm_name=config.VM_NAME[0],
-            model='i6300esb',
-            action='reset'
-        )
-        assert ll_vms.startVm(
-            positive=True, wait_for_status=config.VM_UP, vm=config.VM_NAME[0]
+            vm_name=conf.VM_NAME[0],
+            model=conf.WATCHDOG_MODEL,
+            action=conf.WATCHDOG_ACTION_RESET
         )
 
     @polarion("RHEVM3-4952")
     def test_detect_watchdog(self):
         """
-        Detect watchdog
+        Check that watchdog device appears under the VM
         """
-        logger.info("Check if vm %s run", config.VM_NAME[0])
-        assert ll_vms.checkVmState(
-            True, config.VM_NAME[0], config.VM_UP
-        ), "VM %s is not running" % config.VM_NAME[0]
-        self.detect_watchdog(True, config.VM_NAME[0])
+        self.start_vm_and_check_watchdog_device(positive=True)
 
     @polarion("RHEVM3-4965")
     def test_remove_watchdog(self):
         """
-        Deleting watchdog model
+        Remove watchdog device from the VM
         """
-        assert ll_vms.stopVm(positive=True, vm=config.VM_NAME[0])
-        assert ll_vms.delete_watchdog(vm_name=config.VM_NAME[0])
-        assert ll_vms.startVm(
-            positive=True, wait_for_status=config.VM_UP, vm=config.VM_NAME[0]
+        u_libs.testflow.step("Stop VM %s", conf.VM_NAME[0])
+        assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
+
+        u_libs.testflow.step(
+            "Remove watchdog device from VM %s", conf.VM_NAME[0]
         )
-        self.detect_watchdog(False, config.VM_NAME[0])
+        assert ll_vms.delete_watchdog(vm_name=conf.VM_NAME[0])
 
-    @classmethod
-    def teardown_class(cls):
-        ll_vms.stop_vms_safely([config.VM_NAME[0]])
-
-#####################################################################
+        self.start_vm_and_check_watchdog_device(positive=False)
 
 
-class WatchdogInstall(WatchdogVM):
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(start_vms.__name__)
+class TestWatchdogInstall(u_libs.SlaTest):
     """
-    Install VM watchdog
+    Install watchdog on the VM
     """
     __test__ = True
+    vms_to_start = [conf.VM_NAME[1]]
 
     @polarion("RHEVM3-4967")
     def test_install_watchdog(self):
         """
         Install watchdog and enable service
         """
-        self.run_watchdog_service(config.VM_NAME[1])
-        logger.info("Watchdog install test successful")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Stop vm
-        """
-        ll_vms.stop_vms_safely([config.VM_NAME[1]])
-
-#######################################################################
+        u_libs.testflow.step(
+            "Install and run watchdog service on VM %s", conf.VM_NAME[1]
+        )
+        assert helpers.install_watchdog_on_vm(vm_name=conf.VM_NAME[1])
 
 
-class WatchdogActionTest(WatchdogVM):
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    add_watchdog_device_to_vm.__name__,
+    start_vms.__name__,
+    install_watchdog_on_vm.__name__
+)
+class BaseWatchdogAction(u_libs.SlaTest):
     """
     Base class to test different watchdog action functionality
     """
-    __test__ = False
-    action = None
+    vms_to_start = [conf.VM_NAME[0]]
+    watchdog_vm = conf.VM_NAME[0]
 
-    @classmethod
-    def setup_class(cls):
+    @staticmethod
+    def wait_for_watchdog_action_and_check_vm_state():
         """
-        Change watchdog action and run watchdog service on vm
+        1) Wait for watchdog action
+        2) Check that VM has state UP
         """
-        cls.change_action(
-            config.VM_NAME[1], cls.action
+        u_libs.testflow.step(
+            "Wait %s seconds for the watchdog action", conf.WATCHDOG_TIMER
         )
-        cls.run_watchdog_service(config.VM_NAME[1])
+        time.sleep(conf.WATCHDOG_TIMER)
 
-    @classmethod
-    def teardown_class(cls):
+        u_libs.testflow.step(
+            "Check that VM %s has state %s", conf.VM_NAME[0], conf.VM_UP
+        )
+        assert ll_vms.get_vm_state(vm_name=conf.VM_NAME[0]) == conf.VM_UP
+
+    @staticmethod
+    def kill_watchdog_and_wait_for_vm_state(vm_name, vm_state):
         """
-        Reboot watchdog vm
+        1) Kill watchdog process on the VM
+        2) Wait for VM state
+
+        Args:
+            vm_name (str): VM name
+            vm_state (str): Expected VM state
         """
-        ll_vms.stop_vms_safely([config.VM_NAME[1]])
+        u_libs.testflow.step("Kill watchdog service on VM %s", vm_name)
+        assert helpers.kill_watchdog_on_vm(vm_name=vm_name)
+
+        u_libs.testflow.step(
+            "Wait until VM %s will have state %s", vm_name, vm_state
+        )
+        assert ll_vms.waitForVMState(vm=vm_name, state=vm_state)
 
 
-class WatchdogTestNone(WatchdogActionTest):
+class TestWatchdogActionNone(BaseWatchdogAction):
     """
     Test watchdog action none
     """
     __test__ = True
-    action = 'none'
+    watchdog_action = conf.WATCHDOG_ACTION_NONE
 
     @polarion("RHEVM3-4959")
     def test_action_none(self):
         """
-        Test watchdog action none, vm should stay in kernel panic
+        1) Kill watchdog device on the VM
+        2) Check that VM has state UP
         """
-        logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
-        self.kill_watchdog(config.VM_NAME[1])
-        assert ll_vms.waitForVMState(
-            config.VM_NAME[1]
-        ), "Watchdog action none did not succeed"
-        self.detect_watchdog(True, config.VM_NAME[1])
-        logger.info("Watchdog action none succeeded")
+        u_libs.testflow.step("Kill watchdog service on VM %s", conf.VM_NAME[0])
+        assert helpers.kill_watchdog_on_vm(vm_name=conf.VM_NAME[0])
 
-#######################################################################
+        self.wait_for_watchdog_action_and_check_vm_state()
 
 
-class WatchdogTestReset(WatchdogActionTest):
+class TestWatchdogActionReset(BaseWatchdogAction):
     """
     Test watchdog action reset
     """
     __test__ = True
-    action = 'reset'
+    watchdog_action = conf.WATCHDOG_ACTION_RESET
 
     @polarion("RHEVM3-4962")
     def test_action_reset(self):
         """
-        Test watchdog action reset
+        1) Kill watchdog device on the VM
+        2) Check that VM was restarted
         """
-        logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
-        self.kill_watchdog(config.VM_NAME[1], sleep_time=0)
-
-        logger.info(
-            "Wait until vm %s will have state %s",
-            config.VM_NAME[1], config.ENUMS['vm_state_reboot_in_progress']
+        self.kill_watchdog_and_wait_for_vm_state(
+            vm_name=conf.VM_NAME[0], vm_state=conf.VM_REBOOT
         )
-        assert ll_vms.waitForVMState(
-            config.VM_NAME[1], config.ENUMS['vm_state_reboot_in_progress']
-        ), "Vm still not have state %s" % (
-            config.ENUMS['vm_state_reboot_in_progress']
+
+        u_libs.testflow.step(
+            "Wait until VM %s will have state %s", conf.VM_NAME[0], conf.VM_UP
         )
-        logger.info(
-            "Wait until vm %s will have state %s",
-            config.VM_NAME[1], config.VM_UP
-        )
-        assert ll_vms.waitForVMState(
-            config.VM_NAME[1], config.VM_UP
-        ), "Vm still not have state %s" % config.VM_UP
-
-#######################################################################
+        assert ll_vms.waitForVMState(vm=conf.VM_NAME[0], state=conf.VM_UP)
 
 
-class WatchdogTestPoweroff(WatchdogActionTest):
+class TestWatchdogActionPoweroff(BaseWatchdogAction):
     """
     Test watchdog action poweroff
     """
     __test__ = True
-    action = 'poweroff'
+    watchdog_action = conf.WATCHDOG_ACTION_POWEROFF
 
     @polarion("RHEVM3-4963")
     def test_action_poweroff(self):
         """
-        Test watchdog action poweroff
+        1) Kill watchdog device on the VM
+        2) Check that VM has state DOWN
         """
-        logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
-        self.kill_watchdog(config.VM_NAME[1])
-        logger.info(
-            "Wait until watchdog device will poweroff vm %s", config.VM_NAME[0]
+        self.kill_watchdog_and_wait_for_vm_state(
+            vm_name=conf.VM_NAME[0], vm_state=conf.VM_DOWN
         )
-        assert ll_vms.waitForVMState(
-            config.VM_NAME[1], state=config.VM_DOWN
-        ), "Watchdog action poweroff failed"
-
-#######################################################################
 
 
-class WatchdogTestPause(WatchdogActionTest):
+class TestWatchdogActionPause(BaseWatchdogAction):
     """
     Test watchdog action pause
     """
     __test__ = True
-    action = 'pause'
+    watchdog_action = conf.WATCHDOG_ACTION_PAUSE
 
     @polarion("RHEVM3-4961")
     def test_action_pause(self):
         """
-        Test watchdog action pause
+        1) Kill watchdog device on the VM
+        2) Check that VM has state PAUSED
         """
-        logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
-        self.kill_watchdog(config.VM_NAME[1])
-        logger.info(
-            "Wait until vm %s will have state paused", config.VM_NAME[1]
+        self.kill_watchdog_and_wait_for_vm_state(
+            vm_name=conf.VM_NAME[0], vm_state=conf.VM_PAUSED
         )
-        assert ll_vms.waitForVMState(
-            config.VM_NAME[1], state='paused'
-        ), "Vm %s still not have state paused"
-
-#######################################################################
 
 
-class WatchdogTestDump(WatchdogActionTest):
+class TestWatchdogActionDump(BaseWatchdogAction):
     """
     Test watchdog action dump
     """
     __test__ = True
-    action = 'dump'
+    watchdog_action = conf.WATCHDOG_ACTION_DUMP
 
-    @classmethod
-    def get_host_dump_path(cls, host_resource):
+    @staticmethod
+    def get_host_dump_path(host_resource):
         """
+        Get host dump path
 
+        Args:
+            host_resource (VDS): Host resource
+
+        Returns:
+            str: Host dump path
         """
-        host_resource_executor = host_resource.executor()
-        cmd = ['grep', '^auto_dump_path', config.QEMU_CONF]
-        logger.info(
-            "Run command '%s' on resource %s", " ".join(cmd), host_resource
-        )
-        rc, out, err = host_resource_executor.run_cmd(cmd)
+        cmd = ["grep", "^auto_dump_path", conf.QEMU_CONF]
+        rc, out, _ = host_resource.run_command(command=cmd)
         if rc:
-            logger.error(
-                "Failed to run command '%s' on resource %s; out: %s; err: %s" %
-                (" ".join(cmd), host_resource, out, err)
-            )
-            return config.DUMP_PATH
+            return conf.DUMP_PATH
         else:
             regex = r"auto_dump_path=\"(.+)\""
             dump_path = re.search(regex, out).group(1)
@@ -460,272 +277,157 @@ class WatchdogTestDump(WatchdogActionTest):
         """
         Test watchdog action dump
         """
-        host_index = config.HOSTS.index(
-            ll_vms.get_vm_host(config.VM_NAME[1])
+        host_resource = conf.VDS_HOSTS[
+            conf.HOSTS.index(ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]))
+        ]
+        dump_path = self.get_host_dump_path(host_resource=host_resource)
+        cmd = ["ls", "-l", dump_path, "|", "wc", "-l"]
+
+        u_libs.testflow.step(
+            "%s: check number of dump files under %s", host_resource, dump_path
         )
-        host_executor = config.VDS_HOSTS[host_index].executor()
-        dump_path = self.get_host_dump_path(config.VDS_HOSTS[host_index])
-        cmd = ['ls', '-l', dump_path, '|', 'wc', '-l']
-        rc, out, err = host_executor.run_cmd(cmd)
-        assert not rc, (
-            "Failed to run command '%s' on resource %s; out: %s; err: %s" %
-            (" ".join(cmd), config.VDS_HOSTS[host_index], out, err)
-        )
-        logger.info("Number of files in dumpath: %s", out)
+        rc, out, _ = host_resource.run_command(command=cmd)
+        assert not rc
         logs_count = int(out)
 
-        logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
-        self.kill_watchdog(config.VM_NAME[1])
-        self.detect_watchdog(True, config.VM_NAME[1])
+        u_libs.testflow.step("Kill watchdog service on VM %s", conf.VM_NAME[0])
+        helpers.kill_watchdog_on_vm(vm_name=conf.VM_NAME[0])
 
-        logger.info("Watchdog action dump successful")
-
-        rc, out, err = host_executor.run_cmd(cmd)
-        assert not rc, (
-            "Failed to run command '%s' on resource %s; out: %s; err: %s" %
-            (" ".join(cmd), config.VDS_HOSTS[host_index], out, err)
+        u_libs.testflow.step(
+            "Wait %s seconds for the watchdog action", conf.WATCHDOG_TIMER
         )
-        logger.info(
-            "Number of files in dumpath after watchdog dump action: %s", out
+        time.sleep(conf.WATCHDOG_TIMER)
+
+        u_libs.testflow.step(
+            "%s: check new number of dump files under %s",
+            host_resource, dump_path
         )
-        assert logs_count + 1 == int(out), (
-            "Dump file was not created on resource %s under directory %s" %
-            (config.VDS_HOSTS[host_index], dump_path)
+        rc, out, _ = host_resource.run_command(command=cmd)
+        assert not rc
+
+        u_libs.testflow.step(
+            "Old number of dump files: %s; New number of dump files %s",
+            logs_count, out
         )
+        assert logs_count + 1 == int(out)
 
-#######################################################################
 
-
-class WatchdogMigration(WatchdogActionTest):
+class TestWatchdogMigration(BaseWatchdogAction):
     """
-    Test watchdog with migration of vm
+    Test watchdog with migration of VM
     """
     __test__ = True
-    action = 'poweroff'
+    watchdog_action = conf.WATCHDOG_ACTION_POWEROFF
 
     @polarion("RHEVM3-4954")
     def test_migration(self):
         """
-        Test, that migration not trigger watchdog action
+        Tess that migration does not trigger watchdog action
         """
-        if (len(config.HOSTS)) < 2:
-            raise SkipTest("Too few hosts")
+        u_libs.testflow.step("Migrate VM %s", conf.VM_NAME[0])
+        assert ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0])
 
-        logger.info("Migrate VM %s", config.VM_NAME[1])
-        assert ll_vms.migrateVm(
-            positive=True,
-            vm=config.VM_NAME[1],
-            force=True
-        ), "Migration of vm %s Failed" % config.VM_NAME[1]
-        time.sleep(config.WATCHDOG_TIMER)
-        logger.info("Check, that vm %s still up", config.VM_NAME[1])
-        assert ll_vms.waitForVMState(
-            config.VM_NAME[1]), "Watchdog was triggered"
-
-#######################################################################
+        self.wait_for_watchdog_action_and_check_vm_state()
 
 
-class WatchdogHighAvailability(WatchdogActionTest):
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    add_watchdog_device_to_vm.__name__,
+    update_vms.__name__,
+    start_vms.__name__,
+    install_watchdog_on_vm.__name__
+)
+class TestWatchdogHighAvailability(u_libs.SlaTest):
     """
-    Action poweroff with vm that is highly available
+    Test watchdog action poweroff on the HA VM
     """
     __test__ = True
-    action = 'poweroff'
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Test high availability with action shutdown
-        """
-        logger.info(
-            "Update vm %s high available and placement affinity parameters",
-            config.VM_NAME[1]
-        )
-        if not ll_vms.updateVm(
-            positive=True,
-            vm=config.VM_NAME[1],
-            placement_affinity=config.VM_MIGRATABLE,
-            highly_available=True
-        ):
-            raise errors.VMException(
-                "Vm %s not set to automatic migratable and highly available" %
-                config.VM_NAME[1]
-            )
-        super(WatchdogHighAvailability, cls).setup_class()
+    vms_to_start = [conf.VM_NAME[0]]
+    watchdog_vm = conf.VM_NAME[0]
+    watchdog_action = conf.WATCHDOG_ACTION_POWEROFF
+    vms_to_params = {conf.VM_NAME[0]: {conf.VM_HIGHLY_AVAILABLE: True}}
 
     @polarion("RHEVM3-4955")
     def test_high_availability(self):
         """
-        Test action poweroff with Vm set to highly available.
+        1) Kill watchdog device on the VM
+        2) Check that the engine starts the HA VM
         """
-        logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
-        self.kill_watchdog(config.VM_NAME[1])
-        logger.info(
-            "Check, that vm %s started because high available flag",
-            config.VM_NAME[0]
+        u_libs.testflow.step("Kill watchdog service on VM %s", conf.VM_NAME[0])
+        assert helpers.kill_watchdog_on_vm(vm_name=conf.VM_NAME[0])
+
+        u_libs.testflow.step(
+            "Wait until VM %s will have state %s",
+            conf.VM_NAME[0], conf.VM_POWERING_UP
         )
-        assert ll_vms.waitForVMState(config.VM_NAME[1]), (
-            "VM %s did not start as high available" % config.VM_NAME[1]
+        assert ll_vms.waitForVMState(
+            vm=conf.VM_NAME[0], state=conf.VM_POWERING_UP
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Run the VM to start state
-        """
-        super(WatchdogHighAvailability, cls).teardown_class()
-        logger.info(
-            "Update vm %s high available and placement affinity parameters",
-            config.VM_NAME[1]
-        )
-        if not ll_vms.updateVm(
-            positive=True,
-            vm=config.VM_NAME[1],
-            placement_affinity=config.VM_USER_MIGRATABLE,
-            highly_available=False
-        ):
-            logger.error(
-                "Failed to update vm %s" % config.VM_NAME[1]
-            )
 
-#######################################################################
-
-
-class WatchdogEvents(WatchdogActionTest):
+@pytest.mark.usefixtures(backup_engine_log.__name__)
+class TestWatchdogEvents(BaseWatchdogAction):
     """
-    Event in logs
+    Test watchdog events
     """
     __test__ = True
-    action = 'reset'
-    engine_backup_log = 'watchdog_test_event.log'
+    watchdog_action = conf.WATCHDOG_ACTION_RESET
 
     @polarion("RHEVM3-4956")
-    def test_event(self):
+    def test_watchdog_event(self):
         """
-        Test if event is displayed in log file
+        1) Kill watchdog process on the VM
+        2) Check that watchdog event appears under the engine log
         """
-        logger.info("Backup engine log to %s", self.engine_backup_log)
-        cmd = ['cp', config.ENGINE_LOG, self.engine_backup_log]
-        assert config.ENGINE_HOST.run_command(command=cmd), (
-            "Failed to copy engine log to %s" % self.engine_backup_log
+        self.kill_watchdog_and_wait_for_vm_state(
+            vm_name=conf.VM_NAME[0], vm_state=conf.VM_REBOOT
         )
 
-        logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
-        self.kill_watchdog(config.VM_NAME[1])
+        u_libs.testflow.step(
+            "Wait until VM %s will have state %s", conf.VM_NAME[0], conf.VM_UP
+        )
+        assert ll_vms.waitForVMState(vm=conf.VM_NAME[0], state=conf.VM_UP)
 
         cmd = [
-            'diff', config.ENGINE_LOG, self.engine_backup_log,
-            '|', 'grep', 'event',
-            '|', 'grep', 'Watchdog'
+            "diff", conf.ENGINE_LOG, conf.ENGINE_TEMP_LOG,
+            "|", "grep", "event",
+            "|", "grep", "Watchdog"
         ]
-        logger.info("Check if new watchdog event appear under engine log")
-        assert config.ENGINE_HOST.run_command(command=cmd), (
-            "Error: no new watchdog event under engine.log"
+        u_libs.testflow.step(
+            "Check that new watchdog event appears under the engine log"
         )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove used file
-        """
-        cmd = ['rm', cls.engine_backup_log]
-        logger.info("Remove file %s from engine", cls.engine_backup_log)
-        if config.ENGINE_HOST.run_command(command=cmd)[0]:
-            logger.error(
-                "Failed to remove file %s from engine", cls.engine_backup_log
-            )
-        super(WatchdogEvents, cls).teardown_class()
-
-#######################################################################
+        assert not conf.ENGINE_HOST.run_command(command=cmd)[0]
 
 
-class WatchdogCRUDTemplate(WatchdogVM):
+@u_libs.attr(tier=1)
+@pytest.mark.usefixtures(
+    add_watchdog_device_to_template.__name__,
+    make_vm_from_template.__name__,
+    start_vms.__name__
+)
+class TestWatchdogCRUDTemplate(u_libs.SlaTest):
     """
-    CRUD test for template
+    1) Add watchdog device to the template
+    2) Create new VM from the template and
+     check that new VM has watchdog device
+    3) Remove watchdog device from the template
     """
     __test__ = True
-    vm_name1 = "watchdog_template_vm1"
-    vm_name2 = "watchdog_template_vm2"
-    template_name = "watchdog_template"
+    watchdog_template = conf.TEMPLATE_NAME[0]
+    watchdog_action = conf.WATCHDOG_ACTION_RESET
+    vm_for_template = conf.TEMPLATE_NAME[0]
+    vm_from_template_name = conf.VM_FROM_TEMPLATE_WATCHDOG
+    vms_to_start = [conf.VM_FROM_TEMPLATE_WATCHDOG]
 
-    @bz({"1338503": {}})
     @polarion("RHEVM3-4957")
-    def test_add_watchdog_template(self):
-        """
-        Add watchdog to clean template
-        """
-        assert ll_templates.add_watchdog(
-            template_name=config.TEMPLATE_NAME[0],
-            model='i6300esb',
-            action='reset'
-        )
-
-    @bz({"1338503": {}})
-    @polarion("RHEVM3-4966")
     def test_detect_watchdog_template(self):
         """
-        Detect watchdog
+        Detect if watchdog device exists on the new VM
         """
-        logger.info(
-            "Create new vm %s from template %s",
-            self.vm_name1, config.TEMPLATE_NAME[0]
+        u_libs.testflow.step(
+            "Check that watchdog device appears under VM %s OS",
+            conf.VM_FROM_TEMPLATE_WATCHDOG
         )
-        assert ll_vms.createVm(
-            positive=True,
-            vmName=self.vm_name1,
-            vmDescription="Watchdog VM",
-            cluster=config.CLUSTER_NAME[0],
-            template=config.TEMPLATE_NAME[0]
-        ), "Cannot create vm %s from template %s" % (
-            self.vm_name1, config.TEMPLATE_NAME[0]
+        helpers.detect_watchdog_on_vm(
+            positive=True, vm_name=conf.VM_FROM_TEMPLATE_WATCHDOG
         )
-        logger.info("Wait until vm %s will have state down", self.vm_name1)
-        assert ll_vms.waitForVMState(self.vm_name1, state=config.VM_DOWN), (
-            "Vm %s not in status down after creation from template" %
-            self.vm_name1
-        )
-        logger.info("Start vm %s", self.vm_name1)
-        assert ll_vms.startVm(positive=True, vm=self.vm_name1), (
-            "Failed to start vm %s" % self.vm_name1
-        )
-        self.detect_watchdog(True, self.vm_name1)
-
-    @bz({"1338503": {}})
-    @polarion("RHEVM3-4958")
-    def test_remove_watchdog_template(self):
-        """
-        Deleting watchdog model
-        """
-        assert ll_templates.delete_watchdog(
-            template_name=config.TEMPLATE_NAME[0]
-        )
-        logger.info(
-            "Create new vm %s from template %s",
-            self.vm_name2, config.TEMPLATE_NAME[0])
-        assert ll_vms.createVm(
-            positive=True,
-            vmName=self.vm_name2,
-            vmDescription="tempalte vm",
-            cluster=config.CLUSTER_NAME[0],
-            template=config.TEMPLATE_NAME[0]
-        ), "Cannot create vm %s from template %s" % (
-            (self.vm_name2, config.TEMPLATE_NAME[0])
-        )
-        logger.info("Wait until vm %s will have state down", self.vm_name2)
-        assert ll_vms.waitForVMState(self.vm_name2, state=config.VM_DOWN), (
-            "Vm %s not in status down after creation from template" %
-            self.vm_name2
-        )
-        logger.info("Start vm %s", self.vm_name2)
-        assert ll_vms.startVm(positive=True, vm=self.vm_name2), (
-            "Failed to start vm %s" % self.vm_name2
-        )
-        self.detect_watchdog(False, self.vm_name2)
-
-    @classmethod
-    def teardown_class(cls):
-        logger.info("Remove vms %s", [cls.vm_name1, cls.vm_name2])
-        if not ll_vms.safely_remove_vms([cls.vm_name1, cls.vm_name2]):
-            raise errors.VMException("Failed to remove vms")
-
-######################################################################

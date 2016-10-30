@@ -471,7 +471,7 @@ def make_vm_from_template(request):
     """
     1) Make VM from template
     """
-    vm_template = request.node.cls.vm_for_template
+    vm_for_template = request.node.cls.vm_for_template
     vm_from_template_name = request.node.cls.vm_from_template_name
 
     def fin():
@@ -485,13 +485,13 @@ def make_vm_from_template(request):
 
     u_libs.testflow.setup(
         "Create the VM %s from the template %s",
-        vm_from_template_name, vm_template
+        vm_from_template_name, vm_for_template
     )
     assert ll_vms.addVm(
         positive=True,
         cluster=sla_config.CLUSTER_NAME[0],
         name=vm_from_template_name,
-        template=vm_template
+        template=vm_for_template
     )
 
 
