@@ -28,7 +28,7 @@ MIN = 60
 
 # Polarion decorator
 polarion = pytest.mark.polarion
-polarion.name = 'polarion-id'
+polarion.name = 'polarion-testcase-id'
 
 # Bugzilla decorator
 # https://github.com/rhevm-qe-automation/pytest_marker_bugzilla
@@ -171,13 +171,19 @@ class JunitExtension(object):
     markers = (
         'bugzilla',
         'jira',
-        'polarion-id',
+        'polarion-testcase-id',
     )
 
     attributes = (
         'api',
         'storage',
     )
+
+    polarion_importer_properties = {
+        'polarion-project-id': None,
+        'polarion-user-id': None,
+        'polarion-response-myproduct': None,
+    }
 
     global_properties = {
         'polarion-custom-plannedin': None,
@@ -218,7 +224,10 @@ class JunitExtension(object):
         # This will check if the junit have such method and if not we simply
         # won't add global properties node
         if getattr(self.junit, 'add_global_property', None):
-            for k, v in self.global_properties.iteritems():
+            all_properties = dict(
+                self.global_properties, **self.polarion_importer_properties
+            )
+            for k, v in all_properties.iteritems():
                 self.junit.add_global_property(k, v)
 
     def pytest_runtest_setup(self, item):
@@ -232,6 +241,15 @@ class JunitExtension(object):
         )
         self.global_properties['polarion-custom-arch'] = (
             config.ART_CONFIG['PARAMETERS']['arch'].replace("_", "")
+        )
+        self.polarion_importer_properties['polarion-project-id'] = (
+            config.ART_CONFIG['PARAMETERS']['polarion_project']
+        )
+        self.polarion_importer_properties['polarion-user-id'] = (
+            config.ART_CONFIG['PARAMETERS']['polarion_user']
+        )
+        self.polarion_importer_properties['polarion-response-myproduct'] = (
+            config.ART_CONFIG['PARAMETERS']['polarion_response_myproduct']
         )
 
     def pytest_sessionstart(self, session):

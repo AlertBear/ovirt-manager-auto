@@ -49,5 +49,10 @@ useAgent = string(default='True')
 vm_os = string(default='Red Hat Enterprise Linux 6.x x64')
 display_type = option('spice', 'vnc', 'rdesktop', default='spice')
 
+# polarion
+polarion_user = string(default='ci-user')
+polarion_project = string(default='RHEVM3')
+polarion_response_myproduct = string(default='rhvm')
+
 [STORAGE]
 storage_pool=force_list(default=list())
