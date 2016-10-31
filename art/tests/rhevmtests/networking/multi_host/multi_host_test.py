@@ -24,9 +24,10 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    add_vnics_to_vms, add_vnic_to_tamplate, move_host_to_cluster
+    add_vnics_to_vms, add_vnic_to_tamplate, move_host_to_cluster,
+    add_network_to_cluster
 )
-from rhevmtests.fixtures import start_vm
+from rhevmtests.fixtures import start_vm, create_clusters
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces, NetworkFixtures
 )  # flake8: noqa
@@ -360,6 +361,8 @@ class TestMultiHostCase05(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_clusters.__name__,
+    add_network_to_cluster.__name__,
     move_host_to_cluster.__name__,
     setup_networks_fixture.__name__
 )
@@ -375,10 +378,16 @@ class TestMultiHostCase06(NetworkTest):
     restore_mtu = True
     cl_name2 = "multi_host_cluster_case_06"
     dc = conf.DC_0
-    cpu = conf.CPU_NAME
-    version = conf.COMP_VERSION
     cl = conf.CL_0
     hosts_nets_nic_dict = helper.prepare_dict_for_sn_fixture(hosts=2, net=net)
+    clusters_dict = {
+        cl_name2: {
+            "name": cl_name2,
+            "data_center": dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+        },
+    }
 
     @polarion("RHEVM3-4077")
     def test_update_with_vlan_mtu(self):

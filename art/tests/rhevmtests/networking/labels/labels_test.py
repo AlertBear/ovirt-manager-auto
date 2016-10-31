@@ -22,10 +22,10 @@ from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
-    add_label_nic_and_network, create_network_on_dc,
-    move_host_to_another_cluster, create_datacenter,
-    create_clusters_and_networks
+    add_label_nic_and_network, create_network_on_dc_and_cluster,
+    move_host_to_another_cluster, create_datacenter
 )
+from rhevmtests.fixtures import create_clusters
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces, NetworkFixtures
 )
@@ -470,7 +470,7 @@ class TestNetLabels03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
-    create_network_on_dc.__name__
+    create_network_on_dc_and_cluster.__name__
 )
 class TestNetLabels04(NetworkTest):
 
@@ -482,7 +482,7 @@ class TestNetLabels04(NetworkTest):
 
     net_1 = label_conf.NETS[4][0]
     label_1 = label_conf.LABEL_NAME[4][0]
-    network_dict = {
+    networks_dict = {
         net_1: {
             "required": "false"
         }
@@ -908,7 +908,8 @@ class TestNetLabels06(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_datacenter.__name__,
-    create_clusters_and_networks.__name__,
+    create_clusters.__name__,
+    create_network_on_dc_and_cluster.__name__,
     move_host_to_another_cluster.__name__,
 )
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
@@ -921,13 +922,28 @@ class TestNetLabels07(NetworkTest):
     __test__ = True
 
     labels = label_conf.LABEL_NAME[7][:4]
-    dc_name2 = "Label_DC_%s_case07" % conf.COMP_VERSION_4_0[-2].replace(
+    networks_dict = label_conf.local_dict
+    datacenter = "Label_DC_%s_case07" % conf.COMP_VERSION_4_0[-2].replace(
         ".", "_"
     )
-    comp_cl_names = [
+    cluster_list = [
         "Label_cluster_%s_case07" % conf.COMP_VERSION_4_0[i]
         for i in range(len(conf.COMP_VERSION_4_0) - 1)
     ]
+    clusters_dict = {
+        cluster_list[0]: {
+            "name": cluster_list[0],
+            "data_center": datacenter,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION_4_0[0],
+        },
+        cluster_list[1]: {
+            "name": cluster_list[1],
+            "data_center": datacenter,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION_4_0[1],
+        },
+    }
     nets = label_conf.NETS[7][:4]
     vlan_id_list = label_conf.VLAN_IDS[9:11]
     sleep_timeout = 30
@@ -941,7 +957,7 @@ class TestNetLabels07(NetworkTest):
         4) Repeat the 2 steps above when moving from 3.6 cluster up
         to all support cluster
         """
-        for cluster in self.comp_cl_names:
+        for cluster in self.cluster_list:
             testflow.step(
                 "Move the host %s to cluster %s", conf.HOST_1_NAME, cluster
             )

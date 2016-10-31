@@ -9,11 +9,9 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_host
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import config as label_conf
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
@@ -52,18 +50,29 @@ def add_label_nic_and_network(request):
 
 
 @pytest.fixture(scope="class")
-def create_network_on_dc(request):
+def create_network_on_dc_and_cluster(request):
     """
     Create network on datacenter
     """
     labels = NetworkFixtures()
-    network_dict = getattr(request.node.cls, "network_dict")
+    datacenter = getattr(request.node.cls, "datacenter", labels.dc_0)
+    networks_dict = getattr(request.node.cls, "networks_dict")
+    cluster_list = getattr(request.node.cls, "cluster_list", list())
     testflow.setup(
-        "Create network: %s in datacenter %s", network_dict, labels.dc_0
+        "Add networks: %s to datacenter %s", ",".join(networks_dict.keys()),
+        datacenter
     )
     assert hl_networks.create_and_attach_networks(
-        data_center=labels.dc_0, network_dict=network_dict
+        data_center=datacenter, network_dict=networks_dict
     )
+    for cluster in cluster_list:
+        testflow.setup(
+            "Add networks: %s to cluster %s", ",".join(networks_dict.keys()),
+            cluster
+        )
+        assert hl_networks.create_and_attach_networks(
+            cluster=cluster, network_dict=networks_dict
+        )
 
 
 @pytest.fixture(scope="class")
@@ -71,59 +80,23 @@ def create_datacenter(request):
     """
     Create datacenter
     """
-    dc_name2 = request.node.cls.dc_name2
+    datacenter = request.node.cls.datacenter
 
     def fin():
         """
         Remove datacenter
         """
-        testflow.teardown("Remove datacenter %s", dc_name2)
+        testflow.teardown("Remove datacenter %s", datacenter)
         assert ll_datacenters.remove_datacenter(
-            positive=True, datacenter=dc_name2
+            positive=True, datacenter=datacenter
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Create datacenter %s", dc_name2)
+    testflow.setup("Create datacenter %s", datacenter)
     assert ll_datacenters.addDataCenter(
-        positive=True, name=dc_name2, version=conf.COMP_VERSION_4_0[0],
+        positive=True, name=datacenter, version=conf.COMP_VERSION_4_0[0],
         local=False
     )
-
-
-@pytest.fixture(scope="class")
-def create_clusters_and_networks(request):
-    """
-    Create clusters and networks
-    """
-    dc_name2 = request.node.cls.dc_name2
-    comp_cl_names = request.node.cls.comp_cl_names
-
-    def fin():
-        """
-        Remove clusters
-        """
-        for cl in comp_cl_names:
-            testflow.teardown("Remove cluster %s", cl)
-            ll_clusters.removeCluster(positive=True, cluster=cl)
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_and_attach_networks(
-        data_center=dc_name2, network_dict=label_conf.local_dict
-    )
-
-    for index, cluster in enumerate(comp_cl_names):
-        testflow.setup("Create cluster %s", cluster)
-        assert ll_clusters.addCluster(
-            positive=True, name=cluster, data_center=dc_name2,
-            version=conf.COMP_VERSION_4_0[index], cpu=conf.CPU_NAME
-        )
-        testflow.setup(
-            "Add networks: %s to datacenter %s and cluster %s",
-            label_conf.local_dict, dc_name2, cluster
-        )
-        assert hl_networks.create_and_attach_networks(
-            cluster=cluster, network_dict=label_conf.local_dict
-        )
 
 
 @pytest.fixture(scope="class")

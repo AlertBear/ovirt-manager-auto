@@ -22,11 +22,12 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    create_basic_setup, remove_all_networks, add_clusters_to_dcs,
+    create_basic_setup, remove_all_networks,
     create_and_attach_network, add_networks_to_clusters,
-    update_cluster_network_usages, move_host_to_cluster, remove_clusters,
+    update_cluster_network_usages, move_host_to_cluster,
     remove_network, install_host_with_new_management
 )
+from rhevmtests.fixtures import create_clusters
 
 
 @attr(tier=2)
@@ -41,9 +42,8 @@ class TestMGMTNetRole01(NetworkTest):
     """
     __test__ = True
 
-    dc = mgmt_conf.DATA_CENTERS[1][0]
-    cluster = mgmt_conf.CLUSTERS[1][0]
-    create_basic_setup_params = [dc, cluster]
+    ext_dc = mgmt_conf.DATA_CENTERS[1][0]
+    ext_cluster = mgmt_conf.CLUSTERS[1][0]
 
     @polarion("RHEVM3-6466")
     def test_01_default_mgmt_net(self):
@@ -53,7 +53,7 @@ class TestMGMTNetRole01(NetworkTest):
         """
         testflow.step('Check that the default management network exists on DC')
         management_network_obj = ll_networks.get_management_network(
-            cluster_name=self.cluster
+            cluster_name=self.ext_cluster
         )
         assert management_network_obj
 
@@ -61,14 +61,14 @@ class TestMGMTNetRole01(NetworkTest):
             'Check that the default management network exists on cluster'
         )
         assert ll_networks.get_network_in_datacenter(
-            network=management_network_obj.name, datacenter=self.dc
+            network=management_network_obj.name, datacenter=self.ext_dc
         )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
     remove_all_networks.__name__,
-    add_clusters_to_dcs.__name__,
+    create_clusters.__name__,
     create_and_attach_network.__name__
 )
 class TestMGMTNetRole02(NetworkTest):
@@ -84,7 +84,14 @@ class TestMGMTNetRole02(NetworkTest):
     net_2 = mgmt_conf.NETS[2][1]
     net_dict = mgmt_conf.NET_DICT_CASE_02
     create_and_attach_network_params = [[(dc, cluster)], net_dict]
-    add_clusters_to_dcs_params = [(cluster, dc, None)]
+    clusters_dict = {
+        cluster: {
+            "name": cluster,
+            "data_center": dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+        }
+    }
     remove_all_networks_params = [dc]
 
     @polarion("RHEVM3-6474")
@@ -123,7 +130,7 @@ class TestMGMTNetRole02(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_basic_setup.__name__,
-    add_clusters_to_dcs.__name__,
+    create_clusters.__name__,
     create_and_attach_network.__name__
 )
 class TestMGMTNetRole03(NetworkTest):
@@ -134,16 +141,22 @@ class TestMGMTNetRole03(NetworkTest):
     """
     __test__ = True
 
-    ext_cluster_0 = mgmt_conf.CLUSTERS[3][0]
+    ext_cluster = mgmt_conf.CLUSTERS[3][0]
     ext_cluster_1 = mgmt_conf.CLUSTERS[3][1]
     ext_dc = mgmt_conf.DATA_CENTERS[3][0]
     net_1 = mgmt_conf.NETS[3][0]
     create_and_attach_network_params = [
-        [(ext_dc, ext_cluster_0), (None, ext_cluster_1)],
+        [(ext_dc, ext_cluster), (None, ext_cluster_1)],
         mgmt_conf.NET_DICT_CASE_03
     ]
-    add_clusters_to_dcs_params = [(ext_cluster_1, ext_dc, None)]
-    create_basic_setup_params = [ext_dc, ext_cluster_0]
+    clusters_dict = {
+        ext_cluster_1: {
+            "name": ext_cluster_1,
+            "data_center": ext_dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+        }
+    }
 
     @polarion("RHEVM3-6476")
     def test_01_remove_mgmt_net(self):
@@ -161,13 +174,13 @@ class TestMGMTNetRole03(NetworkTest):
         )
 
         assert ll_networks.update_cluster_network(
-            positive=True, cluster=self.ext_cluster_0, network=self.net_1,
+            positive=True, cluster=self.ext_cluster, network=self.net_1,
             usages=conf.MANAGEMENT_NET_USAGE
         )
 
         testflow.step('Check that management network is net1 for that cluster')
         assert hl_networks.is_management_network(
-            cluster_name=self.ext_cluster_0, network=self.net_1
+            cluster_name=self.ext_cluster, network=self.net_1
         )
 
         testflow.step(
@@ -205,7 +218,7 @@ class TestMGMTNetRole03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     remove_all_networks.__name__,
-    add_clusters_to_dcs.__name__,
+    create_clusters.__name__,
     create_and_attach_network.__name__,
     update_cluster_network_usages.__name__
 )
@@ -229,7 +242,14 @@ class TestMGMTNetRole04(NetworkTest):
         ext_cls_0, net_1, conf.MANAGEMENT_NET_USAGE
     ]
     create_and_attach_network_params = [[(dc, ext_cls_0)], net_dict]
-    add_clusters_to_dcs_params = [(ext_cls_0, dc, None)]
+    clusters_dict = {
+        ext_cls_0: {
+            "name": ext_cls_0,
+            "data_center": dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+        }
+    }
     remove_all_networks_params = [dc]
     usages_to_check = [conf.DISPLAY_NET_USAGE, conf.MIGRATION_NET_USAGE]
 
@@ -257,7 +277,7 @@ class TestMGMTNetRole04(NetworkTest):
 @pytest.mark.usefixtures(
     create_and_attach_network.__name__,
     remove_all_networks.__name__,
-    add_clusters_to_dcs.__name__,
+    create_clusters.__name__,
     move_host_to_cluster.__name__
 )
 class TestMGMTNetRole05(NetworkTest):
@@ -273,7 +293,15 @@ class TestMGMTNetRole05(NetworkTest):
     net_1 = mgmt_conf.NETS[5][0]
     net_dict = mgmt_conf.NET_DICT_CASE_05
     move_host_to_cluster_params = [1, conf.CL_0]
-    add_clusters_to_dcs_params = [(ext_cls_0, dc, net_1)]
+    clusters_dict = {
+        ext_cls_0: {
+            "name": ext_cls_0,
+            "data_center": dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+            "management_network": net_1
+        }
+    }
     remove_all_networks_params = [dc]
     create_and_attach_network_params = [[(dc, None)], net_dict]
 
@@ -310,8 +338,7 @@ class TestMGMTNetRole05(NetworkTest):
 @pytest.mark.usefixtures(
     create_basic_setup.__name__,
     create_and_attach_network.__name__,
-    add_clusters_to_dcs.__name__,
-    remove_clusters.__name__
+    create_clusters.__name__,
 )
 class TestMGMTNetRole06(NetworkTest):
     """
@@ -327,7 +354,7 @@ class TestMGMTNetRole06(NetworkTest):
     """
     __test__ = True
 
-    dc = mgmt_conf.DATA_CENTERS[6][0]
+    ext_dc = mgmt_conf.DATA_CENTERS[6][0]
     ext_cls_0 = mgmt_conf.CLUSTERS[6][0]
     ext_cls_1 = mgmt_conf.CLUSTERS[6][1]
     ext_cls_2 = mgmt_conf.CLUSTERS[6][2]
@@ -335,13 +362,31 @@ class TestMGMTNetRole06(NetworkTest):
     net_1 = mgmt_conf.NETS[6][0]
     net_2 = mgmt_conf.NETS[6][1]
     net_dict = mgmt_conf.NET_DICT_CASE_06
-    add_clusters_to_dcs_params = [
-        (ext_cls_0, dc, conf.MGMT_BRIDGE), (ext_cls_1, dc, net_1),
-        (ext_cls_2, dc, net_2)
-    ]
-    create_and_attach_network_params = [[(dc, None)], net_dict]
-    create_basic_setup_params = [dc, None]
-    remove_clusters_params = [ext_cls_3]
+    clusters_to_remove = [ext_cls_1]
+    clusters_dict = {
+        ext_cls_0: {
+            "name": ext_cls_0,
+            "data_center": ext_dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+            "management_network": conf.MGMT_BRIDGE
+        },
+        ext_cls_1: {
+            "name": ext_cls_1,
+            "data_center": ext_dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+            "management_network": net_1
+        },
+        ext_cls_2: {
+            "name": ext_cls_2,
+            "data_center": ext_dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+            "management_network": net_2
+        },
+    }
+    create_and_attach_network_params = [[(ext_dc, None)], net_dict]
 
     @polarion("RHEVM3-6477")
     def test_01_different_mgmt_net(self):
@@ -359,7 +404,7 @@ class TestMGMTNetRole06(NetworkTest):
         )
         assert ll_clusters.addCluster(
             positive=True, name=self.ext_cls_3, cpu=conf.CPU_NAME,
-            data_center=self.dc, version=conf.COMP_VERSION
+            data_center=self.ext_dc, version=conf.COMP_VERSION
         )
 
         testflow.step(
@@ -375,7 +420,7 @@ class TestMGMTNetRole06(NetworkTest):
 
         testflow.step('Remove Default management network')
         assert ll_networks.remove_network(
-            positive=True, network=conf.MGMT_BRIDGE, data_center=self.dc
+            positive=True, network=conf.MGMT_BRIDGE, data_center=self.ext_dc
         )
 
         testflow.step(
@@ -384,7 +429,7 @@ class TestMGMTNetRole06(NetworkTest):
         )
         assert ll_clusters.addCluster(
             positive=False, name=self.ext_cls_0, cpu=conf.CPU_NAME,
-            data_center=self.dc, version=conf.COMP_VERSION
+            data_center=self.ext_dc, version=conf.COMP_VERSION
         )
 
         testflow.step(
@@ -393,7 +438,7 @@ class TestMGMTNetRole06(NetworkTest):
         )
         assert ll_clusters.addCluster(
             positive=True, name=self.ext_cls_0, cpu=conf.CPU_NAME,
-            data_center=self.dc, version=conf.COMP_VERSION,
+            data_center=self.ext_dc, version=conf.COMP_VERSION,
             management_network=self.net_1
         )
 
@@ -407,7 +452,7 @@ class TestMGMTNetRole06(NetworkTest):
         testflow.step('Update all clusters to have net1 as management network')
         assert ll_clusters.removeCluster(positive=True, cluster=self.ext_cls_2)
         assert ll_networks.remove_network(
-            positive=True, network=self.net_2, data_center=self.dc
+            positive=True, network=self.net_2, data_center=self.ext_dc
         )
 
         testflow.step(
@@ -416,7 +461,7 @@ class TestMGMTNetRole06(NetworkTest):
         )
         assert ll_clusters.addCluster(
             positive=True, name=self.ext_cls_3, cpu=conf.CPU_NAME,
-            data_center=self.dc, version=conf.COMP_VERSION
+            data_center=self.ext_dc, version=conf.COMP_VERSION
         )
 
         testflow.step(
@@ -442,14 +487,13 @@ class TestMGMTNetRole07(NetworkTest):
     """
     __test__ = True
 
-    dc = mgmt_conf.DATA_CENTERS[7][0]
+    ext_dc = mgmt_conf.DATA_CENTERS[7][0]
     net_1 = mgmt_conf.NETS[7][0]
     net_2 = mgmt_conf.NETS[7][1]
     ext_cls_0 = mgmt_conf.CLUSTERS[7][0]
     net_dict = mgmt_conf.NET_DICT_CASE_07
-    remove_network_params = [dc, conf.MGMT_BRIDGE]
-    create_and_attach_network_params = [[(dc, None)], net_dict]
-    create_basic_setup_params = [dc, None]
+    remove_network_params = [ext_dc, conf.MGMT_BRIDGE]
+    create_and_attach_network_params = [[(ext_dc, None)], net_dict]
 
     @polarion("RHEVM3-6479")
     def test_01_different_mgmt_net(self):
@@ -466,7 +510,7 @@ class TestMGMTNetRole07(NetworkTest):
         )
         assert ll_clusters.addCluster(
             positive=True, name=self.ext_cls_0, cpu=conf.CPU_NAME,
-            data_center=self.dc, version=conf.COMP_VERSION
+            data_center=self.ext_dc, version=conf.COMP_VERSION
         )
 
         testflow.step(
@@ -483,7 +527,7 @@ class TestMGMTNetRole07(NetworkTest):
 
         testflow.step('Remove non-default management network')
         assert ll_networks.remove_network(
-            positive=True, network=self.net_1, data_center=self.dc
+            positive=True, network=self.net_1, data_center=self.ext_dc
         )
 
         testflow.step(
@@ -491,7 +535,7 @@ class TestMGMTNetRole07(NetworkTest):
         )
         assert ll_clusters.addCluster(
             positive=False, name=self.ext_cls_0, cpu=conf.CPU_NAME,
-            data_center=self.dc, version=conf.COMP_VERSION
+            data_center=self.ext_dc, version=conf.COMP_VERSION
         )
 
 
@@ -500,7 +544,7 @@ class TestMGMTNetRole07(NetworkTest):
 @pytest.mark.usefixtures(
     install_host_with_new_management.__name__,
     create_and_attach_network.__name__,
-    add_clusters_to_dcs.__name__,
+    create_clusters.__name__,
     add_networks_to_clusters.__name__,
 )
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
@@ -528,9 +572,22 @@ class TestMGMTNetRole08(NetworkTest):
     net_1 = mgmt_conf.NETS[8][0]
     net_2 = mgmt_conf.NETS[8][1]
     net_dict = mgmt_conf.NET_DICT_CASE_08_2
-    add_clusters_to_dcs_params = [
-        (ext_cls_1, dc, net_1), (ext_cls_2, dc, net_2),
-    ]
+    clusters_dict = {
+        ext_cls_1: {
+            "name": ext_cls_1,
+            "data_center": dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+            "management_network": net_1
+        },
+        ext_cls_2: {
+            "name": ext_cls_2,
+            "data_center": dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
+            "management_network": net_2
+        },
+    }
     add_networks_to_clusters_params = [(ext_cls_1, net_2), (ext_cls_2, net_1)]
     create_and_attach_network_params = [[(dc, None)], net_dict]
     install_host_with_new_management_params = [

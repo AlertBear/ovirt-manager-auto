@@ -8,12 +8,10 @@ Fixtures for Management Network As A Role test cases
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import helper
 import rhevmtests.networking.config as conf
-from art.core_api import apis_exceptions
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -22,8 +20,8 @@ def create_basic_setup(request):
     """
     Create basic setup (Data-Center and optional cluster)
     """
-    dc = request.cls.create_basic_setup_params[0]
-    cluster = request.cls.create_basic_setup_params[1]
+    dc = request.node.cls.ext_dc
+    cluster = getattr(request.node.cls, "ext_cluster", None)
 
     def fin():
         """
@@ -36,34 +34,6 @@ def create_basic_setup(request):
         datacenter=dc, cluster=cluster, version=conf.COMP_VERSION,
         cpu=conf.CPU_NAME
     )
-
-
-@pytest.fixture(scope="class")
-def add_clusters_to_dcs(request):
-    """
-    Add cluster(s) to Data-Center(s) with optional management network(s)
-    """
-    cl_dcs_nets = request.cls.add_clusters_to_dcs_params
-    clusters = [cl[0] for cl in request.cls.add_clusters_to_dcs_params]
-
-    def fin():
-        """
-        Remove cluster from DC
-        """
-        for cl in clusters:
-            # Avoid failure when deleting clusters that were changed during
-            # runtime
-            try:
-                assert ll_clusters.removeCluster(positive=True, cluster=cl)
-            except apis_exceptions.EntityNotFound:
-                pass
-    request.addfinalizer(fin)
-
-    for cl, dc, net in cl_dcs_nets:
-        assert ll_clusters.addCluster(
-            positive=True, name=cl, cpu=conf.CPU_NAME, data_center=dc,
-            version=conf.COMP_VERSION, management_network=net
-        )
 
 
 @pytest.fixture(scope="class")
@@ -142,17 +112,6 @@ def add_networks_to_clusters(request):
         assert ll_networks.add_network_to_cluster(
             positive=True, network=net, cluster=cl, required=True
         )
-
-
-@pytest.fixture(scope="class")
-def remove_clusters(request):
-    """
-    Remove all clusters from a given list
-    """
-    def fin():
-        for cl in request.cls.remove_clusters_params:
-            assert ll_clusters.removeCluster(positive=True, cluster=cl)
-    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")

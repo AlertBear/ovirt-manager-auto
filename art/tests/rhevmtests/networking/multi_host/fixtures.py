@@ -8,7 +8,6 @@ Fixtures for MultiHost
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -101,24 +100,11 @@ def add_vnic_to_tamplate(request):
 @pytest.fixture(scope="class")
 def move_host_to_cluster(request):
     """
-    Create new cluster
     Move host to new cluster
     """
     multi_host = NetworkFixtures()
-    net = request.node.cls.net
-    dc = request.node.cls.dc
     cl = request.node.cls.cl
-    cpu = request.node.cls.cpu
-    version = request.node.cls.version
     cl_name2 = request.node.cls.cl_name2
-
-    def fin2():
-        """
-        Remove extra cluster
-        """
-        testflow.teardown("Remove cluster %s", cl_name2)
-        assert ll_clusters.removeCluster(positive=True, cluster=cl_name2)
-    request.addfinalizer(fin2)
 
     def fin1():
         """
@@ -132,17 +118,23 @@ def move_host_to_cluster(request):
         )
     request.addfinalizer(fin1)
 
-    testflow.setup("Add cluster %s", cl_name2)
-    assert ll_clusters.addCluster(
-        positive=True, name=cl_name2, cpu=cpu, data_center=dc, version=version
-    )
-    testflow.setup("Add network %s to cluster %s", net, cl_name2)
-    assert ll_networks.add_network_to_cluster(
-        positive=True, network=net, cluster=cl_name2, required=False
-    )
     testflow.setup(
         "Move host %s to cluster %s", multi_host.host_1_name, cl_name2
     )
     assert hl_hosts.move_host_to_another_cluster(
         host=multi_host.host_1_name, cluster=cl_name2
+    )
+
+
+@pytest.fixture(scope="class")
+def add_network_to_cluster(request):
+    """
+    Attach network to cluster.
+    """
+    cl_name2 = request.node.cls.cl_name2
+    net = request.node.cls.net
+
+    testflow.setup("Add network %s to cluster %s", net, cl_name2)
+    assert ll_networks.add_network_to_cluster(
+        positive=True, network=net, cluster=cl_name2, required=False
     )
