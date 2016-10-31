@@ -15,7 +15,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
     update_vnic_profile, run_vm, create_vm, attach_vnic_profile_to_vm
@@ -78,6 +78,7 @@ class TestMultipleQueueNics01(NetworkTest):
         )
 
     @polarion("RHEVM3-4312")
+    @bz({"1389996": {}})
     def test_02_multiple_queue_nics(self):
         """
         Hibernate the VM and check the queue still configured on qemu
