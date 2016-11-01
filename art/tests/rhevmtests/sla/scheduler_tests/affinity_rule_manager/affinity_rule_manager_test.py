@@ -13,6 +13,7 @@ from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
     run_once_vms,
     start_vms,
+    update_vms,
     update_vms_memory_to_hosts_memory,
     update_vms_to_default_parameters,
     update_cluster,
@@ -272,6 +273,7 @@ class TestAREM5(BaseAREM):
 @pytest.mark.usefixtures(
     update_cluster.__name__,
     wait_for_scheduling_memory_update.__name__,
+    update_vms.__name__,
     update_vms_memory_to_hosts_memory.__name__,
     update_vms_to_default_parameters.__name__,
     run_once_vms.__name__,
@@ -298,6 +300,11 @@ class TestAREM6(BaseAREM):
         conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1},
         conf.VM_NAME[2]: {conf.VM_RUN_ONCE_HOST: 1}
     }
+    vms_to_params = dict(
+        (
+            vm_name, {conf.VM_MEMORY: 3 * conf.GB}
+        ) for vm_name in conf.VM_NAME[1:3]
+    )
     update_vms_memory = conf.VM_NAME[:1]
     update_to_default_params = conf.VM_NAME[:1]
     vms_to_stop = conf.VM_NAME[:3]
