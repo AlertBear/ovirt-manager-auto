@@ -37,6 +37,9 @@ from art.rhevm_api.utils.test_utils import (
     validateElementStatus, get_api, )
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
+from art.rhevm_api.tests_lib.low_level.networks import (
+    prepare_vnic_profile_mappings_object
+)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 ACTIVE_DOMAIN = ENUMS['storage_domain_state_active']
@@ -1121,25 +1124,49 @@ def get_unregistered_templates(storage_domain):
     return unregistered_templates.get_template()
 
 
-def register_object(obj, cluster):
+def register_object(obj, cluster, **kwargs):
     """
     Register unregistered vms or templates from storage domain
 
     __author__ = "ratamir"
-    :param obj: object of vm or template to register
-           ->  the object should be received from get_unregistered_vms() or
-               get_unregistered_templates()
-    :type obj: List of vm objects or template objects
-    :param cluster: Name of cluster on which the vms or templates should
-           be registered
-    :type cluster: str
-    :returns: True on success, False otherwise
-    :rtype: bool
+
+    Args:
+        obj (Vm or Template): object of vm or template to register the object
+            should be received from get_unregistered_vms() or
+            get_unregistered_templates()
+        cluster (str): Name of cluster on which the vms or templates should
+            be registered
+
+    Keyword Args:
+        reassign_bad_macs (bool): Reassign MAC from pool if MAC is outside
+            of MAC pool
+        network_mappings (list): Map networks from the imported object to
+            existing network on cluster (list of dicts)
+            network_mappings = [{
+            "source_network_profile_name": "src_profile_name",
+            "source_network_name": "src_network_name",
+            "target_network": "target_network_name",
+            "target_vnic_profile": "target_profile_name",
+            "cluster": "cluster_name_for_target_vnic_profile",
+            "datacenter": "datacenter_name_for_target_vnic_profile"
+            }]
+
+    Returns:
+        bool: True on success, False otherwise
     """
     cluster_obj = Cluster(name=cluster)
+    reassign_bad_macs = kwargs.get("reassign_bad_macs", True)
+    network_mappings = kwargs.get("network_mappings")
+    vnic_profile_mappings = None
+    if network_mappings:
+        vnic_profile_mappings = prepare_vnic_profile_mappings_object(
+            network_mappings
+        )
     return bool(
         util.syncAction(
-            entity=obj, action='register', positive=True, cluster=cluster_obj
+            entity=obj, action='register', positive=True, cluster=cluster_obj,
+            reassign_bad_macs=reassign_bad_macs,
+            vnic_profile_mappings=vnic_profile_mappings
         )
     )
 

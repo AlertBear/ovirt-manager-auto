@@ -25,6 +25,7 @@ import art.rhevm_api.tests_lib.low_level as ll
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 from art.core_api import apis_exceptions
 from art.core_api import apis_utils
+from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils import test_utils
 
 NET_API = test_utils.get_api("network", "networks")
@@ -1561,3 +1562,49 @@ def get_supported_network_filters():
     """
     network_filters = NF_API.get(absLink=False)
     return dict((i.name, i) for i in network_filters.get_network_filter())
+
+
+@ll.general.generate_logs
+def prepare_vnic_profile_mappings_object(network_mappings):
+    """
+    Prepare VnicProfileMappings object for import VM from data domain
+
+    Args:
+        network_mappings (list): Map networks from the imported object to
+            existing network on cluster (list of dicts)
+
+    Returns:
+        VnicProfileMappings: VnicProfileMappings object
+
+    Examples:
+        vnic_profile_mapping = network_mappings = [{
+            "source_network_profile_name": "src_profile_name",
+            "source_network_name": "src_network_name",
+            "target_network": "target_network_name",
+            "target_vnic_profile": "target_profile_name",
+            "cluster": "cluster_name_for_target_vnic_profile",
+            "datacenter": "datacenter_name_for_target_vnic_profile"
+            }]
+        prepare_vnic_profile_mappings_object(
+            network_mappings=vnic_profile_mapping
+            )
+    """
+    vnic_profile_mappings = None
+    for network_mapping in network_mappings:
+        target_vnic_profile = network_mapping.get("target_vnic_profile")
+        target_network = network_mapping.pop("target_network", None)
+        cluster = network_mapping.pop("cluster", None)
+        datacenter = network_mapping.pop("datacenter", None)
+        if target_vnic_profile:
+            vnic_profile_object = get_vnic_profile_obj(
+                name=target_vnic_profile, network=target_network,
+                cluster=cluster, data_center=datacenter
+            )
+            network_mapping["target_vnic_profile"] = vnic_profile_object
+
+        vnic_profile_mappings = getDS("VnicProfileMappings")()
+        vnic_profile_mapping = getDS("VnicProfileMapping")
+        vnic_profile_mappings.add_vnic_profile_mapping(
+            vnic_profile_mapping(**network_mapping)
+        )
+    return vnic_profile_mappings
