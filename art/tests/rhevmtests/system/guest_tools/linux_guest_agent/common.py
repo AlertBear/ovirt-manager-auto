@@ -243,12 +243,18 @@ class GABaseTestCase(TestCase):
         cmd = shlex.split(cmd % (self.stats, self.vm_id, 'guestIPs'))
         ip_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
         ip_list = ip_agent.split(' ')
+        ip_check_ran = False
 
         for iface in self.get_ifaces():
             ip.insert(1, iface['name'])
             rc, ip_real, err = self.machine.executor().run_cmd(ip)
             ip_real = ip_real.strip()
+            logger.info("Get IP line returned: %s", ip_real)
+            if not ip_real:
+                continue
+            ip_check_ran = True
             assert ip_real in ip_list
+        assert ip_check_ran, "Check for IP was unsuccessful"
 
     def agent_data(self, application_list, list_app_cmd):
         """ rhevm-guest-agent data """
