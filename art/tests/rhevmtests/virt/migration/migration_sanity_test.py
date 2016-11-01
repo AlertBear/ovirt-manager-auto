@@ -13,7 +13,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib.network as network_lib
 from rhevmtests.virt.migration.fixtures import (
-    cancel_migration_test, migration_init, restart_vm
+    migration_init, restart_vm
 )
 import config
 
@@ -62,43 +62,3 @@ class TestMigrationVirtSanityCase2(VirtTest):
             vm_password=config.VMS_LINUX_PW,
             connectivity_check=config.CONNECTIVITY_CHECK
         ), "Maintenance test failed"
-
-
-@attr(tier=1)
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-@pytest.mark.usefixtures(
-    migration_init.__name__,
-    cancel_migration_test.__name__
-)
-class TestMigrationVirtSanityCase3(VirtTest):
-    """
-    Check cancel VM migration.
-    1. Start migrate vm in different thread
-    2. Cancel migration
-    3. Check the cancel succeed (VM stay on the source host)
-    """
-    __test__ = True
-
-    @polarion("RHEVM3-14032")
-    def test_cancel_migration(self):
-        testflow.step("Migrate VM %s", config.MIGRATION_VM)
-        assert ll_vms.migrateVm(
-            positive=True,
-            vm=config.MIGRATION_VM,
-            wait=False
-        )
-        ll_vms.wait_for_vm_states(
-            vm_name=config.MIGRATION_VM,
-            states=[
-                config.ENUMS['vm_state_migrating'],
-                config.ENUMS['vm_state_migrating_from'],
-                config.ENUMS['vm_state_migrating_to']
-            ]
-        )
-        testflow.step("Cancel VM %s migration ", config.MIGRATION_VM)
-        config.CANCEL_VM_MIGRATE = hl_vms.cancel_vm_migrate(
-            vm=config.MIGRATION_VM,
-        )
-        assert config.CANCEL_VM_MIGRATE, (
-            "Cancel migration didn't succeed for VM:%s " % config.MIGRATION_VM
-        )

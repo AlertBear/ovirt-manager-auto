@@ -99,6 +99,7 @@ def init_network_dict(
 
 def migrate_vm_with_policy(
     migration_policy,
+    vm_name=config.MIGRATION_VM,
     cluster_name=None,
     bandwidth_method=None,
     custom_bandwidth=None,
@@ -116,6 +117,7 @@ def migrate_vm_with_policy(
 
     Args:
         migration_policy (str): Migration policy name
+        vm_name (str): vm_name default config.MIGRATION_VM
         cluster_name (str): Cluster name
         bandwidth_method (str): Bandwidth assignment method
         custom_bandwidth (int): Custom bandwidth (method must be custom)
@@ -142,7 +144,7 @@ def migrate_vm_with_policy(
         )
         update_migration_policy_on_vm(
             migration_policy=migration_policy,
-            vm_name=config.MIGRATION_VM,
+            vm_name=vm_name,
             auto_converge=auto_converge,
             compressed=compressed
         )
@@ -158,12 +160,12 @@ def migrate_vm_with_policy(
             migration_policy, bandwidth_method, expected_bandwidth
         )
         check_bandwidth_kwargs = {
-            'vm_name': config.MIGRATION_VM,
+            'vm_name': vm_name,
             'expected_bandwidth': expected_bandwidth
         }
         vm_migration_kwargs = {
             'positive': True,
-            'vm': config.MIGRATION_VM
+            'vm': vm_name
         }
         check_bandwidth_job = jobs.Job(
             check_migration_bandwidth, (), check_bandwidth_kwargs
@@ -179,7 +181,7 @@ def migrate_vm_with_policy(
     else:
         return ll_vms.migrateVm(
             positive=True,
-            vm=config.MIGRATION_VM
+            vm=vm_name
         )
 
 
@@ -262,7 +264,7 @@ def check_migration_bandwidth(
     vm_id = helper.get_vm_id(vm_name)
     bw_results = []
     ll_vms.wait_for_vm_states(
-        vm_name=config.MIGRATION_VM,
+        vm_name=vm_name,
         states=[
             config.ENUMS['vm_state_migrating'],
             config.ENUMS['vm_state_migrating_from']

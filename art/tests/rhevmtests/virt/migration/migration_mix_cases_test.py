@@ -9,6 +9,7 @@ import time
 import pytest
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.unittest_lib import attr, VirtTest, testflow
 import rhevmtests.virt.helper as virt_helper
 from rhevmtests.virt.migration.fixtures import (
@@ -16,8 +17,9 @@ from rhevmtests.virt.migration.fixtures import (
     restore_default_policy_on_cluster,
     restore_default_policy_on_vm,
     start_vms_on_specific_host,
-    migration_load_test,
+    setting_migration_vm,
     migration_with_two_disks,
+    cancel_migration_test,
 )
 import config
 import migration_helper
@@ -49,7 +51,7 @@ class TestMigrationMixCase1(VirtTest):
 @attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__,
-    migration_load_test.__name__
+    setting_migration_vm.__name__
 )
 class TestMigrationMixCase2(VirtTest):
     """
@@ -143,7 +145,8 @@ class TestMigrationMixCase4(VirtTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     migration_init.__name__,
-    restore_default_policy_on_cluster.__name__
+    restore_default_policy_on_cluster.__name__,
+    setting_migration_vm.__name__,
 )
 class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
     """
@@ -152,6 +155,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
     """
 
     __test__ = True
+    vm_name = config.MIGRATION_VM_LOAD
 
     @polarion("RHEVM-16922")
     def test_migration_with_policy_bandwidth_auto(self):
@@ -165,10 +169,11 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
             )
             assert migration_helper.migrate_vm_with_policy(
                 migration_policy=migration_policy,
+                vm_name=self.vm_name,
                 bandwidth_method=config.MIGRATION_BANDWIDTH_AUTO,
                 cluster_name=config.CLUSTER_NAME[0]
             ), "Failed to migrate VM: %s with policy %s" % (
-                config.MIGRATION_VM, migration_policy
+                self.vm_name, migration_policy
             )
             time.sleep(15)
 
@@ -186,11 +191,12 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
             )
             assert migration_helper.migrate_vm_with_policy(
                 migration_policy=migration_policy,
+                vm_name=self.vm_name,
                 bandwidth_method=config.MIGRATION_BANDWIDTH_HYPERVISOR_DEFAULT,
                 expected_bandwidth=config.HYPERVISOR_DEFAULT_BANDWIDTH,
                 cluster_name=config.CLUSTER_NAME[0]
             ), "Failed to migrate VM: %s with policy %s" % (
-                config.MIGRATION_VM, migration_policy
+                self.vm_name, migration_policy
             )
             time.sleep(15)
 
@@ -208,12 +214,13 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
             )
             assert migration_helper.migrate_vm_with_policy(
                 migration_policy=migration_policy,
+                vm_name=self.vm_name,
                 bandwidth_method=config.MIGRATION_BANDWIDTH_CUSTOM,
                 custom_bandwidth=config.CUSTOM_BW_32_MBPS,
                 expected_bandwidth=config.CUSTOM_BW_32_MBPS / 2,
                 cluster_name=config.CLUSTER_NAME[0]
             ), "Failed to migrate VM: %s with policy %s" % (
-                config.MIGRATION_VM, migration_policy
+                self.vm_name, migration_policy
             )
             time.sleep(15)
 
@@ -258,4 +265,53 @@ class TestVMLevelMigrationPolicies(VirtTest):
             compressed=True
         ), "Failed to migrate VM: %s with policy %s" % (
             config.MIGRATION_VM, config.MIGRATION_POLICY_LEGACY
+        )
+
+
+@attr(tier=2)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+@pytest.mark.usefixtures(
+    migration_init.__name__,
+    cancel_migration_test.__name__,
+    setting_migration_vm.__name__
+)
+class TestCancelMigration(VirtTest):
+    """
+    Check cancel VM migration.
+    1. Start migrate vm with load in different thread
+    2. Cancel migration
+    3. Check the cancel succeed (VM stay on the source host)
+    """
+    __test__ = True
+    vm_name = config.MIGRATION_VM_LOAD
+    load_size = 2000
+    time_to_run_load = 120
+
+    @polarion("RHEVM3-14032")
+    def test_cancel_migration(self):
+        virt_helper.load_vm_memory_with_load_tool(
+            vm_name=self.vm_name, load=self.load_size,
+            time_to_run=self.time_to_run_load
+        )
+        testflow.step("Migrate VM %s", self.vm_name)
+        assert ll_vms.migrateVm(
+            positive=True,
+            vm=self.vm_name,
+            wait=False
+        )
+        ll_vms.wait_for_vm_states(
+            vm_name=self.vm_name,
+            states=[
+                config.ENUMS['vm_state_migrating'],
+                config.ENUMS['vm_state_migrating_from'],
+                config.ENUMS['vm_state_migrating_to']
+            ]
+        )
+        testflow.step("Cancel VM %s migration ", self.vm_name)
+        config.CANCEL_VM_MIGRATE = hl_vms.cancel_vm_migrate(
+            vm=self.vm_name,
+        )
+
+        assert config.CANCEL_VM_MIGRATE, (
+            "Cancel migration didn't succeed for VM:%s " % config.MIGRATION_VM
         )

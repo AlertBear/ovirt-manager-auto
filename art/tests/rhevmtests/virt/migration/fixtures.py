@@ -200,9 +200,9 @@ def start_vms_on_specific_host(request):
 
 
 @pytest.fixture(scope="class")
-def migration_load_test(request, create_vm_from_glance):
+def setting_migration_vm(request, create_vm_from_glance):
     """
-    Usage in load testing
+    Setting migration vm for cases with load and large memory
     1. Create VM from Glance (diff fixture)
     2. Set VM memory to 85% of Host memory
     3. Start VM
