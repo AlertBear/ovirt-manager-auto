@@ -316,7 +316,8 @@ class TestCase11546(BaseCase):
         )
 
         # Waits until total size changes (extend is done)
-        # wait_for_tasks doesn't work (value is not updated correctly)
+        # wait_for_tasks_deprecated doesn't work
+        # (value is not updated correctly)
         ll_sd.wait_for_change_total_size(
             self.new_storage_domain,
             self.current_total_size[self.new_storage_domain]

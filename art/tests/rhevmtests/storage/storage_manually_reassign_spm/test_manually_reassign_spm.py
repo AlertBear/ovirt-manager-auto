@@ -77,7 +77,7 @@ class ReassignSPMWithStorageBlocked(BasicEnvironment):
 
         self.blocked_domain = self.origin_host_address
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         testflow.step("Setting host %s to be new SPM", self.hsm_hosts[0])
         status = ll_hosts.select_host_as_spm(
@@ -113,7 +113,7 @@ class TestCase5815(BasicEnvironment):
         Expected result: HSM host should become the SPM
         """
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         testflow.step("Selecting host %s as new SPM", self.hsm_hosts[0])
         assert ll_hosts.select_host_as_spm(
@@ -249,7 +249,7 @@ class TestCase14812(BasicEnvironment):
         """
         testflow.step("Set '%s' to be the SPM", self.vm_host)
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         assert ll_hosts.select_host_as_spm(
             True, self.vm_host, config.DATA_CENTER_NAME,

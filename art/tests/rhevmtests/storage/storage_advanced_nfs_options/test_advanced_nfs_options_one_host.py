@@ -45,9 +45,7 @@ def detach_export_domain(request):
     testflow.setup(
         "Detaching export storage domain %s", config.EXPORT_DOMAIN_NAME
     )
-    wait_for_tasks(
-        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-    )
+    wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
     assert hl_sd.detach_and_deactivate_domain(
         config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
     ), ("Failed to deactivate and detach export storage domain %s",

@@ -71,8 +71,7 @@ def initializer_module(request):
             helpers.create_vm_with_disks(storage_domain, storage_type)
         )
         utils.wait_for_tasks(
-            vdc=config.VDC, vdc_password=config.VDC_PASSWORD,
-            datacenter=config.DATA_CENTER_NAME
+            engine=config.ENGINE, datacenter=config.DATA_CENTER_NAME
         )
 
 
@@ -660,7 +659,7 @@ class TestCase6230(TestCase):
                     "Failed to deactivate disk %s" % disk_name
                 )
         utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         for vm in vm_names:
             inactive_disks = [

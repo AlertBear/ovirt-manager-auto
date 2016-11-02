@@ -28,7 +28,7 @@ class RestartOvirt(TestCase):
 
     def tearDown(self):
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
 
     def restart_before_tasks_start(self):
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -36,7 +36,7 @@ class RestartOvirt(TestCase):
             executor.submit(
                 restart_engine, config.ENGINE, 10, 75)
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
         logger.info("checking if action failed")
         self.check_action_failed()
 
@@ -70,7 +70,7 @@ class RestartOvirt(TestCase):
             executor.submit(self._timeouting_thread, operation_info)
 
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
         self.check_action_failed()
 
     def restart_after_finish_before_notified(self):
@@ -85,7 +85,7 @@ class RestartOvirt(TestCase):
         restart_engine(config.ENGINE, 10, 75)
         logger.info("ovirt-engine restarted")
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
         self.check_action_failed()
 
     def check_action_failed(self):
@@ -122,7 +122,7 @@ class TestCase6160(RestartOvirt):
             startVm(True, config.VM_NAME[0], config.VM_UP)
 
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
         assert waitForHostsStates(True, config.HOSTS[0])
 
     def perform_action(self):
@@ -185,7 +185,7 @@ class TestCase6161(RestartOvirt):
         super(TestCase6161, self).tearDown()
         common.start_vm()
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
 
     def perform_action(self):
         logger.info("Suspending vm %s", config.VM_NAME[0])
@@ -244,7 +244,7 @@ class TestCase6162(RestartOvirt):
         if VM_API.query("name=%s" % self.cloned_vm):
             removeVm(True, self.cloned_vm)
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
 
     def check_action_failed(self):
         assert waitForVmsGone(True, self.cloned_vm, 600)

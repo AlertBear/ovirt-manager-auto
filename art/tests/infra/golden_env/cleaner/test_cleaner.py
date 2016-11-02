@@ -62,13 +62,7 @@ def remove_disks_and_sds():
             testflow.step("Clean disks from storage: %s", sd.get_name())
             ll_sd.remove_floating_disks(sd)
         for dc in dcs_list:
-            wait_for_tasks(
-                vdc=config.VDC,
-                vdc_password=config.VDC_PASSWORD,
-                datacenter=dc.get_name(),
-                db_name=config.DB_NAME,
-                db_user=config.DB_USER
-            )
+            wait_for_tasks(engine=config.ENGINE, datacenter=dc.get_name())
         for sd in sds:
             if sd.get_master():
                 continue

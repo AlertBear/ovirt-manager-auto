@@ -922,7 +922,7 @@ def deactivate_domain(dc_name, sd_name):
     """
     Deactivate storage domain. There's a chance the OVF update
     task starts while the deactivation command is executed, try for
-    TIMEOUT_DEACTIVATE_DOMAIN executing wait_for_tasks
+    TIMEOUT_DEACTIVATE_DOMAIN executing wait_for_tasks_deprecated
 
     Args:
         dc_name (str): Name of the Data-center
@@ -931,7 +931,7 @@ def deactivate_domain(dc_name, sd_name):
         bool: True if the operation succeeds , False otherwise
     """
     if ll_sd.is_storage_domain_active(dc_name, sd_name):
-        test_utils.wait_for_tasks(
+        test_utils.wait_for_tasks_deprecated(
             vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
             datacenter=dc_name
         )
@@ -947,7 +947,7 @@ def deactivate_domain(dc_name, sd_name):
                 "Storage domain %s wasn't deactivated, wait for tasks and "
                 "try again", sd_name
             )
-            test_utils.wait_for_tasks(
+            test_utils.wait_for_tasks_deprecated(
                 vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
                 datacenter=dc_name
             )
@@ -965,7 +965,7 @@ def detach_domain(dc_name, sd_name):
     Return:
         bool: True if the operation succeeds , False otherwise
     """
-    test_utils.wait_for_tasks(
+    test_utils.wait_for_tasks_deprecated(
         vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
         datacenter=dc_name
     )
@@ -982,7 +982,7 @@ def detach_domain(dc_name, sd_name):
                 "Waiting for all tasks to end before trying to detach "
                 "the storage domain again "
             )
-            test_utils.wait_for_tasks(
+            test_utils.wait_for_tasks_deprecated(
                 vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
                 datacenter=dc_name
             )

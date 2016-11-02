@@ -190,7 +190,7 @@ class BaseGlusterMount(BaseTestCase):
         In case the domain exists, remove it
         """
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         if not ll_sd.removeStorageDomains(
             True, self.domain_name, self.host,

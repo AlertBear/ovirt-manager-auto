@@ -108,7 +108,7 @@ class TestCase11592(TestCase):
 
         logger.info("Waiting for tasks before deactivating the storage domain")
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         testflow.step("De-activate non-master data domain")
         assert ll_sds.deactivateStorageDomain(
@@ -128,7 +128,7 @@ class TestCase11592(TestCase):
 
         logger.info("Waiting for tasks before deactivating the storage domain")
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         testflow.step("Deactivating non-master data domain")
         assert hl_sds.detach_and_deactivate_domain(
@@ -178,7 +178,7 @@ class TestCase11593(TestCase):
 
         testflow.step("Deactivating master domain")
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         assert ll_sds.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, old_master_domain_name

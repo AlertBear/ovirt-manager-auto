@@ -277,10 +277,7 @@ class TestLockVM(VirtTest):
             status=int(config.ENUMS['vm_status_locked_db']),
             vdc_pass=config.VDC_ROOT_PASSWORD
         )
-        test_utils.wait_for_tasks(
-            config.VDC_HOST, config.VDC_ROOT_PASSWORD,
-            config.DC_NAME[0]
-        )
+        test_utils.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
         assert ll_vms.remove_locked_vm(
             self.base_vm_name,
             vdc=config.VDC_HOST,

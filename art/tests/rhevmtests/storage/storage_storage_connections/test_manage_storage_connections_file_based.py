@@ -115,7 +115,7 @@ class TestCasePosix(TestCase):
         """
         logger.info("Detaching and deactivating domain")
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         if not hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, self.sd_name
@@ -138,7 +138,7 @@ class TestCasePosix(TestCase):
     def positive_flow(self, vfs_type):
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         if not ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
@@ -469,7 +469,7 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             "Waiting for tasks before deactivating the storage domain"
         )
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
@@ -499,7 +499,7 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             "Waiting for tasks before deactivating the storage domain"
         )
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name

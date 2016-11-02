@@ -25,8 +25,7 @@ from rhevmtests.system.config import (
     HOSTS_IP as hosts_ips,
     HOSTS_PW as hosts_password,
     ISO_IMAGE as iso_image,
-    VDC_HOST as vdc_host,
-    VDC_ROOT_PASSWORD as vdc_root_password,
+    ENGINE,
 )
 
 import config
@@ -128,11 +127,7 @@ class TestHostInMaintenance(TestCase):
         request.addfinalizer(finalize)
 
         testflow.setup("Waiting for tasks on host.")
-        test_utils.wait_for_tasks(
-            vdc_host,
-            vdc_root_password,
-            dcs_names[0]
-        )
+        test_utils.wait_for_tasks(ENGINE, dcs_names[0])
 
         testflow.setup("Checking if host is active.")
         if ll_hosts.isHostUp(True, host=hosts[0]):
@@ -421,11 +416,7 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
     @polarion("RHEVM3-8845")
     def test_set_active_host_to_maintenance(self):
         testflow.step("Waiting for tasks on host.")
-        test_utils.wait_for_tasks(
-            vdc_host,
-            vdc_root_password,
-            dcs_names[0]
-        )
+        test_utils.wait_for_tasks(ENGINE, dcs_names[0])
 
         testflow.step("Setting host %s to maintenance.", hosts[0])
         if not ll_hosts.deactivate_host(True, host=hosts[0]):

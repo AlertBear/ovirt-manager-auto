@@ -147,7 +147,7 @@ def initializer_module(request):
         config.DATA_CENTER_NAME, config.STORAGE_TYPE_ISCSI
     )
     wait_for_tasks(
-        config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DATA_CENTER_NAME
+        config.ENGINE, config.DATA_CENTER_NAME
     )
     for sd in ISCSI_SDS:
         hl_sd.detach_and_deactivate_domain(
@@ -251,7 +251,7 @@ class BaseTestCaseNewDC(BaseTestCase):
         """
         Remove the created data center
         """
-        wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD, self.dc)
+        wait_for_tasks(config.ENGINE, self.dc)
         if not hl_dc.clean_datacenter(
             True, datacenter=self.dc, formatExpStorage='true',
             vdc=config.VDC, vdc_password=config.VDC_PASSWORD
@@ -623,7 +623,7 @@ class TestCase11257(BaseTestCaseNewDC):
         assert ll_sd.detachStorageDomain(True, self.dc, self.iscsi_domain), (
             "Unable to detach iscsi domain %s" % self.iscsi_domain
         )
-        wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD, self.dc)
+        wait_for_tasks(config.ENGINE, self.dc)
         assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
@@ -672,7 +672,7 @@ class TestCase11233(BaseTestCaseNewDC):
         assert ll_sd.removeStorageDomain(
             True, self.iscsi_domain, self.host, format='true'
         ), "Unable to remove iscsi domain %s" % self.iscsi_domain
-        wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD, self.dc)
+        wait_for_tasks(config.ENGINE, self.dc)
         assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )

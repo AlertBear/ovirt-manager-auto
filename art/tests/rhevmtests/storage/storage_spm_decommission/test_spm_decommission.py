@@ -292,7 +292,7 @@ class UpgradeBaseClass(StorageTest):
                 True, self.data_center_name
             )
         wait_for_tasks(
-            config.ENGINE, config.VDC_PASSWORD, self.data_center_name
+            config.ENGINE, self.data_center_name
         )
         ll_dc.remove_datacenter(True, self.data_center_name)
         ll_sd.removeStorageDomains(True, sds, self.host_1)

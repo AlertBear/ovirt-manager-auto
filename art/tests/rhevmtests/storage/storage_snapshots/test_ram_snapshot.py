@@ -533,7 +533,7 @@ class TestCase5131(VMWithMemoryStateSnapshot):
         # This is need it for RestoreFromSnapshot tasks on the background
         # due to the statless vm
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         testflow.step("Starting VM %s again", self.vm_name)
         assert ll_vms.startVm(
@@ -549,5 +549,5 @@ class TestCase5131(VMWithMemoryStateSnapshot):
         # This is need it for RestoreFromSnapshot tasks on the background
         # due to the statless vm
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )

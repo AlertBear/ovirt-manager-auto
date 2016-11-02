@@ -250,7 +250,7 @@ def create_gluster_or_posix_export_domain(request, attach_export_domain):
             vfs_type=self.vfs_type, sd_type=self.sd_type
         ), "Creating GlusterFS domain '%s' failed" % self.export_domain
     test_utils.wait_for_tasks(
-        config.VDC, config.VDC_ROOT_PASSWORD, config.DATA_CENTER_NAME
+        config.ENGINE, config.DATA_CENTER_NAME
     )
     hl_sd.remove_storage_domain(
         self.export_domain, config.DATA_CENTER_NAME, self.host, False,

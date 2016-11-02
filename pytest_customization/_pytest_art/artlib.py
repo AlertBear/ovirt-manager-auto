@@ -25,6 +25,7 @@ These are:
 """
 import atexit
 import time
+import warnings
 import yaml
 import signal
 from art import rhevm_api
@@ -87,6 +88,10 @@ def pytest_configure(config):
     """
     if not config.getoption('art_conf'):
         return
+
+    # Print the first occurrence of matching warnings for each location
+    # where the warning is issued
+    warnings.simplefilter("default")
 
     config.art_wrapper = TestRunnerWrapper(
         None,

@@ -181,9 +181,7 @@ class BaseCaseIsoDomains(TestCase):
         testflow.setup(
             "Wait for tasks to complete before storage domain deactivation"
         )
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, self.dc_name
-        )
+        test_utils.wait_for_tasks(config.ENGINE, self.dc_name)
         status = ll_sd.deactivateStorageDomain(
             False, self.dc_name, self.storage_domain
         )
@@ -196,9 +194,7 @@ class BaseCaseIsoDomains(TestCase):
         testflow.setup(
             "Wait for tasks to complete before deactivating the storage domain"
         )
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, self.dc_name
-        )
+        test_utils.wait_for_tasks(config.ENGINE, self.dc_name)
         assert ll_sd.deactivateStorageDomain(
             True, self.dc_name, self.storage_domain
         ), (

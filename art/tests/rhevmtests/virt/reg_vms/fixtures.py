@@ -375,10 +375,7 @@ def unlock_disks(request):
             vdc=config.VDC_HOST,
             vdc_pass=config.VDC_ROOT_PASSWORD
         )
-        test_utils.wait_for_tasks(
-            config.VDC_HOST, config.VDC_ROOT_PASSWORD,
-            config.DC_NAME[0]
-        )
+        test_utils.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
         time.sleep(20)
         testflow.teardown("Check there are no disks in locked status")
         assert hl_disks.check_no_locked_disks(

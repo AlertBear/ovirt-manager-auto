@@ -31,10 +31,7 @@ def initializer_class(request):
     def finalizer():
         logger.info("Cleanup - removing storage domains")
         results = list()
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
-            config.DATA_CENTER_NAME
-        )
+        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
         with ThreadPoolExecutor(
             max_workers=len(self.sds_for_cleanup)
         ) as executor:

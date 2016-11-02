@@ -33,7 +33,7 @@ class RestartVDSM(TestCase):
         wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
                                       timeout=DATA_CENTER_INIT_TIMEOUT)
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
 
     def restart_before_tasks_start(self):
         self.perform_action()
@@ -43,7 +43,7 @@ class RestartVDSM(TestCase):
         logger.info("VDSM restarted")
 
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
         wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
                                       timeout=DATA_CENTER_INIT_TIMEOUT)
         self.check_action_failed()
@@ -73,7 +73,7 @@ class RestartVDSM(TestCase):
         wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
                                       timeout=DATA_CENTER_INIT_TIMEOUT)
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
         self.check_action_failed()
 
     def check_action_failed(self):
@@ -110,7 +110,7 @@ class TestCase6157(RestartVDSM):
             startVm(True, config.VM_NAME[0], config.VM_UP)
 
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
         wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
                                       timeout=DATA_CENTER_INIT_TIMEOUT)
 
@@ -174,7 +174,7 @@ class TestCase6158(RestartVDSM):
         if VM_API.query("name=%s" % self.cloned_vm):
             removeVm(True, self.cloned_vm)
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
 
     @polarion("RHEVM3-6158")
     def test_restart_before_tasks_start(self):
@@ -223,7 +223,7 @@ class TestCase6159(RestartVDSM):
         super(TestCase6159, self).tearDown()
         common.start_vm()
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.ENGINE, config.DATA_CENTER_NAME)
 
 # commented out as it is failing
 #    @polarion("RHEVM3-6159")

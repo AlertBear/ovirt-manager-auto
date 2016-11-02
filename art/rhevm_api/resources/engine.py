@@ -134,17 +134,22 @@ class Engine(Service):
                     h.fqdn == config['ENGINE_DB_HOST']
                 ]
                 if not remote_host:
-                    raise Exception(
-                        "Can not find instance of %s in inventory: %s" % (
-                            config['ENGINE_DB_HOST'],
-                            Host.inventory,
-                        )
+                    self.logger.warning(
+                        "Can not find instance of %s in inventory: %s",
+                        config['ENGINE_DB_HOST'], Host.inventory,
                     )
+                    remote_host = [
+                        Host(config['ENGINE_DB_HOST'])
+                    ]
+                    remote_host[0].add_user(self.host.root_user)
                 remote_host = remote_host[0]
                 self.logger.info(
-                    "Using %s as host for DB %s",
+                    "Using %s as host for DB %s (%s/%s), over SSH (%s/%s)",
                     remote_host,
-                    config['ENGINE_DB_DATABASE']
+                    config['ENGINE_DB_DATABASE'],
+                    user.name, user.password,
+                    remote_host.root_user.name,
+                    remote_host.root_user.password,
                 )
                 host = remote_host
             return Database(host, config['ENGINE_DB_DATABASE'], user)

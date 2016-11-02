@@ -589,7 +589,7 @@ class TestCase5246(TestCase):
         )
 
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
+            config.ENGINE,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
         logger.info("Put the first domain into maintenance")
@@ -612,7 +612,7 @@ class TestCase5246(TestCase):
 
         logger.info("Put the second storage domain into maintenance")
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
+            config.ENGINE,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
         assert ll_sd.deactivateStorageDomain(
@@ -633,7 +633,7 @@ class TestCase5246(TestCase):
 
     def tearDown(self):
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
+            config.ENGINE,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
         if self.sd_name_1 is not None and self.sd_name_2 is not None:
@@ -1037,7 +1037,7 @@ class TestCase5245(TestCase):
         self._try_to_change_connection(conn.id, False)
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
+            config.ENGINE,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
 
@@ -1049,7 +1049,7 @@ class TestCase5245(TestCase):
         self._try_to_change_connection(conn.id, False)
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
+            config.ENGINE,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
 
@@ -1165,7 +1165,7 @@ class TestCase5244(TestCase):
         )
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
+            config.ENGINE,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
         assert ll_sd.deactivateStorageDomain(
@@ -1179,7 +1179,7 @@ class TestCase5244(TestCase):
         ), "Failed to activate storage domain '%s'" % self.sd_name_1
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD,
+            config.ENGINE,
             config.DATACENTER_ISCSI_CONNECTIONS
         )
         assert ll_sd.deactivateStorageDomain(

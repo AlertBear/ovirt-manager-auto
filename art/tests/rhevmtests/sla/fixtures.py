@@ -368,8 +368,7 @@ def choose_specific_host_as_spm(request):
         )
         try:
             test_utils.wait_for_tasks(
-                vdc=sla_config.VDC_HOST,
-                vdc_password=sla_config.VDC_ROOT_PASSWORD,
+                engine=sla_config.ENGINE,
                 datacenter=sla_config.DC_NAME[0]
             )
         except apis_exceptions.APITimeout:

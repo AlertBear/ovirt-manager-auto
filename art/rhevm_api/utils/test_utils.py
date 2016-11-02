@@ -18,7 +18,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import threading
-
+import warnings
 import logging
 import re
 import time
@@ -684,11 +684,14 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
     Returns True and a list of the records in the query output on success
             False and an empty list on failure
     """
+    warnings.warn(
+        "runSQLQueryOnSetup function is deprecated "
+        "please use Engine.db.psql instead", DeprecationWarning)
     setup = Setup(vdc, 'root', vdc_pass, dbuser=psql_username)
     return setup.psql(query, psql_db=psql_db)
 
 
-def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
+def get_running_tasks_deprecated(vdc, vdc_pass, sp_id, db_name, db_user):
     """
     Description: Gets taks_id for all tasks running in rhevm
     Parameters:
@@ -698,6 +701,9 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
         * db_name - name of the rhevm database
         * db_user - name of the user of database
     """
+    warnings.warn(
+        "get_running_tasks_deprecated function is deprecated "
+        "please use get_running_tasks instead", DeprecationWarning)
     query = "select task_id, action_type, status, vdsm_task_id from " \
             "async_tasks where storage_pool_id = '%s'" % sp_id
     tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
@@ -705,7 +711,27 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
     return tasks
 
 
-def wait_for_tasks(
+def get_running_tasks(engine, sp_id):
+    """
+    Gets taks_id for all tasks running in rhevm
+
+    Args:
+        engine - instance of resources.Engine
+        sp_id - storage pool id
+
+    Returns:
+        list of running tasks
+    """
+    query = (
+        "select task_id, action_type, status, vdsm_task_id from "
+        "async_tasks where storage_pool_id = '%s'" % sp_id
+    )
+    tasks = engine.db.psql(query)
+    logger.debug("Query %s returned list: %s", query, tasks)
+    return tasks
+
+
+def wait_for_tasks_deprecated(
         vdc, vdc_password, datacenter,
         db_name=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
         db_user=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'], timeout=TASK_TIMEOUT,
@@ -721,11 +747,42 @@ def wait_for_tasks(
         * timeout - max seconds to wait
         * sleep - polling interval
     """
+    warnings.warn(
+        "wait_for_tasks_deprecated function is deprecated "
+        "please use wait_for_tasks instead", DeprecationWarning)
     dc_util = get_api('data_center', 'datacenters')
     sp_id = dc_util.find(datacenter).id
     sampler = TimeoutingSampler(
-        timeout, sleep, get_running_tasks, vdc, vdc_password, sp_id, db_name,
-        db_user)
+        timeout, sleep, get_running_tasks_deprecated, vdc, vdc_password,
+        sp_id, db_name, db_user,
+    )
+    for tasks in sampler:
+        if not tasks:
+            logger.info("All tasks are gone")
+            return
+
+
+def wait_for_tasks(engine, datacenter, timeout=TASK_TIMEOUT, sleep=TASK_POLL):
+    """
+    Waits until all tasks in data-center are finished
+
+    Args:
+        engine - instance of resources.Engine
+        datacenter - name of the datacenter that has running tasks
+        timeout - max seconds to wait
+        sleep - polling interval
+
+    Returns:
+        None when success
+
+    Raises:
+        APITimeout in case of timeout is reached
+    """
+    dc_util = get_api('data_center', 'datacenters')
+    sp_id = dc_util.find(datacenter).id
+    sampler = TimeoutingSampler(
+        timeout, sleep, get_running_tasks, engine, sp_id,
+    )
     for tasks in sampler:
         if not tasks:
             logger.info("All tasks are gone")

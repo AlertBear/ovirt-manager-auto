@@ -467,8 +467,7 @@ class TestCase4557(IscsiNfsSD):
         Perform basic disk sanity after reconstruct
         """
         logger.info("Waiting for tasks before deactivating the storage domain")
-        test_utils.wait_for_tasks(config.VDC, config.VDC_ROOT_PASSWORD,
-                                  self.data_center_name)
+        test_utils.wait_for_tasks(config.ENGINE, self.data_center_name)
         found, master_domain = ll_sd.findMasterStorageDomain(
             True, self.data_center_name,
         )
@@ -501,9 +500,7 @@ class TestCase4557(IscsiNfsSD):
             True, self.data_center_name, self.master_domain,
         )
 
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_ROOT_PASSWORD, self.data_center_name,
-        )
+        test_utils.wait_for_tasks(config.ENGINE, self.data_center_name)
 
         ll_sd.wait_for_storage_domain_available_size(
             self.data_center_name, self.master_domain,
@@ -542,8 +539,7 @@ class TestCase4556(BaseCaseDCMixed):
         Reinitialize from unattached storage domain
         """
         logger.info("Waiting for tasks before deactivating the storage domain")
-        test_utils.wait_for_tasks(config.VDC, config.VDC_ROOT_PASSWORD,
-                                  self.data_center_name)
+        test_utils.wait_for_tasks(config.ENGINE, self.data_center_name)
         logger.info("Deactivate iSCSI domain")
         ll_sd.deactivateStorageDomain(True, self.data_center_name,
                                       self.iscsi)
@@ -741,9 +737,7 @@ class TestCase4566(IscsiNfsSD):
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.master_address,
         )
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_ROOT_PASSWORD, self.data_center_name,
-        )
+        test_utils.wait_for_tasks(config.ENGINE, self.data_center_name)
 
         logger.info("Make sure DC %s is up before cleaning the env",
                     self.data_center_name)
@@ -751,9 +745,7 @@ class TestCase4566(IscsiNfsSD):
             self.data_center_name, timeout=TIMEOUT_DATA_CENTER_RECONSTRUCT,
         )
 
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_ROOT_PASSWORD, self.data_center_name,
-        )
+        test_utils.wait_for_tasks(config.ENGINE, self.data_center_name)
 
         if ll_disks.checkDiskExists(True, self.disk_alias):
             ll_disks.wait_for_disks_status([self.disk_alias])

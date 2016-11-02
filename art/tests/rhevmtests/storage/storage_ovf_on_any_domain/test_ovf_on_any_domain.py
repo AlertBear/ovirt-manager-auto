@@ -92,9 +92,7 @@ def setup_module():
 
     # TODO: As a workaround for bug
     # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
-    test_utils.wait_for_tasks(
-        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-    )
+    test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
     hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     vm1_args = VM_ARGS.copy()
@@ -1357,9 +1355,7 @@ class TestCase6261(BasicEnvironment):
 
         # TODO: As a workaround for bug
         # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
+        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
         hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     def tearDown(self):
@@ -1382,9 +1378,7 @@ class TestCase6261(BasicEnvironment):
 
         # TODO: As a workaround for bug
         # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
+        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
         hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     @polarion("RHEVM3-6261")
@@ -1480,8 +1474,7 @@ class TestCase6262(EnvironmentWithNewVm):
         )
         logger.info("Wait until all VMs in the pool have been created "
                     "successfully")
-        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
         logger.info("Allow a bit over a minute for all the VMs created from "
                     "the pool to be written into the OVF store")
         for num_ovf_files_with_vm_pool in TimeoutingSampler(

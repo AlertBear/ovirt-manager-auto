@@ -446,9 +446,7 @@ def deactivate_domain(request):
             )[0]
         )
 
-    test_utils.wait_for_tasks(
-        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-    )
+    test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
     testflow.setup(
         "Deactivating storage domain %s", self.sd_to_deactivate
     )
@@ -553,9 +551,7 @@ def create_storage_domain(request):
         True, config.DATA_CENTER_NAME, name,
         config.SD_ACTIVE
     )
-    test_utils.wait_for_tasks(
-        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-    )
+    test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
 
 
 @pytest.fixture()

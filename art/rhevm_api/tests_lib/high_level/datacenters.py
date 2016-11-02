@@ -17,7 +17,7 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.test_handler.exceptions as errors
 from art.rhevm_api.resources import Host  # This import is not good here
 from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
-from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.rhevm_api.utils.test_utils import wait_for_tasks_deprecated
 from art.test_handler.settings import opts
 
 
@@ -223,7 +223,7 @@ def clean_datacenter(
 
         dc_name = dc_obj.get_name()
         if vdc and vdc_password:
-            wait_for_tasks(
+            wait_for_tasks_deprecated(
                 vdc=vdc,
                 vdc_password=vdc_password,
                 datacenter=dc_name,
@@ -244,7 +244,7 @@ def clean_datacenter(
                     )
 
         if vdc and vdc_password:
-            wait_for_tasks(
+            wait_for_tasks_deprecated(
                 vdc=vdc,
                 vdc_password=vdc_password,
                 datacenter=dc_name,
@@ -259,7 +259,7 @@ def clean_datacenter(
             )
 
             if vdc and vdc_password:
-                wait_for_tasks(
+                wait_for_tasks_deprecated(
                     vdc=vdc,
                     vdc_password=vdc_password,
                     datacenter=dc_name,

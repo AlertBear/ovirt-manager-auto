@@ -23,10 +23,7 @@ def deactivate_hosts(host=None):
             hosts.
     """
     host = host if host else conf.HOST_0_NAME
-    test_utils.wait_for_tasks(
-        vdc=conf.VDC_HOST, vdc_password=conf.VDC_ROOT_PASSWORD,
-        datacenter=conf.DC_0
-    )
+    test_utils.wait_for_tasks(engine=conf.ENGINE, datacenter=conf.DC_0)
     if not ll_hosts.checkHostSpmStatus(positive=True, hostName=host):
         if not ll_hosts.select_host_as_spm(
             positive=True, host=host, data_center=conf.DC_0

@@ -312,7 +312,7 @@ def storage_cleanup():
     for dc in config.dcs:
         dc_name = dc['name']
         spm = None
-        wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD, dc_name)
+        wait_for_tasks(config.ENGINE, dc_name)
         for sd_obj in engine_sds_objs:
             sd_name = sd_obj.get_name()
             if sd_name not in config.SD_LIST:

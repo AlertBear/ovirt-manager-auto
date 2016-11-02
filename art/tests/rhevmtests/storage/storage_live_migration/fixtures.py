@@ -335,7 +335,7 @@ def add_two_storage_domains(request):
             )
             ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
     request.addfinalizer(finalizer)
     self.spm = ll_hosts.getSPMHost(config.HOSTS)
@@ -360,6 +360,6 @@ def add_two_storage_domains(request):
         ), "Failed to add storage domain %s" % sd_name
 
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
     self.storage_domain = self.disk_storage_domains = self.sd_src

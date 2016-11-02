@@ -65,7 +65,7 @@ class EnvironmentWithTwoHosts(TestCase):
         """
         cls.hosts = []
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            config.ENGINE, config.DATA_CENTER_NAME
         )
         for host in config.HOSTS:
             if ll_hosts.getHostCluster(host) == config.CLUSTER_NAME:

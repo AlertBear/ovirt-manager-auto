@@ -1323,9 +1323,7 @@ def add_storage_domain(storage_domain, data_center, index, storage_type):
         True, data_center, storage_domain,
         config.SD_ACTIVE
     )
-    test_utils.wait_for_tasks(
-        config.VDC, config.VDC_PASSWORD, data_center
-    )
+    test_utils.wait_for_tasks(config.ENGINE, data_center)
 
 
 def create_filesystem(
