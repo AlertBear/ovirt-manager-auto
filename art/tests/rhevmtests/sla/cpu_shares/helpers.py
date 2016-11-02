@@ -1,16 +1,13 @@
 """
 CPU Share Test Helpers
 """
-import shlex
 
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
-from art.core_api import apis_exceptions
-from art.core_api import apis_utils
+from art.core_api import apis_exceptions, apis_utils
 from art.unittest_lib import testflow
-
 
 logger = conf.logging.getLogger(__name__)
 
@@ -49,16 +46,11 @@ def get_vms_cpu_consumption_on_host(vms):
     Returns:
         dict: VM's CPU consumption
     """
-    current_dict = {}
-    for vm_name in vms:
-        vm_pid = conf.VDS_HOSTS[0].get_vm_process_pid(vm_name=vm_name)
-        command = "top -b -n 1 -c -p %s | awk FNR==8" % vm_pid
-        rc, out, _ = conf.VDS_HOSTS[0].run_command(
-            shlex.split(command)
-        )
-        if rc:
-            return current_dict
-        current_dict[vm_name] = int(float(out.split()[8]))
+    current_dict = dict(
+        (
+            vm_name, hl_vms.get_vm_cpu_consumption_on_the_host(vm_name=vm_name)
+        ) for vm_name in vms
+    )
     logger.info(
         "Current dict of VM's names and their cpu consumption :%s",
         current_dict
