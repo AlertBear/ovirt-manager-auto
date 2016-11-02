@@ -27,6 +27,7 @@ import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as test_exceptions
 import art.test_handler.settings as test_settings
@@ -77,12 +78,12 @@ def remove_networks(positive, networks, data_center=None):
     return True
 
 
+@ll_general.generate_logs
 def create_and_attach_networks(
     data_center=None, cluster=None, network_dict=None
 ):
     """
-    Function that creates networks on datacenter and attach the networks to
-    a cluster
+    Create networks on datacenter and attach the networks to a cluster
 
     Args:
         data_center (str): DC name.
@@ -170,6 +171,7 @@ def remove_net_from_setup(
     return True
 
 
+@ll_general.generate_logs
 def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     """
     create (X) dummy network interfaces on host
@@ -282,6 +284,7 @@ def remove_all_networks(datacenter=None, cluster=None):
     return status
 
 
+@ll_general.generate_logs
 def get_ip_on_host_nic(host, nic):
     """
     Get IP on host NIC
@@ -445,6 +448,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=list()):
     return True
 
 
+@ll_general.generate_logs
 def is_management_network(cluster_name, network):
     """
     Check if network is management network
@@ -456,34 +460,18 @@ def is_management_network(cluster_name, network):
     Returns:
         bool: True if network is management network, otherwise False
     """
-    logger.info(
-        "Check if network %s is management network under cluster %s",
-        network, cluster_name
-    )
     mgmt_net_obj = ll_networks.get_management_network(cluster_name)
     cl_mgmt_net_obj = ll_clusters.get_cluster_management_network(cluster_name)
-    if (
-            mgmt_net_obj.get_name() == network and
-            mgmt_net_obj.get_id() == cl_mgmt_net_obj.get_id()
-    ):
-        return True
-    logger.error(
-        "Network %s is not management network under cluster %s",
-        network, cluster_name
+    return (
+        mgmt_net_obj.get_name() == network and
+        mgmt_net_obj.get_id() == cl_mgmt_net_obj.get_id()
     )
-    return False
 
 
+@ll_general.generate_logs
 def get_nic_statistics(nic, host=None, vm=None, keys=None):
     """
     Get Host NIC/VM NIC statistics value for given keys.
-    Available keys are:
-        data.current.rx
-        data.current.tx
-        errors.total.rx
-        errors.total.tx
-        data.total.rx
-        data.total.tx
 
     Args:
         nic (str): NIC name
@@ -493,6 +481,15 @@ def get_nic_statistics(nic, host=None, vm=None, keys=None):
 
     Returns:
         dict: Dict with keys values
+
+    Examples:
+        get_nic_statistics(
+            nic=rx_tx_stats.host_0_nics[1], host=rx_tx_stats.host_0_name,
+            keys=[
+                data.current.rx, data.current.tx, errors.total.rx
+                errors.total.tx, data.total.rx, data.total.tx
+                ]
+            )
     """
     res = dict()
     stats = ll_hosts.get_host_nic_statistics(
@@ -535,6 +532,7 @@ def get_clusters_managements_networks_ids(cluster=None):
         ]
 
 
+@ll_general.generate_logs
 def get_management_network_host_nic(host, cluster):
     """
     Get host NIC name that management network resides on
