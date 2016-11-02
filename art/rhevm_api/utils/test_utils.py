@@ -694,8 +694,7 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
     Returns True and a list of the records in the query output on success
             False and an empty list on failure
     """
-    setup = Setup(vdc, 'root', vdc_pass, dbuser=psql_username)
-    return setup.psql(query, psql_db=psql_db)
+    return vdc.db.psql(query)
 
 
 def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
