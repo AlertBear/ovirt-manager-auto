@@ -43,6 +43,7 @@ ETHTOOL_CMD = "ethtool"
 logger = logging.getLogger('networks')
 
 
+@ll.general.generate_logs
 def _prepare_network_object(**kwargs):
     """
     Preparing logical network object
@@ -107,6 +108,7 @@ def _prepare_network_object(**kwargs):
     return net
 
 
+@ll.general.generate_logs
 def add_network(positive, **kwargs):
     """
     Add network to a data center
@@ -132,20 +134,12 @@ def add_network(positive, **kwargs):
     Returns:
         bool: True if create network succeeded, False otherwise.
     """
-    net_name = kwargs.get("name")
-    datacenter = kwargs.get("data_center")
-    log_info, log_error = ll.general.get_log_msg(
-        action="Create", obj_type="network", obj_name=net_name,
-        positive=positive, extra_txt="in datacenter %s" % datacenter, **kwargs
-    )
-    logger.info(log_info)
     net_obj = _prepare_network_object(**kwargs)
     status = NET_API.create(entity=net_obj, positive=positive)[1]
-    if not status:
-        logger.error(log_error)
     return status
 
 
+@ll.general.generate_logs
 def update_network(positive, network, **kwargs):
     """
     Update network
@@ -172,19 +166,12 @@ def update_network(positive, network, **kwargs):
         bool: True if network was updated properly, False otherwise
     """
     net = find_network(network, kwargs.get("data_center"))
-    log_info_txt, log_error_txt = ll.general.get_log_msg(
-        action="Update", obj_type="network", obj_name=network,
-        positive=positive, **kwargs
-    )
-    logger.info(log_info_txt)
     net_update = _prepare_network_object(**kwargs)
     status = NET_API.update(net, net_update, positive)[1]
-    if not status:
-        logger.error(log_error_txt)
-        return False
-    return True
+    return status
 
 
+@ll.general.generate_logs
 def remove_network(positive, network, data_center=None):
     """
     Remove network
@@ -198,27 +185,15 @@ def remove_network(positive, network, data_center=None):
     Returns:
         bool: True if network was removed properly, False otherwise
     """
-    log_info, log_error = ll.general.get_log_msg(
-        action="Remove", obj_type="network", obj_name=network,
-        positive=positive
-    )
-    logger.info(log_info)
     net = find_network(network, data_center)
     res = NET_API.delete(net, positive)
-    if not res:
-        logger.error(log_error)
     return res
 
 
+@ll.general.generate_logs
 def find_network(network, data_center=None, cluster=None):
     """
-    Find desired network using cluster or data center as an option to narrow
-    down the search when multiple networks with the same name exist
-    (needed due to BZ#741111). The network is retrieved at the data center
-    level unless only the network name is passed, in which case a search is
-    done among all the networks in the environment.
-
-     __author__: 'atal, tgeft'
+    Find desired network using cluster or data center
 
      Args:
          network (str): Name of the network to find.
@@ -232,7 +207,6 @@ def find_network(network, data_center=None, cluster=None):
     Raises:
         EntityNotFound: If network was not found
     """
-    logger.info("Find desired network %s", network)
     if cluster:
         from art.rhevm_api.tests_lib.low_level.clusters import (
             get_cluster_object
@@ -264,6 +238,7 @@ def find_network(network, data_center=None, cluster=None):
         return NET_API.find(network)
 
 
+@ll.general.generate_logs
 def _prepare_cluster_network_object(**kwargs):
     """
     Preparing cluster network object
@@ -278,7 +253,6 @@ def _prepare_cluster_network_object(**kwargs):
         Network: Network object
     """
     net = kwargs.get('net', apis_utils.data_st.Network())
-
     if kwargs.get('usages', None) is not None:
         net.set_usages(apis_utils.data_st.Usages(
             usage=kwargs.get('usages').split(','))
@@ -293,6 +267,7 @@ def _prepare_cluster_network_object(**kwargs):
     return net
 
 
+@ll.general.generate_logs
 def get_cluster_network(cluster, network):
     """
     Find a network by cluster (along with the network properties that are
@@ -308,13 +283,13 @@ def get_cluster_network(cluster, network):
     Raises:
         EntityNotFound: If network was not found
     """
-    logger.info("Get cluster %s network %s", cluster, network)
     cluster_obj = CL_API.find(cluster)
     return CL_API.getElemFromElemColl(
         cluster_obj, network, "networks", "network"
     )
 
 
+@ll.general.generate_logs
 def get_cluster_networks(cluster, href=True):
     """
     Get href of the cluster networks or the networks objects
@@ -328,12 +303,12 @@ def get_cluster_networks(cluster, href=True):
             networks
     """
     cluster_obj = CL_API.find(cluster)
-    logger.info("Get all networks from %s", cluster)
     return CL_API.getElemFromLink(
         cluster_obj, link_name='networks', attr='network', get_href=href
     )
 
 
+@ll.general.generate_logs
 def add_network_to_cluster(positive, network, cluster, **kwargs):
     """
     Attach network to cluster
@@ -354,21 +329,15 @@ def add_network_to_cluster(positive, network, cluster, **kwargs):
     """
 
     kwargs.update(net=find_network(network, kwargs.get("data_center")))
-    log_info_txt, log_error_txt = ll.general.get_log_msg(
-        action="Add", obj_type="network", obj_name=network,
-        positive=positive, extra_txt="in cluster %s" % cluster, **kwargs
-    )
     net = _prepare_cluster_network_object(**kwargs)
     cluster_nets = get_cluster_networks(cluster=cluster)
-    logger.info(log_info_txt)
     status = NET_API.create(
         entity=net, positive=positive, collection=cluster_nets
     )[1]
-    if not status:
-        logger.error(log_error_txt)
     return status
 
 
+@ll.general.generate_logs
 def update_cluster_network(positive, cluster, network, **kwargs):
     """
     Update network on cluster
@@ -386,25 +355,17 @@ def update_cluster_network(positive, cluster, network, **kwargs):
     Returns:
         bool: True if network was attached properly, False otherwise
     """
-
-    log_info, log_error = ll.general.get_log_msg(
-        action="Update", obj_type="network", obj_name=network,
-        positive=positive, extra_txt="on cluster %s" % cluster, **kwargs
-    )
     net = get_cluster_network(cluster, network)
-    logger.info(log_info)
     net_update = _prepare_cluster_network_object(**kwargs)
     status = NET_API.update(net, net_update, positive)[1]
-    if not status:
-        logger.error(log_error)
     return status
 
 
+@ll.general.generate_logs
 def remove_network_from_cluster(positive, network, cluster):
     """
     Remove network from cluster
 
-    __author__: 'edolinin', 'atal'
     Args:
         positive (bool): Expected results
         network (str): Network name
@@ -413,19 +374,12 @@ def remove_network_from_cluster(positive, network, cluster):
     Returns:
         bool: True if remove network succeeded, False otherwise.
     """
-
-    log_info, log_error = ll.general.get_log_msg(
-        action="Remove", obj_type="network", obj_name=network,
-        positive=positive, extra_txt="from cluster %s" % cluster
-    )
     net_obj = get_cluster_network(cluster=cluster, network=network)
-    logger.info(log_info)
     status = NET_API.delete(net_obj, positive)
-    if not status:
-        log_error(log_error)
     return status
 
 
+@ll.general.generate_logs
 def is_network_required(network, cluster):
     """
     Check if Network is required
@@ -437,14 +391,12 @@ def is_network_required(network, cluster):
     Returns:
         bool: True if network is required, False otherwise.
     """
-    logger.info("Check if network %s is required", network)
     net_obj = get_cluster_network(cluster, network)
     res = net_obj.get_required()
-    if not res:
-        logger.error("Network %s is not required", network)
     return res
 
 
+@ll.general.generate_logs
 def check_ip_rule(vds_resource, subnet):
     """
     Check occurrence of specific ip in 'ip rule' command output
@@ -457,15 +409,15 @@ def check_ip_rule(vds_resource, subnet):
         bool: True/False
     """
     rc, out, _ = vds_resource.run_command(["ip", "rule"])
-    logger.info("The output of ip rule command is:\n %s", out)
     if rc:
         return False
     return len(re.findall(subnet.replace('.', '[.]'), out)) >= 2
 
 
+@ll.general.generate_logs
 def update_vnic_profile(name, network, **kwargs):
     """
-    Update VNIC profile with provided parameters in kwargs
+    Update VNIC profile
 
     Args:
         name (str): Name of vnic profile
@@ -486,9 +438,6 @@ def update_vnic_profile(name, network, **kwargs):
     Returns:
         bool: True, if adding vnic profile was success, otherwise False
     """
-    log_info, log_error = ll.general.get_log_msg(
-        action="update", obj_type="vNIC profile", obj_name=name, **kwargs
-    )
     kwargs["name"] = name
     cluster = kwargs.get("cluster")
     data_center = kwargs.get("data_center")
@@ -501,15 +450,12 @@ def update_vnic_profile(name, network, **kwargs):
 
     new_vnic_profile_obj = _prepare_vnic_profile_object(**kwargs)
 
-    logger.info(log_info)
-    if not VNIC_PROFILE_API.update(
+    return VNIC_PROFILE_API.update(
         vnic_profile_obj, new_vnic_profile_obj, True
-    )[1]:
-        logger.error(log_error)
-        return False
-    return True
+    )[1]
 
 
+@ll.general.generate_logs
 def get_network_vnic_profiles(network, cluster=None, data_center=None):
     """
     Get all the VNIC profiles that belong to a certain network
@@ -526,13 +472,13 @@ def get_network_vnic_profiles(network, cluster=None, data_center=None):
     network_object = find_network(
         network=network, data_center=data_center, cluster=cluster
     )
-    logger.info("Get all vNICs profiles for network %s", network)
     return NET_API.getElemFromLink(
         network_object, link_name='vnicprofiles', attr='vnic_profile',
         get_href=False
     )
 
 
+@ll.general.generate_logs
 def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
     """
     Get VNIC profile object.
@@ -550,7 +496,6 @@ def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
     Raises:
         EntityNotFound: if vNIC profile object not found
     """
-    logger.info("Get vNIC profile %s object", name)
     matching_profiles = filter(
         lambda profile: profile.get_name() == name, get_network_vnic_profiles(
             network, cluster, data_center
@@ -559,17 +504,15 @@ def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
     if matching_profiles:
         return matching_profiles[0]
     else:
-        raise apis_exceptions.EntityNotFound(
-            'VNIC profile %s was not found among the profiles of network %s' %
-            (name, network)
-        )
+        raise apis_exceptions.EntityNotFound()
 
 
+@ll.general.generate_logs
 def get_vnic_profile_attr(
     name, network=None, cluster=None, data_center=None, attr_list=list()
 ):
     """
-    Finds the VNIC profile object.
+    Get VNIC profile attributes.
 
     Args:
         name (str): Name of the VNIC profile to find.
@@ -592,7 +535,6 @@ def get_vnic_profile_attr(
     vnic_profile_obj = get_vnic_profile_obj(
         name=name, network=network, cluster=cluster, data_center=data_center
     )
-    logger.info("Get vNIC profile %s attributes", name)
     attr_dict = dict()
     for arg in attr_list:
         if arg == "network_obj":
@@ -615,10 +557,10 @@ def get_vnic_profile_attr(
     return attr_dict
 
 
-# noinspection PyUnusedLocal
+@ll.general.generate_logs
 def add_vnic_profile(positive, name, **kwargs):
     """
-    Add new vnic profile to network in cluster with cluster_name
+    Add new vnic profile to network
 
     Args:
         positive (bool): Expected result
@@ -638,24 +580,17 @@ def add_vnic_profile(positive, name, **kwargs):
     Returns:
         bool: True, if adding vnic profile was success, otherwise False
     """
-    log_info_txt, log_error_txt = ll.general.get_log_msg(
-        action="Add", obj_type="vNIC profile", obj_name=name,
-        positive=positive, **kwargs
-    )
     kwargs["name"] = name
     vnic_profile_obj = _prepare_vnic_profile_object(**kwargs)
-    logger.info(log_info_txt)
-    if not VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]:
-        logger.error(log_error_txt)
-        return False
-    return True
+    return VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]
 
 
+@ll.general.generate_logs
 def remove_vnic_profile(
     positive, vnic_profile_name, network, cluster=None, data_center=None
 ):
     """
-    Remove vnic profiles with given names
+    Remove vnic profile
 
     __author__ = "alukiano"
 
@@ -669,21 +604,13 @@ def remove_vnic_profile(
     Returns:
         bool: True if action succeeded, otherwise False
     """
-    log_info_txt, log_error_txt = ll.general.get_log_msg(
-        action="Remove", obj_type="vNIC profile", obj_name=vnic_profile_name,
-        positive=positive, network=network, cluster=None, data_center=None
-    )
     profile_obj = get_vnic_profile_obj(
         vnic_profile_name, network, cluster, data_center
     )
-    logger.info(log_info_txt)
-
-    if not VNIC_PROFILE_API.delete(profile_obj, positive):
-        logger.error(log_error_txt)
-        return False
-    return True
+    return VNIC_PROFILE_API.delete(profile_obj, positive)
 
 
+@ll.general.generate_logs
 def is_vnic_profile_exist(vnic_profile_name):
     """
     Find specific VNIC profile on the setup
@@ -694,19 +621,14 @@ def is_vnic_profile_exist(vnic_profile_name):
     Returns:
         bool: True if action succeeded, otherwise False
     """
-    logger.info(
-        "Searching for vNIC profile %s among all the profile on setup",
-        vnic_profile_name
-    )
     all_profiles = get_vnic_profile_objects()
     for profile in all_profiles:
         if profile.get_name() == vnic_profile_name:
             return True
-
-    logger.error("vNIC profile %s was not found in setup", vnic_profile_name)
     return False
 
 
+@ll.general.generate_logs
 def get_networks_in_datacenter(datacenter):
     """
     Get all networks in datacenter.
@@ -718,10 +640,10 @@ def get_networks_in_datacenter(datacenter):
         list: list of all datacenter networks
     """
     dc = DC_API.find(datacenter)
-    logger.info("Get all networks from %s", datacenter)
     return NET_API.getElemFromLink(dc, get_href=False)
 
 
+@ll.general.generate_logs
 def get_network_in_datacenter(network, datacenter):
     """
     Find network under datacenter.
@@ -733,15 +655,14 @@ def get_network_in_datacenter(network, datacenter):
     Returns:
         Network: Network object if network was found in datacenter
     """
-    logger.info("Get network %s from datacenter %s", network, datacenter)
     for net in get_networks_in_datacenter(datacenter=datacenter):
         if net.get_name() == network:
             logger.info("Get %s from %s", network, datacenter)
             return net
-    logger.error("Network %s not found on datacenter %s", network, datacenter)
     return None
 
 
+@ll.general.generate_logs
 def create_network_in_datacenter(positive, datacenter, **kwargs):
     """
     Add network to datacenter
@@ -764,23 +685,16 @@ def create_network_in_datacenter(positive, datacenter, **kwargs):
     Returns:
         bool: True if create network succeeded, False otherwise.
     """
-    net_name = kwargs.get("name")
-    log_info_txt, log_error_txt = ll.general.get_log_msg(
-        action="Create", obj_type="network", obj_name=net_name,
-        positive=positive, extra_txt="in datacenter %s" % datacenter, **kwargs
-    )
     dc = DC_API.find(datacenter)
-    logger.info(log_info_txt)
     net_obj = _prepare_network_object(**kwargs)
     status = NET_API.create(
         entity=net_obj, positive=positive, collection=NET_API.getElemFromLink
         (dc, get_href=True)
     )[1]
-    if not status:
-        logger.error(log_error_txt)
     return status
 
 
+@ll.general.generate_logs
 def delete_network_in_datacenter(positive, network, datacenter):
     """
     Delete existing network from datacenter
@@ -793,22 +707,16 @@ def delete_network_in_datacenter(positive, network, datacenter):
     Returns:
         bool: True if result of action == positive, False otherwise
     """
-    log_info, log_error = ll.general.get_log_msg(
-        action="Delete", obj_type="network", obj_name=network,
-        positive=positive, extra_txt="in datacenter %s" % datacenter
-    )
     net_to_remove = get_network_in_datacenter(
         network=network, datacenter=datacenter
     )
     if net_to_remove:
-        logger.info(log_info)
         res = NET_API.delete(net_to_remove, positive)
-        if not res:
-            logger.error(log_error)
         return res
     return False
 
 
+@ll.general.generate_logs
 def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     """
     Update existing network in datacenter
@@ -831,21 +739,15 @@ def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     Returns:
         bool: True if result of action == positive, False otherwise
     """
-    log_info, log_error = ll.general.get_log_msg(
-        action="Update", obj_type="network", obj_name=network,
-        positive=positive, extra_txt="in datacenter %s" % datacenter, **kwargs
-    )
-    logger.info(log_info)
     net = get_network_in_datacenter(
         network=network, datacenter=datacenter
     )
     net_update = _prepare_network_object(**kwargs)
     res = NET_API.update(net, net_update, positive)
-    if not res:
-        logger.error(log_error)
     return res
 
 
+@ll.general.generate_logs
 def is_host_network_is_vm(vds_resource, net_name):
     """
     Check if network that resides on Host is VM or non-VM
@@ -858,19 +760,11 @@ def is_host_network_is_vm(vds_resource, net_name):
         bool: True if net_name is VM, False otherwise
     """
     vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
-    logger.info(
-        "Check if network %s is VM network on host %s", vm_file,
-        vds_resource.fqdn
-    )
     res = vds_resource.fs.exists(path=vm_file)
-    if not res:
-        logger.error(
-            "Network %s is not VM network on host %s",
-            net_name, vds_resource.fqdn
-        )
     return res
 
 
+@ll.general.generate_logs
 def is_vlan_on_host_network(vds_resource, interface, vlan):
     """
     Check for VLAN value on the network that resides on Host
@@ -890,22 +784,14 @@ def is_vlan_on_host_network(vds_resource, interface, vlan):
     rc, out, _ = vds_resource.run_command(["cat", vlan_file])
     if rc:
         return False
-    logger.info(
-        "Check if %s is tagged with vlan %s on %s",
-        interface, vlan, vds_resource.fqdn
-    )
     match_obj = re.search("VID: ([0-9]+)", out)
     if match_obj:
         vid = match_obj.group(1)
     res = vid == vlan
-    if not res:
-        logger.error(
-            "%s is not tagged with vlan %s on %s",
-            interface, vlan, vds_resource.fqdn
-        )
     return res
 
 
+@ll.general.generate_logs
 def create_networks_in_datacenter(datacenter, num_of_net, prefix):
     """
     Create number of networks under datacenter.
@@ -925,14 +811,11 @@ def create_networks_in_datacenter(datacenter, num_of_net, prefix):
         if not create_network_in_datacenter(
             positive=True, datacenter=datacenter, name=net_name
         ):
-            logger.error(
-                'Failed to create %s net after successfully creation of %s',
-                net_name, dc_net_list
-            )
             return list()
     return dc_net_list
 
 
+@ll.general.generate_logs
 def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
     """
     Delete all networks under datacenter except mgmt_net.
@@ -960,6 +843,7 @@ def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
     return True
 
 
+@ll.general.generate_logs
 def get_vnic_profile_from_network(
     network, vnic_profile, cluster=None, data_center=None
 ):
@@ -978,15 +862,14 @@ def get_vnic_profile_from_network(
     """
     network_obj = find_network(network, data_center, cluster).id
     all_vnic_profiles = get_vnic_profile_objects()
-    logger.info("Get vNIC profile object from %s", network)
     for vnic_profile_obj in all_vnic_profiles:
         if vnic_profile_obj.name == vnic_profile:
             if vnic_profile_obj.get_network().id == network_obj:
                 return vnic_profile_obj
-    logger.error("Failed to get VNIC profile object from %s", network)
     return None
 
 
+@ll.general.generate_logs
 def create_label(label):
     """
     Create label object with provided id
@@ -1084,6 +967,7 @@ def add_label(**kwargs):
     return True
 
 
+@ll.general.generate_logs
 def get_label_objects(**kwargs):
     """
     Get network labels from given networks list and given list NICs of any
@@ -1117,7 +1001,6 @@ def get_label_objects(**kwargs):
     label_list = []
     networks = kwargs.get("networks")
     host_nic_dict = kwargs.get("host_nic_dict")
-    logger.info("Get label objects with kwargs %s", kwargs)
     try:
         if host_nic_dict:
             for host in host_nic_dict:
@@ -1144,8 +1027,6 @@ def get_label_objects(**kwargs):
         logger.error(e)
         raise
 
-    if not label_list:
-        logger.error("Label objects doesn't exists")
     return label_list
 
 
@@ -1284,6 +1165,7 @@ def check_bridge_file_exist(positive, vds_resource, bridge_name):
     return True
 
 
+@ll.general.generate_logs
 def create_properties(**kwargs):
     """
     Creates Properties object that contains list of different property objects
@@ -1303,13 +1185,12 @@ def create_properties(**kwargs):
     return properties_obj
 
 
+@ll.general.generate_logs
 def update_qos_on_vnic_profile(
     datacenter, qos_name, vnic_profile_name, network_name, cluster=None
 ):
     """
     Update QoS to vNIC profile.
-    Every vNIC profile has default QoS (Unlimited) so only update functions
-    is needed (No add_qos functions)
 
     Args:
         datacenter (str): Datacenter name
@@ -1330,6 +1211,7 @@ def update_qos_on_vnic_profile(
     )
 
 
+@ll.general.generate_logs
 def get_vnic_profile_objects():
     """
     Get all vnic profiles objects from engine
@@ -1340,6 +1222,7 @@ def get_vnic_profile_objects():
     return VNIC_PROFILE_API.get(absLink=False)
 
 
+@ll.general.generate_logs
 def get_management_network(cluster_name):
     """
     Find management network besides all networks of specific Cluster
@@ -1351,13 +1234,11 @@ def get_management_network(cluster_name):
         Network: Management network object
     """
     try:
-        logger.info("Get management network from %s", cluster_name)
         net_obj = [
             i for i in get_cluster_networks(cluster_name, href=False)
             if "management" in i.get_usages().get_usage()
         ][0]
     except IndexError:
-        logger.error("management networks not found in %s", cluster_name)
         return None
 
     return net_obj
@@ -1386,6 +1267,7 @@ def check_network_usage(cluster_name, network, *attrs):
     return True
 
 
+@ll.general.generate_logs
 def get_host_nic_labels(nic):
     """
     Get host NIC labels
@@ -1401,6 +1283,7 @@ def get_host_nic_labels(nic):
     )
 
 
+@ll.general.generate_logs
 def get_host_nic_label_objs_by_id(host_nics, labels_id):
     """
     Get host NIC label objects by label ID
@@ -1421,6 +1304,7 @@ def get_host_nic_label_objs_by_id(host_nics, labels_id):
     return label_objs_list
 
 
+@ll.general.generate_logs
 def prepare_qos_on_net(qos_dict):
     """
     Prepare QoS on network
@@ -1454,6 +1338,7 @@ def prepare_qos_on_net(qos_dict):
     return qos_obj
 
 
+@ll.general.generate_logs
 def get_network_on_host_nic(host, nic):
     """
     Get network name from host NIC
@@ -1469,6 +1354,7 @@ def get_network_on_host_nic(host, nic):
         NET_API, ll.hosts.get_host_nic(host, nic).get_network().get_id())
 
 
+@ll.general.generate_logs
 def _prepare_vnic_profile_object(**kwargs):
     """
     Prepare vnic profile object for create or update
@@ -1552,6 +1438,7 @@ def _prepare_vnic_profile_object(**kwargs):
     return vnic_profile_obj
 
 
+@ll.general.generate_logs
 def get_supported_network_filters():
     """
     Get all supported network filters from engine
