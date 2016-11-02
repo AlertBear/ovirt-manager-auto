@@ -594,13 +594,21 @@ class CreateDC(TestCase):
                 cluster=cluster
             )
 
-    def add_glance_templates(self, glance_templates, data_center, cluster):
+    def add_glance_templates(
+        self, glance_templates, data_center, cluster, existing_templates
+    ):
         for glance_template in glance_templates:
+            glance_template_name = glance_template.get('name')
+            if glance_template_name in existing_templates:
+                testflow.skip(
+                    self.exist_msg, "Glance Template", glance_template_name,
+                )
+                continue
+            testflow.step("Import Glance template %s", glance_template_name)
             glance, image = glance_template.get('source').split(':')
             gi = ll_sd.GlanceImage(image, glance, timeout=1800)
 
             data_sds = self._get_data_storage_domains(data_center)
-            glance_template_name = glance_template.get('name')
 
             assert gi.import_image(
                 destination_storage_domain=data_sds[0],
@@ -646,10 +654,21 @@ class CreateDC(TestCase):
             network=config.MGMT_BRIDGE
         )
 
-    def add_export_templates(self, export_templates, data_center, cluster):
+    def add_export_templates(
+        self, export_templates, data_center, cluster, existing_templates
+    ):
         data_sds = self._get_data_storage_domains(data_center)
         for export_template in export_templates:
+            if export_template['name'] in existing_templates:
+                testflow.skip(
+                    self.exist_msg, "Export Template", export_template['name']
+                )
+                continue
             export_domain, template = export_template.get('source').split(':')
+            testflow.step(
+                "Import template %s from export %s", export_template['name'],
+                export_domain
+            )
             assert ll_templates.import_template(
                 positive=True,
                 template=template,
@@ -734,31 +753,18 @@ class CreateDC(TestCase):
         exist_templates = ll_templates.get_all_template_objects_names()
         for external_template in cluster['external_templates']:
             if external_template['glance']:
-                glance_name = external_template['glance'][0]['name']
-                if glance_name in exist_templates:
-                    testflow.skip(
-                        self.exist_msg, "Glance Template", glance_name
-                    )
-                else:
-                    logger.info("Adding glance templates")
-                    testflow.step("Import Glance template %s", glance_name)
-                    self.add_glance_templates(
-                        external_template['glance'], dc_name, cluster['name']
-                    )
+                self.add_glance_templates(
+                    external_template['glance'], dc_name, cluster['name'],
+                    exist_templates
+                )
                 self.copy_template_disks(external_template['glance'], dc_name)
 
             if external_template['export_domain']:
-                export_name = external_template['export_domain'][0]['name']
-                if export_name in exist_templates:
-                    testflow.skip(
-                        self.exist_msg, "Export Template", export_name
-                    )
-                else:
-                    logger.info("Adding export templates")
-                    self.add_export_templates(
-                        external_template['export_domain'], dc_name,
-                        cluster['name']
-                    )
+                logger.info("Adding export templates")
+                self.add_export_templates(
+                    external_template['export_domain'], dc_name,
+                    cluster['name'], exist_templates
+                )
                 self.copy_template_disks(
                     external_template['export_domain'], dc_name
                 )
