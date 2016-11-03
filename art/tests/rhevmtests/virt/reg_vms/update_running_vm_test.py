@@ -6,7 +6,7 @@
 import pytest
 import logging
 from art.unittest_lib import attr, VirtTest, testflow
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from rhevmtests.virt.reg_vms.fixtures import (
@@ -86,6 +86,7 @@ class UpdateRunningVm(VirtTest):
             parameters['comment'],
         )
 
+    @bz({"1391155": {}})
     @polarion("RHEVM3-6295")
     @pytest.mark.usefixtures(
         add_vm_fixture.__name__, start_stop_fixture.__name__

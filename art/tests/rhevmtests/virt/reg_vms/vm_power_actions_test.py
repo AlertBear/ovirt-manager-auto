@@ -55,6 +55,7 @@ class TestPowerActions(VirtTest):
         )
 
     @attr(tier=1)
+    @bz({"1389996": {}})
     @polarion("RHEVM3-9962")
     @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
     def test_suspend_resume(self):
