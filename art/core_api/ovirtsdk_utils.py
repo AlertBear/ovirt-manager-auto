@@ -146,7 +146,7 @@ class SdkUtil(APIUtil):
 
         return results
 
-    def create(self, entity, positive, expectedEntity=None,
+    def create(self, entity, positive, expectedEntity=None, incrementBy=1,
                async=False, collection=None, current=None, compare=True,
                **kwargs):
         '''
@@ -157,6 +157,7 @@ class SdkUtil(APIUtil):
            * positive - if positive or negative verification should be done
            * expectedEntity - if there are some expected entity different from
                               entity
+           * incrementBy - increment by number of elements
            * async -sycnh or asynch request
            * compare - True by default and run compareElements,
                        otherwise compareElements doesn't run

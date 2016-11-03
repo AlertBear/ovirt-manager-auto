@@ -923,7 +923,7 @@ class JavaSdkUtil(APIUtil):
         return python_results
 
     @jvm_thread_care
-    def create(self, entity, positive, expectedEntity=None,
+    def create(self, entity, positive, expectedEntity=None, incrementBy=1,
                async=False, collection=None, current=None, compare=True,
                **kwargs):
         '''
@@ -934,6 +934,7 @@ class JavaSdkUtil(APIUtil):
            * positive - if positive or negative verification should be done
            * expectedEntity - if there are some expected entity different from
                               sent
+           * incrementBy - increment by number of elements
            * async -sycnh or asynch request
            * compare - True by default and run compareElements,
                        otherwise compareElements doesn't run

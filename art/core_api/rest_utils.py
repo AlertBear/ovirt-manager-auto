@@ -16,17 +16,19 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+from lxml import etree
 import re
-import threading
 import time
+import threading
 from contextlib import contextmanager
-
-import art.core_api.apis_utils as api_utils
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound, APIException,\
     APILoginError
+from art.core_api.apis_utils import (
+    APIUtil, parse, data_st, NEGATIVE_CODES_CREATE, NEGATIVE_CODES,
+    DEF_TIMEOUT, DEF_SLEEP, ApiOperation, api_error
+)
 from art.test_handler import settings
-from lxml import etree
 
 
 class RespKey(object):
@@ -40,7 +42,7 @@ class RespKey(object):
     trace = 'trace'
 
 
-class RestUtil(api_utils.APIUtil):
+class RestUtil(APIUtil):
 
     xsd = None
     xsd_schema_errors = []
@@ -147,26 +149,17 @@ class RestUtil(api_utils.APIUtil):
                                   'error: %s. body: %s' %
                                   (err, ret[RespKey.body]))
 
-    @staticmethod
-    def build_url(href, **additional_params):
-        """
-        Build URL with additional parameters
-
-        Args:
-            href (str): Initial URL for request
-
-        Keyword Args:
-            current (bool): Current flag
-            deploy_hosted_engine (bool): Deploy hosted engine flag
-            undeploy_hosted_engine (bool): Undeploy hosted engine flag
-
-        Returns:
-            str: URL with additional parameters
-        """
+    def buildUrl(self, href, current=None):
+        '''
+        Description: builds url with matrix parameters
+        Parameters:
+           * href - initial url for request
+           * current - boolean current value (True/False)
+        Return: result url
+        '''
         url = href
-        for k, v in additional_params.iteritems():
-            if v:
-                url = "%s?%s" % (url, k)
+        if current is True:
+            url = '%s;current' % href
         return url
 
     def get(self, href=None, elm=None, absLink=True, listOnly=False,
@@ -197,9 +190,8 @@ class RestUtil(api_utils.APIUtil):
                           {'uri': href})
         ret = self.api.GET(href)
 
-        if not validator.compareResponseCode(
-            ret[RespKey.status], api_utils.POSITIVE_CODES, self.logger
-        ):
+        if not validator.compareResponseCode(ret[RespKey.status],
+                                             [200, 201], self.logger):
             return None
 
         if validate:
@@ -213,7 +205,7 @@ class RestUtil(api_utils.APIUtil):
 
         parsedResp = None
         try:
-            parsedResp = api_utils.parse(ret[RespKey.body], silence=True)
+            parsedResp = parse(ret[RespKey.body], silence=True)
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return None
@@ -268,123 +260,105 @@ class RestUtil(api_utils.APIUtil):
         return validator.compareResponseCode(ret[RespKey.status],
                                              expected_statuses, self.logger)
 
-    def create(self, entity, positive, **kwargs):
-        """
-        Create POST request and verify the response
+    def create(self, entity, positive,
+               expected_pos_status=[200, 201, 202],
+               expected_neg_status=NEGATIVE_CODES_CREATE,
+               expectedEntity=None, incrementBy=1,
+               async=False, collection=None,
+               coll_elm_name=None, current=None, compare=True, operations=[]):
+        '''
+        Description: implements POST method and verify the response
+        Author: edolinin
+        Parameters:
+           * entity - entity for post body
+           * positive - if positive or negative verification should be done
+           * expected_pos_status - list of expected statuses for positive
+                                   request
+           * expected_neg_status - list of expected statuses for negative
+                                   request
+           * expectedEntity - if there are some expected entity different from
+                              sent
+           * incrementBy - increment by number of elements
+           * async -sycnh or asynch request
+           * collection - explicitely defined collection where to add an entity
+           * coll_elm_name - name of collection element if it's different
+                             from self.element_name
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
+           * operations - List of operations to concatenate to the href in
+             the POST call (e.g. ['collapse_snapshots', 'clone=true'])
+        Return: POST response (None on parse error.),
+                status (True if POST test succeeded, False otherwise.)
+        '''
 
-        Args:
-            entity (DS object): Entity for POST body
-            positive (bool): Positive on negative behaviour
-
-        Keyword Args:
-            expected_pos_status (list): Expected positive statuses
-            expected_neg_status (list): Expected negative statuses
-            expectedEntity (DS object): Expected entity
-            async (bool): Sync or async request
-            collection (str): Collection name
-            coll_elm_name (str): Collection element name
-            compare (bool): Enable compareElements
-            operations (list): Operations to concatenate to the url
-            current (bool): Current flag
-            deploy_hosted_engine (bool): Deploy hosted engine flag
-
-        Returns:
-            tuple: POST response and status
-        """
-        expected_pos_status = kwargs.get(
-            "expected_pos_status", api_utils.POSITIVE_CODES_CREATE
-        )
-        expected_neg_status = kwargs.get(
-            "expected_neg_status", api_utils.NEGATIVE_CODES_CREATE
-        )
-        async = kwargs.get("async", False)
-        compare = kwargs.get("compare", True)
-
-        href = kwargs.get("collection")
+        href = collection
         if not href:
             href = self.links[self.collection_name]
 
         if self.max_collection is not None:
-            href = "{0};max={1}".format(href, self.max_collection)
+            href = '{0};max={1}'.format(href, self.max_collection)
 
-        coll_elm_name = kwargs.get("coll_elm_name")
         if not coll_elm_name:
             coll_elm_name = self.element_name
 
+        if self.opts['validate']:
+            collection = self.get(href, listOnly=True, elm=coll_elm_name)
+
         entity = validator.dump_entity(entity, coll_elm_name)
 
-        post_url = self.build_url(
-            href=href,
-            current=kwargs.get("current"),
-            deploy_hosted_engine=kwargs.get("deploy_hosted_engine")
-        )
-
-        operations = kwargs.get("operations")
+        post_url = self.buildUrl(href, current)
         if operations:
-            post_url += ";" + ";".join(operations)
-
+            post_url += ';' + ';'.join(operations)
         self.logger.debug(
             "CREATE request content is --  url:%(uri)s body:%(body)s ",
-            {'uri': post_url, 'body': entity}
-        )
+            {'uri': post_url, 'body': entity})
 
         # TODO: fix this nasty nested with when we will move to python 2.7
-        with self.correlationIdContext(api_utils.ApiOperation.create):
-            with measure_time("POST"):
+        with self.correlationIdContext(ApiOperation.create):
+            with measure_time('POST'):
                 ret = self.api.POST(post_url, entity)
 
-        if not self.responseCodesMatch(
-            positive, api_utils.ApiOperation.create, expected_pos_status,
-            expected_neg_status, ret
-        ):
+        if not self.responseCodesMatch(positive, ApiOperation.create,
+                                       expected_pos_status,
+                                       expected_neg_status, ret):
             return None, False
 
-        if not self.opts["validate"]:
+        if not self.opts['validate']:
             return None, True
 
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
-        self.logger.debug(
-            "Response body for CREATE request is: %s ", ret[RespKey.body]
-        )
+        self.logger.debug("Response body for CREATE request is: %s ",
+                          ret[RespKey.body])
 
         if positive:
             if ret[RespKey.body]:
                 self.logger.info("New entity was added")
-                actual_entity = validator.dump_entity(
-                    api_utils.parse(ret[RespKey.body], silence=True),
-                    self.element_name
-                )
+                actlEntity = validator.dump_entity(
+                    parse(ret[RespKey.body], silence=True), self.element_name)
 
-                expected_entity = kwargs.get("expectedEntity")
-                expected_entity = entity if not expected_entity else (
-                    validator.dump_entity(expected_entity, self.element_name)
-                )
+                expEntity = entity if not expectedEntity else (
+                    validator.dump_entity(expectedEntity, self.element_name))
 
                 if compare and not validator.compareElements(
-                    api_utils.parse(expected_entity, silence=True),
-                    api_utils.parse(actual_entity, silence=True),
-                    self.logger,
-                    self.element_name
-                ):
+                        parse(expEntity, silence=True),
+                        parse(actlEntity, silence=True),
+                        self.logger,
+                        self.element_name):
                     return None, False
 
                 if not async:
-                    self.find(
-                        api_utils.parse(actual_entity, silence=True).id, "id",
-                        collection=collection, absLink=False
-                    )
+                    self.find(parse(actlEntity, silence=True).id, 'id',
+                              collection=collection, absLink=False)
+
             else:
                 return ret[RespKey.body], True
         self.validateResponseViaXSD(href, ret)
-        return api_utils.parse(ret[RespKey.body], silence=True), True
+        return parse(ret[RespKey.body], silence=True), True
 
-    def update(
-        self, origEntity, newEntity, positive,
-        expected_pos_status=api_utils.POSITIVE_CODES,
-        expected_neg_status=api_utils.NEGATIVE_CODES,
-        current=None, compare=True
-    ):
+    def update(self, origEntity, newEntity, positive,
+               expected_pos_status=[200, 201],
+               expected_neg_status=NEGATIVE_CODES, current=None, compare=True):
         '''
         Description: implements PUT method and verify the response
         Author: edolinin
@@ -404,20 +378,19 @@ class RestUtil(api_utils.APIUtil):
 
         entity = validator.dump_entity(newEntity, self.element_name)
 
-        put_url = self.build_url(href=origEntity.href, current=current)
+        put_url = self.buildUrl(origEntity.href, current)
         self.logger.debug(
             "PUT request content is --  url:%(uri)s body:%(body)s ",
             {'uri': put_url, 'body': entity})
 
         # TODO: fix this nasty nested with when we will move to python 2.7
-        with self.correlationIdContext(api_utils.ApiOperation.update):
+        with self.correlationIdContext(ApiOperation.update):
             with measure_time('PUT'):
                 ret = self.api.PUT(put_url, entity)
 
-        if not self.responseCodesMatch(
-            positive, api_utils.ApiOperation.update, expected_pos_status,
-            expected_neg_status, ret
-        ):
+        if not self.responseCodesMatch(positive, ApiOperation.update,
+                                       expected_pos_status,
+                                       expected_neg_status, ret):
             return None, False
 
         if not self.opts['validate']:
@@ -430,18 +403,17 @@ class RestUtil(api_utils.APIUtil):
             self.logger.info(self.element_name + " was updated")
 
             if compare and not validator.compareElements(
-                api_utils.parse(entity, silence=True),
-                api_utils.parse(ret[RespKey.body], silence=True),
-                self.logger, self.element_name
-            ):
+                    parse(entity, silence=True),
+                    parse(ret[RespKey.body], silence=True),
+                    self.logger, self.element_name):
                 return None, False
 
         self.validateResponseViaXSD(origEntity.href, ret)
-        return api_utils.parse(ret[RespKey.body], silence=True), True
+        return parse(ret[RespKey.body], silence=True), True
 
     def delete(self, entity, positive,
                expected_pos_status=[200, 202, 204],
-               expected_neg_status=api_utils.NEGATIVE_CODES,
+               expected_neg_status=NEGATIVE_CODES,
                operations=[]):
         '''
         Implements DELETE method and verify the reponse
@@ -462,16 +434,15 @@ class RestUtil(api_utils.APIUtil):
         href = entity.href
         if operations:
             href += ';' + ';'.join(operations)
-        with self.correlationIdContext(api_utils.ApiOperation.delete):
+        with self.correlationIdContext(ApiOperation.delete):
             self.logger.debug("DELETE request content is --  url:%(uri)s",
                               {'uri': href})
             with measure_time('DELETE'):
                 ret = self.api.DELETE(href)
 
-        if not self.responseCodesMatch(
-            positive, api_utils.ApiOperation.delete,
-            expected_pos_status, expected_neg_status, ret
-        ):
+        if not self.responseCodesMatch(positive, ApiOperation.delete,
+                                       expected_pos_status,
+                                       expected_neg_status, ret):
             return False
 
         if not self.opts['validate']:
@@ -547,9 +518,7 @@ class RestUtil(api_utils.APIUtil):
         Examples:
             NET_API.query(constraint=conf.MGMT_BRIDGE, datacenter=conf.DC_0)
         """
-        expected_status = (
-            expected_status if expected_status else api_utils.POSITIVE_CODES
-        )
+        expected_status = expected_status if expected_status else [200, 201]
         if not href:
             href = self.links["%s/search" % self.collection_name]
 
@@ -601,105 +570,90 @@ class RestUtil(api_utils.APIUtil):
         self.validateResponseViaXSD(href, ret)
 
         return getattr(
-            api_utils.parse(ret[RespKey.body], silence=True), self.element_name
+            parse(ret[RespKey.body], silence=True), self.element_name
         )
 
-    def syncAction(self, entity, action, positive, **kwargs):
-        """
-        Run synchronic action
+    def syncAction(
+            self, entity, action, positive, async=False,
+            positive_async_stat=[200, 202], positive_sync_stat=[200, 201],
+            negative_stat=NEGATIVE_CODES, **params
+    ):
+        '''
+        __author__ = edolinin
+        run synchronic action
+        :param entity: target entity
+        :type entity: object
+        :param action: desired action
+        :type action: str
+        :param positive: if positive or negative verification should be done
+        :type positive: bool
+        :param asynch: synch or asynch action
+        :type async: bool
+        :param positive_async_stat: asynch expected status
+        :type positive_async_stat: list
+        :param positive_sync_stat: synch expected status
+        :type positive_sync_stat: list
+        :param negative_stat: negative test expected status
+        :type negative_stat: list
+        :return: POST response (None if no response)
+                 in case of negative test return api_error object
+        :rtype: str
+        '''
 
-        Args:
-            entity (DS object): Target entity
-            action (str): Action to run
-            positive (bool): Positive or negative behaviour
+        def getActionHref(actions, action):
+            results = filter(lambda x: x.get_rel() == action,
+                             actions.get_link())
+            return results[0].get_href()
 
-        Keyword Args:
-            async (bool): Sync or async action
-            positive_async_stat (list): Async expected positive statuses
-            positive_sync_stat (list): Sync expected positive statuses
-            negative_stat (list): Expected negative statuses
-            deploy_hosted_engine (bool): Deploy hosted engine flag
-            undeploy_hosted_engine (bool): Undeploy hosted engine flag
+        actionHref = getActionHref(entity.actions, action)
+        if re.search('^/{0}/.*'.format(self.entry_point), actionHref) is None:
+            actionHref = '/{0}{1}'.format(self.entry_point, actionHref)
 
-        Returns:
-            str: POST response
-        """
-        expected_async_pos_status = kwargs.pop(
-            "positive_async_stat", [200, 202]
-        )
-        expected_sync_pos_status = kwargs.pop(
-            "positive_sync_stat", api_utils.POSITIVE_CODES
-        )
-        expected_neg_status = kwargs.pop(
-            "negative_stat", api_utils.NEGATIVE_CODES
-        )
-        async = kwargs.pop("async", False)
-
-        action_href = filter(
-            lambda x: x.get_rel() == action, entity.actions.get_link()
-        )[0].get_href()
-        if re.search("^/{0}/.*".format(self.entry_point), action_href) is None:
-            action_href = "/{0}{1}".format(self.entry_point, action_href)
-
-        action_href = self.build_url(
-            href=action_href,
-            deploy_hosted_engine=kwargs.get("deploy_hosted_engine"),
-            undeploy_hosted_engine=kwargs.get("undeploy_hosted_engine")
-        )
-
-        operations = kwargs.pop("operations", [])
-        if operations:
-            action_href += ";" + ";".join(operations)
-
-        action_body = validator.dump_entity(
-            self.makeAction(async, 10, **kwargs), "action"
-        )
+        actionBody = validator.dump_entity(self.makeAction(async, 10,
+                                                           **params),
+                                           'action')
+        if params.get('operations'):
+            actionHref += ';' + ';'.join(params['operations'])
 
         self.logger.debug(
-            "Action request content is --  url:%(uri)s body:%(body)s",
-            {"uri": action_href, "body": action_body}
-        )
+            "Action request content is --  url:%(uri)s body:%(body)s ",
+            {'uri': actionHref, 'body': actionBody})
 
         # TODO: fix this nasty nested with when we will move to python 2.7
-        with self.correlationIdContext(api_utils.ApiOperation.syncAction):
-            with measure_time("POST"):
-                ret = self.api.POST(action_href, action_body)
+        with self.correlationIdContext(ApiOperation.syncAction):
+            with measure_time('POST'):
+                ret = self.api.POST(actionHref, actionBody)
 
-        positive_stat = (
-            expected_async_pos_status if async else expected_sync_pos_status
-        )
-        if not self.responseCodesMatch(
-            positive, api_utils.ApiOperation.syncAction, positive_stat,
-            expected_neg_status, ret
-        ):
+        positive_stat = positive_async_stat if async else positive_sync_stat
+        if not self.responseCodesMatch(positive, ApiOperation.syncAction,
+                                       positive_stat, negative_stat, ret):
             return None
 
-        if not self.opts["validate"]:
+        if not self.opts['validate']:
             return ret[RespKey.body]
 
-        self.logger.debug(
-            "Response body for action request is: %s", ret[RespKey.body]
-        )
+        self.logger.debug("Response body for action request is: %s ",
+                          ret[RespKey.body])
+        resp_action = None
         try:
-            resp_action = api_utils.parse(ret[RespKey.body], silence=True)
+            resp_action = parse(ret[RespKey.body], silence=True)
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return None
 
         if positive:
             if resp_action and not validator.compareAsyncActionStatus(
-                async, resp_action.status, self.logger
-            ):
+                    async, resp_action.status, self.logger):
                 return None
 
         else:
-            return api_utils.api_error(
+            return api_error(
                 reason=ret[RespKey.reason],
                 status=ret[RespKey.status],
                 detail=self.parseDetail(ret)
             )
 
-        self.validateResponseViaXSD(action_href, ret)
+        self.validateResponseViaXSD(actionHref, ret)
         valid = validator.compareActionLink(
             entity.actions, action, self.logger
         )
@@ -765,7 +719,7 @@ class RestUtil(api_utils.APIUtil):
 
                     if isinstance(link_content, list):
                         return link_content
-                    elif isinstance(link_content, api_utils.data_st.Fault):
+                    elif isinstance(link_content, data_st.Fault):
                         raise EntityNotFound(
                             "Obtained Fault object for %s element and "
                             "link_name %s link with response: %s"
@@ -779,10 +733,8 @@ class RestUtil(api_utils.APIUtil):
                 self.api.headers.pop('All-content')
         return no_results
 
-    def waitForElemStatus(
-        self, restElement, status, timeout=api_utils.DEF_TIMEOUT,
-        ignoreFinalStates=False, collection=None
-    ):
+    def waitForElemStatus(self, restElement, status, timeout=DEF_TIMEOUT,
+                          ignoreFinalStates=False, collection=None):
         '''
         Description: Wait till the rest element (the Host, VM) gets the desired
         status or till timeout.
@@ -828,15 +780,13 @@ class RestUtil(api_utils.APIUtil):
                 self.logger.debug(
                     "Waiting for status '%s' currently status is '%s' ",
                     status, elemStat)
-                time.sleep(api_utils.DEF_SLEEP)
-                handleTimeout = handleTimeout + api_utils.DEF_SLEEP
+                time.sleep(DEF_SLEEP)
+                handleTimeout = handleTimeout + DEF_SLEEP
                 continue
 
-        self.logger.error(
-            "Interrupt because of timeout. %s status is '%s'.",
-            self.element_name, elemStat
-        )
+        self.logger.error("Interrupt because of timeout. %s status is '%s'."\
+                        % (self.element_name, elemStat))
         return False
 
 
-api_utils.APIUtil.register(RestUtil)
+APIUtil.register(RestUtil)
