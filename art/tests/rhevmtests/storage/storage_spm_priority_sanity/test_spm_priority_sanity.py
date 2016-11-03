@@ -236,9 +236,9 @@ class TestCase6220(BasicEnvironment):
         Expected result: default value shuld be '5'
         """
         testflow.step("Add host %s back to the environment", self.removed_host)
-        assert ll_hosts.add_host(
-            name=self.removed_host, address=self.removed_host_ip,
-            wait=True, cluster=config.CLUSTER_NAME,
+        assert ll_hosts.addHost(
+            True, self.removed_host, address=self.removed_host_ip,
+            wait=True, reboot=False, cluster=config.CLUSTER_NAME,
             root_password=config.HOSTS_PW
         ), "Failed to add host %s back to %s" % (
             self.removed_host, config.DATA_CENTER_NAME

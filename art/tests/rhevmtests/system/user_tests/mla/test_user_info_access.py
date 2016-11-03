@@ -47,8 +47,8 @@ def setUpModule():
             data_center=config.DC_NAME_B,
             version=config.COMP_VERSION
         )
-        hosts.add_host(
-            name=config.HOSTS_IP[1],
+        hosts.addHost(
+            True, config.HOSTS_IP[1],
             root_password=config.HOSTS_PW,
             address=config.HOSTS_IP[1],
             cluster=config.CLUSTER_NAME_B

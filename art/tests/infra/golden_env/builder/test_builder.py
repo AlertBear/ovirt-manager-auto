@@ -263,8 +263,8 @@ class CreateDC(TestCase):
                 testflow.skip(self.exist_msg, "Host", host_name)
                 continue
             testflow.step("Add host %s", host_name)
-            if not hosts.add_host(
-                name=host_name, address=vds_obj.fqdn,
+            if not hosts.addHost(
+                True, host_name, address=vds_obj.fqdn,
                 root_password=vds_obj.root_user.password, wait=False,
                 cluster=cluster_name, comment=vds_obj.ip,
             ):

@@ -29,14 +29,9 @@ def add_hosts(hosts_list, passwords, cluster):
         for index, host in enumerate(hosts_list):
             password = passwords[index]
             logger.info("Adding host %s", host)
-            results.append(
-                executor.submit(
-                    fn=ll_hosts.add_host,
-                    name=host,
-                    root_password=password,
-                    cluster=cluster
-                )
-            )
+            results.append(executor.submit(ll_hosts.addHost, True, name=host,
+                                           root_password=password,
+                                           cluster=cluster))
 
     for index, result in enumerate(results):
         if not result.result():

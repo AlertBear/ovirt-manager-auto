@@ -9,7 +9,7 @@ from art.test_handler.exceptions import DataCenterException, HostException,\
 from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter
 import logging
 from art.rhevm_api.tests_lib.low_level.clusters import addCluster
-from art.rhevm_api.tests_lib.low_level.hosts import add_host
+from art.rhevm_api.tests_lib.low_level.hosts import addHost
 from art.rhevm_api.tests_lib.high_level import storagedomains
 
 ########################################################
@@ -36,14 +36,12 @@ def setup_package():
                         "cannot add cluster: %s" % cluster_name
                     )
         for host_name in [config.HOSTS[0], config.HOSTS[1]]:
-            if not add_host(
-                name=host_name,
-                root_password=config.HOSTS_PW,
-                address=host_name,
-                cluster=config.CLUSTER_NAME[0]
-            ):
+            if not addHost(True, name=host_name,
+                           root_password=config.HOSTS_PW, address=host_name,
+                           cluster=config.CLUSTER_NAME[0]):
                 raise HostException("cannot add host: %s" % host_name)
-        if not add_host(
+        if not addHost(
+            True,
             name=config.HOSTS[2],
             root_password=config.HOSTS_PW,
             address=config.HOSTS[2],

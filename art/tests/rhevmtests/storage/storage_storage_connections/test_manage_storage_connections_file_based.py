@@ -37,8 +37,8 @@ def initializer_module(request):
         """
         Add back host to the environment
         """
-        if not ll_hosts.add_host(
-            name=config.HOST_FOR_MOUNT, cluster=HOST_CLUSTER,
+        if not ll_hosts.addHost(
+            True, name=config.HOST_FOR_MOUNT, cluster=HOST_CLUSTER,
             root_password=config.HOSTS_PW, address=config.HOST_FOR_MOUNT_IP
         ):
             raise exceptions.HostException(

@@ -120,9 +120,9 @@ def teardown_module():
             config.DATACENTER_ISCSI_CONNECTIONS
         )
         test_failed = True
-    if not ll_hosts.add_host(
-        name=config.HOST_FOR_MOUNT, address=config.HOST_FOR_MOUNT_IP,
-        wait=True, cluster=config.CLUSTER_NAME,
+    if not ll_hosts.addHost(
+        True, config.HOST_FOR_MOUNT, address=config.HOST_FOR_MOUNT_IP,
+        wait=True, reboot=False, cluster=config.CLUSTER_NAME,
         root_password=config.VDC_ROOT_PASSWORD
     ):
         logger.error(
@@ -222,9 +222,9 @@ def _restore_empty_dc():
         raise exceptions.ClusterException(
             "Failed to create cluster '%s'" % cluster_name
         )
-    if not ll_hosts.add_host(
-        name=config.HOST_FOR_MOUNT, address=config.HOST_FOR_MOUNT_IP,
-        wait=True, cluster=config.CLUSTER_ISCSI_CONNECTIONS,
+    if not ll_hosts.addHost(
+        True, config.HOST_FOR_MOUNT, address=config.HOST_FOR_MOUNT_IP,
+        wait=True, reboot=False, cluster=config.CLUSTER_ISCSI_CONNECTIONS,
         root_password=config.VDC_ROOT_PASSWORD
     ):
         raise exceptions.HostException(
