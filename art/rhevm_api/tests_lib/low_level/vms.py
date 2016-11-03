@@ -1148,7 +1148,7 @@ def restartVm(
 def startVm(
     positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
     wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, placement_host=None,
-    use_cloud_init=False
+    use_cloud_init=False, pause=False
 ):
     """
     Start VM
@@ -1185,6 +1185,9 @@ def startVm(
             return False
     if use_cloud_init:
         action_params['use_cloud_init'] = 'true'
+    if pause:
+        wait_for_status = ENUMS['vm_state_paused']
+        action_params["pause"] = pause
     log_info, log_error = ll_general.get_log_msg(
         action="start", obj_type=VM, obj_name=vm, positive=positive,
         **action_params
@@ -3539,8 +3542,8 @@ def remove_vm_from_export_domain(
         return False
 
     sample = TimeoutingSampler(
-        timeout=timeout, sleep=sleep, func=export_domain_vm_exist, vm=vm,
-        export_domain=export_storagedomain, positive=False
+        timeout=timeout, sleep=sleep, func=is_vm_exists_in_export_domain,
+        vm=vm, export_domain=export_storagedomain, positive=False
     )
     return sample.waitForFuncStatus(result=True)
 
@@ -5286,7 +5289,7 @@ def remove_numa_node_from_vm(vm_name, numa_node_index):
     return status
 
 
-def export_domain_vm_exist(vm, export_domain, positive=True):
+def is_vm_exists_in_export_domain(vm, export_domain, positive=True):
     """
     __Author__ = slitmano
 

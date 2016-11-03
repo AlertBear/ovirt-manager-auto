@@ -9,7 +9,6 @@ import shlex
 import time
 import logging
 import xmltodict
-
 from utilities import jobs
 from art import test_handler
 import art.core_api.validator as validator
@@ -37,6 +36,7 @@ import config as config_virt
 
 logger = logging.getLogger("Virt_Helper")
 
+DEFAULT_JOB_TIMEOUT = 600
 VDSM_LOG = "/var/log/vdsm/vdsm.log"
 SERVICE_STATUS = "id"
 LOAD_MEMORY_FILE = "tests/rhevmtests/virt/migration/memoryLoad.py"
@@ -1036,3 +1036,68 @@ def clone_same_vm_twice(base_vm_name, clone_vm_list):
     job_set.start()
     job_set.join()
     return jobs_list[0].result and not jobs_list[1].result
+
+
+def remove_vm_from_storage_domain(vm_name, export_domain):
+    """
+    Remove the VM from export storage
+
+    Args:
+        vm_name (str): name of the vm
+        export_domain (str): export domain name
+
+    Returns:
+        bool: Return True if vm removed form export domain, otherwise False
+    """
+
+    if ll_vms.is_vm_exists_in_export_domain(vm_name, export_domain):
+        return ll_vms.remove_vm_from_export_domain(
+            True, vm_name, config.DC_NAME[0], export_domain
+        )
+
+
+def job_runner(
+    job_name,
+    kwargs_info,
+    job_method_name,
+    vms_list,
+    timeout=DEFAULT_JOB_TIMEOUT
+):
+    """
+    Create job set according to given name and parameters,
+    And run the jobs on vms list. Returns status in the end
+
+    Args:
+        job_name (str): Job name
+        kwargs_info (dict): Execute method parameters
+        job_method_name (obj): Method to execute
+        vms_list (list): List of vms to run the method on
+        timeout (int): timeout for each job
+            Note: Job will raise exception if the jobs don't finish
+            after the specified timeout.
+
+    Returns:
+        bool: True if all jobs pass, otherwise False
+    """
+    jobs_info = {}
+    for vm_name in vms_list:
+        jobs_info['{0}_{1}_job'.format(vm_name, job_name)] = jobs.Job(
+            job_method_name, (), kwargs_info[vm_name]
+        )
+    logger.info("jobs info:")
+    for job_key in jobs_info.keys():
+        logging.info("name: %s\ninfo: %s", job_key, jobs_info[job_key])
+
+    job_set = jobs.JobsSet()
+    job_set.addJobs(jobs_info.values())
+    job_set.start()
+    job_set.join(timeout)
+    for job_key in jobs_info.keys():
+        if not jobs_info[job_key].result:
+            logger.error(
+                "Job %s failed\nSee exception info: %s",
+                job_key,
+                jobs_info[job_key].exception
+            )
+            return False
+    return True

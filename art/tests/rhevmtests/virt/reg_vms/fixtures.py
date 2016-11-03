@@ -40,7 +40,7 @@ class RegVmBase(object):
         :type vm_name: str
         """
 
-        if ll_vms.export_domain_vm_exist(vm_name, cls.export_domain):
+        if ll_vms.is_vm_exists_in_export_domain(vm_name, cls.export_domain):
             assert ll_vms.remove_vm_from_export_domain(
                 True, vm_name, config.DC_NAME[0], cls.export_domain
             )

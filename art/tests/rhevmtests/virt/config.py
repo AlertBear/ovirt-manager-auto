@@ -6,6 +6,7 @@ Virt - Test configuration module
 """
 
 from rhevmtests.config import *  # flake8: noqa
+import rhevmtests.helpers as helper
 
 # #######################################################################
 # Following parameters should move to consolidated config, once possible
@@ -121,10 +122,12 @@ VM_DISPLAY = "display_type"
 VM_CLUSTER = "cluster"
 VM_WATCHDOG_MODEL = "watchdog_model"
 VM_CPU_SHARES = "cpu_shares"
+MAX_MEMORY = 'max_memory'
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
     VM_MEMORY_GUARANTEED: GB,
+    MAX_MEMORY: helper.get_gb(4),
     VM_CPU_SOCKET: 1,
     VM_CPU_CORES: 1,
     VM_OS: VM_OS_TYPE,
@@ -159,3 +162,8 @@ VALIDATOR_IGNORE_LIST = [
     'vm', 'version', 'host_numa_nodes', 'sessions', 'status_detail',
     'affinity_labels', 'applications', 'fqdn', 'host_devices', 'nics',
 ]
+VM_REMOVE_SNAPSHOT_TIMEOUT = 1000
+VM_ACTION_TIMEOUT = 1000
+
+# snapshot
+SNAPSHOT_DESCRIPTION = ['snapshot_1', 'snapshot_2']
