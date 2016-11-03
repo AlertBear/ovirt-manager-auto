@@ -1090,7 +1090,7 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     vmObj = VM_API.find(vm)
 
     asyncMode = async.lower() == 'true'
-    status = bool(VM_API.syncAction(vmObj, action, positive, async))
+    status = bool(VM_API.syncAction(vmObj, action, positive, async=async))
     if status and positive and not asyncMode:
         return VM_API.waitForElemStatus(vmObj, expectedStatus,
                                         VM_ACTION_TIMEOUT)
@@ -2380,7 +2380,9 @@ def exportVm(
         discard_snapshots=discard_snapshots
     )
     status = bool(
-        VM_API.syncAction(vm_obj, "export", positive, async, **action_params)
+        VM_API.syncAction(
+            vm_obj, "export", positive, async=async, **action_params
+        )
     )
     logger.info("Export VM %s to export domain %s", vm, storagedomain)
     if status and positive:
@@ -5452,7 +5454,7 @@ def reorder_vm_mac_address(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     logger.info("Reorder VM %s vNICs", vm_name)
-    res = VM_API.syncAction(vm_obj, "reordermacaddresses", True, "true")
+    res = VM_API.syncAction(vm_obj, "reordermacaddresses", True, async=True)
     if not res:
         logger.error("Failed to reorder MACs on VM %s", vm_name)
     return res

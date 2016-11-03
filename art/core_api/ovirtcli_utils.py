@@ -1064,7 +1064,7 @@ class CliUtil(RestUtil):
 
         return self.get(href, listOnly=True)
 
-    def create(self, entity, positive, expectedEntity=None, incrementBy=1,
+    def create(self, entity, positive, expectedEntity=None,
                async=False, collection=None, compare=True):
         """
         Description: creates a new element
@@ -1076,8 +1076,6 @@ class CliUtil(RestUtil):
         :param expectedEntity: if there are some expected entity different
                               from sent
         :type expectedEntity: str
-        :param incrementBy: increment by number of elements
-        :type incrementBy: int
         :param async: sync or async request
         :type async: bool
         :param collection: collection to use for add command
