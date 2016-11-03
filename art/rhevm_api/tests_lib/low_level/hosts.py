@@ -21,13 +21,12 @@ import logging
 import shlex
 import time
 
-from utilities import machine
-from utilities.utils import getIpAddressByHostName, getHostName
-
-import art.rhevm_api.tests_lib.low_level.general as ll_general
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_clusters,
+    general as ll_general
+)
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
-from art.core_api.apis_utils import TimeoutingSampler, data_st
-from art.core_api.apis_utils import getDS
+from art.core_api.apis_utils import TimeoutingSampler, data_st, getDS
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState
 )
@@ -42,6 +41,7 @@ from art.rhevm_api.utils.test_utils import (
     startVdsmd
 )
 from art.test_handler import settings
+from utilities import machine
 
 ELEMENT = "host"
 COLLECTION = "hosts"
@@ -245,114 +245,46 @@ def waitForHostsStates(
         return False
 
 
-def _check_hypervisor(positive, host, cluster):
+@ll_general.generate_logs()
+def add_host(name, address, root_password, wait=True, **kwargs):
     """
-    Description: Checks if host is already in setup waiting for approval
-    Author: jlibosva
-    Parameters:
-        * host - host to check
-        * cluster - eventually which cluster we want host to put in
-    Return: positive if host has been approved, False otherwise
+    Add new host
+
+    Args:
+        name (str): Host name
+        address (str): Host FQDN or IP
+        root_password (str): Host root password
+        wait (bool): Wait until the host will have state UP
+
+    Keyword Args:
+        cluster (str): Host cluster name
+        override_iptables (bool): Override host iptables
+        deploy_hosted_engine (bool): Deploy hosted engine flag
+
+    Returns:
+        bool: True, if add action succeeds, otherwise False
     """
-    try:
-        host = HOST_API.find(host)
-    except EntityNotFound:
-        return False
+    host_cluster = kwargs.pop("cluster", "Default")
+    host_cluster = ll_clusters.get_cluster_object(cluster_name=host_cluster)
+    deploy_hosted_engine = kwargs.pop("deploy_hosted_engine", False)
 
-    if host.get_status() == ENUMS['search_host_state_pending_approval'] and \
-            positive:
-        return approveHost(True, host, cluster)
-    return False
+    host_obj = Host(
+        name=name,
+        cluster=host_cluster,
+        address=address,
+        root_password=root_password,
+        **kwargs
+    )
+    host, status = HOST_API.create(
+        entity=host_obj,
+        positive=True,
+        deploy_hosted_engine=deploy_hosted_engine
+    )
 
+    if wait and status:
+        return HOST_API.waitForElemStatus(host, status="up", timeout=800)
 
-def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
-            reboot=True, **kwargs):
-    """
-    Description: add new host
-    Author: edolinin, jhenner
-    Parameters:
-       * name - name of a new host
-       * root_password - (required, can be empty only for negative tests)
-       * address - host IP address, if not provided - fetched from name
-       * port - port number
-       * cluster - name of the cluster where to attach a new host
-       * wait - True if test should wait till timeout or host state to be "UP"
-       * vdcPort - default = port parameter, located at settings.conf
-       * override_iptables - override iptables. gets true/false strings.
-       * rhel_like - for hypervisors only - True will install hypervisor as it
-                                            does with rhel
-                                          - False will install hypervisor
-                                            using vdsm-reg on hypervisor
-       * reboot - True - to reboot host after install.
-                  False- host won't reboot after install.
-       * protocol - vdsm trasport protocol (stomp / xml)
-    Return: True if host     added and test is    positive,
-            True if host not added and test isn't positive,
-            False otherwise.
-    """
-
-    cluster = kwargs.pop('cluster', 'Default')
-
-    if _check_hypervisor(positive, name, cluster):
-        return True
-
-    address = kwargs.get('address')
-    if not address:
-        host_address = getIpAddressByHostName(name)
-    else:
-        host_address = kwargs.pop('address')
-
-    hostCl = CL_API.find(cluster)
-
-    osType = 'rhel'
-    root_password = kwargs.get('root_password')
-
-    hostObj = None
-
-    if kwargs.get('protocol') is None:
-        # check whether configuration requires specific transport protocol
-        transport_proto = settings.opts.get('vdsm_transport_protocol')
-        if transport_proto is not None:
-            HOST_API.logger.info(
-                "Setting vdsm_transport_protocol = %s explicitly",
-                transport_proto
-            )
-            kwargs['protocol'] = transport_proto
-
-    kwargs.setdefault('override_iptables', 'true')
-
-    if root_password:
-        hostObj = machine.Machine(host_address, 'root',
-                                  root_password).util(machine.LINUX)
-    if positive:
-        hostObj.isConnective(attempt=5, interval=5, remoteCmd=False)
-        osType = hostObj.getOsInfo()
-        if not osType:
-            HOST_API.logger.error("Can't get host %s os info" % name)
-            return False
-
-    if osType.lower().find('hypervisor') == -1 or rhel_like:
-        host = Host(name=name, cluster=hostCl, address=host_address, **kwargs)
-
-        logger.info("Adding host %s to cluster %s", name, cluster)
-        host, status = HOST_API.create(host, positive)
-
-        if not wait:
-            return status and positive
-
-        if hasattr(host, 'href'):
-            return status and HOST_API.waitForElemStatus(host, "up", 800)
-        else:
-            return status and not positive
-
-    if vdcPort is None:
-        vdcPort = settings.opts['port']
-
-    if not installOvirtHost(positive, name, 'root', root_password,
-                            settings.opts['host'], vdcPort):
-        return False
-
-    return approveHost(positive, name, cluster)
+    return status
 
 
 def updateHost(positive, host, **kwargs):
@@ -592,134 +524,45 @@ def deactivate_host(
                 return not positive
 
 
-def install_host(
-        positive, host,
-        root_password, iso_image=None,
-        override_iptables="true"
-):
+@ll_general.generate_logs()
+def install_host(host, root_password, **kwargs):
     """
-    Description:
-        run host installation
-    Parameters:
-        positive (bool): expected result
-        host (str): name of a host to be installed
-        root_password (str): password of root user
-        iso_image (str): iso image for rhevh installation
-        override_iptables (str): override iptables. gets true/false strings.
-    Return:
-        bool: True if host was installed properly, False otherwise
+    Install host
+
+    Args:
+        host (str): Host name
+        root_password (str): Host root password
+
+    Keyword Args:
+        image (str): RHEV-H image
+        override_iptables (bool): Override iptables
+        deploy_hosted_engine (bool): Deploy hosted engine flag
+        undeploy_hosted_engine (bool): Undeploy hosted engine flag
+
+    Returns:
+        bool: True, if host installation succeeds, otherwise False
     """
-    state_maintenance = ENUMS['host_state_maintenance']
-    state_installing = ENUMS['host_state_installing']
-    host_object = HOST_API.find(host)
+    override_iptables = kwargs.get("override_iptables", True)
+    state_maintenance = ENUMS["host_state_maintenance"]
+    state_installing = ENUMS["host_state_installing"]
+    host_obj = get_host_object(host_name=host)
     response = HOST_API.syncAction(
-        host_object,
-        "install",
-        positive,
+        entity=host_obj,
+        action="install",
+        positive=True,
         root_password=root_password,
-        image=iso_image,
-        override_iptables=override_iptables.lower()
+        override_iptables=override_iptables,
+        **kwargs
     )
-    if response and not positive:
-        return True
     if not (
         response and HOST_API.waitForElemStatus(
-            host_object,
-            state_installing,
-            INSTALLATION_MAX_TIME
+            host_obj, status=state_installing, timeout=120
         )
     ):
         return False
     return HOST_API.waitForElemStatus(
-        host_object,
-        state_maintenance,
-        INSTALLATION_MAX_TIME
+        host_obj, status=state_maintenance, timeout=800
     )
-
-
-def approveHost(positive, host, cluster='Default'):
-    """
-    Description: approve host (for ovirt hosts)
-    Author: edolinin
-    Parameters:
-       * host - name of a host to be approved
-       * cluster - name of cluster
-    Return: status (True if host was approved properly, False otherwise)
-    """
-
-    hostObj = HOST_API.find(host)
-    clusterObj = CL_API.find(cluster)
-
-    kwargs = {'cluster': clusterObj}
-    status = bool(
-        HOST_API.syncAction(hostObj, "approve", positive, **kwargs)
-    )
-    testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 120)
-
-    return status and testHostStatus
-
-
-# FIXME: need to rewrite this def because new ovirt approval has been changed
-def installOvirtHost(positive, host, user_name, password, vdc, port=443,
-                     timeout=60):
-    """
-    Description: installation of ovirt host
-    Author: edolinin
-    Parameters:
-       * host - name of a host to be installed
-       * user_name - user name to open ssh session
-       * password - password to open ssh session
-       * vdc - name of vdc where host should be installed
-       * port - port number
-       * timeout - How maximum time wait [sec] after service restart
-       * waitTime - wait between iteration [sec]
-    Return: status (True if host was installed properly, False otherwise)
-    """
-    if waitForHostsStates(positive, host,
-                          ENUMS['search_host_state_pending_approval']):
-        return True
-
-    vdcHostName = getHostName(vdc)
-    if not vdcHostName:
-        HOST_API.logger.error("Can't get hostname from %s" % vdc)
-
-    ip = getHostIP(host)
-    hostObj = machine.Machine(ip, user_name, password).util(machine.LINUX)
-    if not hostObj.isConnective():
-        HOST_API.logger.error("No connectivity to the host %s" % host)
-        return False
-    commands = []
-    commands.append([
-        SED, '-i',
-        "'s/vdc_host_name[[:space:]]*=.*/vdc_host_name = %s/'" % vdcHostName,
-        "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
-    commands.append([
-        SED, '-i',
-        "'s/nc_host_name[[:space:]]*=.*/nc_host_name = %s/'" % vdc,
-        "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
-    commands.append([
-        SED, '-i',
-        "'s/vdc_host_port[[:space:]]*=.*/vdc_host_port = %s/'" % port,
-        "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
-    commands.append([SERVICE, 'vdsm-reg', "restart"])
-    for command in commands:
-        res, out = hostObj.runCmd(command)
-        if not res:
-            HOST_API.logger.error("command %s" % " ".join(command))
-            HOST_API.logger.error(str(out))
-            return False
-
-    if not waitForOvirtAppearance(positive, host, attempts=20, interval=3):
-        HOST_API.logger.error("Host %s doesn't appear!" % host)
-        return False
-
-    if not waitForHostsStates(positive, host,
-                              states=ENUMS[
-                                  'search_host_state_pending_approval']):
-        HOST_API.logger.error("Host %s isn't in PENDING_APPROVAL state" % host)
-        return False
-
-    return True
 
 
 def commit_network_config(host):
@@ -2389,6 +2232,22 @@ def is_hosted_engine_configured(host_name):
     if hosted_engine_obj:
         return hosted_engine_obj.get_configured()
     return False
+
+
+def is_hosted_engine_active(host_name):
+    """
+    Check if host is active under the hosted engine environment via engine
+
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        bool: True, if host is active under the hosted engine environment,
+            otherwise False
+    """
+    if not is_hosted_engine_configured(host_name=host_name):
+        return False
+    return get_hosted_engine_obj(host_name=host_name).get_active()
 
 
 def add_affinity_label(host_name, affinity_label_name):

@@ -367,8 +367,8 @@ class TestUpgrade(TestCase):
         logger.info(
             "Re-add the moved host back into its original cluster/data center"
         )
-        if not ll_hosts.addHost(
-            True, self.host, address=self.host_ip, wait=True, reboot=False,
+        if not ll_hosts.add_host(
+            name=self.host, address=self.host_ip, wait=True,
             cluster=config.CLUSTER_NAME, root_password=config.VDC_ROOT_PASSWORD
         ):
             self.test_failed = True

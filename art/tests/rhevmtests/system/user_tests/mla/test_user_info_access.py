@@ -61,8 +61,7 @@ def setup_module(request):
             version=config.COMP_VERSION
         )
 
-        hosts.addHost(
-            True,
+        hosts.add_host(
             name=config.HOSTS_IP[1],
             root_password=config.HOSTS_PW,
             address=config.HOSTS_IP[1],
