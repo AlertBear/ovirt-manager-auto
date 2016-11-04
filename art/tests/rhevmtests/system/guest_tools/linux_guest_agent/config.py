@@ -46,7 +46,6 @@ TEST_IMAGES = {
         'id': None,
         'ip': None,
     },
-
 }
 
 INSTALL_TIMEOUT = PARAMETERS.get('install_timeout', 480)
@@ -54,19 +53,23 @@ TIMEOUT = PARAMETERS.get('timeout', 320)
 AGENT_SERVICE_NAME = 'ovirt-guest-agent'
 UPSTREAM = 'ovirt' in PRODUCT_NAME.lower()
 
-if UPSTREAM:
-    GA_NAME = 'ovirt-guest-agent'
-else:
-    GA_NAME = 'rhevm-guest-agent'
-
-PACKAGE_NAME = '%s-common' % GA_NAME
+GA_NAME = 'ovirt-guest-agent'
+OLD_GA_NAME = 'rhevm-guest-agent'
 
 # GA repositories
 UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/14.04/xUbuntu_14.04/'
+
 GA_REPO_NAME = 'rhevm_latest'
-GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/4.0/%s/%s'
+if not UPSTREAM:
+    GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_4.1/%s'
+else:
+    GA_REPO_URL = 'http://resources.ovirt.org/repos/ovirt/tested/4.1/rpm/%s'
+
 GA_REPO_OLDER_NAME = 'rhevm_older'
-GA_REPO_OLDER_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_3.6/%s'
+if not UPSTREAM:
+    GA_REPO_OLDER_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_4.0/%s'
+else:
+    GA_REPO_OLDER_URL = 'http://resources.ovirt.org/repos/ovirt/tested/4.0/rpm/%s'
 
 GUEST_ROOT_USER = 'root'
 GUEST_ROOT_PASSWORD = '123456'

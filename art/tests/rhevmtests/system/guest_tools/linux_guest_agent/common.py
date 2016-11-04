@@ -21,8 +21,7 @@ logger = logging.getLogger(__name__)
 def import_image(diskName, async=True):
     glance_image = storagedomains.GlanceImage(
         image_name=diskName,
-        glance_repository_name=config.GLANCE_DOMAIN,
-        timeout=1800
+        glance_repository_name=config.GLANCE_DOMAIN
     )
     glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
@@ -99,9 +98,7 @@ class GABaseTestCase(TestCase):
         vms.add_repo_to_vm(
             vm_host=self.machine,
             repo_name=config.GA_REPO_NAME,
-            baseurl=config.GA_REPO_URL % (
-                config.PRODUCT_BUILD, self.disk_name[2:5]
-            ),
+            baseurl=config.GA_REPO_URL % self.os_codename
         )
         testflow.step("Updating package %s", package)
         assert self.machine.package_manager.update(

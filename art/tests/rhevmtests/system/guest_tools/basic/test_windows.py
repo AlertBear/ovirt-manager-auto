@@ -28,7 +28,7 @@ def import_image(diskName):
     glance_image = storagedomains.GlanceImage(
         image_name=diskName,
         glance_repository_name=config.GLANCE_NAME,
-        timeout=1800
+        timeout=5400
     )
     assert glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
@@ -395,7 +395,7 @@ class Windows10_64b(Windows):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 10 64bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN10_DISK_64b
     codename = 'Win 10'
     polarion_map = {

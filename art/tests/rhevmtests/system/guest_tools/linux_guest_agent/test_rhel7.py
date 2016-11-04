@@ -30,7 +30,7 @@ class RHEL7GATest(common.GABaseTestCase):
     __test__ = False
     package = config.GA_NAME
     list_app = ['rpm -qa']
-    application_list = ['kernel', config.PACKAGE_NAME]
+    application_list = ['kernel', config.GA_NAME]
     cmd_chkconf = [
         'systemctl', 'list-unit-files', '|',
         'grep', 'ovirt', '|',
@@ -87,28 +87,26 @@ class RHEL764bGATest(RHEL7GATest):
     """
     __test__ = True
     vm_name = disk_name = DISK_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel764_setup(cls, rhel7_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_NAME,
-                baseurl=config.GA_REPO_URL % (
-                    config.PRODUCT_BUILD[:7], cls.disk_name[2:5]
-                ),
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_NAME,
+            baseurl=config.GA_REPO_URL % cls.os_codename
+        )
 
     @polarion('RHEVM3-7378')
     def test_aa_install_guest_agent(self):
         """ RHEL7_1_64b install_guest_agent """
-        self.install_guest_agent(config.PACKAGE_NAME)
+        self.install_guest_agent(config.GA_NAME)
 
     @polarion('RHEVM3-7400')
     def test_zz_uninstall_guest_agent(self):
         """ RHEL7_1_64b uninstall_guest_agent """
-        self.uninstall('%s-*' % config.GA_NAME)
+        self.uninstall('%s*' % config.GA_NAME)
 
     @polarion('RHEVM3-7380')
     def test_post_install(self):
@@ -153,20 +151,23 @@ class UpgradeRHEL764bGATest(RHEL7GATest):
     """
     __test__ = True
     vm_name = disk_name = DISK_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def upgrade_rhel764_setup(cls, rhel7_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_OLDER_NAME,
-                baseurl=config.GA_REPO_OLDER_URL % cls.disk_name[2:5],
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_OLDER_NAME,
+            baseurl=config.GA_REPO_OLDER_URL % cls.os_codename
+        )
 
     @polarion('RHEVM3-7404')
     def test_upgrade_guest_agent(self):
         """ RHEL7_1_64b upgrade_guest_agent """
-        self.upgrade_guest_agent(config.PACKAGE_NAME)
+        if not config.UPSTREAM:
+            self.upgrade_guest_agent(config.OLD_GA_NAME)
+        else:
+            self.upgrade_guest_agent(config.GA_NAME)
         self.services(config.AGENT_SERVICE_NAME)
         self.agent_data(self.application_list, self.list_app)

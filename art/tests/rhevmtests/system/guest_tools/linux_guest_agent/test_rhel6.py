@@ -59,28 +59,26 @@ class RHEL664bGATest(RHEL6GATest):
     ''' test installation of guest agent on rhel 6 64b '''
     __test__ = True
     vm_name = disk_name = DISKx64_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel664_setup(cls, rhel6_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_NAME,
-                baseurl=config.GA_REPO_URL % (
-                    config.PRODUCT_BUILD[:7], cls.disk_name[2:5]
-                ),
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_NAME,
+            baseurl=config.GA_REPO_URL % cls.os_codename
+        )
 
     @polarion("RHEVM3-7422")
     def test_aa_install_guest_agent(self):
         """ RHEL6_64b install_guest_agent """
-        self.install_guest_agent(config.PACKAGE_NAME)
+        self.install_guest_agent(config.GA_NAME)
 
     @polarion("RHEVM3-7423")
     def test_zz_uninstall_guest_agent(self):
         """ RHEL6_64b uninstall_guest_agent """
-        self.uninstall('%s-*' % config.GA_NAME)
+        self.uninstall('%s*' % config.GA_NAME)
 
     @polarion("RHEVM3-7437")
     def test_post_install(self):
@@ -123,28 +121,26 @@ class RHEL632bGATest(RHEL6GATest):
     ''' test installation of guest agent on rhel 6 32b '''
     __test__ = True
     vm_name = disk_name = DISKx86_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel632_setup(cls, rhel6_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_NAME,
-                baseurl=config.GA_REPO_URL % (
-                    config.PRODUCT_BUILD, cls.disk_name[2:5]
-                ),
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_NAME,
+            baseurl=config.GA_REPO_URL % cls.os_codename
+        )
 
     @polarion("RHEVM3-7420")
     def test_aa_install_guest_agent(self):
         """ RHEL6_32b install_guest_agent """
-        self.install_guest_agent(config.PACKAGE_NAME)
+        self.install_guest_agent(config.GA_NAME)
 
     @polarion("RHEVM3-7419")
     def test_zz_uninstall_guest_agent(self):
         """ RHEL6_32b uninstall_guest_agent """
-        self.uninstall('%s-*' % config.GA_NAME)
+        self.uninstall('%s*' % config.GA_NAME)
 
     @polarion("RHEVM3-7410")
     def test_post_install(self):
@@ -187,21 +183,24 @@ class UpgradeRHEL664bGATest(RHEL6GATest):
     ''' test of upgrade guest agent on rhel 6 64b '''
     __test__ = True
     vm_name = disk_name = DISKx64_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def upgrade_rhel664_setup(cls, rhel6_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_OLDER_NAME,
-                baseurl=config.GA_REPO_OLDER_URL % cls.disk_name[2:5],
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_OLDER_NAME,
+            baseurl=config.GA_REPO_OLDER_URL % cls.os_codename
+        )
 
     @polarion('RHEVM3-7436')
     def test_upgrade_guest_agent(self):
         """ RHEL6_64b upgrade_guest_agent """
-        self.upgrade_guest_agent(config.PACKAGE_NAME)
+        if not config.UPSTREAM:
+            self.upgrade_guest_agent(config.OLD_GA_NAME)
+        else:
+            self.upgrade_guest_agent(config.GA_NAME)
         self.services(config.AGENT_SERVICE_NAME)
         self.agent_data(self.application_list, self.list_app)
 
@@ -211,20 +210,23 @@ class UpgradeRHEL632bGATest(RHEL6GATest):
     ''' test of upgrade guest agent on rhel 6 32b '''
     __test__ = True
     vm_name = disk_name = DISKx86_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def upgrade_rhel632_setup(cls, rhel6_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_OLDER_NAME,
-                baseurl=config.GA_REPO_OLDER_URL % cls.disk_name[2:5],
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_OLDER_NAME,
+            baseurl=config.GA_REPO_OLDER_URL % cls.os_codename
+        )
 
     @polarion('RHEVM3-7421')
     def test_upgrade_guest_agent(self):
         """ RHEL6_32b upgrade_guest_agent """
-        self.upgrade_guest_agent(config.PACKAGE_NAME)
+        if not config.UPSTREAM:
+            self.upgrade_guest_agent(config.OLD_GA_NAME)
+        else:
+            self.upgrade_guest_agent(config.GA_NAME)
         self.services(config.AGENT_SERVICE_NAME)
         self.agent_data(self.application_list, self.list_app)

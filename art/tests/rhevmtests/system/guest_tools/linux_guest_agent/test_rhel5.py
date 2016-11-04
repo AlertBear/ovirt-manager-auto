@@ -59,34 +59,36 @@ class RHEL5GATest(common.GABaseTestCase):
 
 
 @attr(tier=3)
+@pytest.mark.skipif(
+    config.UPSTREAM is None,
+    reason="Cannot run on oVirt since 4.0"
+)
 class RHEL532bGATest(RHEL5GATest):
     """
     Cover basic testing of GA of rhel 5 32b
     """
     __test__ = True
     vm_name = disk_name = DISKx86_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel532_setup(cls, rhel5_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_NAME,
-                baseurl=config.GA_REPO_URL % (
-                    config.PRODUCT_BUILD[:7], cls.disk_name[2:5]
-                ),
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_NAME,
+            baseurl=config.GA_REPO_OLDER_URL % cls.os_codename
+        )
 
     @polarion("RHEVM3-7377")
     def test_aa_install_guest_agent(self):
         """ RHEL5_32b install_guest_agent """
-        self.install_guest_agent(config.GA_NAME)
+        self.install_guest_agent(config.OLD_GA_NAME)
 
     @polarion("RHEVM3-7406")
     def test_zz_uninstall_guest_agent(self):
         """ RHEL5_32b uninstall_guest_agent """
-        self.uninstall('%s-*' % config.GA_NAME)
+        self.uninstall('%s*' % config.OLD_GA_NAME)
 
     @polarion("RHEVM3-7425")
     def test_post_install(self):
@@ -110,34 +112,36 @@ class RHEL532bGATest(RHEL5GATest):
 
 
 @attr(tier=3)
+@pytest.mark.skipif(
+    config.UPSTREAM is None,
+    reason="Cannot run on oVirt since 4.0"
+)
 class RHEL564bGATest(RHEL5GATest):
     """
     Cover basic testing of GA of rhel 5 64b
     """
     __test__ = True
     vm_name = disk_name = DISKx64_NAME
+    os_codename = disk_name[2:5]
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel564_setup(cls, rhel5_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_NAME,
-                baseurl=config.GA_REPO_URL % (
-                    config.PRODUCT_BUILD, cls.disk_name[2:5]
-                ),
-            )
+        vms.add_repo_to_vm(
+            vm_host=cls.machine,
+            repo_name=config.GA_REPO_NAME,
+            baseurl=config.GA_REPO_OLDER_URL % cls.os_codename
+        )
 
     @polarion("RHEVM3-7407")
     def test_aa_install_guest_agent(self):
         """ install_guest_agent """
-        self.install_guest_agent(config.GA_NAME)
+        self.install_guest_agent(config.OLD_GA_NAME)
 
     @polarion("RHEVM3-7408")
     def test_zz_uninstall_guest_agent(self):
         """ uninstall_guest_agent """
-        self.uninstall('%s-*' % config.GA_NAME)
+        self.uninstall('%s*' % config.OLD_GA_NAME)
 
     @polarion("RHEVM3-7431")
     def test_post_install(self):
@@ -158,55 +162,3 @@ class RHEL564bGATest(RHEL5GATest):
     def test_function_continuity(self):
         """ RHEL5_64b, rhevm-guest-agent function continuity """
         self.function_continuity(self.application_list, self.list_app_cmd)
-
-
-@attr(tier=3)
-class UpgradeRHEL564bGATest(RHEL5GATest):
-    """
-    Cover basic testing of upgrade GA of rhel 5 64b
-    """
-    __test__ = True
-    vm_name = disk_name = DISKx64_NAME
-
-    @classmethod
-    @pytest.fixture(scope="class", autouse=True)
-    def upgrade_rhel564_setup(cls, rhel5_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_OLDER_NAME,
-                baseurl=config.GA_REPO_OLDER_URL % cls.disk_name[2:5],
-            )
-
-    @polarion('RHEVM3-7430')
-    def test_upgrade_guest_agent(self):
-        """ upgrade_guest_agent """
-        self.upgrade_guest_agent(config.GA_NAME)
-        self.services(config.AGENT_SERVICE_NAME)
-        self.agent_data(self.application_list, self.list_app_cmd)
-
-
-@attr(tier=3)
-class UpgradeRHEL532bGATest(RHEL5GATest):
-    """
-    Cover basic testing of upgrade GA of rhel 5 32b
-    """
-    __test__ = True
-    vm_name = disk_name = DISKx86_NAME
-
-    @classmethod
-    @pytest.fixture(scope="class", autouse=True)
-    def upgrade_rhel532_setup(cls, rhel5_setup):
-        if not config.UPSTREAM:
-            vms.add_repo_to_vm(
-                vm_host=cls.machine,
-                repo_name=config.GA_REPO_OLDER_NAME,
-                baseurl=config.GA_REPO_OLDER_URL % cls.disk_name[2:5],
-            )
-
-    @polarion('RHEVM3-7424')
-    def test_upgrade_guest_agent(self):
-        """ upgrade_guest_agent """
-        self.upgrade_guest_agent(config.GA_NAME)
-        self.services(config.AGENT_SERVICE_NAME)
-        self.agent_data(self.application_list, self.list_app_cmd)

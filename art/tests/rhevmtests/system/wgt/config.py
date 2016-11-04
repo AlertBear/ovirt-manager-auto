@@ -8,4 +8,4 @@ from rhevmtests.system.config import *  # flake8: noqa
 
 CD_WITH_TOOLS = RHEVM_UTILS_ENUMS['CD_WITH_TOOLS']
 NIC_NAME = 'nic1'
-PRODUCT = 'ovirt' if 'ovirt' in PRODUCT_NAME.lower() else 'rhevm'
+PRODUCT = 'rhevm'

@@ -9,7 +9,7 @@ import pytest
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
@@ -26,7 +26,7 @@ def import_image(disk_name):
     glance_image = ll_storagedomains.GlanceImage(
         image_name=disk_name,
         glance_repository_name=config.GLANCE_DOMAIN,
-        timeout=1800
+        timeout=5400
     )
     assert glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
@@ -607,14 +607,13 @@ class Win8_CI_64b(Windows):
 
 
 @attr(tier=2)
-@bz({'1300959': {}})
 class Windows10_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 10 64bit.
     """
     __test__ = True
-    disk_name = 'win10_Disk1'
+    disk_name = 'Win10_CI_rhevm_64b'
     serial_number = config.WIN10_64B['serial_number']
     architecture = config.WIN10_64B['architecture']
     codename = config.WIN10_64B['codename']
