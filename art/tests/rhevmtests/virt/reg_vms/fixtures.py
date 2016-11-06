@@ -5,8 +5,10 @@
 import logging
 import pytest
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    templates as ll_templates,
+    vms as ll_vms,
+)
 import config
 import rhevmtests.virt.helper as virt_helper
 
@@ -173,6 +175,9 @@ def test_snapshot_and_import_export_fixture(request):
     request.addfinalizer(fin2)
 
     assert virt_helper.create_base_vm(vm_name=vm_name, add_disk=True)
+    export_domain_vms = ll_vms.get_vms_from_storage_domain(base.export_domain)
+    for vm in export_domain_vms:
+        base.remove_vm_from_storage_domain(vm_name=vm)
 
 
 @pytest.fixture()

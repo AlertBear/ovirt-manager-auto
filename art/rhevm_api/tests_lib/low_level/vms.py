@@ -5828,3 +5828,31 @@ def get_vms():
         list: VMs objects from the engine
     """
     return VM_API.get(absLink=False)
+
+
+def get_vms_from_storage_domain(storage_domain_name):
+    """
+    Get list of vms in a given storage domain
+
+    Args:
+        storage_domain_name (str): Name of storage domain
+
+    Returns:
+        list: of vm names in storage domain, empty list if no vms are found
+    """
+    from art.rhevm_api.tests_lib.low_level.storagedomains import (
+        get_storage_domain_obj
+    )
+    try:
+        storage_domain_object = get_storage_domain_obj(storage_domain_name)
+    except EntityNotFound:
+        logger.error("Storage domain: %s wasn't found", storage_domain_name)
+        return list()
+    storage_domain_vms = storage_domain_object.get_vms()
+    if storage_domain_vms:
+        storage_domain_vms = [vm.get_name() for vm in storage_domain_vms]
+        logger.info(
+            "Vms found in storage domain: %s: %s",
+            storage_domain_name, storage_domain_vms
+        )
+    return list() if storage_domain_vms is None else storage_domain_vms

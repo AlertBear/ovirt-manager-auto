@@ -30,7 +30,7 @@ class ImportExportVm(VirtTest):
     Check different cases for import/export vm
     """
     __test__ = True
-    vm_name = 'export_vm'
+    vm_name = 'virt_export_vm'
     master_domain, export_domain, non_master_domain = (
         helper.get_storage_domains()
     )
