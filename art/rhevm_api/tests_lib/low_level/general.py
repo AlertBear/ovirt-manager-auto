@@ -16,8 +16,10 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import inspect
+import re
 from collections import namedtuple
 from distutils.version import StrictVersion
+from functools import wraps
 
 import art.test_handler.exceptions as exceptions
 from art.core_api import validator
@@ -314,15 +316,29 @@ def get_log_msg(
     Returns:
         tuple: Log info and log error text
     """
-    if kwargs:
-        kwargs = prepare_kwargs_for_log(**kwargs)
+    kwargs = prepare_kwargs_for_log(**kwargs)
+    kwargs_to_pop = list()
+    for k, v in kwargs.iteritems():
+        if k in action.lower():
+            key = re.findall(k, action, re.IGNORECASE)[0]
+            v = ",".join(v) if isinstance(v, list) else v
+            action = action.replace(
+                key, "{key} {val}".format(key=key, val=v)
+            )
+            kwargs_to_pop.append(k)
 
-    action = action.capitalize()
+    for k in kwargs_to_pop:
+        kwargs.pop(k)
+
     with_kwargs = "with %s" % kwargs if kwargs else ""
     state = "Succeeded to" if not positive else "Failed to"
-    info_text = "%s %s %s %s %s" % (
-        action, obj_type, obj_name, with_kwargs, extra_txt
-    )
+    info_text = (
+        "{action} {obj_type} {obj_name} {with_kwargs} {extra_txt}".format(
+            action=action, obj_type=obj_type, obj_name=obj_name,
+            with_kwargs=with_kwargs, extra_txt=extra_txt
+        )
+    ).strip()
+
     log_info_txt = info_text if positive else "Negative: %s" % info_text
     log_error_txt = "%s %s" % (state, info_text)
     return log_info_txt, log_error_txt
@@ -346,37 +362,66 @@ def prepare_kwargs_for_log(**kwargs):
     return new_kwargs
 
 
-def generate_logs(func):
+def generate_logs(info=True, error=True):
     """
-    Decorator to generate log info and log error for function
+    Decorator to generate log info and log error for function.
+    The log contain the fist line from the function docstring and resolve
+    names from function docstring by function args, any args that not
+    resolved from the docstring will be printed after.
+    If the function have positive arg the log will be based positive or
+    negative based on that.
+    In some cases only info or error log is needed, the decorator can be
+    called with @generate_logs(error=False) to get only log INFO and vice versa
 
-    The action is the first line of the function docstring and all kwargs
-    after that.
-    If the function fail log error is printed as well.
+    For example:
+        @generate_logs()
+        def my_test(test, cases):
+            '''
+            Run test with cases
+            '''
+            return
+
+        my_test(test='my-test-name', cases=['case01', 'case02']
+        Will generate:
+            INFO Run test my-test-name with cases case01, case02
+            ERROR Failed to Run test my-test-name with cases case01, case02
 
     Args:
-        func (Function): Function
+        info (bool): True to get INFO log
+        error (bool): True to get ERROR log
 
     Returns:
         any: The function return
     """
-
-    def inner(*args, **kwargs):
+    def generate_logs_decorator(func):
         """
-        The call for the function
+        The real decorator
+
+        Args:
+            func (Function): Function
+
+        Returns:
+            any: The function return
         """
-        func_doc = inspect.getdoc(func)
-        func_args = inspect.getargspec(func).args
-        for arg, val in zip(func_args, args):
-            if not kwargs.get(arg):
-                kwargs[arg] = val
+        @wraps(func)
+        def inner(*args, **kwargs):
+            """
+            The call for the function
+            """
+            func_doc = inspect.getdoc(func)
+            func_args = inspect.getargspec(func).args
+            for arg, val in zip(func_args, args):
+                if not kwargs.get(arg):
+                    kwargs[arg] = val
 
-        action = func_doc.split("\n")[0]
-        log_info, log_err = get_log_msg(action=action, **kwargs)
-        util.logger.info(log_info)
-        res = func(**kwargs)
-        if not res:
-            util.logger.error(log_err)
-        return res
+            action = func_doc.split("\n")[0]
+            log_info, log_err = get_log_msg(action=action, **kwargs)
+            if info:
+                util.logger.info(log_info)
 
-    return inner
+            res = func(**kwargs)
+            if not res and error:
+                util.logger.error(log_err)
+            return res
+        return inner
+    return generate_logs_decorator

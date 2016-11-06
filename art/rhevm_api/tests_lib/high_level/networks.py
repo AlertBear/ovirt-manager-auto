@@ -78,7 +78,7 @@ def remove_networks(positive, networks, data_center=None):
     return True
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def create_and_attach_networks(
     data_center=None, cluster=None, network_dict=None
 ):
@@ -171,7 +171,7 @@ def remove_net_from_setup(
     return True
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     """
     create (X) dummy network interfaces on host
@@ -284,7 +284,7 @@ def remove_all_networks(datacenter=None, cluster=None):
     return status
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def get_ip_on_host_nic(host, nic):
     """
     Get IP on host NIC
@@ -448,7 +448,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=list()):
     return True
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def is_management_network(cluster_name, network):
     """
     Check if network is management network
@@ -468,7 +468,7 @@ def is_management_network(cluster_name, network):
     )
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def get_nic_statistics(nic, host=None, vm=None, keys=None):
     """
     Get Host NIC/VM NIC statistics value for given keys.
@@ -532,7 +532,7 @@ def get_clusters_managements_networks_ids(cluster=None):
         ]
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def get_management_network_host_nic(host, cluster):
     """
     Get host NIC name that management network resides on

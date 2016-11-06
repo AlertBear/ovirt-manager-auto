@@ -10,7 +10,7 @@ import rhevmtests.helpers as helpers
 logger = logging.getLogger(__name__)
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def kill_watchdog_on_vm(vm_name):
     """
     Kill the watchdog process on the VM
@@ -28,7 +28,7 @@ def kill_watchdog_on_vm(vm_name):
     return True
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def detect_watchdog_on_vm(positive, vm_name):
     """
     Detect watchdog device 6300esb on the VM

@@ -31,7 +31,7 @@ MIIMON = "miimon"
 SETUPNETWORKS = "setupnetworks"
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def remove_networks_from_host(host_name, networks, nic=None):
     """
     Remove network attachments from host
@@ -56,7 +56,7 @@ def remove_networks_from_host(host_name, networks, nic=None):
     return True
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def add_network_to_host(host_name, nic_name=None, **kwargs):
     """
     Attach network to host/host NIC
@@ -83,7 +83,7 @@ def add_network_to_host(host_name, nic_name=None, **kwargs):
     return res
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def update_network_on_host(host_name, nic_name=None, **kwargs):
     """
     Update network on host/host NIC
@@ -112,7 +112,7 @@ def update_network_on_host(host_name, nic_name=None, **kwargs):
     return res
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def setup_networks(host_name, **kwargs):
     """
     Sends setupNetwork action request to VDS host
@@ -276,7 +276,7 @@ def setup_networks(host_name, **kwargs):
     return res
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def clean_host_interfaces(host_name):
     """
     Remove all networks beside management network from host
@@ -337,7 +337,7 @@ def clean_host_interfaces(host_name):
     return True
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def get_attached_networks_names_from_host_nic(host_name, nic):
     """
     Get attached networks names from host NIC
@@ -359,7 +359,7 @@ def get_attached_networks_names_from_host_nic(host_name, nic):
     ]
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def get_host_unmanaged_networks_info(host_name):
     """
     Get un-managed host networks info (name and host_nic)
@@ -379,7 +379,7 @@ def get_host_unmanaged_networks_info(host_name):
     return res
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def get_unsync_network_attachments(host_name, networks=None):
     """
     Get un-synced network attachment
@@ -403,7 +403,7 @@ def get_unsync_network_attachments(host_name, networks=None):
     ]
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def get_networks_unsync_reason(host_name, networks=None):
     """
     Get un-synced network reason
@@ -431,7 +431,7 @@ def get_networks_unsync_reason(host_name, networks=None):
     return res
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def check_network_on_nic(network, host, nic):
     """
     Checks if network resides on Host NIC via NIC attachments

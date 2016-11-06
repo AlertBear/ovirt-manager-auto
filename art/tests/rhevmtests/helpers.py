@@ -53,7 +53,7 @@ def get_golden_template_name(cluster=config.CLUSTER_NAME[0]):
     return None
 
 
-@ll_general.generate_logs
+@ll_general.generate_logs()
 def set_passwordless_ssh(src_host, dst_host):
     """
     Set passwordless SSH to remote host
