@@ -131,10 +131,10 @@ VALIDATOR_IGNORE_LIST = [
     'watchdogs', 'cdroms', 'statistics', 'vm_pool', 'start_time', 'run_once',
     'guest_info', 'payloads', 'use_latest_template_version', 'name', 'disks',
     'stop_reason', 'placement_policy', 'guest_operating_system',
-    'creation_time', 'snapshots', 'id', 'instance_type', 'nics',
+    'creation_time', 'snapshots', 'id', 'instance_type',  'numa_tune_mode',
     'guest_time_zone', 'stop_time', 'template', 'external_host_provider',
     'katello_errata', 'next_run_configuration_exists', 'floppies', 'tags',
-    'initialization', 'quota', 'host', 'reported_devices', 'numa_tune_mode',
+    'initialization', 'quota', 'host', 'reported_devices', 'original_template',
     'vm', 'version', 'host_numa_nodes', 'sessions', 'status_detail',
-    'affinity_labels', 'applications', 'fqdn', 'host_devices'
+    'affinity_labels', 'applications', 'fqdn', 'host_devices', 'nics',
 ]
