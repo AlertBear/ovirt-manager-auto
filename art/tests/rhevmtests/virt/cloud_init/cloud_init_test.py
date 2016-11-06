@@ -18,6 +18,7 @@ logger = logging.getLogger("Cloud init VM")
 
 
 @attr(tier=1)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestCloudInit(VirtTest):
     """
     Cloud init test cases
