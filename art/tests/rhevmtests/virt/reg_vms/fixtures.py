@@ -56,10 +56,8 @@ def basic_teardown_fixture(request):
     Remove vm safely
     """
 
-    vm_name = request.cls.vm_name
-
     def fin():
-        ll_vms.safely_remove_vms([vm_name])
+        ll_vms.safely_remove_vms(config.REG_VMS_LIST)
 
     request.addfinalizer(fin)
 

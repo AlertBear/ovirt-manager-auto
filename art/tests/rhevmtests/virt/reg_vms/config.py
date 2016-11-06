@@ -15,3 +15,5 @@ WIN_7 = ENUMS['windows7']
 
 ticket_expire_time = 120
 template_name = TEMPLATE_NAME[0]
+REG_VMS_LIST = ['add_vm_test', 'virt_mix_cases', 'clone_vm_from_template']
+

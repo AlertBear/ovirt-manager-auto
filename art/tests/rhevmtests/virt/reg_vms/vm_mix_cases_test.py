@@ -27,9 +27,10 @@ class TestMixCases(VirtTest):
     storages = set([NFS])
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
-    vm_name = 'mix_cases'
+    vm_name = config.REG_VMS_LIST[1]
     add_disk = False
     vm_parameters = None
+    VM_DISK_CLONE_TIMEOUT = 1500
     master_domain, export_domain, non_master_domain = (
         helper.get_storage_domains()
     )
@@ -263,18 +264,25 @@ class TestMixCases(VirtTest):
 
     @attr(tier=1)
     @polarion("RHEVM3-12582")
-    @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
+    @pytest.mark.usefixtures(
+        basic_teardown_fixture.__name__,
+        add_template_fixture.__name__
+    )
     def test_clone_vm_from_template(self):
         """
         Clone vm from template
         """
-
-        testflow.step("Clone vm from template")
+        vm_name = config.REG_VMS_LIST[2]
+        template_name = 'template_virt'
+        testflow.step(
+            "Clone vm %s from template %s", vm_name, template_name
+        )
         assert ll_vms.cloneVmFromTemplate(
             positive=True,
-            name=self.vm_name,
-            template=self.template_name,
-            cluster=config.CLUSTER_NAME[0]
+            name=vm_name,
+            template=template_name,
+            cluster=config.CLUSTER_NAME[0],
+            timeout=self.VM_DISK_CLONE_TIMEOUT
         )
 
 
