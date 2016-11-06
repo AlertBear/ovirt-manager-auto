@@ -704,6 +704,4 @@ class TestSanityAffinityLabelName(u_libs.SlaTest):
         assert not ll_afflabels.AffinityLabels.create(name=("a" * 51))
         special_name = "*@_@*"
         u_libs.testflow.step("Create the affinity label %s", special_name)
-        assert ll_afflabels.AffinityLabels.create(name=special_name)
-        u_libs.testflow.step("Delete the affinity label %s", special_name)
-        assert ll_afflabels.AffinityLabels.delete(name=special_name)
+        assert not ll_afflabels.AffinityLabels.create(name=special_name)
