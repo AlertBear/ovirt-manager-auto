@@ -71,6 +71,8 @@ VNC = ENUMS['display_type_vnc']
 
 # cpu_hotplug
 CPU_HOTPLUG_VM = "cpu_hotplug_vm"
+CPU_HOTPLUG_VM_LOAD = "cpu_hotplug_vm_with_load"
+CPU_HOTPLUG_VMS_NAME = [CPU_HOTPLUG_VM, CPU_HOTPLUG_VM_LOAD]
 VCPU_PINNING_3 = ([{str(i): str(i)} for i in range(3)])
 CPU_TOPOLOGY = []
 CPU_HOTPLUG_VM_PARAMS = {
