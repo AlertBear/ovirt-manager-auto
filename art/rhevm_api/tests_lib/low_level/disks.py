@@ -49,7 +49,10 @@ CONN_API = get_api('storage_connection', 'storageconnections')
 
 logger = logging.getLogger("art.ll_lib.disks")
 BLOCK_DEVICES = [ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']]
-
+FILE_DEVICES = [
+    ENUMS['storage_type_gluster'], ENUMS['storage_type_nfs'],
+    ENUMS['storage_type_ceph'], ENUMS['storage_type_posixfs']
+]
 FORMAT_COW = ENUMS['format_cow']
 FORMAT_RAW = ENUMS['format_raw']
 VIRTIO = ENUMS['interface_virtio']
@@ -782,6 +785,12 @@ def get_other_storage_domain(
         "Disk '%s' is using storage domain of type '%s'",
         disk.get_name(), disk_sd_type
     )
+
+    # Make sure that the func return sd from different kind file <-> block
+    device_type = (
+        FILE_DEVICES if disk_sd_type in FILE_DEVICES else BLOCK_DEVICES
+    )
+
     dc = get_sd_datacenter(disk_sd.get_name())
     sd_list = []
 
@@ -799,10 +808,11 @@ def get_other_storage_domain(
                 continue
             if force_type and (disk_sd_type != sd_type):
                 continue
-            if not force_type and (disk_sd_type == sd_type):
+            if not force_type and (sd_type in device_type):
                 continue
             if sd_type in ignore_type:
                 continue
+
             sd_list.append(sd.get_name())
     if sd_list:
         random_sd = random.choice(sd_list)
