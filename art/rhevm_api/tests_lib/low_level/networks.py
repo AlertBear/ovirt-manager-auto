@@ -1495,3 +1495,26 @@ def prepare_vnic_profile_mappings_object(network_mappings):
             vnic_profile_mapping(**network_mapping)
         )
     return vnic_profile_mappings
+
+
+@ll.general.generate_logs()
+def get_bond_active_slave_object(host, bond):
+    """
+    Get host bond active slave object.
+
+    Args:
+        host (str): Host name.
+        bond (str): Bond name.
+
+    Returns:
+        HostNic or None: HostNic objects if active slave found else None.
+    """
+    host_nics = ll.hosts.get_host_nics_list(host)
+    bond_object = [i for i in host_nics if i.name == bond]
+    bond_slave_object = (
+        bond_object[0].bonding.active_slave if bond_object else None
+    )
+    if not bond_slave_object:
+        return None
+
+    return [i for i in host_nics if i.id == bond_slave_object.id][0]

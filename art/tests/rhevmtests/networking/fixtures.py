@@ -75,6 +75,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
     """
     Perform network operation on host via setup network
     """
+    NetworkFixtures()
     hosts_nets_nic_dict = request.node.cls.hosts_nets_nic_dict
     sriov_nics = getattr(request.node.cls, "sriov_nics", False)
     ethtool_opts_str = "ethtool_opts"

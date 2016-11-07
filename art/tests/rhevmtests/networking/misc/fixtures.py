@@ -12,7 +12,7 @@ from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def case_01_fixture(request):
+def remove_all_networks(request):
     """
     Fixture for case01:
     """
