@@ -1,20 +1,14 @@
 """
 Soft Fencing config module
 """
-
-__test__ = False
-
 from rhevmtests.system.config import *  # flake8: noqa
 
-
 TEST_NAME = "Soft Fencing"
-PM_ADDRESS = PARAMETERS['pm_address']
-PM_TYPE_IPMILAN = PARAMETERS['pm_type_ipmilan']
-PM_PASSWORD = PARAMETERS['pm_password']
-PM_USER = PARAMETERS['pm_user']
-host_with_pm = None  # Filled in setup_package
-host_without_pm = None  # Filled in setup_package
-job_description = 'Executing SSH Soft Fencing on host'
+host_with_pm = None  # Filled in setup_module
+host_with_pm_num = None  # Filled in setup_module
+host_without_pm = None  # Filled in setup_module
+host_without_pm_num = None  # Filled in setup_module
+job_description = 'Handling non responsive Host'
 
 job_finished = ENUMS['job_finished']
 job_failed = ENUMS['job_failed']

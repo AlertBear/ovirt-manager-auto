@@ -4,20 +4,24 @@ Check different cases when host need to do soft fencing or hard fencing,
 on host with pm and without,
 """
 
-from art.rhevm_api.tests_lib.low_level.hosts import \
-    runDelayedControlService, waitForHostsStates,\
-    deactivate_host, removeHost, add_host, isHostUp, activate_host
+import logging
+import pytest
+
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    runDelayedControlService, waitForHostsStates, removeHost,
+    add_host, isHostUp, activate_host, select_host_as_spm, waitForSPM
+)
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
+from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest as TestCase
-from art.rhevm_api.tests_lib.low_level import vms
-from art.unittest_lib import attr
-import art.test_handler.exceptions as errors
+from art.test_handler.tools import polarion, bz
+from art.unittest_lib import attr, testflow, CoreSystemTest as TestCase
+from rhevmtests.helpers import get_pm_details
+
 from rhevmtests.system.soft_fencing import config
-import logging
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -26,64 +30,96 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 PINNED = ENUMS['vm_affinity_pinned']
 HOST_CONNECTING = ENUMS['host_state_connecting']
 VM_DOWN = ENUMS['vm_state_down']
-JOB = 'SshSoftFencing'
-sql = '%s FROM job WHERE action_type=\'SshSoftFencing\''
-PM_TYPE = config.PM_TYPE_IPMILAN
+JOB = 'VdsNotRespondingTreatment'
+sql = '%s FROM job WHERE action_type=\'VdsNotRespondingTreatment\''
 
 logger = logging.getLogger(__name__)
 
-########################################################################
-#                             Test Cases                               #
-########################################################################
+
+@pytest.fixture(scope="module", autouse=True)
+def module_setup(request):
+    """
+    Prepare environment for Soft Fencing tests
+    """
+    def fin():
+        testflow.teardown(
+            "Remove power management of host %s", config.host_with_pm
+        )
+        assert hl_hosts.remove_power_management(host_name=config.host_with_pm)
+    request.addfinalizer(fin)
+
+    config.host_with_pm = config.HOSTS[0]
+    config.host_with_pm_num = 0
+    config.host_without_pm = config.HOSTS[1]
+    config.host_without_pm_num = 1
+    hostname = config.VDS_HOSTS[0].fqdn
+    testflow.setup("Get power management details of host %s", hostname)
+    host_pm = get_pm_details(hostname).get(hostname)
+    if not host_pm:
+        pytest.skip("The host %s does not have power management" % hostname)
+    agent = {
+        "agent_type": host_pm.get("pm_type"),
+        "agent_address": host_pm.get("pm_address"),
+        "agent_username": host_pm.get("pm_username"),
+        "agent_password": host_pm.get("pm_password"),
+        "concurrent": False,
+        "order": 1
+    }
+    testflow.setup("Add power management to host %s", config.host_with_pm)
+    assert hl_hosts.add_power_management(
+        host_name=config.host_with_pm, pm_agents=[agent]
+    )
 
 
-def _check_host_state(host, service, job_status):
-    logger.info("Stop %s on host %s", service, host)
-    if not runDelayedControlService(True, host, config.HOSTS_USER,
-                                    config.HOSTS_PW,
-                                    service=service, command='stop'):
-        raise errors.HostException("Trying to stop %s "
-                                   "on host %s failed" % (service, host))
-    logger.info("Check if %s job was invoked for host: %s", JOB, host)
-    if not waitForHostsStates(True, host, states=HOST_CONNECTING):
-        if not config.ENGINE.db.psql(sql, 'SELECT *'):
-            raise errors.HostException("%s job failed to start on host: %s"
-                                       % (JOB, host))
-    if not waitForHostsStates(True, host):
-        raise errors.HostException("Host %s is not in up state" % host)
-    status = check_recent_job(True, description=config.job_description,
-                              job_status=job_status)
-    if not status:
-        raise errors.JobException("No job with given description")
-    logger.info("Ssh soft fencing to host %s %s", host, job_status)
+def _check_host_state(host_num, service, job_status):
+    testflow.step(
+        "Check if service %s on host %s is in state %s",
+        service, config.HOSTS[host_num], job_status
+    )
+    testflow.step("Stop %s on host %s", service, config.HOSTS[host_num])
+    assert runDelayedControlService(
+            True, config.VDS_HOSTS[host_num].fqdn, config.HOSTS_USER,
+            config.HOSTS_PW, service=service, command='stop'
+    )
+    testflow.step(
+        "Check if %s job was invoked for host: %s",
+        JOB, config.HOSTS[host_num]
+    )
+    if not waitForHostsStates(
+            True, config.HOSTS[host_num], states=HOST_CONNECTING
+    ):
+        assert config.ENGINE.db.psql(sql, 'SELECT *')
+    assert waitForHostsStates(True, config.HOSTS[host_num])
+    testflow.step("Check recent jobs for job %s", config.job_description)
+    assert check_recent_job(
+        True, description=config.job_description, job_status=job_status
+    ), "No job with given description"
+    logger.info(
+        "SSH soft fencing to host %s %s", config.HOSTS[host_num], job_status
+    )
 
 
-def _delete_job_from_db():
-    if config.ENGINE.db.psql(sql, 'SELECT *'):
-        config.ENGINE.db.psql(sql, 'DELETE')
-    if config.ENGINE.db.psql(sql, 'SELECT *'):
-        logger.info("Deleting %s job from db failed", JOB)
-
-
-def _activate_both_hosts():
-    for host in config.host_with_pm, config.host_without_pm:
-        if not isHostUp(True, host=host):
-            if not activate_host(True, host=host):
-                raise errors.HostException("cannot activate host: %s" % host)
-
-
-@attr(tier=3, extra_reqs={'pm': PM_TYPE})
+@attr(tier=1)
 class SoftFencing(TestCase):
-
+    """
+    Soft fencing base class
+    """
     __test__ = False
 
-    @classmethod
-    def setup_class(cls):
-        _activate_both_hosts()
+    @pytest.fixture(scope="class", autouse=True)
+    def base_class_setup(self, request):
+        def fin():
+            testflow.teardown("Delete job %s from DB", JOB)
+            if config.ENGINE.db.psql(sql, 'SELECT *'):
+                config.ENGINE.db.psql(sql, 'DELETE')
+            if config.ENGINE.db.psql(sql, 'SELECT *'):
+                logger.info("Deleting job %s from DB failed", JOB)
+        request.addfinalizer(fin)
 
-    @classmethod
-    def teardown_class(cls):
-        _delete_job_from_db()
+        for host in config.host_with_pm, config.host_without_pm:
+            if not isHostUp(True, host=host):
+                testflow.setup("Activate host %s", host)
+                assert activate_host(True, host=host)
 
 
 class SoftFencingPassedWithoutPM(SoftFencing):
@@ -97,32 +133,35 @@ class SoftFencingPassedWithoutPM(SoftFencing):
         """
         Check if engine does soft fencing to host when vdsm is stopped
         """
-        _check_host_state(config.host_without_pm, config.service_vdsmd,
-                          config.job_finished)
+        _check_host_state(
+            config.host_without_pm_num, config.service_vdsmd,
+            config.job_finished
+        )
 
 
+@bz({'1423657': {}})
 class SoftFencingFailedWithPM(SoftFencing):
     """
     Positive: After soft fencing failed, fence with power management
     """
-
     __test__ = True
 
     @polarion("RHEVM3-8402")
     def test_check_host_state(self):
         """
-        Check if job sshSoftFencing appear after timestamp,
-        and job status FAILED
+        There is no sshSoftFencing in the DB anymore, so just check
+        if fencing operation succeeded
         """
-        _check_host_state(config.host_with_pm, config.service_network,
-                          config.job_failed)
+        _check_host_state(
+            config.host_with_pm_num, config.service_network,
+            config.job_finished
+        )
 
 
 class SoftFencingPassedWithPM(SoftFencing):
     """
     Positive: Soft fencing success on host with PM
     """
-
     __test__ = True
 
     @polarion("RHEVM3-8407")
@@ -130,103 +169,94 @@ class SoftFencingPassedWithPM(SoftFencing):
         """
         Check if engine does soft fencing to host when vdsm is stopped
         """
-        _check_host_state(config.host_with_pm, config.service_vdsmd,
-                          config.job_finished)
+        _check_host_state(
+            config.host_with_pm_num, config.service_vdsmd, config.job_finished
+        )
 
 
 class CheckVmAfterSoftFencing(SoftFencing):
     """
     Positive: Check vm after soft fencing
     """
-
     __test__ = True
 
     vm_test = "vm_test"
 
     @classmethod
-    def setup_class(cls):
-        super(CheckVmAfterSoftFencing, cls).setup_class()
-        logger.info("Create new vm")
-        if not vms.createVm(positive=True, vmName=cls.vm_test,
-                            vmDescription="Test VM",
-                            cluster=config.CLUSTER_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            provisioned_size=DISK_SIZE, nic='nic1',
-                            diskInterface=ENUMS['interface_virtio'],
-                            placement_host=config.host_with_pm,
-                            placement_affinity=PINNED,
-                            network=config.MGMT_BRIDGE):
-            raise errors.VMException("Cannot create vm")
-        logger.info("Successfully created a simple VM.")
-        logger.info("Start Vm")
-        if not vms.startVm(positive=True, vm=cls.vm_test):
-            raise errors.VMException("VM failed change state to UP")
-        logger.info("Vm started")
+    @pytest.fixture(scope="class", autouse=True)
+    def class_setup(cls, request):
+        def fin():
+            testflow.teardown("Delete VM %s", cls.vm_test)
+            assert vms.removeVms(True, cls.vm_test, stop='true')
+        request.addfinalizer(fin)
+
+        testflow.setup("Create VM %s", cls.vm_test)
+        assert vms.createVm(
+            positive=True, vmName=cls.vm_test, vmDescription="Test VM",
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.STORAGE_NAME[0],
+            provisioned_size=DISK_SIZE, nic='nic1',
+            diskInterface=ENUMS['interface_virtio'],
+            placement_host=config.host_with_pm, placement_affinity=PINNED,
+            network=config.MGMT_BRIDGE
+        )
+        testflow.setup("Start VM %s", cls.vm_test)
+        assert vms.startVm(positive=True, vm=cls.vm_test)
 
     @polarion("RHEVM3-8406")
     def test_check_vm_state(self):
         """
         Check that vm is up after soft fencing
         """
-        _check_host_state(config.host_with_pm, config.service_vdsmd,
-                          config.job_finished)
-        logger.info("Check VM state")
+        _check_host_state(
+            config.host_with_pm_num, config.service_vdsmd, config.job_finished
+        )
+        testflow.step("Check VM state")
         assert checkVmState(True, self.vm_test, ENUMS['vm_state_up'])
-        logger.info("Vm state up")
-
-    @classmethod
-    def teardown_class(cls):
-        super(CheckVmAfterSoftFencing, cls).teardown_class()
-        logger.info("Deleting vm: %s", cls.vm_test)
-        if not vms.removeVms(True, cls.vm_test, stop='true'):
-            raise errors.VMException("cannot remove vm: %s" % cls.vm_test)
 
 
 class SoftFencingToHostNoProxies(SoftFencing):
     """
     Positive: Soft fencing to host with power management without proxies
     """
-
     __test__ = True
 
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(scope="class", autouse=True)
+    def class_setup(cls, request):
         """
         Remove another host in cluster
         """
-        super(SoftFencingToHostNoProxies, cls).setup_class()
-        logger.info("Put another host in cluster to maintenance")
-        if not deactivate_host(True, config.host_without_pm):
-            raise errors.HostException("Attempt to put host %s"
-                                       " to maintenance state failed"
-                                       % config.host_without_pm)
-        logger.info("Attempt to remove host")
-        if not removeHost(True, config.host_without_pm):
-            raise errors.HostException("Attempt to remove host %s failed"
-                                       % config.host_without_pm)
+        def fin():
+            for host_num in 1, 2:
+                testflow.teardown(
+                    "Add host %s that was removed", config.HOSTS[host_num]
+                )
+                assert add_host(
+                    name=config.HOSTS[host_num],
+                    address=config.VDS_HOSTS[host_num].fqdn,
+                    root_password=config.HOSTS_PW,
+                    cluster=config.CLUSTER_NAME[0]
+                )
+                testflow.teardown("Wait for host %s", config.HOSTS[host_num])
+                assert waitForHostsStates(True, config.HOSTS[host_num])
+        request.addfinalizer(fin)
+
+        select_host_as_spm(True, config.host_with_pm, config.DC_NAME[0])
+        waitForSPM(
+            config.DC_NAME[0], config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP
+        )
+        for host_num in 1, 2:
+            testflow.setup("Remove host %s", config.HOSTS[host_num])
+            assert removeHost(
+                True, config.HOSTS[host_num], deactivate=True
+            )
 
     @polarion("RHEVM3-8405")
     def test_check_soft_fencing_without_proxies(self):
         """
         Check that host do soft fencing with out proxies
         """
-        _check_host_state(config.host_with_pm, config.service_vdsmd,
-                          config.job_finished)
-
-    @classmethod
-    def teardown_class(cls):
-        super(SoftFencingToHostNoProxies, cls).teardown_class()
-        logger.info("Add host that was removed")
-        if not add_host(
-            name=config.host_without_pm,
-            address=config.VDS_HOSTS[1].fqdn,
-            root_password=config.HOSTS_PW,
-            cluster=config.CLUSTER_NAME[0]
-        ):
-            raise errors.HostException("Add host %s was failed"
-                                       % config.host_without_pm)
-        logger.info("Wait for host %s", config.host_without_pm)
-        if not waitForHostsStates(True, config.host_with_pm):
-            raise errors.HostException("Host %s not in up state"
-                                       % config.host_without_pm)
-        logger.info("Host %s Up", config.host_without_pm)
+        _check_host_state(
+            config.host_with_pm_num, config.service_vdsmd, config.job_finished
+        )
