@@ -97,8 +97,6 @@ echo "export PYTHONPATH=$ART_PATH:$ART_PATH/pytest_customization:$RHEVM_QE_UTILS
 
 source ./.art/bin/activate
 pip install -U -rrequirements.txt
-# WA for https://github.com/pyca/cryptography/issues/2838
-pip install cryptography==1.2.1
 python setup_pytest.py install
 
 virtualenv --relocatable .art
