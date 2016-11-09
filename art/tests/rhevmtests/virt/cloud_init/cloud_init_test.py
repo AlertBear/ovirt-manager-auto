@@ -10,6 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
 import helper
+import rhevmtests.virt.helper as virt_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib.common import VirtTest, attr, testflow
 from fixtures import case_setup, start_vm_with_cloud_init
@@ -17,7 +18,6 @@ from fixtures import case_setup, start_vm_with_cloud_init
 logger = logging.getLogger("Cloud init VM")
 
 
-@attr(tier=1)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestCloudInit(VirtTest):
     """
@@ -28,6 +28,7 @@ class TestCloudInit(VirtTest):
     vm_name = config.CLOUD_INIT_VM_NAME
     initialization = None
 
+    @attr(tier=1)
     @polarion("RHEVM3-14364")
     @pytest.mark.usefixtures(case_setup.__name__)
     def test_case_1_new_vm_with_cloud_init(self):
@@ -41,6 +42,7 @@ class TestCloudInit(VirtTest):
             positive=True, vm=self.vm_name, wait_for_ip=True,
             use_cloud_init=True, wait_for_status=config.VM_UP
         )
+        assert virt_helper.wait_for_vm_fqdn(self.vm_name)
         testflow.step("Check cloud init parameters")
         assert helper.check_cloud_init_parameters(
             script_content=helper.SCRIPT_CONTENT,
@@ -51,6 +53,7 @@ class TestCloudInit(VirtTest):
             % self.vm_name
         )
 
+    @attr(tier=2)
     @polarion("RHEVM3-4795")
     @pytest.mark.usefixtures(case_setup.__name__)
     @pytest.mark.initialization_param(user_name=config.VDC_ROOT_USER)
@@ -67,6 +70,7 @@ class TestCloudInit(VirtTest):
             initialization=self.initialization,
             wait_for_state=config.VM_UP
         ), "Failed to start VM %s " % self.vm_name
+        assert virt_helper.wait_for_vm_fqdn(self.vm_name)
         testflow.step("Check VM %s with root user", self.vm_name)
         assert helper.check_cloud_init_parameters(
             time_zone=config.NEW_ZEALAND_TZ_LIST,
@@ -76,6 +80,7 @@ class TestCloudInit(VirtTest):
             % self.vm_name
         )
 
+    @attr(tier=2)
     @polarion("RHEVM3-14369")
     @pytest.mark.usefixtures(
         case_setup.__name__,
@@ -101,6 +106,7 @@ class TestCloudInit(VirtTest):
             self.vm_name
         )
 
+    @attr(tier=2)
     @polarion("RHEVM3-4796")
     @pytest.mark.usefixtures(case_setup.__name__)
     @pytest.mark.per_condition(set_authorized_ssh_keys=True)
@@ -115,6 +121,7 @@ class TestCloudInit(VirtTest):
             positive=True, vm=self.vm_name, wait_for_ip=True,
             use_cloud_init=True, wait_for_status=config.VM_UP
         )
+        assert virt_helper.wait_for_vm_fqdn(self.vm_name)
         testflow.step("Check connectivity without password")
         assert helper.check_cloud_init_parameters(
             script_content=helper.SCRIPT_CONTENT,

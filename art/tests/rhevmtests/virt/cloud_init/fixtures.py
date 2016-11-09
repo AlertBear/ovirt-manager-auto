@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
 import helper
+import rhevmtests.virt.helper as virt_helper
 
 logger = logging.getLogger("cloud_init_fixture")
 
@@ -147,3 +148,4 @@ def start_vm_with_cloud_init(request):
         positive=True, vm=vm_name, wait_for_ip=True,
         use_cloud_init=True, wait_for_status=config.VM_UP
     )
+    assert virt_helper.wait_for_vm_fqdn(vm_name)

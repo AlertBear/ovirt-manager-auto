@@ -15,6 +15,7 @@ from rhevmtests import helpers
 from rhevmtests.networking import config
 from art.unittest_lib import testflow
 from art.test_handler import exceptions
+from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
 import art.unittest_lib.network as lib_network
@@ -761,3 +762,29 @@ def remove_all_pools_from_cluster(cluster):
         all_vms_in_cluster_pools.extend(vms_in_pool)
     if all_vms_in_cluster_pools:
         ll_vms.waitForVmsGone(True, all_vms_in_cluster_pools)
+
+
+@ll_general.generate_logs()
+def wait_for_vm_fqdn(
+    vm_name, timeout=config.VM_IP_TIMEOUT, sleep=config.SAMPLER_SLEEP
+):
+    """
+    Wait for vm's fqdn.
+
+    Args:
+        vm_name (str): Name of the vm.
+        timeout (int): Timeout for sampling the result.
+        sleep (int): Time to wait between samples.
+
+    Returns:
+         True if got vm's fqdn within the timeout period, False otherwise.
+    """
+    sampler = test_utils.TimeoutingSampler(
+        timeout=timeout, sleep=sleep, func=ll_vms.get_vm_obj, vm_name=vm_name
+    )
+    try:
+        for vm_object in sampler:
+            if vm_object.get_fqdn():
+                return True
+    except APITimeout:
+        return False
