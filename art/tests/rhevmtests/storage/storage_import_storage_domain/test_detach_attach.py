@@ -1325,6 +1325,7 @@ class TestCase5192_3_6(BaseTestCase5192):
 # Bugzilla history:
 # BZ1328071: Unexpected flow when importing a domain with a template with
 # multiple disks on different domains
+@bz({'1393257': {}})
 @attr(tier=3)
 class TestCase5200(DomainImportWithTemplate):
     """
