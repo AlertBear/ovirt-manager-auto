@@ -359,4 +359,4 @@ class TestRegisterDomain10(NetworkTest):
         """
         mac, network, nic = helper.get_vm_params(vm=self.vm)
         testflow.step("Check that VM %s imported with empty vNIC", self.vm)
-        assert not ll_vms.check_vnic_on_vm_nic(vm=self.vm, nic=nic, vnic=None)
+        assert ll_vms.check_vnic_on_vm_nic(vm=self.vm, nic=nic, vnic=None)
