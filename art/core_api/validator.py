@@ -43,6 +43,8 @@ DS_CLASS_MAPPER = {
     'templatepermissions': 'Permissions',
 }
 
+SORT_ATTRS = ["name", "id", "index"]
+
 primitive = (int, bool, float, long, basestring)
 
 
@@ -164,6 +166,72 @@ def getAttibuteValue(elm, attrName):
 
 def getClassName(elmClass):
     return DS_CLASS_MAPPER.get(elmClass.lower(), elmClass)
+
+
+def sort_elements_by_attr(act_elms, exp_elms, sort_attr):
+    """
+    Sort actual and expected elements by sort attribute value
+
+    Args:
+        act_elms (list): Actual elements
+        exp_elms (list): Expected elements
+        sort_attr (str): Sort attribute
+    """
+    exp_elms.sort(key=lambda x: getattr(x, sort_attr))
+    act_elms.sort(key=lambda x: getattr(x, sort_attr))
+
+
+def sort_elements_by_existence(act_elms, exp_elms, sort_attr):
+    """
+    Sort larger list(actual or expected elements)
+    by existence in the smaller list
+    Elements that appear under the smaller list
+    will be moved to the first places of the list
+
+    Args:
+        act_elms (list): Actual elements-
+        exp_elms (list): Expected elements
+        sort_attr (str): Sort attribute
+    """
+    act_elms_size = len(act_elms)
+    exp_elms_size = len(exp_elms)
+    if act_elms_size != exp_elms_size:
+        elms_to_sort, sort_by_elms = (
+            act_elms, exp_elms
+        ) if act_elms_size > exp_elms_size else (
+            exp_elms, act_elms
+        )
+        elms_attrs_vals = [getattr(elm, sort_attr) for elm in sort_by_elms]
+        elms_to_sort.sort(
+            key=lambda x: -1 if getattr(x, sort_attr) in elms_attrs_vals else 1
+        )
+
+
+def sort_elements(act_elms, exp_elms, logger, elm_class):
+    """
+    1) Sort elements by attribute
+    2) Sort elements by existence in the smaller list
+
+    Args:
+        act_elms (list): Actual elements
+        exp_elms (list): Expected elements
+        logger (Logger): Logger instance
+        elm_class (str): Element class name
+    """
+    for sort_attr in SORT_ATTRS:
+        if hasattr(exp_elms[0], sort_attr) and hasattr(act_elms[0], sort_attr):
+            sort_elements_by_attr(
+                act_elms=act_elms, exp_elms=exp_elms, sort_attr=sort_attr
+            )
+            sort_elements_by_existence(
+                act_elms=act_elms, exp_elms=exp_elms, sort_attr=sort_attr
+            )
+            return
+    logger.warn(
+        "Can't sort objects {0} list by any attribute from: {1}".format(
+            elm_class, SORT_ATTRS
+        )
+    )
 
 
 def compareElements(expElm, actElm, logger, root, equal=True,
@@ -291,20 +359,16 @@ def compareElements(expElm, actElm, logger, root, equal=True,
                                             attrActVal))
             else:
                 nodeName = "{0}->{1}".format(root, attr)
-                if isinstance(attrExpVal, list):
-                    try:
-                        attrExpVal.sort(
-                            key=lambda x: x.name if x.name else x.id
-                        )
-                        attrActVal.sort(
-                            key=lambda x: x.name if x.name else x.id
-                        )
-                    except AttributeError:
-                        logger.warn(
-                            "Can't sort {0} objects list by name".format(
-                                elmClass
-                            )
-                        )
+                if (
+                    attrExpVal and isinstance(attrExpVal, list) and
+                    attrActVal and isinstance(attrActVal, list)
+                ):
+                    sort_elements(
+                        act_elms=attrActVal,
+                        exp_elms=attrExpVal,
+                        logger=logger,
+                        elm_class=elmClass
+                    )
 
                     for i in range(0, len(attrExpVal)):
                         if i > len(attrActVal) - 1:
