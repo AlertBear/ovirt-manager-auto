@@ -13,13 +13,13 @@ EXTRA_SD_PATH = conf.UNUSED_DATA_DOMAIN_PATHS[0]
 EXTRA_SD_ADDRESS = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
 
 NETS = global_helper.generate_object_names(
-    num_of_cases=10, num_of_objects=2, prefix="reg_dom"
+    num_of_cases=8, num_of_objects=2, prefix="reg_dom"
 )
 VM_NAMES = global_helper.generate_object_names(
-    num_of_cases=10, num_of_objects=1, prefix="register_domain_network_vm"
+    num_of_cases=8, num_of_objects=1, prefix="register_domain_network_vm"
 )
 VM_NICS = global_helper.generate_object_names(
-    num_of_cases=10, num_of_objects=1, prefix="register_domain_vnic"
+    num_of_cases=8, num_of_objects=1, prefix="register_domain_vnic"
 )
 VMS_LIST = [i[0] for i in VM_NAMES.values()]
 NETS_LIST = [i[0] for i in NETS.values()]
@@ -68,12 +68,6 @@ NETS_DICT = {
         "required": "false",
     },
     NETS[8][0]: {
-        "required": "false",
-    },
-    NETS[9][0]: {
-        "required": "false",
-    },
-    NETS[10][0]: {
         "required": "false",
     },
 }

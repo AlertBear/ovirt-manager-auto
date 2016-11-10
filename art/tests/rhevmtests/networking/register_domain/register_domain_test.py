@@ -151,7 +151,6 @@ class TestRegisterDomain03(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1390553": {}})
 @pytest.mark.usefixtures(
     prepare_setup.__name__,
     import_vm_from_data_domain.__name__
@@ -168,6 +167,7 @@ class TestRegisterDomain04(NetworkTest):
     def test_mac_pool_not_in_mac_range_already_exists_with_reassign(self):
         """
         Check that MAC of imported VM is from the MAC pool
+        Check that the VM vNIC is plugged after import
         """
         mac, network, nic = helper.get_vm_params(vm=self.vm)
         testflow.step(
@@ -179,10 +179,7 @@ class TestRegisterDomain04(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(
-    prepare_setup.__name__,
-    import_vm_from_data_domain.__name__
-)
+@pytest.mark.usefixtures(prepare_setup.__name__)
 class TestRegisterDomain05(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
@@ -190,21 +187,25 @@ class TestRegisterDomain05(NetworkTest):
     """
     __test__ = False
     vm = register_domain_conf.VM_NAMES[5][0]
-    reassessing_mac = False
 
     @polarion("RHEVM-16896")
     def test_mac_pool_not_in_mac_range_already_exists_without_reassign(self):
         """
-        Check that MAC of imported VM is not from the MAC pool
+        Check that import VM fail when MAC is already exists in engine
         """
-        mac, network, nic = helper.get_vm_params(vm=self.vm)
-        vm_mac = ll_vms.get_vm_nic_mac_address(vm=self.vm, nic=nic)
-        testflow.step(
-            "Check the MAC of imported VM %s is %s", self.vm, mac
+        unregistered_vms = ll_storage.get_unregistered_vms(
+            storage_domain=register_domain_conf.EXTRA_SD_NAME
         )
-        assert mac == vm_mac
-        testflow.step("Check that VM vNIC %s is unplugged", nic)
-        assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic, positive=False)
+        vm_to_import = [i for i in unregistered_vms if i.name == self.vm]
+        assert vm_to_import
+        testflow.step(
+            "Check that import VM %s from data domain %s fail with: "
+            "reassessing_mac=False when MAC is duplicate",
+            self.vm, register_domain_conf.EXTRA_SD_NAME
+        )
+        assert not ll_storage.register_object(
+            obj=vm_to_import[0], cluster=conf.CL_0, reassign_bad_macs=False
+        )
 
 
 @attr(tier=2)
@@ -229,7 +230,7 @@ class TestRegisterDomain06(NetworkTest):
         Check that MAC of imported VM is not from the MAC pool
         """
         mac, network, nic = helper.get_vm_params(vm=self.vm)
-        vm_mac = mac = ll_vms.get_vm_nic_mac_address(vm=self.vm, nic=nic)
+        vm_mac = ll_vms.get_vm_nic_mac_address(vm=self.vm, nic=nic)
         testflow.step(
             "Check the MAC of imported VM %s is %s", self.vm, mac
         )
@@ -239,46 +240,18 @@ class TestRegisterDomain06(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1390553": {}})
-@pytest.mark.usefixtures(
-    prepare_setup.__name__,
-    import_vm_from_data_domain.__name__
-)
-class TestRegisterDomain07(NetworkTest):
-    """
-    Import VM from storage data domain when MAC is already exists on another VM
-    with reassessing MAC flag
-    """
-    __test__ = False
-    vm = register_domain_conf.VM_NAMES[7][0]
-
-    @polarion("RHEVM-")
-    def test_mac_pool_in_mac_range_already_exists_with_reassign(self):
-        """
-        Check that MAC of imported VM is from the MAC pool
-        """
-        mac, network, nic = helper.get_vm_params(vm=self.vm)
-        testflow.step(
-            "Check the MAC of imported VM %s is from the MAC pool", self.vm
-        )
-        assert helper.check_mac_in_mac_range(vm=self.vm, nic=nic)
-        testflow.step("Check that VM %s vNIC %s is plugged", self.vm, nic)
-        assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
-
-
-@attr(tier=2)
 @pytest.mark.usefixtures(
     prepare_setup.__name__,
     manage_mac_pool_range.__name__,
     make_sure_no_mac_in_pool.__name__
 )
-class TestRegisterDomain08(NetworkTest):
+class TestRegisterDomain07(NetworkTest):
     """
     Import VM from storage data domain when not MACs left in the pool
     with reassessing MAC flag
     """
     __test__ = False
-    vm = register_domain_conf.VM_NAMES[8][0]
+    vm = register_domain_conf.VM_NAMES[7][0]
 
     @polarion("RHEVM-17144")
     def test_no_mac_left_in_pool_with_reassign(self):
@@ -301,52 +274,19 @@ class TestRegisterDomain08(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1390575": {}})
-@pytest.mark.usefixtures(
-    prepare_setup.__name__,
-    manage_mac_pool_range.__name__,
-    make_sure_no_mac_in_pool.__name__,
-    import_vm_from_data_domain.__name__
-)
-class TestRegisterDomain09(NetworkTest):
-    """
-    Import VM from storage data domain when not MACs left in the pool
-    without reassessing MAC flag
-    """
-    __test__ = False
-    vm = register_domain_conf.VM_NAMES[9][0]
-    reassessing_mac = False
-
-    @polarion("RHEVM-17158")
-    def test_no_mac_left_in_pool_without_reassign(self):
-        """
-        Check that VM was imported with the original MAC
-        """
-        mac, network, nic = helper.get_vm_params(vm=self.vm)
-        vm_mac = mac = ll_vms.get_vm_nic_mac_address(vm=self.vm, nic=nic)
-        testflow.step(
-            "Check the the VM %s was imported with MAC %s", self.vm, mac
-        )
-        assert mac == vm_mac
-        testflow.step("Check that VM %s vNIC %s is plugged", self.vm, nic)
-        assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
-
-
-@attr(tier=2)
-@bz({"1390560": {}})
 @pytest.mark.usefixtures(
     prepare_setup.__name__,
     import_vm_from_data_domain.__name__
 )
-class TestRegisterDomain10(NetworkTest):
+class TestRegisterDomain08(NetworkTest):
     """
     Import VM from storage data domain while the network exists on
     datacenter but force to import with empty vNIC
     """
     __test__ = False
-    vm = register_domain_conf.VM_NAMES[10][0]
+    vm = register_domain_conf.VM_NAMES[8][0]
     reassessing_mac = False
-    net = register_domain_conf.NETS[10][0]
+    net = register_domain_conf.NETS[8][0]
     network_mappings = [{
         "source_network_profile_name": net,
         "source_network_name": net

@@ -86,7 +86,7 @@ def prepare_setup(request):
     assert ll_vms.safely_remove_vms(vms=vms_to_remove)
 
     vms_to_recreate = list()
-    for i in range(4, 8):
+    for i in range(4, 7):
         vm_to_recreate_index = register_domain_conf.VMS_DICT.keys().index(
             register_domain_conf.VM_NAMES[i][0]
         )
