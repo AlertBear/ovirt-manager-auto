@@ -9,7 +9,7 @@ import shlex
 import time
 import logging
 import xmltodict
-from utilities import jobs
+from utilities import jobs, utils
 from art import test_handler
 import art.core_api.validator as validator
 from rhevmtests import helpers
@@ -27,7 +27,8 @@ from art.rhevm_api.tests_lib.low_level import (
     vmpools as ll_vmpools,
     clusters as ll_clusters,
     general as ll_general,
-    disks as ll_disks
+    disks as ll_disks,
+    events as ll_events,
 )
 import config as config_virt
 
@@ -53,6 +54,7 @@ VIRSH_VM_IOTHREADS_NUMBER_CMD = (
     "virsh -r dumpxml %s | grep -oP '(?<=<iothreads>).*?(?=</iothreads>)'"
 )
 VIRSH_VM_IOTHREADS_DRIVERS_CMD = "virsh -r dumpxml %s | grep 'iothread='"
+V2V_IMPORT_TIMEOUT = 1500
 
 test_handler.find_test_file.__test__ = False
 
@@ -933,3 +935,48 @@ def verify_ssh(vm_name):
     """
     host_resource = helpers.get_vm_resource(vm_name)
     return host_resource.executor().is_connective()
+
+
+def wait_for_v2v_import_event(vm_name, cluster, timeout=V2V_IMPORT_TIMEOUT):
+    """
+    Waits until engine reports a successful import of the vm via v2v
+
+    Args:
+        vm_name (str): Name given to the imported vm
+        cluster (str): Cluster name to which the vm is imported
+        timeout (int): Time to wait until vm import is done
+
+    Returns:
+        bool: True if the event was find within timeout
+    """
+    data_center = ll_clusters.get_cluster_data_center_name(cluster)
+    event_message = (
+        "Vm %s was imported successfully to Data Center %s, Cluster %s" %
+        (vm_name, data_center, cluster)
+    )
+    last_event = ll_events.get_max_event_id()
+    return ll_events.wait_for_event(
+        query=event_message, start_id=last_event, timeout=timeout
+    )
+
+
+def compare_vm_parameters(param_name, param_value, expected_config):
+    """
+    Compares two vm parameters taking into account mac address range.
+    It checks if actual[nic_mac_address] falls into
+    expected[nic_mac_address][start] : expected[nic_mac_address][end] range
+
+    Args:
+        param_name (str): vm parameter name
+        param_value (str): vm parameter value
+        expected_config (dict): expected vm parameters
+
+    Returns:
+        bool: True if parameters equal, False otherwise
+    """
+    if param_name == 'nic_mac_address':
+        return utils.MAC(param_value) in utils.MACRange(
+                mac_start=utils.MAC(expected_config[param_name]['start']),
+                mac_end=utils.MAC(expected_config[param_name]['end'])
+            )
+    return expected_config[param_name] == param_value

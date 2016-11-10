@@ -22,7 +22,8 @@ import time
 from art.rhevm_api.tests_lib.low_level import (
     general as ll_general,
     networks as ll_networks,
-    vmpools as ll_vmpools
+    vmpools as ll_vmpools,
+    datacenters as ll_dc,
 )
 import art.test_handler.exceptions as exceptions
 from art.core_api.apis_utils import getDS, data_st
@@ -884,3 +885,17 @@ def set_cluster_cpu_level(cluster_name, cluster_cpu_level):
     return cluster_cpu_level == get_cluster_cpu_level(
         cluster_name=cluster_name
     )
+
+
+def get_cluster_data_center_name(cluster_name):
+    """
+    Get name of the cluster's data center
+
+    Args:
+        cluster_name (str): Name of the cluster
+
+    Returns:
+         str: Name of data center
+    """
+    dc_id = get_cluster_object(cluster_name).data_center.get_id()
+    return ll_dc.get_data_center(dc_id, key='id').name

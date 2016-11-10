@@ -305,6 +305,7 @@ class RestUtil(api_utils.APIUtil):
             operations (list): Operations to concatenate to the url
             current (bool): Current flag
             deploy_hosted_engine (bool): Deploy hosted engine flag
+            validate (bool): Validate the new element exist after creation
 
         Returns:
             tuple: POST response and status
@@ -357,7 +358,8 @@ class RestUtil(api_utils.APIUtil):
         ):
             return None, False
 
-        if not self.opts["validate"]:
+        validate = kwargs.get("validate", self.opts["validate"])
+        if not validate:
             return None, True
 
         collection = self.get(href, list_only=True, elm=coll_elm_name)

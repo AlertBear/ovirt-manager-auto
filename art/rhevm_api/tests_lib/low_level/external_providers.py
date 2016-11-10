@@ -6,10 +6,10 @@ External network providers
 """
 
 import logging
-
 import requests
 
 from art.core_api.apis_utils import getDS
+
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenters,
     general as ll_general,
@@ -21,6 +21,7 @@ import art.core_api.apis_exceptions as api_exceptions
 
 CEPH = 'ceph'
 AUTH_KEY = 'authenticationkey'
+
 logger = logging.getLogger(__name__)
 
 
