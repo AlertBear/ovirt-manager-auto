@@ -759,4 +759,5 @@ def remove_all_pools_from_cluster(cluster):
         if not ll_vmpools.removeVmPool(True, pool):
             continue
         all_vms_in_cluster_pools.extend(vms_in_pool)
-    ll_vms.waitForVmsGone(True, all_vms_in_cluster_pools)
+    if all_vms_in_cluster_pools:
+        ll_vms.waitForVmsGone(True, all_vms_in_cluster_pools)
