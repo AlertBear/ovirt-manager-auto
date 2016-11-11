@@ -285,7 +285,6 @@ class ARTLogging(object):
                 flow_logger.log(level, " ERR: %s", rec.getMessage())
         else:
             self.log_filter.flush()
-        flow_logger.info(DELIMITER)
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_teardown(self, item, nextitem):
@@ -307,8 +306,11 @@ class ARTLogging(object):
         flow_logger.removeFilter(self.log_filter)
 
     def print_flow_logger(self, log_level, log_type, msg, *args, **kwargs):
-        self.step_id += 1
         self.log_filter.toggle(False)
+        if self.step_id == 0:
+            flow_logger.info(DELIMITER)
+
+        self.step_id += 1
         msg = "      Test {0}  {1:2}: {2}".format(log_type, self.step_id, msg)
         try:
             # we may want to check length of message
