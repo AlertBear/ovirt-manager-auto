@@ -40,7 +40,7 @@ def initializer_module(request):
                 "was a problem with the test's finalizer function", host_ip,
             )
             if ll_hosts.get_host_status(host_ip) == config.HOST_UP:
-                ll_hosts.deactivateHost(True, host_ip)
+                ll_hosts.deactivate_host(True, host_ip)
             ll_hosts.removeHost(True, host_ip)
         except EntityNotFound:
             pass
@@ -63,7 +63,7 @@ def initializer_module(request):
     host_name = hsm_host['hsmHost']
     host_ip = ll_hosts.getHostIP(host_name)
     config.HOST_FOR_30_DC = {'name': host_name, 'ip': host_ip}
-    assert ll_hosts.deactivateHost(True, host_name)
+    assert ll_hosts.deactivate_host(True, host_name)
     assert ll_hosts.removeHost(True, host_name)
     config.HOSTS.remove(host_name)
 
@@ -118,7 +118,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             """
             ll_vms.stop_vms_safely([self.vm_1])
             if not ll_hosts.isHostUp(True, self.host):
-                ll_hosts.activateHost(True, self.host)
+                ll_hosts.activate_host(True, self.host)
             try:
                 ll_templates.removeTemplate(True, self.template)
             except apis_exceptions.EntityNotFound:
@@ -151,7 +151,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             try:
                 logger.info("Removing host %s", self.host_for_dc)
                 if ll_hosts.isHostUp(True, self.host_for_dc):
-                    ll_hosts.deactivateHost(True, self.host_for_dc)
+                    ll_hosts.deactivate_host(True, self.host_for_dc)
                 ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
                 ll_hosts.removeHost(True, self.host_for_dc)
             except apis_exceptions.EntityNotFound:
@@ -291,7 +291,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
 
         logger.info("Changing SPM host")
         old_spm_host = ll_hosts.getSPMHost(hosts)
-        if not ll_hosts.deactivateHost(True, old_spm_host):
+        if not ll_hosts.deactivate_host(True, old_spm_host):
             logger.error("Cannot deactivate host %s", old_spm_host)
             self.fail("Cannot deactivate host %s" % old_spm_host)
         ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)

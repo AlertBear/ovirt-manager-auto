@@ -480,7 +480,7 @@ class TestHostStoppedByUser(PowerSavingWithPM):
         cls.host_down = conf.HOSTS[1]
         super(TestHostStoppedByUser, cls).setup_class()
         cls._update_hosts_in_reserve(2)
-        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
         logger.info("Stop host %s via power management", conf.HOSTS[1])
         if not ll_hosts.fenceHost(
             positive=True, host=conf.HOSTS[1], fence_type="stop"

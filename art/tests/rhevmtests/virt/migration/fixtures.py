@@ -377,7 +377,7 @@ def over_load_test(request, update_cluster_over_commit):
         ll_vms.stop_vms_safely(vms_list=test_vms)
         hl_vms.update_os_type(os_type=vm_default_os_type, test_vms=test_vms)
         hl_vms.update_vms_memory(vms_list=test_vms, memory=int(vm_default_mem))
-        ll_hosts.activateHost(
+        ll_hosts.activate_host(
             positive=True,
             host=config.HOSTS[host_index_max_mem]
         )

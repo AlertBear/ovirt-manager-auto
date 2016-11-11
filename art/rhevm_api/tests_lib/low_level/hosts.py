@@ -88,6 +88,10 @@ MAC_SPOOF_LINES = [
     "<filterref filter='no-arp-mac-spoofing'/>"
 ]
 FENCE_AGENT = "fence agent"
+
+ACTIVATION_MAX_TIME = 300
+INSTALLATION_MAX_TIME = 3600
+
 logger = logging.getLogger("art.ll_lib.hosts")
 
 
@@ -465,7 +469,7 @@ def removeHost(positive, host, deactivate=False, force=False):
     hostObj = HOST_API.find(host)
     if deactivate:
         if not isHostInMaintenance(positive, host):
-            if not deactivateHost(positive=positive, host=host):
+            if not deactivate_host(positive=positive, host=host):
                 return False
 
     operations = ['force=true'] if force else None
@@ -473,17 +477,14 @@ def removeHost(positive, host, deactivate=False, force=False):
     return HOST_API.delete(hostObj, positive, operations=operations)
 
 
-def activateHost(positive, host, wait=True):
+def activate_host(positive, host, wait=True):
     """
-    Activate host (set status to UP)
-
-    __author__: edolinin
-
+    Description:
+        Activate host (set status to UP)
     Args:
         positive (bool): Expected result
         host (str): Name of a host to be activated
         wait (bool): Wait for host to be up
-
     Returns:
         bool: True if host was activated properly, False otherwise
     """
@@ -492,7 +493,11 @@ def activateHost(positive, host, wait=True):
     status = bool(HOST_API.syncAction(host_obj, "activate", positive))
 
     if status and wait and positive:
-        test_host_status = HOST_API.waitForElemStatus(host_obj, "up", 200)
+        test_host_status = HOST_API.waitForElemStatus(
+            host_obj,
+            "up",
+            ACTIVATION_MAX_TIME
+        )
     else:
         test_host_status = True
 
@@ -540,7 +545,7 @@ def isHostInMaintenance(positive, host):
     return (host_status == ENUMS['host_state_maintenance']) == positive
 
 
-def deactivateHost(
+def deactivate_host(
     positive, host, expected_status=ENUMS['host_state_maintenance'],
     timeout=300
 ):
@@ -587,32 +592,49 @@ def deactivateHost(
                 return not positive
 
 
-def installHost(positive, host, root_password, iso_image=None,
-                override_iptables='true'):
+def install_host(
+        positive, host,
+        root_password, iso_image=None,
+        override_iptables="true"
+):
     """
-    Description: run host installation
-    Author: edolinin, atal
+    Description:
+        run host installation
     Parameters:
-       * host - name of a host to be installed
-       * root_password - password of root user
-       * iso_image - iso image for rhevh installation
-       * override_iptables - override iptables. gets true/false strings.
-    Return: status (True if host was installed properly, False otherwise)
+        positive (bool): expected result
+        host (str): name of a host to be installed
+        root_password (str): password of root user
+        iso_image (str): iso image for rhevh installation
+        override_iptables (str): override iptables. gets true/false strings.
+    Return:
+        bool: True if host was installed properly, False otherwise
     """
     state_maintenance = ENUMS['host_state_maintenance']
     state_installing = ENUMS['host_state_installing']
-    hostObj = HOST_API.find(host)
+    host_object = HOST_API.find(host)
     response = HOST_API.syncAction(
-        hostObj, "install", positive, root_password=root_password,
-        image=iso_image, override_iptables=override_iptables.lower()
+        host_object,
+        "install",
+        positive,
+        root_password=root_password,
+        image=iso_image,
+        override_iptables=override_iptables.lower()
     )
     if response and not positive:
         return True
     if not (
-        response and HOST_API.waitForElemStatus(hostObj, state_installing, 800)
+        response and HOST_API.waitForElemStatus(
+            host_object,
+            state_installing,
+            INSTALLATION_MAX_TIME
+        )
     ):
         return False
-    return HOST_API.waitForElemStatus(hostObj, state_maintenance, 800)
+    return HOST_API.waitForElemStatus(
+        host_object,
+        state_maintenance,
+        INSTALLATION_MAX_TIME
+    )
 
 
 def approveHost(positive, host, cluster='Default'):
@@ -1612,7 +1634,7 @@ def start_vdsm(host, password, datacenter):
     if not startVdsmd(vds=ip, password=password):
         HOST_API.logger.error("Unable to start vdsm on host %s", host)
         return False
-    if not activateHost(True, host):
+    if not activate_host(True, host):
         HOST_API.logger.error("Unable to activate host %s", host)
         return False
 
@@ -1634,7 +1656,7 @@ def stop_vdsm(host, password):
             if not stopVm(True, vm.name):
                 return False
 
-    if not deactivateHost(True, host):
+    if not deactivate_host(True, host):
         HOST_API.logger.error("Unable to deactivate host %s", host)
         return False
     ip = getHostIP(host)

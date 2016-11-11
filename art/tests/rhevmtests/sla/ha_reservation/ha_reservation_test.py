@@ -80,13 +80,13 @@ def init_ha_reservation(request):
             ha_reservation=False,
             mem_ovrcmt_prc=conf.CLUSTER_OVERCOMMITMENT_DESKTOP
         )
-        ll_hosts.activateHost(positive=True, host=conf.HOSTS[2])
+        ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
         update_ha_reservation_interval(
             ha_reservation_interval=conf.DEFAULT_RESERVATION_INTERVAL
         )
     request.addfinalizer(fin)
 
-    assert ll_hosts.deactivateHost(
+    assert ll_hosts.deactivate_host(
         positive=True,
         host=conf.HOSTS[2]
     )
@@ -141,7 +141,7 @@ class TestPutHostToMaintenance(BaseHAReservation):
         assert helpers.is_cluster_ha_safe()
 
         u_libs.testflow.step("Deactivate host %s", conf.HOSTS[1])
-        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
 
         u_libs.testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]
@@ -155,7 +155,7 @@ class TestPutHostToMaintenance(BaseHAReservation):
         Check if cluster is Ha safe
         """
         u_libs.testflow.step("Activate host %s", conf.HOSTS[1])
-        assert ll_hosts.activateHost(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.activate_host(positive=True, host=conf.HOSTS[1])
 
         u_libs.testflow.step(
             "Check if cluster %s is HA safe", conf.CLUSTER_NAME[0]
@@ -248,7 +248,7 @@ class TestMultiVM(BaseHAReservation):
         assert helpers.is_cluster_ha_safe()
 
         u_libs.testflow.step("Deactivate host %s", conf.HOSTS[1])
-        assert ll_hosts.deactivateHost(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
 
         u_libs.testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]

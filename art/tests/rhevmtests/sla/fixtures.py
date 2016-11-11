@@ -196,7 +196,7 @@ def deactivate_hosts(request):
 
     for host_name in hosts_to_deactivate:
         u_libs.testflow.setup("Deactivate the host %s", host_name)
-        assert ll_hosts.deactivateHost(positive=True, host=host_name)
+        assert ll_hosts.deactivate_host(positive=True, host=host_name)
 
 
 @pytest.fixture(scope="class")

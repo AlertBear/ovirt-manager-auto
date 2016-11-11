@@ -379,7 +379,7 @@ class TestCase11196(BaseTestCaseNewDC):
             Reactivate host
             """
             if ll_hosts.isHostInMaintenance(True, self.host):
-                if not ll_hosts.activateHost(True, self.host):
+                if not ll_hosts.activate_host(True, self.host):
                     self.test_failed = True
                     logger.error(
                         "Error activating host %s", self.host
@@ -413,7 +413,7 @@ class TestCase11196(BaseTestCaseNewDC):
         assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
-        assert ll_hosts.deactivateHost(True, self.host), (
+        assert ll_hosts.deactivate_host(True, self.host), (
             "Unable to place host %s in maintenance mode" % self.host
         )
         assert self.timeout_sampling_iscsi_session(), (

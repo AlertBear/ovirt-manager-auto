@@ -58,7 +58,7 @@ def move_host_to_another_cluster(host, cluster, activate=True):
     """
     if not ll_hosts.isHostInMaintenance(positive=True, host=host):
         logger.info("Set %s to maintenance", host)
-        if not ll_hosts.deactivateHost(positive=True, host=host):
+        if not ll_hosts.deactivate_host(positive=True, host=host):
             logger.error("Failed to set %s to maintenance", host)
             return False
 
@@ -69,7 +69,7 @@ def move_host_to_another_cluster(host, cluster, activate=True):
 
     if activate:
         logger.info("Activate %s", host)
-        if not ll_hosts.activateHost(positive=True, host=host):
+        if not ll_hosts.activate_host(positive=True, host=host):
             logger.error("Failed to activate %s", host)
             return False
     return True
@@ -90,7 +90,7 @@ def deactivate_host_if_up(host):
     """
     logger.info("Deactivate Host %s", host)
     if not ll_hosts.isHostInMaintenance(True, host):
-        if not ll_hosts.deactivateHost(True, host):
+        if not ll_hosts.deactivate_host(True, host):
             logger.error("Failed to deactivate Host %s")
             return False
     return True
@@ -218,7 +218,7 @@ def activate_host_if_not_up(host):
         logger.info(
             "Host %s status is %s. activating", host, host_status
         )
-        if not ll_hosts.activateHost(positive=True, host=host):
+        if not ll_hosts.activate_host(positive=True, host=host):
             logger.error("Failed to activate host %s", host)
             return False
     return True
@@ -243,7 +243,7 @@ def restart_services_under_maintenance_state(
     """
     host_name = ll_hosts.get_host_name_from_engine(vds_resource=host_resource)
 
-    if not ll_hosts.deactivateHost(positive=True, host=host_name):
+    if not ll_hosts.deactivate_host(positive=True, host=host_name):
         return False
 
     service_restarted = False
@@ -256,7 +256,7 @@ def restart_services_under_maintenance_state(
                 srv, host_name
             )
             break
-    if not ll_hosts.activateHost(positive=True, host=host_name):
+    if not ll_hosts.activate_host(positive=True, host=host_name):
         return False
     return service_restarted
 

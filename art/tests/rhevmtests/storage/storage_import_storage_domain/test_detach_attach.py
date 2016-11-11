@@ -199,7 +199,7 @@ class BasicEnvironment(BaseTestCase):
         logger.info("Cluster %s was created successfully", cluster_name)
 
         self.host = ll_hosts.getHSMHost(config.HOSTS)
-        if not ll_hosts.deactivateHost(True, self.host):
+        if not ll_hosts.deactivate_host(True, self.host):
             raise exceptions.HostException(
                 "Failed to deactivate host %s" % self.host
             )
@@ -212,7 +212,7 @@ class BasicEnvironment(BaseTestCase):
                 "Failed to update host %s" % self.host
             )
 
-        if not ll_hosts.activateHost(True, self.host):
+        if not ll_hosts.activate_host(True, self.host):
             raise exceptions.HostException(
                 "Failed to activate host %s" % self.host
             )
@@ -312,7 +312,7 @@ class BasicEnvironment(BaseTestCase):
             logger.error("Failed to remove dc %s" % dc_name)
             self.test_failed = True
 
-        if not ll_hosts.deactivateHost(True, self.host):
+        if not ll_hosts.deactivate_host(True, self.host):
             logger.error("Failed to deactivate host %s" % self.host)
             self.test_failed = True
         ll_hosts.waitForHostsStates(True, [self.host], config.HOST_MAINTENANCE)
@@ -323,7 +323,7 @@ class BasicEnvironment(BaseTestCase):
             logger.error("Failed to update host %s" % self.host)
             self.test_failed = True
 
-        if not ll_hosts.activateHost(True, self.host):
+        if not ll_hosts.activate_host(True, self.host):
             logger.error("Failed to activate host %s" % self.host)
             self.test_failed = True
         ll_hosts.waitForHostsStates(True, [self.host], config.HOST_UP)

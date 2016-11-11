@@ -35,7 +35,7 @@ def deactivate_hosts(host=None):
 
     hosts = filter(lambda x: host != x, conf.HOSTS)
     for host in hosts:
-        if not ll_hosts.deactivateHost(positive=True, host=host):
+        if not ll_hosts.deactivate_host(positive=True, host=host):
             return False
 
     return True

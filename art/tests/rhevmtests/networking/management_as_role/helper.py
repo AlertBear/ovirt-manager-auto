@@ -84,7 +84,7 @@ def prepare_host_for_installation(
         bool: True if prepare host succeeded, otherwise False
     """
     if maintenance:
-        assert ll_hosts.deactivateHost(positive=True, host=host_name)
+        assert ll_hosts.deactivate_host(positive=True, host=host_name)
 
     if new_setup:
         if not hl_networks.create_basic_setup(
@@ -176,7 +176,7 @@ def move_host_new_cl(host, cl, positive=True, activate_host=False):
         return False
 
     if activate_host:
-        if not ll_hosts.activateHost(True, host=host):
+        if not ll_hosts.activate_host(True, host=host):
             return False
 
     return True

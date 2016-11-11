@@ -163,7 +163,7 @@ def migrate_by_maintenance(
     """
     status = True
     logger.info("Setting %s into maintenance", src_host)
-    if not hosts.deactivateHost(positive=True, host=src_host):
+    if not hosts.deactivate_host(positive=True, host=src_host):
         logger.error("Failed to set %s into maintenance", src_host)
         return False
     logger.info("Checking VMs after migration")
@@ -174,7 +174,7 @@ def migrate_by_maintenance(
         ):
             status = False
     logger.info("Activating %s", src_host)
-    if not hosts.activateHost(True, host=src_host):
+    if not hosts.activate_host(True, host=src_host):
         logger.error("Couldn't activate host %s", src_host)
         return False
     return status
@@ -226,7 +226,7 @@ def migrate_by_nic_down(
         return False
 
     logger.info("Activating %s", src_host)
-    if not hosts.activateHost(True, host=src_host):
+    if not hosts.activate_host(True, host=src_host):
         logger.error("Couldn't activate host %s", src_host)
         return False
     return status

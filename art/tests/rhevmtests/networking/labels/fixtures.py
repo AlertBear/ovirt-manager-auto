@@ -117,8 +117,8 @@ def move_host_to_another_cluster(request):
         assert ll_hosts.updateHost(
             positive=True, host=labels.host_1_name, cluster=labels.cluster_0
         )
-        assert ll_hosts.activateHost(positive=True, host=labels.host_1_name)
+        assert ll_hosts.activate_host(positive=True, host=labels.host_1_name)
     request.addfinalizer(fin)
 
     testflow.setup("Deactivate host %s", labels.host_1_name)
-    assert ll_hosts.deactivateHost(positive=True, host=labels.host_1_name)
+    assert ll_hosts.deactivate_host(positive=True, host=labels.host_1_name)

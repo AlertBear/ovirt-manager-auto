@@ -77,7 +77,7 @@ def _fence_host(positive, fence_type):
 
 def _move_host_to_up(host):
     if not ll_hosts.isHostUp(True, host=host):
-        if not ll_hosts.activateHost(True, host=host):
+        if not ll_hosts.activate_host(True, host=host):
             raise HostException("cannot activate host: %s" % host)
 
 

@@ -166,7 +166,7 @@ def set_host_status(activate=False):
             AssertionError: if failed operation
     """
     host_state = "active" if activate else "maintenance"
-    func = "activateHost" if activate else "deactivateHost"
+    func = "activate_host" if activate else "deactivate_host"
     if not activate:
         ll_hosts.select_host_as_spm(
             positive=True,

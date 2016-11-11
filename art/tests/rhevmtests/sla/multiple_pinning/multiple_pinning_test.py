@@ -68,7 +68,7 @@ class BaseMultiplePinning(u_libs.SlaTest):
         u_libs.testflow.step("Stop the VM %s", conf.VM_NAME[0])
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
         u_libs.testflow.step("Deactivate the host %s", vm_host)
-        assert ll_hosts.deactivateHost(positive=True, host=vm_host)
+        assert ll_hosts.deactivate_host(positive=True, host=vm_host)
 
 
 @u_libs.attr(tier=1)

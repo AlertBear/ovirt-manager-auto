@@ -25,10 +25,9 @@ import Queue
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api.validator import compareCollectionSize
-from art.core_api import validator
 from art.core_api.apis_exceptions import EntityNotFound, TestCaseError
 from utilities.machine import Machine
-from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost
+from art.rhevm_api.tests_lib.low_level.hosts import deactivate_host, removeHost
 
 ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'
@@ -544,7 +543,7 @@ def removeGlusterHost(positive, host):
     Returns: True (success) / False (failure)
     '''
     hostObj = hostUtil.find(host)
-    if not deactivateHost(positive, host):
+    if not deactivate_host(positive, host):
         util.logger.error("Host deactivation failed: %s." % hostObj.name)
         return False
     if not removeHost(positive, host):

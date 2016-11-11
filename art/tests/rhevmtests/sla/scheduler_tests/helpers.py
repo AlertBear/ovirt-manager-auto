@@ -59,7 +59,7 @@ def migrate_vm_by_maintenance_and_get_destination_host(src_host, vm_name):
     Returns:
         str: Destination host name
     """
-    if not ll_hosts.deactivateHost(positive=True, host=src_host):
+    if not ll_hosts.deactivate_host(positive=True, host=src_host):
         return ""
     return ll_vms.get_vm_host(vm_name=vm_name)
 

@@ -73,9 +73,9 @@ class EnvironmentWithTwoHosts(TestCase):
                     if cls.num_active_hosts > 0:
                         cls.num_active_hosts -= 1
                     else:
-                        ll_hosts.deactivateHost(True, host)
+                        ll_hosts.deactivate_host(True, host)
             else:
-                ll_hosts.deactivateHost(True, host)
+                ll_hosts.deactivate_host(True, host)
 
         ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME)
@@ -97,7 +97,7 @@ class EnvironmentWithTwoHosts(TestCase):
         for host in config.HOSTS:
             if not ll_hosts.isHostUp(True, host):
                 logger.info("Activating host %s", host)
-                ll_hosts.activateHost(True, host)
+                ll_hosts.activate_host(True, host)
 
 
 @attr(tier=4)
@@ -496,7 +496,7 @@ class TestCase11624(TestCase):
         # put all other hosts in maintenance
         for host in config.HOSTS:
             if host != self.spm_host_name and ll_hosts.isHostUp(True, host):
-                ll_hosts.deactivateHost(True, host)
+                ll_hosts.deactivate_host(True, host)
         ll_hosts.waitForHostsStates(True, [self.spm_host_name])
         self.vm_name = self.vm_name_base = (
             storage_helpers.create_unique_object_name(
@@ -617,7 +617,7 @@ class TestCase11624(TestCase):
         logger.info("Activating hosts back again")
         for host in config.HOSTS:
             if not ll_hosts.isHostUp(True, host):
-                ll_hosts.activateHost(True, host, True)
+                ll_hosts.activate_host(True, host, True)
 
     @polarion("RHEVM3-11624")
     def test_io_error(self):

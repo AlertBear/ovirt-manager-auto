@@ -34,7 +34,7 @@ def sync_prepare_setup(request):
         """
         Activate host
         """
-        assert ll_hosts.activateHost(
+        assert ll_hosts.activate_host(
             positive=True, host=network_api.host_0_name
         )
     request.addfinalizer(fin3)
@@ -70,7 +70,7 @@ def sync_prepare_setup(request):
             networks_dict=networks_dict, dc=dc, cluster=cl
         )
 
-    assert ll_hosts.deactivateHost(positive=True, host=network_api.host_0_name)
+    assert ll_hosts.deactivate_host(positive=True, host=network_api.host_0_name)
 
 
 @attr(tier=2)

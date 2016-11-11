@@ -278,7 +278,7 @@ class TestCase5823(BasicEnvironment):
         Expected result: HSM host becomes SPM
         """
         testflow.step("Deactivate SPM host %s", self.spm_host)
-        assert ll_hosts.deactivateHost(
+        assert ll_hosts.deactivate_host(
             True, self.spm_host
         ), "Unable to deactivate host %s " % self.spm_host
 
@@ -291,7 +291,7 @@ class TestCase5823(BasicEnvironment):
         """
         Activate host
         """
-        if not ll_hosts.activateHost(True, self.spm_host):
+        if not ll_hosts.activate_host(True, self.spm_host):
             logger.error(
                 "Unable to activate host %s ", self.spm_host
             )

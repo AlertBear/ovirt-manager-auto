@@ -50,7 +50,7 @@ def initializer_module(request):
     # storage domains
     global HOST_CLUSTER
     HOST_CLUSTER = ll_hosts.getHostCluster(config.HOST_FOR_MOUNT)
-    if not ll_hosts.deactivateHost(True, config.HOST_FOR_MOUNT):
+    if not ll_hosts.deactivate_host(True, config.HOST_FOR_MOUNT):
         raise exceptions.HostException(
             "Failed to deactivate host %s" % config.HOST_FOR_MOUNT
         )

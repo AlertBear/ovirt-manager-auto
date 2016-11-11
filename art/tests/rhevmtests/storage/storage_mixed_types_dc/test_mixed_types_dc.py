@@ -665,7 +665,7 @@ class TestCase4566(IscsiNfsSD):
             # before deactivate it
             for host in config.HOSTS:
                 if host != self.host:
-                    ll_hosts.deactivateHost(True, host)
+                    ll_hosts.deactivate_host(True, host)
         else:
             self.host = config.HOSTS[0]
         self.host_ip = ll_hosts.getHostIP(self.host)
@@ -762,7 +762,7 @@ class TestCase4566(IscsiNfsSD):
         if config.GOLDEN_ENV:
             for host in config.HOSTS:
                 if ll_hosts.isHostInMaintenance(True, host):
-                    ll_hosts.activateHost(True, host)
+                    ll_hosts.activate_host(True, host)
 
         super(TestCase4566, self).tearDown()
 

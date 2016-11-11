@@ -317,10 +317,10 @@ class TestMGMTNetRole05(NetworkTest):
             'Move the host to another cluster with the default management'
             ' network'
         )
-        assert ll_hosts.deactivateHost(positive=True, host=conf.HOST_1_NAME)
+        assert ll_hosts.deactivate_host(positive=True, host=conf.HOST_1_NAME)
         assert helper.move_host_new_cl(host=conf.HOST_1_NAME, cl=conf.CL_1)
-        assert ll_hosts.activateHost(positive=True, host=conf.HOST_1_NAME)
-        assert ll_hosts.deactivateHost(
+        assert ll_hosts.activate_host(positive=True, host=conf.HOST_1_NAME)
+        assert ll_hosts.deactivate_host(
             positive=True, host=conf.HOST_1_NAME
         )
 
@@ -616,7 +616,7 @@ class TestMGMTNetRole08(NetworkTest):
         host_1 = conf.HOST_1_NAME
 
         testflow.step('Deactivate host')
-        assert ll_hosts.deactivateHost(positive=True, host=host_1)
+        assert ll_hosts.deactivate_host(positive=True, host=host_1)
 
         testflow.step(
             'Move the host to another cluster with the same management '

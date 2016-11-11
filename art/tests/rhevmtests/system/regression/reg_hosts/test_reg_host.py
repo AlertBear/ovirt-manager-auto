@@ -105,7 +105,7 @@ class TestActiveHost(TestCase):
     @classmethod
     def setup_class(cls):
         if not ll_hosts.isHostUp(True, host=HOST):
-            if not ll_hosts.activateHost(True, host=HOST):
+            if not ll_hosts.activate_host(True, host=HOST):
                 raise HostException("cannot activate host: %s" % HOST)
 
     @classmethod
@@ -127,7 +127,7 @@ class TestHostInMaintenance(TestCase):
         )
         if ll_hosts.isHostUp(True, host=HOST):
             logger.info("setting host: %s to maintenance", HOST)
-            if not ll_hosts.deactivateHost(True, host=HOST):
+            if not ll_hosts.deactivate_host(True, host=HOST):
                 raise HostException(
                     "Could not set host: %s to maintenance" % HOST
                 )
@@ -136,7 +136,7 @@ class TestHostInMaintenance(TestCase):
     def teardown_class(cls):
         if not ll_hosts.isHostUp(True, host=HOST):
             logger.info("Activating host: %s", HOST)
-            if not ll_hosts.activateHost(True, host=HOST):
+            if not ll_hosts.activate_host(True, host=HOST):
                 raise HostException("cannot activate host: %s" % HOST)
 
 
@@ -150,7 +150,7 @@ class TestActivateActiveHost(TestActiveHost):
     @polarion("RHEVM3-8433")
     def test_activate_active_host(self):
         logger.info("Trying to activate host %s", HOST)
-        assert not ll_hosts.activateHost(True, host=HOST)
+        assert not ll_hosts.activate_host(True, host=HOST)
 
 
 @attr(tier=1)
@@ -335,7 +335,7 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
             config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
         )
         logger.info("setting host %s to maintenance", HOST)
-        if not ll_hosts.deactivateHost(True, host=HOST):
+        if not ll_hosts.deactivate_host(True, host=HOST):
             raise HostException("Could not set host: %s to maintenance" % HOST)
 
 
@@ -352,8 +352,10 @@ class ReinstallHost(TestHostInMaintenance):
     @polarion("RHEVM3-8421")
     def test_reinstall_host(self):
         logger.info("reinstall host: %s", HOST)
-        if not ll_hosts.installHost(
-                True, host=HOST, root_password=HOST_PW,
+        if not ll_hosts.install_host(
+                True,
+                host=HOST,
+                root_password=HOST_PW,
                 iso_image=config.ISO_IMAGE
         ):
             raise HostException("re installation of host: %s failed" % HOST)
@@ -387,7 +389,7 @@ class ActivateInactiveHost(TestHostInMaintenance):
     @polarion("RHEVM3-8422")
     def test_activate_inactive_host(self):
         logger.info("activate host: %s", HOST)
-        if not ll_hosts.activateHost(True, host=HOST):
+        if not ll_hosts.activate_host(True, host=HOST):
             raise HostException("host activation failed")
 
 
@@ -401,7 +403,7 @@ class ReinstallActiveHost(TestActiveHost):
     @polarion("RHEVM3-8423")
     def test_reinstall_active_host(self):
         logger.info("attempting to re install host: %s ", HOST)
-        if not ll_hosts.installHost(
+        if not ll_hosts.install_host(
                 False, host=HOST, root_password=HOST_PW,
                 iso_image=config.ISO_IMAGE
         ):

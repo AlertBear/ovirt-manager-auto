@@ -512,7 +512,7 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseStartVms):
         """
         vm_host = ll_vms.get_vm_host(vm_name=conf.VM_NAME[0])
         u_libs.testflow.step("Deactivate host %s", vm_host)
-        assert not ll_hosts.deactivateHost(positive=True, host=vm_host)
+        assert not ll_hosts.deactivate_host(positive=True, host=vm_host)
 
 
 @u_libs.attr(tier=2)

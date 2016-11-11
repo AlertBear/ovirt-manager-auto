@@ -100,7 +100,7 @@ class BasicEnvironment(BaseTestCase):
 
         for host in hosts_sorted_by_spm_priority:
             logger.info("Activate host '%s'", host)
-            if not ll_hosts.activateHost(True, host):
+            if not ll_hosts.activate_host(True, host):
                 raise exceptions.HostException(
                     "Unable to activate host: %s " % host
                 )
@@ -397,7 +397,7 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
         """
         logger.info("Activate hosts: %s ", self.hsm_hosts)
         for host in self.hsm_hosts:
-            if not ll_hosts.activateHost(True, host):
+            if not ll_hosts.activate_host(True, host):
                 logger.error("Failed to activate host: %s", host)
                 BaseTestCase.test_failed = True
         super(TestCase6205, self).tearDown()
@@ -472,7 +472,7 @@ class TestCase6206(BasicEnvironment):
             host for host in config.HOSTS if host not in self.hosts
         ]
         for host in hosts_to_activate:
-            if not ll_hosts.activateHost(True, host):
+            if not ll_hosts.activate_host(True, host):
                 logger.error("Failed to activate host: %s", host)
                 BaseTestCase.test_failed = True
 
@@ -721,7 +721,7 @@ class TestCase6215(BasicEnvironment):
                 self.max_spm_priority_host
             )
             BaseTestCase.test_failed = True
-        if not ll_hosts.activateHost(True, self.former_spm):
+        if not ll_hosts.activate_host(True, self.former_spm):
             logger.error(
                 "Failed to activate host '%s'", self.former_spm
             )

@@ -6,7 +6,7 @@ on host with pm and without,
 
 from art.rhevm_api.tests_lib.low_level.hosts import \
     runDelayedControlService, waitForHostsStates,\
-    deactivateHost, removeHost, addHost, isHostUp, activateHost
+    deactivate_host, removeHost, addHost, isHostUp, activate_host
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.utils.test_utils import get_api
@@ -68,7 +68,7 @@ def _delete_job_from_db():
 def _activate_both_hosts():
     for host in config.host_with_pm, config.host_without_pm:
         if not isHostUp(True, host=host):
-            if not activateHost(True, host=host):
+            if not activate_host(True, host=host):
                 raise errors.HostException("cannot activate host: %s" % host)
 
 
@@ -196,7 +196,7 @@ class SoftFencingToHostNoProxies(SoftFencing):
         """
         super(SoftFencingToHostNoProxies, cls).setup_class()
         logger.info("Put another host in cluster to maintenance")
-        if not deactivateHost(True, config.host_without_pm):
+        if not deactivate_host(True, config.host_without_pm):
             raise errors.HostException("Attempt to put host %s"
                                        " to maintenance state failed"
                                        % config.host_without_pm)

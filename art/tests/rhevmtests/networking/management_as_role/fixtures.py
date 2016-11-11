@@ -90,7 +90,7 @@ def move_host_to_cluster(request):
         """
         Activate host after updating its cluster
         """
-        assert ll_hosts.activateHost(positive=True, host=host)
+        assert ll_hosts.activate_host(positive=True, host=host)
     request.addfinalizer(fin2)
 
     def fin1():

@@ -106,7 +106,7 @@ class TestMigrateNegativeCase4(VirtTest):
         expected_host_status = config.ENUMS[
             'host_state_preparing_for_maintenance'
         ]
-        assert ll_hosts.deactivateHost(
+        assert ll_hosts.deactivate_host(
             positive=True,
             host=config.HOSTS[config.HOST_INDEX_MAX_MEMORY],
             expected_status=expected_host_status

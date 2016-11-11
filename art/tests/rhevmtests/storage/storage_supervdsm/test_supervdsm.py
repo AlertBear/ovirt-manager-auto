@@ -86,7 +86,7 @@ def check_host_up(request):
             "Host %s was down unexpectedly. Starting it up" %
             config.HOSTS[0]
         )
-        assert hosts.activateHost(
+        assert hosts.activate_host(
             True, config.HOSTS[0]
         ), "Host %s was not activated" % config.HOSTS[0]
     host_ip = hosts.getHostIP(config.HOSTS[0])

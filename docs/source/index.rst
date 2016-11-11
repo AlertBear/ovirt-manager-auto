@@ -540,9 +540,9 @@ Simple condition::
 
 Action conditions::
 
-    ifaction(activateHost,'TRUE',name='{host}')
+    ifaction(activate_host,'TRUE',name='{host}')
 
-    not ifaction(activateHost,'TRUE',name='{host}')
+    not ifaction(activate_host,'TRUE',name='{host}')
 
 Loop statements::
 
