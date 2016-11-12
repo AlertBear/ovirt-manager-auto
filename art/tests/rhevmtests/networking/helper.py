@@ -36,6 +36,7 @@ VIRSH_USER = "virsh"
 VIRSH_PASS = "qum5net"
 PE_EXPECT = "pe.expect"
 PE_SENDLINE = "pe.sendline"
+SN_TIMEOUT = 300
 
 
 def create_random_ips(num_of_ips=2, mask=16, ip_version=4, base_ip_prefix="5"):
@@ -527,7 +528,7 @@ def wait_for_sn(content, last_event, matches=1):
     """
     assert ll_events.find_event(
         last_event=last_event, event_code=APPLY_NETWORK_CHANGES_EVENT_CODE,
-        content=content, matches=matches
+        content=content, matches=matches, timeout=SN_TIMEOUT
     )
 
 
