@@ -30,7 +30,7 @@ class TestRegisterDomain01(NetworkTest):
     Import VM from storage data domain with same MAC pool range and network
     exists on datacenter
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[1][0]
     reassessing_mac = False
 
@@ -69,7 +69,7 @@ class TestRegisterDomain02(NetworkTest):
     not is datacenter and reassessing MAC is checked and mapping the network
     in the import process
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[2][0]
     src_net = register_domain_conf.NETS[2][0]
     dst_net = register_domain_conf.NETS[2][1]
@@ -117,7 +117,7 @@ class TestRegisterDomain03(NetworkTest):
     not is datacenter and reassessing MAC is not checked and without mapping
     the network in the import process
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[3][0]
     net = register_domain_conf.NETS[3][0]
     reassessing_mac = False
@@ -160,7 +160,7 @@ class TestRegisterDomain04(NetworkTest):
     Import VM from storage data domain when MAC is already exists on another VM
     with reassessing MAC flag
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[4][0]
 
     @polarion("RHEVM-17153")
@@ -185,7 +185,7 @@ class TestRegisterDomain05(NetworkTest):
     Import VM from storage data domain when MAC is already exists on another VM
     without reassessing MAC flag
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[5][0]
 
     @polarion("RHEVM-16896")
@@ -220,7 +220,7 @@ class TestRegisterDomain06(NetworkTest):
     Import VM from storage data domain when MAC is already exists on another VM
     without reassessing MAC flag and allow duplicate flag in MAC pool
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[6][0]
     reassessing_mac = False
 
@@ -250,7 +250,7 @@ class TestRegisterDomain07(NetworkTest):
     Import VM from storage data domain when not MACs left in the pool
     with reassessing MAC flag
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[7][0]
 
     @polarion("RHEVM-17144")
@@ -283,7 +283,7 @@ class TestRegisterDomain08(NetworkTest):
     Import VM from storage data domain while the network exists on
     datacenter but force to import with empty vNIC
     """
-    __test__ = False
+    __test__ = True
     vm = register_domain_conf.VM_NAMES[8][0]
     reassessing_mac = False
     net = register_domain_conf.NETS[8][0]
