@@ -72,6 +72,7 @@ class BaseMultiplePinning(u_libs.SlaTest):
 
 
 @u_libs.attr(tier=1)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
