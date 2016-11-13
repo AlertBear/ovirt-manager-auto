@@ -1026,14 +1026,13 @@ class TestCase6003(BaseTestCase):
             self.vm_name, LIVE_MIGRATION_TIMEOUT, False,
             same_type=config.MIGRATE_SAME_TYPE
         )
-
-        logger.info("Wait until the LSM locks disk '%s'", self.vm_disk_name)
+        logger.info(
+            "Wait until the LSM start creating '%s'",
+            AUTO_GENERATED_SNAPSHOT_DESC
+        )
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, config.SNAPSHOT_LOCKED,
             snapshots_description=AUTO_GENERATED_SNAPSHOT_DESC
-        )
-        ll_disks.wait_for_disks_status(
-            [self.vm_disk_name], status=config.DISK_LOCKED
         )
         status = ll_disks.attachDisk(False, self.disk_alias, self.vm_name)
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
