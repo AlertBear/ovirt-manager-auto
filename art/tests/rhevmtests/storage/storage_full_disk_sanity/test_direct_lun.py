@@ -121,6 +121,7 @@ class DirectLunAttachTestCase(TestCase):
 
 
 @attr(tier=2)
+@bz({'1394564': {}})
 class TestCase5927(DirectLunAttachTestCase):
     """
     Attach a lun when vm is running
@@ -150,6 +151,7 @@ class TestCase5927(DirectLunAttachTestCase):
 
 
 @attr(tier=3)
+@bz({'1394564': {}})
 class TestCase5920(DirectLunAttachTestCase):
     """
     Suspend vm with direct lun attached
@@ -186,6 +188,7 @@ class TestCase5920(DirectLunAttachTestCase):
 
 
 @attr(tier=2)
+@bz({'1394564': {}})
 class TestCase5930(DirectLunAttachTestCase):
     """
     Add more then one direct lun to the same vm
@@ -222,6 +225,7 @@ class TestCase5930(DirectLunAttachTestCase):
 
 
 @attr(tier=3)
+@bz({'1394564': {}})
 class TestCase5931(DirectLunAttachTestCase):
     """
     Attach lun vm, create a template and verify the direct lun will not be
@@ -306,6 +310,7 @@ class TestCase5932(DirectLunAttachTestCase):
 
 
 @attr(tier=3)
+@bz({'1394564': {}})
 class TestCase5933(DirectLunAttachTestCase):
     """
     Attach lun to vm and verify the direct lun will not be
@@ -343,6 +348,7 @@ class TestCase5933(DirectLunAttachTestCase):
 
 
 @attr(tier=4)
+@bz({'1394564': {}})
 class TestCase5934(DirectLunAttachTestCase):
     """
     HA vm with direct lun
@@ -378,6 +384,7 @@ class TestCase5934(DirectLunAttachTestCase):
 
 
 @attr(tier=2)
+@bz({'1394564': {}})
 class TestCase5938(DirectLunAttachTestCase):
     """
     direct lun as bootable disk
@@ -413,6 +420,7 @@ class TestCase5938(DirectLunAttachTestCase):
 
 
 @attr(tier=2)
+@bz({'1394564': {}})
 class TestCase5939(DirectLunAttachTestCase):
     """
     shared disk from direct lun
@@ -448,6 +456,7 @@ class TestCase5939(DirectLunAttachTestCase):
 
 
 @attr(tier=3)
+@bz({'1394564': {}})
 class TestCase5940(DirectLunAttachTestCase):
     """
     move vm with direct lun
@@ -486,6 +495,7 @@ class TestCase5940(DirectLunAttachTestCase):
 
 
 @attr(tier=1)
+@bz({'1394564': {}})
 class TestCase5924(DirectLunAttachTestCase):
     """
     Full flow direct lun
@@ -540,6 +550,7 @@ class TestCase5924(DirectLunAttachTestCase):
 
 
 @attr(tier=2)
+@bz({'1394564': {}})
 class TestCase5911(DirectLunAttachTestCase):
     """
     remove a vm with a direct lun
@@ -565,6 +576,7 @@ class TestCase5911(DirectLunAttachTestCase):
 
 
 @attr(tier=3)
+@bz({'1394564': {}})
 class TestCase5913(DirectLunAttachTestCase):
     """
     Direct lun - wipe after delete
@@ -598,6 +610,7 @@ class TestCase5913(DirectLunAttachTestCase):
 
 
 @attr(tier=2)
+@bz({'1394564': {}})
 class TestCase5918(DirectLunAttachTestCase):
     """
     Update a direct lun attached to vm
