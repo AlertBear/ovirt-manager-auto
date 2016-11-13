@@ -765,6 +765,8 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
         }
     }
     vms_to_start = conf.VM_NAME[:2]
+    wait_for_vms_state = conf.VM_UP
+    wait_for_vms_ip = False
 
     @polarion("RHEVM3-5550")
     def test_ha_vms(self):
@@ -783,8 +785,15 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
             assert ll_hosts.kill_vm_process(
                 resource=host_resource, vm_name=vm_name
             )
-        u_libs.testflow.step("Wait until both HA VM's will change state to UP")
-        assert ll_vms.waitForVmsStates(positive=True, names=conf.VM_NAME[:2])
+
+        u_libs.testflow.step(
+            "Wait until both HA VM's %s will change state to %s",
+            conf.VM_NAME[:2], conf.VM_POWERING_UP
+        )
+        assert ll_vms.waitForVmsStates(
+            positive=True, names=conf.VM_NAME[:2], states=conf.VM_POWERING_UP
+        )
+
         u_libs.testflow.step(
             "Check that both HA VM's started on the same host"
         )

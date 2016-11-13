@@ -29,6 +29,9 @@ def start_vms(request):
     """
     vms_to_start = request.node.cls.vms_to_start
     wait_for_vms_ip = getattr(request.node.cls, "wait_for_vms_ip", True)
+    wait_for_vms_state = getattr(
+        request.node.cls, "wait_for_vms_state", sla_config.VM_POWERING_UP
+    )
 
     def fin():
         """
@@ -42,7 +45,8 @@ def start_vms(request):
     ll_vms.start_vms(
         vm_list=vms_to_start,
         wait_for_ip=wait_for_vms_ip,
-        max_workers=len(vms_to_start)
+        max_workers=len(vms_to_start),
+        wait_for_status=wait_for_vms_state
     )
 
 
