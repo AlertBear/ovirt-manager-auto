@@ -265,7 +265,12 @@ class TestAffinityLabels3(u_libs.SlaTest):
             "vms": [sla_conf.VM_NAME[0]]
         }
     }
-    vms_to_run = {sla_conf.VM_NAME[0]: {sla_conf.VM_RUN_ONCE_HOST: 0}}
+    vms_to_run = {
+        sla_conf.VM_NAME[0]: {
+            sla_conf.VM_RUN_ONCE_HOST: 0,
+            sla_conf.VM_RUN_ONCE_WAIT_FOR_STATE: sla_conf.VM_UP
+        }
+    }
 
     @polarion("RHEVM-15873")
     def test_check_if_vm_migrated(self):

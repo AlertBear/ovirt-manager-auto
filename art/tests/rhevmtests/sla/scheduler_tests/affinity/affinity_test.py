@@ -220,7 +220,10 @@ class BaseMigrateVm(BaseAffinity):
     Migrate VM under different affinity groups
     """
     vms_to_run = {
-        conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0},
+        conf.VM_NAME[0]: {
+            conf.VM_RUN_ONCE_HOST: 0,
+            conf.VM_RUN_ONCE_WAIT_FOR_STATE: conf.VM_UP
+        },
         conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1}
     }
 

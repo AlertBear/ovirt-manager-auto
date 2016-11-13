@@ -816,7 +816,6 @@ class TestPlacementPolicyCase1(BasicSlaSanity):
         }
     }
     vms_to_start = conf.VM_NAME[:1]
-    wait_for_vms_ip = False
 
     @polarion("RHEVM3-9522")
     def test_migrate_migratable_vm(self):
@@ -843,7 +842,6 @@ class TestPlacementPolicyCase2(BasicSlaSanity):
         }
     }
     vms_to_start = conf.VM_NAME[:1]
-    wait_for_vms_ip = False
 
     @polarion("RHEVM3-9525")
     def test_migrate_user_migratable_vm(self):

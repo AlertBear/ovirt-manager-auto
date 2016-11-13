@@ -307,7 +307,6 @@ class TestCpuFilter(BaseSchedulerSanity):
         }
     }
     vms_to_start = conf.VM_NAME[:1]
-    wait_for_vms_ip = False
 
     @polarion("RHEVM3-9481")
     def test_cpu_filter(self):
