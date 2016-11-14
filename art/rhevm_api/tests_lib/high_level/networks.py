@@ -519,17 +519,22 @@ def get_clusters_managements_networks_ids(cluster=None):
     Returns:
         list: Managements networks ids
     """
-    all_clusters = ll_clusters.CLUSTER_API.get(absLink=False)
+    mgmt_ids = list()
+    all_clusters = ll_clusters.get_cluster_names_list()
     clusters = filter(
-        lambda x: x.name == cluster if cluster else x, all_clusters
+        lambda x: x == cluster if cluster else x, all_clusters
     )
     logger.info(
-        "Get management networks id from %s", [cl.name for cl in clusters]
+        "Get management networks id from %s", ", ".join(
+            [cl for cl in clusters]
+        )
     )
-    return [
-        ll_networks.get_management_network(cluster_name=cl.name).id
-        for cl in clusters
-        ]
+    for cl in clusters:
+        mgmt_net = ll_networks.get_management_network(cluster_name=cl)
+        if mgmt_net:
+            mgmt_ids.append(mgmt_net.id)
+
+    return mgmt_ids
 
 
 @ll_general.generate_logs()
