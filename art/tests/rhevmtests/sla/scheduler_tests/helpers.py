@@ -5,10 +5,9 @@ import logging
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.helpers as rhevm_helpers
+import art.unittest_lib as u_libs
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
-import art.unittest_lib as u_libs
 
 logger = logging.getLogger(__name__)
 
@@ -74,32 +73,3 @@ def stop_cpu_load_on_all_hosts():
             {conf.RESOURCE: conf.VDS_HOSTS[:3], conf.HOST: conf.HOSTS[:3]}
         ]
     )
-
-
-def change_engine_config_low_utilization_value(value):
-    """
-    1) Change engine-config LowUtilizationForEvenlyDistribute value
-    2) Wait until engine storage domain will be active
-
-    Args:
-        value (int): New value
-
-    Returns:
-        bool: True, if update succeed, otherwise False
-    """
-    logger.info(
-        "Change engine-config parameter %s to %s",
-        conf.ENGINE_CONFIG_LOW_UTILIZATION, value
-    )
-    cmd = [
-        "{0}={1}".format(conf.ENGINE_CONFIG_LOW_UTILIZATION, value)
-    ]
-    if not conf.ENGINE.engine_config(action='set', param=cmd).get('results'):
-        logger.error(
-            "Failed to set %s option to %s",
-            conf.ENGINE_CONFIG_LOW_UTILIZATION, value
-        )
-        return False
-    if not rhevm_helpers.wait_for_engine_api():
-        return False
-    return True

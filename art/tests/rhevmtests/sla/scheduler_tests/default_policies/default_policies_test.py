@@ -25,35 +25,9 @@ logger = logging.getLogger(__name__)
 host_as_spm = 2
 
 
-@pytest.fixture(scope="module")
-def setup_default_policies(request):
-    """
-    1) Change engine-config LowUtilizationForEvenlyDistribute to 35
-    """
-    def fin():
-        """
-        1) Change engine-config LowUtilizationForEvenlyDistribute to 0
-        """
-        u_libs.testflow.teardown(
-            "Change LowUtilizationForEvenlyDistribute via engine-config to 0"
-        )
-        sch_helpers.change_engine_config_low_utilization_value(0)
-    request.addfinalizer(fin)
-
-    u_libs.testflow.setup(
-        "Change LowUtilizationForEvenlyDistribute via engine-config to %s",
-        sla_conf.LOW_UTILIZATION_VALUE
-    )
-    assert sch_helpers.change_engine_config_low_utilization_value(
-        sla_conf.LOW_UTILIZATION_VALUE
-    )
-
-
-@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
-    setup_default_policies.__name__,
     run_once_vms.__name__,
     load_hosts_cpu.__name__,
     update_cluster.__name__
