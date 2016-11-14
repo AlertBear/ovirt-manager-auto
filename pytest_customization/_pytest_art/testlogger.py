@@ -154,6 +154,7 @@ class ARTLogging(object):
         self.last_test_class = None
         self.step_id = 0
         flow_logger.addFilter(self.log_filter)
+        self.log_delimiter = False
 
     @staticmethod
     def get_test_name(item):
@@ -208,6 +209,11 @@ class ARTLogging(object):
     def _log_header(self, item):
         if item is None:
             return  # It shouldn't happen but just for case it will.
+
+        if self.step_id == 0:
+            flow_logger.info(DELIMITER)
+            self.log_delimiter = True
+
         self.itnum += 1
         description = self.get_desctription(item)
         logger.info("Test Name: %s", self.get_test_name(item))
@@ -222,6 +228,7 @@ class ARTLogging(object):
                 if 'team' in info.kwargs:
                     team = info.kwargs['team']
                     break
+
         flow_logger.info(
             "%03d: %s/%s", self.itnum, team, self.get_test_name(item)
         )
@@ -307,7 +314,7 @@ class ARTLogging(object):
 
     def print_flow_logger(self, log_level, log_type, msg, *args, **kwargs):
         self.log_filter.toggle(False)
-        if self.step_id == 0:
+        if self.step_id == 0 and not self.log_delimiter:
             flow_logger.info(DELIMITER)
 
         self.step_id += 1
