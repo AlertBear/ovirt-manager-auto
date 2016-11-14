@@ -362,7 +362,7 @@ class TestMGMTNetRole06(NetworkTest):
     net_1 = mgmt_conf.NETS[6][0]
     net_2 = mgmt_conf.NETS[6][1]
     net_dict = mgmt_conf.NET_DICT_CASE_06
-    clusters_to_remove = [ext_cls_1]
+    clusters_to_remove = [ext_cls_0, ext_cls_1, ext_cls_3]
     clusters_dict = {
         ext_cls_0: {
             "name": ext_cls_0,
