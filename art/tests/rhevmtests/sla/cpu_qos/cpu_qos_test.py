@@ -17,6 +17,7 @@ from fixtures import (
     create_vm_from_template_for_cpu_qos_test
 )
 from rhevmtests.sla.fixtures import (
+    create_vm_without_disk,
     start_vms,
     stop_guest_agent_service,
     update_vms,
@@ -253,10 +254,14 @@ class TestRemoveAttachedCpuProfile(BaseCpuQoSAndCpuProfile):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    create_vm_without_disk.__name__,
+    create_cpu_qoss.__name__,
+    create_cpu_profile.__name__,
+    update_vms.__name__,
     create_template_for_cpu_qos_test.__name__,
     create_vm_from_template_for_cpu_qos_test.__name__
 )
-class TestCreateQoSVmFromTemplate(BaseCpuQoSAndCpuProfile):
+class TestCreateQoSVmFromTemplate(u_libs.SlaTest):
     """
     Create VM from template that has specific CPU profile
     """
@@ -264,7 +269,7 @@ class TestCreateQoSVmFromTemplate(BaseCpuQoSAndCpuProfile):
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
     vms_to_params = {
-        conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
+        conf.VM_WITHOUT_DISK: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
     }
 
     @polarion("RHEVM3-14939")
@@ -341,8 +346,9 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
         host = ll_vms.get_vm_host(vm_name=conf.QOS_VMS[0])
         host_cpu = ll_hosts.get_host_processing_units_number(host_name=host)
         u_libs.testflow.step("Hotplug CPU to VM %s", conf.QOS_VMS[0])
+        vm_cpu_sockets = min(8, host_cpu)
         assert ll_vms.updateVm(
-            positive=True, vm=conf.QOS_VMS[0], cpu_socket=host_cpu
+            positive=True, vm=conf.QOS_VMS[0], cpu_socket=vm_cpu_sockets
         )
         assert sla_helpers.load_vm_and_check_the_load(load_dict=self.load_dict)
 

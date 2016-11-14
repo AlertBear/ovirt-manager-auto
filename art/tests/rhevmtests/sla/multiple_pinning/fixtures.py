@@ -79,31 +79,3 @@ def attach_host_device(request):
         device_name=host_device_name,
         host_name=conf.HOSTS[0]
     )
-
-
-@pytest.fixture(scope="module")
-def create_vm_for_export_and_template_checks(request):
-    """
-    1) Create VM that pinned to two hosts
-    """
-    def fin():
-        """
-        1) Remove VM
-        """
-        u_libs.testflow.teardown(
-            "Remove the VM %s", conf.VM_IMPORT_EXPORT_TEMPLATE
-        )
-        ll_vms.safely_remove_vms([conf.VM_IMPORT_EXPORT_TEMPLATE])
-    request.addfinalizer(fin)
-
-    u_libs.testflow.setup(
-        "Create VM %s with placement hosts %s",
-        conf.VM_IMPORT_EXPORT_TEMPLATE, conf.HOSTS[:2]
-    )
-    assert ll_vms.addVm(
-        positive=True,
-        name=conf.VM_IMPORT_EXPORT_TEMPLATE,
-        cluster=conf.CLUSTER_NAME[0],
-        template=conf.BLANK_TEMPlATE,
-        placement_hosts=conf.HOSTS[:2]
-    )

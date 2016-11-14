@@ -65,6 +65,9 @@ DEFAULT_VM_PARAMETERS = {
     VM_PROTECTED: False
 }
 
+VM_WITHOUT_DISK = "vm_without_disk_sla"
+BLANK_TEMPlATE = "Blank"
+
 DC_QUOTA_MODE = "quota_mode"
 QUOTA_NONE_MODE = "NONE"
 QUOTA_AUDIT_MODE = "AUDIT"

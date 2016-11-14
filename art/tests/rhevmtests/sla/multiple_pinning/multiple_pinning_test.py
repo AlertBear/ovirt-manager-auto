@@ -15,12 +15,12 @@ import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
 from fixtures import (
     attach_host_device,
-    create_vm_for_export_and_template_checks,
     numa_pinning,
     update_class_cpu_pinning
 )
 from rhevmtests.sla.fixtures import (
     activate_hosts,
+    create_vm_without_disk,
     choose_specific_host_as_spm,
     export_vm,
     import_vm,
@@ -461,7 +461,8 @@ class TestMultiplePinning10(BaseMultiplePinning):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_for_export_and_template_checks.__name__,
+    create_vm_without_disk.__name__,
+    update_vms.__name__,
     export_vm.__name__,
     import_vm.__name__
 )
@@ -470,8 +471,11 @@ class TestImportExport(BaseMultiplePinning):
     Import and export the VM that pinned to two hosts
     """
     __test__ = True
-    vm_to_export = conf.VM_IMPORT_EXPORT_TEMPLATE
-    vm_to_import = conf.VM_IMPORT_EXPORT_TEMPLATE
+    vms_to_params = {
+        conf.VM_WITHOUT_DISK: {conf.VM_PLACEMENT_HOSTS: range(2)}
+    }
+    vm_to_export = conf.VM_WITHOUT_DISK
+    vm_to_import = conf.VM_WITHOUT_DISK
     vm_import_name = conf.VM_IMPORTED
 
     @polarion("RHEVM3-12406")
@@ -490,7 +494,8 @@ class TestImportExport(BaseMultiplePinning):
 @u_libs.attr(tier=2)
 @bz({"1333409": {}})
 @pytest.mark.usefixtures(
-    create_vm_for_export_and_template_checks.__name__,
+    create_vm_without_disk.__name__,
+    update_vms.__name__,
     make_template_from_vm.__name__,
     make_vm_from_template.__name__
 )
@@ -500,9 +505,11 @@ class TestTemplate(BaseMultiplePinning):
     create the VM from this template
     """
     __test__ = True
-    vm_for_template = conf.VM_IMPORT_EXPORT_TEMPLATE
+    vms_to_params = {
+        conf.VM_WITHOUT_DISK: {conf.VM_PLACEMENT_HOSTS: range(2)}
+    }
+    vm_for_template = conf.VM_WITHOUT_DISK
     template_name = conf.VM_IMPORT_EXPORT_TEMPLATE
-    vm_template = conf.VM_IMPORT_EXPORT_TEMPLATE
     vm_from_template_name = conf.VM_FROM_TEMPLATE
 
     @polarion("RHEVM3-12407")
@@ -514,5 +521,7 @@ class TestTemplate(BaseMultiplePinning):
             vm_name=conf.VM_FROM_TEMPLATE
         )
         vm_placement_hosts.sort()
-        u_libs.testflow.step("Check VM %s placement hosts", conf.VM_NAME[0])
+        u_libs.testflow.step(
+            "Check VM %s placement hosts", conf.VM_FROM_TEMPLATE
+        )
         assert vm_placement_hosts == conf.HOSTS[:2]

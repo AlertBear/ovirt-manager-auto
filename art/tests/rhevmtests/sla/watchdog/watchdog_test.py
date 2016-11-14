@@ -415,7 +415,7 @@ class TestWatchdogCRUDTemplate(u_libs.SlaTest):
     __test__ = True
     watchdog_template = conf.TEMPLATE_NAME[0]
     watchdog_action = conf.WATCHDOG_ACTION_RESET
-    vm_for_template = conf.TEMPLATE_NAME[0]
+    template_name = conf.TEMPLATE_NAME[0]
     vm_from_template_name = conf.VM_FROM_TEMPLATE_WATCHDOG
     vms_to_start = [conf.VM_FROM_TEMPLATE_WATCHDOG]
 

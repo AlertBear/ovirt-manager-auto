@@ -83,7 +83,7 @@ def create_template_for_cpu_qos_test(request):
     assert ll_templates.createTemplate(
         positive=True,
         name=conf.QOS_TEMPLATE,
-        vm=conf.QOS_VMS[0],
+        vm=conf.VM_WITHOUT_DISK,
         cluster=conf.CLUSTER_NAME[0],
         cpu_profile_id=cpu_profile_id
 

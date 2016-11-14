@@ -475,7 +475,7 @@ def make_vm_from_template(request):
     """
     1) Make VM from template
     """
-    vm_for_template = request.node.cls.vm_for_template
+    template_name = request.node.cls.template_name
     vm_from_template_name = request.node.cls.vm_from_template_name
 
     def fin():
@@ -489,13 +489,13 @@ def make_vm_from_template(request):
 
     u_libs.testflow.setup(
         "Create the VM %s from the template %s",
-        vm_from_template_name, vm_for_template
+        vm_from_template_name, template_name
     )
     assert ll_vms.addVm(
         positive=True,
         cluster=sla_config.CLUSTER_NAME[0],
         name=vm_from_template_name,
-        template=vm_for_template
+        template=template_name
     )
 
 
@@ -657,4 +657,29 @@ def stop_host_network(request):
     )
     assert ll_hosts.waitForHostsStates(
         positive=True, names=host_name, states=sla_config.HOST_NONRESPONSIVE
+    )
+
+
+@pytest.fixture(scope="class")
+def create_vm_without_disk(request):
+    """
+    1) Create VM without disk for the future use
+    """
+    def fin():
+        """
+        1) Remove VM
+        """
+        u_libs.testflow.teardown("Remove VM %s", sla_config.VM_WITHOUT_DISK)
+        ll_vms.safely_remove_vms(vms=[sla_config.VM_WITHOUT_DISK])
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup(
+        "Add VM %s to the cluster %s",
+        sla_config.VM_WITHOUT_DISK, sla_config.CLUSTER_NAME[0]
+    )
+    assert ll_vms.addVm(
+        positive=True,
+        name=sla_config.VM_WITHOUT_DISK,
+        cluster=sla_config.CLUSTER_NAME[0],
+        template=sla_config.BLANK_TEMPlATE
     )
