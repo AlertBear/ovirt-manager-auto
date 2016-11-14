@@ -27,9 +27,7 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
 )
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
-from art.rhevm_api.tests_lib.low_level.networks import (
-    get_vnic_profile_obj, VNIC_PROFILE_API,
-)
+from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 from art.rhevm_api.tests_lib.low_level.vms import (
     DiskNotFound,
     prepare_watchdog_obj,
@@ -541,9 +539,10 @@ def getTemplatesNics(template, version=BASE_TEMPLATE_VERSION):
                                         attr='nic', get_href=True)
 
 
+@ll_general.generate_logs()
 def getTemplatesNic(template, nic, version=BASE_TEMPLATE_VERSION):
     """
-    Get a specific nic from a specific template
+    Get NIC from template
 
     Args:
         template (str): Name of the template.
@@ -1096,34 +1095,6 @@ def waitForTemplatesGone(positive, templates, timeout=600, samplingPeriod=10):
         positive, templates, TEMPLATE_API, timeout, samplingPeriod)
 
 
-def check_vnic_on_template_nic(template, nic='nic1', vnic='rhevm'):
-    """
-    Check for vnic parameter value if this profile resides on the nic
-    parameter
-    **Author**: gcheresh
-
-    **Parameters**:
-        * *template* - template name to check for VNIC profile name on
-        * *nic* - NIC on template to check the VNIC profile on
-        * *vnic* - vnic name to check on the NIC of Template
-    **Returns**: True if VNIC profile with 'vnic' name is located on the nic
-    of the Template
-    """
-    try:
-        nic = getTemplatesNic(template=template, nic=nic)
-    except EntityNotFound:
-        VM_API.logger.error("Template %s doesn't have nic '%s'", template,
-                            nic)
-        return False
-    if nic.get_vnic_profile():
-        vnic_obj = VNIC_PROFILE_API.find(val=nic.get_vnic_profile().get_id(),
-                                         attribute='id')
-        return vnic_obj.get_name() == vnic
-    # for NIC that doesn't have VNIC profile on it
-    else:
-        return vnic is None
-
-
 def check_template_existence(template_name):
     """
     Check if template exist
@@ -1276,11 +1247,12 @@ def get_templates_obj(template_name, all_content=False):
     return TEMPLATE_API.query(template_name_query)
 
 
+@ll_general.generate_logs()
 def get_template_obj(
     template_name, all_content=False, version=BASE_TEMPLATE_VERSION
 ):
     """
-    Gets template object by name and specific template version
+    Gets template object by template_name and specific template version
 
     Args:
         template_name (str): Name of the template.
@@ -1291,18 +1263,11 @@ def get_template_obj(
     Returns:
          Template: If found returns the template object, otherwise None
     """
-    log_info, log_error = ll_general.get_log_msg(
-        action="get", obj_type="template", obj_name=template_name,
-        all_content=all_content, template_version=version
-    )
-    logger.info(log_info)
-    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
     version = 0 if template_name == 'Blank' else version
     templates_list = get_templates_obj(template_name, all_content)
     for template in templates_list:
         if template.get_version().get_version_number() == version:
             return template
-    logger.error(log_error)
     return None
 
 

@@ -7,7 +7,7 @@ helper file for import_export networks feature
 
 import logging
 
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.high_level.templates as hl_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as import_export_conf
 import rhevmtests.networking.config as network_conf
@@ -66,7 +66,7 @@ def check_imported_vm_or_templates(net1, net2, vm=None, template=None):
                 return False
 
         if template:
-            if not ll_templates.check_vnic_on_template_nic(
+            if not hl_templates.check_vnic_on_template_nic(
                 template=template, nic=nic, vnic=vnic
             ):
                 return False

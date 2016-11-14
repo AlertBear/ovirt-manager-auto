@@ -5871,3 +5871,21 @@ def get_vms_from_storage_domain(storage_domain_name):
             storage_domain_name, storage_domain_vms
         )
     return list() if storage_domain_vms is None else storage_domain_vms
+
+
+@ll_general.generate_logs()
+def get_vm_vnic_profile_obj(nic):
+    """
+    Get vm NIC vNIC profile object.
+
+    Args:
+        nic (object): Nic object.
+
+    Returns:
+        VnicProfile or None: VnicProfile object if found else None.
+    """
+    vnic_profile_obj = nic.get_vnic_profile()
+
+    return None if not vnic_profile_obj else VNIC_PROFILE_API.find(
+        val=vnic_profile_obj.get_id(), attribute='id'
+    )
