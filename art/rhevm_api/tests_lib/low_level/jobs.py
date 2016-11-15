@@ -186,31 +186,43 @@ def add_job(job_description, auto_cleared=True):
     return True
 
 
-def add_step(job_description, step_description,
-             step_type, step_state, parent_step_description=None):
+def add_step(
+        job_description, step_description,
+        step_type, step_state,
+        parent_step_description=None
+):
     """
     Description: Add new step to job or step with given description
-    **Author**: alukiano
-    **Parameters**:
-      * *step_description* - Name of step
-      * *job_description* - Name of job to add step
-      * *step_type* - type of step, one of
-        ['VALIDATING', 'EXECUTING', 'FINALIZING']
-      * *step_state* - state of step, one of
-        ['STARTED', 'FINISHED', 'FAILED', 'ABORTED', 'UNKNOWN']
-      * *parent_step_description* - add sub-step to step with given description
-    **Returns**: True, if job adding job was success, else False
+    Arguments:
+        step_description (str): Name of step
+        job_description (str): Name of job to add step
+        step_type (obj): type of step, one of
+            ['VALIDATING', 'EXECUTING', 'FINALIZING']
+        step_state (obj): state of step, one of
+            ['STARTED', 'FINISHED', 'FAILED', 'ABORTED', 'UNKNOWN']
+        parent_step_description (str): add sub-step to step
+            with given description
+    Returns:
+        bool: True, if job adding job was success, else False
     """
     job_obj = None
     parent_step_obj = None
-    for status in [ENUMS['job_started'], ENUMS['job_finished'],
-                   ENUMS['job_failed'], ENUMS['job_aborted'],
-                   ENUMS['job_unknown']]:
-        job_obj = check_recent_job(True, job_description, job_status=status)[1]
+    for status in [
+            ENUMS['job_started'], ENUMS['job_finished'],
+            ENUMS['job_failed'], ENUMS['job_aborted'],
+            ENUMS['job_unknown']
+    ]:
+        _, job_obj = check_recent_job(
+            True,
+            job_description,
+            job_status=status
+        )
         if job_obj:
             if parent_step_description:
-                parent_step_obj = step_by_description(job_obj,
-                                                      parent_step_description)
+                parent_step_obj = step_by_description(
+                    job_obj,
+                    parent_step_description
+                )
                 if parent_step_obj:
                     break
             else:
@@ -222,12 +234,13 @@ def add_step(job_description, step_description,
         logger.error("No parent step with given description found")
         return False
     steps_obj = STEPS_API.getElemFromLink(job_obj, get_href=True)
-    status_obj = data_st.Status(state=step_state)
-    step_obj = data_st.Step(description=step_description,
-                            job=job_obj,
-                            parent_step=parent_step_obj,
-                            status=status_obj,
-                            type_=step_type.lower())
+    step_obj = data_st.Step(
+        description=step_description,
+        job=job_obj,
+        parent_step=parent_step_obj,
+        status=step_state,
+        type_=step_type.lower()
+    )
     if not STEPS_API.create(step_obj, True, collection=steps_obj)[1]:
         return False
     return True
@@ -256,24 +269,30 @@ def step_by_description(job, step_description):
 
 def end_job(job_description, job_status, end_status):
     """
-    Description: End job with given description
-    **Author**: alukiano
-    **Parameters**:
-      * *job_description* - description of job, that you want to end
-      * *job_status* - status of job, that you want to end
-      * *end_status* - end job with specific status
-        ['STARTED', 'FINISHED', 'FAILED', 'ABORTED', 'UNKNOWN']
-    **Returns**: True, if ending job success
-            False, else
+    Description:
+        End job with given description
+    Parameters:
+        job_description (str): description of job you want to end
+        job_status (str): status of job you want to end
+        end_status (str):  end job with specific status. One of
+            ['STARTED', 'FINISHED', 'FAILED', 'ABORTED', 'UNKNOWN']
+    Returns:
+        bool: True, if ending job succeeds, False otherwise
     """
-    status_obj = data_st.Status(state=end_status)
-    job_obj = check_recent_job(True,
-                               job_description,
-                               job_status=job_status)[1]
-    if not job_obj:
+    _, job_object = check_recent_job(
+        True,
+        job_description,
+        job_status=job_status
+    )
+    if not job_object:
         logger.warn("Job with given description not exist")
         return False
-    if not JOBS_API.syncAction(job_obj, "end", True, status=status_obj):
+    if not JOBS_API.syncAction(
+        job_object,
+        "end",
+        True,
+        status=end_status
+    ):
         return False
     return True
 
