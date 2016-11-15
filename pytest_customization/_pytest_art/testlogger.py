@@ -316,6 +316,8 @@ class ARTLogging(object):
         self.log_filter.toggle(False)
         if self.step_id == 0 and not self.log_delimiter:
             flow_logger.info(DELIMITER)
+        else:
+            self.log_delimiter = False
 
         self.step_id += 1
         msg = "      Test {0}  {1:2}: {2}".format(log_type, self.step_id, msg)
