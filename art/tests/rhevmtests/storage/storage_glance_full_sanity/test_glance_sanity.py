@@ -545,7 +545,7 @@ class TestCase5683(BaseTestCase):
             storagedomain=storage_domains[0]
         ):
             raise errors.TemplateException(
-                "Unable to create template % from vm %s" %
+                "Unable to create template %s from vm %s" %
                 (self.template_name, config.VM_NAME[0])
 
             )
