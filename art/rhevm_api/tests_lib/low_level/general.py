@@ -319,7 +319,7 @@ def get_log_msg(
     kwargs = prepare_kwargs_for_log(**kwargs)
     kwargs_to_pop = list()
     for k, v in kwargs.iteritems():
-        if k in action.lower():
+        if k.lower() in action.lower().split():
             key = re.findall(k, action, re.IGNORECASE)[0]
             v = ",".join(v) if isinstance(v, list) else v
             action = action.replace(
