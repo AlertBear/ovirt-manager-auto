@@ -551,3 +551,77 @@ def clean_export_domain(request):
             config.EXPORT_DOMAIN_NAME, config.DATA_CENTER_NAME
         )
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def set_spm_priorities(request):
+    """
+    Set hosts' SPM priorities according to spm_priorities list
+    """
+    self = request.node.cls
+
+    def finalizer():
+        """
+        Resetting SPM priority to all hosts
+        """
+        testflow.teardown(
+            "Resetting SPM priority to %s for all hosts", self.spm_priorities
+        )
+        for host, priority in zip(config.HOSTS, self.spm_priorities):
+            if not ll_hosts.setSPMPriority(True, host, priority):
+                logger.error("Unable to set host %s priority", host)
+    request.addfinalizer(finalizer)
+
+    if not hasattr(self, 'spm_priorities'):
+        self.spm_priorities = (
+            [config.DEFAULT_SPM_PRIORITY] * len(config.HOSTS)
+        )
+    testflow.setup(
+        "Setting SPM priorities for hosts: %s", self.spm_priorities
+    )
+    for host, priority in zip(config.HOSTS, self.spm_priorities):
+        if not ll_hosts.setSPMPriority(True, host, priority):
+            raise exceptions.HostException(
+                'Unable to set host %s priority' % host
+            )
+    if not hasattr(self, 'spm_host'):
+        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+    if not hasattr(self, 'hsm_hosts'):
+        self.hsm_hosts = [
+            host for host in config.HOSTS if host != self.spm_host
+        ]
+    testflow.setup("Ensuring SPM priority is for all hosts")
+    for host, priority in zip(config.HOSTS, self.spm_priorities):
+        if not ll_hosts.checkSPMPriority(True, host, str(priority)):
+            raise exceptions.HostException(
+                'Unable to check host %s priority' % host
+            )
+
+
+@pytest.fixture()
+def init_master_domain_params(request):
+    """
+    Extract master domain name and address
+    """
+    self = request.node.cls
+
+    found, master_domain_obj = ll_sd.findMasterStorageDomain(
+        True, config.DATA_CENTER_NAME
+    )
+    assert found, (
+        "Could not find master storage domain on Data center '%s'" %
+        config.DATA_CENTER_NAME
+    )
+
+    self.master_domain = master_domain_obj['masterDomain']
+
+    if not hasattr(self, 'master_domain_address'):
+        rc, master_domain_address = ll_sd.getDomainAddress(
+            True, self.master_domain
+        )
+        assert rc, "Could not get the address of '%s'" % self.master_domain
+        self.master_domain_address = master_domain_address['address']
+    logger.info(
+        'Found master %s domain in address: %s',
+        self.master_domain, self.master_domain_address,
+    )

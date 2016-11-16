@@ -4,22 +4,26 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_2_Storage_SPM_Priority
 """
 import logging
+import pytest
 import config
+import helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     storagedomains as ll_sd,
 )
-from art.rhevm_api.tests_lib.high_level import (
-    hosts as hl_hosts,
-)
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils
-from art.test_handler import exceptions
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
+from rhevmtests.storage.fixtures import (
+    set_spm_priorities,
+)
+from rhevmtests.storage.storage_spm_priority_sanity.fixtures import (
+    wait_for_spm, remove_host, deactivate_hsm_hosts, initialize_hosts_params,
+    activate_old_master_domain, set_different_host_priorities
+)
 from utilities import utils
-import pytest
 
 
 logger = logging.getLogger(__name__)
@@ -28,15 +32,16 @@ WAIT_FOR_SPM_TIMEOUT = 100
 RETRY_INTERVAL = 10
 
 
+@pytest.mark.usefixtures(
+    wait_for_spm.__name__,
+    set_spm_priorities.__name__
+)
 class BasicEnvironment(BaseTestCase):
     """
     Base class that ensures SPM is elected and SPM priorities
     are set to default for all hosts
     """
     storages = config.NOT_APPLICABLE
-    spm_priorities = []
-    spm_host = None
-    hsm_hosts = []
 
     def wait_for_spm_host_and_verify_identity(self, host_name):
         """
@@ -53,12 +58,12 @@ class BasicEnvironment(BaseTestCase):
             config.DATA_CENTER_NAME, WAIT_FOR_SPM_TIMEOUT, RETRY_INTERVAL
         ):
             logger.error(
-                'SPM host was not elected in %s', config.DATA_CENTER_NAME
+                "SPM host was not elected in %s", config.DATA_CENTER_NAME
             )
             return False
 
         self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        logger.info("Verify SPM host is '%s'", host_name)
+        testflow.step("Verify SPM host is '%s'", host_name)
         if self.spm_host is not host_name:
             logger.info(
                 "SPM host %s does not match the expected host %s",
@@ -67,26 +72,6 @@ class BasicEnvironment(BaseTestCase):
             return False
 
         return True
-
-    def deactivate_and_verify_hosts(self, hosts=config.HOSTS):
-        """
-        Deactivate given hosts and verify they reach to 'maintenance' state
-
-        :param hosts: List of hosts to deactivate
-        :type hosts: list
-        :raise: HostException
-        """
-        logger.info("Put hosts '%s' into maintenance mode", hosts)
-        if not hl_hosts.deactivate_hosts_if_up(hosts):
-            raise exceptions.HostException(
-                "Unable to deactivate hosts: %s " % hosts
-            )
-        if not ll_hosts.waitForHostsStates(
-            True, hosts, config.HOST_MAINTENANCE
-        ):
-            raise exceptions.HostException(
-                'Hosts failed to enter maintenance mode'
-            )
 
     def activate_and_verify_hosts(self, hosts=config.HOSTS):
         """
@@ -99,15 +84,13 @@ class BasicEnvironment(BaseTestCase):
         hosts_sorted_by_spm_priority = ll_hosts._sort_hosts_by_priority(hosts)
 
         for host in hosts_sorted_by_spm_priority:
-            logger.info("Activate host '%s'", host)
-            if not ll_hosts.activate_host(True, host):
-                raise exceptions.HostException(
-                    "Unable to activate host: %s " % host
-                )
-        if not ll_hosts.waitForHostsStates(
-            True, hosts, config.HOST_UP
-        ):
-            raise exceptions.HostException('Hosts failed to activate')
+            testflow.step("Activate host '%s'", host)
+            assert ll_hosts.activate_host(True, host), (
+                "Unable to activate host: %s " % host
+            )
+        assert ll_hosts.waitForHostsStates(True, hosts, config.HOST_UP), (
+            "Hosts failed to activate"
+        )
 
     def set_priorities(
         self, positive=True, priorities=None, hosts=config.HOSTS
@@ -123,63 +106,21 @@ class BasicEnvironment(BaseTestCase):
         :type hosts: list
         :raise: HostException
         """
-        logger.info(
-            'Setting SPM priorities %s for hosts: %s', priorities, hosts
+        testflow.step(
+            "Setting SPM priorities %s for hosts: %s", priorities, hosts
         )
         for host, priority in zip(hosts, priorities):
-            if not ll_hosts.setSPMPriority(positive, host, priority):
-                raise exceptions.HostException(
-                    'Unable to set host %s priority' % host
-                )
-
-        logger.info(
-            'Ensure that the SPM priority was configured on input hosts'
-        )
-        for host, priority in zip(hosts, priorities):
-            if not ll_hosts.checkSPMPriority(positive, host, str(priority)):
-                raise exceptions.HostException(
-                    'Unable to check host %s priority' % host
-                )
-
-    def setUp(self):
-        """
-        * Set hosts SPM priorities according to spm_priorities list
-        * SPM should be elected
-        """
-        self.spm_priorities = (
-            [config.DEFAULT_SPM_PRIORITY] * len(config.HOSTS)
-        )
-        self.set_priorities(priorities=self.spm_priorities)
-
-        logger.info('Getting SPM host')
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        self.hsm_hosts = filter(lambda x: x != self.spm_host, config.HOSTS)
-        logger.info(
-            'Found SPM host: %s, hsm hosts: %s', self.spm_host, self.hsm_hosts
-        )
-
-    def tearDown(self):
-        """
-        Reset SPM priorities for all hosts to default (Normal)
-        """
-        logger.info(
-            'Resetting SPM priority to %s for all hosts', config.HOSTS
-        )
-        for host, priority in zip(config.HOSTS, self.spm_priorities):
-            if not ll_hosts.setSPMPriority(True, host, priority):
-                logger.error("Unable to set host %s priority", host)
-                BaseTestCase.test_failed = True
-
-        logger.info('Waiting for SPM to be elected')
-        if not ll_hosts.waitForSPM(
-            config.DATA_CENTER_NAME, WAIT_FOR_SPM_TIMEOUT, RETRY_INTERVAL
-        ):
-            logger.error(
-                'SPM host was not elected in %s', config.DATA_CENTER_NAME
+            assert ll_hosts.setSPMPriority(positive, host, priority), (
+                "Unable to set host %s priority" % host
             )
-            BaseTestCase.test_failed = True
 
-        BaseTestCase.teardown_exception()
+        testflow.step(
+            "Ensure that the SPM priority was configured on input hosts"
+        )
+        for host, priority in zip(hosts, priorities):
+            assert ll_hosts.checkSPMPriority(positive, host, str(priority)), (
+                "Unable to check host %s priority" % host
+            )
 
 
 class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
@@ -193,10 +134,10 @@ class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
         Basic flow for minus one SPM hosts priority
         """
         self.set_priorities(priorities=priorities, hosts=hosts)
-        self.deactivate_and_verify_hosts(hosts=hosts)
+        helpers.deactivate_and_verify_hosts(hosts=hosts)
         self.activate_and_verify_hosts(hosts=hosts)
 
-        logger.info('Waiting for SPM to be elected')
+        testflow.step("Waiting for SPM to be elected")
         with pytest.raises(apis_exceptions.APITimeout):
             ll_hosts.waitForSPM(
                 datacenter=config.DATA_CENTER_NAME,
@@ -205,28 +146,14 @@ class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    remove_host.__name__
+)
 class TestCase6220(BasicEnvironment):
     """
     RHEVM3-6220 - Default SPM priority value
     """
     __test__ = True
-    polarion_test_case = '6220'
-
-    def setUp(self):
-        """
-        Remove host from the environment
-        """
-        super(TestCase6220, self).setUp()
-        self.removed_host = self.hsm_hosts[0]
-        self.removed_host_ip = ll_hosts.getHostIP(self.removed_host)
-        logger.info(
-            "Remove host '%s' ip: %s from %s", self.removed_host,
-            self.removed_host_ip, config.DATA_CENTER_NAME
-        )
-        if not ll_hosts.removeHost(True, self.removed_host, True):
-            raise exceptions.HostException(
-                "Failed to remove host %s" % self.removed_host
-            )
 
     @polarion("RHEVM3-6220")
     def test_default_spm_priority(self):
@@ -273,10 +200,6 @@ class TestCase6212(BasicEnvironment):
         valid_priorities = [
             config.MIN_SPM_PRIORITY, config.MAX_SPM_PRIORITY
         ]
-        logger.info(
-            "Set hosts: '%s' SPM priority to '%s'", self.hsm_hosts[:2],
-            valid_priorities
-        )
         self.set_priorities(
             priorities=valid_priorities, hosts=self.hsm_hosts[:2]
         )
@@ -288,25 +211,25 @@ class TestCase6212(BasicEnvironment):
         Expected result: Illegal values changes shouldn't occur, SPM priority
         should stay as it was (5)
         """
-        logger.info(
+        testflow.step(
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.BELOW_MIN_SPM_PRIORITY
         )
         assert ll_hosts.setSPMPriority(
             False, self.hsm_hosts[0], config.BELOW_MIN_SPM_PRIORITY
-        ), 'Set SPM priority to illegal value succeded'
+        ), "Set SPM priority to illegal value succeded"
         assert ll_hosts.checkSPMPriority(
             True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
         ), "Host %s SPM priority isn't %s" % (
             (self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY)
         )
-        logger.info(
+        testflow.step(
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.LARGER_THAN_MAX_SPM_PRIORITY
         )
         assert ll_hosts.setSPMPriority(
             False, self.hsm_hosts[0], config.LARGER_THAN_MAX_SPM_PRIORITY
-        ), 'Set SPM priority to illegal value succeded'
+        ), "Set SPM priority to illegal value succeded"
         assert ll_hosts.checkSPMPriority(
             True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
         ), "Host %s SPM priority isn't %s" % (
@@ -319,13 +242,13 @@ class TestCase6212(BasicEnvironment):
         * Change and validate SPM priority to '#'
         Expected result: Illegal values changes shouldn't occur
         """
-        logger.info(
+        testflow.step(
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.ILLEGAL_SPM_PRIORITY
         )
         assert ll_hosts.setSPMPriority(
             False, self.hsm_hosts[0], config.ILLEGAL_SPM_PRIORITY
-        ), 'Set SPM priority to illegal value succeded'
+        ), "Set SPM priority to illegal value succeded"
 
 
 @attr(tier=2)
@@ -334,7 +257,6 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
     RHEVM3-6217 - All hosts with '-1' priority
     """
     __test__ = True
-    polarion_test_case = '6217'
 
     @polarion("RHEVM3-6217")
     def test_all_hosts_with_minus_one_spm_priority(self):
@@ -349,20 +271,15 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    deactivate_hsm_hosts.__name__
+)
 class TestCase6205(SPMHostsMinusOnePriorityFlow):
     """
     RHEVM3-6205 - Host that has priority -1 is not chosen,
     even if it is the only host
     """
     __test__ = True
-    polarion_test_case = '6205'
-
-    def setUp(self):
-        """
-        Set all host except the SPM to maintenance
-        """
-        super(TestCase6205, self).setUp()
-        self.deactivate_and_verify_hosts(hosts=self.hsm_hosts)
 
     @polarion("RHEVM3-6205")
     def test_all_hosts_with_minus_one_spm_priority(self):
@@ -377,66 +294,43 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
         min_priorities = [config.MIN_SPM_PRIORITY]
         self.basic_flow(priorities=min_priorities, hosts=[self.spm_host])
 
-        logger.info("Restarting vdsmd on %s", self.spm_host)
+        testflow.step("Restarting vdsmd on %s", self.spm_host)
         spm_host_ip = ll_hosts.getHostIP(self.spm_host)
         test_utils.restartVdsmd(spm_host_ip, config.HOSTS_PW)
         assert ll_hosts.waitForHostsStates(
             True, self.spm_host, config.HOST_UP
         ), "Host %s failed to reach 'UP' state" % self.spm_host
 
-        logger.info('Waiting for SPM to be elected')
+        testflow.step("Waiting for SPM to be elected")
         with pytest.raises(apis_exceptions.APITimeout):
             ll_hosts.waitForSPM(
                 datacenter=config.DATA_CENTER_NAME,
                 timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
             )
 
-    def tearDown(self):
-        """
-        Activate all HSM hosts
-        """
-        logger.info("Activate hosts: %s ", self.hsm_hosts)
-        for host in self.hsm_hosts:
-            if not ll_hosts.activate_host(True, host):
-                logger.error("Failed to activate host: %s", host)
-                BaseTestCase.test_failed = True
-        super(TestCase6205, self).tearDown()
-
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    initialize_hosts_params.__name__
+)
 class TestCase6206(BasicEnvironment):
     """
     RHEVM3-6206 - Two hosts swap their priorities, the SPM changes accordingly
     """
     __test__ = True
-    polarion_test_case = '6206'
 
     def basic_flow(self):
         """
         Deactivate Hosts, set new priorities, activate hosts and wait for SPM
         """
-        self.deactivate_and_verify_hosts()
+        helpers.deactivate_and_verify_hosts()
         self.set_priorities(priorities=self.priorities, hosts=self.hosts)
         self.activate_and_verify_hosts(hosts=self.hosts)
-        if not self.wait_for_spm_host_and_verify_identity(
+        assert self.wait_for_spm_host_and_verify_identity(
             self.high_spm_priority_host
-        ):
-            raise exceptions.HostException(
-                "%s selected as SPM and not %s" %
-                (self.spm_host, self.high_spm_priority_host)
-            )
-
-    def setUp(self):
-        """
-        Set all hosts to maintenance and select two hosts to work with
-        """
-        super(TestCase6206, self).setUp()
-        self.high_spm_priority_host = self.hsm_hosts[0]
-        self.low_spm_priority_host = self.hsm_hosts[1]
-        self.hosts = [self.high_spm_priority_host, self.low_spm_priority_host]
-        self.priorities = [
-            config.DEFAULT_SPM_PRIORITY, config.DEFAULT_SPM_PRIORITY - 1
-        ]
+        ), "%s selected as SPM and not %s" % (
+            self.spm_host, self.high_spm_priority_host
+        )
 
     @polarion("RHEVM3-6206")
     def test_two_hosts_swap_priorities(self):
@@ -453,7 +347,7 @@ class TestCase6206(BasicEnvironment):
         selected each time
         """
         self.basic_flow()
-        logger.info(
+        testflow.step(
             "Swapping SPM priorities between host %s and %s",
             self.high_spm_priority_host, self.low_spm_priority_host
         )
@@ -463,40 +357,16 @@ class TestCase6206(BasicEnvironment):
         self.hosts = [self.high_spm_priority_host, self.low_spm_priority_host]
         self.basic_flow()
 
-    def tearDown(self):
-        """
-        Activate all hosts
-        """
-        logger.info("Activate all hosts")
-        hosts_to_activate = [
-            host for host in config.HOSTS if host not in self.hosts
-        ]
-        for host in hosts_to_activate:
-            if not ll_hosts.activate_host(True, host):
-                logger.error("Failed to activate host: %s", host)
-                BaseTestCase.test_failed = True
-
-        super(TestCase6206, self).tearDown()
-
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    set_different_host_priorities.__name__
+)
 class TestCase6224(BasicEnvironment):
     """
     RHEVM3-6224 - Restart/Stop VDSM
     """
     __test__ = True
-    polarion_test_case = '6224'
-
-    def setUp(self):
-        """
-        Set HSM hosts SPM priority to '-1' and SPM host to '2'
-        """
-        super(TestCase6224, self).setUp()
-        hsm_priorities = (
-            [config.MIN_SPM_PRIORITY] * len(self.hsm_hosts)
-        )
-        self.set_priorities(priorities=hsm_priorities, hosts=self.hsm_hosts)
-        self.set_priorities(priorities=[2], hosts=[self.spm_host])
 
     def basic_flow(self, host_name, priority):
         """
@@ -508,20 +378,17 @@ class TestCase6224(BasicEnvironment):
         :type priority: int
         :raise: HostException
         """
-        self.deactivate_and_verify_hosts(hosts=[host_name])
-        logger.info(
+        helpers.deactivate_and_verify_hosts(hosts=[host_name])
+        testflow.step(
             "Change SPM priority to %s in the DB to %s", host_name, priority
         )
-        if not ll_hosts.set_spm_priority_in_db(
+        assert ll_hosts.set_spm_priority_in_db(
             host_name=host_name, spm_priority=priority,
             engine=config.ENGINE
-        ):
-            raise exceptions.HostException(
-                "Failed to change SPM priority on the DB for host '%s'" %
-                self.spm_host
-            )
-
-        logger.info("Restarting vdsmd on %s", host_name)
+        ), "Failed to change SPM priority on the DB for host '%s'" % (
+            self.spm_host
+        )
+        testflow.step("Restarting vdsmd on %s", host_name)
         host_ip = ll_hosts.getHostIP(host_name)
         test_utils.restartVdsmd(host_ip, config.HOSTS_PW)
         self.activate_and_verify_hosts(hosts=[host_name])
@@ -542,7 +409,7 @@ class TestCase6224(BasicEnvironment):
         self.basic_flow(
             host_name=self.spm_host, priority=config.MIN_SPM_PRIORITY
         )
-        logger.info('Waiting for SPM to be elected')
+        testflow.step("Waiting for SPM to be elected")
         with pytest.raises(apis_exceptions.APITimeout):
             ll_hosts.waitForSPM(
                 datacenter=config.DATA_CENTER_NAME,
@@ -556,13 +423,14 @@ class TestCase6224(BasicEnvironment):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    activate_old_master_domain.__name__
+)
 class TestCase6222(BasicEnvironment):
     """
     RHEVM3-6222 - Migrate Master Storage Domain (negative test)
     """
     __test__ = True
-    polarion_test_case = '6222'
-    master_domain = None
 
     @polarion("RHEVM3-6222")
     def test_migrate_master_storage_domain(self):
@@ -570,10 +438,8 @@ class TestCase6222(BasicEnvironment):
         * Switch Master domain to maintenance
         Expected result: SPM host doesn't change
         """
-        self.master_domain = ll_sd.get_master_storage_domain_name(
-            config.DATA_CENTER_NAME
-        )
         former_spm = self.spm_host
+        testflow.step("Deactivate master storage domain")
         assert ll_sd.deactivate_master_storage_domain(
             True, config.DATA_CENTER_NAME
         ), "Failed to deactivate master storage domain"
@@ -588,19 +454,6 @@ class TestCase6222(BasicEnvironment):
             self.spm_host, self.hsm_hosts[0]
         )
 
-    def tearDown(self):
-        """
-        Activate old master storage domain
-        """
-        if not ll_sd.activateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.master_domain, wait=True
-        ):
-            logger.error(
-                "Failed to activate storage domain '%s'", self.master_domain
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase6222, self).tearDown()
-
 
 @attr(tier=2)
 class TestCase6221(BasicEnvironment):
@@ -608,7 +461,6 @@ class TestCase6221(BasicEnvironment):
     RHEVM3-6221 - Change the SPM priority value in the DB (negative test)
     """
     __test__ = True
-    polarion_test_case = '6221'
 
     @polarion("RHEVM3-6221")
     def test_db_illegal_spm_priority_value(self):
@@ -617,7 +469,7 @@ class TestCase6221(BasicEnvironment):
         Expected result: DB blocks values higher than 10
         and lower than -1
         """
-        logger.info(
+        testflow.step(
             "Change SPM priority to %s in the DB to %s", self.spm_host,
             config.LARGER_THAN_MAX_SPM_PRIORITY
         )
@@ -628,7 +480,7 @@ class TestCase6221(BasicEnvironment):
         ), "SPM priority on the DB for host '%s' changed to '%s'" % (
             self.spm_host, config.MIN_SPM_PRIORITY + 1
         )
-        logger.info(
+        testflow.step(
             "Change SPM priority to %s in the DB to %s", self.spm_host,
             config.BELOW_MIN_SPM_PRIORITY
         )
@@ -650,7 +502,6 @@ class TestCase6215(BasicEnvironment):
     # the fact that art code runs on the engine (when using GE)
 
     __test__ = False
-    polarion_test_case = '6215'
     former_spm = None
 
     def setUp(self):
@@ -681,16 +532,16 @@ class TestCase6215(BasicEnvironment):
         Expected result: HSM with the next highest SPM priority is selected
         as SPM
         """
-        self.deactivate_and_verify_hosts(hosts=[self.spm_host])
+        helpers.deactivate_and_verify_hosts(hosts=[self.spm_host])
         logger.info(
-            'Blocking connection between %s and %s', self.engine_ip,
+            "Blocking connection between %s and %s", self.engine_ip,
             self.max_spm_priority_host
         )
         self.former_spm = self.spm_host
         assert st_api.blockOutgoingConnection(
             self.max_spm_priority_host_ip, config.HOSTS_USER,
             config.HOSTS_PW, self.engine_ip
-        ), 'Unable to block connection between %s and %s' % (
+        ), "Unable to block connection between %s and %s" % (
             self.max_spm_priority_host_ip, self.engine_ip
         )
         self.wait_for_spm_host_and_verify_identity(
@@ -711,7 +562,7 @@ class TestCase6215(BasicEnvironment):
             self.engine_ip
         ):
             logger.error(
-                'Failed to unblock connection between %s and %s',
+                "Failed to unblock connection between %s and %s",
                 self.max_spm_priority_host, self.engine_ip
             )
             BaseTestCase.test_failed = True
@@ -740,7 +591,6 @@ class TestCase6219(BasicEnvironment):
     RHEVM3-6219 - Storage disconnection and SPM re-election
     """
     __test__ = True
-    polarion_test_case = '6219'
     former_spm = None
 
     def setUp(self):
@@ -767,18 +617,12 @@ class TestCase6219(BasicEnvironment):
         found, non_master_obj = ll_sd.findNonMasterStorageDomains(
             True, config.DATA_CENTER_NAME,
         )
-        if not found:
-            raise exceptions.StorageDomainException(
-                "Failed to find non-master storage domain"
-            )
+        assert found, "Failed to find non-master storage domain"
         non_master = non_master_obj['nonMasterDomains'][0]
         rc, non_master_domain = ll_sd.getDomainAddress(
             True, non_master
         )
-        if not rc:
-            raise exceptions.StorageDomainException(
-                "Could not get the address of '%s'" % non_master
-            )
+        assert rc, "Could not get the address of '%s'" % non_master
         self.non_master_storage_domain_ip = non_master_domain['address']
 
     @polarion("RHEVM3-6219")
@@ -791,14 +635,14 @@ class TestCase6219(BasicEnvironment):
         Expected result: HSM host with valid SPM priority should become SPM
         """
         logger.info(
-            'Blocking connection between %s and %s', self.spm_host,
+            "Blocking connection between %s and %s", self.spm_host,
             self.non_master_storage_domain_ip
         )
         self.former_spm = self.spm_host
         assert st_api.blockOutgoingConnection(
             self.spm_host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.non_master_storage_domain_ip
-        ), 'Unable to block connection between %s and %s' % (
+        ), "Unable to block connection between %s and %s" % (
             self.spm_host, self.non_master_storage_domain_ip
         )
         assert ll_hosts.waitForHostsStates(
@@ -822,7 +666,7 @@ class TestCase6219(BasicEnvironment):
             self.non_master_storage_domain_ip
         ):
             logger.error(
-                'Failed to unblock connection between %s and %s',
+                "Failed to unblock connection between %s and %s",
                 self.former_spm, self.non_master_storage_domain_ip
             )
             BaseTestCase.test_failed = True
