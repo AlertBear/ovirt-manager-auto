@@ -8,6 +8,7 @@ Global fixtures
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
@@ -85,3 +86,31 @@ def create_clusters(request):
     for cluster_name, params in clusters_dict.iteritems():
         testflow.setup("Add cluster %s with %s", cluster_name, params)
         assert ll_clusters.addCluster(positive=True, **params)
+
+
+@pytest.fixture(scope="class")
+def create_datacenters(request):
+    """
+    Add datacenter(s).
+    """
+    datacenters_dict = getattr(request.node.cls, "datacenters_dict", dict())
+    dcs_to_remove = getattr(
+        request.node.cls, 'dcs_to_remove', datacenters_dict.keys()
+    )
+    result_list = list()
+
+    def fin():
+        """
+        Remove datacenter(s).
+        """
+        for dc in dcs_to_remove:
+            testflow.teardown("Remove datacenter %s", dc)
+            result_list.append(
+                ll_datacenters.remove_datacenter(positive=True, datacenter=dc)
+            )
+        assert all(result_list)
+    request.addfinalizer(fin)
+
+    for dc_params in datacenters_dict.itervalues():
+        testflow.setup("Add datacenter with %s", dc_params)
+        assert ll_datacenters.addDataCenter(positive=True, **dc_params)

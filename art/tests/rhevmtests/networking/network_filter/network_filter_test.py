@@ -19,10 +19,10 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
-    restore_vnic_profile_filter, create_dc_cluster,
-    add_vnic_to_vm, remove_vnic_from_vm, remove_vnic_profiles
+    restore_vnic_profile_filter, add_vnic_to_vm, remove_vnic_from_vm,
+    remove_vnic_profiles
 )
-from rhevmtests.fixtures import start_vm
+from rhevmtests.fixtures import start_vm, create_datacenters, create_clusters
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces, NetworkFixtures
@@ -311,7 +311,10 @@ class TestNetworkFilterCase05(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(create_dc_cluster.__name__)
+@pytest.mark.usefixtures(
+    create_datacenters.__name__,
+    create_clusters.__name__
+)
 class TestNetworkFilterCase06(NetworkTest):
     """
     Create and update vNIC profile network filter on old datacenter
@@ -323,6 +326,20 @@ class TestNetworkFilterCase06(NetworkTest):
     __test__ = True
     ext_dc = "NetworkFilter-DC-3-6"
     ext_cl = "NetworkFilter-CL-3-6"
+    clusters_dict = {
+        ext_cl: {
+            "name": ext_cl,
+            "data_center": ext_dc,
+            "version": conf.COMP_VERSION_4_0[0],
+            "cpu": conf.CPU_NAME,
+        }
+    }
+    datacenters_dict = {
+        ext_dc: {
+            "name": ext_dc,
+            "version": conf.COMP_VERSION_4_0[0],
+        }
+    }
     vnic_pro_1 = nf_conf.VNIC_PROFILES[6][0]
     vnic_pro_2 = nf_conf.VNIC_PROFILES[6][1]
     vnic_pro_3 = nf_conf.VNIC_PROFILES[6][2]

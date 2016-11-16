@@ -7,7 +7,6 @@ Fixtures for network filter
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
@@ -29,33 +28,6 @@ def remove_vnic_profiles(request):
         testflow.teardown("Remove unneeded vNIC profiles")
         networking.remove_unneeded_vnic_profiles()
     request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def create_dc_cluster(request):
-    """
-    Create old version(3.6) of DC/Cluster
-    """
-    ext_dc = request.node.cls.ext_dc
-    ext_cl = request.node.cls.ext_cl
-
-    def fin():
-        """
-        Remove DC and cluster
-        """
-        testflow.teardown(
-            "Remove datacenter %s and cluster %s", ext_dc, ext_cl
-        )
-        assert hl_networks.remove_basic_setup(
-            datacenter=ext_dc, cluster=ext_cl
-        )
-    request.addfinalizer(fin)
-
-    testflow.setup("Create datacenter %s and cluster %s", ext_dc, ext_cl)
-    assert hl_networks.create_basic_setup(
-        datacenter=ext_dc, cluster=ext_cl,
-        version=conf.COMP_VERSION_4_0[0], cpu=conf.CPU_NAME
-    )
 
 
 @pytest.fixture(scope="class")

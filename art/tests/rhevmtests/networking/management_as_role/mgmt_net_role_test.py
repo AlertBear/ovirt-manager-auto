@@ -22,17 +22,18 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    create_basic_setup, remove_all_networks,
+    remove_all_networks,
     create_and_attach_network, add_networks_to_clusters,
     update_cluster_network_usages, move_host_to_cluster,
     remove_network, install_host_with_new_management
 )
-from rhevmtests.fixtures import create_clusters
+from rhevmtests.fixtures import create_clusters, create_datacenters
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_basic_setup.__name__
+    create_datacenters.__name__,
+    create_clusters.__name__
 )
 class TestMGMTNetRole01(NetworkTest):
     """
@@ -44,6 +45,20 @@ class TestMGMTNetRole01(NetworkTest):
 
     ext_dc = mgmt_conf.DATA_CENTERS[1][0]
     ext_cluster = mgmt_conf.CLUSTERS[1][0]
+    clusters_dict = {
+        ext_cluster: {
+            "name": ext_cluster,
+            "data_center": ext_dc,
+            "version": conf.COMP_VERSION,
+            "cpu": conf.CPU_NAME,
+        }
+    }
+    datacenters_dict = {
+        ext_dc: {
+            "name": ext_dc,
+            "version": conf.COMP_VERSION,
+        }
+    }
 
     @polarion("RHEVM3-6466")
     def test_01_default_mgmt_net(self):
@@ -129,7 +144,7 @@ class TestMGMTNetRole02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_basic_setup.__name__,
+    create_datacenters.__name__,
     create_clusters.__name__,
     create_and_attach_network.__name__
 )
@@ -149,7 +164,19 @@ class TestMGMTNetRole03(NetworkTest):
         [(ext_dc, ext_cluster), (None, ext_cluster_1)],
         mgmt_conf.NET_DICT_CASE_03
     ]
+    datacenters_dict = {
+        ext_dc: {
+            "name": ext_dc,
+            "version": conf.COMP_VERSION,
+        }
+    }
     clusters_dict = {
+        ext_cluster: {
+            "name": ext_cluster,
+            "data_center": ext_dc,
+            "version": conf.COMP_VERSION,
+            "cpu": conf.CPU_NAME,
+        },
         ext_cluster_1: {
             "name": ext_cluster_1,
             "data_center": ext_dc,
@@ -336,7 +363,7 @@ class TestMGMTNetRole05(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    create_basic_setup.__name__,
+    create_datacenters.__name__,
     create_and_attach_network.__name__,
     create_clusters.__name__,
 )
@@ -363,6 +390,12 @@ class TestMGMTNetRole06(NetworkTest):
     net_2 = mgmt_conf.NETS[6][1]
     net_dict = mgmt_conf.NET_DICT_CASE_06
     clusters_to_remove = [ext_cls_0, ext_cls_1, ext_cls_3]
+    datacenters_dict = {
+        ext_dc: {
+            "name": ext_dc,
+            "version": conf.COMP_VERSION,
+        }
+    }
     clusters_dict = {
         ext_cls_0: {
             "name": ext_cls_0,
@@ -474,7 +507,7 @@ class TestMGMTNetRole06(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_basic_setup.__name__,
+    create_datacenters.__name__,
     create_and_attach_network.__name__,
     remove_network.__name__
 )
@@ -492,6 +525,12 @@ class TestMGMTNetRole07(NetworkTest):
     net_2 = mgmt_conf.NETS[7][1]
     ext_cls_0 = mgmt_conf.CLUSTERS[7][0]
     net_dict = mgmt_conf.NET_DICT_CASE_07
+    datacenters_dict = {
+        ext_dc: {
+            "name": ext_dc,
+            "version": conf.COMP_VERSION,
+        }
+    }
     remove_network_params = [ext_dc, conf.MGMT_BRIDGE]
     create_and_attach_network_params = [[(ext_dc, None)], net_dict]
 
@@ -593,7 +632,6 @@ class TestMGMTNetRole08(NetworkTest):
     install_host_with_new_management_params = [
         1, net_1, conf.CL_0, ext_cls_0, dc, mgmt_conf.NET_DICT_CASE_08_1, net_1
     ]
-    remove_clusters_params = [ext_cls_1, ext_cls_2]
 
     @polarion("RHEVM3-6470")
     def test_01_default_mgmt_net(self):

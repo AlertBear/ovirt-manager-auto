@@ -11,29 +11,7 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import helper
-import rhevmtests.networking.config as conf
 from rhevmtests.networking.fixtures import NetworkFixtures
-
-
-@pytest.fixture(scope="class")
-def create_basic_setup(request):
-    """
-    Create basic setup (Data-Center and optional cluster)
-    """
-    dc = request.node.cls.ext_dc
-    cluster = getattr(request.node.cls, "ext_cluster", None)
-
-    def fin():
-        """
-        Remove basic setup
-        """
-        assert hl_networks.remove_basic_setup(datacenter=dc, cluster=cluster)
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_basic_setup(
-        datacenter=dc, cluster=cluster, version=conf.COMP_VERSION,
-        cpu=conf.CPU_NAME
-    )
 
 
 @pytest.fixture(scope="class")

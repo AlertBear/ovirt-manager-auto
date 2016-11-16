@@ -10,6 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
@@ -20,7 +21,6 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
-import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
 import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
@@ -29,11 +29,11 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    add_labels, add_vnic_profile, create_cluster,  create_dc_and_networks,
+    add_labels, add_vnic_profile, create_cluster,  add_network_to_dc,
     create_vnics_on_vm, deactivate_hosts, remove_qos, set_host_nic_down,
     update_vnic_profile, remove_network
 )
-from rhevmtests.fixtures import start_vm
+from rhevmtests.fixtures import start_vm, create_datacenters, create_clusters
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, clean_host_interfaces, setup_networks_fixture
 )
@@ -612,7 +612,11 @@ class TestSanity07(TestSanityCaseBase):
         )
 
 
-@pytest.mark.usefixtures(create_dc_and_networks.__name__)
+@pytest.mark.usefixtures(
+    create_datacenters.__name__,
+    create_clusters.__name__,
+    add_network_to_dc.__name__
+)
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestSanity08(TestSanityCaseBase):
     """
@@ -627,6 +631,13 @@ class TestSanity08(TestSanityCaseBase):
     cluster_1 = "sanity_extra_cluster_1"
     cluster_2 = "sanity_extra_cluster_2"
     mgmt_bridge = conf.MGMT_BRIDGE
+    clusters_to_remove = [cluster_1, cluster_2]
+    datacenters_dict = {
+        dc: {
+            "name": dc,
+            "version": conf.COMP_VERSION,
+        }
+    }
 
     @polarion("RHEVM3-14512")
     def test_create_dc_cluster_with_management_net(self):
@@ -636,8 +647,10 @@ class TestSanity08(TestSanityCaseBase):
         testflow.step(
             "Create %s with %s as management network", self.cluster_1, self.net
         )
-        assert mgmt_net_helper.add_cluster(
-            cl=self.cluster_1, dc=self.dc, management_network=self.net
+        assert ll_clusters.addCluster(
+            positive=True, name=self.cluster_1, data_center=self.dc,
+            cpu=conf.CPU_NAME, version=conf.COMP_VERSION,
+            management_network=self.net
         )
         assert hl_networks.is_management_network(
             cluster_name=self.cluster_1, network=self.net
@@ -651,8 +664,10 @@ class TestSanity08(TestSanityCaseBase):
         testflow.step(
             "Create new DC and cluster with default management network"
         )
-        assert mgmt_net_helper.add_cluster(
-            cl=self.cluster_2, dc=self.dc, management_network=self.mgmt_bridge
+        assert ll_clusters.addCluster(
+            positive=True, name=self.cluster_2, data_center=self.dc,
+            cpu=conf.CPU_NAME, version=conf.COMP_VERSION,
+            management_network=self.mgmt_bridge
         )
         assert hl_networks.is_management_network(
             cluster_name=self.cluster_2, network=self.mgmt_bridge

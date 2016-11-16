@@ -8,9 +8,7 @@ Fixtures for sanity
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
@@ -127,47 +125,19 @@ def create_cluster(request):
 
 
 @pytest.fixture(scope="class")
-def create_dc_and_networks(request):
+def add_network_to_dc(request):
     """
-    Create new datacenter
     Add network to datacenter
     """
     NetworkFixtures()
     dc = request.node.cls.dc
-    cluster_1 = request.node.cls.cluster_1
-    cluster_2 = request.node.cls.cluster_2
     net = request.node.cls.net
-
-    def fin2():
-        """
-        Remove datacenter
-        """
-        testflow.teardown("Remove datacenter %s", dc)
-        assert ll_dc.remove_datacenter(positive=True, datacenter=dc)
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Remove clusters
-        """
-        results = list()
-        for cl in (cluster_1, cluster_2):
-            testflow.teardown("Remove cluster %s", cl)
-            results.append(
-                ll_clusters.removeCluster(positive=True, cluster=cl)
-            )
-        assert all(results)
-    request.addfinalizer(fin1)
 
     net_dict = {
         net: {
             "required": "true",
         }
     }
-    testflow.setup("Create datacenter %s", dc)
-    assert hl_networks.create_basic_setup(
-        datacenter=dc, version=conf.COMP_VERSION, cpu=conf.CPU_NAME
-    )
     testflow.setup("Create network %s on datacenter %s", net, dc)
     network_helper.prepare_networks_on_setup(
         networks_dict=net_dict, dc=dc,

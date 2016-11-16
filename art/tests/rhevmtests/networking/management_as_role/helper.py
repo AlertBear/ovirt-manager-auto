@@ -8,7 +8,6 @@ Utilities used by the test cases of Management As A Role
 import logging
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import rhevmtests.networking.config as conf
@@ -198,25 +197,6 @@ def remove_persistence_nets(host_resource):
         )[0]:
             return False
     return True
-
-
-def add_cluster(cl, dc, positive=True, **kwargs):
-    """
-    Add Cluster to DC
-
-    Args:
-        cl (str): Cluster name
-        dc (str, optional): DC name
-        positive (bool, optional): Flag if test is positive or negative
-        **kwargs: dict of additional params (for example MGMT network)
-
-    Returns:
-        bool: True if cluster added successfully, otherwise False
-    """
-    return ll_clusters.addCluster(
-        positive=positive, name=cl, cpu=conf.CPU_NAME, data_center=dc,
-        version=conf.COMP_VERSION, **kwargs
-    )
 
 
 def virsh_remove_network(vds_resource, network):
