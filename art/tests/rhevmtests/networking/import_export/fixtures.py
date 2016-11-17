@@ -26,11 +26,6 @@ class ImportExport(NetworkFixtures):
     """
     def __init__(self):
         super(ImportExport, self).__init__()
-        import_export_conf.SD_NAME = (
-            ll_storagedomains.getStorageDomainNamesForType(
-                datacenter_name=self.dc_0, storage_type=conf.STORAGE_TYPE
-            )[0]
-        )
         self.export_domain = conf.EXPORT_DOMAIN_NAME
         self.ie_vm = import_export_conf.IE_VM_NAME
         self.ie_vm_2 = import_export_conf.IE_VM_2_NAME
@@ -88,6 +83,12 @@ def import_export_prepare_setup(request):
             export_storagedomain=import_export.export_domain
         )
     request.addfinalizer(fin1)
+
+    import_export_conf.SD_NAME = (
+        ll_storagedomains.getStorageDomainNamesForType(
+            datacenter_name=import_export.dc_0, storage_type=conf.STORAGE_TYPE
+        )[0]
+    )
 
     assert ll_vms.createVm(
         positive=True, vmName=import_export.ie_vm, vmDescription="",
