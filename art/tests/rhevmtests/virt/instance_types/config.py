@@ -21,18 +21,18 @@ INSTANCE_TYPE_PARAMS = {
     # 'custom_emulated_machine': 'pc', TODO: pending bz# 1390172
     # 'custom_cpu_model': 'Conroe',  TODO: pending bz# 1390172
     'virtio_scsi': True,
-    'display_type': 'spice',
-    'monitors': 4,
+    'display_type': 'spice' if not PPC_ARCH else 'vnc',
+    'monitors': 4 if not PPC_ARCH else 1,
     'disconnect_action': 'NONE',
-    'smartcard_enabled': True,
-    'single_qxl_pci': True,
+    'smartcard_enabled': not PPC_ARCH,
+    'single_qxl_pci': not PPC_ARCH,
     'serial_console': True,
     'migration_downtime': 100,
     'auto_converge': 'true',
     'compressed': 'false',
     'migration_policy': '00000000-0000-0000-0000-000000000000',
     'boot': 'network hd',
-    'soundcard_enabled': True,
+    'soundcard_enabled': not PPC_ARCH,
     'io_threads': 2,
     'memory_guaranteed': MB_SIZE_256,
     'highly_available': True,
@@ -100,9 +100,12 @@ EDIT_MEDIUM_INSTANCE_DICT = {
     'instance_type_id': None, 'sockets': 4, 'cores': 2, 'threads': 2
 }
 EDIT_SMALL_INSTANCE_DICT = {
-    'instance_type_id': None, 'serial_console': True, 'display': 'vnc',
-    'smartcards': True, 'single_qxl_pci': True, 'soundcard': True,
-    'boot_devices': ['cdrom']
+    'instance_type_id': None,
+    'serial_console': True,
+    'display': 'vnc',
+    'smartcards': not PPC_ARCH,
+    'single_qxl_pci': not PPC_ARCH,
+    'soundcard': not PPC_ARCH, 'boot_devices': ['cdrom']
 }
 EDIT_LARGE_INSTANCE_DICT = {
     'instance_type_id': None,
@@ -110,11 +113,19 @@ EDIT_LARGE_INSTANCE_DICT = {
     'migration_downtime': 100
 }
 EDIT_XLARGE_INSTANCE_DICT = {
-    'instance_type_id': None, 'io_threads': 2, 'memory': 2 * GB,
-    'memory_guaranteed': 2 * GB, 'balooning': True, 'virtio_scsi': True
+    'instance_type_id': None,
+    'io_threads': 2,
+    'memory': 2 * GB,
+    'memory_guaranteed': 2 * GB,
+    'balooning': True,
+    'virtio_scsi': True
 }
 INSTANCE_TYPE_AND_TEMPLATE_DICT = {
-    'io_threads': 2, 'sockets': 2, 'cores': 2, 'threads': 2,
-    'memory': MB_SIZE_256, 'memory_guaranteed': MB_SIZE_256,
+    'io_threads': 2,
+    'sockets': 2,
+    'cores': 2,
+    'threads': 2,
+    'memory': MB_SIZE_256,
+    'memory_guaranteed': MB_SIZE_256,
     'high_availability': True
 }

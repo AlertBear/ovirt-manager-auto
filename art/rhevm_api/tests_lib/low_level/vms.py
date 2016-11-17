@@ -558,7 +558,7 @@ def _prepareVmObject(**kwargs):
 
     # soundcard enabled
     soundcard_enabled = kwargs.pop("soundcard_enabled", None)
-    if soundcard_enabled:
+    if soundcard_enabled is not None:
         vm.set_soundcard_enabled(soundcard_enabled)
 
     # migration_downtime

@@ -187,7 +187,7 @@ def _prepare_instance_type_object(**kwargs):
 
     # soundcard enabled
     soundcard_enabled = kwargs.get("soundcard_enabled")
-    if soundcard_enabled:
+    if soundcard_enabled is not None:
         instance_type.set_soundcard_enabled(soundcard_enabled)
 
     # io_threads

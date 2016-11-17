@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates
 )
 from art.unittest_lib import attr, VirtTest, testflow
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from fixtures import (
     default_instance_type_teardown, remove_test_vms,
     remove_custom_instance_type, remove_test_templates
@@ -160,6 +160,7 @@ class TestInstanceType(VirtTest):
         default_instance_type_teardown.__name__, remove_test_vms.__name__
     )
     @pytest.mark.instance_type_name(name=config.SMALL_INSTANCE_TYPE)
+    @bz({'1397118': {'ppc': config.PPC_ARCH}})
     def test_edit_small_instance_type(self):
         """
         1. Update 'small' instance type.
@@ -169,8 +170,10 @@ class TestInstanceType(VirtTest):
         testflow.step("Update %s instance type", config.SMALL_INSTANCE_TYPE)
         assert ll_instance_types.update_instance_type(
             instance_type_name=config.SMALL_INSTANCE_TYPE, display_type='vnc',
-            serial_console=True, smartcard_enabled=True,
-            single_qxl_pci=True, soundcard_enabled=True, boot='cdrom'
+            serial_console=True, boot='cdrom',
+            smartcard_enabled=config.EDIT_SMALL_INSTANCE_DICT['smartcards'],
+            single_qxl_pci=config.EDIT_SMALL_INSTANCE_DICT['single_qxl_pci'],
+            soundcard_enabled=config.EDIT_SMALL_INSTANCE_DICT['soundcard'],
         )
         testflow.step(
             "Create vm: %s from %s instance type",
@@ -178,7 +181,7 @@ class TestInstanceType(VirtTest):
         )
         assert ll_vms.addVm(
             positive=True, name=config.INSTANCE_TYPE_VM,
-            cluster=config.CLUSTER_NAME[0], os_type=config.OS_RHEL_7,
+            cluster=config.CLUSTER_NAME[0], os_type=config.VM_OS_TYPE,
             instance_type=config.SMALL_INSTANCE_TYPE
         )
         testflow.step(
@@ -299,6 +302,7 @@ class TestInstanceType(VirtTest):
         default_instance_type_teardown.__name__, remove_test_vms.__name__
     )
     @pytest.mark.instance_type_name(name=config.SMALL_INSTANCE_TYPE)
+    @bz({'1397118': {'ppc': config.PPC_ARCH}})
     def test_instance_type_mandetory_fields(self):
         """
         1. Create a vm from 'small' instance type
@@ -374,7 +378,7 @@ class TestInstanceType(VirtTest):
         assert ll_vms.addVm(
             positive=True, name=config.TEMPLATE_VM,
             cluster=config.CLUSTER_NAME[0],
-            os_type=config.OS_RHEL_7, **config.TEMPLATE_PARAMS
+            os_type=config.VM_OS_TYPE, **config.TEMPLATE_PARAMS
         )
         testflow.step(
             "Create template: %s from vm: %s", config.NEW_TEMPLATE_NAME,
