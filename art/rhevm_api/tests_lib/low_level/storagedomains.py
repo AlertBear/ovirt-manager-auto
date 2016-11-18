@@ -1495,7 +1495,7 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
         _storage_type = storage_domain_object.get_storage().get_type()
 
         if sd_type == DATA_DOMAIN_TYPE or sd_type == CINDER_DOMAIN_TYPE:
-            if _storage_type == storage_type and state == ACTIVE_DOMAIN:
+            if _storage_type == storage_type:
                 # TODO: W/A for bug:
                 # https://bugzilla.redhat.com/show_bug.cgi?id=1354200
                 if storage_domain_object.get_name() != HOSTED_STORAGE:
@@ -1510,27 +1510,32 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
                     return True
         return False
 
-    sdObjList = getDCStorages(datacenter_name, False)
+    sd_obj_list = []
     for sd in getDCStorages(datacenter_name, False):
-        if sd.get_status() == ENUMS['storage_domain_state_maintenance']:
-            continue
-        util.logger.info(
-            "Waiting up to %s seconds for sd %s to be active",
-            SD_STATUS_OK_TIMEOUT, sd.get_name()
-        )
-        if not waitForStorageDomainStatus(
-            True, datacenter_name, sd.get_name(),
-            ENUMS['storage_domain_state_active'], SD_STATUS_OK_TIMEOUT, 1
-        ):
-            util.logger.error(
-                "NFS domain '%s' has not reached %s state after %s seconds" %
-                (
-                    sd.get_name(), ENUMS['storage_domain_state_active'],
-                    SD_STATUS_OK_TIMEOUT
+        if validate_domain_storage_type(sd, storage_type):
+            if sd.get_status() == ACTIVE_DOMAIN:
+                sd_obj_list.append(sd.get_name())
+            elif sd.get_status() == ENUMS['storage_domain_state_maintenance']:
+                continue
+            else:
+                util.logger.info(
+                    "Waiting up to %s seconds for sd %s to be active",
+                    SD_STATUS_OK_TIMEOUT, sd.get_name()
                 )
-            )
-    return [sdObj.get_name() for sdObj in sdObjList if
-            validate_domain_storage_type(sdObj, storage_type)]
+                try:
+                    waitForStorageDomainStatus(
+                        True, datacenter_name, sd.get_name(),
+                        ACTIVE_DOMAIN, SD_STATUS_OK_TIMEOUT, 1
+                    )
+                    sd_obj_list.append(sd.get_name())
+                except APITimeout:
+                    util.logger.error(
+                        "Domain '%s' has not reached %s state after %s secs" %
+                        (
+                            sd.get_name(), ACTIVE_DOMAIN, SD_STATUS_OK_TIMEOUT
+                        )
+                    )
+    return sd_obj_list
 
 
 def get_storage_domain_images(storage_domain_name):

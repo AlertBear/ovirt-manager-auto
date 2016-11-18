@@ -117,11 +117,21 @@ def start_vm(request):
     """
     self = request.node.cls
 
-    wait_for_ip = False
-    if hasattr(self, 'installation'):
-        wait_for_ip = True if self.installation else False
+    wait_for_ip = getattr(self, 'vm_wait_for_ip', False)
+
+    run_on_spm = getattr(self, 'vm_run_on_spm', None)
+    if run_on_spm:
+        host = ll_hosts.getSPMHost(config.HOSTS)
+    elif run_on_spm is False:
+        host = ll_hosts.getHSMHost(config.HOSTS)
+    else:
+        host = None
+
     testflow.setup("Starting VM %s", self.vm_name)
-    assert ll_vms.startVm(True, self.vm_name, config.VM_UP, wait_for_ip), (
+    assert ll_vms.startVm(
+        True, self.vm_name, config.VM_UP, wait_for_ip,
+        placement_host=host
+    ), (
         "Failed to start VM %s" % self.vm_name
     )
 
@@ -245,12 +255,17 @@ def undo_snapshot(request):
     self = request.node.cls
 
     def finalizer():
-        testflow.teardown("Undoing snapshot of VM %s", self.vm_name)
-        assert ll_vms.undo_snapshot_preview(True, self.vm_name), (
-            "Failed to undo previewed snapshot %s" %
-            self.snapshot_description
+        snapshot_description = ll_vms.get_snapshot_description_in_preview(
+            self.vm_name
         )
-        ll_vms.wait_for_vm_snapshots(self.vm_name, [config.SNAPSHOT_OK])
+        if snapshot_description:
+            testflow.teardown("Undoing snapshot of VM %s", self.vm_name)
+            assert ll_vms.undo_snapshot_preview(True, self.vm_name), (
+                "Failed to undo previewed snapshot %s" % snapshot_description
+            )
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
+            )
     request.addfinalizer(finalizer)
 
 
@@ -307,6 +322,17 @@ def poweroff_vm(request):
             "Failed to power off VM %s" % self.vm_name
         )
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def poweroff_vm_setup(request):
+    """
+    Power off VM
+    """
+    self = request.node.cls
+
+    testflow.setup("Power off VM %s", self.vm_name)
+    assert ll_vms.stop_vms_safely([self.vm_name])
 
 
 @pytest.fixture(scope='class')
@@ -525,7 +551,7 @@ def remove_storage_domain(request):
     self.storage_domain = None
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture()
 def remove_vms(request):
     """
     Remove VM
@@ -712,4 +738,24 @@ def clean_mount_point(request):
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
             )
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def remove_vm_from_export_domain(request):
+    """
+    Remove VM from export domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        testflow.teardown(
+            "Removing VM %s from export domain %s", self.vm_name,
+            config.EXPORT_DOMAIN_NAME
+        )
+        assert ll_vms.remove_vm_from_export_domain(
+            True, self.vm_name, config.DATA_CENTER_NAME,
+            config.EXPORT_DOMAIN_NAME
+        )
+
     request.addfinalizer(finalizer)

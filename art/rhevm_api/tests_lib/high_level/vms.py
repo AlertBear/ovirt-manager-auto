@@ -56,7 +56,7 @@ def get_vm_ip(vm_name, start_vm=True):
         str: VM IP
     """
     logging.info("Check vm %s status", vm_name)
-    if vms.checkVmState(True, vm_name, ENUMS['vm_state_down']) and start_vm:
+    if start_vm and vms.checkVmState(True, vm_name, ENUMS['vm_state_down']):
         logging.info("Start vm %s", vm_name)
         if not vms.startVm(True, vm_name):
             raise errors.VMException("Failed to start vm %s" % vm_name)

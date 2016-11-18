@@ -5765,3 +5765,24 @@ def get_vm_vnic_profile_obj(nic):
     return None if not vnic_profile_obj else VNIC_PROFILE_API.find(
         val=vnic_profile_obj.get_id(), attribute='id'
     )
+
+
+@ll_general.generate_logs()
+def get_snapshot_description_in_preview(vm_name):
+    """
+    Get the description of the snapshot that is in preview
+
+    Args:
+        vm_name: Name of the vm
+
+    Returns:
+        str: description of the snapshot in preview, empty string ('') in case
+        the vm is not in preview status
+    """
+    for snapshot in _getVmSnapshots(vm_name, get_href=False):
+        if (
+            snapshot.get_snapshot_status() ==
+            ENUMS['snapshot_state_in_preview']
+        ):
+            return snapshot.get_description()
+    return ''
