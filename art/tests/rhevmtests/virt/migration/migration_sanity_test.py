@@ -13,7 +13,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib.network as network_lib
 from rhevmtests.virt.migration.fixtures import (
-    migration_init, restart_vm
+    migration_init, start_vm_on_spm
 )
 import config
 
@@ -21,7 +21,6 @@ import config
 @attr(tier=1)
 @pytest.mark.usefixtures(
     migration_init.__name__,
-    restart_vm.__name__
 )
 class TestMigrationVirtSanityCase1(VirtTest):
     """
@@ -42,7 +41,8 @@ class TestMigrationVirtSanityCase1(VirtTest):
 
 @attr(tier=1)
 @pytest.mark.usefixtures(
-    migration_init.__name__
+    migration_init.__name__,
+    start_vm_on_spm.__name__
 )
 class TestMigrationVirtSanityCase2(VirtTest):
     """

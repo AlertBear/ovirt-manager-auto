@@ -6,18 +6,22 @@ Migration fixture for Virt and Network
 
 import logging
 import pytest
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
-import art.rhevm_api.tests_lib.low_level.disks as ll_disks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.unittest_lib import testflow
+from art.rhevm_api.tests_lib.high_level import (
+    hosts as hl_hosts,
+    networks as hl_networks,
+    vms as hl_vms,
+    datacenters as hl_data_center
+)
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as cluster_api,
+    disks as ll_disks,
+    networks as ll_networks,
+    vms as ll_vms,
+    storagedomains as ll_sd
+)
 import rhevmtests.networking.helper as net_helper
 import rhevmtests.virt.helper as virt_helper
-from art.unittest_lib import testflow
 import config
 import migration_helper
 
@@ -28,7 +32,7 @@ logger = logging.getLogger(__name__)
 def migration_init(request):
     """
     Migration module init, prepare env for migration:
-    run VM and set hosts 3, 4(if exists) to maintenance
+    run VM
     """
 
     def fin():
@@ -43,14 +47,11 @@ def migration_init(request):
 
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Set all but 2 hosts in the Cluster %s to the maintenance "
-        "state", config.CLUSTER_NAME[0]
-    )
-    virt_helper.set_host_status()
-    assert net_helper.run_vm_once_specific_host(
-        vm=config.MIGRATION_VM, host=config.HOSTS[0],
-        wait_for_up_status=True
+    testflow.setup("Start vm %s", config.MIGRATION_VM)
+    ll_vms.start_vms(
+        vm_list=[config.MIGRATION_VM],
+        wait_for_status=config.VM_UP,
+        wait_for_ip=True
     )
 
 
@@ -63,14 +64,21 @@ def network_migrate_init(request):
 
     def fin():
         """
-        Remove the all networks configure in setup from data center .
+        Remove the all networks configure in setup from data center
         """
-
+        testflow.teardown(
+            "Remove the all networks configure in setup from data center"
+        )
         assert hl_networks.remove_net_from_setup(
             host=config.HOSTS[:2], data_center=config.DC_NAME[0], all_net=True
         )
     request.addfinalizer(fin)
 
+    testflow.setup(
+        "Set all but 2 hosts in the Cluster %s to the maintenance "
+        "state", config.CLUSTER_NAME[0]
+    )
+    virt_helper.set_host_status()
     net_helper.prepare_networks_on_setup(
         networks_dict=config.NETS_DICT,
         dc=config.DC_NAME[0],
@@ -114,21 +122,28 @@ def update_cluster_over_commit(request):
         ), err_message % (cluster_name, 'none')
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def create_vm_from_glance(request):
     """
-    Part of case 'migration_load_test' setup
-    Create VM with load tool (pig) from glance.
+    1. Stop Migrate VM
+    2. Create VM with load tool (pig) from glance
+    3. Update VM memory to 85% of host memory
+    4. Run VM on host with maximum memory
     """
-    action = ['Create', 'Update']
+    percentage = 85
+    vm_name = config.MIGRATION_VM_LOAD
+    action = [
+        'Create', 'Update', 'Failed to update vm memory with hosts memory',
+        'Run'
+        ]
 
     def fin():
         """
-        1. Remove VM with load tool
-        2. Start migrate vm on first host
+        Restart migrate vm on first host
         """
-
-        ll_vms.safely_remove_vms(vms=[config.MIGRATION_VM_LOAD])
+        testflow.teardown(
+            "Restart migrate vm %s on first host", config.MIGRATION_VM
+        )
         hl_vms.start_vm_on_specific_host(
             vm=config.MIGRATION_VM,
             host=config.HOSTS[0],
@@ -136,22 +151,41 @@ def create_vm_from_glance(request):
         )
     request.addfinalizer(fin)
 
+    testflow.setup("Stop migrate vm %s ", config.MIGRATION_VM)
     assert ll_vms.stop_vms_safely(vms_list=[config.MIGRATION_VM])
+    testflow.setup("Create vm with load tool from glance")
     assert virt_helper.create_vm_from_glance_image(
         image_name=config.MIGRATION_IMAGE_VM,
-        vm_name=config.MIGRATION_VM_LOAD
-    ), virt_helper.get_err_msg(
-        action=action[0], vm_name=config.MIGRATION_VM_LOAD
-    )
+        vm_name=vm_name
+    ), virt_helper.get_err_msg(action=action[0], vm_name=vm_name)
+    testflow.setup("Update vm memory to 85 percent of host memory")
     assert ll_vms.updateVm(
         positive=True,
-        vm=config.MIGRATION_VM_LOAD,
+        vm=vm_name,
         memory=config.GB * 2,
         memory_guaranteed=config.GB,
         os_type=config.OS_RHEL_7
-    ), virt_helper.get_err_msg(
-        action=action[1], vm_name=config.MIGRATION_VM_LOAD
+    ), virt_helper.get_err_msg(action=action[1], vm_name=vm_name)
+    hosts = [config.HOSTS[0], config.HOSTS[1]]
+    status, host_index_max_mem = (
+        hl_vms.set_vms_with_host_memory_by_percentage(
+            test_hosts=hosts,
+            test_vms=[vm_name],
+            percentage=percentage
+        )
     )
+    assert status, virt_helper.get_err_msg(action[2])
+    testflow.setup("Start vm on host %s", config.HOSTS[host_index_max_mem])
+    assert net_helper.run_vm_once_specific_host(
+        vm=vm_name,
+        wait_for_up_status=True,
+        host=config.HOSTS[host_index_max_mem]
+    ), virt_helper.get_err_msg(action[3], vm_name=vm_name)
+    logger.info("Wait for VM to get FQDN")
+    if not virt_helper.wait_for_vm_fqdn(
+        config.MIGRATION_VM_LOAD, timeout=config.FQDN_TIMEOUT
+    ):
+        logger.warn("Failed to get FQDN for vm %s", config.MIGRATION_VM_LOAD)
 
 
 @pytest.fixture(scope="class")
@@ -165,8 +199,12 @@ def cancel_migration_test(request):
         """
         Remove migration job only if case failed to cancel migration.
         """
+        testflow.teardown(
+            "Remove migration job. (only if case failed to cancel migration)"
+        )
         if not config.CANCEL_VM_MIGRATE:
             migration_helper.remove_migration_job()
+
     request.addfinalizer(fin)
 
 
@@ -187,9 +225,11 @@ def start_vms_on_specific_host(request):
         """
         Stop running vms
         """
+        testflow.setup("Stop vms: ", testflow)
         ll_vms.stop_vms_safely(vms_list=test_vms)
     request.addfinalizer(fin)
 
+    testflow.setup("Start vms on different hosts")
     for host, vms in vms_to_host.items():
         for vm_to_start in vms:
             assert net_helper.run_vm_once_specific_host(
@@ -203,35 +243,28 @@ def start_vms_on_specific_host(request):
 def setting_migration_vm(request, create_vm_from_glance):
     """
     Setting migration vm for cases with load and large memory
-    1. Create VM from Glance (diff fixture)
-    2. Set VM memory to 85% of Host memory
-    3. Start VM
+    With vm created from Glance
     """
-    percentage = 85
-    vm_name = request.node.cls.vm_name
-    action = ["Failed to update vm memory with hosts memory", "Run"]
 
     def fin():
         """
         Stop VM with load tool
         """
+        testflow.teardown("Stop vm: %s ", config.MIGRATION_VM_LOAD)
+        ll_vms.stop_vms_safely(vms_list=[config.MIGRATION_VM_LOAD])
 
-        ll_vms.stop_vms_safely(vms_list=[vm_name])
     request.addfinalizer(fin)
 
-    hosts = [config.HOSTS[0], config.HOSTS[1]]
-    status, host_index_max_mem = (
-        hl_vms.set_vms_with_host_memory_by_percentage(
-            test_hosts=hosts,
-            test_vms=[vm_name],
-            percentage=percentage
-        )
+    testflow.setup("Start vm: %s ", config.MIGRATION_VM_LOAD)
+    ll_vms.start_vms(
+        vm_list=[config.MIGRATION_VM_LOAD],
+        wait_for_status=config.VM_UP,
+        wait_for_ip=True
     )
-    assert status, virt_helper.get_err_msg(action[0])
-    assert net_helper.run_vm_once_specific_host(
-        vm=vm_name, wait_for_up_status=True,
-        host=config.HOSTS[host_index_max_mem]
-    ), virt_helper.get_err_msg(action[1], vm_name=vm_name)
+    if not virt_helper.wait_for_vm_fqdn(
+        config.MIGRATION_VM_LOAD, timeout=config.FQDN_TIMEOUT
+    ):
+        logger.warn("Failed to get FQDN for vm %s", config.MIGRATION_VM_LOAD)
 
 
 @pytest.fixture(scope="class")
@@ -249,12 +282,14 @@ def migration_with_two_disks(request):
         """
         Remove vm
         """
+        testflow.teardown("Remove vm %s", vm_name)
         ll_vms.safely_remove_vms(vms=[vm_name])
     request.addfinalizer(fin)
 
     master_domain = (
         ll_sd.get_master_storage_domain_name(datacenter_name=config.DC_NAME[0])
     )
+    testflow.setup("Create vm with 2 disks on master domain")
     assert ll_vms.createVm(
         positive=True,
         vmName=vm_name,
@@ -262,12 +297,14 @@ def migration_with_two_disks(request):
         cluster=config.CLUSTER_NAME[0],
         template=config.TEMPLATE_NAME[0],
     ), virt_helper.get_err_msg(action=actions[0], vm_name=vm_name)
+    first_disk_id = ll_disks.getObjDisks(name=vm_name, get_href=False)[0].id
     assert ll_disks.updateDisk(
         positive=True,
         vmName=vm_name,
-        alias=config.TEMPLATE_NAME[0],
+        id=first_disk_id,
         bootable=True
     ), virt_helper.get_err_msg(action=actions[1], vm_name=vm_name)
+    testflow.setup("Start vm %s", vm_name)
     assert ll_vms.startVm(
         positive=True,
         vm=vm_name,
@@ -286,43 +323,24 @@ def migration_with_two_disks(request):
 
 
 @pytest.fixture(scope="class")
-def move_host_to_other_cluster(request):
-    """
-    Usage in no available host on cluster test,
-    move host 1 to cluster 2, (one host per cluster)
-    """
-
-    def fin():
-        """
-        Return host 1 to cluster 1
-        """
-        hl_hosts.move_host_to_another_cluster(
-            host=config.HOSTS[1],
-            cluster=config.CLUSTER_NAME[0]
-        )
-    request.addfinalizer(fin)
-
-    assert hl_hosts.move_host_to_another_cluster(
-        host=config.HOSTS[1],
-        cluster=config.CLUSTER_NAME[1]
-    )
-
-
-@pytest.fixture(scope="class")
 def migrate_to_diff_dc(request):
     """
-    1. Add additional DC and cluster,
-    2. Move one of the host to this DC
+    1. Start migrate VM on first host
+    2. Add new DC and cluster
+    3. Move hosts 2,3 to this new DC under new cluster
     """
 
     def fin():
         """
-        Remove additional DC and cluster
+        1. Move hosts back to cluster 1
+        2. Remove new DC and cluster
         """
-        hl_hosts.move_host_to_another_cluster(
-            host=config.HOSTS[1],
-            cluster=config.CLUSTER_NAME[0]
-        )
+        testflow.teardown("Move host 2,3 to GE cluster 1")
+        for host_name in config.HOSTS[1:3]:
+            hl_hosts.move_host_to_another_cluster(
+                host=host_name,
+                cluster=config.CLUSTER_NAME[0]
+            )
         testflow.teardown(
             "Remove additional data center %s and cluster %s",
             config.ADDITIONAL_DC_NAME, config.ADDITIONAL_CL_NAME
@@ -334,6 +352,15 @@ def migrate_to_diff_dc(request):
     request.addfinalizer(fin)
 
     testflow.setup(
+        "Stop vm and run in on host %s only host in cluster", config.HOSTS[0]
+    )
+    ll_vms.stop_vms_safely([config.MIGRATION_VM])
+    net_helper.run_vm_once_specific_host(
+        vm=config.MIGRATION_VM,
+        host=config.HOSTS[0],
+        wait_for_up_status=True
+    )
+    testflow.setup(
         "Add additional data center and cluster, and move host to "
         "additional cluster"
     )
@@ -343,10 +370,12 @@ def migrate_to_diff_dc(request):
         cluster=config.ADDITIONAL_CL_NAME,
         cpu=config.CPU_NAME
     )
-    assert hl_hosts.move_host_to_another_cluster(
-        host=config.HOSTS[1],
-        cluster=config.ADDITIONAL_CL_NAME
-    )
+    testflow.setup("Move host 2,3 to new cluster")
+    for host_name in config.HOSTS[1:3]:
+        assert hl_hosts.move_host_to_another_cluster(
+            host=host_name,
+            cluster=config.ADDITIONAL_CL_NAME
+        )
 
 
 @pytest.fixture(scope="class")
@@ -360,7 +389,6 @@ def over_load_test(request, update_cluster_over_commit):
     """
 
     vm_default_mem = config.GB
-    host_index_max_mem = -1
     vm_default_os_type = config.VM_OS_TYPE
     percentage = 85
     test_vms = request.node.cls.test_vms
@@ -371,16 +399,14 @@ def over_load_test(request, update_cluster_over_commit):
     def fin():
         """
         1. update Vms back to configure memory and os type
-        2. activate host with max memory
+        2. activate hosts
         3. start migrate vm on first host
         """
         ll_vms.stop_vms_safely(vms_list=test_vms)
+        testflow.teardown("Set hosts to the active state")
+        migration_helper.activate_hosts()
         hl_vms.update_os_type(os_type=vm_default_os_type, test_vms=test_vms)
         hl_vms.update_vms_memory(vms_list=test_vms, memory=int(vm_default_mem))
-        ll_hosts.activate_host(
-            positive=True,
-            host=config.HOSTS[host_index_max_mem]
-        )
         hl_vms.start_vm_on_specific_host(
             vm=config.MIGRATION_VM,
             host=config.HOSTS[0],
@@ -388,7 +414,11 @@ def over_load_test(request, update_cluster_over_commit):
         )
     request.addfinalizer(fin)
 
+    testflow.setup("Stop vm %s", config.MIGRATION_VM)
     assert ll_vms.stop_vms_safely(vms_list=[config.MIGRATION_VM])
+    testflow.setup("Activate all hosts")
+    virt_helper.set_host_status()
+    testflow.setup("Updates 2 VMs %s to 85 percent of host memory", test_vms)
     assert hl_vms.update_os_type(
         os_type=config.OS_RHEL_7, test_vms=test_vms
     ), virt_helper.get_err_msg(update_os_type, vm_name=test_vms)
@@ -400,6 +430,7 @@ def over_load_test(request, update_cluster_over_commit):
         )
     )
     assert status, virt_helper.get_err_msg(action=failed_update_vm_memory)
+    testflow.setup("Start vms %s", test_vms)
     ll_vms.start_vms(vm_list=test_vms, wait_for_status=config.VM_UP)
 
 
@@ -415,9 +446,11 @@ def migration_options_test(request):
     actions = ["run", "create"]
 
     def fin():
+        testflow.teardown("Stop vm %s", vm_name)
         ll_vms.safely_remove_vms(vms=[vm_name])
     request.addfinalizer(fin)
 
+    testflow.setup("Create vm %s", vm_name)
     assert ll_vms.createVm(
         True,
         vmName=vm_name,
@@ -430,6 +463,7 @@ def migration_options_test(request):
         network=config.MGMT_BRIDGE,
         display_type=config.VM_DISPLAY_TYPE,
     ), virt_helper.get_err_msg(action=actions[1], vm_name=vm_name)
+    testflow.setup("Start vm %s", vm_name)
     assert ll_vms.startVm(
         positive=True,
         vm=vm_name,
@@ -451,12 +485,14 @@ def add_nic_to_vm(request):
         """
         Remove NIC
         """
+        testflow.teardown("Remove NIC")
         ll_vms.updateNic(
             positive=True, vm=config.VM_NAME[0], nic=nic, plugged="false"
         )
         ll_vms.removeNic(positive=True, vm=config.VM_NAME[0], nic=nic)
     request.addfinalizer(fin)
 
+    testflow.setup("Add new NIC to VM")
     assert ll_vms.addNic(positive=True, vm=vm_name, name=nic, network=network)
 
 
@@ -472,6 +508,7 @@ def update_migration_network_on_cluster(request):
         """
         Set network as non-required network
         """
+        testflow.teardown("Set network as non-required network")
         for network in networks:
             ll_networks.update_cluster_network(
                 positive=True, cluster=config.CLUSTER_NAME[0],
@@ -479,29 +516,11 @@ def update_migration_network_on_cluster(request):
             )
     request.addfinalizer(fin)
 
+    testflow.setup("Update network to be migration network on cluster")
     assert ll_networks.update_cluster_network(
         positive=True, cluster=config.CLUSTER_NAME[0],
         network=migration_network, usages="migration"
     )
-
-
-@pytest.fixture(scope="class")
-def restart_vm(request):
-    """
-    Stop VM, and start on SPM host
-    """
-
-    def fin():
-        """
-        Stop VM, and start on SPM host
-        """
-        ll_vms.stop_vms_safely(vms_list=[config.MIGRATION_VM])
-        hl_vms.start_vm_on_specific_host(
-            vm=config.MIGRATION_VM,
-            host=config.HOSTS[0],
-            wait_for_ip=True
-        )
-    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")
@@ -528,10 +547,64 @@ def restore_default_policy_on_vm(request):
         update vm migration policy to default
         (policy=minimal_downtime, auto_converge=false,compressed=false)
         """
+        vm_name = request.node.cls.vm_name
         testflow.teardown("update vm migration policy to default")
         migration_helper.update_migration_policy_on_vm(
-            vm_name=config.MIGRATION_VM,
+            vm_name=vm_name,
             migration_policy=config.MIGRATION_POLICY_INHERIT
         )
+
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope='class')
+def load_vm(request):
+    """
+    Run load vm
+    """
+
+    vm_name = config.MIGRATION_VM_LOAD
+    load_size = request.node.cls.load_size
+    time_to_run_load = request.node.cls.time_to_run_load
+
+    testflow.setup(
+        "Run load on vm %s. Load size:%d Duration:%d",
+        vm_name, load_size, time_to_run_load
+    )
+    virt_helper.load_vm_memory_with_load_tool(
+        vm_name=vm_name,
+        load=load_size,
+        time_to_run=time_to_run_load,
+        start_vm=False
+    )
+
+
+@pytest.fixture(scope="class")
+def start_vm_on_spm(request):
+    """
+    Run VM on SPM host
+    """
+    ll_vms.stop_vms_safely([config.MIGRATION_VM])
+    testflow.setup("Run VM %s on SPM host", config.MIGRATION_VM)
+    spm_host = hl_data_center.get_spm_host(
+        positive=True,
+        datacenter=config.DATA_CENTER_NAME
+    )
+    assert net_helper.run_vm_once_specific_host(
+        vm=config.MIGRATION_VM,
+        host=spm_host.get_name(),
+        wait_for_up_status=True
+    )
+
+
+@pytest.fixture(scope="module")
+def teardown_migration(request):
+    """
+    Stop and remove load vm
+    """
+
+    def fin():
+        testflow.teardown("Remove vm %s", config.MIGRATION_VM_LOAD)
+        assert ll_vms.safely_remove_vms(vms=[config.MIGRATION_VM_LOAD])
 
     request.addfinalizer(fin)

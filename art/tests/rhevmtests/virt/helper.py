@@ -9,6 +9,7 @@ import shlex
 import time
 import logging
 import xmltodict
+
 from utilities import jobs
 from art import test_handler
 from rhevmtests import helpers
@@ -170,14 +171,9 @@ def set_host_status(activate=False):
     Raises:
             AssertionError: if failed operation
     """
+
     host_state = "active" if activate else "maintenance"
     func = "activate_host" if activate else "deactivate_host"
-    if not activate:
-        ll_hosts.select_host_as_spm(
-            positive=True,
-            host=config.HOSTS[0],
-            data_center=config.DC_NAME[0]
-        )
     call_func = getattr(ll_hosts, func)
     logger.info("Putting hosts besides first two to %s", host_state)
     for host in config.HOSTS[2:]:
@@ -398,7 +394,12 @@ def create_vm_from_glance_image(image_name, vm_name):
     )
 
 
-def load_vm_memory_with_load_tool(vm_name, load=500, time_to_run=60):
+def load_vm_memory_with_load_tool(
+    vm_name,
+    load=500,
+    time_to_run=60,
+    start_vm=True
+):
     """
     Load VM memory with load tool that install on VM
 
@@ -406,6 +407,7 @@ def load_vm_memory_with_load_tool(vm_name, load=500, time_to_run=60):
         vm_name (str): VM name
         load (int): Load value in MB
         time_to_run (int): Time to run memory load in sec
+        start_vm (bool): start vm if down
 
     Returns:
         int: Process id
@@ -415,7 +417,9 @@ def load_vm_memory_with_load_tool(vm_name, load=500, time_to_run=60):
         load, vm_name, time_to_run
     )
     cmd = LOAD_VM_COMMAND % (load, time_to_run)
-    vm_resource = helpers.get_vm_resource(vm_name)
+    vm_resource = helpers.get_vm_resource(vm=vm_name, start_vm=start_vm)
+    if start_vm:
+        assert wait_for_vm_fqdn(vm_name)
     ps_id = vm_resource.run_command(command=shlex.split(cmd))[1]
     time.sleep(5)
     return ps_id

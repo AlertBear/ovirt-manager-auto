@@ -22,9 +22,7 @@ import config
 logger = logging.getLogger("Virt_Network_Migration_Init")
 
 VIRSH_VM_LIST_CMD = ["virsh", "-r", "list", "|grep"]
-VIRSH_DOM_JOB_INFO_CMD = (
-    "virsh -r domjobinfo %s | grep bandwidth:"
-)
+VIRSH_DOM_JOB_INFO_CMD = "virsh -r domjobinfo %s | grep bandwidth:"
 SAMPLER_TIMEOUT = 3
 
 
@@ -105,7 +103,8 @@ def migrate_vm_with_policy(
     custom_bandwidth=None,
     expected_bandwidth=None,
     auto_converge="inherit",
-    compressed="inherit"
+    compressed="inherit",
+    migration_timeout=config.MIGRATION_TIMEOUT
 ):
     """
     Handles 2 case: update policy in cluster or VM level
@@ -124,6 +123,7 @@ def migrate_vm_with_policy(
         expected_bandwidth (int): Expected bandwidth while migrate
         auto_converge (bool): auto converge (3.6 optimize features)
         compressed (bool): compressed (3.6 optimize_features)
+        migration_timeout (int): migration time out, default is: 300 sec
 
     Returns:
         bool: True if migrate with policy pass, otherwise False
@@ -165,7 +165,8 @@ def migrate_vm_with_policy(
         }
         vm_migration_kwargs = {
             'positive': True,
-            'vm': vm_name
+            'vm': vm_name,
+            'timeout': migration_timeout
         }
         check_bandwidth_job = jobs.Job(
             check_migration_bandwidth, (), check_bandwidth_kwargs
@@ -270,9 +271,9 @@ def check_migration_bandwidth(
             config.ENUMS['vm_state_migrating_from']
         ]
     )
-    time.sleep(1)
-    testflow.step("check bandwidth on vm %s", vm_name)
-    for i in range(0, 3):
+
+    logger.info("check bandwidth on vm %s for ~60 sec", vm_name)
+    for i in range(1, 20):
         bw_results.append(
             monitor_bandwidth(
                 iteration_number=i,
@@ -280,6 +281,8 @@ def check_migration_bandwidth(
                 vm_id=vm_id
             )
         )
+        i += 1
+        time.sleep(1)
     return check_bandwidth_results(bw_results, expected_bandwidth)
 
 
@@ -297,7 +300,8 @@ def monitor_bandwidth(vm_id, host_resource, iteration_number=0):
     """
     cmd = shlex.split(VIRSH_DOM_JOB_INFO_CMD % vm_id)
     rc, out, err = host_resource.executor().run_cmd(cmd)
-    logger.info("#%d: bandwidth output: %s", iteration_number, out)
+    if iteration_number % 5 == 0:
+        logger.info("#%d: bandwidth output: %s", iteration_number, out)
     if rc or err:
         logger.warn(
             "Did not get bandwidth value with virsh cmd: %s on: %s, err: %s"
@@ -312,7 +316,7 @@ def check_bandwidth_results(
     expected_bandwidth
 ):
     """
-    Check if average bandwidth as expected
+    Check if bandwidth as expected (not over the expected bandwidth)
 
     Args:
         bandwidth_results (list): list of bandwidth samples
@@ -321,16 +325,12 @@ def check_bandwidth_results(
     Returns:
         bool: True if bandwidth is as expected
     """
-    _sum = 0
-    _counter = 0
     logger.info("bandwidth results list: %s", bandwidth_results)
     for val in bandwidth_results:
-        if val not in (-1, 0):
-            _sum += val
-            _counter += 1
-    avg = _sum / _counter if _sum != 0 else -1
-    logger.info("bandwidth avg: %s", avg)
-    if expected_bandwidth < 20:
-        return expected_bandwidth * 0.75 <= avg <= expected_bandwidth
-    else:
-        return expected_bandwidth * 0.85 <= avg <= expected_bandwidth
+        if val > expected_bandwidth:
+            logger.error(
+                "Bandwidth pass limitation. Found: %s Expected: %s",
+                val, expected_bandwidth
+            )
+            return False
+    return True

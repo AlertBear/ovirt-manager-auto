@@ -12,7 +12,7 @@ from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from rhevmtests.virt.migration.fixtures import (
-    move_host_to_other_cluster, migrate_to_diff_dc, over_load_test,
+    migrate_to_diff_dc, over_load_test,
     migration_options_test, migration_init,
 )
 import config
@@ -21,11 +21,13 @@ import config
 @attr(tier=3)
 @pytest.mark.usefixtures(
     migration_init.__name__,
-    move_host_to_other_cluster.__name__
+    migrate_to_diff_dc.__name__
 )
 class TestMigrateNegativeCase1(VirtTest):
     """
-    Negative: No available host on cluster
+    Negative cases:
+        1. No available host on cluster
+        2. Migrate vm to other data center
     """
     __test__ = True
 
@@ -40,21 +42,9 @@ class TestMigrateNegativeCase1(VirtTest):
         ), 'migration success although'
         'no available host on cluster'
 
-
-@attr(tier=3)
-@pytest.mark.usefixtures(
-    migration_init.__name__,
-    migrate_to_diff_dc.__name__
-)
-class TestMigrateNegativeCase2(VirtTest):
-    """
-    Negative: Migrate vm on another data center
-    """
-    __test__ = True
-
     @polarion("RHEVM3-5658")
-    def test_migrate_vm_on_other_data_center(self):
-        testflow.step("Negative step: Migrate vm on another data center")
+    def test_migrate_vm_to_other_data_center(self):
+        testflow.step("Negative step: Migrate vm to another data center")
         assert ll_vms.migrateVm(
             positive=False,
             vm=config.MIGRATION_VM,
@@ -67,7 +57,7 @@ class TestMigrateNegativeCase2(VirtTest):
 @pytest.mark.usefixtures(
     migration_init.__name__
 )
-class TestMigrateNegativeCase3(VirtTest):
+class TestMigrateNegativeCase2(VirtTest):
     """
     Negative: Migrate vm on the same host
     """
@@ -90,7 +80,7 @@ class TestMigrateNegativeCase3(VirtTest):
     migration_init.__name__,
     over_load_test.__name__
 )
-class TestMigrateNegativeCase4(VirtTest):
+class TestMigrateNegativeCase3(VirtTest):
     """
     Negative: Migrate vm to overload host
     """
