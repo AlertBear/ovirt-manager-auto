@@ -17,7 +17,8 @@ from rhevmtests.virt import config
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from fixtures import (
-    base_setup_fixture, migrate_vm_for_test
+    base_setup_fixture, migrate_vm_for_test,
+    set_cpu_toplogy, enable_cluster_cpu_threading
 )
 from _pytest_art.testlogger import TestFlowInterface
 
@@ -32,7 +33,7 @@ class CPUHotPlugClass(common.VirtTest):
     """
 
     __test__ = True
-    vm_name = config.CPU_HOTPLUG_VMS_NAME[0]
+    vm_name = config.CPU_HOTPLUG_VM
 
     @polarion("RHEVM3-9638")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
@@ -140,8 +141,29 @@ class CPUHotPlugClass(common.VirtTest):
         Test hot plug while migrating VM
         """
         testflow.step(
-            "Update VM %s cpu socket to 2", config.CPU_HOTPLUG_VMS_NAME[1]
+            "Update VM %s cpu socket to 2", config.CPU_HOTPLUG_VM_LOAD
         )
         assert not ll_vms.updateVm(
-            True, config.CPU_HOTPLUG_VMS_NAME[1], cpu_socket=2
+            True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=2
         ), "hot plug  worked while migrating VM "
+
+    @polarion("RHEVM3-9630")
+    @pytest.mark.usefixtures(
+        set_cpu_toplogy.__name__, enable_cluster_cpu_threading.__name__,
+        base_setup_fixture.__name__
+    )
+    @pytest.mark.args_marker(placement_host=0)
+    @common.attr(tier=2)
+    def test_negative_thread_cpu(self):
+        """
+        Test CPU hot plug while threads is enabled on the cluster
+        Set number of threads to over the host threads number,
+        and check that action failed.
+        """
+        testflow.step(
+            "Update VM %s cpu socket to %d",
+            self.vm_name, config.CPU_TOPOLOGY[0] * 10
+        )
+        assert not ll_vms.updateVm(
+            True, self.vm_name, cpu_socket=config.CPU_TOPOLOGY[0] * 10
+        )
