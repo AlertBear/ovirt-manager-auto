@@ -84,7 +84,7 @@ def case_setup(request, cloud_init_setup):
         logger.info("Set authorized ssh keys")
         config.VM_USER_CLOUD_INIT = config.VM_USER_CLOUD_INIT_1
         initialization.set_authorized_ssh_keys(
-            config.ENGINE_HOST.get_ssh_public_key()
+            config.SLAVE_HOST.get_ssh_public_key()
         )
         config.USER_PKEY = True
 
