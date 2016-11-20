@@ -4,6 +4,8 @@ Storage related global config file
 from rhevmtests.config import *  # flake8: noqa
 
 __test__ = False
+# FIXTURES SECTION
+MASTER_DOMAIN = None
 
 TESTNAME = "GlobalStorage"
 DATA_CENTER_NAME = DC_NAME[0]
@@ -20,6 +22,8 @@ VDC_PASSWORD = VDC_ROOT_PASSWORD
 # SPM priority parameters
 DEFAULT_SPM_PRIORITY = 5
 LOW_SPM_PRIORITY = 1
+
+TIMEOUT_DEACTIVATE_DOMAIN = 90
 
 WAIT_FOR_SPM_TIMEOUT = 120
 

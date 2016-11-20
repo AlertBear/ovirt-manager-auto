@@ -15,9 +15,11 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     jobs as ll_jobs,
 )
-from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.rhevm_api.resources import storage
+from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
+import rhevmtests.helpers as rhevm_helpers
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -35,21 +37,25 @@ def create_vm(request, remove_vm):
     """
     self = request.node.cls
 
-    if not hasattr(self, 'storage_domain'):
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
+    self.storage_domain = getattr(
+        self, 'storage_domain', ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
+    )
     self.vm_name = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_VM
     )
-    if not hasattr(self, 'installation'):
-        self.installation = True
+    cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
+    self.installation = getattr(self, 'installation', True)
+    vm_args['cluster'] = cluster
     vm_args['vmName'] = self.vm_name
     vm_args['installation'] = self.installation
     vm_args['deep_copy'] = clone
+    if hasattr(self, 'vm_args'):
+        vm_args.update(self.vm_args)
     testflow.setup("Creating VM %s", self.vm_name)
     assert storage_helpers.create_vm_or_clone(**vm_args), (
         "Failed to create VM %s" % self.vm_name
@@ -165,6 +171,7 @@ def attach_disk(request):
     Attach a disk to VM
     """
     self = request.node.cls
+
     attach_kwargs = config.attach_disk_params.copy()
     if hasattr(self, 'update_attach_params'):
         attach_kwargs.update(self.update_attach_params)
@@ -196,10 +203,12 @@ def create_snapshot(request):
     """
     self = request.node.cls
 
-    if not hasattr(self, 'snapshot_description'):
-        self.snapshot_description = storage_helpers.create_unique_object_name(
+    self.snapshot_description = getattr(
+        self, 'snapshot_description',
+        storage_helpers.create_unique_object_name(
             self.__name__, config.OBJECT_TYPE_SNAPSHOT
         )
+    )
     testflow.setup(
         "Creating snapshot %s of VM %s",
         self.snapshot_description, self.vm_name
@@ -295,10 +304,9 @@ def poweroff_vm(request):
 
     def finalizer():
         testflow.teardown("Power off VM %s", self.vm_name)
-        if not ll_vms.stop_vms_safely([self.vm_name]):
-            logger.error("Failed to power off VM %s", self.vm_name)
-            self.test_failed = True
-        self.teardown_exception()
+        assert ll_vms.stop_vms_safely([self.vm_name]), (
+            "Failed to power off VM %s" % self.vm_name
+        )
     request.addfinalizer(finalizer)
 
 
@@ -388,7 +396,7 @@ def deactivate_domain(request):
         self.sd_to_deactivate = self.storage_domains[
             self.sd_to_deactivate_index
         ]
-    wait_for_tasks(
+    test_utils.wait_for_tasks(
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
     testflow.setup(
@@ -472,22 +480,19 @@ def create_storage_domain(request):
             vfs_type=config.ENUMS['vfs_type_glusterfs']
         )
     elif self.storage == CEPH:
-        # TODO: remove this when the patch related to the vfs_type will merge
-        name = "{0}_{1}".format(CEPH, self.non_master)
-        self.non_master = name
-        posix_address = (
-            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[self.index]
-        )
-        posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[self.index]
-        status = hl_sd.addPosixfsDataDomain(
-            host=spm,
-            storage=name,
-            data_center=config.DATA_CENTER_NAME,
-            address=posix_address,
-            path=posix_path,
-            vfs_type=CEPH,
-            mount_options=config.CEPH_MOUNT_OPTIONS
-        )
+            posix_address = (
+                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[self.index]
+            )
+            posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[self.index]
+            status = hl_sd.addPosixfsDataDomain(
+                host=spm,
+                storage=name,
+                data_center=config.DATA_CENTER_NAME,
+                address=posix_address,
+                path=posix_path,
+                vfs_type=CEPH,
+                mount_options=config.CEPH_MOUNT_OPTIONS
+            )
     assert status, (
         "Creating %s storage domain '%s' failed" % (self.storage, name)
     )
@@ -498,7 +503,7 @@ def create_storage_domain(request):
         True, config.DATA_CENTER_NAME, name,
         config.SD_ACTIVE
     )
-    wait_for_tasks(
+    test_utils.wait_for_tasks(
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
 
@@ -606,7 +611,7 @@ def init_master_domain_params(request):
     self = request.node.cls
 
     found, master_domain_obj = ll_sd.findMasterStorageDomain(
-        True, config.DATA_CENTER_NAME
+        True, datacenter=config.DATA_CENTER_NAME
     )
     assert found, (
         "Could not find master storage domain on Data center '%s'" %
@@ -625,3 +630,84 @@ def init_master_domain_params(request):
         'Found master %s domain in address: %s',
         self.master_domain, self.master_domain_address,
     )
+
+
+@pytest.fixture(scope='class')
+def create_dc(request):
+    """
+    Add data-center with one host to the environment
+    """
+    self = request.node.cls
+
+    self.new_dc_name = getattr(
+        self, 'new_dc_name', storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DC
+        )
+    )
+    self.cluster_name = getattr(
+        self, 'cluster_name', storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_CLUSTER
+        )
+    )
+    self.dc_version = getattr(self, 'dc_version', config.COMPATIBILITY_VERSION)
+    self.host_name = getattr(
+        self, 'host_name', ll_hosts.getHSMHost(config.HOSTS)
+    )
+    testflow.setup(
+        "Create data-center %s with cluster %s and host %s", self.new_dc_name,
+        self.cluster_name, self.host_name
+    )
+    storage_helpers.create_data_center(
+        self.new_dc_name, self.cluster_name, self.host_name, self.dc_version
+    )
+
+
+@pytest.fixture(scope='class')
+def clean_dc(request):
+    """
+    Remove data-center from the the environment
+    """
+    self = request.node.cls
+
+    def finalizer():
+        master_domain = getattr(self, 'master_domain', config.MASTER_DOMAIN)
+        testflow.teardown(
+            "Clean data-center %s and remove it", self.new_dc_name
+        )
+        storage_helpers.clean_dc(
+            self.new_dc_name, self.cluster_name, self.host_name,
+            sd_name=master_domain
+        )
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def clean_mount_point(request):
+    """
+    Clean storage domain mount point
+    """
+    self = request.node.cls
+
+    def finalizer():
+
+        spm_host = ll_hosts.getSPMHost(config.HOSTS)
+
+        if self.storage == NFS or self.storage == POSIX:
+            assert storage.clean_mount_point(
+                spm_host, config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_DATA_DOMAIN_PATHS[0],
+                rhevm_helpers.NFS_MNT_OPTS
+            ), "Failed to clean mount point address: %s, path: %s" % (
+                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_DATA_DOMAIN_PATHS[0],
+            )
+        elif self.storage == GLUSTER:
+            assert storage.clean_mount_point(
+                spm_host, config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+                rhevm_helpers.GLUSTER_MNT_OPTS
+            ), "Failed to clean mount point address: %s, path: %s" % (
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+            )
+    request.addfinalizer(finalizer)

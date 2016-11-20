@@ -21,15 +21,24 @@ import logging
 from pprint import pformat
 import shlex
 from art.rhevm_api import resources
-
+from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.high_level import datastructures
 
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG, opts
 import art.test_handler.exceptions as errors
+from art.rhevm_api.utils import test_utils
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
+PARAMETERS = ART_CONFIG['PARAMETERS']
+
+VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password')
+REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
+VDC_HOST = REST_CONNECTION['host']
+SD_UNATTACHED = ENUMS['storage_domain_state_unattached']
+
+TIMEOUT_DEACTIVATE_DOMAIN = 90
 
 logger = logging.getLogger("art.hl_lib.sds")
 
@@ -885,17 +894,22 @@ def detach_and_deactivate_domain(datacenter, domain):
     """
     Deactivates and detaches a storage domain
 
-    :param datacenter: Name of Data center from which domain will be
-    deactivated and detached
-    :type datacenter: str
-    :param domain: The storage domain to deactivate and detach
-    :type domain: str
-    :return: True if successful, False otherwise
-    :rtype: bool
+    Args:
+        datacenter (str): Name of the Data-center
+        domain (str): Name of the storage-domain
+    Return:
+        bool: True if the operation succeeds , False otherwise
     """
-    if not deactivate_domain(datacenter, domain):
-        return False
-    if not ll_sd.detachStorageDomain(True, datacenter, domain):
+    logger.info(
+        'Checking if domain %s is active in dc %s', domain, datacenter
+    )
+    if ll_sd.is_storage_domain_active(datacenter, domain):
+        if not deactivate_domain(datacenter, domain):
+            logger.error(
+                'Unable to deactivate domain %s from dc %s', domain, datacenter
+            )
+            return False
+    if not detach_domain(datacenter, domain):
         logger.error(
             'Unable to detach domain %s from dc %s', domain, datacenter
         )
@@ -906,23 +920,73 @@ def detach_and_deactivate_domain(datacenter, domain):
 
 def deactivate_domain(dc_name, sd_name):
     """
-    Deactivate a storage domain
+    Deactivate storage domain. There's a chance the OVF update
+    task starts while the deactivation command is executed, try for
+    TIMEOUT_DEACTIVATE_DOMAIN executing wait_for_tasks
 
-    :param dc_name: Name of Data center from which domain will be deactivated
-    :type dc_name: str
-    :param sd_name: The storage domain to deactivate
-    :type sd_name: str
-    :return: True if successful, False otherwise
-    :rtype: bool
+    Args:
+        dc_name (str): Name of the Data-center
+        sd_name (str): Name of the storage-domain
+    Return:
+        bool: True if the operation succeeds , False otherwise
     """
     if ll_sd.is_storage_domain_active(dc_name, sd_name):
-        if not ll_sd.deactivateStorageDomain(True, dc_name, sd_name):
-            logger.error(
-                'Unable to deactivate domain %s on dc %s', sd_name, dc_name
+        test_utils.wait_for_tasks(
+            vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
+            datacenter=dc_name
+        )
+        for status in apis_utils.TimeoutingSampler(
+            TIMEOUT_DEACTIVATE_DOMAIN, 10,
+            ll_sd.deactivateStorageDomain, True, dc_name, sd_name
+        ):
+            if not ll_sd.is_storage_domain_active(
+                datacenter=dc_name, domain=sd_name
+            ):
+                return True
+            logger.info(
+                "Storage domain %s wasn't deactivated, wait for tasks and "
+                "try again", sd_name
             )
-            return False
-    logger.info('Domain %s is inactive in datacenter %s', sd_name, dc_name)
-    return True
+            test_utils.wait_for_tasks(
+                vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
+                datacenter=dc_name
+            )
+    return False
+
+
+def detach_domain(dc_name, sd_name):
+    """
+    Detach storage domain. There's a chance of other tasks running
+    while detaching the domain
+
+    Args:
+        dc_name (str): Name of the Data-center
+        sd_name (str): Name of the storage-domain
+    Return:
+        bool: True if the operation succeeds , False otherwise
+    """
+    test_utils.wait_for_tasks(
+        vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
+        datacenter=dc_name
+    )
+    for status in apis_utils.TimeoutingSampler(
+        TIMEOUT_DEACTIVATE_DOMAIN, 10, ll_sd.detachStorageDomain,
+        True, dc_name, sd_name
+    ):
+        domain_obj = ll_sd.get_storage_domain_obj(storage_domain=sd_name)
+        try:
+            if domain_obj.get_status() == SD_UNATTACHED:
+                return True
+        except AttributeError:
+            logger.info(
+                "Waiting for all tasks to end before trying to detach "
+                "the storage domain again "
+            )
+            test_utils.wait_for_tasks(
+                vdc=VDC_HOST, vdc_password=VDC_ROOT_PASSWORD,
+                datacenter=dc_name
+            )
+    return False
 
 
 def destroy_storage_domain(sd_name, dc_name, host_name):

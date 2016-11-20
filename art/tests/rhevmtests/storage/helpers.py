@@ -7,9 +7,15 @@ import os
 import re
 import shlex
 from art.core_api.apis_utils import TimeoutingSampler
+from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources.storage as storage_resources
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sd,
+    vms as hl_vms,
+    hosts as hl_hosts,
+)
 from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_clusters,
     datacenters as ll_dc,
     disks as ll_disks,
     hosts as ll_hosts,
@@ -20,6 +26,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import exceptions
+from art.unittest_lib.common import testflow
 import rhevmtests.helpers as rhevm_helpers
 from rhevmtests.storage import config
 from utilities import errors
@@ -1136,3 +1143,160 @@ def clean_export_domain(export_domain, datacenter):
         ll_vms.remove_vm_from_export_domain(
             True, vm, datacenter, export_domain
         )
+
+
+def create_data_center(
+    dc_name, cluster_name, host_name, comp_version=config.COMPATIBILITY_VERSION
+):
+    """
+    Add data-center with one host to the environment
+
+    Args:
+        dc_name (str): Name of the Data-center
+        cluster_name (str): Name of the Cluster
+        host_name (str): Name of the host
+        comp_version (str): Data-center compatibility version
+        sd_name (str): Name of the storage-domain
+    Raise:
+        DataCenterException : If fails to add data-center
+        ClusterException: If fails to add cluster
+        HostException: If fails to perform host operation
+    """
+    testflow.step("Add data-center %s", dc_name)
+    assert ll_dc.addDataCenter(
+        True, name=dc_name, local=False, version=comp_version
+    ), "Failed to create dc %s" % dc_name
+
+    testflow.step("Add cluster %s", cluster_name)
+    assert ll_clusters.addCluster(
+        True, name=cluster_name, cpu=config.CPU_NAME,
+        data_center=dc_name, version=config.COMPATIBILITY_VERSION
+    ),  "addCluster %s with cpu %s and version %s to datacenter %s failed" % (
+        cluster_name, config.CPU_NAME, config.COMPATIBILITY_VERSION, dc_name
+    )
+    testflow.step("Move host %s to cluster %s", host_name, cluster_name)
+    assert hl_hosts.move_host_to_another_cluster(
+        host=host_name, cluster=cluster_name, activate=True
+    ), "Failed to move host %s to cluster %s" % (host_name, cluster_name)
+
+
+def clean_dc(dc_name, cluster_name, dc_host, sd_name=None):
+    """
+    Clean data-center, remove storage-domain and attach the host back to GE
+    data-center
+
+    Args:
+        dc_name (str): Name of the Data-center
+        cluster_name (str): Name of the Cluster
+        dc_host (str): Name of the host
+        sd_name (str): Name of the storage-domain
+        remove_param (dict): Parameters for domain remove
+    Raise:
+        DataCenterException : If fails to remove data-center
+        StorageDomainException: If fails to remove storage-domain
+        HostException: If fails to perform host operation
+    """
+    if sd_name:
+        logger.info(
+            "Checking if domain %s is active in dc %s", sd_name, dc_name
+        )
+        if ll_sd.is_storage_domain_active(dc_name, sd_name):
+            testflow.step("Deactivate storage-domain %s ", sd_name)
+            hl_sd.deactivate_domain(dc_name, sd_name)
+
+    testflow.step("Remove data-center %s", dc_name)
+    assert ll_dc.remove_datacenter(True, dc_name), (
+        "Failed to remove dc %s" % dc_name
+    )
+    testflow.step("Move host %s to cluster %s", dc_host, cluster_name)
+    assert hl_hosts.move_host_to_another_cluster(
+        host=dc_host, cluster=config.CLUSTER_NAME, activate=True
+    ), "Failed to move host %s to cluster %s" % (dc_host, cluster_name)
+    assert ll_clusters.removeCluster(True, cluster_name), (
+        "Failed to remove cluster %s" % cluster_name
+    )
+
+
+def add_storage_domain(storage_domain, data_center, index, storage_type):
+    """
+    Add storage domain to given data-center
+
+    Args:
+        storage_domain (str): Name of the storage-domain
+        data_center (str): Name of the data-center
+        index (int): Index for the additional resources
+        storage_type (str): Storage domain type
+    Raises:
+        StorageDomainException : If Fails to add the storage-domain
+    """
+    spm = ll_hosts.getSPMHost(config.HOSTS)
+    if storage_type == config.STORAGE_TYPE_ISCSI:
+        status = hl_sd.addISCSIDataDomain(
+            spm,
+            storage_domain,
+            data_center,
+            config.UNUSED_LUNS[index],
+            config.UNUSED_LUN_ADDRESSES[index],
+            config.UNUSED_LUN_TARGETS[index],
+            override_luns=True
+        )
+
+    elif storage_type == config.STORAGE_TYPE_FCP:
+        status = hl_sd.addFCPDataDomain(
+            spm,
+            storage_domain,
+            data_center,
+            config.UNUSED_FC_LUNS[index],
+            override_luns=True
+        )
+    elif storage_type == config.STORAGE_TYPE_NFS:
+        nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[index]
+        nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[index]
+        status = hl_sd.addNFSDomain(
+            host=spm,
+            storage=storage_domain,
+            data_center=data_center,
+            address=nfs_address,
+            path=nfs_path,
+            format=True
+        )
+    elif storage_type == config.STORAGE_TYPE_GLUSTER:
+        gluster_address = (
+            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[index]
+        )
+        gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[index]
+        status = hl_sd.addGlusterDomain(
+            host=spm,
+            name=storage_domain,
+            data_center=data_center,
+            address=gluster_address,
+            path=gluster_path,
+            vfs_type=config.ENUMS['vfs_type_glusterfs']
+        )
+    elif storage_type == config.STORAGE_TYPE_CEPH:
+            posix_address = (
+                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index]
+            )
+            posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index]
+            status = hl_sd.addPosixfsDataDomain(
+                host=spm,
+                storage=storage_domain,
+                data_center=data_center,
+                address=posix_address,
+                path=posix_path,
+                vfs_type=config.STORAGE_TYPE_CEPH,
+                mount_options=config.CEPH_MOUNT_OPTIONS
+            )
+    assert status, "Creating %s storage domain '%s' failed" % (
+        storage_type, storage_domain
+    )
+    ll_jobs.wait_for_jobs(
+        [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
+    )
+    ll_sd.waitForStorageDomainStatus(
+        True, data_center, storage_domain,
+        config.SD_ACTIVE
+    )
+    test_utils.wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, data_center
+    )
