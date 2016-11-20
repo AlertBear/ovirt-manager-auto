@@ -41,7 +41,7 @@ class TestMemoryHotplug(VirtTest):
             "Expand VM memory using memory hot-plug: with 1GB,check memory "
             "updated"
         )
-        helper.hotplug_memory_check(
+        assert helper.hotplug_memory_check(
             vm_name=self.vm_name, memory_to_expand=config.GB
         )
 
@@ -58,7 +58,7 @@ class TestMemoryHotplug(VirtTest):
             "check memory updated"
         )
 
-        helper.hotplug_memory_check(
+        assert helper.hotplug_memory_check(
             vm_name=self.vm_name, memory_to_expand=config.MB_SIZE_256
         )
 
@@ -76,7 +76,7 @@ class TestMemoryHotplug(VirtTest):
             "Total of 4GB - 4 iterations of 1GB"
             "check memory updated"
         )
-        helper.hotplug_memory_check(
+        assert helper.hotplug_memory_check(
             vm_name=self.vm_name, memory_to_expand=config.GB, multiplier=4
         )
 
@@ -94,7 +94,7 @@ class TestMemoryHotplug(VirtTest):
             "Total of 1280 MB: 5 iterations of 256MB"
             "check memory updated"
         )
-        helper.hotplug_memory_check(
+        assert helper.hotplug_memory_check(
             vm_name=self.vm_name, memory_to_expand=config.MB_SIZE_256,
             multiplier=5
         )
