@@ -22,11 +22,7 @@ FLOPPY_IMAGE = PARAMETERS.get('floppy_image')
 INSTALLATION = True
 
 VER = COMP_VERSION
-CUSTOM_PROPERTY = "UserDefinedVMProperties='auto_custom_hook=^[0-9]+$'"
-CUSTOM_PROPERTY_VNIC = ("""CustomDeviceProperties='{type=interface;"""
-                        """prop={speed=^([0-9]{1,5})$;"""
-                        """port_mirroring=^(True|False)$;"""
-                        """bandwidth=^([0-9]{1,5})$}}'""")
+
 VM_TEMPLATE_FOR_TEST = 'vm-templ-for-test'
 VM_FOR_TEMPLATE = 'vm_for_template'
 

@@ -14,7 +14,8 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion
 from art.unittest_lib import CoreSystemTest as TestCase, testflow
 from art.unittest_lib import attr
-from rhevmtests.system.hooks import config
+
+from hooks import config
 
 HOOK_VALUE = "1234"
 CUSTOM_HOOK = "auto_custom_hook={0}".format(HOOK_VALUE)
@@ -35,21 +36,21 @@ def setup_module(request):
     assert vms.createVm(
         positive=True,
         vmName=config.HOOKS_VM_NAME,
-        cluster=config.CLUSTER_NAME[0],
-        display_type=config.DISPLAY_TYPE,
-        template=config.TEMPLATE_NAME[0],
+        cluster=config.clusters_names[0],
+        display_type=config.display_type_vnc,
+        template=config.templates_names[0],
         custom_properties=CUSTOM_HOOK
     )
 
     def finalize():
         testflow.teardown("Tearing down module %s.", __name__)
 
-        testflow.step("Removing all hooks from %s host.", config.HOSTS_IP[0])
+        testflow.step("Removing all hooks from %s host.", config.hosts_ips[0])
         assert runMachineCommand(
             positive=True,
-            ip=config.HOSTS_IP[0],
-            user=config.HOSTS_USER,
-            password=config.HOSTS_PW,
+            ip=config.hosts_ips[0],
+            user=config.hosts_user,
+            password=config.hosts_password,
             cmd=REMOVE_HOOKS
         )[0]
 
@@ -65,14 +66,14 @@ def setup_module(request):
 
 def check_vdsmd():
     if not test_utils.isVdsmdRunning(
-            config.HOSTS_IP[0],
-            config.HOSTS_USER,
-            config.HOSTS_PW
+            config.hosts_ips[0],
+            config.hosts_user,
+            config.hosts_password
     ):
         hosts.start_vdsm(
-            config.HOSTS[0],
-            config.HOSTS_PW,
-            config.DC_NAME[0]
+            config.hosts[0],
+            config.hosts_password,
+            config.dcs_names[0]
         )
 
 
@@ -80,12 +81,12 @@ def check_vm():
     if not vms.checkVmState(
             positive=True,
             vmName=config.HOOKS_VM_NAME,
-            state=config.VM_UP
+            state=config.vm_state_up
     ):
         vms.restartVm(
             vm=config.HOOKS_VM_NAME,
             wait_for_ip=True,
-            placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
+            placement_host=config.hosts[0],
         )
 
 
@@ -111,12 +112,12 @@ class TestCaseVm(TestCase):
             "Creating a Python script with name %s "
             "on host %s to verify %s hook",
             cls._hook_name(ext=cls.PY),
-            config.HOSTS_IP[0],
+            config.hosts_ips[0],
             cls.CUSTOM_HOOK
         )
         hooks.create_python_script_to_verify_custom_hook(
-            ip=config.HOSTS_IP[0],
-            password=config.HOSTS_PW,
+            ip=config.hosts_ips[0],
+            password=config.hosts_password,
             script_name=cls._hook_name(ext=cls.PY),
             custom_hook=cls.CUSTOM_HOOK,
             target=path.join(HOOK_DIR, cls.NAME),
@@ -134,12 +135,12 @@ class TestCaseVm(TestCase):
             testflow.step(
                 "Removing python script %s from host %s.",
                 hook_name,
-                config.HOSTS_IP[0]
+                config.hosts_ips[0]
             )
             test_utils.removeFileOnHost(
                 positive=True,
-                ip=config.HOSTS_IP[0],
-                password=config.HOSTS_PW,
+                ip=config.hosts_ips[0],
+                password=config.hosts_password,
                 filename=path.join(HOOK_DIR, hook_name)
             )
             testflow.step("Checking %s VM's state", config.HOOKS_VM_NAME)
@@ -153,8 +154,8 @@ class TestCaseVm(TestCase):
         logger.info("Checking for existence of file %s/%s.", TMP, cls.NAME)
         return hooks.check_for_file_existence_and_content(
             positive,
-            ip=config.HOSTS_IP[0],
-            password=config.HOSTS_PW,
+            ip=config.hosts_ips[0],
+            password=config.hosts_password,
             filename=path.join(TMP, cls._hook_name()),
             content=HOOK_VALUE
         )
@@ -186,11 +187,11 @@ class TestCaseVdsm(TestCase):
         testflow.step(
             "Creating shell script %s on %s host.",
             script_name,
-            config.HOSTS_IP[0]
+            config.hosts_ips[0]
         )
         hooks.create_one_line_shell_script(
-            ip=config.HOSTS_IP[0],
-            password=config.HOSTS_PW,
+            ip=config.hosts_ips[0],
+            password=config.hosts_password,
             script_name=script_name,
             command='touch',
             arguments=path.join(TMP, cls._hook_name()),
@@ -208,24 +209,24 @@ class TestCaseVdsm(TestCase):
             testflow.step(
                 "Removing shell script %s from host %s.",
                 hook_name,
-                config.HOSTS_IP[0]
+                config.hosts_ips[0]
             )
             test_utils.removeFileOnHost(
                 positive=True,
-                ip=config.HOSTS_IP[0],
-                password=config.HOSTS_PW,
+                ip=config.hosts_ips[0],
+                password=config.hosts_password,
                 filename=path.join(HOOK_DIR, hook_name)
             )
 
             testflow.step(
                 "Removing hook %s from host %s.",
                 cls._hook_name(),
-                config.HOSTS_IP[0]
+                config.hosts_ips[0]
             )
             test_utils.removeFileOnHost(
                 positive=True,
-                ip=config.HOSTS_IP[0],
-                password=config.HOSTS_PW,
+                ip=config.hosts_ips[0],
+                password=config.hosts_password,
                 filename=path.join(TMP, cls._hook_name())
             )
             testflow.step("Checking if vdsmd is running.")
@@ -239,8 +240,8 @@ class TestCaseVdsm(TestCase):
         logger.info("Checking for existence of file %s/%s", TMP, cls.NAME)
         return hooks.check_for_file_existence_and_content(
             positive=positive,
-            ip=config.HOSTS_IP[0],
-            password=config.HOSTS_PW,
+            ip=config.hosts_ips[0],
+            password=config.hosts_password,
             filename=path.join(TMP, cls._hook_name())
         )
 
@@ -249,7 +250,7 @@ class TestCaseVdsm(TestCase):
         return "{0}.{1}".format(cls.NAME, ext)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCaseAfterVdsmStop(TestCaseVdsm):
     """ after_vdsm_stop hook """
     __test__ = True
@@ -259,18 +260,18 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
     @polarion("RHEVM3-8482")
     def test_after_vdsm_stop(self):
         """ test_after_vdsm_stop """
-        testflow.step("Stopping vdsm on %s.", config.HOSTS_IP[0])
-        hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
+        testflow.step("Stopping vdsm on %s.", config.hosts_ips[0])
+        hosts.stop_vdsm(config.hosts[0], config.hosts_password)
 
         testflow.step(
             "Checking for presence of %s on %s.",
             self._hook_name(),
-            config.HOSTS_IP[0]
+            config.hosts_ips[0]
         )
         assert self.check_for_file(positive=True)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCaseBeforeVdsmStart(TestCaseVdsm):
     """ before_vdsm_start hook """
     __test__ = True
@@ -280,32 +281,32 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
     @polarion("RHEVM3-8483")
     def test_before_vdsm_start(self):
         """ test_before_vdsm_start """
-        testflow.step("Stopping vdsm on %s.", config.HOSTS_IP[0])
-        hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
+        testflow.step("Stopping vdsm on %s.", config.hosts_ips[0])
+        hosts.stop_vdsm(config.hosts[0], config.hosts_password)
 
         testflow.step(
             "Checking the %s is not at %s.",
             self._hook_name(),
-            config.HOSTS_IP[0]
+            config.hosts_ips[0]
         )
         assert not self.check_for_file(positive=False)
 
-        testflow.step("Starting vdsm on %s.", config.HOSTS_IP[0])
+        testflow.step("Starting vdsm on %s.", config.hosts_ips[0])
         hosts.start_vdsm(
-            config.HOSTS[0],
-            config.HOSTS_PW,
-            config.DC_NAME[0]
+            config.hosts[0],
+            config.hosts_password,
+            config.dcs_names[0]
         )
 
         testflow.step(
             "Checking for presence of %s on %s.",
             self._hook_name(),
-            config.HOSTS_IP[0]
+            config.hosts_ips[0]
         )
         assert self.check_for_file(positive=True)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCaseBeforeVmStart(TestCaseVm):
     """ before_vm_start hook """
     __test__ = True
@@ -321,7 +322,7 @@ class TestCaseBeforeVmStart(TestCaseVm):
         testflow.step(
             "Checking the %s is not at %s.",
             self._hook_name(),
-            config.HOSTS_IP[0]
+            config.hosts_ips[0]
         )
         assert not self.check_for_file(positive=False)
 
@@ -329,20 +330,20 @@ class TestCaseBeforeVmStart(TestCaseVm):
         assert vms.startVm(
             positive=True,
             vm=config.HOOKS_VM_NAME,
-            wait_for_status=config.VM_UP,
+            wait_for_status=config.vm_state_up,
             wait_for_ip=True,
-            placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
+            placement_host=config.hosts[0],
         )
 
         testflow.step(
             "Checking for presence of %s on %s.",
             self._hook_name(),
-            config.HOSTS_IP[0]
+            config.hosts_ips[0]
         )
         assert self.check_for_file(positive=True)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCaseAfterVmPause(TestCaseVm):
     """ after_vm_pause hook """
     __test__ = True
@@ -357,6 +358,6 @@ class TestCaseAfterVmPause(TestCaseVm):
         testflow.step(
             "Checking for presence of %s on %s.",
             self._hook_name(),
-            config.HOSTS_IP[0]
+            config.hosts_ips[0]
         )
         assert self.check_for_file(positive=True)
