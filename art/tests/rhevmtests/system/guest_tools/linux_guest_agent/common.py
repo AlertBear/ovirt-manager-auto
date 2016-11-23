@@ -1,6 +1,7 @@
 import ast
 import logging
 import shlex
+from string import digits
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.unittest_lib import CoreSystemTest as TestCase
@@ -220,21 +221,25 @@ class GABaseTestCase(TestCase):
         cmd = shlex.split(cmd % (self.stats, self.vm_id, 'appsList'))
         app_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
         app_list = ast.literal_eval(app_agent)
+        for app in app_list:
+            while app and app[0] not in digits:
+                app = app[app.find("-")+1:]
+            assert len(app)
 
         for app in application_list:
             self._check_app(list_app_cmd, app, app_list)
 
     def _check_app(self, list_app_cmd, app, app_list):
         rc, app_real, err = self.machine.executor().run_cmd(
-            [list_app_cmd] + ['|', 'grep', '-o', app]
+            [list_app_cmd] + ['|', 'grep', "^" + app + "-[0-9]"]
         )
         app_real = app_real.strip()
-        app_real_list = app_real.split('\r\n')
+        app_real_list = app_real.split('\n')
 
-        for app in app_real_list:
-            if app.endswith(('i686', 'x86_64', 'noarch')):
-                app = app[:app.rfind('.')]
-            assert len(filter(lambda x: app in x, app_list)) > 0
+        for app_real in app_real_list:
+            if app_real.endswith(('i686', 'x86_64', 'noarch')):
+                app_real = app_real[:app_real.rfind('.')]
+            assert len(filter(lambda x: app_real in x, app_list)) > 0
 
     def _check_guestIP(self):
         ip = ['ifconfig', '|', 'grep', 'inet addr:', '|', 'cut', '-d:',
