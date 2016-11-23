@@ -5798,3 +5798,22 @@ def get_snapshot_description_in_preview(vm_name):
         ):
             return snapshot.get_description()
     return ''
+
+
+@ll_general.generate_logs()
+def get_vm_disks_ids(vm):
+    """
+    Returns disks ids for given vm
+
+    Args:
+        vm: vm name
+
+    Returns:
+        list: List of disk ids, if no disk found return empty list
+    """
+    disk_objs = getObjDisks(name=vm, get_href=False)
+    if disk_objs:
+        return [disk_obj.id for disk_obj in disk_objs]
+    else:
+        return []
+    pass

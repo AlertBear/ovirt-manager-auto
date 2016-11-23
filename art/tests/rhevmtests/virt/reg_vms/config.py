@@ -15,5 +15,32 @@ WIN_7 = ENUMS['windows7']
 
 ticket_expire_time = 120
 template_name = TEMPLATE_NAME[0]
-REG_VMS_LIST = ['add_vm_test', 'virt_mix_cases', 'clone_vm_from_template']
+# vm names
+ADD_VM_TEST = 'add_vm_test'
+MIX_CASE_TEST = 'virt_mix_cases'
+CLONE_VM_TEST = "tested_vm_clone_vm"
+BASE_VM_VIRT = "base_vm_virt"
+VM_FROM_BASE_TEMPLATE = 'virt_vm_from_template'
+BASE_VM = 'virt_base_vm'
+BASE_TEMPLATE = 'virt_base_template'
+# clone vm test
+TEST_CLONE_WITH_2_DISKS = "cloned_vm_with_2_disks"
+TEST_CLONE_WITH_WITHOUT_DISKS = "cloned_vm_without_disks"
+REG_VMS_LIST = [
+    ADD_VM_TEST, MIX_CASE_TEST, VM_FROM_BASE_TEMPLATE, BASE_VM_VIRT,
+    TEST_CLONE_WITH_2_DISKS, TEST_CLONE_WITH_WITHOUT_DISKS,
+    CLONE_VM_TEST
 
+]
+DESCRIPTION = 'description'
+# clone vm
+CLONE_VM_TEST_VM_PARAMETERS = {
+    VM_MEMORY: GB,
+    VM_MEMORY_GUARANTEED: GB,
+    VM_OS: VM_OS_TYPE,
+    TYPE_VM: VM_TYPE_DESKTOP,
+    VM_DISPLAY: VM_DISPLAY_TYPE,
+    VM_PLACEMENT_AFFINITY: VM_MIGRATABLE,
+    VM_CLUSTER: CLUSTER_NAME[0],
+    DESCRIPTION: "Virt_test"
+}

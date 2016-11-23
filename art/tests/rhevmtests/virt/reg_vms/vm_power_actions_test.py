@@ -21,6 +21,7 @@ import config
 logger = logging.getLogger("virt_vm_base_actions")
 
 
+@pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
 class TestPowerActions(VirtTest):
     __test__ = True
     vm_name = 'power_actions'
@@ -31,7 +32,6 @@ class TestPowerActions(VirtTest):
 
     @attr(tier=2)
     @polarion("RHEVM3-12587")
-    @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
     def test_locked_vm(self):
         """
         Change vm status in database to locked and try to remove it
@@ -57,7 +57,6 @@ class TestPowerActions(VirtTest):
     @attr(tier=1)
     @bz({"1389996": {}})
     @polarion("RHEVM3-9962")
-    @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
     def test_suspend_resume(self):
         """
         Suspend / Resume VM test
@@ -77,7 +76,6 @@ class TestPowerActions(VirtTest):
 
     @attr(tier=2)
     @polarion("RHEVM3-9980")
-    @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
     def test_migrate_suspend_vm(self):
         """
         Migrate suspend VM, migration should fail
@@ -94,6 +92,7 @@ class TestPowerActions(VirtTest):
 
 
 @attr(tier=1)
+@pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
 class TestPauseVM(VirtTest):
     """
     VM in pause mode test cases
@@ -105,7 +104,6 @@ class TestPauseVM(VirtTest):
     template_name = config.TEMPLATE_NAME[0]
 
     @polarion("RHEVM3-9951")
-    @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
     def test_pause_vm(self):
         """
         Start vm in pause mode and check vm status
@@ -121,7 +119,6 @@ class TestPauseVM(VirtTest):
     @attr(tier=1)
     @polarion("RHEVM3-9964")
     @bz({"1273720": {}})
-    @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
     def test_migrate_paused_vm(self):
         """
         Negative:

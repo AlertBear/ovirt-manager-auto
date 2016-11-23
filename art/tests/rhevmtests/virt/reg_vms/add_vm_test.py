@@ -23,7 +23,7 @@ class AddVm(VirtTest):
     Add vms with different parameters test cases
     """
     __test__ = True
-    vm_name = config.REG_VMS_LIST[0]
+    vm_name = config.ADD_VM_TEST
     vm_parameters = {
         'cluster': config.CLUSTER_NAME[0],
         'os_type': config.VM_OS_TYPE,

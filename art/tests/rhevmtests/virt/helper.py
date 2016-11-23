@@ -12,6 +12,7 @@ import xmltodict
 
 from utilities import jobs
 from art import test_handler
+import art.core_api.validator as validator
 from rhevmtests import helpers
 from rhevmtests.networking import config
 from art.unittest_lib import testflow
@@ -29,7 +30,8 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     vmpools as ll_vmpools,
     clusters as ll_clusters,
-    general as ll_general
+    general as ll_general,
+    disks as ll_disks,
 )
 import config as config_virt
 
@@ -546,25 +548,33 @@ def check_display_parameters(vm_name, display_type):
     return True
 
 
-def create_file_in_vm(vm, vm_resource):
+def create_file_in_vm(vm, vm_resource, path=config_virt.TEMP_PATH):
     """
     Create an empty file in vm using vm resource entity
 
     Args:
         vm (str): Vm name
         vm_resource (Host resource): Resource for the vm
+        path (str): path to locate the file
 
     Raises:
         VMException: If failed to create file
     """
     logger.info("attempting to create an empty file in vm: %s", vm)
-    if not vm_resource.fs.touch(config_virt.FILE_NAME, config_virt.TEMP_PATH):
+    if not vm_resource.fs.touch(
+        file_name=config_virt.FILE_NAME, path=path
+    ):
         raise exceptions.VMException(
             "Failed to create an empty file on vm: '%s'" % vm
         )
 
 
-def check_if_file_exist(positive, vm, vm_resource):
+def check_if_file_exist(
+    positive,
+    vm,
+    vm_resource,
+    path=config_virt.TEMP_PATH
+):
     """
     Checks if file (name of file in config) exist or not in the vm using vm
     resource entity
@@ -573,6 +583,7 @@ def check_if_file_exist(positive, vm, vm_resource):
         positive (bool): Signifies the expected result
         vm (str): Vm name
         vm_resource (host resource): Command executor for the vm
+        path (str): path where to find the file
 
     Raises:
         VMException: If file exist
@@ -582,7 +593,7 @@ def check_if_file_exist(positive, vm, vm_resource):
         config_virt.FILE_NAME, vm, positive
     )
     full_path_to_file = os.path.join(
-        config_virt.TEMP_PATH, config_virt.FILE_NAME
+        path, config_virt.FILE_NAME
     )
     file_exists = vm_resource.fs.exists(full_path_to_file)
     if not (file_exists == positive):
@@ -925,3 +936,104 @@ def check_thread_number(disk_id, counter):
         logger.error("Thread not attached to disk")
         return False
     return True
+
+
+def check_clone_vm(
+    clone_vm_name,
+    base_vm_name,
+    check_disk_content=False,
+):
+    """
+    Check clone vm
+        1. Check Nic: check the MAC address is diff then base
+        2. Check disk content: start vms and check that new disk contains
+        the same file as in base disk
+        3. Check that clone vm has the same attributes as base vm
+
+    Args:
+        clone_vm_name (str): clone vm name
+        base_vm_name (str): base vm name
+        check_disk_content (bool): If True check clone vm content,
+        else don't check
+
+    Returns:
+         bool: Return True if all checks pass, else return False
+    """
+    logger.info(
+        "Check clone vm: start vms %s, %s", clone_vm_name, base_vm_name
+    )
+    ll_vms.start_vms(vm_list=[clone_vm_name, base_vm_name])
+    if check_disk_content:
+        logger.info("Check disk content")
+        vm_resource = helpers.get_vm_resource(clone_vm_name)
+        testflow.step("Verify that file exists after vm restart")
+        check_if_file_exist(True, clone_vm_name, vm_resource, path='/home/')
+    logger.info("Check Nic info")
+    clone_vm_mac_address = ll_vms.get_vm_nic_mac_address(vm=clone_vm_name)
+    base_vm_mac_address = ll_vms.get_vm_nic_mac_address(vm=base_vm_name)
+    if clone_vm_mac_address == base_vm_mac_address:
+        logger.error(
+            "MAC addresses are the same,\n"
+            "clone vm mac address: %s\n"
+            "base vm mac address:  %s",
+            clone_vm_mac_address, base_vm_mac_address
+        )
+        return False
+    logger.info("Check VM attributes")
+    logger.info("Check disks ids")
+    base_vm_disks_ids = ll_vms.getObjDisks(
+        name=base_vm_name, get_href=False
+    )
+    clone_vm_disks_ids = ll_disks.getObjDisks(
+        name=base_vm_name, get_href=False
+    )
+    if base_vm_disks_ids == clone_vm_disks_ids:
+        logger.error(
+            "Disks ids are the same, should have different ids, see ids:\n"
+            "base vm: %s \nclone vm: %s",
+            base_vm_disks_ids, clone_vm_disks_ids
+        )
+        return False
+    testflow.step("stop vms and check vm attributes")
+    ll_vms.stop_vms_safely(vms_list=[clone_vm_name, base_vm_name])
+    vm_obj_clone_vm = ll_vms.get_vm_obj(clone_vm_name)
+    vm_obj_base_vm = ll_vms.get_vm_obj(base_vm_name)
+    return validator.compareElements(
+        vm_obj_base_vm, vm_obj_clone_vm, logger=logger, root='Comparator',
+        ignore=config_virt.VALIDATOR_IGNORE_LIST
+    )
+
+
+def clone_same_vm_twice(base_vm_name, clone_vm_list):
+    """
+    Clone same vm simultaneous
+
+    Args:
+        base_vm_name (str): vm that we clone from
+        clone_vm_list(list): list of vm name to clone
+    """
+    testflow.step("Clone vm")
+    job_list_parameters = {}
+    clone_jobs = {}
+    for i, clone_vm_name in zip(range(0, len(clone_vm_list)), clone_vm_list):
+        wait = True if i == 0 else False
+        job_list_parameters["clone_job_kwargs_{0}".format(i)] = {
+            'positive': True,
+            'vm': base_vm_name,
+            'clone_vm_name': clone_vm_name,
+            'wait': wait
+        }
+    logger.info(job_list_parameters)
+    for i in range(0, len(clone_vm_list)+1):
+        clone_jobs["job_{0}".format(i)] = jobs.Job(
+            hl_vms.clone_vm,
+            (),
+            job_list_parameters["clone_job_kwargs_{0}".format(i)]
+        )
+    logger.info(clone_jobs)
+    job_set = jobs.JobsSet()
+    jobs_list = clone_jobs.values()
+    job_set.addJobs(jobs_list)
+    job_set.start()
+    job_set.join()
+    return jobs_list[0].result and not jobs_list[1].result

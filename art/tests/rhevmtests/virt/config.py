@@ -33,6 +33,13 @@ storage_name = PARAMETERS.get('storage_name', '%s_%d' % (STORAGE_TYPE, 0))
 nfs_storage_0 = PARAMETERS.get('storage_name_0', '%s_0' % STORAGE_TYPE)
 nfs_storage_1 = PARAMETERS.get('storage_name_1', '%s_1' % STORAGE_TYPE)
 export_storage = PARAMETERS.get('export_storage', EXPORT_DOMAIN_NAME)
+
+# disk interfaces
+VIRTIO = INTERFACE_VIRTIO
+
+# storage matrix
+STORAGE_SELECTOR = opts['storages']
+
 # #################################################
 # Following paramaters are virt specific paramaters
 # #################################################
@@ -137,3 +144,18 @@ SLAVE_HOST = resources.Host('127.0.0.1')
 SLAVE_HOST.users.append(
     resources.RootUser(VDC_ROOT_PASSWORD)
 )
+
+# general
+FQDN_TIMEOUT = 130
+
+VALIDATOR_IGNORE_LIST = [
+    'watchdogs', 'cdroms', 'statistics', 'vm_pool', 'start_time', 'run_once',
+    'guest_info', 'payloads', 'use_latest_template_version', 'name', 'disks',
+    'stop_reason', 'placement_policy', 'guest_operating_system',
+    'creation_time', 'snapshots', 'id', 'instance_type',  'numa_tune_mode',
+    'guest_time_zone', 'stop_time', 'template', 'external_host_provider',
+    'katello_errata', 'next_run_configuration_exists', 'floppies', 'tags',
+    'initialization', 'quota', 'host', 'reported_devices', 'original_template',
+    'vm', 'version', 'host_numa_nodes', 'sessions', 'status_detail',
+    'affinity_labels', 'applications', 'fqdn', 'host_devices', 'nics',
+]

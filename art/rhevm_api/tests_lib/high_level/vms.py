@@ -960,3 +960,48 @@ def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
             vms_in_cluster, cluster_name
         )
     return all_removed
+
+
+@ll_general.generate_logs()
+def clone_vm(positive, vm, clone_vm_name, wait=True):
+    """
+    Clone vm to clone_vm_name
+
+    Args:
+        positive (bool): True if clone action should succeed, False otherwise
+        vm (str): base vm name
+        clone_vm_name (str): clone vm name
+        wait (bool): True if walt for status of disks, False otherwise
+
+    Returns:
+        bool: True if vm was cloned properly, False otherwise
+    """
+    action_params = {}
+    vm_obj = VM_API.find(vm)
+    new_vm = vms.data_st.Vm()
+    new_vm.set_name(clone_vm_name)
+    action_params['vm'] = new_vm
+    action_params['async'] = True
+
+    res = VM_API.syncAction(vm_obj, 'clone', positive, **action_params)
+    if res:
+        if not wait:
+            logger.warning(
+                "Not going to wait till VM clone completes. wait=%s, "
+                "positive=%s" % (str(wait), positive)
+            )
+            return positive
+        if wait:  # checks disks status
+            if not VM_API.waitForElemStatus(
+                vms.get_vm(clone_vm_name), "down",
+                vms.VM_DISK_CLONE_TIMEOUT
+            ):
+                return False
+            base_vm_disks = vms.get_vm_disks_ids(vm=vm)
+            clone_vm_disks = vms.get_vm_disks_ids(vm=clone_vm_name)
+            disks_list = base_vm_disks + clone_vm_disks
+            disks_status = vms.wait_for_disks_status(
+                disks_list, key='id', timeout=vms.CLONE_FROM_SNAPSHOT
+            )
+            return disks_status and positive
+    return False

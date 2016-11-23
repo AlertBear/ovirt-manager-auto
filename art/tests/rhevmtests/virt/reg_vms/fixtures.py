@@ -1,18 +1,26 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-
-import logging
+import time
 import pytest
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import logging
+from art.unittest_lib import testflow
+from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
     templates as ll_templates,
     vms as ll_vms,
+    storagedomains as ll_sd
 )
+from art.rhevm_api.tests_lib.high_level import (
+    disks as hl_disks,
+    vms as hl_vms
+)
+import rhevmtests.helpers as gen_helper
+import rhevmtests.virt.helper as helper
 import config
-import rhevmtests.virt.helper as virt_helper
 
-logger = logging.getLogger("reg_vm_fixture")
+logger = logging.getLogger(__name__)
 
 
 class RegVmBase(object):
@@ -20,7 +28,7 @@ class RegVmBase(object):
     Class reg vm base
     """
     master_domain, export_domain, non_master_domain = (
-        virt_helper.get_storage_domains()
+        helper.get_storage_domains()
     )
 
     @classmethod
@@ -57,6 +65,7 @@ def basic_teardown_fixture(request):
     """
 
     def fin():
+        testflow.teardown("Remove all vms in list: %s", config.REG_VMS_LIST)
         ll_vms.safely_remove_vms(config.REG_VMS_LIST)
 
     request.addfinalizer(fin)
@@ -70,14 +79,16 @@ def add_vm_fixture(request):
     """
 
     vm_name = request.cls.vm_name
-    add_disk = request.cls.add_disk
+    add_disk = getattr(request.cls, "add_disk", False)
 
     def fin():
-        ll_vms.safely_remove_vms([vm_name])
+        testflow.teardown("Remove vm %s", vm_name)
+        assert ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin)
 
-    assert virt_helper.create_base_vm(vm_name=vm_name, add_disk=add_disk)
+    testflow.setup("Create vm %s with disk %s", vm_name, str(add_disk))
+    assert helper.create_base_vm(vm_name=vm_name, add_disk=add_disk)
 
 
 @pytest.fixture()
@@ -86,16 +97,18 @@ def start_stop_fixture(request):
     Start vm
     """
 
-    vm_name = request.cls.vm_name
+    vm_name = getattr(request.cls, "vm_name", config.BASE_VM_VIRT)
 
     def fin():
         """
         Stop vm
         """
-        ll_vms.stop_vms_safely(vms_list=[vm_name])
+        testflow.teardown("Stop vm %s", vm_name)
+        assert ll_vms.stop_vms_safely(vms_list=[vm_name])
 
     request.addfinalizer(fin)
 
+    testflow.setup("Start vm %s", vm_name)
     ll_vms.start_vms(
         vm_list=[vm_name],
         wait_for_ip=False,
@@ -116,37 +129,64 @@ def stateless_vm_test_fixture(request):
     base = RegVmBase
 
     def fin():
+        testflow.teardown("Remove stateless vm %s", vm_name)
         base.remove_stateless_vm()
 
     request.addfinalizer(fin)
 
-    assert virt_helper.create_vm_from_template(
+    testflow.setup(
+        "Create vm %s from template %s", vm_name, config.template_name
+    )
+    assert helper.create_vm_from_template(
         vm_name=vm_name,
         template=config.template_name,
         vm_parameters=vm_parameters
     )
-
+    testflow.setup("Start vm %s", vm_name)
     assert ll_vms.startVm(positive=True, vm=vm_name)
 
 
-@pytest.fixture()
-def add_template_fixture(request):
+@pytest.fixture(scope="class")
+def create_vm_and_template_with_small_disk(request):
     """
-    1. Create vm and from this vm create template
-    2. Remove vm and template
-
+    1. Create base vm with 1 GB disk
+    2. Create template (base_template)
+    3. Create new vm from base_template
     """
-    vm_name = 'tmp_vm'
-    template_base = 'template_virt'
+    base_vm = config.BASE_VM
+    base_template = config.BASE_TEMPLATE
+    cluster_name = config.CLUSTER_NAME[0]
+    vm_from_template = config.VM_FROM_BASE_TEMPLATE
+    test_vm_name = request.node.cls.vm_name
+    vm_parameters = request.node.cls.vm_parameters
 
     def fin():
-        assert ll_vms.safely_remove_vms([vm_name])
-        assert ll_templates.removeTemplate(True, template_base)
+        """
+        Remove vms and template
+        """
+        vms_list = [base_vm, test_vm_name, vm_from_template]
+        testflow.teardown("Remove vms %s", vms_list)
+        assert ll_vms.safely_remove_vms(vms=vms_list)
+        testflow.teardown("Remove template %s", base_template)
+        assert ll_templates.removeTemplate(True, template=base_template)
 
     request.addfinalizer(fin)
 
-    assert virt_helper.create_base_vm(vm_name=vm_name, add_disk=True)
-    assert ll_templates.createTemplate(True, vm=vm_name, name=template_base)
+    testflow.setup("Create vm %s with disk %s", base_vm, str(True))
+    assert helper.create_base_vm(vm_name=base_vm, add_disk=True)
+    testflow.setup("create template %s from vm %s", base_template, base_vm)
+    assert ll_templates.createTemplate(
+        positive=True, vm=base_vm, name=base_template,
+        cluster=cluster_name
+    )
+    testflow.setup(
+        "Create new vm %s from template %s", vm_from_template, base_template
+    )
+    assert helper.create_vm_from_template(
+        vm_name=vm_from_template,
+        template=base_template,
+        vm_parameters=vm_parameters
+    )
 
 
 @pytest.fixture()
@@ -159,43 +199,52 @@ def test_snapshot_and_import_export_fixture(request):
 
     """
     vm_name = request.cls.vm_name
-
     base = RegVmBase
 
     def fin1():
+        testflow.teardown("Remove vm %s from export domain", vm_name)
         base.remove_vm_from_storage_domain(vm_name=vm_name)
 
     request.addfinalizer(fin1)
 
     def fin2():
+        testflow.teardown("Remove vm %s", vm_name)
         assert ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin2)
 
-    assert virt_helper.create_base_vm(vm_name=vm_name, add_disk=True)
+    testflow.setup("Create vm %s ", vm_name)
+    assert helper.create_base_vm(vm_name=vm_name, add_disk=True)
     export_domain_vms = ll_vms.get_vms_from_storage_domain(base.export_domain)
+    testflow.setup("Clean export domain from vms")
     for vm in export_domain_vms:
         base.remove_vm_from_storage_domain(vm_name=vm)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def add_vm_from_template_fixture(request):
     """
-    Create vm from template with parameters, remove it in fin
-    vm name is taken from class member
+    Create vm from template with parameters
     """
 
-    vm_name = request.cls.vm_name
+    vm_name = request.cls.base_vm_name
     cluster_name = request.cls.cluster_name
     template_name = request.cls.template_name
-    vm_parameters = request.cls.vm_parameters
+    vm_parameters = getattr(
+        request.cls, "vm_parameters", config.DEFAULT_VM_PARAMETERS
+    )
 
     def fin():
-        ll_vms.safely_remove_vms([vm_name])
+        """
+        Stop and remove vm
+        """
+        testflow.teardown("Stop and remove vm %s ", vm_name)
+        assert ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin)
 
-    assert virt_helper.create_vm_from_template(
+    testflow.setup("Create vm %s from template", vm_name)
+    assert helper.create_vm_from_template(
         vm_name=vm_name,
         cluster=cluster_name,
         template=template_name,
@@ -213,15 +262,137 @@ def vm_display_fixture(request):
     display_types = request.cls.display_types
 
     def fin():
-        ll_vms.safely_remove_vms(vm_names)
+        testflow.teardown("remove vms %s", vm_names)
+        assert ll_vms.safely_remove_vms(vm_names)
 
     request.addfinalizer(fin)
 
+    testflow.setup("Create vms with different display types %s", display_types)
     for display_type in display_types:
         vm_name = '%s_vm' % display_type
-        assert virt_helper.create_base_vm(
+        assert helper.create_base_vm(
             vm_name=vm_name,
             display_type=display_type,
             add_disk=True
         )
         assert ll_vms.startVm(True, vm_name)
+
+
+@pytest.fixture()
+def add_vm_with_disks(request):
+    """
+    Create VM from GE template and add different disks.
+    """
+
+    base_vm_name = config.BASE_VM_VIRT
+    cow_disk = config.DISK_FORMAT_COW
+    disk_interfaces = config.INTERFACE_VIRTIO
+
+    def fin():
+        """
+        Remove vm
+        """
+        vms = [base_vm_name, config.TEST_CLONE_WITH_2_DISKS]
+        testflow.teardown("Remove VMs: %s", vms)
+        assert ll_vms.safely_remove_vms(vms=vms)
+
+    request.addfinalizer(fin)
+    master_domain = (
+        ll_sd.get_master_storage_domain_name(datacenter_name=config.DC_NAME[0])
+    )
+    testflow.setup("Create VM %s from GE template", base_vm_name)
+    assert helper.create_vm_from_template(vm_name=base_vm_name)
+    first_disk_id = ll_disks.getObjDisks(
+        name=base_vm_name, get_href=False
+    )[0].id
+    assert ll_disks.updateDisk(
+        positive=True,
+        vmName=base_vm_name,
+        id=first_disk_id,
+        bootable=True
+    )
+    testflow.setup("add 2 more disks on master storage domain")
+    for x in xrange(0, 2):
+        assert ll_vms.addDisk(
+            positive=True,
+            vm=base_vm_name,
+            provisioned_size=config.GB,
+            storagedomain=master_domain,
+            interface=disk_interfaces,
+            format=cow_disk
+        ), "Failed to add disk to vm on master domain"
+
+
+@pytest.fixture(scope="class")
+def create_file_on_vm(request):
+    """
+    Start VM, Create empty file on vm, Stop VM
+    """
+    vm_name = request.cls.base_vm_name
+
+    testflow.setup("Start VM %s", vm_name)
+    ll_vms.start_vms(
+        vm_list=[vm_name],
+        wait_for_ip=True,
+        wait_for_status=config.VM_UP
+    )
+    vm_resource = gen_helper.get_vm_resource(vm_name)
+    testflow.setup("Creating a file in vm: %s", vm_name)
+    helper.create_file_in_vm(vm_name, vm_resource, path='/home/')
+    helper.check_if_file_exist(True, vm_name, vm_resource, path='/home/')
+    assert vm_resource.run_command(['sync'])[0] == 0
+    testflow.setup("Stop VM %s", vm_name)
+    ll_vms.stop_vms_safely(vms_list=[vm_name])
+
+
+@pytest.fixture()
+def remove_locked_vm(request):
+    """
+    Remove locked VM
+    """
+    vm_name = request.cls.base_vm_name
+
+    def fin():
+        testflow.teardown("Remove locked VM")
+        assert ll_vms.remove_locked_vm(
+            vm_name=vm_name,
+            vdc=config.VDC_HOST,
+            vdc_pass=config.VDC_ROOT_PASSWORD
+        )
+
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def unlock_disks(request):
+    """
+    Update locked disk status to 'OK'
+    """
+    def fin1():
+        testflow.teardown("unlock disks")
+        hl_disks.unlock_disks(
+            vdc=config.VDC_HOST,
+            vdc_pass=config.VDC_ROOT_PASSWORD
+        )
+        test_utils.wait_for_tasks(
+            config.VDC_HOST, config.VDC_ROOT_PASSWORD,
+            config.DC_NAME[0]
+        )
+        time.sleep(20)
+        testflow.teardown("Check there are no disks in locked status")
+        assert hl_disks.check_no_locked_disks(
+            vdc=config.VDC_HOST,
+            vdc_pass=config.VDC_ROOT_PASSWORD
+        )
+
+    def fin2():
+        testflow.teardown("Remove vms")
+        for vm_name in [config.BASE_VM_VIRT, config.CLONE_VM_TEST]:
+            assert ll_vms.remove_locked_vm(
+                vm_name=vm_name,
+                vdc=config.VDC_HOST,
+                vdc_pass=config.VDC_ROOT_PASSWORD
+            )
+
+    request.addfinalizer(fin2)
+    request.addfinalizer(fin1)

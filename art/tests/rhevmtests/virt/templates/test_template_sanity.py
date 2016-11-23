@@ -20,6 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, testflow, VirtTest
+import rhevmtests.virt.config as virt_conf
 
 logger = logging.getLogger('virt.templates.test_template_sanity')
 
@@ -153,7 +154,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             vm_object, template_object, logger=logger, root='Comparator',
-            ignore=conf.VALIDATOR_IGNORE_LIST
+            ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)
@@ -175,7 +176,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             vm_object, template_object, logger=logger, root='Comparator',
-            ignore=conf.VALIDATOR_IGNORE_LIST
+            ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)
@@ -233,7 +234,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             template_object, vm_object, logger=logger, root='Comparator',
-            ignore=conf.VALIDATOR_IGNORE_LIST
+            ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
     @pytest.mark.usefixtures(
@@ -259,7 +260,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             template_object, vm_object, logger=logger, root='Comparator',
-            ignore=conf.VALIDATOR_IGNORE_LIST
+            ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
     @pytest.mark.usefixtures(

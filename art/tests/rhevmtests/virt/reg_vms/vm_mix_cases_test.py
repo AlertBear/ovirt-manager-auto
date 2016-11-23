@@ -12,8 +12,8 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.virt.helper as helper
 from rhevmtests.virt.reg_vms.fixtures import (
-    add_vm_fixture, basic_teardown_fixture, add_vm_from_template_fixture,
-    add_template_fixture, vm_display_fixture,
+    add_vm_fixture, basic_teardown_fixture,
+    create_vm_and_template_with_small_disk, vm_display_fixture,
 )
 import config
 
@@ -27,7 +27,7 @@ class TestMixCases(VirtTest):
     storages = set([NFS])
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
-    vm_name = config.REG_VMS_LIST[1]
+    vm_name = config.MIX_CASE_TEST
     add_disk = False
     vm_parameters = None
     VM_DISK_CLONE_TIMEOUT = 1500
@@ -37,7 +37,7 @@ class TestMixCases(VirtTest):
 
     @attr(tier=1)
     @polarion("RHEVM3-12522")
-    @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
+    @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_set_ticket(self):
         """
         Start vm, check set ticket
@@ -247,42 +247,18 @@ class TestMixCases(VirtTest):
 
     @attr(tier=1)
     @polarion("RHEVM3-12585")
-    @pytest.mark.usefixtures(add_template_fixture.__name__)
+    @pytest.mark.usefixtures(create_vm_and_template_with_small_disk.__name__)
     def test_template_with_wrong_sd(self):
         """
         Negative: Create new vm with wrong storage domain
         """
-        template_base = 'template_virt'
         testflow.step("Negative: Create new vm with wrong storage domain")
         assert not ll_vms.addVm(
             positive=True,
             name=self.vm_name,
             cluster=config.CLUSTER_NAME[0],
-            template=template_base,
+            template=config.BASE_TEMPLATE,
             storagedomain=self.non_master_domain
-        )
-
-    @attr(tier=1)
-    @polarion("RHEVM3-12582")
-    @pytest.mark.usefixtures(
-        basic_teardown_fixture.__name__,
-        add_template_fixture.__name__
-    )
-    def test_clone_vm_from_template(self):
-        """
-        Clone vm from template
-        """
-        vm_name = config.REG_VMS_LIST[2]
-        template_name = 'template_virt'
-        testflow.step(
-            "Clone vm %s from template %s", vm_name, template_name
-        )
-        assert ll_vms.cloneVmFromTemplate(
-            positive=True,
-            name=vm_name,
-            template=template_name,
-            cluster=config.CLUSTER_NAME[0],
-            timeout=self.VM_DISK_CLONE_TIMEOUT
         )
 
 
