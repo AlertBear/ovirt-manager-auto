@@ -22,7 +22,7 @@ from fixtures import update_vms_nics_stats, vm_prepare_setup
     vm_prepare_setup.__name__,
     update_vms_nics_stats.__name__
 )
-class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
+class TestCumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
     """
     Hot unplug the vNIC
     Hot plug the vNIC

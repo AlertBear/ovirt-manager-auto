@@ -24,7 +24,7 @@ from fixtures import (
     host_prepare_setup.__name__,
     update_host_nics_stats.__name__
 )
-class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
+class TestCumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
     """
    Check that sending ICMP traffic on the host increases its statistics
     """
@@ -58,7 +58,7 @@ class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
     update_host_nics_stats.__name__,
     move_host_to_another_cluster.__name__
 )
-class CumulativeNetworkUsageHostStatisticsCase2(NetworkTest):
+class TestCumulativeNetworkUsageHostStatisticsCase2(NetworkTest):
     """
    Move the host to another compatible cluster and check that statistics
    remains the same
