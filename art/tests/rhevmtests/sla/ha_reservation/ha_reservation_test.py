@@ -17,7 +17,6 @@ import art.unittest_lib as u_libs
 import config as conf
 import helpers
 import pytest
-import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
@@ -54,8 +53,6 @@ def update_ha_reservation_interval(ha_reservation_interval):
         )
     ]
     if not conf.ENGINE.engine_config(action='set', param=cmd).get('results'):
-        return False
-    if not rhevm_helpers.wait_for_engine_api():
         return False
     return True
 

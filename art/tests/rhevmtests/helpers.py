@@ -433,30 +433,3 @@ def wait_for_vm_gets_to_full_memory(vm_name, expected_memory, threshold=0.9):
                 "Timeout When Trying to get VM %s CPU consumption", vm_name
             )
     return False
-
-
-def wait_for_engine_api(
-    sampler_timeout=config.SAMPLER_TIMEOUT,
-    sampler_sleep=config.SAMPLER_SLEEP
-):
-    """
-    Sample datacenter API until it can reach it
-
-    Returns:
-        bool: True, if datacenter API reachable before timeout happen,
-            otherwise False
-    """
-    sampler = apis_utils.TimeoutingSampler(
-        timeout=sampler_timeout,
-        sleep=sampler_sleep,
-        func=ll_sd.dcUtil.get,
-        absLink=False
-    )
-    logger.info("Sample engine host API")
-    for sample in sampler:
-        try:
-            if sample:
-                return True
-        except apis_exceptions.APITimeout:
-            logging.error("Can not connect to API page")
-    return False

@@ -47,8 +47,6 @@ def change_arem_state(enable):
     if not conf.ENGINE.engine_config(action='set', param=cmd).get('results'):
         logger.error("Failed to set %s option to false", conf.AREM_OPTION)
         return False
-    if not rhevm_helpers.wait_for_engine_api():
-        return False
     return True
 
 

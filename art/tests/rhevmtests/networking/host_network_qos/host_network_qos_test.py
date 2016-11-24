@@ -281,7 +281,6 @@ class TestHostNetQOSCase03(NetworkTest):
         assert conf.ENGINE.engine_config(
             action='set', param=cmd2
         ).get('results')
-        assert helpers.wait_for_engine_api()
 
         testflow.step(
             "Configure %s on %s to have weighted share and rate limit to be "
