@@ -7,7 +7,6 @@ Fixtures for sanity
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
@@ -19,79 +18,8 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 import rhevmtests.networking.required_network.helper as required_network_helper
+from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
-
-
-@pytest.fixture(scope="module")
-def create_networks(request):
-    """
-    Create networks
-    """
-    sanity = NetworkFixtures()
-
-    def fin1():
-        """
-        Remove networks from setup
-        """
-        assert network_helper.remove_networks_from_setup(
-            hosts=sanity.host_0_name
-        )
-    request.addfinalizer(fin1)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=sanity_conf.SN_DICT, dc=sanity.dc_0,
-        cluster=sanity.cluster_0
-    )
-
-
-@pytest.fixture(scope="class")
-def clean_host_interfaces(request):
-    """
-    Clean host interfaces
-    """
-    sanity = NetworkFixtures()
-
-    def fin():
-        """
-        Clean host interfaces
-        """
-        assert hl_host_network.clean_host_interfaces(
-            host_name=sanity.host_0_name
-        )
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def attach_networks(request):
-    """
-    Attach networks to host NICs
-    """
-    sanity = NetworkFixtures()
-    nets = request.node.cls.nets
-    nic = request.node.cls.nic
-    ip_addr_dict = request.node.cls.ip_addr_dict
-    bond = request.node.cls.bond
-
-    sn_dict = {
-        "add": {}
-    }
-    if not nets:
-        sn_dict["add"]["1"] = {
-            "slaves": sanity_conf.DUMMYS[:2],
-            "nic": bond
-        }
-    else:
-        for net in nets:
-            sn_dict["add"][net] = {
-                "network": net,
-                "nic": sanity.vds_0_host.nics[nic],
-            }
-            if ip_addr_dict:
-                sn_dict["add"][net]["ip"] = ip_addr_dict
-
-    assert hl_host_network.setup_networks(
-        host_name=sanity.host_0_name, **sn_dict
-    )
 
 
 @pytest.fixture(scope="class")
@@ -109,11 +37,13 @@ def add_vnic_profile(request):
         """
         Remove vNIC profile
         """
+        testflow.teardown("Remove vNIC profile %s", vnic_profile)
         assert ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=vnic_profile, network=net
         )
     request.addfinalizer(fin)
 
+    testflow.setup("Add vNIC profile %s", vnic_profile)
     assert ll_networks.add_vnic_profile(
         positive=True, name=vnic_profile, data_center=dc,
         network=net, port_mirroring=True, description=description
@@ -132,49 +62,52 @@ def remove_qos(request):
         """
         Remove QoS from setup
         """
+        testflow.teardown("Remove QoS %s", qos_name)
         network_helper.remove_qos_from_dc(qos_name=qos_name)
     request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")
-def case_06_fixture(request):
+def create_vnics_on_vm(request):
     """
     Create 5 VNICs on VM with different params for plugged/linked
     """
     NetworkFixtures()
     nets = request.node.cls.nets
     vm = request.node.cls.vm_name
+    vnics = sanity_conf.VNICS[6]
 
     def fin():
         """
         Remove vNICs from VM
         """
-        for nic in conf.NIC_NAME[1:6]:
-            assert ll_vms.removeNic(positive=True, vm=vm, nic=nic)
+        results = list()
+        for nic in vnics[:5]:
+            testflow.teardown("Remove vNIC %s from VM %s", nic, vm)
+            results.append(ll_vms.removeNic(positive=True, vm=vm, nic=nic))
+        assert all(results)
     request.addfinalizer(fin)
 
     plug_link_param_list = [
         ("true", "true"),
         ("true", "false"),
         ("false", "true"),
-        ("false", "false")
+        ("false", "false"),
+        ("true", "true"),
     ]
     for i in range(len(plug_link_param_list)):
-        nic_name = conf.NIC_NAME[i+1]
+        nic_name = vnics[i]
+        testflow.setup("Add vNIC %s to VM %s", nic_name, vm)
+        network = nets[i] if i != 4 else None
         assert ll_vms.addNic(
             positive=True, vm=vm, name=nic_name,
-            network=nets[i], plugged=plug_link_param_list[i][0],
+            network=network, plugged=plug_link_param_list[i][0],
             linked=plug_link_param_list[i][1]
         )
 
-    assert ll_vms.addNic(
-        positive=True, vm=vm, name=conf.NIC_NAME[5], network=None,
-        plugged="true", linked="true"
-    )
-
 
 @pytest.fixture(scope="class")
-def case_07_fixture(request):
+def create_cluster(request):
     """
     Create new cluster
     """
@@ -185,14 +118,16 @@ def case_07_fixture(request):
         """
         Remove cluster
         """
+        testflow.teardown("Remove cluster %s", ext_cl)
         assert ll_clusters.removeCluster(positive=True, cluster=ext_cl)
     request.addfinalizer(fin)
 
+    testflow.setup("Create cluster %s", ext_cl)
     mac_pool_helper.create_cluster_with_mac_pool(mac_pool_name="")
 
 
 @pytest.fixture(scope="class")
-def case_08_fixture(request):
+def create_dc_and_networks(request):
     """
     Create new datacenter
     Add network to datacenter
@@ -207,6 +142,7 @@ def case_08_fixture(request):
         """
         Remove datacenter
         """
+        testflow.teardown("Remove datacenter %s", dc)
         assert ll_dc.remove_datacenter(positive=True, datacenter=dc)
     request.addfinalizer(fin2)
 
@@ -214,8 +150,13 @@ def case_08_fixture(request):
         """
         Remove clusters
         """
+        results = list()
         for cl in (cluster_1, cluster_2):
-            assert ll_clusters.removeCluster(positive=True, cluster=cl)
+            testflow.teardown("Remove cluster %s", cl)
+            results.append(
+                ll_clusters.removeCluster(positive=True, cluster=cl)
+            )
+        assert all(results)
     request.addfinalizer(fin1)
 
     net_dict = {
@@ -223,9 +164,11 @@ def case_08_fixture(request):
             "required": "true",
         }
     }
+    testflow.setup("Create datacenter %s", dc)
     assert hl_networks.create_basic_setup(
         datacenter=dc, version=conf.COMP_VERSION, cpu=conf.CPU_NAME
     )
+    testflow.setup("Create network %s on datacenter %s", net, dc)
     network_helper.prepare_networks_on_setup(
         networks_dict=net_dict, dc=dc,
     )
@@ -245,12 +188,18 @@ def update_vnic_profile(request):
         """
         Remove queue from vNIC profile
         """
+        testflow.teardown(
+            "Remove custom properties from vNIC profile %s", mgmt_bridge
+        )
         assert ll_networks.update_vnic_profile(
             name=mgmt_bridge, network=mgmt_bridge,
             data_center=dc, custom_properties="clear"
         )
     request.addfinalizer(fin)
 
+    testflow.setup(
+        "Set queues custom properties on vNIC profile %s", mgmt_bridge
+    )
     assert ll_networks.update_vnic_profile(
         name=mgmt_bridge, network=mgmt_bridge,
         data_center=dc, custom_properties=prop_queue
@@ -265,26 +214,13 @@ def add_labels(request):
     NetworkFixtures()
     labels = request.node.cls.labels
 
-    def fin():
-        """
-        Remove labels
-        """
-        remove_dict = {
-            "remove": {
-                "labels": labels
-            }
-        }
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **remove_dict
-        )
-    request.addfinalizer(fin)
-
     for lb, nets in labels.iteritems():
         label_dict = {
             lb: {
                 "networks": nets
             }
         }
+        testflow.setup("Add label %s to %s", lb, nets)
         assert ll_networks.add_label(**label_dict)
 
 
@@ -294,16 +230,21 @@ def deactivate_hosts(request):
     Deactivate hosts
     """
     sanity = NetworkFixtures()
+    host_name = sanity.host_0_name
 
     def fin():
         """
         Activate hosts
         """
+        results = list()
         for host in conf.HOSTS:
-            hl_hosts.activate_host_if_not_up(host=host)
+            testflow.teardown("Activate host %s", host)
+            results.append(hl_hosts.activate_host_if_not_up(host=host))
+        assert all(results)
     request.addfinalizer(fin)
 
-    assert required_network_helper.deactivate_hosts(host=sanity.host_0_name)
+    testflow.setup("Deactivate all hosts beside host %s", host_name)
+    assert required_network_helper.deactivate_hosts(host=host_name)
 
 
 @pytest.fixture(scope="class")
@@ -312,12 +253,31 @@ def set_host_nic_down(request):
     Set host NIC down
     """
     sanity = NetworkFixtures()
+    interface = sanity.host_0_nics[1]
 
     def fin():
         """
         Set host NIC up
         """
-        assert sanity.vds_0_host.network.if_up(nic=sanity.host_0_nics[1])
+        testflow.teardown("Set interface %s up", interface)
+        assert sanity.vds_0_host.network.if_up(nic=interface)
     request.addfinalizer(fin)
 
-    assert sanity.vds_0_host.network.if_down(nic=sanity.host_0_nics[1])
+    testflow.setup("Set interface %s down", interface)
+    assert sanity.vds_0_host.network.if_down(nic=interface)
+
+
+@pytest.fixture(scope="class")
+def remove_network(request):
+    """
+    Remove network from setup
+    """
+    NetworkFixtures()
+    net = request.node.cls.net
+
+    def fin():
+        """
+        Remove network from setup
+        """
+        assert ll_networks.remove_network(positive=True, network=net)
+    request.addfinalizer(fin)

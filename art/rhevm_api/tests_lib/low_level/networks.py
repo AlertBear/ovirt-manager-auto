@@ -747,7 +747,7 @@ def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     return res
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(error=False)
 def is_host_network_is_vm(vds_resource, net_name):
     """
     Check if network that resides on Host is VM or non-VM
@@ -760,8 +760,7 @@ def is_host_network_is_vm(vds_resource, net_name):
         bool: True if net_name is VM, False otherwise
     """
     vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
-    res = vds_resource.fs.exists(path=vm_file)
-    return res
+    return vds_resource.fs.exists(path=vm_file)
 
 
 @ll.general.generate_logs()
@@ -1267,7 +1266,7 @@ def check_network_usage(cluster_name, network, *attrs):
     return True
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(error=False)
 def get_host_nic_labels(nic):
     """
     Get host NIC labels
@@ -1283,7 +1282,7 @@ def get_host_nic_labels(nic):
     )
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(error=False)
 def get_host_nic_label_objs_by_id(host_nics, labels_id):
     """
     Get host NIC label objects by label ID
