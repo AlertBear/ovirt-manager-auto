@@ -75,7 +75,7 @@ class TestCRUD2(u_libs.SlaTest):
         ) for i in xrange(1)
     ]
 
-    @polarion("RHEVM3-15870")
+    @polarion("RHEVM-15870")
     def test_check_affinity_labels_crud(self):
         """
         1) Assign affinity label to VM via affinity labels collection
@@ -131,7 +131,7 @@ class TestCRUD3(u_libs.SlaTest):
         ) for i in xrange(1)
     ]
 
-    @polarion("RHEVM3-16262")
+    @polarion("RHEVM-16262")
     def test_check_affinity_labels_crud(self):
         """
         1) Assign affinity label to host via affinity labels collection

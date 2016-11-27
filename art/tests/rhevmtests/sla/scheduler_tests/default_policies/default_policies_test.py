@@ -261,7 +261,7 @@ class TestCheckClusterPoliciesParameters(u_libs.SlaTest):
     """
     __test__ = True
 
-    @polarion("RHEVM3-14841")
+    @polarion("RHEVM-14841")
     def test_check_cluster_policies_parameters(self):
         """
         Check different values for cluster policy parameters:

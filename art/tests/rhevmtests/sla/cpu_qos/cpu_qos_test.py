@@ -134,7 +134,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 cpu_profile_id=cpu_profile_id
             )
 
-    @polarion("RHEVM-14710")
+    @polarion("RHEVM3-14710")
     def test_e_remove_cpu_profile_and_qos(self):
         """
         1. Detach CPU profiles from VM's
@@ -213,6 +213,7 @@ class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
+    @polarion("RHEVM3-14688")
     def test_vm_cpu_limitation(self):
         """
         1. Load VM CPU to 100%
