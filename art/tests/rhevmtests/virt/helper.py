@@ -561,9 +561,8 @@ def create_file_in_vm(vm, vm_resource, path=config_virt.TEMP_PATH):
         VMException: If failed to create file
     """
     logger.info("attempting to create an empty file in vm: %s", vm)
-    if not vm_resource.fs.touch(
-        file_name=config_virt.FILE_NAME, path=path
-    ):
+    full_path = os.path.join(path, config_virt.FILE_NAME)
+    if not vm_resource.fs.touch(full_path):
         raise exceptions.VMException(
             "Failed to create an empty file on vm: '%s'" % vm
         )

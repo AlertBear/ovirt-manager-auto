@@ -33,4 +33,5 @@ VM_POOLS_PARAMS = {
     'prestarted_vms': 0,
     'type_': 'automatic',
 }
-MAX_VMS_IN_POOL_TEST = 5
+MAX_VMS_IN_POOL_TEST = 20
+MAC_POOL_SIZE = 60

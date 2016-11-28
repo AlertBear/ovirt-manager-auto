@@ -11,11 +11,11 @@ import copy
 import logging
 import pytest
 from fixtures import (
-    vm_pool_teardown, create_vm_pool, add_user
+    vm_pool_teardown, create_vm_pool, add_user, set_cluster_mac_pool
 )
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
-    vmpools as ll_vmpools
+    vmpools as ll_vmpools,
 )
 from art.rhevm_api.tests_lib.high_level import (
     vmpools as hl_vmpools,
@@ -191,3 +191,38 @@ class TestUserStartedVmIsStateless(VirtTest):
             "exist as vm is stateless"
         )
         helper.check_if_file_exist(False, vm, vm_resource)
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    set_cluster_mac_pool.__name__, create_vm_pool.__name__
+)
+class TestNoMacAddressDuplicationBetweenPools(VirtTest):
+    """
+    Test case is basd on bug#1395462 and verifies that different vm pools
+    don't cause duplication of mac address between vms
+    """
+
+    __test__ = True
+
+    pool_name = ["Virt_pool_%s_same_mac" % i for i in range(1, 4)]
+    pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
+    pool_params['size'] = 20
+
+    @polarion("RHEVM-18288")
+    def test_no_mac_address_duplication_between_pools(self):
+        """
+        Test case is basd on bug#1395462 and verifies that different vm pools
+        don't cause duplication of mac address between vms
+        """
+        testflow.step(
+            "Getting all mac addresses from vms created within vm pools: %s",
+            self.pool_name
+        )
+        all_mac_from_pool_vms = [
+            ll_vms.get_vm_nic_mac_address(vm) for pool in self.pool_name
+            for vm in ll_vmpools.get_vms_in_pool_by_name(pool)
+            ]
+        testflow.step("Verifying that no mac address appears more than once")
+        for mac in all_mac_from_pool_vms:
+            assert not all_mac_from_pool_vms.count(mac) > 1
