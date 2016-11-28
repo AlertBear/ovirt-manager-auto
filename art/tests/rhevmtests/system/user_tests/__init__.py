@@ -23,6 +23,7 @@ def get_action_groups(role_name):
     )
     return [p.get_name() for p in permits]
 
+
 """
     Code below will create for each module(test_user, test_admin)
     class with specific role and set mandatory attributes.

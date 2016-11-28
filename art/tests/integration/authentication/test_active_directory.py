@@ -5,7 +5,6 @@ Authentication of users expiredPw/expiredAcc/disabled is tested.
 Testing authentication user from groups and users from 2 AD.
 '''
 
-__test__ = True
 
 import time
 import logging
@@ -18,6 +17,8 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion
 from test_base import connectionTest
 from art.core_api.apis_utils import TimeoutingSampler
+
+__test__ = True
 
 logger = logging.getLogger(__name__)
 MB = 1024 * 1024

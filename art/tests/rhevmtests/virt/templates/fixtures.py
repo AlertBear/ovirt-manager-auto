@@ -6,7 +6,7 @@ Fixtures for template test module
 """
 import pytest
 import config as conf
-from art.rhevm_api.tests_lib.low_level import(
+from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
     mla as ll_mla,

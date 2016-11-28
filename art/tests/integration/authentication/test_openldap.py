@@ -5,7 +5,6 @@ Authentication of expired users, users from group and correct users.
 User with many groups and if updating of user is propagated.
 '''
 
-__test__ = True
 
 from authentication import config
 import logging
@@ -17,6 +16,8 @@ from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion, bz
 from test_base import connectionTest
+
+__test__ = True
 
 logger = logging.getLogger(__name__)
 TEST_FOLDER = '/root/do_not_remove'

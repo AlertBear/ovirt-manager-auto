@@ -5,7 +5,7 @@
 Config file for sanity test
 """
 
-from rhevmtests.networking.config import *  # NOQA
+from rhevmtests.networking.config import *  # flake8: noqa
 import rhevmtests.helpers as global_helper
 
 # Host network QoS

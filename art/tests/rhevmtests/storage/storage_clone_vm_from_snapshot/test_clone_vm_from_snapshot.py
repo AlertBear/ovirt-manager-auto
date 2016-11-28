@@ -18,7 +18,7 @@ from rhevmtests.storage.fixtures import (
     initialize_storage_domains, remove_vms, delete_disks
 )
 from rhevmtests.storage.storage_clone_vm_from_snapshot.fixtures import (
-    initialize_vm, VM_NAMES, remove_additional_nic, remove_additional_snapshot,
+    initialize_vm, remove_additional_nic, remove_additional_snapshot,
     create_server_vm_with_snapshot, remove_cloned_vm
 )
 

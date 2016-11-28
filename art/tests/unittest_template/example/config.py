@@ -2,11 +2,11 @@
 Config module for example
 """
 
-# This must be here so nose doesn't consider this as a test
-__test__ = False
-
 # Our chance to access config object of config file
 from art.test_handler.settings import ART_CONFIG
+
+# This must be here so nose doesn't consider this as a test
+__test__ = False
 
 # Name of the test
 TESTNAME = "example"

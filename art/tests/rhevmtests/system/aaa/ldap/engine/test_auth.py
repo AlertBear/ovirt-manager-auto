@@ -1,7 +1,6 @@
 """
 Test possible configuration option of properties file.
 """
-__test__ = True
 
 import os
 import logging
@@ -10,6 +9,8 @@ from rhevmtests.system.aaa.ldap import config, common
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
+
+__test__ = True
 
 logger = logging.getLogger(__name__)
 CONF_NAME = '99-krb_ipa.conf'

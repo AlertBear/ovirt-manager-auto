@@ -7,7 +7,6 @@ polarion:
   https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
   System/Extension tester tool
 """
-__test__ = True
 
 import logging
 
@@ -16,6 +15,8 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from rhevmtests.system.aaa.ldap import config
+
+__test__ = True
 
 logger = logging.getLogger('test_info')
 

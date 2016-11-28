@@ -1413,7 +1413,7 @@ def _prepare_vnic_profile_object(**kwargs):
         vnic_profile_obj.set_qos(qos)
 
     if custom_properties:
-        from art.rhevm_api.tests_lib.low_level.vms import(
+        from art.rhevm_api.tests_lib.low_level.vms import (
             createCustomPropertiesFromArg
         )
         vnic_profile_obj.set_custom_properties(

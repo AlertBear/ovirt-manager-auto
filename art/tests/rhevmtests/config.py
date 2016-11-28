@@ -1,7 +1,6 @@
 """
 Consolidated config module
 """
-__test__ = False
 
 import logging
 import copy
@@ -12,6 +11,8 @@ from art.rhevm_api import resources
 from urlparse import urlparse
 
 logger = logging.getLogger(__name__)
+
+__test__ = False
 
 
 def get_list(params, key):
@@ -26,6 +27,7 @@ def get_list(params, key):
     :rtype: list
     """
     return params.as_list(key) if key in params else []
+
 
 # RHEVM related constants
 ENUMS = opts['elements_conf']['RHEVM Enums']

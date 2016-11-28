@@ -2,11 +2,12 @@
 Config module for libvirt test suite
 Author: Alex Jia <ajia@redhat.com>, Bing Li <bili@redhat.com>
 """
-__test__ = True
 
 from art.test_handler.settings import opts
 from art.rhevm_api.utils import test_utils
 from . import ART_CONFIG
+
+__test__ = True
 
 GB = 1024 ** 3
 

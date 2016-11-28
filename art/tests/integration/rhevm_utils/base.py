@@ -1,9 +1,6 @@
-
 """
 File contains base classes for this module.
 """
-
-__test__ = False
 
 import logging
 from art.unittest_lib import CoreSystemTest as TestCase
@@ -13,15 +10,17 @@ from art.rhevm_api.tests_lib.high_level.datacenters import (
 )
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 from art.rhevm_api.utils.test_utils import get_api
-VM_API = get_api('vm', 'vms')
-
 
 from rhevm_utils import unittest_conf
-config = unittest_conf.config
 
 from utilities.rhevm_tools.base import Setup
 from art.test_handler.settings import opts
+# from art.test_handler.settings import ART_CONFIG
 
+__test__ = False
+
+config = unittest_conf.config
+VM_API = get_api('vm', 'vms')
 logger = logging.getLogger(__name__)
 
 CONFIG_ELEMENTS = 'elements_conf'
@@ -29,8 +28,6 @@ CONFIG_SECTION = 'RHEVM Utilities'
 BASE_SNAPSHOT = 'working_snapshot'
 
 VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
-
-# from art.test_handler.settings import ART_CONFIG
 
 
 def setup_module():
@@ -59,6 +56,7 @@ def teardown_module():
     dc_name = params.get('dc_name', 'datacenter_%s' % params.get('basename'))
     clean_datacenter(True, dc_name, vdc=params.get('host'),
                      vdc_password=params.get('vdc_password'))
+
 
 _multiprocess_can_split_ = True
 

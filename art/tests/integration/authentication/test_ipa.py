@@ -6,8 +6,6 @@ Login formats, user with many groups and if updating of user is propagated.
 '''
 
 
-__test__ = True
-
 from authentication import config
 import logging
 
@@ -20,6 +18,8 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import getDS
 from art.test_handler.tools import polarion, bz
 from test_base import connectionTest
+
+__test__ = True
 
 logger = logging.getLogger(__name__)
 KINIT = 'kinit nonascii <<< %s'

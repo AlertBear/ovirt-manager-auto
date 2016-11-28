@@ -1,10 +1,9 @@
-__test__ = False
-
 from art.rhevm_api import resources
 from art.rhevm_api.utils import test_utils
 from art.test_handler.settings import opts
 from art.test_handler.settings import ART_CONFIG
 
+__test__ = False
 
 TEST_NAME = "UpgradeSanity"
 PARAMETERS = ART_CONFIG['PARAMETERS']

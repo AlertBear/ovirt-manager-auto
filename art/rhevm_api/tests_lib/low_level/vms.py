@@ -1964,7 +1964,7 @@ def addSnapshot(
     try:
         snapshot = _getVmSnapshot(vm, description)
     except EntityNotFound:
-        return False == positive
+        return positive is False
 
     snapshotStatus = True
     if status and positive and wait:

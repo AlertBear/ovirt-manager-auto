@@ -2,13 +2,14 @@
 Config module for advanced nfs options tests
 """
 
-__test__ = False
 
 import copy
 
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api import resources
+
+__test__ = False
 
 # Name of the test
 TESTNAME = "golden_env"

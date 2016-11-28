@@ -4,10 +4,11 @@ Nothing is created using default DC and default cluster.
 Authentication of expired users, users from group and correct users.
 '''
 
-__test__ = True
 
 from authentication import config
 import test_base as base
+
+__test__ = True
 
 
 class RHDSNormalUserAndGroupUser(base.BaseNormalUserAndGroupUser):

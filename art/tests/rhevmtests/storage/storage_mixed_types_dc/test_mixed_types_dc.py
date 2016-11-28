@@ -277,8 +277,8 @@ class TestCase4562(IscsiNfsSD):
         """
         Creates a new snapshots and clones vm from it for both vms
         """
-        get_sd_id = lambda w: w.get_storage_domains(
-        ).get_storage_domain()[0].get_id()
+        def get_sd_id(w):
+            return w.get_storage_domains().get_storage_domain()[0].get_id()
 
         def add_snapshot_and_clone(vm_name):
             snapshot_name = "%s_snaphot" % vm_name

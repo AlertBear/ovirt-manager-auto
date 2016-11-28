@@ -5,7 +5,7 @@
 Config file for Int fault events
 """
 
-from rhevmtests.networking.config import *  # NOQA
+from rhevmtests.networking.config import *  # flake8: noqa
 import rhevmtests.helpers as global_helper
 
 HOST_NICS = None  # Filled in setup_package

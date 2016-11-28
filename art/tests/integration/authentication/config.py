@@ -1,9 +1,10 @@
 """ Test configuration - login data to the servers and test setup options.  """
 
-__test__ = False
 
 from art.rhevm_api import resources
 from art.test_handler.settings import ART_CONFIG
+
+__test__ = False
 
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 PARAMETERS = ART_CONFIG['PARAMETERS']
@@ -15,6 +16,7 @@ OpenLDAP = ART_CONFIG['OpenLDAP']
 
 def getUserWithDomain(user_name, user_domain):
     return '%s@%s' % (user_name, user_domain)
+
 
 USER_PASSWORD = '123456'
 

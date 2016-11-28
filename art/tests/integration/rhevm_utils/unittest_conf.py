@@ -1,4 +1,3 @@
-__test__ = False
 
 import logging
 
@@ -6,6 +5,8 @@ from configobj import ConfigObj
 
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api import resources
+
+__test__ = False
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ def get_list(params, key):
     :rtype: list
     """
     return params.as_list(key) if key in params else []
+
 
 global config
 config = ConfigObj(raise_errors=True)

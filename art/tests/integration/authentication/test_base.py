@@ -1,6 +1,5 @@
 # This module can be used to inherit basic sanity cases for every new domain
 # Check test_rhds.py how to use it.
-__test__ = False
 
 from authentication import config
 import logging
@@ -10,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.core_api.apis_exceptions import APIException
 from art.test_handler.tools import bz
 
+__test__ = False
 
 logger = logging.getLogger(__name__)
 USERROLE = 'UserRole'

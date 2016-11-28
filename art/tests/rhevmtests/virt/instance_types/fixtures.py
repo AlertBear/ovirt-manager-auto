@@ -5,7 +5,7 @@ Fixtures for instance types test module
 """
 import pytest
 import config
-from art.rhevm_api.tests_lib.low_level import(
+from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
     instance_types as ll_instance_types

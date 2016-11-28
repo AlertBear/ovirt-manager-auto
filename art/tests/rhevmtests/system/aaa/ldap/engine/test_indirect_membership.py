@@ -1,7 +1,6 @@
 """
 Test indirect membership. Recursive and non-recursive. (AD and IPA)
 """
-__test__ = True
 
 import logging
 
@@ -10,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
+__test__ = True
 
 logger = logging.getLogger(__name__)
 
