@@ -1370,6 +1370,7 @@ def _prepare_vnic_profile_object(**kwargs):
         pass_through (bool): Enable or disable pass through mode
         network_filter (str): Network filter name to use. ('None') to set
             vNIC profile with no network_filter
+        migratable (bool): When profile is pass_through allow migration on it
 
     Returns:
         VnicProfile: vNIC profile object
@@ -1385,6 +1386,7 @@ def _prepare_vnic_profile_object(**kwargs):
     data_center = kwargs.get("data_center")
     cluster = kwargs.get("cluster")
     network_filter = kwargs.get("network_filter")
+    migratable = kwargs.get("migratable")
 
     vnic_profile_obj = apis_utils.data_st.VnicProfile()
 
@@ -1397,17 +1399,12 @@ def _prepare_vnic_profile_object(**kwargs):
     if description:
         vnic_profile_obj.set_description(description)
 
-    if network:
+    if network or new_network:
         net_obj = find_network(
-            network=network, data_center=data_center, cluster=cluster
+            network=network or new_network, data_center=data_center,
+            cluster=cluster
         )
         vnic_profile_obj.set_network(net_obj)
-
-    if new_network:
-        new_net_obj = find_network(
-            network=new_network, data_center=data_center, cluster=cluster
-        )
-        vnic_profile_obj.set_network(new_net_obj)
 
     if qos:
         vnic_profile_obj.set_qos(qos)
@@ -1433,6 +1430,9 @@ def _prepare_vnic_profile_object(**kwargs):
             network_filters = get_supported_network_filters()
             network_filter_object = network_filters.get(network_filter)
         vnic_profile_obj.set_network_filter(network_filter_object)
+
+    if migratable is not None:
+        vnic_profile_obj.set_migratable(migratable)
 
     return vnic_profile_obj
 
