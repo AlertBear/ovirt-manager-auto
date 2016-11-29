@@ -1,82 +1,75 @@
 """
-Regression host test
-Checks host deployment, updating and authentication methods
+Regression host test module.
+Checks host deployment, updating and authentication methods.
 """
+import logging
+import pytest
 
-from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
+from art.rhevm_api.utils import test_utils
 from art.core_api.apis_exceptions import EntityNotFound
+from art.test_handler.exceptions import HostException
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
-    attr,
+    attr, testflow,
     CoreSystemTest as TestCase,
 )
-from rhevmtests.system.regression.reg_hosts import config
-import logging
-from art.test_handler.exceptions import HostException
 
+from rhevmtests.system.config import (
+    PM1_TYPE, PM2_TYPE,
+    HOST_FALSE_IP,
+    CLUSTER_NAME as clusters_names,
+    DC_NAME as dcs_names,
+    HOSTS as hosts,
+    HOSTS_IP as hosts_ips,
+    HOSTS_PW as hosts_password,
+    ISO_IMAGE as iso_image,
+    VDC_HOST as vdc_host,
+    VDC_ROOT_PASSWORD as vdc_root_password,
+)
 
-PINNED = config.ENUMS['vm_affinity_pinned']
-HOST_CONNECTING = config.ENUMS['host_state_connecting']
-VM_DOWN = config.ENUMS['vm_state_down']
-HOST = None  # Filled in setup_module
-HOST_IP = None  # Filled in setup_module
-HOST2 = None  # Filled in setup_module
-HOST2_IP = None  # Filled in setup_module
-HOST_PW = None  # Filled in setup_module
-PM1_TYPE = config.PM1_TYPE
-PM2_TYPE = config.PM2_TYPE
-PM1_ADDRESS = config.PM1_ADDRESS
-PM2_ADDRESS = config.PM2_ADDRESS
-PM1_USER = config.PM1_USER
-PM2_USER = config.PM2_USER
-PM1_PASS = config.PM1_PASS
-PM2_PASS = config.PM2_PASS
-HOST_FALSE_IP = config.HOST_FALSE_IP
+import config
 
 
 logger = logging.getLogger(__name__)
 
-########################################################################
-#                             Test Cases                               #
-########################################################################
 
-
-def setup_module():
-    global HOST, HOST_IP, HOST2, HOST2_IP, HOST_PW
-    HOST = config.HOSTS[0]
-    HOST_IP = config.HOSTS_IP[0]
-    HOST2 = config.HOSTS[1]
-    HOST2_IP = config.HOSTS_IP[1]
-    HOST_PW = config.HOSTS_PW
-
-
-def _add_host_if_missing():
+def add_host_if_missing():
     try:
-        ll_hosts.get_host_object(HOST)
+        ll_hosts.get_host_object(hosts[0])
     except EntityNotFound:
-        logger.info("adding host %s", HOST)
+        logger.info("Adding host %s", hosts[0])
         if not ll_hosts.add_host(
-            name=HOST, address=HOST_IP, root_password=HOST_PW,
-            port=54321, cluster=config.CLUSTER_NAME[0], wait=False,
+            name=hosts[0],
+            address=hosts_ips[0],
+            root_password=hosts_password,
+            port=54321,
+            cluster=clusters_names[0],
+            wait=False,
         ):
-            raise HostException("Add host %s failed" % HOST)
+            raise HostException("Add host {0} failed.".format(hosts[0]))
 
 
 class TestPowerManagement(TestCase):
     """
     Base class for test cases including power management
     """
-
-    __test__ = False
     pm_type = None
     pm_address = None
     pm_user = None
     pm_password = None
 
+    __test__ = False
+
     @classmethod
-    def setup_class(cls):
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Removing power management from host.")
+            hl_hosts.remove_power_management(host_name=hosts[0])
+        request.addfinalizer(finalize)
+
         agent = {
             "agent_type": cls.pm_type,
             "agent_address": cls.pm_address,
@@ -85,14 +78,13 @@ class TestPowerManagement(TestCase):
             "concurrent": False,
             "order": 1
         }
+
+        testflow.setup("Adding power management to host.")
         if not hl_hosts.add_power_management(
-            host_name=HOST, pm_agents=[agent]
+            host_name=hosts[0],
+            pm_agents=[agent]
         ):
             raise HostException()
-
-    @classmethod
-    def teardown_class(cls):
-        hl_hosts.remove_power_management(host_name=HOST)
 
 
 class TestActiveHost(TestCase):
@@ -103,14 +95,16 @@ class TestActiveHost(TestCase):
     __test__ = False
 
     @classmethod
-    def setup_class(cls):
-        if not ll_hosts.isHostUp(True, host=HOST):
-            if not ll_hosts.activate_host(True, host=HOST):
-                raise HostException("cannot activate host: %s" % HOST)
-
-    @classmethod
-    def teardown_class(cls):
-        cls.setup_class()
+    @pytest.fixture(scope="class")
+    def setup_class(cls, request):
+        testflow.setup("Checking if host is not active.")
+        if not ll_hosts.isHostUp(True, host=hosts[0]):
+            testflow.setup("Activating host.")
+            if not ll_hosts.activate_host(True, host=hosts[0]):
+                raise HostException(
+                    "Cannot activate host: {0}.",
+                    hosts[0]
+                )
 
 
 class TestHostInMaintenance(TestCase):
@@ -121,23 +115,37 @@ class TestHostInMaintenance(TestCase):
     __test__ = False
 
     @classmethod
-    def setup_class(cls):
-        test_utils.wait_for_tasks(
-            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
-        )
-        if ll_hosts.isHostUp(True, host=HOST):
-            logger.info("setting host: %s to maintenance", HOST)
-            if not ll_hosts.deactivate_host(True, host=HOST):
-                raise HostException(
-                    "Could not set host: %s to maintenance" % HOST
-                )
+    @pytest.fixture(scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Checking if host if active.")
+            if not ll_hosts.isHostUp(True, host=hosts[0]):
+                testflow.teardown("Activating host: %s.", hosts[0])
+                if not ll_hosts.activate_host(True, host=hosts[0]):
+                    raise HostException(
+                        "Cannot activate host: {0}.".format(hosts[0])
+                    )
+        request.addfinalizer(finalize)
 
-    @classmethod
-    def teardown_class(cls):
-        if not ll_hosts.isHostUp(True, host=HOST):
-            logger.info("Activating host: %s", HOST)
-            if not ll_hosts.activate_host(True, host=HOST):
-                raise HostException("cannot activate host: %s" % HOST)
+        testflow.setup("Waiting for tasks on host.")
+        test_utils.wait_for_tasks(
+            vdc_host,
+            vdc_root_password,
+            dcs_names[0]
+        )
+
+        testflow.setup("Checking if host is active.")
+        if ll_hosts.isHostUp(True, host=hosts[0]):
+            testflow.setup(
+                "Setting host: %s to maintenance.",
+                hosts[0]
+            )
+            if not ll_hosts.deactivate_host(True, host=hosts[0]):
+                raise HostException(
+                    "Could not set host: {0} to maintenance.".format(
+                        hosts[0]
+                    )
+                )
 
 
 @attr(tier=1)
@@ -149,8 +157,8 @@ class TestActivateActiveHost(TestActiveHost):
 
     @polarion("RHEVM3-8433")
     def test_activate_active_host(self):
-        logger.info("Trying to activate host %s", HOST)
-        assert not ll_hosts.activate_host(True, host=HOST)
+        testflow.step("Activating host %s.", hosts[0])
+        assert ll_hosts.activate_host(False, host=hosts[0])
 
 
 @attr(tier=1)
@@ -158,23 +166,36 @@ class TestUpdateHostName(TestCase):
     """
     Positive  - Update host's name
     """
+    NEW_NAME = "test_new_name"
+
     __test__ = True
 
-    new_name = 'test_new_name'
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            """
+            Restore host's name.
+            """
+            testflow.teardown("Restoring host %s's name.", hosts[0])
+            if not ll_hosts.updateHost(
+                True,
+                host=cls.NEW_NAME,
+                name=hosts[0]
+            ):
+                raise HostException(
+                    "Cannot change {0} host name.".format(hosts[0])
+                )
+        request.addfinalizer(finalize)
 
     @polarion("RHEVM3-8418")
     def test_update_host_name(self):
-        logger.info("Updating host %s's name", HOST)
-        assert ll_hosts.updateHost(True, host=HOST, name=self.new_name)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Update host's name back.
-        """
-        logger.info("Updating host %s's name back", HOST)
-        if not ll_hosts.updateHost(True, host=cls.new_name, name=HOST):
-            raise HostException("Cannot change host %s's name" % HOST)
+        testflow.step("Updating host %s's name.", hosts[0])
+        assert ll_hosts.updateHost(
+            True,
+            host=hosts[0],
+            name=self.NEW_NAME
+        )
 
 
 @attr(tier=1, extra_reqs={'pm': PM1_TYPE})
@@ -189,44 +210,57 @@ class TestAddRemovePowerManagement(TestCase):
     def test_add_power_management(self):
         agent = {
             "agent_type": PM1_TYPE,
-            "agent_address": PM1_ADDRESS,
-            "agent_username": PM1_USER,
-            "agent_password": PM1_PASS,
+            "agent_address": config.PM1_ADDRESS,
+            "agent_username": config.PM1_USER,
+            "agent_password": config.PM1_PASS,
             "concurrent": False,
             "order": 1
         }
+
+        testflow.step("Adding power management to host %s.", hosts[0])
         if not hl_hosts.add_power_management(
-            host_name=HOST, pm_agents=[agent]
+            host_name=hosts[0],
+            pm_agents=[agent]
         ):
             raise HostException()
 
     @polarion("RHEVM3-8843")
     def test_remove_power_management(self):
-        hl_hosts.remove_power_management(host_name=HOST)
+        testflow.step(
+            "Removing power management from host %s.",
+            hosts[0]
+        )
+        hl_hosts.remove_power_management(host_name=hosts[0])
 
 
-@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
+@attr(tier=1, extra_reqs={"pm": PM1_TYPE})
 class TestUpdatePowerManagementType(TestPowerManagement):
     """
     Positive - update power management type on host
     """
-    __test__ = True
     pm_type = PM1_TYPE
-    pm_address = PM1_ADDRESS
-    pm_user = PM1_USER
-    pm_password = PM1_PASS
+    pm_address = config.PM1_ADDRESS
+    pm_user = config.PM1_USER
+    pm_password = config.PM1_PASS
+
+    __test__ = True
 
     @polarion("RHEVM3-8841")
     def test_update_power_management_type(self):
-        logger.info(
-            "Update power management type to %s  on host: %s", PM2_TYPE, HOST)
+        testflow.step(
+            "Update power management type to %s  on host: %s.",
+            PM2_TYPE,
+            hosts[0]
+        )
         if not ll_hosts.update_fence_agent(
-            host_name=HOST,
+            host_name=hosts[0],
             agent_address=self.pm_address,
             agent_type=PM2_TYPE
         ):
             raise HostException(
-                "Cannot change power management type in host: %s" % HOST
+                "Cannot change power management type in host: {0}.".format(
+                    hosts[0]
+                )
             )
 
 
@@ -235,27 +269,30 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
     """
     Negative - update power management type on host
     """
-    __test__ = True
+    INVALID_TYPE = 'invalid_type'
+
     pm_type = PM1_TYPE
-    pm_address = PM1_ADDRESS
-    pm_user = PM1_USER
-    pm_password = PM1_PASS
-    invalid_type = 'invalid_type'
+    pm_address = config.PM1_ADDRESS
+    pm_user = config.PM1_USER
+    pm_password = config.PM1_PASS
+
+    __test__ = True
 
     @polarion("RHEVM3-8842")
     def test_update_power_management_invalid_type(self):
-        logger.info(
-            "Update power management type to %s on host: %s",
-            self.invalid_type, HOST
+        testflow.step(
+            "Updating power management type to %s on host: %s.",
+            self.INVALID_TYPE,
+            hosts[0]
         )
         if not ll_hosts.update_fence_agent(
-            host_name=HOST,
+            host_name=hosts[0],
             agent_address=self.pm_address,
-            agent_type=self.invalid_type
+            agent_type=self.INVALID_TYPE
         ):
             raise HostException(
                 "Power management type changed successfully "
-                "although provided with an invalid type"
+                "although provided with an invalid type."
             )
 
 
@@ -264,38 +301,67 @@ class SetSPMToLow(TestCase):
     """
     Positive - Set SPM priority on host to low
     """
+    NORMAL_SPM_LEVEL = 5
+    LOW_SPM_LEVEL = 2
+
     __test__ = True
 
     @classmethod
-    def setup_class(cls):
-        logger.info(
-            "Check that SPM priority on host: %s is set to normal", HOST
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            """
+            Set SPM priority back to Normal
+            """
+            testflow.teardown(
+                "Set SPM priority on host: %s back to normal.",
+                hosts[0]
+            )
+            if not ll_hosts.updateHost(
+                True,
+                host=hosts[0],
+                spm_priority=cls.NORMAL_SPM_LEVEL
+            ):
+                raise HostException(
+                    "Cannot set SPM level on host: {0} to normal.".format(
+                        hosts[0]
+                    )
+                )
+        request.addfinalizer(finalize)
+
+        testflow.setup(
+            "Check that SPM priority on host: %s is set to normal.",
+            hosts[0]
         )
         if not ll_hosts.checkSPMPriority(
-                True, hostName=HOST, expectedPriority=5
+            True,
+            hostName=hosts[0],
+            expectedPriority=cls.NORMAL_SPM_LEVEL
         ):
-            if not ll_hosts.updateHost(True, host=HOST, spm_priority=5):
+            testflow.setup("Updating host.")
+            if not ll_hosts.updateHost(
+                True,
+                host=hosts[0],
+                spm_priority=cls.NORMAL_SPM_LEVEL
+            ):
                 raise HostException(
-                    "Cannot set SPM level on host:%s to normal" % HOST
+                    "Cannot set SPM level on host: {0} to normal.".format(
+                        hosts[0]
+                    )
                 )
 
     @polarion("RHEVM3-8432")
     def test_set_spm_to_low(self):
-        logger.info("Set SPM priority on host: %s to low", HOST)
-        if not ll_hosts.updateHost(True, host=HOST, spm_priority=2):
+        testflow.step("Set SPM priority on host: %s to low.", hosts[0])
+        if not ll_hosts.updateHost(
+            True,
+            host=hosts[0],
+            spm_priority=self.LOW_SPM_LEVEL
+        ):
             raise HostException(
-                "Cannot set SPM level on host: %s to low" % HOST
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Set SPM priority back to Normal
-        """
-        logger.info("Set SPM priority on host: %s back to normal", HOST)
-        if not ll_hosts.updateHost(True, host=HOST, spm_priority=5):
-            raise HostException(
-                "Cannot set SPM level on host: %s to normal" % HOST
+                "Cannot set SPM level on host: {0} to low.".format(
+                    hosts[0]
+                )
             )
 
 
@@ -306,20 +372,43 @@ class UpdateIPOfActiveHost(TestActiveHost):
     """
     __test__ = True
 
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(UpdateIPOfActiveHost, cls).setup_class(request)
+
+        def finalize():
+            testflow.teardown(
+                "Set host %s to correct address.",
+                hosts[0]
+            )
+            if not ll_hosts.updateHost(
+                True,
+                host=hosts[0],
+                address=hosts_ips[0]
+            ):
+                raise HostException(
+                    "Cannot change address for host {0}.".format(
+                        hosts[0]
+                    )
+                )
+        request.addfinalizer(finalize)
+
     @polarion("RHEVM3-8419")
     def test_update_ip_of_activeHost(self):
-        logger.info("changing ip address for the active host: %s", HOST)
-        if not ll_hosts.updateHost(False, host=HOST, address=HOST2_IP):
+        testflow.step(
+            "Changing ip address for the active host: %s.",
+            hosts[0]
+        )
+        if not ll_hosts.updateHost(
+            False,
+            host=hosts[0],
+            address=hosts_ips[1]
+        ):
             raise HostException(
-                "Host: %s update was successful although host is still active"
-                % HOST
+                "Host: {0} update was successful "
+                "although host is still active.".format(hosts[0])
             )
-
-    @classmethod
-    def teardown_class(cls):
-        logger.info("set host %s to correct address", HOST)
-        if not ll_hosts.updateHost(True, host=HOST, address=HOST_IP):
-            raise HostException("Cannot change address for host %s" % HOST)
 
 
 @attr(tier=1)
@@ -331,12 +420,20 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
 
     @polarion("RHEVM3-8420")
     def test_set_active_host_to_maintenance(self):
+        testflow.step("Waiting for tasks on host.")
         test_utils.wait_for_tasks(
-            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+            vdc_host,
+            vdc_root_password,
+            dcs_names[0]
         )
-        logger.info("setting host %s to maintenance", HOST)
-        if not ll_hosts.deactivate_host(True, host=HOST):
-            raise HostException("Could not set host: %s to maintenance" % HOST)
+
+        testflow.step("Setting host %s to maintenance.", hosts[0])
+        if not ll_hosts.deactivate_host(True, host=hosts[0]):
+            raise HostException(
+                "Could not set host: {0} to maintenance.".format(
+                    hosts[0]
+                )
+            )
 
 
 @attr(tier=1)
@@ -344,24 +441,24 @@ class ReinstallHost(TestHostInMaintenance):
     """
     Positive - Reinstall host using password authentication
     """
-    __test__ = True
+    # TODO: add reinstallation with ssh authentication and negative tests
+    # installation of rhevh - here or in rhevh test suite??
+    # OS_RHEL = 'rhel'
+    # OS_RHEVH = 'rhevh'
 
-    os_rhel = 'rhel'
-    os_rhevh = 'rhevh'
+    __test__ = True
 
     @polarion("RHEVM3-8421")
     def test_reinstall_host(self):
-        logger.info("reinstall host: %s", HOST)
+        testflow.step("Reinstall host: %s.", hosts[0])
         if not ll_hosts.install_host(
-            host=HOST,
-            root_password=HOST_PW,
-            image=config.ISO_IMAGE
+            host=hosts[0],
+            root_password=hosts_password,
+            image=iso_image,
         ):
-            raise HostException("re installation of host: %s failed" % HOST)
-
-
-# TODO: add reinstallation with ssh authentication and negative tests
-# installation of rhevh - here or in rhevh test suite??
+            raise HostException(
+                "Reinstallation of host: {0} failed.".format(hosts[0])
+            )
 
 
 @attr(tier=1)
@@ -373,9 +470,11 @@ class ManualFenceForHost(TestHostInMaintenance):
 
     @polarion("RHEVM3-8835")
     def test_manual_fence_for_host(self):
-        logger.info("Manual fence host: %s", HOST)
-        if not ll_hosts.fence_host(host=HOST, fence_type='manual'):
-            raise HostException("Manual fence for host: %s failed" % HOST)
+        testflow.step("Manual fence host: %s.", hosts[0])
+        if not ll_hosts.fence_host(host=hosts[0], fence_type='manual'):
+            raise HostException(
+                "Manual fence for host: {0} failed.".format(hosts[0])
+            )
 
 
 @attr(tier=1)
@@ -387,9 +486,9 @@ class ActivateInactiveHost(TestHostInMaintenance):
 
     @polarion("RHEVM3-8422")
     def test_activate_inactive_host(self):
-        logger.info("activate host: %s", HOST)
-        if not ll_hosts.activate_host(True, host=HOST):
-            raise HostException("host activation failed")
+        testflow.step("Activating host: %s.", hosts[0])
+        if not ll_hosts.activate_host(True, host=hosts[0]):
+            raise HostException("Host activation failed.")
 
 
 @attr(tier=1)
@@ -401,14 +500,16 @@ class ReinstallActiveHost(TestActiveHost):
 
     @polarion("RHEVM3-8423")
     def test_reinstall_active_host(self):
-        logger.info("attempting to re install host: %s ", HOST)
+        testflow.step("Reinstalling host: %s.", hosts[0])
         if ll_hosts.install_host(
-            host=HOST,
-            root_password=HOST_PW,
-            image=config.ISO_IMAGE
+            host=hosts[0],
+            root_password=hosts_password,
+            image=iso_image,
         ):
             raise HostException(
-                "re install host: %s worked although host is active" % HOST
+                "Reinstall host: {0} worked although host is active.".format(
+                    hosts[0]
+                )
             )
 
 
@@ -417,25 +518,33 @@ class CreateHostWithWrongIPAddress(TestCase):
     """
     Negative - add host with wrong ip
     """
+    NAME = "newhost"
+
     __test__ = True
 
-    name = 'newhost'
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Checking if host exists.")
+            if ll_hosts.is_host_exist(host_name=cls.NAME):
+                testflow.teardown("Removing host.")
+                if not ll_hosts.removeHost(True, host=cls.NAME):
+                    raise HostException(
+                        "Unable to remove host: {0}.".format(cls.NAME)
+                    )
+        request.addfinalizer(finalize)
 
     @polarion("RHEVM3-8424")
     def test_create_host_with_wrong_IP_address(self):
-        logger.info("attempting to add a host with an invalid ip address")
+        testflow.step("Adding a host with an invalid ip address.")
         if ll_hosts.add_host(
-            name=self.name,
+            name=self.NAME,
             address=HOST_FALSE_IP,
-            root_password=HOST_PW
+            root_password=hosts_password,
+            cluster=clusters_names[0],
         ):
-            raise HostException("added a host with an invalid ip address")
-
-    @classmethod
-    def teardown_class(cls):
-        if ll_hosts.is_host_exist(host_name=cls.name):
-            if not ll_hosts.removeHost(True, host=cls.name):
-                raise HostException("unable to remove host: %s" % cls.name)
+            raise HostException("Added a host with an invalid ip address.")
 
 
 @attr(tier=1)
@@ -443,23 +552,33 @@ class CreateHostWithEmptyRootPassword(TestCase):
     """
     Negative - add host without filling out the root password field
     """
+    NAME = "newhost"
+
     __test__ = True
 
-    name = 'newhost'
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Checking if host exists.")
+            if ll_hosts.is_host_exist(host_name=cls.NAME):
+                testflow.teardown("Removing host.")
+                if not ll_hosts.removeHost(True, host=cls.NAME):
+                    raise HostException(
+                        "Unable to remove host: {0}.".format(cls.NAME)
+                    )
+        request.addfinalizer(finalize)
 
     @polarion("RHEVM3-8425")
     def test_create_host_with_empty_root_password(self):
-        logger.info("attempting to add a host without root password")
+        testflow.step("Adding a host without root password.")
         if ll_hosts.add_host(
-            name=self.name, root_password='', address=HOST2_IP
+            name=self.NAME,
+            root_password="",
+            address=hosts[1],
+            cluster=clusters_names[0],
         ):
-            raise HostException("added a host without providing root password")
-
-    @classmethod
-    def teardown_class(cls):
-        if ll_hosts.is_host_exist(host_name=cls.name):
-            if not ll_hosts.removeHost(True, host=cls.name):
-                raise HostException("unable to remove host: %s" % cls.name)
+            raise HostException("Added host without root password.")
 
 
 @attr(tier=1)
@@ -469,17 +588,26 @@ class RemoveActiveHost(TestActiveHost):
     """
     __test__ = True
 
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        super(RemoveActiveHost, cls).setup_class(request)
+
+        def finalizer():
+            testflow.teardown("Adding host if it's missing.")
+            add_host_if_missing()
+
+        request.addfinalizer(finalizer)
+
     @polarion("RHEVM3-8427")
     def test_remove_active_host(self):
-        logger.info("attempting to remove host: %s while active", HOST)
-        if not ll_hosts.removeHost(False, host=HOST):
+        testflow.step("Removing host %s while active.", hosts[0])
+        if not ll_hosts.removeHost(False, host=hosts[0]):
             raise HostException(
-                "Host %s was removed although still active" % HOST
+                "Host {0} was removed although still active.".format(
+                    hosts[0]
+                )
             )
-
-    @classmethod
-    def teardown_class(cls):
-        _add_host_if_missing()
 
 
 @attr(tier=1)
@@ -487,23 +615,29 @@ class SearchForHost(TestCase):
     """
     Positive - send a query to search for host
     """
+    QUERY_KEY = "name"
+    KEY_NAME = "name"
+
     __test__ = True
 
-    query_key = 'name'
-    key_name = 'name'
-
     @classmethod
+    @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls):
-        _add_host_if_missing()
+        testflow.setup("Adding host if it's missing.")
+        add_host_if_missing()
 
     @polarion("RHEVM3-8428")
     def test_search_for_host(self):
-        logger.info("search for host: %s", HOST)
+        testflow.step("Searching for host: %s.", hosts[0])
         if not ll_hosts.searchForHost(
-                True, query_key=self.query_key, query_val=HOST,
-                key_name=self.key_name
+                True,
+                query_key=self.QUERY_KEY,
+                query_val=hosts[0],
+                key_name=self.KEY_NAME
         ):
-            raise HostException("couldn't find host %s" % HOST)
+            raise HostException(
+                "Couldn't find host {0}.".format(hosts[0])
+            )
 
 
 @attr(tier=1, extra_reqs={'pm': PM1_TYPE})
@@ -511,25 +645,31 @@ class AddSecondaryPowerManagement(TestPowerManagement):
     """
     Positive - add secondary power management
     """
-    __test__ = True
-
     pm_type = PM1_TYPE
-    pm_address = PM1_ADDRESS
-    pm_user = PM1_USER
-    pm_password = PM1_PASS
+    pm_address = config.PM1_ADDRESS
+    pm_user = config.PM1_USER
+    pm_password = config.PM1_PASS
+
+    __test__ = True
 
     @polarion("RHEVM3-8836")
     def test_add_secondary_power_management(self):
-        logger.info("Set secondary power management to host: %s", HOST)
         agent = {
             "agent_type": PM2_TYPE,
-            "agent_address": PM2_ADDRESS,
-            "agent_username": PM2_USER,
-            "agent_password": PM2_PASS,
+            "agent_address": config.PM2_ADDRESS,
+            "agent_username": config.PM2_USER,
+            "agent_password": config.PM2_PASS,
             "concurrent": False,
             "order": 2
         }
-        if not ll_hosts.add_fence_agent(host_name=HOST, **agent):
+
+        testflow.step(
+            "Set secondary power management to host: %s.",
+            hosts[0]
+        )
+        if not ll_hosts.add_fence_agent(host_name=hosts[0], **agent):
             raise HostException(
-                "adding secondary power management to host s% failed" % HOST
+                "Adding secondary power management to host {0} failed.".format(
+                    hosts[0]
+                )
             )

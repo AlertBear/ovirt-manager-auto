@@ -2,25 +2,17 @@
 -----------------
 test_mixed
 -----------------
-
-@author: Nelly Credi
 """
-
-import logging
-
 from art.test_handler.tools import bz
 from art.unittest_lib import (
-    attr,
+    attr, testflow,
     CoreSystemTest as TestCase,
 )
 from art.rhevm_api.tests_lib.low_level import (
     general as ll_general,
     mla as ll_mla,
 )
-from rhevmtests import config
-
-logger = logging.getLogger(__name__)
-ENUMS = config.ENUMS
+from rhevmtests.config import PRODUCT_NAME as product_name
 
 
 class TestCaseMixed(TestCase):
@@ -34,9 +26,10 @@ class TestCaseMixed(TestCase):
         """
         verify product name
         """
-        logger.info('Check product name')
-        status = ll_general.checkProductName(config.PRODUCT_NAME)
-        assert status, 'Failed to check product name'
+        testflow.step('Check product name')
+        assert ll_general.checkProductName(
+            product_name
+        ), 'Failed to check product name'
 
     @attr(tier=1)
     def test_check_existing_permissions(self):
@@ -44,9 +37,10 @@ class TestCaseMixed(TestCase):
         verify users functionality
         check existing permissions
         """
-        logger.info('Check existing permissions')
-        status = ll_mla.checkSystemPermits(positive=True)
-        assert status, 'Failed to check existing permissions'
+        testflow.step('Check existing permissions')
+        assert ll_mla.checkSystemPermits(
+            positive=True
+        ), 'Failed to check existing permissions'
 
     @attr(tier=2)
     @bz({'1303346': {}})
@@ -55,6 +49,7 @@ class TestCaseMixed(TestCase):
         verify xsd functionality
         check xsd schema validations
         """
-        logger.info('Check xsd schema validations')
-        status = ll_general.checkResponsesAreXsdValid()
-        assert status, 'Failed to check xsd schema validations'
+        testflow.step('Check xsd schema validations')
+        assert ll_general.checkResponsesAreXsdValid(), (
+            'Failed to check xsd schema validations'
+        )

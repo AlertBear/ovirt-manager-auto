@@ -2,18 +2,11 @@
 -----------------
 test_users_and_roles
 -----------------
-
-@author: Nelly Credi
 """
-
 import logging
+import pytest
 
-from art.unittest_lib import (
-    attr,
-    CoreSystemTest as TestCase,
-)
-from rhevmtests.system.regression.flow import config
-
+from art.core_api.apis_exceptions import EngineTypeError
 from art.rhevm_api.tests_lib.low_level import (
     users as ll_users,
     tags as ll_tags,
@@ -21,7 +14,14 @@ from art.rhevm_api.tests_lib.low_level import (
     mla as ll_mla,
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.core_api.apis_exceptions import EngineTypeError
+from art.unittest_lib import (
+    attr, testflow,
+    CoreSystemTest as TestCase,
+)
+
+from rhevmtests.config import ENGINE_ENTRY_POINT as engine_entry_point
+
+from rhevmtests.system.regression.flow import config
 
 logger = logging.getLogger(__name__)
 
@@ -33,47 +33,40 @@ class TestCaseUserAndRoles(TestCase):
     __test__ = True
 
     @classmethod
-    def setup_class(cls):
-        """
-        Create user for tests
-        """
-        logger.info('Add user')
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        def finalize():
+            testflow.teardown("Removing user.")
+            ll_users.removeUser(
+                positive=True,
+                user=config.USER_NAME
+            )
+        testflow.setup("Adding user for perform tests.")
         ll_users.addExternalUser(
             positive=True,
-            user_name=config.USERNAME_NAME,
+            user_name=config.USER_NAME,
             domain=config.USER_DOMAIN,
         )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Clear the environment
-        Remove users and tags if still exists
-        """
-        logger.info('Remove user')
-        ll_users.removeUser(positive=True, user=config.USERNAME_NAME)
 
     @attr(tier=1)
     def test_remove_inherited_permissions_for_user(self):
         """
         Verify impossibility of removing inherited permissions
         """
-        logger.info("Trying to remove inherited permissions")
+        testflow.step("Removing inherited permissions.")
         assert ll_mla.removeAllPermissionsFromUser(
             positive=False,
-            user=config.USERNAME_NAME
+            user=config.USER_NAME
         ), "Something gone wrong"
-        logger.info("Can't remove inheried permissions as expected")
 
     @attr(tier=2)
     def test_delete_everyone_group(self):
         """
         verify group functionality
-        try to delete 'Everyone' group & verify failure
+        try to delete "Everyone" group & verify failure
         """
-        logger.info('Delete \'Everyone\' group')
-        status = ll_users.deleteGroup(positive=False, group_name='Everyone')
-        assert status, "Delete 'Everyone' group failed as expected"
+        testflow.step("Deleting 'Everyone' group.")
+        assert ll_users.deleteGroup(positive=False, group_name="Everyone")
 
     @attr(tier=2)
     def test_create_user_with_wrong_domain(self):
@@ -81,13 +74,12 @@ class TestCaseUserAndRoles(TestCase):
         verify users functionality
         create a user with no roles & verify failure
         """
-        logger.info('Create user - wrong domain')
-        status = ll_users.addExternalUser(
+        testflow.step("Creating user with wrong domain.")
+        assert ll_users.addExternalUser(
             positive=False,
-            domain='bad_config',
-            user_name=config.USERNAME_NAME,
+            domain="bad_config",
+            user_name=config.USER_NAME,
         )
-        assert status, 'Create user - wrong domain'
 
     @attr(tier=2)
     def test_create_user_not_in_domain(self):
@@ -95,13 +87,12 @@ class TestCaseUserAndRoles(TestCase):
         verify users functionality
         create a user which does not exists in domain & verify failure
         """
-        logger.info('Create user which does not exists in domain')
-        status = ll_users.addExternalUser(
+        testflow.step("Creating user which does not exists in domain.")
+        assert ll_users.addExternalUser(
             positive=False,
             domain=config.USER_DOMAIN,
             user_name=config.USER_NON_EXISTING,
         )
-        assert status, 'Create user which does not exists in domain'
 
     @attr(tier=1)
     def test_add_tag_to_user(self):
@@ -109,17 +100,20 @@ class TestCaseUserAndRoles(TestCase):
         verify users functionality
         add a tag to user and remove it
         """
-        logger.info('Create tag')
-        tag_name = 'Tag_A'
-        tag_status = ll_tags.addTag(positive=True, name=tag_name)
-        assert tag_status, 'Create tag'
-        logger.info('Add tag to user')
-        status = ll_users.addTagToUser(
-            positive=True, user=config.USERNAME_NAME, tag=tag_name
+        TAG_NAME = "Tag_A"
+
+        testflow.step("Adding tag.")
+        assert ll_tags.addTag(positive=True, name=TAG_NAME)
+
+        testflow.step("Adding tag to user.")
+        assert ll_users.addTagToUser(
+            positive=True,
+            user=config.USER_NAME,
+            tag=TAG_NAME
         )
-        remove_status = ll_tags.removeTag(positive=True, tag=tag_name)
-        assert status, 'Add tag to user'
-        assert remove_status, 'Delete tag'
+
+        testflow.step("Removing tag from user.")
+        assert ll_tags.removeTag(positive=True, tag=TAG_NAME)
 
     @attr(tier=1)
     def test_check_system_summary(self):
@@ -127,71 +121,70 @@ class TestCaseUserAndRoles(TestCase):
         verify users functionality
         check system summary
         """
-        logger.info('Check system summary')
-        status = ll_general.checkSummary(
-            positive=True, domain=config.USER_DOMAIN
+        testflow.step("Checking system summary.")
+        assert ll_general.checkSummary(
+            positive=True,
+            domain=config.USER_DOMAIN
         )
-        assert status, 'Check system summary'
 
     @attr(tier=1)
     def test_check_system_version_tag(self):
         """
         verify system version tag
         """
-        logger.info('Check system version tag')
-        status = ll_general.checkSystemVersionTag(positive=True)
-        assert status, 'Check system version tag'
+        testflow.step("Checking system version tag.")
+        assert ll_general.checkSystemVersionTag(positive=True)
 
     @attr(tier=1)
     def test_check_definition_of_blank_template(self):
         """
         verify definition of blank template
         """
-        logger.info('Check definition of blank template')
         xpathMatch = XPathMatch(ll_general.util)
         expr = (
-            'count(/api/special_objects/blank_template['
-            '@href="/%s/templates/00000000-0000-0000-0000-000000000000"])' %
-            config.ENGINE_ENTRY_POINT
+            "count(/api/special_objects/blank_template["
+            "@href=\"/%s/templates/00000000-0000-0000-0000-000000000000\"])" %
+            engine_entry_point
         )
+
         try:
-            status = xpathMatch(True, 'api', expr)
-            assert status, 'Check definition of blank template'
+            testflow.step("Checking definition of blank template.")
+            assert xpathMatch(True, "api", expr)
         except EngineTypeError:
-            logger.info('xPath is only supported for rest')
+            logger.info("xPath is only supported for rest")
 
     @attr(tier=1)
     def test_check_definition_of_tag_root_object(self):
         """
         verify definition of tag root object
         """
-        logger.info('Check definition of tag root object')
         xpathMatch = XPathMatch(ll_general.util)
         expr = (
-            'count(/api/special_objects/root_tag['
-            '@href="/%s/tags/00000000-0000-0000-0000-000000000000"])' %
-            config.ENGINE_ENTRY_POINT
+            "count(/api/special_objects/root_tag["
+            "@href=\"/%s/tags/00000000-0000-0000-0000-000000000000\"])" %
+            engine_entry_point
         )
+
         try:
-            status = xpathMatch(True, 'api', expr)
-            assert status, 'Check definition of tag root object'
+            testflow.step("Checking definition of tag root object.")
+            assert xpathMatch(True, "api", expr)
         except EngineTypeError:
-            logger.info('xPath is only supported for rest')
+            logger.info("xPath is only supported for rest.")
 
     @attr(tier=1)
-    def test_check_user_properties_in_active_directory(self):
+    def test_check_userp_properties_in_active_directory(self):
         """
         verify users functionality
         verify user properties in active directory
         """
-        logger.info('Check user properties in aaa-jdbc provider')
-        status = ll_users.verifyADUserProperties(
-            positive=True, domain=config.USER_DOMAIN,
-            user=config.USERNAME_NAME,
-            expected_username='%s@%s' % (
-                config.USERNAME_NAME,
+        testflow.step("Checking user properties in aaa-jdbc provider.")
+        assert ll_users.verifyADUserProperties(
+            positive=True,
+            domain=config.USER_DOMAIN,
+            user=config.USER_NAME,
+            expected_username="{0}@{1}".format(
+                config.USER_NAME,
                 config.USER_DOMAIN
             ),
-            expected_department='Quality Assurance'
+            expected_department="Quality Assurance"
         )
-        assert status, 'Check user properties in aaa-jdbc provider'

@@ -2,18 +2,19 @@
 -----------------
 test_data_centers
 -----------------
-
-@author: Kobi Hakimi
 """
 
 import logging
 
 from art.unittest_lib import (
-    attr,
-    CoreSystemTest as TestCase,
+    attr, testflow,
+    CoreSystemTest as TestCase
 )
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
-from rhevmtests import config
+from rhevmtests.config import (
+    COMP_VERSION as comp_version,
+    DC_NAME as dcs_names
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,8 @@ class TestCaseDataCenter(TestCase):
     """
     __test__ = True
 
-    dc_name = config.DC_NAME[0]
+    dc_name = dcs_names[0]
+    tmp_dc_name = "temp_data_center"
 
     @attr(tier=1)
     def test_create_remove_temporary_local_data_center(self):
@@ -32,17 +34,19 @@ class TestCaseDataCenter(TestCase):
         Positive - check Create temporary Local data center functionality
         remove data center if successful
         """
-        logger.info('Create temporary Local data center')
-        status = ll_dc.addDataCenter(
-            True, name='temp_data_center', local=True,
-            version=config.COMP_VERSION
+        testflow.step('Create temporary Local data center')
+        assert ll_dc.addDataCenter(
+            positive=True,
+            name=self.tmp_dc_name,
+            local=True,
+            version=comp_version
         )
-        assert status, 'Create temporary Local data center'
-        logger.info('Remove temporary data center')
-        status = ll_dc.remove_datacenter(
-            positive=True, datacenter='temp_data_center'
+
+        testflow.step('Remove temporary data center')
+        assert ll_dc.remove_datacenter(
+            positive=True,
+            datacenter=self.tmp_dc_name
         )
-        assert status, 'Remove temporary data center'
 
     @attr(tier=2)
     def test_create_data_center_with_spaces_in_name(self):
@@ -50,24 +54,26 @@ class TestCaseDataCenter(TestCase):
         Negative - check if Create data center with spaces in name fails
         as expected
         """
-        logger.info('Create data center with spaces in name')
-        status = ll_dc.addDataCenter(
-            False, name='No Data Center', local=True,
-            version=config.COMP_VERSION
+        testflow.step('Create data center with spaces in name')
+        assert ll_dc.addDataCenter(
+            positive=False,
+            name='No Data Center',
+            local=True,
+            version=comp_version
         )
-        assert status, 'Create data center with spaces in name'
 
     @attr(tier=2)
     def test_create_data_center_with_existing_name(self):
         """
         Negative - check if Create data center with existing name fails
         """
-        logger.info('Create data center with existing name')
-        status = ll_dc.addDataCenter(
-            False, name=self.dc_name, local=True,
-            version=config.COMP_VERSION
+        testflow.step('Create data center with existing name')
+        assert ll_dc.addDataCenter(
+            positive=False,
+            name=self.dc_name,
+            local=True,
+            version=comp_version
         )
-        assert status, 'Create data center with existing name'
 
     @attr(tier=1)
     def test_update_data_center_name_and_description(self):
@@ -76,27 +82,30 @@ class TestCaseDataCenter(TestCase):
         revert the change
         """
         updated_name = self.dc_name + 'updated'
-        logger.info('Update data center name and description')
-        update_status = ll_dc.update_datacenter(
-            positive=True, datacenter=self.dc_name,
-            name=updated_name, description='Data Center Description'
+
+        testflow.step('Update data center name and description')
+        assert ll_dc.update_datacenter(
+            positive=True,
+            datacenter=self.dc_name,
+            name=updated_name,
+            description='Data Center Description'
         )
-        revert_status = ll_dc.update_datacenter(
-            positive=True, datacenter=updated_name,
-            name=self.dc_name, description=''
+        assert ll_dc.update_datacenter(
+            positive=True,
+            datacenter=updated_name,
+            name=self.dc_name,
+            description=''
         )
-        assert update_status, 'Update data center name and description'
-        assert revert_status, 'Revert data center name and description'
 
     @attr(tier=1)
     def test_search_for_data_center(self):
         """
         Positive - Search for data center
         """
-        log_msg = 'Search for %s data center' % self.dc_name
-        logger.info(log_msg)
-        status = ll_dc.searchForDataCenter(
-            positive=True, query_key='name',
-            query_val=self.dc_name, key_name='name'
+        testflow.step("Searching for %s data center", self.dc_name)
+        assert ll_dc.searchForDataCenter(
+            positive=True,
+            query_key='name',
+            query_val=self.dc_name,
+            key_name='name'
         )
-        assert status, log_msg
