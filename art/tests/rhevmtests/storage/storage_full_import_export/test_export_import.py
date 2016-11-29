@@ -260,8 +260,7 @@ class TestCase11995(BaseExportImportTestCase):
         super(TestCase11995, self).tearDown()
 
 
-@attr(tier=2)
-@bz({'1339673': {}})
+@attr(tier=1)
 class TestCase11987(BaseExportImportTestCase):
     """
     Export a VM sanity

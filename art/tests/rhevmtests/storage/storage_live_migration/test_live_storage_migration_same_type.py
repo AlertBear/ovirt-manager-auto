@@ -28,7 +28,7 @@ def setup_module():
     LOCAL_LUN_TARGET = config.UNUSED_LUN_TARGETS[:]
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase6004(basePlan.TestCase6004):
     """
     live migrate

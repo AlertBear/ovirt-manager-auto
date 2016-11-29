@@ -263,7 +263,7 @@ class CopyDiskWithContent(BasicEnvironment):
         helpers.check_file_existence(self.test_vm_name)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     """
     Copy disk - basic flow
@@ -281,6 +281,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         helpers.check_file_existence(self.test_vm_name)
 
     @polarion("RHEVM3-11247")
+    @attr(tier=2)
     def test_different_domain_different_alias(self):
         """
         Copy existing disk to different storage domain with different alias
