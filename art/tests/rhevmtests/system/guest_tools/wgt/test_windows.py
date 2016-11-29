@@ -2,31 +2,34 @@
 Test installation of guest tools on all windows machines. Then check if all
 product/services/drivers relevant to windows machine are installed/running.
 """
-import inspect
 import logging
-import sys
 import pytest
+import re
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.test_handler.tools import polarion
-from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
-    storagedomains as ll_storagedomains,
+    storagedomains as ll_sds,
+    disks as ll_disks
+)
+from art.rhevm_api.tests_lib.high_level import (
+    vms as hl_vms,
+    storagedomains as hl_sds
 )
 from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
-from rhevmtests.system.wgt import config
+from rhevmtests.system.guest_tools.wgt import config
 
 logger = logging.getLogger(__name__)
 GUEST_FAMILY = 'Windows'
 
 
 def import_image(disk_name):
-    glance_image = ll_storagedomains.GlanceImage(
+    glance_image = ll_sds.GlanceImage(
         image_name=disk_name,
         glance_repository_name=config.GLANCE_DOMAIN,
-        timeout=5400
+        timeout=3600
     )
     assert glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
@@ -36,18 +39,39 @@ def import_image(disk_name):
     return glance_image
 
 
-def setup_module():
-    WIN_IMAGES = sorted(
-        set([
-            x[1].disk_name for x in inspect.getmembers(
-                sys.modules[__name__],
-                inspect.isclass
-            ) if getattr(x[1], '__test__', False)
-        ]),
-        reverse=True,
-    )
-    assert len(WIN_IMAGES) > 0, "There are no test cases to run"
-    logger.info("Windows images to test: %s", WIN_IMAGES)
+@pytest.fixture(scope='module', autouse=True)
+def module_setup(request):
+    def fin_vms():
+        testflow.teardown("Remove remaining Windows VMs")
+        for vm in ll_vms.get_vms_from_cluster(config.CLUSTER_NAME[0]):
+            if vm.startswith("Win"):
+                ll_vms.removeVm(positive=True, vm=vm, stopVM=True)
+
+        testflow.teardown("Remove remaining Windows disks")
+        for disk in ll_disks.get_all_disks():
+            if disk.get_alias().startswith("Win"):
+                ll_disks.deleteDisk(True, disk.get_alias())
+    request.addfinalizer(fin_vms)
+
+    if not ll_sds.is_storage_domain_active(
+            config.DC_NAME[0], config.ISO_DOMAIN_NAME
+    ):
+        def fin_sd():
+            testflow.teardown("Detach and deactivate ISO storage domain")
+            hl_sds.detach_and_deactivate_domain(
+                datacenter=config.DC_NAME[0],
+                domain=config.ISO_DOMAIN_NAME,
+            )
+        request.addfinalizer(fin_sd)
+
+        testflow.setup("Attach ISO storage domain")
+        assert ll_sds.attachStorageDomain(
+            True, config.DC_NAME[0], config.ISO_DOMAIN_NAME
+        )
+        testflow.setup("Activate ISO storage domain")
+        assert ll_sds.activateStorageDomain(
+            True, config.DC_NAME[0], config.ISO_DOMAIN_NAME
+        )
 
 
 class Windows(TestCase):
@@ -74,12 +98,16 @@ class Windows(TestCase):
         cls = request.cls
 
         def fin():
+            testflow.teardown("Remove VM %s", cls.vm_name)
             ll_vms.removeVm(positive=True, vm=cls.vm_name, stopVM='true')
         request.addfinalizer(fin)
 
         cls.vm_name = '%s' % ((cls.disk_name[:9] + cls.disk_name[-6:]) if
-                              len(cls.disk_name) > 15 else cls.disk_name)
+                              len(cls.disk_name) > 15 else cls.disk_name
+                              )
+        testflow.setup("Import image %s", cls.disk_name)
         import_image(cls.disk_name)
+        testflow.setup("Create windows VM %s", cls.vm_name)
         ret = hl_vms.create_windows_vm(
             disk_name=cls.disk_name,
             iso_name=config.CD_WITH_TOOLS,
@@ -117,14 +145,20 @@ class Windows(TestCase):
         logger.info("Windows '%s' apps are: %s", self.disk_name, apps)
         testflow.step("Check if guest agent is reporting applications")
         assert len(apps) > 0, "Applications are empty"
+        for app in apps:
+            testflow.step("Check if app %s is reporting version", app)
+            try:
+                re.search("[ -]\d+.*", app).group(0)[1:]
+            except AttributeError:
+                logger.error("App %s is not reporting version", app)
 
     def check_guest_os(self):
         """ Check guest OS info is reported """
         vm = ll_vms.get_vm(self.vm_name)
         TimeoutingSampler(
             config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
-            lambda: True if vm.get_guest_operating_system() is not None
-            else False)
+            lambda: vm.get_guest_operating_system() is not None
+        )
         guest_os = vm.get_guest_operating_system()
         logger.info("Guest '%s' os info:", self.vm_name)
         logger.info("Architecture: '%s'", guest_os.get_architecture())
@@ -150,7 +184,8 @@ class Windows(TestCase):
         vm = ll_vms.get_vm(self.vm_name)
         TimeoutingSampler(
             config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
-            lambda: True if vm.get_guest_time_zone() is not None else False)
+            lambda: vm.get_guest_time_zone() is not None
+        )
         guest_timezone = vm.get_guest_time_zone()
         logger.info(
             "Guest timezone name is '%s', offset: '%s'",

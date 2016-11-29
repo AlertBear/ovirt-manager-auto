@@ -6,11 +6,10 @@ import pytest
 
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow
+from art.rhevm_api.tests_lib.low_level import vms
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
-
-from art.rhevm_api.tests_lib.low_level import vms
 
 DISK_NAME = 'rhel7_x64_Disk1'
 
@@ -18,6 +17,7 @@ DISK_NAME = 'rhel7_x64_Disk1'
 @pytest.fixture(scope="module", autouse=True)
 def setup_module(request):
     def fin():
+        testflow.teardown("Remove VM %s", DISK_NAME)
         assert vms.removeVm(True, DISK_NAME, stopVM='true')
     request.addfinalizer(fin)
     common.prepare_vms([DISK_NAME])
@@ -42,18 +42,24 @@ class RHEL7GATest(common.GABaseTestCase):
         cls = request.cls
 
         def fin():
+            testflow.teardown("Shutdown VM %s", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
+            testflow.teardown("Undo snapshot preview")
             assert vms.undo_snapshot_preview(True, cls.vm_name)
             vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
         super(RHEL7GATest, cls).ga_base_setup()
+        testflow.setup(
+            "Preview snapshot %s of VM %s", cls.vm_name, cls.vm_name
+        )
         assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
         vms.wait_for_vm_snapshots(
             cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
             cls.vm_name
         )
+        testflow.setup("Start VM %s", cls.vm_name)
         assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
@@ -92,6 +98,9 @@ class RHEL764bGATest(RHEL7GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel764_setup(cls, rhel7_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_NAME,
@@ -112,6 +121,7 @@ class RHEL764bGATest(RHEL7GATest):
     def test_post_install(self):
         """ RHEL7_1_64b rhevm-guest-agent post-install """
         self.post_install([self.cmd_chkconf])
+        testflow.step("Check that there are open virtio ports")
         rc, out, err = self.machine.executor().run_cmd([
             'stat', '-L', '/dev/virtio-ports/*rhevm*',
             '|', 'grep', 'Uid',
@@ -119,6 +129,7 @@ class RHEL764bGATest(RHEL7GATest):
         ])
         assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
+            testflow.step("Check tuned profile")
             rc, out, err = self.machine.executor().run_cmd([
                 'tuned-adm', 'list', '|',
                 'grep', '^Current', '|',
@@ -156,6 +167,9 @@ class UpgradeRHEL764bGATest(RHEL7GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def upgrade_rhel764_setup(cls, rhel7_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_OLDER_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_OLDER_NAME,

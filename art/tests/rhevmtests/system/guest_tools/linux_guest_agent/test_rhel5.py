@@ -3,7 +3,7 @@ Sanity test of guest agent of rhel 5 32/64b
 """
 import pytest
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import attr, testflow
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
@@ -18,6 +18,7 @@ DISKx86_NAME = 'rhel5_x86_Disk1'
 def setup_vms(request):
     def fin():
         for vm in [DISKx64_NAME, DISKx86_NAME]:
+            testflow.teardown("Remove VM %s", vm)
             assert vms.removeVm(True, vm, stopVM='true')
     request.addfinalizer(fin)
     common.prepare_vms([DISKx64_NAME, DISKx86_NAME])
@@ -42,18 +43,24 @@ class RHEL5GATest(common.GABaseTestCase):
         cls = request.cls
 
         def fin():
+            testflow.teardown("Shutdown VM %s", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
+            testflow.teardown("Undo snapshot preview")
             assert vms.undo_snapshot_preview(True, cls.vm_name)
             vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
         super(RHEL5GATest, cls).ga_base_setup()
+        testflow.setup(
+            "Preview snapshot %s of VM %s", cls.vm_name, cls.vm_name
+        )
         assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
         vms.wait_for_vm_snapshots(
             cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
             cls.vm_name
         )
+        testflow.setup("Start VM %s", cls.vm_name)
         assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
@@ -74,6 +81,9 @@ class RHEL532bGATest(RHEL5GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel532_setup(cls, rhel5_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_NAME,
@@ -127,6 +137,9 @@ class RHEL564bGATest(RHEL5GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel564_setup(cls, rhel5_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_NAME,

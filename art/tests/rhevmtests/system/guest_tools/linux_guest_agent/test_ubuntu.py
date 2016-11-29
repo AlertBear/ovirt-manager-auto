@@ -5,16 +5,17 @@ import logging
 import pytest
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import attr, testflow
+from art.rhevm_api.tests_lib.low_level import vms
 
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 
-from art.rhevm_api.tests_lib.low_level import vms
-
 logger = logging.getLogger(__name__)
 NAME = 'ovirt-guest-agent'
 DISK_NAME = 'ubuntu-12.04_Disk1'
+KEY_ID = 'D5C7F7C373A1A299'
+APT_KEY = '73A1A299'
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -22,14 +23,17 @@ def setup_vms(request):
     vm_name = DISK_NAME
 
     def fin():
+        testflow.teardown("Remove VM %s", vm_name)
         assert vms.removeVm(True, vm_name, stopVM='true')
     request.addfinalizer(fin)
 
     common.prepare_vms([DISK_NAME])
+    testflow.setup("Start VM %s", vm_name)
     assert vms.startVm(True, vm_name, wait_for_status=config.VM_UP)
-    machine = config.TEST_IMAGES[DISK_NAME]['machine']
+    machine = config.TEST_IMAGES[vm_name]['machine']
 
     executor = machine.executor()
+    testflow.setup("Add %s repo to VM %s", config.UBUNTU_REPOSITORY, vm_name)
     rc, _, err = executor.run_cmd([
         'echo', 'deb', config.UBUNTU_REPOSITORY, './',
         '>>', '/etc/apt/sources.list',
@@ -38,18 +42,20 @@ def setup_vms(request):
     logger.info(
         "Vm's '%s' repo '%s' enabled", machine, config.UBUNTU_REPOSITORY
     )
+    testflow.setup("Add gpg key to %s repo", config.UBUNTU_REPOSITORY)
     rc, _, err = executor.run_cmd([
         'gpg', '-v', '-a', '--keyserver',
         '%sRelease.key' % config.UBUNTU_REPOSITORY,
-        '--recv-keys', 'D5C7F7C373A1A299'
+        '--recv-keys', KEY_ID
     ])
     assert not rc, "Failed to import key to vm '%s': %s" % (machine, err)
     rc, _, err = executor.run_cmd([
-        'gpg', '--export', '--armor', '73A1A299', '|', 'apt-key', 'add', '-'
+        'gpg', '--export', '--armor', APT_KEY, '|', 'apt-key', 'add', '-'
     ])
     assert not rc, "Failed to import apt key to vm '%s': %s" % (machine, err)
     logger.info('Gpg keys exported.')
 
+    testflow.setup("Update system")
     assert machine.package_manager.update(), 'Failed to update system'
 
 
@@ -67,6 +73,7 @@ class Ubuntu1204TestCase(common.GABaseTestCase):
     @pytest.fixture(scope="class", autouse=True)
     def ubuntu_setup(cls, request):
         def fin():
+            testflow.teardown("Stop VM %s safely", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
         request.addfinalizer(fin)
         super(Ubuntu1204TestCase, cls).ga_base_setup()

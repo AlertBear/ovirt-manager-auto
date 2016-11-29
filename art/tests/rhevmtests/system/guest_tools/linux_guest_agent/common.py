@@ -1,7 +1,7 @@
 import ast
 import logging
 import shlex
-from string import digits
+import re
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.unittest_lib import CoreSystemTest as TestCase
@@ -44,7 +44,9 @@ def wait_for_connective(machine, timeout=200, sleep=10):
 
 def prepare_vms(vm_disks):
     for image in vm_disks:
+        testflow.setup("Import image %s", image)
         config.TEST_IMAGES[image]['image'] = import_image(image)
+        testflow.setup("Create VM %s", image)
         assert vms.createVm(
             positive=True,
             vmName=image,
@@ -59,13 +61,17 @@ def prepare_vms(vm_disks):
 
     for image in vm_disks:
         if config.TEST_IMAGES[image]['image']._is_import_success(3600):
+            testflow.setup("Attach disk %s to VM %s", image, image)
             disks.attachDisk(True, image, image)
+            testflow.setup("Start VM %s", image)
             assert vms.startVm(True, image, wait_for_status=config.VM_UP)
+            testflow.setup("Get MAC address of VM %s", image)
             mac = vms.getVmMacAddress(
                 True, vm=image, nic=config.NIC_NAME
             )[1].get('macAddress', None)
             logger.info("Mac address is %s", mac)
 
+            testflow.setup("Get IP address of VM %s", image)
             ip = test_utils.convertMacToIpAddress(
                 True, mac, subnetClassB=config.SUBNET_CLASS
             )[1].get('ip', None)
@@ -76,7 +82,9 @@ def prepare_vms(vm_disks):
             )
             config.TEST_IMAGES[image]['machine'] = machine
             wait_for_connective(machine)
+            testflow.setup("Stop VM %s", image)
             vms.stop_vms_safely([image])
+            testflow.setup("Add snapshot %s to VM %s", image, image)
             assert vms.addSnapshot(True, image, image)
 
 
@@ -134,7 +142,8 @@ class GABaseTestCase(TestCase):
         )
         assert not rc, 'User/Group ovirtagent was no found: %s' % err
         testflow.step(
-            "Check ownership of /dev/virtio-ports/com.redhat.rhevm.vdsm file")
+            "Check ownership of /dev/virtio-ports/com.redhat.rhevm.vdsm file"
+        )
         rc, out, err = executor.run_cmd([
             'stat',
             '--format=%U:%G',
@@ -214,7 +223,8 @@ class GABaseTestCase(TestCase):
         iface_real = iface_real.strip()
         testflow.step(
             "Check that network interfaces on the host correspond "
-            "to the ones inside the VM")
+            "to the ones inside the VM"
+        )
         for it in self.get_ifaces():
             assert it['name'] in iface_real
             assert it['hw'] in iface_real
@@ -241,9 +251,11 @@ class GABaseTestCase(TestCase):
         app_agent = self._run_cmd_on_hosts_vm(cmd, self.vm_name)
         app_list = ast.literal_eval(app_agent)
         for app in app_list:
-            while app and app[0] not in digits:
-                app = app[app.find("-")+1:]
-            assert len(app)
+            testflow.step("Check if app %s is reporting version", app)
+            try:
+                re.search("[ -]\d+.*", app).group(0)[1:]
+            except AttributeError:
+                logger.error("App %s is not reporting version", app)
 
         for app in application_list:
             self._check_app(list_app_cmd, app, app_list)
@@ -257,6 +269,7 @@ class GABaseTestCase(TestCase):
 
         testflow.step("Check that all apps are reported correctly")
         for app_real in app_real_list:
+            testflow.step("Checking app: %s", app_real)
             if app_real.endswith(('i686', 'x86_64', 'noarch')):
                 app_real = app_real[:app_real.rfind('.')]
             assert len(filter(lambda x: app_real in x, app_list)) > 0
@@ -276,10 +289,9 @@ class GABaseTestCase(TestCase):
             rc, ip_real, err = self.machine.executor().run_cmd(ip)
             ip_real = ip_real.strip()
             logger.info("Get IP line returned: %s", ip_real)
-            if not ip_real:
-                continue
-            ip_check_ran = True
-            assert ip_real in ip_list
+            if ip_real:
+                ip_check_ran = True
+                assert ip_real in ip_list
         assert ip_check_ran, "Check for IP was unsuccessful"
 
     def agent_data(self, application_list, list_app_cmd):

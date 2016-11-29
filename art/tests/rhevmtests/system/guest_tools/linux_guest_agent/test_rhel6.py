@@ -3,12 +3,11 @@ Sanity test of guest agent of rhel 6 32/64b
 """
 import pytest
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import attr, testflow
+from art.rhevm_api.tests_lib.low_level import vms
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
-
-from art.rhevm_api.tests_lib.low_level import vms
 
 DISKx64_NAME = 'rhel6_x64_Disk1'
 DISKx86_NAME = 'rhel6_x86_Disk1'
@@ -18,6 +17,7 @@ DISKx86_NAME = 'rhel6_x86_Disk1'
 def setup_vms(request):
     def fin():
         for vm in [DISKx64_NAME, DISKx86_NAME]:
+            testflow.teardown("Remove VM %s", vm)
             assert vms.removeVm(True, vm, stopVM='true')
     request.addfinalizer(fin)
     common.prepare_vms([DISKx64_NAME, DISKx86_NAME])
@@ -38,18 +38,24 @@ class RHEL6GATest(common.GABaseTestCase):
         cls = request.cls
 
         def fin():
+            testflow.teardown("Shutdown VM %s", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
+            testflow.teardown("Undo snapshot preview")
             assert vms.undo_snapshot_preview(True, cls.vm_name)
             vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
         super(RHEL6GATest, cls).ga_base_setup()
+        testflow.setup(
+            "Preview snapshot %s of VM %s", cls.vm_name, cls.vm_name
+        )
         assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
         vms.wait_for_vm_snapshots(
             cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
             cls.vm_name
         )
+        testflow.setup("Start VM %s", cls.vm_name)
         assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
@@ -64,6 +70,9 @@ class RHEL664bGATest(RHEL6GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel664_setup(cls, rhel6_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_NAME,
@@ -84,6 +93,7 @@ class RHEL664bGATest(RHEL6GATest):
     def test_post_install(self):
         """ RHEL6_64b rhevm-guest-agent post-install """
         self.post_install()
+        testflow.step("Check that there are open virtio ports")
         rc, out, err = self.machine.executor().run_cmd([
             'stat', '-L', '/dev/virtio-ports/*rhevm*',
             '|', 'grep', 'Uid',
@@ -91,6 +101,7 @@ class RHEL664bGATest(RHEL6GATest):
         ])
         assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
+            testflow.step("Check tuned profile")
             rc, out, err = self.machine.executor().run_cmd([
                 'tuned-adm', 'list', '|',
                 'grep', '^Current', '|',
@@ -126,6 +137,9 @@ class RHEL632bGATest(RHEL6GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def rhel632_setup(cls, rhel6_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_NAME,
@@ -146,6 +160,7 @@ class RHEL632bGATest(RHEL6GATest):
     def test_post_install(self):
         """ RHEL6_32b rhevm-guest-agent post-install """
         self.post_install([self.cmd_chkconf])
+        testflow.step("Check that there are open virtio ports")
         rc, out, err = self.machine.executor().run_cmd([
             'stat', '-L', '/dev/virtio-ports/*rhevm*',
             '|', 'grep', 'Uid',
@@ -153,6 +168,7 @@ class RHEL632bGATest(RHEL6GATest):
         ])
         assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
+            testflow.step("Check tuned profile")
             rc, out, err = self.machine.executor().run_cmd([
                 'tuned-adm', 'list', '|',
                 'grep', '^Current', '|',
@@ -188,6 +204,9 @@ class UpgradeRHEL664bGATest(RHEL6GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def upgrade_rhel664_setup(cls, rhel6_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_OLDER_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_OLDER_NAME,
@@ -215,6 +234,9 @@ class UpgradeRHEL632bGATest(RHEL6GATest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def upgrade_rhel632_setup(cls, rhel6_setup):
+        testflow.setup(
+            "Add repo %s to VM %s", config.GA_REPO_OLDER_NAME, cls.machine
+        )
         vms.add_repo_to_vm(
             vm_host=cls.machine,
             repo_name=config.GA_REPO_OLDER_NAME,
