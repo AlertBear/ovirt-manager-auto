@@ -3570,12 +3570,13 @@ def checkVmState(positive, vmName, state, host=None):
         return positive == general_check
 
 
+@ll_general.generate_logs()
 def remove_vm_from_export_domain(
     positive, vm, datacenter, export_storagedomain, timeout=SAMPLER_TIMEOUT,
     sleep=SAMPLER_SLEEP
 ):
     """
-    Remove VM from export domain
+    Remove VM from export_storagedomain
 
     __author__: istein
 
@@ -3590,18 +3591,10 @@ def remove_vm_from_export_domain(
     Returns:
         bool: True if vm was removed properly, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="VM", obj_name=vm, positive=positive,
-        extra_txt="from export domain %s" % export_storagedomain
-    )
     export_storage_domain_obj = STORAGE_DOMAIN_API.find(export_storagedomain)
     vm_obj = VM_API.getElemFromElemColl(export_storage_domain_obj, vm)
-
-    logger.info(log_info)
     status = VM_API.delete(vm_obj, positive)
-
     if not status:
-        logger.error(log_error)
         return False
 
     sample = TimeoutingSampler(

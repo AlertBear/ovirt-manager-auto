@@ -134,8 +134,6 @@ class TestImportExportCase03(NetworkTest):
     vms_to_import = [vm_1]
     nic_name = import_export_conf.VNICS[3]
     net_list = import_export_conf.NETS
-    net1 = net_list[0]
-    net2 = net_list[1]
 
     @polarion("RHEVM3-3771")
     def test_01_import_vm_vnic_profiles(self):

@@ -157,7 +157,7 @@ def import_vms(request, import_export_prepare_setup):
         """
         Remove VMs
         """
-        ll_vms.safely_remove_vms(vms=vms_list)
+        assert ll_vms.safely_remove_vms(vms=vms_list)
     request.addfinalizer(fin)
 
     for name in vms_to_import:
@@ -182,7 +182,10 @@ def import_templates(request, import_export_prepare_setup):
         """
         Remove templates
         """
-        ll_templates.removeTemplates(positive=True, templates=template_list)
+        assert ll_templates.waitForTemplatesStates(names=template_list)
+        assert ll_templates.removeTemplates(
+            positive=True, templates=template_list
+        )
     request.addfinalizer(fin)
 
     for name in templates_to_import:
@@ -201,46 +204,8 @@ def remove_networks(request, import_export_prepare_setup):
     """
     import_export = ImportExport()
     net_list = request.node.cls.net_list
-    net1 = request.node.cls.net1
-    net2 = request.node.cls.net2
-
-    def fin():
-        """
-        Remove networks
-        """
-        dc_dict1 = {
-            net1: {
-                "required": "false"
-            },
-            net2: {
-                "mtu": conf.MTU[0],
-                "required": "false"
-            }
-        }
-        sn_dict = {
-            "add": {
-                "1": {
-                    "network": net1,
-                    "nic": import_export.host_0_nics[1]
-                },
-                "2": {
-                    "network": net2,
-                    "nic": import_export.host_0_nics[2]
-                }
-            }
-        }
-        networking_helper.prepare_networks_on_setup(
-            networks_dict=dc_dict1, dc=import_export.dc_0,
-            cluster=import_export.cluster_0
-        )
-        hl_host_network.setup_networks(
-            host_name=import_export.host_0_name, **sn_dict
-        )
-    request.addfinalizer(fin)
 
     assert hl_host_network.remove_networks_from_host(
         host_name=import_export.host_0_name, networks=net_list[:3]
     )
-    assert hl_networks.remove_networks(
-        positive=True, networks=net_list[:2]
-    )
+    assert hl_networks.remove_networks(positive=True, networks=net_list[:2])

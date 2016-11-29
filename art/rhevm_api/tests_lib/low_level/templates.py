@@ -1051,7 +1051,7 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
         return [templ for templ in templates if
                 (templ.get_status() != state)]
 
-    names = split(names)
+    names = split(names) if not isinstance(names, list) else names
     sampler = TimeoutingSampler(
         timeout, sleep, get_pending_templates, names, state)
     for bad_templates in sampler:
