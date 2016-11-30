@@ -3512,7 +3512,8 @@ def getVmNicVlanId(vm, nic='nic1'):
     '''
     try:
         nic_obj = get_vm_nic(vm, nic)
-        net_obj = NETWORK_API.find(nic_obj.network.id, 'id')
+        vnic_profile = VNIC_PROFILE_API.find(nic_obj.vnic_profile, 'id')
+        net_obj = NETWORK_API.find(vnic_profile.network.id, 'id')
     except EntityNotFound:
         return False, {'vlan_id': 0}
 
