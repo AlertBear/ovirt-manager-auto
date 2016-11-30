@@ -43,6 +43,7 @@ class TestExceptionType(type):
     exceptions
     """
     EXCEPTIONS = {}
+
     def __new__(cls, name, bases, dct):
         ex_cls = type.__new__(cls, name, bases, dct)
         cls.EXCEPTIONS[name] = ex_cls

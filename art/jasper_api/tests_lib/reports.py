@@ -27,7 +27,7 @@ from configobj import ConfigObj
 from copy import deepcopy
 import logging
 
-logger=logging.getLogger('rhevm_reports')
+logger = logging.getLogger('rhevm_reports')
 
 reportsObj = None
 
@@ -39,14 +39,17 @@ class ExecutiveReports():
     hostsBreakDown = 'host_os_break_down_BR22'
     hostsSummary = 'summary_of_host_usage_resources_br17'
 
+
 class InventoryReports():
     type = 'Inventory'
     hosts = 'Hosts_Inventory'
     storagDomains = 'Storage_Domain_Report_BR21'
     VMs = 'VM_Inventory'
 
+
 class ServiceLevelReports():
     type = 'Service_level'
+
 
 class ServiceLevelHostReports(ServiceLevelReports):
     subType = 'Hosts'
@@ -55,13 +58,16 @@ class ServiceLevelHostReports(ServiceLevelReports):
     singleHostUptime = 'single_host_uptime_br8'
     top10Hosts = 'top_10_downtime_hosts_br7b'
 
+
 class ServiceLevelVMReports(ServiceLevelReports):
     subType = 'VMs'
     clusterQualityVMs = 'cluster_quality_of_service_vms_br13'
     VMsUptime = 'virtual_servers_uptime_br14'
 
+
 class TrendReports():
     type = 'Trend'
+
 
 class TrendHostReports(TrendReports):
     subType = 'Hosts'
@@ -71,6 +77,7 @@ class TrendHostReports(TrendReports):
     singleResource = 'single_host_resource_br2a'
     singleResourceDow = 'single_host_resource_usage_dow_br2b'
     singleResourceHod = 'single_host_resource_usage_hour_of_day_br2c'
+
 
 class TrendVMReports(TrendReports):
     subType = 'Virtual_machines'
@@ -97,10 +104,11 @@ class JasperReports(object):
             user = conf['JASPER_REST_CONNECTION']['user']
             password = conf['JASPER_REST_CONNECTION']['password']
             entry_point = conf['JASPER_REST_CONNECTION']['entry_point']
-            self.__base_uri = '{0}://{1}:{2}/{3}/'.format(opts['scheme'],
-                            opts['host'], opts['port'], entry_point)
+            self.__base_uri = '{0}://{1}:{2}/{3}/'.format(
+                opts['scheme'], opts['host'], opts['port'], entry_point,
+            )
         except Exception as ex:
-            logger.error('Jasperserver is not configured: %s' % ex)
+            logger.error('Jasperserver is not configured: %s', ex)
             raise
         localOpts = deepcopy(opts)
         localOpts['user'] = user
@@ -189,11 +197,12 @@ class JasperReports(object):
         # TODO: response validation
         fname = None
         try:
-            with NamedTemporaryFile(delete=False, prefix=report,
-                suffix='.pdf') as tmp:
-                    tmp.write(resp)
-                    fname = tmp.name
-        except Exception as ex:
+            with NamedTemporaryFile(
+                delete=False, prefix=report, suffix='.pdf'
+            ) as tmp:
+                tmp.write(resp)
+                fname = tmp.name
+        except Exception:
             logger.error('Failed to store report output: %s' % report)
         return fname
 
@@ -296,8 +305,9 @@ def reportClusterQualityOfServiceHosts():
 def reportClusterUptime():
     '''
     This report contains chart displaying the weighted average uptime of hosts
-    within a selected cluster for a requested period and a table of history data
-    displaying the down time and the maintenance time each time of each host.
+    within a selected cluster for a requested period and a table of history
+    data displaying the down time and the maintenance time each time of each
+    host.
     '''
     rep = ServiceLevelHostReports()
     return _runReport(

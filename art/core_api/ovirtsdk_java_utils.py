@@ -42,7 +42,7 @@ addlock = threading.Lock()
 # starting Java VM
 jvm = java_sdk.initVM(java_sdk.CLASSPATH)
 
-import org.ovirt.engine.sdk
+import org.ovirt.engine.sdk  # noqa
 
 # default timeout
 DEF_TIMEOUT = 900
@@ -176,7 +176,7 @@ def get_getters_and_setters(python_object=None, java_object=None):
         # getting python methods
         python_methods = filter(lambda method: not method.startswith('__')
                                 and not method.endswith('_')
-                                and not method in PYTHON_IGNORE_LIST,
+                                and method not in PYTHON_IGNORE_LIST,
                                 dir(python_object))
         python_getters = filter(lambda method: 'get' in method
                                 and method.find('get') == 0, python_methods)
@@ -186,7 +186,7 @@ def get_getters_and_setters(python_object=None, java_object=None):
         # getting java methods
         java_methods = filter(lambda method: not method.startswith('__')
                               and not method.endswith('_')
-                              and not method in JAVA_IGNORE_LIST,
+                              and method not in JAVA_IGNORE_LIST,
                               dir(java_object))
         java_setters = filter(lambda method: 'set' in method
                               and method.find('set') == 0, java_methods)
@@ -641,8 +641,8 @@ class JavaTranslator(object):
                     JavaTranslator object/list if getter returns
                     entity/collection
             """
-#java_func.__class__
-#<type 'builtin_function_or_method'>
+            # java_func.__class__
+            # <type 'builtin_function_or_method'>
             # getter path
             if not java_func.__name__.lower().startswith('set'):
                 data = None
@@ -674,7 +674,7 @@ class JavaTranslator(object):
                     pass
 
                 # primitives and lists of primitives
-                #list
+                # list
                 if isinstance(data, java.util.List):
                     # consider data conversion inside list
                     return [self.java_datatypes_converter(d) for d in data]

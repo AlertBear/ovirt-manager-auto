@@ -50,11 +50,10 @@ def writeXml(root, path):
     * root - root element
     * path - output file path
     '''
-
-    file = open(path, 'w')
-    ElementTree(root).write(file, encoding="utf-8",
-            pretty_print=True, xml_declaration=True)
-    file.close()
+    with open(path, 'w') as fh:
+        ElementTree(root).write(
+            fh, encoding="utf-8", pretty_print=True, xml_declaration=True,
+        )
 
 
 def buildXml(inputFilePath, outputFilePath):
@@ -64,8 +63,6 @@ def buildXml(inputFilePath, outputFilePath):
     * inputFilePath - path of input xml file
     * outputFilePath - path of output xml file
     '''
-
-
     testCasesTree = load(inputFilePath)
     rootElement = testCasesTree.getroot()
     for elm in list(rootElement):
@@ -82,8 +79,9 @@ def buildXml(inputFilePath, outputFilePath):
 
 
 parser = argparse.ArgumentParser(
-                    prog=argv[0],
-                    description='Execute the test specified by config file.')
+    prog=argv[0],
+    description='Execute the test specified by config file.',
+)
 
 parser.add_argument("--input_file", "-in", dest="input",
                     help="input test file path", metavar="FILE")
@@ -92,6 +90,3 @@ parser.add_argument("--output_file", "-out", dest="output",
 
 args = parser.parse_args(argv[1:])
 buildXml(args.input, args.output)
-
-
-

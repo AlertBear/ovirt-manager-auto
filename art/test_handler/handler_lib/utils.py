@@ -1,7 +1,16 @@
 from functools import wraps
 import art.test_handler.settings as settings
 
+
 DS_PATH = settings.opts.get('data_struct_mod')
+
+
+def raise_parse_error(node, message):
+    """
+    NOTE(lbednar): This function disappeared somewhere, but it used in
+    the code bellow, so just adding such dummy function as replacement.
+    """
+    raise Exception(node, message)
 
 
 class DataStructuresCheat(object):
@@ -80,8 +89,8 @@ class DataStructuresCheat(object):
             values = input_data.split()
             for value in values:
                 try:
-                    fvalue = float(value)
-                except (TypeError, ValueError), exp:
+                    float(value)
+                except (TypeError, ValueError):
                     raise_parse_error(node, 'Requires sequence of integers')
             return input_data
 
@@ -90,8 +99,8 @@ class DataStructuresCheat(object):
             values = input_data.split()
             for value in values:
                 try:
-                    fvalue = float(value)
-                except (TypeError, ValueError), exp:
+                    float(value)
+                except (TypeError, ValueError):
                     pass
             return input_data
 
@@ -108,8 +117,8 @@ class DataStructuresCheat(object):
             values = input_data.split()
             for value in values:
                 try:
-                    fvalue = float(value)
-                except (TypeError, ValueError), exp:
+                    float(value)
+                except (TypeError, ValueError):
                     raise_parse_error(node, 'Requires sequence of floats')
             return input_data
 
@@ -118,8 +127,8 @@ class DataStructuresCheat(object):
             values = input_data.split()
             for value in values:
                 try:
-                    fvalue = float(value)
-                except (TypeError, ValueError), exp:
+                    float(value)
+                except (TypeError, ValueError):
                     pass
             return input_data
 
@@ -136,8 +145,8 @@ class DataStructuresCheat(object):
             values = input_data.split()
             for value in values:
                 try:
-                    fvalue = float(value)
-                except (TypeError, ValueError), exp:
+                    float(value)
+                except (TypeError, ValueError):
                     raise_parse_error(node, 'Requires sequence of doubles')
             return input_data
 
@@ -146,8 +155,8 @@ class DataStructuresCheat(object):
             values = input_data.split()
             for value in values:
                 try:
-                    fvalue = float(value)
-                except (TypeError, ValueError), exp:
+                    float(value)
+                except (TypeError, ValueError):
                     pass
             return input_data
 
@@ -155,7 +164,11 @@ class DataStructuresCheat(object):
             values = input_data.split()
             for value in values:
                 if value not in ('true', '1', 'false', '0', ):
-                    raise_parse_error(node, 'Requires sequence of booleans ("true", "1", "false", "0")')
+                    raise_parse_error(
+                        node,
+                        'Requires sequence of booleans ("true", "1", '
+                        '"false", "0")'
+                    )
             return input_data
 
         def cheat_gds_validate_boolean_list(self, input_data, node,

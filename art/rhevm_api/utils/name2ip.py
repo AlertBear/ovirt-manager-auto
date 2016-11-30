@@ -1,4 +1,3 @@
-
 import re
 import time
 import logging
@@ -28,6 +27,7 @@ class LookUpIpByEntityName(object):
     """
     cache = ThreadSafeDict()
     entity = None
+
     def __init__(self, target_var, source_var, cache_exp=60*10):
         """
         target_var - ipVar
@@ -51,21 +51,26 @@ class LookUpIpByEntityName(object):
         if self.func is None:
             self.func = args[0]
             self.adjust_doc()
-            return self # decorator self-calling
+            return self  # decorator self-calling
         return self.wrapper(*args, **kwargs)
-
 
     def adjust_doc(self):
         try:
             sub = re.compile('^((.*)%s\s*([=-]).*)$' % self.tv, re.M)
-            doc = sub.sub(r'\1\n\2%s \3 name of entity (can supply %s)' % \
-                    (self.sv, self.tv), self.func.func_doc, 1)
+            doc = sub.sub(
+                r'\1\n\2%s \3 name of entity (can supply %s)' % (
+                    self.sv, self.tv
+                ),
+                self.func.func_doc, 1,
+            )
             self.func.func_doc = doc
-            #self.wrapper.im_func.func_doc = doc
-            #self.wrapper.im_func.func_name = self.func.func_name
+            # self.wrapper.im_func.func_doc = doc
+            # self.wrapper.im_func.func_name = self.func.func_name
         except Exception as ex:
-            logger.warn("failed to add '%s' into doc-string of '%s': %s",
-                            self.sv, self.func.func_name, ex)
+            logger.warn(
+                "failed to add '%s' into doc-string of '%s': %s",
+                self.sv, self.func.func_name, ex,
+            )
 
     def wrapper(self, *args, **kwargs):
         if kwargs.get(self.tv, None):
@@ -90,7 +95,7 @@ class LookUpIpByEntityName(object):
         with self.cache:
             cache_rec = self.cache.get(cache_rec_name, {'ip': None, 'exp': 0})
             time_stmp = time.time()
-            if cache_rec['exp'] < time_stmp: # record expired
+            if cache_rec['exp'] < time_stmp:  # record expired
                 ip = self.get_ip(source_value)
                 if ip is None:
                     raise IpLookUpError(cache_rec_name)
@@ -191,13 +196,13 @@ class name2ip(LookUpIpByEntityName):
     It expects source_value as "entity_collection:entity_name"
     """
     ENTITY = {
-            LookUpVMIpByName.entity: LookUpVMIpByName,
-            LookUpHostIpByName.entity: LookUpHostIpByName,
-            }
+        LookUpVMIpByName.entity: LookUpVMIpByName,
+        LookUpHostIpByName.entity: LookUpHostIpByName,
+    }
 
     def look_up(self, source_value):
         m = re.match("^(?P<entity>[^:]+):(?P<name>.+)$", source_value)
-        if m: # use only specific resolver
+        if m:  # use only specific resolver
             self.entity = m.group('entity')
             if self.entity not in self.ENTITY:
                 raise ValueError("unknown entity: '%s'" % self.entity)

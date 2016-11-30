@@ -243,16 +243,20 @@ def validateElementStatus(positive, element, collection, elementName,
             util.logger.warning(MSG.format(elementName, element, ERR))
             return False
 
-        try:    # Fetch Data Center object in order to get storage domain status
+        try:  # Fetch Data Center object in order to get storage domain status
             dcUtil = get_api('data_center', 'datacenters')
             dcObj = dcUtil.find(dcName)
         except EntityNotFound:
-            ERR = "Data Center object is needed in order to get storage domain status"
+            ERR = (
+                "Data Center object is needed in order to get storage domain "
+                "status"
+            )
             util.logger.warning(MSG.format(dcName, "datacenter", ERR))
             return False
 
-        elementObj = util.getElemFromElemColl(dcObj, elementName,
-                             'storagedomains', 'storage_domain')
+        elementObj = util.getElemFromElemColl(
+            dcObj, elementName, 'storagedomains', 'storage_domain',
+        )
     else:
         try:
             elementObj = util.find(elementName)
@@ -438,11 +442,12 @@ def prepareDataForVm(root_dir='/tmp', root_name_prefix='', dir_cnt=1,
     data_path = None
     rc = True
     try:
-        data_path = createDirTree(root_dir=root_dir,
-            name_prefix=root_name_prefix, dir_cnt=int(dir_cnt),
-            file_cnt=int(file_cnt))
+        data_path = createDirTree(
+            root_dir=root_dir, name_prefix=root_name_prefix,
+            dir_cnt=int(dir_cnt), file_cnt=int(file_cnt),
+        )
     except Exception as err:
-        logger.error('failed to prepare data for VM', err)
+        logger.error('failed to prepare data for VM: %s', err)
         rc = False
     return rc, {'data_path': data_path}
 
@@ -467,8 +472,9 @@ def waitUntilPingable(IPs, timeout=180):
     startTime = time.time()
     while True:
         pingResult = pingToVms(IPs)
-        dead_machines = [ip for ip, alive in pingResult.iteritems()
-                if not alive]
+        dead_machines = [
+            ip for ip, alive in pingResult.iteritems() if not alive
+        ]
         if not dead_machines:
             break
         if timeout < time.time() - startTime:
@@ -681,7 +687,7 @@ def removeFileOnHost(positive, ip, filename, user='root',
             False in other case.
     '''
     machine = Machine(ip, user, password).util(osType)
-    if machine == None:
+    if machine is None:
         return False
     return machine.removeFile(filename)
 
@@ -702,7 +708,7 @@ def removeDirOnHost(
             False in other case.
     """
     machine = Machine(ip, user, password).util(osType)
-    if machine == None:
+    if machine is None:
         return False
     if osType == LINUX:
         return machine.removeFile(dirname)
@@ -758,8 +764,9 @@ def searchForObj(
             expected_count = min(expected_count, max)
 
     contsraint = "{0}={1}".format(query_key, query_val)
-    query_objs = util.query(contsraint, max=max,
-                    case_sensitive=str(case_sensitive).lower())
+    query_objs = util.query(
+        contsraint, max=max, case_sensitive=str(case_sensitive).lower(),
+    )
     status = compareCollectionSize(query_objs, expected_count, util.logger)
 
     return status
@@ -780,14 +787,15 @@ def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
     Author: jlibosva
     Return: Tuple (volume_id, image_id) if found, (None, None) otherwise
     """
-    path_to_ovf = '/rhev/data-center/%s/%s/master/vms/%s/%s.ovf' % \
-                  (spool_id, domain_id, object_id, object_id)
+    path_to_ovf = '/rhev/data-center/%s/%s/master/vms/%s/%s.ovf' % (
+        spool_id, domain_id, object_id, object_id,
+    )
 
     logger.debug("Checking file %s on host %s", path_to_ovf, vds)
 
     namespace_dict = {
-        'ovf' : "http://schemas.dmtf.org/ovf/envelope/1/",
-        'xsi' : "http://www.w3.org/2001/XMLSchema-instance"
+        'ovf': "http://schemas.dmtf.org/ovf/envelope/1/",
+        'xsi': "http://www.w3.org/2001/XMLSchema-instance",
     }
 
     host = Machine(vds, vds_username, vds_password).util(LINUX)
@@ -999,8 +1007,8 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
     logger.debug("Checking file %s on host %s", path_to_ovf, vds)
 
     namespace_dict = {
-        'ovf' : "http://schemas.dmtf.org/ovf/envelope/1/",
-        'xsi' : "http://www.w3.org/2001/XMLSchema-instance"
+        'ovf': "http://schemas.dmtf.org/ovf/envelope/1/",
+        'xsi': "http://www.w3.org/2001/XMLSchema-instance",
     }
 
     host = Machine(vds, vds_username, vds_password).util(LINUX)
@@ -1010,8 +1018,9 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
         ovf_hnd.close()
 
     disks_elements = root_elem.xpath(
-                        'Section[@xsi:type="ovf:DiskSection_Type"]/Disk',
-                        namespaces=namespace_dict)
+        'Section[@xsi:type="ovf:DiskSection_Type"]/Disk',
+        namespaces=namespace_dict,
+    )
 
     attrib = '{' + namespace_dict['ovf'] + '}fileRef'
     return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]

@@ -20,7 +20,7 @@
 import os
 from abc import ABCMeta, abstractmethod
 import logging
-from subprocess  import Popen, PIPE
+from subprocess import Popen, PIPE
 
 logger = logging.getLogger('setup_ds')
 

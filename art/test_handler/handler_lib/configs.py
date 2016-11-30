@@ -109,8 +109,8 @@ class ARTConfigValidator(ConfigValidator):
 
         for filename in parameters.as_list(self._test_conf_spec):
             filename = self.funcs.findConfigFile(filename)
-            custom_spec = ConfigLoader(filename, _inspec=True,
-                    raise_errors=True).load()
+            custom_spec = ConfigLoader(
+                filename, _inspec=True, raise_errors=True).load()
             spec.merge(custom_spec)
 
     def checkSectionExistence(self, value, section):

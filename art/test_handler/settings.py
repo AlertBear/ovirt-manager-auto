@@ -151,7 +151,7 @@ def readTestRunOpts(path, redefs):
     if not os.path.exists(path):
         raise IOError("Configuration file doesn't exist: %s" % path)
 
-    #preparing working copy of conf file
+    # preparing working copy of conf file
     confFileCopyName = "%s.copy" % path
     copyfile(path, confFileCopyName)
 

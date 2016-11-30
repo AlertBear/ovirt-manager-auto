@@ -445,14 +445,16 @@ def _getVolumeBricks(cluster, volume, bricks):
         # in case of EntityNotFound exception from util/hostUtil.find
         # exception will be not caught and passed to higher levels
         hostObj = hostUtil.find(brick['server'])
-        brick_tmp = util.find(val=brick['brick_dir'],
-                        attribute='brick_dir', absLink=False,
-                        collection=volBricks, server_id=hostObj.id)
+        brick_tmp = util.find(
+            val=brick['brick_dir'], attribute='brick_dir', absLink=False,
+            collection=volBricks, server_id=hostObj.id,
+        )
         bricksObjs.append(brick_tmp)
 
     if not bricksObjs:
-            raise EntityNotFound("Volume %s doesn't contains these bricks: %s"\
-                                 % (volume, bricks))
+        raise EntityNotFound("Volume %s doesn't contains these bricks: %s" % (
+            volume, bricks)
+        )
     return bricksObjs
 
 
@@ -484,15 +486,19 @@ def removeBrickFromVolume(positive, cluster, volume, bricks, force=True):
     else:
         return False
 
-    if vol.volume_type in ('replicate', 'distributed_replicate',
-                           'distributed_stripe'):
+    if vol.volume_type in (
+        'replicate', 'distributed_replicate', 'distributed_stripe',
+    ):
         delBricks = GlusterBricks()
-        delBricks.set_replica_count((vol.replica_count -1) \
-                                    if vol.volume_type == 'replicate' \
-                                    else vol.replica_count)
+        delBricks.set_replica_count(
+            (vol.replica_count - 1)
+            if vol.volume_type == 'replicate'
+            else vol.replica_count
+        )
         delBricks.set_brick(bricks)
-        return util.delete(vol.link[index], positive, body=delBricks,
-                         element_name='bricks')
+        return util.delete(
+            vol.link[index], positive, body=delBricks, element_name='bricks',
+        )
     else:
         for brick in bricks:
             status = util.delete(brick, positive)
@@ -525,8 +531,8 @@ def checkVolumeParam(positive, cluster, volume, key, value):
                 actualValue = option.value
         if value != actualValue:
             status = False
-            util.logger.error(ERROR % ("Parameter",
-                      vol.get_name(), value, actualValue))
+            util.logger.error(
+                ERROR, "Parameter", vol.get_name(), value, actualValue)
 
     except AttributeError as e:
         util.logger.error("checkVolumeParams: %s", str(e))

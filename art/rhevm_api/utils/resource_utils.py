@@ -74,11 +74,11 @@ def verifyDataOnVm(positive, ip, user, password, osType, dest, destToCompare):
         srcLocal = "{0}/{1}".format(dest, os.path.basename(destToCompare))
         if not machine.copyFrom(srcLocal, dest, 300, exc_info=positive):
             logger.error("copy data from %s", ip)
-            return False == positive
+            return False is positive
         logger.info("compare: %s to %s", srcLocal, destToCompare)
         res = machine.compareDirs(srcLocal, destToCompare)
         cleanupData(srcLocal)
         return res == positive
     except Exception as ex:
         logger.error("can not verify data on %s: %s", ip, ex)
-    return False == positive
+    return False is positive

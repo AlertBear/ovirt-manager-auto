@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-# FIXME: generally this should be rewrited. or replaced by utilities.jobs module
+# FIXME: generally this should be rewrited,
+# or replaced by utilities.jobs module
 import threading
 import logging
-import art.test_handler.settings as settings
-from utilities.utils import readConfFile
 logger = logging.getLogger('threads')
+
 
 class ParallelException(Exception):
     pass
@@ -28,6 +28,7 @@ class CreateThread(threading.Thread):
      Author: egerman
      '''
     retValue = None
+
     def __init__(self, target, **kwargs):
         '''
         Parameters:
@@ -40,6 +41,7 @@ class CreateThread(threading.Thread):
 
     def run(self):
         self.retValue = self._target(**(self._kwargs))
+
 
 def runParallel(targets, params, async=False):
     '''
@@ -56,7 +58,7 @@ def runParallel(targets, params, async=False):
     for i in range(len(targets)):
         t = CreateThread(targets[i], **(params[i]))
         t.start()
-        logger.info("Thread %s started", funcName)
+        logger.info("Thread %s started", targets[i])
         threads.append(t)
 
     if async:
@@ -70,5 +72,3 @@ def runParallel(targets, params, async=False):
         results.append(t.retValue)
 
     return results
-
-

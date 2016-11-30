@@ -1149,7 +1149,7 @@ class CliUtil(RestUtil):
                 return response, False
         else:
             if positive:
-            # refresh collection
+                # refresh collection
                 if collHref:
                     collection = self.get(collHref, listOnly=True)
                 else:

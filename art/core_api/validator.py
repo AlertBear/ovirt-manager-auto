@@ -94,9 +94,10 @@ def compareActionStatus(status, expected, logger):
         logger.debug("Action status is valid: %(exp)s " % {'exp': expected})
         return True
     except AssertionError:
-        logger.error("Action status is not valid, expected is:"
-                     " %(exp)s, actual is: %(act)s " % \
-                     {'exp': expected, 'act': status})
+        logger.error(
+            "Action status is not valid, expected is: %(exp)s, actual "
+            "is: %(act)s " % {'exp': expected, 'act': status}
+        )
         return False
 
 
@@ -121,13 +122,15 @@ def compareCollectionSize(collection, expectedSize, logger):
                 assert len(collection) in expectedSize
             else:
                 assert len(collection) == expectedSize
-            logger.debug("Collection size is correct: %(exp)s " % \
-                         {'exp': expectedSize})
+            logger.debug(
+                "Collection size is correct: %(exp)s " % {'exp': expectedSize}
+            )
             return True
         except AssertionError:
-            logger.error("Collection size is wrong, expected is:"
-                         " %(exp)s, actual is: %(act)s " % \
-                         {'exp': expectedSize, 'act': len(collection)})
+            logger.error(
+                "Collection size is wrong, expected is: %(exp)s, actual "
+                "is: %(act)s " % {'exp': expectedSize, 'act': len(collection)}
+            )
             return False
     else:
         logger.error("No collection found for size comparison.")
@@ -140,8 +143,11 @@ def compareActionLink(actions, action, logger):
         assert action in actionsList
         return True
     except AssertionError:
-        logger.error("Required action : '%s' doesn't exist"
-                     " in actions links: %s " % (action, actionsList))
+        logger.error(
+            "Required action : '%s' doesn't exist in actions links: %s " % (
+                action, actionsList,
+            )
+        )
         return False
 
 
@@ -353,8 +359,10 @@ def compareElements(expElm, actElm, logger, root, equal=True,
                     logger.info(MSG.format(root, attr, attrExpVal))
                 else:
                     equal = False
-                    MSG = "Property '{0}->{1}' has wrong value, " \
-                    " expected: '{2}'; actual: '{3}'"
+                    MSG = (
+                        "Property '{0}->{1}' has wrong value, "
+                        " expected: '{2}'; actual: '{3}'"
+                    )
                     logger.error(MSG.format(root, attr, attrExpVal,
                                             attrActVal))
             else:
