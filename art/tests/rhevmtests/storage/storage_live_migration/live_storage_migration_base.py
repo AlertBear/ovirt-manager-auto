@@ -32,7 +32,7 @@ from art.rhevm_api.utils.test_utils import (
 )
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest, testflow
 
@@ -90,6 +90,7 @@ def setup_module():
     LOCAL_LUN_TARGET = config.UNUSED_LUN_TARGETS[:]
 
 
+@bz({'1396960': {}})
 class BaseTestCase(StorageTest):
     """
     A class with a simple setUp

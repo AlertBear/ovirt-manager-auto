@@ -21,7 +21,7 @@ from art.rhevm_api.utils.test_utils import (
     restartVdsmd, restart_engine,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from utilities.machine import LINUX, Machine
@@ -47,6 +47,7 @@ disk_args = {
 }
 
 
+@bz({'1400707': {}})
 class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardowns of common things
