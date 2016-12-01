@@ -225,7 +225,9 @@ def sort_elements(act_elms, exp_elms, logger, elm_class):
         elm_class (str): Element class name
     """
     for sort_attr in SORT_ATTRS:
-        if hasattr(exp_elms[0], sort_attr) and hasattr(act_elms[0], sort_attr):
+        exp_elm_attr = getattr(exp_elms[0], sort_attr, None)
+        act_elm_attr = getattr(act_elms[0], sort_attr, None)
+        if exp_elm_attr and act_elm_attr:
             sort_elements_by_attr(
                 act_elms=act_elms, exp_elms=exp_elms, sort_attr=sort_attr
             )
