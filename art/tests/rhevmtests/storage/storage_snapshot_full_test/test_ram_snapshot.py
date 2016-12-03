@@ -9,7 +9,7 @@ from helpers import is_pid_running_on_vm, start_cat_process_on_vm
 from art.unittest_lib import StorageTest as TestCase, testflow
 from art.unittest_lib import attr
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     jobs as ll_jobs,
@@ -24,6 +24,7 @@ VM_PREFIX = "vm_ram_snapshot"
 VM_NAME = VM_PREFIX + "_%s"
 
 
+@bz({'1396960': {}})
 class DCWithStoragesActive(TestCase):
     """
     A class that ensures DC is up with all storages active and SPM elected.

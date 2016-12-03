@@ -11,7 +11,7 @@ from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.networking.helper import seal_vm
 from rhevmtests.storage import helpers as storage_helpers
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import StorageTest as TestCase, attr, testflow
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
@@ -25,6 +25,7 @@ from utilities.machine import Machine, LINUX
 logger = logging.getLogger(__name__)
 
 
+@bz({'1396960': {}})
 class BaseTestCase(TestCase):
     """
     This class implements the common setUp and tearDown functions
