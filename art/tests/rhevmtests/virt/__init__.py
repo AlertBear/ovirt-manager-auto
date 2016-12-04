@@ -14,10 +14,11 @@ def setup_package():
     3. Remove all redundant VMs
     """
     logger.info("VIRT cleanup")
+    skip_vms = config.VM_NAME + [config.HE_VM]
     helper.remove_all_pools_from_cluster(config.CLUSTER_NAME[0])
     none_ge_vms_in_cluster = helper.get_all_vm_in_cluster(
         cluster_name=config.CLUSTER_NAME[0],
-        skip=config.VM_NAME
+        skip=skip_vms
     )
     logger.info("Stop GE VMs")
     ll_vms.stop_vms_safely(config.VM_NAME)
@@ -25,14 +26,8 @@ def setup_package():
     if none_ge_vms_in_cluster:
         ll_vms.stop_vms_safely(none_ge_vms_in_cluster)
         for vm in none_ge_vms_in_cluster:
-            ll_vms.updateVm(
-                positive=True,
-                vm=vm,
-                protected=False
-            )
-    ll_vms.remove_all_vms_from_cluster(
-        config.CLUSTER_NAME[0], skip=config.VM_NAME
-    )
+            ll_vms.updateVm(positive=True, vm=vm, protected=False)
+    ll_vms.remove_all_vms_from_cluster(config.CLUSTER_NAME[0], skip=skip_vms)
     for vm in config.VM_NAME:
         logger.info("Update VM %s to default parameters ")
         if not ll_vms.updateVm(
