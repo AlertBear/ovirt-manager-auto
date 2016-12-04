@@ -5,85 +5,44 @@ Storage/3_5_Storage_Get_Device_Name
 """
 import config
 import logging
+import pytest
 import shlex
 
-from art.rhevm_api.tests_lib.low_level import disks, jobs, storagedomains, vms
-from art.test_handler import exceptions
+from art.rhevm_api.tests_lib.low_level import disks, vms
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers
 from utilities.machine import LINUX, Machine
-import rhevmtests.storage.helpers as storage_helpers
+from rhevmtests.storage.fixtures import (
+    delete_disks, initialize_storage_domains,
+)
+from rhevmtests.storage.storage_get_device_name.fixtures import (
+    add_disks_permutation, create_vms_for_test,
+)
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
-SHARED_DISK = "sharable_disk_%s"
-NON_SHARED_DISK = "non_sharable_disk_%s"
-
-ALIAS = "alias"
+SHARED_DISK = "%s_sharable_disk_%s"
+NON_SHARED_DISK = "%s_non_sharable_disk_%s"
 
 # Global list to hold VMs with VirtIO-SCSI Enabled set to False
 VMS_WITH_VIRTIO_SCSI_FALSE = list()
 
-STORAGE_DEVICES_FILTER = '[sv]d[a-z]'
 
-# Parameters for disk (alias and storage domain are filled in per test case)
-disk_kwargs = {
-    "interface": config.DISK_INTERFACE_VIRTIO,
-    "alias": '',
-    "format": config.DISK_FORMAT_RAW,
-    "provisioned_size": config.DISK_SIZE,
-    "bootable": False,
-    "storagedomain": '',
-    "shareable": False,
-    "sparse": False,
-}
-
-
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    create_vms_for_test.__name__,
+    delete_disks.__name__,
+)
 class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardown for the permutation of disks
     used as part of the tests
     """
     __test__ = False
-    vm_name = None
-    storage_domain = None
-    create_disk_permutations = False
     polarion_test_case = None
-
-    def setUp(self):
-        """
-        General setup function that picks a storage domain to use (matching
-        the current storage type), initializes the disk aliases and
-        descriptions list and the disk aliases list, then picks the first
-        2 GE VMs from the configuration file
-        """
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-
-        self.disk_aliases = list()
-        vm_names = storage_helpers.get_vms_for_storage(self.storage)
-        self.vm_name = vm_names[0]
-        self.vm_name_2 = vm_names[1]
-
-        # Create disk permutations for the relevant cases
-        if self.create_disk_permutations:
-            self.create_disks_using_permutations()
-
-    def create_disks_using_permutations(self):
-        """
-        Creates a set of disks to be used with all the Get Device name
-        tests, and saves a list with the aliases of the created disks
-        """
-        self.disk_aliases = (
-            helpers.create_disks_from_requested_permutations(
-                self.storage_domain, (config.VIRTIO, config.VIRTIO_SCSI),
-                config.DISK_SIZE, test_name=self.polarion_test_case
-            )
-        )
 
     def verify_logical_device_naming(self, disk_interface,
                                      disk_logical_volume_name):
@@ -110,35 +69,42 @@ class BasicEnvironment(BaseTestCase):
         is_disk_shared) and attaches it to the vms passed in (using
         parameter vm_names)
         """
-        disk_args = disk_kwargs.copy()
+        disk_args = config.disk_args.copy()
+        disk_args['format'] = config.RAW_DISK
+        disk_args['sparse'] = False
         disk_args['storagedomain'] = self.storage_domain
         # Message used as part of the various log messages (shared or
         # non-shared disk, setting default to 'non-shared'
         disk_message = "shared" if is_disk_shared else "non-shared"
-        disk_args[ALIAS] = NON_SHARED_DISK % self.polarion_test_case
+        self.disk_alias = helpers.create_unique_object_name(
+            disk_message + self.storage + self.polarion_test_case,
+            config.OBJECT_TYPE_DISK
+        )
+        disk_args['alias'] = self.disk_alias
         if is_disk_shared:
-            disk_args[ALIAS] = SHARED_DISK % self.polarion_test_case
             disk_args['shareable'] = True
 
-        logger.info("Creating %s disk '%s'", disk_message, disk_args[ALIAS])
-        if not disks.addDisk(True, **disk_args):
-            raise exceptions.DiskException("Failed to create %s disk %s"
-                                           % (disk_message,
-                                              disk_args[ALIAS]))
-        disks.wait_for_disks_status([disk_args[ALIAS]])
-        self.disk_aliases.append(disk_args[ALIAS])
+        testflow.step("Creating %s disk '%s'", disk_message, self.disk_alias)
+        assert disks.addDisk(True, **disk_args), (
+            "Failed to create %s disk %s" % (disk_message, self.disk_alias)
+        )
+        disks.wait_for_disks_status([self.disk_alias])
+        self.disks_to_remove.append(self.disk_alias)
 
         for vm_name in vm_names:
-            logger.info("Attaching %s disk '%s' to VM '%s'", disk_message,
-                        disk_args[ALIAS], vm_name)
-            if not disks.attachDisk(True, disk_args[ALIAS], vm_name):
-                raise exceptions.DiskException("Failed to attach %s disk '%s' "
-                                               "to vm %s" %
-                                               (disk_message,
-                                                disk_args[ALIAS], vm_name))
+            logger.info(
+                "Attaching %s disk '%s' to VM '%s'",
+                disk_message, self.disk_alias, vm_name
+            )
+            assert disks.attachDisk(True, self.disk_alias, vm_name), (
+                "Failed to attach %s disk '%s' to vm %s" % (
+                    disk_message, self.disk_alias, vm_name
+                )
+            )
 
-    def attach_disk_permutations_and_verify_in_os(self, hot_plug=False,
-                                                  hot_unplug=False):
+    def attach_disk_permutations_and_verify_in_os(
+        self, hot_plug=False, hot_unplug=False
+    ):
         """
         Attaches all disks (created using permutations) to the first VM
         used, and verified each disk is visible on the OS using vd* or sd*
@@ -148,36 +114,38 @@ class BasicEnvironment(BaseTestCase):
 
         Used by Polarion cases 4572, 4575 and 4576
         """
-        assert vms.startVm(True, self.vm_name, config.VM_UP, True)
+        testflow.step("Starting VM %s", self.vm_names[0])
+        assert vms.startVm(True, self.vm_names[0], config.VM_UP, True)
 
         self.current_storage_devices = helpers.get_storage_devices(
-            self.vm_name, STORAGE_DEVICES_FILTER
+            self.vm_names[0], helpers.REGEX_DEVICE_NAME
         )
         if not hot_plug:
-            vms.stop_vms_safely([self.vm_name])
+            vms.stop_vms_safely([self.vm_names[0]])
 
-        for disk_alias in self.disk_aliases:
-            logger.info("Attaching disk '%s' to VM '%s'", disk_alias,
-                        self.vm_name)
-            assert disks.attachDisk(True, disk_alias, self.vm_name)
+        for disk_alias in self.disks_to_remove:
+            testflow.step(
+                "Attaching disk '%s' to VM '%s'", disk_alias, self.vm_names[0]
+            )
+            assert disks.attachDisk(True, disk_alias, self.vm_names[0])
             assert disks.wait_for_disks_status(disk_alias)
 
             if not hot_plug:
-                assert vms.startVm(True, self.vm_name, config.VM_UP, True)
+                assert vms.startVm(True, self.vm_names[0], config.VM_UP, True)
 
             # TODO: This is a workaround for bug
             # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-            vm_ip = helpers.get_vm_ip(self.vm_name)
+            vm_ip = helpers.get_vm_ip(self.vm_names[0])
             vm_machine = Machine(host=vm_ip, user=config.VM_USER,
                                  password=config.VM_PASSWORD).util(LINUX)
             vm_machine.runCmd(shlex.split("udevadm trigger"))
 
             disk_logical_volume_name = vms.get_vm_disk_logical_name(
-                self.vm_name, disk_alias, parse_logical_name=True
+                self.vm_names[0], disk_alias, parse_logical_name=True
             )
             self.current_storage_devices = (
                 helpers.get_storage_devices(
-                    self.vm_name, STORAGE_DEVICES_FILTER
+                    self.vm_names[0], helpers.REGEX_DEVICE_NAME
                 )
             )
             assert disk_logical_volume_name in self.current_storage_devices, (
@@ -192,10 +160,10 @@ class BasicEnvironment(BaseTestCase):
                                               disk_logical_volume_name)
 
             if hot_unplug:
-                assert disks.detachDisk(True, disk_alias, self.vm_name)
+                assert disks.detachDisk(True, disk_alias, self.vm_names[0])
                 self.current_storage_devices = (
                     helpers.get_storage_devices(
-                        self.vm_name, STORAGE_DEVICES_FILTER
+                        self.vm_names[0], helpers.REGEX_DEVICE_NAME
                     )
                 )
                 assert disk_logical_volume_name not in (
@@ -206,7 +174,7 @@ class BasicEnvironment(BaseTestCase):
                 )
 
             if not hot_plug:
-                vms.stop_vms_safely([self.vm_name])
+                vms.stop_vms_safely([self.vm_names[0]])
 
     def create_and_attach_disk_to_vms_performing_os_validation(
         self, is_disk_shared, vm_names
@@ -217,9 +185,8 @@ class BasicEnvironment(BaseTestCase):
         """
         self.current_storage_devices = dict()
         self.create_and_attach_disk_to_vms(is_disk_shared, vm_names)
-
-        vms.start_vms(
-            vm_names, wait_for_status=config.VM_UP)
+        testflow.step("Starting VMs %s", vm_names)
+        vms.start_vms(vm_names, wait_for_status=config.VM_UP)
 
         for vm_name in vm_names:
             # TODO: This is a workaround for bug
@@ -231,45 +198,35 @@ class BasicEnvironment(BaseTestCase):
 
             self.current_storage_devices[vm_name] = (
                 helpers.get_storage_devices(
-                    vm_name, STORAGE_DEVICES_FILTER
+                    vm_name, helpers.REGEX_DEVICE_NAME
                 )
             )
 
             if is_disk_shared:
                 disk_logical_volume_name = vms.get_vm_disk_logical_name(
-                    vm_name, SHARED_DISK % self.polarion_test_case,
-                    parse_logical_name=True
+                    vm_name, self.disk_alias, parse_logical_name=True
                 )
             else:
                 disk_logical_volume_name = vms.get_vm_disk_logical_name(
-                    vm_name, NON_SHARED_DISK % self.polarion_test_case,
-                    parse_logical_name=True
+                    vm_name, self.disk_alias, parse_logical_name=True
                 )
-            self.verify_logical_device_naming(config.VIRTIO,
-                                              disk_logical_volume_name)
+            self.verify_logical_device_naming(
+                config.VIRTIO, disk_logical_volume_name
+            )
             assert disk_logical_volume_name in (
                 self.current_storage_devices[vm_name]
             ), (
                 "The disk volume name '%s' was not found after being attached "
                 "to the VM" % disk_logical_volume_name
             )
-
+        testflow.step("Powering off VMs %s", vm_names)
         vms.stop_vms_safely(vm_names)
-
-    def tearDown(self):
-        """
-        Power off the VMs and remove all disks created for the tests
-        """
-        vms.stop_vms_safely([self.vm_name, self.vm_name_2])
-        for disk_alias in self.disk_aliases:
-            if not disks.deleteDisk(True, disk_alias):
-                self.test_failed = True
-                logger.error("Deleting disk '%s' failed", disk_alias)
-        jobs.wait_for_jobs([config.ENUMS['job_remove_disk']])
-        self.teardown_exception()
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    add_disks_permutation.__name__,
+)
 class TestCase4572(BasicEnvironment):
     """
     Basic flow - get device name
@@ -283,7 +240,6 @@ class TestCase4572(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '4572'
-    create_disk_permutations = True
 
     @polarion("RHEVM3-4572")
     def test_basic_flow_get_device_name(self):
@@ -314,7 +270,7 @@ class TestCase4573(BasicEnvironment):
     def test_one_shared_disk_on_2_vms(self):
         """ Polarion case 4573"""
         self.create_and_attach_disk_to_vms_performing_os_validation(
-            True, [self.vm_name, self.vm_name_2]
+            True, [self.vm_names[0], self.vm_names[1]]
         )
 
 
@@ -341,14 +297,17 @@ class TestCase4574(BasicEnvironment):
     def test_one_non_shared_one_shared_disk_on_2_vms(self):
         """ Polarion case 4574"""
         self.create_and_attach_disk_to_vms_performing_os_validation(
-            False, [self.vm_name]
+            False, [self.vm_names[0]]
         )
         self.create_and_attach_disk_to_vms_performing_os_validation(
-            True, [self.vm_name, self.vm_name_2]
+            True, [self.vm_names[0], self.vm_names[1]]
         )
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    add_disks_permutation.__name__,
+)
 class TestCase4575(BasicEnvironment):
     """
     Get device name - hotplug
@@ -362,7 +321,6 @@ class TestCase4575(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '4575'
-    create_disk_permutations = True
 
     @polarion("RHEVM3-4575")
     def test_basic_flow_get_device_name(self):
@@ -371,6 +329,9 @@ class TestCase4575(BasicEnvironment):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    add_disks_permutation.__name__,
+)
 class TestCase4576(BasicEnvironment):
     """
     Get device name - hotunplug
@@ -386,7 +347,6 @@ class TestCase4576(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '4576'
-    create_disk_permutations = True
 
     @polarion("RHEVM3-4576")
     def test_basic_flow_get_device_name(self):

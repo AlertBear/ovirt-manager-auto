@@ -5,7 +5,6 @@ from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
-    disks as hl_disks,
 )
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -68,15 +67,16 @@ def add_disk_permutations(request):
     """
     self = request.node.cls
 
-    if not hasattr(self, 'shared'):
-        self.shared = None
+    self.shared = getattr(self, 'shared', None)
+    self.polarion_test_case = getattr(self, 'polarion_test_case', 'Test')
 
     testflow.setup("Creating all disk permutations")
-    block = self.storage in config.BLOCK_TYPES
-    self.disk_names = hl_disks.create_all_legal_disk_permutations(
-        self.storage_domain, shared=self.shared,
-        block=block, size=config.DISK_SIZE,
-        interfaces=storage_helpers.INTERFACES
+    self.disk_names = storage_helpers.create_disks_from_requested_permutations(
+        domain_to_use=self.storage_domain,
+        interfaces=storage_helpers.INTERFACES,
+        shared=self.shared,
+        size=config.DISK_SIZE,
+        test_name=self.polarion_test_case
     )
     assert ll_disks.wait_for_disks_status(self.disk_names), (
         "At least one of the disks %s was not in the expected state 'OK"
