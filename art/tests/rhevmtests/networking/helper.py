@@ -440,6 +440,7 @@ def remove_ifcfg_files(vms_resources, exclude_nics=list()):
             logger.info("Remove %s from %s", ifcfg, vm_resource)
             if not vm_resource.fs.remove(path=ifcfg):
                 logger.error("Fail to remove %s for %s", ifcfg, vm_resource)
+        vm_resource.run_command(["sync"])
     return True
 
 

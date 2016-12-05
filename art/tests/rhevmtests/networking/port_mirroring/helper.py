@@ -138,6 +138,11 @@ def check_traffic_during_icmp(
         "count": "10",
     }
 
+    logger.info("Check if %s accept ICMP", dst_ip)
+    if not src_vm_obj.network.send_icmp(dst=dst_ip, count="1"):
+        logger.error("Failed to send ICMP to %s", dst_ip)
+        return False
+
     res = net_help.check_traffic_during_func_operation(
         func=src_vm_obj.network.send_icmp, func_kwargs=icmp_kwargs,
         tcpdump_kwargs=tcpdump_kwargs
@@ -145,7 +150,7 @@ def check_traffic_during_icmp(
 
     if not positive == res:
         logger.error(exp_info)
-
+        return False
     return True
 
 

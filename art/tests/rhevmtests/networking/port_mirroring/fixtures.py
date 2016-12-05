@@ -110,11 +110,6 @@ def port_mirroring_prepare_setup(request):
     helper.add_nics_to_vms()
     helper.set_vms_network_params()
 
-    for host in port_mirroring.vds_list:
-        assert host.service(conf.FIREWALL_SRV).stop(), (
-            "Cannot stop Firewall service"
-        )
-
 
 @pytest.fixture(scope="class")
 def return_vms_to_original_host(request):
