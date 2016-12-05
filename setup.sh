@@ -73,6 +73,7 @@ then
   exit 1
 fi
 
+export PYCURL_SSL_LIBRARY=nss
 
 $YUM install -y \
     python-virtualenv \
@@ -88,7 +89,8 @@ $YUM install -y \
     vdsm-cli \
     autofs \
     krb5-workstation \
-    redhat-rpm-config
+    redhat-rpm-config \
+    libcurl
 
 rm -rf .art
 virtualenv --system-site-packages .art

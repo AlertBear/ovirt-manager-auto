@@ -31,3 +31,4 @@ pytest-catchlog
 # pytest-marker-bugzilla
 git+git://github.com/rhevm-qe-automation/pytest-marker-bugzilla.git
 uritemplate
+ovirt-engine-sdk-python
