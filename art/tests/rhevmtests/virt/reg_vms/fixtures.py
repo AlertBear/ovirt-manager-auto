@@ -3,13 +3,12 @@
 
 import time
 import pytest
-import logging
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     templates as ll_templates,
     vms as ll_vms,
-    storagedomains as ll_sd
+    storagedomains as ll_sd,
 )
 from art.rhevm_api.tests_lib.high_level import (
     disks as hl_disks,
@@ -19,8 +18,6 @@ import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as helper
 import config
 from art.unittest_lib import testflow
-
-logger = logging.getLogger(__name__)
 
 
 class RegVmBase(object):
@@ -128,11 +125,9 @@ def stateless_vm_test_fixture(request):
     vm_name = request.cls.vm_name
     vm_parameters = request.cls.vm_parameters
 
-    base = RegVmBase
-
     def fin():
         testflow.teardown("Remove stateless vm %s", vm_name)
-        base.remove_stateless_vm(vm_name)
+        RegVmBase.remove_stateless_vm(vm_name)
 
     request.addfinalizer(fin)
 
@@ -192,35 +187,51 @@ def create_vm_and_template_with_small_disk(request):
 
 
 @pytest.fixture()
-def test_snapshot_and_import_export_fixture(request):
+def remove_vm_from_export_domain(request):
+    """
+    Fixture to remove vm from export domain
+    """
+    vm_name = request.cls.vm_name
+
+    def fin():
+        """
+        Remove vm from export domain
+        """
+        testflow.teardown("Remove vm %s from export domain", vm_name)
+        RegVmBase.remove_vm_from_storage_domain(vm_name=vm_name)
+
+    request.addfinalizer(fin)
+
+
+@pytest.fixture()
+def test_snapshot_and_import_export_fixture(
+    request, remove_vm_from_export_domain
+):
     """
     Fixture for snapshot and import export tests:
     1. Create test vm
-    2. fin1: Remove vm from export domain
-    3. fin2: Remove vm
-
+    2. Remove vms from export domain
+    3. fin: Remove vm
     """
     vm_name = request.cls.vm_name
-    base = RegVmBase
 
-    def fin1():
-        testflow.teardown("Remove vm %s from export domain", vm_name)
-        base.remove_vm_from_storage_domain(vm_name=vm_name)
-
-    request.addfinalizer(fin1)
-
-    def fin2():
+    def fin():
+        """
+        Remove vm
+        """
         testflow.teardown("Remove vm %s", vm_name)
         assert ll_vms.safely_remove_vms([vm_name])
 
-    request.addfinalizer(fin2)
+    request.addfinalizer(fin)
 
     testflow.setup("Create vm %s ", vm_name)
     assert helper.create_base_vm(vm_name=vm_name, add_disk=True)
-    export_domain_vms = ll_vms.get_vms_from_storage_domain(base.export_domain)
-    testflow.setup("Clean export domain from vms")
+    export_domain_vms = ll_vms.get_vms_from_storage_domain(
+        RegVmBase.export_domain
+    )
+    testflow.setup("Remove vms from export domain")
     for vm in export_domain_vms:
-        base.remove_vm_from_storage_domain(vm_name=vm)
+        RegVmBase.remove_vm_from_storage_domain(vm_name=vm)
 
 
 @pytest.fixture(scope="class")

@@ -4,7 +4,6 @@ Virt - Reg vms
 from rhevmtests.virt.config import *  # flake8: noqa
 
 TWO_GB = 2 * GB
-NIC_NAME = 'nic'
 WIN_TZ = ENUMS['timezone_win_gmt_standard_time']
 RHEL_TZ = ENUMS['timezone_rhel_etc_gmt']
 # Timeout for VM creation in Vmpool
@@ -21,6 +20,7 @@ MIX_CASE_TEST = 'virt_mix_cases'
 CLONE_VM_TEST = "tested_vm_clone_vm"
 VM_FROM_BASE_TEMPLATE = 'virt_vm_from_template'
 BASE_VM = 'virt_base_vm'
+CPU_MODEL_VM = 'test_cpu_vm'
 BASE_TEMPLATE = 'virt_base_template'
 # clone vm test
 TEST_CLONE_WITH_2_DISKS = "cloned_vm_with_2_disks"
@@ -28,8 +28,7 @@ TEST_CLONE_WITH_WITHOUT_DISKS = "cloned_vm_without_disks"
 REG_VMS_LIST = [
     ADD_VM_TEST, MIX_CASE_TEST, VM_FROM_BASE_TEMPLATE, BASE_VM_VIRT,
     TEST_CLONE_WITH_2_DISKS, TEST_CLONE_WITH_WITHOUT_DISKS,
-    CLONE_VM_TEST
-
+    CLONE_VM_TEST, CPU_MODEL_VM
 ]
 DESCRIPTION = 'description'
 # clone vm

@@ -37,6 +37,7 @@ CLUSTER_UTIL = test_utils.get_api('cluster', 'clusters')
 TEMPLATE_UTIL = test_utils.get_api('template', 'templates')
 
 VM_POOL = api_utils.getDS('VmPool')
+VM = api_utils.getDS('Vm')
 TEMPLATE = api_utils.getDS('Template')
 
 logger = logging.getLogger("art.ll_lib.vmpools")
@@ -46,8 +47,25 @@ VM_POOL_ACTION_TIMEOUT = 600
 
 
 def _prepareVmPoolObject(**kwargs):
+    """
+    Prepares the pool object
 
+    Keyword Arguments:
+        name (str): vmpool name
+        size (int): number of vms in pool
+        template (str): name of the template to base the pool on
+        description (str): vm pool description
+        prestarted_vms (int): number of prestarted vms in the pool
+        max_user_vms (int): max number of vms per user in pool
+        stateful (bool): pool state
+        custom_cpu_model (str): Name of custom cpu model to start vm with
+        custom_emulated_machine (str): Name of custom emulated machine type to
+
+    Returns:
+        VmPool: Returns a VmPool object with relevant attributes
+    """
     pool = VM_POOL()
+    vm = VM()
 
     name = kwargs.pop('name', None)
     if name:
@@ -90,6 +108,15 @@ def _prepareVmPoolObject(**kwargs):
     if stateful is not None:
         pool.set_stateful(stateful)
 
+    custom_cpu_model = kwargs.get("custom_cpu_model")
+    if custom_cpu_model is not None:
+        vm.set_custom_cpu_model(custom_cpu_model)
+
+    custom_emulated_machine = kwargs.get("custom_emulated_machine")
+    if custom_emulated_machine is not None:
+        vm.set_custom_emulated_machine(custom_emulated_machine)
+
+    pool.set_vm(vm)
     return pool
 
 
@@ -100,26 +127,23 @@ def addVmPool(positive, wait=True, **kwargs):
 
     __Author__ = edolinin, slitmano
 
-    :param positive: True if action is expected to succeed False otherwise
-    :type positive: bool
-    :param wait: If True wait until VMs in pool are down, False otherwise
-    :type wait: bool
-    :param name: vmpool name
-    :type name: str
-    :param size: number of vms in pool
-    :type size: int
-    :param template: name of the template to base the pool on
-    :type template: str
-    :param description: vm pool description
-    :type description: str
-    :param prestarted_vms: number of prestarted vms in the pool
-    :type prestarted_vms: int
-    :param max_user_vms: max number of vms per user in pool
-    :type max_user_vms: int
-    :param stateful: pool state
-    :type stateful: bool
-    :return: True if action result == positive, False otherwise
-    :rtype: bool
+    Args:
+        positive (bool): True if action is expected to succeed False otherwise
+        wait (bool): If True wait until VMs in pool are down, False otherwise
+
+    Keyword Arguments:
+        name (str): vmpool name
+        size (int): number of vms in pool
+        template (str): name of the template to base the pool on
+        description (str): vm pool description
+        prestarted_vms (int): number of prestarted vms in the pool
+        max_user_vms (int): max number of vms per user in pool
+        stateful (bool): pool state
+        custom_cpu_model (str): Name of custom cpu model to start vm with
+        custom_emulated_machine (str): Name of custom emulated machine type to
+
+    Returns:
+        bool: True if action result == positive, False otherwise
     """
     size = kwargs.get('size', 0)
     pool = _prepareVmPoolObject(**kwargs)

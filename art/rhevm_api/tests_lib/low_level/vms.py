@@ -512,12 +512,12 @@ def _prepare_vm_object(**kwargs):
 
     # custom emulated machine
     custom_emulated_machine = kwargs.pop("custom_emulated_machine", None)
-    if custom_emulated_machine:
+    if custom_emulated_machine is not None:
         vm.set_custom_emulated_machine(custom_emulated_machine)
 
     # custom cpu model
     custom_cpu_model = kwargs.pop("custom_cpu_model", None)
-    if custom_cpu_model:
+    if custom_cpu_model is not None:
         vm.set_custom_cpu_model(custom_cpu_model)
 
     # soundcard enabled
@@ -1983,6 +1983,9 @@ def runVmOnce(
         user_name (str): Domain user name
         password (str): Domain user password
         initialization (Initialization): Initialization obj for cloud init
+        custom_cpu_model (str): Name of custom cpu model to start vm with
+        custom_emulated_machine (str): Name of custom emulated machine type to
+            start vm with
 
 
     Returns
@@ -2033,6 +2036,14 @@ def runVmOnce(
         vm_hosts.add_host(HOST_API.find(host))
         vm_policy.set_hosts(vm_hosts)
         vm_for_action.set_placement_policy(vm_policy)
+
+    custom_cpu_model = kwargs.get("custom_cpu_model")
+    if custom_cpu_model is not None:
+        vm_for_action.set_custom_cpu_model(custom_cpu_model)
+
+    custom_emulated_machine = kwargs.get("custom_emulated_machine")
+    if custom_emulated_machine is not None:
+        vm_for_action.set_custom_emulated_machine(custom_emulated_machine)
 
     action_params["vm"] = vm_for_action
     action_params['use_sysprep'] = use_sysprep
@@ -5546,6 +5557,29 @@ def remove_affinity_label(vm_name, affinity_label_name):
     )
 
 
+@ll_general.generate_logs()
+def get_vms_objects_from_storage_domain(storage_domain_name):
+    """
+    Get list of vm objects in a given storage domain
+
+    Args:
+        storage_domain_name (str): Name of storage domain
+
+    Returns:
+        list: of vm objects in storage domain, empty list if no vms are found
+    """
+    from art.rhevm_api.tests_lib.low_level.storagedomains import (
+        get_storage_domain_obj
+    )
+    try:
+        storage_domain_object = get_storage_domain_obj(storage_domain_name)
+    except EntityNotFound:
+        return list()
+    return VM_API.getElemFromLink(
+        storage_domain_object, link_name='vms', attr='vm', get_href=False,
+    )
+
+
 def get_vms_from_storage_domain(storage_domain_name):
     """
     Get list of vms in a given storage domain
@@ -5556,22 +5590,16 @@ def get_vms_from_storage_domain(storage_domain_name):
     Returns:
         list: of vm names in storage domain, empty list if no vms are found
     """
-    from art.rhevm_api.tests_lib.low_level.storagedomains import (
-        get_storage_domain_obj
+    storage_domain_vms = get_vms_objects_from_storage_domain(
+        storage_domain_name
     )
-    try:
-        storage_domain_object = get_storage_domain_obj(storage_domain_name)
-    except EntityNotFound:
-        logger.error("Storage domain: %s wasn't found", storage_domain_name)
-        return list()
-    storage_domain_vms = storage_domain_object.get_vms()
     if storage_domain_vms:
         storage_domain_vms = [vm.get_name() for vm in storage_domain_vms]
         logger.info(
             "Vms found in storage domain: %s: %s",
             storage_domain_name, storage_domain_vms
         )
-    return list() if storage_domain_vms is None else storage_domain_vms
+    return storage_domain_vms
 
 
 @ll_general.generate_logs()
@@ -5639,12 +5667,12 @@ def get_qcow_version_disks_snapshot(vm, snapshot):
 
        Args:
            vm (str): Name of the VM
-           snapshot (str): snapshot name/description
+           snapshot (str): Snapshot name/description
 
        Returns:
            list: List of qcow version of each snapshot disk in a specific
-           snapshot
-       """
+                snapshot
+    """
 
     return [
         snapshot_disk.get_qcow_version() for snapshot_disk in

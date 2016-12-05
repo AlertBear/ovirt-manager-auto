@@ -214,7 +214,7 @@ def load_vm_memory_with_load_tool(
         "Run load %s MB on vm %s for %s sec",
         load, vm_name, time_to_run
     )
-    cmd = LOAD_VM_COMMAND % (load, time_to_run)
+    cmd = config_virt.LOAD_VM_COMMAND % (load, time_to_run)
     vm_resource = helpers.get_vm_resource(vm=vm_name, start_vm=start_vm)
     if vm_resource.executor().wait_for_connectivity_state(positive=True):
         ps_id = vm_resource.run_command(command=shlex.split(cmd))[1]
@@ -543,7 +543,7 @@ def get_vm_id(vm_name):
          HostException: If failed to run command
     """
     host_resource = helpers.get_host_resource_of_running_vm(vm_name)
-    cmd = shlex.split(" ".join((VIRSH_VM_LIST_CMD, vm_name)))
+    cmd = shlex.split(" ".join((config_virt.VIRSH_VM_LIST_CMD, vm_name)))
     rc, out, err = host_resource.executor().run_cmd(cmd)
     if rc:
         raise exceptions.HostException(
@@ -563,7 +563,7 @@ def get_dump_xml_as_dict(vm_name):
         vm_name (str): VM name
 
     Returns:
-        dict: VM dump xml info as disc
+        dict: VM dump xml info as dict
 
     Raise:
          HostException: If failed to run command
@@ -571,12 +571,12 @@ def get_dump_xml_as_dict(vm_name):
 
     host_resource = helpers.get_host_resource_of_running_vm(vm_name)
     vm_id = get_vm_id(vm_name)
-    cmd = shlex.split(" ".join((VIRSH_VM_DUMP_XML_CMD, vm_id)))
+    cmd = shlex.split(" ".join((config_virt.VIRSH_VM_DUMP_XML_CMD, vm_id)))
     rc, out, err = host_resource.executor().run_cmd(cmd)
     if rc:
         raise exceptions.HostException(
             "Failed to run virsh cmd: %s on: %s, err: %s"
-            % (host_resource, VIRSH_VM_LIST_CMD, err)
+            % (host_resource, config_virt.VIRSH_VM_LIST_CMD, err)
         )
     return xmltodict.parse(out)
 
@@ -672,10 +672,14 @@ def check_iothreads_of_vm(vm_name, number_of_disks, number_of_threads):
     )
     host_resource = helpers.get_host_resource_of_running_vm(vm_name)
     vm_id = get_vm_id(vm_name)
-    cmd = shlex.split(VIRSH_VM_IOTHREADS_NUMBER_CMD % vm_id, posix=False)
+    cmd = shlex.split(
+        config_virt.VIRSH_VM_IOTHREADS_NUMBER_CMD % vm_id, posix=False
+    )
     total_threads_output = run_command_on_host(cmd, host_resource)
     total_threads = int(total_threads_output) if total_threads_output else -1
-    cmd = shlex.split(VIRSH_VM_IOTHREADS_DRIVERS_CMD % vm_id, posix=False)
+    cmd = shlex.split(
+        config_virt.VIRSH_VM_IOTHREADS_DRIVERS_CMD % vm_id, posix=False
+    )
     logger.info(
         "Expected disk:%d, Expected threads:%d, Actual threads:%d" %
         (number_of_disks, number_of_threads, total_threads)
@@ -901,7 +905,7 @@ def job_runner(
     kwargs_info,
     job_method_name,
     vms_list,
-    timeout=DEFAULT_JOB_TIMEOUT
+    timeout=config_virt.DEFAULT_JOB_TIMEOUT
 ):
     """
     Create job set according to given name and parameters,
@@ -1248,3 +1252,166 @@ def prepare_vm_for_sparsification(
     testflow.step("Stopping vm: %s", vm_name)
     assert ll_vms.stop_vms_safely([vm_name])
     return new_used_space, disks_ids
+
+
+def get_cluster_hosts_resources(cluster_name):
+    """
+    Get a mapping between host name of Resource object for hosts in a given
+    cluster.
+
+    Args:
+        cluster_name (str): Name of the cluster
+
+    Returns:
+         dict: Return a dictionary of resources.VDS objects or empty dict if no
+            hosts were found in the cluster
+    """
+    cluster_hosts = ll_hosts.get_cluster_hosts(cluster_name)
+    return {
+        host_name: helpers.get_host_resource_by_name(host_name=host_name)
+        for host_name in cluster_hosts
+    }
+
+
+def get_cpu_model_name_for_rest_api(cpu_model_full_name):
+    """
+    Convert the cpu model name that is returned from vdsClient getVdsCaps to
+    the one that is acceptable in REST API
+
+    Args:
+        cpu_model_full_name (str): Name of cpu model as reported in vdsm
+
+    Returns:
+        str: Name of the cpu model as expected in REST API or None if the name
+            isn't a valid one
+    """
+    cpu_model_full_name = cpu_model_full_name.split(' ')
+    if 'AMD' in cpu_model_full_name:
+        return '%s_%s' % (cpu_model_full_name[1], cpu_model_full_name[2])
+    elif 'Intel' in cpu_model_full_name:
+        return cpu_model_full_name[1]
+    else:
+        logger.error(
+            "cpu model: %s is no supported in the system", cpu_model_full_name
+        )
+    return ""
+
+
+def check_vm_machine_type(vm_name, host_resource, expected_machine_type):
+    """
+    Check if vm domain xml is set with the expected value for emulated machine
+    flag upon vm creation.
+
+    Args:
+        vm_name (str): Name of the vm.
+        host_resource (Host): resource of the host running the vm
+        expected_machine_type (str): Expected value of the machine type
+
+    Returns:
+         bool: True if the vm was set with the expected value, False otherwise
+    """
+    vm_id = get_vm_id(vm_name)
+    cmd = shlex.split(
+        config_virt.VIRSH_VM_EMULATED_MACHINE_CMD % vm_id, posix=False
+    )
+    machine_type_output = host_resource.run_command(cmd)[1]
+    if not machine_type_output:
+        return False
+    actual_machine_type = machine_type_output.split("=")[1]
+    logger.info(
+        "Expected machine type: %s, Actual machine type: %s" %
+        (expected_machine_type, actual_machine_type)
+    )
+    return expected_machine_type in actual_machine_type
+
+
+def check_vm_cpu_model(vm_name, host_resource, expected_cpu_model):
+    """
+    Check if vm domain xml is set with the expected value for cpu model
+    upon vm creation.
+
+    Args:
+        vm_name (str): Name of the vm.
+        host_resource (Host): resource of the host running the vm
+        expected_cpu_model (str): Expected value of the cpu model type
+
+    Returns:
+         bool: True if the vm was set with the expected value, False otherwise
+    """
+    vm_id = get_vm_id(vm_name)
+    cmd = shlex.split(config_virt.VIRSH_VM_CPU_MODEL_CMD % vm_id, posix=False)
+    cpu_model_output = host_resource.run_command(cmd)[1]
+    if not cpu_model_output:
+        return False
+    logger.info(
+        "Expected cpu type: %s, cpu type from virsh output: %s" %
+        (expected_cpu_model, cpu_model_output)
+    )
+    return expected_cpu_model in cpu_model_output
+
+
+def get_hosts_by_cpu_model(cpu_model_name, cluster):
+    """
+    Get all hosts in cluster with specific cpu model
+
+    Args:
+        cpu_model_name (str): Name of cpu model to filter from
+        cluster (str): Name of the cluster from which to get the hosts
+
+    Returns:
+        list: List of host names in the cluster with the given cpu_model_name
+    """
+    hosts = list()
+    hosts_dict = get_cluster_hosts_resources(cluster)
+    for name, resource in hosts_dict.iteritems():
+        host_cpu = config_virt.CPU_MODEL_DENOM.get_maximal_cpu_model(
+            hosts=[resource], version=config.COMP_VERSION
+        ).get('cpu', '')
+        if host_cpu == cpu_model_name:
+            hosts.append(name)
+    return hosts
+
+
+def highest_common_cpu_model_host_pair_from_cluster(cluster):
+    """
+    Looks for a pair of hosts with the highest common cpu model in a given
+    Cluster. e.g. if we have a cluster with 1 host with Conroe model and 2
+    Penryn, the common cpu model is Conroe, but the hosts with highest cpu
+    models are the 2 with Penryn.
+
+    Args:
+        cluster (str): Name of the cluster
+
+    Returns:
+         dict: cpu info dict for specific model which is common to the 2 host
+            with the highest cpu model in the cluster.
+    """
+    hosts_dict = get_cluster_hosts_resources(cluster)
+    if len(hosts_dict) < 2:
+        return None
+    min_cpu_model = config_virt.CPU_MODEL_DENOM.get_common_cpu_model(
+        hosts_dict.values()
+    )
+    while len(hosts_dict) > 2:
+        min_host = get_hosts_by_cpu_model(min_cpu_model.get('cpu'), cluster)[0]
+        hosts_dict.pop(min_host)
+    return config_virt.CPU_MODEL_DENOM.get_common_cpu_model(
+        hosts_dict.values()
+    )
+
+
+def verify_number_of_disks_on_vm(vm_resource, number_of_disks=1):
+    """
+    Verifies that the vm has the given number of disk in it's file system
+
+    Args:
+        vm_resource (VDS): Vm resource to issue command with
+        number_of_disks (int): Expected number of disks on the vm
+
+    Returns:
+         bool: True if number_of_disks == number of disks found in vm, False
+            otherwise
+    """
+    cmd = shlex.split(config_virt.LSBLK_CMS, posix=False)
+    cmd_output = (vm_resource.run_command(cmd)[1]).strip().split('\n')
+    return len(cmd_output) == number_of_disks

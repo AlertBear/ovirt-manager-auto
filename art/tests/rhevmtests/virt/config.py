@@ -4,10 +4,11 @@
 """
 Virt - Test configuration module
 """
-
 from rhevmtests.config import *  # flake8: noqa
 import rhevmtests.helpers as helper
 import os
+from art.rhevm_api.utils import cpumodel
+
 
 # #######################################################################
 # Following parameters should move to consolidated config, once possible
@@ -207,3 +208,18 @@ DD_CREATE_FILE_CMD = 'dd if=/dev/urandom of=%s bs=1M count=%s'
 FILE_SIZE_IN_MB = 400
 # Sparsify test
 BAD_BLOCKS_CMD = 'badblocks -v %s1'
+
+# Helper parameters
+DEFAULT_JOB_TIMEOUT = 600
+LOAD_VM_COMMAND = (
+    '/home/loadTool -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
+)
+VIRSH_VM_LIST_CMD = "virsh -r list | grep "
+VIRSH_VM_DUMP_XML_CMD = "virsh -r dumpxml "
+VIRSH_VM_IOTHREADS_NUMBER_CMD = (
+    "virsh -r dumpxml %s | grep -oP '(?<=<iothreads>).*?(?=</iothreads>)'"
+)
+VIRSH_VM_IOTHREADS_DRIVERS_CMD = "virsh -r dumpxml %s | grep 'iothread='"
+VIRSH_VM_EMULATED_MACHINE_CMD = "virsh -r dumpxml %s | grep -o machine=\'.*\'"
+VIRSH_VM_CPU_MODEL_CMD = "virsh -r dumpxml %s | grep -o '<model.*</model>'"
+LSBLK_CMS = "lsblk | grep disk"

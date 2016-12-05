@@ -96,31 +96,34 @@ class TestMixCases(VirtTest):
         """
         Create, update and remove vm nic
         """
-
-        nics = ["%s_%d" % (config.NIC_NAME, i) for i in range(3)]
-
-        testflow.step("Add nic %s to vm %s", nics[0], self.vm_name)
+        testflow.step("Add nic %s to vm %s", config.NIC_NAME[0], self.vm_name)
         assert ll_vms.addNic(
             True, vm=self.vm_name,
-            name=nics[0],
+            name=config.NIC_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        testflow.step("Add additional nic %s to vm %s", nics[1], self.vm_name)
+        testflow.step(
+            "Add additional nic %s to vm %s", config.NIC_NAME[1], self.vm_name
+        )
 
         assert ll_vms.addNic(
             True, vm=self.vm_name,
-            name=nics[1],
+            name=config.NIC_NAME[1],
             network=config.MGMT_BRIDGE
         )
-        testflow.step("Update nic %s name to %s", nics[1], nics[2])
+        testflow.step(
+            "Update nic %s name to %s", config.NIC_NAME[1], config.NIC_NAME[2]
+        )
         assert ll_vms.updateNic(
             True, vm=self.vm_name,
-            nic=nics[1], name=nics[2]
+            nic=config.NIC_NAME[1], name=config.NIC_NAME[2]
         )
-        testflow.step("Remove nic %s from vm %s", nics[2], self.vm_name)
+        testflow.step(
+            "Remove nic %s from vm %s", config.NIC_NAME[2], self.vm_name
+        )
         assert ll_vms.removeNic(
             True, vm=self.vm_name,
-            nic=nics[2]
+            nic=config.NIC_NAME[2]
         )
 
     @attr(tier=2)

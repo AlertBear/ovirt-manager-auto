@@ -158,29 +158,32 @@ class CpuModelDenominator(object):
             'vendor': vendor,
         }
 
-    def get_cpu_info(self, model_name, version=None):
+    def get_cpu_info(self, value, key='model', version=None):
         """
-        Gets cpu info for specific model_name, and version
-        :param model_name: cpu model name
-        :type model_name: str
-        :param version: version
-        :type version: str
-        :return: cpu info
-        :rtype: dict(cpu=str, level=int, model=str, vendor=str)
+        Gets cpu info by one of the cpu info dictionary keys - default is model
+
+        Args:
+            value (obj): Value to filter cpu info by
+            key (str): Which key from cpu info dictionary to filter by (can be
+                'model', 'cpu', 'level', vendor')
+            version (str): Compatibility version to get cpu list from
+
+        Returns:
+            dict: cpu info = dict(cpu=str, level=int, model=str, vendor=str)
         """
         try:
             return [
                 cpu for cpu in self.get_cpu_list(version)
-                if cpu['model'] == model_name
+                if cpu[key] == value
             ][0]
         except IndexError:
-            raise UnknownCpuModel("%s for %s version" % (model_name, version))
+            raise UnknownCpuModel("%s for %s version" % (value, version))
 
     def _list_cpu_info(self, models, version):
         info_list = []
         for model in models:
             try:
-                info_list.append(self.get_cpu_info(model, version))
+                info_list.append(self.get_cpu_info(model, version=version))
             except UnknownCpuModel as ex:
                 logger.warning("Unsupported model: %s", ex)
         return info_list
@@ -238,4 +241,78 @@ class CpuModelDenominator(object):
                     raise HostVendorMismatch(
                         "%s != %s" % (vendor, host_vendor,)
                     )
-        return self.get_cpu_info(MIN_MODEL.get(vendor), version)
+        return self.get_cpu_info(MIN_MODEL.get(vendor), version=version)
+
+    def get_maximal_cpu_model(self, hosts, version=None):
+        """
+        Get the cpu model name of the host with the highest cpu model from
+        a list of hosts.
+
+        Args:
+            hosts (list): list of hosts resources objects
+            version (str): compatibility version
+
+        Returns:
+            dict(cpu=str, level=int, model=str, vendor=str):
+            cpu info for the host with highest cpu model.
+        """
+        max_cpu_of_all_hosts = None
+        for host in hosts:
+            host_info = self.fetch_host_caps(host)
+            # Determine the highest cpu model supported by 'host'
+            max_host_cpu = max(
+                self._list_cpu_info(host_info.get('models'), version),
+                key=lambda info: info.get('level')
+            )
+            # Initialize 'max_cpu_of_all_hosts' in 1st iteration
+            if max_cpu_of_all_hosts is None:
+                max_cpu_of_all_hosts = max_host_cpu
+            else:
+                # check if we are comparing between cpu models of same vendor
+                if (
+                    max_host_cpu.get('vendor') !=
+                    max_cpu_of_all_hosts.get('vendor')
+                ):
+                    raise HostVendorMismatch(
+                        "%s != %s" % (
+                            max_host_cpu.get('vendor'),
+                            max_cpu_of_all_hosts.get('vendor'),
+                        )
+                    )
+                # Updates 'max_cpu_of_all_hosts' if higher model found
+                if (
+                    max_host_cpu.get('level') >
+                    max_cpu_of_all_hosts.get('level')
+                ):
+                    max_cpu_of_all_hosts = max_host_cpu
+        logger.info(
+            "The maximal cpu model found: %s", max_cpu_of_all_hosts.get('cpu')
+        )
+        return max_cpu_of_all_hosts
+
+    def get_relative_cpu_model(self, cpu_name, higher=True, version=None):
+        """
+        Get a cpu model of the same vendor as given cpu_name but with higher
+        or lower cpu model level (according to higher flag).
+
+        Args:
+            cpu_name (str): cpu model name of some host or cluster.
+            higher (bool): Looks for a higher level model if True, otherwise
+                looks for a lower version model
+            version (str): compatibility version
+
+        Returns:
+            dict: {cpu=str, level=int, model=str, vendor=str} if found,
+                otherwise empty dict
+        """
+        cpu_info = self.get_cpu_info(cpu_name, key='cpu', version=version)
+        for cpu in self.get_cpu_list(version):
+            operation = (
+                cpu.get('level') > cpu_info.get('level') if higher else
+                cpu.get('level') < cpu_info.get('level')
+            )
+            if cpu.get('vendor') == cpu_info.get('vendor') and operation:
+                logger.info("The cpu model found is %s", cpu.get('cpu'))
+                return cpu
+        logger.warning("No cpu model found")
+        return {}
