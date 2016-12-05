@@ -28,9 +28,9 @@ from art.test_handler.settings import opts
 
 from rhevmtests.storage.fixtures import (
     create_vm, create_snapshot, delete_disks, add_disk, attach_disk,
-    initialize_storage_domains, poweroff_vm, remove_vm, add_disk_permutations,
-    attach_and_activate_disks,
-) # flake8: noqa to use create_vm we need to import into namespace remove_vm
+    initialize_storage_domains, poweroff_vm, add_disk_permutations,
+    attach_and_activate_disks, remove_vm  # flake8: noqa
+)
 from fixtures import (
     initialize_attributes_start_vm, wait_for_disks_status_ok,
     create_multiple_vms, add_vm_with_disk

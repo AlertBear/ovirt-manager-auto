@@ -69,7 +69,6 @@ def add_disk_permutations(request):
 
     self.shared = getattr(self, 'shared', None)
     self.polarion_test_case = getattr(self, 'polarion_test_case', 'Test')
-
     testflow.setup("Creating all disk permutations")
     self.disk_names = storage_helpers.create_disks_from_requested_permutations(
         domain_to_use=self.storage_domain,

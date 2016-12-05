@@ -4,20 +4,24 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_5_Storage_Allow_Online_Vdisk_Editing
 """
 import logging
-
-import config
+import pytest
+from rhevmtests.storage import config
 import helpers
+from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
-    jobs as ll_jobs,
-    storagedomains as ll_sd,
     vms as ll_vms,
+    jobs as ll_jobs,
 )
-from art.test_handler import exceptions
+from rhevmtests.storage.fixtures import (
+    create_vm, delete_disks, remove_vm  # flake8: noqa
+)
+from rhevmtests.storage.storage_live_disk_description_edit.fixtures import (
+    add_disks_permutation, create_second_vm, poweroff_vms,
+)
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, StorageTest as BaseTestCase
-from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 
@@ -32,53 +36,18 @@ ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
 CEPH = config.STORAGE_TYPE_CEPH
 NFS = config.STORAGE_TYPE_NFS
-VMS_WITH_VIRTIO_SCSI_FALSE = list()
-DISK_STATUS_OK_TIMEOUT = 900
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks_permutation.__name__,
+    delete_disks.__name__
+)
 class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    polarion_test_case = None
-    vm1_name = None
-    vm2_name = None
-
-    def setup_with_disks(
-            self, disk_interfaces=(config.VIRTIO, config.VIRTIO_SCSI)
-    ):
-        """
-        Creates a set of disks to be used with all the Live disk
-        description edit tests, and saves a dictionary with the aliases
-        and descriptions of the created disks
-        """
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-        vm_names = storage_helpers.get_vms_for_storage(self.storage)
-        self.vm1_name = vm_names[0]
-        self.vm2_name = vm_names[1]
-        if config.PPC_ARCH:
-            disk_interfaces += (config.INTERFACE_SPAPR_VSCSI,)
-        self.disk_aliases = (
-            storage_helpers.create_disks_from_requested_permutations(
-                self.storage_domain, disk_interfaces, config.DISK_SIZE,
-                test_name=self.polarion_test_case
-            )
-        )
-
-    def tearDown(self):
-        """
-        Remove the disks created as part of the initial setup, this is to
-        ensure no conflict between runs including Rest API and SDK
-        """
-        for disk in self.disk_aliases:
-            if not ll_disks.deleteDisk(True, disk):
-                logger.error("Failed to delete disk '%s'", disk)
-                BaseTestCase.test_failed = True
-
-        self.teardown_exception()
 
 
 class BaseClassEditDescription(BasicEnvironment):
@@ -87,68 +56,73 @@ class BaseClassEditDescription(BasicEnvironment):
     """
     __test__ = False
 
-    def setUp(self):
-        """
-        Pass in all disk interfaces for the 2 basic sanity cases
-        """
-        self.setup_with_disks()
-        self.original_descriptions = dict()
-        self.updated_descriptions = dict()
+    updated_descriptions = dict()
+    original_descriptions = dict()
 
     def basic_positive_flow(self):
         """
         Basic flow used by the majority of test cases in this plan
         """
-        for disk_alias in self.disk_aliases:
+        for disk_alias in self.disk_names:
             disk_object = ll_disks.get_disk_obj(disk_alias)
-            logger.info("Attaching disk '%s' to VM", disk_alias)
-            ll_disks.attachDisk(True, disk_alias, self.vm1_name)
-            assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias, disk_object.get_description()
+            testflow.step(
+                "Attaching disk '%s' to VM: %s", disk_alias, self.vm_name
             )
-
+            ll_disks.attachDisk(True, disk_alias, self.vm_name)
+            assert helpers.verify_vm_disk_description(
+                self.vm_name, disk_alias, disk_object.get_description()
+            )
             self.original_descriptions.update(
                 {disk_alias: disk_object.get_description()}
             )
             self.updated_descriptions.update(
-                {disk_alias: disk_object.get_description() + "_update"}
+                {disk_alias: "update"}
+            )
+            testflow.step(
+                "Update disk %s description to %s", disk_alias,
+                self.updated_descriptions.get(disk_alias)
             )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias,
                 description=self.updated_descriptions[disk_alias],
-                vmName=self.vm1_name
+                vmName=self.vm_name
             )
             assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias,
+                self.vm_name, disk_alias,
                 self.updated_descriptions[disk_alias]
             )
-        logger.info("Starting VM")
-        assert ll_vms.startVm(True, self.vm1_name, config.VM_UP)
-        for disk_alias in self.disk_aliases:
+        testflow.step("Starting VM %s", self.vm_name)
+        assert ll_vms.startVm(True, self.vm_name, config.VM_UP)
+        for disk_alias in self.disk_names:
             assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias,
+                self.vm_name, disk_alias,
                 self.updated_descriptions[disk_alias]
+            )
+            testflow.step(
+                "Update disk %s description to %s", disk_alias,
+                VM_POWERED_ON_DESCRIPTION
             )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias, description=VM_POWERED_ON_DESCRIPTION,
-                vmName=self.vm1_name
+                vmName=self.vm_name
             )
             assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
-        logger.info("Stopping VM safely")
-        ll_vms.stop_vms_safely([self.vm1_name])
-        ll_vms.waitForVMState(self.vm1_name, config.VM_DOWN)
-        for disk_alias in self.disk_aliases:
+        testflow.step("Stop VM %s", self.vm_name)
+        ll_vms.stop_vms_safely([self.vm_name])
+        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        for disk_alias in self.disk_names:
             assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
+            testflow.step("Update disk %s to original description", disk_alias)
             assert ll_disks.updateDisk(
                 True, alias=disk_alias,
                 description=self.original_descriptions.get(disk_alias),
-                vmName=self.vm1_name
+                vmName=self.vm_name
             )
-            ll_disks.detachDisk(True, disk_alias, self.vm1_name)
+            ll_disks.detachDisk(True, disk_alias, self.vm_name)
 
 
 @attr(tier=3)
@@ -159,8 +133,8 @@ class TestCase11500(BaseClassEditDescription):
     Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
     __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
-    storages = set([ISCSI, FCP])
     polarion_test_case = '11500'
+    storages = set([ISCSI, FCP])
     # Bugzilla history
     # 1211314: CLI auto complete option description is missing for add disk
 
@@ -189,8 +163,8 @@ class TestCase11501(BaseClassEditDescription):
         NFS in opts['storages'] or GLUSTERFS in opts['storages'] or
         CEPH in opts['storages']
     )
-    storages = set([NFS, GLUSTERFS, CEPH])
     polarion_test_case = '11501'
+    storages = set([NFS, GLUSTERFS, CEPH])
     # Bugzilla history
     # 1211314: CLI auto complete option description is missing for add disk
 
@@ -209,6 +183,10 @@ class TestCase11501(BaseClassEditDescription):
 
 
 @attr(tier=3)
+@pytest.mark.usefixtures(
+    create_second_vm.__name__,
+    poweroff_vms.__name__,
+)
 class TestCase11503(BasicEnvironment):
     """
     Hot plug disk from one running VM to another, ensuring that the
@@ -218,17 +196,7 @@ class TestCase11503(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '11503'
-
-    def setUp(self):
-        """ Setup disks for this test case """
-        self.original_descriptions = dict()
-        self.setup_with_disks()
-
-    def tearDown(self):
-        """ Remove disks and power off VM for this test case """
-        super(TestCase11503, self).tearDown()
-        ll_vms.stop_vms_safely([self.vm2_name])
-        ll_vms.waitForVMState(self.vm2_name, config.VM_DOWN)
+    original_descriptions = dict()
 
     @polarion("RHEVM3-11503")
     # Bugzilla history:
@@ -242,60 +210,80 @@ class TestCase11503(BasicEnvironment):
         still valid
         """
         disks_to_hotplug = {}
-        for disk_alias in self.disk_aliases:
+        self.vms_to_poweroff = [self.vm_name, self.vm_name_2]
+        for disk_alias in self.disk_names:
             disk_object = ll_disks.get_disk_obj(disk_alias)
             if disk_object.get_interface() != config.INTERFACE_SPAPR_VSCSI:
                 # SPAPR VSCSI does not support hotplug
                 disks_to_hotplug[disk_alias] = disk_object
 
         for disk_alias, disk_object in disks_to_hotplug.iteritems():
-            ll_disks.attachDisk(True, disk_alias, self.vm1_name)
+            testflow.step("Attach disk %s to VM %s", disk_alias, self.vm_name)
+            ll_disks.attachDisk(True, disk_alias, self.vm_name)
             assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias, disk_object.get_description()
+                self.vm_name, disk_alias, disk_object.get_description()
             )
             self.original_descriptions.update(
                 {disk_alias: disk_object.get_description()}
             )
+            testflow.step(
+                "Update disk %s description to %s", disk_alias,
+                VM_INITIAL_DESCRIPTION
+            )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias, description=VM_INITIAL_DESCRIPTION,
-                vmName=self.vm1_name
+                vmName=self.vm_name
             )
-
-        ll_vms.startVm(True, self.vm1_name)
-        ll_vms.startVm(True, self.vm2_name)
-        assert ll_vms.waitForVmsStates(True, [self.vm1_name, self.vm2_name])
+        testflow.step("Start VMs %s and %s",  self.vm_name,  self.vm_name_2)
+        ll_vms.startVm(True, self.vm_name)
+        ll_vms.startVm(True, self.vm_name_2)
+        assert ll_vms.waitForVmsStates(True, [self.vm_name, self.vm_name_2])
 
         for disk_alias in disks_to_hotplug:
             assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias, VM_INITIAL_DESCRIPTION
+                self.vm_name, disk_alias, VM_INITIAL_DESCRIPTION
+            )
+            testflow.step(
+                "Update disk %s description to %s", disk_alias,
+                VM_POWERED_ON_DESCRIPTION
             )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias, description=VM_POWERED_ON_DESCRIPTION,
-                vmName=self.vm1_name
+                vmName=self.vm_name
             )
             assert helpers.verify_vm_disk_description(
-                self.vm1_name, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
-            ll_disks.detachDisk(True, disk_alias, self.vm1_name)
-            ll_disks.attachDisk(True, disk_alias, self.vm2_name)
+            testflow.step("Detach disk %s", disk_alias)
+            ll_disks.detachDisk(True, disk_alias, self.vm_name)
+            testflow.step("Attach disk %s and verify description", disk_alias)
+            ll_disks.attachDisk(True, disk_alias, self.vm_name_2)
             assert helpers.verify_vm_disk_description(
-                self.vm2_name, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm_name_2, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
 
         # Detach disk that was attached into the 2nd VM from the 1st
-        ll_vms.stop_vms_safely([self.vm1_name, self.vm2_name])
-        ll_vms.waitForVMState(self.vm1_name, config.VM_DOWN)
-        ll_vms.waitForVMState(self.vm2_name, config.VM_DOWN)
+        testflow.step("Stop VMs %s", [self.vm_name, self.vm_name_2])
+        ll_vms.stop_vms_safely([self.vm_name, self.vm_name_2])
+        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        ll_vms.waitForVMState(self.vm_name_2, config.VM_DOWN)
         for disk_alias in disks_to_hotplug:
+            testflow.step(
+                "Update disk %s description to %s", disk_alias,
+                self.original_descriptions.get(disk_alias)
+            )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias,
                 description=self.original_descriptions.get(disk_alias),
-                vmName=self.vm2_name
+                vmName=self.vm_name_2
             )
-            ll_disks.detachDisk(True, disk_alias, self.vm2_name)
+            ll_disks.detachDisk(True, disk_alias, self.vm_name_2)
 
 
 @attr(tier=3)
+@pytest.mark.usefixtures(
+    poweroff_vms.__name__
+)
 class TestCase11504(BasicEnvironment):
     """
     Attempt to edit a disk's description on a running VM while running a
@@ -305,24 +293,6 @@ class TestCase11504(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '11504'
-    vm_name = polarion_test_case + "_Test_VM"
-    # Bugzilla history:
-    # 1251956: Live storage migration is broken
-    # 1259785:  Error 'Unable to find org.ovirt.engine.core.common.job.Step
-    # with id' after live migrate a Virtio RAW disk, job stays in status
-    # STARTED
-
-    def setUp(self):
-        """ Setup disks for this test case """
-        self.setup_with_disks()
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.storage_domain
-        vm_args['vmName'] = self.vm_name
-
-        logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.vm_name)
 
     @polarion("RHEVM3-11504")
     def test_ensure_disk_description_is_locked_during_lsm(self):
@@ -332,25 +302,38 @@ class TestCase11504(BasicEnvironment):
         2. Start a Live Storage migration, and ensure that the disk
         description cannot happen while this operation is running
         """
-        for disk_alias in self.disk_aliases:
+        for disk_alias in self.disk_names:
+            testflow.step("Attach disk %s to VM %s", disk_alias, self.vm_name)
             ll_disks.attachDisk(True, disk_alias, self.vm_name)
 
-        for disk_alias in self.disk_aliases:
+        for disk_alias in self.disk_names:
+            testflow.step(
+                "Update disk %s description to %s", disk_alias,
+                VM_POWERED_ON_DESCRIPTION
+            )
             assert ll_disks.updateDisk(
-                True, alias=disk_alias,
-                description=VM_POWERED_ON_DESCRIPTION, vmName=self.vm_name
+                True, alias=disk_alias, description=VM_POWERED_ON_DESCRIPTION,
+                vmName=self.vm_name
             )
             assert helpers.verify_vm_disk_description(
                 self.vm_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
         # Find a storage domain of the same type to migrate the disk into
         target_sd = ll_disks.get_other_storage_domain(
-            self.disk_aliases[0], self.vm_name, self.storage
+            self.disk_names[0], self.vm_name, self.storage
         )
-        for disk_alias in self.disk_aliases:
+        ll_vms.startVm(
+            positive=True, vm=self.vm_name, wait_for_status=config.VM_UP
+        )
+        self.vms_to_poweroff.append(self.vm_name)
+        for disk_alias in self.disk_names:
+            testflow.step(
+                "Migrate disk %s to storage-domain %s", disk_alias, target_sd
+            )
             ll_vms.live_migrate_vm_disk(
                 self.vm_name, disk_alias, target_sd, wait=False
             )
+            ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
             disk_description_expected_to_fail = (
                 "LSM_disk_description_will_not_work_at_all"
             )
@@ -361,6 +344,10 @@ class TestCase11504(BasicEnvironment):
             assert ll_disks.wait_for_disks_status(
                 disk_alias, status=config.DISK_LOCKED
             )
+            testflow.step(
+                "Update disk %s description to %s", disk_alias,
+                disk_description_expected_to_fail
+            )
             assert ll_disks.updateDisk(
                 False, alias=disk_alias,
                 description=disk_description_expected_to_fail,
@@ -369,23 +356,10 @@ class TestCase11504(BasicEnvironment):
             assert helpers.verify_vm_disk_description(
                 self.vm_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
+            ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+            assert ll_vms.wait_for_snapshot_gone(
+                vm_name=self.vm_name, snapshot=config.LIVE_SNAPSHOT_DESCRIPTION
+            ), "Failed to remove snapshot %s" % (
+                config.LIVE_SNAPSHOT_DESCRIPTION
+            )
             assert ll_disks.wait_for_disks_status(disk_alias)
-
-    def tearDown(self):
-        """
-        Ensure that the snapshot created is removed and all disks are detached
-        """
-        # Power off VM, remove snapshot created during Live storage
-        # migration and then delete each disk
-        logger.info(
-            "Wait until all the disks are no longer locked, this will be the "
-            "case once Live storage migration has completed"
-        )
-        ll_jobs.wait_for_jobs([config.ENUMS['job_live_migrate_disk']])
-        assert ll_disks.wait_for_disks_status(
-            self.disk_aliases, timeout=DISK_STATUS_OK_TIMEOUT
-        )
-
-        ll_vms.stop_vms_safely([self.vm_name])
-        super(TestCase11504, self).tearDown()
-        ll_vms.removeVm(True, self.vm_name)

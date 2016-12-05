@@ -12,7 +12,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as TestCase, testflow
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
-    create_vm, delete_disks, poweroff_vm,
+    create_vm, delete_disks, poweroff_vm, remove_vm  # flake8: noqa
 )
 
 logger = logging.getLogger(__name__)
