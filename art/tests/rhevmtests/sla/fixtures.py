@@ -599,7 +599,8 @@ def configure_hosts_power_management(request):
     pm_hosts = dict(
         (sla_config.HOSTS[i], sla_config.VDS_HOSTS[i]) for i in hosts_to_pms
     )
-    assert sch_helpers.configure_pm_on_hosts(hosts=pm_hosts)
+    if not sch_helpers.configure_pm_on_hosts(hosts=pm_hosts):
+        pytest.skip("Not all hosts have power management")
 
 
 @pytest.fixture(scope="class")

@@ -37,9 +37,10 @@ def update_configuration_constants():
         ):
             pytest.skip(
                 "Host %s scheduling memory %s does not equal "
-                "to the host %s scheduling memory %s",
-                host_name, host_sch_memory,
-                conf.HOSTS[0], first_host_sch_memory
+                "to the host %s scheduling memory %s" % (
+                    host_name, host_sch_memory,
+                    conf.HOSTS[0], first_host_sch_memory
+                )
             )
     half_host_memory = first_host_sch_memory / 2
     conf.DEFAULT_PS_PARAMS[

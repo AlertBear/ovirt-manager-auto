@@ -74,7 +74,8 @@ def init_test(request):
     request.addfinalizer(fin)
 
     pm_hosts = dict(zip(conf.HOSTS[:3], conf.VDS_HOSTS[:3]))
-    assert sch_helpers.configure_pm_on_hosts(hosts=pm_hosts)
+    if not sch_helpers.configure_pm_on_hosts(hosts=pm_hosts):
+        pytest.skip("Not all hosts have power management")
 
 
 @u_lib.attr(tier=3)
