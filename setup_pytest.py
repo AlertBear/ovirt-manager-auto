@@ -20,6 +20,7 @@ if __name__ == "__main__":
                 'artautodevices = _pytest_art.autodevices',
                 'artlogging = _pytest_art.testlogger',
                 'artmac2ip = _pytest_art.mac2ip',
+                'arttestinfo = _pytest_art.testinfo',
             ],
         },
     )
