@@ -1,10 +1,10 @@
 import logging
 import art.rhevm_api.tests_lib.low_level.general as ll_general
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level.disks import get_all_disk_permutation,\
-    addDisk
 from utilities.rhevm_tools.base import Setup
 import art.test_handler.settings as settings
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+)
 
 logger = logging.getLogger("art.hl_lib.disks")
 
@@ -33,16 +33,16 @@ def delete_disks(disks_names, timeout=DEFAULT_TIMEOUT, sleep=SLEEP_TIME):
     if not disks_names:
         return False
     logger.info("Wait until disks state is OK")
-    if not disks.wait_for_disks_status(
+    if not ll_disks.wait_for_disks_status(
             disks_names, timeout=timeout, sleep=sleep
     ):
         return False
     for disk in disks_names:
         logger.info("Delete disk %s", disk)
-        if not disks.deleteDisk(True, disk):
+        if not ll_disks.deleteDisk(True, disk):
             logging.error("Delete disk %s failed", disk)
             return False
-    return disks.waitForDisksGone(True, disks_names, timeout, sleep)
+    return ll_disks.waitForDisksGone(True, disks_names, timeout, sleep)
 
 
 def add_new_disk(sd_name, size, block, shared=False, **kwargs):
@@ -83,7 +83,7 @@ def add_new_disk(sd_name, size, block, shared=False, **kwargs):
         }
     )
 
-    assert addDisk(True, **disk_args)
+    assert ll_disks.addDisk(True, **disk_args)
     return disk_args['alias']
 
 
@@ -114,7 +114,7 @@ def create_all_legal_disk_permutations(
     """
     disks_names = []
     logger.info("Creating all disks")
-    disk_permutations = get_all_disk_permutation(
+    disk_permutations = ll_disks.get_all_disk_permutation(
         block=block, shared=shared, interfaces=interfaces
     )
     for permutation in disk_permutations:

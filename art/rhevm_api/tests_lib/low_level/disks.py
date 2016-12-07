@@ -1050,7 +1050,7 @@ def get_non_ovf_disks():
         list: List of disks that are not OVF_STORE
     """
     return [
-        d.get_id() for d in DISKS_API.get(absLink=False) if (
+        d.get_id() for d in get_all_disks() if (
             d.get_alias() != ENUMS['ovf_disk_alias']
         )
     ]

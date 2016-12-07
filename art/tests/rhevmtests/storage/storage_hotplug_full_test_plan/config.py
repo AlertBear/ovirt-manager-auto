@@ -21,14 +21,7 @@ DISKS_TO_PLUG = dict()
 UNATTACHED_DISKS_PER_STORAGE_TYPE = dict()
 TEXT = 'Hello World!'
 DISKS_WAIT_TIMEOUT = 300
-
-disk_args = {
-    'alias': None,
-    'storagedomain': None,
-    'interface': INTERFACE_VIRTIO,
-    'format': DISK_FORMAT_COW,
-    'provisioned_size': DISK_SIZE
-}
+VM_NAMES = dict()
 
 MAIN_HOOK_DIR = "/usr/libexec/vdsm/hooks/"
 ALL_AVAILABLE_HOOKS = [

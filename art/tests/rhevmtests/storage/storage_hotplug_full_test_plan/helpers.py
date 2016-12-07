@@ -7,6 +7,7 @@ import os
 import config
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
+    general as ll_general,
 )
 from art.test_handler import exceptions
 from rhevmtests.storage import helpers as storage_helpers
@@ -20,14 +21,17 @@ def create_vm_with_disks(storage_domain, storage_type):
     Creates a VM and installs system on it, create 7 disks and attach them to
     the VM
 
-    Parameters:
-        * storage_domain: name of the storage domain
-        * storage_type: storage type of the domain where the disks will be
-        created
+    Args:
+        storage_domain (str): Name of the storage-domains
+        storage_type (str): Storage domain type
+
     Returns:
-        Name of the vm created
+        str: Name of the vm created
     """
-    vm_name = config.VM_NAME % storage_type
+    object_name = "%s_%s" % (storage_domain, storage_type)
+    vm_name = storage_helpers.create_unique_object_name(
+        object_name, config.OBJECT_TYPE_VM
+    )
     unattached_disk = 'unattached_disk_%s' % storage_type
     vm_args = config.create_vm_args.copy()
     vm_args['vmName'] = vm_name
@@ -102,7 +106,8 @@ def create_local_files_with_hooks():
 
 
 def remove_hook_files():
-    """ removes all the local copies of the hook files
+    """
+    removes all the local copies of the hook files
     """
     os.remove(config.HOOKFILENAME)
     os.remove(config.HOOKWITHSLEEPFILENAME)
@@ -112,8 +117,16 @@ def remove_hook_files():
 
 def create_vm_from_template(class_name, storage_domain, storage_type):
     """
-    Clones a vm from the template of the given image name with class name as
+    Clones a VM from the template of the given image name with class name as
     part of the VM name
+
+    Args:
+        class_name (str): Polarion test case id
+        storage_domain (str): Name of the storage-domain
+        storage_type (str): Storage domain type
+
+    Returns:
+        str: created VM name
     """
     vm_name = config.CLASS_VM_NAME_FORMAT % (class_name, storage_type)
     vm_args = config.create_vm_args.copy()
@@ -125,3 +138,32 @@ def create_vm_from_template(class_name, storage_domain, storage_type):
             "Unable to clone vm %s from template" % vm_name
         )
     return vm_name
+
+
+@ll_general.generate_logs(error=False)
+def run_cmd(executor, cmd):
+    """
+    Run given command on a given machine
+
+    Args:
+        machine (machine object): Machine object to run command on
+        cmd (str): Command to run on the given machine
+
+    Returns:
+        str: command's output
+    """
+    rc, out, error = executor.run_command(cmd)
+    assert not rc, "Command %s failed, out: %s , error:%s" % (cmd, out, error)
+    return out
+
+
+def clear_hooks(executor):
+    """
+    Clear all VDSM hot(un)plug hook directories
+
+    Args:
+        machine (machine object): Machine object to run command on
+    """
+    for hook_dir in config.ALL_AVAILABLE_HOOKS:
+        remote_hooks = os.path.join(config.MAIN_HOOK_DIR, hook_dir, '*')
+        run_cmd(executor, ['rm', '-f', remote_hooks])
