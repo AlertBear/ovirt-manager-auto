@@ -59,27 +59,17 @@ RHEL_RHEVM_APPLIANCE_DIR = "/tmp"
 RHEVH_RHEVM_APPLIANCE_DIR = "/data"
 APPLIANCE_OVA_URL = PARAMETERS.get("rhevm_appliance_url", "")
 
-# Network constants
-VDS_ACTIVE_INTERFACES = [
-    vds_resource.get_network().find_int_by_ip(
-        vds_resource.ip
-    ) for vds_resource in VDS_HOSTS
-]
-VDS_DEFAULT_GATEWAY = [
-    vds_resource.get_network().find_default_gw() for vds_resource in VDS_HOSTS
-]
-
 # Host constants
 AMD_MODEL = "model_Opteron_G1"
 INTEL_MODEL = "model_Conroe"
 
 # Storage constants
-STORAGE_PARAMETERS = ART_CONFIG["STORAGE_PARAMETERS"]
+STORAGE_PARAMETERS = ART_CONFIG.get("STORAGE_PARAMETERS", {})
 HOSTED_ENGINE_DISK_SIZE = 60
 
 ISCSI_TYPE = "iscsi"
 ISCSI_USER = STORAGE_PARAMETERS.get("iscsi_user", "")
-ISCSI_PORTAL_IP = STORAGE_PARAMETERS["iscsi_portal_ip"]
+ISCSI_PORTAL_IP = STORAGE_PARAMETERS.get("iscsi_portal_ip")
 ISCSI_DEFAULT_PORT = "3260"
 ISCSI_INITIATOR_FILE = "/etc/iscsi/initiatorname.iscsi"
 ISCSI_PASSWORD = STORAGE_PARAMETERS.get("iscsi_password", "")
@@ -100,11 +90,10 @@ STORAGE_CLASS_D = {
 }
 
 # VM constants
-VM_PARAMETERS = ART_CONFIG["VM_PARAMETERS"]
-
-VM_FQDN = VM_PARAMETERS["vm_fqdn"]
-VM_DOMAIN = ".".join(VM_FQDN.split(".")[1:])
-VM_MAC_ADDRESS = VM_PARAMETERS["vm_mac_address"]
+VM_PARAMETERS = ART_CONFIG.get("VM_PARAMETERS", {})
+VM_FQDN = VM_PARAMETERS.get("vm_fqdn")
+VM_MAC_ADDRESS = VM_PARAMETERS.get("vm_mac_address")
+VM_DOMAIN = ".".join(VM_FQDN.split(".")[1:]) if VM_FQDN else ""
 
 # Engine constants
 REST_CONNECTION = ART_CONFIG["REST_CONNECTION"]
@@ -116,22 +105,23 @@ VDC_ADMIN_DOMAIN = REST_CONNECTION["user_domain"]
 VDC_ROOT_PASSWORD = PARAMETERS["vdc_root_password"]
 ENGINE_ENTRY_POINT = REST_CONNECTION["entry_point"]
 
-ENGINE_HOST = resources.Host(VM_FQDN)
-ENGINE_HOST.users.append(
-    resources.RootUser(VDC_ROOT_PASSWORD)
-)
+if VM_FQDN:
+    ENGINE_HOST = resources.Host(VM_FQDN)
+    ENGINE_HOST.users.append(
+        resources.RootUser(VDC_ROOT_PASSWORD)
+    )
 
-ENGINE = resources.Engine(
-    ENGINE_HOST,
-    resources.ADUser(
-        VDC_ADMIN_USER,
-        VDC_PASSWORD,
-        resources.Domain(VDC_ADMIN_DOMAIN),
-    ),
-    schema=REST_CONNECTION.get("schema"),
-    port=VDC_PORT,
-    entry_point=ENGINE_ENTRY_POINT,
-)
+    ENGINE = resources.Engine(
+        ENGINE_HOST,
+        resources.ADUser(
+            VDC_ADMIN_USER,
+            VDC_PASSWORD,
+            resources.Domain(VDC_ADMIN_DOMAIN),
+        ),
+        schema=REST_CONNECTION.get("schema"),
+        port=VDC_PORT,
+        entry_point=ENGINE_ENTRY_POINT,
+    )
 
 # Answer file constants
 ANSWER_FILE_PATH = "/tmp/temp_answer_file.conf"
@@ -237,7 +227,7 @@ ATTRIBUTE_RECORD = "record"
 
 # RHEVH constants
 RHEVH = "Red Hat Enterprise Virtualization Hypervisor"
-RHEVH_FLAG = VDS_HOSTS[0].get_os_info()["dist"] == RHEVH
+RHEVH_FLAG = False
 
 # Engine health page constant
 ENGINE_HEALTH_PAGE_URL = "http://%s/ovirt-engine/services/health" % VM_FQDN

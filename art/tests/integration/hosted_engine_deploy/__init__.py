@@ -12,6 +12,7 @@ def setup_package():
     """
     Download appliance ova file on first host
     """
+    conf.RHEVH_FLAG = conf.VDS_HOSTS[0].os.distribution.distname == conf.RHEVH
     if conf.APPLIANCE_OVA_URL:
         dir_to_download = (
             conf.RHEVH_RHEVM_APPLIANCE_DIR if conf.RHEVH_FLAG
