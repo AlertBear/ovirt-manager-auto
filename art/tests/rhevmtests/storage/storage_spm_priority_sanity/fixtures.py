@@ -33,14 +33,12 @@ def remove_host(request):
     """
     self = request.node.cls
 
-    if not hasattr(self, 'removed_host'):
-        self.removed_host = self.hsm_hosts[0]
-    if not hasattr(self, 'removed_host_ip'):
-        self.removed_host_ip = ll_hosts.getHostIP(self.removed_host)
-
+    self.removed_host = getattr(
+        self, 'removed_host', self.hsm_hosts[0]
+    )
+    self.host_object = config.VDS_HOSTS[config.HOSTS.index(self.removed_host)]
     testflow.setup(
-        "Remove host '%s' ip: %s from %s", self.removed_host,
-        self.removed_host_ip, config.DATA_CENTER_NAME
+        "Remove host '%s' from %s", self.removed_host, config.DATA_CENTER_NAME
     )
     assert ll_hosts.removeHost(True, self.removed_host, True), (
         "Failed to remove host %s" % self.removed_host
@@ -64,8 +62,7 @@ def activate_hosts(request):
                 "Failed to activate host %s" % host
             )
     request.addfinalizer(finalizer)
-    if not hasattr(self, 'hosts_to_activate'):
-        self.hosts_to_activate = list()
+    self.hosts_to_activate = getattr(self, 'hosts_to_activate', list())
 
 
 @pytest.fixture()
@@ -102,16 +99,20 @@ def initialize_hosts_params(request, activate_hosts):
         ]
     request.addfinalizer(finalizer)
 
-    if not hasattr(self, 'high_spm_priority_host'):
-        self.high_spm_priority_host = self.hsm_hosts[0]
-    if not hasattr(self, 'low_spm_priority_host'):
-        self.low_spm_priority_host = self.hsm_hosts[1]
-    if not hasattr(self, 'hosts'):
-        self.hosts = [self.high_spm_priority_host, self.low_spm_priority_host]
-    if not hasattr(self, 'priorities'):
-        self.priorities = [
-            config.DEFAULT_SPM_PRIORITY, config.DEFAULT_SPM_PRIORITY - 1
-        ]
+    self.high_spm_priority_host = getattr(
+        self, 'high_spm_priority_host', self.hsm_hosts[0]
+    )
+    self.low_spm_priority_host = getattr(
+        self, 'low_spm_priority_host', self.hsm_hosts[1]
+    )
+    self.hosts = getattr(
+        self, 'hosts',
+        [self.high_spm_priority_host, self.low_spm_priority_host]
+    )
+    self.priorities = getattr(
+        self, 'priorities',
+        [config.DEFAULT_SPM_PRIORITY, config.DEFAULT_SPM_PRIORITY - 1]
+    )
 
 
 @pytest.fixture()
@@ -131,6 +132,11 @@ def activate_old_master_domain(request):
         self.old_master_domain = ll_sd.get_master_storage_domain_name(
             config.DATA_CENTER_NAME
         )
+    self.old_master_domain = getattr(
+        self, 'old_master_domain', ll_sd.get_master_storage_domain_name(
+            config.DATA_CENTER_NAME
+        )
+    )
 
 
 @pytest.fixture()
@@ -140,10 +146,9 @@ def set_different_host_priorities(request):
     """
     self = request.node.cls
 
-    if not hasattr(self, 'hsm_priorities'):
-        self.hsm_priorities = (
-            [config.MIN_SPM_PRIORITY] * len(self.hsm_hosts)
-        )
+    self.hsm_priorities = getattr(
+        self, 'hsm_priorities', [config.MIN_SPM_PRIORITY] * len(self.hsm_hosts)
+    )
     testflow.setup("Setting HSM priorities for hosts: %s", self.hsm_hosts)
     for host, priority in zip(self.hsm_hosts, self.hsm_priorities):
         assert ll_hosts.setSPMPriority(True, host, priority), (

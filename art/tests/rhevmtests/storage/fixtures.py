@@ -37,11 +37,10 @@ def create_vm(request, remove_vm):
     """
     self = request.node.cls
 
-    self.storage_domain = getattr(
-        self, 'storage_domain', ll_sd.getStorageDomainNamesForType(
+    if not hasattr(self, 'storage_domain'):
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-    )
     self.vm_name = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_VM
     )
@@ -569,18 +568,20 @@ def set_spm_priorities(request):
         """
         Resetting SPM priority to all hosts
         """
+        result_list = list()
         testflow.teardown(
             "Resetting SPM priority to %s for all hosts", self.spm_priorities
         )
         for host, priority in zip(config.HOSTS, self.spm_priorities):
-            if not ll_hosts.setSPMPriority(True, host, priority):
-                logger.error("Unable to set host %s priority", host)
+            result_list.append(ll_hosts.setSPMPriority(True, host, priority))
+        assert all(result_list)
     request.addfinalizer(finalizer)
 
-    if not hasattr(self, 'spm_priorities'):
-        self.spm_priorities = (
+    self.spm_priorities = getattr(
+        self, 'spm_priorities', (
             [config.DEFAULT_SPM_PRIORITY] * len(config.HOSTS)
         )
+    )
     testflow.setup(
         "Setting SPM priorities for hosts: %s", self.spm_priorities
     )
@@ -589,8 +590,9 @@ def set_spm_priorities(request):
             raise exceptions.HostException(
                 'Unable to set host %s priority' % host
             )
-    if not hasattr(self, 'spm_host'):
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+    self.spm_host = getattr(
+        self, 'spm_host', ll_hosts.getSPMHost(config.HOSTS)
+    )
     if not hasattr(self, 'hsm_hosts'):
         self.hsm_hosts = [
             host for host in config.HOSTS if host != self.spm_host
@@ -618,7 +620,7 @@ def init_master_domain_params(request):
         config.DATA_CENTER_NAME
     )
 
-    self.master_domain = master_domain_obj['masterDomain']
+    self.master_domain = master_domain_obj.get('masterDomain')
 
     if not hasattr(self, 'master_domain_address'):
         rc, master_domain_address = ll_sd.getDomainAddress(

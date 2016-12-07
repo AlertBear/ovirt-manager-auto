@@ -19,9 +19,9 @@ from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
-    delete_disks, set_spm_priorities, init_master_domain_params,
-    create_vm, remove_vm
-) # flake8: noqa
+    delete_disks, set_spm_priorities, init_master_domain_params, create_vm
+)
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 from rhevmtests.storage.storage_manually_reassign_spm.fixtures import (
     init_non_master_domains_params, flush_iptable_block, activate_domain,
     start_vm_on_hsm_host, retrieve_master_domain_for_vm_creation,
@@ -104,6 +104,7 @@ class TestCase5815(BasicEnvironment):
     Assign HSM host to be SPM while another host is SPM of DC
     """
     __test__ = True
+    polarion_test_case = '5815'
 
     @polarion("RHEVM3-5815")
     def test_reassign_spm(self):
@@ -129,6 +130,7 @@ class TestCase5823(BasicEnvironment):
     Reassign of SPM server when entering maintenance mode
     """
     __test__ = True
+    polarion_test_case = '5823'
 
     @polarion("RHEVM3-5823")
     def test_reassign_spm_when_deactivate_spm_host(self):
@@ -157,6 +159,7 @@ class TestCase5818(BasicEnvironment):
     Manually reassign SPM during async task
     """
     __test__ = True
+    polarion_test_case = '5818'
     disk_alias = None
     disks_to_remove = list()
 
@@ -198,6 +201,7 @@ class TestCase5819(BasicEnvironment):
     Reassign SPM during storage domain deactivation
     """
     __test__ = True
+    polarion_test_case = '5819'
 
     @polarion("RHEVM3-5819")
     def test_reassign_spm_during_deactivate_domain(self):
@@ -231,6 +235,7 @@ class TestCase14812(BasicEnvironment):
     "Image is not a legal chain"
     """
     __test__ = True
+    polarion_test_case = '14812'
 
     disk_alias = None
     disks_to_remove = list()
@@ -282,6 +287,7 @@ class TestCase5820(ReassignSPMWithStorageBlocked):
     Resign SPM where host can't see non-Master Storage Domain
     """
     __test__ = True
+    polarion_test_case = '5820'
 
     # Bug description - SPM Host become Non-responsive when block connection
     # to Master/Non-master Storage Domain
@@ -307,6 +313,7 @@ class TestCase5821(ReassignSPMWithStorageBlocked):
     Resign SPM where host can't see Master Storage Domain
     """
     __test__ = True
+    polarion_test_case = '5821'
 
     # Bug description - SPM Host become Non-responsive when block connection
     # to Master/Non-master Storage Domain

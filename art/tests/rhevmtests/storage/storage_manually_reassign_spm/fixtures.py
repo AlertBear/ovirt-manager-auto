@@ -77,6 +77,22 @@ def flush_iptable_block(request):
 
 
 @pytest.fixture()
+def fin_activate_host(request):
+    """
+    Activate host
+    """
+    self = request.node.cls
+
+    def finalizer():
+        testflow.teardown("Activate host %s", self.spm_host)
+        assert ll_hosts.activate_host(True, self.spm_host), (
+            "Unable to activate host %s ", self.spm_host
+        )
+        ll_hosts.waitForHostsStates(True, self.spm_host)
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
 def activate_domain(request):
     """
     activates storage domain
@@ -135,18 +151,3 @@ def retrieve_master_domain_for_vm_creation(request):
             config.DATA_CENTER_NAME
         )
         self.storage_domain = master_domain_obj['masterDomain']
-
-
-@pytest.fixture()
-def fin_activate_host(request):
-    """
-    Activate host
-    """
-    self = request.node.cls
-
-    def finalizer():
-        assert ll_hosts.activate_host(True, self.spm_host), (
-            "Unable to activate host %s ", self.spm_host
-        )
-        ll_hosts.waitForHostsStates(True, self.spm_host)
-    request.addfinalizer(finalizer)

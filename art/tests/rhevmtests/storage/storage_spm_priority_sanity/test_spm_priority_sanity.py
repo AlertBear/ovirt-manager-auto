@@ -154,6 +154,7 @@ class TestCase6220(BasicEnvironment):
     RHEVM3-6220 - Default SPM priority value
     """
     __test__ = True
+    polarion_test_case = '6220'
 
     @polarion("RHEVM3-6220")
     def test_default_spm_priority(self):
@@ -164,7 +165,7 @@ class TestCase6220(BasicEnvironment):
         """
         testflow.step("Add host %s back to the environment", self.removed_host)
         assert ll_hosts.add_host(
-            name=self.removed_host, address=self.removed_host_ip,
+            name=self.removed_host, address=self.host_object.fqdn,
             wait=True, cluster=config.CLUSTER_NAME,
             root_password=config.HOSTS_PW
         ), "Failed to add host %s back to %s" % (
@@ -257,6 +258,7 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
     RHEVM3-6217 - All hosts with '-1' priority
     """
     __test__ = True
+    polarion_test_case = '6217'
 
     @polarion("RHEVM3-6217")
     def test_all_hosts_with_minus_one_spm_priority(self):
@@ -280,6 +282,7 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
     even if it is the only host
     """
     __test__ = True
+    polarion_test_case = '6205'
 
     @polarion("RHEVM3-6205")
     def test_all_hosts_with_minus_one_spm_priority(self):
@@ -318,6 +321,7 @@ class TestCase6206(BasicEnvironment):
     RHEVM3-6206 - Two hosts swap their priorities, the SPM changes accordingly
     """
     __test__ = True
+    polarion_test_case = '6206'
 
     def basic_flow(self):
         """
@@ -367,6 +371,7 @@ class TestCase6224(BasicEnvironment):
     RHEVM3-6224 - Restart/Stop VDSM
     """
     __test__ = True
+    polarion_test_case = '6224'
 
     def basic_flow(self, host_name, priority):
         """
@@ -431,6 +436,7 @@ class TestCase6222(BasicEnvironment):
     RHEVM3-6222 - Migrate Master Storage Domain (negative test)
     """
     __test__ = True
+    polarion_test_case = '6222'
 
     @polarion("RHEVM3-6222")
     def test_migrate_master_storage_domain(self):
@@ -461,6 +467,7 @@ class TestCase6221(BasicEnvironment):
     RHEVM3-6221 - Change the SPM priority value in the DB (negative test)
     """
     __test__ = True
+    polarion_test_case = '6221'
 
     @polarion("RHEVM3-6221")
     def test_db_illegal_spm_priority_value(self):
@@ -503,6 +510,7 @@ class TestCase6215(BasicEnvironment):
 
     __test__ = False
     former_spm = None
+    polarion_test_case = '6215'
 
     def setUp(self):
         """
@@ -591,6 +599,7 @@ class TestCase6219(BasicEnvironment):
     RHEVM3-6219 - Storage disconnection and SPM re-election
     """
     __test__ = True
+    polarion_test_case = '6219'
     former_spm = None
 
     def setUp(self):
