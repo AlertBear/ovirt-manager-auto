@@ -1659,6 +1659,10 @@ def get_vm_nic(vm, nic):
 
     Returns:
         NIC: VM NIC object
+
+    Raises:
+        EntityNotFound: If VM NIC object not found
+
     """
     vm_obj = VM_API.find(vm)
     logger.info("Get %s vNIC object from %s", nic, vm)
