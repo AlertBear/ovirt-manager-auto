@@ -8,6 +8,7 @@ from art.test_handler.settings import ART_CONFIG
 ################################
 # General configuration values #
 ################################
+PRODUCT = ART_CONFIG["DEFAULT"]["PRODUCT"]
 PARAMETERS = ART_CONFIG["PARAMETERS"]
 
 # HOSTS
@@ -50,6 +51,7 @@ DISK_DEPLOY = "disk"
 # Appliance constants
 APPLIANCE_PATH = None
 RHEVM_APPLIANCE_PACKAGE = "rhevm-appliance"
+OVIRT_APPLIANCE_PACKAGE = "ovirt-engine-appliance"
 RHEL_RHEVM_APPLIANCE_DIR = "/tmp"
 RHEVH_RHEVM_APPLIANCE_DIR = "/data"
 APPLIANCE_OVA_URL = PARAMETERS.get("rhevm_appliance_url", "")
@@ -238,3 +240,62 @@ RHEVH_FLAG = VDS_HOSTS[0].get_os_info()["dist"] == RHEVH
 ENGINE_HEALTH_PAGE_URL = "http://%s/ovirt-engine/services/health" % VM_FQDN
 
 RHEV_MOUNT_POINT = "/rhev/data-center/mnt/"
+
+# HE clean constants
+HE_CLI = "hosted-engine"
+SERVICE_STOP_TIMEOUT = 180
+SANLOCK_SERVICE = "sanlock"
+MOUNT_DIR = "/rhev/data-center/mnt/"
+
+CLEAN_COMMAND = "clean_command"
+CLEAN_LOGGER = "clean_logger"
+CLEAN_SERVICE = "clean_service"
+
+SERVICE_NAME = "service_name"
+SERVICE_OPERATION = "service_operation"
+SERVICE_OPERATION_RESTART = "restart"
+SERVICE_OPERATION_STOP = "stop"
+
+
+CLEAN_OPERATIONS = [
+    {
+        CLEAN_COMMAND: [
+            HE_CLI, "--set-maintenance", "--mode=global"
+        ],
+        CLEAN_LOGGER: "enable 'GlobalMaintenance'"
+    },
+    {
+        CLEAN_COMMAND: [HE_CLI, "--vm-poweroff"],
+        CLEAN_LOGGER: "destroy HE VM"
+    },
+    {
+        CLEAN_SERVICE: {
+            SERVICE_NAME: OVIRT_HA_AGENT_SERVICE,
+            SERVICE_OPERATION: SERVICE_OPERATION_STOP
+        },
+        CLEAN_LOGGER: "%s %s service" % (
+            SERVICE_OPERATION_STOP, OVIRT_HA_AGENT_SERVICE
+        )
+    },
+    {
+        CLEAN_COMMAND: ["sanlock", "client", "shutdown", "-f", "1"],
+        CLEAN_LOGGER: "shutdown sanlock"
+    },
+    {
+        CLEAN_COMMAND: ["umount", "%s*" % MOUNT_DIR],
+        CLEAN_LOGGER: "umount all directories under %s" % MOUNT_DIR
+    },
+    {
+        CLEAN_COMMAND: ["rm", "-rf", "%s*" % MOUNT_DIR],
+        CLEAN_LOGGER: "remove all directories under %s" % MOUNT_DIR
+    },
+    {
+        CLEAN_SERVICE: {
+            SERVICE_NAME: SANLOCK_SERVICE,
+            SERVICE_OPERATION: SERVICE_OPERATION_RESTART
+        },
+        CLEAN_LOGGER: "%s %s service" % (
+            SERVICE_OPERATION_RESTART, SANLOCK_SERVICE
+        )
+    }
+]

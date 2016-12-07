@@ -30,9 +30,8 @@ class BaseDeploy(test_libs.IntegrationTest):
     @classmethod
     def setup_class(cls):
         """
-        1) Reprovision host
-        2) Install hosted engine packages
-        3) Create storage for test
+        1) Install hosted engine packages
+        2) Create storage for test
         """
         storage_class = getattr(
             storage_helper, conf.STORAGE_CLASS_D[cls.storage_type]
@@ -69,12 +68,6 @@ class BaseDeploy(test_libs.IntegrationTest):
         1) Clean hosts from HE deployment
         2) Clean storage after test
         """
-        logger.info("%s: Enable global maintenance", conf.VDS_HOSTS[0])
-        conf.VDS_HOSTS[0].run_command(
-            command=[
-                conf.HOSTED_ENGINE_CMD, "--set-maintenance", "--mode=global"
-            ]
-        )
         results = []
         with ThreadPoolExecutor(max_workers=len(conf.VDS_HOSTS)) as executor:
             for vds_resource in conf.VDS_HOSTS:
@@ -116,8 +109,7 @@ class BaseDeploy(test_libs.IntegrationTest):
     @classmethod
     def __prepare_resource_for_he_deployment(cls, vds_resource):
         """
-        1) Reprovision host
-        2) Install HE packages on host
+        1) Install HE packages on host
         3) Stop NetworkManager
 
         :param vds_resource: vds resource
@@ -136,7 +128,11 @@ class BaseDeploy(test_libs.IntegrationTest):
                     raise errors.HostedEngineException(
                         "Can not install rpm package on RHEV-H"
                     )
-                packages_to_install.append(conf.RHEVM_APPLIANCE_PACKAGE)
+                if conf.PRODUCT == "rhevm":
+                    appliance_package = conf.RHEVM_APPLIANCE_PACKAGE
+                else:
+                    appliance_package = conf.OVIRT_APPLIANCE_PACKAGE
+                packages_to_install.append(appliance_package)
         for package in packages_to_install:
             if not host_package_manager.install(package):
                 raise errors.HostedEngineException(
@@ -152,32 +148,30 @@ class BaseDeploy(test_libs.IntegrationTest):
     @staticmethod
     def __clean_host_from_he_deployment(vds_resource):
         """
-        1) Remove HE packages
-        2) Remove HE configuration directories
-        3) Reboot host
+        Clean the host from the HE configuration
 
         :param vds_resource: vds resource
         :type vds_resource: VDS
         """
-        logger.info("%s: Poweroff HE VM", vds_resource)
-        vds_resource.run_command(
-            command=[conf.HOSTED_ENGINE_CMD, "--vm-poweroff"]
-        )
-        logger.info(
-            "%s: Stop %s service", vds_resource, conf.OVIRT_HA_AGENT_SERVICE
-        )
-        if not vds_resource.service(
-            name=conf.OVIRT_HA_AGENT_SERVICE, timeout=120
-        ).stop():
-            logger.error(
-                "%s: Failed to stop %s service",
-                vds_resource, conf.OVIRT_HA_AGENT_SERVICE
+        for clean_operation in conf.CLEAN_OPERATIONS:
+            logger.info(
+                "%s: %s", vds_resource, clean_operation[conf.CLEAN_LOGGER]
             )
-        logger.info(
-            "%s: Unmount all storages from %s",
-            vds_resource, conf.RHEV_MOUNT_POINT
-        )
-        vds_resource.nfs.umount(mount_point="%s*" % conf.RHEV_MOUNT_POINT)
+            if conf.CLEAN_COMMAND in clean_operation:
+                vds_resource.run_command(
+                    command=clean_operation[conf.CLEAN_COMMAND]
+                )
+            if conf.CLEAN_SERVICE in clean_operation:
+                host_service = vds_resource.service(
+                    name=clean_operation[
+                        conf.CLEAN_SERVICE
+                    ][conf.SERVICE_NAME],
+                    timeout=conf.SERVICE_STOP_TIMEOUT
+                )
+                getattr(
+                    host_service,
+                    clean_operation[conf.CLEAN_SERVICE][conf.SERVICE_OPERATION]
+                )()
 
     @classmethod
     def __create_answer_file_on_resource(
