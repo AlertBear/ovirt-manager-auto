@@ -14,6 +14,7 @@ import config as pm_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+from art.unittest_lib import testflow
 from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -32,6 +33,7 @@ def port_mirroring_prepare_setup(request):
         """
         Remove networks
         """
+        testflow.teardown("Remove networks from setup")
         hl_networks.remove_net_from_setup(
             host=port_mirroring.hosts_list, data_center=port_mirroring.dc_0,
             all_net=True
@@ -43,6 +45,7 @@ def port_mirroring_prepare_setup(request):
         """
         Remove all vNIC profiles from setup
         """
+        testflow.teardown("Remove unneeded vnic profiles")
         networking.remove_unneeded_vnic_profiles()
     request.addfinalizer(fin4)
 
@@ -51,6 +54,7 @@ def port_mirroring_prepare_setup(request):
         """
         Finalizer for remove vNICs from VMs
         """
+        testflow.teardown("Remove unneeded VMs NICs")
         networking.remove_unneeded_vms_nics()
     request.addfinalizer(fin3)
 
@@ -59,6 +63,7 @@ def port_mirroring_prepare_setup(request):
         """
         Stop all VMs
         """
+        testflow.teardown("Stop all VMs")
         ll_vms.stop_vms_safely(vms_list=conf.VM_NAME)
     request.addfinalizer(fin2)
 
@@ -72,9 +77,11 @@ def port_mirroring_prepare_setup(request):
             vms_resources.append(
                 pm_conf.VMS_NETWORKS_PARAMS.get(vm).get("resource")
             )
+            testflow.teardown("Remove ifcfg files from VMs")
         assert network_helper.remove_ifcfg_files(vms_resources=vms_resources)
     request.addfinalizer(fin1)
 
+    testflow.setup("Create networks %s", pm_conf.NETS_DICT)
     network_helper.prepare_networks_on_setup(
         networks_dict=pm_conf.NETS_DICT, dc=port_mirroring.dc_0,
         cluster=port_mirroring.cluster_0
@@ -94,18 +101,28 @@ def port_mirroring_prepare_setup(request):
         }
     }
     for host_name in port_mirroring.hosts_list:
+        testflow.setup(
+            "Attach networks %s to host %s", pm_conf.NETS_DICT, host_name
+        )
         assert hl_host_network.setup_networks(host_name=host_name, **sn_dict)
 
+    testflow.setup("Create vnic profiles with port mirroring")
     helper.create_vnic_profiles_with_pm()
+    testflow.setup("Set port mirroring on VM %s", port_mirroring.vm_0)
     assert helper.set_port_mirroring(
         vm=port_mirroring.vm_0, nic=conf.NIC_NAME[0],
         network=port_mirroring.mgmt_bridge
     )
     for vm in vm_list:
+        testflow.setup(
+            "Start VM %s on specific host %s", vm, port_mirroring.host_0_name
+        )
         assert ll_vms.runVmOnce(
             positive=True, vm=vm, host=port_mirroring.host_0_name,
             wait_for_state=conf.ENUMS["vm_state_up"]
         )
+
+    testflow.setup("Add nics to VMs")
     helper.add_nics_to_vms()
     helper.set_vms_network_params()
 
@@ -121,6 +138,7 @@ def return_vms_to_original_host(request):
         """
         Migrate all VMs back to original host
         """
+        testflow.teardown("Return VMs to original host")
         helper.return_vms_to_original_host()
     request.addfinalizer(fin)
 
@@ -137,6 +155,7 @@ def disable_port_mirroring(request):
         Disable PM for non first VM
         """
         for vm_name in conf.VM_NAME[2:4]:
+            testflow.teardown("Disable port mirroring on VM %s", vm_name)
             assert helper.set_port_mirroring(
                 vm=vm_name, nic=pm_conf.PM_NIC_NAME[0], teardown=True,
                 network=pm_conf.PM_NETWORK[0], disable_mirroring=True
@@ -151,6 +170,7 @@ def set_port_mirroring(request):
     """
     port_mirroring = NetworkFixtures()
 
+    testflow.step("Set port on VM %s", port_mirroring.vm_1)
     assert helper.set_port_mirroring(
         vm=port_mirroring.vm_1, nic=pm_conf.PM_NIC_NAME[0],
         network=pm_conf.PM_NETWORK[0]

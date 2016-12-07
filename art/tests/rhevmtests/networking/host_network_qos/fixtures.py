@@ -29,6 +29,9 @@ def remove_qos_from_dc(request):
         Remove QoS from datacenter
         """
         if qos_remove:
+            testflow.teardown(
+                "Remove QoS from datacenter %s", host_network_qos.dc_0
+            )
             assert all(
                 [
                     ll_dc.delete_qos_from_datacenter(

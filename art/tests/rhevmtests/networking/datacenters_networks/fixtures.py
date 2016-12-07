@@ -10,6 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as dc_conf
+from art.unittest_lib import testflow
 import rhevmtests.networking.config as conf
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -28,6 +29,7 @@ def datacenter_networks_prepare_setup(request):
         Remove basic setup
         """
         for dc_name in dc_list:
+            testflow.teardown("Remove datacenter %s", dc_name)
             result_list.append(
                 hl_networks.remove_basic_setup(datacenter=dc_name)
             )
@@ -35,6 +37,7 @@ def datacenter_networks_prepare_setup(request):
     request.addfinalizer(fin)
 
     for dc in dc_list:
+        testflow.teardown("Add datacenter %s", dc)
         assert hl_networks.create_basic_setup(
             datacenter=dc, version=conf.COMP_VERSION
         )
@@ -56,6 +59,9 @@ def create_network_in_datacenter(request, datacenter_networks_prepare_setup):
             key: val,
             "name": net_name[idx]
         }
+        testflow.setup(
+            "Add network to datatcenter %s with %s", dc_1, kwargs_dict
+        )
         assert ll_networks.create_network_in_datacenter(
             positive=True, datacenter=dc_1, **kwargs_dict
         )
@@ -76,6 +82,7 @@ def create_networks_in_dc(request, datacenter_networks_prepare_setup):
         Remove networks from setup
         """
         for dc_name in dc_list:
+            testflow.teardown("Remove network from setup")
             assert ll_networks.delete_networks_in_datacenter(
                 datacenter=dc_name, mgmt_net=datacenter_networks.mgmt_bridge
             )
@@ -84,6 +91,7 @@ def create_networks_in_dc(request, datacenter_networks_prepare_setup):
     for idx, (nets_num, dc, prefix) in enumerate(
         zip(nets_num_list, dc_list, prefix_list)
     ):
+        testflow.setup("Create networks in datacenter %s", dc)
         dc_net_list = ll_networks.create_networks_in_datacenter(
             num_of_net=nets_num, datacenter=dc, prefix=prefix
         )

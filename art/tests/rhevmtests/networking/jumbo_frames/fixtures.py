@@ -20,26 +20,18 @@ from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
-class JumboFrame(NetworkFixtures):
-    """
-    Fixtures for jumbo frame
-    """
-    def __init__(self):
-        super(JumboFrame, self).__init__()
-        self.vms_list = [self.vm_0, self.vm_1]
-
-
 @pytest.fixture(scope="module")
 def prepare_setup_jumbo_frame(request):
     """
     Prepare setup for jumbo frame test
     """
-    jumbo_frame = JumboFrame()
+    jumbo_frame = NetworkFixtures()
 
     def fin2():
         """
         Remove networks from setup
         """
+        testflow.teardown("Remove networks from setup")
         assert hl_networks.remove_net_from_setup(
             host=jumbo_frame.hosts_list, data_center=jumbo_frame.dc_0,
             mgmt_network=jumbo_frame.mgmt_bridge, all_net=True
@@ -50,15 +42,18 @@ def prepare_setup_jumbo_frame(request):
         """
         Stop VMs
         """
+        testflow.teardown("Stop VMs %s", jumbo_frame.vms_list)
         assert ll_vms.stopVms(vms=jumbo_frame.vms_list)
     request.addfinalizer(fin1)
 
+    testflow.setup("Create networks %s", jumbo_conf.NETS_DICT)
     network_helper.prepare_networks_on_setup(
         networks_dict=jumbo_conf.NETS_DICT, dc=jumbo_frame.dc_0,
         cluster=jumbo_frame.cluster_0
     )
 
     for vm, host in zip(jumbo_frame.vms_list, jumbo_frame.hosts_list):
+        testflow.setup("Run vm %s once on specific host %s", vm, host)
         assert network_helper.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )
@@ -72,7 +67,7 @@ def configure_mtu_on_host(request, restore_hosts_mtu):
     """
     Configure MTU on hosts interfaces
     """
-    jumbo_frame = JumboFrame()
+    jumbo_frame = NetworkFixtures()
     mtu = request.node.cls.mtu
     host_nic_index = request.node.cls.host_nic_index
     host_nic = jumbo_frame.host_0_nics[host_nic_index]
@@ -91,7 +86,7 @@ def add_vnics_to_vms(request):
     """
     Add vNICs to VMs
     """
-    JumboFrame()
+    NetworkFixtures()
     vms_ips = request.node.cls.vms_ips
     vnics_to_add = request.node.cls.vnics_to_add
 
@@ -122,7 +117,7 @@ def update_cluster_network(request):
     """
     Update cluster network usages
     """
-    jumbo_frame = JumboFrame()
+    jumbo_frame = NetworkFixtures()
     net = request.node.cls.net
 
     def fin():
@@ -152,7 +147,7 @@ def restore_hosts_mtu(request):
     """
     Restore hosts interfaces MTU
     """
-    JumboFrame()
+    NetworkFixtures()
 
     def fin():
         """

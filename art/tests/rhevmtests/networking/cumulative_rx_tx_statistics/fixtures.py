@@ -93,7 +93,9 @@ def host_attach_networks_to_hosts(request, clean_hosts_interfaces):
     """
     Attach networks with IP to hosts
     """
-    NetworkFixtures()
+    rx_tx_state = NetworkFixtures()
+    host_nic_list = [rx_tx_state.host_0_nics[1], rx_tx_state.host_1_nics[1]]
+    host_ips_list = rx_tx_conf.HOST_IPS[:2]
     ip_dict = rx_tx_conf.BASIC_IP_DICT_NETMASK
     sn_dict = {
         "add": {
@@ -104,10 +106,11 @@ def host_attach_networks_to_hosts(request, clean_hosts_interfaces):
             }
         }
     }
-    for i in range(2):
-        host = conf.HOSTS[i]
-        sn_dict["add"]["1"]["nic"] = conf.VDS_HOSTS[i].nics[1]
-        ip_dict["ip_prefix"]["address"] = rx_tx_conf.HOST_IPS[i]
+    for host, nic, host_ip in zip(
+        rx_tx_state.hosts_list, host_nic_list, host_ips_list
+    ):
+        sn_dict["add"]["1"]["nic"] = nic
+        ip_dict["ip_prefix"]["address"] = host_ip
         testflow.setup("Attach: %s to host %s", sn_dict, host)
         assert hl_host_network.setup_networks(host_name=host, **sn_dict)
 
@@ -117,6 +120,9 @@ def vm_attach_networks_to_hosts(request, clean_hosts_interfaces):
     """
     Attach networks to hosts
     """
+    rx_tx_state = NetworkFixtures()
+    host_nic_list = [rx_tx_state.host_0_nics[1], rx_tx_state.host_1_nics[1]]
+
     sn_dict = {
         "add": {
             "1": {
@@ -129,11 +135,9 @@ def vm_attach_networks_to_hosts(request, clean_hosts_interfaces):
             }
         }
     }
-
-    for i in range(2):
-        host = conf.HOSTS[i]
-        sn_dict["add"]["1"]["nic"] = conf.VDS_HOSTS[i].nics[1]
-        sn_dict["add"]["2"]["nic"] = conf.VDS_HOSTS[i].nics[1]
+    for host, nic in zip(rx_tx_state.hosts_list, host_nic_list):
+        sn_dict["add"]["1"]["nic"] = nic
+        sn_dict["add"]["2"]["nic"] = nic
         testflow.setup("Attach: %s to host %s", sn_dict, host)
         assert hl_host_network.setup_networks(host_name=host, **sn_dict)
 
@@ -217,6 +221,7 @@ def update_host_nics_stats(request):
     Update host NICs stats values
     """
     rx_tx_stats = NetworkFixtures()
+    testflow.setup("Update host NICs stats values")
     conf.NIC_STAT = hl_networks.get_nic_statistics(
         nic=rx_tx_stats.host_0_nics[1], host=rx_tx_stats.host_0_name,
         keys=rx_tx_conf.STAT_KEYS
@@ -237,11 +242,19 @@ def move_host_to_another_cluster(request):
         """
         Move host back to original cluster
         """
+        testflow.teardown(
+            "Move host %s back to original cluster %s",
+            rx_tx_stats.host_0_name, rx_tx_stats.cluster_0
+        )
         assert hl_hosts.move_host_to_another_cluster(
             host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_0
         )
     request.addfinalizer(fin)
 
+    testflow.setup(
+        "Move host %s to another cluster %s", rx_tx_stats.host_0_name,
+        rx_tx_stats.cluster_1
+    )
     assert hl_hosts.move_host_to_another_cluster(
         host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_1
     )

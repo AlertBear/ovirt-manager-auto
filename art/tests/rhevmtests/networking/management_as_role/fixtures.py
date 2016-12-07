@@ -11,6 +11,7 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import helper
+from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -23,6 +24,10 @@ def create_and_attach_network(request):
     setup = request.cls.create_and_attach_network_params[1]
 
     for dc, cl in dcs_clusters:
+        testflow.setup(
+            "Create and attach network %s to datacenter %s and cluster %s",
+            setup, dc, cl
+        )
         assert hl_networks.create_and_attach_networks(
             data_center=dc, cluster=cl, network_dict=setup
         )
@@ -37,6 +42,7 @@ def remove_all_networks(request):
 
     def fin():
         for dc in dcs:
+            testflow.teardown("Remove all networks from datacenter %s", dc)
             assert hl_networks.remove_all_networks(datacenter=dc)
     request.addfinalizer(fin)
 
@@ -50,6 +56,7 @@ def update_cluster_network_usages(request):
     net = request.cls.update_cluster_network_usages_params[1]
     usages = request.cls.update_cluster_network_usages_params[2]
 
+    testflow.setup("Update cluster network usages")
     assert ll_networks.update_cluster_network(
         positive=True, cluster=cluster, network=net, usages=usages
     )
@@ -68,6 +75,7 @@ def move_host_to_cluster(request):
         """
         Activate host after updating its cluster
         """
+        testflow.teardown("Activate host %s", host)
         assert ll_hosts.activate_host(positive=True, host=host)
     request.addfinalizer(fin2)
 
@@ -75,6 +83,7 @@ def move_host_to_cluster(request):
         """
         Move host to a specified cluster
         """
+        testflow.teardown("Update host %s to specified cluster %s", host, cl)
         assert ll_hosts.updateHost(positive=True, host=host, cluster=cl)
     request.addfinalizer(fin1)
 
@@ -87,6 +96,7 @@ def add_networks_to_clusters(request):
     cl_nets = request.cls.add_networks_to_clusters_params
 
     for cl, net in cl_nets:
+        testflow.setup("Add network %s to cluster %s", net, cl)
         assert ll_networks.add_network_to_cluster(
             positive=True, network=net, cluster=cl, required=True
         )
@@ -100,6 +110,7 @@ def remove_network(request):
     dc = request.cls.remove_network_params[0]
     net = request.cls.remove_network_params[1]
 
+    testflow.setup("Remove network %s from datacenter %s", net, dc)
     assert ll_networks.remove_network(
         positive=True, network=net, data_center=dc
     )
@@ -133,6 +144,7 @@ def install_host_with_new_management(request):
 
     vds_host_obj = mgmt_as_role.vds_list[host_index]
 
+    testflow.setup("Install host with new management network %s", mgmt_net)
     assert helper.install_host_new_mgmt(
         dc=dc, cl=dst_cl, dest_cl=dst_cl, net_setup=net_setup,
         mgmt_net=mgmt_net, host_resource=vds_host_obj

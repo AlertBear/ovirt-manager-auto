@@ -26,11 +26,15 @@ def create_networks_on_engine(request):
         """
         Remove the VLAN from the setup
         """
+        testflow.teardown("Remove networks from setup")
         assert network_helper.remove_networks_from_setup(
             hosts=arbitrary_vlan_device_name.host_0_name
         )
     request.addfinalizer(fin)
 
+    testflow.setup(
+        "Create networks %s on setup", vlan_name_conf.ARBITRARY_NET_DICT
+    )
     net_helper.prepare_networks_on_setup(
         networks_dict=vlan_name_conf.ARBITRARY_NET_DICT,
         dc=arbitrary_vlan_device_name.dc_0,
