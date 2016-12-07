@@ -56,3 +56,7 @@ polarion_response_myproduct = string(default='rhvm')
 
 [STORAGE]
 storage_pool=force_list(default=list())
+
+# section for hosted engine details
+[HOSTED_ENGINE]
+additional_hosts = force_list(default=list())
