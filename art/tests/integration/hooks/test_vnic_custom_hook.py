@@ -366,10 +366,11 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
             HOTUNPLUG_NIC,
             config.HOOKS_VM_NAME
         )
-        assert vms.hotUnplugNic(
+        assert vms.updateNic(
             positive=True,
             vm=config.HOOKS_VM_NAME,
-            nic=HOTUNPLUG_NIC
+            nic=HOTUNPLUG_NIC,
+            plugged=False
         )
 
         def finalize():
@@ -381,10 +382,11 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
                 HOTUNPLUG_NIC,
                 config.HOOKS_VM_NAME
             )
-            assert vms.hotPlugNic(
+            assert vms.updateNic(
                 positive=True,
                 vm=config.HOOKS_VM_NAME,
-                nic=HOTUNPLUG_NIC
+                nic=HOTUNPLUG_NIC,
+                plugged=True
             )
 
         request.addfinalizer(finalize)

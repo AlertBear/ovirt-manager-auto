@@ -1785,58 +1785,6 @@ def removeNic(positive, vm, nic):
     return status
 
 
-def hotPlugNic(positive, vm, nic):
-    '''
-    Description: implement hotPlug nic.
-    Author: atal
-    Parameters:
-        * vm - vm name
-        * nic - nic name to plug.
-    Return: True in case of succeed, False otherwise
-    '''
-    try:
-        nic_obj = get_vm_nic(vm, nic)
-    except EntityNotFound:
-        logger.error('Entity %s not found!' % nic)
-        return not positive
-
-    return bool(NIC_API.syncAction(nic_obj, "activate", positive))
-
-
-def hotUnplugNic(positive, vm, nic):
-    """
-    Implement hotUnplug nic.
-
-    __author__: 'atal'
-
-    Args:
-        positive (bool): Expected status.
-        vm (str): VM name.
-        nic (str): NIC name to unplug.
-
-    Returns:
-        bool: True if un-plug was succeed, False otherwise.
-    """
-    log_info, log_error = ll_general.get_log_msg(
-        action="un-plug", obj_type="NIC", obj_name=nic, positive=positive,
-        extra_txt="from VM %s" % vm
-    )
-
-    try:
-        nic_obj = get_vm_nic(vm, nic)
-    except EntityNotFound:
-        logger.error('Entity %s not found!' % nic)
-        return not positive
-
-    logger.info(log_info)
-    status = bool(NIC_API.syncAction(nic_obj, "deactivate", positive))
-
-    if not status:
-        logger.error(log_error)
-
-    return status
-
-
 def remove_locked_vm(vm_name, vdc, vdc_pass,
                      psql_username=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
                      psql_db=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],

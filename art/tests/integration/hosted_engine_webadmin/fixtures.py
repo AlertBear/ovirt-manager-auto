@@ -106,10 +106,11 @@ def add_nic_to_he_vm(request):
         test_libs.testflow.teardown(
             "Unplug NIC %s from the HE VM", conf.ADDITIONAL_HE_VM_NIC_NAME
         )
-        ll_vms.hotUnplugNic(
+        ll_vms.updateNic(
             positive=True,
             vm=conf.HE_VM_NAME,
-            nic=conf.ADDITIONAL_HE_VM_NIC_NAME
+            nic=conf.ADDITIONAL_HE_VM_NIC_NAME,
+            plugged=False
         )
         test_libs.testflow.teardown(
             "Remove the NIC %s from the HE VM", conf.ADDITIONAL_HE_VM_NIC_NAME
