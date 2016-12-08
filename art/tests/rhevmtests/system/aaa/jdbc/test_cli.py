@@ -37,6 +37,7 @@ TST_CON_MSG = "Testing connection with user %s"
 def setup_module(request):
     def finalize():
         testflow.teardown("Tearing down module %s", __name__)
+
         _cli_stepper_action(USER_CLI, 'delete', RMV_USR_MSG, TEST_USER1)
         _cli_stepper_action(USER_CLI, 'delete', RMV_USR_MSG, TEST_USER2)
         _cli_stepper_action(
@@ -58,6 +59,7 @@ def setup_module(request):
     request.addfinalizer(finalize)
 
     testflow.setup("Setting up module %s", __name__)
+
     global USER_CLI, GROUP_CLI, MANAGE_CLI
     ss = config.ENGINE_HOST.executor().session()
     USER_CLI = EngineCLI(tool=TOOL, session=ss).setup_module('user')
@@ -76,12 +78,16 @@ def setup_module(request):
         '--attribute=lastName=Blabla',
         '--attribute=title=user',
     )[0]
+
     testflow.setup(ADD_USR_MSG, TEST_USER2)
     assert USER_CLI.run('add', TEST_USER2)[0]
+
     testflow.setup(ADD_USR_MSG, TEST_USER_DELETE)
     assert USER_CLI.run('add', TEST_USER_DELETE)[0]
+
     testflow.setup(ADD_USR_MSG, TEST_USER_DISABLED)
     assert USER_CLI.run('add', TEST_USER_DISABLED, flag='+disabled')[0]
+
     testflow.setup(ADD_GRP_MSG, TEST_GROUP1)
     assert GROUP_CLI.run(
         'add',
@@ -89,8 +95,10 @@ def setup_module(request):
         '--attribute=displayName=Group1',
         '--attribute=description=Admin Group',
     )[0]
+
     testflow.setup(ADD_GRP_MSG, TEST_GROUP2)
     assert GROUP_CLI.run('add', TEST_GROUP2)[0]
+
     testflow.setup(ADD_GRP_MSG, TEST_GROUP_DELETE)
     assert GROUP_CLI.run('add', TEST_GROUP_DELETE)[0]
 

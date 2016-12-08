@@ -24,6 +24,7 @@ class ADTLS(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Tearing down class %s", cls.__name__)
+
             testflow.teardown("Login as user %s", config.VDC_ADMIN_USER)
             users.loginAsUser(
                 config.VDC_ADMIN_USER,
@@ -31,6 +32,7 @@ class ADTLS(TestCase):
                 config.VDC_PASSWORD,
                 False,
             )
+
             testflow.teardown("Removing user %s", config.ADW2k12_USER1)
             for domain in config.ADW2K12_DOMAINS:
                 principal = '%s@%s' % (config.ADW2k12_USER1, domain)
@@ -43,6 +45,7 @@ class ADTLS(TestCase):
         request.addfinalizer(finalize)
 
         testflow.setup("Setting up class %s", cls.__name__)
+
         testflow.setup(
             "Assigning user permissions to user %s", config.ADW2k12_USER1
         )
@@ -60,6 +63,7 @@ class ADTLS(TestCase):
         """ active directory start tsl """
         for domain in config.ADW2K12_DOMAINS:
             principal = '%s@%s' % (config.ADW2k12_USER1, domain)
+
             testflow.step("Login as user %s", config.ADW2k12_USER1)
             users.loginAsUser(
                 principal,
@@ -67,6 +71,7 @@ class ADTLS(TestCase):
                 config.ADW2k12_USER_PASSWORD,
                 True,
             )
+
             testflow.step(
                 "Testing connection with user %s", config.ADW2k12_USER1
             )
@@ -91,6 +96,7 @@ class ADGroupWithSpacesInName(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Tearing down class %s", cls.__name__)
+
             testflow.teardown("Login as user %s", config.VDC_ADMIN_USER)
             users.loginAsUser(
                 config.VDC_ADMIN_USER,
@@ -98,16 +104,20 @@ class ADGroupWithSpacesInName(TestCase):
                 config.VDC_PASSWORD,
                 False,
             )
+
             testflow.teardown("Removing user %s", cls.princ)
-            users.removeUser(True, cls.princ, cls.conf['authz_name'])
+            assert users.removeUser(True, cls.princ, cls.conf['authz_name'])
+
             testflow.teardown("Removing group %s", cls.group)
-            users.deleteGroup(True, cls.group)
+            assert users.deleteGroup(True, cls.group)
 
         request.addfinalizer(finalize)
 
         testflow.setup("Setting up class %s", cls.__name__)
+
         testflow.setup("Adding group %s", cls.group)
         assert users.addGroup(True, cls.group, cls.conf['authz_name'])
+
         testflow.setup("Adding cluster permissions to group %s", cls.group)
         assert mla.addClusterPermissionsToGroup(
             True,
@@ -126,5 +136,6 @@ class ADGroupWithSpacesInName(TestCase):
             config.ADW2k12_USER_PASSWORD,
             True,
         )
+
         testflow.step("Testing connection with user %s", self.princ)
         assert common.connectionTest(), "User %s can't login." % self.princ

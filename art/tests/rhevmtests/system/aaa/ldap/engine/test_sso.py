@@ -24,6 +24,7 @@ APACHE_CONF = 'z-ovirt-sso.conf'
 def setup_module(request):
     def finalize():
         testflow.teardown("Tearing down module %s", __name__)
+
         fqdn = config.ENGINE_HOST.fqdn
         delete_principal = 'delete_principal -force HTTP/%s' % fqdn
 
@@ -48,7 +49,7 @@ def setup_module(request):
         common.loginAsAdmin()
 
         testflow.teardown("Removing user %s", config.SSO_USER)
-        users.removeUser(
+        assert users.removeUser(
             True,
             config.SSO_USER,
             config.OPENLDAP_SSO['authz_name'],
@@ -80,14 +81,14 @@ def setup_module(request):
             openldap.run_cmd(['rm', '-f', KEYTAB])
 
     testflow.setup("Adding user %s", config.SSO_USER)
-    users.addExternalUser(
+    assert users.addExternalUser(
         True,
         user_name=config.SSO_USER,
         domain=config.OPENLDAP_SSO['authz_name'],
     )
 
     testflow.setup("Adding cluster permission to user %s", config.SSO_USER)
-    mla.addClusterPermissionsToUser(
+    assert mla.addClusterPermissionsToUser(
         True,
         config.SSO_USER,
         config.CLUSTER_NAME[0],

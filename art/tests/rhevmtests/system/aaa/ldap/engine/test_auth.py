@@ -53,8 +53,10 @@ class DirectLogin(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Tearing down class %s", cls.__name__)
+
             testflow.teardown("Login as admin user")
             common.loginAsAdmin()
+
             user = cls.USER
             if cls.DOMAIN:
                 user = '%s@%s' % (cls.USER, cls.DOMAIN)
@@ -64,18 +66,21 @@ class DirectLogin(TestCase):
         request.addfinalizer(finalize)
 
         testflow.setup("Setting up class %s", cls.__name__)
+
         user_upn = user = cls.USER
         if cls.DOMAIN:
             user_upn = '%s@%s' % (cls.USER, cls.DOMAIN)
+
         testflow.setup("Adding user %s", user)
-        users.addExternalUser(
+        assert users.addExternalUser(
             True,
             user_name=user,
             domain=cls.conf['authz_name'],
             namespace=cls.NAMESPACE,
         )
+
         testflow.setup("Adding cluster permission to user %s", cls.USER)
-        mla.addClusterPermissionsToUser(
+        assert mla.addClusterPermissionsToUser(
             True,
             user_upn,
             config.CLUSTER_NAME[0],
@@ -85,12 +90,14 @@ class DirectLogin(TestCase):
 
     def login(self):
         """ login as user """
+        testflow.step("Login as user %s", self.USER)
         users.loginAsUser(
             self.USER,
             self.conf['authn_name'],
             self.PASSWORD,
             self.FILTER,
         )
+
         testflow.step("Testing connection with user %s", self.USER)
         assert common.connectionTest(), "User %s can't login." % self.USER
 
@@ -110,7 +117,6 @@ class ADDigestMD5(DirectLogin):
     @common.check(config.EXTENSIONS)
     def test_ad_digest_md5(self):
         """ active directory digest md5 authentication """
-        testflow.step("Login as user %s", self.USER)
         self.login()
 
 
@@ -127,5 +133,4 @@ class IPAGSSAPI(DirectLogin):
     @common.check(config.EXTENSIONS)
     def test_ipa_gssapi(self):
         """ IPA gssapi authentication """
-        testflow.step("Login as user %s", self.USER)
         self.login()

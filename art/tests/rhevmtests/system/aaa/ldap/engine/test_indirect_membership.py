@@ -34,18 +34,29 @@ class IndirectMembership(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Tearing down class %s", cls.__name__)
+
+            testflow.teardown("Login as admin")
             common.loginAsAdmin()
+
+            testflow.teardown("Removing user %s", cls.USER)
+            assert users.removeUser(True, cls.USER)
+
+            testflow.teardown("Deleting group %s", cls.GROUP)
             assert users.deleteGroup(True, cls.GROUP)
 
         request.addfinalizer(finalize)
 
         testflow.setup("Setting up class %s", cls.__name__)
+
+        testflow.setup("Adding group %s", cls.GROUP)
         assert users.addGroup(
             True,
             cls.GROUP,
             cls.conf['authz_name'],
             cls.NAMESPACE,
         )
+
+        testflow.setup("Adding cluster permission to group %s", cls.GROUP)
         assert mla.addClusterPermissionsToGroup(
             True,
             cls.GROUP,
@@ -54,7 +65,10 @@ class IndirectMembership(TestCase):
 
     def indirect_group_membership(self):
         user = self.USER
+        testflow.step("Login as user %s", self.USER)
         users.loginAsUser(user, self.conf['authn_name'], self.PASSWORD, True)
+
+        testflow.step("Testing connection")
         assert common.connectionTest(), "%s can't login" % user
         logger.info("User %s can login and is indirect member of group %s.",
                     user, self.GROUP)
@@ -111,20 +125,24 @@ class GroupRecursion(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Tearing down class %s", cls.__name__)
+
             testflow.teardown("Login as admin user")
             common.loginAsAdmin()
+
             testflow.teardown("Deleting group %s", config.IPA_GROUP_LOOP2)
             assert users.deleteGroup(True, config.IPA_GROUP_LOOP2)
 
         request.addfinalizer(finalize)
 
         testflow.setup("Setting up class %s", cls.__name__)
+
         testflow.setup("Adding group %s", config.IPA_GROUP_LOOP2)
         assert users.addGroup(
             True,
             config.IPA_GROUP_LOOP2,
             cls.conf['authz_name']
         )
+
         testflow.setup(
             "Adding cluster permissions to group %s", config.IPA_GROUP_LOOP2
         )
@@ -144,6 +162,7 @@ class GroupRecursion(TestCase):
             self.PASSWORD,
             True
         )
+
         testflow.step("Testing connection with user %s", self.USER)
         assert common.connectionTest(), "%s can't login" % self.USER
 

@@ -20,25 +20,29 @@ class AuthBaseCase(TestCase):
     namespace = None
 
     @pytest.fixture(autouse=True, scope="class")
-    def setup_class(self, request):
+    def setup_base_class(self, request):
         def finalize():
             testflow.teardown("Tearing down class %s", self.__name__)
 
+            testflow.teardown("Login as admin")
             common.loginAsAdmin()
+
             testflow.teardown("Removing user %s", self.user)
-            users.removeUser(True, self.user)
+            assert users.removeUser(True, self.user)
 
         request.addfinalizer(finalize)
 
         testflow.setup("Setting up class %s", self.__name__)
-        authz = '%s-authz' % self.domain
+
         testflow.setup("Adding user %s", self.user)
+        authz = '%s-authz' % self.domain
         assert users.addExternalUser(
             True,
             '%s@%s' % (self.user, authz),
             authz,
             namespace=self.namespace,
         )
+
         testflow.setup("Adding cluster permissions to user %s", self.user)
         assert mla.addClusterPermissionsToUser(
             True,
@@ -50,7 +54,10 @@ class AuthBaseCase(TestCase):
     def login(self, user=None):
         """ test login with user """
         user = user if user else self.user
+        testflow.step("Login as user %s", user)
         users.loginAsUser(user, self.domain, self.password, True)
+
+        testflow.step("Testing connection")
         connected = common.connectionTest()
         logger.info(
             "User '%s' %s login",
@@ -68,6 +75,20 @@ class BaseUserFromGroup(AuthBaseCase):
 
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(self, request):
+        def finalize():
+            testflow.teardown("Tearing down class %s", self.__name__)
+
+            testflow.teardown("Login as admin")
+            common.loginAsAdmin()
+
+            testflow.teardown("Removing user %s", self.user)
+            assert users.removeUser(True, self.user)
+
+            testflow.teardown("Deleting group %s", self.group)
+            assert users.deleteGroup(True, group_name=self.group)
+
+        request.addfinalizer(finalize)
+
         testflow.setup("Setting up class %s", self.__name__)
 
         testflow.setup("Adding group %s", self.group)
@@ -88,10 +109,6 @@ class BaseUserFromGroup(AuthBaseCase):
     def user_from_group(self):
         """ Authenticate as user from group """
         assert self.login()
-
-    def tearDown(self):
-        common.loginAsAdmin()
-        users.deleteGroup(True, group_name=self.group)
 
 
 class BaseExpiredAccount(AuthBaseCase):
@@ -131,13 +148,13 @@ class BaseSpecialCharsSearch(TestCase):
 
     def search(self, special_characters=('#', '%', '$',)):
         """ search special characters """
-        logger.info(
+        testflow.step(
             "Trying to search by these '%s' special chars",
             ','.join(special_characters)
         )
         for special_char in special_characters:
             user_name = 'special%s' % special_char
-            logger.info("Search for user '%s'", user_name)
+            testflow.step("Search for user '%s'", user_name)
             # https://bugzilla.redhat.com/show_bug.cgi?id=1275237
             # When resolved modify this test based, on implmentation details
             assert users.search_user(
