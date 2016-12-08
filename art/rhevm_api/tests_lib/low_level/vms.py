@@ -3450,22 +3450,6 @@ def get_vm_nic_linked(vm, nic='nic1', positive=True):
     return True
 
 
-def is_vm_nic_have_profile(vm, nic='nic1'):
-    """
-    Check if vNIC contains vnic profile
-
-    Args:
-        vm (str): VM name
-        nic (str): vNIC name
-
-    Returns:
-        bool: True if NIC contains non-empty network object or False for
-            Empty network object
-    """
-    nic_obj = get_vm_nic(vm, nic)
-    return bool(nic_obj.get_vnic_profile())
-
-
 def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
     """
     Check if VNIC profile 'vnic_profile_name' exist on the given VNIC
@@ -3484,9 +3468,7 @@ def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
     )
     nic_obj = get_vm_nic(vm=vm, nic=nic)
     if not vnic_profile_name:
-        if nic_obj.get_vnic_profile():
-            return False
-        return True
+        return bool(nic_obj.get_vnic_profile())
 
     all_profiles = VNIC_PROFILE_API.get(absLink=False)
     for profile in all_profiles:

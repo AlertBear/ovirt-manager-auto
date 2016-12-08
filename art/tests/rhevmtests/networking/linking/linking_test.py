@@ -190,7 +190,7 @@ class TestLinkedCase02(NetworkTest):
             )
 
             testflow.step("Checking if vNIC: %s has vNIC profile", vnic)
-            assert ll_vms.is_vm_nic_have_profile(vm=vm, nic=vnic)
+            assert ll_vms.check_vm_nic_profile(vm=vm, nic=vnic)
 
             testflow.step(
                 "Negative: checking if vNIC: %s is in plugged state", vnic
@@ -330,7 +330,7 @@ class TestLinkedCase04(NetworkTest):
                 "Check if VM: %s vNIC: %s has vNIC profile", self.vm_name,
                 nic_name
             )
-            assert ll_vms.is_vm_nic_have_profile(vm=self.vm_name, nic=nic_name)
+            assert ll_vms.check_vm_nic_profile(vm=self.vm_name, nic=nic_name)
             testflow.step(
                 "Negative: check if VM: %s vNIC: %s is plugged", self.vm_name,
                 nic_name
