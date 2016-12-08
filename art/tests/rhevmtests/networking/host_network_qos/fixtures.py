@@ -5,12 +5,12 @@
 Fixtures for Host Network QoS
 """
 
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as host_qos_conf
-import pytest
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -20,13 +20,22 @@ def remove_qos_from_dc(request):
     """
     Remove QoS objects from Data-Center
     """
+    host_network_qos = NetworkFixtures()
     qos_names = request.node.cls.qos_names
     qos_remove = getattr(request.cls, "qos_names_fin_remove", True)
 
     def fin():
+        """
+        Remove QoS from datacenter
+        """
         if qos_remove:
-            for qos in qos_names:
-                network_helper.remove_qos_from_dc(qos_name=qos)
+            assert all(
+                [
+                    ll_dc.delete_qos_from_datacenter(
+                        datacenter=host_network_qos.dc_0, qos_name=qos
+                    ) for qos in qos_names
+                    ]
+            )
     request.addfinalizer(fin)
 
 

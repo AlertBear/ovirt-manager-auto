@@ -9,6 +9,7 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import config as net_api_conf
 import helper
 import rhevmtests.networking.config as conf
@@ -1436,10 +1437,9 @@ class TestHostNetworkApiSync05(NetworkTest):
             testflow.step(
                 "Removing QoS: %s from DC: %s", qos_name, net_api_conf.SYNC_DC
             )
-            network_helper.remove_qos_from_dc(
-                qos_name=qos_name, datacenter=net_api_conf.SYNC_DC
+            assert ll_dc.delete_qos_from_datacenter(
+                datacenter=net_api_conf.SYNC_DC, qos_name=qos_name
             )
-
             testflow.step("Check the network: %s is unsynced", net)
             assert not network_helper.networks_sync_status(
                 host=conf.HOST_0_NAME, networks=[net]

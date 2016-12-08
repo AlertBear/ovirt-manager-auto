@@ -9,6 +9,7 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
@@ -53,7 +54,7 @@ def remove_qos(request):
     """
     Remove QoS from setup
     """
-    NetworkFixtures()
+    sanity = NetworkFixtures()
     qos_name = request.node.cls.qos_name
 
     def fin():
@@ -61,7 +62,9 @@ def remove_qos(request):
         Remove QoS from setup
         """
         testflow.teardown("Remove QoS %s", qos_name)
-        network_helper.remove_qos_from_dc(qos_name=qos_name)
+        assert ll_dc.delete_qos_from_datacenter(
+            datacenter=sanity.dc_0, qos_name=qos_name
+        )
     request.addfinalizer(fin)
 
 

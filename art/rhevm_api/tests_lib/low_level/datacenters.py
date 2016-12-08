@@ -439,22 +439,20 @@ def get_qos_from_datacenter(datacenter, qos_name):
     return False
 
 
+@ll_general.generate_logs()
 def delete_qos_from_datacenter(datacenter, qos_name):
     """
     Get QoS from datacenter
-    :param datacenter: Datacenter name
-    :param qos_name: Qos name
-    :return: True/False
+
+    Args:
+        datacenter (str): Datacenter name
+        qos_name (str): Qos name
+
+    Returns:
+        bool: True if delete of qos from datacenter succeeded, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        action="delete", obj_name=qos_name, obj_type="QoS"
-    )
     qos = get_qos_from_datacenter(datacenter, qos_name)
-    logger.info(log_info)
-    res = util.delete(qos, True)
-    if not res:
-        logger.error(log_error)
-    return res
+    return util.delete(qos, True)
 
 
 def update_qos_in_datacenter(datacenter, qos_name, **kwargs):

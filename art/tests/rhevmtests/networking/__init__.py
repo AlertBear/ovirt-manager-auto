@@ -303,11 +303,9 @@ def remove_qos_from_setup():
             qos_name = qos.get_name()
             if qos_name == config.DEFAULT_MGMT_QOS:
                 continue
-            logger.info("Remove %s from %s", qos_name, dc)
-            if not ll_datacenters.delete_qos_from_datacenter(
+            ll_datacenters.delete_qos_from_datacenter(
                 datacenter=dc, qos_name=qos_name
-            ):
-                logger.error("Failed to remove %s from %s", qos_name, dc)
+            )
 
 
 @ignore_exception
