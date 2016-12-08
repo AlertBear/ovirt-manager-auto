@@ -242,12 +242,6 @@ class TestAddHostAndDeployHostedEngine(test_libs.SlaTest):
         """
         Add the host and deploy HE on it
         """
-        self._deploy_hosted_engine(deploy=False)
-        test_libs.testflow.step("Remove the host %s", conf.HOSTS[1])
-        assert ll_hosts.removeHost(
-            positive=True, host=conf.HOSTS[1], deactivate=True
-        )
-
         test_libs.testflow.step("Add the host %s to the engine", conf.HOSTS[1])
         assert ll_hosts.add_host(
             name=conf.HOSTS[1],
