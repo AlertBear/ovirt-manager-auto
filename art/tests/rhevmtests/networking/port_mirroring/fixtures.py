@@ -9,7 +9,6 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as pm_conf
 import helper
@@ -102,11 +101,11 @@ def port_mirroring_prepare_setup(request):
         vm=port_mirroring.vm_0, nic=conf.NIC_NAME[0],
         network=port_mirroring.mgmt_bridge
     )
-    hl_vms.start_vms_on_specific_host(
-        vm_list=vm_list, max_workers=len(vm_list),
-        host=port_mirroring.host_0_name, wait_for_ip=False,
-        wait_for_status=conf.ENUMS["vm_state_up"]
-    )
+    for vm in vm_list:
+        assert ll_vms.runVmOnce(
+            positive=True, vm=vm, host=port_mirroring.host_0_name,
+            wait_for_state=conf.ENUMS["vm_state_up"]
+        )
     helper.add_nics_to_vms()
     helper.set_vms_network_params()
 
