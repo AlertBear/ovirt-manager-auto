@@ -769,7 +769,12 @@ def remove_all_pools_from_cluster(cluster):
             continue
         all_vms_in_cluster_pools.extend(vms_in_pool)
     if all_vms_in_cluster_pools:
-        ll_vms.waitForVmsGone(True, all_vms_in_cluster_pools)
+        try:
+            ll_vms.waitForVmsGone(True, all_vms_in_cluster_pools)
+        except APITimeout:
+            logger.error(
+                "Could not remove all pool vms from cluster: %s", cluster
+            )
 
 
 @ll_general.generate_logs()

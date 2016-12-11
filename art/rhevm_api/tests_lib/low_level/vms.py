@@ -4239,7 +4239,7 @@ def stop_vms_safely(vms_list):
                 else:
                     vms_action_stop.add(vm)
         else:
-            logger.warning("Vm %s is not exist under engine", vm)
+            logger.warning("Vm %s does not exist under engine", vm)
     for vm in vms_action_stop:
         if not waitForVMState(vm, ENUMS['vm_state_down']):
             vms_stop_failed.add(vm)

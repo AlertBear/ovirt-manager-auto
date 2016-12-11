@@ -939,7 +939,7 @@ def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
         logger_message += " except %s" % ", ".join(skip)
     logger.info(logger_message)
     vms_in_cluster = [
-        vm for vm in get_vms_objects_from_cluster(cluster_name)
+        vm.get_name() for vm in get_vms_objects_from_cluster(cluster_name)
         if vm.get_name() not in skip
     ]
     if vms_in_cluster:
@@ -947,7 +947,7 @@ def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
         log = "" if wait else "asynchrony"
         logger.info("Remove VMs %s", log)
         for vm in vms_in_cluster:
-            if not vms.removeVm(True, vm):
+            if not vms.removeVm(True, vm, wait=False):
                 all_removed = False
         if wait and all_removed:
             try:
