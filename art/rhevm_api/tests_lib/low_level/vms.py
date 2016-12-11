@@ -3454,35 +3454,30 @@ def get_vm_nic_linked(vm, nic='nic1', positive=True):
     return True
 
 
+@ll_general.generate_logs()
 def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
     """
-    Check if VNIC profile 'vnic_profile_name' exist on the given VNIC
+    Check if VNIC profile vnic_profile_name exist on the given VNIC on VM.
+
+    To check if vNIC have empty profile send vnic_profile_name=""
 
     Args:
         vm (str): VM name
         vnic_profile_name (str): Name of the vnic_profile to test
-        nic (str): NIC name
+        nic (str): vNIC name
 
     Returns:
-        bool: True if vnic_profile_name exists on NIC, False otherwise
+        bool: True if vnic_profile_name exists on vNIC, False otherwise
     """
-    logger.info(
-        "Check if vNIC profile %s exist on VM %s NIC %s",
-        vnic_profile_name, vm, nic
-    )
+
     nic_obj = get_vm_nic(vm=vm, nic=nic)
     if not vnic_profile_name:
-        return bool(nic_obj.get_vnic_profile())
+        return not bool(nic_obj.get_vnic_profile())
 
     all_profiles = VNIC_PROFILE_API.get(absLink=False)
     for profile in all_profiles:
         if profile.get_name() == vnic_profile_name:
             return profile.get_id() == nic_obj.get_vnic_profile().get_id()
-
-    logger.error(
-        "vNIC profile %s not found on VM %s NIC %s", vnic_profile_name, vm,
-        nic
-    )
     return False
 
 
