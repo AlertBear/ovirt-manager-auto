@@ -27,7 +27,7 @@ class OpenStackProvider(object):
     def __init__(
         self, provider_api_element_name, name, url, requires_authentication,
         username=None, password=None, authentication_url=None,
-        tenant_name=None, read_only=True
+        tenant_name=None
     ):
         """
         OpenStackProvider class
@@ -43,8 +43,6 @@ class OpenStackProvider(object):
             authentication_url (str): Provider URL address for
                 authentication (in case required_authentication is enabled)
             tenant_name (str): Provider tenant name
-            read_only (bool): True (default) to enable provider
-                read-only mode, False to enable read/write mode
 
         """
         self._name = name
@@ -54,7 +52,6 @@ class OpenStackProvider(object):
         self._password = password
         self._authentication_url = authentication_url
         self._tenant_name = tenant_name
-        self._read_only = read_only
 
         # provider_name will be generated from child class name, it should be
         # same as in generated DS for specific provider
@@ -140,7 +137,6 @@ class OpenStackProvider(object):
             self.authentication_url
         )
         self.osp_obj.set_tenant_name(self.tenant_name)
-        self.osp_obj.set_read_only(self.read_only)
 
     @property
     def name(self):
@@ -197,14 +193,6 @@ class OpenStackProvider(object):
     @tenant_name.setter
     def tenant_name(self, tenant_name):
         self._tenant_name = tenant_name
-
-    @property
-    def read_only(self):
-        return self._read_only
-
-    @read_only.setter
-    def read_only(self, read_only):
-        self._read_only = read_only
 
 
 class OpenStackImageProvider(OpenStackProvider):
@@ -457,18 +445,28 @@ class ExternalNetworkProvider(OpenStackProvider):
             name=name, url=url,
             requires_authentication=requires_authentication,
             username=username, password=password,
-            authentication_url=authentication_url, tenant_name=tenant_name,
-            read_only=read_only
+            authentication_url=authentication_url, tenant_name=tenant_name
         )
+        self._read_only = read_only
 
         if api_url:
             self.api_url_networks = "%s/networks" % api_url
             self.api_url_subnets = "%s/subnets" % api_url
             self.api_requests = requests.session()
 
+    @property
+    def read_only(self):
+        """Set external provider read/write access"""
+        return self._read_only
+
+    @read_only.setter
+    def read_only(self, read_only):
+        self._read_only = read_only
+
     def _init(self):
         super(ExternalNetworkProvider, self)._init()
         self.osp_obj.set_type("external")
+        self.osp_obj.set_read_only(self.read_only)
 
     def get_all_networks(self):
         """
