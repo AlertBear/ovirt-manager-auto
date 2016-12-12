@@ -410,8 +410,8 @@ def prepare_ip_object(network_attachment, ip_dict):
     Returns:
         NetworkAttachment: NetworkAttachment object
     """
+    ip_address_assignments = data_st.IpAddressAssignments()
     for value in ip_dict.values():
-        ip_address_assignments = data_st.IpAddressAssignments()
         ip_address_assignment = data_st.IpAddressAssignment()
         ip = data_st.Ip()
         for k, v in value.iteritems():
