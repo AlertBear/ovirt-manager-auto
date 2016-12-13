@@ -44,9 +44,7 @@ class TestNetQOSCase01(NetworkTest):
     vm_name = conf.VM_0
     vms = [conf.VM_0, conf.VM_1]
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
     vms_to_stop = vms
 
@@ -69,9 +67,7 @@ class TestNetQOSCase01(NetworkTest):
             "Compare provided QoS %s and %s exists with libvirt values",
             qos_conf.INBOUND_DICT, qos_conf.OUTBOUND_DICT
         )
-        assert helper.compare_qos(
-            host_obj=conf.VDS_0_HOST, vm_name=conf.VM_0, **dict_compare
-        )
+        assert helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
 
     def test_02_several_network_qos(self):
         """
@@ -108,9 +104,7 @@ class TestNetQOSCase01(NetworkTest):
             qos_conf.INBOUND_DICT, qos_conf.OUTBOUND_DICT, self.qos_name_2,
             self.vnic_profile_2
         )
-        assert not helper.compare_qos(
-            host_obj=conf.VDS_0_HOST, vm_name=conf.VM_0, **dict_compare
-        )
+        assert not helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
         testflow.step("Restart VM %s", conf.VM_0)
         assert ll_vms.restartVm(
             vm=conf.VM_0, placement_host=conf.HOST_0_NAME
@@ -119,9 +113,7 @@ class TestNetQOSCase01(NetworkTest):
             "Check that after restart VM the QoS %s is equal to "
             "libvirt values", self.qos_name_2
         )
-        assert helper.compare_qos(
-            host_obj=conf.VDS_0_HOST, vm_name=conf.VM_0, **dict_compare
-        )
+        assert helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
 
     @polarion("RHEVM3-3999")
     def test_03_update_network_qos(self):
@@ -154,9 +146,7 @@ class TestNetQOSCase01(NetworkTest):
             "Check provided QoS %s and %s doesn't match libvirt values",
             qos_conf.INBOUND_DICT_UPDATE, qos_conf.OUTBOUND_DICT_UPDATE
         )
-        assert not helper.compare_qos(
-            host_obj=conf.VDS_0_HOST, vm_name=conf.VM_0, **dict_compare
-        )
+        assert not helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
         assert ll_vms.addNic(
             positive=True, vm=conf.VM_1, name=conf.VM_NIC_1,
             network=conf.MGMT_BRIDGE, vnic_profile=self.vnic_profile_1
@@ -182,9 +172,7 @@ class TestNetQOSCase01(NetworkTest):
             qos_conf.OUTBOUND_DICT
         )
         for vm in self.vms:
-            assert helper.compare_qos(
-                host_obj=conf.VDS_0_HOST, vm_name=vm, **dict_compare
-            )
+            assert helper.compare_qos(vm_name=vm, **dict_compare)
 
     def test_04_migrate_network_qos(self):
         """
@@ -199,17 +187,13 @@ class TestNetQOSCase01(NetworkTest):
             outbound_dict=qos_conf.OUTBOUND_DICT_UPDATE, vm=conf.VM_1,
             nic=conf.VM_NIC_1
         )
-        testflow.step("Migrate VM to Host %s", conf.HOST_1_NAME)
-        assert ll_vms.migrateVm(
-            positive=True, vm=conf.VM_1, host=conf.HOST_1_NAME
-        )
+        testflow.step("Migrate VM %s", conf.VM_1)
+        assert ll_vms.migrateVm(positive=True, vm=conf.VM_1)
         testflow.step(
             "Compare provided QoS %s and %s exists with libvirt values",
             qos_conf.INBOUND_DICT_UPDATE, qos_conf.OUTBOUND_DICT_UPDATE
         )
-        assert helper.compare_qos(
-            host_obj=conf.VDS_1_HOST, vm_name=conf.VM_1, **dict_compare
-        )
+        assert helper.compare_qos(vm_name=conf.VM_1, **dict_compare)
 
     @polarion("RHEVM3-4000")
     def test_05_remove_network_qos(self):
@@ -229,9 +213,7 @@ class TestNetQOSCase01(NetworkTest):
             "Check that after deletion of QoS libvirt is not updated with "
             "unlimited values till plug/unplug action"
         )
-        assert not helper.compare_qos(
-            host_obj=conf.VDS_0_HOST, vm_name=conf.VM_0, **dict_compare
-        )
+        assert not helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
         testflow.step("Unplug and plug NIC on %s", conf.VM_0)
         assert ll_vms.updateNic(
             positive=True, vm=conf.VM_0, nic=conf.VM_NIC_1, plugged="false"
@@ -244,6 +226,4 @@ class TestNetQOSCase01(NetworkTest):
             "unlimited"
         )
         for vm, host in zip(self.vms, [conf.VDS_0_HOST, conf.VDS_1_HOST]):
-            assert helper.compare_qos(
-                host_obj=host, vm_name=vm, **dict_compare
-            )
+            assert helper.compare_qos(vm_name=vm, **dict_compare)

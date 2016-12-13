@@ -168,18 +168,18 @@ def get_libvirt_bw(interface):
     return virsh_qos_in_dict, virsh_qos_out_dict
 
 
-def compare_qos(host_obj, vm_name, **kwargs):
+def compare_qos(vm_name, **kwargs):
     """
     Compares QoS of provided bw and libvirt bw
-    :param host_obj: resource.VDS host object
-    :type host_obj: resource.VDS
-    :param vm_name: vm name to check the id
-    :type vm_name: str
-    :param kwargs: dict of {MAC: qos_obj} pairs
-    :type: dict
-    :return: True/False
-    :rtype: bool
+
+    Args:
+        vm_name (str): vm name to check the id
+
+    Returns:
+        bool: True if QoS is match expected Qos , False otherwise
     """
+    host = ll_vms.get_vm_host(vm_name=vm_name)
+    host_obj = conf.VDS_HOSTS[conf.HOSTS.index(host)]
     xml_out = get_vm_xml(host_obj, vm_name)
     interface_list = xml_out.find("devices").findall("interface")
     for interface in interface_list:
@@ -190,7 +190,7 @@ def compare_qos(host_obj, vm_name, **kwargs):
             if not qos_calc.compare_dicts(
                 virsh_qos_in_dict, virsh_qos_out_dict
             ):
-                    return False
+                return False
     return True
 
 
