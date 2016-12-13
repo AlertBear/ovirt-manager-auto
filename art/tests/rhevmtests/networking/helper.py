@@ -530,19 +530,19 @@ def call_function_and_wait_for_sn(func, content, matches=1, **func_kwargs):
     wait_for_sn(content=content, last_event=last_event, matches=matches)
 
 
-def check_queues_from_qemu(vm, host_obj, num_queues):
+def check_queues_from_qemu(vm, num_queues):
     """
     Get numbers of queues from qemu process by VM name
 
-    :param vm: VM name
-    :type vm: str
-    :param host_obj: resource.VDS host object
-    :type host_obj: resources.VDS
-    :param num_queues: Number of queues to check
-    :type num_queues: int
-    :return: True/False
-    :rtype: bool
+    Args:
+        vm (str): VM name
+        num_queues (int): Number of queues to check
+
+    Returns:
+        bool: True if num_queues match the VM queues, False otherwise
     """
+    host = ll_vms.get_vm_host(vm_name=vm)
+    host_obj = conf.VDS_HOSTS[conf.HOSTS.index(host)]
     cmd = ["pgrep", "-a", "qemu-kvm"]
     rc, out, _ = host_obj.run_command(cmd)
     if rc:

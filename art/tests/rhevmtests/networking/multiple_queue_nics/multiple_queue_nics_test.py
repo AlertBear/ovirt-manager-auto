@@ -43,9 +43,7 @@ class TestMultipleQueueNics01(NetworkTest):
     num_queues_1 = multiple_queue_conf.NUM_QUEUES[1]
     prop_queues = multiple_queue_conf.PROP_QUEUES[1]
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
 
     @polarion("RHEVM3-4310")
@@ -70,17 +68,13 @@ class TestMultipleQueueNics01(NetworkTest):
             self.num_queues_0
         )
         assert network_helper.check_queues_from_qemu(
-            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
-            num_queues=self.num_queues_0
+            vm=self.vm_name, num_queues=self.num_queues_0
         )
         testflow.step("Restart VM %s", self.vm_name)
-        assert ll_vms.restartVm(
-            vm=self.vm_name, placement_host=conf.HOST_0_NAME
-        )
+        assert ll_vms.restartVm(vm=self.vm_name)
         testflow.step("Check that qemu has %s queues", self.num_queues_1)
         assert network_helper.check_queues_from_qemu(
-            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
-            num_queues=self.num_queues_1
+            vm=self.vm_name, num_queues=self.num_queues_1
         )
 
     @polarion("RHEVM3-4312")
@@ -93,13 +87,10 @@ class TestMultipleQueueNics01(NetworkTest):
         assert ll_vms.suspendVm(positive=True, vm=self.vm_name)
 
         testflow.step("Start %s", self.vm_name)
-        assert ll_vms.startVm(
-            positive=True, vm=self.vm_name, placement_host=conf.HOST_0_NAME
-        )
+        assert ll_vms.startVm(positive=True, vm=self.vm_name)
         testflow.step("Check that qemu has %s queues", self.num_queues_1)
         assert network_helper.check_queues_from_qemu(
-            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
-            num_queues=self.num_queues_1
+            vm=self.vm_name, num_queues=self.num_queues_1
         )
 
     @polarion("RHEVM3-4311")
@@ -107,20 +98,14 @@ class TestMultipleQueueNics01(NetworkTest):
         """
         Check number of queues after VM migration
         """
-        testflow.step(
-            "Migrate Vm %s from host %s to destination host %s",
-            self.vm_name, conf.HOST_0_NAME, conf.HOST_1_NAME
-        )
-        assert ll_vms.migrateVm(
-            positive=True, vm=self.vm_name, host=conf.HOST_1_NAME
-        )
+        testflow.step("Migrate Vm %s", self.vm_name)
+        assert ll_vms.migrateVm(positive=True, vm=self.vm_name)
         testflow.step(
             "Check that qemu has %s queues after VM migration",
             self.num_queues_1
         )
         assert network_helper.check_queues_from_qemu(
-            vm=self.vm_name, host_obj=conf.VDS_1_HOST,
-            num_queues=self.num_queues_1
+            vm=self.vm_name, num_queues=self.num_queues_1
         )
 
 
@@ -143,9 +128,7 @@ class TestMultipleQueueNics02(NetworkTest):
     vm_nic = multiple_queue_conf.VM_NIC
     num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
 
     @polarion("RHEVM-16866")
@@ -165,6 +148,5 @@ class TestMultipleQueueNics02(NetworkTest):
         """
         testflow.step("Check that qemu has %s queues", self.num_queues_0)
         assert network_helper.check_queues_from_qemu(
-            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
-            num_queues=self.num_queues_0
+            vm=self.vm_name, num_queues=self.num_queues_0
         )

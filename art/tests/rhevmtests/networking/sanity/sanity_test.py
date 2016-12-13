@@ -855,9 +855,7 @@ class TestSanity11(TestSanityCaseBase):
     dc = conf.DC_0
     mgmt_bridge = conf.MGMT_BRIDGE
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
 
     @polarion("RHEVM3-4309")
@@ -867,8 +865,7 @@ class TestSanity11(TestSanityCaseBase):
         """
         testflow.step("Check that queue exists in qemu process")
         assert network_helper.check_queues_from_qemu(
-            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
-            num_queues=self.num_queues
+            vm=self.vm_name, num_queues=self.num_queues
         )
 
 
