@@ -156,6 +156,7 @@ OBJECT_TYPE_SD = "sd"
 OBJECT_TYPE_SNAPSHOT = "snap"
 OBJECT_TYPE_TEMPLATE = "templ"
 OBJECT_TYPE_VM = "vm"
+OBJECT_TYPE_MOUNT_POINT = "mount_point"
 
 # These lists of keywords are useful for low_level addStorageDomain:
 # addStorageDomain(True, name='my_name', **NFS_DOMAINS_KWARGS[0])
@@ -325,5 +326,7 @@ GLUSTER_REPLICA_PATH = PARAMETERS.get('gluster_replica_path', None)
 GLUSTER_REPLICA_SERVERS= get_list(PARAMETERS, 'gluster_replica_servers')
 
 REGEX_DD_WIPE_AFTER_DELETE = 'dd.* if=/dev/zero.* of=.*/%s'
+
 DEV_ZERO = '/dev/zero'
 DEV_URANDOM = '/dev/urandom'
+MOUNT_POINT = None

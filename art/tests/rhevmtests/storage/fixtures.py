@@ -1,5 +1,7 @@
+
 import pytest
 import logging
+
 import config
 from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
@@ -45,9 +47,9 @@ def create_vm(request, remove_vm):
     )
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
+    self.installation = getattr(self, 'installation', True)
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
-    self.installation = getattr(self, 'installation', True)
     vm_args['cluster'] = cluster
     vm_args['vmName'] = self.vm_name
     vm_args['installation'] = self.installation
@@ -133,6 +135,8 @@ def start_vm(request):
     ), (
         "Failed to start VM %s" % self.vm_name
     )
+    if hasattr(self, 'get_vm_ip'):
+        self.vm_ip = storage_helpers.get_vm_ip(self.vm_name)
 
 
 @pytest.fixture(scope='class')
@@ -142,14 +146,6 @@ def add_disk(request):
     """
     self = request.node.cls
 
-    def finalizer():
-        if ll_disks.checkDiskExists(True, self.disk_name):
-            ll_disks.wait_for_disks_status([self.disk_name])
-            testflow.teardown("Deleting disk %s", self.disk_name)
-            assert ll_disks.deleteDisk(True, self.disk_name), (
-                "Failed to delete disk %s" % self.disk_name
-            )
-    request.addfinalizer(finalizer)
     disk_params = config.disk_args.copy()
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
@@ -171,6 +167,25 @@ def add_disk(request):
         "Failed to create disk %s" % self.disk_name
     )
     ll_disks.wait_for_disks_status([self.disk_name])
+
+
+@pytest.fixture(scope='class')
+def delete_disk(request):
+    """
+    Removes disk
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if ll_disks.checkDiskExists(True, self.disk_name):
+            assert ll_disks.wait_for_disks_status([self.disk_name]), (
+                "Failed to get disk %s status" % self.disk_alias
+            )
+            testflow.teardown("Deleting disk %s", self.disk_name)
+            assert ll_disks.deleteDisk(True, self.disk_name), (
+                "Failed to delete disk %s" % self.disk_name
+            )
+    request.addfinalizer(finalizer)
 
 
 @pytest.fixture(scope='class')
@@ -331,7 +346,9 @@ def poweroff_vm_setup(request):
     self = request.node.cls
 
     testflow.setup("Power off VM %s", self.vm_name)
-    assert ll_vms.stop_vms_safely([self.vm_name])
+    assert ll_vms.stop_vms_safely([self.vm_name]), (
+        "Failed to power off VM %s" % self.vm_name
+    )
 
 
 @pytest.fixture(scope='class')
@@ -504,19 +521,19 @@ def create_storage_domain(request):
             vfs_type=config.ENUMS['vfs_type_glusterfs']
         )
     elif self.storage == CEPH:
-            posix_address = (
-                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[self.index]
-            )
-            posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[self.index]
-            status = hl_sd.addPosixfsDataDomain(
-                host=spm,
-                storage=name,
-                data_center=config.DATA_CENTER_NAME,
-                address=posix_address,
-                path=posix_path,
-                vfs_type=CEPH,
-                mount_options=config.CEPH_MOUNT_OPTIONS
-            )
+        posix_address = (
+            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[self.index]
+        )
+        posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[self.index]
+        status = hl_sd.addPosixfsDataDomain(
+            host=spm,
+            storage=name,
+            data_center=config.DATA_CENTER_NAME,
+            address=posix_address,
+            path=posix_path,
+            vfs_type=CEPH,
+            mount_options=config.CEPH_MOUNT_OPTIONS
+        )
     assert status, (
         "Creating %s storage domain '%s' failed" % (self.storage, name)
     )
@@ -756,5 +773,21 @@ def remove_vm_from_export_domain(request):
             True, self.vm_name, config.DATA_CENTER_NAME,
             config.EXPORT_DOMAIN_NAME
         )
-
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def create_fs_on_disk(request):
+    """
+    Creates a filesystem on a disk and mounts it in the vm
+    """
+
+    self = request.node.cls
+    out, config.MOUNT_POINT = storage_helpers.create_fs_on_disk(
+        self.vm_name, self.disk_name
+    )
+
+    assert out, (
+        "Unable to create a filesystem on disk: %s of VM %s" %
+        (self.disk_name, self.vm_name)
+    )

@@ -5,20 +5,23 @@ Storage/3_6_Storage_VM_Freeze_Thaw
 """
 import logging
 import os
+import pytest
 import re
 from art.rhevm_api.tests_lib.low_level import (
-    disks as ll_disks,
-    storagedomains as ll_sd,
-    vms as ll_vms,
+    vms as ll_vms
 )
-from art.test_handler import exceptions
+from rhevmtests.storage import config
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase, testflow
-from rhevmtests.storage import config
-from rhevmtests.storage import helpers as storage_helpers
-
 from art.rhevm_api.utils.resource_utils import runMachineCommand
+
+from rhevmtests.storage.fixtures import (
+    add_disk, attach_disk, create_fs_on_disk, create_vm, start_vm,
+)
+
+from rhevmtests.storage.fixtures import remove_vm # noqa
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,42 +31,20 @@ CHECK_PID_CMD = "file /proc/%s"
 DD_FILE_SIZE_CMD = "du %s"
 WRITE_TO_FILE_CMD = "echo 'test write freeze/thaw' > %s"
 OVIRT_GUEST_AGENT_STOP_CMD = "service ovirt-guest-agent stop"
-QEMU_GUEST_AGENT_STOP_CMD = "service qemu-ga stop"
+QEMU_GUEST_AGENT_STOP_CMD = "service qemu-guest-agent stop"
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    start_vm.__name__
+)
 class BaseTestCase(TestCase):
     """
     Common class for all tests with some common methods
     """
     file_path = "/tmp/test_file"
     dd_path = "/tmp/dd_output"
-
-    def setUp(self):
-        """
-        Create and start a vm
-        """
-        self.vm_name = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_VM
-        )
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.storage_domain
-        vm_args['vmName'] = self.vm_name
-
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.vm_name
-            )
-
-        ll_vms.startVm(
-            True, self.vm_name, wait_for_status=config.VM_UP,
-            wait_for_ip=True
-        )
-        self.vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        logger.info("Running tests on vm %s", self.vm_name)
+    get_vm_ip = True
 
     def assert_fail_write_to_filesystem_with_timeout(self):
         """
@@ -170,15 +151,6 @@ class BaseTestCase(TestCase):
         )
         self.run_cmd(WRITE_TO_FILE_CMD % self.file_path)
 
-    def tearDown(self):
-        """
-        Remove the vm
-        """
-        if not ll_vms.safely_remove_vms([self.vm_name]):
-            logger.error("Failed to stop and remove vm %s", self.vm_name)
-            BaseTestCase.test_failed = True
-        BaseTestCase.teardown_exception()
-
 
 @attr(tier=2)
 class TestCase14677(BaseTestCase):
@@ -212,44 +184,20 @@ class TestCase14717(BaseTestCase):
             self.freeze_thaw_basic_flow()
 
 
+@pytest.mark.usefixtures(
+    add_disk.__name__,
+    attach_disk.__name__,
+    create_fs_on_disk.__name__,
+)
 @attr(tier=3)
 class TestCase14713(BaseTestCase):
     """
     RHEVM3-14713 - Freeze and thaw a vm with multiple disks
     """
     __test__ = True
-
-    def setUp(self):
-        """
-        Attach a disk and create a filesystem on it
-        """
-        super(TestCase14713, self).setUp()
-        self.disk_alias = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_DISK
-        )
-        if not ll_disks.addDisk(
-            True, alias=self.disk_alias,
-            provisioned_size=10 * config.GB, interface=config.VIRTIO,
-            sparse=True, format=config.COW_DISK,
-            storagedomain=self.storage_domain
-        ):
-            raise exceptions.DiskException(
-                "Unable to add disk %s on storage domain %s" %
-                (self.disk_alias, self.storage_domain)
-            )
-
-        ll_disks.wait_for_disks_status([self.disk_alias])
-        ll_disks.attachDisk(True, self.disk_alias, self.vm_name)
-        out, mount_point = storage_helpers.create_fs_on_disk(
-            self.vm_name, self.disk_alias
-        )
-        if not out:
-            raise Exception(
-                "Unable to create filesystem on disk %s with vm %s" %
-                (self.disk_alias, self.vm_name)
-            )
-        self.dd_path = os.path.join(mount_point, "dd_file")
-        self.file_path = os.path.join(mount_point, "test_file")
+    disk_size = 10 * config.GB
+    dd_path = os.path.join(config.MOUNT_POINT, '/', "dd_file")
+    file_path = os.path.join(config.MOUNT_POINT, '/', "test_file")
 
     @polarion("RHEVM3-14713")
     def test_freeze_thaw_multiple_disks(self):
