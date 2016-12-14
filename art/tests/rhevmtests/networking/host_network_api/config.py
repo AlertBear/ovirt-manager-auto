@@ -332,6 +332,20 @@ SN_DICT = {
         "required": "false",
         "vlan_id": VLAN_IDS[53]
     },
+    SN_NETS[8][0]: {
+        "required": "false"
+    },
+    SN_NETS[8][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[15]
+    },
+    SN_NETS[8][2]: {
+        "required": "false",
+        "usages": ""
+    },
+    SN_NETS[8][3]: {
+        "required": "false"
+    },
 }
 
 HOST_DICT = {

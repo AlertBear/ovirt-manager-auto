@@ -739,6 +739,7 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
     1. Create BOND with network.
     2. Attach multiple VLANs to BOND.
     """
+    __test__ = True
     bond_1 = "bond031"
     dummys_1 = net_api_conf.DUMMYS[:2]
     net_1 = net_api_conf.SN_NETS[3][0]
@@ -747,6 +748,7 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
     net_2 = net_api_conf.SN_NETS[3][1]
     net_3 = net_api_conf.SN_NETS[3][2]
     net_4 = net_api_conf.SN_NETS[3][3]
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
     @polarion("RHEVM3-10438")
     def test_01_attach_networks_to_bond(self):
@@ -1101,6 +1103,143 @@ class TestHostNetworkApiSetupNetworks07(NetworkTest):
         testflow.step(
             "Attach VLAN network %s and VM network %s to same BOND %s",
             self.net_case_new_vlan, self.net_case_new_vm, self.bond_3
+        )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(clean_host_interfaces.__name__)
+class TestHostNetworkApiSetupNetworks08(NetworkTest):
+    """
+    1) Attach network with static ipv4 and static ipv6 to host NIC.
+    2) Attach Non-VM network with static ipv4 and static ipv6 to host NIC.
+    3) Attach VLAN network with static ipv4 and static ipv6 to host NIC.
+    4) Attach network with static ipv4 and static ipv6 to bond.
+    """
+    __test__ = True
+    net_1 = net_api_conf.SN_NETS[8][0]
+    ip_v6_1 = net_api_conf.IPV6_IPS[0]
+    ip_v4_1 = net_api_conf.IPS[0]
+    net_2 = net_api_conf.SN_NETS[8][1]
+    ip_v6_2 = net_api_conf.IPV6_IPS[1]
+    ip_v4_2 = net_api_conf.IPS[1]
+    net_3 = net_api_conf.SN_NETS[8][2]
+    ip_v6_3 = net_api_conf.IPV6_IPS[2]
+    ip_v4_3 = net_api_conf.IPS[2]
+    net_4 = net_api_conf.SN_NETS[8][3]
+    ip_v6_4 = net_api_conf.IPV6_IPS[3]
+    ip_v4_4 = net_api_conf.IPS[3]
+    dummys_1 = net_api_conf.DUMMYS[:2]
+    bond_1 = "bond041"
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
+    @polarion("RHEVM3-17559")
+    def test_01_attach_network_with_ipv4_and_ipv6_to_host_nic(self):
+        """
+        Attach network with ipv4 and ipv6 to host NIC.
+        """
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv4"]["address"] = self.ip_v4_1
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv6"]["address"] = self.ip_v6_1
+
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": self.net_1,
+                    "nic": conf.HOST_0_NICS[1],
+                    "ip": net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+                },
+            }
+        }
+        testflow.step(
+            "Attach network %s with static IPv4 and IPv6 %s to host NIC",
+            self.net_1, net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+
+        )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+
+    @polarion("RHEVM3-17560")
+    def test_02_attach_non_vm_network_with_ipv4_and_ipv6_to_host_nic(self):
+        """
+        Attach non VM network with ipv4 and ipv6 to host NIC.
+        """
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv4"]["address"] = self.ip_v4_2
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv6"]["address"] = self.ip_v6_2
+
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": self.net_2,
+                    "nic": conf.HOST_0_NICS[2],
+                    "ip": net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+                },
+            }
+        }
+        testflow.step(
+            "Attach non VM network %s with static IPv4 and IPv6 %s to "
+            "host NIC",
+            self.net_2, net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+
+        )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+
+    @polarion("RHEVM3-17561")
+    def test_03_attach_vlan_network_with_ipv4_and_ipv6_to_host_nic(self):
+        """
+        Attach VLAN network with ipv4 and ipv6 to host NIC.
+        """
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv4"]["address"] = self.ip_v4_3
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv6"]["address"] = self.ip_v6_3
+
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": self.net_3,
+                    "nic": conf.HOST_0_NICS[3],
+                    "ip": net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+                },
+            }
+        }
+        testflow.step(
+            "Attach VLAN network %s with static IPv4 and IPv6 %s to "
+            "host NIC",
+            self.net_3, net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+
+        )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+
+    @polarion("RHEVM3-17562")
+    def test_04_attach_network_with_ipv4_and_ipv6_to_bond(self):
+        """
+        Attach network with ipv4 and ipv6 to bond.
+        """
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv4"]["address"] = self.ip_v4_4
+        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv6"]["address"] = self.ip_v6_4
+
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": self.bond_1,
+                    "slaves": self.dummys_1,
+                },
+                "2": {
+                    "network": self.net_4,
+                    "nic": self.bond_1,
+                    "ip": net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+                },
+            }
+        }
+        testflow.step(
+            "Attach network %s with static IPv4 and IPv6 %s to bond %s",
+            self.net_4, net_api_conf.BASIC_IPV4_AND_IPV6_DICT, self.bond_1
+
         )
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
