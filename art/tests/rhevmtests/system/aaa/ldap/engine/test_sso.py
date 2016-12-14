@@ -33,11 +33,13 @@ def setup_module(request):
             ['kadmin.local', '-q', delete_principal])
 
         testflow.teardown("Removing Kerberos")
-        with config.ENGINE_HOST.executor().session() as ss:
-            ss.run_cmd([
-                'yum', 'remove', '-y', config.KRB_MODULE, config.MISC_PKG
-            ])
-            ss.run_cmd(['rm', '-f', KEYTAB])
+        with config.ENGINE_HOST.executor().session() as engine_session:
+            engine_session.package_manager.remove(
+                config.GSSAPI_MODULE,
+                config.SESSION_MODULE,
+                config.MISC_PKG
+            )
+            engine_session.fs.remove(KEYTAB)
 
         testflow.teardown("Cleaning extensions directory")
         common.cleanExtDirectory(config.APACHE_EXTENSIONS, [APACHE_CONF])
@@ -64,21 +66,20 @@ def setup_module(request):
     add_keytab = 'ktadd -keytab %s HTTP/%s' % (KEYTAB, fqdn)
 
     testflow.setup("Installing and configuring Kerberos")
-    with config.ENGINE_HOST.executor().session() as engine:
-        engine.run_cmd([
-            'yum', 'install', '-y',
+    with config.ENGINE_HOST.executor().session() as engine_session:
+        engine_session.package_manager.install(
             config.GSSAPI_MODULE,
             config.SESSION_MODULE,
             config.MISC_PKG
-        ])
-        with config.OPENLDAP_HOST.executor().session() as openldap:
-            openldap.run_cmd(['kadmin.local', '-q', add_principal])
-            openldap.run_cmd(['kadmin.local', '-q', add_keytab])
-            with openldap.open_file(KEYTAB, 'rb') as ldap_kt:
-                with engine.open_file(KEYTAB, 'wb') as engine_kt:
+        )
+        with config.OPENLDAP_HOST.executor().session() as openldap_session:
+            openldap_session.run_cmd(['kadmin.local', '-q', add_principal])
+            openldap_session.run_cmd(['kadmin.local', '-q', add_keytab])
+            with openldap_session.open_file(KEYTAB, 'rb') as ldap_kt:
+                with engine_session.open_file(KEYTAB, 'wb') as engine_kt:
                     engine_kt.write(ldap_kt.read())
                     logger.info('%s was created.' % KEYTAB)
-            openldap.run_cmd(['rm', '-f', KEYTAB])
+            openldap_session.fs.remove(KEYTAB)
 
     testflow.setup("Adding user %s", config.SSO_USER)
     assert users.addExternalUser(
