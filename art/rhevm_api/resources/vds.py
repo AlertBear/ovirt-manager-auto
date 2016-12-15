@@ -102,7 +102,7 @@ class VDS(Host):
             getVdsCaps
             out = config.VDS_HOSTS[0].vds_client("getVdsCapabilities")
         """
-        cmd_args = " ".join(args)
+        cmd_args = "', '".join(args)
         args_txt = "('{0}')".format(cmd_args) if cmd_args else "()"
         if json:
             command = (
