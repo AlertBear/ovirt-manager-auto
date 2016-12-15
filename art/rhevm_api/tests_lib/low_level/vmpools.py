@@ -411,3 +411,13 @@ def get_all_vm_pools():
     """
     logger.info("Getting all vm pools in the system")
     return UTIL.get(absLink=False)
+
+
+def get_all_vm_pools_names():
+    """
+    Get list of all VMPools names from API
+
+    Returns:
+        list: all VMPools names
+    """
+    return [vmpool.get_name() for vmpool in get_all_vm_pools()]

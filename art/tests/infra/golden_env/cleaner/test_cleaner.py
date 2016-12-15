@@ -9,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms,
     templates as ll_templates,
+    vmpools as ll_vmpools,
 )
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
@@ -91,6 +92,12 @@ def clean_he_env():
     testflow.step("Remove the %s from %s", HOSTED_ENGINE_HA_PACKAGE, host.ip)
     if not hosted_host.package_manager.remove(HOSTED_ENGINE_HA_PACKAGE):
         logger.error("Failed to remove HE packages from host %s", host.ip)
+
+
+def remove_vm_pools():
+    for vmpool in ll_vmpools.get_all_vm_pools_names():
+        testflow.step("Remove VMPool: %s", vmpool)
+        ll_vmpools.removeVmPool(positive=True, vmpool=vmpool)
 
 
 def remove_vms_and_templates():
@@ -188,6 +195,7 @@ class CleanGoldenEnv(BaseTestCase):
         """
 
         remove_users_groups()
+        remove_vm_pools()
         remove_vms_and_templates()
         remove_disks_and_sds()
 
