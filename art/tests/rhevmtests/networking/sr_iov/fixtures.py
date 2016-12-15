@@ -33,35 +33,65 @@ class SRIOV(NetworkFixtures):
             ll_sriov.SriovHostNics(self.host_0_name)
         )
         sriov_conf.HOST_1_SRIOV_NICS_OBJ = (
-            ll_sriov.SriovHostNics(self.host_0_name)
+            ll_sriov.SriovHostNics(self.host_1_name)
         )
         sriov_conf.HOST_0_PF_LIST = (
             sriov_conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
         )
+        sriov_conf.HOST_1_PF_LIST = (
+            sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
+        )
         sriov_conf.HOST_0_PF_NAMES = (
             sriov_conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_names()
         )
-        pf_host_nic_name = [
+        sriov_conf.HOST_1_PF_NAMES = (
+            sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_names()
+        )
+        pf_host_0_nic_name = [
             i for i in sriov_conf.HOST_0_PF_NAMES if i ==
             conf.VDS_0_HOST.nics[1]
             ]
-        if not pf_host_nic_name:
+        if not pf_host_0_nic_name:
             sriov_conf.HOST_0_PF_OBJECT = ll_sriov.SriovNicPF(
                 conf.HOST_0_NAME, sriov_conf.HOST_0_PF_NAMES[0]
             )
         else:
             sriov_conf.HOST_0_PF_OBJECT = ll_sriov.SriovNicPF(
-                conf.HOST_0_NAME, pf_host_nic_name[0]
+                conf.HOST_0_NAME, pf_host_0_nic_name[0]
             )
-        mgmt_nic_obj = hl_networks.get_management_network_host_nic(
+        pf_host_1_nic_name = [
+            i for i in sriov_conf.HOST_1_PF_NAMES if i ==
+            conf.VDS_1_HOST.nics[1]
+            ]
+        if not pf_host_1_nic_name:
+            sriov_conf.HOST_1_PF_OBJECT = ll_sriov.SriovNicPF(
+                conf.HOST_1_NAME, sriov_conf.HOST_1_PF_NAMES[0]
+            )
+        else:
+            sriov_conf.HOST_1_PF_OBJECT = ll_sriov.SriovNicPF(
+                conf.HOST_1_NAME, pf_host_1_nic_name[0]
+            )
+        host_0_mgmt_nic_obj = hl_networks.get_management_network_host_nic(
             host=self.host_0_name, cluster=self.cluster_0
         )
 
         # Remove the host NIC with management network from PF lists
-        if mgmt_nic_obj.name in sriov_conf.HOST_0_PF_NAMES:
-            sriov_conf.HOST_0_PF_NAMES.remove(mgmt_nic_obj.name)
+        if host_0_mgmt_nic_obj.name in sriov_conf.HOST_0_PF_NAMES:
+            sriov_conf.HOST_0_PF_NAMES.remove(host_0_mgmt_nic_obj.name)
             sriov_conf.HOST_0_PF_LIST = filter(
-                lambda x: x.id != mgmt_nic_obj.id, sriov_conf.HOST_0_PF_LIST
+                lambda x: x.id != host_0_mgmt_nic_obj.id,
+                sriov_conf.HOST_0_PF_LIST
+            )
+        host_1_mgmt_nic_obj = hl_networks.get_management_network_host_nic(
+            host=self.host_1_name, cluster=self.cluster_0
+        )
+
+        # Remove the host NIC with management network from PF lists
+        if host_1_mgmt_nic_obj.name in sriov_conf.HOST_1_PF_NAMES:
+            sriov_conf.HOST_1_PF_NAMES.remove(host_1_mgmt_nic_obj.name)
+            sriov_conf.HOST_1_PF_LIST = filter(
+                lambda x: x.id != host_1_mgmt_nic_obj.id,
+                sriov_conf.HOST_1_PF_LIST
             )
 
 
@@ -331,9 +361,15 @@ def set_num_of_vfs(request):
     """
     SRIOV()
     num_of_vfs = request.node.cls.num_of_vfs
-    testflow.setup("Set number %s of virtual functions", num_of_vfs)
-    sriov_conf.HOST_0_PF_OBJECT.set_number_of_vf(num_of_vfs)
-    conf.HOST_0_VFS_LIST = sriov_conf.HOST_0_PF_OBJECT.get_all_vf_names()
+    hosts = getattr(request.node.cls, "hosts", [0])
+    for host in hosts:
+        host_pf = "HOST_%s_PF_OBJECT" % host
+        pf_object = getattr(sriov_conf, host_pf)
+        testflow.setup(
+            "Set number %s of virtual functions on host %s", num_of_vfs,
+            conf.HOSTS[host]
+        )
+        pf_object.set_number_of_vf(num_of_vfs)
 
 
 @pytest.fixture(scope="class")
@@ -361,12 +397,12 @@ def add_vnics_to_vm(request):
 @pytest.fixture(scope="class")
 def update_vnic_profiles(request):
     """
-    Update vNICs  profiles with pass_through = True
+    Update vNICs profiles with pass_through = True
     """
     sriov = SRIOV()
     vnics_profiles = request.node.cls.vnics_profiles
     for vnic in vnics_profiles:
-        testflow.setup("Update vNIC profile %s", vnic)
+        testflow.setup("Update vNIC profile %s with pass_through = True", vnic)
         assert ll_networks.update_vnic_profile(
             name=vnic, network=vnic, data_center=sriov.dc_0, pass_through=True
         )
@@ -394,15 +430,21 @@ def reset_host_sriov_params(request):
     Set number of VFs to 0
     Set all_networks_allowed to True
     """
+    hosts = getattr(request.node.cls, "hosts", [0])
+
     def fin():
         """
         Set number of VFs to 0
         Set all_networks_allowed to True
         """
-        testflow.teardown("Set number of VFs to 0")
-        sriov_conf.HOST_0_PF_OBJECT.set_number_of_vf(0)
-        testflow.teardown("Set all_networks_allowed to True")
-        sriov_conf.HOST_0_PF_OBJECT.set_all_networks_allowed(enable=True)
+        results = list()
+        for host in hosts:
+            pf_object = getattr(sriov_conf, "HOST_%s_PF_OBJECT" % host)
+            testflow.teardown("Set number of VFs to 0")
+            results.append(pf_object.set_number_of_vf(0))
+            testflow.teardown("Set all_networks_allowed to True")
+            results.append(pf_object.set_all_networks_allowed(enable=True))
+        assert all(results)
     request.addfinalizer(fin)
 
 

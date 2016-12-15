@@ -435,6 +435,37 @@ def wait_for_vm_gets_to_full_memory(vm_name, expected_memory, threshold=0.9):
     return False
 
 
+def raise_if_false_in_list(results):
+    """
+    For finalizers, When we have fixture with more then one finalizer if one
+    of the finalizer fail the next one will not execute.
+    This function will raise if one element in the list is False
+
+    Args:
+        results (list): Results list
+
+    Raises:
+        AssertionError: If one element in the list is False
+
+    Examples:
+        results = list()
+
+        def fin3():
+            raise_if_false_in_list(results=results)
+        request.addfinalizer(fin3)
+
+        def fin2():
+            results,append((some_function(), "ERROR for raise"))
+        request.addfinalizer(fin2)
+
+        def fin1():
+            results,append((some_function(), "ERROR for raise"))
+        request.addfinalizer(fin1)
+    """
+    res = [r[1] for r in results if not r[0]]
+    assert not res, res
+
+
 def get_gb(gb):
     """
     Return byte int value according to requested GB

@@ -1737,7 +1737,7 @@ def updateNic(positive, vm, nic, **kwargs):
         name (str): NIC name
         network (str): Network name
         vnic_profile (str): The VNIC profile that will be selected for the NIC
-        interface (str): NIC type. (virtio, rtl8139, e1000 and passthrough)
+        interface (str): NIC type. (virtio, rtl8139, e1000 and pci_passthrough)
         mac_address (str): NIC mac address
         plugged (bool): Update the NIC with plugged/unplugged state
         linked (bool): Update the NIC with linked/unlinked state

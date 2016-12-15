@@ -15,6 +15,9 @@ VM_TEST_VNICS = global_helper.generate_object_names(
 TEMPLATE_TEST_VNICS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=5, prefix="template_sriov_vnic"
 )
+MIGRATION_TEST_VNICS = global_helper.generate_object_names(
+    num_of_cases=5, num_of_objects=5, prefix="migration_sriov_vnic"
+)
 
 HOST_O_SRIOV_NICS_OBJ = None  # Filled in setup_package
 HOST_1_SRIOV_NICS_OBJ = None  # Filled in setup_package
@@ -23,10 +26,13 @@ HOST_1_PF_LIST = list()  # Filled in setup_package
 HOST_0_PF_NAMES = list()  # Filled in setup_package
 HOST_1_PF_NAMES = list()  # Filled in setup_package
 HOST_0_PF_OBJECT = None  # Filled in setup_package
-HOST_0_VFS_LIST = None  # Filled in setup_package
+HOST_1_PF_OBJECT = None  # Filled in setup_package
 
 HOSTS_PARAM_DICT = None
 
+MIGRATION_TIMEOUT = 300
+MIGRATION_NIC_1_MAC = None  # Filled in remove_vnic_and_save_mac fixture
+SRIOV_MIGRATION_VM = "SR-IOV-migration-vm"
 VM_DISK_SIZE = 1024
 NUM_VF_PATH = "/sys/class/net/%s/device/sriov_numvfs"
 MAC_ADDR_FILE = "/sys/class/net/%s/address"
@@ -35,16 +41,19 @@ BURST_VALUE = 100
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
 NETWORK_QOS = "network_qos"
 LABELS = global_helper.generate_object_names(
-    num_of_cases=5, num_of_objects=2, prefix="label"
+    num_of_cases=5, num_of_objects=2, prefix="sriov_label"
 )
 GENERAL_NETS = global_helper.generate_object_names(
-    num_of_cases=35, num_of_objects=10, prefix="gen"
+    num_of_cases=35, num_of_objects=10, prefix="sriov_gen"
 )
 VM_NETS = global_helper.generate_object_names(
-    num_of_cases=35, num_of_objects=10, prefix="vm"
+    num_of_cases=35, num_of_objects=10, prefix="sriov_vm"
 )
 IMPORT_EXPORT_NETS = global_helper.generate_object_names(
-    num_of_cases=35, num_of_objects=10, prefix="IE"
+    num_of_cases=35, num_of_objects=10, prefix="sriov_IE"
+)
+MIGRATION_NETS = global_helper.generate_object_names(
+    num_of_cases=35, num_of_objects=10, prefix="sriov_mig"
 )
 GENERAL_DICT = {
     GENERAL_NETS[4][0]: {
@@ -101,4 +110,16 @@ IMPORT_EXPORT_DICT = {
     IMPORT_EXPORT_NETS[1][1]: {
         "required": "false"
     },
+}
+
+MIGRATION_DICT = {
+    MIGRATION_NETS[1][0]: {
+        "required": "false"
+    },
+    MIGRATION_NETS[1][1]: {
+        "required": "false"
+    },
+    MIGRATION_NETS[1][2]: {
+        "required": "false"
+    }
 }

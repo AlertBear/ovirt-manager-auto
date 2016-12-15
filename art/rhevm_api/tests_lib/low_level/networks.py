@@ -434,6 +434,7 @@ def update_vnic_profile(name, network, **kwargs):
         pass_through (bool): Enable or disable pass through mode
         network_filter (str): Network filter name to use. ('None') to update
             vNIC profile with no network_filter
+        migratable (bool): When profile is pass_through allow migration on it
 
     Returns:
         bool: True, if adding vnic profile was success, otherwise False
