@@ -32,6 +32,7 @@ rlUtil = get_api('role', 'roles')
 taglUtil = get_api('tag', 'tags')
 groupUtil = get_api('group', 'groups')
 permsUtil = get_api('permission', 'permissions')
+SSH_PUBLIC_KEYS_API = get_api('ssh_public_key', 'sshpublickeys')
 
 User = getDS('User')
 Domain = getDS('Domain')
@@ -41,6 +42,7 @@ Roles = getDS('Roles')
 Role = getDS('Role')
 Tag = getDS('Tag')
 Permission = getDS('Permission')
+ssh_public_key = getDS('SshPublicKey')
 
 logger = logging.getLogger("art.ll_lib.users")
 
@@ -278,3 +280,67 @@ def loginAsUser(user, domain, password, filter):
     opts['user_domain'] = domain
     opts['password'] = password
     logger.info(msg, user, domain, filter, password)
+
+
+def get_user_obj(user_name):
+    """
+    Get user object.
+
+    Args:
+        user_name (str): Name of the user
+
+    Returns:
+        User: specific user object
+    """
+    return util.find(user_name)
+
+
+def get_ssh_private_keys(user_name):
+    """
+    Get ssh private keys from user options on engine web page.
+
+    Args:
+        user_name (str): name of authorization user to get keys for.
+
+    Returns:
+        list: list of SshPublicKey class objects
+    """
+    return SSH_PUBLIC_KEYS_API.getElemFromLink(get_user_obj(user_name))
+
+
+def del_ssh_private_key(ssh_obj):
+    """
+    Delete ssh private keys from user options on engine web page.
+    Args:
+        ssh_obj (obj): object of ssh private key.
+
+    Returns:
+        bool: True/False depending on the action result.
+    """
+    return SSH_PUBLIC_KEYS_API.delete(ssh_obj, positive=True)
+
+
+def set_ssh_private_key(user_name, key):
+    """
+    Set ssh private keys from user options on engine web page.
+    Args:
+        user_name (str): name of authorization user to get keys for.
+        key (str): public key which will be uploaded.
+
+    Returns:
+        tuple: with 2 elements, object of Action class from data structures and
+               bool with result - True/False
+    """
+    collection = SSH_PUBLIC_KEYS_API.getElemFromLink(
+        get_user_obj(user_name),
+        get_href=True
+    )
+    key_obj = ssh_public_key(content=key)
+
+    return SSH_PUBLIC_KEYS_API.create(
+        key_obj,
+        positive=True,
+        collection=collection,
+        async=True
+    )
+

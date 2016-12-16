@@ -166,6 +166,8 @@ def _prepareVmObject(**kwargs):
     :type cmdline: str
     :param vcpu_pinning: vcpu pinning affinity
     :type vcpu_pinning: dict
+    :param serial_console: set 'Enable VirtIO serial console' flag for vm
+    :type serial_console: bool
     :param highly_available: set high-availability for vm ('true' or 'false')
     :type highly_available: str
     :param placement_affinity: vm to host affinity
@@ -402,6 +404,15 @@ def _prepareVmObject(**kwargs):
 
     # stateless
     vm.set_stateless(kwargs.pop("stateless", None))
+
+    # serial console
+    serial_console = kwargs.pop("serial_console", None)
+    if serial_console is not None:
+        vm.set_console(
+            data_st.Console(
+                enabled=serial_console
+            )
+        )
 
     # high availablity
     ha = kwargs.pop("highly_available", None)
