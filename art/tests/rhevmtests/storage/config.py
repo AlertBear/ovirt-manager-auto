@@ -156,6 +156,7 @@ OBJECT_TYPE_SNAPSHOT = "snap"
 OBJECT_TYPE_TEMPLATE = "templ"
 OBJECT_TYPE_VM = "vm"
 OBJECT_TYPE_MOUNT_POINT = "mount_point"
+OBJECT_TYPE_NIC = "nic"
 
 # These lists of keywords are useful for low_level addStorageDomain:
 # addStorageDomain(True, name='my_name', **NFS_DOMAINS_KWARGS[0])

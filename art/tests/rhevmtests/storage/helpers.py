@@ -64,7 +64,7 @@ LSBLK_CMD = 'lsblk -o NAME'
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
-FIND_CMD = 'find / -name %s'
+FIND_CMD = '[ -f %s ]'
 ECHO_CMD = 'echo %s > %s'
 CREATE_FILE_CMD = 'touch %s/%s'
 CREATE_FILESYSTEM_CMD = 'mkfs.%s %s'
@@ -456,10 +456,10 @@ def create_unique_object_name(object_description, object_type):
         :rtype: str
         """
         current_date_time = (
-            datetime.datetime.now().strftime("%d%H%M%S")
+            datetime.datetime.now().strftime("%d%H%M%S%f")
         )
         return "{0}_{1}_{2}".format(
-            object_type, object_description[:25], current_date_time
+            object_type, object_description[:23], current_date_time[:10]
         )
 
 

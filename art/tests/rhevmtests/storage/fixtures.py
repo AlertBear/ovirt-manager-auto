@@ -17,6 +17,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.resources import storage
 from art.rhevm_api.utils import test_utils
+from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
 import rhevmtests.helpers as rhevm_helpers
@@ -840,3 +841,53 @@ def wait_for_all_snapshot_tasks(request):
                 "Disks in VM '%s' failed to reach state 'OK'", self.vm_name
             )
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def unblock_connectivity_storage_domain_teardown(request):
+    """
+    Unblock connectivity from host to storage domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        assert unblockOutgoingConnection(
+            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
+            self.storage_domain_ip
+        ), "Failed to block connects from %s to %s" % (
+            self.host_ip, self.storage_domain_ip
+        )
+
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def initialize_variables_block_domain(request):
+    """
+    Initialize variables for blocking connection from the SPM to a
+    storage domain
+    """
+    self = request.node.cls
+
+    self.host = getattr(self, 'host', ll_hosts.getSPMHost(config.HOSTS))
+    self.host_ip = ll_hosts.getHostIP(self.host)
+    found, address = ll_sd.getDomainAddress(True, self.storage_domain)
+    assert found, "IP for storage domain %s not found" % self.storage_domain
+    self.storage_domain_ip = address['address']
+
+
+@pytest.fixture()
+def add_nic(request):
+    """
+    Add a nic to the VM
+    """
+    self = request.node.cls
+
+    self.nic = storage_helpers.create_unique_object_name(
+        self.__name__, config.OBJECT_TYPE_NIC
+    )
+    assert ll_vms.addNic(
+        True, vm=self.vm_name, name=self.nic, mac_address=None,
+        network=config.MGMT_BRIDGE, vnic_profile=config.MGMT_BRIDGE,
+        plugged='true', linked='true'
+    ), "Failed to add nic %s to VM %s" % (self.nic, self.vm_name)

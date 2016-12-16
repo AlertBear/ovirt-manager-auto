@@ -3,34 +3,37 @@
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Single_Snapshot
 """
-import logging
 import os
-import re
-import shlex
-import config
+import pytest
+import logging
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     hosts as ll_hosts,
     jobs as ll_jobs,
-    storagedomains as ll_sds,
     vms as ll_vms,
 )
-from art.rhevm_api.utils.storage_api import (
-    blockOutgoingConnection, unblockOutgoingConnection,
+from art.rhevm_api.tests_lib.high_level import (
+    datacenters as hl_dc,
 )
-from art.rhevm_api.utils.test_utils import restartVdsmd, restart_engine
+from art.rhevm_api.utils import storage_api
+from art.rhevm_api.utils import test_utils
+from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
+from art.test_handler.tools import polarion, bz
+
+from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers
-from art.unittest_lib import StorageTest as BaseTestCase, testflow
-from art.unittest_lib import attr
-from art.test_handler import exceptions
-from art.test_handler.tools import polarion
-from utilities.machine import Machine, LINUX
+from rhevmtests.storage.fixtures import (
+    create_vm, poweroff_vm, unblock_connectivity_storage_domain_teardown,
+    remove_vms, poweroff_vm_setup, start_vm, undo_snapshot, add_nic,
+    initialize_variables_block_domain,
+)
+
+from rhevmtests.storage.fixtures import remove_vm  # noqa
+from fixtures import add_disks, initialize_test_variables
 
 logger = logging.getLogger(__name__)
 
 ACTIVE_VM = 'Active VM'
-VM_NAMES = []
-ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 class BasicEnvironment(BaseTestCase):
@@ -41,103 +44,64 @@ class BasicEnvironment(BaseTestCase):
     polarion_test_case = None
     snapshot_desc = None
     disk_count = 4
+    vm_wait_for_ip = True
     file_name = 'test_file'
-    mount_path = '/new_fs_%s'
     cmd_create = 'echo "test_txt" > %s/test_file'
-    cm_del = 'rm -f %s/test_file'
+    cmd_del = 'rm -f %s/test_file'
     umount_cmd = 'umount %s'
-
-    def setUp(self):
-        """
-        Creating disks for case
-        """
-        self.vm_name = config.VM_NAME % self.storage
-        logger.info("Creating VM %s", self.vm_name)
-        self.storage_domain = ll_sds.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[0]
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.storage_domain
-        vm_args['vmName'] = self.vm_name
-
-        logger.info('Creating vm and installing OS on it')
-
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.vm_name)
-
-        self.mounted_paths = []
-        spm = ll_hosts.getSPMHost(config.HOSTS)
-        host_ip = ll_hosts.getHostIP(spm)
-        self.host = Machine(host_ip, config.HOSTS_USER,
-                            config.HOSTS_PW).util(LINUX)
-
-        self.disks_names = ['disk_%s_%s' % (d, self.polarion_test_case)
-                            for d in range(self.disk_count)]
-        logger.info("DISKS: %s", self.disks_names)
-        for disk_name in self.disks_names:
-            ll_disks.addDisk(
-                True, alias=disk_name, provisioned_size=config.GB,
-                storagedomain=self.storage_domain, format=config.COW_DISK,
-                interface=config.INTERFACE_VIRTIO, sparse=True,
-            )
-        ll_disks.wait_for_disks_status(self.disks_names)
-        storage_helpers.prepare_disks_for_vm(self.vm_name, self.disks_names)
-        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        self.vm = Machine(
-            vm_ip, config.VM_USER, config.VM_PASSWORD).util(LINUX)
-        self.boot_disk = ll_vms.get_vm_bootable_disk(self.vm_name)
-        self.vm.runCmd(shlex.split(self.cmd_create))
-        if not ll_vms.shutdownVm(True, self.vm_name, 'false'):
-            raise exceptions.VMException(
-                "Failed to shutdown vm %s" % self.vm_name
-            )
 
     def check_file_existence_operation(self, should_exist=True,
                                        operation='snapshot'):
 
+        testflow.step("Check if files exist on vm %s", self.vm_name)
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
+        if should_exist:
+            assert all(self.get_list_path_exist()), (
+                "%s operation failed, files should exist" % operation
+            )
+        else:
+            assert not any(self.get_list_path_exist()), (
+                "%s operation failed, files should not exist" % operation
+            )
+
+    def get_list_path_exist(self):
         lst = []
-        state = not should_exist
-        self._get_non_bootable_devices()
-        for dev in self.devices:
-            full_path = os.path.join((self.mount_path % dev), self.file_name)
+        for path in self.mounted_paths:
+            full_path = os.path.join(path, self.file_name)
             logger.info("Checking full path %s", full_path)
-            result = self.vm.isFileExists(full_path)
+            result = storage_helpers.does_file_exist(
+                self.vm_name, full_path, self.vm_executor
+            )
             logger.info("File %s", 'exist' if result else 'not exist')
             lst.append(result)
-
-        if state in lst:
-            raise exceptions.SnapshotException("%s operation failed"
-                                               % operation)
+        return lst
 
     def delete_operation(self):
+        testflow.step("Execute delete operation of files")
         ll_vms.start_vms(
             [self.vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=True
         )
-        for dev in self.devices:
-            mount_path = self.mount_path % dev
-            cmd = self.cm_del % mount_path
-            status, output = self.vm.runCmd(shlex.split(cmd))
-            logger.info("File %s", 'deleted' if status else 'not deleted')
-            if not status:
-                raise exceptions.VMException(
-                    "Failed to delete file(s) from vm %s, Output: %s"
-                    % (self.vm_name, output)
-                )
-        if not ll_vms.shutdownVm(True, self.vm_name, async='false'):
-            raise exceptions.VMException(
-                "Failed to shutdown vm %s" % self.vm
+        for path in self.mounted_paths:
+            assert storage_helpers._run_cmd_on_remote_machine(
+                self.vm_name, self.cmd_del % path, self.vm_executor
             )
+        assert ll_vms.shutdownVm(True, self.vm_name, async='false'), (
+            "Failed to shutdown vm %s" % self.vm_name
+        )
 
     def _perform_snapshot_operation(self, disks=None, wait=True, live=False):
+        self.snapshot_desc = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
+        )
         if not live:
             if not ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
                 ll_vms.shutdownVm(True, self.vm_name, 'false')
         if disks:
             snapshot_disks = '%s disks: %s' % (len(disks), disks)
-        else:
+        elif disks is None:
             snapshot_disks = 'all disks'
+        elif disks == []:
+            snapshot_disks = 'only vm configuration'
         testflow.step(
             "Adding new snapshot to vm %s with %s",
             self.vm_name, snapshot_disks
@@ -151,53 +115,21 @@ class BasicEnvironment(BaseTestCase):
                 self.vm_name, [config.SNAPSHOT_OK]
             )
 
-    def _get_non_bootable_devices(self):
-        vm_devices = self.vm.get_storage_devices()
-        if not vm_devices:
-            logger.error("No devices found in vm %s", self.vm_name)
-            raise exceptions.VMException(
-                "No devices found in vm %s" % self.vm_name
-            )
-        logger.info("Devices found: %s", vm_devices)
-        boot_disk_output = self.vm.get_boot_storage_device()
-        boot_disk = re.search(
-            storage_helpers.REGEX_DEVICE_NAME, boot_disk_output
-        ).group()
-        boot_device = boot_disk.split('/')[-1]
-        logger.info("Boot disk device is: %s", boot_device)
-        self.devices = [d for d in vm_devices if d != boot_device]
-        self.devices.sort()
-        logger.info("Devices (excluding boot disk): %s", self.devices)
-
     def _prepare_fs_on_devs(self):
-        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
+        if not ll_vms.get_vm_state(self.vm_name) == config.VM_UP:
+            ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
+        self.mounted_paths = []
 
-        self._get_non_bootable_devices()
-        for dev in self.devices:
-            dev_path = os.path.join('/dev', dev)
-            rc, out = self.vm.runCmd(
-                (storage_helpers.CREATE_DISK_LABEL_CMD % dev_path).split()
+        testflow.step("Creating files for testing on VM %s", self.vm_name)
+        for disk_alias in self.disks_names:
+            status, mount_path = storage_helpers.create_fs_on_disk(
+                self.vm_name, disk_alias
             )
-            logger.info(out)
-            assert rc
-            rc, out = self.vm.runCmd(
-                (storage_helpers.CREATE_DISK_PARTITION_CMD % dev_path).split()
+            assert status, "Unable to create fs on disk %s" % disk_alias
+            self.mounted_paths.append(mount_path)
+            assert storage_helpers._run_cmd_on_remote_machine(
+                self.vm_name, self.cmd_create % mount_path, self.vm_executor
             )
-            logger.info(out)
-            assert rc
-            # Create the partition as number 1
-            dev_number = '1'
-            self.vm.createFileSystem(dev_path, dev_number, 'ext4',
-                                     (self.mount_path % dev))
-
-            self.mounted_paths.append(self.mount_path % dev)
-            logger.info("writing file to disk")
-
-            mount_path = self.mount_path % dev
-            cmd = self.cmd_create % mount_path
-            status, _ = self.vm.runCmd(shlex.split(cmd))
-
-            assert status
         self.check_file_existence_operation(True, 'Writing')
         return True
 
@@ -218,16 +150,20 @@ class BasicEnvironment(BaseTestCase):
         testflow.step(
             "Verifying amount of volumes increased by %s", len(disk_ids)
         )
-        assert current_vol_count == initial_vol_count + len(disk_ids)
-
-    def tearDown(self):
-        if not ll_vms.safely_remove_vms([self.vm_name]):
-            logger.error("Failed to remove vm %s", self.vm_name)
-            BaseTestCase.test_failed = True
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
-        BaseTestCase.teardown_exception()
+        assert current_vol_count == initial_vol_count + len(disk_ids), (
+            "Current volumes should be %s, not %s" % (
+                initial_vol_count + len(disk_ids), current_vol_count
+            )
+        )
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    poweroff_vm_setup.__name__,
+)
 @attr(tier=2)
 class TestCase6022(BasicEnvironment):
     """
@@ -239,10 +175,6 @@ class TestCase6022(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6022'
 
-    def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6022, self).setUp()
-
     @polarion("RHEVM3-6022")
     def test_create_snapshot_of_first_disk(self):
         """
@@ -253,6 +185,14 @@ class TestCase6022(BasicEnvironment):
         self._perform_snapshot_with_verification(self.disks_names[0:2])
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    undo_snapshot.__name__,
+    poweroff_vm.__name__,
+)
 @attr(tier=2)
 class TestCase6023(BasicEnvironment):
     """
@@ -265,16 +205,7 @@ class TestCase6023(BasicEnvironment):
     polarion_test_case = '6023'
     file_name = '/root/test_file'
     cmd_create = 'echo "test_txt" > %s' % file_name
-    cm_del = 'rm -f %s' % file_name
-    previewed = False
-    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-
-    def setUp(self):
-        """
-        Prepares the environment
-        """
-        super(TestCase6023, self).setUp()
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+    cmd_del = 'rm -f %s' % file_name
 
     @polarion("RHEVM3-6023")
     def test_preview_snapshot(self):
@@ -284,10 +215,15 @@ class TestCase6023(BasicEnvironment):
         - Delete the file from the disk
         - Preview the snapshot of the first disk
         """
+        testflow.step("Creating files for testing on VM %s", self.vm_name)
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, self.cmd_create, self.vm_executor
+        ), "Failed to create files for VM %s" % self.vm_name
         self._perform_snapshot_operation()
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        status, output = self.vm.runCmd(shlex.split(self.cm_del))
-        assert status, "Files were not deleted {0}".format(output)
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, self.cmd_del, self.vm_executor
+        ), "Failed to delete files from VM %s" % self.vm_name
 
         disks_to_preview = [(self.boot_disk, self.snapshot_desc),
                             (self.disks_names[0], ACTIVE_VM),
@@ -295,36 +231,36 @@ class TestCase6023(BasicEnvironment):
                             (self.disks_names[2], ACTIVE_VM),
                             (self.disks_names[3], ACTIVE_VM)]
 
-        logger.info("Custom preview with disks %s", disks_to_preview)
+        testflow.step("Custom preview with disks %s", disks_to_preview)
 
-        self.previewed = ll_vms.preview_snapshot(
+        assert ll_vms.preview_snapshot(
             True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
             disks_lst=disks_to_preview
+        ), "Failure to preview snapshot %s from VM %s" % (
+            self.snapshot_desc, self.vm_name
         )
 
-        assert self.previewed
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        logger.info("Check that the file exist after previewing the snapshot")
-        assert self.vm.isFileExists(self.file_name)
-
-    def tearDown(self):
-        if not ll_vms.stop_vms_safely([self.vm_name]):
-            BaseTestCase.test_failed = True
-            logger.error("Failed to remove vm %s", self.vm_name)
-        if self.previewed:
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                BaseTestCase.test_failed = True
-                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase6023, self).tearDown()
+        testflow.step(
+            "Check that the file exist after previewing the snapshot"
+        )
+        assert storage_helpers.does_file_exist(
+            self.vm_name, self.file_name, self.vm_executor
+        )
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    undo_snapshot.__name__,
+    poweroff_vm.__name__,
+)
 @attr(tier=3)
 class TestCase6024(BasicEnvironment):
     """
@@ -335,13 +271,6 @@ class TestCase6024(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '6024'
-    previewed = False
-    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-
-    def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6024, self).setUp()
-        assert self._prepare_fs_on_devs()
 
     @polarion("RHEVM3-6024")
     def test_create_snapshot_of_first_disk(self):
@@ -352,11 +281,13 @@ class TestCase6024(BasicEnvironment):
           and fourth disks
         - Preview the first and fourth snapshots
         """
+        assert self._prepare_fs_on_devs()
         disks_for_snap = [self.disks_names[0],
                           self.disks_names[3]]
-        logger.info("Snapshot with disks: %s", disks_for_snap)
+        testflow.step("Creating snapshot for disks: %s", disks_for_snap)
         self._perform_snapshot_operation(
-            disks=disks_for_snap)
+            disks=disks_for_snap
+        )
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
         self.delete_operation()
@@ -367,44 +298,32 @@ class TestCase6024(BasicEnvironment):
                             (self.disks_names[2], ACTIVE_VM),
                             (self.disks_names[3], self.snapshot_desc)]
 
-        logger.info("Previewing the snapshot %s", self.snapshot_desc)
-        self.previewed = ll_vms.preview_snapshot(
+        testflow.step("Previewing the snapshot %s", self.snapshot_desc)
+        assert ll_vms.preview_snapshot(
             True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
             disks_lst=disks_to_preview
+        ), "Failure to preview snapshot %s from VM %s" % (
+            self.snapshot_desc, self.vm_name
         )
 
-        assert self.previewed
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
 
         assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
-        lst = []
-        self._get_non_bootable_devices()
-        for dev in self.devices:
-            full_path = os.path.join((self.mount_path % dev), self.file_name)
-            logger.info("Checking full path %s", full_path)
-            result = self.vm.isFileExists(full_path)
-            logger.info("File %s ", 'exist' if result else 'does not exist')
-            lst.append(result)
-
+        lst = self.get_list_path_exist()
         results = [d for d in lst if d is True]
         assert len(results) == len(disks_for_snap)
 
-    def tearDown(self):
-        if not ll_vms.stop_vms_safely([self.vm_name]):
-            BaseTestCase.test_failed = True
-            logger.error("Failed to remove vm %s", self.vm_name)
-        if self.previewed:
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                BaseTestCase.test_failed = True
-                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase6024, self).tearDown()
 
-
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    undo_snapshot.__name__,
+    poweroff_vm.__name__,
+)
 @attr(tier=3)
 class TestCase6026(BasicEnvironment):
     """
@@ -414,13 +333,6 @@ class TestCase6026(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '6026'
-    previewed = False
-    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-
-    def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6026, self).setUp()
-        assert self._prepare_fs_on_devs()
 
     @polarion("RHEVM3-6026")
     def test_flow_create_preview_and_undo_snapshot_of_all_disks(self):
@@ -435,17 +347,18 @@ class TestCase6026(BasicEnvironment):
         - Undo previewed snapshot
         - Start VM
         """
-        logger.info("Creating snapshot")
+        assert self._prepare_fs_on_devs()
         self._perform_snapshot_operation()
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
         self.delete_operation()
 
-        logger.info("Previewing the snapshot %s", self.snapshot_desc)
-        self.previewed = ll_vms.preview_snapshot(
+        testflow.step("Previewing the snapshot %s", self.snapshot_desc)
+        assert ll_vms.preview_snapshot(
             True, self.vm_name, self.snapshot_desc, ensure_vm_down=True
+        ), "Failure to preview snapshot %s from VM %s" % (
+            self.snapshot_desc, self.vm_name
         )
-        assert self.previewed
 
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
@@ -453,31 +366,24 @@ class TestCase6026(BasicEnvironment):
 
         self.check_file_existence_operation(True, 'snapshot')
 
-        if self.previewed:
-            logger.info("Undo the snapshot %s", self.snapshot_desc)
-            assert ll_vms.undo_snapshot_preview(
-                True, self.vm_name, ensure_vm_down=True
-            )
-            self.previewed = False
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
+        testflow.step("Undo the snapshot %s", self.snapshot_desc)
+        assert ll_vms.undo_snapshot_preview(
+            True, self.vm_name, ensure_vm_down=True
+        ), "Failure to undo snapshot on VM %s" % self.vm_name
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK]
+        )
         self.check_file_existence_operation(False, 'undo')
 
-    def tearDown(self):
-        if self.previewed:
-            logger.info("Undo the snapshot %s", self.snapshot_desc)
-            if not ll_vms.undo_snapshot_preview(
-                True, self.vm_name, ensure_vm_down=True
-            ):
-                BaseTestCase.test_failed = True
-                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase6026, self).tearDown()
 
-
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    undo_snapshot.__name__,
+    poweroff_vm.__name__,
+)
 @attr(tier=3)
 class TestCase6007(BasicEnvironment):
     """
@@ -489,16 +395,7 @@ class TestCase6007(BasicEnvironment):
     polarion_test_case = '6007'
     file_name = '/root/test_file'
     cmd_create = 'echo "test_txt" > %s' % file_name
-    cm_del = 'rm -f %s' % file_name
-    previewed = False
-    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-
-    def setUp(self):
-        """
-        Prepares the environment
-        """
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6007, self).setUp()
+    cmd_del = 'rm -f %s' % file_name
 
     @polarion("RHEVM3-6007")
     def test_preview_snapshot(self):
@@ -513,12 +410,16 @@ class TestCase6007(BasicEnvironment):
         - Undo previewed snapshot
         - Start VM
         """
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, self.cmd_create, self.vm_executor
+        ), "Files were not deleted"
         disks_for_snap = [self.boot_disk]
-        logger.info("Creating snapshot")
         self._perform_snapshot_operation(disks_for_snap)
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         ll_vms.start_vms([self.vm_name], 1, config.VM_UP, wait_for_ip=False)
-        self.vm.runCmd(shlex.split(self.cm_del))
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, self.cmd_del, self.vm_executor
+        )
 
         disks_to_preview = [(self.boot_disk, self.snapshot_desc),
                             (self.disks_names[0], ACTIVE_VM),
@@ -526,33 +427,30 @@ class TestCase6007(BasicEnvironment):
                             (self.disks_names[2], ACTIVE_VM),
                             (self.disks_names[3], ACTIVE_VM)]
 
-        self.previewed = ll_vms.preview_snapshot(
+        assert ll_vms.preview_snapshot(
             True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
             disks_lst=disks_to_preview
+        ), "Failure to preview snapshot %s from VM %s" % (
+            self.snapshot_desc, self.vm_name
         )
-        assert self.previewed
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
 
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        assert self.vm.isFileExists(self.file_name)
-
-    def tearDown(self):
-        if not ll_vms.stop_vms_safely([self.vm_name]):
-            BaseTestCase.test_failed = True
-            logger.error("Failed to remove vm %s", self.vm_name)
-        if self.previewed:
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                BaseTestCase.test_failed = True
-                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase6007, self).tearDown()
+        assert storage_helpers.does_file_exist(
+            self.vm_name, self.file_name, self.vm_executor
+        )
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    remove_vms.__name__,
+)
 @attr(tier=2)
 class TestCase6013(BasicEnvironment):
     """
@@ -563,15 +461,10 @@ class TestCase6013(BasicEnvironment):
     """
     # TODO: This case is False until RFE/bug:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1115440 is solved
+    # This has been not tested since we need to integrate the RFE in our code
     __test__ = False
     polarion_test_case = '6013'
-    new_vm_name = 'new_vm_%s' % polarion_test_case
-
-    def setUp(self):
-        self.disk_count = 2
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6013, self).setUp()
-        assert self._prepare_fs_on_devs()
+    disk_count = 2
 
     @polarion("RHEVM3-6013")
     def test_clone_vm_from_snapshot(self):
@@ -581,21 +474,28 @@ class TestCase6013(BasicEnvironment):
         file
         - Clone VM from the snapshot
         """
+        assert self._prepare_fs_on_devs()
+        self.new_vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
         self._perform_snapshot_operation(disks=[self.boot_disk])
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         ll_vms.cloneVmFromSnapshot(
             True, self.new_vm_name, config.CLUSTER_NAME, self.vm_name,
             self.snapshot_desc
         )
+        self.vm_names.append(self.new_vm_name)
         ll_jobs.wait_for_jobs([config.JOB_CLONE_VM_FROM_SNAPSHOT])
 
-    def tearDown(self):
-        if not ll_vms.safely_remove_vms([self.new_vm_name]):
-            BaseTestCase.test_failed = True
-            logger.error("Failed to power off vm %s", self.vm_name)
-        super(TestCase6013, self).tearDown()
 
-
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    undo_snapshot.__name__,
+    poweroff_vm.__name__,
+)
 @attr(tier=2)
 class TestCase6010(BasicEnvironment):
     """
@@ -606,16 +506,6 @@ class TestCase6010(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6010'
     disks_for_custom_preview = 2
-    previewed = False
-    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-
-    def setUp(self):
-        """
-        Prepares the environment
-        """
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6010, self).setUp()
-        assert self._prepare_fs_on_devs()
 
     @polarion("RHEVM3-6010")
     def test_custom_preview_with_configuration_and_two_disks(self):
@@ -629,6 +519,7 @@ class TestCase6010(BasicEnvironment):
         - Preview snapshots
         - Start VM
         """
+        assert self._prepare_fs_on_devs()
         self._perform_snapshot_operation()
 
         self.delete_operation()
@@ -639,42 +530,29 @@ class TestCase6010(BasicEnvironment):
                             (self.disks_names[2], ACTIVE_VM),
                             (self.disks_names[3], ACTIVE_VM)]
 
-        self.previewed = ll_vms.preview_snapshot(
+        assert ll_vms.preview_snapshot(
             True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
             disks_lst=disks_to_preview
+        ), "Failure to preview snapshot %s from VM %s" % (
+            self.snapshot_desc, self.vm_name
         )
-        assert self.previewed
 
         ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
 
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        lst = []
-        self._get_non_bootable_devices()
-        for dev in self.devices:
-            full_path = os.path.join((self.mount_path % dev), self.file_name)
-            logger.info("Checking full path %s", full_path)
-            result = self.vm.isFileExists(full_path)
-            logger.info("File %s", 'exist' if result else 'not exist')
-            lst.append(result)
-
+        lst = self.get_list_path_exist()
         results = [d for d in lst if d is True]
         assert len(results) == self.disks_for_custom_preview
 
-    def tearDown(self):
-        if not ll_vms.stop_vms_safely([self.vm_name]):
-            BaseTestCase.test_failed = True
-            logger.error("Failed to remove vm %s", self.vm_name)
-        if self.previewed:
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                BaseTestCase.test_failed = True
-                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase6010, self).tearDown()
 
-
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    poweroff_vm_setup.__name__,
+)
 @attr(tier=4)
 class TestCase6014(BasicEnvironment):
     """
@@ -687,16 +565,6 @@ class TestCase6014(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '6014'
-    # Bugzills history:
-    # 1119203: Live snapshot creation reported as failed by engine but
-    # created successfully
-
-    def setUp(self):
-        """
-        Prepares the environment
-        """
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6014, self).setUp()
 
     @polarion("RHEVM3-6014")
     def test_restart_VDSM_during_snapshot_creation(self):
@@ -708,10 +576,21 @@ class TestCase6014(BasicEnvironment):
         self._perform_snapshot_operation(wait=False)
         self.host = ll_hosts.getSPMHost(config.HOSTS)
         self.host_ip = ll_hosts.getHostIP(self.host)
-        assert restartVdsmd(self.host_ip, config.HOSTS_PW)
-        ll_hosts.waitForHostsStates(True, self.host)
+        testflow.step("Restarting vdsm on host %s", self.host)
+        assert test_utils.restartVdsmd(self.host_ip, config.HOSTS_PW), (
+            "Failure to restart vdsm service on host %s" % self.host
+        )
+        ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
 
 
+@bz({'1408405': {}})
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    poweroff_vm_setup.__name__,
+)
 @attr(tier=4)
 class TestCase6006(BasicEnvironment):
     """
@@ -723,16 +602,6 @@ class TestCase6006(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '6006'
-    # Bugzills history:
-    # 1119203: Live snapshot creation reported as failed by engine but
-    # created successfully
-
-    def setUp(self):
-        """
-        Prepares the environment
-        """
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6006, self).setUp()
 
     @polarion("RHEVM3-6006")
     def test_restart_engine_during_snapshot_creation(self):
@@ -742,11 +611,20 @@ class TestCase6006(BasicEnvironment):
         - Restart ovirt-engine service during snapshot creation
         """
         self._perform_snapshot_operation(wait=False)
-        logger.info("Restarting ovirt-engine...")
-        restart_engine(config.ENGINE, 5, 30)
-        ll_hosts.waitForHostsStates(True, config.HOSTS[0])
+        testflow.step("Restarting ovirt-engine")
+        test_utils.restart_engine(config.ENGINE, 5, 30)
+        hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    add_nic.__name__,
+    undo_snapshot.__name__,
+    poweroff_vm.__name__,
+)
 @attr(tier=2)
 class TestCase16779(BasicEnvironment):
     """
@@ -756,25 +634,7 @@ class TestCase16779(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '16779'
-    nic = 'nic_%s' % polarion_test_case
     commit = False
-    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-
-    def setUp(self):
-        """
-        Prepares the environment
-        """
-        super(TestCase16779, self).setUp()
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        profile = config.MGMT_BRIDGE
-        if not ll_vms.addNic(
-            True, vm=self.vm_name, name=self.nic, mac_address=None,
-            network=config.MGMT_BRIDGE, vnic_profile=profile, plugged='true',
-            linked='true'
-        ):
-            raise exceptions.NetworkException("Can't add nic %s" % self.nic)
-
-        assert self._prepare_fs_on_devs()
 
     @polarion("RHEVM3-16779")
     def test_create_snapshot_from_vm_configuration(self):
@@ -785,6 +645,7 @@ class TestCase16779(BasicEnvironment):
         - Delete one of the VM's NICs
         - Restore the snapshot (which includes only the OVF - conf file)
         """
+        assert self._prepare_fs_on_devs()
         self._perform_snapshot_operation(disks=[])
 
         self.delete_operation()
@@ -793,33 +654,35 @@ class TestCase16779(BasicEnvironment):
         assert ll_vms.preview_snapshot(
             True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
             disks_lst=disks_to_preview
+        ), "Failure to preview snapshot %s from VM %s" % (
+            self.snapshot_desc, self.vm_name
         )
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
 
-        assert ll_vms.commit_snapshot(True, self.vm_name)
+        assert ll_vms.commit_snapshot(True, self.vm_name), (
+            "Failure to commit VM's %s snapshot" % self.vm_name
+        )
         self.commit = True
 
-        assert ll_vms.removeNic(True, self.vm_name, self.nic)
+        assert ll_vms.removeNic(True, self.vm_name, self.nic), (
+            "Failure to remove VM's %s nic %s" % (
+                self.vm_name, self.nic
+            )
+        )
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_OK]
         )
 
-    def tearDown(self):
-        if not ll_vms.stop_vms_safely([self.vm_name]):
-            BaseTestCase.test_failed = True
-            logger.error("Failed to remove vm %s", self.vm_name)
-        if not self.commit:
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                BaseTestCase.test_failed = True
-                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase16779, self).tearDown()
 
-
+@bz({'1410428': {}})
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+)
 @attr(tier=3)
 class TestCase14399(BasicEnvironment):
     """
@@ -832,16 +695,7 @@ class TestCase14399(BasicEnvironment):
     snap_1 = 'snapshot_1'
     snap_2 = 'snapshot_2'
     snap_3 = 'snapshot_3'
-
-    def setUp(self):
-        """
-        Prepares the environment
-        """
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        self.snaps = [self.snap_1, self.snap_2, self.snap_3]
-        super(TestCase14399, self).setUp()
-        assert self._prepare_fs_on_devs()
-        self.cmd_create = 'echo "test_txt" > %s/test_file_%s'
+    snaps = [snap_1, snap_2, snap_3]
 
     @polarion("RHEVM3-14399")
     def test_delete_second_snapshot_out_of_three(self):
@@ -853,13 +707,18 @@ class TestCase14399(BasicEnvironment):
         - Write more files on disk #2 (file C) and create third snapshot
         - Now you have 3 snapshots from disk #2. Delete snapshot #2
         """
+        assert self._prepare_fs_on_devs()
+        self.cmd_create = 'echo "test_txt" > %s/test_file_%s'
         for index, snap_desc in enumerate(self.snaps):
+            testflow.step(
+                "Start vm %s and create snapshot %s", self.vm_name, snap_desc
+            )
             ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-            self._get_non_bootable_devices()
-            for dev in self.devices:
-                logger.info("writing file to disk %s", dev)
-                self.vm.runCmd(shlex.split(self.cmd_create
-                                           % ((self.mount_path % dev), index)))
+            for path in self.mounted_paths:
+                assert storage_helpers._run_cmd_on_remote_machine(
+                    self.vm_name, self.cmd_create % (path, index),
+                    self.vm_executor
+                )
             ll_vms.shutdownVm(True, self.vm_name, 'false')
             ll_vms.addSnapshot(
                 True, self.vm_name, snap_desc,
@@ -884,14 +743,29 @@ class TestCase14399(BasicEnvironment):
         current_vol_count = storage_helpers.get_disks_volume_count(
             disk_ids
         )
-        logger.info("The number of volumes after removing one snapshot is: "
-                    "%s", current_vol_count)
+        logger.info(
+            "The number of volumes after removing one snapshot is: %s",
+            current_vol_count
+        )
 
-        assert current_vol_count == initial_vol_count - 1
+        assert current_vol_count == initial_vol_count - 1, (
+            "Current volumes should be %s, not %s" % (
+                initial_vol_count - 1, current_vol_count
+            )
+        )
 
         self.check_file_existence_operation(True, 'snapshot')
 
 
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    add_disks.__name__,
+    start_vm.__name__,
+    initialize_test_variables.__name__,
+    initialize_variables_block_domain.__name__,
+    poweroff_vm_setup.__name__,
+    unblock_connectivity_storage_domain_teardown.__name__,
+)
 @attr(tier=4)
 class TestCase6015(BasicEnvironment):
     """
@@ -904,16 +778,6 @@ class TestCase6015(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6015'
 
-    def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6015, self).setUp()
-        self.host = ll_hosts.getSPMHost(config.HOSTS)
-        self.host_ip = ll_hosts.getHostIP(self.host)
-        self.sd = ll_vms.get_vms_disks_storage_domain_name(self.vm_name)
-        found, address = ll_sds.getDomainAddress(True, self.sd)
-        assert found, "IP for storage domain %s not found" % self.sd
-        self.sd_ip = address['address']
-
     @polarion("RHEVM3-6015")
     def test_block_connectivity_to_storage(self):
         """
@@ -921,19 +785,13 @@ class TestCase6015(BasicEnvironment):
         - Create a snapshot to the VM, pick only 2 disks
         - Block connectivity to storage server during snapshot creation
         """
-
         self._perform_snapshot_operation(self.disks_names[0:2], wait=False)
-        blockOutgoingConnection(self.host_ip, config.HOSTS_USER,
-                                config.HOSTS_PW, self.sd_ip)
+        assert storage_api.blockOutgoingConnection(
+            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
+            self.storage_domain_ip
+        ), "Failed to block connections from %s to %s" % (
+            self.host_ip, self.storage_domain_ip
+        )
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         # TODO: cmestreg: doesn't this test needs to check the rollback and
         #                 that the volumes are gone?
-
-    def tearDown(self):
-        try:
-            unblockOutgoingConnection(self.host_ip, config.HOSTS_USER,
-                                      config.HOSTS_PW, self.sd_ip)
-        except AttributeError, err:
-            logger.error(
-                "AttributeError calling unblockOutgoingConnection: %s", err)
-        super(TestCase6015, self).tearDown()
