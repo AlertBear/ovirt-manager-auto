@@ -376,6 +376,13 @@ def choose_specific_host_as_spm(request):
             host=sla_config.HOSTS[host_as_spm],
             data_center=sla_config.DC_NAME[0]
         )
+        u_libs.testflow.setup(
+            "Wait until the datacenter %s will have state equal to 'up'",
+            sla_config.DC_NAME[0]
+        )
+        assert ll_datacenters.waitForDataCenterState(
+            name=sla_config.DC_NAME[0]
+        )
 
 
 @pytest.fixture(scope="class")
