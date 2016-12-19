@@ -279,6 +279,7 @@ class TestBalloonUsageDifferentMemory(Balloon):
                 conf.VM_MEMORY_GUARANTEED: (
                     conf.DIFFERENT_MEMORY - 128 * conf.MB * i
                 ),
+                conf.VM_MAX_MEMORY: conf.DIFFERENT_MEMORY + conf.GB,
                 conf.VM_BALLOONING: True
             }
         ) for i, vm_name in enumerate(conf.MOM_VMS[:2])

@@ -50,6 +50,7 @@ VM_DISPLAY_TYPE = ENUMS[
 # VM parameters
 VM_MEMORY = "memory"
 VM_MEMORY_GUARANTEED = "memory_guaranteed"
+VM_MAX_MEMORY = "max_memory"
 VM_PLACEMENT_AFFINITY = "placement_affinity"
 VM_PLACEMENT_HOST = "placement_host"
 VM_PLACEMENT_HOSTS = "placement_hosts"
@@ -78,6 +79,7 @@ VM_CPU_PROFILE = "cpu_profile_id"
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
     VM_MEMORY_GUARANTEED: GB,
+    VM_MAX_MEMORY: 4 * GB,
     VM_CPU_SOCKET: 1,
     VM_CPU_CORES: 1,
     VM_OS: VM_OS_TYPE,

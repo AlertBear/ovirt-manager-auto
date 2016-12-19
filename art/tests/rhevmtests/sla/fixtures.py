@@ -218,7 +218,8 @@ def update_vms_memory_to_hosts_memory(request):
     for vm_name, vm_memory in zip(update_vms_memory, hosts_memory):
         vm_params = {
             sla_config.VM_MEMORY: vm_memory,
-            sla_config.VM_MEMORY_GUARANTEED: vm_memory
+            sla_config.VM_MEMORY_GUARANTEED: vm_memory,
+            sla_config.VM_MAX_MEMORY: vm_memory + sla_config.GB
         }
         u_libs.testflow.setup(
             "Update the VM %s with params %s", vm_name, vm_params

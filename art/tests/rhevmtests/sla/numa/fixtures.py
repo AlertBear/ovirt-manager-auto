@@ -173,5 +173,6 @@ def update_vm_memory_for_numa_test(request):
         positive=True,
         vm=conf.VM_NAME[0],
         memory=vm_memory,
-        memory_guaranteed=vm_memory
+        memory_guaranteed=vm_memory,
+        max_memory=vm_memory + conf.GB
     )

@@ -31,7 +31,8 @@ def update_vms_for_ksm_test():
             placement_host=conf.HOSTS[0],
             placement_affinity=conf.VM_USER_MIGRATABLE,
             memory=vm_memory,
-            memory_guaranteed=vm_memory
+            memory_guaranteed=vm_memory,
+            max_memory=vm_memory + conf.GB
         )
 
 

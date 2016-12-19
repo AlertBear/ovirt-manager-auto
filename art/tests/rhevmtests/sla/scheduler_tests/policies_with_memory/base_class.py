@@ -65,21 +65,24 @@ def update_configuration_constants():
             {
                 normalutilized_vm: {
                     conf.VM_MEMORY: normalutilized_memory,
-                    conf.VM_MEMORY_GUARANTEED: normalutilized_memory
+                    conf.VM_MEMORY_GUARANTEED: normalutilized_memory,
+                    conf.VM_MAX_MEMORY: normalutilized_memory + conf.GB
                 },
                 overutilized_vm: {
                     conf.VM_MEMORY: overutilized_memory,
-                    conf.VM_MEMORY_GUARANTEED: overutilized_memory
+                    conf.VM_MEMORY_GUARANTEED: overutilized_memory,
+                    conf.VM_MAX_MEMORY: overutilized_memory + conf.GB
                 }
             }
         )
     memory_near_overutilized = conf.DEFAULT_PS_PARAMS[
         conf.MIN_FREE_MEMORY
     ] * conf.MB - conf.GB / 2
-    conf.MEMORY_NEAR_OVERUTILIZED[conf.VM_MEMORY] = memory_near_overutilized
-    conf.MEMORY_NEAR_OVERUTILIZED[
-        conf.VM_MEMORY_GUARANTEED
-    ] = memory_near_overutilized
+    conf.MEMORY_NEAR_OVERUTILIZED = {
+        conf.VM_MEMORY: memory_near_overutilized,
+        conf.VM_MAX_MEMORY: memory_near_overutilized + conf.GB,
+        conf.VM_MEMORY_GUARANTEED: memory_near_overutilized
+    }
 
 
 @pytest.fixture(scope="module")
