@@ -249,6 +249,8 @@ def _prepareVmObject(**kwargs):
     :type compressed: bool
     :param instance_type: name of instance_type to be used for the vm
     :type instance_type: str
+    :param max_memory: Upper bound for the memory hotplug
+    :type max_memory: int
     :returns: vm object
     :rtype: instance of VM
     """
@@ -421,12 +423,14 @@ def _prepareVmObject(**kwargs):
 
     # memory policy memory_guaranteed and ballooning
     guaranteed = kwargs.pop("memory_guaranteed", None)
+    max_memory = kwargs.pop("max_memory", None)
     ballooning = kwargs.pop('ballooning', None)
-    if ballooning is not None or guaranteed:
+    if ballooning is not None or guaranteed or max_memory:
         vm.set_memory_policy(
             data_st.MemoryPolicy(
                 guaranteed=guaranteed,
                 ballooning=ballooning,
+                max=max_memory
             )
         )
 
@@ -741,6 +745,8 @@ def addVm(positive, wait=True, **kwargs):
     :type compressed: bool
     :param instance_type: name of instance_type to be used for the vm
     :type instance_type: str
+    :param max_memory: Upper bound for the memory hotplug
+    :type max_memory: int
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -884,6 +890,8 @@ def updateVm(positive, vm, **kwargs):
     :type compressed: bool
     :param instance_type: name of instance_type to be used for the vm
     :type instance_type: str
+    :param max_memory: Upper bound for the memory hotplug
+    :type max_memory: int
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
@@ -2737,7 +2745,8 @@ def createVm(
     copy_permissions=False, custom_properties=None,
     watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
     numa_mode=None, ballooning=None, memory_guaranteed=None,
-    initialization=None, cpu_shares=None, serial_number=None
+    initialization=None, cpu_shares=None, serial_number=None,
+    max_memory=None
 ):
     """
     Create new vm with nic, disk and OS
@@ -2842,6 +2851,8 @@ def createVm(
     :type cpu_shares: int
     :param serial_number: serial number to use
     :type serial_number: str
+    :param max_memory: Upper bound for the memory hotplug
+    :type max_memory: int
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
@@ -2864,7 +2875,8 @@ def createVm(
         cpu_profile_id=cpu_profile_id, numa_mode=numa_mode,
         ballooning=ballooning, memory_guaranteed=memory_guaranteed,
         initialization=initialization, cpu_shares=cpu_shares,
-        serial_number=serial_number, placement_hosts=placement_hosts
+        serial_number=serial_number, placement_hosts=placement_hosts,
+        max_memory=max_memory
     ):
         return False
 
