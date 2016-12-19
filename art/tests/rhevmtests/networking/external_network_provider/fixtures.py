@@ -240,7 +240,7 @@ def deploy_ovn(request):
             results_list.append(
                 helper.wait_for_up_state_and_reactivate(host=host)
             )
-        assert results_list
+        assert all(results_list)
     request.addfinalizer(fin7)
 
     def fin6():
@@ -260,7 +260,7 @@ def deploy_ovn(request):
                         host=host, service=service, action="start"
                     )
                 )
-        assert results_list
+        assert all(results_list)
     request.addfinalizer(fin6)
 
     def fin5():
