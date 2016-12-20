@@ -13,11 +13,12 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.utils.test_utils as test_utils
 import config as sriov_conf
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
-from art.unittest_lib import testflow
 import rhevmtests.networking.helper as network_helper
-from art.core_api import apis_exceptions
+from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -147,61 +148,84 @@ def prepare_setup_import_export(request):
     export_domain = request.node.cls.export_domain
     vms_list = request.node.cls.vms_list
     sd_name = request.node.cls.sd_name
+    result = list()
 
     def fin6():
+        """
+        Check if one of the finalizers failed.
+        """
+        global_helper.raise_if_false_in_list(results=result)
+    request.addfinalizer(fin6)
+
+    def fin5():
         """
         Remove networks from setup
         """
         testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=sriov_import_export.host_0_name
+        result.append(
+            (
+                network_helper.remove_networks_from_setup(
+                    hosts=sriov_import_export.host_0_name
+                ), "fin5: network_helper.remove_networks_from_setup"
+            )
         )
-    request.addfinalizer(fin6)
+    request.addfinalizer(fin5)
 
-    def fin5():
+    def fin4():
         """
         Remove template from export domain
         """
         testflow.teardown(
             "Remove template %s from export domain", export_template_name
         )
-        ll_templates.removeTemplateFromExportDomain(
-            positive=True, template=export_template_name,
-            export_storagedomain=export_domain
+        result.append(
+            (
+                ll_templates.removeTemplateFromExportDomain(
+                    positive=True, template=export_template_name,
+                    export_storagedomain=export_domain
+                ), "fin4: ll_templates.removeTemplateFromExportDomain"
+            )
         )
-    request.addfinalizer(fin5)
+    request.addfinalizer(fin4)
 
-    def fin4():
+    def fin3():
         """
         Remove templates
         """
         for template in templates_list:
             testflow.teardown("Remove template %s", template)
-            ll_templates.removeTemplate(positive=True, template=template)
-    request.addfinalizer(fin4)
+            result.append(
+                (
+                    ll_templates.removeTemplate(
+                        positive=True, template=template
+                    ), "fin3: ll_templates.removeTemplate %s" % template
+                )
+            )
+    request.addfinalizer(fin3)
 
-    def fin3():
+    def fin2():
         """
         Remove VM from export domain
         """
         testflow.teardown("Remove VM %s from export domain", vm)
-        ll_vms.remove_vm_from_export_domain(
-            positive=True, vm=vm, datacenter=dc,
-            export_storagedomain=export_domain
+        result.append(
+            (
+                ll_vms.remove_vm_from_export_domain(
+                    positive=True, vm=vm, datacenter=dc,
+                    export_storagedomain=export_domain
+                ), "fin2: ll_vms.remove_vm_from_export_domain"
+            )
         )
-    request.addfinalizer(fin3)
-
-    def fin2():
-        testflow.teardown("Remove VMs %s", vms_list)
-        ll_vms.removeVms(positive=True, vms=vms_list)
     request.addfinalizer(fin2)
 
     def fin1():
-        """
-        Stop VMS
-        """
-        testflow.teardown("Stop VMs %s", vms_list)
-        ll_vms.stop_vms_safely(vms_list=vms_list)
+        testflow.teardown("Remove VMs %s", vms_list)
+        result.append(
+            (
+                ll_vms.removeVms(positive=True, vms=vms_list),
+                "fin1: ll_vms.removeVms"
+            )
+        )
     request.addfinalizer(fin1)
 
     testflow.setup(
@@ -280,7 +304,7 @@ def create_qos(request):
         testflow.teardown(
             "Delete QoS %s from datacenter %s", net_qos, sriov.dc_0,
         )
-        ll_datacenters.delete_qos_from_datacenter(
+        assert ll_datacenters.delete_qos_from_datacenter(
             datacenter=sriov.dc_0, qos_name=net_qos
         )
     request.addfinalizer(fin)
@@ -309,9 +333,10 @@ def add_update_vnic_profile(request):
     sriov = SRIOV()
     vnic_p_list = request.node.cls.vnic_p_list
     net_1 = request.node.cls.net_1
-    dc = request.node.cls.dc
-    update_vnic = request.node.cls.update_vnic
-    pass_through = request.node.cls.pass_through
+    dc = getattr(request.node.cls, "dc", sriov.dc_0)
+    update_vnic = getattr(request.node.cls, "update_vnic", False)
+    pass_through = getattr(request.node.cls, "pass_through", True)
+    result_list = list()
 
     def fin():
         """
@@ -319,10 +344,13 @@ def add_update_vnic_profile(request):
         """
         for vnic in vnic_p_list:
             testflow.teardown("Remove vNIC profile %s", vnic)
-            ll_networks.remove_vnic_profile(
-                positive=True, vnic_profile_name=vnic, network=net_1,
-                data_center=dc
+            result_list.append(
+                ll_networks.remove_vnic_profile(
+                    positive=True, vnic_profile_name=vnic, network=net_1,
+                    data_center=dc
+                )
             )
+        assert all(result_list)
     request.addfinalizer(fin)
 
     testflow.setup(
@@ -379,49 +407,54 @@ def add_vnics_to_vm(request):
     """
     sriov = SRIOV()
     nics = request.node.cls.nics
-    pass_through_vnic = request.node.cls.pass_through_vnic
-    profiles = request.node.cls.profiles
-    nets = request.node.cls.nets
+    pass_through_vnic = getattr(request.node.cls, "pass_through_vnic", None)
+    profiles = getattr(request.node.cls, "profiles", None)
+    nets = getattr(request.node.cls, "nets", None)
+    vms = getattr(request.node.cls, "vms", [sriov.vm_0])
+    add_vm_nic = getattr(request.node.cls, "add_vm_nic", True)
+    vm_nics_to_remove = getattr(request.node.cls, "vm_nics_to_remove", None)
+    result_list = list()
 
-    for nic, passthrough, profile, net in zip(
-        nics, pass_through_vnic, profiles, nets
-    ):
-        testflow.setup("Add NIC %s to VM %s", nic, sriov.vm_0)
-        assert ll_vms.addNic(
-            positive=True, vm=sriov.vm_0, name=nic, network=net,
-            vnic_profile=profile,
-            interface=conf.PASSTHROUGH_INTERFACE if passthrough else "virtio"
-        )
+    def fin():
+        """
+        Remove vNICs from VM
+        """
+        vms_nics = vm_nics_to_remove if vm_nics_to_remove else vms
+        for vm, nic in zip(vms_nics, nics):
+            testflow.teardown("Remove NIC %s from VM %s", nic, vm)
+            result_list.append(
+                ll_vms.removeNic(positive=True, vm=vm, nic=nic)
+            )
+
+        assert all(result_list)
+    request.addfinalizer(fin)
+
+    if add_vm_nic:
+        for vm, nic, passthrough, profile, net in zip(
+            vms, nics, pass_through_vnic, profiles, nets
+        ):
+            testflow.setup("Add NIC %s to VM %s", nic, vm)
+            assert ll_vms.addNic(
+                positive=True, vm=vm, name=nic, network=net,
+                vnic_profile=profile,
+                interface=(
+                    conf.PASSTHROUGH_INTERFACE if passthrough else "virtio"
+                )
+            )
 
 
 @pytest.fixture(scope="class")
 def update_vnic_profiles(request):
     """
-    Update vNICs profiles with pass_through = True
+    Update vNICs profiles.
     """
     sriov = SRIOV()
     vnics_profiles = request.node.cls.vnics_profiles
-    for vnic in vnics_profiles:
-        testflow.setup("Update vNIC profile %s with pass_through = True", vnic)
+    for vnic, val in vnics_profiles.iteritems():
+        testflow.setup("Update vNIC profile %s with %s", vnic, val)
         assert ll_networks.update_vnic_profile(
-            name=vnic, network=vnic, data_center=sriov.dc_0, pass_through=True
+            name=vnic, network=vnic, data_center=sriov.dc_0, **val
         )
-
-
-@pytest.fixture(scope="class")
-def stop_vms(request):
-    """
-    Stop VMs
-    """
-    vms_list = request.node.cls.vms_list
-
-    def fin():
-        """
-        Stop VM
-        """
-        testflow.setup("Stop VMs %s", vms_list)
-        ll_vms.stop_vms_safely(vms_list=vms_list)
-    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")
@@ -449,57 +482,18 @@ def reset_host_sriov_params(request):
 
 
 @pytest.fixture(scope="class")
-def start_vm(request):
+def update_qos(request):
     """
-    Start VM
-    """
-    sriov = SRIOV()
-    vm = request.node.cls.vm
-    testflow.setup("Run VM %s once on specific host %s", vm, sriov.host_0_name)
-    assert network_helper.run_vm_once_specific_host(
-        vm=vm, host=sriov.host_0_name, wait_for_up_status=True
-    )
-
-
-@pytest.fixture(scope="class")
-def vm_case_03(request):
-    """
-    Setup for VM case03
+    update QOS on vNIC profile.
     """
     dc = request.node.cls.dc
-    net_2 = request.node.cls.net_2
-    net_3 = request.node.cls.net_3
+    net = request.node.cls.net_3
     net_qos = request.node.cls.net_qos
-    testflow.setup("Update vNIC profile %s", net_2)
-    assert ll_networks.update_vnic_profile(
-        name=net_2, network=net_2, data_center=dc, port_mirroring=True
-    )
-    testflow.setup("Update QoS %s to vNIC profile %s", net_qos, net_3)
+    testflow.setup("Update QoS %s to vNIC profile %s", net_qos, net)
     assert ll_networks.update_qos_on_vnic_profile(
-        datacenter=dc, qos_name=net_qos, vnic_profile_name=net_3,
-        network_name=net_3
+        datacenter=dc, qos_name=net_qos, vnic_profile_name=net,
+        network_name=net
     )
-
-
-@pytest.fixture(scope="class")
-def remove_vnics_from_vm(request):
-    """
-    Remove vNICs from VM
-    """
-    sriov = SRIOV()
-    nics = request.node.cls.nics
-
-    def fin():
-        """
-        Remove vNICs from VM
-        """
-        for nic in nics:
-            try:
-                testflow.teardown("Remove NIC %s from VM %s", nic, sriov.vm_0)
-                ll_vms.removeNic(positive=True, vm=sriov.vm_0, nic=nic)
-            except apis_exceptions.EntityNotFound:
-                pass
-    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")
@@ -520,89 +514,74 @@ def add_labels(request):
 
 
 @pytest.fixture(scope="class")
-def vm_case_05(request):
+def add_vnic_profile(request):
     """
-    Update
+    Add vNIC profile.
     """
-    vm_1 = request.node.cls.vm_1
-    mgmt_vm_nic = request.node.cls.mgmt_vm_nic
+    sriov = SRIOV()
+    pass_through_vnic = request.node.cls.pass_through_vnic
     mgmt_network = request.node.cls.mgmt_network
-    passthrough_profile = request.node.cls.passthrough_profile
-    dc = request.node.cls.dc
-    vms_list = request.node.cls.vms_list
-
-    def fin2():
-        """
-        Remove vNIC profile from VM
-        """
-        testflow.teardown("Remove vNIC profile %s", passthrough_profile)
-        ll_networks.remove_vnic_profile(
-            positive=True, vnic_profile_name=passthrough_profile,
-            network=mgmt_network, data_center=dc
-        )
-    request.addfinalizer(fin2)
+    profiles = request.node.cls.profiles
+    result_list = list()
 
     def fin1():
         """
-        Update vNIC profile to virtIO
+        Remove vNIC profile from VM
         """
-        testflow.teardown("Update VM %s NIC %s", vm_1, mgmt_vm_nic)
-        ll_vms.updateNic(
-            positive=True, vm=vm_1, nic=mgmt_vm_nic,
-            network=mgmt_network, interface=conf.INTERFACE_VIRTIO,
-            vnic_profile=mgmt_network
-        )
+        testflow.teardown("Remove vNIC profile %s", profiles)
+        for profile in profiles:
+            result_list.append(
+                ll_networks.remove_vnic_profile(
+                    positive=True, vnic_profile_name=profile,
+                    network=mgmt_network, data_center=sriov.dc_0
+                )
+            )
+        assert all(result_list)
     request.addfinalizer(fin1)
 
-    testflow.setup(
-        "Add new vNIC profile %s to network %s", passthrough_profile,
-        mgmt_network
-    )
-    assert ll_networks.add_vnic_profile(
-        positive=True, name=passthrough_profile,
-        network=mgmt_network, data_center=dc, pass_through=True
-    )
-    testflow.setup("Update VM %s NIC %s", vm_1, mgmt_vm_nic)
-    assert ll_vms.updateNic(
-        positive=True, vm=vm_1, nic=mgmt_vm_nic,
-        network=mgmt_network, interface=conf.PASSTHROUGH_INTERFACE,
-        vnic_profile=passthrough_profile
-    )
-    for vm, host in zip(vms_list, [conf.HOST_0_NAME, conf.HOST_1_NAME]):
-        testflow.setup("Run vm %s once one specific host %s", vm, host)
-        assert network_helper.run_vm_once_specific_host(
-            vm=vm, host=host, wait_for_up_status=True
+    for vm, passthrough, profile in zip(
+        sriov.vms_list, pass_through_vnic, profiles
+    ):
+        testflow.setup(
+            "Add new vNIC profile %s to network %s", profile,
+            mgmt_network
+        )
+        assert ll_networks.add_vnic_profile(
+            positive=True, name=profile, network=mgmt_network,
+            data_center=sriov.dc_0, pass_through=passthrough
         )
 
 
 @pytest.fixture()
-def vm_case_04(request):
+def set_all_networks_allowed(request):
     """
     Disable set_all_networks_allowed
-    Remove vNIC1 from VM
-    Stop VM
     """
     SRIOV()
-    vm_nic_1 = request.node.cls.vm_nic_1
-    vm = request.node.cls.vm
-
-    def fin2():
-        """
-        Remove vNIC1 from VM for SR-IOV VM case04
-        """
-        testflow.teardown("Remove NIC %s from VM %s", vm_nic_1, vm)
-        ll_vms.removeNic(positive=True, vm=vm, nic=vm_nic_1)
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Stop VM
-        """
-        testflow.teardown("Stop VM %s", vm)
-        ll_vms.stop_vms_safely(vms_list=[vm])
-    request.addfinalizer(fin1)
-
     testflow.setup("Set all_networks_allowed to False")
-    assert sriov_conf.HOST_0_PF_OBJECT.set_all_networks_allowed(
-        enable=False
-    )
+    assert sriov_conf.HOST_0_PF_OBJECT.set_all_networks_allowed(enable=False)
+
+
+@pytest.fixture(scope="class")
+def set_ip_on_vm_interface(request):
+    """
+    Set IP on VM interface
+    """
+    sriov = SRIOV()
+    ips = request.node.cls.ips
+
+    for vm, ip in zip(sriov.vms_list, ips):
+        vm_resource = global_helper.get_vm_resource(vm=vm, start_vm=False)
+        testflow.setup(
+            "Get VM %s interface excluding mgmt interface", vm
+        )
+        interface = network_helper.get_non_mgmt_nic_name(vm=vm)
+        assert interface, "Failed to get interface from %s" % vm
+
+        testflow.setup(
+            "Configure temporary static IP %s on specific interface %s",
+            ip, interface[0]
+        )
+        assert test_utils.configure_temp_static_ip(
+            vds_resource=vm_resource, ip=ip, nic=interface[0]
+        )

@@ -17,9 +17,8 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    create_qos, add_update_vnic_profile, set_num_of_vfs,
-    prepare_setup_general, add_vnics_to_vm, init_fixture,
-    reset_host_sriov_params, remove_vnics_from_vm
+    create_qos, add_update_vnic_profile, set_num_of_vfs, prepare_setup_general,
+    add_vnics_to_vm, init_fixture, reset_host_sriov_params,
 )
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces
@@ -41,8 +40,12 @@ class TestSriov01(NetworkTest):
     3. Check that bond NICs have SR_IOV related configuration
     """
     __test__ = True
+
+    # General
     bond_1 = "bond1"
     sriov_nics = True
+
+    # setup_networks_fixture
     hosts_nets_nic_dict = {
         0: {
             bond_1: {
@@ -91,7 +94,11 @@ class TestSriov02(NetworkTest):
     Edit vNIC profile with passthrough property
     """
     __test__ = True
+
+    # create_qos
     net_qos = sriov_conf.NETWORK_QOS
+
+    # add_update_vnic_profile
     vnic_p_list = conf.VNIC_PROFILE[:3]
     dc = conf.DC_0
     net_1 = conf.MGMT_BRIDGE
@@ -220,7 +227,11 @@ class TestSriov03(NetworkTest):
     b. Putting link up and down doesn't change the number of VFs
     """
     __test__ = True
+
+    # set_num_of_vfs
     num_of_vfs = 2
+
+    # clean_host_interfaces
     hosts_nets_nic_dict = {
         0: {}
     }
@@ -289,8 +300,14 @@ class TestSriov04(NetworkTest):
     Changing the number of VFs for a PF when PF contains non-free VFs
     """
     __test__ = True
+
+    # General
     net1 = sriov_conf.GENERAL_NETS[4][0]
+
+    # set_num_of_vfs
     num_of_vfs = 3
+
+    # clean_host_interfaces
     hosts_nets_nic_dict = {
         0: {}
     }
@@ -339,7 +356,6 @@ class TestSriov04(NetworkTest):
     prepare_setup_general.__name__,
     setup_networks_fixture.__name__,
     add_update_vnic_profile.__name__,
-    remove_vnics_from_vm.__name__,
     add_vnics_to_vm.__name__,
 )
 @pytest.mark.skipif(
@@ -351,16 +367,23 @@ class TestSriov05(NetworkTest):
     Try to edit vNIC profile with passthrough property to become regular vNIC
     """
     __test__ = True
-    net_1 = sriov_conf.GENERAL_NETS[5][0]
+
+    # General
     pt_vnic = conf.VNIC_PROFILE[0]
+
+    # add_update_vnic_profile
     vnic_p_list = [pt_vnic]
+    net_1 = sriov_conf.GENERAL_NETS[5][0]
     dc = conf.DC_0
-    update_vnic = False
-    pass_through = True
+
+    # add_vnics_to_vm
     nics = sriov_conf.GENERAL_TEST_VNICS[5][1:3]
     pass_through_vnic = [True, False]
     profiles = [vnic_p_list[0], net_1]
+    vms = [conf.VM_0, conf.VM_0]
     nets = [net_1, net_1]
+
+    # setup_networks_fixture
     hosts_nets_nic_dict = {
         0: {
             net_1: {

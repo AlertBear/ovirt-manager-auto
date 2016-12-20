@@ -18,6 +18,7 @@ from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     prepare_setup_import_export, init_fixture, reset_host_sriov_params
 )
+from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import clean_host_interfaces
 
 
@@ -27,6 +28,7 @@ from rhevmtests.networking.fixtures import clean_host_interfaces
     reset_host_sriov_params.__name__,
     clean_host_interfaces.__name__,
     prepare_setup_import_export.__name__,
+    start_vm.__name__
 )
 @pytest.mark.skipif(
     conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
@@ -36,28 +38,37 @@ class TestSriovImportExport01(NetworkTest):
     Cases for Import/Export with VM and VFs
     """
     __test__ = True
-    vm = "sriov_export_vm"
+
+    # General
     vm_nic_1 = sriov_conf.TEMPLATE_TEST_VNICS[1][0]
     vm_nic_2 = sriov_conf.TEMPLATE_TEST_VNICS[1][1]
     net_1 = sriov_conf.IMPORT_EXPORT_NETS[1][0]
     net_2 = sriov_conf.IMPORT_EXPORT_NETS[1][1]
-    dc = conf.DC_0
-    cluster = conf.CL_0
-    net_list = [net_1, net_2]
-    vm_nic_list = [vm_nic_1, vm_nic_2]
-    export_domain = conf.EXPORT_DOMAIN_NAME
     import_vm_name = "sriov_import_vm"
-    export_template_name = "sriov_export_template"
     import_template_name = "sriov_import_template"
     vm_from_template = "sriov_from_template"
-    vms_list = [import_vm_name, vm, vm_from_template]
+
+    # prepare_setup_import_export
+    net_list = [net_1, net_2]
+    dc = conf.DC_0
+    vm = "sriov_export_vm"
+    cluster = conf.CL_0
+    vm_nic_list = [vm_nic_1, vm_nic_2]
+    export_template_name = "sriov_export_template"
     templates_list = [import_template_name, export_template_name]
+    export_domain = conf.EXPORT_DOMAIN_NAME
+    vms_list = [import_vm_name, vm, vm_from_template]
     sd_name = ll_storagedomains.getStorageDomainNamesForType(
         datacenter_name=dc, storage_type=conf.STORAGE_TYPE
     )[0]
+
+    # clean_host_interfaces
     hosts_nets_nic_dict = {
         0: {}
     }
+
+    # stop VM
+    vms_to_stop = vms_list
 
     @polarion("RHEVM3-10676")
     def test_01_export_vm_with_vf(self):

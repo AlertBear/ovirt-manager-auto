@@ -7,7 +7,6 @@ SR_IOV feature tests for VFs on VM
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sriov_conf
 import helper
@@ -18,10 +17,11 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     reset_host_sriov_params, update_vnic_profiles, add_vnics_to_vm,
-    init_fixture, prepare_setup_vm, stop_vms, start_vm, set_num_of_vfs,
-    create_qos, vm_case_03, remove_vnics_from_vm, add_labels, vm_case_05,
-    vm_case_04
+    init_fixture, prepare_setup_vm, set_num_of_vfs, create_qos, update_qos,
+    add_labels, add_vnic_profile, set_all_networks_allowed,
+    set_ip_on_vm_interface
 )
+from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces
 )  # flake8: noqa
@@ -31,12 +31,11 @@ from rhevmtests.networking.fixtures import (
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     reset_host_sriov_params.__name__,
-    remove_vnics_from_vm.__name__,
-    stop_vms.__name__,
     init_fixture.__name__,
     prepare_setup_vm.__name__,
     update_vnic_profiles.__name__,
     add_vnics_to_vm.__name__,
+    start_vm.__name__,
 )
 @pytest.mark.skipif(
     conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
@@ -46,18 +45,34 @@ class TestSriovVm01(NetworkTest):
     Cases for VFs on VM
     """
     __test__ = True
+
+    # General
     vm = conf.VM_0
-    vms_list = [vm]
     extra_vm = conf.VM_1
     vm_nic = sriov_conf.VM_TEST_VNICS[1][0]
     extra_vm_nic = sriov_conf.VM_TEST_VNICS[1][1]
-    nics = [vm_nic, extra_vm_nic]
     net_1 = sriov_conf.VM_NETS[1][0]
     net_2 = sriov_conf.VM_NETS[1][1]
-    vnics_profiles = [net_1, net_2]
+
+    # stop VM
+    vms_to_stop = [vm]
+
+    # update_vnic_profiles
+    vnics_profiles = {
+        net_1: {
+            "pass_through": True
+        },
+        net_2: {
+            "pass_through": True
+        },
+    }
+
+    # add_vnics_to_vm
     pass_through_vnic = [True]
     profiles = [net_1]
     nets = profiles
+    nics = [vm_nic, extra_vm_nic]
+    vm_nics_to_remove = [conf.VM_0, conf.VM_0]
 
     @polarion("RHEVM3-6614")
     def test_01_run_vm_zero_vfs(self):
@@ -204,8 +219,6 @@ class TestSriovVm01(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     reset_host_sriov_params.__name__,
-    remove_vnics_from_vm.__name__,
-    stop_vms.__name__,
     init_fixture.__name__,
     prepare_setup_vm.__name__,
     set_num_of_vfs.__name__,
@@ -221,18 +234,38 @@ class TestSriovVm02(NetworkTest):
     Test run VM with VLAN
     """
     __test__ = True
+
+    # General
     vm = conf.VM_0
-    vms_list = [vm]
     vm_nic = sriov_conf.VM_TEST_VNICS[2][0]
     net_1 = sriov_conf.VM_NETS[2][0]
     vlan_id = sriov_conf.VLAN_IDS[2]
     dc = conf.DC_0
-    vnics_profiles = [net_1]
+
+    # remove_vnics_from_vm
     nics = [vm_nic]
+
+    # set_num_of_vfs
+    num_of_vfs = 1
+
+    # update_vnic_profiles
+    vnics_profiles = {
+        net_1: {
+            "pass_through": True
+        },
+    }
+
+    # add_vnics_to_vm
     pass_through_vnic = [True]
     profiles = [net_1]
     nets = profiles
-    num_of_vfs = 1
+
+    # start_vm
+    start_vms_dict = {
+        vm: {
+            "host": 0
+        }
+    }
 
     @polarion("RHEVM3-6314")
     def test_01_vm_with_vlan(self):
@@ -250,16 +283,15 @@ class TestSriovVm02(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     reset_host_sriov_params.__name__,
-    remove_vnics_from_vm.__name__,
-    stop_vms.__name__,
     init_fixture.__name__,
     set_num_of_vfs.__name__,
     prepare_setup_vm.__name__,
     create_qos.__name__,
-    vm_case_03.__name__,
+    update_qos.__name__,
     update_vnic_profiles.__name__,
     setup_networks_fixture.__name__,
     add_vnics_to_vm.__name__,
+    start_vm.__name__
 )
 @pytest.mark.skipif(
     conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
@@ -271,25 +303,52 @@ class TestSriovVm03(NetworkTest):
     Run VM with passthrough, port mirroring and network QoS profiles
     """
     __test__ = True
+
+    # update_vnic_profile_and_qos
+    net_2 = sriov_conf.VM_NETS[3][1]
+    net_3 = sriov_conf.VM_NETS[3][2]
+    net_qos = sriov_conf.NETWORK_QOS
+    dc = conf.DC_0
+
+    # General
     vm = conf.VM_0
-    vms_list = [vm]
     vm_nic_1 = sriov_conf.VM_TEST_VNICS[3][0]
     vm_nic_2 = sriov_conf.VM_TEST_VNICS[3][1]
     vm_nic_3 = sriov_conf.VM_TEST_VNICS[3][2]
     vm_nic_4 = sriov_conf.VM_TEST_VNICS[3][3]
     net_1 = sriov_conf.VM_NETS[3][0]
-    net_2 = sriov_conf.VM_NETS[3][1]
-    net_3 = sriov_conf.VM_NETS[3][2]
     net_4 = sriov_conf.VM_NETS[3][3]
     net_list = [net_1, net_2, net_3]
+
+    # stop VM
+    vms_to_stop = [vm]
+
+    # set_num_of_vfs
     num_of_vfs = 1
-    dc = conf.DC_0
-    vnics_profiles = [net_1, net_4]
-    nics = [vm_nic_1, vm_nic_2, vm_nic_3]
+
+    # add_vnics_to_vm
     pass_through_vnic = [True, False, False]
     profiles = net_list
+    vms = [conf.VM_0, conf.VM_0, conf.VM_0]
+    nics = [vm_nic_1, vm_nic_2, vm_nic_3]
+
+    # create_qos
     nets = net_list
-    net_qos = sriov_conf.NETWORK_QOS
+
+    # update_vnic_profiles
+    vnics_profiles = {
+        net_1: {
+            "pass_through": True
+        },
+        net_2: {
+            "port_mirroring": True
+        },
+        net_4: {
+            "pass_through": True
+        }
+    }
+
+    # setup_networks_fixture
     hosts_nets_nic_dict = {
         0: {
             net_2: {
@@ -342,15 +401,17 @@ class TestSriovVm03(NetworkTest):
 
 
 @attr(tier=2)
+@pytest.mark.incremental
 @pytest.mark.usefixtures(
     reset_host_sriov_params.__name__,
-    stop_vms.__name__,
     init_fixture.__name__,
-    vm_case_04.__name__,
+    set_all_networks_allowed.__name__,
+    add_vnics_to_vm.__name__,
     set_num_of_vfs.__name__,
     prepare_setup_vm.__name__,
     update_vnic_profiles.__name__,
     add_labels.__name__,
+    start_vm.__name__,
 )
 @pytest.mark.skipif(
     conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
@@ -360,51 +421,55 @@ class TestSriovVm04(NetworkTest):
     Allowed networks and labels
     """
     __test__ = True
+
+    # General
     vm = conf.VM_0
-    vms_list = [vm]
-    vm_nic_1 = sriov_conf.VM_TEST_VNICS[4][0]
     net_1 = sriov_conf.VM_NETS[4][0]
     net_2 = sriov_conf.VM_NETS[4][1]
     net_3 = sriov_conf.VM_NETS[4][2]
     net_4 = sriov_conf.VM_NETS[4][3]
-    net_list = [net_1, net_2, net_3, net_4]
     label_1 = sriov_conf.LABELS[4][0]
     label_2 = sriov_conf.LABELS[4][1]
-    label_list = [label_1, label_2]
-    dc = conf.DC_0
-    num_of_vfs = 1
-    vnics_profiles = net_list
 
-    @polarion("RHEVM3-9373")
-    def test_01_all_networks_allowed_specific_net(self):
-        """
-        Add vNIC to VM
-        Add network to all_networks_allowed
-        Run VM
-        """
-        assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vm_nic_1,
-            network=self.net_1, interface=conf.PASSTHROUGH_INTERFACE
-        )
-        sriov_conf.HOST_0_PF_OBJECT.add_network_to_allowed_networks(
-            network=self.net_1
-        )
-        testflow.step(
-            "Add network to all_networks_allowed and run VM"
-        )
-        assert network_helper.run_vm_once_specific_host(
-            vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
-        )
+    # remove_vnics_from_vm
+    nics = sriov_conf.VM_TEST_VNICS[4][:1]
+    add_vm_nic = False
+
+    # set_num_of_vfs
+    num_of_vfs = 1
+
+    # add_labels
+    net_list = [net_1, net_3, net_2, net_4]
+    label_list = [label_1, label_2]
+
+    # update_vnic_profiles
+    vnics_profiles = {
+        net_1: {
+            "pass_through": True
+        },
+        net_2: {
+            "pass_through": True
+        },
+        net_3: {
+            "pass_through": True
+        },
+        net_4: {
+            "pass_through": True
+        },
+    }
+
+    # stop VM
+    vms_to_stop = [vm]
 
     @polarion("RHEVM3-14640")
-    def test_02_all_networks_allowed_specific_net_negative(self):
+    def test_01_all_networks_allowed_specific_net_negative(self):
         """
         Add vNIC to VM
         Try to run VM with network not specified in all_networks_allowed
         """
         assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vm_nic_1,
-            network=self.net_2, interface=conf.PASSTHROUGH_INTERFACE
+            positive=True, vm=self.vm, name=self.nics[0],
+            network=self.net_1, interface=conf.PASSTHROUGH_INTERFACE
         )
         testflow.step(
             "Try to run a VM with network not specified in "
@@ -414,41 +479,64 @@ class TestSriovVm04(NetworkTest):
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
-    @polarion("RHEVM3-10627")
-    def test_03_all_networks_allowed_specific_label(self):
-        """
-        Add vNIC to VM
-        Set all_networks_allowed to specific label
-        Run VM
-        """
-        assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vm_nic_1,
-            network=self.net_3, interface=conf.PASSTHROUGH_INTERFACE
-        )
-        assert sriov_conf.HOST_0_PF_OBJECT.add_label_to_allowed_labels(
-            label=self.label_1
-        )
-        testflow.step(
-            "Set all_networks_allowed to specific label and run VM"
-        )
-        assert network_helper.run_vm_once_specific_host(
-            vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
-        )
-
     @polarion("RHEVM3-14639")
-    def test_04_all_networks_allowed_specific_label_negative(self):
+    def test_02_all_networks_allowed_specific_label_negative(self):
         """
-        Add vNIC to VM
+        Update vNIC to VM
         Try to run VM with label not specified in all_networks_allowed
         """
-        assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vm_nic_1,
-            network=self.net_4, interface=conf.PASSTHROUGH_INTERFACE
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.nics[0], network=self.net_2,
+            interface=conf.PASSTHROUGH_INTERFACE
         )
         testflow.step(
             "Try to run VM with label not specified in all_networks_allowed"
         )
         assert not network_helper.run_vm_once_specific_host(
+            vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
+        )
+
+    @polarion("RHEVM3-9373")
+    def test_03_all_networks_allowed_specific_net(self):
+        """
+        Update vNIC to VM
+        Add network to all_networks_allowed
+        Run VM
+        """
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.nics[0], network=self.net_3,
+            interface=conf.PASSTHROUGH_INTERFACE
+        )
+        sriov_conf.HOST_0_PF_OBJECT.add_network_to_allowed_networks(
+            network=self.net_3
+        )
+        testflow.step(
+            "Add network to all_networks_allowed and run VM"
+        )
+        assert network_helper.run_vm_once_specific_host(
+            vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
+        )
+        testflow.step("Stop VM %s", self.vm)
+        assert ll_vms.stop_vms_safely(vms_list=[self.vm])
+
+    @polarion("RHEVM3-10627")
+    def test_04_all_networks_allowed_specific_label(self):
+        """
+        Update vNIC to VM
+        Set all_networks_allowed to specific label
+        Run VM
+        """
+        assert ll_vms.updateNic(
+            positive=True, vm=self.vm, nic=self.nics[0], network=self.net_4,
+            interface=conf.PASSTHROUGH_INTERFACE
+        )
+        assert sriov_conf.HOST_0_PF_OBJECT.add_label_to_allowed_labels(
+            label=self.label_2
+        )
+        testflow.step(
+            "Set all_networks_allowed to specific label and run VM"
+        )
+        assert network_helper.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
@@ -458,8 +546,10 @@ class TestSriovVm04(NetworkTest):
     init_fixture.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
-    vm_case_05.__name__,
-    stop_vms.__name__
+    add_vnic_profile.__name__,
+    add_vnics_to_vm.__name__,
+    start_vm.__name__,
+    set_ip_on_vm_interface.__name__
 )
 @pytest.mark.skipif(
     conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
@@ -469,21 +559,42 @@ class TestSriovVm05(NetworkTest):
     Check connectivity between VMs using VF and bridge vNICs
     """
     __test__ = True
-    dc = conf.DC_0
+
+    # General
     vm_1 = conf.VM_0
     vm_2 = conf.VM_1
-    vms_list = [vm_1, vm_2]
-    mgmt_vm_nic = conf.NIC_NAME[0]
-    vm_2_ip = None
-    passthrough_profile = "mgmt_passthrough"
-    mgmt_network = conf.MGMT_BRIDGE
+
+    # set_num_of_vfs
     num_of_vfs = 1
+
+    # add_vnic_profile
+    mgmt_vm_nic = sriov_conf.VM_TEST_VNICS[5][0]
+    mgmt_network = conf.MGMT_BRIDGE
+
+    # add_vnics_to_vm
+    nics = [sriov_conf.VM_TEST_VNICS[5][0], sriov_conf.VM_TEST_VNICS[5][0]]
+    nets = [conf.MGMT_BRIDGE, conf.MGMT_BRIDGE]
+    vms = [vm_1, vm_2]
+    profiles = ["mgmt_passthrough", "mgmt_vitio"]
+    pass_through_vnic = [True, False]
+
+    # start_vm
+    start_vms_dict = {
+        vm_1: {
+            "host": 0
+        },
+        vm_2: {
+            "host": 1
+        }
+    }
+
+    # set_ip_on_vm_interface
+    ips = sriov_conf.IPS[:2]
 
     @polarion("RHEVM3-6728")
     def test_check_connectivity(self):
         """
         Ping between VMs using VF and bridge vNICs
         """
-        vm_2_ip = hl_vms.get_vm_ip(vm_name=self.vm_2, start_vm=False)
         vm_resource = global_helper.get_vm_resource(vm=self.vm_1)
-        assert vm_resource.network.send_icmp(dst=vm_2_ip)
+        assert vm_resource.network.send_icmp(dst=sriov_conf.IPS[1])

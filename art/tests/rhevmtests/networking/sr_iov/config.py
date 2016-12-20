@@ -5,6 +5,7 @@
 SR_IOV feature config
 """
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.helper as network_helper
 
 GENERAL_TEST_VNICS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=5, prefix="general_sriov_vnic"
@@ -55,6 +56,9 @@ IMPORT_EXPORT_NETS = global_helper.generate_object_names(
 MIGRATION_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="sriov_mig"
 )
+
+IPS = network_helper.create_random_ips(num_of_ips=2, mask=24)
+
 GENERAL_DICT = {
     GENERAL_NETS[4][0]: {
         "required": "false"
