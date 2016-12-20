@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # disks since new snapshots will be bigger than the minimum size
 DISK_SIZE = 3 * config.GB
 SNAPSHOT_NAME = None
+VM_NAMES = config.VM_NAMES
 
 
 @pytest.fixture(scope='module', autouse=True)

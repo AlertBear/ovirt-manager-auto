@@ -6,7 +6,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 
-VM_NAMES = dict()
+VM_NAMES = config.VM_NAMES
 
 
 @pytest.fixture(scope='class')
