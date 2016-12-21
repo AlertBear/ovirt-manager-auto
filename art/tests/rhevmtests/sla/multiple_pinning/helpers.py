@@ -28,7 +28,7 @@ def add_one_numa_node_to_vm(negative=False):
         vm_name=conf.VM_NAME[0],
         host_name=conf.HOSTS[0],
         index=0,
-        memory=vm_memory,
+        memory=vm_memory / conf.MB,
         cores=vm_cores,
         pin_list=[host_numa_node_index]
     ) == (not negative)
@@ -53,3 +53,33 @@ def get_the_same_cpus_from_resources():
             "Hosts %s do not have the same online CPU" % conf.VDS_HOSTS[:2]
         )
     return cpu_list.pop()
+
+
+def change_host_cluster(cluster_name):
+    """
+    1) Deactivate the host
+    2) Change the host cluster
+    3) Activate the host
+
+    Args:
+        cluster_name (str): Cluster name
+
+    Returns:
+        bool: True, if all actions succeed, otherwise False
+    """
+    u_libs.testflow.setup("Deactivate the host %s", conf.HOSTS[0])
+    if not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0]):
+        return False
+
+    u_libs.testflow.setup(
+        "Change the host %s cluster to %s", conf.HOSTS[0], cluster_name
+    )
+    if not ll_hosts.updateHost(
+        positive=True, host=conf.HOSTS[0], cluster=cluster_name
+    ):
+        return False
+
+    u_libs.testflow.setup("Activate the host %s", conf.HOSTS[0])
+    if not ll_hosts.activate_host(positive=True, host=conf.HOSTS[0]):
+        return False
+    return True

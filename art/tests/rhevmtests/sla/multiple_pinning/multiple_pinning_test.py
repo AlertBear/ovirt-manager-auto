@@ -15,6 +15,7 @@ import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
 from fixtures import (
     attach_host_device,
+    change_host_cluster,
     numa_pinning,
     update_class_cpu_pinning
 )
@@ -359,6 +360,7 @@ class TestMultiplePinning07(BaseMultiplePinning):
 
 
 @u_libs.attr(tier=3)
+@pytest.mark.usefixtures(change_host_cluster.__name__)
 class TestMultiplePinning08(BaseMultiplePinning):
     """
     Negative: Pin VM to host from another cluster
@@ -370,17 +372,15 @@ class TestMultiplePinning08(BaseMultiplePinning):
         """
         1) Pin VM to host from another cluster
         """
-        if len(conf.HOSTS) < 4:
-            pytest.skip("Golden environment does not have four hosts")
         u_libs.testflow.step(
             "Update the VM %s placement host to %s",
-            conf.VM_NAME[0], conf.HOSTS[3]
+            conf.VM_NAME[0], conf.HOSTS[0]
         )
         assert not ll_vms.updateVm(
             positive=True,
             vm=conf.VM_NAME[0],
             placement_affinity=conf.VM_PINNED,
-            placement_hosts=[conf.HOSTS[3]]
+            placement_hosts=[conf.HOSTS[0]]
         )
 
 

@@ -79,3 +79,17 @@ def attach_host_device(request):
         device_name=host_device_name,
         host_name=conf.HOSTS[0]
     )
+
+
+@pytest.fixture(scope="class")
+def change_host_cluster(request):
+    """
+    Change the host cluster
+    """
+    def fin():
+        pinning_helpers.change_host_cluster(cluster_name=conf.CLUSTER_NAME[0])
+    request.addfinalizer(fin)
+
+    assert pinning_helpers.change_host_cluster(
+        cluster_name=conf.CLUSTER_NAME[1]
+    )
