@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import VirtTest, attr, testflow
 from rhevmtests.virt.vm_pools import helpers
 import rhevmtests.helpers as gen_helper
@@ -79,6 +79,7 @@ class TestAddVmsToPool(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     new_pool_size = 3
 
+    @bz({'1408577': {}})
     @polarion("RHEVM3-9870")
     def test_add_vms_to_pool(self):
         """

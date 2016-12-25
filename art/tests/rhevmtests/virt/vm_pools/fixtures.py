@@ -32,11 +32,6 @@ def vm_pool_teardown(request):
         ll_vms.stop_vms_safely([config.CPU_HOTPLUG_VM])
         testflow.teardown("Base teardown for VM pool test")
         if ll_vmpools.does_vm_pool_exist(pool_name):
-            ll_vmpools.updateVmPool(
-                True,
-                pool_name,
-                prestarted_vms=0
-            )
             if config.COMP_VERSION < config.NEW_IMPLEMENTATION_VERSION:
                 helpers.wait_for_vm_pool_removed(pool_name)
             else:

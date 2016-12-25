@@ -23,11 +23,12 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import VirtTest, attr, testflow
 
 
 @attr(tier=2)
+@bz({'1408599': {}})
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, add_user.__name__
 )

@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vmpools as ll_vmpools,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import VirtTest, attr, testflow
 
 logger = logging.getLogger("virt.vm_pools.prestarted_vms")
@@ -42,6 +42,7 @@ class TestAdminStartVmAndPrestartedVms(VirtTest):
     updated_prestarted = 2
 
     @polarion("RHEVM3-9860")
+    @bz({'1408577': {}})
     def test_add_vm_and_increase_prestarted_vms(self):
         """
         Tests that the running VMs in the pool amount to VMs started by admin +
@@ -187,6 +188,7 @@ class TestPoolSizeMoreThanPrestartedUserAndAdminTakeVms(VirtTest):
 
 
 @attr(tier=2)
+@bz({'1408599': {}})
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, add_user.__name__
 )
@@ -258,6 +260,7 @@ class TestUpdatePoolWithPrestartedVms(VirtTest):
     update_prestarted_vms = 2
 
     @polarion("RHEVM3-9873")
+    @bz({'1408577': {}})
     def test_update_vm_pool_with_prestarted_vms(self):
         """
         Tests update of prestarted_vms parameter value in pool:
@@ -286,6 +289,7 @@ class TestUpdatePoolWithTooManyPrestartedVms(VirtTest):
     updated_prestarted_vms = 3
 
     @polarion("RHEVM3-12740")
+    @bz({'1408577': {}})
     def test_create_pool_with_too_many_prestarted_vms(self):
         """
         Negative - update of prestarted vms parametr with an invalid value:

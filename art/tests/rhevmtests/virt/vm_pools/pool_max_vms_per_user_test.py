@@ -17,7 +17,7 @@ from rhevmtests.virt.vm_pools import helpers
 import art.rhevm_api.tests_lib.high_level.vmpools as hl_vmpools
 import art.rhevm_api.tests_lib.low_level.vmpools as ll_vmpools
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import VirtTest, attr, testflow
 
 logger = logging.getLogger("virt.vm_pools.max_vms_per_user")
@@ -100,6 +100,7 @@ class TestUpdatePoolNumberOfVmsPerUser(VirtTest):
     new_max_user_vms = 3
 
     @polarion("RHEVM3-9866")
+    @bz({'1408577': {}})
     def test_update_pool_number_of_vms_per_user(self):
         """
         Tests vm pool update max_vms_per_user parameter value
@@ -141,6 +142,7 @@ class TestUpdatePoolWithInvalidNumberOfVmsPerUser(VirtTest):
     new_max_user_vms = -1
 
     @polarion("RHEVM3-9867")
+    @bz({'1408577': {}})
     def test_update_pool_with_invalid_number_of_vms_per_user(self):
         """
         Negative - tests vm pool update with invalid max_vms_per_user parameter
@@ -177,6 +179,7 @@ class TestMaxVmsPerUserAsUser(VirtTest):
     users = [config.USER]
 
     @polarion("RHEVM3-14383")
+    @bz({'1408577': {}})
     def test_max_vms_per_user_as_user(self):
         """
         Tests max_vms_per_user constraint on actual user:
