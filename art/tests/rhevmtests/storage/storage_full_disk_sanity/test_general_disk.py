@@ -20,8 +20,11 @@ import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
     add_disk, attach_disk, create_snapshot, create_vm, create_template,
     deactivate_domain, delete_disks, initialize_storage_domains, poweroff_vm,
-    preview_snapshot, undo_snapshot, remove_vm  # flake8: noqa
+    preview_snapshot, undo_snapshot, delete_disk,
 )
+
+from rhevmtests.storage.fixtures import remove_vm # noqa
+
 from rhevmtests.storage.storage_full_disk_sanity.fixtures import (
     create_second_vm, poweroff_vm_and_wait_for_stateless_to_remove
 )
@@ -296,6 +299,7 @@ class TestCase16774(TestCase):
 @attr(tier=3)
 @pytest.mark.usefixtures(
     add_disk.__name__,
+    delete_disk.__name__,
 )
 class TestCase16777(TestCase):
     """

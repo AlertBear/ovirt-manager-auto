@@ -16,7 +16,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import StorageTest as TestCase, attr
 from rhevmtests.storage.fixtures import (
     add_disk, create_vm, create_template, create_storage_domain,
-    deactivate_domain, delete_disks, initialize_storage_domains,
+    deactivate_domain, delete_disks, initialize_storage_domains, delete_disk
 )
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @attr(tier=3)
 @pytest.mark.usefixtures(
     add_disk.__name__,
+    delete_disk.__name__
 )
 class TestCase16757(TestCase):
     """
@@ -107,6 +108,7 @@ class TestCase16759(TestCase):
 @pytest.mark.usefixtures(
     initialize_storage_domains.__name__,
     add_disk.__name__,
+    delete_disk.__name__,
     deactivate_domain.__name__,
 )
 class TestCase16760(TestCase):

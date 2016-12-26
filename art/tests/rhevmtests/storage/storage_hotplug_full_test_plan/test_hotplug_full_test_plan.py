@@ -28,8 +28,9 @@ from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from utilities import machine
 from rhevmtests.storage.fixtures import (
-    create_vm, add_disk, delete_disks, start_vm
+    create_vm, add_disk, delete_disks, start_vm,
 )
+
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS

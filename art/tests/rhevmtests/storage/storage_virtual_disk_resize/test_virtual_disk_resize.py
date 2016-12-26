@@ -27,10 +27,13 @@ from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
 
 from rhevmtests.storage.fixtures import (
-    create_vm, create_snapshot, delete_disks, add_disk, attach_disk,
+    create_vm, create_snapshot, add_disk, attach_disk,
     initialize_storage_domains, poweroff_vm, add_disk_permutations,
-    attach_and_activate_disks, remove_vm  # flake8: noqa
+    attach_and_activate_disks, delete_disk,
 )
+
+from rhevmtests.storage.fixtures import remove_vm # noqa
+
 from fixtures import (
     initialize_attributes_start_vm, wait_for_disks_status_ok,
     create_multiple_vms, add_vm_with_disk
@@ -500,10 +503,10 @@ class TestCase5067(BasicResize):
 
 
 @pytest.mark.usefixtures(
-    delete_disks.__name__,
     create_vm.__name__,
     initialize_attributes_start_vm.__name__,
     add_disk.__name__,
+    delete_disk.__name__,
     attach_disk.__name__,
     add_vm_with_disk.__name__,
     poweroff_vm.__name__,
