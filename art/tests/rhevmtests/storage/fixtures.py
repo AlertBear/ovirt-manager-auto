@@ -21,6 +21,7 @@ from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
 import rhevmtests.helpers as rhevm_helpers
+from rhevmtests.networking import helper as network_helper
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -765,15 +766,79 @@ def remove_vm_from_export_domain(request):
     self = request.node.cls
 
     def finalizer():
+        export_domain = getattr(
+            self, 'export_domain', config.EXPORT_DOMAIN_NAME
+        )
+
         testflow.teardown(
-            "Removing VM %s from export domain %s", self.vm_name,
-            config.EXPORT_DOMAIN_NAME
+            "Removing VM: %s from export domain: %s", self.vm_name,
+            export_domain
         )
         assert ll_vms.remove_vm_from_export_domain(
-            True, self.vm_name, config.DATA_CENTER_NAME,
-            config.EXPORT_DOMAIN_NAME
+            positive=True, vm=self.vm_name, datacenter=config.DATA_CENTER_NAME,
+            export_storagedomain=export_domain
+        ), "Failed to remove VM: %s from export domain: %s" % (
+            self.vm_name, export_domain
+        )
+
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def remove_template_from_export_domain(request):
+    """
+    Remove template from export domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        export_domain = getattr(
+            self, 'export_domain', config.EXPORT_DOMAIN_NAME
+        )
+
+        testflow.teardown(
+            "Remove template: %s from export domain: %s",
+            self.template_name, export_domain
+        )
+        assert ll_templates.removeTemplateFromExportDomain(
+            positive=True, template=self.template_name,
+            export_storagedomain=export_domain
+        ), "Failed to remove template: %s from export domain: %s" % (
+            self.vm_name, export_domain
         )
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def seal_vm(request):
+    """
+    Seal VM
+    """
+    self = request.node.cls
+
+    assert network_helper.seal_vm(self.vm_name, config.VM_PASSWORD), (
+        "Failed to set a persistent network for VM '%s'" % self.vm_name
+    )
+
+
+@pytest.fixture()
+def export_vm(request):
+    """
+    Export VM to export domain
+    """
+    self = request.node.cls
+
+    export_domain = getattr(
+        self, 'export_domain', config.EXPORT_DOMAIN_NAME
+    )
+    testflow.setup(
+        "Export VM: %s to export domain: %s", self.vm_name, export_domain
+    )
+    assert ll_vms.exportVm(True, self.vm_name, export_domain), (
+        "Failed to export VM: '%s' into export domain: %s" % (
+            self.vm_name, export_domain
+        )
+    )
 
 
 @pytest.fixture()
@@ -891,3 +956,109 @@ def add_nic(request):
         network=config.MGMT_BRIDGE, vnic_profile=config.MGMT_BRIDGE,
         plugged='true', linked='true'
     ), "Failed to add nic %s to VM %s" % (self.nic, self.vm_name)
+
+
+@pytest.fixture()
+def export_template(request):
+    """
+    Export template to export domain
+    """
+    self = request.node.cls
+
+    export_domain = getattr(
+        self, 'export_domain', config.EXPORT_DOMAIN_NAME
+    )
+    testflow.setup(
+        "Export template %s to export domain %s",
+        self.template_name, export_domain
+    )
+    exclusive = getattr(self, 'exclusive', 'false')
+    assert ll_templates.exportTemplate(
+        True, self.template_name, export_domain, exclusive=exclusive, wait=True
+    ), "Failed to export template %s into export domain %s" % (
+        self.template_name, export_domain
+    )
+
+
+@pytest.fixture()
+def remove_templates(request):
+    """
+    Remove templates
+    """
+    self = request.node.cls
+
+    def finalizer():
+        for template in self.templates_names:
+            if ll_templates.check_template_existence(template):
+                testflow.teardown("Remove template %s", template)
+                assert ll_templates.removeTemplate(True, template), (
+                    "Failed to remove template %s" % template
+                )
+
+    request.addfinalizer(finalizer)
+    if not hasattr(self, 'templates_names'):
+        self.templates_names = list()
+
+
+@pytest.fixture()
+def clone_vm_from_template(request):
+    """
+    Clone VM from template
+    """
+    self = request.node.cls
+
+    self.vm_from_template = storage_helpers.create_unique_object_name(
+        self.__class__.__name__, config.OBJECT_TYPE_VM
+    )
+    testflow.setup(
+        "Clone VM %s from template %s", self.vm_from_template,
+        self.template_name
+    )
+    assert ll_vms.cloneVmFromTemplate(
+        positive=True, name=self.vm_from_template, template=self.template_name,
+        cluster=config.CLUSTER_NAME, vol_sparse=True,
+        vol_format=config.COW_DISK
+    ), "Failed to clone VM %s from template %s" % (
+        self.vm_from_template, self.template_name
+    )
+
+
+@pytest.fixture()
+def create_export_domain(request):
+    """
+    Create and attach export domain
+    """
+
+    self = request.node.cls
+
+    self.export_domain = storage_helpers.create_unique_object_name(
+        self.__class__.__name__, config.OBJECT_TYPE_SD
+    )
+    self.spm = getattr(self, 'spm', ll_hosts.getSPMHost(config.HOSTS))
+
+    assert ll_sd.addStorageDomain(
+        True, name=self.export_domain, host=self.spm, type=config.EXPORT_TYPE,
+        **self.storage_domain_kwargs
+    ), "Unable to add export domain %s" % self.export_domain
+
+    assert ll_sd.attachStorageDomain(
+        True, config.DATA_CENTER_NAME, self.export_domain
+    ), "Unable to attach export domain %s to data center" % (
+        self.export_domain
+    )
+
+
+@pytest.fixture()
+def remove_export_domain(request):
+    """
+    Remove export domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if ll_sd.checkIfStorageDomainExist(True, self.export_domain):
+            testflow.teardown("Remove export domain %s", self.export_domain)
+            assert hl_sd.remove_storage_domain(
+                self.export_domain, config.DATA_CENTER_NAME, self.spm, True
+            ), "Failed to remove export domain %s" % self.export_domain
+    request.addfinalizer(finalizer)
