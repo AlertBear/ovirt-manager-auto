@@ -193,6 +193,9 @@ def _prepare_vm_object(**kwargs):
         compressed (bool): Enable compressed (only with Legacy policy)
         instance_type (str): name of instance_type to be used for the vm
         max_memory (int): Upper bound for the memory hotplug
+        rng_device (bool): Enable rng device
+        rng_bytes (int): Bytes per period
+        rng_period (int): Period duration (ms)
 
     Returns:
         instance of VM: vm object
@@ -557,6 +560,18 @@ def _prepare_vm_object(**kwargs):
             compressed=compressed
         )
         vm.set_migration(migration_options)
+
+    # RNG policy
+    rng_device = kwargs.pop("rng_device", None)
+    if rng_device:
+        rng_bytes = kwargs.pop("rng_bytes", None)
+        rng_period = kwargs.pop("rng_period", None)
+        rng = data_st.RngDevice(
+            source=rng_device,
+            rate=data_st.Rate(bytes=rng_bytes, period=rng_period)
+        )
+        vm.set_rng_device(rng)
+
     return vm
 
 
@@ -698,6 +713,12 @@ def addVm(positive, wait=True, **kwargs):
     :type instance_type: str
     :param max_memory: Upper bound for the memory hotplug
     :type max_memory: int
+    :param rng_device: Enable rng device
+    :type rng_device: bool
+    :param rng_bytes: Bytes per period
+    :type rng_bytes: int
+    :param rng_period: Period duration (ms)
+    :type  rng_period: int
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -801,6 +822,9 @@ def updateVm(positive, vm, **kwargs):
         instance_type (str): Name of instance_type to be used for the vm
         max_memory (int): Upper bound for the memory hotplug
         virtio_scsi (bool): Enable/Disable virtIO scsi
+        rng_device (bool): Enable rng device
+        rng_bytes (int): Bytes per period
+        rng_period (int): Period duration (ms)
 
     Returns:
         bool: True, if update success, otherwise False
