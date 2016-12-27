@@ -4,7 +4,6 @@
 import time
 import pytest
 import logging
-from art.unittest_lib import testflow
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -20,6 +19,7 @@ import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as helper
 import rhevmtests.virt.config as virt_config
 import config
+from art.unittest_lib import testflow
 
 logger = logging.getLogger(__name__)
 
@@ -362,7 +362,6 @@ def remove_locked_vm(request):
             vdc=config.VDC_HOST,
             vdc_pass=config.VDC_ROOT_PASSWORD
         )
-
     request.addfinalizer(fin)
 
 
@@ -399,3 +398,72 @@ def unlock_disks(request):
 
     request.addfinalizer(fin2)
     request.addfinalizer(fin1)
+
+
+@pytest.fixture()
+def change_cpu_limitations(request):
+    """
+    Change the engine cpu limitation
+    """
+    comp_version = request.cls.comp_version
+    if comp_version == config.COMP_VERSION:
+        value = config.VCPU_4_1
+    elif comp_version == "4.0":
+        value = config.VCPU_4_0
+
+    def fin():
+        testflow.teardown("Return CPU limitations to default")
+        param = "MaxNumOfVmCpus=%s" % value
+        assert config.ENGINE.engine_config(
+            action='set', param=param, version=comp_version
+        ).get('results'), "Failed to configure %s" % param
+
+    request.addfinalizer(fin)
+
+    testflow.setup("Change CPU limitations to 10")
+    param = "MaxNumOfVmCpus=10"
+    assert config.ENGINE.engine_config(
+        action='set', param=param, version=comp_version
+    ).get('results'), "Failed to configure %s" % param
+
+
+@pytest.fixture()
+def default_cpu_settings(request):
+    """
+    cleanup for vcpu test cases
+    """
+    def fin():
+        testflow.teardown("Update VM %s cpu to 1", config.VM_NAME[0])
+        assert ll_vms.updateVm(
+            positive=True,
+            vm=config.VM_NAME[0],
+            cpu_cores=1,
+            cpu_socket=1,
+            cpu_threads=1
+        )
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def create_vm_for_vcpu(request):
+    """
+    Create VM for Vcpu test,
+    The test requires a new vm in 4.0 cluster
+    """
+    cluster = request.cls.cluster
+    vm_name = request.cls.vm_name
+
+    def fin():
+        testflow.teardown("Remove VM %s", vm_name)
+        assert ll_vms.safely_remove_vms([vm_name])
+    request.addfinalizer(fin)
+
+    testflow.setup("Create VM %s for on cluster %s", vm_name, cluster)
+    assert ll_vms.addVm(
+        positive=True,
+        name=vm_name,
+        cluster=cluster,
+        os_type=config.VM_OS_TYPE,
+        display_type=config.VM_DISPLAY_TYPE,
+
+    )

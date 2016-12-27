@@ -185,12 +185,13 @@ class Engine(Service):
         service.start()
         self.wait_for_engine_status_up()
 
-    def engine_config(self, action, param=None, restart=True):
+    def engine_config(self, action, param=None, restart=True, version=None):
         """ Runs engine-config command with given action
         Args:
              action (str): list, get, set, all
              param (str): parameter given to the command
             restart (bool): True to restart engine False otherwise
+            version (str): The version of the parameter
         Returns:
             dict: Command returned output
 
@@ -200,8 +201,6 @@ class Engine(Service):
         res = {
             "results": dict()
         }
-        version = None
-
         cmd = ["engine-config"]
         actions = ["list", "get", "set", "all"]
         if action not in actions:
@@ -210,7 +209,8 @@ class Engine(Service):
         cmd.extend(["--%s" % action])
         if param:
             cmd.extend([param])
-
+        if version:
+            cmd.extend(["--cver=%s" % version])
         executor = self.host.executor()
         rc, out, _ = executor.run_cmd(cmd)
         if rc:

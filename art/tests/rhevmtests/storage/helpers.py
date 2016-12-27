@@ -1194,9 +1194,9 @@ def create_data_center(
     testflow.step("Add cluster %s", cluster_name)
     assert ll_clusters.addCluster(
         True, name=cluster_name, cpu=config.CPU_NAME,
-        data_center=dc_name, version=config.COMPATIBILITY_VERSION
+        data_center=dc_name, version=comp_version
     ),  "addCluster %s with cpu %s and version %s to datacenter %s failed" % (
-        cluster_name, config.CPU_NAME, config.COMPATIBILITY_VERSION, dc_name
+        cluster_name, config.CPU_NAME, comp_version, dc_name
     )
     testflow.step("Move host %s to cluster %s", host_name, cluster_name)
     assert hl_hosts.move_host_to_another_cluster(

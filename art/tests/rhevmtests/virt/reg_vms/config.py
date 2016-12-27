@@ -44,3 +44,6 @@ CLONE_VM_TEST_VM_PARAMETERS = {
     VM_CLUSTER: CLUSTER_NAME[0],
     DESCRIPTION: "Virt_test"
 }
+REG_VMS_LIST = ['add_vm_test', 'virt_mix_cases', 'clone_vm_from_template']
+VCPU_4_0 = 240
+VCPU_4_1 = 288
