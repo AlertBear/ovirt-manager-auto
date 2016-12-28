@@ -62,7 +62,7 @@ class CPUHotPlugClass(common.VirtTest):
 
     @polarion("RHEVM3-9627")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
-    @pytest.mark.args_marker(cpu_cores=2, cpu_socket=2)
+    @pytest.mark.args_marker(cpu_cores=1, cpu_socket=1)
     def test_hotplug_cpu(self):
         """
         Test that the number of CPUs changed is also changed on the VM OS
@@ -77,9 +77,9 @@ class CPUHotPlugClass(common.VirtTest):
         working_cores = helper.get_number_of_cores(vm_resource)
         testflow.step(
             "Verifying that after hotplug vm: %s has %d cpus",
-            self.vm_name, 8
+            self.vm_name, 4
         )
-        assert working_cores == 8, (
+        assert working_cores == 4, (
             "The number of working cores: %s isn't correct" % working_cores
         )
 

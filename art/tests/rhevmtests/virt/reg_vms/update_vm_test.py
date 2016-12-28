@@ -7,6 +7,7 @@
 import logging
 import pytest
 from art.test_handler.tools import polarion, bz
+import rhevmtests.helpers as helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 from art.unittest_lib import attr, VirtTest, testflow
@@ -279,7 +280,9 @@ class UpdateVm(VirtTest):
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
-                memory=2 * self.new_mem
+                memory=2 * self.new_mem,
+                max_memory=helper.get_gb(4),
+                compare=False
             )
         testflow.step("Update vm guaranteed memory")
         assert ll_vms.updateVm(

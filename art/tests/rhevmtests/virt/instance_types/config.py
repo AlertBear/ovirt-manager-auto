@@ -1,5 +1,5 @@
 from rhevmtests.virt.config import *  # flake8: noqa
-
+import rhevmtests.helpers as helper
 INSTANCE_TYPE_NAME = 'test_instance_type'
 NAME_AFTER_UPDATE = 'test_update_instance_type'
 TINY_INSTANCE_TYPE = 'Tiny'
@@ -36,11 +36,12 @@ INSTANCE_TYPE_PARAMS = {
     'io_threads': 2,
     'memory_guaranteed': MB_SIZE_256,
     'highly_available': True,
-    'availablity_priority': 2
+    'availablity_priority': 2,
+    'max_memory': GB
 }
 
 TEMPLATE_PARAMS = {
-    'memory': 8 * GB,
+    'memory': helper.get_gb(8),
     'cpu_sockets': 1,
     'cpu_threads': 1,
     'cpu_cores': 1,
@@ -57,9 +58,10 @@ TEMPLATE_PARAMS = {
     'boot': 'cdrom',
     'soundcard_enabled': False,
     'io_threads': 1,
-    'memory_guaranteed': 8 * GB,
+    'memory_guaranteed': helper.get_gb(8),
     'highly_available': False,
-    'availablity_priority': 1
+    'availablity_priority': 1,
+    'max_memory': helper.get_gb(8)
 }
 
 DEFAULT_INSTANCES_PARAMS = {

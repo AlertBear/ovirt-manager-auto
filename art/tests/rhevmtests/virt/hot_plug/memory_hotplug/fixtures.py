@@ -1,7 +1,8 @@
 import pytest
+from art.unittest_lib.common import testflow
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.unittest_lib.common import testflow
+import rhevmtests.helpers as helper
 from rhevmtests.virt import config
 
 
@@ -20,15 +21,16 @@ def memory_hotplug_setup(request):
 
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Create vm %s for memory hotplug test", vm_name
-    )
+    testflow.setup("Create vm %s for memory hotplug test", vm_name)
     assert ll_vms.createVm(
-        positive=True, vmName=vm_name, vmDescription=vm_name,
+        positive=True, vmName=vm_name,
+        vmDescription=vm_name,
         cluster=config.CLUSTER_NAME[0],
-        template=config.TEMPLATE_NAME[0], os_type=config.VM_OS_TYPE,
+        template=config.TEMPLATE_NAME[0],
+        os_type=config.VM_OS_TYPE,
         display_type=config.VM_DISPLAY_TYPE,
-        network=config.MGMT_BRIDGE
+        network=config.MGMT_BRIDGE,
+        max_memory=helper.get_gb(12)
     )
     testflow.setup("Disable ballooning on VM")
     assert ll_vms.updateVm(

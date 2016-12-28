@@ -433,3 +433,17 @@ def wait_for_vm_gets_to_full_memory(vm_name, expected_memory, threshold=0.9):
                 "Timeout When Trying to get VM %s CPU consumption", vm_name
             )
     return False
+
+
+def get_gb(gb):
+    """
+    Return byte int value according to requested GB
+
+    Args:
+        gb (int): GB value
+
+    Returns:
+        int: byte value
+    """
+
+    return 1024 ** 3 * gb

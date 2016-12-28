@@ -7,8 +7,11 @@ import pytest
 import logging
 from art.unittest_lib import attr, VirtTest, testflow
 from art.test_handler.tools import polarion, bz
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.helpers as helper
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    vms as ll_vms
+)
 from rhevmtests.virt.reg_vms.fixtures import (
     add_vm_fixture, start_stop_fixture
 )
@@ -86,7 +89,7 @@ class UpdateRunningVm(VirtTest):
             parameters['comment'],
         )
 
-    @bz({"1391155": {}})
+    @bz({"1408691": {}})
     @polarion("RHEVM3-6295")
     @pytest.mark.usefixtures(
         add_vm_fixture.__name__, start_stop_fixture.__name__
@@ -102,6 +105,7 @@ class UpdateRunningVm(VirtTest):
 
         parameters = {
             'memory': config.TWO_GB,
+            'max_memory': helper.get_gb(4),
             'memory_guaranteed': config.TWO_GB,
             'monitors': 2,
             'placement_affinity': self.affinity,

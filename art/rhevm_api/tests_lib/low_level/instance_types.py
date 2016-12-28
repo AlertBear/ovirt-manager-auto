@@ -67,6 +67,7 @@ def _prepare_instance_type_object(**kwargs):
         ballooning (bool): Enable ballooning
         highly_available (bool): Enable high availability
         availability_priority (int): Priority for availability
+        max_memory (int): Upper bound for the memory hotplug
 
 
     Returns:
@@ -198,13 +199,15 @@ def _prepare_instance_type_object(**kwargs):
         instance_type.set_io(io)
 
     # memory policy memory_guaranteed and ballooning
-    guaranteed = kwargs.get("memory_guaranteed")
-    ballooning = kwargs.get('ballooning')
-    if ballooning or guaranteed:
+    guaranteed = kwargs.pop("memory_guaranteed", None)
+    max_memory = kwargs.pop("max_memory", None)
+    ballooning = kwargs.pop('ballooning', None)
+    if ballooning is not None or guaranteed or max_memory:
         instance_type.set_memory_policy(
             data_st.MemoryPolicy(
                 guaranteed=guaranteed,
                 ballooning=ballooning,
+                max=max_memory
             )
         )
 
@@ -258,6 +261,7 @@ def create_instance_type(instance_type_name, **kwargs):
         ballooning (bool): Enable ballooning
         highly_available (bool): Enable high availability
         availability_priority (int): Priority for availability
+        max_memory (int): Upper bound for the memory hotplug
 
 
     Returns:
@@ -306,6 +310,7 @@ def update_instance_type(instance_type_name, **kwargs):
         ballooning (bool): Enable ballooning
         highly_available (bool): Enable high availability
         availability_priority (int): Priority for availability
+        max_memory (int): Upper bound for the memory hotplug
 
     Returns
         bool: True if instance type was updated properly, False otherwise

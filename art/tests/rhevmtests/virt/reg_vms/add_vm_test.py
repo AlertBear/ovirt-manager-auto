@@ -7,6 +7,7 @@ import logging
 import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
+import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as helper
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, VirtTest, testflow
@@ -106,6 +107,7 @@ class AddVm(VirtTest):
         vm_parameters = self.vm_parameters.copy()
         vm_parameters['name'] = self.vm_name
         vm_parameters['memory'] = config.TWO_GB
+        vm_parameters['max_memory'] = gen_helper.get_gb(2)
         vm_parameters['memory_guaranteed'] = config.TWO_GB
 
         assert ll_vms.addVm(True, **vm_parameters)

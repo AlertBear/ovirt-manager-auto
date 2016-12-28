@@ -7,6 +7,7 @@ import pytest
 import helper
 import copy
 from rhevmtests.virt import config
+import rhevmtests.helpers as gen_helper
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
@@ -46,6 +47,7 @@ def run_once_setup(request):
         storageDomainName=config.STORAGE_NAME[0],
         provisioned_size=2 * config.GB, nic=config.NIC_NAME[0],
         memory=config.GB,
+        max_memory=gen_helper.get_gb(4),
         network=config.MGMT_BRIDGE,
         os_type=config.VM_OS_TYPE,
         display_type=config.VM_DISPLAY_TYPE,

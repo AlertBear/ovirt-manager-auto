@@ -15,6 +15,7 @@ from rhevmtests.virt.reg_vms.fixtures import (
 )
 
 logger = logging.getLogger("virt_snapshot_test")
+VM_REMOVE_SNAPSHOT_TIMEOUT = 4000
 
 
 class VmSnapshots(VirtTest):
@@ -73,9 +74,10 @@ class VmSnapshots(VirtTest):
         )
         for snapshot in self.snapshot_description:
             assert ll_vms.removeSnapshot(
-                True,
-                self.vm_name,
-                snapshot
+                positive=True,
+                vm=self.vm_name,
+                description=snapshot,
+                timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
             )
 
     @attr(tier=1)
@@ -122,7 +124,8 @@ class VmSnapshots(VirtTest):
         )
         for snapshot in self.snapshot_description:
             assert ll_vms.removeSnapshot(
-                True,
-                self.vm_name,
-                snapshot
+                positive=True,
+                vm=self.vm_name,
+                description=snapshot,
+                timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
             )

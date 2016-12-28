@@ -10,7 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import rhevmtests.helpers as global_helper
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib.common import attr, VirtTest, testflow
 from fixtures import reboot_vm
 from rhevmtests.virt import config
@@ -19,7 +19,6 @@ import helper
 logger = logging.getLogger("memory_hotplug_cases")
 
 
-@bz({"1391155": {}})
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestMemoryHotplug(VirtTest):
     """

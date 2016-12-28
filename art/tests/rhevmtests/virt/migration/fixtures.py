@@ -20,6 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     storagedomains as ll_sd
 )
+import rhevmtests.helpers as gen_helper
 import rhevmtests.networking.helper as net_helper
 import rhevmtests.virt.helper as virt_helper
 import config
@@ -162,7 +163,8 @@ def create_vm_from_glance(request):
     assert ll_vms.updateVm(
         positive=True,
         vm=vm_name,
-        memory=config.GB * 2,
+        memory=gen_helper.get_gb(2),
+        max_memory=gen_helper.get_gb(4),
         memory_guaranteed=config.GB,
         os_type=config.OS_RHEL_7
     ), virt_helper.get_err_msg(action=action[1], vm_name=vm_name)

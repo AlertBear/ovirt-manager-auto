@@ -6,10 +6,13 @@ import copy
 import logging
 import pytest
 import art.rhevm_api.data_struct.data_structures as data_struct
-import art.rhevm_api.tests_lib.low_level.disks as ll_disks
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.helpers as gen_helper
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    storagedomains as ll_sd,
+    templates as ll_templates,
+    vms as ll_vms
+)
 import config
 import helper
 import rhevmtests.virt.helper as virt_helper
@@ -102,7 +105,8 @@ def case_setup(request, cloud_init_setup):
         initialization=initialization,
         nic=config.NIC_NAME[0],
         network=config.MGMT_BRIDGE,
-        memory=2 * config.GB
+        memory=2 * config.GB,
+        max_memory=gen_helper.get_gb(4)
     )
     logger.info("update disk to bootable")
     ll_disks.updateDisk(
