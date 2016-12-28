@@ -5,7 +5,7 @@ import config
 import logging
 import pytest
 from art.unittest_lib.common import attr, StorageTest as TestCase, testflow
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # DON'T REMOVE THIS, larger disk size are needed when cloning multiple
 # disks since new snapshots will be bigger than the minimum size
 DISK_SIZE = 3 * config.GB
-SNAPSHOT_NAME = None
+SNAPSHOT_NAMES = config.SNAPSHOT_NAMES
 VM_NAMES = config.VM_NAMES
 
 
@@ -38,7 +38,7 @@ def create_vm_with_snapshot(request):
     creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    global VM_NAMES, SNAPSHOT_NAME
+    global VM_NAMES, SNAPSHOT_NAMES
 
     def finalizer_module():
         ll_vms.safely_remove_vms(VM_NAMES.values())
@@ -59,11 +59,11 @@ def create_vm_with_snapshot(request):
                 'Unable to create vm %s for test' % vm_name
             )
         VM_NAMES[storage_type] = vm_name
-        SNAPSHOT_NAME = helpers.create_unique_object_name(
+        SNAPSHOT_NAMES[storage_type] = helpers.create_unique_object_name(
             "base_%s" % storage_type, config.OBJECT_TYPE_SNAPSHOT
         )
         testflow.setup("Creating snapshot of for VM %s", vm_name)
-        assert ll_vms.addSnapshot(True, vm_name, SNAPSHOT_NAME)
+        assert ll_vms.addSnapshot(True, vm_name, SNAPSHOT_NAMES[storage_type])
 
 
 @pytest.mark.usefixtures(
@@ -106,7 +106,7 @@ class BaseTestCase(TestCase):
         )
         assert ll_vms.cloneVmFromSnapshot(
             True, name=cloned_vm_name, cluster=config.CLUSTER_NAME,
-            vm=self.vm_name, snapshot=snapshot,
+            vm=VM_NAMES[self.storage], snapshot=snapshot,
             storagedomain=self.storage_domain_1, vol_format=vol_format,
             sparse=sparse, compare=False
         )
@@ -136,7 +136,9 @@ class TestCase6103(BaseTestCase):
         self.cloned_vm = helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
         )
-        self.clone_vm_from_snapshot(self.cloned_vm, SNAPSHOT_NAME)
+        self.clone_vm_from_snapshot(
+            self.cloned_vm, SNAPSHOT_NAMES[self.storage]
+        )
         testflow.step("Starting VM %s and waiting for IP", self.cloned_vm)
         assert ll_vms.startVm(True, self.cloned_vm, wait_for_ip=True), (
             "Starting VM %s encounter issues" % self.cloned_vm
@@ -165,7 +167,7 @@ class TestCase6119(BaseTestCase):
             self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         self.clone_vm_from_snapshot(
-            self.cloned_vm, SNAPSHOT_NAME, sparse=False,
+            self.cloned_vm, SNAPSHOT_NAMES[self.storage], sparse=False,
             vol_format=config.RAW_DISK
         )
 
@@ -193,14 +195,18 @@ class TestCase6120(BaseTestCase):
         self.cloned_vm_down = helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
         )
-        self.clone_vm_from_snapshot(self.cloned_vm_down, SNAPSHOT_NAME)
+        self.clone_vm_from_snapshot(
+            self.cloned_vm_down, SNAPSHOT_NAMES[self.storage]
+        )
 
         assert ll_vms.startVm(True, self.vm_name, wait_for_status=config.VM_UP)
 
         self.cloned_vm_up = helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
         )
-        self.clone_vm_from_snapshot(self.cloned_vm_up, SNAPSHOT_NAME)
+        self.clone_vm_from_snapshot(
+            self.cloned_vm_up, SNAPSHOT_NAMES[self.storage]
+        )
 
 
 @attr(tier=3)
@@ -224,14 +230,16 @@ class TestCase6122(BaseTestCase):
         self.cloned_vm = helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
         )
-        self.clone_vm_from_snapshot(self.cloned_vm, SNAPSHOT_NAME)
+        self.clone_vm_from_snapshot(
+            self.cloned_vm, SNAPSHOT_NAMES[self.storage]
+        )
         assert ll_vms.searchForVm(True, 'name', self.cloned_vm, 'name')
 
         testflow.step("Trying to clone a vm's snapshot with the same name")
 
         assert ll_vms.cloneVmFromSnapshot(
             False, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=self.vm_name, snapshot=SNAPSHOT_NAME,
+            vm=self.vm_name, snapshot=SNAPSHOT_NAMES[self.storage],
             storagedomain=self.storage_domain_1, compare=False
         )
 
@@ -242,7 +250,7 @@ class TestCase6122(BaseTestCase):
 
         assert ll_vms.cloneVmFromSnapshot(
             False, name=illegal_characters, cluster=config.CLUSTER_NAME,
-            vm=self.vm_name, snapshot=SNAPSHOT_NAME,
+            vm=self.vm_name, snapshot=SNAPSHOT_NAMES[self.storage],
             storagedomain=self.storage_domain_1, compare=False
         )
 
@@ -295,6 +303,7 @@ class TestCase6108(BaseTestCase):
     delete_disks.__name__,
     remove_cloned_vm.__name__,
 )
+@bz({'1408977': {}})
 class TestCase6109(BaseTestCase):
     """
     Clone a vm with multiple disks.
@@ -358,7 +367,7 @@ class TestCase6111(BaseTestCase):
 
         assert ll_vms.cloneVmFromSnapshot(
             True, name=self.cloned_vm_desktop, cluster=config.CLUSTER_NAME,
-            vm=self.vm_name, snapshot=SNAPSHOT_NAME,
+            vm=self.vm_name, snapshot=SNAPSHOT_NAMES[self.storage],
             storagedomain=self.storage_domain_1, compare=False
         )
         self.vm_names.append(self.cloned_vm_desktop)
@@ -388,6 +397,7 @@ class TestCase6111(BaseTestCase):
     delete_disks.__name__,
     remove_cloned_vm.__name__,
 )
+@bz({'1408977': {}})
 class TestCase6112(BaseTestCase):
     """
     Make a snapshot of a vm with three disks.
