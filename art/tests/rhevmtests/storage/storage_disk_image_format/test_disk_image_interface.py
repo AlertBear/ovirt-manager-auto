@@ -296,7 +296,8 @@ class TestCase14944(TestCaseMultipleDisks):
             disk_args = config.disk_args.copy()
             disk_args['interface'] = TEST_INTERFACES[idx]
             disk_args['alias'] = storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_DISK
+                TEST_INTERFACES[idx] + self.__class__.__name__,
+                config.OBJECT_TYPE_DISK
             )
             disk_args['type_'] = config.STORAGE_TYPE_ISCSI
             disk_args["lun_address"] = config.UNUSED_LUN_ADDRESSES[idx]
