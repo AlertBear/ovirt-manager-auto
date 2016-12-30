@@ -980,7 +980,7 @@ def get_disk_list_from_disk_attachments(disk_attachments):
     Return disk obj list from disk attachments list
 
     :param disk_attachments: disk attachment objs
-    :type disk_attachment: list
+    :type disk_attachments: list
     :returns: list of Disk objects
     :rtype: list
     """

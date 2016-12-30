@@ -179,6 +179,7 @@ class TestCase11604(BaseTestDiskImageVms):
 
 
 @attr(tier=2)
+@bz({'1405822': {}})
 class TestCase11621(BaseTestDiskImageVms):
     """
     Polarion case 11621
@@ -303,7 +304,7 @@ class ExportVms(BaseTestDiskImageVms):
     pass
 
 
-@bz({'1383264': {}})
+@bz({'1409238': {}})
 @attr(tier=2)
 class TestCase11618(ExportVms):
     """
@@ -327,7 +328,7 @@ class TestCase11618(ExportVms):
         self.check_disks()
 
 
-@bz({'1383264': {}})
+@bz({'1409238': {}})
 @attr(tier=2)
 class TestCase11617(ExportVms):
     """
@@ -353,7 +354,7 @@ class TestCase11617(ExportVms):
         self.check_disks({self.vm_prealloc: True})
 
 
-@bz({'1383264': {}})
+@bz({'1409238': {}})
 @attr(tier=2)
 class TestCase11616(ExportVms):
     """
