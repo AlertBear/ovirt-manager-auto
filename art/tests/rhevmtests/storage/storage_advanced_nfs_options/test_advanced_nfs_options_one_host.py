@@ -502,7 +502,6 @@ class TestCase4817(helpers.TestCaseNFSOptions):
         address = config.NFS_ADDRESSES[0]
         path = config.NFS_PATHS[0]
         self.name = 'test_%s_custom' % self.polarion_test_case
-        self.sds_for_cleanup.append(self.name)
 
         logger.info("Creating NFS domain with custom options")
         storage = helpers.NFSStorage(
