@@ -26,8 +26,9 @@ from fixtures import (
     update_storage_domain_wipe_after_delete, add_disk_start_vm
 )
 from rhevmtests.storage.fixtures import (
-    create_vm
+    create_vm,
 )
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 logger = logging.getLogger(__name__)
 FILE_TO_WATCH = config.VDSM_LOG
