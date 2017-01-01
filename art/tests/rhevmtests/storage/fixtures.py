@@ -1,8 +1,8 @@
 
 import pytest
 import logging
-
 import config
+from art.core_api.apis_exceptions import APITimeout
 from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
@@ -811,3 +811,53 @@ def create_fs_on_disk(request):
         "Unable to create a filesystem on disk: %s of VM %s" %
         (self.disk_name, self.vm_name)
     )
+
+
+@pytest.fixture(scope='class')
+def prepare_disks_with_fs_for_vm(request):
+    """
+    Prepare disks with filesystem for vm
+    """
+    self = request.node.cls
+
+    testflow.setup(
+        "Creating disks with filesystem and attach to VM %s", self.vm_name,
+    )
+    disks, mount_points = storage_helpers.prepare_disks_with_fs_for_vm(
+        self.storage_domain, self.storage, self.vm_name
+    )
+    self.disks_to_remove = disks
+    config.MOUNT_POINTS = mount_points
+
+
+@pytest.fixture()
+def wait_for_all_snapshot_tasks(request):
+    """
+    Wait for snapshot creation and LSM tasks
+    """
+    self = request.node.cls
+
+    def finalizer():
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        disks = [d.get_id() for d in ll_vms.getVmDisks(self.vm_name)]
+        ll_disks.wait_for_disks_status(disks, key='id')
+        try:
+            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+        except APITimeout:
+            logger.error(
+                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
+            )
+
+        try:
+            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+        except APITimeout:
+            logger.error(
+                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
+            )
+        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
+        if not ll_vms.waitForVmsDisks(self.vm_name):
+            logger.error(
+                "Disks in VM '%s' failed to reach state 'OK'", self.vm_name
+            )
+    request.addfinalizer(finalizer)

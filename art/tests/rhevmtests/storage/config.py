@@ -4,8 +4,7 @@ Storage related global config file
 from rhevmtests.config import *  # flake8: noqa
 
 __test__ = False
-# FIXTURES SECTION
-MASTER_DOMAIN = None
+
 
 TESTNAME = "GlobalStorage"
 DATA_CENTER_NAME = DC_NAME[0]
@@ -330,3 +329,7 @@ REGEX_DD_WIPE_AFTER_DELETE = 'dd.* if=/dev/zero.* of=.*/%s'
 DEV_ZERO = '/dev/zero'
 DEV_URANDOM = '/dev/urandom'
 MOUNT_POINT = None
+
+# FIXTURES SECTION
+MASTER_DOMAIN = None
+MOUNT_POINTS = dict()

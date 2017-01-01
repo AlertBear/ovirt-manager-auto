@@ -3,51 +3,48 @@
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_5_Storage_Live_Merge
 """
+import pytest
 import logging
 import os
 from multiprocessing import Process, Queue
 from time import sleep
 
-import config
-from art.core_api.apis_exceptions import APITimeout
+from rhevmtests.storage import config
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
-    hosts as ll_hosts,
     jobs as ll_jobs,
-    storagedomains as ll_sd,
     vms as ll_vms,
 )
 from art.rhevm_api.utils.test_utils import (
     restartVdsmd, restart_engine,
 )
-from art.test_handler import exceptions
-from art.test_handler.tools import bz, polarion
+from rhevmtests.storage.fixtures import (
+    create_vm, prepare_disks_with_fs_for_vm, delete_disks,
+    wait_for_all_snapshot_tasks,
+)
+from rhevmtests.storage.fixtures import remove_vm  # noqa
+from rhevmtests.storage.storage_live_merge.fixtures import (
+    initialize_params,
+)
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
-from utilities.machine import LINUX, Machine
 
 logger = logging.getLogger(__name__)
 
-VM_NAMES = dict()
 CMD_CREATE_FILE = 'touch %s/test_file_%s'
 TEST_FILE_TEMPLATE = 'test_file_%s'
 SNAPSHOT_DESCRIPTION_TEMPLATE = 'snapshot_%s_%s_%s'
 DD_SIZE = 900 * config.MB
 ISCSI = config.STORAGE_TYPE_ISCSI
-DISK_NAMES = dict()
-MOUNT_POINTS = dict()
-
-disk_args = {
-    'positive': True,
-    'provisioned_size': config.DISK_SIZE,
-    'bootable': False,
-    'interface': config.VIRTIO,
-    'sparse': True,
-    'format': config.COW_DISK,
-}
 
 
-@bz({'1400707': {}})
+@pytest.mark.usefixtures(
+    delete_disks.__name__,
+    create_vm.__name__,
+    prepare_disks_with_fs_for_vm.__name__,
+    initialize_params.__name__,
+)
 class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardowns of common things
@@ -55,62 +52,6 @@ class BasicEnvironment(BaseTestCase):
     __test__ = False
     test_case = None
     checksum_files = dict()
-
-    def setUp(self):
-        """
-        Prepare the environment for testing
-        """
-        self.vm_name = config.VM_NAME % (self.storage, self.test_case)
-        self.snapshot_list = list()
-        VM_NAMES[self.storage] = list()
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-        self.spm = ll_hosts.getSPMHost(config.HOSTS)
-        host_ip = ll_hosts.getHostIP(self.spm)
-        self.host = Machine(host_ip, config.HOSTS_USER,
-                            config.HOSTS_PW).util(LINUX)
-        logger.info("Creating VM %s", self.vm_name)
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.storage_domain
-        vm_args['vmName'] = self.vm_name
-
-        logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.vm_name)
-        VM_NAMES[self.storage].append(self.vm_name)
-        disks, mount_points = storage_helpers.prepare_disks_with_fs_for_vm(
-            self.storage_domain, self.storage, self.vm_name
-        )
-        DISK_NAMES[self.storage] = disks
-        MOUNT_POINTS[self.storage] = mount_points
-
-        disk_objects = ll_vms.getVmDisks(self.vm_name)
-        for disk in disk_objects:
-            new_vm_disk_name = (
-                "%s_%s" % (disk.get_name(), self.test_case)
-            )
-            ll_disks.updateDisk(
-                True, vmName=self.vm_name, id=disk.get_id(),
-                alias=new_vm_disk_name
-            )
-
-    def tearDown(self):
-        """
-        Clean the environment - remove vm created during setup
-        """
-        logger.info('Deleting VM %s', self.vm_name)
-        if not ll_vms.safely_remove_vms([self.vm_name]):
-            logger.error("Failed to remove vm %s", self.vm_name)
-            self.test_failed = True
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
-        for disk_name in DISK_NAMES.iteritems():
-            if ll_disks.checkDiskExists(True, disk_name):
-                if not ll_disks.deleteDisk(True, disk_name):
-                    logger.error("Failed to delete disk %s", self.disk_name)
-                    self.test_failed = True
-        self.teardown_exception()
 
     def create_files_on_vm_disks(self, vm_name, iteration_number):
         """
@@ -122,11 +63,12 @@ class BasicEnvironment(BaseTestCase):
                 True, self.vm_name, config.VM_UP, wait_for_ip=True
             )
         vm_executor = storage_helpers.get_vm_executor(self.vm_name)
-        for idx, mount_dir in enumerate(MOUNT_POINTS[self.storage]):
-            logger.info("Creating file in %s", mount_dir)
+        for idx, mount_dir in enumerate(config.MOUNT_POINTS):
             full_path = os.path.join(
                 mount_dir, TEST_FILE_TEMPLATE % iteration_number
             )
+            testflow.step("Creating file %s", full_path)
+
             rc = storage_helpers.create_file_on_vm(
                 vm_name, TEST_FILE_TEMPLATE, mount_dir, vm_executor=vm_executor
             )
@@ -157,7 +99,7 @@ class BasicEnvironment(BaseTestCase):
                 ll_vms.shutdownVm(True, self.vm_name)
                 ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
 
-        logger.info(
+        testflow.step(
             "Adding new %s snapshot to vm %s",
             'live' if live else '', self.vm_name
         )
@@ -173,12 +115,11 @@ class BasicEnvironment(BaseTestCase):
         self.snapshot_list.append(snapshot_description)
         if not live:
             if ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
-                if not ll_vms.startVm(
+                assert ll_vms.startVm(
                     True, self.vm_name, config.VM_UP, wait_for_ip=True
-                ):
-                    raise exceptions.VMException(
-                        "Failed to power on VM '%s'" % self.vm_name
-                    )
+                ), (
+                    "Failed to power on VM '%s'" % self.vm_name
+                )
 
     def perform_snapshot_with_verification(
         self, snap_description, disks_for_snap
@@ -187,14 +128,14 @@ class BasicEnvironment(BaseTestCase):
         initial_vol_count = storage_helpers.get_disks_volume_count(
             disk_ids
         )
-        logger.info("Before snapshot: %s volumes", initial_vol_count)
+        testflow.step("Before snapshot: %s volumes", initial_vol_count)
 
         self.perform_snapshot_operation(snap_description)
 
         current_vol_count = storage_helpers.get_disks_volume_count(
             disk_ids
         )
-        logger.info("After snapshot: %s volumes", current_vol_count)
+        testflow.step("After snapshot: %s volumes", current_vol_count)
 
         assert current_vol_count == (
             initial_vol_count + len(disk_ids)
@@ -209,10 +150,10 @@ class BasicEnvironment(BaseTestCase):
         state = not should_exist
         vm_executor = storage_helpers.get_vm_executor(self.vm_name)
         # For each mount point, check if the corresponding file exists
-        for mount_dir in MOUNT_POINTS[self.storage]:
+        for mount_dir in config.MOUNT_POINTS:
             for file_name in files:
                 full_path = os.path.join(mount_dir, file_name)
-                logger.info("Checking if file %s exists", full_path)
+                testflow.step("Checking if file %s exists", full_path)
                 result = storage_helpers.does_file_exist(
                     self.vm_name, full_path, vm_executor=vm_executor
                 )
@@ -244,23 +185,21 @@ class BasicEnvironment(BaseTestCase):
             "Previewing snapshot %s to validate disk's content",
             snapshot_description
         )
-        if not ll_vms.preview_snapshot(
-                True, self.vm_name, snapshot_description, True
-        ):
-            raise exceptions.SnapshotException(
-                "Failed to preview snapshot %s. Can't verify files",
-                snapshot_description
-            )
+        assert ll_vms.preview_snapshot(
+            True, self.vm_name, snapshot_description, True
+        ), (
+            "Failed to preview snapshot %s. Can't verify files",
+            snapshot_description
+        )
         ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
         try:
             logger.info(
                 "Verifying files %s on snapshot %s",
                 files, snapshot_description
             )
-            if not self.check_files_existence(files):
-                raise exceptions.SnapshotException(
-                    "Snapshot verification failed"
-                )
+            assert self.check_files_existence(files), (
+                "Snapshot verification failed"
+            )
 
         # Make sure to undo the previewed snapshot even if the file
         # verification failed
@@ -269,10 +208,7 @@ class BasicEnvironment(BaseTestCase):
             status = ll_vms.undo_snapshot_preview(True, self.vm_name, True)
             ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
             ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-            if not status:
-                raise exceptions.VMException(
-                    "Undo snapshot failed for VM '%s'" % self.vm_name
-                )
+            assert status, "Undo snapshot failed for VM '%s'" % self.vm_name
 
     def live_delete_snapshot_with_verification(
             self, vm_name, snapshot_description, running_io_op=False
@@ -291,7 +227,7 @@ class BasicEnvironment(BaseTestCase):
         logger.info("Before live merge: %s volumes", initial_vol_count)
 
         disk_object = ll_vms.getVmDisk(
-            vm_name, disk_id=DISK_NAMES[self.storage][0]
+            vm_name, disk_id=self.disks_to_remove[0]
         )
 
         def f(q):
@@ -309,10 +245,9 @@ class BasicEnvironment(BaseTestCase):
         testflow.step(
             "Removing snapshot '%s' of vm %s", snapshot_description, vm_name
         )
-        if not ll_vms.removeSnapshot(True, vm_name, snapshot_description):
-            exceptions.VMException(
-                "Failed to live delete snapshot %s" % snapshot_description
-            )
+        assert ll_vms.removeSnapshot(True, vm_name, snapshot_description), (
+            "Failed to live delete snapshot %s" % snapshot_description
+        )
         if running_io_op:
             p.join()
             rc, output = q.get()
@@ -323,12 +258,11 @@ class BasicEnvironment(BaseTestCase):
         )
         logger.info("After live merge: %s volumes", current_vol_count)
 
-        if not current_vol_count == initial_vol_count - len(snapshot_disks):
-            raise exceptions.VMException(
-                "Live merge failed - before live merge: %s volumes, "
-                "after live merge: %s volumes, snapshot contains %s disks" %
-                (initial_vol_count, current_vol_count, len(snapshot_disks))
-            )
+        assert current_vol_count == initial_vol_count - len(snapshot_disks), (
+            "Live merge failed - before live merge: %s volumes, "
+            "after live merge: %s volumes, snapshot contains %s disks" %
+            (initial_vol_count, current_vol_count, len(snapshot_disks))
+        )
         logger.info("Snapshot %s was removed", snapshot_description)
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
 
@@ -339,8 +273,9 @@ class BasicEnvironment(BaseTestCase):
             # Create files on all vm's disks before snapshot operation.
             # Files will be named: 'test_file_<idx>'
             testflow.step("Creating files on vm's '%s' disks", self.vm_name)
-            if not self.create_files_on_vm_disks(self.vm_name, idx):
-                raise exceptions.VMException("Failed to create file")
+            assert self.create_files_on_vm_disks(self.vm_name, idx), (
+                "Failed to create file"
+            )
             snap_description = SNAPSHOT_DESCRIPTION_TEMPLATE % (
                 self.test_case, self.storage, idx
             )
@@ -408,12 +343,6 @@ class TestCase16287(BasicEnvironment):
     """
     __test__ = True
     test_case = '16287'
-
-    def setUp(self):
-        self.snapshot_description = storage_helpers.create_unique_object_name(
-            self.test_case, config.OBJECT_TYPE_SNAPSHOT
-        )
-        super(TestCase16287, self).setUp()
 
     @polarion("RHEVM3-16287")
     def test_basic_live_deletion_of_snapshots_disk(self):
@@ -518,13 +447,13 @@ class TestCase6045(BasicEnvironment):
     def test_live_deletion_during_vdsm_restart(self):
         self.basic_flow()
 
-        logger.info("Removing snapshot %s", self.snapshot_list[1])
+        testflow.step("Removing snapshot %s", self.snapshot_list[1])
         # timeout=-1 means no wait
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
         )
 
-        logger.info("Restarting VDSM")
+        testflow.step("Restarting VDSM")
         assert restartVdsmd(self.spm, config.HOSTS_PW)
         logger.info("VDSM restarted")
 
@@ -580,12 +509,12 @@ class TestCase6046(BasicEnvironment):
     def test_live_deletion_during_engine_restart(self):
         self.basic_flow()
 
-        logger.info("Removing snapshot %s", self.snapshot_list[1])
+        testflow.step("Removing snapshot %s", self.snapshot_list[1])
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
         )
 
-        logger.info("Restarting ovirt-engine")
+        testflow.step("Restarting ovirt-engine")
         restart_engine(config.ENGINE, 10, 75)
         logger.info("ovirt-engine restarted")
 
@@ -651,7 +580,7 @@ class TestCase6050(BasicEnvironment):
     def test_live_merge_during_live_merge(self):
         self.basic_flow()
 
-        logger.info("Removing snapshot %s", self.snapshot_list[1])
+        testflow.step("Removing snapshot %s", self.snapshot_list[1])
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
         )
@@ -709,8 +638,8 @@ class TestCase6058(BasicEnvironment):
     def test_live_merge_with_stop_vm(self):
         self.basic_flow()
         # Creation of 4th disk
-        for mount_dir in MOUNT_POINTS[self.storage]:
-            logger.info("Creating file in %s", mount_dir)
+        for mount_dir in config.MOUNT_POINTS:
+            testflow.step("Creating file in %s", mount_dir)
             status = storage_helpers.create_file_on_vm(
                 self.vm_name, TEST_FILE_TEMPLATE % 3, mount_dir
             )
@@ -720,7 +649,7 @@ class TestCase6058(BasicEnvironment):
                     3, mount_dir, self.vm_name
                 )
 
-        logger.info("Removing snapshot %s", self.snapshot_list[1])
+        testflow.step("Removing snapshot %s", self.snapshot_list[1])
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
         )
@@ -733,6 +662,9 @@ class TestCase6058(BasicEnvironment):
 
 
 @attr(tier=3)
+@pytest.mark.usefixtures(
+    wait_for_all_snapshot_tasks.__name__,
+)
 class TestCase6062(BasicEnvironment):
     """
     Live delete and merge of snapshot during Live Storage Migration
@@ -772,39 +704,6 @@ class TestCase6062(BasicEnvironment):
             "expected to fail" % (self.snapshot_list[1], self.disk_to_migrate)
         )
 
-    def tearDown(self):
-        """
-        Ensure the Live disk migrate has completed before cleaning up the
-        environment. Note that a snapshot is taken before the disk is
-        migrated
-        """
-        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
-        disks = [d.get_id() for d in ll_vms.getVmDisks(self.vm_name)]
-        ll_disks.wait_for_disks_status(disks, key='id')
-        try:
-            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-        except APITimeout:
-            logger.error(
-                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
-            )
-            BaseTestCase.test_failed = True
-
-        try:
-            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-        except APITimeout:
-            logger.error(
-                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
-            )
-            BaseTestCase.test_failed = True
-        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
-        if not ll_vms.waitForVmsDisks(self.vm_name):
-            logger.error(
-                "Disks in VM '%s' failed to reach state 'OK'", self.vm_name
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase6062, self).tearDown()
-
 
 @attr(tier=2)
 class TestCase12216(BasicEnvironment):
@@ -828,7 +727,7 @@ class TestCase12216(BasicEnvironment):
         vm_disks = ll_vms.getVmDisks(self.vm_name)
 
         for disk in vm_disks:
-            logger.info("Resizing disk %s", disk)
+            testflow.step("Resizing disk %s", disk)
             size_before = disk.get_provisioned_size()
             new_size = size_before + (1 * config.GB)
             status = ll_vms.extend_vm_disk_size(
