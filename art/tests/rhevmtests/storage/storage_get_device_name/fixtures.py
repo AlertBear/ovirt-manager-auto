@@ -21,7 +21,7 @@ def add_disks_permutation(request, add_disk_permutations):
     self.disks_to_remove = self.disk_names
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture()
 def create_vms_for_test(request, remove_vms):
     """
     Create VMs for test and initialize parameters
