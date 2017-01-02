@@ -7,6 +7,22 @@ from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.test_handler.settings import ART_CONFIG as art_config, opts as options
 
 
+HOOKS_VM_NAME = 'test_vm_hooks'
+
+VM_PROPERTY_KEY = "UserDefinedVMProperties"
+VNIC_PROPERTY_KEY = "CustomDeviceProperties"
+
+CUSTOM_PROPERTY_HOOKS = "auto_custom_hook=^[0-9]+$"
+CUSTOM_PROPERTY_VNIC_HOOKS = (
+    "\"{type=interface;"
+    "prop={speed=^([0-9]{1,5})$;"
+    "port_mirroring=^(True|False)$;"
+    "bandwidth=^([0-9]{1,5})$}}\""
+)
+
+custom_property_default = None
+custom_property_vnic_default = None
+
 parameters = art_config["PARAMETERS"]
 rest_connection = art_config["REST_CONNECTION"]
 
@@ -22,31 +38,16 @@ vdc_admin_user = rest_connection["user"]
 vdc_password = rest_connection["password"]
 vdc_admin_domain = rest_connection["user_domain"]
 
-scheme = rest_connection.get("scheme")
-schema = rest_connection.get("schema")
-
-engine_entry_point = rest_connection["entry_point"]
-engine_url = "{0}://{1}:{2}/{3}".format(
-    scheme,
-    vdc_host,
-    vdc_port,
-    engine_entry_point
-)
-
 engine_host = resources.Host(vdc_host)
-engine_host.users.append(
-    resources.RootUser(vdc_root_password)
-)
+engine_host.users.append(resources.RootUser(vdc_root_password))
+
 engine = resources.Engine(
     engine_host,
     resources.ADUser(
         vdc_admin_user,
         vdc_password,
         resources.Domain(vdc_admin_domain),
-    ),
-    schema=schema,
-    port=vdc_port,
-    entry_point=engine_entry_point
+    )
 )
 
 mgmt_bridge = parameters.get("mgmt_bridge")
@@ -109,6 +110,10 @@ for host in hosts_objects:
     hosts.append(host.name)
     hosts_ips.append(host.address)
 
+
+hooks_host = resources.Host(ip=hosts_ips[0])
+hooks_host.users.append(resources.RootUser(vdc_root_password))
+
 external_templates = []
 templates = []
 for cluster in clusters:
@@ -128,15 +133,3 @@ templates_names = [
 
 display_type_vnc = enums["display_type_vnc"]
 vm_state_up = enums["vm_state_up"]
-
-HOOKS_VM_NAME = 'test_vm_hooks'
-CUSTOM_PROPERTY_HOOKS = "'UserDefinedVMProperties=auto_custom_hook=^[0-9]+$'"
-CUSTOM_PROPERTY_VNIC_HOOKS = (
-    "'CustomDeviceProperties={type=interface;"
-    "prop={speed=^([0-9]{1,5})$;"
-    "port_mirroring=^(True|False)$;"
-    "bandwidth=^([0-9]{1,5})$}}'"
-)
-
-custom_property_default = None
-custom_property_vnic_default = None

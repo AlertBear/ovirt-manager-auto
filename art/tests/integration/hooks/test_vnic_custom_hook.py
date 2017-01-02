@@ -6,16 +6,15 @@ after_nic_hotplug, before_nic_hotplug
 
 import logging
 import pytest
+from shlex import split
 from os import path
 from time import sleep
 
 from art.rhevm_api.tests_lib.low_level import hooks, vms, networks
-from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion
 from art.unittest_lib import CoreSystemTest as TestCase, testflow, attr
 
-from hooks import config
+from . import config, get_property_value, set_property_value
 
 SPEED = "1000"
 CUSTOM_PROPERTIES_A = "speed={0};port_mirroring=True;bandwidth=10000".format(
@@ -39,9 +38,54 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
-    testflow.setup("Setting up module %s.", __name__)
+    def finalize():
+        testflow.teardown("Removing all hooks from %s.", config.hosts_ips[0])
+        assert config.hooks_host.run_command(split(REMOVE_HOOKS))[0] == 0
 
-    testflow.step("Creating a %s VM.", config.HOOKS_VM_NAME)
+        testflow.teardown("Removing VM %s.", config.HOOKS_VM_NAME)
+        assert vms.stopVm(positive=True, vm=config.HOOKS_VM_NAME)
+        assert vms.removeVm(
+            positive=True,
+            vm=config.HOOKS_VM_NAME,
+            wait=True
+        )
+
+        testflow.teardown("Removing VNIC profile %s.", PROFILE_A)
+        assert networks.remove_vnic_profile(
+            positive=True,
+            vnic_profile_name=PROFILE_A,
+            network=config.mgmt_bridge,
+            cluster=config.clusters_names[0]
+        )
+
+        testflow.teardown("Removing VNIC profile %s.", PROFILE_A)
+        assert networks.remove_vnic_profile(
+            positive=True,
+            vnic_profile_name=PROFILE_B,
+            network=config.mgmt_bridge,
+            cluster=config.clusters_names[0]
+        )
+
+        testflow.teardown("Drop custom property to default value")
+        assert set_property_value(
+            config.VNIC_PROPERTY_KEY,
+            config.custom_property_vnic_default
+        )
+
+    request.addfinalizer(finalize)
+
+    testflow.setup("Configuring custom properties for this module needs.")
+    config.custom_property_vnic_default = "\"{}\"".format(
+        get_property_value(
+            config.VNIC_PROPERTY_KEY
+        )
+    )
+    assert set_property_value(
+        config.VNIC_PROPERTY_KEY,
+        config.CUSTOM_PROPERTY_VNIC_HOOKS
+    )
+
+    testflow.setup("Creating a %s VM.", config.HOOKS_VM_NAME)
     assert vms.createVm(
         positive=True,
         vmName=config.HOOKS_VM_NAME,
@@ -50,16 +94,16 @@ def setup_module(request):
         template=config.templates_names[0]
     )
 
-    testflow.step("Starting %s VM.", config.HOOKS_VM_NAME)
+    testflow.setup("Starting %s VM.", config.HOOKS_VM_NAME)
     assert vms.startVm(
         positive=True,
         vm=config.HOOKS_VM_NAME,
         wait_for_status=config.vm_state_up,
         wait_for_ip=True,
-        placement_host=config.hosts[0],
+        placement_host=config.hosts[0]
     )
 
-    testflow.step(
+    testflow.setup(
         "Adding a %s VNIC profile to %s network in %s cluster with custom "
         "properties %s.",
         PROFILE_A,
@@ -75,7 +119,7 @@ def setup_module(request):
         custom_properties=CUSTOM_PROPERTIES_A
     )
 
-    testflow.step(
+    testflow.setup(
         "Adding a %s VNIC profile to %s network in %s cluster with custom "
         "properties %s.",
         PROFILE_B,
@@ -91,7 +135,7 @@ def setup_module(request):
         custom_properties=CUSTOM_PROPERTIES_B
     )
 
-    testflow.step(
+    testflow.setup(
         "Checking if it's not possible to add a %s VNIC profile to %s network "
         "in %s cluster with custom properties %s.",
         PROFILE_BAD_A,
@@ -107,7 +151,7 @@ def setup_module(request):
         custom_properties="test=250"
     )
 
-    testflow.step(
+    testflow.setup(
         "Checking if it's not possible to add a %s VNIC profile to %s network "
         "in %s cluster with custom properties %s.",
         PROFILE_BAD_B,
@@ -123,7 +167,7 @@ def setup_module(request):
         custom_properties="speed=abc"
     )
 
-    testflow.step(
+    testflow.setup(
         "Adding linked %s nic to %s vm.",
         PROFILE_A,
         config.HOOKS_VM_NAME
@@ -137,7 +181,7 @@ def setup_module(request):
         linked=True
     )
 
-    testflow.step(
+    testflow.setup(
         "Adding %s nic with profile %s to %s vm.",
         HOTUNPLUG_NIC,
         PROFILE_A,
@@ -151,49 +195,13 @@ def setup_module(request):
         vnic_profile=PROFILE_A
     )
 
-    def finalize():
-        testflow.teardown("Tearing down %s module.", __name__)
 
-        testflow.step("Removing all hooks from %s.", config.hosts_ips[0])
-        assert runMachineCommand(
-            positive=True,
-            ip=config.hosts_ips[0],
-            user=config.hosts_user,
-            password=config.hosts_password,
-            cmd=REMOVE_HOOKS
-        )[0]
-
-        testflow.step("Removing VM %s.", config.HOOKS_VM_NAME)
-        assert vms.removeVm(
-            positive=True,
-            vm=config.HOOKS_VM_NAME,
-            stopVM="true"
-        )
-
-        testflow.step("Removing VNIC profile %s.", PROFILE_A)
-        networks.remove_vnic_profile(
-            positive=True,
-            vnic_profile_name=PROFILE_A,
-            network=config.mgmt_bridge,
-            cluster=config.clusters_names[0]
-        )
-
-        testflow.step("Removing VNIC profile %s.", PROFILE_A)
-        networks.remove_vnic_profile(
-            positive=True,
-            vnic_profile_name=PROFILE_B,
-            network=config.mgmt_bridge,
-            cluster=config.clusters_names[0]
-        )
-
-    request.addfinalizer(finalize)
-
-
+@attr(tier=3)
 class TestCaseVnic(TestCase):
     __test__ = False
 
     CUSTOM_HOOK = "speed"
-    HOOK_NAMES = None
+    hooks_names = None
 
     @classmethod
     def _create_python_script_to_verify_custom_hook(cls, name):
@@ -201,8 +209,7 @@ class TestCaseVnic(TestCase):
         script_name = "{0}.{1}".format(name, SCRIPT_TYPES["python"])
 
         hooks.create_python_script_to_verify_custom_hook(
-            ip=config.hosts_ips[0],
-            password=config.hosts_password,
+            host=config.hooks_host,
             script_name=script_name,
             custom_hook=cls.CUSTOM_HOOK,
             target=path.join(HOOK_PATH, name),
@@ -215,8 +222,7 @@ class TestCaseVnic(TestCase):
         script_name = "{0}.{1}".format(name, SCRIPT_TYPES["shell"])
 
         hooks.create_one_line_shell_script(
-            ip=config.hosts_ips[0],
-            password=config.hosts_password,
+            host=config.hooks_host,
             script_name=script_name,
             command="touch",
             arguments=path.join(TMP, my_hook),
@@ -226,12 +232,25 @@ class TestCaseVnic(TestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
+        def finalize():
+            """ remove created script """
+            testflow.teardown("Removing all hooks.")
+            for hook_name, hook_type in cls.hooks_names.iteritems():
+                hook_name = "{0}/{1}.{2}".format(
+                    hook_name,
+                    hook_name,
+                    hook_type
+                )
+                assert config.hooks_host.fs.remove(
+                    path.join(HOOK_PATH, hook_name)
+                )
+
+        request.addfinalizer(finalize)
+
         """ create python script """
 
-        testflow.setup("Setting up %s class.", cls.__name__)
-
-        testflow.step("Creating scripts for test hooks.")
-        for hook_name, hook_type in cls.HOOK_NAMES.iteritems():
+        testflow.setup("Creating scripts for test hooks.")
+        for hook_name, hook_type in cls.hooks_names.iteritems():
             if hook_type == SCRIPT_TYPES["python"]:
                 cls._create_python_script_to_verify_custom_hook(hook_name)
             elif hook_type == SCRIPT_TYPES["shell"]:
@@ -239,37 +258,16 @@ class TestCaseVnic(TestCase):
             else:
                 logger.error("Unsupported script type.")
 
-        def finalize():
-            """ remove created script """
-            testflow.teardown("Tearing down %s class.", cls.__name__)
-
-            testflow.step("Removing all hooks.")
-            for hook_name, hook_type in cls.HOOK_NAMES.iteritems():
-                hook_name = "{0}/{1}.{2}".format(
-                    hook_name,
-                    hook_name,
-                    hook_type
-                )
-                test_utils.removeFileOnHost(
-                    positive=True,
-                    ip=config.hosts_ips[0],
-                    password=config.hosts_password,
-                    filename=path.join(HOOK_PATH, hook_name)
-                )
-
-        request.addfinalizer(finalize)
-
     @classmethod
     def check_for_files(cls):
         """ Check for file created by hook """
-        for hook_name, hook_type in cls.HOOK_NAMES.iteritems():
+        for hook_name, hook_type in cls.hooks_names.iteritems():
             my_hook = "{0}.hook".format(hook_name)
             logger.info("Checking existence of %s/%s", TMP, my_hook)
 
             assert hooks.check_for_file_existence_and_content(
                 positive=True,
-                ip=config.hosts_ips[0],
-                password=config.hosts_password,
+                host=config.hooks_host,
                 filename=path.join(TMP, my_hook),
                 content=(
                     SPEED if hook_type == SCRIPT_TYPES["python"] else None
@@ -277,13 +275,12 @@ class TestCaseVnic(TestCase):
             )
 
 
-@attr(tier=3)
 class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
     """ after_before_nic_hotplug hook """
     __test__ = True
 
     NIC_NAME = "hot_plugged_nic"
-    HOOK_NAMES = {
+    hooks_names = {
         "after_nic_hotplug": SCRIPT_TYPES["shell"],
         "before_nic_hotplug": SCRIPT_TYPES["python"]
     }
@@ -291,10 +288,33 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
+        def finalize():
+            """ remove created nic """
+            testflow.teardown("Stopping %s VM.", config.HOOKS_VM_NAME)
+            assert vms.stopVm(True, config.HOOKS_VM_NAME)
+
+            testflow.teardown(
+                "Removing %s nic from %s VM.",
+                cls.NIC_NAME,
+                config.HOOKS_VM_NAME
+            )
+            assert vms.removeNic(True, config.HOOKS_VM_NAME, cls.NIC_NAME)
+
+            testflow.teardown("Starting %s VM.", config.HOOKS_VM_NAME)
+            assert vms.startVm(
+                positive=True,
+                vm=config.HOOKS_VM_NAME,
+                wait_for_status=config.vm_state_up,
+                wait_for_ip=True,
+                placement_host=config.hosts[0]
+            )
+
+        request.addfinalizer(finalize)
+
         """ hot plug nic """
         super(TestCaseAfterBeforeNicHotplug, cls).setup_class(request)
 
-        testflow.step(
+        testflow.setup(
             "Adding %s nic with profile %s to %s VM.",
             cls.NIC_NAME,
             PROFILE_A,
@@ -307,30 +327,6 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
             network=config.mgmt_bridge,
             vnic_profile=PROFILE_A
         )
-
-        def finalize():
-            """ remove created nic """
-            testflow.teardown("Tearing down %s class", cls.__name__)
-
-            testflow.step("Stopping %s VM.", config.HOOKS_VM_NAME)
-            assert vms.stopVm(True, config.HOOKS_VM_NAME)
-
-            testflow.step(
-                "Removing %s nic from %s VM.",
-                cls.NIC_NAME,
-                config.HOOKS_VM_NAME
-            )
-            assert vms.removeNic(True, config.HOOKS_VM_NAME, cls.NIC_NAME)
-
-            testflow.step("Starting %s VM.", config.HOOKS_VM_NAME)
-            assert vms.startVm(
-                positive=True,
-                vm=config.HOOKS_VM_NAME,
-                wait_for_status=config.vm_state_up,
-                wait_for_ip=True
-            )
-
-        request.addfinalizer(finalize)
 
     @polarion("RHEVM3-12335")
     def test_after_before_nic_hotplug(self):
@@ -345,12 +341,11 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
         sleep(SLEEP_TIME)
 
 
-@attr(tier=3)
 class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
     """ before_after_nic_hotunplug hook """
     __test__ = True
 
-    HOOK_NAMES = {
+    hooks_names = {
         "before_nic_hotunplug": SCRIPT_TYPES["shell"],
         "after_nic_hotunplug": SCRIPT_TYPES["python"]
     }
@@ -358,26 +353,9 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        """ hot unplug nic """
-        super(TestCaseAfterBeforeNicHotunplug, cls).setup_class(request)
-
-        testflow.step(
-            "Making hot unplug of a %s nic from %s VM.",
-            HOTUNPLUG_NIC,
-            config.HOOKS_VM_NAME
-        )
-        assert vms.updateNic(
-            positive=True,
-            vm=config.HOOKS_VM_NAME,
-            nic=HOTUNPLUG_NIC,
-            plugged=False
-        )
-
         def finalize():
             """ plug nic back """
-            testflow.teardown("Tearing down %s class.", cls.__name__)
-
-            testflow.step(
+            testflow.teardown(
                 "Making hot plug of %s nic to %s VM.",
                 HOTUNPLUG_NIC,
                 config.HOOKS_VM_NAME
@@ -391,6 +369,21 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
 
         request.addfinalizer(finalize)
 
+        """ hot unplug nic """
+        super(TestCaseAfterBeforeNicHotunplug, cls).setup_class(request)
+
+        testflow.setup(
+            "Making hot unplug of a %s nic from %s VM.",
+            HOTUNPLUG_NIC,
+            config.HOOKS_VM_NAME
+        )
+        assert vms.updateNic(
+            positive=True,
+            vm=config.HOOKS_VM_NAME,
+            nic=HOTUNPLUG_NIC,
+            plugged=False
+        )
+
     @polarion("RHEVM3-12338")
     def test_after_before_nic_hotunplug(self):
         """ test_after_before_nic_hotunplug """
@@ -398,12 +391,11 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
         self.check_for_files()
 
 
-@attr(tier=3)
 class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
     """ before_after_update_device hook """
     __test__ = True
 
-    HOOK_NAMES = {
+    hooks_names = {
         "before_update_device": SCRIPT_TYPES["python"],
         "after_update_device": SCRIPT_TYPES["python"]
     }
@@ -414,7 +406,7 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
         """ update nic """
         super(TestCaseAfterBeforeUpdateDevice, cls).setup_class(request)
 
-        testflow.step("Updating %s nic to make it not linked.", UPDATE_NIC)
+        testflow.setup("Updating %s nic to make it not linked.", UPDATE_NIC)
         assert vms.updateNic(
             positive=True,
             vm=config.HOOKS_VM_NAME,
@@ -431,7 +423,6 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
         self.check_for_files()
 
 
-@attr(tier=3)
 class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
     """ after_update_device_fail hook """
     __test__ = True
@@ -442,7 +433,7 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
         "alias={1} network={2}"
     )
 
-    HOOK_NAMES = {
+    hooks_names = {
         "after_update_device_fail": SCRIPT_TYPES["shell"]
     }
 
@@ -452,36 +443,26 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
         """ update fail nic """
         super(TestCaseAfterUpdateDeviceFail, cls).setup_class(request)
 
-        testflow.step("Defining a command to determine failed nic.")
+        testflow.setup("Defining a command to determine failed nic.")
         cmd_nic = (
             'virsh -r dumpxml {0} | '
             'awk \"/<interface type=\'bridge\'>/,/<\/interface>/\" | '
             'grep alias | grep -oP "(?<=<alias name=\').*?(?=\'/>)"'
         )
 
-        testflow.step("Running a command on %s host.", config.hosts_ips[0])
-        fail_nic = runMachineCommand(
-            positive=True,
-            ip=config.hosts_ips[0],
-            user=config.hosts_user,
-            password=config.hosts_password,
-            cmd=cmd_nic.format(config.HOOKS_VM_NAME)
-        )[1]["out"][:-2].split()[0]
+        testflow.setup("Running a command on %s host.", config.hosts_ips[0])
+        fail_nic = config.hooks_host.run_command(
+            split(cmd_nic.format(config.HOOKS_VM_NAME))
+        )[1][:-2].split()[0]
 
-        testflow.step("Getting ID of the %s VM.", config.HOOKS_VM_NAME)
+        testflow.setup("Getting ID of the %s VM.", config.HOOKS_VM_NAME)
         vm_id = vms.VM_API.find(config.HOOKS_VM_NAME).get_id()
 
-        testflow.step("Defining a command for updating a nic to fail.")
-        cmd = cls.UPDATE_FAIL.format(vm_id, fail_nic, cls.NONEXISTENT)
+        testflow.setup("Defining a command for updating a nic to fail.")
+        cmd = split(cls.UPDATE_FAIL.format(vm_id, fail_nic, cls.NONEXISTENT))
 
-        testflow.step("Checking if the command above failed.")
-        assert runMachineCommand(
-            positive=False,
-            ip=config.hosts_ips[0],
-            user=config.hosts_user,
-            password=config.hosts_password,
-            cmd=cmd
-        )[0]
+        testflow.setup("Checking if the command above failed.")
+        assert config.hooks_host.run_command(cmd)[0] != 0
 
     @polarion("RHEVM3-12346")
     def test_after_update_device_fail(self):
