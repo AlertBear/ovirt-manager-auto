@@ -14,6 +14,7 @@ import art.unittest_lib as test_libs
 import config as conf
 import pytest
 from art.test_handler import tools
+from config import non_ge
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 #############################################################################
 
 
+@non_ge
 class HostedEngineTest(test_libs.SlaTest):
     """
     Base class that include basic functions for whole test

@@ -16,6 +16,7 @@ from fixtures import (
     update_he_vm_cpus_back,
     wait_for_ovf_and_restart_he_vm
 )
+from config import non_ge
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -61,6 +62,7 @@ def init_he_webadmin():
     helpers.apply_new_parameters_on_he_vm()
 
 
+@non_ge
 @pytest.mark.usefixtures(
     update_he_vm.__name__,
     wait_for_ovf_and_restart_he_vm.__name__
@@ -87,6 +89,7 @@ class TestUpdateHeVmMemory(test_libs.SlaTest):
         )
 
 
+@non_ge
 @pytest.mark.usefixtures(
     update_he_vm.__name__,
     update_he_vm_cpus_back.__name__
@@ -113,6 +116,7 @@ class TestHotplugHeVmCpus(test_libs.SlaTest):
         )
 
 
+@non_ge
 @pytest.mark.usefixtures(
     update_he_vm.__name__,
     wait_for_ovf_and_restart_he_vm.__name__,
@@ -140,6 +144,7 @@ class TestUpdateHeVmCpus(test_libs.SlaTest):
         )
 
 
+@non_ge
 class TestAddNicToHeVmWithManagementNetwork(test_libs.SlaTest):
     """
     Add with management network NIC to HE VM
@@ -162,6 +167,7 @@ class TestAddNicToHeVmWithManagementNetwork(test_libs.SlaTest):
         )
 
 
+@non_ge
 @pytest.mark.usefixtures(
     wait_for_ovf_and_restart_he_vm.__name__,
     create_network.__name__,
@@ -195,6 +201,7 @@ class TestAddNicToHeVmWithoutManagementNetwork(test_libs.SlaTest):
         )
 
 
+@non_ge
 @pytest.mark.incremental
 class TestAddHostAndDeployHostedEngine(test_libs.SlaTest):
     """

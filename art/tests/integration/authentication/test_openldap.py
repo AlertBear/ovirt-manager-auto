@@ -10,12 +10,12 @@ from authentication import config
 import logging
 
 from art.unittest_lib import CoreSystemTest as TestCase
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion, bz
 from test_base import connectionTest
+from config import non_ge
 
 __test__ = True
 
@@ -39,6 +39,7 @@ def loginAsAdmin():
                       config.USER_PASSWORD, False)
 
 
+@non_ge
 @attr(tier=1)
 class LDAPCase289010(TestCase):
     """
@@ -56,7 +57,6 @@ class LDAPCase289010(TestCase):
             True, config.LDAP_REGULAR_NAME, config.MAIN_CLUSTER_NAME,
             role='UserRole', domain=config.LDAP_DOMAIN)
 
-    @istest
     @polarion("RHEVM3-8077")
     def normalUserAndGroupUser(self):
         """ Authenticate as normal user and user from group """
@@ -80,6 +80,7 @@ class LDAPCase289010(TestCase):
         users.deleteGroup(positive=True, group_name=config.LDAP_GROUP)
 
 
+@non_ge
 @attr(tier=1)
 class LDAPCase289066(TestCase):
     """
@@ -94,7 +95,6 @@ class LDAPCase289066(TestCase):
             True, config.LDAP_EXPIRED_PSW_NAME, config.MAIN_CLUSTER_NAME,
             role='UserRole', domain=config.LDAP_DOMAIN)
 
-    @istest
     @polarion("RHEVM3-8078")
     def expiredPassword(self):
         """ Login as user with disabled account """
@@ -109,6 +109,7 @@ class LDAPCase289066(TestCase):
                          domain=config.LDAP_DOMAIN)
 
 
+@non_ge
 @attr(tier=1)
 class LDAPCase289068(TestCase):
     """ Test if user with expired password can't login """
@@ -121,7 +122,6 @@ class LDAPCase289068(TestCase):
             True, config.LDAP_EXPIRED_ACC_NAME, config.MAIN_CLUSTER_NAME,
             role='UserRole', domain=config.LDAP_DOMAIN)
 
-    @istest
     @polarion("RHEVM3-8079")
     def expiredAccount(self):
         """ Login as user with expired password """
@@ -136,6 +136,7 @@ class LDAPCase289068(TestCase):
                          domain=config.LDAP_DOMAIN)
 
 
+@non_ge
 @attr(tier=2)
 class LDAPCase289069(TestCase):
     """ Try to search via REST with firstname, lastname """
@@ -148,7 +149,6 @@ class LDAPCase289069(TestCase):
         domainID = users.domUtil.find(config.LDAP_DOMAIN).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
-    @istest
     @polarion("RHEVM3-8080")
     @bz({'1177367': {'engine': ['cli'], 'version': ['3.5']}})
     def searchForUsersAndGroups(self):
@@ -167,6 +167,7 @@ class LDAPCase289069(TestCase):
         logger.info("Searching for users and groups works correctly.")
 
 
+@non_ge
 @attr(tier=2)
 class LDAPCase289071(TestCase):
     """ If the information is updated on LDAP side it's propageted to rhevm """
@@ -189,7 +190,6 @@ class LDAPCase289071(TestCase):
         self.user = self._find_user_in_directory(config.LDAP_TESTING_USER_NAME)
         addUser(config.LDAP_TESTING_USER_NAME)
 
-    @istest
     @polarion("RHEVM3-8081")
     @bz({'1125161': {}})
     def updateInformation(self):
@@ -217,6 +217,7 @@ class LDAPCase289071(TestCase):
                          domain=config.LDAP_DOMAIN)
 
 
+@non_ge
 @attr(tier=2)
 class LDAPCase289072(TestCase):
     """ If user which is part of group is removed, the group still persists """
@@ -229,7 +230,6 @@ class LDAPCase289072(TestCase):
             True, config.LDAP_GROUP, config.MAIN_CLUSTER_NAME)
         addUser(config.LDAP_USER_FROM_GROUP)
 
-    @istest
     @polarion("RHEVM3-8082")
     @bz({'1125161': {}})
     def persistencyOfGroupRights(self):
@@ -250,6 +250,7 @@ class LDAPCase289072(TestCase):
         users.deleteGroup(True, group_name=config.LDAP_GROUP)
 
 
+@non_ge
 @attr(tier=2)
 class LDAPCase289076(TestCase):
     """ Test if user which has lot of groups assigned can be added & login """
@@ -261,7 +262,6 @@ class LDAPCase289076(TestCase):
             True, config.LDAP_WITH_MANY_GROUPS_NAME, config.MAIN_CLUSTER_NAME,
             role='UserRole', domain=config.LDAP_DOMAIN)
 
-    @istest
     @polarion("RHEVM3-8083")
     def userWithManyGroups(self):
         """ User with many groups """
@@ -276,6 +276,7 @@ class LDAPCase289076(TestCase):
                          domain=config.LDAP_DOMAIN)
 
 
+@non_ge
 @attr(tier=2)
 class LDAPCase289078(TestCase):
     """ Test if user can't login after group removal from user """
@@ -296,7 +297,6 @@ class LDAPCase289078(TestCase):
         mla.addClusterPermissionsToGroup(
             True, config.LDAP_GROUP2, config.MAIN_CLUSTER_NAME)
 
-    @istest
     @polarion("RHEVM3-8084")
     def removeUserFromOpenLDAP(self):
         """ remove user from OpenLDAP """

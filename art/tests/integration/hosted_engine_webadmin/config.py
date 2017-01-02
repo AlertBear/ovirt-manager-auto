@@ -1,6 +1,8 @@
 """
 HE webadmin test configuration file
 """
+import pytest
+
 from art.rhevm_api import resources
 from art.test_handler.settings import ART_CONFIG, opts
 
@@ -90,3 +92,8 @@ EXPECTED_MEMORY = 8 * GB
 EXPECTED_CPUS = 4
 DEFAULT_CPUS_VALUE = 2
 TEST_NETWORK = "test_network"
+
+non_ge = pytest.mark.skipif(
+    "prepared_env" in ART_CONFIG,
+    reason="Tests not supported on GE"
+)

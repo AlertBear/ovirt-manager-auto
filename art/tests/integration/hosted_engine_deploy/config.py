@@ -1,6 +1,9 @@
 """
 HE Deploy test configuration file
 """
+
+import pytest
+
 from art.rhevm_api import resources
 from art.test_handler.settings import ART_CONFIG
 
@@ -299,3 +302,8 @@ CLEAN_OPERATIONS = [
         )
     }
 ]
+
+non_ge = pytest.mark.skipif(
+    "prepared_env" in ART_CONFIG,
+    reason="Tests not supported on GE"
+)

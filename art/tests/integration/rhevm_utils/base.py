@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.vms as llvms
 from art.rhevm_api.utils.test_utils import get_api
 
 from rhevm_utils import unittest_conf
+from unittest_conf import non_ge
 
 from utilities.rhevm_tools.base import Setup
 from art.test_handler.settings import opts
@@ -61,6 +62,7 @@ def teardown_module():
 _multiprocess_can_split_ = True
 
 
+@non_ge
 class RHEVMUtilsTestCase(TestCase):
     """
     Base class for test plan. It contains general setUp and tearDown class

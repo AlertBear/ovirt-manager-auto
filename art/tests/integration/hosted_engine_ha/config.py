@@ -2,6 +2,8 @@
 Hosted Engine HA test configuration file
 """
 import socket
+import pytest
+
 from art.rhevm_api import resources
 from art.test_handler.settings import ART_CONFIG, opts
 
@@ -209,3 +211,8 @@ HE_STORAGE_DOMAIN_TYPE = VDS_HOSTS[0].run_command(
 )[1].strip().split("=")[1]
 IS_ISCSI_STORAGE_DOMAIN = HE_STORAGE_DOMAIN_TYPE == ISCSI_STORAGE_DOMAIN
 HE_ISCSI_STORAGE_DOMAIN_MSG = "Test does not supported on ISCSI storage"
+
+non_ge = pytest.mark.skipif(
+    "prepared_env" in ART_CONFIG,
+    reason="Tests not supported on GE"
+)

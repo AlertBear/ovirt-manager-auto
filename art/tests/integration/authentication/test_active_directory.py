@@ -10,13 +10,13 @@ import time
 import logging
 from authentication import config
 from art.unittest_lib import CoreSystemTest as TestCase
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion
 from test_base import connectionTest
 from art.core_api.apis_utils import TimeoutingSampler
+from config import non_ge
 
 __test__ = True
 
@@ -57,6 +57,7 @@ def addUserWithClusterPermissions(user_name):
     )
 
 
+@non_ge
 @attr(tier=2)
 class ActiveDirectory(TestCase):
     __test__ = False
@@ -107,7 +108,6 @@ class ActiveDirectory(TestCase):
         users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
                           config.USER_PASSWORD, False)
 
-    @istest
     @polarion("RHEVM3-7354")
     @attr(tier=1)
     def disabledAccount(self):
@@ -116,7 +116,6 @@ class ActiveDirectory(TestCase):
         assert not connectionTest(), "User with disabled acc can login."
         logger.info("User with disabled acc can't login.")
 
-    @istest
     @polarion("RHEVM3-7353")
     @attr(tier=1)
     def expiredPassword(self):
@@ -125,7 +124,6 @@ class ActiveDirectory(TestCase):
         assert not connectionTest(), "User with expired psw can login."
         logger.info("User with expired password can't login.")
 
-    @istest
     @polarion("RHEVM3-7355")
     @attr(tier=1)
     def expiredUser(self):
@@ -134,7 +132,6 @@ class ActiveDirectory(TestCase):
         assert not connectionTest(), "Expired user can login."
         logger.info("Expired user can't login.")
 
-    @istest
     @polarion("RHEVM3-7349")
     @attr(tier=1)
     def userFromGroup(self):
@@ -170,14 +167,12 @@ class ActiveDirectory(TestCase):
         )[0], "Run cmd %s failed." % CLEAN
         logger.info("Authentication passed.")
 
-    @istest
     @polarion("RHEVM3-7348")
     def ldapEncryption(self):
         """ LDAP encryption """
         self._checkEnc(AUTH, True)
         self._checkEnc(AUTH_CONF, False)
 
-    @istest
     @polarion("RHEVM3-7362")
     def multipleDomains(self):
         """ Multiple domains: Two ADs, using FQDN names """

@@ -4,10 +4,10 @@
 from authentication import config
 import logging
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.core_api.apis_exceptions import APIException
 from art.test_handler.tools import bz
+from config import non_ge
 
 __test__ = False
 
@@ -38,6 +38,7 @@ def addUser(user_name, domain):
     users.addUser(True, user_name=user_name, domain=domain)
 
 
+@non_ge
 @attr(tier=1)
 class BaseNormalUserAndGroupUser(TestCase):
     """ Login as normal user and user from group. """
@@ -55,7 +56,6 @@ class BaseNormalUserAndGroupUser(TestCase):
                                         config.MAIN_CLUSTER_NAME,
                                         role=USERROLE, domain=self.domain)
 
-    @istest
     def normalUserAndGroupUser(self):
         """ Authenticate as normal user and user from group """
         msg_f = "%s user can't log in."
@@ -79,6 +79,7 @@ class BaseNormalUserAndGroupUser(TestCase):
         users.deleteGroup(positive=True, group_name=config.GROUP(self.domain))
 
 
+@non_ge
 @attr(tier=1)
 class BaseExpiredAccount(TestCase):
     """ Login as user with expired account """
@@ -92,7 +93,6 @@ class BaseExpiredAccount(TestCase):
             config.MAIN_CLUSTER_NAME,
             role=USERROLE, domain=self.domain)
 
-    @istest
     def expiredAccount(self):
         """ Login as user with expired password """
         msg = "User with expired acc can login."
@@ -107,6 +107,7 @@ class BaseExpiredAccount(TestCase):
                          domain=self.domain)
 
 
+@non_ge
 @attr(tier=1)
 class BaseExpiredPassword(TestCase):
     """ Login as user with expired password """
@@ -120,7 +121,6 @@ class BaseExpiredPassword(TestCase):
             config.MAIN_CLUSTER_NAME,
             role=USERROLE, domain=self.domain)
 
-    @istest
     def expiredPassword(self):
         """ Login as user with disabled account """
         msg = "User with expired psw can login."
@@ -135,6 +135,7 @@ class BaseExpiredPassword(TestCase):
                          domain=self.domain)
 
 
+@non_ge
 @attr(tier=2)
 class BaseGroupsPersistency(TestCase):
     """ Persistency of group rights """
@@ -147,7 +148,6 @@ class BaseGroupsPersistency(TestCase):
         mla.addClusterPermissionsToGroup(True, config.GROUP(self.domain),
                                          config.MAIN_CLUSTER_NAME)
 
-    @istest
     @bz({'1125161': {}})
     def basePersistencyOfGroupRights(self):
         """ After user removal, check that his group persist """
@@ -168,6 +168,7 @@ class BaseGroupsPersistency(TestCase):
         users.deleteGroup(True, group_name=config.GROUP(self.domain))
 
 
+@non_ge
 @attr(tier=2)
 class BaseUserWithManyGroups(TestCase):
     """ Login as user with many groups """
@@ -180,7 +181,6 @@ class BaseUserWithManyGroups(TestCase):
             True, config.WITH_MANY_GROUPS_NAME(self.domain),
             config.MAIN_CLUSTER_NAME, role=USERROLE, domain=self.domain)
 
-    @istest
     def userWithManyGroups(self):
         """ Check that user with many groups can login """
         loginAsUser(config.WITH_MANY_GROUPS_NAME(self.domain), self.domain)
@@ -194,6 +194,7 @@ class BaseUserWithManyGroups(TestCase):
                          user=config.WITH_MANY_GROUPS_NAME(self.domain))
 
 
+@non_ge
 @attr(tier=2)
 class BaseSearchForUsersAndGroups(TestCase):
     """ Search within domain for users and groups """
@@ -208,7 +209,6 @@ class BaseSearchForUsersAndGroups(TestCase):
         domainID = users.domUtil.find(self.domain).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
-    @istest
     @bz({'1177367': {'engine': ['cli'], 'version': ['3.5']}})
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """

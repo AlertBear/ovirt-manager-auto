@@ -1,5 +1,6 @@
 
 import logging
+import pytest
 
 from configobj import ConfigObj
 
@@ -311,3 +312,8 @@ config['log_collector'] = LOG_COLLECTOR
 config['image-uploader'] = IMAGE_UPLOADER
 config['upgrade'] = UPGRADE
 config['CLEANUP_ANSWERS'] = CLEANUP_ANSWERS
+
+non_ge = pytest.mark.skipif(
+    "prepared_env" in ART_CONFIG,
+    reason="Tests not supported on GE"
+)

@@ -1,5 +1,6 @@
 """ Test configuration - login data to the servers and test setup options.  """
 
+import pytest
 
 from art.rhevm_api import resources
 from art.test_handler.settings import ART_CONFIG
@@ -180,4 +181,9 @@ ENGINE = resources.Engine(
     schema=REST_CONNECTION.get('schema'),
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
+)
+
+non_ge = pytest.mark.skipif(
+    "prepared_env" in ART_CONFIG,
+    reason="Tests not supported on GE"
 )

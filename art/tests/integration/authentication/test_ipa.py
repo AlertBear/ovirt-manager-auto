@@ -10,7 +10,6 @@ from authentication import config
 import logging
 
 from art.unittest_lib import CoreSystemTest as TestCase
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
@@ -18,6 +17,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import getDS
 from art.test_handler.tools import polarion, bz
 from test_base import connectionTest
+from config import non_ge
 
 __test__ = True
 
@@ -47,6 +47,7 @@ def loginAsAdmin():
                       config.USER_PASSWORD, False)
 
 
+@non_ge
 @attr(tier=1)
 class IPACase93880(TestCase):
     """
@@ -67,7 +68,6 @@ class IPACase93880(TestCase):
             True, config.IPA_DISABLED_NAME, config.MAIN_CLUSTER_NAME,
             role=USER_ROLE, domain=config.IPA_DOMAIN)
 
-    @istest
     @polarion("RHEVM3-8953")
     def authenticateUsersNegative(self):
         """ Authenticate users - negative """
@@ -90,6 +90,7 @@ class IPACase93880(TestCase):
                          domain=config.IPA_DOMAIN)
 
 
+@non_ge
 @attr(tier=1)
 class IPACase93879(TestCase):
     """
@@ -111,7 +112,6 @@ class IPACase93879(TestCase):
         mla.addClusterPermissionsToGroup(
             True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME, role=USER_ROLE)
 
-    @istest
     @polarion("RHEVM3-8952")
     def authenticateUsers(self):
         """ Authenticate users """
@@ -136,6 +136,7 @@ class IPACase93879(TestCase):
         )
 
 
+@non_ge
 @attr(tier=2)
 class IPACase93881(TestCase):
     """ Try to login with different login formats """
@@ -150,7 +151,6 @@ class IPACase93881(TestCase):
             True, config.IPA_REGULAR_NAME, config.MAIN_CLUSTER_NAME,
             role=USER_ROLE, domain=config.IPA_DOMAIN)
 
-    @istest
     @polarion("RHEVM3-8954")
     @bz({'1123545': {}})
     def loginFormats(self):
@@ -169,6 +169,7 @@ class IPACase93881(TestCase):
                          domain=config.IPA_DOMAIN)
 
 
+@non_ge
 @attr(tier=2)
 class IPACase109871(TestCase):
     """ Test if user which has lot of groups assigned can be added & login """
@@ -180,7 +181,6 @@ class IPACase109871(TestCase):
             True, config.IPA_WITH_MANY_GROUPS_NAME, config.MAIN_CLUSTER_NAME,
             role=USER_ROLE, domain=config.IPA_DOMAIN)
 
-    @istest
     @polarion("RHEVM3-8959")
     def userWithManyGroups(self):
         """ User with many groups """
@@ -195,6 +195,7 @@ class IPACase109871(TestCase):
                          domain=config.IPA_DOMAIN)
 
 
+@non_ge
 @attr(tier=2)
 class IPACase109146(TestCase):
     """ If user which is part of group is removed, the group still persists """
@@ -206,7 +207,6 @@ class IPACase109146(TestCase):
         mla.addClusterPermissionsToGroup(
             True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME)
 
-    @istest
     @polarion("RHEVM3-8958")
     @bz({'1125161': {}})
     def persistencyOfGroupRights(self):
@@ -228,6 +228,7 @@ class IPACase109146(TestCase):
         users.deleteGroup(True, group_name=config.IPA_GROUP)
 
 
+@non_ge
 @attr(tier=2)
 class IPACase93882(TestCase):
     """ Try to search via REST with firstname, lastname """
@@ -236,7 +237,6 @@ class IPACase93882(TestCase):
     # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1615
     apis = TestCase.apis - set(['java', 'sdk'])
 
-    @istest
     @polarion("RHEVM3-8955")
     @bz({'1125161': {}})
     def search(self):
@@ -263,6 +263,7 @@ class IPACase93882(TestCase):
         logger.info("Searching for users and groups works correctly.")
 
 
+@non_ge
 @attr(tier=2)
 class IPACase93883(TestCase):
     """ If the information is updated on IPA side it's propageted to rhevm """
@@ -287,7 +288,6 @@ class IPACase93883(TestCase):
             password=config.IPA_PASSWORD
         )[0]
 
-    @istest
     @polarion("RHEVM3-8956")
     @bz({'1117240': {}})
     def update(self):

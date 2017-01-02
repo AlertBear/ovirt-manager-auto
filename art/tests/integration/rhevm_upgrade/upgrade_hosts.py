@@ -12,10 +12,12 @@ from art.unittest_lib import attr
 from art.unittest_lib import CoreSystemTest as TestCase
 
 from rhevm_upgrade import config
+from config import non_ge
 
 logger = logging.getLogger(__name__)
 
 
+@non_ge
 @attr(tier=2)
 class UpgradeHosts(TestCase):
     """ Perform the upgrade of hosts """

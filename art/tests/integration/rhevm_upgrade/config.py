@@ -1,3 +1,5 @@
+import pytest
+
 from art.rhevm_api import resources
 from art.rhevm_api.utils import test_utils
 from art.test_handler.settings import opts
@@ -167,4 +169,9 @@ ANSWERS['__default__'] = (
     'OVESETUP_CONFIG/isoDomainACL',
     'OVESETUP_DIALOG/confirmSettings',
     'OVESETUP_RHEVM_DIALOG/confirmUpgrade'
+)
+
+non_ge = pytest.mark.skipif(
+    "prepared_env" in ART_CONFIG,
+    reason="Tests not supported on GE"
 )

@@ -13,10 +13,12 @@ import otopi_parser_helper
 import storageapi.he_storage_api as storage_helper
 from concurrent.futures import ThreadPoolExecutor
 from storageapi.storageErrors import StorageAPIGeneralException
+from config import non_ge
 
 logger = logging.getLogger(__name__)
 
 
+@non_ge
 @test_libs.attr(tier=4)
 class BaseDeploy(test_libs.IntegrationTest):
     """

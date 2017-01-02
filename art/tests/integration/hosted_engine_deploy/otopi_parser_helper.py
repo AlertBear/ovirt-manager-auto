@@ -2,10 +2,13 @@
 Helper for otopi machine dialog parser
 """
 import logging
-import config as conf
-import otopimdp.parser as otopi_parser
+import pytest
+
 import art.test_handler.exceptions as errors
 
+import config as conf
+
+otopi_parser = pytest.importorskip('otopimdp.parser')
 
 logger = logging.getLogger(__name__)
 

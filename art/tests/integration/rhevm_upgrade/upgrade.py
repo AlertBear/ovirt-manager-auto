@@ -13,10 +13,12 @@ from utilities.rhevm_tools.setup import SetupUtility
 from art.unittest_lib import attr
 
 from rhevm_upgrade import config
+from config import non_ge
 
 logger = logging.getLogger(__name__)
 
 
+@non_ge
 @attr(tier=2)
 class UpgradeSanityUpgrade(TestCase):
     """ Perform the upgrade """

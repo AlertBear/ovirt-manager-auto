@@ -14,6 +14,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from reports.sanity.test_local_installation_sanity import SanityServicesLogs
 
 from rhevm_upgrade import config
+from config import non_ge
 
 logger = logging.getLogger(__name__)
 domUtil = get_api('domain', 'domains')
@@ -31,6 +32,7 @@ def teardown_module():
     logger.debug("tearDownClass: cleaned the DC")
 
 
+@non_ge
 @attr(tier=2)
 class UpgradeSanityVerification(TestCase):
     """ Basic test """
@@ -85,6 +87,7 @@ class UpgradeSanityVerification(TestCase):
             ])[0]
 
 
+@non_ge
 @attr(tier=2)
 class UpgradeSanityDWHReports(SanityServicesLogs):
     pass
