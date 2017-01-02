@@ -189,26 +189,6 @@ def delete_disk(request):
 
 
 @pytest.fixture(scope='class')
-def delete_disk(request):
-    """
-    Removes disk
-    """
-    self = request.node.cls
-
-    def finalizer():
-        if ll_disks.checkDiskExists(True, self.disk_name):
-            assert ll_disks.wait_for_disks_status([self.disk_name]), (
-                "Waiting for disk %s to be in status OK failed" %
-                self.disk_alias
-            )
-            testflow.teardown("Deleting disk %s", self.disk_name)
-            assert ll_disks.deleteDisk(True, self.disk_name), (
-                "Failed to delete disk %s" % self.disk_name
-            )
-    request.addfinalizer(finalizer)
-
-
-@pytest.fixture(scope='class')
 def attach_disk(request):
     """
     Attach a disk to VM
