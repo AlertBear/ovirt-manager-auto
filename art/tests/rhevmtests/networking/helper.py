@@ -21,6 +21,7 @@ import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
+import rhevmtests.helpers as global_helper
 from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import events
 from art.rhevm_api.utils import test_utils
@@ -719,6 +720,28 @@ def remove_none_from_dict(dict_):
         )
     else:
         return dict_
+
+
+def get_non_mgmt_nic_name(vm):
+    """
+    Get VM interface list excluding management network.
+
+    Args:
+        vm: VM name.
+
+    Returns:
+        list: VM interface list.
+    """
+    vm_resource = global_helper.get_vm_resource(vm=vm, start_vm=False)
+    mgmt_interface = vm_resource.network.find_mgmt_interface()
+
+    logger.info(
+        "Get VM %s interface excluding mgmt interface %s", vm,
+        mgmt_interface
+    )
+    return get_vm_interfaces_list(
+        vm_resource=vm_resource, exclude_nics=[mgmt_interface]
+    )
 
 
 if __name__ == "__main__":
