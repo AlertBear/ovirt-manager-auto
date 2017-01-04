@@ -417,7 +417,7 @@ def initialize_storage_domains(request):
     self.storage_domain_2 = self.storage_domains[2]
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture()
 def deactivate_domain(request):
     """
     Deactivates GE storage domain
@@ -433,12 +433,18 @@ def deactivate_domain(request):
         ), ("Failed to activate storage domain %s" % self.sd_to_deactivate)
 
     request.addfinalizer(finalizer)
-    if not hasattr(self, 'sd_to_deactivate_index'):
-        self.sd_to_deactivate = self.storage_domains[1]
-    else:
+
+    if hasattr(self, 'sd_to_deactivate_index'):
         self.sd_to_deactivate = self.storage_domains[
             self.sd_to_deactivate_index
         ]
+    else:
+        self.sd_to_deactivate = getattr(
+            self, 'sd_to_deactivate', ll_sd.getStorageDomainNamesForType(
+                config.DATA_CENTER_NAME, self.storage
+            )[0]
+        )
+
     test_utils.wait_for_tasks(
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
@@ -893,6 +899,10 @@ def wait_for_disks_and_snapshots(request):
     self = request.node.cls
 
     def finalizer():
+        testflow.teardown(
+            "Wait for VMs %s Disks and snapshots to be in 'OK' status",
+            self.vms_to_wait
+        )
         for vm_name in self.vms_to_wait:
             if ll_vms.does_vm_exist(vm_name):
                 try:
@@ -907,6 +917,7 @@ def wait_for_disks_and_snapshots(request):
             ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
             ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
     request.addfinalizer(finalizer)
+
     self.vms_to_wait = getattr(self, 'vms_to_wait', [self.vm_name])
 
 
@@ -918,6 +929,10 @@ def unblock_connectivity_storage_domain_teardown(request):
     self = request.node.cls
 
     def finalizer():
+        testflow.teardown(
+            "Unblock connection from host %s to domain %s",
+            self.host_ip, self.storage_domain_ip
+        )
         assert unblockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip
@@ -936,7 +951,13 @@ def initialize_variables_block_domain(request):
     """
     self = request.node.cls
 
-    self.host = getattr(self, 'host', ll_hosts.getSPMHost(config.HOSTS))
+    spm_host = getattr(self, 'block_spm_host', True)
+    self.host = getattr(self, 'host', None)
+
+    if self.host is None:
+        self.host = ll_hosts.getSPMHost(config.HOSTS) if spm_host else (
+            ll_hosts.getHSMHost(config.HOSTS)
+        )
     self.host_ip = ll_hosts.getHostIP(self.host)
     found, address = ll_sd.getDomainAddress(True, self.storage_domain)
     assert found, "IP for storage domain %s not found" % self.storage_domain
@@ -1104,4 +1125,79 @@ def move_host_to_another_cluster(request):
     ), (
         "Could not move host '%s' into cluster '%s'" % self.host_name,
         self.cluster_name
+    )
+
+
+@pytest.fixture()
+def update_vm_disk(request):
+    """
+    Update VM disk
+    """
+    self = request.node.cls
+
+    disk = self.disk_name if getattr(self, 'disk_name', None) else (
+        getattr(self, 'disk_id', None)
+    )
+    disk_kwargs = getattr(self, 'disk_kwargs', None)
+    testflow.setup("Update disk %s", disk)
+    assert ll_disks.updateDisk(True, **disk_kwargs), (
+        "Failed to update disk %s" % disk
+    )
+
+
+@pytest.fixture()
+def restart_vdsmd(request):
+    """
+    Restart VDSM
+    """
+    self = request.node.cls
+
+    def finalizer():
+        host = getattr(
+            self, 'restart_vdsmd_host', ll_hosts.getSPMHost(config.HOSTS)
+        )
+        host_ip = ll_hosts.getHostIP(host)
+        testflow.teardown("Restart vdsmd on host %s", host)
+        assert test_utils.restartVdsmd(host_ip, config.HOSTS_PW), (
+            "Failed to restart VDSM on host %s" % host
+        )
+        assert ll_hosts.waitForHostsStates(True, host), (
+            "Host %s failed to reach status UP" % host
+        )
+        assert ll_hosts.waitForSPM(
+            config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+            config.WAIT_FOR_SPM_INTERVAL
+        ), "SPM host was not elected in data-center %s" % (
+            config.DATA_CENTER_NAME
+        )
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def create_second_vm(request):
+    """
+    Create second VM and initialize parameters
+    """
+    self = request.node.cls
+
+    def finalizer():
+        """
+        Remove the second VM
+        """
+        testflow.teardown("Remove VM %s", self.vm_name_2)
+        assert ll_vms.safely_remove_vms([self.vm_name_2]), (
+            "Failed to power off and remove VM %s" % self.vm_name_2
+        )
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+    request.addfinalizer(finalizer)
+
+    self.vm_name_2 = storage_helpers.create_unique_object_name(
+        self.__name__, config.OBJECT_TYPE_VM
+    )
+    vm_args = config.create_vm_args.copy()
+    vm_args['storageDomainName'] = self.storage_domain
+    vm_args['vmName'] = self.vm_name_2
+    testflow.setup("Creating VM %s", self.vm_name_2)
+    assert storage_helpers.create_vm_or_clone(**vm_args), (
+        "Failed to create VM %s" % self.vm_name_2
     )

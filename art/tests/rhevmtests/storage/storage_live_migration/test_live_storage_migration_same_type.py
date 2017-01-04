@@ -4,28 +4,37 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_1_Storage_Live_Storage_Migration
 """
 import config
-import logging
+import pytest
 from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.low_level import vms
 from art.test_handler.settings import opts
 import live_storage_migration_base as basePlan
 from art.test_handler.tools import bz
 
-logger = logging.getLogger(__name__)
+from rhevmtests.storage.fixtures import (
+    update_vm_disk, create_snapshot, delete_disks, deactivate_domain,
+    add_disk_permutations, remove_templates, remove_vms, restart_vdsmd,
+    unblock_connectivity_storage_domain_teardown, wait_for_disks_and_snapshots,
+    initialize_storage_domains, initialize_variables_block_domain, create_vm,
+    start_vm, create_second_vm, poweroff_vm
+)
+from rhevmtests.storage.storage_live_migration.fixtures import (
+    initialize_params, initialize_disk_args, add_disk, attach_disk_to_vm,
+    initialize_domain_to_deactivate, create_disks_for_vm, create_templates,
+    prepare_disks_for_vm, initialize_vm_and_template_names,
+    create_vms_from_templates, add_two_storage_domains
+)
+from rhevmtests.storage.fixtures import remove_vm  # noqa
+
 ISCSI = config.STORAGE_TYPE_ISCSI
 
 
-def setup_module():
+@pytest.fixture(scope='module', autouse=True)
+def inizialize_tests_params(request):
     """
-    Initialization of several parameters
+    Determine whether to run plan on same storage type or on different types
+    of storage
     """
-    config.TESTNAME = "LSM_same_type"
-    logger.info("Setup module %s", config.TESTNAME)
     config.MIGRATE_SAME_TYPE = True
-    global LOCAL_LUN, LOCAL_LUN_ADDRESS, LOCAL_LUN_TARGET
-    LOCAL_LUN = config.UNUSED_LUNS[:]
-    LOCAL_LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES[:]
-    LOCAL_LUN_TARGET = config.UNUSED_LUN_TARGETS[:]
 
 
 @attr(tier=2)
@@ -41,7 +50,7 @@ class TestCase6004(basePlan.TestCase6004):
 @attr(tier=3)
 class TestCase5990(basePlan.TestCase5990):
     """
-    vm in paused mode
+    VM in paused mode
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -49,16 +58,36 @@ class TestCase5990(basePlan.TestCase5990):
 
 
 @attr(tier=2)
-class TestCase5994(basePlan.TestCase5994):
+class TestCase5994_powering_off(basePlan.TestCase5994_powering_off):
     """
-    different vm status
+    different VM status
         https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
 
     """
-    # TODO: Verify this case works properly. Previous comment state a
-    # race condition could occur, in that case remove
-    __test__ = False
+    __test__ = True
+
+
+@attr(tier=2)
+class TestCase5994_powering_up(basePlan.TestCase5994_powering_up):
+    """
+    different VM status
+        https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+
+    """
+    __test__ = True
+
+
+@attr(tier=2)
+class TestCase5994_wait_for_lunch(basePlan.TestCase5994_wait_for_lunch):
+    """
+    different VM status
+        https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+
+    """
+    __test__ = True
 
 
 @attr(tier=2)
@@ -68,15 +97,13 @@ class TestCase5993(basePlan.TestCase5993):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: This has not been verified since there is a bz that prevents it
-    # from being run. Add the bz and test this once more
-    __test__ = False
+    __test__ = True
 
 
 @attr(tier=3)
 class TestCase5992(basePlan.TestCase5992):
     """
-    snapshots and move vm
+    snapshots and move VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -100,7 +127,7 @@ class TestCase5991(basePlan.TestCase5991):
 @attr(tier=3)
 class TestCase5989(basePlan.TestCase5989):
     """
-    suspended vm
+    suspended VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -108,7 +135,27 @@ class TestCase5989(basePlan.TestCase5989):
 
 
 @attr(tier=3)
-class TestCase5988(basePlan.TestCase5988):
+class TestCase5988_before_snapshot(basePlan.TestCase5988_before_snapshot):
+    """
+    Create live snapshot during live storage migration
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
+@attr(tier=3)
+class TestCase5988_after_snapshot(basePlan.TestCase5988_after_snapshot):
+    """
+    Create live snapshot during live storage migration
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
+@attr(tier=3)
+class TestCase5988_while_snapshot(basePlan.TestCase5988_while_snapshot):
     """
     Create live snapshot during live storage migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -124,8 +171,7 @@ class TestCase5986(basePlan.TestCase5986):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: Fix this case
-    __test__ = False
+    __test__ = True
 
 
 @attr(tier=2)
@@ -139,15 +185,34 @@ class TestCase5995(basePlan.TestCase5995):
 
 
 @attr(tier=3)
-class TestCase5996(basePlan.TestCase5996):
+class TestCase5996_active_disk(basePlan.TestCase5996_active_disk):
     """
     hot plug disk
     1) inactive disk
-    - create and run a vm
+    - create and run a VM
     - hot plug a floating disk and keep it inactive
     - move the disk images to a different domain
     2) active disk
-    - create and run a vm
+    - create and run a VM
+    - hot plug a disk and activate it
+    - move the images to a different domain
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
+@attr(tier=3)
+class TestCase5996_inactive_disk(basePlan.TestCase5996_inactive_disk):
+    """
+    hot plug disk
+    1) inactive disk
+    - create and run a VM
+    - hot plug a floating disk and keep it inactive
+    - move the disk images to a different domain
+    2) active disk
+    - create and run a VM
     - hot plug a disk and activate it
     - move the images to a different domain
 
@@ -158,7 +223,17 @@ class TestCase5996(basePlan.TestCase5996):
 
 
 @attr(tier=2)
-class TestCase6003(basePlan.TestCase6003):
+class TestCase6003_active_disk(basePlan.TestCase6003_active_disk):
+    """
+    Attach disk during migration
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
+@attr(tier=2)
+class TestCase6003_inactive_disk(basePlan.TestCase6003_inactive_disk):
     """
     Attach disk during migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -180,7 +255,7 @@ class TestCase6001(basePlan.TestCase6001):
 @attr(tier=2)
 class TestCase5972(basePlan.TestCase5972):
     """
-    live migrate vm with multiple disks on multiple domains
+    live migrate VM with multiple disks on multiple domains
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -195,33 +270,6 @@ class TestCase5970(basePlan.TestCase5970):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = ISCSI in opts['storages']
-
-
-@attr(tier=2)
-class TestCase5969(basePlan.TestCase5969):
-    """
-    Power off/Shutdown of vm during LSM
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-    """
-    # TODO: Fix this case
-    __test__ = False
-
-
-class TestCase5969PowerOff(basePlan.TestCase5969PowerOff):
-    # TODO: Fix this case
-    __test__ = False
-
-    def turn_off_method(self):
-        vms.stopVm(True, self.vm_name, 'false')
-
-
-class TestCase5969Shutdown(basePlan.TestCase5969Shutdown):
-    # TODO: Fix this case
-    __test__ = False
-
-    def turn_off_method(self):
-        vms.shutdownVm(True, self.vm_name, 'false')
 
 
 @attr(tier=2)
@@ -248,7 +296,7 @@ class TestCase5967(basePlan.TestCase5967):
 @attr(tier=3)
 class TestCase5979(basePlan.TestCase5979):
     """
-    offline migration for disk attached to running vm
+    offline migration for disk attached to running VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -258,19 +306,37 @@ class TestCase5979(basePlan.TestCase5979):
 @attr(tier=3)
 class TestCase5976(basePlan.TestCase5976):
     """
-    Deactivate vm disk during live migrate
+    Deactivate VM disk during live migrate
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: Fix this case
-    __test__ = False
+    __test__ = True
 
 
 @attr(tier=3)
-@bz({'1258219': {}})
-class TestCase5977(basePlan.TestCase5977):
+class TestCase5977_after_lsm(basePlan.TestCase5977_after_lsm):
     """
-    migrate a vm between hosts + LSM
+    migrate a VM between hosts + LSM
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
+@attr(tier=3)
+class TestCase5977_snapshot_creation(basePlan.TestCase5977_snapshot_creation):
+    """
+    migrate a VM between hosts + LSM
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
+@attr(tier=3)
+class TestCase5977_vm_migration(basePlan.TestCase5977_vm_migration):
+    """
+    migrate a VM between hosts + LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -278,14 +344,23 @@ class TestCase5977(basePlan.TestCase5977):
 
 
 @attr(tier=2)
-class TestCase5975(basePlan.TestCase5975):
+class TestCase5975_dest_domain(basePlan.TestCase5975_dest_domain):
     """
     Extend storage domain while lsm
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: Needs 4 iscsi storage domains (only on block device)
-    __test__ = False
+    __test__ = True
+
+
+@attr(tier=2)
+class TestCase5975_src_domain(basePlan.TestCase5975_src_domain):
+    """
+    Extend storage domain while lsm
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
 
 
 @attr(tier=4)
@@ -297,7 +372,7 @@ class TestCase6000(basePlan.TestCase6000):
     """
     # Bugzilla history: 1106593
     # TODO: tier3 jobs have not been verified
-    __test__ = False
+    __test__ = True
 
 
 @attr(tier=4)
@@ -312,7 +387,7 @@ class TestCase6002(basePlan.TestCase6002):
 
 
 @attr(tier=4)
-class TestCase5999(basePlan.TestCase5999):
+class TestCase5999_spm(basePlan.TestCase5999_spm):
     """
     live migrate during host restart
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -323,9 +398,9 @@ class TestCase5999(basePlan.TestCase5999):
 
 
 @attr(tier=4)
-class TestCase5998(basePlan.TestCase5998):
+class TestCase5999_hsm(basePlan.TestCase5999_hsm):
     """
-    reboot host during live migration on HA vm
+    live migrate during host restart
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -334,14 +409,23 @@ class TestCase5998(basePlan.TestCase5998):
 
 
 @attr(tier=4)
-class TestCase5997(basePlan.TestCase5997):
+class TestCase5997_ha_vm(basePlan.TestCase5997_ha_vm):
     """
-    kill vm's pid during live migration
+    kill VM's pid during live migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: tier3 jobs have not been verified
-    __test__ = False
+    __test__ = True
+
+
+@attr(tier=4)
+class TestCase5997_regular_vm(basePlan.TestCase5997_regular_vm):
+    """
+    kill VM's pid during live migration
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
 
 
 @attr(tier=2)
@@ -369,16 +453,6 @@ class TestCase5971(basePlan.TestCase5971):
     __test__ = True
 
 
-@attr(tier=3)
-class TestCase5980(basePlan.TestCase5980):
-    """
-    offline migration + LSM
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-    """
-    __test__ = True
-
-
 @attr(tier=4)
 class TestCase5966(basePlan.TestCase5966):
     """
@@ -387,24 +461,33 @@ class TestCase5966(basePlan.TestCase5966):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: tier3 jobs have not been verified
-    __test__ = False
+    __test__ = True
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5981(basePlan.TestCase5981):
     """
     merge after a failure in LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: Fix this case
-    __test__ = False
+    __test__ = True
 
 
 @attr(tier=2)
-class TestCase5983(basePlan.TestCase5983):
+class TestCase5983_spm(basePlan.TestCase5983_spm):
     """
-    migrate multiple vm's disks
+    migrate multiple VM's disks
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
+@attr(tier=2)
+class TestCase5983_hsm(basePlan.TestCase5983_hsm):
+    """
+    migrate multiple VM's disks
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
@@ -421,7 +504,7 @@ class TestCase5984(basePlan.TestCase5984):
     """
     # Bugzilla history: 1106593
     # TODO: tier3 jobs have not been verified
-    __test__ = False
+    __test__ = True
 
 
 @attr(tier=4)
@@ -432,4 +515,4 @@ class TestCase5974(basePlan.TestCase5974):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: tier3 jobs have not been verified
-    __test__ = False
+    __test__ = True

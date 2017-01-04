@@ -4468,33 +4468,31 @@ def live_migrate_vm_disk(
         wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
 
 
-def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
-                    ensure_on=True, same_type=True, target_domain=None):
+def live_migrate_vm(
+    vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True, ensure_on=True,
+    same_type=True, target_domain=None
+):
     """
-    Live migrate all vm's disks
+    Live migrate all VM's disks
 
     __author__ = "ratamir"
 
-    :param vm_name: Name of the vm
-    :type vm_name: str
-    :param timeout: Specify how long before an exception should be
+    Args:
+        vm_name (str): Name of the VM
+        timeout (int): Specify how long before an exception should be
         raised (in seconds)
-    :type timeout: int
-    :param wait: Specifies whether to wait until migration has completed
-    :type wait: bool
-    :param ensure_on: Specify whether VM should be up before live storage
+        wait (bool): Specifies whether to wait until migration has completed
+        ensure_on (bool): Specify whether VM should be up before live storage
         migration begins
-    :type ensure_on: bool
-    :param same_type: If True, return only a storage domain of the same type,
-        False will result in a different domain type returned
-    :type same_type: bool
-    :param target_domain: Name of the target domain to migrate,
-        required param in case of specific domain requested
-    :type target_domain: str
-    :raises:
-        * DiskException if something went wrong
-        * VMException if vm is not up and ensure_on=False
-        * APITimeout if waiting for snapshot was longer than 1800 seconds
+        same_type (bool): If True, return only a storage domain of the same
+        type, False will result in a different domain type returned
+        target_domain (str): Name of the target domain to migrate, required
+        param in case of specific domain requested
+
+    Raises:
+        DiskException: If failed to migrate disk
+        VMException: If vm is not up and ensure_on=False
+        APITimeout: If waiting for snapshot was longer than 1800 seconds
     """
     logger.info("Start Live Migrating vm %s disks", vm_name)
     vm_obj = VM_API.find(vm_name)
@@ -4527,7 +4525,6 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
         )
     if wait:
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
-        waitForVMState(vm_name, timeout=timeout, sleep=5)
 
 
 def remove_all_vm_lsm_snapshots(vm_name):

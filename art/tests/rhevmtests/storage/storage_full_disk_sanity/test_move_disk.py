@@ -115,6 +115,7 @@ class TestCase16760(TestCase):
     Move disk to deactivated storage domain - should fail
     """
     __test__ = True
+    sd_to_deactivate_index = 1
 
     @polarion("RHEVM3-16760")
     @attr(tier=3)

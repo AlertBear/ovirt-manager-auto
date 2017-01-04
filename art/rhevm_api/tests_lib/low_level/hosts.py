@@ -1517,6 +1517,38 @@ def kill_vm_process(resource, vm_name):
     return not bool(rc)
 
 
+def kill_vdsmd(resource):
+    """
+    Kill VDSM process on a given host
+
+    Args:
+        resource (VDS): resource
+
+    Returns:
+        bool: True, if function succeed to kill VDSM process, otherwise False
+    """
+    rc, out, err = resource.run_command(shlex.split('pgrep vdsm'))
+    if rc:
+        logger.error(
+            "Failed to get VDSM pid from resource %s out: %s error: %s",
+            resource, out, err
+        )
+        return False
+    vdsm_process = out.rstrip('\n').split('\n')
+    rc, out, err = resource.run_command(shlex.split('pgrep super'))
+    if rc:
+        logger.error(
+            "Failed to get super VDSM pid from resource %s out: %s error: %s",
+            resource, out, err
+        )
+        return False
+    super_vdsm_process = out.rstrip('\n').split('\n')
+    vdsm_pid = set(vdsm_process).symmetric_difference(super_vdsm_process).pop()
+    logger.info("kill VDSM pid: %s on host %s", vdsm_pid, resource.ip)
+    rc, out, err = resource.run_command(['kill', '-9', vdsm_pid])
+    return not bool(rc)
+
+
 def get_host_object(host_name):
     """
     This function get host object by host name.
