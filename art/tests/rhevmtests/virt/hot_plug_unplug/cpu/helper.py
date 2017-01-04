@@ -6,7 +6,7 @@ Helper for hot plug cpu module
 from rhevmtests.virt import config
 from art.test_handler import exceptions
 
-logger = config.logging.getLogger("virt.hot_plug.hot_plug_cpu.helper")
+logger = config.logging.getLogger("virt.hot_plug_unplug.cpu.helper")
 
 NPROC_COMMAND = 'nproc'
 MAX_NUM_CORES_PER_SOCKET = 16

@@ -1,11 +1,12 @@
 """
-Hot Plug CPU - Testing
-- Test hot plug cpu
+Hot Plug and Unplug CPU - Testing
+- Test hot plug cpu , and hot unplug cpu
 - Test that the number of CPUs changed is also changed on the VM OS
 - Test hot plug with host maximum cpu
-- Test migration after hot plug cpu
+- Test migration after hot plug cpu and unplug
 - Test CPU hot plug while threads is enabled on the cluster.
 - Negative test: check hot plug cpu while migration
+- Negative test: check hot unplug cpu while migration
 - Negative test: check hot unplug while cores are pinned
 """
 import pytest
@@ -34,16 +35,18 @@ class CPUHotPlugClass(common.VirtTest):
 
     __test__ = True
     vm_name = config.CPU_HOTPLUG_VM
+    hot_plug_cpu_before = False
 
     @polarion("RHEVM3-9638")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
-    def test_migrate_vm_hot_plugged_with_CPUs(self):
+    def test_migrate_vm(self):
         """
-        Test migration after increasing the number of CPUs
+        1. Test migration after increasing the number of CPUs
+        2. Test migration after decreasing the number of CPUs
         """
         testflow.step(
-            "Updating number of cpu sockets on vm: %s to %d",
-            self.vm_name, 2
+            "HOT-PLUG CPU CASE:\nUpdating number of cpu sockets on vm: %s to "
+            "%d", self.vm_name, 2
         )
         assert ll_vms.updateVm(True, self.vm_name, cpu_socket=2)
         testflow.step("migrating vm: %s", self.vm_name)
@@ -59,16 +62,36 @@ class CPUHotPlugClass(common.VirtTest):
             "The Cores number should be 2 and not: %s" %
             ll_vms.get_vm_cores(self.vm_name)
         )
+        testflow.step(
+            "HOT-UNPLUG CPU CASE:\nUpdating number of cpu sockets on vm: %s "
+            "to %d", self.vm_name, 1
+        )
+        assert ll_vms.updateVm(True, self.vm_name, cpu_socket=1)
+        testflow.step("migrating vm: %s", self.vm_name)
+        assert ll_vms.migrateVm(True, self.vm_name)
+        vm_resource = helpers.get_host_resource(
+            hl_vms.get_vm_ip(self.vm_name), config.VMS_LINUX_PW
+        )
+        testflow.step(
+            "Verifying that after migration vm: %s has %d cpus",
+            self.vm_name, 1
+        )
+        assert helper.get_number_of_cores(vm_resource) == 1, (
+            "The Cores number should be 1 and not: %s" %
+            ll_vms.get_vm_cores(self.vm_name)
+        )
 
     @polarion("RHEVM3-9627")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     @pytest.mark.args_marker(cpu_cores=1, cpu_socket=1)
     def test_hotplug_cpu(self):
         """
-        Test that the number of CPUs changed is also changed on the VM OS
+        Basic hot-plug and hot-unplug case:
+        Plug CPU and check it on OS, and unplug CPU and check it on OS
         """
         testflow.step(
-            "Updating cpu sockets on vm: %s to %d", self.vm_name, 4
+            "HOT-PLUG CPU CASE:\nUpdating cpu sockets on vm: %s to %d",
+            self.vm_name, 4
         )
         assert ll_vms.updateVm(True, self.vm_name, cpu_socket=4)
         vm_resource = helpers.get_host_resource(
@@ -80,6 +103,22 @@ class CPUHotPlugClass(common.VirtTest):
             self.vm_name, 4
         )
         assert working_cores == 4, (
+            "The number of working cores: %s isn't correct" % working_cores
+        )
+        testflow.step(
+            "HOT-UNPLUG CPU CASE:\nUpdating cpu sockets on vm: %s to %d",
+            self.vm_name, 2
+        )
+        assert ll_vms.updateVm(True, self.vm_name, cpu_socket=2)
+        vm_resource = helpers.get_host_resource(
+            hl_vms.get_vm_ip(self.vm_name), config.VMS_LINUX_PW
+        )
+        working_cores = helper.get_number_of_cores(vm_resource)
+        testflow.step(
+            "Verifying that after hotplug vm: %s has %d cpus",
+            self.vm_name, 2
+        )
+        assert working_cores == 2, (
             "The number of working cores: %s isn't correct" % working_cores
         )
 
@@ -140,6 +179,21 @@ class CPUHotPlugClass(common.VirtTest):
         """
         Test hot plug while migrating VM
         """
+        testflow.step(
+            "Update VM %s cpu socket to 2", config.CPU_HOTPLUG_VM_LOAD
+        )
+        assert not ll_vms.updateVm(
+            True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=2
+        ), "hot plug  worked while migrating VM "
+
+    @polarion("RHEVM-18361")
+    @pytest.mark.usefixtures(migrate_vm_for_test.__name__)
+    @common.attr(tier=2)
+    def test_negative_hotunplug_during_migration(self):
+        """
+        Test hot unplug while migrating VM
+        """
+        self.hot_plug_cpu_before = True
         testflow.step(
             "Update VM %s cpu socket to 2", config.CPU_HOTPLUG_VM_LOAD
         )

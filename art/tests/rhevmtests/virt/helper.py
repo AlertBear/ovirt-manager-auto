@@ -420,8 +420,6 @@ def load_vm_memory_with_load_tool(
     )
     cmd = LOAD_VM_COMMAND % (load, time_to_run)
     vm_resource = helpers.get_vm_resource(vm=vm_name, start_vm=start_vm)
-    if start_vm:
-        assert wait_for_vm_fqdn(vm_name)
     ps_id = vm_resource.run_command(command=shlex.split(cmd))[1]
     time.sleep(5)
     return ps_id

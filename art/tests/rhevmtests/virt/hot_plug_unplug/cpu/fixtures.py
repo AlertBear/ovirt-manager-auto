@@ -50,7 +50,7 @@ def cpu_hot_plug_setup(request):
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def create_vm_from_glance(request):
     """
     Setup: Creates a vm with pig load tool from glance.
@@ -128,6 +128,7 @@ def migrate_vm_for_test(request, create_vm_from_glance):
     Load vm and migrate it in order to hot plug vm while migrating
     """
     vm_name = config.CPU_HOTPLUG_VM_LOAD
+    hot_plug_cpu_before = getattr(request.cls, "hot_plug_cpu_before", False)
 
     def fin():
         """
@@ -138,6 +139,13 @@ def migrate_vm_for_test(request, create_vm_from_glance):
             hl_vms.cancel_vm_migrate(vm_name)
 
     request.addfinalizer(fin)
+
+    if hot_plug_cpu_before:
+        testflow.setup("Hot plug cpu to 4 cpu")
+        assert not ll_vms.updateVm(
+            True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=4
+        ), "hot plug CPU failed."
+
     testflow.setup("Run load on VM %s.", vm_name)
     virt_helper.load_vm_memory_with_load_tool(
         vm_name=vm_name,
