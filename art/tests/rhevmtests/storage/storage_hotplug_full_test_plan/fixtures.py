@@ -146,13 +146,13 @@ def remove_vm_disk(request):
         assert ll_vms.deactivateVmDisk(
             positive=True, vm=self.vm_name, diskAlias=self.disk_name
         ), "Failed to deactivate disk: %s of VM: %s" % (
-                self.disk_name, self.vm_name
-            )
+            self.disk_name, self.vm_name
+        )
         assert ll_vms.removeDisk(
             positive=True, vm=self.vm_name, disk=self.disk_name
         ), "Failed to remove disk: %s from VM: %s" % (
-                self.disk_name, self.vm_name
-            )
+            self.disk_name, self.vm_name
+        )
     request.addfinalizer(finalizer)
 
 
@@ -237,7 +237,7 @@ def add_floating_disks(request):
                 )
             )
             assert ll_disks.addDisk(True, **disk_params), (
-                 "Can't create disk with params: %s" % disk_params
+                "Can't create disk with params: %s" % disk_params
             )
             logger.info(
                 "Waiting for disk %s to be OK", disk_params['alias']
