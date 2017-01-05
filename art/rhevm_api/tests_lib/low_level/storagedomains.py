@@ -1871,3 +1871,20 @@ def get_storage_domain_storage_type(storage_domain):
     :type: str
     """
     return get_storage_domain_obj(storage_domain).get_storage().get_type()
+
+
+def get_storage_domains_by_type(storage_domain_type=DATA_DOMAIN_TYPE):
+    """
+    Get all storage domains of the specific type
+
+    Args:
+        storage_domain_type (srt): Storage domain type
+
+    Returns:
+        list: Storage domains objects
+    """
+    storage_domains = get_storage_domains()
+    return [
+        storage_domain for storage_domain in storage_domains
+        if storage_domain.get_type() == storage_domain_type
+    ]

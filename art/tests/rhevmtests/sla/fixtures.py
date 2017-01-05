@@ -5,6 +5,7 @@ import copy
 import socket
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
@@ -384,6 +385,26 @@ def choose_specific_host_as_spm(request):
         assert ll_datacenters.waitForDataCenterState(
             name=sla_config.DC_NAME[0]
         )
+        u_libs.testflow.setup(
+            "Wait until all storage domains will have state equal to '%s'",
+            sla_config.SD_ACTIVE
+        )
+        results = []
+        storage_domains = ll_sds.get_storage_domains_by_type()
+        with ThreadPoolExecutor(max_workers=len(storage_domains)) as executor:
+            for storage_domain in storage_domains:
+                results.append(
+                    executor.submit(
+                        ll_sds.waitForStorageDomainStatus,
+                        True,
+                        sla_config.DC_NAME[0],
+                        storage_domain.get_name(),
+                        sla_config.SD_ACTIVE
+                    )
+                )
+        for result in results:
+            if result.exception():
+                raise result.exception()
 
 
 @pytest.fixture(scope="class")
