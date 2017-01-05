@@ -167,27 +167,27 @@ def get_vm_numa_pinning(resource, vm_name, pinning_type):
     return pinning_dict
 
 
-def get_numa_mode_from_vm_process(resource, vm_name):
+def get_numa_mode_from_vm_process(resource, vm_name, numa_mode):
     """
     Get VM NUMA mode from the host
 
     Args:
         resource (VDS): VDS resource
         vm_name (str): VM name
+        numa_mode (str): Expected NUMA mode of the VM
 
     Returns:
-        str: NUMA memory mode
+        bool: True, if the VM NUMA mode equal to the expected NUMA mode,
+            otherwise False
     """
-    numa_mode = ""
     logger.info("Get vm %s pid", vm_name)
     vm_pid = resource.get_vm_process_pid(vm_name)
     if not vm_pid:
         logger.error("Failed to get vm %s pid", vm_name)
-        return numa_mode
-    cmd = ["tail", "-n", "1", "/proc/%s/numa_maps" % vm_pid]
-    logger.info("Get VM %s NUMA mode from the host %s", vm_name, resource)
+        return False
+    cmd = ["grep", numa_mode, "/proc/%s/numa_maps" % vm_pid]
     rc, out, _ = resource.run_command(command=cmd)
-    return numa_mode if rc else out.split()[1].split(":")[0]
+    return bool(not rc and out)
 
 
 def create_number_of_equals_numa_nodes(resource, vm_name, num_of_numa_nodes):

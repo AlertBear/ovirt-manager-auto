@@ -208,6 +208,20 @@ class TestStrictNumaModeOnVM(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
+    @polarion("RHEVM3-12235")
+    def test_numa_memory_mode(self):
+        """
+        Check VM NUMA memory mode
+        """
+        u_libs.testflow.step(
+            "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
+        )
+        assert helpers.get_numa_mode_from_vm_process(
+            resource=conf.VDS_HOSTS[0],
+            vm_name=conf.VM_NAME[0],
+            numa_mode=self.vm_numa_mode
+        )
+
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
@@ -271,8 +285,10 @@ class TestPreferModeOnVm(u_libs.SlaTest):
             "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
         )
         assert helpers.get_numa_mode_from_vm_process(
-            resource=conf.VDS_HOSTS[0], vm_name=conf.VM_NAME[0]
-        ) == self.vm_numa_mode
+            resource=conf.VDS_HOSTS[0],
+            vm_name=conf.VM_NAME[0],
+            numa_mode=self.vm_numa_mode
+        )
 
 
 @u_libs.attr(tier=1)
@@ -337,8 +353,10 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
             "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
         )
         assert helpers.get_numa_mode_from_vm_process(
-            resource=conf.VDS_HOSTS[0], vm_name=conf.VM_NAME[0]
-        ) == self.vm_numa_mode
+            resource=conf.VDS_HOSTS[0],
+            vm_name=conf.VM_NAME[0],
+            numa_mode=self.vm_numa_mode
+        )
 
 
 @u_libs.attr(tier=2)
