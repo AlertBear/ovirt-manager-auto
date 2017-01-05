@@ -27,9 +27,12 @@ class LogTestInfo(object):
             self.statistics[item.nodeid] = dict()
             self.statistics[item.nodeid]['testname'] = item.nodeid
             item_attr = item.get_marker('attr')
-            tier = item_attr.kwargs.get('tier')
+            tier = 0
+            for _, kwargs in item_attr._arglist:
+                if kwargs.get('tier', tier) > tier:
+                    tier = kwargs['tier']
             team = item_attr.kwargs.get('team')
-            if tier is None or team is None:
+            if tier == 0 or team is None:
                 return
             self.statistics[item.nodeid]['tier'] = tier
             self.statistics[item.nodeid]['team'] = team
