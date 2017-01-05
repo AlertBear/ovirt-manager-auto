@@ -70,7 +70,8 @@ class BasicEnvironment(BaseTestCase):
             testflow.step("Creating file %s", full_path)
 
             rc = storage_helpers.create_file_on_vm(
-                vm_name, TEST_FILE_TEMPLATE, mount_dir, vm_executor=vm_executor
+                vm_name, TEST_FILE_TEMPLATE % iteration_number,
+                mount_dir, vm_executor=vm_executor
             )
             if not rc:
                 logger.error(
@@ -653,7 +654,7 @@ class TestCase6058(BasicEnvironment):
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
         )
-        assert ll_vms.stopVm(True, self.vm_name)
+        assert ll_vms.stopVm(positive=True, vm=self.vm_name, async='true')
         assert ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_OK]
