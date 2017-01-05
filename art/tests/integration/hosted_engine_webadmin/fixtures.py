@@ -1,13 +1,103 @@
 """
 HE webadmin fixtures
 """
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sds
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as test_libs
 import config as conf
 import helpers
-import pytest
+from art.rhevm_api import resources
+
+
+@pytest.fixture(scope="module")
+def initialize_ge_constants():
+    """
+    Initialize hosts constants
+    """
+    if conf.GE:
+        golden_env = conf.ART_CONFIG["prepared_env"]
+        dc = golden_env["dcs"][0]
+        conf.DC_NAME = dc["name"]
+        clusters = dc["clusters"]
+        conf.CLUSTER_NAME = clusters[0]["name"]
+        for cluster in clusters:
+            for host in cluster["hosts"]:
+                conf.HOSTS.append(host["name"])
+        host_objs = ll_hosts.HOST_API.get(absLink=False)
+        conf.HOSTS_IP = [host_obj.get_address() for host_obj in host_objs]
+        if not ll_hosts.is_hosted_engine_configured(conf.HOSTS[0]):
+            pytest.skip("GE does not configured as HE environment")
+    conf.VDS_HOSTS = [resources.VDS(h, conf.HOSTS_PW) for h in conf.HOSTS_IP]
+
+
+@pytest.fixture(scope="module")
+def init_he_webadmin(request):
+    """
+    1) Wait for the engine to be up
+    2) Enable global maintenance
+    3) Change the OVF update interval to one minute
+    4) Add storage domain to the engine to start auto-import
+    5) Wait until HE VM will appear under engine
+    6) Wait for up state of HE VM
+    """
+    def fin():
+        test_libs.testflow.teardown(
+            "Set engine-config parameter %s to %s",
+            conf.OVF_UPDATE_INTERVAL, conf.DEFAULT_OVF_UPDATE_INTERVAL_VALUE
+        )
+        helpers.change_engine_config_ovf_update_interval()
+        test_libs.testflow.teardown("Disable global maintenance")
+        helpers.run_hosted_engine_cli_command(
+            resource=conf.VDS_HOSTS[0],
+            command=["--set-maintenance", "--mode=%s" % conf.MAINTENANCE_NONE]
+        )
+    request.addfinalizer(fin)
+
+    test_libs.testflow.setup("Wait until the engine will be UP")
+    assert conf.ENGINE.wait_for_engine_status_up(timeout=conf.SAMPLER_TIMEOUT)
+    if not conf.GE:
+        test_libs.testflow.setup(
+            "Add master storage domain %s:%s",
+            conf.PARAMETERS["data_domain_address"],
+            conf.PARAMETERS["data_domain_path"]
+        )
+        assert hl_sds.create_storages(
+            storage=conf.PARAMETERS,
+            type_=conf.STORAGE_TYPE,
+            host=conf.HOSTS[0],
+            datacenter=conf.DC_NAME
+        )
+        test_libs.testflow.setup(
+            "Wait until the HE VM will be appear under the engine"
+        )
+        assert helpers.wait_until_he_vm_will_appear_under_engine()
+        test_libs.testflow.setup("Wait until the HE VM will have state UP")
+        assert ll_vms.waitForVMState(vm=conf.HE_VM_NAME)
+    he_vm_host = ll_vms.get_vm_host(vm_name=conf.HE_VM_NAME)
+    if he_vm_host != conf.HOSTS[0]:
+        test_libs.testflow.setup(
+            "Migrate the VM %s to the host %s", conf.HE_VM_NAME, conf.HOSTS[0]
+        )
+        assert ll_vms.migrateVm(
+            positive=True, vm=conf.HE_VM_NAME, host=conf.HOSTS[0], force=True
+        )
+    test_libs.testflow.setup("Enable 'GlobalMaintenance'")
+    helpers.run_hosted_engine_cli_command(
+        resource=conf.VDS_HOSTS[0],
+        command=["--set-maintenance", "--mode=%s" % conf.MAINTENANCE_GLOBAL]
+    )
+    test_libs.testflow.setup(
+        "Set engine-config parameter %s to %s",
+        conf.OVF_UPDATE_INTERVAL, conf.OVF_UPDATE_INTERVAL_VALUE
+    )
+    assert helpers.change_engine_config_ovf_update_interval()
+    test_libs.testflow.setup("Wait for the OVF generation and restart HE VM")
+    helpers.apply_new_parameters_on_he_vm()
 
 
 @pytest.fixture(scope="class")

@@ -1,79 +1,42 @@
 """
 Test HE behaviour via the engine
 """
-import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sds
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as test_libs
+import art.unittest_lib as u_libs
 import config as conf
 import helpers
 import pytest
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from fixtures import (
     add_nic_to_he_vm,
     create_network,
+    initialize_ge_constants,
+    init_he_webadmin,
     update_he_vm,
     update_he_vm_cpus_back,
     wait_for_ovf_and_restart_he_vm
 )
-from config import non_ge
 
 
-@pytest.fixture(scope="module", autouse=True)
-def init_he_webadmin():
-    """
-    1) Wait for the engine to be up
-    2) Enable global maintenance
-    3) Change the OVF update interval to one minute
-    4) Add storage domain to the engine to start auto-import
-    5) Wait until HE VM will appear under engine
-    6) Wait for up state of HE VM
-    """
-    test_libs.testflow.setup("Wait until the engine will be UP")
-    assert conf.ENGINE.wait_for_engine_status_up(timeout=conf.SAMPLER_TIMEOUT)
-    test_libs.testflow.setup("Enable 'GlobalMaintenance'")
-    helpers.run_hosted_engine_cli_command(
-        resource=conf.VDS_HOSTS[0],
-        command=["--set-maintenance", "--mode=%s" % conf.MAINTENANCE_GLOBAL]
-    )
-    test_libs.testflow.setup(
-        "Set engine-config parameter %s to %s",
-        conf.OVF_UPDATE_INTERVAL, conf.OVF_UPDATE_INTERVAL_VALUE
-    )
-    assert helpers.change_engine_config_ovf_update_interval()
-    test_libs.testflow.setup(
-        "Add master storage domain %s:%s",
-        conf.PARAMETERS["data_domain_address"],
-        conf.PARAMETERS["data_domain_path"]
-    )
-    assert hl_sds.create_storages(
-        storage=conf.PARAMETERS,
-        type_=conf.STORAGE_TYPE,
-        host=conf.HOSTS[0],
-        datacenter=conf.DC_NAME
-    )
-    test_libs.testflow.setup(
-        "Wait until the HE VM will be appear under the engine"
-    )
-    assert helpers.wait_until_he_vm_will_appear_under_engine()
-    test_libs.testflow.setup("Wait until the HE VM will have state UP")
-    assert ll_vms.waitForVMState(vm=conf.HE_VM_NAME)
-    test_libs.testflow.setup("Wait for the OVF generation and restart HE VM")
-    helpers.apply_new_parameters_on_he_vm()
-
-
-@non_ge
+@bz({"1411783": {}})
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    init_he_webadmin.__name__,
     update_he_vm.__name__,
     wait_for_ovf_and_restart_he_vm.__name__
 )
-class TestUpdateHeVmMemory(test_libs.SlaTest):
+class TestUpdateHeVmMemory(u_libs.SlaTest):
     """
     Update HE VM memory and check that HE VM has
     expected memory value via engine and via guest OS
     """
     __test__ = True
-    he_params = {"memory": conf.EXPECTED_MEMORY}
+    he_params = {
+        "memory": conf.EXPECTED_MEMORY,
+        conf.MAX_MEMORY: conf.HE_VM_MAX_MEMORY
+    }
 
     @polarion("RHEVM-15025")
     def test_he_vm_memory(self):
@@ -89,18 +52,23 @@ class TestUpdateHeVmMemory(test_libs.SlaTest):
         )
 
 
-@non_ge
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    init_he_webadmin.__name__,
     update_he_vm.__name__,
     update_he_vm_cpus_back.__name__
 )
-class TestHotplugHeVmCpus(test_libs.SlaTest):
+class TestHotplugHeVmCpus(u_libs.SlaTest):
     """
     Hotplug CPU's on HE VM and check that HE VM has
     expected amount of CPU's via engine and via guest OS
     """
     __test__ = True
-    he_params = {"cpu_socket": conf.EXPECTED_CPUS}
+    he_params = {
+        "cpu_socket": conf.EXPECTED_CPUS,
+        conf.MAX_MEMORY: conf.HE_VM_MAX_MEMORY
+    }
 
     @polarion("RHEVM-15027")
     def test_he_vm_cpus(self):
@@ -116,19 +84,25 @@ class TestHotplugHeVmCpus(test_libs.SlaTest):
         )
 
 
-@non_ge
+@bz({"1411783": {}})
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    init_he_webadmin.__name__,
     update_he_vm.__name__,
     wait_for_ovf_and_restart_he_vm.__name__,
     update_he_vm_cpus_back.__name__
 )
-class TestUpdateHeVmCpus(test_libs.SlaTest):
+class TestUpdateHeVmCpus(u_libs.SlaTest):
     """
     Update HE VM amount of CPU's and check that HE VM has
     expected amount of CPU's via engine and via guest OS
     """
     __test__ = True
-    he_params = {"cpu_cores": 2}
+    he_params = {
+        "cpu_cores": 2,
+        conf.MAX_MEMORY: conf.HE_VM_MAX_MEMORY
+    }
 
     @polarion("RHEVM-15023")
     def test_he_vm_cpus(self):
@@ -144,8 +118,12 @@ class TestUpdateHeVmCpus(test_libs.SlaTest):
         )
 
 
-@non_ge
-class TestAddNicToHeVmWithManagementNetwork(test_libs.SlaTest):
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    init_he_webadmin.__name__
+)
+class TestAddNicToHeVmWithManagementNetwork(u_libs.SlaTest):
     """
     Add with management network NIC to HE VM
     """
@@ -156,7 +134,7 @@ class TestAddNicToHeVmWithManagementNetwork(test_libs.SlaTest):
         """
         Add NIC
         """
-        test_libs.testflow.step(
+        u_libs.testflow.step(
             "Add NIC with the management network to the HE VM"
         )
         assert not ll_vms.addNic(
@@ -167,13 +145,16 @@ class TestAddNicToHeVmWithManagementNetwork(test_libs.SlaTest):
         )
 
 
-@non_ge
+@bz({"1411783": {}})
+@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    init_he_webadmin.__name__,
     wait_for_ovf_and_restart_he_vm.__name__,
     create_network.__name__,
     add_nic_to_he_vm.__name__
 )
-class TestAddNicToHeVmWithoutManagementNetwork(test_libs.SlaTest):
+class TestAddNicToHeVmWithoutManagementNetwork(u_libs.SlaTest):
     """
     Add NIC to HE VM without management network and
     check if NIC appear under HE VM
@@ -185,25 +166,29 @@ class TestAddNicToHeVmWithoutManagementNetwork(test_libs.SlaTest):
         """
         Check NIC via engine and via guest OS, before and after HE VM restart
         """
-        helpers.check_he_vm_nic_via_engine(
+        assert helpers.check_he_vm_nic_via_engine(
             nic_name=conf.ADDITIONAL_HE_VM_NIC_NAME
         )
-        helpers.check_he_vm_nic_via_guest_os(
+        assert helpers.check_he_vm_nic_via_guest_os(
             nic_name=conf.ADDITIONAL_HE_VM_NIC_NAME
         )
-        test_libs.testflow.step("Wait for the OVF update and restart HE VM")
-        helpers.apply_new_parameters_on_he_vm()
-        helpers.check_he_vm_nic_via_engine(
+        u_libs.testflow.step("Wait for the OVF update and restart HE VM")
+        assert helpers.apply_new_parameters_on_he_vm()
+        assert helpers.check_he_vm_nic_via_engine(
             nic_name=conf.ADDITIONAL_HE_VM_NIC_NAME
         )
-        helpers.check_he_vm_nic_via_guest_os(
+        assert helpers.check_he_vm_nic_via_guest_os(
             nic_name=conf.ADDITIONAL_HE_VM_NIC_NAME
         )
 
 
-@non_ge
+@u_libs.attr(tier=3)
+@pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    init_he_webadmin.__name__
+)
 @pytest.mark.incremental
-class TestAddHostAndDeployHostedEngine(test_libs.SlaTest):
+class TestAddHostAndDeployHostedEngine(u_libs.SlaTest):
     """
     1) Add the host with HE deployment
     2) Undeploy the host
@@ -219,24 +204,24 @@ class TestAddHostAndDeployHostedEngine(test_libs.SlaTest):
         Args:
             deploy (bool): Deploy or undeploy the host
         """
-        test_libs.testflow.step("Deactivate the host %s", conf.HOSTS[1])
+        u_libs.testflow.step("Deactivate the host %s", conf.HOSTS[1])
         assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
 
         deploy_msg = "Deploy" if deploy else "Undeploy"
         deploy_param = {"deploy_hosted_engine": True} if deploy else {
             "undeploy_hosted_engine": True
         }
-        test_libs.testflow.step("%s the host %s", deploy_msg, conf.HOSTS[1])
+        u_libs.testflow.step("%s the host %s", deploy_msg, conf.HOSTS[1])
         assert ll_hosts.install_host(
             host=conf.HOSTS[1],
             root_password=conf.HOSTS_PW,
             **deploy_param
         )
 
-        test_libs.testflow.step("Activate the host %s", conf.HOSTS[1])
+        u_libs.testflow.step("Activate the host %s", conf.HOSTS[1])
         assert ll_hosts.activate_host(positive=True, host=conf.HOSTS[1])
 
-        test_libs.testflow.step(
+        u_libs.testflow.step(
             "Wait until the engine will %s the host %s",
             deploy_msg.lower(), conf.HOSTS[1]
         )
@@ -249,15 +234,25 @@ class TestAddHostAndDeployHostedEngine(test_libs.SlaTest):
         """
         Add the host and deploy HE on it
         """
-        test_libs.testflow.step("Add the host %s to the engine", conf.HOSTS[1])
+        if conf.GE:
+            self._deploy_hosted_engine(deploy=False)
+
+            u_libs.testflow.step(
+                "Remove the host %s from the engine", conf.HOSTS[1]
+            )
+            assert ll_hosts.removeHost(
+                positive=True, host=conf.HOSTS[1], deactivate=True
+            )
+        u_libs.testflow.step("Add the host %s to the engine", conf.HOSTS[1])
         assert ll_hosts.add_host(
             name=conf.HOSTS[1],
             address=conf.VDS_HOSTS[1].fqdn,
             root_password=conf.HOSTS_PW,
+            cluster=conf.CLUSTER_NAME,
             deploy_hosted_engine=True
         )
 
-        test_libs.testflow.step(
+        u_libs.testflow.step(
             "Wait until the host %s will HE configured", conf.HOSTS[1]
         )
         assert helpers.wait_until_host_will_deploy_he(host_name=conf.HOSTS[1])
