@@ -17,7 +17,6 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as helper
-import rhevmtests.virt.config as virt_config
 import config
 from art.unittest_lib import testflow
 

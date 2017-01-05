@@ -344,3 +344,15 @@ def set_ssh_private_key(user_name, key):
         async=True
     )
 
+
+def get_user_id(user_name):
+    """
+    Get user id
+
+    Args:
+        user_name(str): User name
+
+    Returns:
+        str: user id
+    """
+    return util.find(user_name).get_id()

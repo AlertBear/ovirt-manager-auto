@@ -627,3 +627,10 @@ WIN10_64B = opts['elements_conf']['Win10_64b']
 
 # Misc
 SSH_TYPE = "ssh"
+
+
+# user info
+USER_DOMAIN = "%s-authz" % VDC_ADMIN_DOMAIN
+USER = 'user1'
+USER_NAME = '%s@%s' % (USER, USER_DOMAIN)
+ADMIN_USER_NAME = '%s@%s' % (VDC_ADMIN_USER, USER_DOMAIN)

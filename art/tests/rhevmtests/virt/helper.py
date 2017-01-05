@@ -1099,3 +1099,27 @@ def job_runner(
             )
             return False
     return True
+
+
+def test_basic_search_params(positive, api, query, resource_name):
+    """
+    Test that preform basic Vm queries.
+    Args:
+        positive (bool): The test type, True for positive and False
+                         Negative.
+        api (object): getApi object, Example: VM_API
+        query(str): The query to preform
+        resource_name (str): test resource name Example: vm, template
+
+    Returns:
+        bool: True if resource found, else False
+    """
+    log = "POSITIVE" if positive else "NEGATIVE"
+    testflow.step(
+        "Performing %s Test, query: %s", log, query
+    )
+    vms = helpers.search_object(
+        util=api,
+        query=query
+    )
+    return positive == (resource_name in vms)

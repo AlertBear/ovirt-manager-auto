@@ -167,3 +167,5 @@ VM_ACTION_TIMEOUT = 1000
 
 # snapshot
 SNAPSHOT_DESCRIPTION = ['snapshot_1', 'snapshot_2']
+
+BASE_VM_VIRT = "base_vm_virt"

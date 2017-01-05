@@ -478,3 +478,23 @@ def get_gb(gb):
     """
 
     return 1024 ** 3 * gb
+
+
+def search_object(util, query, identity='name'):
+    """
+    Perform a search query and filter by identity key
+
+    Args:
+        util (object): getApi object, Example: VM_API
+        query (str): Query sting
+        identity (str): Identity key: name/id
+
+    Returns:
+        list: list of objects names
+
+    """
+
+    objects = util.query(query, all_content=True)
+    return [
+        getattr(obj, identity) for obj in objects if hasattr(obj, identity)
+        ]

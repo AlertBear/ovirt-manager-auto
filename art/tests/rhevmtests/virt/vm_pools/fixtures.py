@@ -70,7 +70,7 @@ def add_user(request):
         """
         ll_users.loginAsUser(
             config.VDC_ADMIN_USER,
-            config.INTERNAL_DOMAIN,
+            config.VDC_ADMIN_DOMAIN,
             config.VDC_PASSWORD,
             False
         )

@@ -166,7 +166,7 @@ def allocate_vms_as_user(
     user_name = '%s@%s' % (user, config.USER_DOMAIN)
     if user == config.USER:
         ll_users.loginAsUser(
-            user, config.INTERNAL_DOMAIN, config.USER_PASSWORD, True
+            user, config.VDC_ADMIN_DOMAIN, config.VDC_PASSWORD, True
         )
     for i in range(new_vms):
         logger.info(
@@ -181,7 +181,7 @@ def allocate_vms_as_user(
             )
     if user == config.USER:
         ll_users.loginAsUser(
-            config.VDC_ADMIN_USER, config.INTERNAL_DOMAIN,
+            config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
             config.VDC_PASSWORD, False
         )
     if positive and verify:
@@ -384,13 +384,13 @@ def stop_vm_in_pool_as_user(positive, vm, user, manual=False):
     user_name = '%s@%s' % (user, config.USER_DOMAIN)
     if user == config.USER:
         ll_users.loginAsUser(
-            user, config.INTERNAL_DOMAIN, config.USER_PASSWORD, True
+            user, config.VDC_ADMIN_DOMAIN, config.VDC_PASSWORD, True
         )
     if not ll_vms.stopVm(positive, vm):
         return False
     if user == config.USER:
         ll_users.loginAsUser(
-            config.VDC_ADMIN_USER, config.INTERNAL_DOMAIN,
+            config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
             config.VDC_PASSWORD, False
         )
     logger.info("Checking permissions of user: %s on vm: %s", user, vm)
@@ -439,13 +439,13 @@ def start_vm_in_pool_as_user(
     user_name = '%s@%s' % (user, config.USER_DOMAIN)
     if user == config.USER:
         ll_users.loginAsUser(
-            user, config.INTERNAL_DOMAIN, config.USER_PASSWORD, True
+            user, config.VDC_ADMIN_DOMAIN, config.VDC_PASSWORD, True
         )
     if not ll_vms.startVm(positive, vm):
         return False
     if user == config.USER:
         ll_users.loginAsUser(
-            config.VDC_ADMIN_USER, config.INTERNAL_DOMAIN,
+            config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
             config.VDC_PASSWORD, False
         )
     if manual:

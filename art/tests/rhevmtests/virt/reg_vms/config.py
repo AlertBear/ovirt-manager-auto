@@ -19,7 +19,6 @@ template_name = TEMPLATE_NAME[0]
 ADD_VM_TEST = 'add_vm_test'
 MIX_CASE_TEST = 'virt_mix_cases'
 CLONE_VM_TEST = "tested_vm_clone_vm"
-BASE_VM_VIRT = "base_vm_virt"
 VM_FROM_BASE_TEMPLATE = 'virt_vm_from_template'
 BASE_VM = 'virt_base_vm'
 BASE_TEMPLATE = 'virt_base_template'

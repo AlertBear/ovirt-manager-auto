@@ -78,11 +78,11 @@ class NetworkTest(object):
 
 @virt
 @attr(team="virt")
-class VirtTest(BaseTestCase):
+class VirtTest(object):
     """
     Basic class for compute/virt tests
     """
-    __test__ = False
+    apis = set(["rest", "java", "sdk"])
 
 
 @sla
