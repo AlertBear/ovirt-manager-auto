@@ -457,7 +457,7 @@ def remove_unmanaged_networks(host_name, networks=list()):
     unmanged_networks = get_host_unmanaged_networks(host_name, networks)
     for unmanaged_network in unmanged_networks:
         log_info, log_error = ll_general.get_log_msg(
-            action="Remove", obj_type="un-managed network",
+            log_action="Remove", obj_type="un-managed network",
             obj_name=unmanaged_network.name
         )
         logger.info(log_info)

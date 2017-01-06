@@ -70,7 +70,7 @@ def add_affinity_label_to_element(
     )
     element_name = element_obj.get_name()
     log_info, log_err = ll_general.get_log_msg(
-        action="Add",
+        log_action="Add",
         obj_type=AFFINITY_LABEL_NAME,
         obj_name=affinity_label_name,
         extra_txt="to the {0} {1}".format(element_type, element_name)
@@ -111,7 +111,7 @@ def remove_affinity_label_from_element(
     )
     element_name = element_obj.get_name()
     log_info, log_err = ll_general.get_log_msg(
-        action="Remove",
+        log_action="Remove",
         obj_type=AFFINITY_LABEL_NAME,
         obj_name=affinity_label_name,
         extra_txt="from the {0} {1}".format(element_type, element_name)
@@ -170,7 +170,7 @@ class AffinityLabels(object):
             object_name=AFFINITY_LABEL_DS_NAME, name=name, **kwargs
         )
         log_info, log_error = ll_general.get_log_msg(
-            action="Create",
+            log_action="Create",
             obj_type=AFFINITY_LABEL_DS_NAME,
             obj_name=name,
             positive=True,
@@ -206,7 +206,7 @@ class AffinityLabels(object):
             object_name=AFFINITY_LABEL_DS_NAME, **kwargs
         )
         log_info, log_error = ll_general.get_log_msg(
-            action="Update",
+            log_action="Update",
             obj_type=AFFINITY_LABEL_DS_NAME,
             obj_name=old_name,
             positive=True,
@@ -235,7 +235,7 @@ class AffinityLabels(object):
         """
         affinity_label_obj = cls.get_label_object(label_name=name)
         log_info, log_error = ll_general.get_log_msg(
-            action="Delete",
+            log_action="Delete",
             obj_type=AFFINITY_LABEL_DS_NAME,
             obj_name=name
         )
@@ -296,7 +296,7 @@ class AffinityLabels(object):
             object_name=element_type, id=element_id
         )
         log_info, log_err = ll_general.get_log_msg(
-            action="Add",
+            log_action="Add",
             obj_type=AFFINITY_LABEL_NAME,
             obj_name=label_name,
             extra_txt="to the {0} {1}".format(element_type, element_name)
@@ -343,7 +343,7 @@ class AffinityLabels(object):
             object_name=element_type, href=label_elm_link
         )
         log_info, log_err = ll_general.get_log_msg(
-            action="Remove",
+            log_action="Remove",
             obj_type=AFFINITY_LABEL_NAME,
             obj_name=label_name,
             extra_txt="from the {0} {1}".format(element_type, element_name)

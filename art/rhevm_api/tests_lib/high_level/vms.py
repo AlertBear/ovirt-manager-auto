@@ -833,7 +833,7 @@ def stop_stateless_vm(vm):
     :rtype: bool
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="stop", obj_type="VM", obj_name=vm,
+        log_action="stop", obj_type="VM", obj_name=vm,
     )
     logging.info(log_info)
     if not vms.stop_vms_safely([vm]):

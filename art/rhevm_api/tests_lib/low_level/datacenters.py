@@ -101,7 +101,7 @@ def addDataCenter(positive, **kwargs):
     dc_name = kwargs.get("name", "")
     local = kwargs.pop("local", False)
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_name=dc_name, obj_type="datacenter",
+        log_action="Add", obj_name=dc_name, obj_type="datacenter",
         positive=positive, **kwargs
     )
     logger.info(log_info)
@@ -141,7 +141,7 @@ def update_datacenter(positive, datacenter, **kwargs):
         bool: True if update succeeded, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Update", obj_type="datacenter", obj_name=datacenter,
+        log_action="Update", obj_type="datacenter", obj_name=datacenter,
         positive=positive, **kwargs
     )
     dc = util.find(datacenter)
@@ -178,7 +178,7 @@ def remove_datacenter(positive, datacenter, force=False):
         bool: True if data center was removed properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="datacenter", obj_name=datacenter,
+        log_action="Remove", obj_type="datacenter", obj_name=datacenter,
         positive=positive
     )
     logger.info(log_info)
@@ -385,7 +385,7 @@ def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
     kwargs["name"] = qos_name
     kwargs["type_"] = qos_type
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_name=qos_name, obj_type="QoS"
+        log_action="Add", obj_name=qos_name, obj_type="QoS"
     )
     qos_obj = prepare_qos_obj(**kwargs)
     dc = get_data_center(datacenter)
@@ -428,7 +428,7 @@ def get_qos_from_datacenter(datacenter, qos_name):
     """
     qoss = get_qoss_from_datacenter(datacenter)
     log_info, log_error = ll_general.get_log_msg(
-        action="Get", obj_name=qos_name, obj_type="QoS"
+        log_action="Get", obj_name=qos_name, obj_type="QoS"
     )
     logger.info(log_info)
     for qos in qoss:

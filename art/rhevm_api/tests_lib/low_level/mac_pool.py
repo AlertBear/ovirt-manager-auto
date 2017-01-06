@@ -220,8 +220,8 @@ def create_mac_pool(name, ranges, positive=True, **kwargs):
         bool: True if create MAC pool succeeded, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Create", obj_name=name, obj_type="MAC pool", positive=positive,
-        **kwargs
+        log_action="Create", obj_name=name, obj_type="MAC pool",
+        positive=positive, **kwargs
     )
     kwargs["name"] = name
     kwargs["ranges"] = ranges
@@ -252,7 +252,8 @@ def update_mac_pool(mac_pool_name, **kwargs):
         bool: True if MAC pool was updated, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="update", obj_type="MAC pool", obj_name=mac_pool_name, **kwargs
+        log_action="update", obj_type="MAC pool", obj_name=mac_pool_name,
+        **kwargs
     )
     mac_pool_obj = get_mac_pool(mac_pool_name)
     mac_pool_obj_for_update = prepare_macpool_obj(**kwargs)

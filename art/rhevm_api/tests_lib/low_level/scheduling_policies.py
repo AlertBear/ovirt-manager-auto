@@ -111,7 +111,7 @@ def add_new_scheduling_policy(**kwargs):
     """
     policy_name = kwargs.get("name")
     log_info, log_error = ll_general.get_log_msg(
-        action="Create", obj_type=SCHEDULING_POLICY, obj_name=policy_name
+        log_action="Create", obj_type=SCHEDULING_POLICY, obj_name=policy_name
     )
     sch_pol_obj = _prepare_scheduling_policy_object(**kwargs)
 
@@ -143,7 +143,7 @@ def update_scheduling_policy(policy_name, **kwargs):
     new_sch_pol_obj = _prepare_scheduling_policy_object(**kwargs)
 
     log_info, log_error = ll_general.get_log_msg(
-        action="Update",
+        log_action="Update",
         obj_type=SCHEDULING_POLICY,
         obj_name=policy_name,
         **kwargs
@@ -168,7 +168,7 @@ def remove_scheduling_policy(policy_name):
     :rtype: bool
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type=SCHEDULING_POLICY, obj_name=policy_name
+        log_action="Remove", obj_type=SCHEDULING_POLICY, obj_name=policy_name
     )
     logger.info(log_info)
     sch_pol_obj = SCH_POL_API.find(policy_name)
@@ -258,7 +258,7 @@ def add_scheduling_policy_unit(
         unit_obj = UNIT_CLASS.get(unit_type)(scheduling_policy_unit=pl_unit)
 
     log_info, log_error = ll_general.get_log_msg(
-        action="Add",
+        log_action="Add",
         obj_type=SCHEDULING_POLICY_UNIT,
         obj_name=unit_name,
         extra_txt="to the scheduling policy %s" % policy_name

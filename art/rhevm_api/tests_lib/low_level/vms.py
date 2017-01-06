@@ -754,7 +754,7 @@ def addVm(positive, wait=True, **kwargs):
     vm_obj = _prepareVmObject(**kwargs)
     expected_vm = _prepareVmObject(**kwargs)
     log_info, log_error = ll_general.get_log_msg(
-        action="add", obj_type="vm", obj_name=kwargs.get('name'),
+        log_action="add", obj_type="vm", obj_name=kwargs.get('name'),
         positive=positive, **kwargs
     )
     operations = []
@@ -899,7 +899,7 @@ def updateVm(positive, vm, **kwargs):
     vm_new_obj = _prepareVmObject(**kwargs)
     compare = kwargs.get("compare", True)
     log_info, log_error = ll_general.get_log_msg(
-        action="update",
+        log_action="update",
         obj_type=VM,
         obj_name=vm,
         positive=positive,
@@ -1095,26 +1095,30 @@ def waitForVMState(vm, state='up', **kwargs):
     return VM_API.waitForQuery(query, **kwargs)
 
 
+@ll_general.generate_logs()
 def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
-    '''
-    Description: change vm status
-    Author: edolinin
-    Parameters:
-       * positive - indicates positive/negative test's flow
-       * vm - name of vm
-       * action - action that should be run on vm -
-       (start/stop/suspend/shutdown/detach)
-       * expectedStatus - status of vm in case the action succeeded
-       * async - don't wait for VM status if 'true' ('false' by default)
-    Return: status (True if vm status is changed properly, False otherwise)
-    '''
-    vmObj = VM_API.find(vm)
+    """
+    Change vm status
 
-    asyncMode = async.lower() == 'true'
-    status = bool(VM_API.syncAction(vmObj, action, positive, async=async))
-    if status and positive and not asyncMode:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus,
-                                        VM_ACTION_TIMEOUT)
+    Args:
+        positive (bool): indicates positive/negative test's flow
+        vm (str): name of vm
+        action (str): action that should be run on vm -
+            (start/stop/suspend/shutdown/detach)
+        expectedStatus (str): status of vm in case the action succeeded
+        async (str): don't wait for VM status if 'true' ('false' by default)
+
+    Returns:
+        bool: True if vm status is changed properly, False otherwise
+    """
+    vm_object = get_vm(vm=vm)
+    async_mode = async.lower() == 'true'
+    status = bool(VM_API.syncAction(vm_object, action, positive, async=async))
+    if status and positive and not async_mode:
+        return VM_API.waitForElemStatus(
+            vm_object, expectedStatus, VM_ACTION_TIMEOUT,
+            ignoreFinalStates=True
+        )
     return status
 
 
@@ -1189,7 +1193,7 @@ def startVm(
         wait_for_status = ENUMS['vm_state_paused']
         action_params["pause"] = pause
     log_info, log_error = ll_general.get_log_msg(
-        action="start", obj_type=VM, obj_name=vm, positive=positive,
+        log_action="start", obj_type=VM, obj_name=vm, positive=positive,
         **action_params
     )
     logger.info(log_info)
@@ -1244,27 +1248,20 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
     return status
 
 
+@ll_general.generate_logs()
 def stopVm(positive, vm, async='false'):
     """
     Stop vm
 
-    :param positive: Expected status
-    :type positive: bool
-    :param vm: Name of vm
-    :type vm: str
-    :param async: Stop VM asynchronously if 'true' ('false' by default)
-    :type async: str
-    :return: Status (True if vm was stopped properly, False otherwise)
-    :rtype: bool
+    Args:
+        positive (bool): Expected status
+        vm (str): Name of vm
+        async (str): Stop VM asynchronously if 'true' ('false' by default)
+
+    Returns:
+        bool: True if vm was stopped properly, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        action="stop", obj_type=VM, obj_name=vm, positive=positive
-    )
-    logger.info(log_info)
-    if not changeVMStatus(positive, vm, 'stop', 'DOWN', async):
-        logger.error(log_error)
-        return False
-    return True
+    return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
 
 
 def stopVms(vms, wait='true'):
@@ -1329,7 +1326,7 @@ def detachVm(positive, vm):
     '''
     vmObj = VM_API.find(vm)
     log_info, log_error = ll_general.get_log_msg(
-        action="detach", obj_type=VM, obj_name=vm, positive=positive
+        log_action="detach", obj_type=VM, obj_name=vm, positive=positive
     )
     expectedStatus = vmObj.get_status()
 
@@ -1453,7 +1450,7 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
                         description=kwargs.pop('description', None))
 
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_type="disk", obj_name=disk, positive=positive,
+        log_action="Add", obj_type="disk", obj_name=disk, positive=positive,
         extra_txt="provisioned size: %d" % provisioned_size, **kwargs
     )
     # replace disk params from kwargs
@@ -1548,8 +1545,8 @@ def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
     disk_obj = does_disk_exist(getVmDisks(vm))
     if disk_obj:
         log_info, log_error = ll_general.get_log_msg(
-            action="Remove", obj_type="disk", obj_name=disk, positive=positive,
-            extra_txt="disk id %s" % disk_obj.get_id()
+            log_action="Remove", obj_type="disk", obj_name=disk,
+            positive=positive, extra_txt="disk id %s" % disk_obj.get_id()
         )
         logger.info(log_info)
         status = VM_API.delete(disk_obj, positive)
@@ -1708,8 +1705,8 @@ def addNic(positive, vm, **kwargs):
     nic_obj = _prepareNicObj(vm=vm, **kwargs)
     nics_coll = get_vm_nics(vm)
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_type="vNIC", obj_name=nic_name, positive=positive,
-        extra_txt="to VM %s" % vm, **kwargs
+        log_action="Add", obj_type="vNIC", obj_name=nic_name,
+        positive=positive, extra_txt="to VM %s" % vm, **kwargs
     )
     logger.info(log_info)
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
@@ -1749,7 +1746,7 @@ def updateNic(positive, vm, nic, **kwargs):
         bool: status (True if NIC was updated properly, False otherwise)
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="update", obj_type="vNIC", obj_name=nic,
+        log_action="update", obj_type="vNIC", obj_name=nic,
         positive=positive, extra_txt="on VM %s" % vm,  **kwargs
     )
     nic_new = _prepareNicObj(vm=vm, **kwargs)
@@ -1774,7 +1771,7 @@ def removeNic(positive, vm, nic):
         bool: True if nic was removed properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
+        log_action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
         extra_txt="from VM %s" % vm
     )
     vm_obj = VM_API.find(vm)
@@ -2113,7 +2110,7 @@ def runVmOnce(
 
     action_params_txt = ll_general.prepare_kwargs_for_log(**action_params)
     log_info, log_error = ll_general.get_log_msg(
-        action="run_once", obj_type="vm", obj_name=vm, positive=positive,
+        log_action="run_once", obj_type="vm", obj_name=vm, positive=positive,
         extra_txt="action parameters: %s" % action_params_txt, **kwargs
         )
     logger.info(log_info)
@@ -2146,7 +2143,7 @@ def suspendVm(positive, vm, wait=True):
     """
 
     log_info, log_error = ll_general.get_log_msg(
-        action="suspend", obj_type="vm", obj_name=vm, positive=positive,
+        log_action="suspend", obj_type="vm", obj_name=vm, positive=positive,
     )
     vmObj = VM_API.find(vm)
     logger.info(log_info)
@@ -2234,7 +2231,7 @@ def migrateVm(
         action_params["force"] = True
 
     log_info, log_error = ll_general.get_log_msg(
-        action="Migrate", obj_type=VM, obj_name=vm, positive=positive,
+        log_action="Migrate", obj_type=VM, obj_name=vm, positive=positive,
     )
     logger.info(log_info)
     if not VM_API.syncAction(vm_obj, "migrate", positive, **action_params):
@@ -3380,7 +3377,7 @@ def get_vm_nic_plugged(vm, nic='nic1', positive=True):
         bool: True if NIC is plugged, otherwise False
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Get", obj_type="NIC", obj_name=nic, positive=positive,
+        log_action="Get", obj_type="NIC", obj_name=nic, positive=positive,
         extra_txt="plug state"
     )
     nic_obj = get_vm_nic(vm, nic)
@@ -3405,7 +3402,7 @@ def get_vm_nic_linked(vm, nic='nic1', positive=True):
         bool: True if NIC is linked, otherwise False
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Get", obj_type="NIC", obj_name=nic, positive=positive,
+        log_action="Get", obj_type="NIC", obj_name=nic, positive=positive,
         extra_txt="link state"
     )
     nic_obj = get_vm_nic(vm, nic)
@@ -4402,7 +4399,7 @@ def add_watchdog(vm_name, model, action):
     """
     vm_obj = get_vm_obj(vm_name=vm_name)
     log_info, log_error = ll_general.get_log_msg(
-        action="Add",
+        log_action="Add",
         obj_type="watchdog",
         obj_name=model,
         extra_txt="to VM %s with action %s" % (vm_name, action),
@@ -4440,7 +4437,7 @@ def update_watchdog(vm_name, **kwargs):
         return False
     old_watchdog_obj = watchdog_collection[0]
     log_info, log_error = ll_general.get_log_msg(
-        action="Update",
+        log_action="Update",
         obj_type="watchdog",
         obj_name=old_watchdog_obj.get_model(),
         extra_txt="with parameters %s on VM %s" % (kwargs, vm_name)
@@ -4468,7 +4465,7 @@ def delete_watchdog(vm_name):
         return False
     watchdog_obj = watchdog_collection[0]
     log_info, log_error = ll_general.get_log_msg(
-        action="Delete",
+        log_action="Delete",
         obj_type="watchdog",
         obj_name=watchdog_obj.get_model(),
         extra_txt="from VM %s" % vm_name
@@ -5243,7 +5240,7 @@ def add_numa_node_to_vm(
         elm=vm_obj, link_name=NUMA_NODE_LINK, get_href=True
     )
     log_info, log_error = ll_general.get_log_msg(
-        action="Add",
+        log_action="Add",
         obj_type="numa node",
         obj_name=str(index),
         extra_txt="to VM %s" % vm_name,
@@ -5277,7 +5274,7 @@ def remove_numa_node_from_vm(vm_name, numa_node_index):
         )
         return False
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove",
+        log_action="Remove",
         obj_type="numa node",
         obj_name=str(numa_node_index),
         extra_txt="from VM %s" % vm_name
@@ -5539,7 +5536,7 @@ def add_vm_host_device(vm_name, host_name, device_name):
         "HostDevice", id=host_device_id
     )
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_type="host device", obj_name=device_name,
+        log_action="Add", obj_type="host device", obj_name=device_name,
         extra_txt="to VM %s" % vm_name
     )
     host_devices_link = get_vm_host_devices_link(vm_name=vm_name)
@@ -5567,7 +5564,7 @@ def remove_vm_host_device(vm_name, device_name):
         vm_name=vm_name, device_name=device_name
     )
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="host device", obj_name=device_name,
+        log_action="Remove", obj_type="host device", obj_name=device_name,
         extra_txt="from VM %s" % vm_name
     )
     logger.info(log_info)

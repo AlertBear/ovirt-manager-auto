@@ -318,7 +318,7 @@ def updateHost(positive, host, **kwargs):
     """
 
     log_info, log_error = ll_general.get_log_msg(
-        action="Update", obj_type="host", obj_name=host,
+        log_action="Update", obj_type="host", obj_name=host,
         positive=positive, **kwargs
     )
     logger.info(log_info)
@@ -577,7 +577,7 @@ def commit_network_config(host):
             False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Commit", obj_type="network config", obj_name="",
+        log_action="Commit", obj_type="network config", obj_name="",
         positive=True, extra_txt="on host %s" % host
     )
     logger.info(log_info)
@@ -1987,7 +1987,7 @@ def add_fence_agent(
         bool: True if add fence agent succeed, otherwise False
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_type=FENCE_AGENT, obj_name=agent_address,
+        log_action="Add", obj_type=FENCE_AGENT, obj_name=agent_address,
         extra_txt="to host %s" % host_name
     )
     agent_obj = __prepare_fence_agent_object(
@@ -2032,7 +2032,7 @@ def update_fence_agent(host_name, agent_address, **kwargs):
         bool: True, if fence agent update succeed, otherwise False
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Update", obj_type=FENCE_AGENT, obj_name=agent_address,
+        log_action="Update", obj_type=FENCE_AGENT, obj_name=agent_address,
         extra_txt="on host %s" % host_name
     )
     old_agent_obj = get_fence_agent_by_address(
@@ -2059,7 +2059,7 @@ def remove_fence_agent(fence_agent_obj):
     """
     agent_address = fence_agent_obj.get_address()
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type=FENCE_AGENT, obj_name=agent_address
+        log_action="Remove", obj_type=FENCE_AGENT, obj_name=agent_address
     )
     logger.info(log_info)
     status = AGENT_API.delete(entity=fence_agent_obj, positive=True)

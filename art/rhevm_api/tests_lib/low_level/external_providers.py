@@ -114,7 +114,7 @@ class OpenStackProvider(object):
         :raise: EntityNotFound
         """
         log_info, log_error = ll_general.get_log_msg(
-            action="Remove", obj_type=self.provider_name,
+            log_action="Remove", obj_type=self.provider_name,
             obj_name=openstack_ep
         )
         logger.info(log_info)

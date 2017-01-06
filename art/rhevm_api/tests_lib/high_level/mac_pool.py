@@ -42,8 +42,8 @@ def remove_ranges_from_mac_pool(mac_pool_name, range_list):
         bool: True if remove of range succeeded, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
-        range_list=range_list
+        log_action="Remove", obj_type="MAC pool range(s)",
+        obj_name=mac_pool_name, range_list=range_list
     )
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
     new_range_list = ll_mac_pool.get_mac_range_values(mac_pool_obj)
@@ -76,7 +76,7 @@ def add_ranges_to_mac_pool(mac_pool_name, range_list):
     exist_ranges = ll_mac_pool.get_mac_range_values(mac_pool_obj)
     exist_ranges.extend(range_list)
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
+        log_action="Add", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
         range_list=range_list
     )
     logger.info(log_info)

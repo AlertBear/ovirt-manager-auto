@@ -123,8 +123,8 @@ def addVmPool(positive, wait=True, **kwargs):
     size = kwargs.get('size', 0)
     pool = _prepareVmPoolObject(**kwargs)
     log_info, log_error = ll_general.get_log_msg(
-        action="create", obj_type="vmpool", obj_name=pool, positive=positive,
-        **kwargs
+        log_action="create", obj_type="vmpool", obj_name=pool,
+        positive=positive, **kwargs
     )
     logger.info(log_info)
     pool, status = UTIL.create(pool, positive)
@@ -184,8 +184,8 @@ def updateVmPool(positive, vmpool, **kwargs):
     kwargs['id'] = pool.id
     pool_new_object = _prepareVmPoolObject(**kwargs)
     log_info, log_error = ll_general.get_log_msg(
-        action="update", obj_type="vmpool", obj_name=vmpool, positive=positive,
-        **kwargs
+        log_action="update", obj_type="vmpool", obj_name=vmpool,
+        positive=positive, **kwargs
     )
     logger.info(log_info)
     pool, status = UTIL.update(pool, pool_new_object, positive)
@@ -253,7 +253,8 @@ def removeVmPool(positive, vmpool, wait=False):
     pool = UTIL.find(vmpool)
     pool_vms = get_vms_in_pool_by_name(vmpool)
     log_info, log_error = ll_general.get_log_msg(
-        action="remove", obj_type="vmpool", obj_name=vmpool, positive=positive
+        log_action="remove", obj_type="vmpool", obj_name=vmpool,
+        positive=positive
     )
     logger.info(log_info)
     status = UTIL.delete(pool, positive)

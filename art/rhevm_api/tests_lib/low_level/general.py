@@ -299,19 +299,20 @@ def get_object_name_by_id(object_api, object_id):
 
 
 def get_log_msg(
-        action, obj_type="", obj_name="", positive=True, extra_txt="", **kwargs
+        log_action, obj_type="", obj_name="", positive=True, extra_txt="",
+        **kwargs
 ):
     """
-    Generate info and error logs for action on object.
+    Generate info and error logs for log_action on object.
 
     Args:
-        action (str): The action to perform on the object
+        log_action (str): The log_action to perform on the object
             (create, update, remove)
         obj_type (str): Object type
         obj_name (str): Object name
         positive (bool): Expected results
         extra_txt (str): Extra text to add to the log
-        kwargs (dict): Parameters for the action if any
+        kwargs (dict): Parameters for the log_action if any
 
     Returns:
         tuple: Log info and log error text
@@ -319,13 +320,13 @@ def get_log_msg(
     kwargs = prepare_kwargs_for_log(**kwargs)
     kwargs_to_pop = list()
     for k, v in kwargs.iteritems():
-        if k.lower() in action.lower().split():
+        if k.lower() in log_action.lower().split():
             if isinstance(v, bool):
                 continue
 
-            key = re.findall(k, action, re.IGNORECASE)[0]
+            key = re.findall(k, log_action, re.IGNORECASE)[0]
             v = ",".join(v) if isinstance(v, list) else v
-            action = action.replace(
+            log_action = log_action.replace(
                 key, "{key} {val}".format(key=key, val=v)
             )
             kwargs_to_pop.append(k)
@@ -336,8 +337,8 @@ def get_log_msg(
     with_kwargs = "with %s" % kwargs if kwargs else ""
     state = "Succeeded to" if not positive else "Failed to"
     info_text = (
-        "{action} {obj_type} {obj_name} {with_kwargs} {extra_txt}".format(
-            action=action, obj_type=obj_type, obj_name=obj_name,
+        "{log_action} {obj_type} {obj_name} {with_kwargs} {extra_txt}".format(
+            log_action=log_action, obj_type=obj_type, obj_name=obj_name,
             with_kwargs=with_kwargs, extra_txt=extra_txt
         )
     ).strip()
@@ -417,8 +418,8 @@ def generate_logs(info=True, error=True):
                 if not kwargs.get(arg):
                     kwargs[arg] = val
 
-            action = func_doc.split("\n")[0]
-            log_info, log_err = get_log_msg(action=action, **kwargs)
+            log_action = func_doc.split("\n")[0]
+            log_info, log_err = get_log_msg(log_action=log_action, **kwargs)
             if info:
                 util.logger.info(log_info)
 

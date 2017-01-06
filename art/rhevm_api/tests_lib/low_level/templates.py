@@ -308,8 +308,8 @@ def createTemplate(
     name = kwargs.get("name")
     copy_permissions = kwargs.get("copy_permissions")
     log_info, log_error = ll_general.get_log_msg(
-        action="Create", obj_type="template", obj_name=name, positive=positive,
-        **kwargs
+        log_action="Create", obj_type="template", obj_name=name,
+        positive=positive, **kwargs
     )
     new_version = kwargs.get("new_version", False)
     version_name = kwargs.get("version_name", None)
@@ -418,7 +418,7 @@ def removeTemplate(
         bool: True if template was removed properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="template", obj_name=template,
+        log_action="Remove", obj_type="template", obj_name=template,
         positive=positive
     )
     template_obj = get_template_obj(template, version=version_number)
@@ -582,7 +582,7 @@ def addTemplateNic(
     if not template_obj:
         return False
     log_info_txt, log_error_txt = ll_general.get_log_msg(
-        action="add", obj_type="nic", obj_name=nic_name, positive=positive,
+        log_action="add", obj_type="nic", obj_name=nic_name, positive=positive,
         extra_txt="template version: %s" % version, **kwargs
     )
     kwargs.update([("cluster", template_obj.cluster.id)])
@@ -644,7 +644,7 @@ def add_watchdog(template_name, model, action, version=BASE_TEMPLATE_VERSION):
     if not template_obj:
         return False
     log_info, log_error = ll_general.get_log_msg(
-        action="Add",
+        log_action="Add",
         obj_type="watchdog",
         obj_name=model,
         extra_txt="to template %s with action %s" % (template_name, action),
@@ -678,7 +678,7 @@ def delete_watchdog(template_name):
         return False
     watchdog_obj = watchdog_collection[0]
     log_info, log_error = ll_general.get_log_msg(
-        action="Delete",
+        log_action="Delete",
         obj_type="watchdog",
         obj_name=watchdog_obj.get_model(),
         extra_txt="from template %s" % template_name
@@ -739,7 +739,7 @@ def removeTemplateNic(positive, template, nic, version=BASE_TEMPLATE_VERSION):
         bool: True if nic was removed properly, False otherwise
     """
     log_info_txt, log_error_txt = ll_general.get_log_msg(
-        action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
+        log_action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
         extra_txt="from template %s, version: %s" % (template, version)
     )
     nic_obj = getTemplatesNic(template, nic, version)
@@ -772,7 +772,7 @@ def removeTemplateFromExportDomain(
         bool: True if template was removed properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="template", obj_name=template,
+        log_action="Remove", obj_type="template", obj_name=template,
         positive=positive,
         extra_txt="from export domain %s" % export_storagedomain,
         template_version=version
@@ -872,7 +872,7 @@ def exportTemplate(
         bool: True if template was exported properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Export", obj_type="template", obj_name=template,
+        log_action="Export", obj_type="template", obj_name=template,
         positive=positive,
         extra_txt="to export domain %s. override: %s" % (
             storagedomain, exclusive
@@ -921,7 +921,7 @@ def import_template(
         bool: True if function should wait for response, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Import", obj_type="template", obj_name=template,
+        log_action="Import", obj_type="template", obj_name=template,
         positive=positive,
         extra_txt="from export domain %s" % source_storage_domain
     )
@@ -1287,7 +1287,7 @@ def get_template_obj_from_export_domain(
          object: If found returns the template object, otherwise None
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="get", obj_type="template", obj_name=template_name,
+        log_action="get", obj_type="template", obj_name=template_name,
         extra_txt="from export domain: %s" % export_domain_object.get_name(),
         template_version=version
     )

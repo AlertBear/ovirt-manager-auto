@@ -297,7 +297,7 @@ def updateCluster(positive, cluster, **kwargs):
     old_cluster_obj = util.find(cluster)
     new_cluster_obj = _prepareClusterObject(**kwargs)
     log_info, log_error = ll_general.get_log_msg(
-        action="Update", obj_type=CLUSTER_NAME, obj_name=cluster,
+        log_action="Update", obj_type=CLUSTER_NAME, obj_name=cluster,
         positive=positive, **kwargs
     )
     logger.info(log_info)
@@ -321,7 +321,7 @@ def removeCluster(positive, cluster):
         bool: True if cluster was removed properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="cluster", obj_name=cluster,
+        log_action="Remove", obj_type="cluster", obj_name=cluster,
         positive=positive
     )
     logger.info(log_info)
@@ -529,7 +529,8 @@ def create_affinity_group(cluster_name, **kwargs):
         cluster_obj, link_name=link_name, get_href=True
     )
     log_info, log_error = ll_general.get_log_msg(
-        action="Create", obj_type=AFFINITY_GROUP_NAME, obj_name=affinity_name,
+        log_action="Create", obj_type=AFFINITY_GROUP_NAME,
+        obj_name=affinity_name,
         extra_txt="on cluster %s with parameters: %s" % (cluster_name, kwargs)
     )
     try:
@@ -558,8 +559,8 @@ def remove_affinity_group(affinity_name, cluster_name):
         bool: True, if remove affinity group action succeed, otherwise False
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type=AFFINITY_GROUP_NAME, obj_name=affinity_name,
-        extra_txt="from cluster %s" % cluster_name
+        log_action="Remove", obj_type=AFFINITY_GROUP_NAME,
+        obj_name=affinity_name, extra_txt="from cluster %s" % cluster_name
     )
     logger.info(log_info)
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
@@ -674,7 +675,7 @@ def add_cpu_profile(cluster_name, **kwargs):
         return False
 
     log_info, log_error = ll_general.get_log_msg(
-        action="Add",
+        log_action="Add",
         obj_type=CPU_PROFILE_NAME,
         obj_name=cpu_profile_name,
         positive=True, **kwargs
