@@ -876,36 +876,28 @@ def prepare_disks_with_fs_for_vm(request):
 
 
 @pytest.fixture()
-def wait_for_all_snapshot_tasks(request):
+def wait_for_disks_and_snapshots(request):
     """
-    Wait for snapshot creation and LSM tasks
+    Wait for given VMs snapshots and disks status
     """
     self = request.node.cls
 
     def finalizer():
-        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
-        disks = [d.get_id() for d in ll_vms.getVmDisks(self.vm_name)]
-        ll_disks.wait_for_disks_status(disks, key='id')
-        try:
-            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-        except APITimeout:
-            logger.error(
-                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
-            )
-
-        try:
-            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-        except APITimeout:
-            logger.error(
-                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
-            )
-        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
-        if not ll_vms.waitForVmsDisks(self.vm_name):
-            logger.error(
-                "Disks in VM '%s' failed to reach state 'OK'", self.vm_name
-            )
+        for vm_name in self.vms_to_wait:
+            if ll_vms.does_vm_exist(vm_name):
+                try:
+                    disks = [d.get_id() for d in ll_vms.getVmDisks(vm_name)]
+                    ll_disks.wait_for_disks_status(disks, key='id')
+                    ll_vms.wait_for_vm_snapshots(vm_name, config.SNAPSHOT_OK)
+                except APITimeout:
+                    assert False, (
+                        "Snapshots failed to reach OK state on VM '%s'" %
+                        vm_name
+                    )
+            ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+            ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
     request.addfinalizer(finalizer)
+    self.vms_to_wait = getattr(self, 'vms_to_wait', [self.vm_name])
 
 
 @pytest.fixture()

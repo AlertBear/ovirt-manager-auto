@@ -1,5 +1,4 @@
 """
-3.5 Live merge
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_5_Storage_Live_Merge
 """
@@ -8,7 +7,6 @@ import logging
 import os
 from multiprocessing import Process, Queue
 from time import sleep
-
 from rhevmtests.storage import config
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -20,10 +18,10 @@ from art.rhevm_api.utils.test_utils import (
 )
 from rhevmtests.storage.fixtures import (
     create_vm, prepare_disks_with_fs_for_vm, delete_disks,
-    wait_for_all_snapshot_tasks,
+    wait_for_disks_and_snapshots,
 )
 from rhevmtests.storage.fixtures import remove_vm  # noqa
-from rhevmtests.storage.storage_live_merge.fixtures import (
+from rhevmtests.storage.storage_remove_snapshots.fixtures import (
     initialize_params,
 )
 from art.test_handler.tools import polarion
@@ -52,6 +50,7 @@ class BasicEnvironment(BaseTestCase):
     __test__ = False
     test_case = None
     checksum_files = dict()
+    live_merge = None
 
     def create_files_on_vm_disks(self, vm_name, iteration_number):
         """
@@ -93,16 +92,16 @@ class BasicEnvironment(BaseTestCase):
         return True
 
     def perform_snapshot_operation(
-        self, snapshot_description, wait=True, live=False
+        self, snapshot_description, wait=True
     ):
-        if not live:
+        if not self.live_merge:
             if not ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
                 ll_vms.shutdownVm(True, self.vm_name)
                 ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
 
         testflow.step(
             "Adding new %s snapshot to vm %s",
-            'live' if live else '', self.vm_name
+            'live' if self.live_merge else '', self.vm_name
         )
         status = ll_vms.addSnapshot(
             True, self.vm_name, snapshot_description, wait=wait
@@ -114,7 +113,7 @@ class BasicEnvironment(BaseTestCase):
             )
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         self.snapshot_list.append(snapshot_description)
-        if not live:
+        if not self.live_merge:
             if ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
                 assert ll_vms.startVm(
                     True, self.vm_name, config.VM_UP, wait_for_ip=True
@@ -211,10 +210,11 @@ class BasicEnvironment(BaseTestCase):
             ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
             assert status, "Undo snapshot failed for VM '%s'" % self.vm_name
 
-    def live_delete_snapshot_with_verification(
-            self, vm_name, snapshot_description, running_io_op=False
+    def delete_snapshot_with_verification(
+        self, vm_name, snapshot_description, running_io_op=False
     ):
-        if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+
+        if self.live_merge and ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
             testflow.step("Starting vm %s", vm_name)
             ll_vms.startVm(True, vm_name, config.VM_UP, wait_for_ip=True)
         snapshot_disks = [
@@ -225,7 +225,7 @@ class BasicEnvironment(BaseTestCase):
         initial_vol_count = storage_helpers.get_disks_volume_count(
             snapshot_disks
         )
-        logger.info("Before live merge: %s volumes", initial_vol_count)
+        testflow.step("Before live merge: %s volumes", initial_vol_count)
 
         disk_object = ll_vms.getVmDisk(
             vm_name, disk_id=self.disks_to_remove[0]
@@ -238,7 +238,7 @@ class BasicEnvironment(BaseTestCase):
                     size=DD_SIZE
                 )
             )
-        if running_io_op:
+        if self.live_merge and running_io_op:
             q = Queue()
             p = Process(target=f, args=(q,))
             p.start()
@@ -257,7 +257,7 @@ class BasicEnvironment(BaseTestCase):
         current_vol_count = storage_helpers.get_disks_volume_count(
             snapshot_disks
         )
-        logger.info("After live merge: %s volumes", current_vol_count)
+        testflow.step("After live merge: %s volumes", current_vol_count)
 
         assert current_vol_count == initial_vol_count - len(snapshot_disks), (
             "Live merge failed - before live merge: %s volumes, "
@@ -285,26 +285,27 @@ class BasicEnvironment(BaseTestCase):
                 snap_description, disk_names
             )
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        if not self.live_merge:
+            assert ll_vms.stop_vms_safely([self.vm_name]), (
+                "Failed to poweroff VM %s" % self.vm_name
+            )
 
 
 @attr(tier=1)
 class TestCase6038(BasicEnvironment):
     """
-    Basic live delete and merge of snapshots
+    Basic delete and merge of snapshots
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6038
     """
-    __test__ = True
+    __test__ = False
     test_case = '6038'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6038")
-    def test_basic_live_deletion(self):
+    def test_basic_snapshot_deletion(self):
         self.basic_flow()
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[1]
         )
         self.verify_snapshot_files(
@@ -315,21 +316,18 @@ class TestCase6038(BasicEnvironment):
 @attr(tier=2)
 class TestCase6052(BasicEnvironment):
     """
-    Basic live delete and merge of snapshots with continuous I/O
+    Basic delete and merge of snapshots with continuous I/O
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6052
     """
-    __test__ = True
+    __test__ = False
     test_case = '6052'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6052")
-    def test_basic_live_deletion_with_io(self):
+    def test_basic_snapshot_deletion_with_io(self):
         self.basic_flow()
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[0], running_io_op=True
         )
 
@@ -337,16 +335,16 @@ class TestCase6052(BasicEnvironment):
 @attr(tier=2)
 class TestCase16287(BasicEnvironment):
     """
-    Basic live delete and merge of a single snapshot's disk
+    Basic delete and merge of a single snapshot's disk
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM/workitem?id=RHEVM3-16287
     """
-    __test__ = True
+    __test__ = False
     test_case = '16287'
 
     @polarion("RHEVM3-16287")
-    def test_basic_live_deletion_of_snapshots_disk(self):
+    def test_basic_snapshot_deletion_of_snapshots_disk(self):
         self.perform_snapshot_operation(self.snapshot_description)
         snapshot_disks_before = ll_vms.get_snapshot_disks(
             self.vm_name, self.snapshot_description
@@ -356,6 +354,8 @@ class TestCase16287(BasicEnvironment):
         assert vm_disk.get_id() in disk_ids_before, (
             "Disk %s is not part of the snapshot's disks" % vm_disk.get_alias()
         )
+        if not self.live_merge:
+            assert ll_vms.stop_vms_safely([self.vm_name])
         assert ll_vms.delete_snapshot_disks(
             self.vm_name, self.snapshot_description, vm_disk.get_id()
         ), "Failed to remove snapshots disk %s" % vm_disk.get_alias()
@@ -377,23 +377,20 @@ class TestCase12215(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-12215
     """
-    __test__ = True
+    __test__ = False
     test_case = '12215'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-12215")
-    def test_live_deletion_of_all_snapshots(self):
+    def test_snapshot_deletion_of_all_snapshots(self):
         self.basic_flow()
 
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[1]
         )
         self.verify_snapshot_files(
             self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
         )
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[2]
         )
         self.verify_snapshot_files(
@@ -404,22 +401,19 @@ class TestCase12215(BasicEnvironment):
 @attr(tier=3)
 class TestCase6044(BasicEnvironment):
     """
-    Live delete and merge after deleting the base snapshot
+    Snapshot delete and merge after deleting the base snapshot
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6044
     """
-    __test__ = True
+    __test__ = False
     test_case = '6044'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6044")
-    def test_live_deletion_base_snapshot(self):
+    def test_snapshot_deletion_base_snapshot(self):
         self.basic_flow()
 
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[0]
         )
         self.verify_snapshot_files(
@@ -433,21 +427,20 @@ class TestCase6044(BasicEnvironment):
 @attr(tier=4)
 class TestCase6045(BasicEnvironment):
     """
-    Live snapshot delete and merge with restart of vdsm
+    Snapshot snapshot delete and merge with restart of vdsm
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6045
     """
-    __test__ = True
+    __test__ = False
     test_case = '6045'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6045")
-    def test_live_deletion_during_vdsm_restart(self):
+    def test_snapshot_deletion_during_vdsm_restart(self):
         self.basic_flow()
 
+        if not self.live_merge:
+            assert ll_vms.stop_vms_safely([self.vm_name])
         testflow.step("Removing snapshot %s", self.snapshot_list[1])
         # timeout=-1 means no wait
         assert ll_vms.removeSnapshot(
@@ -466,22 +459,19 @@ class TestCase6045(BasicEnvironment):
 @attr(tier=3)
 class TestCase6043(BasicEnvironment):
     """
-    Live delete and merge after deleting the last created snapshot
+    Snapshot delete and merge after deleting the last created snapshot
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6043
     """
-    __test__ = True
+    __test__ = False
     test_case = '6043'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6043")
-    def test_basic_live_deletion(self):
+    def test_basic_snapshot_deletion(self):
         self.basic_flow()
 
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[2]
         )
         self.verify_snapshot_files(
@@ -495,21 +485,20 @@ class TestCase6043(BasicEnvironment):
 @attr(tier=4)
 class TestCase6046(BasicEnvironment):
     """
-    Live delete and merge of snapshot while stopping the engine
+    Snapshot delete and merge of snapshot while stopping the engine
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6046
     """
-    __test__ = True
+    __test__ = False
     test_case = '6046'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6046")
     def test_live_deletion_during_engine_restart(self):
         self.basic_flow()
 
+        if not self.live_merge:
+            assert ll_vms.stop_vms_safely([self.vm_name])
         testflow.step("Removing snapshot %s", self.snapshot_list[1])
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
@@ -532,29 +521,26 @@ class TestCase6048(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6048
     """
-    __test__ = True
+    __test__ = False
     test_case = '6048'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6048")
-    def test_consecutive_live_deletion_of_snapshots(self):
+    def test_consecutive_snapshot_deletion_of_snapshots(self):
         self.basic_flow(5)
 
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[1]
         )
         self.verify_snapshot_files(
             self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
         )
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[2]
         )
         self.verify_snapshot_files(
             self.snapshot_list[3], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
         )
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[3]
         )
         self.verify_snapshot_files(
@@ -565,22 +551,21 @@ class TestCase6048(BasicEnvironment):
 @attr(tier=3)
 class TestCase6050(BasicEnvironment):
     """
-    Delete a 2nd live snapshot during a delete and merge of another
+    Delete a 2nd snapshot during a delete and merge of another
     snapshot within the same VM
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6050
     """
-    __test__ = True
+    __test__ = False
     test_case = '6050'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6050")
-    def test_live_merge_during_live_merge(self):
+    def test_snapshot_merge_during_snapshot_merge(self):
         self.basic_flow()
 
+        if not self.live_merge:
+            assert ll_vms.stop_vms_safely([self.vm_name])
         testflow.step("Removing snapshot %s", self.snapshot_list[1])
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
@@ -602,18 +587,15 @@ class TestCase6057(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6057
     """
-    __test__ = True
+    __test__ = False
     test_case = '6057'
-    # Bugzilla history:
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6057")
     def test_live_deletion_after_disk_migration(self):
         self.basic_flow()
         ll_vms.live_migrate_vm(self.vm_name)
 
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[1]
         )
         self.verify_snapshot_files(
@@ -629,7 +611,7 @@ class TestCase6058(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6058
     """
-    __test__ = True
+    __test__ = False
     test_case = '6058'
     # Bugzilla history:
     # 1302215: Live merge operation fails noting Failed child command status
@@ -664,7 +646,7 @@ class TestCase6058(BasicEnvironment):
 
 @attr(tier=3)
 @pytest.mark.usefixtures(
-    wait_for_all_snapshot_tasks.__name__,
+    wait_for_disks_and_snapshots.__name__,
 )
 class TestCase6062(BasicEnvironment):
     """
@@ -673,7 +655,7 @@ class TestCase6062(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=RHEVM3-6062
     """
-    __test__ = True
+    __test__ = False
     test_case = '6062'
     disk_to_migrate = None
     # Bugzilla history:
@@ -709,21 +691,16 @@ class TestCase6062(BasicEnvironment):
 @attr(tier=2)
 class TestCase12216(BasicEnvironment):
     """
-    Basic live merge after disk with snapshot is extended
+    Basic snapshot merge after disk with snapshot is extended
 
     https://polarion.engineering.redhat.com/polarion/#/project
     /RHEVM3/workitem?id=12216
     """
-    __test__ = True
+    __test__ = False
     test_case = '12216'
-    # Bugzilla history:
-    # 1232481: Live merge fails after a disk containing a snapshot has
-    # been extended
-    # 1302215: Live merge operation fails noting Failed child command status
-    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-12216")
-    def test_basic_live_merge_after_disk_resize(self):
+    def test_basic_snapshot_merge_after_disk_resize(self):
         self.basic_flow(1)
         vm_disks = ll_vms.getVmDisks(self.vm_name)
 
@@ -742,7 +719,7 @@ class TestCase12216(BasicEnvironment):
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
             assert disk_obj.get_provisioned_size() == new_size
 
-        self.live_delete_snapshot_with_verification(
+        self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[0]
         )
         assert self.check_files_existence([TEST_FILE_TEMPLATE % '0'])

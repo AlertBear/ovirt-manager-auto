@@ -798,16 +798,13 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
 
     if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
         ll_vms.startVm(True, vm_name, wait_for_status=config.VM_UP)
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(
-        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
-    ).util(LINUX)
+    executor = get_vm_executor(vm_name)
     # TODO: Workaround for bug:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
-    vm_machine.runCmd(shlex.split("udevadm trigger"))
+    executor.run_cmd(shlex.split("udevadm trigger"))
 
     for disk_alias in disk_names:
-        ecode, mount_point = create_fs_on_disk(vm_name, disk_alias)
+        ecode, mount_point = create_fs_on_disk(vm_name, disk_alias, executor)
         if not ecode:
             logger.error("Cannot create filesysem on disk %s:", mount_point)
             mount_point = ''
@@ -840,7 +837,7 @@ def get_vm_boot_disk(vm_name):
     return re.search(REGEX_DEVICE_NAME, output).group()
 
 
-def create_fs_on_disk(vm_name, disk_alias):
+def create_fs_on_disk(vm_name, disk_alias, executor=None):
     """
     Creates a filesystem on a disk and mounts it in the vm
 
@@ -855,7 +852,8 @@ def create_fs_on_disk(vm_name, disk_alias):
     :rtype: tuple
     """
     ll_vms.start_vms([vm_name], wait_for_ip=True)
-    executor = get_vm_executor(vm_name)
+    if not executor:
+        executor = get_vm_executor(vm_name)
     # TODO: Workaround for bug:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
     executor.run_cmd(shlex.split("udevadm trigger"))

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(scope='class')
 def initialize_params(request):
     """
-    Initialize VM name
+    Initialize parameters
     """
     self = request.node.cls
 
