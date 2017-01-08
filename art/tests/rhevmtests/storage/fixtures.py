@@ -742,7 +742,7 @@ def clean_mount_point(request):
                 spm_host, config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_DATA_DOMAIN_PATHS[0],
                 rhevm_helpers.NFS_MNT_OPTS
-            ), "Failed to clean mount point address: %s, path: %s" % (
+            ), "Failed to clean mount point address %s, path %s" % (
                 config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_DATA_DOMAIN_PATHS[0],
             )
@@ -751,7 +751,7 @@ def clean_mount_point(request):
                 spm_host, config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
                 rhevm_helpers.GLUSTER_MNT_OPTS
-            ), "Failed to clean mount point address: %s, path: %s" % (
+            ), "Failed to clean mount point address %s, path %s" % (
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
             )
@@ -771,13 +771,13 @@ def remove_vm_from_export_domain(request):
         )
 
         testflow.teardown(
-            "Removing VM: %s from export domain: %s", self.vm_name,
+            "Removing VM %s from export domain %s", self.vm_name,
             export_domain
         )
         assert ll_vms.remove_vm_from_export_domain(
             positive=True, vm=self.vm_name, datacenter=config.DATA_CENTER_NAME,
             export_storagedomain=export_domain
-        ), "Failed to remove VM: %s from export domain: %s" % (
+        ), "Failed to remove VM %s from export domain %s" % (
             self.vm_name, export_domain
         )
 
@@ -797,7 +797,7 @@ def remove_template_from_export_domain(request):
         )
 
         testflow.teardown(
-            "Remove template: %s from export domain: %s",
+            "Remove template %s from export domain %s",
             self.template_name, export_domain
         )
         assert ll_templates.removeTemplateFromExportDomain(
@@ -1035,7 +1035,7 @@ def create_export_domain(request):
         self.__class__.__name__, config.OBJECT_TYPE_SD
     )
     self.spm = getattr(self, 'spm', ll_hosts.getSPMHost(config.HOSTS))
-
+    testflow.setup("Creating export domain %s", self.export_domain)
     assert ll_sd.addStorageDomain(
         True, name=self.export_domain, host=self.spm, type=config.EXPORT_TYPE,
         **self.storage_domain_kwargs
@@ -1061,4 +1061,27 @@ def remove_export_domain(request):
             assert hl_sd.remove_storage_domain(
                 self.export_domain, config.DATA_CENTER_NAME, self.spm, True
             ), "Failed to remove export domain %s" % self.export_domain
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='class')
+def remove_glance_image(request):
+    """
+    Removes Glance image
+    """
+    self = request.node.cls
+
+    def finalizer():
+        image_found = False
+        for image in ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN):
+            if self.disk.get_alias() == image.get_name():
+                image_found = True
+                assert ll_sd.remove_glance_image(
+                        image.get_id(), config.GLANCE_HOSTNAME,
+                        config.HOSTS_USER, config.HOSTS_PW
+                ), "Failed to remove glance image %s" % self.disk.get_alias()
+        assert image_found, (
+            "Failed to find image %s in glance image repository %s" %
+            self.disk.get_alias(), self.glance_domain
+            )
     request.addfinalizer(finalizer)
