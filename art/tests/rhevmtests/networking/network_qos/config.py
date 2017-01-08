@@ -12,6 +12,9 @@ BITS_BYTES = 8
 QOS_NAME = global_helper.generate_object_names(
     num_of_cases=8, num_of_objects=4, prefix="network-qos_qos"
 )
+VNIC_NAME = global_helper.generate_object_names(
+    num_of_cases=1, num_of_objects=5, prefix="network_qos_vnic"
+)
 QOS_TYPE = "network"
 BW_PARAMS = (10, 10, 100)
 UPDATED_BW_PARAMS = (5, 5, 50)

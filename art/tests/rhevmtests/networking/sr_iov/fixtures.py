@@ -323,66 +323,6 @@ def create_qos(request):
 
 
 @pytest.fixture(scope="class")
-def add_update_vnic_profile(request):
-    """
-    Create a vNIC profile for existing MGMT network
-    Update vNIC profile with passthrough property
-    Create a new vNIC with passthrough property
-    Create a new vNIC with port mirroring enabled
-    """
-    sriov = SRIOV()
-    vnic_p_list = request.node.cls.vnic_p_list
-    net_1 = request.node.cls.net_1
-    dc = getattr(request.node.cls, "dc", sriov.dc_0)
-    update_vnic = getattr(request.node.cls, "update_vnic", False)
-    pass_through = getattr(request.node.cls, "pass_through", True)
-    result_list = list()
-
-    def fin():
-        """
-        Remove vNICs profiles
-        """
-        for vnic in vnic_p_list:
-            testflow.teardown("Remove vNIC profile %s", vnic)
-            result_list.append(
-                ll_networks.remove_vnic_profile(
-                    positive=True, vnic_profile_name=vnic, network=net_1,
-                    data_center=dc
-                )
-            )
-        assert all(result_list)
-    request.addfinalizer(fin)
-
-    testflow.setup(
-        "Add new vNIC profile %s to network %s", vnic_p_list[0], net_1
-    )
-    assert ll_networks.add_vnic_profile(
-        positive=True, name=vnic_p_list[0], data_center=dc, network=net_1,
-        pass_through=pass_through
-    )
-    if update_vnic:
-        testflow.setup("Update vNIC profile %s", vnic_p_list[0])
-        assert ll_networks.update_vnic_profile(
-            name=vnic_p_list[0], network=net_1, pass_through=True,
-            data_center=sriov.dc_0
-        )
-        testflow.setup(
-            "Add new vNIC profile %s to network %s", vnic_p_list[1], net_1
-        )
-        assert ll_networks.add_vnic_profile(
-            positive=True, name=vnic_p_list[1], data_center=dc,
-            network=net_1, pass_through=True
-        )
-        testflow.setup(
-            "Add new vNIC profile %s to network %s", vnic_p_list[2], net_1
-        )
-        assert ll_networks.add_vnic_profile(
-            positive=True, name=vnic_p_list[2], data_center=dc,
-            network=net_1, port_mirroring=True
-        )
-
-
-@pytest.fixture(scope="class")
 def set_num_of_vfs(request):
     """
     Set number of VFs on host
@@ -412,20 +352,20 @@ def add_vnics_to_vm(request):
     nets = getattr(request.node.cls, "nets", None)
     vms = getattr(request.node.cls, "vms", [sriov.vm_0])
     add_vm_nic = getattr(request.node.cls, "add_vm_nic", True)
-    vm_nics_to_remove = getattr(request.node.cls, "vm_nics_to_remove", None)
     result_list = list()
 
     def fin():
         """
         Remove vNICs from VM
         """
-        vms_nics = vm_nics_to_remove if vm_nics_to_remove else vms
-        for vm, nic in zip(vms_nics, nics):
-            testflow.teardown("Remove NIC %s from VM %s", nic, vm)
-            result_list.append(
-                ll_vms.removeNic(positive=True, vm=vm, nic=nic)
-            )
-
+        for vm in vms:
+            vm_nics = ll_vms.get_vm_nics_obj(vm)
+            for nic in vm_nics:
+                if nic.name != conf.NIC_NAME[0]:
+                    testflow.teardown("Remove NIC %s from VM %s", nic.name, vm)
+                    result_list.append(
+                        ll_vms.removeNic(positive=True, vm=vm, nic=nic.name)
+                    )
         assert all(result_list)
     request.addfinalizer(fin)
 
@@ -520,7 +460,8 @@ def add_vnic_profile(request):
     """
     sriov = SRIOV()
     pass_through_vnic = request.node.cls.pass_through_vnic
-    mgmt_network = request.node.cls.mgmt_network
+    port_mirroring = request.node.cls.port_mirroring
+    net_1 = request.node.cls.net_1
     profiles = request.node.cls.profiles
     result_list = list()
 
@@ -533,22 +474,19 @@ def add_vnic_profile(request):
             result_list.append(
                 ll_networks.remove_vnic_profile(
                     positive=True, vnic_profile_name=profile,
-                    network=mgmt_network, data_center=sriov.dc_0
+                    network=net_1, data_center=sriov.dc_0
                 )
             )
         assert all(result_list)
     request.addfinalizer(fin1)
 
-    for vm, passthrough, profile in zip(
-        sriov.vms_list, pass_through_vnic, profiles
+    for passthrough, portmirroring, profile in zip(
+        pass_through_vnic, port_mirroring, profiles
     ):
-        testflow.setup(
-            "Add new vNIC profile %s to network %s", profile,
-            mgmt_network
-        )
+        testflow.setup("Add new vNIC profile %s to network %s", profile, net_1)
         assert ll_networks.add_vnic_profile(
-            positive=True, name=profile, network=mgmt_network,
-            data_center=sriov.dc_0, pass_through=passthrough
+            positive=True, name=profile, network=net_1, data_center=sriov.dc_0,
+            pass_through=passthrough, port_mirroring=portmirroring
         )
 
 

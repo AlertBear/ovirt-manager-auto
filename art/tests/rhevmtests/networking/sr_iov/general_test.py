@@ -17,8 +17,8 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    create_qos, add_update_vnic_profile, set_num_of_vfs, prepare_setup_general,
-    add_vnics_to_vm, init_fixture, reset_host_sriov_params,
+    create_qos, set_num_of_vfs, prepare_setup_general,
+    add_vnics_to_vm, init_fixture, reset_host_sriov_params, add_vnic_profile
 )
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, clean_host_interfaces
@@ -84,7 +84,7 @@ class TestSriov01(NetworkTest):
 @pytest.mark.usefixtures(
     init_fixture.__name__,
     create_qos.__name__,
-    add_update_vnic_profile.__name__
+    add_vnic_profile.__name__
 )
 @pytest.mark.skipif(
     conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
@@ -95,15 +95,17 @@ class TestSriov02(NetworkTest):
     """
     __test__ = True
 
+    # General
+    dc = conf.DC_0
+
     # create_qos
     net_qos = sriov_conf.NETWORK_QOS
 
-    # add_update_vnic_profile
-    vnic_p_list = conf.VNIC_PROFILE[:3]
-    dc = conf.DC_0
+    # add_vnic_profile
+    profiles = sriov_conf.GENERAL_TEST_VNICS[2][:3]
+    pass_through_vnic = [True, True, False]
+    port_mirroring = [False, False, True]
     net_1 = conf.MGMT_BRIDGE
-    update_vnic = True
-    pass_through = False
 
     @polarion("RHEVM3-6305")
     def test_01_port_mirroring_update(self):
@@ -112,7 +114,7 @@ class TestSriov02(NetworkTest):
         """
         testflow.step("Check that port mirroring can't be configured")
         assert not ll_networks.update_vnic_profile(
-            name=self.vnic_p_list[0], network=self.net_1,
+            name=self.profiles[0], network=self.net_1,
             data_center=self.dc, port_mirroring=True
         )
 
@@ -124,7 +126,7 @@ class TestSriov02(NetworkTest):
         testflow.step("Check that QoS can't be configured")
         assert not ll_networks.update_qos_on_vnic_profile(
             datacenter=self.dc, qos_name=self.net_qos,
-            vnic_profile_name=self.vnic_p_list[0],
+            vnic_profile_name=self.profiles[0],
             network_name=self.net_1
         )
 
@@ -139,16 +141,16 @@ class TestSriov02(NetworkTest):
             "passthrough on vNIC"
         )
         assert ll_networks.update_vnic_profile(
-            name=self.vnic_p_list[0], network=self.net_1,
+            name=self.profiles[0], network=self.net_1,
             pass_through=False, data_center=self.dc
         )
         assert ll_networks.update_vnic_profile(
-            name=self.vnic_p_list[0], network=self.net_1,
+            name=self.profiles[0], network=self.net_1,
             data_center=self.dc, port_mirroring=True
         )
         assert ll_networks.update_qos_on_vnic_profile(
             datacenter=self.dc, qos_name=self.net_qos,
-            vnic_profile_name=self.vnic_p_list[0],
+            vnic_profile_name=self.profiles[0],
             network_name=self.net_1
         )
 
@@ -157,9 +159,9 @@ class TestSriov02(NetworkTest):
         """
         Check that passthrough property is enabled on created vNIC profile
         """
-        testflow.step("Check passthrough on %s", self.vnic_p_list[1])
+        testflow.step("Check passthrough on %s", self.profiles[1])
         vnic_profile_obj = ll_networks.get_vnic_profile_obj(
-            name=self.vnic_p_list[1], network=self.net_1,
+            name=self.profiles[1], network=self.net_1,
             cluster=conf.CL_0,  data_center=self.dc
         )
         assert vnic_profile_obj.get_pass_through().get_mode() != "disable"
@@ -175,7 +177,7 @@ class TestSriov02(NetworkTest):
             "with passthrough property"
         )
         assert not ll_networks.update_vnic_profile(
-            name=self.vnic_p_list[1], network=self.net_1,
+            name=self.profiles[1], network=self.net_1,
             data_center=self.dc, port_mirroring=True
         )
 
@@ -191,7 +193,7 @@ class TestSriov02(NetworkTest):
         )
         assert not ll_networks.update_qos_on_vnic_profile(
             datacenter=self.dc, qos_name=self.net_qos,
-            vnic_profile_name=self.vnic_p_list[1],
+            vnic_profile_name=self.profiles[1],
             network_name=self.net_1
         )
 
@@ -205,7 +207,7 @@ class TestSriov02(NetworkTest):
             "enabled"
         )
         assert not ll_networks.update_vnic_profile(
-            name=self.vnic_p_list[2], network=self.net_1,
+            name=self.profiles[2], network=self.net_1,
             pass_through=True, data_center=self.dc
         )
 
@@ -355,7 +357,7 @@ class TestSriov04(NetworkTest):
     init_fixture.__name__,
     prepare_setup_general.__name__,
     setup_networks_fixture.__name__,
-    add_update_vnic_profile.__name__,
+    add_vnic_profile.__name__,
     add_vnics_to_vm.__name__,
 )
 @pytest.mark.skipif(
@@ -369,17 +371,17 @@ class TestSriov05(NetworkTest):
     __test__ = True
 
     # General
-    pt_vnic = conf.VNIC_PROFILE[0]
-
-    # add_update_vnic_profile
-    vnic_p_list = [pt_vnic]
-    net_1 = sriov_conf.GENERAL_NETS[5][0]
+    vnic_profile = sriov_conf.GENERAL_TEST_VNICS[5][0]
     dc = conf.DC_0
+
+    # add_vnic_profile
+    port_mirroring = [False]
+    net_1 = sriov_conf.GENERAL_NETS[5][0]
 
     # add_vnics_to_vm
     nics = sriov_conf.GENERAL_TEST_VNICS[5][1:3]
     pass_through_vnic = [True, False]
-    profiles = [vnic_p_list[0], net_1]
+    profiles = [vnic_profile, net_1]
     vms = [conf.VM_0, conf.VM_0]
     nets = [net_1, net_1]
 
@@ -419,6 +421,6 @@ class TestSriov05(NetworkTest):
             "passthrough property to become regular vNIC"
         )
         assert not ll_networks.update_vnic_profile(
-            name=self.pt_vnic, network=self.net_1, data_center=self.dc,
+            name=self.vnic_profile, network=self.net_1, data_center=self.dc,
             pass_through=False
         )

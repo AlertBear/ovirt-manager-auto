@@ -72,7 +72,6 @@ class TestSriovVm01(NetworkTest):
     profiles = [net_1]
     nets = profiles
     nics = [vm_nic, extra_vm_nic]
-    vm_nics_to_remove = [conf.VM_0, conf.VM_0]
 
     @polarion("RHEVM3-6614")
     def test_01_run_vm_zero_vfs(self):
@@ -568,8 +567,8 @@ class TestSriovVm05(NetworkTest):
     num_of_vfs = 1
 
     # add_vnic_profile
-    mgmt_vm_nic = sriov_conf.VM_TEST_VNICS[5][0]
-    mgmt_network = conf.MGMT_BRIDGE
+    net_1 = conf.MGMT_BRIDGE
+    port_mirroring = [False, False]
 
     # add_vnics_to_vm
     nics = [sriov_conf.VM_TEST_VNICS[5][0], sriov_conf.VM_TEST_VNICS[5][0]]
