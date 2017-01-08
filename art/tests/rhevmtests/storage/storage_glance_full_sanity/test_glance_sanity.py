@@ -4,6 +4,7 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Import_Template_Entities
 """
 import logging
+
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -519,6 +520,7 @@ class TestCase5746(BasicEnvironment):
         )
 
 
+@bz({'1411123'})
 @attr(tier=2)
 class TestCase5683(BaseTestCase):
     """
@@ -596,6 +598,7 @@ class TestCase5683(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
+@bz({'1411123'})
 @attr(tier=3)
 class TestCase10696(BasicEnvironment):
     """
@@ -628,6 +631,7 @@ class TestCase10696(BasicEnvironment):
         )
 
 
+@bz({'1411123'})
 @attr(tier=2)
 class TestCase10697(BasicEnvironment):
     """
