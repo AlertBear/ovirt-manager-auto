@@ -37,7 +37,7 @@ class TestOsnp01(NetworkTest):
     Import network from OpenStack network provider
     Delete imported network
     """
-    __test__ = True
+    __test__ = False
 
     @polarion("RHEVM-14817")
     def test_01_add_openstack_provider(self):
