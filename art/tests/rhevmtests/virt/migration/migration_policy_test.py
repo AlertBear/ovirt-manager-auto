@@ -45,7 +45,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
         """
         Migrate with bandwidth auto and all policies
         """
-        for migration_policy in config.MIGRATION_POLICY_NAME:
+        for migration_policy in config.MIGRATION_POLICY_NAME[:4]:
             testflow.step(
                 "Migrate vm with policy: %s and bandwidth: %s",
                 migration_policy, config.MIGRATION_BANDWIDTH_AUTO
@@ -66,7 +66,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
         Migrate with bandwidth hypervisor default (52 Mbps) and all policies,
         check bandwidth with visrh domjobinfo
         """
-        for migration_policy in config.MIGRATION_POLICY_NAME:
+        for migration_policy in config.MIGRATION_POLICY_NAME[:4]:
             testflow.step(
                 "Migrate vm with policy: %s and bandwidth: %s, and check "
                 "bandwidth",
@@ -89,7 +89,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
         Migrate with custom bandwidth 32 Mbps and all policies,
         check bandwidth with visrh domjobinfo
         """
-        for migration_policy in config.MIGRATION_POLICY_NAME:
+        for migration_policy in config.MIGRATION_POLICY_NAME[:4]:
             testflow.step(
                 "Migrate vm with policy: %s and BW custom: 32 Mbps and check "
                 "bandwidth", migration_policy
