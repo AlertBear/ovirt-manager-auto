@@ -397,7 +397,7 @@ def remove_template(request):
             assert ll_templates.removeTemplate(True, self.template_name), (
                 "Failed to remove template %s" % self.template_name
             )
-
+            ll_jobs.wait_for_jobs([config.JOB_REMOVE_TEMPLATE])
     request.addfinalizer(finalizer)
 
 

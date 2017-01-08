@@ -37,3 +37,10 @@ if EXTEND_LUN:
             "lun_list": [lun],
             "override_luns": True,
         })
+
+BASE_KWARGS = disk_args.copy()
+BASE_KWARGS.update({
+    "interface": VIRTIO_SCSI,
+    "alias": "direct_lun_disk",
+    "type_": STORAGE_TYPE_ISCSI,
+})

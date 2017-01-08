@@ -152,6 +152,7 @@ VM_ANY_HOST = ENUMS['vm_affinity_migratable']
 OBJECT_TYPE_CLUSTER = "cl"
 OBJECT_TYPE_DC = "dc"
 OBJECT_TYPE_DISK = "disk"
+OBJECT_TYPE_DIRECT_LUN = "direct_lun"
 OBJECT_TYPE_POOL = "pool"
 OBJECT_TYPE_SD = "sd"
 OBJECT_TYPE_SNAPSHOT = "snap"
