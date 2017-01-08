@@ -133,12 +133,6 @@ class TestOVNProvider01(NetworkTest):
         )
         helper.run_vm_on_host(vm=net_conf.VM_0, host=net_conf.HOSTS[0])
 
-        testflow.step(
-            "Creating ifcfg file on VM: %s that prevents route change",
-            net_conf.VM_0
-        )
-        assert helper.create_ifcfg_on_vm(vm=net_conf.VM_0)
-
     @polarion("RHEVM3-17296")
     def test_05_hot_add_vnic_with_ovn_network_on_live_vm(self):
         """
@@ -158,12 +152,6 @@ class TestOVNProvider01(NetworkTest):
             positive=True, vm=net_conf.VM_1, name=ovn_conf.OVN_VNIC,
             network=ovn_conf.OVN_NET_1, plugged=True
         )
-
-        testflow.step(
-            "Creating ifcfg file on VM: %s that prevents route change",
-            net_conf.VM_1
-        )
-        assert helper.create_ifcfg_on_vm(vm=net_conf.VM_1)
 
     @polarion("RHEVM3-16927")
     def test_06_ping_same_ovn_network_and_host(self):
@@ -204,13 +192,19 @@ class TestOVNProvider01(NetworkTest):
         )
 
         testflow.step(
-            "Setting IP network: %s on VM: %s and testing ping from "
-            "VM: %s to IP: %s", ovn_conf.OVN_VM_0_NET, net_conf.VM_0,
-            net_conf.VM_0, ovn_conf.OVN_VM_1_IP
+            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_0_NET,
+            net_conf.VM_0
         )
-        assert helper.set_ip_and_test_ping(
-            vm=net_conf.VM_0, vm_ip_net=ovn_conf.OVN_VM_0_NET,
-            src_vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+        assert helper.set_ip_non_mgmt_nic(
+            vm=net_conf.VM_0, ip_network=ovn_conf.OVN_VM_0_NET
+        )
+
+        testflow.step(
+            "Testing ping from VM: %s to IP: %s", net_conf.VM_0,
+            ovn_conf.OVN_VM_1_IP
+        )
+        assert helper.check_ping(
+            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
     @polarion("RHEVM3-16930")
@@ -243,13 +237,19 @@ class TestOVNProvider01(NetworkTest):
         )
 
         testflow.step(
-            "Setting IP network: %s on VM: %s and testing ping from "
-            "VM: %s to VM: %s", ovn_conf.OVN_VM_0_NET, net_conf.VM_0,
-            net_conf.VM_0, net_conf.VM_1
+            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_0_NET,
+            net_conf.VM_0
         )
-        assert helper.set_ip_and_test_ping(
-            vm=net_conf.VM_0, vm_ip_net=ovn_conf.OVN_VM_0_NET,
-            src_vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+        assert helper.set_ip_non_mgmt_nic(
+            vm=net_conf.VM_0, ip_network=ovn_conf.OVN_VM_0_NET
+        )
+
+        testflow.step(
+            "Testing ping from VM: %s to IP: %s", net_conf.VM_0,
+            ovn_conf.OVN_VM_1_IP
+        )
+        assert helper.check_ping(
+            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
     @polarion("RHEVM3-17064")
@@ -277,13 +277,19 @@ class TestOVNProvider01(NetworkTest):
         )
 
         testflow.step(
-            "NEGATIVE: setting IP network: %s on VM: %s and testing ping test"
-            " from VM: %s to VM: %s", ovn_conf.OVN_VM_0_NET, net_conf.VM_0,
-            net_conf.VM_0, net_conf.VM_1
+            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_0_NET,
+            net_conf.VM_0
         )
-        assert not helper.set_ip_and_test_ping(
-            vm=net_conf.VM_0, vm_ip_net=ovn_conf.OVN_VM_0_NET,
-            src_vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+        assert helper.set_ip_non_mgmt_nic(
+            vm=net_conf.VM_0, ip_network=ovn_conf.OVN_VM_0_NET
+        )
+
+        testflow.step(
+            "NEGATIVE: testing ping from VM: %s to IP: %s", net_conf.VM_0,
+            ovn_conf.OVN_VM_1_IP
+        )
+        assert not helper.check_ping(
+            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
         testflow.step(
@@ -297,13 +303,19 @@ class TestOVNProvider01(NetworkTest):
         )
 
         testflow.step(
-            "Setting IP network: %s on VM: %s and testing ping from "
-            "VM: %s to VM: %s", ovn_conf.OVN_VM_1_NET, net_conf.VM_1,
-            net_conf.VM_0, net_conf.VM_1
+            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_1_NET,
+            net_conf.VM_1
         )
-        assert helper.set_ip_and_test_ping(
-            vm=net_conf.VM_1, vm_ip_net=ovn_conf.OVN_VM_1_NET,
-            src_vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+        assert helper.set_ip_non_mgmt_nic(
+            vm=net_conf.VM_1, ip_network=ovn_conf.OVN_VM_1_NET
+        )
+
+        testflow.step(
+            "Testing ping from VM: %s to IP: %s", net_conf.VM_0,
+            ovn_conf.OVN_VM_1_IP
+        )
+        assert helper.check_ping(
+            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
     @polarion("RHEVM3-17062")
@@ -339,18 +351,25 @@ class TestOVNProvider01(NetworkTest):
     @polarion("RHEVM3-17236")
     def test_11_ovn_network_with_subnet(self):
         """
-        1. Hot-unplug OVN vNIC on VM-0
-        2. Attach VM-0 OVN vNIC network: OVN_NET_3
-        3. Hot-plug OVN vNIC on VM-0
-        4. Request DHCP address on OVN vNIC
-        5. Verify that VM-0 acquired IP address from DHCP
-        6. Hot-unplug OVN vNIC on VM-1
-        7. Attach VM-1 OVN vNIC network: OVN_NET_3
-        8. Hot-plug OVN vNIC on VM-1
-        9. Request DHCP address on OVN vNIC
-        10. Verify that VM-1 acquired IP address from DHCP
+        1. Create ifcfg file that prevents default route change
+        2. Hot-unplug OVN vNIC on VM-0
+        3. Attach VM-0 OVN vNIC network: OVN_NET_3
+        4. Hot-plug OVN vNIC on VM-0
+        5. Request DHCP address on OVN vNIC
+        6. Verify that VM-0 acquired IP address from DHCP
+        7. Hot-unplug OVN vNIC on VM-1
+        8. Attach VM-1 OVN vNIC network: OVN_NET_3
+        9. Hot-plug OVN vNIC on VM-1
+        10. Request DHCP address on OVN vNIC
+        11. Verify that VM-1 acquired IP address from DHCP
         """
         for vm_name in (net_conf.VM_0, net_conf.VM_1):
+            testflow.step(
+                "Creating ifcfg file on VM: %s that prevents route change",
+                vm_name
+            )
+            assert helper.create_ifcfg_on_vm(vm=vm_name)
+
             testflow.step(
                 "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
                 "and hot-plug it back", ovn_conf.OVN_VNIC, vm_name,

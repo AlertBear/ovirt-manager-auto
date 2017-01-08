@@ -44,32 +44,6 @@ def run_vm_on_host(vm, host):
     return False
 
 
-def get_non_mgmt_nic_name(vm):
-    """
-    Get the name of the non-mgmt NIC of a VM that has two NIC's installed
-
-    Args:
-        vm (str): VM name
-
-    Returns:
-        str: Name of the non-mgmt NIC, or empty string if error has occurred
-
-    """
-    if not ovn_conf.OVN_VMS_RESOURCES[vm]:
-        return ""
-
-    network = ovn_conf.OVN_VMS_RESOURCES[vm].get_network()
-    interfaces = network.all_interfaces()
-    mgmt_interface = network.find_mgmt_interface()
-
-    match = filter(lambda eth: eth != mgmt_interface, interfaces)
-    if not match:
-        logger.error("Unable to locate a non-mgmt NIC on VM: %s", vm)
-        return ""
-
-    return match[0]
-
-
 def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
     """
     Set IP network on the non-mgmt NIC of a VM that has two NIC's installed
@@ -86,9 +60,10 @@ def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
         str: IP address of the VM, or empty string if error has occurred
 
     """
-    interface = get_non_mgmt_nic_name(vm=vm)
+    interface = net_helper.get_non_mgmt_nic_name(vm=vm)
     if not interface:
         return ""
+    interface = interface[0]
 
     vm_resource = ovn_conf.OVN_VMS_RESOURCES[vm]
 
@@ -138,9 +113,10 @@ def create_ifcfg_on_vm(vm, action="create"):
         "DEFROUTE": "no"
     }
 
-    interface = get_non_mgmt_nic_name(vm=vm)
+    interface = net_helper.get_non_mgmt_nic_name(vm=vm)
     if not interface:
         return False
+    interface = interface[0]
 
     vm_resource = ovn_conf.OVN_VMS_RESOURCES[vm]
     network = vm_resource.get_network()
@@ -195,9 +171,10 @@ def check_ping(vm, dst_ip, max_loss=0, count=ovn_conf.OVN_PING_COUNT):
         bool: True if ping was successful, False otherwise
 
     """
-    interface = get_non_mgmt_nic_name(vm=vm)
+    interface = net_helper.get_non_mgmt_nic_name(vm=vm)
     if not interface:
         return False
+    interface = interface[0]
 
     ret = ovn_conf.OVN_VMS_RESOURCES[vm].run_command(
         command=shlex.split(
@@ -244,28 +221,6 @@ def check_dns_resolver(vm, ip_address):
         logger.error("Unable to locate: %s", ovn_conf.OVN_CMD_RESOLV_CONFIG)
 
     return ip_address in resolv_content
-
-
-def set_ip_and_test_ping(vm, vm_ip_net, src_vm, dst_ip):
-    """
-    Set static IP network on a VM and run ping test
-
-    Args:
-        vm (str): VM name to set the IP network on
-        vm_ip_net (str): IP network (CIDR convention, e.g. 192.168.100.1/24)
-            to be set on VM
-        src_vm (str): Name of source VM that sends the ping
-        dst_ip (str): Ping destination IP address
-
-    Returns:
-        bool: True if both set IP and ping actions were successful, False if
-            one of them failed
-
-    """
-    ip_set_ret = set_ip_non_mgmt_nic(vm=vm, ip_network=vm_ip_net)
-    ping_ret = check_ping(vm=src_vm, dst_ip=dst_ip)
-
-    return ip_set_ret and ping_ret
 
 
 def check_hot_unplug_and_plug(vm, vnic, network=None, vnic_profile=None):
