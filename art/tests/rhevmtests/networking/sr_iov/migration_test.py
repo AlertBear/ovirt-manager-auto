@@ -16,7 +16,7 @@ import helper
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
     SRIOV, init_fixture, reset_host_sriov_params, set_num_of_vfs,
@@ -273,8 +273,8 @@ class SriovMigration01(NetworkTest):
         )
         assert conf.ENGINE_HOST.network.send_icmp(dst=vm_ip)
 
+    @bz({"1410076": {}})
     @polarion("RHEVM-17059")
-    @pytest.mark.skip("NEED INVESTIGATION")
     def test_05_migrate_with_bond_in_guest(self):
         """
         Migrate with vf and virtIO vNIcs (BOND on guest)
