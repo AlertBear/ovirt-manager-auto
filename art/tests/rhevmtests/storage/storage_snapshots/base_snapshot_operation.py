@@ -1,14 +1,10 @@
-"""
-Storage live snapshot sanity tests - full test
-https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-Storage/3_1_Storage_Live_Snapshot
-"""
 import logging
 import os
 import shlex
 import pytest
 
 from rhevmtests import helpers as rhevm_helpers
+from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage import config
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import StorageTest as TestCase, attr, testflow
@@ -16,14 +12,11 @@ from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     vms as ll_vms,
 )
-from art.rhevm_api.tests_lib.high_level import (
-    vms as hl_vms,
-)
-from utilities.machine import Machine, LINUX
 
 from rhevmtests.storage.fixtures import (
     create_vm, initialize_storage_domains, undo_snapshot, add_disk,
-    create_template, start_vm, attach_disk, poweroff_vm, remove_vms,
+    create_template, attach_disk, poweroff_vm, remove_vms,
+    create_fs_on_disk,
 )
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 
@@ -38,7 +31,6 @@ MAX_DESC_LENGTH = 4000
 SPECIAL_CHAR_DESC = '!@#$\% ^&*/\\'
 
 
-@bz({'1396960': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     initialize_prepare_environment.__name__,
@@ -52,11 +44,10 @@ class BasicEnvironmentSetUp(TestCase):
     file_name = 'test_file'
     mount_path = '/root'
     cmd_create = 'echo "test_txt" > test_file'
-    cm_del = 'rm -f test_file'
+    live_snapshot = None
 
-    def _perform_snapshot_operation(
-            self, vm_name, disks=None, wait=True, live=False):
-        if not live:
+    def _perform_snapshot_operation(self, vm_name, disks=None, wait=True):
+        if not self.live_snapshot:
             if not ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
                 ll_vms.shutdownVm(True, vm_name)
                 ll_vms.waitForVMState(vm_name, config.VM_DOWN)
@@ -84,7 +75,7 @@ class BasicEnvironmentSetUp(TestCase):
         ll_vms.waitForVMState(vm_name)
         full_path = os.path.join(self.mount_path, self.file_name)
         logger.info("Checking full path %s", full_path)
-        result = self.vm.isFileExists(full_path)
+        result = storage_helpers.does_file_exist(self.vm_name, full_path)
         logger.info("File %s", "exists" if result else "does not exist")
 
         if should_exist != result:
@@ -93,13 +84,10 @@ class BasicEnvironmentSetUp(TestCase):
 
 
 @attr(tier=2)
-class TestCase11660(BasicEnvironmentSetUp):
+class TestCase18863(BasicEnvironmentSetUp):
     """
-    Full flow Live snapshot
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11660
-
-    Create live snapshot
+    Full flow snapshot operation:
+    Create snapshot
     Add file to the VM
     Stop VM
     Preview and commit snapshot
@@ -109,26 +97,28 @@ class TestCase11660(BasicEnvironmentSetUp):
     Verify that a new data is written on new volumes
     Verify that the file no longer exists both after preview and after commit
     """
-    __test__ = True
+    __test__ = False
+    polarion_test_case = '18863'
 
-    def _test_Live_snapshot(self, vm_name):
+    def _test_snapshot_operation(self, vm_name):
         """
-        Tests live snapshot on given vm
+        Tests snapshot on given vm
         """
-        ll_vms.startVms([vm_name])
-        ll_vms.waitForVMState(vm_name)
-        vm_ip = hl_vms.get_vm_ip(vm_name, start_vm=False)
-        self.vm = Machine(
-            vm_ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW
-        ).util(LINUX)
-        testflow.step("Creating snapshot on a running VM %s", vm_name)
-        self._perform_snapshot_operation(vm_name, live=True)
+        if self.live_snapshot:
+            ll_vms.start_vms([vm_name])
+            ll_vms.waitForVMState(vm_name)
+        live_message = "live" if self.live_snapshot else ""
+        testflow.step("Creating %s snapshot on a VM %s", live_message, vm_name)
+        self._perform_snapshot_operation(vm_name)
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
+        ll_vms.start_vms([vm_name])
+        ll_vms.waitForVMState(vm_name)
         testflow.step("Writing files to VM's %s disk", vm_name)
         cmd = self.cmd_create
-        status, out = self.vm.runCmd(shlex.split(cmd))
-        assert status, "Unable to write to VM %s: %s" % (vm_name, out)
+        executor = storage_helpers.get_vm_executor(self.vm_name)
+        status, out, _ = executor.run_cmd(shlex.split(cmd))
+        assert not status, "Unable to write to VM %s: %s" % (vm_name, out)
         assert self.check_file_existence_operation(vm_name, True), (
             "Writing operation failed"
         )
@@ -150,11 +140,6 @@ class TestCase11660(BasicEnvironmentSetUp):
             True, vm=vm_name, wait_for_ip=True
         )
         testflow.step("Checking that files no longer exist after preview")
-        # PPC's IP doesn't seems to be static
-        vm_ip = hl_vms.get_vm_ip(vm_name, start_vm=False)
-        self.vm = Machine(
-            vm_ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW
-        ).util(LINUX)
         assert self.check_file_existence_operation(vm_name, False), (
             "Snapshot operation failed"
         )
@@ -173,12 +158,12 @@ class TestCase11660(BasicEnvironmentSetUp):
             "Snapshot operation failed"
         )
 
-    @polarion("RHEVM3-11660")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_live_snapshot(self):
         """
         Create a snapshot while VM is running
         """
-        self._test_Live_snapshot(self.vm_name)
+        self._test_snapshot_operation(self.vm_name)
 
 
 @pytest.mark.usefixtures(
@@ -186,17 +171,14 @@ class TestCase11660(BasicEnvironmentSetUp):
     initialize_prepare_environment.__name__,
     add_disk.__name__,
     attach_disk.__name__,
-    undo_snapshot.__name__,
+    create_fs_on_disk.__name__,
     poweroff_vm.__name__,
 )
 @attr(tier=2)
 class TestCase11679(BasicEnvironmentSetUp):
     """
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11679
-
     Add a disk to the VMs
-    Create live snapshot
+    Create snapshot
     Add 3 files to the VM
     Stop VM and restore snapshot
 
@@ -205,86 +187,39 @@ class TestCase11679(BasicEnvironmentSetUp):
     Verify that the correct number of images were created
     Verify that a new data is written on new volumes
     """
-    __test__ = True
-    mount_path = '/new_fs_%s'
-    cmd_create = 'echo "test_txt" > %s/test_file'
-
-    def _prepare_fs_on_devs(self):
-        assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True), (
-            "Failed to start VM %s" % self.vm_name
-        )
-        # PPC's IP doesn't seems to be static
-        vm_ip = hl_vms.get_vm_ip(self.vm_name, start_vm=False)
-        self.vm = Machine(
-            vm_ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW
-        ).util(LINUX)
-        vm_devices = self.vm.get_storage_devices()
-        assert vm_devices,  "No devices found in VM %s" % self.vm_name
-        logger.info("Devices found: %s", vm_devices)
-        self.devices = [d for d in vm_devices if d != 'vda']
-        self.devices.sort()
-        for dev in self.devices:
-            dev_size = self.vm.get_storage_device_size(dev)
-            dev_path = os.path.join('/dev', dev)
-            logger.info("Creating partition for dev: %s", dev_path)
-            dev_number = self.vm.createPartition(
-                dev_path, (dev_size * config.GB) - 100 * config.MB
-            )
-            logger.info("Creating file system for dev: %s", dev + dev_number)
-            self.vm.createFileSystem(
-                dev_path, dev_number, 'ext4', (self.mount_path % dev)
-            )
-
-            self.mounted_paths.append(self.mount_path % dev)
+    __test__ = False
+    full_path = None
+    polarion_test_case = '11679'
 
     def check_file_existence_operation(
             self, should_exist=True, operation='snapshot'
     ):
         ll_vms.start_vms([self.vm_name], 1, config.VM_UP, wait_for_ip=True)
-        # PPC's IP doesn't seems to be static
-        vm_ip = hl_vms.get_vm_ip(self.vm_name, start_vm=False)
-        self.vm = Machine(
-            vm_ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW
-        ).util(LINUX)
-        lst = []
-        for dev in self.devices:
-            full_path = os.path.join((self.mount_path % dev), self.file_name)
-            logger.info("Checking full path %s", full_path)
-            result = self.vm.isFileExists(full_path)
-            logger.info("File %s", "exist" if result else "not exist")
-            lst.append(result)
+        logger.info("Checking full path %s", self.full_path)
+        result = storage_helpers.does_file_exist(self.vm_name, self.full_path)
+        logger.info("File %s", "exist" if result else "not exist")
 
-        assert should_exist in lst, "%s operation failed" % operation
+        assert should_exist == result, "%s operation failed" % operation
 
-    def _test_Live_snapshot(self, vm_name):
+    def _test_snapshot_operation(self, vm_name):
         """
-        Tests live snapshot on given vm
+        Tests snapshot operation on given vm
         """
-        logger.info("Make sure VM %s is up", vm_name)
-        if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
-            ll_vms.startVms([vm_name], config.VM_UP, wait_for_ip=True)
-            # PPC's IP doesn't seems to be static
-            vm_ip = hl_vms.get_vm_ip(vm_name, start_vm=False)
-            self.vm = Machine(
-                vm_ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW
-            ).util(LINUX)
-        testflow.step("Creating live snapshot")
-        self._perform_snapshot_operation(vm_name, live=True)
+        if self.live_snapshot:
+            logger.info("Make sure VM %s is up", vm_name)
+            if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+                ll_vms.start_vms([vm_name], config.VM_UP, wait_for_ip=True)
+        testflow.step("Creating snapshot")
+        self._perform_snapshot_operation(vm_name)
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
-
-        vm_devices = self.vm.get_storage_devices()
-        assert vm_devices, "No devices found"
-        logger.info("Devices found: %s", vm_devices)
-        self.devices = [d for d in vm_devices if d != 'vda']
-        self.devices.sort()
-        for dev in self.devices:
-            logger.info("writing file to disk")
-            mount_path = self.mount_path % dev
-            cmd = self.cmd_create % mount_path
-            status, _ = self.vm.runCmd(shlex.split(cmd))
-
-            assert status
-            self.check_file_existence_operation(True, 'writing')
+        if not self.live_snapshot:
+            if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+                ll_vms.start_vms([vm_name], config.VM_UP, wait_for_ip=True)
+        storage_helpers.create_file_on_vm(
+            vm_name, self.file_name, config.MOUNT_POINT
+        )
+        self.full_path = os.path.join(config.MOUNT_POINT, self.file_name)
+        self.check_file_existence_operation(True, 'writing')
         ll_vms.stop_vms_safely([vm_name])
 
         testflow.step(
@@ -320,25 +255,20 @@ class TestCase11679(BasicEnvironmentSetUp):
         testflow.step("Checking that files no longer exist after commit")
         self.check_file_existence_operation(False)
 
-    @polarion("RHEVM3-11679")
-    def test_live_snapshot(self):
+    @polarion("RHEVM3-" + polarion_test_case)
+    def test_snapshot_operation(self):
         """
         Create a snapshot while VM is running
         """
-        self._prepare_fs_on_devs()
-        self._test_Live_snapshot(self.vm_name)
+        self._test_snapshot_operation(self.vm_name)
 
 
-@bz({'1396960': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
 @attr(tier=3)
 class TestCase11676(TestCase):
     """
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11676
-
     Try to create a snapshot with max chars length
     Try to create a snapshot with special characters
 
@@ -347,38 +277,37 @@ class TestCase11676(TestCase):
     Should be possible to create a snapshot with special characters and backend
     should not limit chars length
     """
-    __test__ = True
+    __test__ = False
+    live_snapshot = None
+    polarion_test_case = '11676'
 
-    def _test_snapshot_desc_length(self, positive, length, vm_name):
-        """
-        Tries to create snapshot with given length description
-        Parameters:
-            * length - how many 'a' chars should description contain
-        """
-        assert ll_vms.startVm(True, vm_name), "Failed to start VM %s" % vm_name
-        description = length * 'a'
-        testflow.step(
-            "Trying to create snapshot on VM %s with description "
-            "containing %d 'a' letters", vm_name, length
-        )
-        assert ll_vms.addSnapshot(
-            positive, vm=vm_name, description=description
-        )
-
-    @polarion("RHEVM3-11676")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_snapshot_description_length_positive(self):
         """
         Try to create a snapshot with max chars length
         """
-        self._test_snapshot_desc_length(
-            True, MAX_DESC_LENGTH, self.vm_name
+        if self.live_snapshot:
+            assert ll_vms.start_vms([self.vm_name]), (
+                "Failed to start VM %s" % self.vm_name
+            )
+        description = MAX_DESC_LENGTH * 'a'
+        testflow.step(
+            "Trying to create snapshot on VM %s with description "
+            "containing %d 'a' letters", self.vm_name, MAX_DESC_LENGTH
+        )
+        assert ll_vms.addSnapshot(
+            True, vm=self.vm_name, description=description
         )
 
-    @polarion("RHEVM3-11676")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_special_characters(self):
         """
         Try to create snapshots containing special characters
         """
+        if self.live_snapshot:
+            assert ll_vms.start_vms([self.vm_name]), (
+                "Failed to start VM %s" % self.vm_name
+            )
         testflow.step(
             "Trying to create snapshot with description %s",
             SPECIAL_CHAR_DESC
@@ -390,35 +319,36 @@ class TestCase11676(TestCase):
         )
 
 
-@bz({'1396960': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     initialize_storage_domains.__name__,
     add_disks_different_sd.__name__,
-    start_vm.__name__,
 )
 @attr(tier=3)
 class TestCase11665(TestCase):
     """
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11665
-
     Create 2 additional disks on a VM, each on a different storage domain
     Add snapshot
 
     Expected Results:
     You should be able to create a snapshot
     """
-    __test__ = True
+    __test__ = False
     disks_count = 2
+    live_snapshot = None
+    polarion_test_case = '11665'
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_CREATE_SNAPSHOT])
-    @polarion("RHEVM3-11665")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_snapshot_on_multiple_domains(self):
         """
         Tests whether snapshot can be created on VM that has disks on multiple
         storage domains
         """
+        if self.live_snapshot:
+            assert ll_vms.startVm(
+                True, self.vm_name, config.VM_UP, True,
+            ), "Failed to start VM %s" % self.vm_name
         testflow.step(
             "Create a snapshot on VM %s that contains multiple disks on "
             "different domains", self.vm_name
@@ -428,16 +358,12 @@ class TestCase11665(TestCase):
         )
 
 
-@bz({'1396960': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
 @attr(tier=3)
 class TestCase11680(TestCase):
     """
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11680
-
     Migrate a VM without waiting
     Add snapshot to the same VM while migrating it
 
@@ -445,17 +371,20 @@ class TestCase11680(TestCase):
 
     It should be impossible to create a snapshot while VMs migration
     """
-    __test__ = True
+    __test__ = False
+    live_snapshot = None
+    polarion_test_case = '11680'
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MIGRATE_VM])
-    @polarion("RHEVM3-11680")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_migration(self):
         """
         Tests live snapshot during migration
         """
-        assert ll_vms.startVm(True, self.vm_name), "Failed to start VM %s" % (
-            self.vm_name
-        )
+        if self.live_snapshot:
+            assert ll_vms.startVm(True, self.vm_name), (
+                "Failed to start VM %s" % self.vm_name
+            )
         testflow.step("Migrate VM %s", self.vm_name)
         assert ll_vms.migrateVm(True, self.vm_name, wait=False)
         testflow.step("Take snapshot while the VM is migrating")
@@ -464,19 +393,14 @@ class TestCase11680(TestCase):
         )
 
 
-@bz({'1396960': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     initialize_storage_domains.__name__,
     add_disks_different_sd.__name__,
-    start_vm.__name__,
 )
 @attr(tier=2)
 class TestCase11674(TestCase):
     """
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11674/
-
     Add a second disk to a VM
     Add snapshot
     Make sure that the new snapshot appears only once
@@ -486,15 +410,21 @@ class TestCase11674(TestCase):
     Only one snapshot should be available in UI, no matter how many disks do
     you have.
     """
-    __test__ = True
+    __test__ = False
     disks_count = 1
+    live_snapshot = None
+    polarion_test_case = '11674'
 
-    @polarion("RHEVM3-11674")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_snapshot_with_multiple_disks(self):
         """
         Checks that created snapshot appears only once although VM has more
         disks
         """
+        if self.live_snapshot:
+            assert ll_vms.startVm(
+                True, self.vm_name, config.VM_UP, True,
+            ), "Failed to start VM %s" % self.vm_name
         snap_descs = set([config.ACTIVE_SNAPSHOT, LIVE_SNAPSHOT_DESC])
         testflow.step("Create snapshot on VM %s", self.vm_name)
         assert ll_vms.addSnapshot(
@@ -509,7 +439,6 @@ class TestCase11674(TestCase):
         assert snap_descs == current_snap_descs
 
 
-@bz({'1396960': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_template.__name__,
@@ -519,9 +448,6 @@ class TestCase11674(TestCase):
 @attr(tier=3)
 class TestCase11684(TestCase):
     """
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11684
-
     Create a template
     Create a thin provisioned VM from that template
     Create a cloned VM from that template
@@ -530,11 +456,13 @@ class TestCase11684(TestCase):
 
     Expected Results:
 
-    Live snapshots should be created for both cases
+    Snapshots should be created for both cases
     """
-    __test__ = True
+    __test__ = False
+    live_snapshot = None
+    polarion_test_case = '11684'
 
-    @polarion("RHEVM3-11684")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_snapshot_on_thin_vm(self):
         """
         Try to make a live snapshot from thinly provisioned VM
@@ -544,7 +472,7 @@ class TestCase11684(TestCase):
             True, vm=self.vm_thin, description=LIVE_SNAPSHOT_DESC
         )
 
-    @polarion("RHEVM3-11684")
+    @polarion("RHEVM3-" + polarion_test_case)
     def test_snapshot_on_cloned_vm(self):
         """
         Try to make a live snapshot from cloned VM

@@ -31,7 +31,7 @@ from fixtures import (
 logger = logging.getLogger(__name__)
 
 
-@bz({'1396960': {}})
+@bz({'1412646': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_snapshot.__name__,
@@ -432,7 +432,6 @@ class TestCase5134(VMWithMemoryStateSnapshot):
         assert ll_vms.startVm(
             True, self.vm_name, wait_for_status=config.VM_UP, wait_for_ip=True
         ), "Unable to start VM %s" % self.vm_name
-
         assert is_pid_running_on_vm(
             self.vm_name, self.pids[0], self.cmdlines[0]
         ), (

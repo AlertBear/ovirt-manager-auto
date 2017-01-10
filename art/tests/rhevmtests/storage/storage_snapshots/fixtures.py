@@ -127,4 +127,5 @@ def add_two_vms_from_template(request):
         (self.vm_clone, self.template_name)
     )
     self.vm_names.append(self.vm_clone)
-    ll_vms.start_vms(self.vm_names, config.MAX_WORKERS)
+    if self.live_snapshot:
+        ll_vms.start_vms(self.vm_names, config.MAX_WORKERS)

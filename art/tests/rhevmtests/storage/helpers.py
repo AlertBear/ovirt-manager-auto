@@ -39,6 +39,7 @@ from utilities.machine import Machine, LINUX
 logger = logging.getLogger(__name__)
 
 SPM_TIMEOUT = 300
+TASK_TIMEOUT = 300
 SPM_SLEEP = 5
 FIND_SDS_TIMEOUT = 10
 SD_STATUS_OK_TIMEOUT = 15
@@ -64,7 +65,7 @@ LSBLK_CMD = 'lsblk -o NAME'
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
-FIND_CMD = '[ -f %s ]'
+FIND_CMD = 'find / %s'
 ECHO_CMD = 'echo %s > %s'
 CREATE_FILE_CMD = 'touch %s/%s'
 CREATE_FILESYSTEM_CMD = 'mkfs.%s %s'
@@ -72,6 +73,7 @@ REGEX_DEVICE_NAME = '[sv]d[a-z]'
 CREATE_DISK_LABEL_CMD = '/sbin/parted %s --script -- mklabel gpt'
 CREATE_DISK_PARTITION_CMD = \
     '/sbin/parted %s --script -- mkpart primary ext4 0 100%%'
+DEVICE_SIZE_CMD = 'lsblk -o NAME,SIZE | grep %s'
 NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
@@ -852,13 +854,11 @@ def create_fs_on_disk(vm_name, disk_alias):
     is mounted if success, error code and error message in case of failure
     :rtype: tuple
     """
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(
-        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
-    ).util(LINUX)
+    ll_vms.start_vms([vm_name], wait_for_ip=True)
+    executor = get_vm_executor(vm_name)
     # TODO: Workaround for bug:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-    vm_machine.runCmd(shlex.split("udevadm trigger"))
+    executor.run_cmd(shlex.split("udevadm trigger"))
 
     logger.info(
         "Find disk logical name for disk with alias %s on vm %s",
@@ -882,21 +882,21 @@ def create_fs_on_disk(vm_name, disk_alias):
     logger.info(
         "Creating label: %s", CREATE_DISK_LABEL_CMD % disk_logical_volume_name
     )
-    rc, out = vm_machine.runCmd(
+    rc, out, _ = executor.run_cmd(
         (CREATE_DISK_LABEL_CMD % disk_logical_volume_name).split()
     )
     logger.info("Output after creating disk label: %s", out)
-    if not rc:
+    if rc:
         return rc, out
     logger.info(
         "Creating partition %s",
         CREATE_DISK_PARTITION_CMD % disk_logical_volume_name
     )
-    rc, out = vm_machine.runCmd(
+    rc, out, _ = executor.run_cmd(
         (CREATE_DISK_PARTITION_CMD % disk_logical_volume_name).split()
     )
     logger.info("Output after creating partition: %s", out)
-    if not rc:
+    if rc:
         return rc, out
     # '1': create the fs as the first partition
     # '?': createFileSystem will return a random mount point
@@ -972,6 +972,28 @@ def get_storage_devices(vm_name, filter='vd[a-z]'):
         )
         return False
     return output.split()
+
+
+def get_storage_device_size(vm_name, dev_name):
+    """
+    Get device size in GB
+
+    __author__ = "ratamir"
+
+    Args:
+        vm_name (str): VM name to use
+        dev_name (str): Name of device (e.g. vdb)
+
+    Returns::
+        Storage device size in GB (integer) if operation succeeded,
+        or raise CommandExecutionError
+    """
+    vm_executor = get_vm_executor(vm_name)
+    command = shlex.split(DEVICE_SIZE_CMD % dev_name)
+    rc, output, error = vm_executor.run_cmd(cmd=command)
+    if rc:
+        raise errors.CommandExecutionError("Output error: %s" % output)
+    return int(output.split()[1][:-1])
 
 
 def does_file_exist(vm_name, file_name, vm_executor=None):
