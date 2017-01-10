@@ -520,7 +520,7 @@ class TestCase5746(BasicEnvironment):
         )
 
 
-@bz({'1411123'})
+@bz({'1411123': {}})
 @attr(tier=2)
 class TestCase5683(BaseTestCase):
     """
@@ -598,7 +598,7 @@ class TestCase5683(BaseTestCase):
         BaseTestCase.teardown_exception()
 
 
-@bz({'1411123'})
+@bz({'1411123': {}})
 @attr(tier=3)
 class TestCase10696(BasicEnvironment):
     """
@@ -631,7 +631,7 @@ class TestCase10696(BasicEnvironment):
         )
 
 
-@bz({'1411123'})
+@bz({'1411123': {}})
 @attr(tier=2)
 class TestCase10697(BasicEnvironment):
     """
