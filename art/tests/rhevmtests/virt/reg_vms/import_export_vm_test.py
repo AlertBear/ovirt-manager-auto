@@ -83,5 +83,7 @@ class ImportExportVm(VirtTest):
             "Move vm disks to storage domain %s", self.non_master_domain
         )
         hl_vms.move_vm_disks(self.vm_name, self.non_master_domain)
-        testflow.step("Move vm disks to storage domain %s", self.master_domain)
+        testflow.step(
+            "Move vm disks to storage domain %s", self.master_domain
+        )
         hl_vms.move_vm_disks(self.vm_name, self.master_domain)

@@ -18,6 +18,7 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as helper
+import rhevmtests.virt.config as virt_config
 import config
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,9 @@ class RegVmBase(object):
         :type vm_name: str
         """
 
-        if ll_vms.is_vm_exists_in_export_domain(vm_name, cls.export_domain):
+        if ll_vms.is_vm_exists_in_export_domain(
+            vm_name, cls.export_domain
+        ):
             assert ll_vms.remove_vm_from_export_domain(
                 True, vm_name, config.DC_NAME[0], cls.export_domain
             )

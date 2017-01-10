@@ -5,14 +5,12 @@
 # Virt VMs: RHEVM3/wiki/Compute/Virt_VMs
 
 import logging
-import time
 import pytest
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, VirtTest, testflow
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.helpers as helper
 import rhevmtests.virt.helper as virt_helper
-from art.rhevm_api.utils import test_utils
 from rhevmtests.virt.reg_vms.fixtures import (
     add_vm_from_template_fixture, stateless_vm_test_fixture,
 )
@@ -22,40 +20,14 @@ logger = logging.getLogger("virt_vm_base_actions")
 
 
 @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
-class TestPowerActions(VirtTest):
+class TestSuspendVM(VirtTest):
     __test__ = True
-    vm_name = 'power_actions'
+    base_vm_name = 'suspend_vm_test'
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
-    add_disk = False
-    vm_parameters = None
-
-    @attr(tier=2)
-    @polarion("RHEVM3-12587")
-    def test_locked_vm(self):
-        """
-        Change vm status in database to locked and try to remove it
-        """
-        testflow.step("remove locked vm")
-        test_utils.update_vm_status_in_database(
-            self.vm_name,
-            vdc=config.VDC_HOST,
-            status=int(config.ENUMS['vm_status_locked_db']),
-            vdc_pass=config.VDC_ROOT_PASSWORD
-        )
-        test_utils.wait_for_tasks(
-            config.VDC_HOST, config.VDC_ROOT_PASSWORD,
-            config.DC_NAME[0]
-        )
-        time.sleep(20)
-        assert ll_vms.remove_locked_vm(
-            self.vm_name,
-            vdc=config.VDC_HOST,
-            vdc_pass=config.VDC_ROOT_PASSWORD
-        )
+    add_disk = True
 
     @attr(tier=1)
-    @bz({"1389996": {}})
     @polarion("RHEVM3-9962")
     def test_suspend_resume(self):
         """
@@ -63,14 +35,14 @@ class TestPowerActions(VirtTest):
         """
         testflow.step("Check suspend/resume vm")
         assert ll_vms.startVm(
-            positive=True, vm=self.vm_name,
+            positive=True, vm=self.base_vm_name,
             wait_for_status=config.VM_UP
         )
-        testflow.step("Suspend vm %s", self.vm_name)
-        assert ll_vms.suspendVm(True, self.vm_name)
-        testflow.step("Resume vm %s", self.vm_name)
+        testflow.step("Suspend vm %s", self.base_vm_name)
+        assert ll_vms.suspendVm(True, self.base_vm_name)
+        testflow.step("Resume vm %s", self.base_vm_name)
         assert ll_vms.startVm(
-            True, self.vm_name,
+            True, self.base_vm_name,
             wait_for_status=config.VM_UP
         )
 
@@ -82,61 +54,56 @@ class TestPowerActions(VirtTest):
         """
         testflow.step("Check migration is suspend vm")
         assert ll_vms.startVm(
-            positive=True, vm=self.vm_name,
+            positive=True, vm=self.base_vm_name,
             wait_for_status=config.VM_UP
         )
-        assert ll_vms.suspendVm(True, self.vm_name)
+        assert ll_vms.suspendVm(True, self.base_vm_name)
         assert not ll_vms.migrateVm(
-            True, self.vm_name,
+            True, self.base_vm_name,
         ), 'succeeded migrate vm in suspend state'
 
 
-@attr(tier=1)
 @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
 class TestPauseVM(VirtTest):
     """
     VM in pause mode test cases
     """
     __test__ = True
-    vm_name = 'pause_vm'
+    add_disk = True
+    base_vm_name = 'pause_vm'
     vm_parameters = {'start_in_pause': True}
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
 
+    @attr(tier=1)
     @polarion("RHEVM3-9951")
     def test_pause_vm(self):
         """
         Start vm in pause mode and check vm status
         """
         testflow.step(
-            "Start vm %s in pause mode and check status", self.vm_name
+            "Start vm %s in pause mode and check status", self.base_vm_name
         )
         assert ll_vms.startVm(
-            True, vm=self.vm_name,
+            True, vm=self.base_vm_name,
             wait_for_status=config.ENUMS['vm_state_paused']
         ), "Failed to start vm in pause mode"
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-9964")
     @bz({"1273720": {}})
     def test_migrate_paused_vm(self):
         """
-        Negative:
         Start vm in pause, migrate vm
         """
         testflow.step("Migrate vm in pause mode")
         assert ll_vms.startVm(
-            True, vm=self.vm_name,
+            True, vm=self.base_vm_name,
             wait_for_status=config.ENUMS['vm_state_paused']
         ), "Failed to start vm in pause mode"
-        host_before = ll_vms.get_vm_host(self.vm_name)
-        # set time to '0', need only to check if vm is up since it in pause
-        # mode
         assert ll_vms.migrateVm(
-            positive=True, vm=self.vm_name, timeout=0
-        ), "pause vm has migrate"
-        host_after = ll_vms.get_vm_host(self.vm_name)
-        assert host_before != host_after, "vm did stay on the same host"
+            positive=True, vm=self.base_vm_name, timeout=0
+        ), "failed to migrate pause vm"
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)

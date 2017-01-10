@@ -8,6 +8,17 @@ import helper
 logger = logging.getLogger(__name__)
 
 
+def setup_storage_domain():
+    """
+    Set master/non-master/export storage domain in config
+    """
+
+    logger.info("Set master/non-master/export storage domain in config")
+    config.MASTER_DOMAIN, config.EXPORT_DOMAIN, config.NON_MASTER_DOMAIN = (
+        helper.get_storage_domains()
+    )
+
+
 def setup_package():
     """
     1. Stop all VMs
@@ -35,6 +46,8 @@ def setup_package():
             positive=True, vm=vm, **config.DEFAULT_VM_PARAMETERS
         ):
             logger.error("Failed to update VM %s to default Parameters" % vm)
+
+    setup_storage_domain()
 
 
 def teardown_package():

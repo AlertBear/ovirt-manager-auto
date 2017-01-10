@@ -10,10 +10,12 @@ from art.unittest_lib import attr, VirtTest, testflow
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.utils import test_utils
 import rhevmtests.virt.helper as helper
 from rhevmtests.virt.reg_vms.fixtures import (
     add_vm_fixture, basic_teardown_fixture,
     create_vm_and_template_with_small_disk, vm_display_fixture,
+    add_vm_from_template_fixture
 )
 import config
 
@@ -28,7 +30,7 @@ class TestMixCases(VirtTest):
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
     vm_name = config.MIX_CASE_TEST
-    add_disk = False
+    add_disk = True
     vm_parameters = None
     VM_DISK_CLONE_TIMEOUT = 1500
     master_domain, export_domain, non_master_domain = (
@@ -293,3 +295,35 @@ class VmDisplay(VirtTest):
         """
         testflow.step("Set vnc and check address and port")
         assert helper.check_display_parameters(self.vm_names[1], config.VNC)
+
+
+@pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)
+class TestLockVM(VirtTest):
+    __test__ = True
+    base_vm_name = 'lock_vm_test'
+    cluster_name = config.CLUSTER_NAME[0]
+    template_name = config.TEMPLATE_NAME[0]
+    add_disk = True
+
+    @attr(tier=2)
+    @polarion("RHEVM3-12587")
+    def test_locked_vm(self):
+        """
+        Change vm status in database to locked and try to remove it
+        """
+        testflow.step("remove locked vm")
+        test_utils.update_vm_status_in_database(
+            self.base_vm_name,
+            vdc=config.VDC_HOST,
+            status=int(config.ENUMS['vm_status_locked_db']),
+            vdc_pass=config.VDC_ROOT_PASSWORD
+        )
+        test_utils.wait_for_tasks(
+            config.VDC_HOST, config.VDC_ROOT_PASSWORD,
+            config.DC_NAME[0]
+        )
+        assert ll_vms.remove_locked_vm(
+            self.base_vm_name,
+            vdc=config.VDC_HOST,
+            vdc_pass=config.VDC_ROOT_PASSWORD
+        )
