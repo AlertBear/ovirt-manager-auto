@@ -6,11 +6,7 @@ Vm Pool test config
 """
 import rhevmtests.helpers as gen_helper
 from rhevmtests.virt.config import *  # flake8:  noqa
-import rhevmtests.virt.helper as helper
 
-MASTER_DOMAIN, EXPORT_DOMAIN, NON_MASTER_DOMAIN = (
-    helper.get_storage_domains()
-)
 WIN_TZ = ENUMS['timezone_win_gmt_standard_time']
 CPU_TYPE_MIN = 'Intel SandyBridge Family'
 MIGRATION_POLICY_MINIMAL_DOWNTIME = '80554327-0569-496b-bdeb-fcbbf52b827b'
@@ -31,6 +27,11 @@ WINDOWS_TEMPLATES_NAME = [
 WINDOWS_VM_NAMES = [
     WINDOWS_2008_RC2, WINDOWS_7, WINDOWS_2012
 ]
+VM_START_STOP_SETTINGS = {
+    WINDOWS_2008_RC2: {},
+    WINDOWS_7: {},
+    WINDOWS_2012: {}
+}
 VM_PARAMETERS = {
     WINDOWS_7: {
         'memory': gen_helper.get_gb(4),

@@ -34,13 +34,14 @@ def migrate_job_info():
     return kwargs_info
 
 
-def test_vm_snapshots(vm_name, with_memory=False):
+def test_vm_snapshots(vm_name, export_domain, with_memory=False):
     """
     Create, restore, export and remove snapshots
 
     Args:
         vm_name (str): vm_name
         with_memory (bool): create/restore snapshot with memory
+        export_domain (str): export domain name
 
     Returns:
         bool: True if all actions success, else False
@@ -78,7 +79,7 @@ def test_vm_snapshots(vm_name, with_memory=False):
     if not ll_vms.exportVm(
         positive=True,
         vm=vm_name,
-        storagedomain=config.EXPORT_DOMAIN,
+        storagedomain=export_domain,
         discard_snapshots='true',
         timeout=virt_config.VM_ACTION_TIMEOUT
     ):
@@ -127,13 +128,14 @@ def suspend_resume_vm(vm_name):
     )
 
 
-def wait_for_snapshot_jobs(vms_list, with_memory=False):
+def wait_for_snapshot_jobs(vms_list, export_domain, with_memory=False):
     """
     Wait until all snapshot jobs finish and returns status
 
     Args:
         vms_list (list): vm names
         with_memory (bool): create/restore snapshot with memory
+        export_domain (str): export domain name
 
     Returns:
         bool: True, if all snapshot jobs finish succeeded, otherwise False
@@ -141,7 +143,11 @@ def wait_for_snapshot_jobs(vms_list, with_memory=False):
     results = []
     with ThreadPoolExecutor(max_workers=len(vms_list)) as executor:
         for vm in vms_list:
-            results.append(executor.submit(test_vm_snapshots, vm, with_memory))
+            results.append(
+                executor.submit(
+                    test_vm_snapshots, vm, export_domain, with_memory
+                )
+            )
     for result in results:
         if not result.result():
             return False

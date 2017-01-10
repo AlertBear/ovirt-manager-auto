@@ -6,7 +6,7 @@ Global fixtures
 """
 
 import pytest
-
+from concurrent.futures import ThreadPoolExecutor
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -30,16 +30,26 @@ def start_vm(request):
         assert ll_vms.stop_vms_safely(vms_list=vms_to_stop)
     request.addfinalizer(fin)
 
-    for vm, val in vms_dict.iteritems():
-        host_index = val.get("host")
-        wait_for_status = val.get("wait_for_status", conf.VM_UP)
-        host_name = conf.HOSTS[host_index] if host_index is not None else None
-        log = "on host %s" % host_name if host_name else ""
-        testflow.setup("Start VM %s %s", vm, log)
-        assert ll_vms.runVmOnce(
-            positive=True, vm=vm, host=host_name,
-            wait_for_state=wait_for_status
-        )
+    results = list()
+    with ThreadPoolExecutor(max_workers=len(vms_dict.keys())) as executor:
+        for vm, val in vms_dict.iteritems():
+            vm_obj = ll_vms.get_vm(vm)
+            if vm_obj.get_status() == conf.ENUMS['vm_state_down']:
+                host_index = val.get("host")
+                wait_for_status = val.get("wait_for_status", conf.VM_UP)
+                host_name = (
+                    conf.HOSTS[host_index] if host_index is not None else None
+                )
+                log = "on host %s" % host_name if host_name else ""
+                testflow.setup("Start VM %s %s", vm, log)
+                results.append(
+                    executor.submit(
+                        ll_vms.runVmOnce, positive=True, vm=vm,
+                        host=host_name, wait_for_state=wait_for_status
+                    )
+                )
+    for result in results:
+        assert result.result(), result.exception()
 
 
 @pytest.fixture(scope="class")

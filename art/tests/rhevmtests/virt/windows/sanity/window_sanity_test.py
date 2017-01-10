@@ -4,7 +4,6 @@
 Virt Windows testing
 """
 
-import logging
 import pytest
 from art.unittest_lib import attr, VirtTest, testflow
 from art.test_handler.tools import polarion
@@ -14,11 +13,13 @@ from art.rhevm_api.tests_lib.low_level import (
 import rhevmtests.virt.helper as virt_helper
 import rhevmtests.virt.windows.config as config
 import rhevmtests.virt.windows.windows_helper as helper
+from rhevmtests.fixtures import (
+    start_vm
+)
 from rhevmtests.virt.windows.fixtures import (
     create_windows_vms,
     remove_vm_from_storage_domain,
     stop_vms,
-    start_windows_vms,
     update_cluster  # flake8: noqa
 )
 
@@ -26,19 +27,23 @@ from rhevmtests.virt.windows.fixtures import (
 @attr(tier=3)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
-    create_windows_vms.__name__,
-    start_windows_vms.__name__
+    create_windows_vms.__name__, start_vm.__name__,
+    remove_vm_from_storage_domain.__name__
 )
 class WindowsSanityTest01(VirtTest):
     """
-    Migrate Windows VM test
+    Case 1: Migrate Windows VM test
+    Case 2: Snapshot test
     """
     __test__ = True
     vm_name = config.WINDOWS_VM_NAMES
-    wait_for_ip = True
+    start_vms_dict = config.VM_START_STOP_SETTINGS
+    master_domain, export_domain, non_master_domain = (
+        virt_helper.get_storage_domains()
+    )
 
     @polarion("RHEVM-18238")
-    def test_migrate_windows_vms(self):
+    def test_1_migrate_windows_vms(self):
         """
         Check migration for all windows VMs
         """
@@ -50,31 +55,15 @@ class WindowsSanityTest01(VirtTest):
             vms_list=config.WINDOWS_VM_NAMES
         )
 
-
-@attr(tier=3)
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-@pytest.mark.usefixtures(
-    create_windows_vms.__name__,
-    start_windows_vms.__name__,
-    remove_vm_from_storage_domain.__name__,
-)
-class WindowsSanityTest02(VirtTest):
-    """
-    Snapshot test for windows VMs
-    """
-
-    __test__ = True
-    vm_name = config.WINDOWS_VM_NAMES
-    wait_for_ip = False
-
     @polarion("RHEVM-18235")
-    def test_basic_vm_snapshots_with_memory(self):
+    def test_2_vm_snapshots_with_memory(self):
         """
         Create, restore, export and remove snapshots with memory
         """
         testflow.setup("Snapshots with memory")
         helper.wait_for_snapshot_jobs(
             vms_list=config.WINDOWS_VM_NAMES,
+            export_domain=self.export_domain,
             with_memory=True
         )
 
@@ -82,13 +71,12 @@ class WindowsSanityTest02(VirtTest):
 @attr(tier=3)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(create_windows_vms.__name__)
-class WindowsSanityTest03(VirtTest):
+class WindowsSanityTest02(VirtTest):
     """
     VM action testing with Windows VMs
     """
 
     __test__ = True
-    vm_name = config.WINDOWS_VM_NAMES
 
     @polarion("RHEVM-18239")
     @pytest.mark.usefixtures(stop_vms.__name__)

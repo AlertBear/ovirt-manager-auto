@@ -11,6 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_cluster
 )
 import rhevmtests.virt.helper as virt_helper
+import windows_helper
 import config
 
 
@@ -96,6 +97,7 @@ def remove_vm_from_storage_domain(request):
     Fixture for snapshot tests
     Remove vm from export domain
     """
+    export_domain = request.cls.export_domain
 
     def fin():
         """
@@ -104,7 +106,7 @@ def remove_vm_from_storage_domain(request):
         for vm_name in config.WINDOWS_VM_NAMES:
             virt_helper.remove_vm_from_storage_domain(
                 vm_name=vm_name,
-                export_domain=config.EXPORT_DOMAIN
+                export_domain=export_domain
             )
 
     request.addfinalizer(fin)
