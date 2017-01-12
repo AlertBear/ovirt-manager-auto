@@ -26,14 +26,13 @@ import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
 import rhevmtests.networking.network_filter.config as nf_conf
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    add_labels, add_vnic_profile, create_cluster,  add_network_to_dc,
-    create_vnics_on_vm, deactivate_hosts, remove_qos, set_host_nic_down,
-    update_vnic_profile, remove_network
+    add_labels, add_network_to_dc, add_vnic_profile, create_cluster,
+    create_vnics_on_vm, remove_qos, update_vnic_profile
 )
-from rhevmtests.fixtures import start_vm, create_datacenters, create_clusters
+from rhevmtests.fixtures import create_clusters, create_datacenters, start_vm
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, clean_host_interfaces, setup_networks_fixture
 )
@@ -1034,39 +1033,3 @@ class TestSanity14(TestSanityCaseBase):
             assert hl_host_network.check_network_on_nic(
                 network=net, host=conf.HOST_0_NAME, nic=self.bond
             )
-
-
-@pytest.mark.usefixtures(
-    deactivate_hosts.__name__,
-    setup_networks_fixture.__name__,
-    remove_network.__name__,
-    set_host_nic_down.__name__
-)
-class TestSanity15(TestSanityCaseBase):
-    """
-    Set network as required
-    Set the network host NIC down
-    Check that host status is non-operational
-    """
-    __test__ = True
-    net = sanity_conf.NETS[15][0]
-    hosts_nets_nic_dict = {
-        0: {
-            net: {
-                "network": net,
-                "nic": 1,
-            },
-        }
-    }
-
-    @bz({"1310417": {}})
-    @polarion("RHEVM3-3750")
-    def test_non_operational(self):
-        """
-        Check that Host is non-operational
-        """
-        testflow.step("Check that Host is non-operational")
-        assert ll_hosts.waitForHostsStates(
-            positive=True, names=conf.HOST_0_NAME, states="non_operational",
-            timeout=conf.TIMEOUT * 2
-        )

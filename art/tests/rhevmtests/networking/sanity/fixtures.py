@@ -7,16 +7,13 @@ Fixtures for sanity
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
-import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
-import rhevmtests.networking.required_network.helper as required_network_helper
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -195,62 +192,3 @@ def add_labels(request):
         }
         testflow.setup("Add label %s to %s", lb, nets)
         assert ll_networks.add_label(**label_dict)
-
-
-@pytest.fixture(scope="class")
-def deactivate_hosts(request):
-    """
-    Deactivate hosts
-    """
-    sanity = NetworkFixtures()
-    host_name = sanity.host_0_name
-
-    def fin():
-        """
-        Activate hosts
-        """
-        results = list()
-        for host in conf.HOSTS:
-            testflow.teardown("Activate host %s", host)
-            results.append(hl_hosts.activate_host_if_not_up(host=host))
-        assert all(results)
-    request.addfinalizer(fin)
-
-    testflow.setup("Deactivate all hosts beside host %s", host_name)
-    assert required_network_helper.deactivate_hosts(host=host_name)
-
-
-@pytest.fixture(scope="class")
-def set_host_nic_down(request):
-    """
-    Set host NIC down
-    """
-    sanity = NetworkFixtures()
-    interface = sanity.host_0_nics[1]
-
-    def fin():
-        """
-        Set host NIC up
-        """
-        testflow.teardown("Set interface %s up", interface)
-        assert sanity.vds_0_host.network.if_up(nic=interface)
-    request.addfinalizer(fin)
-
-    testflow.setup("Set interface %s down", interface)
-    assert sanity.vds_0_host.network.if_down(nic=interface)
-
-
-@pytest.fixture(scope="class")
-def remove_network(request):
-    """
-    Remove network from setup
-    """
-    NetworkFixtures()
-    net = request.node.cls.net
-
-    def fin():
-        """
-        Remove network from setup
-        """
-        assert ll_networks.remove_network(positive=True, network=net)
-    request.addfinalizer(fin)
