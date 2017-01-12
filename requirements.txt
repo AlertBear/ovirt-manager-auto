@@ -27,7 +27,7 @@ pytest >= 2.8.7
 pytest-xdist
 pytest-html
 pytest-ordering
-pytest-catchlog
+pytest-capturelog
 # pytest-marker-bugzilla
 git+git://github.com/rhevm-qe-automation/pytest-marker-bugzilla.git
 uritemplate
