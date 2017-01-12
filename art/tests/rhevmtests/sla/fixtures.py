@@ -3,9 +3,9 @@ SLA fixtures
 """
 import copy
 import socket
+import time
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
@@ -14,13 +14,13 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as sla_config
+import helpers as sla_helpers
 import pytest
 import rhevmtests.helpers as rhevm_helpers
+import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
-import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-
 
 logger = sla_config.logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ def start_vms(request):
         """
         u_libs.testflow.teardown("Stop VM's %s", vms_to_start)
         ll_vms.stop_vms_safely(vms_list=vms_to_start)
+        time.sleep(sla_config.ENGINE_STAT_UPDATE_INTERVAL)
     request.addfinalizer(fin)
 
     u_libs.testflow.setup("Start VM's %s", vms_to_start)
@@ -63,6 +64,7 @@ def stop_vms(request):
         """
         u_libs.testflow.teardown("Stop VM's %s", vms_to_stop)
         ll_vms.stop_vms_safely(vms_list=vms_to_stop)
+        time.sleep(sla_config.ENGINE_STAT_UPDATE_INTERVAL)
     request.addfinalizer(fin)
 
 
@@ -79,6 +81,7 @@ def run_once_vms(request):
         """
         u_libs.testflow.teardown("Stop VM's %s", vms_to_run.keys())
         ll_vms.stop_vms_safely(vms_list=vms_to_run.keys())
+        time.sleep(sla_config.ENGINE_STAT_UPDATE_INTERVAL)
     request.addfinalizer(fin)
 
     temp_vms_to_run = copy.deepcopy(vms_to_run)
@@ -378,33 +381,7 @@ def choose_specific_host_as_spm(request):
             host=sla_config.HOSTS[host_as_spm],
             data_center=sla_config.DC_NAME[0]
         )
-        u_libs.testflow.setup(
-            "Wait until the datacenter %s will have state equal to 'up'",
-            sla_config.DC_NAME[0]
-        )
-        assert ll_datacenters.waitForDataCenterState(
-            name=sla_config.DC_NAME[0]
-        )
-        u_libs.testflow.setup(
-            "Wait until all storage domains will have state equal to '%s'",
-            sla_config.SD_ACTIVE
-        )
-        results = []
-        storage_domains = ll_sds.get_storage_domains_by_type()
-        with ThreadPoolExecutor(max_workers=len(storage_domains)) as executor:
-            for storage_domain in storage_domains:
-                results.append(
-                    executor.submit(
-                        ll_sds.waitForStorageDomainStatus,
-                        True,
-                        sla_config.DC_NAME[0],
-                        storage_domain.get_name(),
-                        sla_config.SD_ACTIVE
-                    )
-                )
-        for result in results:
-            if result.exception():
-                raise result.exception()
+        assert sla_helpers.wait_for_dc_and_storagedomains()
 
 
 @pytest.fixture(scope="class")

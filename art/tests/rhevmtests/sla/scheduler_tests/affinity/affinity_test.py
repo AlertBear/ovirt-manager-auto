@@ -4,6 +4,7 @@ Check different cases for migration and starting of VM's,
 when VM's in different or in the same affinities groups
 """
 import logging
+import time
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -12,6 +13,7 @@ import art.unittest_lib as u_libs
 import pytest
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
+import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
@@ -24,7 +26,6 @@ from rhevmtests.sla.fixtures import (
     update_vms_memory_to_hosts_memory
 )
 from rhevmtests.sla.scheduler_tests.fixtures import create_affinity_groups
-
 
 logger = logging.getLogger(__name__)
 host_as_spm = 1
@@ -47,10 +48,13 @@ def change_arem_state(enable):
     if not conf.ENGINE.engine_config(action='set', param=cmd).get('results'):
         logger.error("Failed to set %s option to false", conf.AREM_OPTION)
         return False
+    time.sleep(conf.ENGINE_STAT_UPDATE_INTERVAL)
+    if not sla_helpers.wait_for_dc_and_storagedomains():
+        return False
     return True
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def init_affinity_test(request):
     """
     1) Disable AREM manager
@@ -61,13 +65,21 @@ def init_affinity_test(request):
         1) Change cluster overcommitment
         2) Enable AREM manager
         """
+        u_libs.testflow.setup(
+            "Enable cluster %s over-commitment", conf.CLUSTER_NAME[0]
+        )
         ll_clusters.updateCluster(
             positive=True, cluster=conf.CLUSTER_NAME[0], mem_ovrcmt_prc=200
         )
+        u_libs.testflow.setup("Enable AREM via engine-config")
         change_arem_state(enable=True)
     request.addfinalizer(fin)
 
+    u_libs.testflow.setup("Disable AREM via engine-config")
     assert change_arem_state(enable=False)
+    u_libs.testflow.setup(
+        "Disable cluster %s over-commitment", conf.CLUSTER_NAME[0]
+    )
     assert ll_clusters.updateCluster(
         positive=True, cluster=conf.CLUSTER_NAME[0], mem_ovrcmt_prc=100
     )

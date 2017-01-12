@@ -3,11 +3,11 @@ Init for sla tests package
 """
 import logging
 
-from art.rhevm_api.tests_lib.low_level import vms as ll_vms
+import config
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
+from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.utils.inventory import Inventory
 from rhevmtests import networking
-from rhevmtests.sla import config
 
 logger = logging.getLogger(__name__)
 

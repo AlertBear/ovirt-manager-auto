@@ -8,8 +8,10 @@ import re
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import config as conf
@@ -571,3 +573,43 @@ def wait_for_host_scheduling_memory(
                 host_name, sample / conf.MB
             )
     return False
+
+
+def wait_for_dc_and_storagedomains():
+    """
+    1) Wait for datacenter state 'UP'
+    2) Wait for storage domains status 'ACTIVE'
+
+    Returns:
+        bool: True, if all actions succeed, otherwise False
+    """
+    testflow.setup(
+        "Wait until the datacenter %s will have state equal to 'UP'",
+        conf.DC_NAME[0]
+    )
+    if not ll_datacenters.waitForDataCenterState(
+        name=conf.DC_NAME[0]
+    ):
+        return False
+    testflow.setup(
+        "Wait until all storage domains will have state equal to '%s'",
+        conf.SD_ACTIVE
+    )
+    results = []
+    storage_domains = ll_sds.get_storage_domains_by_type()
+    with ThreadPoolExecutor(max_workers=len(storage_domains)) as executor:
+        for storage_domain in storage_domains:
+            results.append(
+                executor.submit(
+                    ll_sds.waitForStorageDomainStatus,
+                    True,
+                    conf.DC_NAME[0],
+                    storage_domain.get_name(),
+                    conf.SD_ACTIVE
+                )
+            )
+    for result in results:
+        if result.exception():
+            logger.error(result.exception().msg)
+            return False
+    return True

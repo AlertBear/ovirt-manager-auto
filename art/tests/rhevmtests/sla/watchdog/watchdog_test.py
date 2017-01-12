@@ -89,7 +89,7 @@ class TestWatchdogCRUDVm(u_libs.SlaTest):
         Remove watchdog device from the VM
         """
         u_libs.testflow.step("Stop VM %s", conf.VM_NAME[0])
-        assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
+        assert ll_vms.stop_vms_safely(vms_list=[conf.VM_NAME[0]])
 
         u_libs.testflow.step(
             "Remove watchdog device from VM %s", conf.VM_NAME[0]
