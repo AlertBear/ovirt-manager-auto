@@ -6,6 +6,7 @@ from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
+    hosts as hl_hosts
 )
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -702,6 +703,7 @@ def create_dc(request):
         "Create data-center %s with cluster %s and host %s", self.new_dc_name,
         self.cluster_name, self.host_name
     )
+
     storage_helpers.create_data_center(
         self.new_dc_name, self.cluster_name, self.host_name, self.dc_version
     )
@@ -715,9 +717,17 @@ def clean_dc(request):
     self = request.node.cls
 
     def finalizer():
-        master_domain = getattr(self, 'master_domain', config.MASTER_DOMAIN)
+        found, master_domain = ll_sd.findMasterStorageDomain(
+            True, self.new_dc_name
+        )
+        assert found, (
+            "Could not find master storage domain on data center '%s'"
+            % self.new_dc_name
+        )
+        master_domain = master_domain['masterDomain']
         testflow.teardown(
-            "Clean data-center %s and remove it", self.new_dc_name
+            "Data center's %s master domain is %s", self.new_dc_name,
+            master_domain
         )
         storage_helpers.clean_dc(
             self.new_dc_name, self.cluster_name, self.host_name,
@@ -911,7 +921,7 @@ def unblock_connectivity_storage_domain_teardown(request):
         assert unblockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip
-        ), "Failed to block connects from %s to %s" % (
+        ), "Failed to unblock connection from host %s to domain %s" % (
             self.host_ip, self.storage_domain_ip
         )
 
@@ -1077,3 +1087,21 @@ def remove_glance_image(request):
             self.disk.get_alias(), self.glance_domain
             )
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='class')
+def move_host_to_another_cluster(request):
+    """
+    Move host to another cluster
+    """
+    self = request.node.cls
+
+    testflow.setup(
+        "Move host %s into the newly created cluster", self.host_name
+    )
+    assert hl_hosts.move_host_to_another_cluster(
+            self.host_name, self.cluster_name
+    ), (
+        "Could not move host '%s' into cluster '%s'" % self.host_name,
+        self.cluster_name
+    )

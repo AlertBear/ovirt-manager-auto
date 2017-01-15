@@ -997,13 +997,15 @@ def _getTemplateFirstDiskByName(template, diskName, idx=0):
 
 def copyTemplateDisk(template, disk_name, target_sd):
     """
-    Description: Copy disk of template to another storage domain
-    Parameters:
-        * template - Name of the disk's template
-        * disk_name - Name of the disk
-        * target_sd - Name of storage domain disk should be copyied to
-    Throws: DiskException if syncAction returns False (syncAction should raise
-            exception itself instead of returning False)
+    Copy disk of template to another storage domain
+    Args:
+        template (str): Name of the disk's template
+        disk_name (str): Name of the disk
+        target_sd (str): Name of storage domain disk should be copied to
+
+    Returns: DiskException if syncAction returns False (syncAction should
+        raise exception itself instead of returning False)
+
     """
     # comment from cmestreg: XXX AVOID THIS
     # TBD call for "/api/templates/{template:id}/disks/{disk:id}/copy"
@@ -1013,7 +1015,7 @@ def copyTemplateDisk(template, disk_name, target_sd):
     if not DISKS_API.syncAction(
             disk, 'copy', storage_domain=sd, positive=True
     ):
-        raise errors.DiskException("Failed to move disk %s of template %s to "
+        raise errors.DiskException("Failed to copy disk %s of template %s to "
                                    " storage domain %s"
                                    % (disk_name, template, target_sd))
 
