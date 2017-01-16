@@ -44,3 +44,8 @@ BASE_KWARGS.update({
     "alias": "direct_lun_disk",
     "type_": STORAGE_TYPE_ISCSI,
 })
+
+THIN_PROVISION = 'thin_provision'
+PREALLOCATED = 'preallocated'
+VM_DISK_SIZE = 2 * GB
+DEFAULT_DISK_TIMEOUT = 600

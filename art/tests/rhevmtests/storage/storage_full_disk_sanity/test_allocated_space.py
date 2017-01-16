@@ -4,31 +4,34 @@ Test Allocation/Total size properties
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/2_3_Storage_Data_Domains_General
 """
+import pytest
 import logging
-
 import config
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import (
-    datacenters as ll_dc,
     disks as ll_disks,
     hosts as ll_hosts,
     storagedomains as ll_sd,
     templates as ll_templates,
-    vms as ll_vms,
 )
 from art.rhevm_api.utils.test_utils import restartVdsmd
-from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as TestCase, testflow
-from rhevmtests.storage import helpers as storage_helpers
+from rhevmtests.storage.fixtures import (
+    delete_disks, create_storage_domain, remove_vms, remove_templates
+)
+from rhevmtests.storage.storage_full_disk_sanity.fixtures import (
+    check_initial_storage_domain_params, create_disks_fixture, lun_size_calc,
+    create_2_vms_pre_disk_thin_disk,
+)
+from art.test_handler.tools import bz
 
 logger = logging.getLogger(__name__)
 
 VM_DISK_SIZE = 2 * config.GB
 
-THIN_PROVISION = 'thin_provision'
-PREALLOCATED = 'preallocated'
+
 MIN_UNUSED_LUNS = 1
 DISK_CREATION_TIMEOUT = 600
 # The delta between the expected storage domain size and the actual size (
@@ -37,6 +40,7 @@ SD_SIZE_DELTA = 1 * config.GB + 10 * config.MB
 ISCSI = config.STORAGE_TYPE_ISCSI
 
 
+@pytest.mark.usefixtures(check_initial_storage_domain_params.__name__)
 class BaseCase(TestCase):
     """
     Base class. Ensures environment is running and checks, creates disks
@@ -45,8 +49,9 @@ class BaseCase(TestCase):
     __test__ = False
 
     domains = []
-
-    disk_types = (THIN_PROVISION, PREALLOCATED)
+    vm_names = []
+    templates_names = []
+    disk_types = [config.THIN_PROVISION, config.PREALLOCATED]
     disk_sizes = [160 * config.GB, 7 * config.GB]
 
     current_allocated_size = {}
@@ -56,17 +61,20 @@ class BaseCase(TestCase):
     expected_allocated_size = {}
     expected_total_size = {}
 
-    def create_disks(self):
+    @classmethod
+    def create_disks(cls):
         """
         Creates disks of given types and sizes and updates expected details
         """
-        self.disk_names = []
+        cls.disk_names = []
         for disk_type, disk_size, domain in zip(
-                self.disk_types, self.disk_sizes, self.disk_domains
+                cls.disk_types, cls.disk_sizes, cls.disk_domains
         ):
             disk_name = '%s_disk' % disk_type
-            logger.info('Creating a %s GB %s disk on domain %s',
-                        disk_size, disk_type, domain)
+            testflow.setup(
+                'Creating a %s GB %s disk on domain %s',
+                disk_size, disk_type, domain
+            )
             disk_args = {
                 'positive': True,
                 'provisioned_size': disk_size,
@@ -74,61 +82,22 @@ class BaseCase(TestCase):
                 'bootable': False,
                 'interface': config.VIRTIO_BLK,
                 'alias': disk_name,
-                'sparse': disk_type == THIN_PROVISION,
-                'format': config.RAW_DISK if disk_type == PREALLOCATED else
-                config.COW_DISK
+                'sparse': disk_type == config.THIN_PROVISION,
+                'format': config.RAW_DISK if disk_type == config.PREALLOCATED
+                else config.COW_DISK
             }
             ll_disks.addDisk(**disk_args)
-            self.expected_allocated_size[domain] += disk_size
+            cls.expected_allocated_size[domain] += disk_size
             logger.info('Updating expected allocated size to: %s',
-                        self.expected_allocated_size)
-            self.disk_names.append(disk_name)
+                        cls.expected_allocated_size)
+            cls.disk_names.append(disk_name)
         logger.info('Waiting for disks to be OK')
         # Storage may take more than the default of 3 minutes to create a 7GB
         # Raw disk, increased the timeout to 5 minutes
         assert ll_disks.wait_for_disks_status(
-            self.disk_names, timeout=DISK_CREATION_TIMEOUT
+            cls.disk_names, timeout=DISK_CREATION_TIMEOUT
         )
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Ensure host + DC up
-        """
-        logger.info('Checking that host %s is up', config.HOSTS[0])
-        assert ll_hosts.waitForHostsStates(True, config.HOSTS[0])
-
-        logger.info('Waiting for DC %s to be up', config.DATA_CENTER_NAME)
-        assert ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-
-        cls.domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage
-        )
-
-        logger.info('Found data domains of type %s: %s', cls.storage,
-                    cls.domains)
-
-        # by default create both disks on the same domain
-        cls.disk_domains = [cls.domains[0], cls.domains[0]]
-
-        # set up parameters used by test
-        for domain in cls.domains:
-            cls.current_allocated_size[domain] = (
-                ll_sd.get_allocated_size(domain)
-            )
-            cls.current_total_size[domain] = (
-                ll_sd.get_total_size(domain)
-            )
-            cls.current_used_size[domain] = (
-                ll_sd.get_used_size(domain)
-            )
-
-            logger.debug("Allocated size for %s is %d Total size is %d",
-                         domain, cls.current_allocated_size[domain],
-                         cls.current_total_size[domain])
-            cls.expected_total_size[domain] = cls.current_total_size[domain]
-            cls.expected_allocated_size[domain] = cls.current_allocated_size[
-                domain]
+        cls.disks_to_remove = cls.disk_names
 
     def run_scenario(self):
         """
@@ -154,8 +123,9 @@ class BaseCase(TestCase):
         for domain in self.domains:
             logger.info('Checking info for domain %s', domain)
             allocated_size = ll_sd.get_allocated_size(domain)
-            logger.info('Allocated size for domain %s is %s', domain,
-                        allocated_size)
+            logger.info(
+                'Allocated size for domain %s is %s', domain, allocated_size
+            )
             assert allocated_size == self.expected_allocated_size[domain], (
                 'Allocated size is: %s, expected is %s' %
                 (allocated_size, self.expected_allocated_size[domain])
@@ -166,8 +136,10 @@ class BaseCase(TestCase):
             size_difference = abs(
                 total_size - self.expected_total_size[domain]
             )
-            logger.info("The difference in SD size between the expected and "
-                        "actual is: '%s'", str(size_difference))
+            logger.info(
+                "The difference in SD size between the expected and actual"
+                " is: '%s'", str(size_difference)
+            )
             # A SD size delta is necessary for a comparison between the actual
             # and expected sizes, since the API returns the SD size in GB as
             # an integer
@@ -178,6 +150,7 @@ class BaseCase(TestCase):
 
 
 @attr(tier=1)
+@pytest.mark.usefixtures(delete_disks.__name__)
 class TestCase11536(BaseCase):
     """
     Polarion Test Case 11536 - Create new disk and check storage details
@@ -201,16 +174,9 @@ class TestCase11536(BaseCase):
         self.domains = [self.domains[0]]
         self.run_scenario()
 
-    def tearDown(self):
-        """
-        Remove the disks that were created
-        """
-        for name in self.disk_names:
-            logger.info('Removing disk %s', name)
-            assert ll_disks.deleteDisk(True, name)
-
 
 @attr(tier=2)
+@pytest.mark.usefixtures(create_disks_fixture.__name__)
 class TestCase11537(BaseCase):
     """
     Polarion Test Case 11537 - Delete disk and check storage details
@@ -219,12 +185,6 @@ class TestCase11537(BaseCase):
     """
     __test__ = True
     polarion_test_case = '11537'
-
-    def setUp(self):
-        """
-        Create preallocated and thin provision disks
-        """
-        self.create_disks()
 
     @polarion("RHEVM3-11537")
     def test_delete_disks(self):
@@ -240,31 +200,25 @@ class TestCase11537(BaseCase):
         """
         for disk_name in self.disk_names:
             disk = ll_disks.get_disk_obj(disk_name)
-            logger.info('Removing disk %s', disk.get_alias())
+            testflow.step('Removing disk %s', disk.get_alias())
             assert ll_disks.deleteDisk(True, disk.get_alias())
             provisioned_size = disk.get_provisioned_size()
             self.expected_allocated_size[self.domains[0]] -= provisioned_size
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    create_disks_fixture.__name__,
+    delete_disks.__name__
+)
 class TestCase11547(BaseCase):
     """
     Polarion Test Case 11547 - Move disks and check storage details of both
     domains
     """
-    # TODO: Move floating disk through REST not working development -
-    # enable test once this feature works
-    __test__ = False
+
+    __test__ = True
     polarion_test_case = '11547'
-
-    disk_types = ('thin_provision', 'preallocated')
-    disk_sizes = [160 * config.GB, 7 * config.GB]
-
-    def setUp(self):
-        """
-        Create preallocated and thin provision disks
-        """
-        self.create_disks()
 
     def perform_action(self):
         """
@@ -277,7 +231,8 @@ class TestCase11547(BaseCase):
                 disk.get_alias(), self.domains[0], self.domains[1]
             )
             assert ll_disks.move_disk(
-                disk_name=disk.get_alias(), target_domain=self.domains[1]
+                disk_name=disk.get_alias(), target_domain=self.domains[1],
+                timeout=config.DEFAULT_DISK_TIMEOUT
             )
             provisioned_size = disk.get_provisioned_size()
             self.expected_allocated_size[self.domains[0]] -= provisioned_size
@@ -290,87 +245,62 @@ class TestCase11547(BaseCase):
         """
         self.run_scenario()
 
-    def tearDown(self):
-        """
-        Delete disks that were created in setup
-        """
-        for name in self.disk_names:
-            logger.info('Removing disk %s', name)
-            assert ll_disks.deleteDisk(True, name)
-
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    lun_size_calc.__name__,
+    create_storage_domain.__name__,
+)
 class TestCase11546(BaseCase):
     """
-    Polarion Test Case 11546 - Extend domain and check storage details
+    Polarion Test Case 11546 - Extend domain with lun and check storage details
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/2_3_Storage_Data_Domains_General
     """
     # test case only relevant to iscsi domains
     __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
-    # TODO: Why is this disabled for SDK?
-    apis = BaseCase.apis - set(['sdk'])
+
+    # When creating or extending a storage domain, each LUN loses about
+    # 380 MB of its physical usable space.  In addition, when first
+    # creating a storage domain, 4 GB of free space is taken out for
+    # metadata, headers and other internal usage
+
     polarion_test_case = '11546'
-    new_sd_name = "storage_domain_%s" % polarion_test_case
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Add a new storage domain and extend it. Needed so that the original
-        environment is not changed in case is run in a common environment,
-        such as in the case of the golden environment or in a tiered approach
-        """
-        if not (len(config.UNUSED_LUNS) >= MIN_UNUSED_LUNS):
-            raise exceptions.StorageDomainException(
-                "A minimum of 1 free LUN is needed in order to create a new "
-                "Storage domain"
-            )
-        cls.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        cls.host_machine = storage_helpers.host_to_use()
-        lun_size_orig, lun_free_space_orig = (
-            cls.host_machine.get_lun_storage_info(config.EXTEND_LUN[0])
-        )
-        logger.info("LUN size to be used in SD creation is '%s' and its free "
-                    "space is '%s'", str(lun_size_orig),
-                    str(lun_free_space_orig))
-        if not hl_sd.addISCSIDataDomain(
-            cls.spm_host, cls.new_sd_name, config.DATA_CENTER_NAME,
-            config.EXTEND_LUN[0], config.EXTEND_LUN_ADDRESS[0],
-            config.EXTEND_LUN_TARGET[0], override_luns=True
-        ):
-            raise exceptions.StorageDomainException(
-                "Adding iSCSI storage domain has failed"
-            )
-        assert ll_sd.wait_for_storage_domain_available_size(
-            config.DATA_CENTER_NAME, cls.new_sd_name,
-        )
-        lun_size_sd, lun_free_space_sd = cls.host_machine.get_lun_storage_info(
-            config.EXTEND_LUN[0])
-        logger.info("LUN size after SD creation is '%s' and its free space is "
-                    "'%s'", str(lun_size_sd), str(lun_free_space_sd))
-        # When creating or extending a storage domain, each LUN loses about
-        # 380 MB of its physical usable space.  In addition, when first
-        # creating a storage domain, 4 GB of free space is taken out for
-        # metadata, headers and other internal usage
-        super(TestCase11546, cls).setup_class()
-
-    @classmethod
-    def teardown_class(cls):
-        """Remove the added storage domain"""
-        hl_sd.remove_storage_domain(
-            cls.new_sd_name, config.DATA_CENTER_NAME, cls.spm_host, True
-        )
 
     def perform_action(self):
         """
         Extend added domain
         """
+        self.domains = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )
+        for domain in self.domains:
+            self.current_allocated_size[domain] = (
+                ll_sd.get_allocated_size(domain)
+            )
+            self.current_total_size[domain] = (
+                ll_sd.get_total_size(domain)
+            )
+            self.current_used_size[domain] = (
+                ll_sd.get_used_size(domain)
+            )
+            logger.debug(
+                "Allocated size for %s is %d Total size is %d",
+                domain, self.current_allocated_size[domain],
+                self.current_total_size[domain]
+            )
+            self.expected_total_size[domain] = self.current_total_size[domain]
+            self.expected_allocated_size[domain] = self.current_allocated_size[
+                domain
+            ]
+
+        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
         assert len(config.EXTEND_LUNS) >= MIN_UNUSED_LUNS, (
             "There are less than %s unused Extend LUNs, aborting test" %
             MIN_UNUSED_LUNS
         )
-        current_sd_size = ll_sd.get_total_size(self.new_sd_name)
+        current_sd_size = ll_sd.get_total_size(self.new_storage_domain)
         logger.info("The current SD size is: '%s'", current_sd_size)
 
         extend_lun = config.EXTEND_LUNS.pop()
@@ -380,19 +310,20 @@ class TestCase11546(BaseCase):
         logger.info("LUN size is '%s' and its free space is '%s'",
                     str(lun_size_unused), str(lun_free_space_unused))
 
-        logger.info("Extending domain '%s'", self.new_sd_name)
+        logger.info("Extending domain '%s'", self.new_storage_domain)
         hl_sd.extend_storage_domain(
-            self.new_sd_name, config.STORAGE_TYPE_ISCSI, self.spm_host,
+            self.new_storage_domain, config.STORAGE_TYPE_ISCSI, self.spm_host,
             **extend_lun
         )
 
         # Waits until total size changes (extend is done)
         # wait_for_tasks doesn't work (value is not updated correctly)
         ll_sd.wait_for_change_total_size(
-            self.new_sd_name, self.current_total_size[self.new_sd_name]
+            self.new_storage_domain,
+            self.current_total_size[self.new_storage_domain]
         )
 
-        extended_sd_size = ll_sd.get_total_size(self.new_sd_name)
+        extended_sd_size = ll_sd.get_total_size(self.new_storage_domain)
         logger.info("The updated SD size after the extend has completed is: "
                     "'%s'", extended_sd_size)
 
@@ -402,13 +333,15 @@ class TestCase11546(BaseCase):
         logger.info("LUN size is '%s' and its free space is '%s'",
                     str(lun_size_sd), str(lun_free_space_sd))
 
-        self.expected_total_size[self.new_sd_name] += lun_size_sd
-        logger.info("The new expected domain size with the Raw LUN size is "
-                    "'%s'", str(self.expected_total_size[self.new_sd_name]))
+        self.expected_total_size[self.new_storage_domain] += lun_size_sd
+        logger.info(
+            "The new expected domain size with the Raw LUN size is '%s'",
+            str(self.expected_total_size[self.new_storage_domain])
+        )
 
         # Assert size hasn't changed during the extend
-        assert self.current_used_size[self.new_sd_name] == (
-            ll_sd.get_used_size(self.new_sd_name)
+        assert self.current_used_size[self.new_storage_domain] == (
+            ll_sd.get_used_size(self.new_storage_domain)
         )
 
     @polarion("RHEVM3-11546")
@@ -420,6 +353,11 @@ class TestCase11546(BaseCase):
 
 
 @attr(tier=3)
+@pytest.mark.usefixtures(
+    create_2_vms_pre_disk_thin_disk.__name__,
+    remove_templates.__name__,
+    remove_vms.__name__,
+)
 class TestCase11541(BaseCase):
     """
     Polarion Test Case 11541 - Create template and check storage details
@@ -428,58 +366,14 @@ class TestCase11541(BaseCase):
     """
     __test__ = True
     polarion_test_case = '11541'
-    vms = (THIN_PROVISION, PREALLOCATED)
-
-    def setUp(self):
-        """
-        Create 2 vms, one with preallocated and one with thin provision disks
-        """
-        for vm_name in self.vms:
-            logger.info('Creating vm with %s disks', vm_name)
-            is_thin_provision = vm_name == THIN_PROVISION
-            disk_format = config.COW_DISK if is_thin_provision else (
-                config.RAW_DISK
-            )
-            vm_args = {
-                'positive': True,
-                'vmName': vm_name,
-                'vmDescription': vm_name,
-                'cluster': config.CLUSTER_NAME,
-                'storageDomainName': self.domains[0],
-                'provisioned_size': VM_DISK_SIZE,
-                'volumeType': is_thin_provision,
-                'volumeFormat': disk_format,
-                'display_type': config.DISPLAY_TYPE,
-                'os_type': config.OS_TYPE,
-                'type': config.VM_TYPE,
-            }
-            assert ll_vms.createVm(**vm_args), 'unable to create vm %s' % (
-                vm_name
-            )
-            self.expected_allocated_size[self.domains[0]] += VM_DISK_SIZE
-
-        self.template_names = ['%s_template' % name for name in self.vms]
-
-    def tearDown(self):
-        """
-        Remove vms and templates
-        """
-        for vm_name in self.vms:
-            logger.info('Removing vm %s', vm_name)
-            assert ll_vms.removeVm(True, vm_name), 'Unable to remove vm %s' % (
-                vm_name
-            )
-
-        for template in self.template_names:
-            logger.info('Removing template %s', template)
-            assert ll_templates.removeTemplate(True, template)
 
     def perform_action(self):
         """
-        Create templates from vms (one with preallocated disk, one with thin
+        Create templates from VM's (one with preallocated disk, one with thin
         provision disk)
         """
-        for vm_name, template_name in zip(self.vms, self.template_names):
+
+        for vm_name, template_name in zip(self.vm_names, self.templates_names):
             logger.info('Creating template %s from vm %s', vm_name,
                         template_name)
             template_args = {
@@ -498,10 +392,10 @@ class TestCase11541(BaseCase):
             # the whole preallocated size of the disk
             # For file devices, the allocated size for both disk types is
             # the same as the real size of the disk. In this case the template
-            # is created from an empty vm so there's no increase in the
+            # is created from an empty VM so there's no increase in the
             # allocated size
             if self.storage in config.BLOCK_TYPES:
-                if vm_name == THIN_PROVISION:
+                if vm_name == self.vm_names[0]:
                     # Thin provisioned templates only take up 1GB per disk,
                     # just as with snapshots
                     self.expected_allocated_size[self.domains[0]] += (
@@ -520,25 +414,33 @@ class TestCase11541(BaseCase):
         self.run_scenario()
 
 
+@bz({'1417456': {}})
 @attr(tier=4)
+@pytest.mark.usefixtures(
+    create_disks_fixture.__name__,
+    delete_disks.__name__
+)
 class TestCase11545(BaseCase):
     """
     Polarion Test Case 11545 - Check  storage domain details after rollback
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/2_3_Storage_Data_Domains_General
     """
-    # TODO: Move floating disk through REST not working development -
-    # enable test once this feature works
-    __test__ = False
+    __test__ = True
     polarion_test_case = '11545'
+
+    disk_types = [config.PREALLOCATED, ]
+    disk_sizes = [10 * config.GB, ]
 
     def perform_action(self):
         """
-        Start moving disk, then restart vdsm and wait for action to fail
+        Start moving disk, then restart VDSM and wait for action to fail
         """
+        self.disk_name = self.disk_names[0]
         logger.info('Starting to move disk %s', self.disk_name)
         assert ll_disks.move_disk(
-            self.disk_name, self.domains[0], self.domains[1], wait=False
+            disk_name=self.disk_name, target_domain=self.domains[1],
+            wait=False, timeout=config.DEFAULT_DISK_TIMEOUT
         )
         assert ll_disks.wait_for_disks_status(
             [self.disk_name], status=config.DISK_LOCKED
@@ -559,17 +461,6 @@ class TestCase11545(BaseCase):
         logger.info('Waiting for disk %s to be OK after rollback',
                     self.disk_name)
         assert ll_disks.wait_for_disks_status([self.disk_name])
-
-    def setUp(self):
-        """
-        Create preallocated disk
-        """
-        self.disk_types = (PREALLOCATED)
-        self.disk_sizes = (5 * config.GB,)
-        self.disk_domains = (self.domains[0],)
-        self.disk_name = 'preallocated_disk'
-        self.disk_names = [self.disk_name]
-        self.create_disks()
 
     @polarion("RHEVM3-11545")
     def test_rollback_disk_move(self):

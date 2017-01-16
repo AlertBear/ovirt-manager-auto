@@ -7,6 +7,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     disks as ll_disks,
     jobs as ll_jobs,
+    hosts as ll_hosts,
 )
 import rhevmtests.storage.helpers as storage_helpers
 from art.unittest_lib.common import testflow
@@ -100,3 +101,109 @@ def delete_direct_lun_disk(request):
             )
             ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='class')
+def check_initial_storage_domain_params(request):
+    """
+    Check initial storage domain parameters
+    """
+    self = request.node.cls
+
+    self.domains = ll_sd.getStorageDomainNamesForType(
+        config.DATA_CENTER_NAME, self.storage
+    )
+
+    logger.info(
+        'Found data domains of type %s: %s', self.storage, self.domains
+    )
+
+    # by default create both disks on the same domain
+    self.disk_domains = [self.domains[0], self.domains[0]]
+
+    # set up parameters used by test
+    for domain in self.domains:
+        self.current_allocated_size[domain] = (
+            ll_sd.get_allocated_size(domain)
+        )
+        self.current_total_size[domain] = (
+            ll_sd.get_total_size(domain)
+        )
+        self.current_used_size[domain] = (
+            ll_sd.get_used_size(domain)
+        )
+
+        logger.info(
+            "Allocated size for %s is %d Total size is %d",
+            domain, self.current_allocated_size[domain],
+            self.current_total_size[domain]
+        )
+        self.expected_total_size[domain] = self.current_total_size[domain]
+        self.expected_allocated_size[domain] = self.current_allocated_size[
+            domain
+        ]
+
+
+@pytest.fixture(scope='class')
+def create_disks_fixture(request):
+    """
+    Creates disks of given types and sizes and updates expected details
+    """
+
+    self = request.node.cls
+    self.create_disks()
+
+
+@pytest.fixture(scope='class')
+def lun_size_calc(request):
+    """
+    calculate lun size and free space
+    """
+
+    self = request.node.cls
+    self.host_machine = storage_helpers.host_to_use()
+
+    self.lun_size, self.lun_free_space = (
+        self.host_machine.get_lun_storage_info(config.EXTEND_LUN[0])
+    )
+    logger.info(
+        "LUN size is '%s' and its free space is '%s'",
+        str(self.lun_size), str(self.lun_free_space)
+    )
+
+
+@pytest.fixture(scope='class')
+def create_2_vms_pre_disk_thin_disk(request):
+    """
+    Create 2 vms, one with preallocated and one with thin provision disks
+    """
+
+    self = request.node.cls
+
+    self.disk_map = zip(
+        (True, False), self.disk_sizes,
+        (config.DISK_FORMAT_COW, config.DISK_FORMAT_RAW)
+    )
+    self.vm_names = []
+    for sparse, disk_size, disk_format in self.disk_map:
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_VM
+        )
+        self.vm_names.append(self.vm_name)
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.domains[0]
+        vm_args['installation'] = False
+        vm_args['vmName'] = self.vm_name
+        vm_args['volumeType'] = sparse
+        vm_args['provisioned_size'] = config.VM_DISK_SIZE
+        vm_args['volumeFormat'] = disk_format
+
+        assert ll_vms.createVm(**vm_args), 'unable to create vm %s' % (
+            self.vm_name
+        )
+        self.expected_allocated_size[self.domains[0]] += config.VM_DISK_SIZE
+        self.templates_names.append(
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
+            )
+        )

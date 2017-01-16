@@ -4,9 +4,7 @@ Polarion plan: https://polarion.engineering.redhat.com/polarion/#/project/
 RHEVM3/wiki/Storage_3_6/3_6_Storage_Disk_General
 """
 import logging
-
 import pytest
-
 import config
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import (

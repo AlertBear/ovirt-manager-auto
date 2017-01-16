@@ -972,7 +972,7 @@ def export_template(request):
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def remove_templates(request):
     """
     Remove templates
