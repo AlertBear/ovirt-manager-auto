@@ -15,7 +15,7 @@ from rhevmtests.networking import helper as network_helper
 import rhevmtests.networking.config as conf
 import config as bridgeless_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import attr, testflow
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, setup_networks_fixture, clean_host_interfaces
 )  # flake8: noqa
@@ -43,18 +43,15 @@ def prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@attr(team="network")
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestBridgelessCase1(NetworkTest):
+class TestBridgelessCase(object):
     """
-    1) Attach non-VM network to host NIC.
-    2) Attach non-VM with VLAN network to host NIC.
-    3) Attach non-VM network with VLAN over bond.
-    4) Attach non-VM network over bond
+    Bridgeless test on host NIC and bond.
     """
-    __test__ = True
-    bond_1 = "bond01"
-    bond_2 = "bond02"
+    bond_1 = bridgeless_conf.BOND_1
+    bond_2 = bridgeless_conf.BOND_2
+
     hosts_nets_nic_dict = {
         0: {
             bond_1: {
@@ -68,71 +65,32 @@ class TestBridgelessCase1(NetworkTest):
         }
     }
 
-    @polarion("RHEVM-14837")
-    def test_bridgeless_network(self):
+    @attr(tier=2)
+    @pytest.mark.parametrize(
+        ("net", "nic"),
+        [
+            polarion("RHEVM3-14837")(bridgeless_conf.CASE_1),
+            polarion("RHEVM3-14838")(bridgeless_conf.CASE_2),
+            polarion("RHEVM3-14840")(bridgeless_conf.CASE_3),
+            polarion("RHEVM3-14839")(bridgeless_conf.CASE_4),
+        ]
+    )
+    def test_bridgeless_network(self, net, nic):
         """
-        Attach non-VM network to host NIC
+        1) Attach non-VM network to host NIC.
+        2) Attach non-VM with VLAN network to host NIC.
+        3) Attach non-VM network with VLAN over bond.
+        4) Attach non-VM network over bond
         """
-        testflow.step("Attach non-VM network to host NIC")
-        local_dict = {
-            "add": {
-                "1": {
-                    "network": bridgeless_conf.BRIDGELESS_NETS[1][0],
-                    "nic": conf.HOST_0_NICS[1]
-                }
-            }
-        }
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **local_dict
-        )
+        nic = conf.HOST_0_NICS[nic] if isinstance(nic, int) else nic
+        log = "host NIC %s" % nic if isinstance(nic, int) else "bond %s" % nic
 
-    @polarion("RHEVM-14838")
-    def test_vlan_bridgeless_network(self):
-        """
-        Attach non-VM with VLAN network to host NIC
-        """
-        testflow.step("Attach non-VM network with VLAN to host NIC")
+        testflow.step("Attach non-VM network %s to %s", net, log)
         local_dict = {
             "add": {
                 "1": {
-                    "network": bridgeless_conf.BRIDGELESS_NETS[2][0],
-                    "nic": conf.HOST_0_NICS[2]
-                }
-            }
-        }
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **local_dict
-        )
-
-    @polarion("RHEVM-14840")
-    def test_vlan_bond_bridgeless_network(self):
-        """
-        Attach non-VM network with VLAN over BOND
-        """
-        testflow.step("Attach non-VM network with VLAN to BOND")
-        local_dict = {
-            "add": {
-                "1": {
-                    "network": bridgeless_conf.BRIDGELESS_NETS[3][0],
-                    "nic": self.bond_1
-                }
-            }
-        }
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **local_dict
-        )
-
-    @polarion("RHEVM-14839")
-    def test_bond_bridgeless_network(self):
-        """
-        Attach non-VM network over BOND
-        """
-        testflow.step("Attach non-VM network to BOND")
-        local_dict = {
-            "add": {
-                "1": {
-                    "network": bridgeless_conf.BRIDGELESS_NETS[4][0],
-                    "nic": self.bond_2
+                    "network": net,
+                    "nic": nic
                 }
             }
         }
