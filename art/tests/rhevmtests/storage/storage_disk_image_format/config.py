@@ -18,3 +18,13 @@ DISK_KWARGS = {
     "storageDomainName": None,
 }
 retrieve_disk_obj = lambda x: ll_vms.getVmDisks(x)
+
+TEST_INTERFACES = (
+    INTERFACE_VIRTIO, INTERFACE_VIRTIO_SCSI
+)
+
+if PPC_ARCH:
+    TEST_INTERFACES = (
+        INTERFACE_VIRTIO, INTERFACE_VIRTIO_SCSI,
+        INTERFACE_SPAPR_VSCSI
+    )

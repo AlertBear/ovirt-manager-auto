@@ -1,19 +1,15 @@
 import config
-import logging
 import pytest
+import itertools
 import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    storagedomains as ll_sd,
     jobs as ll_jobs,
-    storagedomains as ll_sds,
     templates as ll_templates,
     vms as ll_vms,
 )
 from art.unittest_lib import testflow
-from rhevmtests.storage.fixtures import (
-    remove_vms
-)  # flake8: noqa
-
-logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')
@@ -110,3 +106,114 @@ def remove_test_templates(request):
     self.template_preallocated = (
         self.template_preallocated % self.polarion_test_id
     )
+
+
+@pytest.fixture(scope='class')
+def create_second_vm(request):
+    """
+    Create VM and initialize parameters
+    """
+    self = request.node.cls
+
+    def finalizer():
+        testflow.teardown("Remove VM %s", self.vm_name_2)
+        assert ll_vms.safely_remove_vms([self.vm_name_2]), (
+            "Failed to power off and remove VM %s" % self.vm_name_2
+        )
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+    request.addfinalizer(finalizer)
+
+    if not hasattr(self, 'storage_domain'):
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+    self.vm_name_2 = storage_helpers.create_unique_object_name(
+        self.__name__, config.OBJECT_TYPE_VM
+    )
+    vm_args = config.create_vm_args.copy()
+    vm_args['storageDomainName'] = self.storage_domain
+    vm_args['vmName'] = self.vm_name_2
+    testflow.setup("Creating VM %s", self.vm_name_2)
+    assert storage_helpers.create_vm_or_clone(**vm_args), (
+        "Failed to create VM %s" % self.vm_name_2
+    )
+
+
+@pytest.fixture(scope='class')
+def create_disks_to_vm(request):
+    """
+    Create 4 disks and attach them to the VM
+    """
+    self = request.node.cls
+
+    self.disk_aliases = list()
+
+    for disk in xrange(4):
+        disk_args = config.disk_args.copy()
+        disk_args['interface'] = config.INTERFACE_VIRTIO
+        disk_args['alias'] = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
+        )
+        disk_args['wait'] = False
+        disk_args['storagedomain'] = self.storage_domain
+        testflow.setup(
+            "Add disk %s to VM %s", disk_args['alias'], self.vm_name
+        )
+        assert ll_vms.addDisk(True, vm=self.vm_name, **disk_args), (
+            "Failed to create disk %s" % disk_args['alias']
+        )
+        self.disk_aliases.append(disk_args['alias'])
+
+    assert ll_disks.wait_for_disks_status(self.disk_aliases), (
+        "Failed to wait for disk %s status OK" % self.disk_aliases
+    )
+
+
+@pytest.fixture(scope='class')
+def create_disks_to_vm_by_interface(request):
+    """
+    Create a VM and as many disks as interfaces to test and attach them
+    to the VM
+    """
+    self = request.node.cls
+
+    lun_disks = getattr(self, 'lun_disks', False)
+
+    self.permutations = (
+        filter(
+            lambda w: w[0] != w[1],
+            itertools.permutations(config.TEST_INTERFACES, 2)
+        )
+    )
+    for disk_interface, index in zip(config.TEST_INTERFACES, xrange(2)):
+        disk_args = config.disk_args.copy()
+        disk_args['interface'] = disk_interface
+        disk_args['alias'] = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
+        )
+        disk_args['storagedomain'] = self.storage_domain
+        testflow.setup("Add disk %s ", disk_args['alias'])
+        if lun_disks:
+            del disk_args['storagedomain']
+            disk_args['type_'] = config.STORAGE_TYPE_ISCSI
+            disk_args['lun_address'] = config.UNUSED_LUN_ADDRESSES[index]
+            disk_args['lun_target'] = config.UNUSED_LUN_TARGETS[index]
+            disk_args['lun_id'] = config.UNUSED_LUNS[index]
+            assert ll_disks.addDisk(True, **disk_args), (
+                "Unable to create disk %s" % disk_args['alias']
+            )
+            assert ll_disks.attachDisk(
+                True, alias=disk_args['alias'], vm_name=self.vm_name,
+                active=True
+            ), "Unable to attach disk %s to vm %s" % (
+                disk_args['alias'], self.vm_name
+            )
+        else:
+            testflow.setup("Add disk %s ", disk_args['alias'])
+            assert ll_vms.addDisk(True, vm=self.vm_name, **disk_args), (
+                "Unable to create disk %s" % disk_args['alias']
+            )
+            assert ll_disks.wait_for_disks_status(self.disk_aliases), (
+                "Failed to wait for disk %s status OK" % self.disk_aliases
+            )
+        self.disk_aliases.append(disk_args['alias'])

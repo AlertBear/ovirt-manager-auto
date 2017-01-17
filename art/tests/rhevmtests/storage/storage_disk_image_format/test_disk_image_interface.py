@@ -5,37 +5,24 @@ Storage_3_6/4_0_Storage_Ability_to_change_disk_interface_for_a_VM_disk
 """
 import re
 import config
-import itertools
 import logging
 import pytest
-
-from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
-    storagedomains as ll_sd,
     vms as ll_vms,
 )
-from art.unittest_lib import attr, StorageTest as TestCase
-from rhevmtests.storage import helpers as storage_helpers
-from rhevmtests.storage.fixtures import (
-    create_vm, add_disk, update_vm
+from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from rhevmtests.storage.storage_disk_image_format.fixtures import (
+    create_second_vm, create_disks_to_vm, create_disks_to_vm_by_interface,
 )
-
-ENUMS = config.ENUMS
+from rhevmtests.storage.fixtures import (
+    create_vm, add_disk, update_vm, delete_disk, attach_disk
+)
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 logger = logging.getLogger(__name__)
-
-TEST_INTERFACES = (
-    config.INTERFACE_VIRTIO, config.INTERFACE_VIRTIO_SCSI
-)
-
-if config.PPC_ARCH:
-    TEST_INTERFACES = (
-        config.INTERFACE_VIRTIO, config.INTERFACE_VIRTIO_SCSI,
-        config.INTERFACE_SPAPR_VSCSI
-    )
 
 INTERFACE_REGEX_GUEST_OS = {
     config.INTERFACE_VIRTIO: "vd[a-z]",
@@ -47,23 +34,7 @@ INTERFACE_REGEX_GUEST_OS = {
 
 class BaseTestCase(TestCase):
 
-    def create_vm_setup(self):
-        """
-        Create a vm
-        """
-        self.vm_name = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_VM
-        )
-        vm_args_copy = config.create_vm_args.copy()
-        vm_args_copy['vmName'] = self.vm_name
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-        vm_args_copy['storageDomainName'] = self.storage_domain
-        if not storage_helpers.create_vm_or_clone(**vm_args_copy):
-            raise exceptions.VMException(
-                "Unable to create vm %s" % self.vm_name
-            )
+    disk_id = None
 
     def check_engine_disk_interface(
         self, disk_interface, vm_name=None, disk_id=None
@@ -88,8 +59,10 @@ class BaseTestCase(TestCase):
         vm_status = ll_vms.get_vm_state(vm_name)
         vm_started = False
         if vm_status != config.VM_UP:
+            testflow.step("Start VM %s", vm_name)
             ll_vms.startVm(
-                True, vm_name, config.VM_UP, wait_for_ip=True
+                positive=True, vm=vm_name, wait_for_status=config.VM_UP,
+                wait_for_ip=True
             )
             vm_started = True
         logical_name = ll_vms.get_vm_disk_logical_name(
@@ -112,59 +85,14 @@ class BaseTestCase(TestCase):
                 vm_status, async='false'
             )
 
-    def finalizer_BaseTestCase(self):
-        """
-        Remove created vm
-        """
-        if not ll_vms.safely_remove_vms([self.vm_name]):
-            TestCase.test_failed = True
-            logger.error("Failed to remove vm %s", self.vm_name)
-        BaseTestCase.teardown_exception()
 
-
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    create_disks_to_vm_by_interface.__name__,
+)
 class TestCaseMultipleDisks(BaseTestCase):
 
-    @pytest.fixture(scope='function')
-    def initializer_TestCaseMultipleDisks_fixture(
-        self, request
-    ):
-        """
-        Create fixture
-        """
-        request.addfinalizer(self.finalizer_BaseTestCase)
-        self.initializer_TestCaseMultipleDisks()
-
-    def initializer_TestCaseMultipleDisks(self):
-        """
-        Create a vm and as many disks as interfaces to test and attach them
-        to the vm
-        """
-        self.permutations = (
-            filter(
-                lambda w: w[0] != w[1],
-                itertools.permutations(TEST_INTERFACES, 2)
-            )
-        )
-        self.create_vm_setup()
-        self.disk_aliases = []
-        for disk_interface in TEST_INTERFACES:
-            disk_args = config.disk_args.copy()
-            disk_args['interface'] = disk_interface
-            disk_args['alias'] = storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_DISK
-            )
-            disk_args['wait'] = False
-            disk_args['storagedomain'] = self.storage_domain
-            if not ll_vms.addDisk(True, self.vm_name, **disk_args):
-                raise exceptions.DiskException(
-                    "Unable to create disk %s" % disk_args['alias']
-                )
-            self.disk_aliases.append(disk_args['alias'])
-
-        if not ll_disks.wait_for_disks_status(self.disk_aliases):
-            raise exceptions.DiskException(
-                "Failed to wait for disk %s status OK" % self.disk_aliases
-            )
+    disk_aliases = []
 
     def get_iteration(self, interface):
         """
@@ -190,6 +118,10 @@ class TestCaseMultipleDisks(BaseTestCase):
                 new_interface = self.get_iteration(previous_interface)
                 if not new_interface:
                     continue
+                testflow.step(
+                    "Update disk %s interface to %s", disk,
+                    new_interface
+                )
                 status = ll_disks.updateDisk(
                     True, vmName=self.vm_name, id=disk.get_id(),
                     interface=new_interface
@@ -223,6 +155,7 @@ class TestCaseMultipleDisks(BaseTestCase):
 
             vm_status = ll_vms.get_vm_state(self.vm_name)
             if vm_status != config.VM_UP:
+                testflow.step("Start VM %s", self.vm_name)
                 ll_vms.startVm(
                     True, self.vm_name, config.VM_UP, wait_for_ip=True
                 )
@@ -252,7 +185,6 @@ class TestCase14943(TestCaseMultipleDisks):
     __test__ = True
 
     @polarion("RHEVM-14943")
-    @pytest.mark.usefixtures("initializer_TestCaseMultipleDisks_fixture")
     def test_change_disk_interface(self):
         """
         Test setup:
@@ -277,47 +209,9 @@ class TestCase14944(TestCaseMultipleDisks):
     """
     __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
     storages = set([config.STORAGE_TYPE_ISCSI])
-
-    @pytest.fixture(scope='function')
-    def initializer_TestCase14944(self, request):
-        """
-        Create a vm and two direct LUN disks
-        """
-        request.addfinalizer(self.finalizer_BaseTestCase)
-        self.permutations = (
-            filter(
-                lambda w: w[0] != w[1],
-                itertools.permutations(TEST_INTERFACES, 2)
-            )
-        )
-        self.create_vm_setup()
-        self.disk_aliases = []
-        for idx in range(len(TEST_INTERFACES)):
-            disk_args = config.disk_args.copy()
-            disk_args['interface'] = TEST_INTERFACES[idx]
-            disk_args['alias'] = storage_helpers.create_unique_object_name(
-                TEST_INTERFACES[idx] + self.__class__.__name__,
-                config.OBJECT_TYPE_DISK
-            )
-            disk_args['type_'] = config.STORAGE_TYPE_ISCSI
-            disk_args["lun_address"] = config.UNUSED_LUN_ADDRESSES[idx]
-            disk_args["lun_target"] = config.UNUSED_LUN_TARGETS[idx]
-            disk_args["lun_id"] = config.UNUSED_LUNS[idx]
-            if not ll_disks.addDisk(True, **disk_args):
-                raise exceptions.DiskException(
-                    "Unable to create disk %s" % disk_args['alias']
-                )
-            self.disk_aliases.append(disk_args['alias'])
-
-        for disk in self.disk_aliases:
-            if not ll_disks.attachDisk(True, disk, self.vm_name, active=True):
-                raise exceptions.DiskException(
-                    "Unable to attach disk %s to vm %s"
-                    % (disk_args['alias'], self.vm_name)
-                )
+    lun_disks = True
 
     @polarion("RHEVM-14944")
-    @pytest.mark.usefixtures("initializer_TestCase14944")
     def test_change_disk_interface_direct_lun(self):
         """
         Test setup:
@@ -335,58 +229,41 @@ class TestCase14944(TestCaseMultipleDisks):
         self.change_vm_disks_interfaces(check_guest=False)
 
 
+@pytest.mark.usefixtures(
+    delete_disk.__name__,
+    create_vm.__name__,
+    add_disk.__name__,
+    attach_disk.__name__
+)
 class BaseOneDiskAttachedTestCase(BaseTestCase):
 
     base_interface = config.INTERFACE_VIRTIO
     new_interface = config.INTERFACE_VIRTIO_SCSI
-
-    @pytest.fixture(scope='function')
-    def initialize_BaseOneDiskAttachedTestCase_fixture(self, request):
-        """
-        Initializer and finalizer call for BaseOneDiskAttachedTestCase
-        """
-        request.addfinalizer(self.finalizer_BaseTestCase)
-        self.initialize_BaseOneDiskAttachedTestCase()
-
-    def initialize_BaseOneDiskAttachedTestCase(self):
-        """
-        Create a vm with a disk attached
-        """
-        self.create_vm_setup()
-        self.disk_alias = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_DISK
-        )
-        disk_args = config.disk_args.copy()
-        disk_args['interface'] = self.base_interface
-        disk_args['wait'] = False
-        disk_args['alias'] = self.disk_alias
-        disk_args['storagedomain'] = self.storage_domain
-        if not ll_vms.addDisk(True, self.vm_name, **disk_args):
-            raise exceptions.DiskException(
-                "Unable to create disk %s" % disk_args['alias']
-            )
-        if not ll_disks.wait_for_disks_status(self.disk_alias):
-            raise exceptions.DiskException(
-                "Failed to wait for disk %s status OK" % self.disk_alias
-            )
-        self.disk_id = ll_disks.get_disk_obj(self.disk_alias).get_id()
+    add_disk_params = {
+        'interface': base_interface
+    }
 
     def update_disk_interface(self, positive=True, check_guest=True):
         """
         Update the disk interface to new_interface and assert the result
         according to postivie
         """
+        self.disk_id = ll_disks.get_disk_obj(self.disk_name).get_id()
+        testflow.step(
+            "Update disk %s interface to %s", self.disk_name,
+            self.new_interface
+        )
         status = ll_disks.updateDisk(
-            positive, vmName=self.vm_name, alias=self.disk_alias,
+            positive=positive, vmName=self.vm_name, alias=self.disk_name,
             interface=self.new_interface
         )
         assert status, "Changing disk %s interface from %s to %s %s " % (
-            self.disk_alias, self.base_interface, self.new_interface,
+            self.disk_name, self.base_interface, self.new_interface,
             'failed' if positive else 'passed'
         )
         logger.info(
             "Disk %s changed interface from %s to %s %s",
-            self.disk_alias, self.base_interface, self.new_interface,
+            self.disk_name, self.base_interface, self.new_interface,
             'passed' if positive else 'failed'
         )
         if positive:
@@ -401,6 +278,12 @@ class BaseOneDiskAttachedTestCase(BaseTestCase):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    delete_disk.__name__,
+    create_vm.__name__,
+    create_second_vm.__name__,
+    add_disk.__name__,
+)
 class TestCase14945(BaseTestCase):
     """
     RHEVM-14945 - Shared disk attached to serveral VMs with different
@@ -409,60 +292,16 @@ class TestCase14945(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM-6245
     """
+    # Gluster doesn't support shareable disks
     __test__ = True
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
+    add_disk_params = {
+        'shareable': True,
+        'format': config.RAW_DISK,
+        'sparse': False,
+        'interface': config.INTERFACE_IDE
+    }
 
-    @pytest.fixture(scope='function')
-    def initializer_TestCase14945(self, request):
-        """
-        Create vms and shared disk
-        """
-        def finalizer_TestCase14945():
-            if not ll_vms.safely_remove_vms(self.vm_names):
-                BaseTestCase.test_failed = True
-                logger.error("Failed to remove vms %s", self.vm_names)
-            if not ll_disks.deleteDisk(True, self.disk_alias):
-                BaseTestCase.test_failed = False
-                logger.error("Failed to remove disk %s", self.disk_alias)
-            BaseTestCase.teardown_exception()
-        request.addfinalizer(finalizer_TestCase14945)
-
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-        self.vm_names = []
-        for idx in range(2):
-            vm_args_copy = config.create_vm_args.copy()
-            vm_args_copy['vmName'] = storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_VM
-            )
-            vm_args_copy['storageDomainName'] = self.storage_domain
-            if not storage_helpers.create_vm_or_clone(**vm_args_copy):
-                raise exceptions.VMException(
-                    "Unable to create vm %s" % self.vm_name
-                )
-            self.vm_names.append(vm_args_copy['vmName'])
-        disk_args = config.disk_args.copy()
-        disk_args['interface'] = config.INTERFACE_IDE
-        self.disk_alias = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_DISK
-        )
-        disk_args['shareable'] = True
-        disk_args['format'] = config.RAW_DISK
-        disk_args['sparse'] = False
-        disk_args['storagedomain'] = self.storage_domain
-        disk_args['alias'] = self.disk_alias
-        if not ll_disks.addDisk(True, **disk_args):
-            raise exceptions.DiskException(
-                "Unable to create disk %s" % disk_args['alias']
-            )
-        if not ll_disks.wait_for_disks_status([self.disk_alias]):
-            raise exceptions.DiskException(
-                "Failed to wait for disk %s status OK" % self.disk_alias
-            )
-
-        self.disk_id = ll_disks.get_disk_obj(self.disk_alias).get_id()
-
-    @pytest.mark.usefixtures("initializer_TestCase14945")
     @polarion("RHEVM-14945")
     def test_shared_disk_different_interfaces(self):
         """
@@ -478,22 +317,33 @@ class TestCase14945(BaseTestCase):
         - Change the shared disk interface -> Disks interface should get
         changed in RHEVM and in the guest for the specific VM ONLY
         """
+        self.vm_names = [self.vm_name, self.vm_name_2]
+        self.disk_id = ll_disks.get_disk_obj(self.disk_name).get_id()
+        testflow.step(
+            "Attach and activate  disk %s to VM %s", self.vm_names[0],
+            self.disk_name
+        )
         assert ll_disks.attachDisk(
-            positive=True, alias=self.disk_alias, vm_name=self.vm_names[0],
+            positive=True, alias=self.disk_name, vm_name=self.vm_names[0],
             active=False, disk_id=self.disk_id,
             interface=config.INTERFACE_IDE
         )
         assert ll_vms.activateVmDisk(
-            True, self.vm_names[0], diskId=self.disk_id
+            positive=True, vm=self.vm_names[0], diskId=self.disk_id
+        )
+        testflow.step(
+            "Attach and Activate disk %s to VM %s", self.vm_names[1],
+            self.disk_name
         )
         assert ll_disks.attachDisk(
-            positive=True, alias=self.disk_alias, vm_name=self.vm_names[1],
+            positive=True, alias=self.disk_name, vm_name=self.vm_names[1],
             active=False, disk_id=self.disk_id,
             interface=config.INTERFACE_VIRTIO
         )
         assert ll_vms.activateVmDisk(
-            True, self.vm_names[1], diskId=self.disk_id
+            positive=True, vm=self.vm_names[1], diskId=self.disk_id
         )
+        testflow.step("Start VMs %s", self.vm_names)
         ll_vms.start_vms(self.vm_names, wait_for_ip=True)
         self.check_engine_disk_interface(
             config.INTERFACE_IDE, self.vm_names[0]
@@ -507,31 +357,45 @@ class TestCase14945(BaseTestCase):
         self.check_guest_os_disk_interface(
             config.INTERFACE_VIRTIO, self.vm_names[1]
         )
+        testflow.step("Stop VMs %s", self.vm_names)
         ll_vms.stop_vms_safely(self.vm_names)
+        testflow.step(
+            "Update disk %s interface to %s in VM %s", self.disk_name,
+            config.INTERFACE_VIRTIO, self.vm_names[0]
+        )
         assert ll_disks.updateDisk(
-            True, vmName=self.vm_names[0], alias=self.disk_alias,
+            positive=True, vmName=self.vm_names[0], alias=self.disk_name,
             interface=config.INTERFACE_VIRTIO
         )
+        testflow.step(
+            "Update disk %s interface to %s in VM %s", self.disk_name,
+            config.INTERFACE_IDE, self.vm_names[1]
+        )
         assert ll_disks.updateDisk(
-            True, vmName=self.vm_names[1], alias=self.disk_alias,
+            True, vmName=self.vm_names[1], alias=self.disk_name,
             interface=config.INTERFACE_IDE
         )
+        testflow.step("Start VMs %s", self.vm_names)
         ll_vms.start_vms(self.vm_names, wait_for_ip=True)
         self.check_engine_disk_interface(
-            config.INTERFACE_VIRTIO, self.vm_names[0]
+            config.INTERFACE_VIRTIO, self.vm_names[0], self.disk_id
         )
         self.check_engine_disk_interface(
-            config.INTERFACE_IDE, self.vm_names[1]
+            config.INTERFACE_IDE, self.vm_names[1], self.disk_id
         )
         self.check_guest_os_disk_interface(
-            config.INTERFACE_VIRTIO, self.vm_names[0]
+            config.INTERFACE_VIRTIO, self.vm_names[0], self.disk_id
         )
         self.check_guest_os_disk_interface(
-            config.INTERFACE_IDE, self.vm_names[1]
+            config.INTERFACE_IDE, self.vm_names[1], self.disk_id
         )
 
 
 @attr(tier=3)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    create_disks_to_vm.__name__,
+)
 class TestCase14946(BaseTestCase):
     """
     RHEVM-14946 - Change disks to IDE for a large number of PCI devices
@@ -539,41 +403,16 @@ class TestCase14946(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM-14946
     """
+    # Gluster doesn't support IDE interface
     __test__ = True
-
-    @pytest.fixture(scope='function')
-    def initializer_TestCase14946(self, request):
-        """
-        Create a vm and 10 Virtio disks and attach them to the vm
-        """
-        request.addfinalizer(self.finalizer_BaseTestCase)
-        self.create_vm_setup()
-        self.disk_aliases = []
-        for disk in range(10):
-            disk_args = config.disk_args.copy()
-            disk_args['interface'] = config.INTERFACE_VIRTIO
-            disk_args['alias'] = storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_DISK
-            )
-            disk_args['wait'] = False
-            disk_args['storagedomain'] = self.storage_domain
-            if not ll_vms.addDisk(True, self.vm_name, **disk_args):
-                raise exceptions.DiskException(
-                    "Unable to create disk %s" % disk_args['alias']
-                )
-            self.disk_aliases.append(disk_args['alias'])
-        if not ll_disks.wait_for_disks_status(self.disk_aliases):
-            raise exceptions.DiskException(
-                "Failed to wait for disk %s status OK" % self.disk_aliases
-            )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM-14946")
-    @pytest.mark.usefixtures("initializer_TestCase14946")
     def test_change_disk_ide_large_number_devices(self):
         """
         Test setup:
         - Create a VM with disk attached and install OS
-        - Create and attach 10 disks to the VM with VirtIO interface
+        - Create and attach 4 disks to the VM with VirtIO interface
 
         Test flow:
         - While the VM is stopped, change all the disks interface to IDE ->
@@ -581,10 +420,17 @@ class TestCase14946(BaseTestCase):
         attached to the VM
         """
         for disk in self.disk_aliases[:3]:
+            testflow.step(
+                "Update disk %s interface to %s", disk, config.INTERFACE_IDE
+            )
             assert ll_disks.updateDisk(
                 True, vmName=self.vm_name, alias=disk,
                 interface=config.INTERFACE_IDE
             ), "Error changing disk interface to IDE"
+        testflow.step(
+            "Update disk %s interface to %s", self.disk_aliases[3],
+            config.INTERFACE_IDE
+        )
         assert ll_disks.updateDisk(
             False, vmName=self.vm_name, alias=self.disk_aliases[3],
             interface=config.INTERFACE_IDE
@@ -606,7 +452,6 @@ class TestCase14947(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14947")
-    @pytest.mark.usefixtures("initialize_BaseOneDiskAttachedTestCase_fixture")
     def test_change_disk_running_vm(self):
         """
         Test setup:
@@ -618,11 +463,17 @@ class TestCase14947(BaseOneDiskAttachedTestCase):
         - Try to change the disk interface of the attached disk while the VM is
         running -> Should fail
         """
+        testflow.step("Start VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         self.update_disk_interface(positive=False)
 
 
 @attr(tier=3)
+@pytest.mark.usefixtures(
+    delete_disk.__name__,
+    create_vm.__name__,
+    add_disk.__name__,
+)
 class TestCase14948(BaseTestCase):
     """
     RHEVM_14948 - Negative - Try to attach disk to a VM without the interface
@@ -631,45 +482,17 @@ class TestCase14948(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM-14948
     """
+    # Gluster doesn't support shareable disks
     __test__ = True
-
-    @pytest.fixture(scope='function')
-    def initializer_TestCase14948(self, request):
-        """
-        Create the vm and the shared disk
-        """
-        def finalizer_TestCase1948():
-            """
-            Remove the created shared disk
-            """
-            if not ll_disks.deleteDisk(True, self.disk_alias):
-                logger.error("Failed to remove disk %s", self.disk_alias)
-                BaseTestCase.test_failed = False
-            self.finalizer_BaseTestCase()
-
-        request.addfinalizer(finalizer_TestCase1948)
-        self.create_vm_setup()
-        disk_args = config.disk_args.copy()
-        disk_args['interface'] = config.INTERFACE_IDE
-        self.disk_alias = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_DISK
-        )
-        disk_args['shareable'] = True
-        disk_args['format'] = config.RAW_DISK
-        disk_args['sparse'] = False
-        disk_args['storagedomain'] = self.storage_domain
-        disk_args['alias'] = self.disk_alias
-        if not ll_disks.addDisk(True, **disk_args):
-            raise exceptions.DiskException(
-                "Unable to create disk %s" % disk_args['alias']
-            )
-        if not ll_disks.wait_for_disks_status([self.disk_alias]):
-            raise exceptions.DiskException(
-                "Failed to wait for disk %s status OK" % self.disk_alias
-            )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
+    add_disk_params = {
+        'shareable': True,
+        'format': config.RAW_DISK,
+        'sparse': False,
+        'interface': config.INTERFACE_IDE
+    }
 
     @polarion("RHEVM-14948")
-    @pytest.mark.usefixtures("initializer_TestCase14948")
     def test_attach_disk_without_interface(self):
         """
         Test setup:
@@ -680,13 +503,17 @@ class TestCase14948(BaseTestCase):
         - Attach the shared disk to the VM and don't specify the interface
         type -> Should fail
         """
-        disk_obj = ll_disks.get_disk_obj(self.disk_alias)
+        disk_obj = ll_disks.get_disk_obj(self.disk_name)
+        testflow.step(
+            "Attach disk %s to VM %s without interface", self.disk_name,
+            self.vm_name
+        )
         assert ll_disks.attachDisk(
-            positive=False, alias=disk_obj.get_alias(),
+            positive=False, alias=self.disk_name,
             vm_name=self.vm_name, active=False, disk_id=disk_obj.get_id(),
             interface=None
         ), (
-            "Succeeded to attach a disk to a vm without specifying "
+            "Succeeded to attach a disk to a VM without specifying "
             "the disk interface"
         )
 
@@ -702,7 +529,6 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14949")
-    @pytest.mark.usefixtures("initialize_BaseOneDiskAttachedTestCase_fixture")
     def test_change_disk_and_restore_snapshot(self):
         """
         Test setup:
@@ -718,8 +544,14 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
         in the RHEVM engine and in the guest OS
         """
         self.snapshot_name = "snapshot_update_disk"
+        testflow.step(
+            "Add snapshot %s to VM %s", self.snapshot_name, self.vm_name
+        )
         ll_vms.addSnapshot(True, self.vm_name, self.snapshot_name)
         self.update_disk_interface()
+        testflow.step(
+            "Restore VM %s to snapshot %s", self.vm_name, self.snapshot_name
+        )
         ll_vms.restore_snapshot(True, self.vm_name, self.snapshot_name)
         self.check_engine_disk_interface(self.base_interface)
         self.check_guest_os_disk_interface(self.base_interface)
@@ -736,7 +568,6 @@ class TestCase14955(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14955")
-    @pytest.mark.usefixtures("initialize_BaseOneDiskAttachedTestCase_fixture")
     def test_change_disk_suspended_vm(self):
         """
         Test setup:
@@ -749,14 +580,19 @@ class TestCase14955(BaseOneDiskAttachedTestCase):
         - Try to change the disk interface of the attached disk to Virtio-SCSI
         -> Should fail
         """
+        testflow.step("Start VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
+        testflow.step("Suspend VM %s", self.vm_name)
         ll_vms.suspendVm(True, self.vm_name)
         self.update_disk_interface(positive=False)
 
 
 @attr(tier=3)
 @pytest.mark.usefixtures(
-    create_vm.__name__, update_vm.__name__, add_disk.__name__
+    delete_disk.__name__,
+    create_vm.__name__,
+    update_vm.__name__,
+    add_disk.__name__
 )
 class TestCase16716(TestCase):
     """
@@ -775,10 +611,9 @@ class TestCase16716(TestCase):
         Attach a disk to a VM when the interface is virtio-scsi and the VM does
         not support this interface
         """
-        if not ll_disks.attachDisk(
+        testflow.step("Attach disk %s to VM %s", self.disk_name, self.vm_name)
+        assert ll_disks.attachDisk(
             False, self.disk_name, self.vm_name, interface=config.VIRTIO_SCSI
-        ):
-            raise exceptions.DiskException(
-                "Succeeded to attach disk %s to vm %s" %
-                (self.disk_name, self.vm_name)
-            )
+        ), "Succeeded to attach disk %s to VM %s" % (
+            self.disk_name, self.vm_name
+        )
