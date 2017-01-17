@@ -369,7 +369,7 @@ def prepare_kwargs_for_log(**kwargs):
 def generate_logs(info=True, error=True):
     """
     Decorator to generate log info and log error for function.
-    The log contain the fist line from the function docstring and resolve
+    The log contain the first line from the function docstring and resolve
     names from function docstring by function args, any args that not
     resolved from the docstring will be printed after.
     If the function have positive arg the log will be based positive or

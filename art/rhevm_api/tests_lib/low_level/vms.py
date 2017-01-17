@@ -2023,31 +2023,33 @@ def removeSnapshot(
     return True
 
 
+@ll_general.generate_logs()
 def runVmOnce(
-    positive, vm, wait_for_state=ENUMS['vm_state_powering_up'], pause=False,
-    use_cloud_init=False, use_sysprep=False, **kwargs
+    positive, vm, wait_for_state=ENUMS['vm_state_powering_up_or_up'],
+    pause=False, use_cloud_init=False, use_sysprep=False, **kwargs
 ):
     """
-    Run once vm with specific parameters
+    Run VM once
 
     Args:
-        positive (bool): if run must succeed or not
-        vm (str): vm name to run
-        wait_for_state (str): wait for specific vm state after run
-        pause (bool): if vm must started in pause state
-        use_cloud_init (bool): If to use cloud
-        use_sysprep (bool): True if sysprep should be used, False otherwise
+        positive (bool): True if test is positive (VM needs to start), or False
+            if negative (VM doesn't need to start)
+        vm (str): VM name to run
+        wait_for_state (str): Wait for specific VM state after run
+        pause (bool): True to start VM in 'pause' state
+        use_cloud_init (bool): True to use cloud, False otherwise
+        use_sysprep (bool): True to use Sysprep, False otherwise
 
     Keyword arguments:
-        display_type (str): display type of vm
-        stateless (bool): if vm must be stateless
-        cdrom_image (str): cdrom image to attach
-        floppy_image (str): floppy image to attach
-        boot_dev (str): boot vm from device
-        host (str): run vm on host
-        domainName (str): vm domain
-        user_name (str): domain user name
-        password (str): domain password name
+        display_type (str): Display type of vm
+        stateless (bool): True if VM should be stateless
+        cdrom_image (str): CD-ROM image to attach
+        floppy_image (str): Floppy image to attach
+        boot_dev (str): Boot vm from device
+        host (str): Host name to run the VM on
+        domainName (str): VM domain
+        user_name (str): Domain user name
+        password (str): Domain user password
         initialization (Initialization): Initialization obj for cloud init
 
 
@@ -2055,8 +2057,7 @@ def runVmOnce(
         bool: True, if positive and action succeed or negative and action
         failed, otherwise False
     """
-    # TODO Consider merging this method with the startVm.
-    vm_obj = VM_API.find(vm)
+    vm_obj = get_vm(vm=vm)
     action_params = {}
     vm_for_action = data_st.Vm()
     display_type = kwargs.get("display_type")
@@ -2108,18 +2109,10 @@ def runVmOnce(
         wait_for_state = ENUMS['vm_state_paused']
         action_params["pause"] = pause
 
-    action_params_txt = ll_general.prepare_kwargs_for_log(**action_params)
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="run_once", obj_type="vm", obj_name=vm, positive=positive,
-        extra_txt="action parameters: %s" % action_params_txt, **kwargs
-        )
-    logger.info(log_info)
     status = bool(
         VM_API.syncAction(vm_obj, 'start', positive, **action_params)
     )
-    if not status:
-        logger.error(log_error)
-    elif positive:
+    if positive:
         return VM_API.waitForElemStatus(
             vm_obj, wait_for_state, VM_ACTION_TIMEOUT
         )
