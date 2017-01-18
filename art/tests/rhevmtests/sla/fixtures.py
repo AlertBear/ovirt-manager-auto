@@ -667,3 +667,39 @@ def create_vm_without_disk(request):
         cluster=sla_config.CLUSTER_NAME[0],
         template=sla_config.BLANK_TEMPlATE
     )
+
+
+@pytest.fixture(scope="class")
+def attach_host_device(request):
+    """
+    Attach host device to VM
+    """
+    pci_device_name = getattr(
+        request.node.cls,
+        "pci_device_name",
+        sla_helpers.get_pci_device_with_iommu(sla_config.HOSTS[0]).get_name()
+    )
+
+    def fin():
+        """
+        Remove host device from VM
+        """
+        if ll_vms.get_vm_host_devices(vm_name=sla_config.VM_NAME[0]):
+            u_libs.testflow.teardown(
+                "Detach the host device %s from VM %s",
+                pci_device_name, sla_config.VM_NAME[0]
+            )
+            assert ll_vms.remove_vm_host_device(
+                vm_name=sla_config.VM_NAME[0], device_name=pci_device_name
+            )
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup(
+        "Attach the host device %s to VM %s",
+        pci_device_name, sla_config.VM_NAME[0]
+    )
+    assert ll_vms.add_vm_host_device(
+        vm_name=sla_config.VM_NAME[0],
+        device_name=pci_device_name,
+        host_name=sla_config.HOSTS[0]
+    )

@@ -14,13 +14,13 @@ import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
 from fixtures import (
-    attach_host_device,
     change_host_cluster,
     numa_pinning,
     update_class_cpu_pinning
 )
 from rhevmtests.sla.fixtures import (
     activate_hosts,
+    attach_host_device,
     create_vm_without_disk,
     choose_specific_host_as_spm,
     export_vm,

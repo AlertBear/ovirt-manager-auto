@@ -13,6 +13,8 @@ from art.test_handler.tools import polarion
 from fixtures import (
     create_equals_numa_nodes_on_vm,
     create_custom_numa_nodes_on_vm,
+    get_pci_device_name,
+    get_pci_device_numa_node,
     pin_one_vm_numa_node_to_two_host_numa_nodes,
     pin_two_vm_numa_nodes_to_tone_host_numa_node,
     remove_all_numa_nodes_from_vm,
@@ -21,6 +23,7 @@ from fixtures import (
     update_vm_numa_mode
 )
 from rhevmtests.sla.fixtures import (
+    attach_host_device,
     start_vms,
     update_vms
 )
@@ -854,3 +857,122 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
             conf.VM_NAME[0]
         )
         assert self.new_num_of_sockets == real_amount_of_cpus
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    get_pci_device_name.__name__,
+    get_pci_device_numa_node.__name__,
+    update_vms.__name__,
+    attach_host_device.__name__,
+    start_vms.__name__,
+)
+class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
+    """
+    Attaching host device to the VM, must apply host
+    device NUMA node on the VM in preferred mode
+    """
+    __test__ = True
+    pci_device_name = None
+    pci_device_numa_node = None
+    num_of_vm_numa_nodes = 1
+    vm_numa_mode = conf.PREFER_MODE
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0]
+        }
+    }
+    vms_to_start = [conf.VM_NAME[0]]
+
+    @polarion("RHEVM-17391")
+    def test_vm_numa_pinning_and_mode(self):
+        """
+        1) Check NUMA memory pinning
+        2) Check NUMA mode
+        """
+        if not self.pci_device_numa_node or self.pci_device_numa_node == -1:
+            pytest.skip("Host device does not have correct numa node")
+        helpers.skip_test_because_memory_condition()
+
+        u_libs.testflow.step(
+            "Check if VM %s NUMA memory pinning is correct",
+            conf.VM_NAME[0]
+        )
+        assert helpers.is_numa_pinning_correct(
+            pinning_type=conf.MEMORY_PINNING_TYPE,
+            numa_mode=self.vm_numa_mode,
+            num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
+        )
+
+        u_libs.testflow.step(
+            "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
+        )
+        assert helpers.get_numa_mode_from_vm_process(
+            resource=conf.VDS_HOSTS[0],
+            vm_name=conf.VM_NAME[0],
+            numa_mode=self.vm_numa_mode
+        )
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    update_vms.__name__,
+    attach_host_device.__name__,
+    remove_all_numa_nodes_from_vm.__name__,
+    create_equals_numa_nodes_on_vm.__name__,
+    update_vm_numa_mode.__name__,
+    start_vms.__name__
+)
+class TestNumaPinningOverrideHotsDeviceNuma(u_libs.SlaTest):
+    """
+    Setting NUMA pinning must override host device NUMA configuration
+    """
+    __test__ = True
+    vms_to_params = {
+        conf.VM_NAME[0]: {
+            conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_PLACEMENT_HOSTS: [0]
+        }
+    }
+    num_of_vm_numa_nodes = 2
+    vm_numa_mode = conf.INTERLEAVE_MODE
+    vms_to_start = [conf.VM_NAME[0]]
+
+    @polarion("RHEVM-17390")
+    def test_vm_numa_pinning_and_mode(self):
+        """
+        1) Check NUMA CPU pinning
+        2) Check NUMA memory pinning
+        3) Check NUMA mode
+        """
+        u_libs.testflow.step(
+            "Check if VM %s NUMA CPU pinning is correct", conf.VM_NAME[0]
+        )
+        assert helpers.is_numa_pinning_correct(
+            pinning_type=conf.CPU_PINNING_TYPE,
+            numa_mode=self.vm_numa_mode,
+            num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
+        )
+
+        helpers.skip_test_because_memory_condition()
+
+        u_libs.testflow.step(
+            "Check if VM %s NUMA memory pinning is correct",
+            conf.VM_NAME[0]
+        )
+        assert helpers.is_numa_pinning_correct(
+            pinning_type=conf.MEMORY_PINNING_TYPE,
+            numa_mode=self.vm_numa_mode,
+            num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
+        )
+
+        u_libs.testflow.step(
+            "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
+        )
+        assert helpers.get_numa_mode_from_vm_process(
+            resource=conf.VDS_HOSTS[0],
+            vm_name=conf.VM_NAME[0],
+            numa_mode=self.vm_numa_mode
+        )

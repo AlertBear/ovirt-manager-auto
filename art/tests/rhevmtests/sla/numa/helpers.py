@@ -405,3 +405,31 @@ def is_vm_numa_nodes_have_correct_values(
             if exp_value != vm_value:
                 return False
     return True
+
+
+def get_pci_devices_numa_node_from_resource(resource):
+    """
+    Get mapping between PCI devices and NUMA nodes
+
+    Args:
+        resource (VDS): Host resource
+
+    Returns:
+        dict: Mapping between PCI devices and NUMA nodes
+    """
+    out = resource.run_command(
+        ["tail", "-n", "1", "/sys/bus/pci/devices/*/numa_node"]
+    )[1]
+    pci_devices = {}
+    pci_device_name = ''
+    for line in out.splitlines():
+        if line:
+            if 'pci' in line:
+                pci_device_name = line.split('/')[-2]
+                pci_device_name = pci_device_name.replace(
+                    ':', '_'
+                ).replace('.', '_')
+                pci_device_name = 'pci_{0}'.format(pci_device_name)
+            elif pci_device_name:
+                pci_devices[pci_device_name] = int(line)
+    return pci_devices

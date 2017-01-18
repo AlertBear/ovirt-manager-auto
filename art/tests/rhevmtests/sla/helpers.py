@@ -613,3 +613,21 @@ def wait_for_dc_and_storagedomains():
             logger.error(result.exception().msg)
             return False
     return True
+
+
+def get_pci_device_with_iommu(host_name):
+    """
+    Get PCI device with IOMMU from the host
+
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        HostDevice: Host device with IOMMU
+    """
+    host_devices = ll_hosts.get_host_devices(host_name=host_name)
+    host_devices_with_iommu = filter(
+        lambda x: x.get_iommu_group() and "USB" in x.get_product().get_name(),
+        host_devices
+    )
+    return host_devices_with_iommu[0] if host_devices_with_iommu else None

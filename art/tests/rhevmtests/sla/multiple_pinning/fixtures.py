@@ -3,7 +3,6 @@ Multiple pinning fixtures
 """
 import logging
 
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
@@ -46,39 +45,6 @@ def numa_pinning(request):
     request.addfinalizer(fin)
 
     pinning_helpers.add_one_numa_node_to_vm()
-
-
-@pytest.fixture(scope="class")
-def attach_host_device(request):
-    """
-    1) Attach host device to VM
-    """
-    host_device_name = ll_hosts.get_host_devices(
-        host_name=conf.HOSTS[0]
-    )[0].get_name()
-
-    def fin():
-        """
-        1) Remove host device from VM
-        """
-        if ll_vms.get_vm_host_devices(vm_name=conf.VM_NAME[0]):
-            u_libs.testflow.teardown(
-                "Detach the host device %s from VM %s",
-                host_device_name, conf.VM_NAME[0]
-            )
-            ll_vms.remove_vm_host_device(
-                vm_name=conf.VM_NAME[0], device_name=host_device_name
-            )
-    request.addfinalizer(fin)
-
-    u_libs.testflow.setup(
-        "Attach the host device %s to VM %s", host_device_name, conf.VM_NAME[0]
-    )
-    assert ll_vms.add_vm_host_device(
-        vm_name=conf.VM_NAME[0],
-        device_name=host_device_name,
-        host_name=conf.HOSTS[0]
-    )
 
 
 @pytest.fixture(scope="class")

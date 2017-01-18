@@ -7,6 +7,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import helpers
 import pytest
+import rhevmtests.sla.helpers as sla_helpers
 
 
 @pytest.fixture(scope="class")
@@ -176,3 +177,25 @@ def update_vm_memory_for_numa_test(request):
         memory_guaranteed=vm_memory,
         max_memory=vm_memory + conf.GB
     )
+
+
+@pytest.fixture(scope="class")
+def get_pci_device_name(request):
+    """
+    Get PCI device and save it to the class variable
+    """
+    request.node.cls.pci_device_name = sla_helpers.get_pci_device_with_iommu(
+        host_name=conf.HOSTS[0]
+    ).get_name()
+
+
+@pytest.fixture(scope="class")
+def get_pci_device_numa_node(request):
+    """
+    Get PCI device NUMA node and save it to the class variable
+    """
+    klass = request.node.cls
+    pci_devices = helpers.get_pci_devices_numa_node_from_resource(
+        resource=conf.VDS_HOSTS[0]
+    )
+    klass.pci_device_numa_node = pci_devices[klass.pci_device_name]
