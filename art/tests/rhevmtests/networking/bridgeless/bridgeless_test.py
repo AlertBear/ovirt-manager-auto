@@ -15,7 +15,7 @@ from rhevmtests.networking import helper as network_helper
 import rhevmtests.networking.config as conf
 import config as bridgeless_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import attr, testflow, NetworkTest
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, setup_networks_fixture, clean_host_interfaces
 )  # flake8: noqa
@@ -43,9 +43,8 @@ def prepare_setup(request):
     )
 
 
-@attr(team="network")
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestBridgelessCase(object):
+class TestBridgelessCase(NetworkTest):
     """
     Bridgeless test on host NIC and bond.
     """

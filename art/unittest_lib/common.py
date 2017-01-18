@@ -69,12 +69,10 @@ class StorageTest(BaseTestCase):
 
 @network
 @attr(team="network")
-class NetworkTest(BaseTestCase):
+class NetworkTest(object):
     """
     Basic class for network tests
     """
-    __test__ = False
-
     apis = set(["rest", "java", "sdk"])
 
 
