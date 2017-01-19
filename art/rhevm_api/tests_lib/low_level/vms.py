@@ -2112,7 +2112,7 @@ def runVmOnce(
     status = bool(
         VM_API.syncAction(vm_obj, 'start', positive, **action_params)
     )
-    if positive:
+    if status and positive:
         return VM_API.waitForElemStatus(
             vm_obj, wait_for_state, VM_ACTION_TIMEOUT
         )
