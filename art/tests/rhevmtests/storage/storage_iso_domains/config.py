@@ -1,4 +1,6 @@
 from rhevmtests.storage.config import *  # flake8: noqa
+import hashlib
+import time
 
 __test__ = False
 
@@ -6,23 +8,14 @@ TESTNAME = PARAMETERS.get('basename', 'StorageIsoDomains')
 
 REST_PASS = REST_CONNECTION['password']
 
-if GOLDEN_ENV:
-    ADDRESS = UNUSED_DATA_DOMAIN_ADDRESSES[:]
-    PATH = UNUSED_DATA_DOMAIN_PATHS[:]
-    LUNS = UNUSED_LUNS[:]
-    LUN_ADDRESS = UNUSED_LUN_ADDRESSES[:]
-    LUN_TARGET = UNUSED_LUN_TARGETS[:]
+ADDRESS = UNUSED_DATA_DOMAIN_ADDRESSES[:]
+PATH = UNUSED_DATA_DOMAIN_PATHS[:]
+LUNS = UNUSED_LUNS[:]
+LUN_ADDRESS = UNUSED_LUN_ADDRESSES[:]
+LUN_TARGET = UNUSED_LUN_TARGETS[:]
 
-    # TODO: Give proper values if GE is able to run on Local in the future
-    LOCAL_DOMAINS = [None, None]
-else:
-    ADDRESS = PARAMETERS.as_list('data_domain_address')
-    PATH = PARAMETERS.as_list('data_domain_path')
-    LUNS = PARAMETERS.as_list('lun')
-    LUN_ADDRESS = PARAMETERS.as_list('lun_address')
-    LUN_TARGET = PARAMETERS.as_list('lun_target')
-
-    LOCAL_DOMAINS = PARAMETERS.as_list('local_domain_path')
+# TODO: Give proper values if GE is able to run on Local in the future
+LOCAL_DOMAINS = [None, None]
 
 LUN_PORT = 3260
 
@@ -67,3 +60,11 @@ ISCSI_DOMAIN = {
     'lun_target': None,  # Filed in setup_package
     'lun_port': LUN_PORT,
 }
+
+
+sha1 = hashlib.sha1("%f" % time.time()).hexdigest()
+TARGETDIR = '/tmp/mnt%s' % sha1
+MKDIR_CMD = 'mkdir %s' % TARGETDIR
+RMDIR_CMD = 'rm -rf %s' % TARGETDIR
+MOUNT_CMD = 'mount -t nfs %s:%s %s' % (iso_address, iso_path, TARGETDIR)
+UMOUNT_CMD = 'umount %s' % TARGETDIR
