@@ -1498,6 +1498,29 @@ def prepare_vnic_profile_mappings_object(network_mappings):
 
 
 @ll.general.generate_logs()
+def get_bond_bonding_property(host, bond, property_name):
+    """
+    Get bond bonding property_name Mac object for host
+
+    Args:
+        host (str): Host name
+        bond (str): Bond name
+        property_name (str): Property name, can be one of the following:
+            "ad_partner_mac", "options", "slaves" or "active_slave"
+
+    Returns:
+        Mac: Mac object, or None if get failed
+    """
+    host_nics = ll.hosts.get_host_nics_list(host)
+    bond_object = [i for i in host_nics if i.name == bond]
+
+    if not bond_object:
+        return None
+
+    return getattr(bond_object[0].bonding, property_name)
+
+
+@ll.general.generate_logs()
 def get_bond_active_slave_object(host, bond):
     """
     Get host bond active slave object.
