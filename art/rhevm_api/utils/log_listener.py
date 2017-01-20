@@ -95,14 +95,16 @@ class LogListener():
 
     def watch_for_remote_changes(self, files_to_watch, regex):
         """
-        method that runs "tail -f 'file_name'" command remotely
+        Method that runs "tail -f 'file_name'" command remotely.
+        Execute the "tail -f" command through communication_
+        components_list[1] (channel)
 
-        return:
-        - True if the regex is found
-        - False otherwise
+        Args:
+            files_to_watch (str): Paths to files to watch
+            regex (str): Regular expression to look for
 
-          execute the "tail -f" command through communication_
-          components_list[1] (channel)
+        Returns:
+            str: The regex if there's a match, empty string otherwise
         """
         start_time = time.time()
         try:
@@ -115,7 +117,7 @@ class LogListener():
         while True:
             if self.time_out:
                 if self.time_out < time.time() - start_time:
-                    return False
+                    return ''
             try:
                 # receive the output from the channel
                 recv = "".join([recv, self.channel.recv(1024)])
@@ -123,21 +125,24 @@ class LogListener():
 
                 if reg:
                     logger.info("regex %s found..", regex)
-                    return True
+                    return reg
 
             except KeyboardInterrupt:
                 self.channel.close()
                 self.ssh.close()
                 raise Exception("close connections")
-        return False
+        return ''
 
     def watch_for_local_changes(self, files_to_watch, regex):
         """
-        method that runs "tail -f 'file_name'" command locally
+        Method that runs "tail -f 'file_name'" command locally
 
-        return:
-        - True if the regex is found
-        - False otherwise
+        Args:
+            files_to_watch (str): Paths to files to watch
+            regex (str): Regular expression to look for
+
+        Returns:
+            str: The regex if there's a match, empty string otherwise
         """
         start_time = time.time()
         try:
@@ -154,7 +159,7 @@ class LogListener():
         while True:
             if self.time_out:
                 if self.time_out < time.time() - start_time:
-                    return False
+                    return ''
             try:
                 line = f.stdout.readline()
                 recv = "".join([recv, line])
@@ -162,19 +167,24 @@ class LogListener():
 
                 if reg:
                     logger.info("regex %s found..", regex)
-                    return True
+                    return reg
 
             except KeyboardInterrupt:
                 raise RuntimeError("Caught control-C")
-        return False
+        return ''
 
     def watch_for_changes(self, run_locally, files_to_watch, regex):
         """
-        method that runs "tail -f 'file_name'" command
+        Method that runs "tail -f 'file_name'" command
 
-        return:
-        - True if the regex is found
-        - False otherwise
+        Args:
+            run_locally (bool): If the command should run in the local host
+            or remotely
+            files_to_watch (str): Paths to files to watch
+            regex(str): Regular expression to look for
+
+        Returns:
+            str: The regex if there's a match, empty string otherwise
         """
         logger.info("watching for regex: %s", regex)
 
@@ -215,7 +225,7 @@ def watch_logs(files_to_watch, regex, command_to_exec=None, time_out=None,
 
     Returns: (found_regex,cmd_rc)
 
-            found_regex - True if the regex was found , False otherwise
+            found_regex - (str) if there's a match, None otherwise
             cmd_rc - True if command exit successfully , False otherwise
 
     -  In case that "ip_for_execute_command" is None -> assign "ip" to it so

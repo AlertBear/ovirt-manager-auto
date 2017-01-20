@@ -17,7 +17,21 @@ def initialize_params(request):
     self = request.node.cls
 
     self.snapshot_list = list()
-    self.spm = ll_hosts.get_spm_host(config.HOSTS)
+    self.host = getattr(self, 'host', None)
+    self.spm = ll_hosts.get_spm_host([
+        host for host in config.HOSTS if self.host != host
+    ])
     self.snapshot_description = storage_helpers.create_unique_object_name(
         self.test_case, config.OBJECT_TYPE_SNAPSHOT
     )
+
+
+@pytest.fixture(scope='class')
+def initialize_params_new_dc(request):
+    """
+    Initialize storage_domain attribute
+    """
+    self = request.node.cls
+
+    if self.new_storage_domain:
+        self.storage_domain = self.new_storage_domain

@@ -8,6 +8,8 @@ import re
 import shlex
 import hashlib
 import time
+import multiprocessing
+
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources.storage as storage_resources
@@ -94,7 +96,9 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     :rtype bool
     """
     is_ro = 'Read Only' if read_only else 'Read Write'
-    for disk in disks_to_prepare:
+    pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
+
+    def attach_and_activate(disk):
         logger.info("Attaching disk %s as %s disk to vm %s",
                     disk, is_ro, vm_name)
         status = ll_disks.attachDisk(
@@ -111,6 +115,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
             raise exceptions.DiskException("Failed to plug disk %s "
                                            "to vm %s"
                                            % (disk, vm_name))
+    pool.map(attach_and_activate, disks_to_prepare)
     return True
 
 
@@ -631,20 +636,23 @@ def get_amount_of_file_type_volumes(
         return num_volumes
 
 
-def get_disks_volume_count(disk_ids, cluster_name=config.CLUSTER_NAME):
+def get_disks_volume_count(
+    disk_ids, cluster_name=config.CLUSTER_NAME,
+    datacenter_name=config.DATA_CENTER_NAME
+):
     """
     Returns the logical volume count, with logic for block and file domain
     types
 
-    __author__ = "glazarov", "ratamir"
-    :param disk_ids: List of disk IDs
-    :type disk_ids: list
-    :param cluster_name: Cluster from which to fetch a host which will
-    run the disk query
-    :type cluster_name: str
-    :returns: Number of volumes retrieved across the disk names (file domain
-    type) or the total logical volumes (block domain type)
-    :rtype: int
+    Arguments:
+        disk_ids (list): List of disk IDs
+        cluster_name (str): Cluster from which to fetch a host which will
+        run the disk query
+        datacenter_name (str): Name of the data center where the disks' storage
+        domains are located
+    Returns:
+        Int: Number of volumes retrieved across the disk names (file domain
+        type) or the total logical volumes (block domain type)
     """
     host = ll_hosts.get_cluster_hosts(cluster_name=cluster_name)[0]
     host_ip = ll_hosts.get_host_ip(host)
@@ -653,7 +661,7 @@ def get_disks_volume_count(disk_ids, cluster_name=config.CLUSTER_NAME):
             "Failed to execute '%s' on %s" % (PVSCAN_CMD, host_ip)
         )
 
-    data_center_obj = ll_dc.get_data_center(config.DATA_CENTER_NAME)
+    data_center_obj = ll_dc.get_data_center(datacenter_name)
     sp_id = get_spuuid(data_center_obj)
     logger.debug("The Storage Pool ID is: '%s'", sp_id)
     # Initialize the volume count before iterating through the disk aliases
@@ -763,22 +771,24 @@ def start_creating_disks_for_test(
     :returns: List of disk aliases created
     :rtype: list
     """
-    disk_names = []
     logger.info("Creating all disks required for test")
     disk_permutations = ll_disks.get_all_disk_permutation(
         block=sd_type in config.BLOCK_TYPES, shared=shared,
         interfaces=interfaces
     )
-    for permutation in disk_permutations:
-        alias = add_new_disk(
+    pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
+
+    def add_disk(permutation):
+        return add_new_disk(
             sd_name=sd_name, permutation=permutation, shared=shared,
             sd_type=sd_type, disk_size=disk_size
         )
-        disk_names.append(alias)
-    return disk_names
+    return pool.map(add_disk, disk_permutations)
 
 
-def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
+def prepare_disks_with_fs_for_vm(
+    storage_domain, storage_type, vm_name, executor=None
+):
     """
     Prepare disks with filesystem for vm
 
@@ -810,14 +820,17 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
         disk_names, timeout=CREATION_DISKS_TIMEOUT
     ):
         raise exceptions.DiskException("Some disks are still locked")
+    logger.info("Attaching and activating disks %s", disk_names)
     prepare_disks_for_vm(vm_name, disk_names)
 
     if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
-        ll_vms.startVm(True, vm_name, wait_for_status=config.VM_UP)
-    executor = get_vm_executor(vm_name)
-    # TODO: Workaround for bug:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
-    executor.run_cmd(shlex.split("udevadm trigger"))
+        ll_vms.startVm(
+            True, vm_name, wait_for_status=config.VM_UP,
+            wait_for_ip=True
+        )
+    if not executor:
+        executor = get_vm_executor(vm_name)
+    logger.info("Creating filesystems on disks %s", disk_names)
 
     for disk_alias in disk_names:
         ecode, mount_point = create_fs_on_disk(vm_name, disk_alias, executor)
@@ -867,7 +880,7 @@ def create_fs_on_disk(vm_name, disk_alias, executor=None):
     is mounted if success, error code and error message in case of failure
     :rtype: tuple
     """
-    ll_vms.start_vms([vm_name], wait_for_ip=True)
+    ll_vms.startVm(True, vm_name, wait_for_ip=True)
     if not executor:
         executor = get_vm_executor(vm_name)
     # TODO: Workaround for bug:

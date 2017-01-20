@@ -118,6 +118,8 @@ TEXT_CONTENT = (
     "deserunt mollit anim id est laborum."
 )
 
+SYNC_CMD = 'sync'
+
 VM_BASE_NAME = "storage_vm"
 DISK_NAME_FORMAT = "%s_%s_%s_disk"
 

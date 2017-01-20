@@ -13,6 +13,7 @@ from rhevmtests.storage.storage_remove_snapshots.fixtures import (
     initialize_params,
 )  # flake8: noqa
 from art.unittest_lib import attr
+from art.test_handler.tools import bz
 
 
 class LiveMergeBaseClass(basePlan.BasicEnvironment):
@@ -77,6 +78,7 @@ class TestCase6044(LiveMergeBaseClass, basePlan.TestCase6044):
     test_case = '6044'
 
 
+@bz({'1430358': {}})
 class TestCase6045(LiveMergeBaseClass, basePlan.TestCase6045):
     """
     Live snapshot delete and merge with restart of vdsm
@@ -99,6 +101,7 @@ class TestCase6043(LiveMergeBaseClass, basePlan.TestCase6043):
     test_case = '6043'
 
 
+@bz({'1430358': {}})
 class TestCase6046(LiveMergeBaseClass, basePlan.TestCase6046):
     """
     Live delete and merge of snapshot while stopping the engine

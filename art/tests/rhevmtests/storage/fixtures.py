@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     jobs as ll_jobs,
 )
-from art.rhevm_api.resources import storage
+from art.rhevm_api.resources import VDS, storage
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 from concurrent.futures import ThreadPoolExecutor
@@ -49,6 +49,7 @@ def create_vm(request, remove_vm):
     )
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
+    clone_from_template = getattr(self, 'clone_from_template', True)
     self.installation = getattr(self, 'installation', True)
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
@@ -56,6 +57,7 @@ def create_vm(request, remove_vm):
     vm_args['vmName'] = self.vm_name
     vm_args['installation'] = self.installation
     vm_args['deep_copy'] = clone
+    vm_args['clone_from_template'] = clone_from_template
     if hasattr(self, 'vm_args'):
         vm_args.update(self.vm_args)
     testflow.setup("Creating VM %s", self.vm_name)
@@ -463,12 +465,18 @@ def create_storage_domain(request):
     self = request.node.cls
 
     def finalizer():
+        """
+        Remove added storage domain
+        """
+        if getattr(self, 'new_dc_name', False):
+            return
         testflow.teardown(
             "Remove storage domain %s", self.new_storage_domain
         )
+        spm = ll_hosts.get_spm_host(config.HOSTS)
         assert hl_sd.remove_storage_domain(
-            self.new_storage_domain, config.DATA_CENTER_NAME,
-            config.HOSTS[0], engine=config.ENGINE, format_disk=True
+            self.new_storage_domain, self.datacenter,
+            spm, engine=config.ENGINE, format_disk=True
         ), ("Failed to remove storage domain %s" % self.new_storage_domain)
     request.addfinalizer(finalizer)
     if not hasattr(self, 'new_storage_domain'):
@@ -479,79 +487,13 @@ def create_storage_domain(request):
         )
     if not hasattr(self, 'index'):
         self.index = 0
-    name = self.new_storage_domain
-    self.spm = ll_hosts.get_spm_host(config.HOSTS)
+    self.datacenter = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
     testflow.setup(
         "Create new storage domain %s", self.new_storage_domain
     )
-    if self.storage == ISCSI:
-        status = hl_sd.addISCSIDataDomain(
-            self.spm,
-            name,
-            config.DATA_CENTER_NAME,
-            config.UNUSED_LUNS[self.index],
-            config.UNUSED_LUN_ADDRESSES[self.index],
-            config.UNUSED_LUN_TARGETS[self.index],
-            override_luns=True
-        )
-
-    elif self.storage == FCP:
-        status = hl_sd.addFCPDataDomain(
-            self.spm,
-            name,
-            config.DATA_CENTER_NAME,
-            config.UNUSED_FC_LUNS[self.index],
-            override_luns=True
-        )
-    elif self.storage == NFS:
-        nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[self.index]
-        nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[self.index]
-        status = hl_sd.addNFSDomain(
-            host=self.spm,
-            storage=name,
-            data_center=config.DATA_CENTER_NAME,
-            address=nfs_address,
-            path=nfs_path,
-            format=True
-        )
-    elif self.storage == GLUSTER:
-        gluster_address = (
-            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[self.index]
-        )
-        gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[self.index]
-        status = hl_sd.addGlusterDomain(
-            host=self.spm,
-            name=name,
-            data_center=config.DATA_CENTER_NAME,
-            address=gluster_address,
-            path=gluster_path,
-            vfs_type=config.ENUMS['vfs_type_glusterfs']
-        )
-    elif self.storage == CEPH:
-        posix_address = (
-            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[self.index]
-        )
-        posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[self.index]
-        status = hl_sd.addPosixfsDataDomain(
-            host=self.spm,
-            storage=name,
-            data_center=config.DATA_CENTER_NAME,
-            address=posix_address,
-            path=posix_path,
-            vfs_type=CEPH,
-            mount_options=config.CEPH_MOUNT_OPTIONS
-        )
-    assert status, (
-        "Creating %s storage domain '%s' failed" % (self.storage, name)
+    storage_helpers.add_storage_domain(
+        self.new_storage_domain, self.datacenter, self.index, self.storage
     )
-    ll_jobs.wait_for_jobs(
-        [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
-    )
-    ll_sd.wait_for_storage_domain_status(
-        True, config.DATA_CENTER_NAME, name,
-        config.SD_ACTIVE
-    )
-    test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
 
 
 @pytest.fixture()
@@ -723,26 +665,34 @@ def clean_dc(request):
     self = request.node.cls
 
     def finalizer():
-        found, storage_domain = ll_sd.findMasterStorageDomain(
-            True, self.new_dc_name
-        )
-        if found:
-            master_domain = storage_domain['masterDomain']
-            testflow.teardown(
-                "Data center's %s master domain is %s", self.new_dc_name,
-                master_domain
-            )
+        master_domain = None
+        new_storage_domain = getattr(self, 'new_storage_domain', False)
+        if new_storage_domain:
+            master_domain = self.storage_domain
         else:
-            logger.warning(
-                "Could not find master storage domain on data center '%s'",
-                self.new_dc_name
+            master_domain = getattr(
+                self, 'master_domain', config.MASTER_DOMAIN
             )
-            master_domain = None
-        testflow.teardown("Cleaning Data-center %s", self.new_dc_name)
+            found, storage_domain = ll_sd.findMasterStorageDomain(
+                True, self.new_dc_name
+            )
+            if found:
+                master_domain = storage_domain['masterDomain']
+
+        testflow.teardown(
+            "Clean data-center %s and remove it", self.new_dc_name
+        )
         storage_helpers.clean_dc(
             self.new_dc_name, self.cluster_name, self.host_name,
             sd_name=master_domain
         )
+        if new_storage_domain:
+            testflow.teardown(
+                "Removing storage domain %s", self.storage_domain
+            )
+            assert ll_sd.removeStorageDomain(
+                True, self.storage_domain, self.host_name, format='true',
+            )
     request.addfinalizer(finalizer)
 
 
@@ -889,7 +839,8 @@ def prepare_disks_with_fs_for_vm(request):
         "Creating disks with filesystem and attach to VM %s", self.vm_name,
     )
     disks, mount_points = storage_helpers.prepare_disks_with_fs_for_vm(
-        self.storage_domain, self.storage, self.vm_name
+        self.storage_domain, self.storage, self.vm_name,
+        executor=getattr(self, 'vm_executor', None)
     )
     self.disks_to_remove = disks
     config.MOUNT_POINTS = mount_points
@@ -1107,8 +1058,8 @@ def remove_glance_image(request):
             if self.disk.get_alias() == image.get_name():
                 image_found = True
                 assert ll_sd.remove_glance_image(
-                        image.get_id(), config.GLANCE_HOSTNAME,
-                        config.HOSTS_USER, config.HOSTS_PW
+                    image.get_id(), config.GLANCE_HOSTNAME,
+                    config.HOSTS_USER, config.HOSTS_PW
                 ), "Failed to remove glance image %s" % self.disk.get_alias()
         assert image_found, (
             "Failed to find image %s in glance image repository %s" %
@@ -1298,3 +1249,28 @@ def import_image_from_glance(request):
     )
 
     ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE])
+
+
+@pytest.fixture()
+def remove_hsm_host(request):
+    """
+    Remove an hsm from the base data center and add it back
+    """
+    self = request.node.cls
+
+    def finalizer():
+        if self.hsm_host not in ll_hosts.get_host_names_list():
+            testflow.teardown("Adding host %s back", self.hsm_host)
+            assert ll_hosts.add_host(
+                name=self.hsm_host, address=self.hsm_host_vds.fqdn,
+                wait=True, cluster=config.CLUSTER_NAME,
+                root_password=config.VDC_ROOT_PASSWORD,
+                comment=self.hsm_host_vds.ip
+            )
+
+    request.addfinalizer(finalizer)
+    self.hsm_host = ll_hosts.get_hsm_host(config.HOSTS)
+    self.hsm_host_ip = ll_hosts.get_host_ip(self.hsm_host)
+    self.hsm_host_vds = VDS(self.hsm_host_ip, config.HOSTS_PW)
+    testflow.setup("Removing host %s from the env", self.hsm_host)
+    assert ll_hosts.remove_host(True, self.hsm_host, deactivate=True)

@@ -5,27 +5,28 @@ Storage/3_5_Storage_Live_Merge
 import pytest
 import logging
 import os
+import shlex
 from multiprocessing import Process, Queue
 from time import sleep
 from rhevmtests.storage import config
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
+    hosts as ll_hosts,
     vms as ll_vms,
 )
-from art.rhevm_api.utils.test_utils import (
-    restartVdsmd, restart_engine,
-)
+from art.rhevm_api.utils.test_utils import restart_engine
 from rhevmtests.storage.fixtures import (
     create_vm, prepare_disks_with_fs_for_vm, delete_disks,
-    wait_for_disks_and_snapshots,
+    wait_for_disks_and_snapshots, init_vm_executor, start_vm
 )
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 from rhevmtests.storage.storage_remove_snapshots.fixtures import (
     initialize_params,
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
+from art.unittest_lib import attr, StorageTest, testflow
+from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -37,13 +38,7 @@ DD_SIZE = 900 * config.MB
 ISCSI = config.STORAGE_TYPE_ISCSI
 
 
-@pytest.mark.usefixtures(
-    delete_disks.__name__,
-    create_vm.__name__,
-    prepare_disks_with_fs_for_vm.__name__,
-    initialize_params.__name__,
-)
-class BasicEnvironment(BaseTestCase):
+class BaseTestCase(StorageTest):
     """
     This class implements setup and teardowns of common things
     """
@@ -51,6 +46,7 @@ class BasicEnvironment(BaseTestCase):
     test_case = None
     checksum_files = dict()
     live_merge = None
+    vm_wait_for_ip = True
 
     def create_files_on_vm_disks(self, vm_name, iteration_number):
         """
@@ -61,7 +57,6 @@ class BasicEnvironment(BaseTestCase):
             assert ll_vms.startVm(
                 True, self.vm_name, config.VM_UP, wait_for_ip=True
             )
-        vm_executor = storage_helpers.get_vm_executor(self.vm_name)
         for idx, mount_dir in enumerate(config.MOUNT_POINTS):
             full_path = os.path.join(
                 mount_dir, TEST_FILE_TEMPLATE % iteration_number
@@ -70,7 +65,7 @@ class BasicEnvironment(BaseTestCase):
 
             rc = storage_helpers.create_file_on_vm(
                 vm_name, TEST_FILE_TEMPLATE % iteration_number,
-                mount_dir, vm_executor=vm_executor
+                mount_dir, vm_executor=self.vm_executor
             )
             if not rc:
                 logger.error(
@@ -79,29 +74,27 @@ class BasicEnvironment(BaseTestCase):
                 )
                 return False
             if not storage_helpers.write_content_to_file(
-                vm_name, full_path, vm_executor=vm_executor
+                vm_name, full_path, vm_executor=self.vm_executor
             ):
                 logger.error(
                     "Failed to write content to file %s on vm %s",
                     full_path, vm_name
                 )
             self.checksum_files[full_path] = storage_helpers.checksum_file(
-                vm_name, full_path, vm_executor=vm_executor
+                vm_name, full_path, vm_executor=self.vm_executor
             )
+        rc, _, error = self.vm_executor.run_cmd(
+            cmd=shlex.split(config.SYNC_CMD)
+        )
+        assert not rc, "Failed to `sync` after write %s" % error
 
         return True
 
     def perform_snapshot_operation(
         self, snapshot_description, wait=True
     ):
-        if not self.live_merge:
-            if not ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
-                ll_vms.shutdownVm(True, self.vm_name)
-                ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
-
         testflow.step(
-            "Adding new %s snapshot to vm %s",
-            'live' if self.live_merge else '', self.vm_name
+            "Adding new snapshot to vm %s", self.vm_name
         )
         status = ll_vms.addSnapshot(
             True, self.vm_name, snapshot_description, wait=wait
@@ -113,27 +106,22 @@ class BasicEnvironment(BaseTestCase):
             )
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         self.snapshot_list.append(snapshot_description)
-        if not self.live_merge:
-            if ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
-                assert ll_vms.startVm(
-                    True, self.vm_name, config.VM_UP, wait_for_ip=True
-                ), (
-                    "Failed to power on VM '%s'" % self.vm_name
-                )
 
     def perform_snapshot_with_verification(
         self, snap_description, disks_for_snap
     ):
+        cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
+        data_center = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
         disk_ids = ll_disks.get_disk_ids(disks_for_snap)
         initial_vol_count = storage_helpers.get_disks_volume_count(
-            disk_ids
+            disk_ids, cluster_name=cluster, datacenter_name=data_center
         )
         testflow.step("Before snapshot: %s volumes", initial_vol_count)
 
         self.perform_snapshot_operation(snap_description)
 
         current_vol_count = storage_helpers.get_disks_volume_count(
-            disk_ids
+            disk_ids, cluster_name=cluster, datacenter_name=data_center
         )
         testflow.step("After snapshot: %s volumes", current_vol_count)
 
@@ -148,21 +136,21 @@ class BasicEnvironment(BaseTestCase):
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         result_list = []
         state = not should_exist
-        vm_executor = storage_helpers.get_vm_executor(self.vm_name)
+        self.vm_executor = storage_helpers.get_vm_executor(self.vm_name)
         # For each mount point, check if the corresponding file exists
         for mount_dir in config.MOUNT_POINTS:
             for file_name in files:
                 full_path = os.path.join(mount_dir, file_name)
                 testflow.step("Checking if file %s exists", full_path)
                 result = storage_helpers.does_file_exist(
-                    self.vm_name, full_path, vm_executor=vm_executor
+                    self.vm_name, full_path, vm_executor=self.vm_executor
                 )
                 logger.info(
                     "File %s", 'exists' if result else 'does not exist'
                 )
                 if result:
                     checksum = storage_helpers.checksum_file(
-                        self.vm_name, full_path, vm_executor=vm_executor
+                        self.vm_name, full_path, vm_executor=self.vm_executor
                     )
                     if checksum != self.checksum_files[full_path]:
                         logger.error(
@@ -291,6 +279,19 @@ class BasicEnvironment(BaseTestCase):
             )
 
 
+@pytest.mark.usefixtures(
+    delete_disks.__name__,
+    create_vm.__name__,
+    start_vm.__name__,
+    init_vm_executor.__name__,
+    prepare_disks_with_fs_for_vm.__name__,
+    initialize_params.__name__,
+    wait_for_disks_and_snapshots.__name__,
+)
+class BasicEnvironment(BaseTestCase):
+    __test__ = False
+
+
 class TestCase6038(BasicEnvironment):
     """
     Basic delete and merge of snapshots
@@ -301,14 +302,13 @@ class TestCase6038(BasicEnvironment):
     __test__ = False
     test_case = '6038'
 
-    @polarion("RHEVM3-6038")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=1)
     def test_basic_snapshot_deletion(self):
         self.basic_flow()
         self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[1]
         )
-
         self.verify_snapshot_files(
             self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
         )
@@ -324,7 +324,7 @@ class TestCase6052(BasicEnvironment):
     __test__ = False
     test_case = '6052'
 
-    @polarion("RHEVM3-6052")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=2)
     def test_basic_snapshot_deletion_with_io(self):
         self.basic_flow()
@@ -343,7 +343,7 @@ class TestCase16287(BasicEnvironment):
     __test__ = False
     test_case = '16287'
 
-    @polarion("RHEVM3-16287")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=2)
     def test_basic_snapshot_deletion_of_snapshots_disk(self):
         self.perform_snapshot_operation(self.snapshot_description)
@@ -380,7 +380,7 @@ class TestCase12215(BasicEnvironment):
     __test__ = False
     test_case = '12215'
 
-    @polarion("RHEVM3-12215")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=3)
     def test_snapshot_deletion_of_all_snapshots(self):
         self.basic_flow()
@@ -409,8 +409,8 @@ class TestCase6044(BasicEnvironment):
     __test__ = False
     test_case = '6044'
 
-    @polarion("RHEVM3-6044")
     @attr(tier=3)
+    @polarion("RHEVM3-%s" % test_case)
     def test_snapshot_deletion_base_snapshot(self):
         self.basic_flow()
 
@@ -435,23 +435,32 @@ class TestCase6045(BasicEnvironment):
     __test__ = False
     test_case = '6045'
 
-    @polarion("RHEVM3-6045")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=4)
     def test_snapshot_deletion_during_vdsm_restart(self):
+        host = ll_hosts.get_spm_host(config.HOSTS)
+        host_resource = rhevm_helpers.get_host_resource_by_name(
+            host_name=host
+        )
         self.basic_flow()
 
         if not self.live_merge:
             assert ll_vms.stop_vms_safely([self.vm_name])
         testflow.step("Removing snapshot %s", self.snapshot_list[1])
-        # timeout=-1 means no wait
         assert ll_vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
         )
-
         testflow.step("Restarting VDSM")
-        assert restartVdsmd(self.spm, config.HOSTS_PW)
-        logger.info("VDSM restarted")
+        assert ll_hosts.kill_vdsmd(host_resource)
 
+        assert ll_hosts.wait_for_spm(
+            config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+            config.WAIT_FOR_SPM_INTERVAL
+        )
+        assert ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK]
+        )
         self.verify_snapshot_files(
             self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
         )
@@ -467,7 +476,7 @@ class TestCase6043(BasicEnvironment):
     __test__ = False
     test_case = '6043'
 
-    @polarion("RHEVM3-6043")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=3)
     def test_basic_snapshot_deletion(self):
         self.basic_flow()
@@ -493,7 +502,7 @@ class TestCase6046(BasicEnvironment):
     __test__ = False
     test_case = '6046'
 
-    @polarion("RHEVM3-6046")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=4)
     def test_live_deletion_during_engine_restart(self):
         self.basic_flow()
@@ -508,7 +517,10 @@ class TestCase6046(BasicEnvironment):
         testflow.step("Restarting ovirt-engine")
         restart_engine(config.ENGINE, 10, 75)
         logger.info("ovirt-engine restarted")
-
+        assert ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK]
+        )
         self.verify_snapshot_files(
             self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
         )
@@ -524,7 +536,7 @@ class TestCase6048(BasicEnvironment):
     __test__ = False
     test_case = '6048'
 
-    @polarion("RHEVM3-6048")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=3)
     def test_consecutive_snapshot_deletion_of_snapshots(self):
         self.basic_flow(5)
@@ -560,7 +572,7 @@ class TestCase6050(BasicEnvironment):
     __test__ = False
     test_case = '6050'
 
-    @polarion("RHEVM3-6050")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=3)
     def test_snapshot_merge_during_snapshot_merge(self):
         self.basic_flow()
@@ -590,7 +602,7 @@ class TestCase6057(BasicEnvironment):
     __test__ = False
     test_case = '6057'
 
-    @polarion("RHEVM3-6057")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=2)
     def test_live_deletion_after_disk_migration(self):
         self.basic_flow()
@@ -614,7 +626,7 @@ class TestCase6058(BasicEnvironment):
     __test__ = False
     test_case = '6058'
 
-    @polarion("RHEVM3-6058")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=2)
     def test_live_merge_with_stop_vm(self):
         self.basic_flow()
@@ -642,9 +654,6 @@ class TestCase6058(BasicEnvironment):
         assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
 
 
-@pytest.mark.usefixtures(
-    wait_for_disks_and_snapshots.__name__,
-)
 class TestCase6062(BasicEnvironment):
     """
     Live delete and merge of snapshot during Live Storage Migration
@@ -656,7 +665,7 @@ class TestCase6062(BasicEnvironment):
     test_case = '6062'
     disk_to_migrate = None
 
-    @polarion("RHEVM3-6062")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=3)
     def test_live_merge_during_lsm(self):
         self.basic_flow()
@@ -693,7 +702,7 @@ class TestCase12216(BasicEnvironment):
     __test__ = False
     test_case = '12216'
 
-    @polarion("RHEVM3-12216")
+    @polarion("RHEVM3-%s" % test_case)
     @attr(tier=2)
     def test_basic_snapshot_merge_after_disk_resize(self):
         self.basic_flow(1)
