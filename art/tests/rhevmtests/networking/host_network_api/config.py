@@ -9,14 +9,320 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 
+
+VLAN_IDS = [str(i) for i in xrange(2, 70)]
+NETS = global_helper.generate_object_names(
+    num_of_cases=7, num_of_objects=40, prefix="HostNetApi"
+)
+
+NETS_CLASS_01_DICT = {
+    # host_network_api_test: test_attach_network_to_nic networks
+    # via HostNic
+    NETS[1][0]: {
+        "required": "false"
+    },
+    NETS[1][1]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[1][2]: {
+        "usages": "",
+        "required": "false"
+    },
+    NETS[1][3]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    # via Host
+    NETS[1][4]: {
+        "required": "false"
+    },
+    NETS[1][5]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[1][6]: {
+        "usages": "",
+        "required": "false"
+    },
+    NETS[1][7]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    # via SetupNetwork
+    NETS[1][8]: {
+        "required": "false"
+    },
+    NETS[1][9]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[1][10]: {
+        "usages": "",
+        "required": "false"
+    },
+    NETS[1][11]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+}
+
+NETS_CLASS_02_DICT = {
+    # host_network_api: test_attach_network_with_ip_to_nic params
+    # via HostNic
+    NETS[2][0]: {
+        "required": "false"
+    },
+    NETS[2][1]: {
+        "required": "false"
+    },
+    NETS[2][2]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[2][3]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[2][4]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[2][5]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[2][6]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[2][7]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    # via Host
+    NETS[2][8]: {
+        "required": "false"
+    },
+    NETS[2][9]: {
+        "required": "false"
+    },
+    NETS[2][10]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[2][11]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[2][12]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[2][13]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[2][14]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[2][15]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    # via SetupNetworks
+    NETS[2][16]: {
+        "required": "false"
+    },
+    NETS[2][17]: {
+        "required": "false"
+    },
+    NETS[2][18]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[2][19]: {
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false"
+    },
+    NETS[2][20]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[2][21]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[2][22]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[2][23]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+}
+
+
+NETS_CLASS_03_DICT = {
+    # host_network_api: test_attach_network_with_ip_to_nic params
+    # via HostNic
+    NETS[3][0]: {
+        "required": "false"
+    },
+    # via Host
+    NETS[3][1]: {
+        "required": "false"
+    },
+    # via SetupNetworks
+    NETS[3][2]: {
+        "required": "false"
+    }
+}
+
+NETS_CLASS_04_DICT = {
+    # host_network_api: test_mtu_negative params
+    NETS[4][0]: {
+        "required": "false",
+        "usages": "",
+        "mtu": conf.MTU[1]
+    },
+    NETS[4][1]: {
+        "required": "false",
+        "usages": "",
+        "mtu": conf.MTU[1]
+    },
+    NETS[4][2]: {
+        "required": "false",
+        "usages": "",
+        "mtu": conf.MTU[1]
+    },
+    NETS[4][3]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+        "mtu": conf.MTU[0]
+    },
+}
+
+NETS_CLASS_05_DICT = {
+    # host_network_api: test_update_network_with_ip_nic params
+    NETS[5][0]: {
+        "required": "false",
+    },
+    NETS[5][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[5][2]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[5][3]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[5][4]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[5][5]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[5][6]: {
+        "required": "false",
+    },
+}
+
+NETS_CLASS_06_DICT = {
+    # host_network_api: test_remove_un_managed_network
+    NETS[6][0]: {
+        "required": "false",
+    },
+    NETS[6][1]: {
+        "required": "false",
+    },
+    NETS[6][2]: {
+        "required": "false",
+    },
+    NETS[6][3]: {
+        "required": "false",
+    }
+}
+
+NETS_CLASS_07_DICT = {
+    # host_network_api: test_attach_network_to_nic_mixeds etup_network_fixture
+    NETS[7][0]: {
+        "required": "false",
+    },
+    NETS[7][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[7][2]: {
+        "required": "false"
+    },
+    NETS[7][3]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[7][4]: {
+        "required": "false",
+    },
+    NETS[7][5]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[7][6]: {
+        "required": "false",
+    },
+    NETS[7][7]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    # host_network_api: test_attach_network_to_nic_mixed test
+    NETS[7][8]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[7][9]: {
+        "required": "false",
+    },
+    NETS[7][10]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[7][11]: {
+        "required": "false",
+    },
+    NETS[7][12]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[7][13]: {
+        "required": "false",
+    },
+    NETS[7][14]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    NETS[7][15]: {
+        "required": "false",
+    },
+}
+
 QOS_NAME = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=6, prefix="host_net_qos"
-)
-NIC_NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=15, prefix="host_net"
-)
-HOST_NETS = global_helper.generate_object_names(
-    num_of_cases=20, num_of_objects=15, prefix="host"
 )
 SYNC_NETS_DC_1 = global_helper.generate_object_names(
     num_of_cases=25, num_of_objects=15, prefix="sync1_"
@@ -94,358 +400,72 @@ IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip"]
 IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip"]
 IPV6_IP_DICT = BASIC_IPV6_DICT["ip"]
 
-
-NIC_DICT = {
-    NIC_NETS[1][0]: {
-        "required": "false"
-    },
-    NIC_NETS[1][1]: {
-        "vlan_id": VLAN_IDS[0],
-        "required": "false"
-    },
-    NIC_NETS[1][2]: {
-        "usages": "",
-        "required": "false"
-    },
-    NIC_NETS[1][3]: {
-        "required": "false"
-    },
-    NIC_NETS[1][4]: {
-        "required": "false"
-    },
-    NIC_NETS[1][5]: {
-        "vlan_id": VLAN_IDS[1],
-        "required": "false"
-    },
-    NIC_NETS[1][6]: {
-        "vlan_id": VLAN_IDS[2],
-        "required": "false"
-    },
-    NIC_NETS[1][7]: {
-        "required": "false",
-        "usages": ""
-    },
-    NIC_NETS[1][8]: {
-        "required": "false",
-        "usages": ""
-    },
-    NIC_NETS[1][9]: {
-        "required": "false"
-    },
-    NIC_NETS[1][10]: {
-        "required": "false",
-        "usages": "",
-        "vlan_id": VLAN_IDS[6]
-    },
-    NIC_NETS[1][11]: {
-        "required": "false",
-        "usages": "",
-        "vlan_id": VLAN_IDS[7]
-    },
-    NIC_NETS[1][12]: {
-        "required": "false",
-        "usages": "",
-        "vlan_id": VLAN_IDS[8]
-    },
-    NIC_NETS[2][0]: {
-        "required": "false",
-        "usages": "",
-        "mtu": conf.MTU[1]
-    },
-    NIC_NETS[2][1]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[3],
-        "mtu": conf.MTU[0]
-    },
-    NIC_NETS[2][2]: {
-        "required": "false"
-    },
-    NIC_NETS[3][0]: {
-        "required": "false"
-    },
-    NIC_NETS[3][1]: {
-        "required": "false"
-    },
-    NIC_NETS[3][2]: {
-        "required": "false"
-    },
-    NIC_NETS[3][3]: {
-        "required": "false",
-        "usages": ""
-    },
-    NIC_NETS[3][4]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[4]
-    },
-    NIC_NETS[3][5]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[5]
-    },
-    NIC_NETS[3][6]: {
-        "required": "false"
-    }
-}
-
 SN_DICT = {
+    # test_multiple_vlans_networks_on_nic params
     SN_NETS[1][0]: {
-        "required": "false"
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false",
     },
     SN_NETS[1][1]: {
-        "vlan_id": VLAN_IDS[9],
-        "required": "false"
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SN_NETS[1][2]: {
-        "usages": "",
-        "required": "false"
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SN_NETS[1][3]: {
-        "required": "false"
+        "vlan_id": VLAN_IDS.pop(0),
+        "required": "false",
     },
     SN_NETS[1][4]: {
-        "required": "false"
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SN_NETS[1][5]: {
-        "vlan_id": VLAN_IDS[10],
-        "required": "false"
-    },
-    SN_NETS[1][6]: {
-        "vlan_id": VLAN_IDS[11],
-        "required": "false"
-    },
-    SN_NETS[1][7]: {
         "required": "false",
-        "usages": ""
-    },
-    SN_NETS[1][8]: {
-        "required": "false",
-        "usages": ""
-    },
-    SN_NETS[1][9]: {
-        "required": "false",
-        "usages": "",
-        "mtu": conf.MTU[1]
-    },
-    SN_NETS[1][10]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[12],
-        "mtu": conf.MTU[0]
-    },
-    SN_NETS[1][11]: {
-        "required": "false",
-        "usages": "",
-        "vlan_id": VLAN_IDS[17]
-    },
-    SN_NETS[1][12]: {
-        "required": "false",
-        "usages": "",
-        "vlan_id": VLAN_IDS[18]
-    },
-    SN_NETS[1][13]: {
-        "required": "false",
-        "usages": "",
-        "vlan_id": VLAN_IDS[19]
-    },
-    SN_NETS[1][14]: {
-        "required": "false",
-        "usages": ""
-    },
-    SN_NETS[1][15]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[20]
-    },
-    SN_NETS[1][16]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[21]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SN_NETS[2][0]: {
         "required": "false"
-    },
-    SN_NETS[2][1]: {
-        "required": "false"
-    },
-    SN_NETS[2][2]: {
-        "required": "false",
-        "usages": ""
-    },
-    SN_NETS[2][3]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[13]
-    },
-    SN_NETS[2][4]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[14]
     },
     SN_NETS[3][0]: {
         "required": "false"
     },
     SN_NETS[3][1]: {
         "required": "false",
-        "usages": ""
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SN_NETS[3][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[22]
     },
     SN_NETS[3][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[23]
+        "vlan_id": VLAN_IDS.pop(0),
     },
-    SN_NETS[6][0]: {
+    SN_NETS[3][4]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    SN_NETS[3][5]: {
         "required": "false",
     },
-    SN_NETS[6][1]: {
+    SN_NETS[3][6]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[48]
+        "vlan_id": VLAN_IDS.pop(0),
     },
-    SN_NETS[6][2]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[49]
-    },
-    SN_NETS[6][3]: {
-        "required": "false",
-    },
-    SN_NETS[6][4]: {
-        "required": "false",
-    },
-    SN_NETS[6][5]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[50]
-    },
-    SN_NETS[7][0]: {
-        "required": "false",
-    },
-    SN_NETS[7][1]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[51]
-    },
-    SN_NETS[7][2]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[52]
-    },
-    SN_NETS[7][3]: {
-        "required": "false",
-    },
-    SN_NETS[7][4]: {
-        "required": "false",
-    },
-    SN_NETS[7][5]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[53]
-    },
-    SN_NETS[8][0]: {
+    SN_NETS[4][0]: {
         "required": "false"
     },
-    SN_NETS[8][1]: {
+    SN_NETS[4][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[15]
+        "vlan_id": VLAN_IDS.pop(0),
     },
-    SN_NETS[8][2]: {
+    SN_NETS[4][2]: {
         "required": "false",
         "usages": ""
     },
-    SN_NETS[8][3]: {
-        "required": "false"
-    },
-}
-
-HOST_DICT = {
-    HOST_NETS[1][0]: {
-        "required": "false"
-    },
-    HOST_NETS[1][1]: {
-        "vlan_id": VLAN_IDS[27],
-        "required": "false"
-    },
-    HOST_NETS[1][2]: {
-        "usages": "",
-        "required": "false"
-    },
-    HOST_NETS[1][3]: {
-        "required": "false"
-    },
-    HOST_NETS[1][4]: {
-        "required": "false"
-    },
-    HOST_NETS[1][5]: {
-        "vlan_id": VLAN_IDS[28],
-        "required": "false"
-    },
-    HOST_NETS[1][6]: {
-        "vlan_id": VLAN_IDS[29],
-        "required": "false"
-    },
-    HOST_NETS[1][7]: {
-        "required": "false",
-        "usages": ""
-    },
-    HOST_NETS[1][8]: {
-        "required": "false",
-        "usages": ""
-    },
-    HOST_NETS[1][9]: {
-        "required": "false"
-    },
-    HOST_NETS[1][10]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[33]
-    },
-    HOST_NETS[1][11]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[34]
-    },
-    HOST_NETS[1][12]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[35]
-    },
-    HOST_NETS[2][0]: {
-        "required": "false",
-        "usages": "",
-        "mtu": conf.MTU[1]
-    },
-    HOST_NETS[2][1]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[30],
-        "mtu": conf.MTU[0]
-    },
-    HOST_NETS[2][2]: {
-        "required": "false"
-    },
-    HOST_NETS[3][0]: {
-        "required": "false"
-    },
-    HOST_NETS[3][1]: {
-        "required": "false"
-    },
-    HOST_NETS[3][2]: {
-        "required": "false"
-    },
-    HOST_NETS[3][3]: {
-        "required": "false",
-        "usages": ""
-    },
-    HOST_NETS[3][4]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[31]
-    },
-    HOST_NETS[3][5]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[32]
-    },
-    HOST_NETS[3][6]: {
-        "required": "false"
-    },
-    HOST_NETS[3][7]: {
-        "required": "false"
-    },
-    HOST_NETS[3][8]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[46]
-    },
-    HOST_NETS[3][9]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[47]
-    },
-    HOST_NETS[3][10]: {
+    SN_NETS[4][3]: {
         "required": "false"
     },
 }
@@ -453,11 +473,11 @@ HOST_DICT = {
 SYNC_DICT_1 = {
     SYNC_NETS_DC_1[1][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[36]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[1][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[37]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[1][2]: {
         "required": "false",
@@ -486,11 +506,11 @@ SYNC_DICT_1 = {
     },
     SYNC_NETS_DC_1[2][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[42]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[2][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[43]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[2][2]: {
         "required": "false",
@@ -574,7 +594,7 @@ SYNC_DICT_1 = {
         }
     },
     SYNC_NETS_DC_1[5][3]: {
-        "vlan_id": VLAN_IDS[13],
+        "vlan_id": VLAN_IDS.pop(0),
         "required": "false",
         "qos": {
             "datacenter": conf.DC_0,
@@ -586,7 +606,7 @@ SYNC_DICT_1 = {
         }
     },
     SYNC_NETS_DC_1[5][4]: {
-        "vlan_id": VLAN_IDS[14],
+        "vlan_id": VLAN_IDS.pop(0),
         "required": "false",
         "qos": {
             "datacenter": conf.DC_0,
@@ -627,14 +647,14 @@ SYNC_DICT_1 = {
 SYNC_DICT_2 = {
     SYNC_NETS_DC_1[1][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[40]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[1][1]: {
         "required": "false"
     },
     SYNC_NETS_DC_1[1][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[41]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[1][3]: {
         "required": "false",
@@ -656,19 +676,19 @@ SYNC_DICT_2 = {
     },
     SYNC_NETS_DC_1[1][8]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[54],
+        "vlan_id": VLAN_IDS.pop(0),
         "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[2][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[44]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[2][1]: {
         "required": "false"
     },
     SYNC_NETS_DC_1[2][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[45]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     SYNC_NETS_DC_1[2][3]: {
         "required": "false",
@@ -692,7 +712,7 @@ SYNC_DICT_2 = {
 
     SYNC_NETS_DC_1[2][8]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[55],
+        "vlan_id": VLAN_IDS.pop(0),
         "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[5][0]: {
@@ -721,7 +741,7 @@ SYNC_DICT_2 = {
         "required": "false",
     },
     SYNC_NETS_DC_1[5][3]: {
-        "vlan_id": VLAN_IDS[13],
+        "vlan_id": VLAN_IDS.pop(0),
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
@@ -733,7 +753,7 @@ SYNC_DICT_2 = {
         }
     },
     SYNC_NETS_DC_1[5][4]: {
-        "vlan_id": VLAN_IDS[14],
+        "vlan_id": VLAN_IDS.pop(0),
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
@@ -777,14 +797,14 @@ IPV6_NETS_DICT = {
     },
     IPV6_NETS[1][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[56]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     IPV6_NETS[1][2]: {
         "required": "false"
     },
     IPV6_NETS[1][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[57]
+        "vlan_id": VLAN_IDS.pop(0),
     },
     IPV6_NETS[1][4]: {
         "required": "false",
@@ -793,20 +813,20 @@ IPV6_NETS_DICT = {
     IPV6_NETS[1][5]: {
         "required": "false",
         "usages": "",
-        "vlan_id": VLAN_IDS[58]
+        "vlan_id": VLAN_IDS.pop(0),
     },
 }
 
 PERSIST_NETS_DICT = {
     PERSIST_NETS[1][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[57],
+        "vlan_id": VLAN_IDS.pop(0),
         "mtu": conf.MTU[0]
 
     },
     PERSIST_NETS[1][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[58],
+        "vlan_id": VLAN_IDS.pop(0),
         "mtu": conf.MTU[0]
     }
 }

@@ -182,7 +182,7 @@ def prepare_network_attachment_obj(host_name, **kwargs):
             "boot_protocol": "none"
         }
     }
-    ip = kwargs.get("ip", ip_none)
+    ip = kwargs.get("ip") or ip_none
     update = kwargs.get(UPDATE)
     nic = kwargs.get(NIC)
     override_configuration = kwargs.get("override_configuration")

@@ -56,15 +56,14 @@ class TestPersistenceSetupNetworks01(NetworkTest):
     bond = "bond10"
     nic_net = host_network_api_conf.PERSIST_NETS[1][0]
     bond_net = host_network_api_conf.PERSIST_NETS[1][1]
-    nic_vlan = host_network_api_conf.VLAN_IDS[57]
-    bond_vlan = host_network_api_conf.VLAN_IDS[58]
+    nic_vlan = host_network_api_conf.VLAN_IDS.pop(0),
+    bond_vlan = host_network_api_conf.VLAN_IDS.pop(0),
     mtu_9000 = conf.MTU[0]
     qos_dict = {
         "rt": host_network_api_conf.QOS_VAL * 1000000,
         "ul": host_network_api_conf.QOS_VAL * 1000000,
         "ls": host_network_api_conf.QOS_VAL
     }
-    persist = True
     hosts_nets_nic_dict = {
         0: {
             nic_net: {

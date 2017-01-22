@@ -75,7 +75,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Attach network with static IPv6 over bridge
         """
         dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_1
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_1
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -99,7 +99,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Attach network with static IPv6 over VLAN bridge
         """
         dummy_nic = conf.HOST_0_NICS[-2]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_2
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_2
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -123,7 +123,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Attach network with static IPv6 over BOND bridge
         """
         bond_dummies = conf.HOST_0_NICS[-5:-3]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_3
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_3
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -148,7 +148,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Attach network with static IPv6 over VLAN BOND bridge
         """
         bond_dummies = conf.HOST_0_NICS[-7:-5]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_4
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_4
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -173,7 +173,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Attach network with static IPv6 over Non-VM
         """
         dummy_nic = conf.HOST_0_NICS[-8]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_5
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_5
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -198,7 +198,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Attach network with static IPv6 over Non-VM VLAN
         """
         dummy_nic = conf.HOST_0_NICS[-9]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_6
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_6
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -247,7 +247,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Change the static ipv6 address with other static ipv6 address
         """
         dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_8
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_8
         network_host_api_dict = {
             "update": {
                 "1": {
@@ -272,9 +272,9 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Change the ipv6 boot protocol to DHCP v6
         """
         dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["boot_protocol"] = "dhcp"
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = None
-        net_api_conf.BASIC_IPV6_DICT["ip"]["netmask"] = None
+        net_api_conf.IPV6_IP_DICT["boot_protocol"] = "dhcp"
+        net_api_conf.IPV6_IP_DICT["address"] = None
+        net_api_conf.IPV6_IP_DICT["netmask"] = None
         network_host_api_dict = {
             "update": {
                 "1": {
@@ -297,9 +297,9 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Change the ipv6 boot protocol to autoconf
         """
         dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["boot_protocol"] = "autoconf"
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = None
-        net_api_conf.BASIC_IPV6_DICT["ip"]["netmask"] = None
+        net_api_conf.IPV6_IP_DICT["boot_protocol"] = "autoconf"
+        net_api_conf.IPV6_IP_DICT["address"] = None
+        net_api_conf.IPV6_IP_DICT["netmask"] = None
 
         network_host_api_dict = {
             "update": {
@@ -323,9 +323,9 @@ class TestHostNetworkApiIpV601(NetworkTest):
         Change the ipv6 boot protocol to static
         """
         dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.BASIC_IPV6_DICT["ip"]["boot_protocol"] = "static"
-        net_api_conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_9
-        net_api_conf.BASIC_IPV6_DICT["ip"]["netmask"] = "24"
+        net_api_conf.IPV6_IP_DICT["boot_protocol"] = "static"
+        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_9
+        net_api_conf.IPV6_IP_DICT["netmask"] = "24"
         network_host_api_dict = {
             "update": {
                 "1": {

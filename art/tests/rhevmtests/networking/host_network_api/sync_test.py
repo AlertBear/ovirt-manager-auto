@@ -71,7 +71,9 @@ def sync_prepare_setup(request):
             networks_dict=networks_dict, dc=dc, cluster=cl
         )
 
-    assert ll_hosts.deactivate_host(positive=True, host=network_api.host_0_name)
+    assert ll_hosts.deactivate_host(
+        positive=True, host=network_api.host_0_name
+    )
 
 
 @attr(tier=2)
@@ -90,14 +92,22 @@ class TestHostNetworkApiSync01(NetworkTest):
     """
     __test__ = True
     net_case_1 = net_api_conf.SYNC_NETS_DC_1[1][0]
-    net_case_1_vlan_id_actual = net_api_conf.VLAN_IDS[36]
-    net_case_1_vlan_id_expected = net_api_conf.VLAN_IDS[40]
+    net_case_1_vlan_id_actual = (
+        net_api_conf.SYNC_DICT_1.get(net_case_1).get("vlan_id")
+        )
+    net_case_1_vlan_id_expected = (
+        net_api_conf.SYNC_DICT_2.get(net_case_1).get("vlan_id")
+        )
     net_case_2 = net_api_conf.SYNC_NETS_DC_1[1][1]
-    net_case_2_vlan_id_actual = net_api_conf.VLAN_IDS[37]
+    net_case_2_vlan_id_actual = (
+        net_api_conf.SYNC_DICT_1.get(net_case_2).get("vlan_id")
+        )
     net_case_2_vlan_id_expected = None
     net_case_3 = net_api_conf.SYNC_NETS_DC_1[1][2]
     net_case_3_vlan_id_actual = None
-    net_case_3_vlan_id_expected = net_api_conf.VLAN_IDS[41]
+    net_case_3_vlan_id_expected = (
+        net_api_conf.SYNC_DICT_2.get(net_case_3).get("vlan_id")
+        )
     net_case_4 = net_api_conf.SYNC_NETS_DC_1[1][3]
     net_case_4_mtu_actual = str(conf.MTU[0])
     net_case_4_mtu_expected = str(conf.MTU[1])
@@ -117,7 +127,9 @@ class TestHostNetworkApiSync01(NetworkTest):
     net_case_9_vlan_id_actual = None
     net_case_9_mtu_actual = str(conf.MTU[0])
     net_case_9_bridge_actual = "false"
-    net_case_9_vlan_id_expected = net_api_conf.VLAN_IDS[54]
+    net_case_9_vlan_id_expected = (
+        net_api_conf.SYNC_DICT_2.get(net_case_9).get("vlan_id")
+        )
     net_case_9_mtu_expected = str(conf.MTU[1])
     net_case_9_bridge_expected = "true"
     hosts_nets_nic_dict = {
@@ -426,16 +438,24 @@ class TestHostNetworkApiSync02(NetworkTest):
     __test__ = True
     bond_1 = "bond021"
     net_case_1 = net_api_conf.SYNC_NETS_DC_1[2][0]
-    net_case_1_vlan_id_actual = net_api_conf.VLAN_IDS[42]
+    net_case_1_vlan_id_actual = (
+        net_api_conf.SYNC_DICT_1.get(net_case_1).get("vlan_id")
+    )
     bond_2 = "bond022"
-    net_case_1_vlan_id_expected = net_api_conf.VLAN_IDS[44]
+    net_case_1_vlan_id_expected = (
+        net_api_conf.SYNC_DICT_2.get(net_case_1).get("vlan_id")
+    )
     net_case_2 = net_api_conf.SYNC_NETS_DC_1[2][1]
-    net_case_2_vlan_id_actual = net_api_conf.VLAN_IDS[43]
+    net_case_2_vlan_id_actual = (
+        net_api_conf.SYNC_DICT_1.get(net_case_2).get("vlan_id")
+    )
     net_case_2_vlan_id_expected = None
     bond_3 = "bond023"
     net_case_3 = net_api_conf.SYNC_NETS_DC_1[2][2]
     net_case_3_vlan_id_actual = None
-    net_case_3_vlan_id_expected = net_api_conf.VLAN_IDS[45]
+    net_case_3_vlan_id_expected = (
+        net_api_conf.SYNC_DICT_2.get(net_case_3).get("vlan_id")
+    )
     bond_4 = "bond024"
     net_case_4 = net_api_conf.SYNC_NETS_DC_1[2][3]
     net_case_4_mtu_actual = str(conf.MTU[0])
@@ -460,7 +480,9 @@ class TestHostNetworkApiSync02(NetworkTest):
     net_case_9_vlan_id_actual = None
     net_case_9_mtu_actual = str(conf.MTU[0])
     net_case_9_bridge_actual = "false"
-    net_case_9_vlan_id_expected = net_api_conf.VLAN_IDS[55]
+    net_case_9_vlan_id_expected = (
+        net_api_conf.SYNC_DICT_2.get(net_case_9).get("vlan_id")
+    )
     net_case_9_mtu_expected = str(conf.MTU[1])
     net_case_9_bridge_expected = "true"
     bond_9 = "bond029"

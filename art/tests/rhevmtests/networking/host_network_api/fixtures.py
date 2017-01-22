@@ -7,12 +7,10 @@ Fixtures for host_network_api
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as network_api_conf
 import helper
 import rhevmtests.networking.config as conf
@@ -21,67 +19,15 @@ from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def attach_net_to_host(request):
-    """
-    Attach network to host NIC
-    """
-
-    network_api = NetworkFixtures()
-    host_nic = None
-    hosts_nets_nic_dict = request.node.cls.sn_dict
-    for key, val in hosts_nets_nic_dict.iteritems():
-        network = val.get("network")
-        nic = val.get("nic")
-        nic = network_api.host_0_nics[nic] if nic else None
-        sn_dict = {
-            "network": network
-        }
-        if nic:
-            sn_dict["nic"] = nic
-        else:
-            host_nic = network_api.host_0_nics[key]
-
-        log = nic if nic else host_nic
-
-        testflow.setup("Attach network %s to host NIC %s", network, log)
-        assert hl_host_network.add_network_to_host(
-            host_name=conf.HOST_0_NAME, nic_name=host_nic, **sn_dict
-        )
-
-
-@pytest.fixture(scope="class")
-def create_network_in_dc_and_cluster(request):
-    """
-    Create network in datacenter and cluster.
-    """
-    network_api = NetworkFixtures()
-    net = request.node.cls.net
-
-    network_dict = {
-        net: {
-            "required": "false"
-        }
-    }
-    testflow.setup(
-        "Create network %s in datacenter %s and cluster %s",
-        net, network_api.dc_0, network_api.cluster_0
-    )
-    assert hl_networks.create_and_attach_networks(
-        data_center=network_api.dc_0, cluster=network_api.cluster_0,
-        network_dict=network_dict
-    )
-
-
-@pytest.fixture(scope="class")
 def remove_network(request):
     """
     Remove network.
     """
     network_api = NetworkFixtures()
-    net = request.node.cls.net
-    testflow.setup("Remove network %s", net)
-    assert ll_networks.remove_network(
-        positive=True, network=net, data_center=network_api.dc_0
+    nets_to_remove = request.node.cls.nets_to_remove
+    testflow.setup("Remove networks %s", nets_to_remove)
+    assert hl_networks.remove_networks(
+        positive=True, networks=nets_to_remove, data_center=network_api.dc_0
     )
 
 

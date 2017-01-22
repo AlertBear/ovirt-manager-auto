@@ -11,6 +11,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.utils.test_utils as test_utils
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+from art.unittest_lib import testflow
 
 logger = logging.getLogger("Host_Network_API_Helper")
 
@@ -107,3 +108,83 @@ def set_ip_on_interface(ip, netmask, interface):
     assert test_utils.configure_temp_static_ip(
         vds_resource=conf.VDS_0_HOST, ip=ip, nic=interface, netmask=netmask
     )
+
+
+def attach_networks_for_parametrize(
+    network, nic, via, log_, ip=None, properties=None,
+    positive=True, update=False, remove=False
+):
+    """
+    Attach network to host via HostNic, Host and SetupNetwork API
+
+    Args:
+        network (str): network name
+        nic (str): NIC name
+        via (str): The API to use
+        log_ (str): Testflow to use
+        ip (dict): IP to set
+        properties (dict): Network custom properties to set
+        positive (bool): Test type (negative/positive)
+        update (bool): True to update existing network
+        remove (bool): Trie to remove network
+
+    Raises:
+        AssertionError: if the test fail
+    """
+    host_0 = conf.HOST_0_NAME
+    testflow.step(log_)
+
+    # Host NIC and Host
+    if via == "host_nic" or via == "host":
+        use_nic = nic if via == "host_nic" else None
+        if remove:
+            nic = nic if via == "host_nic" else None
+            res = hl_host_network.remove_networks_from_host(
+                host_name=host_0, networks=[network], nic=use_nic
+            )
+        else:
+            sn_dict = {
+                "network": network,
+                "nic": nic if via == "host" else None,
+                "ip": ip,
+                "properties": properties
+            }
+            if update:
+                res = hl_host_network.update_network_on_host(
+                    host_name=host_0, nic_name=use_nic, **sn_dict
+                )
+            else:
+                res = hl_host_network.add_network_to_host(
+                    host_name=host_0, nic_name=use_nic, **sn_dict
+                )
+        assert res is positive
+
+    # SetupNetworks
+    if via == "sn":
+        network_dict = {
+            "network": network,
+            "nic": nic,
+            "ip": ip,
+            "properties": properties
+        }
+        if update:
+            sn_dict = {
+                "update": {
+                    "1": network_dict
+                }
+            }
+        elif remove:
+            sn_dict = {
+                "remove": {
+                    "networks": [network]
+                }
+            }
+        else:
+            sn_dict = {
+                "add": {
+                    "1": network_dict
+                }
+            }
+
+        res = hl_host_network.setup_networks(host_name=host_0, **sn_dict)
+        assert res is positive

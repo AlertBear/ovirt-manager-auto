@@ -378,5 +378,5 @@ def setup_package():
     """
     network_cleanup()
     for vds_host in config.VDS_HOSTS[:2]:
-        num_dummy = 20 if vds_host.fqdn == config.VDS_HOSTS[0].fqdn else 8
+        num_dummy = 30 if vds_host.fqdn == config.VDS_HOSTS[0].fqdn else 8
         prepare_dummies(host_resource=vds_host, num_dummy=num_dummy)
