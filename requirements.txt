@@ -9,7 +9,8 @@ pycrypto >= 2.6
 python-dateutil
 python-foreman
 futures
-jira
+setuptools
+jira == 1.0.7
 kerberos
 lockfile
 lxml
@@ -18,7 +19,6 @@ paramiko >= 1.15.2
 repoze.lru >= 0.6
 python-rrmngmnt
 python-otopi-mdp
-setuptools
 unittest2
 pywinrm
 PyYAML
