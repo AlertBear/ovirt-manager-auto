@@ -72,7 +72,6 @@ def create_affinity_groups(request):
     for (
         affinity_group_name, affinity_group_params
     ) in affinity_groups.iteritems():
-        vms = affinity_group_params.pop("vms", None)
         u_libs.testflow.setup(
             "Create the affinity group %s", affinity_group_name
         )
@@ -81,16 +80,6 @@ def create_affinity_groups(request):
             name=affinity_group_name,
             **affinity_group_params
         )
-        if vms:
-            u_libs.testflow.setup(
-                "Populate the affinity group %s with VM's %s",
-                affinity_group_name, vms
-            )
-            assert ll_clusters.populate_affinity_with_vms(
-                affinity_name=affinity_group_name,
-                cluster_name=sla_conf.CLUSTER_NAME[0],
-                vms=vms
-            )
 
 
 @pytest.fixture(scope="class")

@@ -65,6 +65,23 @@ OVER_COMMITMENT_DURATION = "CpuOverCommitDurationMinutes"
 HIGH_UTILIZATION = "HighUtilization"
 LOW_UTILIZATION = "LowUtilization"
 
+# Affinity group constants
+VMS_NAME = "vms"
+HOSTS_NAME = "hosts"
+API_NAME = "api"
+ENTITY_NAME = "entity_name"
+
+AFFINITY_GROUP_PARAMS = {
+    VMS_NAME: {
+        API_NAME: VM_API,
+        ENTITY_NAME: "Vm"
+    },
+    HOSTS_NAME: {
+        API_NAME: hostUtil,
+        ENTITY_NAME: "Host"
+    }
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -477,14 +494,43 @@ def _prepare_affinity_group_object(**kwargs):
         name (str): Affinity group name
         description (str): Affinity group description
         positive (bool): Affinity group positive behaviour
+            (deprecated, use hosts_rule and vms_rule instead of)
         enforcing (bool): Affinity group enforcing behaviour
+            (deprecated, use hosts_rule and vms_rule instead of)
+        hosts_rule (dict): Host to VM affinity group rules
+            (positive, enforcing, enabled)
+        vms_rule (dict): VM to VM affinity group rules
+            (positive, enforcing, enabled)
+        hosts (list): Hosts names to add to the affinity group
+        vms (list): VM's names to add to the affinity group
 
     Returns:
         AffinityGroup: AffinityGroup instance
     """
-    return ll_general.prepare_ds_object('AffinityGroup', **kwargs)
+    rules = {}
+    for rule in ("hosts_rule", "vms_rule"):
+        rule_params = kwargs.pop(rule, {})
+        if rule_params:
+            rules[rule] = getDS("AffinityRule")(**rule_params)
+    kwargs.update(rules)
+
+    affinity_group_elements = {}
+    for collection_name, params in AFFINITY_GROUP_PARAMS.iteritems():
+        if collection_name in kwargs:
+            collection = kwargs.pop(collection_name)
+            collection_obj = getDS(collection_name.capitalize())()
+            add_method_name = "add_{0}".format(params[ENTITY_NAME].lower())
+            for element_name in collection:
+                element_id = params[API_NAME].find(element_name).get_id()
+                element_obj = getDS(params[ENTITY_NAME])(id=element_id)
+                getattr(collection_obj, add_method_name)(element_obj)
+            affinity_group_elements[collection_name] = collection_obj
+    kwargs.update(affinity_group_elements)
+    
+    return ll_general.prepare_ds_object("AffinityGroup", **kwargs)
 
 
+@ll_general.generate_logs()
 def get_affinity_group_obj(affinity_name, cluster_name):
     """
     Get affinity group object by name.
@@ -498,7 +544,7 @@ def get_affinity_group_obj(affinity_name, cluster_name):
     """
     cluster_obj = get_cluster_object(cluster_name)
     affinity_groups = CLUSTER_API.getElemFromLink(
-        cluster_obj, link_name='affinitygroups', attr='affinity_group'
+        cluster_obj, link_name="affinitygroups", attr="affinity_group"
     )
     for affinity_group in affinity_groups:
         if affinity_group.get_name() == affinity_name:
@@ -506,6 +552,24 @@ def get_affinity_group_obj(affinity_name, cluster_name):
     return None
 
 
+def get_affinity_groups_obj(cluster_name):
+    """
+    Get affinity groups object from the cluster
+
+    Args:
+        cluster_name (str): Cluster name
+
+    Returns:
+        AffinityGroups: Cluster affinity groups object
+    """
+    link_name = "affinitygroups"
+    cluster_obj = get_cluster_object(cluster_name)
+    return CLUSTER_API.getElemFromLink(
+        cluster_obj, link_name=link_name, get_href=True
+    )
+
+
+@ll_general.generate_logs()
 def create_affinity_group(cluster_name, **kwargs):
     """
     Create new affinity group under given cluster
@@ -517,36 +581,70 @@ def create_affinity_group(cluster_name, **kwargs):
         name (str): Affinity group name
         description (str): Affinity group description
         positive (bool): Affinity group positive behaviour
+            (deprecated, use hosts_rule and vms_rule instead of)
         enforcing (bool): Affinity group enforcing behaviour
+            (deprecated, use hosts_rule and vms_rule instead of)
+        hosts_rule (dict): Host to VM affinity group rules
+            (positive, enforcing)
+        vms_rule (dict): VM to VM affinity group rules
+            (positive, enforcing, enabled)
+        hosts (list): Hosts names to add to the affinity group
+        vms (list): VM's names to add to the affinity group
 
     Returns:
         bool: True, if add new affinity group action succeed, otherwise False
     """
-    link_name = 'affinitygroups'
-    cluster_obj = get_cluster_object(cluster_name)
-    affinity_name = kwargs.get("name")
-    affinity_groups_obj = CLUSTER_API.getElemFromLink(
-        cluster_obj, link_name=link_name, get_href=True
-    )
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Create", obj_type=AFFINITY_GROUP_NAME,
-        obj_name=affinity_name,
-        extra_txt="on cluster %s with parameters: %s" % (cluster_name, kwargs)
+    affinity_groups_obj = get_affinity_groups_obj(cluster_name=cluster_name)
+    try:
+        affinity_group_obj = _prepare_affinity_group_object(**kwargs)
+    except exceptions.RHEVMEntityException:
+        return False
+
+    return AFFINITY_API.create(
+        affinity_group_obj, True, collection=affinity_groups_obj
+    )[1]
+
+
+@ll_general.generate_logs()
+def update_affinity_group(cluster_name, old_name, **kwargs):
+    """
+    Update affinity group under the given cluster
+
+    Args:
+        cluster_name (str): Cluster name
+        old_name (str): Affinity group name
+
+    Keyword Args:
+        name (str): Affinity group new name
+        description (str): Affinity group description
+        positive (bool): Affinity group positive behaviour
+            (deprecated, use hosts_rule and vms_rule instead of)
+        enforcing (bool): Affinity group enforcing behaviour
+            (deprecated, use hosts_rule and vms_rule instead of)
+        hosts_rule (dict): Host to VM affinity group rules
+            (positive, enforcing)
+        vms_rule (dict): VM to VM affinity group rules
+            (positive, enforcing, enabled)
+        hosts (list): Hosts names to add to the affinity group
+        vms (list): VM's names to add to the affinity group
+
+    Returns:
+        bool: True, if add new affinity group action succeed, otherwise False
+    """
+    old_affinity_group = get_affinity_group_obj(
+        affinity_name=old_name, cluster_name=cluster_name
     )
     try:
         affinity_group_obj = _prepare_affinity_group_object(**kwargs)
     except exceptions.RHEVMEntityException:
         return False
 
-    logger.info(log_info)
-    status = AFFINITY_API.create(
-        affinity_group_obj, True, collection=affinity_groups_obj
+    return AFFINITY_API.update(
+        old_affinity_group, affinity_group_obj, positive=True
     )[1]
-    if not status:
-        logger.error(log_error)
-    return status
 
 
+@ll_general.generate_logs()
 def remove_affinity_group(affinity_name, cluster_name):
     """
     Remove affinity group under given cluster
@@ -558,47 +656,9 @@ def remove_affinity_group(affinity_name, cluster_name):
     Returns:
         bool: True, if remove affinity group action succeed, otherwise False
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Remove", obj_type=AFFINITY_GROUP_NAME,
-        obj_name=affinity_name, extra_txt="from cluster %s" % cluster_name
-    )
-    logger.info(log_info)
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
     status = AFFINITY_API.delete(affinity_group_obj, True)
-    if not status:
-        logger.error(log_error)
     return status
-
-
-def populate_affinity_with_vms(affinity_name, cluster_name, vms):
-    """
-    Populate affinity group with VM's
-
-    Args:
-        affinity_name (str): Affinity group name
-        cluster_name (str): Cluster name
-        vms (list): VM's to insert into affinity group
-
-    Returns:
-        bool: True, if affinity group populated successfully, otherwise False
-    """
-    affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
-    affinity_vms_obj = AFFINITY_API.getElemFromLink(
-        affinity_group_obj, link_name='vms', get_href=True
-    )
-    for vm in vms:
-        vm_id = VM_API.find(vm).get_id()
-        vm_id_obj = getDS('Vm')(id=vm_id)
-        logger.info("Add VM %s to affinity group %s", vm, affinity_name)
-        out, status = VM_API.create(
-            vm_id_obj, True, async=True, collection=affinity_vms_obj
-        )
-        if not status:
-            logger.error(
-                "Failed to add VM %s to affinity group %s", vm, affinity_name
-            )
-            return False
-    return True
 
 
 def vm_exists_under_affinity_group(affinity_name, cluster_name, vm_name):
@@ -616,7 +676,7 @@ def vm_exists_under_affinity_group(affinity_name, cluster_name, vm_name):
     vm_id = VM_API.find(vm_name).get_id()
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
     affinity_vms_obj = AFFINITY_API.getElemFromLink(
-        affinity_group_obj, link_name='vms', attr='vm'
+        affinity_group_obj, link_name=VMS_NAME, attr="vm"
     )
     for vm in affinity_vms_obj:
         if vm_id == vm.get_id():

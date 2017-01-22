@@ -5,6 +5,7 @@ import logging
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import rhevmtests.helpers as rhevm_helpers
@@ -123,3 +124,28 @@ def configure_pm_on_hosts(hosts):
         ):
             return False
     return True
+
+
+def add_affinity_scheduler_policy():
+    """
+    Add scheduling policy for affinity tests
+    """
+    u_libs.testflow.setup(
+        "Add scheduling policy %s", conf.AFFINITY_POLICY_NAME
+    )
+    assert ll_sch_policies.add_new_scheduling_policy(
+        name=conf.AFFINITY_POLICY_NAME
+    )
+    for units_names, unit_type in zip(
+        (conf.AFFINITY_SCHEDULER_FILTERS, conf.AFFINITY_SCHEDULER_WEIGHTS),
+        (ll_sch_policies.FILTER_TYPE, ll_sch_policies.WEIGHT_TYPE)
+    ):
+        factor = 10 if unit_type == ll_sch_policies.WEIGHT_TYPE else None
+        u_libs.testflow.setup("Add %s's to the scheduling policy", unit_type)
+        for unit_name in units_names:
+            assert ll_sch_policies.add_scheduling_policy_unit(
+                policy_name=conf.AFFINITY_POLICY_NAME,
+                unit_name=unit_name,
+                unit_type=unit_type,
+                factor=factor
+            )

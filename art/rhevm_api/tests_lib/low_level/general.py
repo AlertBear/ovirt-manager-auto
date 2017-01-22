@@ -299,8 +299,7 @@ def get_object_name_by_id(object_api, object_id):
 
 
 def get_log_msg(
-        log_action, obj_type="", obj_name="", positive=True, extra_txt="",
-        **kwargs
+    log_action, obj_type="", obj_name="", positive=True, extra_txt="", **kwargs
 ):
     """
     Generate info and error logs for log_action on object.

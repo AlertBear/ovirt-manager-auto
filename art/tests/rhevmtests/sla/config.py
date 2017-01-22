@@ -128,6 +128,25 @@ POLICY_EVEN_VM_DISTRIBUTION = ENUMS["scheduling_policy_vm_evenly_distributed"]
 POLICY_IN_CLUSTER_UPGRADE = "InClusterUpgrade"
 
 # Scheduling policies constants
+VM_TO_HOST_AFFINITY_UNIT = "VmToHostsAffinityGroups"
+VM_TO_VM_AFFINITY_UNIT = "VmAffinityGroups"
+AFFINITY_SCHEDULER_FILTERS = [
+    "CPUOverloaded",
+    VM_TO_VM_AFFINITY_UNIT,
+    "CpuPinning",
+    "HostDevice",
+    "Memory",
+    VM_TO_HOST_AFFINITY_UNIT,
+    "PinToHost",
+    "Network"
+]
+AFFINITY_SCHEDULER_WEIGHTS = [
+    VM_TO_VM_AFFINITY_UNIT,
+    VM_TO_HOST_AFFINITY_UNIT,
+    "PreferredHosts"
+]
+AFFINITY_POLICY_NAME = "affinity_policy"
+
 OVER_COMMITMENT_DURATION = "CpuOverCommitDurationMinutes"
 HIGH_UTILIZATION = "HighUtilization"
 LOW_UTILIZATION = "LowUtilization"
@@ -209,6 +228,7 @@ AREM_OPTION = "AffinityRulesEnforcementManagerEnabled"
 AFFINITY_GROUP_POSITIVE = "positive"
 AFFINITY_GROUP_ENFORCING = "enforcing"
 AFFINITY_GROUP_VMS = "vms"
+AFFINITY_GROUPS_ENABLED = "enabled"
 
 # Cluster constants
 CLUSTER_OVERCOMMITMENT = "mem_ovrcmt_prc"

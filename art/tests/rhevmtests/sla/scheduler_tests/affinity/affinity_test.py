@@ -4,16 +4,16 @@ Check different cases for migration and starting of VM's,
 when VM's in different or in the same affinities groups
 """
 import logging
-import time
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import pytest
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
-import rhevmtests.sla.helpers as sla_helpers
+import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
@@ -31,29 +31,6 @@ logger = logging.getLogger(__name__)
 host_as_spm = 1
 
 
-def change_arem_state(enable):
-    """
-    Enable or disable AREM via engine-config
-
-    Args:
-        enable (bool): Enable or disable AREM
-
-    Returns:
-        bool: True, if change AREM state action is succeed, otherwise False
-    """
-    state_msg = "Enable" if enable else "Disable"
-    arem_state = "true" if enable else "false"
-    logger.info("%s AREM manager via engine-config", state_msg)
-    cmd = ["{0}={1}".format(conf.AREM_OPTION, arem_state)]
-    if not conf.ENGINE.engine_config(action='set', param=cmd).get('results'):
-        logger.error("Failed to set %s option to false", conf.AREM_OPTION)
-        return False
-    time.sleep(conf.ENGINE_STAT_UPDATE_INTERVAL)
-    if not sla_helpers.wait_for_dc_and_storagedomains():
-        return False
-    return True
-
-
 @pytest.fixture(scope="module")
 def init_affinity_test(request):
     """
@@ -65,23 +42,44 @@ def init_affinity_test(request):
         1) Change cluster overcommitment
         2) Enable AREM manager
         """
-        u_libs.testflow.setup(
-            "Enable cluster %s over-commitment", conf.CLUSTER_NAME[0]
+        result_list = []
+        u_libs.testflow.teardown(
+            "Update cluster %s over-commitment and scheduling policy",
+            conf.CLUSTER_NAME[0]
         )
-        ll_clusters.updateCluster(
-            positive=True, cluster=conf.CLUSTER_NAME[0], mem_ovrcmt_prc=200
+        result_list.append(
+            ll_clusters.updateCluster(
+                positive=True,
+                cluster=conf.CLUSTER_NAME[0],
+                mem_ovrcmt_prc=200,
+                scheduling_policy=conf.POLICY_NONE
+            )
         )
-        u_libs.testflow.setup("Enable AREM via engine-config")
-        change_arem_state(enable=True)
+        u_libs.testflow.teardown(
+            "Remove %s scheduling policy", conf.AFFINITY_POLICY_NAME
+        )
+        result_list.append(
+            ll_sch_policies.remove_scheduling_policy(
+                policy_name=conf.AFFINITY_POLICY_NAME
+            )
+        )
+        assert all(result_list)
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup("Disable AREM via engine-config")
-    assert change_arem_state(enable=False)
     u_libs.testflow.setup(
-        "Disable cluster %s over-commitment", conf.CLUSTER_NAME[0]
+        "Add %s scheduling policy", conf.AFFINITY_POLICY_NAME
+    )
+    sch_helpers.add_affinity_scheduler_policy()
+
+    u_libs.testflow.setup(
+        "Update cluster %s over-commitment and scheduling policy",
+        conf.CLUSTER_NAME[0]
     )
     assert ll_clusters.updateCluster(
-        positive=True, cluster=conf.CLUSTER_NAME[0], mem_ovrcmt_prc=100
+        positive=True,
+        cluster=conf.CLUSTER_NAME[0],
+        mem_ovrcmt_prc=100,
+        scheduling_policy=conf.AFFINITY_POLICY_NAME
     )
 
 
@@ -234,7 +232,11 @@ class BaseMigrateVm(BaseAffinity):
             conf.VM_RUN_ONCE_HOST: 0,
             conf.VM_RUN_ONCE_WAIT_FOR_STATE: conf.VM_UP
         },
-        conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1}
+        conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1},
+        conf.VM_NAME[2]: {
+            conf.VM_RUN_ONCE_HOST: 0,
+            conf.VM_RUN_ONCE_WAIT_FOR_STATE: conf.VM_UP
+        }
     }
 
     @staticmethod
@@ -271,7 +273,7 @@ class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
         "hard_positive_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
             conf.AFFINITY_GROUP_ENFORCING: True,
-            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:3]
         }
     }
 
@@ -287,14 +289,14 @@ class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
 class TestMigrateVmUnderSoftPositiveAffinity(BaseMigrateVm):
     """
     Migrate VM under soft positive affinity,
-    VM must migrate on the same host, where second VM run
+    VM must migrate on the same host, where second VM runs
     """
     __test__ = True
     affinity_groups = {
         "soft_positive_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
             conf.AFFINITY_GROUP_ENFORCING: False,
-            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:3]
         }
     }
 
@@ -391,7 +393,7 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(BaseMigrateVm):
         "opposite_soft_positive_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
             conf.AFFINITY_GROUP_ENFORCING: False,
-            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:3]
         }
     }
 
@@ -505,7 +507,7 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(BaseAffinity):
 
 
 @u_libs.attr(tier=2)
-class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseStartVms):
+class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseMigrateVm):
     """
     Put host with VM's placed under hard positive affinity group to maintenance
     """
@@ -514,7 +516,7 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseStartVms):
         "maintenance_hard_positive_affinity_group": {
             conf.AFFINITY_GROUP_POSITIVE: True,
             conf.AFFINITY_GROUP_ENFORCING: True,
-            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:3]
         }
     }
 
@@ -523,9 +525,8 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseStartVms):
         """
         Check that after deactivate hosts vms migrated on the same host
         """
-        vm_host = ll_vms.get_vm_host(vm_name=conf.VM_NAME[0])
-        u_libs.testflow.step("Deactivate host %s", vm_host)
-        assert not ll_hosts.deactivate_host(positive=True, host=vm_host)
+        u_libs.testflow.step("Deactivate host %s", conf.HOSTS[0])
+        assert not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0])
 
 
 @u_libs.attr(tier=2)
@@ -595,10 +596,11 @@ class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
             "Populate affinity group %s with VM's %s",
             self.additional_affinity_group_name, conf.VM_NAME[:2]
         )
-        assert not ll_clusters.populate_affinity_with_vms(
-            affinity_name=self.additional_affinity_group_name,
+        assert not ll_clusters.update_affinity_group(
             cluster_name=conf.CLUSTER_NAME[0],
-            vms=conf.VM_NAME[:2]
+            old_name=self.additional_affinity_group_name,
+            vms=conf.VM_NAME[:2],
+            positive=False
         )
 
 
@@ -635,10 +637,11 @@ class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
             "Populate affinity group %s with VM's %s",
             self.additional_affinity_group_name, conf.VM_NAME[:2]
         )
-        assert not ll_clusters.populate_affinity_with_vms(
-            affinity_name=self.additional_affinity_group_name,
+        assert not ll_clusters.update_affinity_group(
             cluster_name=conf.CLUSTER_NAME[0],
-            vms=conf.VM_NAME[:2]
+            old_name=self.additional_affinity_group_name,
+            vms=conf.VM_NAME[:2],
+            positive=True
         )
 
 
@@ -675,10 +678,11 @@ class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
             "Populate affinity group %s with VM's %s",
             self.additional_affinity_group_name, conf.VM_NAME[:2]
         )
-        assert not ll_clusters.populate_affinity_with_vms(
-            affinity_name=self.additional_affinity_group_name,
+        assert not ll_clusters.update_affinity_group(
             cluster_name=conf.CLUSTER_NAME[0],
-            vms=conf.VM_NAME[:2]
+            old_name=self.additional_affinity_group_name,
+            vms=conf.VM_NAME[:2],
+            positive=True
         )
 
 
@@ -722,10 +726,11 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
             "Add VM %s to affinity group %s",
             conf.VM_NAME[2], self.affinity_group_name
         )
-        assert ll_clusters.populate_affinity_with_vms(
-            affinity_name=self.affinity_group_name,
+        assert ll_clusters.update_affinity_group(
             cluster_name=conf.CLUSTER_NAME[0],
-            vms=conf.VM_NAME[2:3]
+            old_name=self.affinity_group_name,
+            vms=conf.VM_NAME[:3],
+            positive=False
         )
         ha_host = ll_vms.get_vm_host(vm_name=conf.VM_NAME[2])
         host_resource = rhevm_helpers.get_host_resource_by_name(
