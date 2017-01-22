@@ -292,9 +292,15 @@ class TestCase14945(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM-6245
     """
-    # Gluster doesn't support shareable disks
-    __test__ = True
-    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages'] or
+        config.STORAGE_TYPE_FCP in opts['storages']
+    )
+    storages = set([
+        config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS,
+        config.STORAGE_TYPE_FCP
+    ])
     add_disk_params = {
         'shareable': True,
         'format': config.RAW_DISK,
@@ -404,8 +410,15 @@ class TestCase14946(BaseTestCase):
     workitem?id=RHEVM-14946
     """
     # Gluster doesn't support IDE interface
-    __test__ = True
-    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages'] or
+        config.STORAGE_TYPE_FCP in opts['storages']
+    )
+    storages = set([
+        config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS,
+        config.STORAGE_TYPE_FCP
+    ])
 
     @polarion("RHEVM-14946")
     def test_change_disk_ide_large_number_devices(self):
@@ -483,8 +496,15 @@ class TestCase14948(BaseTestCase):
     workitem?id=RHEVM-14948
     """
     # Gluster doesn't support shareable disks
-    __test__ = True
-    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages'] or
+        config.STORAGE_TYPE_FCP in opts['storages']
+    )
+    storages = set([
+        config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS,
+        config.STORAGE_TYPE_FCP
+    ])
     add_disk_params = {
         'shareable': True,
         'format': config.RAW_DISK,
