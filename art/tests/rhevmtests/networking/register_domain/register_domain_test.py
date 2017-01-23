@@ -122,6 +122,7 @@ class TestRegisterDomain03(NetworkTest):
     net = register_domain_conf.NETS[3][0]
     reassessing_mac = False
 
+    @bz({"1414856": {}})
     @polarion("RHEVM-16997")
     def test_mac_pool_not_in_mac_range_without_reassign(self):
         """
@@ -224,6 +225,7 @@ class TestRegisterDomain06(NetworkTest):
     vm = register_domain_conf.VM_NAMES[6][0]
     reassessing_mac = False
 
+    @bz({"1414856": {}})
     @polarion("RHEVM-17143")
     def test_mac_pool_not_in_mac_range_already_exists_without_reassign(self):
         """
