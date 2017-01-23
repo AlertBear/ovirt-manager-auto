@@ -259,10 +259,13 @@ def setup_ldap(host, conf_file):
     copy_extension_file(host, conf_file, tempconf, None)
     with host.executor().session() as ss:
         logger.info("Setting up ldap with conf file %s", conf_file)
-        rc, out, err = ss.run_cmd([
-            'ovirt-engine-extension-aaa-ldap-setup',
-            '--config-append=%s' % tempconf,
-        ])
+        try:
+            rc, out, err = ss.run_cmd([
+                'ovirt-engine-extension-aaa-ldap-setup',
+                '--config-append=%s' % tempconf,
+            ], timeout=120)
+        except Exception as ex:
+            logger.error("LDAP not configured correctly/Exception: %s", ex)
         ss.run_cmd(['rm', '-f', tempconf])
         logger.info(out)
     return not rc
