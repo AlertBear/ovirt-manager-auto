@@ -19,7 +19,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as mgmt_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     remove_all_networks,
@@ -578,6 +578,7 @@ class TestMGMTNetRole07(NetworkTest):
         )
 
 
+@bz({"1415748": {}})
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
