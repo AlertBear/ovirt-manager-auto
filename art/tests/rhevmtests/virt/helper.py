@@ -412,7 +412,7 @@ def load_vm_memory_with_load_tool(
         start_vm (bool): start vm if down
 
     Returns:
-        int: Process id
+        bool: True if load set on VM, False is fail to load VM
     """
     logger.info(
         "Run load %s MB on vm %s for %s sec",
@@ -420,9 +420,14 @@ def load_vm_memory_with_load_tool(
     )
     cmd = LOAD_VM_COMMAND % (load, time_to_run)
     vm_resource = helpers.get_vm_resource(vm=vm_name, start_vm=start_vm)
-    ps_id = vm_resource.run_command(command=shlex.split(cmd))[1]
-    time.sleep(5)
-    return ps_id
+    if vm_resource.executor().wait_for_connectivity_state(positive=True):
+        ps_id = vm_resource.run_command(command=shlex.split(cmd))[1]
+        time.sleep(5)
+        logger.info("ps id: %s", ps_id)
+        return True
+    else:
+        logger.error("Failed to connect to vm %s", vm_name)
+        return False
 
 
 def create_base_vm(

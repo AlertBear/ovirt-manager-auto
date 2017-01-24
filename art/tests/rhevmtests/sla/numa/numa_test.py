@@ -822,7 +822,6 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
     Hotplug VM CPU and check that VM NUMA node updated accordingly
     """
     __test__ = True
-    new_num_of_sockets = 4
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_SOCKET: conf.CORES_MULTIPLIER,
@@ -834,18 +833,23 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
-    @polarion("RHEVM3-9556")
-    def test_hotplug_cpu(self):
+    @staticmethod
+    def _check_hotplug_unplug_cpu(new_num_of_sockets):
         """
-        Hotplug additional CPU to VM and check the VM NUMA architecture
+        Hot plug / unplug cpu and check Numa
+
+        Args:
+            new_num_of_sockets (int): number of CPU
+
         """
-        u_libs.testflow.step("Hotplug CPU to VM %s", conf.VM_NAME[0])
         assert ll_vms.updateVm(
             positive=True,
             vm=conf.VM_NAME[0],
-            cpu_socket=self.new_num_of_sockets
+            cpu_socket=new_num_of_sockets
         )
-        u_libs.testflow.step("Get NUMA parameters from VM %s", conf.VM_NAME[0])
+        u_libs.testflow.step(
+            "Get NUMA parameters from VM %s", conf.VM_NAME[0]
+        )
         vm_numa_params = helpers.get_numa_parameters_from_vm(
             vm_name=conf.VM_NAME[0]
         )
@@ -858,7 +862,23 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
             "Check total number of CPU's under NUMA stats of the VM %s",
             conf.VM_NAME[0]
         )
-        assert self.new_num_of_sockets == real_amount_of_cpus
+        assert new_num_of_sockets == real_amount_of_cpus
+
+    @polarion("RHEVM3-9556")
+    def test_hotplug_cpu(self):
+        """
+        Case 1: Hot plug additional CPU to VM and check the VM NUMA
+        architecture
+        Case 2: Hot unplug CPU to VM and check the VM NUMA architecture
+        """
+        u_libs.testflow.step(
+            "Hotplug CPU to VM %s to %s ", conf.VM_NAME[0], 4
+        )
+        self._check_hotplug_unplug_cpu(4)
+        u_libs.testflow.step(
+            "Hot unplug CPU to VM %s to %s", conf.VM_NAME[0], 2
+        )
+        self._check_hotplug_unplug_cpu(2)
 
 
 @u_libs.attr(tier=2)

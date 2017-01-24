@@ -88,6 +88,34 @@ def create_vm_from_glance(request):
 
 
 @pytest.fixture(scope='function')
+def update_vm_to_ha(request, cpu_hot_plug_setup):
+    """
+    Enable HA VM
+    """
+    vm_name = config.CPU_HOTPLUG_VM
+    args = request.node.get_marker("args_marker")
+    params = args.kwargs if args else {}
+
+    def fin():
+        """
+        Disable HA VM
+        """
+        testflow.teardown("Stop VM")
+        assert ll_vms.stop_vms_safely(vms_list=[vm_name])
+        testflow.teardown("Disable HA on VM")
+        assert ll_vms.updateVm(
+            positive=True, vm=vm_name, highly_available=False
+        )
+
+    request.addfinalizer(fin)
+    testflow.setup("Stop VM")
+    assert ll_vms.stop_vms_safely(vms_list=[vm_name])
+    testflow.setup("Enable HA on VM")
+    assert ll_vms.updateVm(positive=True, vm=vm_name, highly_available=True)
+    init_and_start_vm(params, vm_name)
+
+
+@pytest.fixture(scope='function')
 def base_setup_fixture(request, cpu_hot_plug_setup):
     """
     Update vm cpu socket and core
@@ -104,6 +132,10 @@ def base_setup_fixture(request, cpu_hot_plug_setup):
         ll_vms.stop_vms_safely([vm_name])
 
     request.addfinalizer(fin)
+    init_and_start_vm(params, vm_name)
+
+
+def init_and_start_vm(params, vm_name):
     update_params = copy.deepcopy(config.CPU_HOTPLUG_VM_PARAMS)
     testflow.setup("Restore VM %s configuration to default.", vm_name)
     for key, val in params.iteritems():
@@ -127,27 +159,38 @@ def migrate_vm_for_test(request, create_vm_from_glance):
     """
     Load vm and migrate it in order to hot plug vm while migrating
     """
+    args = request.node.get_marker("args_marker")
+    params = args.kwargs if args else {'hot_plug_cpu_before': False}
     vm_name = config.CPU_HOTPLUG_VM_LOAD
-    hot_plug_cpu_before = getattr(request.cls, "hot_plug_cpu_before", False)
 
     def fin():
         """
-        Cancel migration if vm is still migrating
+        1. Cancel migration if vm is still migrating
+        2. Stop VM
+        3. Restore cpu to 1
         """
         testflow.teardown("Cancel migration if vm is still migrating")
         if ll_vms.get_vm_state(vm_name) in config.MIGRATING_STATUSES:
             hl_vms.cancel_vm_migrate(vm_name)
+        testflow.teardown("Stop VM %s", vm_name)
+        ll_vms.stop_vms_safely([vm_name])
+        testflow.teardown("Restore cpu to 1 socket")
+        assert ll_vms.updateVm(
+            True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=1
+        ), "Failed to update CPU."
 
     request.addfinalizer(fin)
 
-    if hot_plug_cpu_before:
+    if params["hot_plug_cpu_before"]:
+        testflow.setup("Start VM %s", vm_name)
+        ll_vms.start_vms(vm_list=[vm_name])
         testflow.setup("Hot plug cpu to 4 cpu")
-        assert not ll_vms.updateVm(
+        assert ll_vms.updateVm(
             True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=4
         ), "hot plug CPU failed."
 
     testflow.setup("Run load on VM %s.", vm_name)
-    virt_helper.load_vm_memory_with_load_tool(
+    assert virt_helper.load_vm_memory_with_load_tool(
         vm_name=vm_name,
         load=2000,
         time_to_run=120

@@ -90,6 +90,11 @@ CPU_HOTPLUG_VM_PARAMS = {
     "placement_host": VM_ANY_HOST,
     "vcpu_pinning": [],
 }
+# hot cpu actions
+HOT_PLUG_CPU = "hot plug cpu"
+HOT_UNPLUG_CPU = "hot unplug cpu"
+
+# migration
 MIGRATING_STATUSES = [
     ENUMS["vm_state_migrating"], ENUMS["vm_state_migrating_to"],
     ENUMS["vm_state_migrating_from"]

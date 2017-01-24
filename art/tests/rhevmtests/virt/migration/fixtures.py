@@ -576,7 +576,7 @@ def load_vm(request):
         "Run load on vm %s. Load size:%d Duration:%d",
         vm_name, load_size, time_to_run_load
     )
-    virt_helper.load_vm_memory_with_load_tool(
+    assert virt_helper.load_vm_memory_with_load_tool(
         vm_name=vm_name,
         load=load_size,
         time_to_run=time_to_run_load,
