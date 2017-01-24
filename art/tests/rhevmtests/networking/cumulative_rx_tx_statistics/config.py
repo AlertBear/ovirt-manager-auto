@@ -22,12 +22,18 @@ NIC_STAT = {
 NETWORK_0 = "rx_tx_host_net"
 NETWORK_1 = "rx_tx_vm_net_1"
 NETWORK_2 = "rx_tx_vm_net_2"
-ETH0 = conf.VM_NICS[0]
 BASIC_IP_DICT_NETMASK = {
-    "ip_prefix": {
-        "address": "",
-        "netmask": "255.255.0.0",
-        "boot_protocol": "static"
+    'host_1': {
+        "ip_prefix": {
+            "address": HOST_IPS[0],
+            "netmask": "255.255.0.0",
+        }
+    },
+    'host_2': {
+        "ip_prefix": {
+            "address": HOST_IPS[1],
+            "netmask": "255.255.0.0",
+        }
     }
 }
 
@@ -42,4 +48,24 @@ NET_DICT = {
         "required": "false",
         "vlan_id": 2
     }
+}
+
+# vm_stats_test: test_update_nic
+UPDATE_NIC = {
+    'case_vm_1': {
+        "network": NETWORK_2,
+        "logger": "Change NIC name %s to %s" % (VM_NIC_NAME, NETWORK_2)
+    },
+    'case_vm_2': {
+        "network": None,
+        "logger": "Change NIC name %s to empty profile" % VM_NIC_NAME
+    },
+    'case_vm_3': {
+        "plugged": False,
+        "logger": "Unplug vNIC %s from VM %s" % (VM_NIC_NAME, conf.VM_1)
+    },
+    'case_vm_4': {
+        "plugged": True,
+        "logger": "Plug vNIC %s to VM %s" % (VM_NIC_NAME, conf.VM_1)
+    },
 }
