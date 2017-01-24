@@ -337,6 +337,7 @@ class TestSriov04(NetworkTest):
         )
         assert not sriov_conf.HOST_0_PF_OBJECT.set_number_of_vf(2)
 
+    @polarion("RHEVM-19156")
     def test_change_vf_num_for_non_occupied_vf_network(self):
         """
         1. Remove network from VF

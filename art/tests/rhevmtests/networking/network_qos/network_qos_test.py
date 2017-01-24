@@ -69,6 +69,7 @@ class TestNetQOSCase01(NetworkTest):
         )
         assert helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
 
+    @polarion("RHEVM3-19152")
     def test_02_several_network_qos(self):
         """
         1) Check that provided bw values are the same as the values
@@ -174,6 +175,7 @@ class TestNetQOSCase01(NetworkTest):
         for vm in self.vms:
             assert helper.compare_qos(vm_name=vm, **dict_compare)
 
+    @polarion("RHEVM-19153")
     def test_04_migrate_network_qos(self):
         """
         1) Check that provided bw values are the same as the values

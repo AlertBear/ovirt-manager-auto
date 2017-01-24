@@ -274,7 +274,7 @@ class SriovMigration01(NetworkTest):
         )
         assert conf.ENGINE_HOST.network.send_icmp(dst=vm_ip)
 
-    @polarion("RHEVM-MISS")
+    @polarion("RHEVM-19183")
     @bz({"1417217": {}})
     def test_05_check_vnic_plugged_after_migration(self):
         """

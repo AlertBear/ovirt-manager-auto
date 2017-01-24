@@ -325,6 +325,7 @@ class TestPortMirroringCase06(Base):
     net_1 = pm_conf.PM_NETWORK[0]
     mgmt_ips = pm_conf.MGMT_IPS
 
+    @polarion("RHEVM-19154")
     def test_if_up_down_bridge(self):
         """
         Check that mirroring still occurs after down/UP listening bridge on the
