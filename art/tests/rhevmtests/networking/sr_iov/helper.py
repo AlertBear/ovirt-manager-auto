@@ -13,6 +13,7 @@ from xml.etree import ElementTree
 from utilities import jobs
 
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sriov_conf
 import rhevmtests.networking.config as conf
@@ -73,24 +74,29 @@ def create_bond_on_vm(vm_name, vm_resource, vnic):
     sriov_vnic_mac = ll_vms.get_vm_nic_mac_address(
         vm=vm_name, nic=vnic
     )
+    assert sriov_vnic_mac
     sriov_int = None
+    virtio_int = None
+
     for inter in vm_interfaces:
         inter_mac = vm_resource.network.find_mac_by_int(interfaces=[inter])
+        logger.info("Interface %s with MAC %s", inter, inter_mac)
         if inter_mac and inter_mac[0] == sriov_vnic_mac:
             sriov_int = inter
-            break
+        else:
+            virtio_int = inter
 
     assert sriov_int
-    reg_int = filter(lambda x: x != sriov_int, vm_interfaces)
-    assert reg_int
-    reg_int = reg_int[0]
+    assert virtio_int
     nm_control_cmd = "sed -i /NM_CONTROLLED=no/d {ifcfg_file}".format(
         ifcfg_file="{ifcfg_path}/ifcfg-{inter}".format(
-            ifcfg_path=network_helper.IFCFG_PATH, inter=reg_int
+            ifcfg_path=network_helper.IFCFG_PATH, inter=virtio_int
         )
     )
     assert not vm_resource.run_command(shlex.split(nm_control_cmd))[0]
-    nmcli_reload_cmd = "nmcli connection reload {inter}".format(inter=reg_int)
+    nmcli_reload_cmd = "nmcli connection reload {inter}".format(
+        inter=virtio_int
+    )
     assert not vm_resource.run_command(
         command=shlex.split(nmcli_reload_cmd)
     )[0]
@@ -103,14 +109,14 @@ def create_bond_on_vm(vm_name, vm_resource, vnic):
         "nmcli connection modify id {sriov_int} ipv4.method disabled"
         " ipv6.method ignore".format(sriov_int=sriov_int),
         "nmcli connection modify id {reg_int} ipv4.method disabled ipv6.method"
-        " ignore".format(reg_int=reg_int),
+        " ignore".format(reg_int=virtio_int),
         "nmcli connection modify id {sriov_int} connection.slave-type bond "
         "connection.master bond1 connection.autoconnect yes".format(
             sriov_int=sriov_int
         ),
         "nmcli connection modify id {reg_int} connection.slave-type bond "
         "connection.master bond1 connection.autoconnect yes".format(
-            reg_int=reg_int
+            reg_int=virtio_int
         )
     ]
     assert not all(
@@ -123,8 +129,8 @@ def create_bond_on_vm(vm_name, vm_resource, vnic):
         "nmcli connection down id {reg_int_1}; "
         "nmcli connection up id {reg_int_2}; "
         "nmcli connection up bond1".format(
-            sriov_int_1=sriov_int, sriov_int_2=sriov_int, reg_int_1=reg_int,
-            reg_int_2=reg_int
+            sriov_int_1=sriov_int, sriov_int_2=sriov_int, reg_int_1=virtio_int,
+            reg_int_2=virtio_int
         )
     )
     try:
@@ -167,3 +173,23 @@ def check_ping_during_vm_migration(ping_kwargs, migration_kwargs):
     )
 
     return migrate_job.result and ping_job.result
+
+
+def wait_for_refresh_caps(last_event):
+    """
+    Wait until host refreshed the capabilities is done
+
+    When hot plug/unplug sr-iov vNIC from VM getVdsCaps is called and we
+    need to make sure that we wait till it's done before doing anything.
+
+    Args:
+        last_event (Event): Event object of last event to search from
+
+    Returns:
+        bool: True if refresh caps done, False otherwise
+    """
+    content = "Successfully refreshed the capabilities"
+    return ll_events.find_event(
+        last_event=last_event, event_code=sriov_conf.REFRESH_CAPS_CODE,
+        content=content, matches=1
+    )

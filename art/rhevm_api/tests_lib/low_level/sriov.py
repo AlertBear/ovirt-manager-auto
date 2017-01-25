@@ -19,6 +19,7 @@ PF_LABEL_API = test_utils.get_api(
 PF_NETWORK_API = test_utils.get_api(
     "network", "virtualfunctionallowednetworks"
 )
+DUMMY_NIC = "dummy"
 
 logger = logging.getLogger("art.ll_lib.sriov")
 
@@ -78,6 +79,8 @@ class SriovHostNics(object):
         )
         for nic in self.host_nics:
             nic_name = nic.get_name()
+            if DUMMY_NIC in nic_name:
+                continue
             try:
                 SriovNicVF(host=self.host, nic=nic_name)
                 vfs_nics.append(nic)
@@ -272,7 +275,8 @@ class SriovNicPF(SriovNic):
         all_vfs = SriovHostNics(host=self.host).get_all_vf_nics_objects()
         all_nic_vfs = list()
         for vf in all_vfs:
-            if vf.get_physical_function().get_id() == self.nic_obj.get_id():
+            vf_pf = vf.get_physical_function()
+            if vf_pf and vf and vf_pf.get_id() == self.nic_obj.get_id():
                 all_nic_vfs.append(vf)
         return all_nic_vfs
 

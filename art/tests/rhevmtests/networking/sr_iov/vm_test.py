@@ -8,11 +8,13 @@ SR_IOV feature tests for VFs on VM
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.events as ll_events
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -161,7 +163,13 @@ class TestSriovVm01(NetworkTest):
         """
         testflow.step("Stop VM and check that there is 1 VF")
         assert ll_vms.stopVm(positive=True, vm=self.vm)
-        assert len(sriov_conf.HOST_0_PF_OBJECT.get_all_vf_names()) == 1
+        sample = apis_utils.TimeoutingSampler(
+            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+            func=lambda: len(
+                sriov_conf.HOST_0_PF_OBJECT.get_all_vf_names()
+            ) == 1
+        )
+        assert sample.waitForFuncStatus(result=True)
 
     @polarion("RHEVM3-14638")
     def test_07_change_vf_num_non_occupied_vfs(self):
@@ -189,23 +197,31 @@ class TestSriovVm01(NetworkTest):
         Start VM
         Hotunplug vNIC with passthrough profile
         Hotplug new vNIC profile with passthrough property
-        Try to edit vNIC profile with passthrough property to be vitIO
+        Try to edit vNIC profile with passthrough property to be virtIO
         """
         assert network_helper.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
+        )
+        last_event = ll_events.get_last_event(
+            code=sriov_conf.REFRESH_CAPS_CODE
         )
         testflow.step("Hotunplug vNIC with passthrough profile")
         assert ll_vms.updateNic(
             positive=True, vm=self.vm, nic=self.vm_nic, plugged="false"
         )
+        assert helper.wait_for_refresh_caps(last_event=last_event)
         testflow.step(
             "Hotplug new vNIC profile with passthrough property"
+        )
+        last_event = ll_events.get_last_event(
+            code=sriov_conf.REFRESH_CAPS_CODE
         )
         assert ll_vms.addNic(
             positive=True, vm=self.vm, name=self.extra_vm_nic,
             network=self.net_2, vnic_profile=self.net_2,
             interface=conf.PASSTHROUGH_INTERFACE
         )
+        assert helper.wait_for_refresh_caps(last_event=last_event)
         testflow.step(
             "Try to edit vNIC profile with passthrough property to be virtIO"
         )

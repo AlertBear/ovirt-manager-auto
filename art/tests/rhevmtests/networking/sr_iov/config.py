@@ -41,6 +41,7 @@ BW_VALUE = 10
 BURST_VALUE = 100
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
 NETWORK_QOS = "network_qos"
+REFRESH_CAPS_CODE = 606
 LABELS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=2, prefix="sriov_label"
 )

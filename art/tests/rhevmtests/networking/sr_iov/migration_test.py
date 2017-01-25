@@ -5,6 +5,8 @@
 Migration cases for SR-IOV
 """
 
+from time import sleep
+
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -17,7 +19,7 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     SRIOV, init_fixture, reset_host_sriov_params, set_num_of_vfs,
 )
@@ -159,7 +161,6 @@ class SriovMigration01(NetworkTest):
 
     # General
     vm_name = sriov_conf.SRIOV_MIGRATION_VM
-    net = sriov_conf.MIGRATION_NETS[1][0]
     sriov_net_1 = sriov_conf.MIGRATION_NETS[1][0]
     sriov_net_2 = sriov_conf.MIGRATION_NETS[1][1]
     vnic = conf.VM_NIC_0
@@ -273,9 +274,20 @@ class SriovMigration01(NetworkTest):
         )
         assert conf.ENGINE_HOST.network.send_icmp(dst=vm_ip)
 
+    @polarion("RHEVM-MISS")
+    @bz({"1417217": {}})
+    def test_05_check_vnic_plugged_after_migration(self):
+        """
+        Check that SR-IOV vNIC is plugged after migration
+        """
+        testflow.step("Check the vNIC %a is plugged after migration")
+        assert ll_vms.get_vm_nic_plugged(
+            vm=self.vm_name, nic=self.sriov_vnic_1
+        )
+
     @bz({"1410076": {}})
     @polarion("RHEVM-17059")
-    def test_05_migrate_with_bond_in_guest(self):
+    def test_06_migrate_with_bond_in_guest(self):
         """
         Migrate with vf and virtIO vNIcs (BOND on guest)
         """
@@ -297,24 +309,26 @@ class SriovMigration01(NetworkTest):
             self.vm_name
         )
         assert conf.ENGINE_HOST.network.send_icmp(dst=vm_ip)
-        vm_host = ll_vms.get_vm_host(vm_name=self.vm_name)
-        assert vm_host
-        ping_kwargs = {
-            "src_resource": conf.ENGINE_HOST,
-            "dst": vm_ip,
-            "count": "30"
-        }
-        migrate_kwargs = {
-            "vms_list": [self.vm_name],
-            "src_host": vm_host,
-            "vm_os_type": "rhel",
-            "vm_user": conf.VMS_LINUX_USER,
-            "vm_password": conf.VMS_LINUX_PW,
-        }
-        testflow.step(
-            "Migrating VM: %s from host: %s and testing ping "
-            "from Engine to the VM", self.vm_name, vm_host,
-        )
-        assert helper.check_ping_during_vm_migration(
-            ping_kwargs=ping_kwargs, migration_kwargs=migrate_kwargs
-        )
+        for i in xrange(2):
+            vm_host = ll_vms.get_vm_host(vm_name=self.vm_name)
+            assert vm_host
+            ping_kwargs = {
+                "src_resource": conf.ENGINE_HOST,
+                "dst": vm_ip,
+                "count": "30"
+            }
+            migrate_kwargs = {
+                "vms_list": [self.vm_name],
+                "src_host": vm_host,
+                "vm_os_type": "rhel",
+                "vm_user": conf.VMS_LINUX_USER,
+                "vm_password": conf.VMS_LINUX_PW,
+            }
+            testflow.step(
+                "Migrating VM: %s from host: %s and testing ping "
+                "from Engine to the VM", self.vm_name, vm_host,
+            )
+            assert helper.check_ping_during_vm_migration(
+                ping_kwargs=ping_kwargs, migration_kwargs=migrate_kwargs
+            )
+            sleep(5)
