@@ -308,6 +308,7 @@ class TestCase6038(BasicEnvironment):
         self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[1]
         )
+
         self.verify_snapshot_files(
             self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
         )

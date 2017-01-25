@@ -65,7 +65,8 @@ LSBLK_CMD = 'lsblk -o NAME'
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
-FIND_CMD = 'find / %s'
+FIND_CMD = 'locate %s'
+UPDATEDB = 'updatedb'
 ECHO_CMD = 'echo %s > %s'
 CREATE_FILE_CMD = 'touch %s/%s'
 CREATE_FILESYSTEM_CMD = 'mkfs.%s %s'
@@ -1007,6 +1008,9 @@ def does_file_exist(vm_name, file_name, vm_executor=None):
     :rtype: bool
     """
     command = FIND_CMD % file_name
+    _run_cmd_on_remote_machine(
+        vm_name, UPDATEDB, vm_executor=vm_executor
+    )
     return _run_cmd_on_remote_machine(
         vm_name, command, vm_executor=vm_executor
     )

@@ -80,7 +80,7 @@ def initialize_direct_lun_params(request):
     self.lun_kwargs = config.BASE_KWARGS.copy()
     self.lun_kwargs["alias"] = self.disk_alias
     self.template_name = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
+        self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
     )
 
 

@@ -207,7 +207,7 @@ class TestCase5931(DirectLunAttachTestCase):
 
 
 @pytest.mark.usefixtures(
-   poweroff_vm_and_wait_for_stateless_to_remove.__name__,
+    poweroff_vm_and_wait_for_stateless_to_remove.__name__,
 )
 @attr(tier=3)
 @bz({'1415407': {}})
@@ -232,7 +232,7 @@ class TestCase5932(DirectLunAttachTestCase):
         self.attach_disk_to_vm()
         assert ll_vms.runVmOnce(
             True, self.vm_name, stateless=True, wait_for_state=config.VM_UP
-        ), ("Failed to run vm %s in stateless mode" % self.vm_name)
+        ), "Failed to run vm %s in stateless mode" % self.vm_name
         self.snap_added = ll_vms.addSnapshot(
             False, self.vm_name, self.snap_desc
         )
