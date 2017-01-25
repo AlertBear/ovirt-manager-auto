@@ -227,7 +227,10 @@ PACKAGE_MANAGER_REMOVE = "remove"
 AREM_OPTION = "AffinityRulesEnforcementManagerEnabled"
 AFFINITY_GROUP_POSITIVE = "positive"
 AFFINITY_GROUP_ENFORCING = "enforcing"
+AFFINITY_GROUP_HOSTS = "hosts"
+AFFINITY_GROUP_HOSTS_RULES = "hosts_rule"
 AFFINITY_GROUP_VMS = "vms"
+AFFINITY_GROUP_VMS_RULES = "vms_rule"
 AFFINITY_GROUPS_ENABLED = "enabled"
 
 # Cluster constants

@@ -1,6 +1,7 @@
 """
 Scheduler tests fixtures
 """
+import copy
 from time import sleep
 
 import art.rhevm_api.tests_lib.low_level.affinitylabels as ll_afflabels
@@ -72,13 +73,23 @@ def create_affinity_groups(request):
     for (
         affinity_group_name, affinity_group_params
     ) in affinity_groups.iteritems():
+        t_affinity_group_params = copy.deepcopy(affinity_group_params)
         u_libs.testflow.setup(
             "Create the affinity group %s", affinity_group_name
         )
+        affinity_hosts = t_affinity_group_params.pop(
+            sla_conf.AFFINITY_GROUP_HOSTS, None
+        )
+        if affinity_hosts:
+            t_affinity_group_params[sla_conf.AFFINITY_GROUP_HOSTS] = []
+            for affinity_host in affinity_hosts:
+                t_affinity_group_params[sla_conf.AFFINITY_GROUP_HOSTS].append(
+                    sla_conf.HOSTS[affinity_host]
+                )
         assert ll_clusters.create_affinity_group(
             cluster_name=sla_conf.CLUSTER_NAME[0],
             name=affinity_group_name,
-            **affinity_group_params
+            **t_affinity_group_params
         )
 
 

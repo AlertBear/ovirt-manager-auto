@@ -87,11 +87,10 @@ class VirtTest(object):
 
 @sla
 @attr(team="sla")
-class SlaTest(BaseTestCase):
+class SlaTest(object):
     """
     Basic class for compute/sla tests
     """
-    __test__ = False
 
 
 @coresystem
