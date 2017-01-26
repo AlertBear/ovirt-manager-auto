@@ -470,35 +470,29 @@ def set_vms_with_host_memory_by_percentage(
     return True, host_index_max_mem
 
 
-def update_vms_memory(vms_list, memory):
+def update_vms_memory(vms_list, memory, max_memory=None):
     """
     Update memory for vms in list
 
-    :param vms_list:list of vms for update
-    :type vms_list: list
-    :param memory: memory to update
-    :type memory: int
-    :return: True if memory updated
-    :rtype: bool
+    Args:
+        vms_list (list): list of vms for update
+        memory (int): memory to update
+        max_memory (int): max memory value if none will not update max memory
+
+    Returns:
+        bool:True if memory updated
     """
     for vm in vms_list:
-        logger.info(
-            "update vm: %s memory to %d",
-            vm,
-            memory
-        )
+        logger.info("update vm: %s memory to %d", vm, memory)
         if not vms.updateVm(
             True,
             vm=vm,
             memory=memory,
             memory_guaranteed=memory / 2,
-            max_memory=memory + GB,
+            max_memory=max_memory,
             compare=False
         ):
-            logger.error(
-                "Failed to update memory to vm %s",
-                vm
-            )
+            logger.error("Failed to update memory to vm %s", vm)
             return False
     return True
 
@@ -656,7 +650,6 @@ def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
             positive=True,
             vm=vm_name,
             memory=new_memory_size,
-            max_memory=new_memory_size + GB,
             compare=False
         ):
             logger.error("Failed to update memory")

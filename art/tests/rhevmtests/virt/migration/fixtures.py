@@ -408,7 +408,10 @@ def over_load_test(request, update_cluster_over_commit):
         testflow.teardown("Set hosts to the active state")
         migration_helper.activate_hosts()
         hl_vms.update_os_type(os_type=vm_default_os_type, test_vms=test_vms)
-        hl_vms.update_vms_memory(vms_list=test_vms, memory=int(vm_default_mem))
+        hl_vms.update_vms_memory(
+            vms_list=test_vms, memory=int(vm_default_mem),
+            max_memory=gen_helper.get_gb(4)
+        )
         hl_vms.start_vm_on_specific_host(
             vm=config.MIGRATION_VM,
             host=config.HOSTS[0],

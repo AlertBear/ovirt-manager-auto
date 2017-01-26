@@ -30,7 +30,7 @@ def memory_hotplug_setup(request):
         os_type=config.VM_OS_TYPE,
         display_type=config.VM_DISPLAY_TYPE,
         network=config.MGMT_BRIDGE,
-        max_memory=helper.get_gb(12)
+        max_memory=helper.get_gb(16)
     )
     testflow.setup("Disable ballooning on VM")
     assert ll_vms.updateVm(
