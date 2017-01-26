@@ -10,48 +10,25 @@ Test via SetupNetworks
 
 import pytest
 
-import helper as host_net_helper
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import config as net_api_conf
+import helper as host_net_helper
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.network_custom_properties.config as cust_prop_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
-from fixtures import remove_network
+from art.unittest_lib import NetworkTest, attr, testflow
+from fixtures import create_networks, remove_network
 from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
+    clean_host_interfaces, setup_networks_fixture
 )
 
 
-@pytest.fixture(scope="class", autouse=True)
-def create_networks(request):
-    """
-    Create networks on datacenter
-    """
-    network_api = NetworkFixtures()
-    networks = request.node.cls.networks
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=network_api.host_0_name
-        )
-    request.addfinalizer(fin)
-
-    testflow.setup("Create networks: %s", networks.keys())
-    network_helper.prepare_networks_on_setup(
-        networks_dict=networks, dc=network_api.dc_0,
-        cluster=network_api.cluster_0
-    )
-
-
 @attr(tier=2)
-@pytest.mark.usefixtures(clean_host_interfaces.__name__)
+@pytest.mark.usefixtures(
+    create_networks.__name__,
+    clean_host_interfaces.__name__
+)
 class TestHostNetworkApi01(NetworkTest):
     """
     All tests are done via Host,HostNic and SetupNetworks API
@@ -122,7 +99,10 @@ class TestHostNetworkApi01(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(clean_host_interfaces.__name__)
+@pytest.mark.usefixtures(
+    create_networks.__name__,
+    clean_host_interfaces.__name__
+)
 class TestHostNetworkApi02(NetworkTest):
     """
     All tests are done via Host,HostNic and SetupNetworks API
@@ -148,21 +128,21 @@ class TestHostNetworkApi02(NetworkTest):
 
     # HostNic
     net_1 = net_api_conf.NETS[2][0]
-    ip_mask_net_1 = net_api_conf.IPS[0]
+    ip_mask_net_1 = net_api_conf.IPS.pop(0)
     net_2 = net_api_conf.NETS[2][1]
-    ip_prefix_net_2 = net_api_conf.IPS[1]
+    ip_prefix_net_2 = net_api_conf.IPS.pop(0)
     net_3 = net_api_conf.NETS[2][2]
-    ip_mask_net_3 = net_api_conf.IPS[2]
+    ip_mask_net_3 = net_api_conf.IPS.pop(0)
     net_4 = net_api_conf.NETS[2][3]
-    ip_prefix_net_4 = net_api_conf.IPS[3]
+    ip_prefix_net_4 = net_api_conf.IPS.pop(0)
     net_5 = net_api_conf.NETS[2][4]
-    ip_mask_net_5 = net_api_conf.IPS[4]
+    ip_mask_net_5 = net_api_conf.IPS.pop(0)
     net_6 = net_api_conf.NETS[2][5]
-    ip_prefix_net_6 = net_api_conf.IPS[5]
+    ip_prefix_net_6 = net_api_conf.IPS.pop(0)
     net_7 = net_api_conf.NETS[2][6]
-    ip_mask_net_7 = net_api_conf.IPS[6]
+    ip_mask_net_7 = net_api_conf.IPS.pop(0)
     net_8 = net_api_conf.NETS[2][7]
-    ip_prefix_net_8 = net_api_conf.IPS[7]
+    ip_prefix_net_8 = net_api_conf.IPS.pop(0)
     # parametrize (Network, NIC, IP, network type, Use API via)
     nic_mask_vm = [net_1, 1, ip_mask_net_1, vm_type, "host_nic"]
     nic_pre_vm = [net_2, 2, ip_prefix_net_2, vm_type, "host_nic"]
@@ -178,21 +158,21 @@ class TestHostNetworkApi02(NetworkTest):
     ]
     # Host
     net_9 = net_api_conf.NETS[2][8]
-    ip_mask_net_9 = net_api_conf.IPS[8]
+    ip_mask_net_9 = net_api_conf.IPS.pop(0)
     net_10 = net_api_conf.NETS[2][9]
-    ip_prefix_net_10 = net_api_conf.IPS[9]
+    ip_prefix_net_10 = net_api_conf.IPS.pop(0)
     net_11 = net_api_conf.NETS[2][10]
-    ip_mask_net_11 = net_api_conf.IPS[10]
+    ip_mask_net_11 = net_api_conf.IPS.pop(0)
     net_12 = net_api_conf.NETS[2][11]
-    ip_prefix_net_12 = net_api_conf.IPS[11]
+    ip_prefix_net_12 = net_api_conf.IPS.pop(0)
     net_13 = net_api_conf.NETS[2][12]
-    ip_mask_net_13 = net_api_conf.IPS[12]
+    ip_mask_net_13 = net_api_conf.IPS.pop(0)
     net_14 = net_api_conf.NETS[2][13]
-    ip_prefix_net_14 = net_api_conf.IPS[13]
+    ip_prefix_net_14 = net_api_conf.IPS.pop(0)
     net_15 = net_api_conf.NETS[2][14]
-    ip_mask_net_15 = net_api_conf.IPS[14]
+    ip_mask_net_15 = net_api_conf.IPS.pop(0)
     net_16 = net_api_conf.NETS[2][15]
-    ip_prefix_net_16 = net_api_conf.IPS[15]
+    ip_prefix_net_16 = net_api_conf.IPS.pop(0)
     # parametrize (Network, NIC, IP, network type, Use API via)
     host_mask_vm = [net_9, 9, ip_mask_net_9, vm_type, "host"]
     host_pre_vm = [net_10, 10, ip_prefix_net_10, vm_type, "host"]
@@ -208,21 +188,21 @@ class TestHostNetworkApi02(NetworkTest):
     ]
     # SetupNetwork
     net_17 = net_api_conf.NETS[2][16]
-    ip_mask_net_17 = net_api_conf.IPS[16]
+    ip_mask_net_17 = net_api_conf.IPS.pop(0)
     net_18 = net_api_conf.NETS[2][17]
-    ip_prefix_net_18 = net_api_conf.IPS[17]
+    ip_prefix_net_18 = net_api_conf.IPS.pop(0)
     net_19 = net_api_conf.NETS[2][18]
-    ip_mask_net_19 = net_api_conf.IPS[18]
+    ip_mask_net_19 = net_api_conf.IPS.pop(0)
     net_20 = net_api_conf.NETS[2][19]
-    ip_prefix_net_20 = net_api_conf.IPS[19]
+    ip_prefix_net_20 = net_api_conf.IPS.pop(0)
     net_21 = net_api_conf.NETS[2][20]
-    ip_mask_net_21 = net_api_conf.IPS[20]
+    ip_mask_net_21 = net_api_conf.IPS.pop(0)
     net_22 = net_api_conf.NETS[2][21]
-    ip_prefix_net_22 = net_api_conf.IPS[21]
+    ip_prefix_net_22 = net_api_conf.IPS.pop(0)
     net_23 = net_api_conf.NETS[2][22]
-    ip_mask_net_23 = net_api_conf.IPS[22]
+    ip_mask_net_23 = net_api_conf.IPS.pop(0)
     net_24 = net_api_conf.NETS[2][23]
-    ip_prefix_net_24 = net_api_conf.IPS[23]
+    ip_prefix_net_24 = net_api_conf.IPS.pop(0)
     # parametrize (Network, NIC, IP, network type, Use API via)
     sn_mask_vm = [net_17, 17, ip_mask_net_17, vm_type, "sn"]
     sn_pre_vm = [net_18, 18, ip_prefix_net_18, vm_type, "sn"]
@@ -309,6 +289,7 @@ class TestHostNetworkApi02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_networks.__name__,
     setup_networks_fixture.__name__,
     clean_host_interfaces.__name__
 )
@@ -372,6 +353,7 @@ class TestHostNetworkApi03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_networks.__name__,
     setup_networks_fixture.__name__,
     clean_host_interfaces.__name__
 )
@@ -457,6 +439,7 @@ class TestHostNetworkApi04(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_networks.__name__,
     setup_networks_fixture.__name__,
     clean_host_interfaces.__name__
 )
@@ -484,14 +467,14 @@ class TestHostNetworkApi05(NetworkTest):
 
     # test_update_network_with_ip_nic params
     # HostNic
-    host_nic_ip_mask = net_api_conf.IPS[24]
-    host_nic_ip_pre = net_api_conf.IPS[25]
+    host_nic_ip_mask = net_api_conf.IPS.pop(0)
+    host_nic_ip_pre = net_api_conf.IPS.pop(0)
     # Host
-    host_ip_mask = net_api_conf.IPS[26]
-    host_ip_pre = net_api_conf.IPS[27]
+    host_ip_mask = net_api_conf.IPS.pop(0)
+    host_ip_pre = net_api_conf.IPS.pop(0)
     # SetupNetworks
-    sn_ip_mask = net_api_conf.IPS[28]
-    sn_ip_pre = net_api_conf.IPS[29]
+    sn_ip_mask = net_api_conf.IPS.pop(0)
+    sn_ip_pre = net_api_conf.IPS.pop(0)
     netmask_ips = [host_nic_ip_mask, host_ip_mask, sn_ip_mask]
     prefix_ips = [host_nic_ip_pre, host_ip_pre, sn_ip_pre]
 
@@ -615,6 +598,7 @@ class TestHostNetworkApi05(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_networks.__name__,
     setup_networks_fixture.__name__,
     remove_network.__name__,
     clean_host_interfaces.__name__
@@ -706,7 +690,10 @@ class TestHostNetworkApiHost06(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetworkApi07(NetworkTest):
     """
     All tests are done via Host and SetupNetworks API

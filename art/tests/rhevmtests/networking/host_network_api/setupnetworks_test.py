@@ -125,7 +125,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
     dummy_1 = [net_api_conf.DUMMYS[2]]
 
     # test_07_update_bond_with_ip params
-    ip_netmask_net_1 = net_api_conf.IPS[22]
+    ip_netmask_net_1 = net_api_conf.IPS.pop(0)
     net_1 = net_api_conf.SN_NETS[2][0]
 
     # test_08_create_bonds params
@@ -379,17 +379,17 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
     4) Attach network with static ipv4 and static ipv6 to bond.
     """
     net_1 = net_api_conf.SN_NETS[4][0]
-    ip_v6_1 = net_api_conf.IPV6_IPS[0]
-    ip_v4_1 = net_api_conf.IPS[0]
+    ip_v6_1 = net_api_conf.IPV6_IPS.pop(0)
+    ip_v4_1 = net_api_conf.IPS.pop(0)
     net_2 = net_api_conf.SN_NETS[4][1]
-    ip_v6_2 = net_api_conf.IPV6_IPS[1]
-    ip_v4_2 = net_api_conf.IPS[1]
+    ip_v6_2 = net_api_conf.IPV6_IPS.pop(0)
+    ip_v4_2 = net_api_conf.IPS.pop(0)
     net_3 = net_api_conf.SN_NETS[4][2]
-    ip_v6_3 = net_api_conf.IPV6_IPS[2]
-    ip_v4_3 = net_api_conf.IPS[2]
+    ip_v6_3 = net_api_conf.IPV6_IPS.pop(0)
+    ip_v4_3 = net_api_conf.IPS.pop(0)
     net_4 = net_api_conf.SN_NETS[4][3]
-    ip_v6_4 = net_api_conf.IPV6_IPS[3]
-    ip_v4_4 = net_api_conf.IPS[3]
+    ip_v6_4 = net_api_conf.IPV6_IPS.pop(0)
+    ip_v4_4 = net_api_conf.IPS.pop(0)
     bond_1 = "bond041"
 
     # setup_networks_fixture params

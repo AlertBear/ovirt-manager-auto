@@ -134,7 +134,7 @@ def setup_networks_fixture(request, clean_host_interfaces):
                     ip_dict[k]["boot_protocol"] = v.get(
                         "boot_protocol", "static"
                     )
-                    sn_dict["add"][net]["ip"] = ip_dict
+                sn_dict["add"][net]["ip"] = ip_dict
 
         log_dict = helper.remove_none_from_dict(sn_dict)
         testflow.setup(

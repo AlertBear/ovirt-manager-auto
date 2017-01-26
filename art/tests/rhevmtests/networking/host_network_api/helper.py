@@ -9,6 +9,7 @@ import logging
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.utils.test_utils as test_utils
+import config as net_api_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.unittest_lib import testflow
@@ -188,3 +189,30 @@ def attach_networks_for_parametrize(
 
         res = hl_host_network.setup_networks(host_name=host_0, **sn_dict)
         assert res is positive
+
+
+def get_ip_dict(ip, proto):
+    """
+    Get IP dict updated
+
+    Args:
+        ip (str): IP to add to the dict
+        proto (str): Boot protocol to add to the dict
+
+    Returns:
+        dict: IP dict for setupNetworks
+    """
+    ipv6_dict = net_api_conf.IPV6_IP_DICT.copy()
+    if ip:
+        ipv6_dict["address"] = ip
+    else:
+        ipv6_dict["address"] = None
+        ipv6_dict["netmask"] = None
+
+        if proto == "autoconf":
+            ipv6_dict["boot_protocol"] = "autoconf"
+
+        if proto == "dhcp":
+            ipv6_dict["boot_protocol"] = "dhcp"
+
+    return ipv6_dict

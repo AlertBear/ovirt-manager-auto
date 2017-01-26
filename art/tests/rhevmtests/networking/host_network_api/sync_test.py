@@ -20,8 +20,10 @@ from fixtures import (
     update_host_to_another_cluster, manage_ip_and_refresh_capabilities
 )
 from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, NetworkFixtures, clean_host_interfaces
-)  # flake8: noqa
+    setup_networks_fixture,
+    NetworkFixtures,
+    clean_host_interfaces  # flake8: noqa
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -830,7 +832,7 @@ class TestHostNetworkApiSync03(NetworkTest):
     SYNC_IPS = network_helper.create_random_ips(num_of_ips=4, mask=24)
 
     # Test 01 parameters
-    ip_netmask_net_1 = SYNC_IPS[0]
+    ip_netmask_net_1 = SYNC_IPS.pop(0)
     net_1 = net_api_conf.SYNC_NETS_DC_1[3][0]
     net_case_1_ip_expected = ip_netmask_net_1
     actual_ip_net_1 = "10.10.10.10"
@@ -839,13 +841,13 @@ class TestHostNetworkApiSync03(NetworkTest):
     net_2 = net_api_conf.SYNC_NETS_DC_1[3][1]
     net_case_2_netmask_expected = net_api_conf.IP_DICT_NETMASK["netmask"]
     actual_netmask_net_2 = "255.255.255.255"
-    ip_netmask_net_2 = SYNC_IPS[1]
+    ip_netmask_net_2 = SYNC_IPS.pop(0)
 
     # Test 03 parameters
     net_3 = net_api_conf.SYNC_NETS_DC_1[3][2]
     net_case_3_netmask_prefix_expected = net_api_conf.IP_DICT_PREFIX["netmask"]
     actual_netmask_net_3 = "255.255.255.255"
-    ip_prefix_net_3 = SYNC_IPS[2]
+    ip_prefix_net_3 = SYNC_IPS.pop(0)
 
     # Test 04 parameters
     net_4 = net_api_conf.SYNC_NETS_DC_1[3][3]
@@ -857,7 +859,7 @@ class TestHostNetworkApiSync03(NetworkTest):
     net_5 = net_api_conf.SYNC_NETS_DC_1[3][4]
     net_case_5_boot_proto_expected = "STATIC_IP"
     net_case_5_boot_proto_actual = "NONE"
-    ip_netmask_net_5 = SYNC_IPS[3]
+    ip_netmask_net_5 = SYNC_IPS.pop(0)
 
     manage_ip_list = [
         (net_1, actual_ip_net_1, None, True),
@@ -1059,7 +1061,7 @@ class TestHostNetworkApiSync04(NetworkTest):
     SYNC_IPS = network_helper.create_random_ips(num_of_ips=4, mask=24)
 
     # Test 01 parameters
-    ip_netmask_net_1 = SYNC_IPS[0]
+    ip_netmask_net_1 = SYNC_IPS.pop(0)
     net_1 = net_api_conf.SYNC_NETS_DC_1[4][0]
     net_case_1_ip_expected = ip_netmask_net_1
     actual_ip_net_1 = "10.10.10.12"
@@ -1070,14 +1072,14 @@ class TestHostNetworkApiSync04(NetworkTest):
     net_case_2_netmask_expected = net_api_conf.IP_DICT_NETMASK["netmask"]
     actual_netmask_net_2 = "255.255.255.255"
     bond_2 = "bond042"
-    ip_netmask_net_2 = SYNC_IPS[1]
+    ip_netmask_net_2 = SYNC_IPS.pop(0)
 
     # Test 03 parameters
     net_3 = net_api_conf.SYNC_NETS_DC_1[4][2]
     net_case_3_netmask_prefix_expected = net_api_conf.IP_DICT_PREFIX["netmask"]
     actual_netmask_net_3 = "255.255.255.255"
     bond_3 = "bond043"
-    ip_prefix_net_3 = SYNC_IPS[2]
+    ip_prefix_net_3 = SYNC_IPS.pop(0)
 
     # Test 04 parameters
     net_4 = net_api_conf.SYNC_NETS_DC_1[4][3]
@@ -1092,7 +1094,7 @@ class TestHostNetworkApiSync04(NetworkTest):
     net_case_5_boot_proto_expected = "STATIC_IP"
     net_case_5_boot_proto_actual = "NONE"
     bond_5 = "bond045"
-    ip_netmask_5 = SYNC_IPS[3]
+    ip_netmask_5 = SYNC_IPS.pop(0)
 
     manage_ip_list = [
         (net_1, actual_ip_net_1, None, True),

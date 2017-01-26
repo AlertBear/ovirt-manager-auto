@@ -9,335 +9,339 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as net_api_conf
+import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from rhevmtests.networking import helper as network_helper
+from fixtures import create_networks
 from art.unittest_lib import attr, NetworkTest, testflow
 from rhevmtests.networking.fixtures import (
-    clean_host_interfaces, NetworkFixtures
+    clean_host_interfaces,  # flake8: noqa
+    setup_networks_fixture
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def ipv6_prepare_setup(request):
-    """
-    Prepare setup for ipv6 tests
-    """
-    network_api = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert network_helper.remove_networks_from_setup(
-            hosts=network_api.host_0_name
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=net_api_conf.IPV6_NETS_DICT, dc=network_api.dc_0,
-        cluster=network_api.cluster_0
-    )
 
 
 @attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(
-    clean_host_interfaces.__name__
+    create_networks.__name__,
+    setup_networks_fixture.__name__
 )
 class TestHostNetworkApiIpV601(NetworkTest):
     """
-    Attach network with static IPv6 over bridge
+    Attach network with static/autocon/dhcp IPv6 over:
+    1. Bridge
+    2. VLAN
+    3. BOND
+    4. VLAN BOND
+    5. Non-VM
+    6. Non-VM VLAN
     """
-    __test__ = True
-    ip_v6_1 = net_api_conf.IPV6_IPS[1]
-    ip_v6_2 = net_api_conf.IPV6_IPS[2]
-    ip_v6_3 = net_api_conf.IPV6_IPS[3]
-    ip_v6_4 = net_api_conf.IPV6_IPS[4]
-    ip_v6_5 = net_api_conf.IPV6_IPS[5]
-    ip_v6_6 = net_api_conf.IPV6_IPS[6]
-    ip_v6_7 = net_api_conf.IPV6_IPS[7]
-    ip_v6_8 = net_api_conf.IPV6_IPS[8]
-    ip_v6_9 = net_api_conf.IPV6_IPS[9]
-    ip_v4_7 = net_api_conf.IPV4_IPS[7]
+    # create_networks params
+    networks = net_api_conf.IPV6_NETS_CLASS_1
+
+    # STATIC
+    # Bridge static
     net_1 = net_api_conf.IPV6_NETS[1][0]
+    ip_v6_1 = net_api_conf.IPV6_IPS.pop(0)
+    param_1 = [net_1, 1, ip_v6_1, "bridge", "static"]
+
+    # VLAN static
     net_2 = net_api_conf.IPV6_NETS[1][1]
-    net_3 = net_api_conf.IPV6_NETS[1][2]
-    net_4 = net_api_conf.IPV6_NETS[1][3]
-    net_5 = net_api_conf.IPV6_NETS[1][4]
-    net_6 = net_api_conf.IPV6_NETS[1][5]
+    ip_v6_2 = net_api_conf.IPV6_IPS.pop(0)
+    param_2 = [net_2, 2, ip_v6_1, "VLAN", "static"]
+
+    # BOND static
     bond_1 = "bond10"
-    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+    net_3 = net_api_conf.IPV6_NETS[1][2]
+    ip_v6_3 = net_api_conf.IPV6_IPS.pop(0)
+    param_3 = [net_3, bond_1, ip_v6_3, "BOND", "static"]
 
-    @polarion("RHEVM-16627")
-    def test_01_static_ipv6_bridge_network_on_host(self):
+    # VLAN BOND static
+    bond_2 = "bond11"
+    net_4 = net_api_conf.IPV6_NETS[1][3]
+    ip_v6_4 = net_api_conf.IPV6_IPS.pop(0)
+    param_4 = [net_4, bond_2, ip_v6_4, "VLAN BOND", "static"]
+
+    # Non-VM static
+    net_5 = net_api_conf.IPV6_NETS[1][4]
+    ip_v6_5 = net_api_conf.IPV6_IPS.pop(0)
+    param_5 = [net_5, 7, ip_v6_5, "Non-VM", "static"]
+
+    # Non-VM VLAN static
+    net_6 = net_api_conf.IPV6_NETS[1][5]
+    ip_v6_6 = net_api_conf.IPV6_IPS.pop(0)
+    param_6 = [net_6, 8, ip_v6_6, "Non-VM VLAN", "static"]
+
+    # AUTOCONF
+    # Bridge autoconf
+    net_7 = net_api_conf.IPV6_NETS[1][6]
+    param_7 = [net_7, 9, None, "bridge", "autoconf"]
+
+    # VLAN autoconf
+    net_8 = net_api_conf.IPV6_NETS[1][7]
+    param_8 = [net_8, 10, None, "VLAN", "autoconf"]
+
+    # BOND autoconf
+    bond_3 = "bond13"
+    net_9 = net_api_conf.IPV6_NETS[1][8]
+    param_9 = [net_9, bond_3, None, "BOND", "autoconf"]
+
+    # VLAN BOND autoconf
+    bond_4 = "bond14"
+    net_10 = net_api_conf.IPV6_NETS[1][9]
+    param_10 = [net_10, bond_4, None, "VLAN BOND", "autoconf"]
+
+    # Non-VM autoconf
+    net_11 = net_api_conf.IPV6_NETS[1][10]
+    param_11 = [net_11, 15, None, "Non-VM", "autoconf"]
+
+    # Non-VM VLAN autoconf
+    net_12 = net_api_conf.IPV6_NETS[1][11]
+    param_12 = [net_12, 16, None, "Non-VM VLAN", "autoconf"]
+
+    # DHCP
+    # Bridge DHCP
+    net_13 = net_api_conf.IPV6_NETS[1][12]
+    param_13 = [net_13, 17, None, "bridge", "autoconf"]
+
+    # VLAN DHCP
+    net_14 = net_api_conf.IPV6_NETS[1][13]
+    param_14 = [net_14, 18, None, "VLAN", "autoconf"]
+
+    # BOND DHCP
+    bond_5 = "bond15"
+    net_15 = net_api_conf.IPV6_NETS[1][14]
+    param_15 = [net_15, bond_5, None, "BOND", "autoconf"]
+
+    # VLAN BOND DHCP
+    bond_6 = "bond16"
+    net_16 = net_api_conf.IPV6_NETS[1][15]
+    param_16 = [net_16, bond_6, None, "VLAN BOND", "autoconf"]
+
+    # Non-VM DHCP
+    net_17 = net_api_conf.IPV6_NETS[1][16]
+    param_17 = [net_17, 23, None, "Non-VM", "autoconf"]
+
+    # Non-VM VLAN DHCP
+    net_18 = net_api_conf.IPV6_NETS[1][17]
+    param_18 = [net_18, 24, None, "Non-VM VLAN", "autoconf"]
+
+    # setup_networks_fixture fixture
+    hosts_nets_nic_dict = {
+        0: {
+            bond_1: {
+                "nic": bond_1,
+                "slaves": [3, 4]
+            },
+            bond_2: {
+                "nic": bond_2,
+                "slaves": [5, 6]
+            },
+            bond_3: {
+                "nic": bond_3,
+                "slaves": [11, 12]
+            },
+            bond_4: {
+                "nic": bond_4,
+                "slaves": [13, 14]
+            },
+            bond_5: {
+                "nic": bond_5,
+                "slaves": [19, 20]
+            },
+            bond_6: {
+                "nic": bond_6,
+                "slaves": [21, 22]
+            }
+        }
+    }
+
+    @pytest.mark.parametrize(
+        ("network", "nic", "ip", "type_", "proto"),
+        [
+            # Static IPv6
+            polarion("RHEVM3-16627")(param_1),
+            polarion("RHEVM3-16639")(param_2),
+            polarion("RHEVM3-16640")(param_3),
+            polarion("RHEVM3-16641")(param_4),
+            polarion("RHEVM3-16642")(param_5),
+            polarion("RHEVM3-16643")(param_6),
+
+            # Autoconf IPv6
+            polarion("RHEVM3-19184")(param_7),
+            polarion("RHEVM3-19185")(param_8),
+            polarion("RHEVM3-19186")(param_9),
+            polarion("RHEVM3-19188")(param_10),
+            polarion("RHEVM3-19189")(param_11),
+            polarion("RHEVM3-19190")(param_12),
+
+            # DHCP IPv6
+            polarion("RHEVM3-19191")(param_13),
+            polarion("RHEVM3-19192")(param_14),
+            polarion("RHEVM3-19193")(param_15),
+            polarion("RHEVM3-19194")(param_16),
+            polarion("RHEVM3-19195")(param_17),
+            polarion("RHEVM3-19196")(param_18),
+        ]
+    )
+    def test_static_autoconf_dhcp_ipv6_network_on_host(
+        self, network, nic, ip, type_, proto
+    ):
         """
-        Attach network with static IPv6 over bridge
+        Attach network with static/autoconf/dhcp IPv6
         """
-        dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_1
-        network_host_api_dict = {
+        ip_dict = helper.get_ip_dict(ip=ip, proto=proto)
+        host_nic = conf.HOST_0_NICS[nic] if isinstance(nic, int) else nic
+        sn_dict = {
             "add": {
                 "1": {
-                    "network": self.net_1,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
+                    "network": network,
+                    "nic": host_nic,
+                    "ip": {
+                        "1": ip_dict
+                    }
                 },
             }
         }
         testflow.step(
-            "Attach network %s with static IPv6 %s over bridge %s",
-            self.net_1, net_api_conf.BASIC_IPV6_DICT, dummy_nic
+            "Attach network %s (%s) using %s boot protocol IPv6 over %s. %s",
+            network, type_, proto, host_nic, net_api_conf.BASIC_IPV6_DICT
         )
         assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **sn_dict
         )
 
-    @polarion("RHEVM-16639")
-    def test_02_static_ipv6_vlan_bridge_network_on_host(self):
-        """
-        Attach network with static IPv6 over VLAN bridge
-        """
-        dummy_nic = conf.HOST_0_NICS[-2]
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_2
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": self.net_2,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
-                },
-            }
+
+@attr(tier=2)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestHostNetworkApiIpV602(NetworkTest):
+    """
+    Update IPv6 with static, dhcp and autoconf
+
+    1. Update IPv4 and IPv6 from static to another static IPs
+    2. Update from static IPv6 to another static IPv6
+    3. Update from static IPv6 to dhcpv6
+    4. Update from static IPv6 to autoconf
+    5. Update from dhcpv6 to static IPv6
+    """
+    # create_networks params
+    networks = net_api_conf.IPV6_NETS_CLASS_2
+
+    # net_1 IP dict
+    net_1 = net_api_conf.IPV6_NETS[2][0]
+    net_1_dict = net_api_conf.BASIC_IPV4_AND_IPV6_DICT.copy()
+    net_1_dict["ipv6"]["address"] = net_api_conf.IPV6_IPS.pop(0)
+    net_1_dict["ipv4"]["address"] = net_api_conf.IPV4_IPS.pop(0)
+
+    net_1_new_dict = net_api_conf.BASIC_IPV4_AND_IPV6_DICT.copy()
+    net_1_new_dict["ipv6"]["address"] = net_api_conf.IPV6_IPS.pop(0)
+    net_1_new_dict["ipv4"]["address"] = net_api_conf.IPV4_IPS.pop(0)
+
+    # net_2 IP dict
+    net_2 = net_api_conf.IPV6_NETS[2][1]
+    net_2_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_2_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
+
+    net_2_new_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_2_new_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
+
+    # net_3 IP dict
+    net_3 = net_api_conf.IPV6_NETS[2][2]
+    net_3_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_3_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
+
+    net_3_new_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_3_new_dict["boot_protocol"] = "dhcp"
+    net_3_new_dict["address"] = None
+    net_3_new_dict["netmask"] = None
+
+    # net_4 IP dict
+    net_4 = net_api_conf.IPV6_NETS[2][3]
+    net_4_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_4_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
+
+    net_4_new_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_4_new_dict["boot_protocol"] = "autoconf"
+    net_4_new_dict["address"] = None
+    net_4_new_dict["netmask"] = None
+
+    # net_5 IP dict
+    net_5 = net_api_conf.IPV6_NETS[2][4]
+    net_5_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_5_dict["boot_protocol"] = "dhcp"
+    net_5_dict["address"] = None
+    net_5_dict["netmask"] = None
+
+    net_5_new_dict = net_api_conf.IPV6_IP_DICT.copy()
+    net_5_new_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
+
+    # setup_networks_fixture fixture
+    hosts_nets_nic_dict = {
+        0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+                "ip": net_1_dict
+            },
+            net_2: {
+                "nic": 2,
+                "network": net_2,
+                "ip": {
+                    "1": net_2_dict
+                }
+            },
+            net_3: {
+                "nic": 3,
+                "network": net_3,
+                "ip": {
+                    "1": net_3_dict
+                }
+            },
+            net_4: {
+                "nic": 4,
+                "network": net_4,
+                "ip": {
+                    "1": net_4_dict
+                }
+            },
+            net_5: {
+                "nic": 5,
+                "network": net_5,
+                "ip": {
+                    "1": net_5_dict
+                }
+            },
         }
-        testflow.step(
-            "Attach network %s with static IPv6 %s over VLAN bridge",
-            self.net_2, net_api_conf.BASIC_IPV6_DICT
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
+    }
 
-    @polarion("RHEVM-16640")
-    def test_03_static_ipv6_bond_bridge_network_on_host(self):
-        """
-        Attach network with static IPv6 over BOND bridge
-        """
-        bond_dummies = conf.HOST_0_NICS[-5:-3]
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_3
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": self.net_3,
-                    "nic": self.bond_1,
-                    "ip": net_api_conf.BASIC_IPV6_DICT,
-                    "slaves": bond_dummies
-                },
-            }
-        }
-        testflow.step(
-            "Attach network %s with static IPv6 %s over BOND bridge %s",
-            self.net_3, net_api_conf.BASIC_IPV6_DICT, self.bond_1
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
+    @pytest.mark.parametrize(
+        ("network", "nic", "ip_dict", "proto"),
+        [
+            polarion("RHEVM-16884")([net_1, 1, net_1_new_dict, "static"]),
+            polarion("RHEVM-16899")([net_2, 2, net_2_new_dict, "static"]),
+            polarion("RHEVM-16900")([net_3, 3, net_3_new_dict, "dhcp"]),
+            polarion("RHEVM-16901")([net_4, 4, net_4_new_dict, "autoconf"]),
+            polarion("RHEVM-16902")([net_5, 5, net_5_new_dict, "static"]),
+        ]
 
-    @polarion("RHEVM-16641")
-    def test_04_static_ipv6_vlan_bond_bridge_network_on_host(self):
+    )
+    def test_update_network_ipv6_addresses(self, network, nic, ip_dict, proto):
         """
-        Attach network with static IPv6 over VLAN BOND bridge
+        Update IPv6 with static, dhcp and autoconf
         """
-        bond_dummies = conf.HOST_0_NICS[-7:-5]
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_4
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": self.net_4,
-                    "nic": self.bond_1,
-                    "ip": net_api_conf.BASIC_IPV6_DICT,
-                    "slaves": bond_dummies
-                },
-            }
-        }
-        testflow.step(
-            "Attach network %s with static IPv6 %s over VLAN BOND bridge %s",
-            self.net_4, net_api_conf.BASIC_IPV6_DICT, self.bond_1
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-    @polarion("RHEVM-16642")
-    def test_05_static_ipv6_non_vm_network_on_host(self):
-        """
-        Attach network with static IPv6 over Non-VM
-        """
-        dummy_nic = conf.HOST_0_NICS[-8]
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_5
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": self.net_5,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
-                },
-            }
-        }
-        testflow.step(
-            "Attach network %s with static IPv6 %s over Non-VM",
-            self.net_5, net_api_conf.BASIC_IPV6_DICT
-
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-    @polarion("RHEVM-16643")
-    def test_06_static_ipv6_non_vm_vlan_network_on_host(self):
-        """
-        Attach network with static IPv6 over Non-VM VLAN
-        """
-        dummy_nic = conf.HOST_0_NICS[-9]
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_6
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": self.net_6,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
-                },
-            }
-        }
-        testflow.step(
-            "Attach network %s with static IPv6 %s over Non-VM VLAN",
-            self.net_6, net_api_conf.BASIC_IPV6_DICT
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-    @polarion("RHEVM-16884")
-    def test_07_edit_network_with_ipv4_and_ipv6_addresses(self):
-        """
-        Edit network with ipv4 and ipv6 addresses
-        """
-        dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv6"]["address"] = self.ip_v6_7
-        net_api_conf.BASIC_IPV4_AND_IPV6_DICT["ipv4"]["address"] = self.ip_v4_7
-        network_host_api_dict = {
+        host_nic = conf.HOST_0_NICS[nic] if isinstance(nic, int) else nic
+        ip_dict = ip_dict if network == self.net_1 else {"1": ip_dict}
+        sn_dict = {
             "update": {
                 "1": {
-                    "network": self.net_1,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+                    "network": network,
+                    "nic": host_nic,
+                    "ip": ip_dict
                 },
             }
         }
         testflow.step(
-            "Edit network %s with IPv4 and IPv6 addresses %s",
-            self.net_1, net_api_conf.BASIC_IPV4_AND_IPV6_DICT
+            "Update network %s with IPv6 %s, %s.", network, proto, ip_dict
         )
         assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-    @polarion("RHEVM-16899")
-    def test_08_change_static_ipv6_address_with_static_ipv6_address(self):
-        """
-        Change the static ipv6 address with other static ipv6 address
-        """
-        dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_8
-        network_host_api_dict = {
-            "update": {
-                "1": {
-                    "network": self.net_1,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
-                },
-            }
-        }
-        testflow.step(
-            "Change network %s ipv6 static address with other static ipv6 "
-            "address %s",
-            self.net_1, net_api_conf.BASIC_IPV6_DICT
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-    @polarion("RHEVM-16900")
-    def test_09_change_the_ipv6_bootproto_to_dhcpv6(self):
-        """
-        Change the ipv6 boot protocol to DHCP v6
-        """
-        dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.IPV6_IP_DICT["boot_protocol"] = "dhcp"
-        net_api_conf.IPV6_IP_DICT["address"] = None
-        net_api_conf.IPV6_IP_DICT["netmask"] = None
-        network_host_api_dict = {
-            "update": {
-                "1": {
-                    "network": self.net_1,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
-                },
-            }
-        }
-        testflow.step(
-            "Change network %s ipv6 boot protocol to DHCP v6", self.net_1
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-    @polarion("RHEVM-16901")
-    def test_10_change_the_ipv6_bootproto_to_autoconf(self):
-        """
-        Change the ipv6 boot protocol to autoconf
-        """
-        dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.IPV6_IP_DICT["boot_protocol"] = "autoconf"
-        net_api_conf.IPV6_IP_DICT["address"] = None
-        net_api_conf.IPV6_IP_DICT["netmask"] = None
-
-        network_host_api_dict = {
-            "update": {
-                "1": {
-                    "network": self.net_1,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
-                },
-            }
-        }
-        testflow.step(
-            "Change network %s ipv6 boot protocol to autoconf", self.net_1
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-
-    @polarion("RHEVM-16902")
-    def test_11_change_the_ipv6_bootproto_to_static(self):
-        """
-        Change the ipv6 boot protocol to static
-        """
-        dummy_nic = conf.HOST_0_NICS[-1]
-        net_api_conf.IPV6_IP_DICT["boot_protocol"] = "static"
-        net_api_conf.IPV6_IP_DICT["address"] = self.ip_v6_9
-        net_api_conf.IPV6_IP_DICT["netmask"] = "24"
-        network_host_api_dict = {
-            "update": {
-                "1": {
-                    "network": self.net_1,
-                    "nic": dummy_nic,
-                    "ip": net_api_conf.BASIC_IPV6_DICT
-                },
-            }
-        }
-        testflow.step(
-            "Change network %s ipv6 boot protocol to static", self.net_1
-        )
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **sn_dict
         )

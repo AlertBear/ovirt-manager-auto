@@ -14,6 +14,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import config as network_api_conf
 import helper
 import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -104,3 +105,28 @@ def reboot_host(request):
         )
 
     assert hl_hosts.activate_host_if_not_up(host=host)
+
+
+@pytest.fixture(scope="class", autouse=True)
+def create_networks(request):
+    """
+    Create networks on datacenter
+    """
+    network_api = NetworkFixtures()
+    networks = request.node.cls.networks
+
+    def fin():
+        """
+        Remove networks from setup
+        """
+        testflow.teardown("Remove networks from setup")
+        assert network_helper.remove_networks_from_setup(
+            hosts=network_api.host_0_name
+        )
+    request.addfinalizer(fin)
+
+    testflow.setup("Create networks: %s", networks.keys())
+    network_helper.prepare_networks_on_setup(
+        networks_dict=networks, dc=network_api.dc_0,
+        cluster=network_api.cluster_0
+    )

@@ -331,7 +331,7 @@ SN_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=20, prefix="sn"
 )
 IPV6_NETS = global_helper.generate_object_names(
-    num_of_cases=35, num_of_objects=10, prefix="ipv6_"
+    num_of_cases=35, num_of_objects=30, prefix="ipv6_"
 )
 PERSIST_NETS = global_helper.generate_object_names(
     num_of_cases=1, num_of_objects=2, prefix="persist_"
@@ -351,7 +351,7 @@ AVERAGE_SHARE_STR = "outAverageLinkShare"
 AVERAGE_LIMIT_STR = "outAverageUpperLimit"
 AVERAGE_REAL_STR = "outAverageRealTime"
 QOS_VALUES = [AVERAGE_SHARE_STR, AVERAGE_LIMIT_STR, AVERAGE_REAL_STR]
-VLAN_IDS = [str(i) for i in xrange(2, 70)]
+VLAN_IDS = [str(i) for i in xrange(2, 200)]
 IPS = network_helper.create_random_ips(num_of_ips=50, mask=24)
 IPV6_IPS = network_helper.create_random_ips(
     num_of_ips=50, mask=24, ip_version=6
@@ -791,7 +791,8 @@ SYNC_DICT_2 = {
     }
 }
 
-IPV6_NETS_DICT = {
+IPV6_NETS_CLASS_1 = {
+    # Static
     IPV6_NETS[1][0]: {
         "required": "false"
     },
@@ -814,6 +815,73 @@ IPV6_NETS_DICT = {
         "required": "false",
         "usages": "",
         "vlan_id": VLAN_IDS.pop(0),
+    },
+    # autoconf
+    IPV6_NETS[1][6]: {
+        "required": "false"
+    },
+    IPV6_NETS[1][7]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    IPV6_NETS[1][8]: {
+        "required": "false"
+    },
+    IPV6_NETS[1][9]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    IPV6_NETS[1][10]: {
+        "required": "false",
+        "usages": ""
+    },
+    IPV6_NETS[1][11]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    # DHCP
+    IPV6_NETS[1][12]: {
+        "required": "false"
+    },
+    IPV6_NETS[1][13]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    IPV6_NETS[1][14]: {
+        "required": "false"
+    },
+    IPV6_NETS[1][15]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    IPV6_NETS[1][16]: {
+        "required": "false",
+        "usages": ""
+    },
+    IPV6_NETS[1][17]: {
+        "required": "false",
+        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+}
+
+IPV6_NETS_CLASS_2 = {
+    # Static
+    IPV6_NETS[2][0]: {
+        "required": "false"
+    },
+    IPV6_NETS[2][1]: {
+        "required": "false",
+    },
+    IPV6_NETS[2][2]: {
+        "required": "false"
+    },
+    IPV6_NETS[2][3]: {
+        "required": "false",
+    },
+    IPV6_NETS[2][4]: {
+        "required": "false",
     },
 }
 
