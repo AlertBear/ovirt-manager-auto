@@ -1,19 +1,17 @@
 """
 Sanity testing of report and dwh installation
 """
-
 import pytest
 from time import sleep
 
-from art.unittest_lib import attr
 from art.test_handler.tools import polarion
-from art.unittest_lib import testflow
+from art.unittest_lib import attr, testflow
 
 from logging_base import LoggingTest
 import config
 
 
-@attr(tier=2)
+@attr(tier=3)
 class DebugLogs(LoggingTest):
     """Log tests"""
     __test__ = True
@@ -21,7 +19,6 @@ class DebugLogs(LoggingTest):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def set_up(cls, request):
-
         def fin():
             testflow.teardown("Class %s tearDown", cls.__name__)
             testflow.step("Disabling debug mode")
@@ -35,6 +32,11 @@ class DebugLogs(LoggingTest):
             cls.assert_service_restart(
                 config.ENGINE_HOST,
                 config.OVIRT_ENGINE_DWH_SERVICE
+            )
+
+            cls.assert_service_restart(
+                config.ENGINE_HOST,
+                config.OVIRT_ENGINE_SERVICE
             )
 
         request.addfinalizer(fin)
@@ -57,10 +59,7 @@ class DebugLogs(LoggingTest):
             "Error: Unable to backup dwhd.log"
         )
 
-        cls.assert_service_restart(
-            config.ENGINE_HOST,
-            config.OVIRT_ENGINE_DWH_SERVICE
-        )
+        config.ENGINE.restart()
 
         testflow.step("Wait 2 minutes till next day")
         sleep(120)
