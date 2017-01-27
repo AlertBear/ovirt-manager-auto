@@ -9,7 +9,8 @@ pycrypto >= 2.6
 python-dateutil
 python-foreman
 futures
-setuptools
+# WA: https://github.com/pypa/setuptools/issues/942
+setuptools==33.1.1
 jira == 1.0.7
 kerberos
 lockfile
