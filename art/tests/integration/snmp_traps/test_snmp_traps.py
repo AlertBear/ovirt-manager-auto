@@ -14,10 +14,22 @@ from snmp_traps import (
     get_snmp_result,
     finalize_class_helper,
     flush_logs,
+    install_snmp_packages,
+    remove_snmp_packages,
     setup_class_helper,
     start_ovirt_notifier_service,
     stop_ovirt_notifier_service,
 )
+
+
+@pytest.fixture(autouse=True, scope="module")
+def setup_module(request):
+    def finalize():
+        remove_snmp_packages()
+
+    request.addfinalizer(finalize)
+
+    install_snmp_packages()
 
 
 @attr(tier=2)
@@ -25,6 +37,7 @@ class SNMPTestTemplate(TestCase):
     """
     Template class for SNMP traps tests.
     """
+
     @classmethod
     @pytest.fixture(scope="class")
     def setup_class(cls, request):
@@ -56,6 +69,7 @@ class SNMPTestTemplate(TestCase):
                 return "_" + letter.lower()
             else:
                 return letter
+
         return "".join(map(helper, cls.__name__[4:-5])).lstrip("_")
 
     @classmethod

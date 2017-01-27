@@ -1,20 +1,15 @@
-from datetime import datetime
-from multiprocessing.dummy import Pool, cpu_count
+from multiprocessing import cpu_count
+from multiprocessing.dummy import Pool
 from operator import methodcaller
 from os import path
 from random import randint
 from tempfile import gettempdir
 from time import sleep
 
+from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.tests_lib.low_level import vms
-from art.unittest_lib import testflow
 
 import config
-
-# dummy call because of https://bugs.python.org/issue7980
-datetime.strptime('2012-01-01', '%Y-%m-%d')
-
-pool = Pool(cpu_count())
 
 configs_dir = path.join(path.dirname(path.realpath(__file__)), "configs")
 
@@ -22,43 +17,43 @@ temp_dir = gettempdir()
 if temp_dir is None:
     temp_dir = "/var/tmp"
 
-services = ["snmpd", "snmptrapd", "ovirt-engine-notifier"]
-configurations = ["snmptrapd", "snmptrapd_users", "snmpd", "ovirt_notifier"]
 
-
-def generate_helper(configurations, helper=dict()):
+def generate_helper(configurations, _helper=None):
     """
     Description:
         Generates helper dictionary to store configuration files paths.
     Args:
         configurations (list[str]): list of configurations
-        helper (dict[str]): helper dictionary
+        _helper (dict[str]): helper dictionary
     """
-    configuration = configurations[0]
+    if _helper is None:
+        _helper = dict()
+    c = configurations[0]
 
-    if configuration == "snmptrapd":
-        helper[configuration] = "/etc/snmp/snmptrapd.conf"
-    elif configuration == "snmptrapd_users":
-        helper[configuration] = "/var/lib/net-snmp/snmptrapd.conf"
-    elif configuration == "ovirt_notifier":
-        helper[configuration] = (
+    if c == "snmptrapd":
+        _helper[c] = "/etc/snmp/snmptrapd.conf"
+    elif c == "snmptrapd_users":
+        _helper[c] = "/var/lib/net-snmp/snmptrapd.conf"
+    elif c == "ovirt_notifier":
+        _helper[c] = (
             "/etc/ovirt-engine/notifier/notifier.conf.d/99-snmp.conf"
         )
-    elif configuration == "snmpd":
-        helper[configuration] = "/etc/snmp/snmpd.conf"
+    elif c == "snmpd":
+        _helper[c] = "/etc/snmp/snmpd.conf"
     else:
         raise NotImplementedError(
             "There's no implementation for this configuration."
         )
+
     if len(configurations) > 1:
-        return generate_helper(configurations[1:], helper)
+        return generate_helper(configurations[1:], _helper)
     else:
-        return helper
+        return _helper
 
 
 # Helper dictionary to store configuration file path for every
 # service needs to be configured.
-helper = generate_helper(configurations)
+helper = generate_helper(config.CONFIGURATIONS)
 
 
 def copy_config_file(configuration):
@@ -81,7 +76,7 @@ def copy_ovirt_notifier_config_file(source_path):
     Args:
         source_path (str): Path of configuration file in ART sources.
     """
-    configuration = configurations[-1]
+    configuration = config.CONFIGURATIONS[config.NOTIFIER_CONFIG]
     assert config.engine.host.fs.put(
         source_path,
         helper[configuration]
@@ -96,7 +91,7 @@ def copy_config_files(configurations):
     Args:
         configurations (list[str]): List of configurations to configure.
     """
-    pool.map(copy_config_file, configurations)
+    map(copy_config_file, configurations)
 
 
 def start_service(service_name):
@@ -118,7 +113,7 @@ def start_services(services):
     Args:
         services (list[str]): List of services to start.
     """
-    pool.map(start_service, services)
+    map(start_service, services)
 
 
 def stop_service(service_name):
@@ -140,7 +135,7 @@ def stop_services(services):
     Args:
         services (list[str]): List of services to stop.
     """
-    pool.map(stop_service, services)
+    map(stop_service, services)
 
 
 def purge_config(configuration):
@@ -161,46 +156,7 @@ def purge_configs(configurations):
         configurations (list[str]): List of configurations you want to
         get rid of.
     """
-    pool.map(purge_config, configurations)
-
-
-def package_management(action, *packages):
-    """
-    Description:
-        Package management abstraction.
-    Args:
-        action (str): "install", "remove" yum action
-        *packages (tuple[str]): Names of packages to process
-    """
-    if action not in ["install", "remove"]:
-        raise ValueError("Action must be 'install' or 'remove'.")
-
-    command = ("yum", action, "-y")
-    assert config.engine.host.run_command(
-        command + packages
-    )[0] == 0, "There was an error while processing packages."
-
-
-def install_packages(*packages):
-    """
-    Description:
-        Installs a given package or packages.
-    Args:
-        *packages (tuple[str]): Names of packages to install.
-    """
-    action = "install"
-    package_management(action, *packages)
-
-
-def remove_packages(*packages):
-    """
-    Description:
-        Removes a given package or packages.
-    Args:
-        *packages (tuple[str]): Names of packages to remove.
-    """
-    action = "remove"
-    package_management(action, *packages)
+    map(purge_config, configurations)
 
 
 def install_snmp_packages():
@@ -208,7 +164,8 @@ def install_snmp_packages():
     Description:
         Installs net-snmp-utils package and logs to testflow
     """
-    install_packages("net-snmp-utils", "net-snmp")
+    for package in config.SNMP_PACKAGES:
+        config.engine.host.package_manager.install(package)
 
 
 def remove_snmp_packages():
@@ -216,7 +173,8 @@ def remove_snmp_packages():
     Description:
         Removes net-snmp-utils package and logs to testflow
     """
-    remove_packages("net-snmp-utils", "net-snmp")
+    for package in config.SNMP_PACKAGES:
+        config.engine.host.package_manager.remove(package)
 
 
 def start_ovirt_notifier_service():
@@ -225,7 +183,7 @@ def start_ovirt_notifier_service():
         Starts ovirt-engine-notifier service.
     """
     assert config.engine.host.service(
-        services[-1]
+        config.SERVICES[config.NOTIFIER_SERVICE]
     ).start(), "There was en error while starting service."
 
 
@@ -235,47 +193,8 @@ def stop_ovirt_notifier_service():
         Stops ovirt-engine-notifier service.
     """
     assert config.engine.host.service(
-        services[-1]
+        config.SERVICES[config.NOTIFIER_SERVICE]
     ).stop(), "There was en error while stopping service."
-
-
-# TODO: Remove
-# These two flush methods are temporary because I've
-# sent a patch to python-rrmngmnt which adds flush_file
-# method to file system class and maybe it's now in
-# package in pip
-def flush_snmp_log():
-    """
-    Description:
-        Flushes snmptrapd.log file on engine host.
-    """
-    try:
-        res = config.engine.host.fs.flush_file(
-            config.SNMPTRAPD_LOG
-        )
-    except:
-        res = config.engine.host.run_command(
-            ["truncate", "-s", "0", config.SNMPTRAPD_LOG]
-        )[0] == 0
-    finally:
-        assert res, "There was an error while flushing a log file."
-
-
-def flush_ovirt_notifier_log():
-    """
-    Description:
-        Flushes notifier.log file on engine host.
-    """
-    try:
-        res = config.engine.host.fs.flush_file(
-            config.NOTIFIER_LOG
-        )
-    except:
-        res = config.engine.host.run_command(
-            ["truncate", "-s", "0", config.NOTIFIER_LOG]
-        )[0] == 0
-    finally:
-        assert res, "There was an error while flushing a log file."
 
 
 def flush_logs():
@@ -283,8 +202,10 @@ def flush_logs():
     Description:
         Flushes snmptrapd.log and notifier.log files on engine host.
     """
-    flush_snmp_log()
-    flush_ovirt_notifier_log()
+    for log in config.LOGS_LIST:
+        assert config.engine.host.fs.flush_file(
+            log
+        ), "There was an error while flushing a log file."
 
 
 def generate_events():
@@ -292,6 +213,7 @@ def generate_events():
     Description:
         Generates events on engine.
     """
+    pool = Pool(cpu_count())
     functions = list()
 
     def create_vm(vm_name):
@@ -300,8 +222,9 @@ def generate_events():
             vmName=vm_name,
             cluster=config.clusters_names[0],
             template=config.templates_names[0],
-            provisioned_size=config.gb,
+            provisioned_size=config.GB,
         )
+
     functions.append(create_vm)
 
     def start_vm(vm_name):
@@ -314,27 +237,47 @@ def generate_events():
                 randint(0, len(config.hosts) - 1)
             ],
         )
+
     functions.append(start_vm)
+
+    def stop_vm(vm_name):
+        res = vms.stopVm(
+            positive=True,
+            vm=vm_name
+        )
+        if not res:
+            try:
+                vms.wait_for_vm_states(
+                    vm_name=vm_name,
+                    states=[config.vm_state_down]
+                )
+                return not res
+            except APITimeout:
+                return res
+        else:
+            return res
+
+    functions.append(stop_vm)
 
     def remove_vm(vm_name):
         return vms.removeVm(
             positive=True,
-            vm=vm_name,
-            stopVM="true",
+            vm=vm_name
         )
+
     functions.append(remove_vm)
 
-    def mapper(fun):
+    def mapper(f):
         """
         Description:
             Closure to return a function which maps iterable
             collection to function argument.
         Args:
-            fun (function): function to apply to collection.
+            f (function): function to apply to collection.
         Returns:
             function: Mapped function.
         """
-        return lambda names: pool.map(fun, names)
+        return lambda names: pool.map(f, names)
 
     mapped_functions = [mapper(fun) for fun in functions]
 
@@ -371,11 +314,11 @@ def get_snmp_result():
     if not notifier_log or not snmptrapd_log:
         return False
 
-    def actions_counter(log, action):
-        action_string_length = len(action)
+    def actions_counter(log, a):
+        action_string_length = len(a)
 
         def recurse(count, start):
-            location = log.find(action, start)
+            location = log.find(a, start)
             if location != -1:
                 return recurse(
                     count + 1, location + action_string_length
@@ -387,8 +330,8 @@ def get_snmp_result():
 
     for action in actions:
         if (
-                actions_counter(notifier_log, action) !=
-                actions_counter(snmptrapd_log, action)
+            actions_counter(notifier_log, action) !=
+            actions_counter(snmptrapd_log, action)
         ):
             return False
 
@@ -407,7 +350,7 @@ def setup_class_helper():
     # As by default ovirt-notifier-service is not enabled
     # on engine hosts it has to be enabled.
     assert config.engine.host.service(
-        services[-1]
+        config.SERVICES[config.NOTIFIER_SERVICE]
     ).enable(), "There was an error while enabling a service."
 
     functions = (
@@ -418,9 +361,9 @@ def setup_class_helper():
 
     def executor(function):
         if function.__name__ in ["stop_services", "start_services"]:
-            return function(services[:-1])
+            return function(config.SERVICES[:config.NOTIFIER_SERVICE])
         elif function.__name__ in ["copy_config_files"]:
-            return function(configurations[:-1])
+            return function(config.CONFIGURATIONS[:config.NOTIFIER_CONFIG])
         else:
             raise NotImplementedError(
                 "There's no implemented scenario for {0}.".format(
@@ -437,31 +380,14 @@ def setup_class_helper():
 def finalize_class_helper():
     # First, it needs to disable service ovirt-engine-notifier
     # as it will not be using anymore
-    config.engine.host.service(services[-1]).disable()
+    config.engine.host.service(
+        config.SERVICES[config.NOTIFIER_SERVICE]
+    ).disable()
 
     # We need to stop the services as they will not be using anymore
     # We don't need to stop ovirt-engine-notifier service as it is
     # already in disabled state
-    stop_services(services[:-1])
+    stop_services(config.SERVICES[:config.NOTIFIER_SERVICE])
 
     # And finally purge all configs for good
-    purge_configs(configurations)
-
-
-def setup_package():
-    """
-    SNMP Traps Package Test Setup Function
-    """
-    testflow.setup("Setting up package %s", __name__)
-
-    # We need to install net-snmp and net-snmp-utils packages first.
-    install_snmp_packages()
-
-
-def teardown_package():
-    """
-    SNMP Traps Package Teardown Function
-    """
-    testflow.teardown("Tearing down package %s.", __name__)
-
-    remove_snmp_packages()
+    purge_configs(config.CONFIGURATIONS)

@@ -3,19 +3,32 @@ SNMP Traps v3 configuration file
 """
 import logging
 
-from art.rhevm_api.resources import (
-    RootUser, ADUser, Engine, Domain, Host
-)
+from art.rhevm_api.resources import Host, RootUser, Engine, ADUser, Domain
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.test_handler.settings import (
-    opts as options,
-    ART_CONFIG as art_config
+    ART_CONFIG as art_config, opts as options
 )
 
 # Logs constants
 NOTIFIER_LOG = '/var/log/ovirt-engine/notifier/notifier.log'
 SNMPTRAPD_LOG = "/var/log/snmptrapd.log"
+LOGS_LIST = [NOTIFIER_LOG, SNMPTRAPD_LOG]
+
+# SNMP related packages
+SNMP_PACKAGES = ["net-snmp-utils", "net-snmp"]
+
+# Services and configuration lists lists
+SERVICES = ["snmpd", "snmptrapd", "ovirt-engine-notifier"]
+CONFIGURATIONS = [
+    "snmptrapd", "snmptrapd_users",
+    "snmpd", "ovirt_notifier"
+]
+
+NOTIFIER_SERVICE = NOTIFIER_CONFIG = -1
+
+# Disk size for virtual machine constant size
+GB = 1024 ** 3
 
 logger = logging.getLogger(__file__)
 
@@ -133,16 +146,13 @@ for cluster in clusters:
                 for external_template in ets[source_type]:
                     external_templates.append(external_template)
 
-templates_names = [
-    template["name"] for template in templates
-] + [
-    template["name"] for template in external_templates
-]
+templates_names = [t["name"] for t in (templates + external_templates)]
+
+# VM States
+vm_state_up = enums["vm_state_up"]
+vm_state_down = enums["vm_state_down"]
+
+display_type_vnc = enums["display_type_vnc"]
 
 # List of virtual machines names for SNMP test module
-snmp_vms_names = ["snmp_vm_{0}".format(i) for i in range(4)]
-
-# Disk size for virtual machine constant size
-gb = 1024 ** 3
-
-vm_state_up = enums["vm_state_up"]
+snmp_vms_names = ["snmp_vm_{0}".format(i) for i in range(2)]
