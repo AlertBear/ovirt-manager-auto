@@ -36,7 +36,13 @@ class TestHostNetworkApiIpV601(NetworkTest):
     6. Non-VM VLAN
     """
     # create_networks params
-    networks = net_api_conf.IPV6_NETS_CLASS_1
+    networks = {
+        "1": {
+            "networks": net_api_conf.IPV6_NETS_CLASS_1,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # STATIC
     # Bridge static
@@ -212,7 +218,10 @@ class TestHostNetworkApiIpV601(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetworkApiIpV602(NetworkTest):
     """
     Update IPv6 with static, dhcp and autoconf
@@ -224,7 +233,13 @@ class TestHostNetworkApiIpV602(NetworkTest):
     5. Update from dhcpv6 to static IPv6
     """
     # create_networks params
-    networks = net_api_conf.IPV6_NETS_CLASS_2
+    networks = {
+        "1": {
+            "networks": net_api_conf.IPV6_NETS_CLASS_2,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # net_1 IP dict
     net_1 = net_api_conf.IPV6_NETS[2][0]

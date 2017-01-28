@@ -107,7 +107,7 @@ def reboot_host(request):
     assert hl_hosts.activate_host_if_not_up(host=host)
 
 
-@pytest.fixture(scope="class", autouse=True)
+@pytest.fixture(scope="class")
 def create_networks(request):
     """
     Create networks on datacenter
@@ -125,8 +125,11 @@ def create_networks(request):
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Create networks: %s", networks.keys())
-    network_helper.prepare_networks_on_setup(
-        networks_dict=networks, dc=network_api.dc_0,
-        cluster=network_api.cluster_0
-    )
+    for k, v in networks.iteritems():
+        networks = v.get("networks")
+        datacenter = v.get("datacenter")
+        cluster = v.get("cluster")
+        testflow.setup("Create networks: %s", networks.keys())
+        network_helper.prepare_networks_on_setup(
+            networks_dict=networks, dc=datacenter, cluster=cluster
+        )

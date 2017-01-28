@@ -20,7 +20,8 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import create_networks, remove_network
 from rhevmtests.networking.fixtures import (
-    clean_host_interfaces, setup_networks_fixture
+    setup_networks_fixture,
+    clean_host_interfaces  # flake8: noqa
 )
 
 
@@ -46,7 +47,13 @@ class TestHostNetworkApi01(NetworkTest):
     non_vm_vlan_type = "Non-VM VLAN network"
 
     # create_networks params
-    networks = net_api_conf.NETS_CLASS_01_DICT
+    networks = {
+        "1": {
+            "networks": net_api_conf.NETS_CLASS_01_DICT,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # HostNic
     net_1 = net_api_conf.NETS[1][0]
@@ -124,7 +131,13 @@ class TestHostNetworkApi02(NetworkTest):
     non_vm_vlan_type = "Non-VM VLAN network"
 
     # create_networks params
-    networks = net_api_conf.NETS_CLASS_02_DICT
+    networks = {
+        "1": {
+            "networks": net_api_conf.NETS_CLASS_02_DICT,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # HostNic
     net_1 = net_api_conf.NETS[2][0]
@@ -303,7 +316,13 @@ class TestHostNetworkApi03(NetworkTest):
     bond_1 = "bond01"
 
     # create_networks params
-    networks = net_api_conf.NETS_CLASS_03_DICT
+    networks = {
+        "1": {
+            "networks": net_api_conf.NETS_CLASS_03_DICT,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # HostNic
     net_1 = net_api_conf.NETS[3][0]
@@ -368,7 +387,13 @@ class TestHostNetworkApi04(NetworkTest):
     net_4 = net_api_conf.NETS[4][3]
 
     # create_networks params
-    networks = net_api_conf.NETS_CLASS_04_DICT
+    networks = {
+        "1": {
+            "networks": net_api_conf.NETS_CLASS_04_DICT,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # setup_networks_fixture fixture
     net_1 = net_api_conf.NETS[4][0]
@@ -455,7 +480,13 @@ class TestHostNetworkApi05(NetworkTest):
     """
 
     # create_networks params
-    networks = net_api_conf.NETS_CLASS_05_DICT
+    networks = {
+        "1": {
+            "networks": net_api_conf.NETS_CLASS_05_DICT,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # test_attach_network_on_bond_nic params
     # HostNic
@@ -612,7 +643,13 @@ class TestHostNetworkApiHost06(NetworkTest):
     """
 
     # create_networks params
-    networks = net_api_conf.NETS_CLASS_06_DICT
+    networks = {
+        "1": {
+            "networks": net_api_conf.NETS_CLASS_06_DICT,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # test_remove_un_managed_network params
     net_1 = net_api_conf.NETS[6][0]
@@ -702,7 +739,13 @@ class TestHostNetworkApi07(NetworkTest):
     2) Attach VLAN network to host NIC that has VM network on it
     """
     # create_networks params
-    networks = net_api_conf.NETS_CLASS_07_DICT
+    networks = {
+        "1": {
+            "networks": net_api_conf.NETS_CLASS_07_DICT,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
     # test_attach_network_to_nic_mixed params
     net_vlan_host = net_api_conf.NETS[7][8]

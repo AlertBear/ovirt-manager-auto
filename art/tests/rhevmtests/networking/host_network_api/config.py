@@ -325,7 +325,7 @@ QOS_NAME = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=6, prefix="host_net_qos"
 )
 SYNC_NETS_DC_1 = global_helper.generate_object_names(
-    num_of_cases=25, num_of_objects=15, prefix="sync1_"
+    num_of_cases=25, num_of_objects=50, prefix="sync1_"
 )
 SN_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=20, prefix="sn"
@@ -470,7 +470,9 @@ SN_DICT = {
     },
 }
 
-SYNC_DICT_1 = {
+
+SYNC_DICT_1_CASE_1 = {
+    # On NIC
     SYNC_NETS_DC_1[1][0]: {
         "required": "false",
         "vlan_id": VLAN_IDS.pop(0),
@@ -504,138 +506,197 @@ SYNC_DICT_1 = {
         "required": "false",
         "usages": ""
     },
-    SYNC_NETS_DC_1[2][0]: {
+    # On BOND
+    SYNC_NETS_DC_1[1][9]: {
         "required": "false",
         "vlan_id": VLAN_IDS.pop(0),
     },
-    SYNC_NETS_DC_1[2][1]: {
+    SYNC_NETS_DC_1[1][10]: {
         "required": "false",
         "vlan_id": VLAN_IDS.pop(0),
     },
-    SYNC_NETS_DC_1[2][2]: {
+    SYNC_NETS_DC_1[1][11]: {
         "required": "false",
     },
-    SYNC_NETS_DC_1[2][3]: {
+    SYNC_NETS_DC_1[1][12]: {
         "required": "false",
         "mtu": conf.MTU[0]
     },
-    SYNC_NETS_DC_1[2][4]: {
+    SYNC_NETS_DC_1[1][13]: {
         "required": "false",
         "mtu": conf.MTU[1]
     },
-    SYNC_NETS_DC_1[2][5]: {
+    SYNC_NETS_DC_1[1][14]: {
         "required": "false",
     },
+    SYNC_NETS_DC_1[1][15]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[1][16]: {
+        "required": "false",
+        "usages": ""
+    },
+    SYNC_NETS_DC_1[1][17]: {
+        "required": "false",
+        "usages": ""
+    },
+}
 
+SYNC_DICT_2_CASE_1 = {
+    # On NIC
+    SYNC_NETS_DC_1[1][0]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    SYNC_NETS_DC_1[1][1]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[1][2]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    SYNC_NETS_DC_1[1][3]: {
+        "required": "false",
+        "mtu": conf.MTU[1]
+    },
+    SYNC_NETS_DC_1[1][4]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[1][5]: {
+        "required": "false",
+        "mtu": conf.MTU[0]
+    },
+    SYNC_NETS_DC_1[1][6]: {
+        "required": "false",
+        "usages": ""
+    },
+    SYNC_NETS_DC_1[1][7]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[1][8]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+        "mtu": conf.MTU[1]
+    },
+    # On BOND
+    SYNC_NETS_DC_1[1][9]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    SYNC_NETS_DC_1[1][10]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[1][11]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+    },
+    SYNC_NETS_DC_1[1][12]: {
+        "required": "false",
+        "mtu": conf.MTU[1]
+    },
+    SYNC_NETS_DC_1[1][13]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[1][14]: {
+        "required": "false",
+        "mtu": conf.MTU[0]
+    },
+    SYNC_NETS_DC_1[1][15]: {
+        "required": "false",
+        "usages": ""
+    },
+    SYNC_NETS_DC_1[1][16]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[1][17]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+        "mtu": conf.MTU[1]
+    },
+}
+
+IP_DICT_CASE_2 = {
+    # NIC
+    SYNC_NETS_DC_1[2][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[2][1]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[2][2]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[2][3]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[2][4]: {
+        "required": "false"
+    },
+    # BOND
+    SYNC_NETS_DC_1[2][5]: {
+        "required": "false"
+    },
     SYNC_NETS_DC_1[2][6]: {
         "required": "false"
     },
     SYNC_NETS_DC_1[2][7]: {
-        "required": "false",
-        "usages": ""
+        "required": "false"
     },
     SYNC_NETS_DC_1[2][8]: {
-        "required": "false",
-        "usages": ""
-    },
-    SYNC_NETS_DC_1[3][0]: {
         "required": "false"
+    },
+    SYNC_NETS_DC_1[2][9]: {
+        "required": "false"
+    },
+}
+
+SYNC_DICT_1_CASE_3 = {
+    # NIC
+    SYNC_NETS_DC_1[3][0]: {
+        "required": "false",
+        "qos": {
+            "datacenter": conf.DC_0,
+            "qos_name": QOS_NAME[3][0],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": 10,
+            "outbound_average_realtime": 10
+        }
     },
     SYNC_NETS_DC_1[3][1]: {
-        "required": "false"
+        "required": "false",
     },
     SYNC_NETS_DC_1[3][2]: {
-        "required": "false"
+        "required": "false",
+        "qos": {
+            "datacenter": conf.DC_0,
+            "qos_name": QOS_NAME[3][1],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": 10,
+            "outbound_average_realtime": 10
+        }
     },
+    # BOND
     SYNC_NETS_DC_1[3][3]: {
-        "required": "false"
+        "required": "false",
+        "qos": {
+            "datacenter": conf.DC_0,
+            "qos_name": QOS_NAME[3][2],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": 10,
+            "outbound_average_realtime": 10
+        }
     },
     SYNC_NETS_DC_1[3][4]: {
-        "required": "false"
+        "required": "false",
     },
-    SYNC_NETS_DC_1[4][0]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[4][1]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[4][2]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[4][3]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[4][4]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[5][0]: {
+    SYNC_NETS_DC_1[3][5]: {
         "required": "false",
         "qos": {
             "datacenter": conf.DC_0,
-            "qos_name": QOS_NAME[5][0],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": 10,
-            "outbound_average_realtime": 10
-        }
-    },
-    SYNC_NETS_DC_1[5][1]: {
-        "required": "false",
-    },
-    SYNC_NETS_DC_1[5][2]: {
-        "required": "false",
-        "qos": {
-            "datacenter": conf.DC_0,
-            "qos_name": QOS_NAME[5][2],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": 10,
-            "outbound_average_realtime": 10
-        }
-    },
-    SYNC_NETS_DC_1[5][3]: {
-        "vlan_id": VLAN_IDS.pop(0),
-        "required": "false",
-        "qos": {
-            "datacenter": conf.DC_0,
-            "qos_name": QOS_NAME[5][3],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": None,
-            "outbound_average_realtime": None
-        }
-    },
-    SYNC_NETS_DC_1[5][4]: {
-        "vlan_id": VLAN_IDS.pop(0),
-        "required": "false",
-        "qos": {
-            "datacenter": conf.DC_0,
-            "qos_name": QOS_NAME[5][4],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": None,
-            "outbound_average_realtime": None
-        }
-    },
-    SYNC_NETS_DC_1[6][0]: {
-        "required": "false",
-        "qos": {
-            "datacenter": conf.DC_0,
-            "qos_name": QOS_NAME[6][0],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": 10,
-            "outbound_average_realtime": 10
-        }
-    },
-    SYNC_NETS_DC_1[6][1]: {
-        "required": "false",
-    },
-    SYNC_NETS_DC_1[6][2]: {
-        "required": "false",
-        "qos": {
-            "datacenter": conf.DC_0,
-            "qos_name": QOS_NAME[6][2],
+            "qos_name": QOS_NAME[3][3],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
@@ -644,149 +705,57 @@ SYNC_DICT_1 = {
     },
 }
 
-SYNC_DICT_2 = {
-    SYNC_NETS_DC_1[1][0]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
-    },
-    SYNC_NETS_DC_1[1][1]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[1][2]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
-    },
-    SYNC_NETS_DC_1[1][3]: {
-        "required": "false",
-        "mtu": conf.MTU[1]
-    },
-    SYNC_NETS_DC_1[1][4]: {
-        "required": "false",
-    },
-    SYNC_NETS_DC_1[1][5]: {
-        "required": "false",
-        "mtu": conf.MTU[0]
-    },
-    SYNC_NETS_DC_1[1][6]: {
-        "required": "false",
-        "usages": ""
-    },
-    SYNC_NETS_DC_1[1][7]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[1][8]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
-        "mtu": conf.MTU[1]
-    },
-    SYNC_NETS_DC_1[2][0]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
-    },
-    SYNC_NETS_DC_1[2][1]: {
-        "required": "false"
-    },
-    SYNC_NETS_DC_1[2][2]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
-    },
-    SYNC_NETS_DC_1[2][3]: {
-        "required": "false",
-        "mtu": conf.MTU[1]
-    },
-    SYNC_NETS_DC_1[2][4]: {
-        "required": "false",
-    },
-    SYNC_NETS_DC_1[2][5]: {
-        "required": "false",
-        "mtu": conf.MTU[0]
-    },
-
-    SYNC_NETS_DC_1[2][6]: {
-        "required": "false",
-        "usages": ""
-    },
-    SYNC_NETS_DC_1[2][7]: {
-        "required": "false"
-    },
-
-    SYNC_NETS_DC_1[2][8]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
-        "mtu": conf.MTU[1]
-    },
-    SYNC_NETS_DC_1[5][0]: {
+SYNC_DICT_2_CASE_3 = {
+    # NIC
+    SYNC_NETS_DC_1[3][0]: {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[19][0],
+            "qos_name": QOS_NAME[3][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 20,
             "outbound_average_upperlimit": 20,
             "outbound_average_realtime": 20
         }
     },
-    SYNC_NETS_DC_1[5][1]: {
+    SYNC_NETS_DC_1[3][1]: {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[19][1],
+            "qos_name": QOS_NAME[3][1],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
     },
-    SYNC_NETS_DC_1[5][2]: {
+    SYNC_NETS_DC_1[3][2]: {
         "required": "false",
     },
-    SYNC_NETS_DC_1[5][3]: {
-        "vlan_id": VLAN_IDS.pop(0),
+    # BOND
+    SYNC_NETS_DC_1[3][3]: {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[5][3],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": None,
-            "outbound_average_realtime": None
-        }
-    },
-    SYNC_NETS_DC_1[5][4]: {
-        "vlan_id": VLAN_IDS.pop(0),
-        "required": "false",
-        "qos": {
-            "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[5][4],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": None,
-            "outbound_average_realtime": None
-        }
-    },
-    SYNC_NETS_DC_1[6][0]: {
-        "required": "false",
-        "qos": {
-            "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[20][0],
+            "qos_name": QOS_NAME[3][2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 20,
             "outbound_average_upperlimit": 20,
             "outbound_average_realtime": 20
         }
     },
-    SYNC_NETS_DC_1[6][1]: {
+    SYNC_NETS_DC_1[3][4]: {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[20][1],
+            "qos_name": QOS_NAME[3][3],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
     },
-    SYNC_NETS_DC_1[6][2]: {
+    SYNC_NETS_DC_1[3][5]: {
         "required": "false",
     }
 }

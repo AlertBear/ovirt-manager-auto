@@ -9,15 +9,16 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import config as net_api_conf
 import helper
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    update_host_to_another_cluster, manage_ip_and_refresh_capabilities
+    update_host_to_another_cluster, manage_ip_and_refresh_capabilities,
+    create_networks
 )
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture,
@@ -32,23 +33,28 @@ def sync_prepare_setup(request):
     Prepare setup for sync tests
     """
     network_api = NetworkFixtures()
+    host = network_api.host_0_name
+    datacentr = net_api_conf.SYNC_DC
+    cluster = net_api_conf.SYNC_CL
+    result = list()
 
     def fin3():
         """
-        Activate host
+        Check if one of the finalizers failed.
         """
-        assert ll_hosts.activate_host(
-            positive=True, host=network_api.host_0_name
-        )
+        global_helper.raise_if_false_in_list(results=result)
     request.addfinalizer(fin3)
 
     def fin2():
         """
-        Remove networks
+        Activate host
         """
-        assert hl_networks.remove_net_from_setup(
-            host=network_api.host_0_name, all_net=True,
-            mgmt_network=network_api.mgmt_bridge, data_center=network_api.dc_0
+        testflow.teardown("Activate host %s", host)
+        result.append(
+            (
+                ll_hosts.activate_host(positive=True, host=host),
+                "fin2: ll_hosts.activate_host"
+            )
         )
     request.addfinalizer(fin2)
 
@@ -56,818 +62,483 @@ def sync_prepare_setup(request):
         """
         Remove basic setup
         """
-        assert hl_networks.remove_basic_setup(
-            datacenter=net_api_conf.SYNC_DC, cluster=net_api_conf.SYNC_CL
+        testflow.teardown(
+            "Remove datacenter %s and cluster %s", datacentr, cluster
+        )
+        result.append(
+            (
+                hl_networks.remove_basic_setup(
+                    datacenter=datacentr, cluster=cluster
+                ), "fin1: hl_networks.remove_basic_setup"
+            )
         )
     request.addfinalizer(fin1)
 
+    testflow.setup("Create dtacenter %s and cluster %s", datacentr, cluster)
     assert hl_networks.create_basic_setup(
-        datacenter=net_api_conf.SYNC_DC, version=conf.COMP_VERSION,
-        cluster=net_api_conf.SYNC_CL, cpu=conf.CPU_NAME
+        datacenter=datacentr, version=conf.COMP_VERSION,
+        cluster=cluster, cpu=conf.CPU_NAME
     )
-    for networks_dict, dc, cl, in (
-        (net_api_conf.SYNC_DICT_1, network_api.dc_0, network_api.cluster_0),
-        (net_api_conf.SYNC_DICT_2, net_api_conf.SYNC_DC, net_api_conf.SYNC_CL)
-    ):
-        network_helper.prepare_networks_on_setup(
-            networks_dict=networks_dict, dc=dc, cluster=cl
-        )
-
-    assert ll_hosts.deactivate_host(
-        positive=True, host=network_api.host_0_name
-    )
+    testflow.setup("Deactivate host %s", host)
+    assert ll_hosts.deactivate_host(positive=True, host=host)
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_networks.__name__,
     setup_networks_fixture.__name__,
     update_host_to_another_cluster.__name__
 )
 class TestHostNetworkApiSync01(NetworkTest):
     """
-    1) Check sync/un-sync different VLAN networks and sync the network.
-    2) Check sync/un-sync different MTU networks over NIC and sync the network.
-    3) Check sync/un-sync for VM/Non-VM networks over NIC and sync the network.
-    4) Check sync/un-sync for VLAN/MTU/Bridge on the same network over NIC and
+    All tests on NIC and BOND
+    1. Check sync/un-sync different VLAN networks and sync the network.
+    2. Check sync/un-sync different MTU networks over NIC and sync the network.
+    3. Check sync/un-sync for VM/Non-VM networks over NIC and sync the network.
+    4. Check sync/un-sync for VLAN/MTU/Bridge on the same network over NIC and
         sync the network.
-
     """
-    __test__ = True
-    net_case_1 = net_api_conf.SYNC_NETS_DC_1[1][0]
-    net_case_1_vlan_id_actual = (
-        net_api_conf.SYNC_DICT_1.get(net_case_1).get("vlan_id")
-        )
-    net_case_1_vlan_id_expected = (
-        net_api_conf.SYNC_DICT_2.get(net_case_1).get("vlan_id")
-        )
-    net_case_2 = net_api_conf.SYNC_NETS_DC_1[1][1]
-    net_case_2_vlan_id_actual = (
-        net_api_conf.SYNC_DICT_1.get(net_case_2).get("vlan_id")
-        )
-    net_case_2_vlan_id_expected = None
-    net_case_3 = net_api_conf.SYNC_NETS_DC_1[1][2]
-    net_case_3_vlan_id_actual = None
-    net_case_3_vlan_id_expected = (
-        net_api_conf.SYNC_DICT_2.get(net_case_3).get("vlan_id")
-        )
-    net_case_4 = net_api_conf.SYNC_NETS_DC_1[1][3]
-    net_case_4_mtu_actual = str(conf.MTU[0])
-    net_case_4_mtu_expected = str(conf.MTU[1])
-    net_case_5 = net_api_conf.SYNC_NETS_DC_1[1][4]
-    net_case_5_mtu_actual = str(conf.MTU[1])
-    net_case_5_mtu_expected = str(conf.MTU[3])
-    net_case_6 = net_api_conf.SYNC_NETS_DC_1[1][5]
-    net_case_6_mtu_actual = str(conf.MTU[3])
-    net_case_6_mtu_expected = str(conf.MTU[0])
-    net_case_7 = net_api_conf.SYNC_NETS_DC_1[1][6]
-    net_case_7_bridge_actual = "true"
-    net_case_7_bridge_expected = "false"
-    net_case_8 = net_api_conf.SYNC_NETS_DC_1[1][7]
-    net_case_8_bridge_actual = "false"
-    net_case_8_bridge_expected = "true"
-    net_case_9 = net_api_conf.SYNC_NETS_DC_1[1][8]
-    net_case_9_vlan_id_actual = None
-    net_case_9_mtu_actual = str(conf.MTU[0])
-    net_case_9_bridge_actual = "false"
-    net_case_9_vlan_id_expected = (
-        net_api_conf.SYNC_DICT_2.get(net_case_9).get("vlan_id")
-        )
-    net_case_9_mtu_expected = str(conf.MTU[1])
-    net_case_9_bridge_expected = "true"
+
+    # Types
+    vlan = net_api_conf.VLAN_STR
+    mtu = net_api_conf.MTU_STR
+    bridge = net_api_conf.BRIDGE_STR
+
+    share = net_api_conf.AVERAGE_SHARE_STR
+    limit = net_api_conf.AVERAGE_LIMIT_STR
+    real = net_api_conf.AVERAGE_REAL_STR
+
+    # create_networks params
+    networks = {
+        "1": {
+            "networks": net_api_conf.SYNC_DICT_1_CASE_1,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        },
+        "2": {
+            "networks": net_api_conf.SYNC_DICT_2_CASE_1,
+            "datacenter": net_api_conf.SYNC_DC,
+            "cluster": net_api_conf.SYNC_CL
+            }
+        }
+
+    # NIC
+    # Sync change VLAN on NIC
+    net_1 = net_api_conf.SYNC_NETS_DC_1[1][0]
+    param_dict_1 = helper.get_dict(network=net_1, type_=vlan)
+    vlan_to_vlan_nic = [param_dict_1]
+
+    # Sync VLAN to no VLAN on NIC
+    net_2 = net_api_conf.SYNC_NETS_DC_1[1][1]
+    param_dict_2 = helper.get_dict(network=net_2, type_=vlan)
+    vlan_to_none_nic = [param_dict_2]
+
+    # Sync no VLAN to VLAn on NIC
+    net_3 = net_api_conf.SYNC_NETS_DC_1[1][2]
+    param_dict_3 = helper.get_dict(network=net_3, type_=vlan)
+    none_to_vlan_nic = [param_dict_3]
+
+    # Sync change MTU on NIC
+    net_4 = net_api_conf.SYNC_NETS_DC_1[1][3]
+    param_dict_4 = helper.get_dict(network=net_4, type_=mtu)
+    mtu_to_mtu_nic = [param_dict_4]
+
+    # Sync MTU to no MTU on NIC
+    net_5 = net_api_conf.SYNC_NETS_DC_1[1][4]
+    param_dict_5 = helper.get_dict(network=net_5, type_=mtu)
+    mtu_to_none_nic = [param_dict_5]
+
+    # Sync no MTU to MTU on NIC
+    net_6 = net_api_conf.SYNC_NETS_DC_1[1][5]
+    param_dict_6 = helper.get_dict(network=net_6, type_=mtu)
+    none_to_mtu_nic = [param_dict_6]
+
+    # Sync VM to non-VM on NIC
+    net_7 = net_api_conf.SYNC_NETS_DC_1[1][6]
+    param_dict_7 = helper.get_dict(network=net_7, type_=bridge)
+    vm_to_non_vm_nic = [param_dict_7]
+
+    # Sync non-VM to VM on NIC
+    net_8 = net_api_conf.SYNC_NETS_DC_1[1][7]
+    param_dict_8 = helper.get_dict(network=net_8, type_=bridge)
+    non_vm_to_vm_nic = [param_dict_8]
+
+    # Sync VLAN, MTU and VM on NIC
+    net_9 = net_api_conf.SYNC_NETS_DC_1[1][8]
+    param_dict_9_1 = helper.get_dict(network=net_9, type_=vlan)
+    param_dict_9_2 = helper.get_dict(network=net_9, type_=mtu)
+    param_dict_9_3 = helper.get_dict(network=net_9, type_=bridge)
+    vlan_mtu_vm_nic = [param_dict_9_1, param_dict_9_2, param_dict_9_3]
+
+    # BOND
+    # Sync change VLAN on BOND
+    net_10 = net_api_conf.SYNC_NETS_DC_1[1][9]
+    param_dict_10 = helper.get_dict(network=net_10, type_=vlan)
+    vlan_to_vlan_bond = [param_dict_10]
+
+    # Sync VLAN to no VLAN on BOND
+    net_11 = net_api_conf.SYNC_NETS_DC_1[1][10]
+    param_dict_11 = helper.get_dict(network=net_11, type_=vlan)
+    vlan_to_none_bond = [param_dict_11]
+
+    # Sync no VLAN to VLAn on BOND
+    net_12 = net_api_conf.SYNC_NETS_DC_1[1][11]
+    param_dict_12 = helper.get_dict(network=net_12, type_=vlan)
+    none_to_vlan_bond = [param_dict_12]
+
+    # Sync change MTU on BOND
+    net_13 = net_api_conf.SYNC_NETS_DC_1[1][12]
+    param_dict_13 = helper.get_dict(network=net_13, type_=mtu)
+    mtu_to_mtu_bond = [param_dict_13]
+
+    # Sync MTU to no MTU on BOND
+    net_14 = net_api_conf.SYNC_NETS_DC_1[1][13]
+    param_dict_14 = helper.get_dict(network=net_14, type_=mtu)
+    mtu_to_none_bond = [param_dict_14]
+
+    # Sync no MTU to MTU on BOND
+    net_15 = net_api_conf.SYNC_NETS_DC_1[1][14]
+    param_dict_15 = helper.get_dict(network=net_15, type_=mtu)
+    none_to_mtu_bond = [param_dict_15]
+
+    # Sync VM to non-VM on BOND
+    net_16 = net_api_conf.SYNC_NETS_DC_1[1][15]
+    param_dict_16 = helper.get_dict(network=net_16, type_=bridge)
+    vm_to_non_vm_bond = [param_dict_16]
+
+    # Sync non-VM to VM on BOND
+    net_17 = net_api_conf.SYNC_NETS_DC_1[1][16]
+    param_dict_17 = helper.get_dict(network=net_17, type_=bridge)
+    non_vm_to_vm_bond = [param_dict_17]
+
+    # Sync VLAN, MTU and VM on BOND
+    net_18 = net_api_conf.SYNC_NETS_DC_1[1][17]
+    param_dict_18_1 = helper.get_dict(network=net_18, type_=vlan)
+    param_dict_18_2 = helper.get_dict(network=net_18, type_=mtu)
+    param_dict_18_3 = helper.get_dict(network=net_18, type_=bridge)
+    vlan_mtu_vm_bond = [param_dict_18_1, param_dict_18_2, param_dict_18_3]
+
+    # setup_networks_fixture params
+    bond_1 = "bond01"
+    bond_2 = "bond02"
+    bond_3 = "bond03"
+    bond_4 = "bond04"
+    bond_5 = "bond05"
+    bond_6 = "bond06"
+    bond_7 = "bond07"
+    bond_8 = "bond08"
+    bond_9 = "bond09"
     hosts_nets_nic_dict = {
         0: {
-            net_case_1: {
+            # Sync over NIC
+            net_1: {
                 "nic": 1,
-                "network": net_case_1,
+                "network": net_1,
                 "datacenter": conf.DC_0
             },
-            net_case_2: {
+            net_2: {
                 "nic": 2,
-                "network": net_case_2,
+                "network": net_2,
                 "datacenter": conf.DC_0
             },
-            net_case_3: {
+            net_3: {
                 "nic": 3,
-                "network": net_case_3,
+                "network": net_3,
                 "datacenter": conf.DC_0
             },
-            net_case_4: {
+            net_4: {
                 "nic": 4,
-                "network": net_case_4,
+                "network": net_4,
                 "datacenter": conf.DC_0
             },
-            net_case_5: {
+            net_5: {
                 "nic": 5,
-                "network": net_case_5,
+                "network": net_5,
                 "datacenter": conf.DC_0
             },
-            net_case_6: {
+            net_6: {
                 "nic": 6,
-                "network": net_case_6,
+                "network": net_6,
                 "datacenter": conf.DC_0
             },
-            net_case_7: {
+            net_7: {
                 "nic": 7,
-                "network": net_case_7,
+                "network": net_7,
                 "datacenter": conf.DC_0
             },
-            net_case_8: {
+            net_8: {
                 "nic": 8,
-                "network": net_case_8,
+                "network": net_8,
                 "datacenter": conf.DC_0
             },
-            net_case_9: {
+            net_9: {
                 "nic": 9,
-                "network": net_case_9,
+                "network": net_9,
                 "datacenter": conf.DC_0
             },
-
-        }
-    }
-
-    @polarion("RHEVM3-13977")
-    def test_01_unsync_network_change_vlan(self):
-        """
-        Check that the network is un-sync and the sync reason is different VLAN
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_1: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_1_vlan_id_expected,
-                    "actual": self.net_case_1_vlan_id_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different VLAN %s", self.net_case_1, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_1)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_1]
-        )
-
-    @polarion("RHEVM3-13979")
-    def test_02_unsync_network_vlan_to_no_vlan(self):
-        """
-        Check that the network is un-sync and the sync reason is no VLAN
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_2: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_2_vlan_id_expected,
-                    "actual": self.net_case_2_vlan_id_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is no "
-            "VLAN %s", self.net_case_2, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s")
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_2]
-        )
-
-    @polarion("RHEVM3-13980")
-    def test_03_unsync_network_no_vlan_to_vlan(self):
-        """
-        Check that the network is un-sync and the sync reason is VLAN
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_3: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_3_vlan_id_expected,
-                    "actual": self.net_case_3_vlan_id_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "VLAN %s", self.net_case_3, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_3)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_3]
-        )
-
-    @polarion("RHEVM3-13987")
-    def test_04_unsync_network_change_mtu(self):
-        """
-        Check that the network is un-sync and the sync reason is different MTU
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_4: {
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_4_mtu_expected,
-                    "actual": self.net_case_4_mtu_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different MTU %s", self.net_case_4, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_4)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_4]
-        )
-
-    @polarion("RHEVM3-13988")
-    def test_05_unsync_network_mtu_to_no_mtu(self):
-        """
-        Check that the network is un-sync and the sync reason is different MTU
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_5: {
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_5_mtu_expected,
-                    "actual": self.net_case_5_mtu_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different MTU %s", self.net_case_5, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_5)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_5]
-        )
-
-    @polarion("RHEVM3-13989")
-    def test_06_unsync_network_no_mtu_to_mtu(self):
-        """
-        Check that the network is un-sync and the sync reason is different MTU
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_6: {
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_6_mtu_expected,
-                    "actual": self.net_case_6_mtu_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different MTU %s", self.net_case_6, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_6)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_6]
-        )
-
-    @polarion("RHEVM3-13993")
-    def test_07_unsync_network_change_vm_non_vm(self):
-        """
-        Check that the network is un-sync and the sync reason is Vm/Non-VM
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_7: {
-                net_api_conf.BRIDGE_STR: {
-                    "expected": self.net_case_7_bridge_expected,
-                    "actual": self.net_case_7_bridge_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "Vm/Non-VM %s", self.net_case_7, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_7)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_7]
-        )
-
-    @polarion("RHEVM3-13994")
-    def test_08_unsync_network_non_vm_vm(self):
-        """
-        Check that the network is un-sync and the sync reason is is Vm/Non-VM
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_8: {
-                net_api_conf.BRIDGE_STR: {
-                    "expected": self.net_case_8_bridge_expected,
-                    "actual": self.net_case_8_bridge_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is is "
-            "Vm/Non-VM %s", self.net_case_8, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_8)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_8]
-        )
-
-    @polarion("RHEVM3-13997")
-    def test_09_unsync_network_change_vlan_mtu_bridge(self):
-        """
-        Check that the network is un-sync and the sync reasons are different
-        VLAN, MTU and Bridge
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_9: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_9_vlan_id_expected,
-                    "actual": self.net_case_9_vlan_id_actual
-                },
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_9_mtu_expected,
-                    "actual": self.net_case_9_mtu_actual
-                },
-                net_api_conf.BRIDGE_STR: {
-                    "expected": self.net_case_9_bridge_expected,
-                    "actual": self.net_case_9_bridge_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons are "
-            "different VLAN, MTU and Bridge %s", self.net_case_9, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_9)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_9]
-        )
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(
-    setup_networks_fixture.__name__,
-    update_host_to_another_cluster.__name__
-)
-class TestHostNetworkApiSync02(NetworkTest):
-    """
-    1) Check sync/un-sync different VLAN networks over BOND and,
-        sync the network.
-    2) Check sync/un-sync different MTU networks over BOND and,
-        sync the network.
-    3) Check sync/un-sync for VM/Non-VM networks over BOND and,
-        sync the network.
-    4) Check sync/un-sync for VLAN/MTU/Bridge on the same network over BOND,
-        and sync the network.
-
-    """
-    __test__ = True
-    bond_1 = "bond021"
-    net_case_1 = net_api_conf.SYNC_NETS_DC_1[2][0]
-    net_case_1_vlan_id_actual = (
-        net_api_conf.SYNC_DICT_1.get(net_case_1).get("vlan_id")
-    )
-    bond_2 = "bond022"
-    net_case_1_vlan_id_expected = (
-        net_api_conf.SYNC_DICT_2.get(net_case_1).get("vlan_id")
-    )
-    net_case_2 = net_api_conf.SYNC_NETS_DC_1[2][1]
-    net_case_2_vlan_id_actual = (
-        net_api_conf.SYNC_DICT_1.get(net_case_2).get("vlan_id")
-    )
-    net_case_2_vlan_id_expected = None
-    bond_3 = "bond023"
-    net_case_3 = net_api_conf.SYNC_NETS_DC_1[2][2]
-    net_case_3_vlan_id_actual = None
-    net_case_3_vlan_id_expected = (
-        net_api_conf.SYNC_DICT_2.get(net_case_3).get("vlan_id")
-    )
-    bond_4 = "bond024"
-    net_case_4 = net_api_conf.SYNC_NETS_DC_1[2][3]
-    net_case_4_mtu_actual = str(conf.MTU[0])
-    net_case_4_mtu_expected = str(conf.MTU[1])
-    bond_5 = "bond025"
-    net_case_5 = net_api_conf.SYNC_NETS_DC_1[2][4]
-    net_case_5_mtu_actual = str(conf.MTU[1])
-    net_case_5_mtu_expected = str(conf.MTU[3])
-    bond_6 = "bond026"
-    net_case_6 = net_api_conf.SYNC_NETS_DC_1[2][5]
-    net_case_6_mtu_actual = str(conf.MTU[3])
-    net_case_6_mtu_expected = str(conf.MTU[0])
-    bond_7 = "bond027"
-    net_case_7 = net_api_conf.SYNC_NETS_DC_1[2][6]
-    net_case_7_bridge_actual = "true"
-    net_case_7_bridge_expected = "false"
-    net_case_8 = net_api_conf.SYNC_NETS_DC_1[2][7]
-    net_case_8_bridge_actual = "false"
-    net_case_8_bridge_expected = "true"
-    bond_8 = "bond028"
-    net_case_9 = net_api_conf.SYNC_NETS_DC_1[2][8]
-    net_case_9_vlan_id_actual = None
-    net_case_9_mtu_actual = str(conf.MTU[0])
-    net_case_9_bridge_actual = "false"
-    net_case_9_vlan_id_expected = (
-        net_api_conf.SYNC_DICT_2.get(net_case_9).get("vlan_id")
-    )
-    net_case_9_mtu_expected = str(conf.MTU[1])
-    net_case_9_bridge_expected = "true"
-    bond_9 = "bond029"
-    hosts_nets_nic_dict = {
-        0: {
+            # Sync over BOND
             bond_1: {
                 "nic": bond_1,
-                "slaves": [-1, -2]
+                "slaves": [10, 11],
+                "network": net_10,
+                "datacenter": conf.DC_0
             },
             bond_2: {
                 "nic": bond_2,
-                "slaves": [-3, -4]
+                "slaves": [12, 13],
+                "network": net_11,
+                "datacenter": conf.DC_0
             },
             bond_3: {
                 "nic": bond_3,
-                "slaves": [-5, -6]
-            },
-            net_case_1: {
-                "nic": bond_1,
-                "network": net_case_1,
-                "datacenter": conf.DC_0
-            },
-            net_case_2: {
-                "nic": bond_2,
-                "network": net_case_2,
-                "datacenter": conf.DC_0
-            },
-            net_case_3: {
-                "nic": bond_3,
-                "network": net_case_3,
+                "slaves": [14, 15],
+                "network": net_12,
                 "datacenter": conf.DC_0
             },
             bond_4: {
                 "nic": bond_4,
-                "slaves": [-7, -8]
+                "slaves": [16, 17],
+                "network": net_13,
+                "datacenter": conf.DC_0
             },
             bond_5: {
                 "nic": bond_5,
-                "slaves": [-9, -10]
+                "slaves": [18, 19],
+                "network": net_14,
+                "datacenter": conf.DC_0
             },
             bond_6: {
                 "nic": bond_6,
-                "slaves": [-11, -12]
-            },
-            net_case_4: {
-                "nic": bond_4,
-                "network": net_case_4,
-                "datacenter": conf.DC_0
-            },
-            net_case_5: {
-                "nic": bond_5,
-                "network": net_case_5,
-                "datacenter": conf.DC_0
-            },
-            net_case_6: {
-                "nic": bond_6,
-                "network": net_case_6,
+                "slaves": [20, 21],
+                "network": net_15,
                 "datacenter": conf.DC_0
             },
             bond_7: {
                 "nic": bond_7,
-                "slaves": [-13, -14]
+                "slaves": [22, 23],
+                "network": net_16,
+                "datacenter": conf.DC_0
             },
             bond_8: {
                 "nic": bond_8,
-                "slaves": [-15, -16]
-            },
-            net_case_7: {
-                "nic": bond_7,
-                "network": net_case_7,
-                "datacenter": conf.DC_0
-            },
-            net_case_8: {
-                "nic": bond_8,
-                "network": net_case_8,
+                "slaves": [24, 25],
+                "network": net_17,
                 "datacenter": conf.DC_0
             },
             bond_9: {
                 "nic": bond_9,
-                "slaves": [-17, -18]
-            },
-            net_case_9: {
-                "nic": bond_9,
-                "network": net_case_9,
+                "slaves": [26, 27],
+                "network": net_18,
                 "datacenter": conf.DC_0
             },
         }
     }
 
-    @polarion("RHEVM3-13981")
-    def test_01_unsync_network_change_vlan_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is different VLAN
-        over BOND
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_1: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_1_vlan_id_expected,
-                    "actual": self.net_case_1_vlan_id_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different VLAN over BOND %s", self.net_case_1, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+    @pytest.mark.parametrize(
+        "compare_dicts",
+        [
+            # Sync over NIC
+            polarion("RHEVM3-13977")(vlan_to_vlan_nic),
+            polarion("RHEVM3-13979")(vlan_to_none_nic),
+            polarion("RHEVM3-13980")(none_to_vlan_nic),
+            polarion("RHEVM3-13987")(mtu_to_mtu_nic),
+            polarion("RHEVM3-13988")(mtu_to_none_nic),
+            polarion("RHEVM3-13989")(none_to_mtu_nic),
+            polarion("RHEVM3-13993")(vm_to_non_vm_nic),
+            polarion("RHEVM3-13994")(non_vm_to_vm_nic),
+            polarion("RHEVM3-13997")(vlan_mtu_vm_nic),
 
-        testflow.step("Sync the network %s", self.net_case_1)
+            # Sync over BOND
+            polarion("RHEVM3-13981")(vlan_to_vlan_bond),
+            polarion("RHEVM3-13982")(vlan_to_none_bond),
+            polarion("RHEVM3-13985")(none_to_vlan_bond),
+            polarion("RHEVM3-13990")(mtu_to_mtu_bond),
+            polarion("RHEVM3-13991")(mtu_to_none_bond),
+            polarion("RHEVM3-13992")(none_to_mtu_bond),
+            polarion("RHEVM3-13995")(vm_to_non_vm_bond),
+            polarion("RHEVM3-13996")(non_vm_to_vm_bond),
+            polarion("RHEVM3-13998")(vlan_mtu_vm_bond),
+        ]
+    )
+    def test_vlan_mtu_bridge_unsync_networks(self, compare_dicts):
+        """
+        1. Check that the network is un-sync and the sync reason is different
+           VLAN, MTU or bridge
+        2. Sync the network
+        """
+        network = None
+        for dict_ in compare_dicts:
+            network = dict_.keys()[0]
+            type_ = dict_.get(network).keys()[0]
+            testflow.step(
+                "Check that the network %s is un-sync and the sync reason is "
+                "different %s %s", network, type_, dict_
+            )
+            assert helper.get_networks_sync_status_and_unsync_reason(
+                net_sync_reason=dict_
+            )
+        testflow.step("Sync the network %s", network)
         assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_1]
-        )
-
-    @polarion("RHEVM3-13982")
-    def test_02_unsync_network_vlan_to_no_vlan_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is no VLAN
-        over BOND
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_2: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_2_vlan_id_expected,
-                    "actual": self.net_case_2_vlan_id_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is no "
-            "VLAN over BOND %s", self.net_case_2, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_2)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_2]
-        )
-
-    @polarion("RHEVM3-13985")
-    def test_03_unsync_network_no_vlan_to_vlan_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is VLAN over BOND
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_3: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_3_vlan_id_expected,
-                    "actual": self.net_case_3_vlan_id_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is VLAN "
-            "over BOND %s", self.net_case_3, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_3)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_3]
-        )
-
-    @polarion("RHEVM3-13990")
-    def test_04_unsync_network_change_mtu_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is different MTU
-        over BOND
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_4: {
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_4_mtu_expected,
-                    "actual": self.net_case_4_mtu_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different MTU over BOND %s", self.net_case_4,  compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_4)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_4]
-        )
-
-    @polarion("RHEVM3-13991")
-    def test_05_unsync_network_mtu_to_no_mtu_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is different MTU
-        over BOND
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_5: {
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_5_mtu_expected,
-                    "actual": self.net_case_5_mtu_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different MTU over BOND %s", self.net_case_5, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_5)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_5]
-        )
-
-    @polarion("RHEVM3-13992")
-    def test_06_unsync_network_no_mtu_to_mtu_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is different
-        MTU over BOND
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_6: {
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_6_mtu_expected,
-                    "actual": self.net_case_6_mtu_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "different MTU over BOND %s", self.net_case_6, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_6)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_6]
-        )
-
-    @polarion("RHEVM3-13995")
-    def test_07_unsync_network_change_vm_non_vm_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is Vm/Non-VM
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_7: {
-                net_api_conf.BRIDGE_STR: {
-                    "expected": self.net_case_7_bridge_expected,
-                    "actual": self.net_case_7_bridge_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "Vm/Non-VM %s", self.net_case_7, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_7)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_7]
-        )
-
-    @polarion("RHEVM3-13996")
-    def test_08_unsync_network_non_vm_vm_bond(self):
-        """
-        Check that the network is un-sync and the sync reason is is Vm/Non-VM
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_8: {
-                net_api_conf.BRIDGE_STR: {
-                    "expected": self.net_case_8_bridge_expected,
-                    "actual": self.net_case_8_bridge_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is is "
-            "Vm/Non-VM %s", self.net_case_8, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_8)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_8]
-        )
-
-    @polarion("RHEVM3-13998")
-    def test_09_unsync_network_change_vlan_mtu_bridge(self):
-        """
-        Check that the network is un-sync and the sync reasons are different
-        VLAN, MTU and Bridge
-        Sync the network
-        """
-        compare_dict = {
-            self.net_case_9: {
-                net_api_conf.VLAN_STR: {
-                    "expected": self.net_case_9_vlan_id_expected,
-                    "actual": self.net_case_9_vlan_id_actual
-                },
-                net_api_conf.MTU_STR: {
-                    "expected": self.net_case_9_mtu_expected,
-                    "actual": self.net_case_9_mtu_actual
-                },
-                net_api_conf.BRIDGE_STR: {
-                    "expected": self.net_case_9_bridge_expected,
-                    "actual": self.net_case_9_bridge_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons are "
-            "different VLAN, MTU and Bridge %s", self.net_case_9, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_case_9)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_9]
+            host=conf.HOST_0_NAME, networks=[network]
         )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_networks.__name__,
     setup_networks_fixture.__name__,
     manage_ip_and_refresh_capabilities.__name__,
-
 )
-class TestHostNetworkApiSync03(NetworkTest):
+class TestHostNetworkApiSync02(NetworkTest):
     """
-    1) Check sync/un-sync for changed IP and sync the network.
-    2) Check sync/un-sync for changed netmask and sync the network.
-    3) Check sync/un-sync for changed netmask prefix and sync the network.
-    4) Check sync/un-sync for no-IP to IP and sync the network.
-    5) Check sync/un-sync for removed IP and sync the network.
+    All tests on NIC and BOND
+    1. Check sync/un-sync for changed IP and sync the network.
+    2. Check sync/un-sync for changed netmask and sync the network.
+    3. Check sync/un-sync for changed netmask prefix and sync the network.
+    4. Check sync/un-sync for no-IP to IP and sync the network.
+    5. Check sync/un-sync for removed IP and sync the network.
     """
-    __test__ = True
-    SYNC_IPS = network_helper.create_random_ips(num_of_ips=4, mask=24)
+    # General params
+    ips = network_helper.create_random_ips(num_of_ips=10, mask=24)
 
-    # Test 01 parameters
-    ip_netmask_net_1 = SYNC_IPS.pop(0)
-    net_1 = net_api_conf.SYNC_NETS_DC_1[3][0]
-    net_case_1_ip_expected = ip_netmask_net_1
-    actual_ip_net_1 = "10.10.10.10"
+    # Types
+    proto = net_api_conf.BOOTPROTO_STR
+    mask = net_api_conf.NETMASK_STR
+    ip = net_api_conf.IPADDR_STR
 
-    # Test 02 parameters
-    net_2 = net_api_conf.SYNC_NETS_DC_1[3][1]
-    net_case_2_netmask_expected = net_api_conf.IP_DICT_NETMASK["netmask"]
-    actual_netmask_net_2 = "255.255.255.255"
-    ip_netmask_net_2 = SYNC_IPS.pop(0)
+    # create_networks params
+    networks = {
+        "1": {
+            "networks": net_api_conf.IP_DICT_CASE_2,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        }
+    }
 
-    # Test 03 parameters
-    net_3 = net_api_conf.SYNC_NETS_DC_1[3][2]
-    net_case_3_netmask_prefix_expected = net_api_conf.IP_DICT_PREFIX["netmask"]
-    actual_netmask_net_3 = "255.255.255.255"
-    ip_prefix_net_3 = SYNC_IPS.pop(0)
+    # NIC
+    # Sync IP to IP NIC
+    net_1 = net_api_conf.SYNC_NETS_DC_1[2][0]
+    net_1_ip = ips.pop(0)
+    net_1_ip_actual = "10.10.10.10"
+    net_1_ip_expected = net_1_ip
+    ip_to_ip_nic = helper.get_dict(
+        network=net_1, type_=ip, act=net_1_ip_actual, ex=net_1_ip_expected
+    )
 
-    # Test 04 parameters
-    net_4 = net_api_conf.SYNC_NETS_DC_1[3][3]
-    actual_ip_net_4 = "10.10.10.11"
-    net_case_4_boot_proto_expected = "NONE"
+    # Sync mask to mask NIC
+    net_2 = net_api_conf.SYNC_NETS_DC_1[2][1]
+    net_2_ip = ips.pop(0)
+    net_2_mask_actual = "255.255.255.255"
+    net_2_mask_expected = net_api_conf.IP_DICT_NETMASK["netmask"]
+    mask_to_mask_nic = helper.get_dict(
+        network=net_2, type_=mask, act=net_2_mask_actual,
+        ex=net_2_mask_expected
+    )
+
+    # Sync prefix to prefix NIC
+    net_3 = net_api_conf.SYNC_NETS_DC_1[2][2]
+    net_3_ip = ips.pop(0)
+    net_3_mask_actual = "255.255.255.255"
+    net_3_prefix_expected = net_api_conf.IP_DICT_PREFIX["netmask"]
+    prefix_to_prefix_nic = helper.get_dict(
+        network=net_3, type_=mask, act=net_3_mask_actual,
+        ex=net_3_prefix_expected
+    )
+
+    # Sync no IP to IP NIC
+    net_4 = net_api_conf.SYNC_NETS_DC_1[2][3]
+    net_4_ip = "10.10.10.11"
     net_case_4_boot_proto_actual = "STATIC_IP"
+    net_case_4_boot_proto_expected = "NONE"
+    no_ip_to_ip_nic = helper.get_dict(
+        network=net_4, type_=proto, act=net_case_4_boot_proto_actual,
+        ex=net_case_4_boot_proto_expected
+    )
 
-    # Test 05 parameters
-    net_5 = net_api_conf.SYNC_NETS_DC_1[3][4]
-    net_case_5_boot_proto_expected = "STATIC_IP"
-    net_case_5_boot_proto_actual = "NONE"
-    ip_netmask_net_5 = SYNC_IPS.pop(0)
+    # Sync IP to no IP NIC
+    net_5 = net_api_conf.SYNC_NETS_DC_1[2][4]
+    net_5_ip = ips.pop(0)
+    net_5_proto_actual = "NONE"
+    net_5_proto_expected = "STATIC_IP"
+    ip_to_no_ip_nic = helper.get_dict(
+        network=net_5, type_=proto, act=net_5_proto_actual,
+        ex=net_5_proto_expected
+    )
 
+    # BOND
+    # Sync IP to IP BOND
+    net_6 = net_api_conf.SYNC_NETS_DC_1[2][5]
+    net_6_ip = ips.pop(0)
+    net_6_ip_actual = "10.10.10.12"
+    net_6_ip_expected = net_6_ip
+    ip_to_ip_bond = helper.get_dict(
+        network=net_6, type_=ip, act=net_6_ip_actual, ex=net_6_ip_expected
+    )
+
+    # Sync mask to mask BOND
+    net_7 = net_api_conf.SYNC_NETS_DC_1[2][6]
+    net_7_ip = ips.pop(0)
+    net_7_mask_actual = "255.255.255.255"
+    net_7_mask_expected = net_api_conf.IP_DICT_NETMASK["netmask"]
+    mask_to_mask_bond = helper.get_dict(
+        network=net_7, type_=mask, act=net_7_mask_actual,
+        ex=net_7_mask_expected
+    )
+
+    # Sync prefix to prefix BOND
+    net_8 = net_api_conf.SYNC_NETS_DC_1[2][7]
+    net_8_ip = ips.pop(0)
+    net_8_mask_actual = "255.255.255.255"
+    net_8_prefix_expected = net_api_conf.IP_DICT_PREFIX["netmask"]
+    prefix_to_prefix_bond = helper.get_dict(
+        network=net_8, type_=mask, act=net_8_mask_actual,
+        ex=net_8_prefix_expected
+    )
+
+    # Sync no IP to IP BOND
+    net_9 = net_api_conf.SYNC_NETS_DC_1[2][8]
+    net_9_ip = "10.10.10.13"
+    net_case_9_boot_proto_actual = "STATIC_IP"
+    net_case_9_boot_proto_expected = "NONE"
+    no_ip_to_ip_bond = helper.get_dict(
+        network=net_9, type_=proto, act=net_case_9_boot_proto_actual,
+        ex=net_case_9_boot_proto_expected
+    )
+
+    # Sync IP to no IP BOND
+    net_10 = net_api_conf.SYNC_NETS_DC_1[2][9]
+    net_10_ip = ips.pop(0)
+    net_10_proto_actual = "NONE"
+    net_10_proto_expected = "STATIC_IP"
+    ip_to_no_ip_bond = helper.get_dict(
+        network=net_10, type_=proto, act=net_10_proto_actual,
+        ex=net_10_proto_expected
+    )
+
+    # manage_ip_and_refresh_capabilities params
+    # Network, IP, mask, set_ip
     manage_ip_list = [
-        (net_1, actual_ip_net_1, None, True),
-        (net_2, None, actual_netmask_net_2, True),
-        (net_3, None, actual_netmask_net_3, True),
-        (net_4, actual_ip_net_4, None, True),
-        (net_5, None, None, False)
+        # NIC
+        (net_1, net_1_ip_actual, None, True),
+        (net_2, None, net_2_mask_actual, True),
+        (net_3, None, net_3_mask_actual, True),
+        (net_4, net_4_ip, None, True),
+        (net_5, None, None, False),
+
+        # BOND
+        (net_6, net_6_ip_actual, None, True),
+        (net_7, None, net_7_mask_actual, True),
+        (net_8, None, net_8_mask_actual, True),
+        (net_9, net_9_ip, None, True),
+        (net_10, None, None, False)
     ]
+
+    # setup_networks_fixture params
+    bond_1 = "bond21"
+    bond_2 = "bond22"
+    bond_3 = "bond23"
+    bond_4 = "bond24"
+    bond_5 = "bond25"
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -875,7 +546,7 @@ class TestHostNetworkApiSync03(NetworkTest):
                 "network": net_1,
                 "ip": {
                     "1": {
-                        "address": ip_netmask_net_1,
+                        "address": net_1_ip,
                         "netmask": "255.255.255.0",
                     }
                 }
@@ -885,7 +556,7 @@ class TestHostNetworkApiSync03(NetworkTest):
                 "network": net_2,
                 "ip": {
                     "1": {
-                        "address": ip_netmask_net_2,
+                        "address": net_2_ip,
                         "netmask": "255.255.255.0",
                     }
                 }
@@ -895,7 +566,7 @@ class TestHostNetworkApiSync03(NetworkTest):
                 "network": net_3,
                 "ip": {
                     "1": {
-                        "address": ip_prefix_net_3
+                        "address": net_3_ip
                     }
                 }
             },
@@ -908,716 +579,253 @@ class TestHostNetworkApiSync03(NetworkTest):
                 "network": net_5,
                 "ip": {
                     "1": {
-                        "address": ip_netmask_net_5,
+                        "address": net_5_ip,
                         "netmask": "255.255.255.0",
                     }
                 }
             },
-        }
-    }
-
-    @polarion("RHEVM3-13999")
-    def test_01_unsync_network_change_ip(self):
-        """
-        Check that the network is un-sync and the sync reasons is changed IP
-        Sync the network
-        """
-        compare_dict = {
-            self.net_1: {
-                net_api_conf.IPADDR_STR: {
-                    "expected": self.net_case_1_ip_expected,
-                    "actual": self.actual_ip_net_1
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons is "
-            "changed IP %s", self.net_1, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_1)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_1]
-        )
-
-    @polarion("RHEVM3-14000")
-    def test_02_unsync_network_change_netmask(self):
-        """
-        Check that the network is un-sync and the sync reason is changed
-        netmask
-        Sync the network
-        """
-        compare_dict = {
-            self.net_2: {
-                net_api_conf.NETMASK_STR: {
-                    "expected": self.net_case_2_netmask_expected,
-                    "actual": self.actual_netmask_net_2
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reason is "
-            "changed netmask %s", self.net_2, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_2)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_2]
-        )
-
-    @polarion("RHEVM3-14001")
-    def test_03_unsync_network_change_netmask_prefix(self):
-        """
-        Check that the network is un-sync and the sync reasons is changed
-        netmask prefix
-        Sync the network
-        """
-        compare_dict = {
-            self.net_3: {
-                net_api_conf.NETMASK_STR: {
-                    "expected": self.net_case_3_netmask_prefix_expected,
-                    "actual": self.actual_netmask_net_3
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons is "
-            "changed netmask prefix %s", self.net_3, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_3)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_3]
-        )
-
-    @polarion("RHEVM3-14009")
-    def test_04_unsync_network_no_ip_to_ip(self):
-        """
-        Check that the network is un-sync and the sync reasons is new IP
-        Sync the network
-        """
-        compare_dict = {
-            self.net_4: {
-                net_api_conf.BOOTPROTO_STR: {
-                    "expected": self.net_case_4_boot_proto_expected,
-                    "actual": self.net_case_4_boot_proto_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons "
-            "is new IP %s", self.net_4, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_4)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_4]
-        )
-
-    @polarion("RHEVM3-14011")
-    def test_05_unsync_network_remove_ip(self):
-        """
-        Check that the network is un-sync and the sync reasons is no IP
-        Sync the network
-        """
-        compare_dict = {
-            self.net_5: {
-                net_api_conf.BOOTPROTO_STR: {
-                    "expected": self.net_case_5_boot_proto_expected,
-                    "actual": self.net_case_5_boot_proto_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons "
-            "is no IP %s", self.net_5, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_5)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_5]
-        )
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(
-    setup_networks_fixture.__name__,
-    manage_ip_and_refresh_capabilities.__name__
-)
-class TestHostNetworkApiSync04(NetworkTest):
-    """
-    1) Check sync/un-sync for changed IP over BOND and sync the network.
-    2) Check sync/un-sync for changed netmask over BOND and sync the network.
-    3) Check sync/un-sync for changed netmask prefix over BOND.
-    4) Check sync/un-sync for no-IP to IP over BOND and sync the network.
-    5) Check sync/un-sync for removed IP over BOND and sync the network.
-    """
-    __test__ = True
-    SYNC_IPS = network_helper.create_random_ips(num_of_ips=4, mask=24)
-
-    # Test 01 parameters
-    ip_netmask_net_1 = SYNC_IPS.pop(0)
-    net_1 = net_api_conf.SYNC_NETS_DC_1[4][0]
-    net_case_1_ip_expected = ip_netmask_net_1
-    actual_ip_net_1 = "10.10.10.12"
-    bond_1 = "bond041"
-
-    # Test 02 parameters
-    net_2 = net_api_conf.SYNC_NETS_DC_1[4][1]
-    net_case_2_netmask_expected = net_api_conf.IP_DICT_NETMASK["netmask"]
-    actual_netmask_net_2 = "255.255.255.255"
-    bond_2 = "bond042"
-    ip_netmask_net_2 = SYNC_IPS.pop(0)
-
-    # Test 03 parameters
-    net_3 = net_api_conf.SYNC_NETS_DC_1[4][2]
-    net_case_3_netmask_prefix_expected = net_api_conf.IP_DICT_PREFIX["netmask"]
-    actual_netmask_net_3 = "255.255.255.255"
-    bond_3 = "bond043"
-    ip_prefix_net_3 = SYNC_IPS.pop(0)
-
-    # Test 04 parameters
-    net_4 = net_api_conf.SYNC_NETS_DC_1[4][3]
-    actual_ip_net_4 = "10.10.10.13"
-    net_case_4_boot_proto_expected = "NONE"
-    net_case_4_boot_proto_actual = "STATIC_IP"
-    bond_4 = "bond044"
-
-    # Test 05 parameters
-    set_ip = False
-    net_5 = net_api_conf.SYNC_NETS_DC_1[4][4]
-    net_case_5_boot_proto_expected = "STATIC_IP"
-    net_case_5_boot_proto_actual = "NONE"
-    bond_5 = "bond045"
-    ip_netmask_5 = SYNC_IPS.pop(0)
-
-    manage_ip_list = [
-        (net_1, actual_ip_net_1, None, True),
-        (net_2, None, actual_netmask_net_2, True),
-        (net_3, None, actual_netmask_net_3, True),
-        (net_4, actual_ip_net_4, None, True),
-        (net_5, None, None, False)
-    ]
-
-    hosts_nets_nic_dict = {
-        0: {
             bond_1: {
                 "nic": bond_1,
-                "slaves": [-1, -2]
-            },
-            net_1: {
-                "nic": bond_1,
-                "network": net_1,
+                "slaves": [6, 7],
+                "network": net_6,
                 "ip": {
                     "1": {
-                        "address": ip_netmask_net_1,
+                        "address": net_6_ip,
                         "netmask": "255.255.255.0",
                     }
                 }
             },
             bond_2: {
                 "nic": bond_2,
-                "slaves": [-3, -4]
-            },
-            net_2: {
-                "nic": bond_2,
-                "network": net_2,
+                "slaves": [8, 9],
+                "network": net_7,
                 "ip": {
                     "1": {
-                        "address": ip_netmask_net_2,
+                        "address": net_7_ip,
                         "netmask": "255.255.255.0",
                     }
                 }
             },
             bond_3: {
                 "nic": bond_3,
-                "slaves": [-5, -6]
-            },
-            net_3: {
-                "nic": bond_3,
-                "network": net_3,
+                "slaves": [10, 11],
+                "network": net_8,
                 "ip": {
                     "1": {
-                        "address": ip_prefix_net_3,
+                        "address": net_8_ip,
                     }
                 }
             },
             bond_4: {
                 "nic": bond_4,
-                "slaves": [-7, -8]
-            },
-            net_4: {
-                "nic": bond_4,
-                "network": net_4,
+                "slaves": [12, 13],
+                "network": net_9,
             },
             bond_5: {
                 "nic": bond_5,
-                "slaves": [-9, 10]
-            },
-            net_5: {
-                "nic": bond_5,
-                "network": net_5,
+                "slaves": [14, 15],
+                "network": net_10,
                 "ip": {
                     "1": {
-                        "address": ip_netmask_5,
+                        "address": net_10_ip,
                         "netmask": "255.255.255.0",
                     }
                 }
-            }
+            },
         }
     }
 
-    @polarion("RHEVM3-14002")
-    def test_01_unsync_network_change_ip_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reasons is changed IP
-        Sync the network
-        """
-        compare_dict = {
-            self.net_1: {
-                net_api_conf.IPADDR_STR: {
-                    "expected": self.net_case_1_ip_expected,
-                    "actual": self.actual_ip_net_1
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons is "
-            "changed IP %s", self.net_1, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+    @pytest.mark.parametrize(
+        "compare_dict",
+        [
+            # Sync over NIC
+            polarion("RHEVM3-13999")(ip_to_ip_nic),
+            polarion("RHEVM3-14000")(mask_to_mask_nic),
+            polarion("RHEVM3-14001")(prefix_to_prefix_nic),
+            polarion("RHEVM3-14009")(no_ip_to_ip_nic),
+            polarion("RHEVM3-14011")(ip_to_no_ip_nic),
 
-        testflow.step("Sync the network %s", self.net_1)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_1]
-        )
-
-    @polarion("RHEVM3-14003")
-    def test_02_unsync_network_change_netmask_over_bond(self):
+            # Sync over BOND
+            polarion("RHEVM3-14002")(ip_to_ip_bond),
+            polarion("RHEVM3-14003")(mask_to_mask_bond),
+            polarion("RHEVM3-14004")(prefix_to_prefix_bond),
+            polarion("RHEVM3-14010")(no_ip_to_ip_bond),
+            polarion("RHEVM3-14012")(ip_to_no_ip_bond),
+        ]
+    )
+    def test_unsync_network_ip_mask_prefix_proto(self, compare_dict):
         """
-        Check that the network is un-sync and the sync reason is changed
-        netmask
-        Sync the network
+        1. Check that the network is un-sync and the sync reason is different
+           IP, netmask or boot protocol
+        2. Sync the network
         """
-        compare_dict = {
-            self.net_2: {
-                net_api_conf.NETMASK_STR: {
-                    "expected": self.net_case_2_netmask_expected,
-                    "actual": self.actual_netmask_net_2
-                }
-            }
-        }
+        network = compare_dict.keys()[0]
+        type_ = compare_dict.get(network).keys()[0]
         testflow.step(
             "Check that the network %s is un-sync and the sync reason is "
-            "changed netmask %s", self.net_2, compare_dict
+            "different %s %s", network, type_, compare_dict
         )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_2)
+        assert helper.get_networks_sync_status_and_unsync_reason(
+            net_sync_reason=compare_dict
+        )
+        testflow.step("Sync the network %s", network)
         assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_2]
-        )
-
-    @polarion("RHEVM3-14004")
-    def test_03_unsync_network_change_netmask_prefix_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reasons is changed
-        netmask prefix
-        Sync the network
-        """
-        compare_dict = {
-            self.net_3: {
-                net_api_conf.NETMASK_STR: {
-                    "expected": self.net_case_3_netmask_prefix_expected,
-                    "actual": self.actual_netmask_net_3
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons is "
-            "changed netmask prefix %s", self.net_3, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_3)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_3]
-        )
-
-    @polarion("RHEVM3-14010")
-    def test_04_unsync_network_no_ip_to_ip_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reasons is new IP
-        Sync the network
-        """
-        compare_dict = {
-            self.net_4: {
-                net_api_conf.BOOTPROTO_STR: {
-                    "expected": self.net_case_4_boot_proto_expected,
-                    "actual": self.net_case_4_boot_proto_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons "
-            "is new IP %s", self.net_4, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_4)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_4]
-        )
-
-    @polarion("RHEVM3-14012")
-    def test_05_unsync_network_remove_ip_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reasons is no IP
-        Sync the network
-        """
-        compare_dict = {
-            self.net_5: {
-                net_api_conf.BOOTPROTO_STR: {
-                    "expected": self.net_case_5_boot_proto_expected,
-                    "actual": self.net_case_5_boot_proto_actual
-                }
-            }
-        }
-        testflow.step(
-            "Check that the network %s is un-sync and the sync reasons "
-            "is no IP %s", self.net_5, compare_dict
-        )
-        assert helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-
-        testflow.step("Sync the network %s", self.net_5)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_5]
+            host=conf.HOST_0_NAME, networks=[network]
         )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_networks.__name__,
     setup_networks_fixture.__name__,
     update_host_to_another_cluster.__name__
 )
-class TestHostNetworkApiSync05(NetworkTest):
+class TestHostNetworkApiSync03(NetworkTest):
     """
+    All tests on NIC and BOND
     Check sync/un-sync for:
      1. Changed QoS
      2. No QoS to QoS
      3. QoS to no QoS
     Sync the network
     """
-    __test__ = True
-    net_case_1 = net_api_conf.SYNC_NETS_DC_1[5][0]
-    net_case_1_qos_expected = "20"
-    net_case_1_qos_actual = "10"
-    net_case_2 = net_api_conf.SYNC_NETS_DC_1[5][1]
-    net_case_2_qos_expected = "10"
-    net_case_2_qos_actual = None
-    net_case_3 = net_api_conf.SYNC_NETS_DC_1[5][2]
-    net_case_3_qos_expected = None
-    net_case_3_qos_actual = "10"
-    net_case_4_1 = net_api_conf.SYNC_NETS_DC_1[5][3]
-    net_case_4_2 = net_api_conf.SYNC_NETS_DC_1[5][4]
-    expected_actual_dict_1 = {
-        "expected": net_case_1_qos_expected,
-        "actual": net_case_1_qos_actual
-    }
-    expected_actual_dict_2 = {
-        "expected": net_case_2_qos_expected,
-        "actual": net_case_2_qos_actual
-    }
-    expected_actual_dict_3 = {
-        "expected": net_case_3_qos_expected,
-        "actual": net_case_3_qos_actual
-    }
-    hosts_nets_nic_dict = {
-        0: {
-            net_case_1: {
-                "nic": 1,
-                "network": net_case_1,
-                "datacenter": conf.DC_0
-            },
-            net_case_2: {
-                "nic": 2,
-                "network": net_case_2,
-                "datacenter": conf.DC_0
-            },
-            net_case_3: {
-                "nic": 3,
-                "network": net_case_3,
-                "datacenter": conf.DC_0
-            },
-            net_case_4_1: {
-                "nic": 4,
-                "network": net_case_4_1,
-                "datacenter": conf.DC_0
-            },
-            net_case_4_2: {
-                "nic": 4,
-                "network": net_case_4_2,
-                "datacenter": conf.DC_0
-            }
+    # Types
+    share = net_api_conf.AVERAGE_SHARE_STR
+    limit = net_api_conf.AVERAGE_LIMIT_STR
+    real = net_api_conf.AVERAGE_REAL_STR
+
+    # create_networks params
+    networks = {
+        "1": {
+            "networks": net_api_conf.SYNC_DICT_1_CASE_3,
+            "datacenter": conf.DC_0,
+            "cluster": conf.CL_0,
+        },
+        "2": {
+            "networks": net_api_conf.SYNC_DICT_2_CASE_3,
+            "datacenter": net_api_conf.SYNC_DC,
+            "cluster": net_api_conf.SYNC_CL
         }
     }
 
-    @polarion("RHEVM3-14026")
-    def test_unsync_network_change_qos(self):
-        """
-        Check that the network is un-sync and the sync reasons changed QoS
-        Sync the network
-        """
-        for qos_value in net_api_conf.QOS_VALUES:
-            compare_dict_ = {
-                self.net_case_1: {
-                    qos_value: self.expected_actual_dict_1
-                }
-            }
-            testflow.step(
-                "Check that the network %s is un-sync and the sync reasons "
-                "changed QoS %s", self.net_case_1, compare_dict_
-            )
-            assert helper.get_networks_sync_status_and_unsync_reason(
-                compare_dict_
-            )
+    # NIC
+    # Sync QoS to QoS NIC
+    net_1 = net_api_conf.SYNC_NETS_DC_1[3][0]
+    net_1_share_nic = helper.get_dict(network=net_1, type_=share)
+    net_1_limit_nic = helper.get_dict(network=net_1, type_=limit)
+    net_1_real_nic = helper.get_dict(network=net_1, type_=real)
+    qos_to_qos_nic = [net_1_share_nic, net_1_limit_nic, net_1_real_nic]
 
-        testflow.step("Sync the network %s", self.net_case_1)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_1]
-        )
+    # Sync no QoS to QoS NIC
+    net_2 = net_api_conf.SYNC_NETS_DC_1[3][1]
+    net_2_share_nic = helper.get_dict(network=net_2, type_=share)
+    net_2_limit_nic = helper.get_dict(network=net_2, type_=limit)
+    net_2_real_nic = helper.get_dict(network=net_2, type_=real)
+    no_qos_to_qos_nic = [net_2_share_nic, net_2_limit_nic, net_2_real_nic]
 
-    @polarion("RHEVM3-14027")
-    def test_unsync_network_no_qos_to_qos(self):
-        """
-        Check that the network is un-sync and the sync reasons no QoS
-        Sync the network
-        """
-        for qos_value in net_api_conf.QOS_VALUES:
-            compare_dict_ = {
-                self.net_case_2: {
-                    qos_value: self.expected_actual_dict_2
-                }
-            }
-            testflow.step(
-                "Check that the network %s is un-sync and the sync reasons"
-                "no QoS %s", self.net_case_2, compare_dict_
-            )
-            assert helper.get_networks_sync_status_and_unsync_reason(
-                compare_dict_
-            )
+    # Sync QoS to no QoS NIC
+    net_3 = net_api_conf.SYNC_NETS_DC_1[3][2]
+    net_3_share_nic = helper.get_dict(network=net_3, type_=share)
+    net_3_limit_nic = helper.get_dict(network=net_3, type_=limit)
+    net_3_real_nic = helper.get_dict(network=net_3, type_=real)
+    qos_to_no_qos_nic = [net_3_share_nic, net_3_limit_nic, net_3_real_nic]
 
-        testflow.step("Sync the network %s", self.net_case_2)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_2]
-        )
+    # BOND
+    # Sync QoS to QoS BOND
+    net_4 = net_api_conf.SYNC_NETS_DC_1[3][3]
+    net_4_share_nic = helper.get_dict(network=net_4, type_=share)
+    net_4_limit_nic = helper.get_dict(network=net_4, type_=limit)
+    net_4_real_nic = helper.get_dict(network=net_4, type_=real)
+    qos_to_qos_bond = [net_4_share_nic, net_4_limit_nic, net_4_real_nic]
 
-    @polarion("RHEVM3-14028")
-    def test_unsync_network_qos_to_no_qos(self):
-        """
-        Check that the network is un-sync and the sync reasons QoS
-        Sync the network
-        """
-        for qos_value in net_api_conf.QOS_VALUES:
-            compare_dict_ = {
-                self.net_case_3: {
-                    qos_value: self.expected_actual_dict_3
-                }
-            }
-            testflow.step(
-                "Check that the network %s is un-sync and the sync reasons "
-                "QoS %s", self.net_case_3, compare_dict_
+    # Sync no QoS to QoS BOND
+    net_5 = net_api_conf.SYNC_NETS_DC_1[3][4]
+    net_5_share_nic = helper.get_dict(network=net_5, type_=share)
+    net_5_limit_nic = helper.get_dict(network=net_5, type_=limit)
+    net_5_real_nic = helper.get_dict(network=net_5, type_=real)
+    no_qos_to_qos_bond = [net_5_share_nic, net_5_limit_nic, net_5_real_nic]
 
-            )
-            assert helper.get_networks_sync_status_and_unsync_reason(
-                compare_dict_
-            )
+    # Sync QoS to no QoS BOND
+    net_6 = net_api_conf.SYNC_NETS_DC_1[3][5]
+    net_6_share_nic = helper.get_dict(network=net_6, type_=share)
+    net_6_limit_nic = helper.get_dict(network=net_6, type_=limit)
+    net_6_real_nic = helper.get_dict(network=net_6, type_=real)
+    qos_to_no_qos_bond = [net_6_share_nic, net_6_limit_nic, net_6_real_nic]
 
-        testflow.step("Sync the network %s", self.net_case_3)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_3]
-        )
-
-    @polarion("RHEVM3-6538")
-    def test_remove_qos_unsync_network(self):
-        """
-        1.  Remove host network QoS that is attached to the first network
-            on the host
-        2.  Check that the first network is unsynced
-        3.  Remove host network QoS that is attached to the second network
-            on the host
-        4.  Check that the second network is unsynced
-        5.  Sync both networks on the host
-        """
-        qos_names = net_api_conf.QOS_NAME[5][3:5]
-        nets = [self.net_case_4_1, self.net_case_4_2]
-
-        for qos_name, net in zip(qos_names, nets):
-            testflow.step(
-                "Removing QoS: %s from DC: %s", qos_name, net_api_conf.SYNC_DC
-            )
-            assert ll_dc.delete_qos_from_datacenter(
-                datacenter=net_api_conf.SYNC_DC, qos_name=qos_name
-            )
-            testflow.step("Check the network: %s is unsynced", net)
-            assert not network_helper.networks_sync_status(
-                host=conf.HOST_0_NAME, networks=[net]
-            )
-
-        testflow.step("Sync both networks")
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=nets
-        )
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(
-    setup_networks_fixture.__name__,
-    update_host_to_another_cluster.__name__
-)
-class TestHostNetworkApiSync06(NetworkTest):
-    """
-    Check sync/un-sync over BOND for:
-     1. Changed QoS
-     2. No QoS to QoS
-     3. QoS to no QoS
-    Sync the network
-    """
-    __test__ = True
-    bond_1 = "bond201"
-    bond_2 = "bond202"
-    bond_3 = "bond203"
-    net_case_1 = net_api_conf.SYNC_NETS_DC_1[6][0]
-    net_case_1_qos_expected = "20"
-    net_case_1_qos_actual = "10"
-    net_case_2 = net_api_conf.SYNC_NETS_DC_1[6][1]
-    net_case_2_qos_expected = "10"
-    net_case_2_qos_actual = None
-    net_case_3 = net_api_conf.SYNC_NETS_DC_1[6][2]
-    net_case_3_qos_expected = None
-    net_case_3_qos_actual = "10"
-    expected_actual_dict_1 = {
-        "expected": net_case_1_qos_expected,
-        "actual": net_case_1_qos_actual
-    }
-    expected_actual_dict_2 = {
-        "expected": net_case_2_qos_expected,
-        "actual": net_case_2_qos_actual
-    }
-    expected_actual_dict_3 = {
-        "expected": net_case_3_qos_expected,
-        "actual": net_case_3_qos_actual
-    }
+    # setup_networks_fixture params
+    bond_1 = "bond31"
+    bond_2 = "bond32"
+    bond_3 = "bond33"
     hosts_nets_nic_dict = {
         0: {
+            net_1: {
+                "nic": 1,
+                "network": net_1,
+                "datacenter": conf.DC_0
+            },
+            net_2: {
+                "nic": 2,
+                "network": net_2,
+                "datacenter": conf.DC_0
+            },
+            net_3: {
+                "nic": 3,
+                "network": net_3,
+                "datacenter": conf.DC_0
+            },
             bond_1: {
                 "nic": bond_1,
-                "slaves": [-1, -2]
+                "slaves": [4, 5],
+                "network": net_4,
+                "datacenter": conf.DC_0
             },
             bond_2: {
                 "nic": bond_2,
-                "slaves": [-3, -4]
+                "slaves": [6, 7],
+                "network": net_5,
+                "datacenter": conf.DC_0
             },
             bond_3: {
                 "nic": bond_3,
-                "slaves": [-5, -6]
-            },
-            net_case_1: {
-                "nic": bond_1,
-                "network": net_case_1,
+                "slaves": [8, 9],
+                "network": net_6,
                 "datacenter": conf.DC_0
             },
-            net_case_2: {
-                "nic": bond_2,
-                "network": net_case_2,
-                "datacenter": conf.DC_0
-            },
-            net_case_3: {
-                "nic": bond_3,
-                "network": net_case_3,
-                "datacenter": conf.DC_0
-            },
-
         }
     }
 
-    @polarion("RHEVM3-14029")
-    def test_unsync_network_change_qos_over_bond(self):
+    @pytest.mark.parametrize(
+        "compare_dicts",
+        [
+            # Sync over NIC
+            polarion("RHEVM3-14026")(qos_to_qos_nic),
+            polarion("RHEVM3-14027")(no_qos_to_qos_nic),
+            polarion("RHEVM3-14028")(qos_to_no_qos_nic),
+
+            # Sync over BOND
+            polarion("RHEVM3-14029")(qos_to_qos_bond),
+            polarion("RHEVM3-14030")(no_qos_to_qos_bond),
+            polarion("RHEVM3-14031")(qos_to_no_qos_bond),
+        ]
+    )
+    def test_unsync_network_qos(self, compare_dicts):
         """
-        Check that the network is un-sync and the sync reasons changed QoS
-        over BOND
-        Sync the network
+        1. Check that the network is un-sync and the sync reasons changed QoS
+        2. Sync the network
         """
-        for qos_value in net_api_conf.QOS_VALUES:
-            compare_dict_ = {
-                self.net_case_1: {
-                    qos_value: self.expected_actual_dict_1
-                }
-            }
+        network = None
+        for compare_dict in compare_dicts:
+            network = compare_dict.keys()[0]
+            type_ = compare_dict.get(network).keys()[0]
             testflow.step(
-                "Check that the network %s is un-sync and the sync reasons"
-                "changed QoS over BOND %s", self.net_case_1, compare_dict_
+                "Check that the network %s is un-sync and the sync reason is "
+                "different %s %s", network, type_, compare_dict
             )
             assert helper.get_networks_sync_status_and_unsync_reason(
-                compare_dict_
+                compare_dict
             )
 
-        testflow.step("Sync the network %s", self.net_case_1)
+        testflow.step("Sync the network %s", network)
         assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_1]
-        )
-
-    @polarion("RHEVM3-14030")
-    def test_unsync_network_no_qos_to_qos_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reasons no QoS over BOND
-        Sync the network
-        """
-        for qos_value in net_api_conf.QOS_VALUES:
-            compare_dict_ = {
-                self.net_case_2: {
-                    qos_value: self.expected_actual_dict_2
-                }
-            }
-            testflow.step(
-                "Check that the network %s is un-sync and the sync reasons"
-                "no QoS over BOND %s", self.net_case_2, compare_dict_
-            )
-            assert helper.get_networks_sync_status_and_unsync_reason(
-                compare_dict_
-            )
-
-        testflow.step("Sync the network %s", self.net_case_2)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_2]
-        )
-
-    @polarion("RHEVM3-14031")
-    def test_unsync_network_qos_to_no_qos_over_bond(self):
-        """
-        Check that the network is un-sync and the sync reasons QoS over BOND
-        Sync the network
-        """
-        for qos_value in net_api_conf.QOS_VALUES:
-            compare_dict_ = {
-                self.net_case_3: {
-                    qos_value: self.expected_actual_dict_3
-                }
-            }
-            testflow.step(
-                "Check that the network %s is un-sync and the sync reasons "
-                "QoS over BOND %s", self.net_case_3, compare_dict_
-            )
-            assert helper.get_networks_sync_status_and_unsync_reason(
-                compare_dict_
-            )
-
-        testflow.step("Sync the network %s", self.net_case_3)
-        assert network_helper.sync_networks(
-            host=conf.HOST_0_NAME, networks=[self.net_case_3]
+            host=conf.HOST_0_NAME, networks=[network]
         )

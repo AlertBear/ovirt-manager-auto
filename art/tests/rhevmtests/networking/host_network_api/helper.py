@@ -191,6 +191,78 @@ def attach_networks_for_parametrize(
         assert res is positive
 
 
+def get_dict(network, type_, ex=None, act=None):
+    """
+    Get param from network dict
+
+    Args:
+        network (str): network name
+        type_ (str): The param type to get
+        ex (str): Expected to set
+        act (str): Actual to set
+
+    Returns:
+        dict: param dict for check sync function
+    """
+    share = net_api_conf.AVERAGE_SHARE_STR
+    limit = net_api_conf.AVERAGE_LIMIT_STR
+    real = net_api_conf.AVERAGE_REAL_STR
+
+    params_dict = {
+        network: {
+            type_: {}
+        }
+    }
+    dict_c_1_1 = net_api_conf.SYNC_DICT_1_CASE_1
+    dict_c_1_2 = net_api_conf.SYNC_DICT_2_CASE_1
+
+    dict_c_3_1 = net_api_conf.SYNC_DICT_1_CASE_3
+    dict_c_3_2 = net_api_conf.SYNC_DICT_2_CASE_3
+
+    if type_ == net_api_conf.VLAN_STR:
+        act = dict_c_1_1.get(network).get("vlan_id", None)
+        ex = dict_c_1_2.get(network).get("vlan_id", None)
+        params_dict[network][type_]["actual"] = act
+        params_dict[network][type_]["expected"] = ex
+
+    if type_ == net_api_conf.MTU_STR:
+        act = dict_c_1_1.get(network).get("mtu", 1500)
+        ex = dict_c_1_2.get(network).get("mtu", 1500)
+        params_dict[network][type_]["actual"] = str(act)
+        params_dict[network][type_]["expected"] = str(ex)
+
+    if type_ == net_api_conf.BRIDGE_STR:
+        act = str(bool(dict_c_1_1.get(network).get("usages", True))).lower()
+        ex = str(bool(dict_c_1_2.get(network).get("usages", True))).lower()
+        params_dict[network][type_]["actual"] = act
+        params_dict[network][type_]["expected"] = ex
+
+    if type_ in [
+            net_api_conf.IPADDR_STR, net_api_conf.NETMASK_STR,
+            net_api_conf.BOOTPROTO_STR
+    ]:
+        params_dict[network][type_]["actual"] = act
+        params_dict[network][type_]["expected"] = ex
+
+    if type_ in [share, limit, real]:
+        get_type = None
+        if type_ == share:
+            get_type = "outbound_average_linkshare"
+
+        if type_ == limit:
+            get_type = "outbound_average_upperlimit"
+
+        if type_ == real:
+            get_type = "outbound_average_realtime"
+
+        act = dict_c_3_1.get(network).get("qos", {}).get(get_type)
+        ex = dict_c_3_2.get(network).get("qos", {}).get(get_type)
+        params_dict[network][type_]["actual"] = str(act) if act else None
+        params_dict[network][type_]["expected"] = str(ex) if ex else None
+
+    return params_dict
+
+
 def get_ip_dict(ip, proto):
     """
     Get IP dict updated
