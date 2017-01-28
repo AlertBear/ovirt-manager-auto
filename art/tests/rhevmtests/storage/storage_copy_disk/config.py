@@ -10,7 +10,7 @@ TEST_FILE_TEMPLATE = 'test_file_copy_disk'
 
 VM_NAMES = dict()
 MOUNT_POINTS = list()
-DISKS_FOR_TEST = list()
+DISKS_FOR_TEST = dict()
 FLOATING_DISKS = list()
 DISKS_BEFORE_COPY = list()
 CHECKSUM_FILES = dict()

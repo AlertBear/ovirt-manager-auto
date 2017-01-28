@@ -397,7 +397,7 @@ class TestCase11264(CopyDiskWithContent):
         """
         disk_objects = [
             d for d in ll_disks.DISKS_API.get(absLink=False)
-            if d.get_id() in config.DISKS_FOR_TEST
+            if d.get_id() in config.DISKS_FOR_TEST[self.storage]
         ]
         copy_disk_args = copy_args.copy()
         copy_disk_args['new_disk_alias'] = self.new_alias
