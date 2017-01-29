@@ -144,47 +144,6 @@ class TestMixCases(VirtTest):
         )
 
     @attr(tier=2)
-    @polarion("RHEVM3-12568")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-    def test_add_bootable_cow_ide_data_disk(self):
-        """
-        Add bootable cow ide data disk to vm
-        """
-
-        testflow.step("Add new VM with bootable cow ide data disk")
-        assert ll_vms.addDisk(
-            True,
-            vm=self.vm_name,
-            provisioned_size=config.GB,
-            storagedomain=self.master_domain,
-            type=config.DISK_TYPE_DATA,
-            format=config.DISK_FORMAT_COW,
-            interface=config.INTERFACE_IDE,
-            bootable=True,
-            wipe_after_delete=True)
-
-    @attr(tier=2)
-    @polarion("RHEVM3-12573")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_sparse_cow_virtio_data_disk(self):
-        """
-        Add sparse cow virtio data disk to vm
-        """
-
-        testflow.step("Add new VM with sparse cow virtio data disk")
-        assert ll_vms.addDisk(
-            True,
-            vm=self.vm_name,
-            provisioned_size=config.GB,
-            storagedomain=self.master_domain,
-            type=config.DISK_TYPE_DATA,
-            format=config.DISK_FORMAT_COW,
-            interface=config.INTERFACE_VIRTIO,
-            sparse=True
-        )
-
-    @attr(tier=2)
     @polarion("RHEVM3-12571")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -326,4 +285,61 @@ class TestLockVM(VirtTest):
             self.base_vm_name,
             vdc=config.VDC_HOST,
             vdc_pass=config.VDC_ROOT_PASSWORD
+        )
+
+
+class TestAddQcowDisk(VirtTest):
+
+    __test__ = True
+
+    vm_name = config.MIX_CASE_TEST
+    add_disk = False
+    master_domain, _, _ = helper.get_storage_domains()
+
+    @attr(tier=2)
+    @polarion("RHEVM3-12573")
+    @pytest.mark.usefixtures(add_vm_fixture.__name__)
+    def test_sparse_cow_virtio_data_disk(self):
+        """
+        Add sparse cow virtio data disk to vm
+        """
+
+        testflow.step(
+            "Adding a new qcow2 disk with virtio interface to vm: %s",
+            self.vm_name
+        )
+        assert ll_vms.addDisk(
+            True,
+            vm=self.vm_name,
+            provisioned_size=config.GB,
+            storagedomain=self.master_domain,
+            type=config.DISK_TYPE_DATA,
+            format=config.DISK_FORMAT_COW,
+            interface=config.INTERFACE_VIRTIO,
+            sparse=True
+        )
+
+    @attr(tier=2)
+    @polarion("RHEVM3-12568")
+    @pytest.mark.usefixtures(add_vm_fixture.__name__)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    def test_add_bootable_cow_ide_data_disk(self):
+        """
+        Add bootable cow ide data disk to vm
+        """
+
+        testflow.step(
+            "Adding a new qcow2 disk with ide interface to vm: %s",
+            self.vm_name
+        )
+        assert ll_vms.addDisk(
+            True,
+            vm=self.vm_name,
+            provisioned_size=config.GB,
+            storagedomain=self.master_domain,
+            type=config.DISK_TYPE_DATA,
+            format=config.DISK_FORMAT_COW,
+            interface=config.INTERFACE_IDE,
+            bootable=True,
+            wipe_after_delete=True
         )
