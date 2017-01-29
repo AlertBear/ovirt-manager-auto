@@ -22,76 +22,8 @@ import golden_env.config as config
 from art.rhevm_api import resources
 
 import logging
-import shlex
 
 logger = logging.getLogger(__name__)
-
-GLOBAL_MAINTENANCE_CMD = "hosted-engine --set-maintenance --mode=global"
-SHUTDOWN_VM = "hosted-engine --vm-poweroff"
-SANLOCK_SHUTDOWN_CMD = "sanlock client shutdown -f 1"
-OVIRT_HA_AGENT_SRV = "ovirt-ha-agent"
-OVIRT_HA_BROKER_SRV = "ovirt-ha-broker"
-SANLOCK_SRV = "sanlock"
-WDMD_SRV = "wdmd"
-SRV_TIMEOUT = 300
-HOSTED_ENGINE_HA_PACKAGE = "rhevm-appliance"
-DEL_STORAGE_ISCSI = "dd if=/dev/zero of=/dev/mapper/%s bs=1024k count=10"
-MOUNT_PATH = "/rhev/data-center/mnt/*"
-UMOUNT_CMD = "umount {0}"
-RM_MOUNT_CMD = "rm -rf {0}"
-
-
-def clean_he_env():
-    """
-    Clean the Golden Environment(GE) in case of hosted engine deployed
-    """
-
-    hosted_host = resources.Host(config.HE_HOST_IP)
-    hosted_host.users.append(resources.RootUser(config.PASSWORDS[0]))
-    hosts_with_he_cap = [hosted_host]
-
-    for host_ip in config.HE_ADDITIONAL_HOSTS:
-        host_resource = resources.Host(host_ip)
-        host_resource.users.append(resources.RootUser(config.PASSWORDS[0]))
-        hosts_with_he_cap.append(host_resource)
-
-    testflow.step("Set the Hosted Engine Cluster, to Global Maintenance mode")
-    hosted_host.run_command(shlex.split(GLOBAL_MAINTENANCE_CMD))
-    testflow.step("Power-off the Hosted Engine VM")
-    hosted_host.run_command(shlex.split(SHUTDOWN_VM))
-
-    for host in hosts_with_he_cap:
-        testflow.step("Stop the %s on %s", OVIRT_HA_AGENT_SRV, host.ip)
-        if not host.service(OVIRT_HA_AGENT_SRV, timeout=SRV_TIMEOUT).stop():
-            logger.error(
-                "Failed to stop the service %s", OVIRT_HA_AGENT_SRV
-            )
-        testflow.step("Stop the %s on %s", OVIRT_HA_BROKER_SRV, host.ip)
-        if not host.service(OVIRT_HA_BROKER_SRV, timeout=SRV_TIMEOUT).stop():
-            logger.error(
-                "Failed to stop the service %s", OVIRT_HA_BROKER_SRV
-            )
-        testflow.step("Sanlock force shutdown")
-        host.run_command(shlex.split(SANLOCK_SHUTDOWN_CMD))
-
-    if config.HE_SD_LUN:
-        testflow.step("Delete the content of lun: %s", config.HE_SD_LUN)
-        del_lun_cmd = DEL_STORAGE_ISCSI % config.HE_SD_LUN
-        hosted_host.run_command(shlex.split(del_lun_cmd))
-
-    for host in hosts_with_he_cap:
-        testflow.step("Remove & clean the mount %s on %s", MOUNT_PATH, host.ip)
-        if not host.run_command(shlex.split(UMOUNT_CMD.format(MOUNT_PATH))):
-            logger.error("Failed to umount %s", MOUNT_PATH)
-        if not host.run_command(shlex.split(RM_MOUNT_CMD.format(MOUNT_PATH))):
-            logger.error("Failed to clean mount point %s", MOUNT_PATH)
-        testflow.step("Restart the %s on %s", SANLOCK_SRV, host.ip)
-        if not host.service(SANLOCK_SRV, timeout=SRV_TIMEOUT).restart():
-            logger.error("Failed to stop the service %s", SANLOCK_SRV)
-
-    testflow.step("Remove the %s from %s", HOSTED_ENGINE_HA_PACKAGE, host.ip)
-    if not hosted_host.package_manager.remove(HOSTED_ENGINE_HA_PACKAGE):
-        logger.error("Failed to remove HE packages from host %s", host.ip)
 
 
 def remove_vm_pools():
@@ -260,12 +192,3 @@ class CleanGoldenEnv(BaseTestCase):
                 cinder_ep.get_name()
             )
             ll_ep.remove_cinder_ep(cinder_ep.get_name())
-
-        try:
-            if config.HE_VM_NAME and ll_vms.get_vm(config.HE_VM_NAME):
-                clean_he_env()
-        except EntityNotFound:
-            logger.error(
-                "Failed to get the Hosted Engine VM, Please make sure you"
-                " need HE details in the conf file of this GE"
-            )

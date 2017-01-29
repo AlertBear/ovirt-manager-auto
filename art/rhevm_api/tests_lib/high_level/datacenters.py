@@ -198,10 +198,6 @@ def clean_datacenter(
         logger.info("  Hosted Engine SD: %s", hosted_engine_sd)
         logger.info("  Master SD: %s", master_domain['masterDomain'])
         logger.info("  VM: %s", hosted_engine_vm)
-        # Set spm priority to default (Medium)
-        ll_hosts.setSPMPriority(
-            positive=True, hostName=hosted_host, spmPriority=5
-        )
         ll_hosts.select_host_as_spm(
             positive=True, host=hosted_host, data_center=datacenter
         )
