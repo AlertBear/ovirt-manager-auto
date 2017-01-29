@@ -105,7 +105,6 @@ class TestCase4816(helpers.TestCaseNFSOptions):
     initializer_class.__name__,
     remove_storage_domain.__name__,
 )
-@bz({'1373581': {}})
 class TestCase4829(helpers.TestCaseNFSOptions):
     """
     Negative test - tests if passed values are correctly validated.
@@ -373,7 +372,6 @@ class TestCase4821(helpers.TestCaseNFSOptions):
 
 @attr(tier=3)
 @pytest.mark.usefixtures(initializer_class.__name__,)
-@bz({'1373581': {}})
 class TestCase4815(helpers.TestCaseNFSOptions):
     """
     Ensure that incorrect and conflicting parameters for creating a storage

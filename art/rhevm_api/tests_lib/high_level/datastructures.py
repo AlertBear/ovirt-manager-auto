@@ -1,5 +1,4 @@
 import copy
-
 from art.rhevm_api.data_struct import data_structures
 
 
@@ -134,9 +133,17 @@ class HostStorage(data_structures.HostStorage, BaseClass):
         data_structures.HostStorage.member_data_items_
     )
     member_data_items_['nfs_timeo'] = data_structures.MemberSpec_(
-        'nfs_timeo', 'xs:string', 0)
+        'nfs_timeo', 'xs:string', 0
+    )
     member_data_items_['nfs_retrans'] = data_structures.MemberSpec_(
-        'nfs_retrans', 'xs:string', 0)
+        'nfs_retrans', 'xs:string', 0
+    )
+    member_data_items_['nfs_version'] = data_structures.MemberSpec_(
+        'nfs_version', 'xs:string', 0
+    )
+    member_data_items_['type_'] = data_structures.MemberSpec_(
+        'type_', 'xs:string', 0
+    )
 
     def _format_string(self, value, input_name):
         return BaseClass._format_string(self, value, input_name)
