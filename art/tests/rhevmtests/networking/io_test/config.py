@@ -25,6 +25,9 @@ NET_DICT = {
     NETS[2][3]: {
         "required": "false",
     },
+    NETS[2][4]: {
+        "required": "false",
+    },
     NETS[3][0]: {
         "required": "false",
     },
@@ -32,6 +35,12 @@ NET_DICT = {
         "required": "false"
     },
     NETS[4][1]: {
+        "required": "false"
+    },
+    NETS[4][2]: {
+        "required": "false"
+    },
+    NETS[4][3]: {
         "required": "false"
     },
 }
