@@ -28,7 +28,8 @@ pytest >= 2.8.7
 pytest-xdist
 pytest-html
 pytest-ordering
-pytest-catchlog
+# WA: https://github.com/eisensheng/pytest-catchlog/issues/55
+git+git://github.com/rhevm-qe-automation/pytest-catchlog.git@junit_compatibility_fix
 # pytest-marker-bugzilla
 git+git://github.com/rhevm-qe-automation/pytest-marker-bugzilla.git
 uritemplate
