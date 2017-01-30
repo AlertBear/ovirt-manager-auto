@@ -8,6 +8,7 @@ import select
 import time
 import logging
 from threading import Thread
+from random import random
 
 
 logger = logging.getLogger("art.utils.mac2ip")
@@ -247,23 +248,26 @@ class DHCPLeasesCatcher(object):
         self.cache = dict()
         self.readers = []
 
-    def add_reader(self, reader, timeout=10):
+    def add_reader(self, reader, timeout=20):
         if not isinstance(reader, Producer):
             raise TypeError("'%s' is not valid Producer class" % reader)
         self.readers.append(reader)
         reader.start()
+        step = timeout / 5.0
+        treshold = 0
         while True:
             if reader.ready:
                 break
-            timeout -= 1
-            if timeout < 0:
+            if treshold > timeout:
                 logger.warn(
                     "The output producer doesn't provide any output yet: %s",
                     reader,
                 )
                 raise ReaderIsNotReady(reader)
             else:
-                time.sleep(1)
+                sleepstep = random() * step
+                time.sleep(sleepstep)
+                treshold += sleepstep
 
     def get_ip(self, mac):
         return self.cache.get(unify_mac_format(mac))
