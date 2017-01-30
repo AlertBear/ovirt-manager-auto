@@ -98,7 +98,11 @@ virtualenv --system-site-packages .art
 echo "export PYTHONPATH=$ART_PATH:$ART_PATH/pytest_customization:$RHEVM_QE_UTILS_PATH:$STORAGE_API_PATH" | tee -a ./.art/bin/activate
 
 source ./.art/bin/activate
+# update pip and its dependencies
+pip install pip -U
+# install ART's requirements
 pip install -U -rrequirements.txt
+# build pytest customization
 python setup_pytest.py install
 
 virtualenv --relocatable .art
