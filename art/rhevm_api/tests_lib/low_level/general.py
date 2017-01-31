@@ -323,7 +323,7 @@ def get_log_msg(
             if isinstance(v, bool):
                 continue
 
-            key = re.findall(k, log_action, re.IGNORECASE)[0]
+            key = re.findall(r'\b%s\b' % k, log_action, re.IGNORECASE)[0]
             v = ",".join(v) if isinstance(v, list) else v
             log_action = log_action.replace(
                 key, "{key} {val}".format(key=key, val=v)
