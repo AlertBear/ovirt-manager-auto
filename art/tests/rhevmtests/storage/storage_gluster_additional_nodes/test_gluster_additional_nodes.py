@@ -27,8 +27,7 @@ from rhevmtests.storage import config
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
-
-NODES = config.GLUSTER_REPLICA_SERVERS
+NODES = [None] * 3
 SPM_HOST = None
 SPM_HOST_IP = None
 SD_INACTIVE_TIMEOUT = 7 * 60
@@ -39,10 +38,14 @@ def setup_module():
     """
     Deactivate all hosts except for one
     """
-    if not NODES or not config.GLUSTER_REPLICA_PATH:
+    # TODO: Remove the use of the NODES list from the class attributes
+    # when moved to fixtures
+    global NODES
+    if not config.GLUSTER_REPLICA_PATH:
         raise exceptions.CannotRunTests(
             "Cannot run tests, missing gluster resources"
         )
+    NODES = config.GLUSTER_REPLICA_SERVERS
     global SPM_HOST, SPM_HOST_IP
     SPM_HOST = ll_hosts.getSPMHost(config.HOSTS)
     SPM_HOST_IP = ll_hosts.getHostIP(SPM_HOST)
@@ -164,7 +167,7 @@ class BaseGlusterMount(BaseTestCase):
         )
 
     def verify_add_storage_domain(
-            self, positive, address=NODES[0], backupvolfile_list=NODES[1:3]
+            self, positive, address=None, backupvolfile_list=None
     ):
         """
         Add a gluster storage domain with optional backup volume files
@@ -383,7 +386,6 @@ class Test12320(BaseGlusterMount):
     Test Gulester setup with Unavailable Master and 2 Available secondary
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [NODES[0]]
     # BZ1303977: KeyError when primary server used to mount gluster volume is
     # down
     bz = {'1303977': {'engine': None, 'version': ["3.6"]}}
@@ -411,7 +413,6 @@ class Test12322(BaseGlusterMount):
     Test Gluster setup with Available Master and 1 Available Secondary
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [NODES[1]]
 
     @polarion("RHEVM3-12322")
     def test_creation_backupvolfile(self):
@@ -429,7 +430,6 @@ class Test12323(BaseGlusterMount):
     Test Gluster setup with Unavailable Master and 1 Available Secondary
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [NODES[0], NODES[1]]
 
     @polarion("RHEVM3-12323")
     def test_creation_backupvolfile(self):
@@ -468,7 +468,6 @@ class Test12325(BaseGlusterMount):
     secondary RHS servers
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [NODES[1], NODES[2]]
 
     @polarion("RHEVM3-12325")
     def test_creation_backupvolfile(self):
@@ -487,7 +486,6 @@ class Test12326(BaseGlusterMount):
     Test Gluster setup with with All RHS servers unavailable
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = NODES
 
     @polarion("RHEVM3-12326")
     def test_creation_backupvolfile(self):
