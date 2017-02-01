@@ -20,10 +20,7 @@ SKIP_MESSAGE_CPU = (
     "Skip windows test: \n"
     "Cluster not support minimum CPU: 'Intel SandyBridge Family'"
 )
-# templates
-WINDOWS_TEMPLATES_NAME = [
-    TEMPLATE_NAME[1], TEMPLATE_NAME[2], TEMPLATE_NAME[3]
-]
+
 WINDOWS_VM_NAMES = [
     WINDOWS_2008_RC2, WINDOWS_7, WINDOWS_2012
 ]

@@ -68,8 +68,12 @@ def create_windows_vms(request, update_cluster):
 
     request.addfinalizer(fin)
     testflow.setup("Create Windows VMS %s", config.WINDOWS_VM_NAMES)
+    windows_templates_names = [
+        config.TEMPLATE_NAME[1], config.TEMPLATE_NAME[2],
+        config.TEMPLATE_NAME[3]
+    ]
     for vm_name, template_name in zip(
-        config.WINDOWS_VM_NAMES, config.WINDOWS_TEMPLATES_NAME
+        config.WINDOWS_VM_NAMES, windows_templates_names
     ):
         assert virt_helper.create_vm_from_template(
             vm_name=vm_name,
