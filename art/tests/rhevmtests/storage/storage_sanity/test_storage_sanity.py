@@ -1,104 +1,51 @@
+"""
+Test storage sanity
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_1_Storage_Sanity
+"""
+import pytest
 import logging
 import config
-from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sds
 from art.rhevm_api.tests_lib.low_level import (
-    hosts as ll_hosts,
-    jobs as ll_jobs,
+
     storagedomains as ll_sds,
     vms as ll_vms,
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.test_handler import exceptions
 from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
 from art.unittest_lib import attr, StorageTest as TestCase, testflow
-import rhevmtests.helpers as rhevm_helpers
-import rhevmtests.storage.helpers as storage_helpers
+from rhevmtests.storage.fixtures import remove_vm  # noqa
+from rhevmtests.storage.fixtures import (
+    create_storage_domain, create_vm,
+)
+from rhevmtests.storage.storage_sanity.fixtures import (
+    get_storage_domain_size, prepare_storage_parameters,
+)
+
+from art.test_handler.tools import bz  # noqa
+
 
 logger = logging.getLogger(__name__)
 
-SPM_TIMEOUT = 600
-SPM_SLEEP = 5
-MIN_UNUSED_LUNS = 2
 ISCSI = config.STORAGE_TYPE_ISCSI
-NFS = config.STORAGE_TYPE_NFS
-GLUSTER = config.STORAGE_TYPE_GLUSTER
-ENUMS = config.ENUMS
 
 
-def setup_module():
-    """
-    Clean the storage domains which not in the ge yaml
-    """
-    rhevm_helpers.storage_cleanup()
-
-
+@pytest.mark.usefixtures(
+    create_storage_domain.__name__,
+    get_storage_domain_size.__name__
+)
 @attr(tier=1)
 class TestCase11591(TestCase):
     """
-    storage sanity test, create and extend a Data domain
+    Storage sanity test, create and extend a data domain
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Sanity
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     polarion_test_case = '11591'
-
-    def setUp(self):
-        """
-        Creates a storage domain
-        """
-        if not ll_hosts.waitForSPM(
-            config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP
-        ):
-            raise exceptions.HostException(
-                "SPM is not set on the current Data center"
-            )
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-
-        assert len(config.UNUSED_LUNS) >= MIN_UNUSED_LUNS, (
-            "There are less than %s unused LUNs, aborting test" %
-            MIN_UNUSED_LUNS
-        )
-        self.sd_name = "{0}_{1}".format(
-            self.polarion_test_case, "iSCSI_Domain"
-        )
-        logger.info("The unused LUNs found are: '%s'", config.UNUSED_LUNS)
-        status_attach_and_activate = hl_sds.addISCSIDataDomain(
-            self.spm_host, self.sd_name,
-            config.DATA_CENTER_NAME, config.UNUSED_LUNS["lun_list"][0],
-            config.UNUSED_LUNS["lun_addresses"][0],
-            config.UNUSED_LUNS["lun_targets"][0], override_luns=True
-        )
-        assert status_attach_and_activate, (
-            "The domain was not added and activated successfully"
-        )
-        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
-        assert ll_sds.wait_for_storage_domain_available_size(
-            config.DATA_CENTER_NAME, self.sd_name,
-        )
-        self.domain_size = ll_sds.get_total_size(self.sd_name)
-        logger.info(
-            "Total size for domain '%s' is '%s'",
-            self.sd_name, self.domain_size
-        )
-
-    def tearDown(self):
-        """
-        Removes storage domain created with setUp
-        """
-        logger.info(
-            "Waiting for tasks before deactivating/removing the storage domain"
-        )
-        wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
-        logger.info("Removing Storage domain '%s'", self.sd_name)
-        assert ll_sds.removeStorageDomains(
-            True, self.sd_name, self.spm_host
-        ), "Failed to remove domain '%s'" % self.sd_name
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
 
     @polarion("RHEVM3-11591")
     def test_create_and_extend_storage_domain(self):
@@ -113,24 +60,28 @@ class TestCase11591(TestCase):
         }
         testflow.step(
             "Extending storage domain %s, current size is %s",
-            self.sd_name, self.domain_size
+            self.new_storage_domain, self.domain_size
         )
         hl_sds.extend_storage_domain(
-            self.sd_name, self.storage, self.spm_host, **extend_lun
+            self.new_storage_domain, self.storage, self.spm, **extend_lun
         )
         ll_sds.wait_for_change_total_size(
-            self.sd_name, self.domain_size
+            self.new_storage_domain, self.domain_size
         )
-        extended_sd_size = ll_sds.get_total_size(self.sd_name)
+        extended_sd_size = ll_sds.get_total_size(self.new_storage_domain)
         testflow.step(
             "Total size for domain '%s' after extend is '%s'",
-            self.sd_name, extended_sd_size
+            self.new_storage_domain, extended_sd_size
         )
         assert extended_sd_size > self.domain_size, (
             "The extended storage domain size hasn't increased"
         )
 
 
+@pytest.mark.usefixtures(
+    create_storage_domain.__name__,
+    get_storage_domain_size.__name__
+)
 @attr(tier=2)
 class TestCase11592(TestCase):
     """
@@ -140,169 +91,73 @@ class TestCase11592(TestCase):
     """
     __test__ = True
     polarion_test_case = '11592'
-    sd_name = None
-
-    def setUp(self):
-        """
-        Creates a storage domain
-        """
-        if not ll_hosts.waitForSPM(
-            config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP
-        ):
-            raise exceptions.HostException(
-                "SPM is not set on the current Data center"
-            )
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-
-        if self.storage in config.BLOCK_TYPES:
-            if not len(config.UNUSED_LUNS) >= 1:
-                raise exceptions.StorageDomainException(
-                    "There are no unused LUNs, aborting test"
-                )
-            self.sd_name = "{0}_{1}".format(
-                self.polarion_test_case, "iSCSI_Domain"
-            )
-            status_attach_and_activate = hl_sds.addISCSIDataDomain(
-                self.spm_host,
-                self.sd_name,
-                config.DATA_CENTER_NAME,
-                config.UNUSED_LUNS["lun_list"][0],
-                config.UNUSED_LUNS["lun_addresses"][0],
-                config.UNUSED_LUNS["lun_targets"][0],
-                override_luns=True
-            )
-            if not status_attach_and_activate:
-                raise exceptions.StorageDomainException(
-                    "Creating iSCSI domain '%s' failed" % self.sd_name
-                )
-        elif self.storage == config.STORAGE_TYPE_NFS:
-            self.sd_name = "{0}_{1}".format(
-                self.polarion_test_case, "NFS_Domain"
-            )
-            self.nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-            self.nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[0]
-            status = hl_sds.addNFSDomain(
-                host=self.spm_host,
-                storage=self.sd_name,
-                data_center=config.DATA_CENTER_NAME,
-                address=self.nfs_address,
-                path=self.nfs_path,
-                format=True
-            )
-            if not status:
-                raise exceptions.StorageDomainException(
-                    "Creating NFS domain '%s' failed" % self.sd_name
-                )
-        elif self.storage == config.STORAGE_TYPE_GLUSTER:
-            self.sd_name = "{0}_{1}".format(
-                self.polarion_test_case, "Gluster_Domain"
-            )
-            self.gluster_address = (
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
-            )
-            self.gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
-            status = hl_sds.addGlusterDomain(
-                host=self.spm_host,
-                name=self.sd_name,
-                data_center=config.DATA_CENTER_NAME,
-                address=self.gluster_address,
-                path=self.gluster_path,
-                vfs_type=config.ENUMS['vfs_type_glusterfs']
-            )
-            if not status:
-                raise exceptions.StorageDomainException(
-                    "Creating Gluster domain '%s' failed" % self.sd_name
-                )
-        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
-
-    def tearDown(self):
-        """
-        Removes storage domain created with setUp
-        """
-        if self.sd_name is not None:
-            logger.info(
-                "Waiting for tasks before deactivating/removing the "
-                "storage domain"
-            )
-            wait_for_tasks(
-                config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-            )
-            logger.info("Removing Storage domain '%s'", self.sd_name)
-            try:
-                status = ll_sds.removeStorageDomains(
-                    True, self.sd_name, self.spm_host
-                )
-                if not status:
-                    raise exceptions.StorageDomainException(
-                        "Failed to remove domain '%s'" % self.sd_name
-                    )
-            except apis_exceptions.EntityNotFound:
-                logger.info(
-                    "Storage domain '%s' wasn't added successfully, "
-                    "nothing to remove", self.sd_name
-                )
 
     @polarion("RHEVM3-11592")
     def test_change_domain_status_test(self):
         """
         Test checks if attaching/detaching storage domains works properly,
-        including ensuring that it is impossible to detach an active domain
+        includes ensuring that it's impossible to detach an active domain
         """
-        logger.info("Attempt to detach an active domain - this should fail")
+        testflow.step("Attempt to detach an active domain - this should fail")
         assert ll_sds.detachStorageDomain(
-            False, config.DATA_CENTER_NAME, self.sd_name
+            False, config.DATA_CENTER_NAME, self.new_storage_domain
         ), (
-            "Detaching non-master active domain '%s' worked" % self.sd_name
-        )
+            "Detaching non-master active domain '%s' worked" %
+            self.new_storage_domain
+           )
 
         logger.info("Waiting for tasks before deactivating the storage domain")
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        logger.info("De-activate non-master data domain")
+        testflow.step("De-activate non-master data domain")
         assert ll_sds.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name
+            True, config.DATA_CENTER_NAME, self.new_storage_domain
         ), (
-            "De-activating non-master domain '%s' failed" % self.sd_name
-        )
+            "De-activating non-master domain '%s' failed"
+            % self.new_storage_domain
+           )
 
-        logger.info("Re-activate non-master data domain")
+        testflow.step("Re-activate non-master data domain")
         assert ll_sds.activateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name
+            True, config.DATA_CENTER_NAME, self.new_storage_domain
         ), (
-            "Activating non-master data domain '%s' failed" % self.sd_name
-        )
+            "Activating non-master data domain '%s' failed"
+            % self.new_storage_domain
+           )
 
         logger.info("Waiting for tasks before deactivating the storage domain")
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        logger.info("Deactivating non-master data domain")
+        testflow.step("Deactivating non-master data domain")
         assert hl_sds.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, self.sd_name
+            config.DATA_CENTER_NAME, self.new_storage_domain
         ), "Detaching and De-activating non-master domain '%s' failed" % (
-            self.sd_name
+            self.new_storage_domain
         )
 
         # In local DC, once a domain is detached it is removed completely
         # so it cannot be reattached - only run this part of the test
         # for non-local DCs
         if not config.LOCAL:
-            logger.info("Attaching non-master data domain")
+            testflow.step("Attaching non-master data domain")
             assert ll_sds.attachStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-            ), "Attaching non-master data domain '%s' failed" % self.sd_name
+                True, config.DATA_CENTER_NAME, self.new_storage_domain
+            ), "Attaching non-master data domain '%s' failed" \
+               % self.new_storage_domain
 
-            logger.info("Activating non-master data domain")
+            testflow.step("Activating non-master data domain")
             assert ll_sds.activateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-            ), "Activating non-master data domain '%s' failed" % self.sd_name
+                True, config.DATA_CENTER_NAME, self.new_storage_domain
+            ), "Activating non-master data domain '%s' failed" \
+               % self.new_storage_domain
 
 
 @attr(tier=2)
 class TestCase11593(TestCase):
     """
-    storage sanity test, changing master domain
+    Storage sanity test, changing master domain
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Sanity
     """
@@ -311,7 +166,8 @@ class TestCase11593(TestCase):
 
     @polarion("RHEVM3-11593")
     def test_change_master_domain_test(self):
-        """ test checks if changing master domain works correctly
+        """
+        Test checks if changing master domain works correctly
         """
         found, master_domain = ll_sds.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME
@@ -320,7 +176,7 @@ class TestCase11593(TestCase):
 
         old_master_domain_name = master_domain['masterDomain']
 
-        logger.info("Deactivating master domain")
+        testflow.step("Deactivating master domain")
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
@@ -332,15 +188,19 @@ class TestCase11593(TestCase):
         found, new_master = ll_sds.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME
         )
-        logger.info("New master: %s" % new_master)
+        testflow.step("New master: %s" % new_master)
         assert found, "New master domain not found"
 
-        logger.info("Activating old master domain")
+        testflow.step("Activating old master domain")
         assert ll_sds.activateStorageDomain(
             True, config.DATA_CENTER_NAME, old_master_domain_name
         ), "Cannot activate old master domain"
 
 
+@pytest.mark.usefixtures(
+    prepare_storage_parameters.__name__,
+    create_vm.__name__
+)
 @attr(tier=2)
 class TestCase11581(TestCase):
     """
@@ -352,37 +212,6 @@ class TestCase11581(TestCase):
     """
     __test__ = True
     polarion_test_case = '11581'
-    interface = config.VIRTIO
-    formats = [config.COW_DISK, config.RAW_DISK]
-    num_of_disks = 2
-
-    def setUp(self):
-        """
-        Configure storage parameters
-        """
-        self.storage_domain = ll_sds.get_master_storage_domain_name(
-            config.DATA_CENTER_NAME
-        )
-        self.disk_count = 0
-        logger.info("Creating vm and installing OS on it")
-        create_vm_args = config.create_vm_args.copy()
-        self.vm_name = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_VM
-        )
-        create_vm_args['vmName'] = self.vm_name
-        create_vm_args['vmDescription'] = self.vm_name
-        create_vm_args['storageDomainName'] = self.storage_domain
-        if not storage_helpers.create_vm_or_clone(**create_vm_args):
-            raise exceptions.VMException(
-                "Failed to create VM '%s'" % self.vm_name
-            )
-        self.domains = list()
-        for storage_type in config.STORAGE_SELECTOR:
-            self.domains.append(
-                ll_sds.getStorageDomainNamesForType(
-                    config.DATA_CENTER_NAME, storage_type
-                )[0]
-            )
 
     @polarion("RHEVM3-11581")
     def test_multiple_disks_on_different_sd(self):
@@ -402,7 +231,7 @@ class TestCase11581(TestCase):
             for index in range(self.num_of_disks):
                 logger.info(
                     "Add new disk - format %s, interface %s",
-                    self.formats[index], self.interface
+                    self.formats[index], config.VIRTIO
                 )
                 if self.formats[index] == config.RAW_DISK:
                     policy_allocation = False
@@ -412,7 +241,7 @@ class TestCase11581(TestCase):
                 assert ll_vms.addDisk(
                     True, self.vm_name, config.GB, True,
                     storage, type=config.DISK_TYPE_DATA,
-                    interface=self.interface, format=self.formats[index],
+                    interface=config.VIRTIO, format=self.formats[index],
                     sparse=policy_allocation
                 ), "Failed to add disk"
                 self.disk_count += 1
@@ -426,12 +255,3 @@ class TestCase11581(TestCase):
         assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True), (
             "Failed to start vm %s" % self.vm_name
         )
-
-    def tearDown(self):
-        """
-        Removes storage domains created in test case
-        """
-        if not ll_vms.safely_remove_vms([self.vm_name]):
-            logger.error("Failed to power off and remove vm %s", self.vm_name)
-            TestCase.test_failed = True
-        TestCase.teardown_exception()

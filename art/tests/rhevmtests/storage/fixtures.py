@@ -475,13 +475,13 @@ def create_storage_domain(request):
     if not hasattr(self, 'index'):
         self.index = 0
     name = self.new_storage_domain
-    spm = ll_hosts.getSPMHost(config.HOSTS)
+    self.spm = ll_hosts.getSPMHost(config.HOSTS)
     testflow.setup(
         "Create new storage domain %s", self.new_storage_domain
     )
     if self.storage == ISCSI:
         status = hl_sd.addISCSIDataDomain(
-            spm,
+            self.spm,
             name,
             config.DATA_CENTER_NAME,
             config.UNUSED_LUNS[self.index],
@@ -492,7 +492,7 @@ def create_storage_domain(request):
 
     elif self.storage == FCP:
         status = hl_sd.addFCPDataDomain(
-            spm,
+            self.spm,
             name,
             config.DATA_CENTER_NAME,
             config.UNUSED_FC_LUNS[self.index],
@@ -502,7 +502,7 @@ def create_storage_domain(request):
         nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[self.index]
         nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[self.index]
         status = hl_sd.addNFSDomain(
-            host=spm,
+            host=self.spm,
             storage=name,
             data_center=config.DATA_CENTER_NAME,
             address=nfs_address,
@@ -515,7 +515,7 @@ def create_storage_domain(request):
         )
         gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[self.index]
         status = hl_sd.addGlusterDomain(
-            host=spm,
+            host=self.spm,
             name=name,
             data_center=config.DATA_CENTER_NAME,
             address=gluster_address,
@@ -528,7 +528,7 @@ def create_storage_domain(request):
         )
         posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[self.index]
         status = hl_sd.addPosixfsDataDomain(
-            host=spm,
+            host=self.spm,
             storage=name,
             data_center=config.DATA_CENTER_NAME,
             address=posix_address,
