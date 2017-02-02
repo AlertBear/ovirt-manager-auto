@@ -280,8 +280,8 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
         bond_obj = data_st.Bonding()
         options = data_st.Options()
         slaves = data_st.HostNics()
-        if mode:
-            options.add_option(data_st.Option(name=MODE, value=mode))
+        if mode is not None:  # BOND mode can be 0
+            options.add_option(data_st.Option(name=MODE, value=str(mode)))
         if mii_mon:
             options.add_option(data_st.Option(name=MIIMON, value=mii_mon))
 

@@ -6,12 +6,32 @@ Global fixtures
 """
 
 import pytest
-from concurrent.futures import ThreadPoolExecutor
+
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.networking.config as conf
+import fixtures_helper
 from art.unittest_lib import testflow
+
+
+@pytest.fixture()
+def stop_vms_fixture_function(request):
+    """
+    Stop VM(s).
+    """
+    vms_dict = request.getfixturevalue("start_vms_dict")
+    vms_dict = vms_dict or dict()
+    vms_to_stop = fixtures_helper.get_fixture_val(
+        request=request, attr_name="vms_to_stop", default_value=vms_dict.keys()
+    )
+
+    def fin():
+        """
+        Stop VM(s).
+        """
+        testflow.teardown("Stop VMs %s", vms_to_stop)
+        assert ll_vms.stop_vms_safely(vms_list=vms_to_stop)
+    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")
@@ -30,26 +50,16 @@ def start_vm(request):
         assert ll_vms.stop_vms_safely(vms_list=vms_to_stop)
     request.addfinalizer(fin)
 
-    results = list()
-    with ThreadPoolExecutor(max_workers=len(vms_dict.keys())) as executor:
-        for vm, val in vms_dict.iteritems():
-            vm_obj = ll_vms.get_vm(vm)
-            if vm_obj.get_status() == conf.ENUMS['vm_state_down']:
-                host_index = val.get("host")
-                wait_for_status = val.get("wait_for_status", conf.VM_UP)
-                host_name = (
-                    conf.HOSTS[host_index] if host_index is not None else None
-                )
-                log = "on host %s" % host_name if host_name else ""
-                testflow.setup("Start VM %s %s", vm, log)
-                results.append(
-                    executor.submit(
-                        ll_vms.runVmOnce, positive=True, vm=vm,
-                        host=host_name, wait_for_state=wait_for_status
-                    )
-                )
-    for result in results:
-        assert result.result(), result.exception()
+    fixtures_helper.start_vm_helper(vms_dict=vms_dict)
+
+
+@pytest.fixture()
+def start_vms_fixture_function(request, stop_vms_fixture_function):
+    """
+    Run VMs once.
+    """
+    vms_dict = request.getfixturevalue("start_vms_dict") or dict()
+    fixtures_helper.start_vm_helper(vms_dict=vms_dict)
 
 
 @pytest.fixture(scope="class")
