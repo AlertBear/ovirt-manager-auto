@@ -65,8 +65,7 @@ LSBLK_CMD = 'lsblk -o NAME'
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
-FIND_CMD = 'locate %s'
-UPDATEDB = 'updatedb'
+FIND_CMD = 'test -e %s'
 ECHO_CMD = 'echo %s > %s'
 CREATE_FILE_CMD = 'touch %s/%s'
 CREATE_FILESYSTEM_CMD = 'mkfs.%s %s'
@@ -899,8 +898,9 @@ def create_fs_on_disk(vm_name, disk_alias, executor=None):
         return rc, out
     # '1': create the fs as the first partition
     # '?': createFileSystem will return a random mount point
+    logger.info("Creating a File-system on first partition")
     mount_point = create_filesystem(
-        vm_name, disk_logical_volume_name, '1', FILESYSTEM, '?',
+        vm_name, disk_logical_volume_name, '1', FILESYSTEM, '?', executor
     )
     return True, mount_point
 
@@ -1008,9 +1008,6 @@ def does_file_exist(vm_name, file_name, vm_executor=None):
     :rtype: bool
     """
     command = FIND_CMD % file_name
-    _run_cmd_on_remote_machine(
-        vm_name, UPDATEDB, vm_executor=vm_executor
-    )
     return _run_cmd_on_remote_machine(
         vm_name, command, vm_executor=vm_executor
     )
@@ -1330,7 +1327,9 @@ def add_storage_domain(storage_domain, data_center, index, storage_type):
     )
 
 
-def create_filesystem(vm_name, device, partition, fs='ext4', targetDir=None):
+def create_filesystem(
+    vm_name, device, partition, fs='ext4', targetDir=None, executor=None
+):
     """
     Creates a filesystem on given path
 
@@ -1344,13 +1343,15 @@ def create_filesystem(vm_name, device, partition, fs='ext4', targetDir=None):
         fs (str): The file system type
         targetDir (str): The mount point location in the guest where the file
         system will be mounted on
+
     Returns:
         The target directory where the file system is mounted on
+
     Raises:
-         Exceptions
+         AssertionError: In case of any failure
     """
     create_fs_cmd = CREATE_FILESYSTEM_CMD % (fs, device + partition)
-    out = _run_cmd_on_remote_machine(vm_name, create_fs_cmd)
+    out = _run_cmd_on_remote_machine(vm_name, create_fs_cmd, executor)
     assert out, (
         errors.CreateFileSystemError(create_fs_cmd, out)
     )
@@ -1359,7 +1360,9 @@ def create_filesystem(vm_name, device, partition, fs='ext4', targetDir=None):
             sha1 = hashlib.sha1("%f" % time.time()).hexdigest()
             targetDir = '/mount-point%s' % sha1
         mount_point_create_cmd = 'mkdir ' + '-p ' + targetDir
-        out = _run_cmd_on_remote_machine(vm_name, mount_point_create_cmd)
+        out = _run_cmd_on_remote_machine(
+            vm_name, mount_point_create_cmd, executor
+        )
         assert out, (
             errors.MountError(
                 "failed to create target directory" % out
@@ -1371,14 +1374,16 @@ def create_filesystem(vm_name, device, partition, fs='ext4', targetDir=None):
         insert_to_fstab = (
             'echo "{0}" >> {1}'.format(fstab_line, '/etc/fstab')
         )
-        out = _run_cmd_on_remote_machine(vm_name, insert_to_fstab)
+        out = _run_cmd_on_remote_machine(
+            vm_name, insert_to_fstab, executor
+        )
         assert out, (
             errors.MountError(
                 "failed to add mount point to fstab", out
             )
         )
         mount_cmd = 'mount -a'
-        out = _run_cmd_on_remote_machine(vm_name, mount_cmd)
+        out = _run_cmd_on_remote_machine(vm_name, mount_cmd, executor)
         assert out, (
             errors.MountError(
                 "failed to mount FS", out

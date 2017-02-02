@@ -260,10 +260,11 @@ class CopyDiskWithContent(BasicEnvironment):
         config.DISKS_BEFORE_COPY = ll_disks.get_non_ovf_disks()
         self.basic_copy(self.cloned_vm)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        helpers.check_file_existence(self.test_vm_name)
+        assert helpers.check_file_existence(
+            self.test_vm_name, storage_type=self.storage
+        )
 
 
-@attr(tier=1)
 class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     """
     Copy disk - basic flow
@@ -272,13 +273,16 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
 
     @polarion("RHEVM3-11246")
     @bz({'1334726': {'ppc': config.PPC_ARCH}})
+    @attr(tier=1)
     def test_same_domain_same_alias(self):
         """
         Copy existing disk to the same storage domain with the same alias
         """
         self.basic_copy(self.vm_name)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        helpers.check_file_existence(self.test_vm_name)
+        assert helpers.check_file_existence(
+            self.test_vm_name, storage_type=self.storage
+        )
 
     @polarion("RHEVM3-11247")
     @attr(tier=2)
@@ -290,7 +294,9 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
             self.vm_name, same_domain=False, new_alias=self.new_alias
         )
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        helpers.check_file_existence(self.test_vm_name)
+        assert helpers.check_file_existence(
+            self.test_vm_name, storage_type=self.storage
+        )
 
     @polarion("RHEVM3-11242")
     @attr(tier=3)
@@ -300,7 +306,9 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         """
         self.basic_copy(self.vm_name, same_domain=False)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        helpers.check_file_existence(self.test_vm_name)
+        assert helpers.check_file_existence(
+            self.test_vm_name, storage_type=self.storage
+        )
 
     @polarion("RHEVM3-11248")
     @attr(tier=3)
@@ -310,7 +318,9 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         """
         self.basic_copy(self.vm_name, new_alias=self.new_alias)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        helpers.check_file_existence(self.test_vm_name)
+        assert helpers.check_file_existence(
+            self.test_vm_name, storage_type=self.storage
+        )
 
 
 class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
@@ -448,7 +458,9 @@ class TestCase11339(CopyDiskWithContent):
 
         self.basic_copy(self.vm_name)
         helpers.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
-        helpers.check_file_existence(self.test_vm_name)
+        assert helpers.check_file_existence(
+            self.test_vm_name, storage_type=self.storage
+        )
 
 
 @attr(tier=3)

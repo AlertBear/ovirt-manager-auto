@@ -9,7 +9,7 @@ VM_NAME = TESTNAME + "_vm_%s"
 TEST_FILE_TEMPLATE = 'test_file_copy_disk'
 
 VM_NAMES = dict()
-MOUNT_POINTS = list()
+MOUNT_POINTS = dict()
 DISKS_FOR_TEST = dict()
 FLOATING_DISKS = list()
 DISKS_BEFORE_COPY = list()

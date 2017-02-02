@@ -86,7 +86,7 @@ def prepare_disks_for_test(vm_name, storage_type, storage_domain):
     """
 
     testflow.setup("Creating FS on VM's %s disks", vm_name)
-    config.DISKS_FOR_TEST[storage_type], config.MOUNT_POINTS = (
+    config.DISKS_FOR_TEST[storage_type], config.MOUNT_POINTS[storage_type] = (
         storage_helpers.prepare_disks_with_fs_for_vm(
             storage_domain, storage_type, vm_name
         )
@@ -101,14 +101,13 @@ def prepare_disks_for_test(vm_name, storage_type, storage_domain):
             alias=new_vm_disk_name
         )
     testflow.setup("Creating files on disks")
-    if not create_files_on_vm_disks(vm_name):
-        raise exceptions.DiskException(
-            "Failed to create files on vm's disks"
-        )
+    assert create_files_on_vm_disks(vm_name, storage_type), (
+        "Failed to create files on vm's disks"
+    )
     config.DISKS_BEFORE_COPY = ll_disks.get_non_ovf_disks()
 
 
-def create_files_on_vm_disks(vm_name):
+def create_files_on_vm_disks(vm_name, storage_type):
     """
     Files will be created on vm's disks with name:
     'test_file_<iteration_number>'
@@ -117,9 +116,9 @@ def create_files_on_vm_disks(vm_name):
         assert ll_vms.startVm(
             True, vm_name, config.VM_UP, wait_for_ip=True
         )
-    config.CHECKSUM_FILES = dict()
+    config.CHECKSUM_FILES[storage_type] = dict()
     vm_executor = storage_helpers.get_vm_executor(vm_name)
-    for mount_dir in config.MOUNT_POINTS:
+    for mount_dir in config.MOUNT_POINTS[storage_type]:
         logger.info("Creating file in %s", mount_dir)
         full_path = os.path.join(mount_dir, config.TEST_FILE_TEMPLATE)
         rc = storage_helpers.create_file_on_vm(
@@ -132,20 +131,24 @@ def create_files_on_vm_disks(vm_name):
             )
             return False
         if not storage_helpers.write_content_to_file(
-            vm_name, full_path
+            vm_name, full_path, vm_executor=vm_executor
         ):
             logger.error(
                 "Failed to write content to file %s on vm %s",
                 full_path, vm_name
             )
-        config.CHECKSUM_FILES[full_path] = storage_helpers.checksum_file(
-            vm_name, full_path
+            return False
+        config.CHECKSUM_FILES[storage_type][full_path] = (
+            storage_helpers.checksum_file(
+                vm_name, full_path, vm_executor
+            )
         )
     return True
 
 
 def check_file_existence(
-    vm_name, file_name=config.TEST_FILE_TEMPLATE, should_exist=True
+    vm_name, file_name=config.TEST_FILE_TEMPLATE, should_exist=True,
+    storage_type=None
 ):
     """
     Determines whether file exists on mounts
@@ -155,7 +158,7 @@ def check_file_existence(
     state = not should_exist
     vm_executor = storage_helpers.get_vm_executor(vm_name)
     # For each mount point, check if the corresponding file exists
-    for mount_dir in config.MOUNT_POINTS:
+    for mount_dir in config.MOUNT_POINTS[storage_type]:
         full_path = os.path.join(mount_dir, file_name)
         testflow.step("Checking if file %s exists", full_path)
         result = storage_helpers.does_file_exist(
@@ -165,11 +168,13 @@ def check_file_existence(
             "File %s %s",
             file_name, 'exists' if result else 'does not exist'
         )
+        if should_exist and not result:
+            return False
         if result:
             checksum = storage_helpers.checksum_file(
-                vm_name, full_path
+                vm_name, full_path, vm_executor
             )
-            if checksum != config.CHECKSUM_FILES[full_path]:
+            if checksum != config.CHECKSUM_FILES[storage_type][full_path]:
                 logger.error(
                     "File exists but it's content changed since it's "
                     "creation!"

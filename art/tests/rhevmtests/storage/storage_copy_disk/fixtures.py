@@ -90,6 +90,9 @@ def create_test_vm(request, remove_vm):
     """
     self = request.node.cls
 
+    self.test_vm_name = storage_helpers.create_unique_object_name(
+        "test_copy_disk_%s" % self.storage, config.OBJECT_TYPE_VM
+    )
     testflow.setup("Creating new VM %s", self.test_vm_name)
     ll_vms.createVm(
         True, self.test_vm_name, self.test_vm_name,
