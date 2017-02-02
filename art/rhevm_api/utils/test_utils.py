@@ -138,25 +138,6 @@ class GetApi(object):
 get_api = GetApi
 
 
-def raise_if_false(results, collection, message, exc):
-    """
-    Raises exception if False occurs in results. Message must contain one
-    placeholder for string which will be items from collection on which place
-    False is.
-
-    Parameters:
-      * results - list of boolean
-      * collection - set/list of items (e.g. hosts, vms ,...)
-      * message - a message that describe the item that cause the False in
-        results
-      * exc - exception in case of False in results
-    """
-    if False in results:
-        failed = [collection[i] for i, result in enumerate(results)
-                  if not result]
-        raise exc(message % failed)
-
-
 def split(s):
     '''
     Split `s` by comma and/or by whitespace.
@@ -358,72 +339,10 @@ def update_vm_status_in_database(vm_name, status, vdc, vdc_pass,
     return setup.psql(query, psql_db=psql_db)
 
 
-def setSELinuxEnforce(address, password, enforce):
-    '''
-    Disables SELinux on the machine
-    Author: jvorcak
-    Parameters:
-       * address - ip address of machine
-       * password - ssh password for root user
-       * enforce - value which should be placed in /selinux/enforce
-              should be 0/1
-    Return: (True if command executed successfuly, False otherwise)
-    '''
-    machine = Machine(address, 'root', password).util(LINUX)
-    return machine.setSELinuxEnforce(enforce)
-
-
-def yum(address, password, package, action):
-    """
-    Description: wraper for yum functionality
-    Parameters:
-     * address - target machine
-     * password - password for user root
-     * package - name of package
-     * action - yum action; install/remove/update ...
-    Return: True/False
-    """
-    machine = Machine(address, 'root', password).util(LINUX)
-    return machine.yum(package, action)
-
-
 def cleanupData(path):
     if path and os.path.exists(path):
         shutil.rmtree(path, ignore_errors=True)
     return True
-
-
-def removeTools(positive, machine, timeout=500, packs='desktop'):
-    ''''Wrapper for removeToolsFromGuest'''
-    return machine.removeToolsFromGuest(timeout, packs)
-
-
-def createMachine(positive, host, ip, os, platf, **kwargs):
-    '''
-    'Wrapper for GuestToolsMachine
-    '''
-    return GuestToolsMachine(host, ip, os, platf, **kwargs)
-
-
-def isGtMachineReady(positive, machine, timeout=300, interval=10):
-    '''
-    'Wrapper for waitForMachineReady
-    '''
-    return machine.waitForMachineReady(timeout, interval)
-
-
-def areToolsAreCorrectlyInstalled(positive, machine):
-    '''
-    'Wrapper for areToolsAreCorrectlyInstalled
-    '''
-    return machine.areToolsAreCorrectlyInstalled()
-
-
-def installAPT(positive, machine, toollist, wait=True, timeout=300):
-    '''
-    wrapper for installAutoUpgraderCD
-    '''
-    return machine.installAutoUpgraderCD(toollist, wait, timeout)
 
 
 def prepareDataForVm(root_dir='/tmp', root_name_prefix='', dir_cnt=1,
@@ -450,40 +369,6 @@ def prepareDataForVm(root_dir='/tmp', root_name_prefix='', dir_cnt=1,
         logger.error('failed to prepare data for VM: %s', err)
         rc = False
     return rc, {'data_path': data_path}
-
-
-@contextmanager
-def restoringRandomState(seed=None):
-    '''
-    Saves the state of the random generator if seed is not None, restores that
-    after if it was saved.
-    '''
-    try:
-        if seed is not None:
-            randState = random.getstate()
-            random.seed(seed)
-            yield
-    finally:
-        if randState is not None:
-            random.setstate(randState)
-
-
-def waitUntilPingable(IPs, timeout=180):
-    startTime = time.time()
-    while True:
-        pingResult = pingToVms(IPs)
-        dead_machines = [
-            ip for ip, alive in pingResult.iteritems() if not alive
-        ]
-        if not dead_machines:
-            break
-        if timeout < time.time() - startTime:
-            MSG = "Timeouted when waiting for IPs {0} to be pingable."
-            raise APITimeout(MSG.format(dead_machines))
-        MSG = "IPs {0} are still not responding on ping."
-        logger.info(MSG.format(dead_machines))
-        time.sleep(10)
-    logger.info("All IP's are pingable now.")
 
 
 def rebootMachine(positive, ip, user, password, osType):
@@ -546,38 +431,6 @@ def getImageByOsType(positive, osType, slim=False):
     elif re.search('win', osType, re.I):
         return True, {'osBoot': supportedOs['cdrom_image'],
                       'floppy': supportedOs['floppy_image']}
-
-
-def toggleServiceOnHost(positive, host, user, password, service, action,
-                        force="false"):
-    """
-        Toggle service on host with specified action.
-        Author: mbenenso
-        Parameters:
-         * positive - test type (positive/negative)
-         * host - IP address of host
-         * user - user name
-         * password - user password
-         * service - the name of the service
-         * action - desired action as string, supported actions:
-                     (START, STOP, RESTART, RELOAD, STATUS)
-         * force - indicates force action ("false" by default)
-        Return: a boolean result of the action,
-                if action is "status" then True is returned if
-                service is running, false otherwise
-    """
-    result = False
-    machine = Machine(host, user, password).util(LINUX)
-    if machine is not None:
-        if action == "status":
-            return machine.isServiceRunning(service)
-
-        force = force.lower() == "true"
-        action_enum = eServiceAction.parse(action.upper())
-        machine.enableServiceSupport()
-        result = machine.service.toggleService(service, action_enum, force)
-
-    return result == positive
 
 
 def isServiceRunning(positive, host, user, password, service):
@@ -672,26 +525,6 @@ def checkHostConnectivity(positive, ip, user, password, osType, attempt=1,
         return False, {'elapsedTime': -1}
 
 
-def removeFileOnHost(positive, ip, filename, user='root',
-                     password='qum5net', osType=LINUX):
-    '''
-    Description: remov file on remote host
-    Author: imeerovi
-    Parameters:
-    * ip - name/ip of host
-    * user - username
-    * password - password
-    * filename - file to erase
-    * osType - type os OS on remote machine (linux, windows) [linux]
-    Return: True remove operation sucseeded
-            False in other case.
-    '''
-    machine = Machine(ip, user, password).util(osType)
-    if machine is None:
-        return False
-    return machine.removeFile(filename)
-
-
 def removeDirOnHost(
     positive, ip, dirname, user='root', password='qum5net', osType=LINUX,
 ):
@@ -772,52 +605,6 @@ def searchForObj(
     return status
 
 
-def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
-                        object_id, idx):
-    """
-    Description: Searches for volumes and images on storage domain
-    Parameters:
-        * vds - host that has mounted storage domain below
-        * vds_username - username of root on vds
-        * vds_password - password for root account on vds
-        * spool_id - storage pool ID containing storage domain below
-        * domain_id - storage domain ID that has template or vm on it
-        * object_id - id of template/vm
-        * idx - index of disk
-    Author: jlibosva
-    Return: Tuple (volume_id, image_id) if found, (None, None) otherwise
-    """
-    path_to_ovf = '/rhev/data-center/%s/%s/master/vms/%s/%s.ovf' % (
-        spool_id, domain_id, object_id, object_id,
-    )
-
-    logger.debug("Checking file %s on host %s", path_to_ovf, vds)
-
-    namespace_dict = {
-        'ovf': "http://schemas.dmtf.org/ovf/envelope/1/",
-        'xsi': "http://www.w3.org/2001/XMLSchema-instance",
-    }
-
-    host = Machine(vds, vds_username, vds_password).util(LINUX)
-    with host.ssh as ssession:
-        ovf_hnd = ssession.getFileHandler().open(path_to_ovf)
-        root_elem = etree.parse(ovf_hnd).getroot()
-        ovf_hnd.close()
-
-    disks_elements = root_elem.xpath(
-        'Section[@xsi:type="ovf:DiskSection_Type"]/Disk',
-        namespaces=namespace_dict,
-    )
-
-    attrib = '{' + namespace_dict['ovf'] + '}fileRef'
-    try:
-        image_and_volume = disks_elements[idx].attrib[attrib].split('/', 1)
-    except IndexError:
-        return (None, None)
-
-    return tuple(image_and_volume)
-
-
 def setPersistentNetwork(host, password):
     """
     Ensure that Network configurations are persistent
@@ -892,20 +679,6 @@ def setPersistentNetwork(host, password):
     # Flush FS buffers
     vm_obj.executor().run_cmd(['sync'])
     return True
-
-
-def getSetupHostname(vdc):
-    """
-    Description: Gets the hostname of setup based on vdc, if vdc is not
-                 running on localhost then vdc parameter is returned
-    Author: jlibosva
-    Parameters: vdc - vdc hostname or IP
-    Return: True and hostname of setup
-    """
-    is_local = vdc == "localhost" or vdc == "127.0.0.1"
-    hostname = gethostname() if is_local else vdc
-
-    return True, {'hostname': hostname}
 
 
 def runSQLQueryOnSetup(vdc, vdc_pass, query,
@@ -985,113 +758,6 @@ def wait_for_vds_tasks(vds_resource):
             logger.info("All VDSM tasks are gone")
             return
         logger.info(task)
-
-
-def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
-                 object_id):
-    """
-    Description: Searches for volumes and images on storage domain
-    Parameters:
-        * vds - host that has mounted storage domain below
-        * vds_username - username of root on vds
-        * vds_password - password for root account on vds
-        * spool_id - storage pool ID containing storage domain below
-        * domain_id - storage domain ID that has template or vm on it
-        * object_id - id of template/vm
-    Author: jlibosva
-    Return: List of images id
-    """
-    path_to_ovf = '/rhev/data-center/%s/%s/master/vms/%s/%s.ovf' % \
-                  (spool_id, domain_id, object_id, object_id)
-
-    logger.debug("Checking file %s on host %s", path_to_ovf, vds)
-
-    namespace_dict = {
-        'ovf': "http://schemas.dmtf.org/ovf/envelope/1/",
-        'xsi': "http://www.w3.org/2001/XMLSchema-instance",
-    }
-
-    host = Machine(vds, vds_username, vds_password).util(LINUX)
-    with host.ssh as ssession:
-        ovf_hnd = ssession.getFileHandler().open(path_to_ovf)
-        root_elem = etree.parse(ovf_hnd).getroot()
-        ovf_hnd.close()
-
-    disks_elements = root_elem.xpath(
-        'Section[@xsi:type="ovf:DiskSection_Type"]/Disk',
-        namespaces=namespace_dict,
-    )
-
-    attrib = '{' + namespace_dict['ovf'] + '}fileRef'
-    return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]
-
-
-def check_spoofing_filter_rule_by_ver(engine_resource, target_version='3.2'):
-    """
-    Check if NetworkFilter (nwfilter) rule is enabled/disabled for a requested
-    version
-
-    :param engine_resource: Engine resource
-    :type engine_resource: resources.Engine
-    :param target_version: Target version to check
-    :type target_version: str
-    :return: True for version >= 3.2 and False for <=3.1
-    :rtype: bool
-    """
-    logger.info(
-        "Check if MAC spoofing is enabled for version %s", target_version
-    )
-    executor = engine_resource.host.executor()
-    cmd = ["engine-config", "-g", "EnableMACAntiSpoofingFilterRules"]
-    rc, out, err = executor.run_cmd(cmd)
-    if rc:
-        logger.error("Failed to run %s. ERR: %s. OUT: %s", cmd, err, out)
-        return False
-
-    ERR_MSG = "Version {0} has incorrect nwfilter value: {1}"
-
-    logger.info(out)
-    for line in out.splitlines():
-        data = line.split()
-        version = data[3]
-        status = data[1].lower()
-        ver_status = version >= target_version
-        test_status = status == str(ver_status).lower()
-        if not test_status:
-            logger.error(ERR_MSG.format(version, status))
-            return False
-    return True
-
-
-def set_network_filter_status(enable, engine_resource):
-    """
-    Disabling or enabling network filtering.
-
-    Args:
-        enable (bool): True for enabling, False for disabling.
-        engine_resource (resources.Engine): Engine resource.
-
-    Returns:
-        bool: True if operation succeeded, False otherwise
-    """
-    log = "Enabling" if enable else "Disabling"
-    logger.info("%s network filter on engine", log)
-
-    cmd = [
-        "engine-config", "-s",
-        "EnableMACAntiSpoofingFilterRules=%s" % str(enable).lower()
-    ]
-
-    rc, out, err = engine_resource.host.run_command(cmd)
-    if rc:
-        return False
-
-    try:
-        restart_engine(engine_resource, RESTART_INTERVAL, RESTART_TIMEOUT)
-    except APITimeout:
-        logger.error("Failed to restart engine service")
-        return False
-    return True
 
 
 def restart_engine(engine, interval, timeout):
@@ -1415,23 +1081,3 @@ def raise_if_exception(results):
         if result.exception():
             logger.error(result.exception())
             raise result.exception()
-
-
-def get_obj_by_query(obj, query_text):
-    """
-    Get query results for object.
-    obj is object that have main tab in UI.
-    network main tab obj example: NET_API = get_api("network", "networks")
-    usage example to get rhevm network object under cluster <name>:
-    net_obj = NET_API = get_api("network", "networks")
-    query_text = "Cluster_network.cluster_name=<name> and name=rhevm"
-    query_res = get_obj_by_query(obj=net_obj, query_text=query_text)
-
-    :param obj: Object to query
-    :param query_text: Query text
-    :return:
-    """
-    res = obj.query(query_text)
-    if not res:
-        raise QueryNotFoundException("Query not found")
-    return res
