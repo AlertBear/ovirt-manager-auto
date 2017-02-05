@@ -45,18 +45,6 @@ cli_exit_timeout = integer(default=240)
 has_sub_tests = boolean(default=True)
 add_report_nodes = string(default=no)
 
-[PROVISIONING_TOOLS]
-enabled = boolean(default=False)
-provisioning_tool = option("cobbler", "foreman", default="foreman")
-[[COBBLER]]
-api = string(default=None)
-user = string(default=None)
-password = string(default=None)
-[[FOREMAN]]
-api = string(default=None)
-user = string(default=None)
-password = string(default=None)
-
 [GENERATE_DS]
 enabled = boolean(default=True)
 encoding = option("ascii", "utf-8", default="utf-8")

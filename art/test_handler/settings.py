@@ -241,38 +241,7 @@ def readTestRunOpts(path, redefs):
     opts['api'] = runSection['system_engine']
     opts['storage_type'] = runSection['storage_type']
 
-    # Configure provisioning tools
-    configure_provisioning(config)
-
     return config
-
-
-def configure_provisioning(config):
-    logger = logging.getLogger("provisioning_tool")
-    pconf = config['PROVISIONING_TOOLS']
-    if not pconf.as_bool('enabled'):
-        return
-    # Log message bellow is consumed by groovy post build script. Don't remove!
-    logger.info("Configuring provisioning tools.")
-    provisioning_tool = pconf['provisioning_tool']
-    opts['provisioning_tool'] = provisioning_tool
-    provisioning_tool = provisioning_tool.upper()
-    opts['provisioning_tool_api'] = pconf[provisioning_tool]['api']
-    opts['provisioning_tool_user'] = pconf[provisioning_tool]['user']
-    opts['provisioning_tool_password'] = pconf[provisioning_tool]['password']
-    opts['provisioning_tool_common_parameters'] = dict(
-        [
-            x for x in pconf[provisioning_tool].iteritems()
-            if x[0] in ('api', 'user', 'password')
-        ]
-    )
-    # passing only specific provisioning tool
-    opts['provisioning_profiles'] = dict(
-        [
-            (x, config['PROVISIONING_PROFILES'][x][provisioning_tool])
-            for x in config['PROVISIONING_PROFILES']
-        ]
-    )
 
 
 def buildTestsFilesMatrix(config, testsList):

@@ -38,7 +38,6 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
-from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import (
     searchForObj, getImageByOsType, convertMacToIpAddress,
@@ -118,8 +117,6 @@ MIGRATION_TIMEOUT = 300
 VM_PASSWORD = "qum5net"
 
 logger = logging.getLogger("art.ll_lib.vms")
-
-ProvisionContext = ProvisionProvider.Context()
 
 
 class DiskNotFound(Exception):
@@ -2909,47 +2906,7 @@ def createVm(
             return False
 
     if installation:
-        floppy = None
-        if image is None:
-            status, res = getImageByOsType(positive, os_type, slim)
-            if not status:
-                return False
-            image = res["osBoot"]
-            floppy = res["floppy"]
-
-        try:
-            if not unattendedInstallation(
-                positive, vmName, image, nic=nic, floppyImage=floppy,
-                hostname=hostname,
-            ):
-                return False
-            if not waitForVMState(vmName):
-                return False
-            mac = getVmMacAddress(positive, vmName, nic=nic)
-            if not mac[0]:
-                return False
-            mac = mac[1]["macAddress"]
-
-            if not waitForSystemIsReady(
-                mac,
-                interval=interval,
-                timeout=VM_INSTALL_TIMEOUT
-            ):
-                return False
-
-            if useAgent:
-                ip = waitForIP(vmName)[1]["ip"]
-
-            logger.debug("%s has ip %s", vmName, ip)
-            if not checkVMConnectivity(
-                positive, vmName, os_type, attempt=attempt, interval=interval,
-                nic=nic, user=user, password=password, ip=ip,
-            ):
-                return False
-        finally:
-            # FIXME: it doesn't work when it runs in parallel
-            ProvisionContext.clear()
-        return True
+        logger.warning("Installation OS is not supported at the moment")
     else:
         if start.lower() == "true":
             return startVm(positive, vmName)
@@ -3099,77 +3056,6 @@ def check_vnic_on_vm_nic(vm, nic='nic1', vnic='rhevm'):
     # for NIC that doesn't have VNIC profile on it
     else:
         return vnic is None
-
-
-def waitForSystemIsReady(mac, interval=60, timeout=VM_INSTALL_TIMEOUT):
-    logger.info(
-        "Wait until system %s has status != %s, checking every %s",
-        mac, ProvisionContext.STATUS_BUILD, interval,
-    )
-    try:
-        for status in TimeoutingSampler(
-            timeout, interval, ProvisionContext.get_system_status, mac,
-        ):
-            logger.info(
-                "Status of system %s is %s", mac, status,
-            )
-            if status == ProvisionContext.STATUS_ERROR:
-                logger.error("Status of system is error, aborting ...")
-                return False
-            elif status != ProvisionContext.STATUS_BUILD:
-                # NOTE: It can happen that guest doesn't provide reports,
-                # so can not test on STATUS_READY
-                break
-    except APITimeout:
-        logger.error(
-            "System %s doesn't have desired status != %s in timeout %s", mac,
-            ProvisionContext.STATUS_BUILD, VM_INSTALL_TIMEOUT,
-        )
-        return False
-    return True
-
-
-def unattendedInstallation(positive, vm, image, nic='nic1', hostname=None,
-                           floppyImage=None, cobblerAddress=None,
-                           cobblerUser=None, cobblerPasswd=None):
-    '''
-    Description: install VM with answer file:
-    unattended floppy disk for windows.
-    via PXE for rhel.
-    Author: imeerovi
-    Parameters:
-       * vm - VM with clean bootable hard disk.
-       * nic- nic name to find out mac address- relevant for rhel only.
-       * image- cdrom image for windows or profile for rhel.
-       * floppyImage- answer file for windows.
-       * cobbler* - backward compatibility with cobbler provisioning,
-                    should be removed
-    Return: status (True if VM started to insall OS, False otherwise).
-    '''
-    if re.search('rhel', image, re.I):
-        status, mac = getVmMacAddress(positive, vm, nic=nic)
-        if not status:
-            return False
-        if not ProvisionContext.add_system(
-            mac=mac['macAddress'],
-            os_name=image
-        ):
-            return False
-        if hostname:
-            if not ProvisionContext.set_host_name(
-                name=mac['macAddress'],
-                hostname=hostname
-            ):
-                return False
-
-        boot_dev = 'hd,network'
-        return runVmOnce(positive, vm, boot_dev=boot_dev)
-    else:
-        boot_dev = 'cdrom'
-        return runVmOnce(
-            positive, vm, cdrom_image=image, floppy_image=floppyImage,
-            boot_dev=boot_dev,
-        )
 
 
 def activateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
