@@ -234,6 +234,12 @@ class TestIOTest02(NetworkTest):
         "netmask": ["255.255.255.0"]
     }
 
+    # Test 6 params - invalid network gateway
+    net_6 = io_conf.NETS[2][5]
+    test_6_invalid_gateway = {
+        "gateway": ["5.5.5.298"]
+    }
+
     @pytest.mark.parametrize(
         ("network", "test_params"),
         [
@@ -242,13 +248,15 @@ class TestIOTest02(NetworkTest):
             polarion("RHEVM3-4378")([net_3, test_3_no_ip]),
             polarion("RHEVM3-4371")([net_4, test_4_no_mask]),
             polarion("RHEVM3-19164")([net_5, test_5_valid_mask]),
+            polarion("RHEVM3-3958")([net_6, test_6_invalid_gateway]),
         ],
         ids=[
             "invalid IPs",
             "invalid netmask",
             "netmask without IP",
             "IP without netmask",
-            "valid netmask"
+            "valid netmask",
+            "invalid gateway"
         ]
     )
     def test_check_ip(self, network, test_params):
@@ -284,6 +292,9 @@ class TestIOTest02(NetworkTest):
 
         if network == self.net_5:
             sn_dict["add"]["1"]["ip"]["1"]["address"] = "1.2.3.3"
+
+        if network == self.net_6:
+            sn_dict["add"]["1"]["ip"]["1"]["address"] = "5.5.5.250"
 
         for key_, params in test_params.iteritems():
             for param in params:

@@ -397,21 +397,22 @@ def is_network_required(network, cluster):
 
 
 @ll.general.generate_logs()
-def check_ip_rule(vds_resource, subnet):
+def check_ip_rule(vds_resource, subnet, matches=2):
     """
     Check occurrence of specific ip in 'ip rule' command output
 
     Args:
         vds_resource (VDS): VDS resource object
         subnet (str): subnet to search for
+        matches (int): Number of matches to find in ip rule command
 
     Returns:
-        bool: True/False
+        bool: True if number of matches is >=, False otherwise.
     """
     rc, out, _ = vds_resource.run_command(["ip", "rule"])
     if rc:
         return False
-    return len(re.findall(subnet.replace('.', '[.]'), out)) >= 2
+    return len(re.findall(subnet.replace('.', '[.]'), out)) >= matches
 
 
 @ll.general.generate_logs()

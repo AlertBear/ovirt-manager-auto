@@ -16,18 +16,19 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as multiple_gw_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest as TestCase
+from art.unittest_lib import NetworkTest
 from art.unittest_lib import attr, testflow
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
+    NetworkFixtures,
+    setup_networks_fixture,
+    clean_host_interfaces  # flake8: noqa
 )
 
 
 @pytest.fixture(scope="module", autouse=True)
 def multiple_gw_prepare_setup(request):
     """
-    Create dummies on host
     Create networks on engine
     """
     multiple_gw = NetworkFixtures()
@@ -48,242 +49,129 @@ def multiple_gw_prepare_setup(request):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestGatewaysCase01(TestCase):
+class TestGatewaysCase01(NetworkTest):
     """
-    Verify you can configure additional VLAN network with static IP and gateway
+    1. Verify you can configure additional VLAN network with static IP and
+        gateway
+    2. Verify you can configure additional bridgeless network with static IP.
+    3. Verify you can configure additional display network with static ip
+        config.
+    4. Verify you can add additional NIC to the already created bond.
+    5. Verify you can remove slave from already created bond
     """
-    __test__ = True
-    net = multiple_gw_conf.NETS[1][0]
-    hosts_nets_nic_dict = {
-        0: {
-            net: {
-                "nic": 1,
-                "network": net,
-                "ip": {
-                    "1": {
-                        "address": multiple_gw_conf.IPS[1],
-                        "gateway": multiple_gw_conf.GATEWAY
-                    }
-                }
-            }
-        }
-    }
+    # Test params = [network, host NIC, IP, IP gateway]
+    # VLAN network params
+    vlan_net = multiple_gw_conf.NETS[1][0]
+    vlan_net_ip = multiple_gw_conf.IPS.pop(0)
+    vlan_net_params = [vlan_net, 1, vlan_net_ip, None]
 
-    @polarion("RHEVM3-3953")
-    def test_check_ip_rule_vlan(self):
+    # Bridgeless network params
+    brless_net = multiple_gw_conf.NETS[1][1]
+    brless_net_ip = multiple_gw_conf.IPS.pop(0)
+    brless_net_params = [brless_net, 1, brless_net_ip, None]
+
+    # Display network params
+    display_net = multiple_gw_conf.NETS[1][2]
+    display_net_ip = multiple_gw_conf.IPS.pop(0)
+    display_net_params = [display_net, 1, display_net_ip, None]
+
+    # Zero gateway params
+    zero_net = multiple_gw_conf.NETS[1][2]
+    zero_net_ip = multiple_gw_conf.IPS.pop(0)
+    zero_net_gw = "0.0.0.0"
+    zero_net_params = [zero_net, 1, zero_net_ip, zero_net_gw]
+
+    @pytest.mark.parametrize(
+        ("network", "nic", "ip", "gateway"),
+        [
+            polarion("RHEVM3-3953")(vlan_net_params),
+            polarion("RHEVM3-3954")(brless_net_params),
+            polarion("RHEVM3-3956")(display_net_params),
+            polarion("RHEVM3-3966")(zero_net_params),
+        ],
+        ids=[
+            "VLAN network with gateway",
+            "Bridgeless network with gateway",
+            "Display network with gateway",
+            "VM network with gateway 0.0.0.0",
+        ]
+    )
+    def test_check_ip_rule(self, network, nic, ip, gateway):
         """
         Check correct configuration with ip rule function
         """
-        testflow.step(
-            "Check correct configuration with ip rule command on VLAN network"
-        )
-        assert ll_networks.check_ip_rule(
-            vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
-        )
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestGatewaysCase02(TestCase):
-    """
-    Verify you can configure additional bridgeless network with static IP.
-    """
-    __test__ = True
-    net = multiple_gw_conf.NETS[2][0]
-    hosts_nets_nic_dict = {
-        0: {
-            net: {
-                "nic": 1,
-                "network": net,
-                "ip": {
-                    "1": {
-                        "address": multiple_gw_conf.IPS[2],
-                        "gateway": multiple_gw_conf.GATEWAY
-                    }
-                }
-            }
-        }
-    }
-
-    @polarion("RHEVM3-3954")
-    def test_check_ip_rule_non_vm(self):
-        """
-        Check correct configuration with ip rule function
-        """
-        testflow.step(
-            "Check correct configuration with ip rule command on non-VM "
-            "network"
-        )
-        assert ll_networks.check_ip_rule(
-            vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
-        )
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestGatewaysCase03(TestCase):
-    """
-    Verify you can configure additional display network with static ip config.
-    Mgmt network should be static
-    """
-    __test__ = True
-    net = multiple_gw_conf.NETS[3][0]
-    hosts_nets_nic_dict = {
-        0: {
-            net: {
-                "nic": 1,
-                "network": net,
-                "ip": {
-                    "1": {
-                        "address": multiple_gw_conf.IPS[3],
-                        "gateway": multiple_gw_conf.GATEWAY
-                    }
-                }
-            }
-        }
-    }
-
-    @polarion("RHEVM3-3956")
-    def test_check_ip_rule_display(self):
-        """
-        Check correct configuration with ip rule function
-        """
-        testflow.step(
-            "Check correct configuration with ip rule command on display "
-            "network"
-        )
-        assert ll_networks.check_ip_rule(
-            vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
-        )
-
-
-@attr(tier=2)
-class TestGatewaysCase04(TestCase):
-    """
-    Try to assign to vm network incorrect static IP and gw addresses
-    """
-    __test__ = True
-    ip = multiple_gw_conf.IPS[4]
-    net = multiple_gw_conf.NETS[4][0]
-    incorrect_value = "5.5.5.298"
-
-    @polarion("RHEVM3-3958")
-    def test_check_incorrect_config_incorrect(self):
-        """
-        Try to create logical  network on DC/Cluster/Hosts
-        Configure it with static IP configuration and incorrect gateway or IP
-        """
-        testflow.step(
-            "Negative: Attach network %s with incorrect IP", self.net
-        )
+        host = conf.HOST_0_NAME
+        ip_gateway = multiple_gw_conf.GATEWAY if not gateway else gateway
         sn_dict = {
             "add": {
-                "1": {
-                    "network": self.net,
-                    "nic": conf.HOST_0_NICS[1],
+                network: {
+                    "nic": conf.HOST_0_NICS[nic],
+                    "network": network,
                     "ip": {
                         "1": {
-                            "address": self.incorrect_value,
-                            "netmask": conf.NETMASK,
-                            "gateway": multiple_gw_conf.GATEWAY,
+                            "address": ip,
+                            "gateway": ip_gateway,
+                            "netmask": 24,
                             "boot_protocol": "static"
                         }
                     }
                 }
             }
         }
-        assert not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        )
+        testflow.step("Attach network %s to host %s", network, host)
+        assert hl_host_network.setup_networks(host_name=host, **sn_dict)
         testflow.step(
-            "Negative: Attach network %s with incorrect gateway", self.net
+            "Check correct configuration with ip rule command on %s network",
+            network
         )
-        sn_dict = {
-            "add": {
-                "1": {
-                    "network": self.net,
-                    "nic": conf.HOST_0_NICS[1],
-                    "ip": {
-                        "1": {
-                            "address": self.ip,
-                            "netmask": conf.NETMASK,
-                            "gateway": self.incorrect_value,
-                            "boot_protocol": "static"
-                        }
-                    }
-                }
-            }
-        }
-        assert not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        )
+        if not gateway:
+            assert ll_networks.check_ip_rule(
+                vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
+            )
+
+        testflow.step("Clean host %s interfaces", host)
+        assert hl_host_network.clean_host_interfaces(host_name=host)
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(clean_host_interfaces.__name__)
-class TestGatewaysCase05(TestCase):
-    """
-    Verify you can configure additional network with gateway 0.0.0.0
-    """
-    __test__ = True
-    gateway = "0.0.0.0"
-    ip = multiple_gw_conf.IPS[5]
-    net = multiple_gw_conf.NETS[5][0]
-    hosts_nets_nic_dict = {
-        0: dict()
-    }
-
-    @polarion("RHEVM3-3966")
-    def test_check_ip_rule_zero_gw(self):
-        """
-        Create logical vm network on DC/Cluster/Hosts
-        Configure it with static IP configuration and gateway of 0.0.0.0
-        """
-        testflow.step(
-            "Configure it with static IP configuration and gateway of 0.0.0.0"
-        )
-        sn_dict = {
-            "add": {
-                "1": {
-                    "network": self.net,
-                    "nic": conf.HOST_0_NICS[1],
-                    "ip": {
-                        "1": {
-                            "address": self.ip,
-                            "netmask": conf.NETMASK,
-                            "gateway": self.gateway,
-                            "boot_protocol": "static"
-                        }
-                    }
-                }
-            }
-        }
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        )
-
-
-@attr(tier=2)
-@pytest.mark.incremental
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestGatewaysCase06(TestCase):
+class TestGatewaysCase02(NetworkTest):
     """
-    Verify you can add additional NIC to the already created bond
-    Verify you can remove slave from already created bond
+    1. Verify you can add additional NIC to the already created bond
+    2. Verify you can remove slave from already created bond
     """
-    __test__ = True
-    net = multiple_gw_conf.NETS[6][0]
-    bond = "bond06"
+    # Test params = [BOND, BOND slave to Add/Remove]
+    # Add slave params
+    bond_1 = "bond20"
+    net_bond_1 = multiple_gw_conf.NETS[2][0]
+    add_slave_params = [bond_1, 3]
+
+    # Remove slave params
+    net_bond_2 = multiple_gw_conf.NETS[2][1]
+    bond_2 = "bond21"
+    remove_slave_params = [bond_2, 6]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
-            net: {
-                "nic": bond,
-                "network": net,
-                "slaves": [-2, -1],
+            net_bond_1: {
+                "nic": bond_1,
+                "network": net_bond_1,
+                "slaves": [1, 2],
                 "ip": {
                     "1": {
-                        "address": multiple_gw_conf.IPS[6],
+                        "address": multiple_gw_conf.IPS.pop(0),
+                        "gateway": multiple_gw_conf.GATEWAY
+                    }
+                }
+            },
+            net_bond_2: {
+                "nic": bond_2,
+                "network": net_bond_2,
+                "slaves": [4, 5, 6],
+                "ip": {
+                    "1": {
+                        "address": multiple_gw_conf.IPS.pop(0),
                         "gateway": multiple_gw_conf.GATEWAY
                     }
                 }
@@ -291,50 +179,37 @@ class TestGatewaysCase06(TestCase):
         }
     }
 
-    @polarion("RHEVM3-3963")
-    def test_01_check_ip_rule_add_slave(self):
+    @pytest.mark.parametrize(
+        ("bond", "slave"),
+        [
+            polarion("RHEVM3-3963")(add_slave_params),
+            polarion("RHEVM3-3964")(remove_slave_params),
+        ],
+        ids=[
+            "Add slave to BOND",
+            "Remove slave from BOND"
+        ]
+    )
+    def test_update_bond_slaves(self, bond, slave):
         """
-        Add additional NIC to the bond and check IP rule
+        Check correct configuration with ip rule function
         """
-        testflow.step("Checking IP rule on BOND before adding 3rd slave")
-        assert ll_networks.check_ip_rule(
-            vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
-        )
-        network_host_api_dict = {
+        log = "Add" if bond == self.bond_1 else "Remove"
+        slave = conf.VDS_0_HOST.nics[slave]
+        sn_dict = {
             "update": {
                 "1": {
-                    "nic": self.bond,
-                    "slaves": [conf.VDS_0_HOST.nics[-3]]
+                    "nic": bond,
+                    "slaves": [slave]
                 }
             }
         }
+        testflow.step("%s slave %s from bond %s", log, slave, bond)
         assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **sn_dict
         )
-        testflow.step("Checking IP rule after adding 3rd slave")
+        testflow.step("Checking IP rule after %s slave %s", log.lower(), slave)
         assert ll_networks.check_ip_rule(
-            vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
-        )
-
-    @polarion("RHEVM3-3964")
-    def test_02_check_ip_rule_remove_slave(self):
-        """
-        Remove a NIC from bond and check ip rule
-        """
-        network_host_api_dict = {
-            "update": {
-                "1": {
-                    "nic": self.bond,
-                    "slaves": [conf.VDS_0_HOST.nics[-3]]
-                }
-            }
-        }
-        assert hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        )
-        testflow.step(
-            "Checking the IP rule after removing one slave from bond"
-        )
-        assert ll_networks.check_ip_rule(
-            vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
+            vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET,
+            matches=4
         )

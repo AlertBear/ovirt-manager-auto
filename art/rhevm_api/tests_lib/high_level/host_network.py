@@ -271,8 +271,7 @@ def setup_networks(host_name, **kwargs):
     )
 
     if persist and res:
-            res = ll_hosts.commit_network_config(host=host_name)
-
+        return ll_hosts.commit_network_config(host=host_name)
     return res
 
 
