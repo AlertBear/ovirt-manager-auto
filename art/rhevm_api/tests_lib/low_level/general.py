@@ -25,6 +25,7 @@ import art.test_handler.exceptions as exceptions
 from art.core_api import validator
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api
+from art.unittest_lib import testflow
 
 util = get_api('', '')
 vmUtil = get_api('vm', 'vms')
@@ -37,13 +38,12 @@ permitUtil = get_api('cluster_level', 'clusterlevels')
 
 VM = getDS('VM')
 
-ProductVersion = namedtuple('ProductVersion', ['major',
-                                               'minor',
-                                               'build',
-                                               'revision'])
+ProductVersion = namedtuple(
+    'ProductVersion', ['major', 'minor', 'build', 'revision']
+)
 
 
-def checkSystemVersionTag(positive):
+def check_system_version_tag(positive):
     '''
     Checks whether there are attributes named:
         revision build minor major
@@ -318,8 +318,11 @@ def get_log_msg(
     """
     kwargs = prepare_kwargs_for_log(**kwargs)
     kwargs_to_pop = list()
+    log = [
+        re.sub('[^0-9a-zA-Z|_]+', "", i) for i in log_action.lower().split()
+    ]
     for k, v in kwargs.iteritems():
-        if k.lower() in log_action.lower().split():
+        if k.lower() in log:
             if isinstance(v, bool):
                 continue
 
@@ -365,7 +368,7 @@ def prepare_kwargs_for_log(**kwargs):
     return new_kwargs
 
 
-def generate_logs(info=True, error=True):
+def generate_logs(info=True, error=True, step=False):
     """
     Decorator to generate log info and log error for function.
     The log contain the first line from the function docstring and resolve
@@ -388,10 +391,13 @@ def generate_logs(info=True, error=True):
         Will generate:
             INFO Run test my-test-name with cases case01, case02
             ERROR Failed to Run test my-test-name with cases case01, case02
+            if step is True:
+                Test Step   1: Run test my-test-name with cases case01, case02
 
     Args:
         info (bool): True to get INFO log
         error (bool): True to get ERROR log
+        step (bool): True to get testflow.step if function called from test
 
     Returns:
         any: The function return
@@ -411,18 +417,38 @@ def generate_logs(info=True, error=True):
             """
             The call for the function
             """
+            kwargs_for_log = kwargs.copy()
+            frame = inspect.stack()[1][3]
+            is_test = True if "test" in frame else False
             func_doc = inspect.getdoc(func)
-            func_args = inspect.getargspec(func).args
-            for arg, val in zip(func_args, args):
-                if not kwargs.get(arg):
-                    kwargs[arg] = val
+            func_argspec = inspect.getargspec(func)
+            try:
+                func_args_defaults = dict(
+                    zip(
+                        func_argspec.args[
+                            -len(func_argspec.defaults):
+                        ], func_argspec.defaults
+                    )
+                )
+            except TypeError:
+                func_args_defaults = dict()
+
+            func_args = func_argspec.args
+            for arg in func_args:
+                if not kwargs_for_log.get(arg):
+                    kwargs_for_log[arg] = func_args_defaults.get(arg)
 
             log_action = func_doc.split("\n")[0]
-            log_info, log_err = get_log_msg(log_action=log_action, **kwargs)
+            log_info, log_err = get_log_msg(
+                log_action=log_action, **kwargs_for_log
+            )
+            if is_test and step:
+                testflow.step(log_info)
+
             if info:
                 util.logger.info(log_info)
 
-            res = func(**kwargs)
+            res = func(*args, **kwargs)
             if not res and error:
                 util.logger.error(log_err)
             return res

@@ -133,7 +133,7 @@ class TestCaseUserAndRoles(TestCase):
         verify system version tag
         """
         testflow.step("Checking system version tag.")
-        assert ll_general.checkSystemVersionTag(positive=True)
+        assert ll_general.check_system_version_tag(positive=True)
 
     @attr(tier=1)
     def test_check_definition_of_blank_template(self):
