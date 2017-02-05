@@ -39,8 +39,6 @@ MIGRATION_TIMEOUT = 300
 WGT_INSTALL_TIMEOUT = 600
 CHECK_MEMORY_COMMAND = "free -m | grep Mem | awk '{ print $2 }'"
 
-ProvisionContext = vms.ProvisionContext
-
 
 def get_vm_ip(vm_name, start_vm=True):
     """
