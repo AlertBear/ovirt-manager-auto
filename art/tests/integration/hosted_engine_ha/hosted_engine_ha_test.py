@@ -6,6 +6,8 @@ import re
 
 import pytest
 
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
 import helpers
@@ -20,6 +22,7 @@ from fixtures import (
     init_he_ha_test,
     load_host_cpu_to_maximum,
     prepare_env_for_next_test,
+    prepare_env_for_power_management_test,
     restart_host_via_power_management,
     stop_network_on_host_with_he_vm,
     stop_services
@@ -94,8 +97,8 @@ class HostedEngineTest(u_libs.SlaTest):
 
 
 @pytest.mark.usefixtures(
+    restart_host_via_power_management.__name__,
     stop_network_on_host_with_he_vm.__name__,
-    restart_host_via_power_management.__name__
 )
 class TestHostWithHeVmLostConnection(HostedEngineTest):
     """
@@ -492,3 +495,31 @@ class TestStopAgentAndBrokerServices(StopServices):
             host_resource=self.he_vm_host,
             expected_state=conf.VM_VDSM_STATE_UP
         )
+
+
+@pytest.mark.usefixtures(
+    restart_host_via_power_management.__name__,
+    prepare_env_for_power_management_test.__name__
+)
+class TestFenceFlowWhenHostWithHeVmKilled(HostedEngineTest):
+    """
+    Kill the host with the HE VM and check that the engine continue the
+    fence flow after restart of the HE VM
+    """
+    __test__ = True
+
+    @polarion("RHEVM-19148")
+    def test_fence_flow(self):
+        """
+        1) Check that HE VM started on the other host
+        2) Check that HA VM started on the other host
+        3) Check that problematic host fenced by the engine
+        """
+        self.he_vm_restarted(hosts_resources=self.hosts_without_he_vm)
+
+        u_libs.testflow.step("Wait for the VM %s state 'UP'", conf.HA_VM_NAME)
+        assert ll_vms.waitForVMState(vm=conf.HA_VM_NAME)
+
+        host_name = conf.HOSTS[conf.VDS_HOSTS.index(self.he_vm_host)]
+        u_libs.testflow.step("Wait for the host %s state 'UP'", host_name)
+        assert ll_hosts.waitForHostsStates(positive=True, names=host_name)

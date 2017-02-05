@@ -21,6 +21,7 @@ VDC_HOST = REST_CONNECTION["host"]
 VDC_ROOT_PASSWORD = PARAMETERS.get("vdc_root_password")
 
 # HOSTS
+HOST_STATUS_UP = ENUMS["host_state_up"]
 HOSTS = []
 VDS_HOSTS = []
 HOSTS_IP = []
@@ -134,3 +135,5 @@ VM_VDSM_STATE_UP = "Up"
 HE_VM_NAME = "HostedEngine"
 HE_STORAGE_NAME = "hosted_storage"
 STORAGE_TYPE = PARAMETERS.get("storage_type")
+
+HA_VM_NAME = "golden_env_mixed_virtio_0"

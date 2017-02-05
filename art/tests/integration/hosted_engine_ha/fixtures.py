@@ -3,9 +3,10 @@ HE HA test fixtures
 """
 import logging
 import socket
-from art.rhevm_api import resources
+
 import pytest
 
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sds
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
@@ -13,6 +14,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
 import helpers
+from art.rhevm_api import resources
 
 logger = logging.getLogger(__name__)
 
@@ -175,35 +177,36 @@ def restart_host_via_power_management(request):
     he_vm_host_pm = helpers.get_host_power_management(
         host_resource=test_class.he_vm_host
     )
-
-    def fin():
-        fence_commands = {
-            "poweroff": "off",
-            "poweron": "on",
-        }
-        for msg, fence_command in fence_commands.iteritems():
-            u_libs.testflow.teardown(
-                "%s: %s via power management", test_class.he_vm_host, msg
-            )
-            assert not helpers.run_power_management_command(
-                command_executor=test_class.command_executor,
-                host_to_fence_pm=he_vm_host_pm,
-                fence_command=fence_command
-            )
-        u_libs.testflow.teardown(
-            "%s: wait for up-to-date status", test_class.he_vm_host
-        )
-        assert helpers.wait_for_host_he_up_to_date(
-            command_executor=test_class.command_executor,
-            host_resource=test_class.he_vm_host,
-            timeout=conf.POWER_MANAGEMENT_TIMEOUT
-        )
-    request.addfinalizer(fin)
-
     if not he_vm_host_pm:
         pytest.skip(
             "%s: does not have power management" % test_class.he_vm_host
         )
+
+    def fin():
+        host_name = conf.HOSTS[conf.VDS_HOSTS.index(test_class.he_vm_host)]
+        if ll_hosts.get_host_status(host=host_name) != conf.HOST_STATUS_UP:
+            fence_commands = {
+                "poweroff": "off",
+                "poweron": "on",
+            }
+            for msg, fence_command in fence_commands.iteritems():
+                u_libs.testflow.teardown(
+                    "%s: %s via power management", test_class.he_vm_host, msg
+                )
+                assert helpers.run_power_management_command(
+                    command_executor=test_class.command_executor,
+                    host_to_fence_pm=he_vm_host_pm,
+                    fence_command=fence_command
+                )
+            u_libs.testflow.teardown(
+                "%s: wait for up-to-date status", test_class.he_vm_host
+            )
+            assert helpers.wait_for_host_he_up_to_date(
+                command_executor=test_class.command_executor,
+                host_resource=test_class.he_vm_host,
+                timeout=conf.POWER_MANAGEMENT_TIMEOUT
+            )
+    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")
@@ -446,3 +449,79 @@ def stop_services(request):
             "%s: stop the service %s", he_vm_host, service_name
         )
         service.stop()
+
+
+@pytest.fixture(scope="class")
+def prepare_env_for_power_management_test(request):
+    """
+    1) Update regular VM to be HA
+    2) Configure PM on the host
+    3) Start the HA VM on the host
+    4) Poweroff of the host
+    """
+    if not conf.GE:
+        pytest.skip("Not GE environment")
+
+    he_vm_host_resource = request.node.cls.he_vm_host
+    host_name = conf.HOSTS[conf.VDS_HOSTS.index(he_vm_host_resource)]
+    he_vm_host_pm = helpers.get_host_power_management(
+        host_resource=he_vm_host_resource
+    )
+    if not he_vm_host_pm:
+        pytest.skip(
+            "Host %s does not have power management" % host_name
+        )
+    agent = {
+        "agent_type": he_vm_host_pm.get(conf.PM_TYPE),
+        "agent_address": he_vm_host_pm.get(conf.PM_ADDRESS),
+        "agent_username": he_vm_host_pm.get(conf.PM_USERNAME),
+        "agent_password": he_vm_host_pm.get(conf.PM_PASSWORD),
+        "concurrent": False,
+        "order": 1
+    }
+    pm_slot = he_vm_host_pm.pop(conf.PM_SLOT, None)
+    if pm_slot:
+        he_vm_host_pm["options"] = {"slot": pm_slot}
+
+    def fin():
+        results = []
+        u_libs.testflow.teardown("Stop the VM %s", conf.HA_VM_NAME)
+        results.append(ll_vms.stop_vms_safely([conf.HA_VM_NAME]))
+
+        u_libs.testflow.teardown("Disable HA on the VM %s", conf.HA_VM_NAME)
+        results.append(
+            ll_vms.updateVm(
+                positive=True,
+                vm=conf.HA_VM_NAME,
+                highly_available=False
+            )
+        )
+
+        u_libs.testflow.teardown(
+            "Remove power management from the host %s", host_name
+        )
+        results.append(hl_hosts.remove_power_management(host_name=host_name))
+
+        assert all(results)
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup("Enable HA on the VM %s", conf.HA_VM_NAME)
+    assert ll_vms.updateVm(
+        positive=True,
+        vm=conf.HA_VM_NAME,
+        highly_available=True
+    )
+
+    u_libs.testflow.setup("Configure PM on the host %s", host_name)
+    assert hl_hosts.add_power_management(
+        host_name=host_name, pm_agents=[agent]
+    )
+
+    u_libs.testflow.setup(
+        "Start the VM %s on the host %s", conf.HA_VM_NAME, host_name
+    )
+    assert ll_vms.runVmOnce(positive=True, vm=conf.HA_VM_NAME, host=host_name)
+
+    he_vm_host_resource.add_power_manager(pm_type="ssh")
+    u_libs.testflow.setup("Poweroff the host %s", host_name)
+    he_vm_host_resource.get_power_manager().poweroff("-f")
