@@ -90,6 +90,7 @@ def remove_ip_from_interface(ip, interface):
      Raises:
         AssertionError: If failed to remove IP from interface.
     """
+    ip = ip.split("/")[0]
     cmd = ["ip", "addr", "del", "%s" % ip, "dev", interface]
     assert not conf.VDS_0_HOST.run_command(cmd)[0]
 
