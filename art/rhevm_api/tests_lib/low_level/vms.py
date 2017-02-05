@@ -280,10 +280,7 @@ def _prepareVmObject(**kwargs):
     # template
     template_name = kwargs.pop("template", "Blank" if add else None)
     template_id = kwargs.pop("templateUuid", None)
-    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
-    template_version = kwargs.pop(
-        "template_version", 0 if template_name == 'Blank' else 1
-    )
+    template_version = kwargs.pop("template_version", 1)
     template = None
     if template_id:
         template = TEMPLATE_API.find(template_id, ID_ATTR)

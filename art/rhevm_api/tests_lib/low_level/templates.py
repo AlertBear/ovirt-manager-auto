@@ -837,17 +837,12 @@ def validateTemplate(positive, template, version=BASE_TEMPLATE_VERSION):
         template (str): Template name
         version (int): Template version number
     Returns:
-        bool: True if template exist, False otherwise
+        bool: True if template existence is as expected (postive),
+            False otherwise
     """
-    templates = get_all_template_objects()
-    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
-    version = 0 if template == 'Blank' else version
-    templates = filter(
-        lambda x: (x.name == template) and (
-            x.version.version_number == version
-        ), templates
-    )
-    return bool(templates) == positive
+    return bool(
+        get_template_obj(template_name=template, version=version)
+    ) is positive
 
 
 def exportTemplate(
@@ -1265,8 +1260,9 @@ def get_template_obj(
     Returns:
          Template: If found returns the template object, otherwise None
     """
-    version = 0 if template_name == 'Blank' else version
     templates_list = get_templates_obj(template_name, all_content)
+    if template_name == 'Blank' and templates_list:
+        return templates_list[0]
     for template in templates_list:
         if template.get_version().get_version_number() == version:
             return template
@@ -1298,8 +1294,6 @@ def get_template_obj_from_export_domain(
     except EntityNotFound:
         logger.error(log_error)
         return None
-    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
-    version = 0 if template_name == 'Blank' else version
     logger.info(log_info)
     for template_object in templates_list:
         if template_object.get_version().get_version_number() == version:
