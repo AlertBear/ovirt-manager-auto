@@ -1,13 +1,14 @@
 """
 Test HE behaviour via the engine
 """
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
 import helpers
-import pytest
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from fixtures import (
     add_nic_to_he_vm,
     create_network,
@@ -19,7 +20,6 @@ from fixtures import (
 )
 
 
-@bz({"1411783": {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
@@ -59,32 +59,48 @@ class TestUpdateHeVmMemory(u_libs.SlaTest):
     update_he_vm.__name__,
     update_he_vm_cpus_back.__name__
 )
-class TestHotplugHeVmCpus(u_libs.SlaTest):
+@pytest.mark.incremental
+class TestHotPlugAndUnplugCpus(u_libs.SlaTest):
     """
     Hotplug CPU's on HE VM and check that HE VM has
     expected amount of CPU's via engine and via guest OS
     """
     __test__ = True
     he_params = {
-        "cpu_socket": conf.EXPECTED_CPUS,
         conf.MAX_MEMORY: conf.HE_VM_MAX_MEMORY
     }
 
+    @staticmethod
+    def update_and_check_cpus(sockets):
+        """
+        1) Update HE VM sockets number
+        2) Check that HE VM has the expected number of sockets
+
+        Args:
+            sockets (int): Number of sockets
+        """
+        u_libs.testflow.step("Update HE VM sockets number to %s", sockets)
+        assert ll_vms.updateVm(
+            positive=True, vm=conf.HE_VM_NAME, cpu_socket=sockets
+        )
+        assert helpers.check_he_vm_cpu_via_engine(expected_value=sockets)
+        assert helpers.check_he_vm_cpu_via_guest_os(expected_value=sockets)
+
     @polarion("RHEVM-15027")
-    def test_he_vm_cpus(self):
+    def test_plug_cpu(self):
         """
-        1) Check HE VM CPU's via the engine
-        2) Check HE VM CPU's via guest OS
+        1) Check CPU hot plug
         """
-        assert helpers.check_he_vm_cpu_via_engine(
-            expected_value=conf.EXPECTED_CPUS
-        )
-        assert helpers.check_he_vm_cpu_via_guest_os(
-            expected_value=conf.EXPECTED_CPUS
-        )
+        self.update_and_check_cpus(sockets=conf.EXPECTED_CPUS)
+
+    @polarion("RHEVM-19141")
+    def test_unplug_cpu(self):
+        """
+        1) Check CPU hot unplug
+        """
+        self.update_and_check_cpus(sockets=conf.DEFAULT_CPUS_VALUE)
 
 
-@bz({"1411783": {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
@@ -145,7 +161,6 @@ class TestAddNicToHeVmWithManagementNetwork(u_libs.SlaTest):
         )
 
 
-@bz({"1411783": {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,

@@ -110,7 +110,7 @@ def check_he_vm_memory_via_engine(expected_value):
             otherwise False
     """
     test_libs.testflow.step(
-        "Check that HE VM has memory equal to %s", expected_value
+        "Check via engine that HE VM has memory equal to %s", expected_value
     )
     return expected_value == ll_vms.get_vm_memory(vm_name=conf.HE_VM_NAME)
 
@@ -127,7 +127,8 @@ def check_he_vm_cpu_via_engine(expected_value):
             otherwise False
     """
     test_libs.testflow.step(
-        "Check that HE VM has amount of CPU's equal to %s", expected_value
+        "Check via engine that HE VM has amount of CPU's equal to %s",
+        expected_value
     )
     return expected_value == ll_vms.get_vm_processing_units_number(
         vm_name=conf.HE_VM_NAME
@@ -146,7 +147,7 @@ def check_he_vm_nic_via_engine(nic_name):
     """
     try:
         test_libs.testflow.step(
-            "Check that HE VM has NIC %s via engine", nic_name
+            "Check via engine that HE VM has NIC %s", nic_name
         )
         ll_vms.get_vm_nic(vm=conf.HE_VM_NAME, nic=nic_name)
     except exceptions.EntityNotFound:
@@ -174,7 +175,7 @@ def check_he_vm_memory_via_guest_os(expected_value):
     vm_os_memory = int(matched.groups()[0]) * 1024
     error = 512 * conf.MB
     test_libs.testflow.step(
-        "Check that HE VM has memory equal to %s", expected_value
+        "Check via guest OS that HE VM has memory equal to %s", expected_value
     )
     return expected_value - error <= vm_os_memory <= expected_value + error
 
@@ -198,7 +199,8 @@ def check_he_vm_cpu_via_guest_os(expected_value):
         return False
     vm_os_cpus = int(matched.groups()[0])
     test_libs.testflow.step(
-        "Check that HE VM has amount of CPU's equal to %s", expected_value
+        "Check via guest OS that HE VM has amount of CPU's equal to %s",
+        expected_value
     )
     return vm_os_cpus == expected_value
 
@@ -215,7 +217,7 @@ def check_he_vm_nic_via_guest_os(nic_name):
     """
     vm_os_nics = conf.ENGINE_HOST.network.all_interfaces()
     test_libs.testflow.step(
-        "Check that HE VM has NIC %s via guest OS", nic_name
+        "Check via guest OS that HE VM has NIC %s", nic_name
     )
     return nic_name in vm_os_nics
 
