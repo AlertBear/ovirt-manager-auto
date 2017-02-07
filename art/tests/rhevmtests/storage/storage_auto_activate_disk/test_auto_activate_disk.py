@@ -94,7 +94,6 @@ class VmWithOs(TestCase):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     delete_disks.__name__,
@@ -107,6 +106,7 @@ class TestCase4936(VmWithOs):
     polarion_test_case = "4936"
 
     @polarion("RHEVM3-4936")
+    @attr(tier=2)
     def test_attach_new_disk_while_running(self):
         """
         Attach different types of disks while the vm is running
@@ -125,7 +125,6 @@ class TestCase4936(VmWithOs):
             )
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     delete_disks.__name__,
@@ -138,6 +137,7 @@ class TestCase4937(VmWithOs):
     polarion_test_case = "4937"
 
     @polarion("RHEVM3-4937")
+    @attr(tier=3)
     def test_attach_new_disk_powering_up(self):
         """
         Attach different types of disks while the vm is powering up
@@ -160,6 +160,7 @@ class TestCase4937(VmWithOs):
             assert ll_vms.waitForVMState(self.vm_name)
 
     @polarion("RHEVM3-4937")
+    @attr(tier=3)
     def test_attach_new_disk_powering_down(self):
         """
         Attach different types of disks while the vm is powering down
@@ -181,6 +182,7 @@ class TestCase4937(VmWithOs):
             assert ll_vms.startVm(True, self.vm_name, config.VM_UP)
 
     @polarion("RHEVM3-4937")
+    @attr(tier=3)
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_attach_new_disk_suspend(self):
         """
