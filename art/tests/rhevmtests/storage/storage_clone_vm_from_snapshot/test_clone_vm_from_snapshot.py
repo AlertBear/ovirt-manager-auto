@@ -116,7 +116,6 @@ class BaseTestCase(TestCase):
         self.vm_names.append(cloned_vm_name)
 
 
-@attr(tier=2)
 class TestCase6103(BaseTestCase):
     """
     Clone a vm from snapshot.
@@ -129,6 +128,7 @@ class TestCase6103(BaseTestCase):
     polarion_case_id = "6103"
 
     @polarion("RHEVM3-6103")
+    @attr(tier=2)
     def test_clone_vm_from_snapshot(self):
         """
         Test that Clone from a vm snapshot works.
@@ -145,7 +145,6 @@ class TestCase6103(BaseTestCase):
         )
 
 
-@attr(tier=2)
 class TestCase6119(BaseTestCase):
     """
     Create a VM from snapshot for a DC with multiple storage domains
@@ -159,6 +158,7 @@ class TestCase6119(BaseTestCase):
     polarion_case_id = "6119"
 
     @polarion("RHEVM3-6119")
+    @attr(tier=2)
     def test_clone_vm_from_snapshot_select_storage(self):
         """
         Test the sd, type and format can be selected
@@ -172,7 +172,6 @@ class TestCase6119(BaseTestCase):
         )
 
 
-@attr(tier=3)
 class TestCase6120(BaseTestCase):
     """
     Create VM from snapshot while original VM is Down ->  Success
@@ -188,6 +187,7 @@ class TestCase6120(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-6120")
+    @attr(tier=3)
     def test_clone_vm_from_snapshot_vm_status(self):
         """
         Try to clone vm's snapshot from different states
@@ -209,7 +209,6 @@ class TestCase6120(BaseTestCase):
         )
 
 
-@attr(tier=3)
 class TestCase6122(BaseTestCase):
     """
     Clone vm from snapshot:
@@ -223,6 +222,7 @@ class TestCase6122(BaseTestCase):
     polarion_case_id = "6122"
 
     @polarion("RHEVM3-6122")
+    @attr(tier=3)
     def test_clone_vm_name_validation(self):
         """
         Test for vm name property and duplicity
@@ -255,7 +255,6 @@ class TestCase6122(BaseTestCase):
         )
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_additional_nic.__name__,
     remove_additional_snapshot.__name__,
@@ -273,6 +272,7 @@ class TestCase6108(BaseTestCase):
     snapshot_to_remove = "snapshot_with_two_nics"
 
     @polarion("RHEVM3-6108")
+    @attr(tier=3)
     def test_clone_vm_multiple_nics(self):
         """
         Add a new nic to the self.vm_name, make a snapshot and clone it.
@@ -297,7 +297,6 @@ class TestCase6108(BaseTestCase):
         assert len(ll_vms.get_vm_nics_obj(self.cloned_vm)) == 2
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     remove_additional_snapshot.__name__,
     delete_disks.__name__,
@@ -318,6 +317,7 @@ class TestCase6109(BaseTestCase):
     disk_alias = "second_disk_%s" % polarion_case_id
 
     @polarion("RHEVM3-6109")
+    @attr(tier=2)
     def test_clone_vm_multiple_disks(self):
         """
         Verify the cloned vm contains multiple disks
@@ -337,7 +337,6 @@ class TestCase6109(BaseTestCase):
         assert len(ll_vms.getVmDisks(self.cloned_vm)) == 2
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_server_vm_with_snapshot.__name__,
 )
@@ -357,6 +356,7 @@ class TestCase6111(BaseTestCase):
     cloned_vm_server = "cloned_server_%s" % polarion_case_id
 
     @polarion("RHEVM3-6111")
+    @attr(tier=3)
     def test_clone_vm_type_desktop_server(self):
         """
         Verify that desktop and server types are preserved after cloning
@@ -391,7 +391,6 @@ class TestCase6111(BaseTestCase):
         ).get_type()
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_additional_snapshot.__name__,
     delete_disks.__name__,
@@ -415,6 +414,7 @@ class TestCase6112(BaseTestCase):
     snapshot_to_remove = "snapshot_multiple_disks_%s" % polarion_case_id
 
     @polarion("RHEVM3-6112")
+    @attr(tier=3)
     def test_clone_vm_after_deleting_disk(self):
         """
         Test only existing disks are cloned even if it were snapshoted.
