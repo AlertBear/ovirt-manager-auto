@@ -1,71 +1,91 @@
 """
-Testing disk permissions feauture.
-1 Host, 1 DC, 1 Cluster, 1 SD will be created.
+Testing disk permissions feature.
 Testing if permissions are correctly assigned/removed/viewed on disks.
 """
 import logging
-import time
 import pytest
 
 import art.test_handler.exceptions as errors
 from art.core_api.apis_exceptions import EntityNotFound
+
 from art.rhevm_api.tests_lib.high_level import (
-    disks as hl_disks,
-    storagedomains as hl_sd
+    disks as hl_disks
 )
 from art.rhevm_api.tests_lib.low_level import (
+    jobs as ll_jobs,
     disks as ll_disks,
-    storagedomains as ll_sd,
-    mla,
-    vms
+    mla, vms
 )
-from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr
+from art.test_handler.tools import polarion
+from art.unittest_lib import attr, testflow
 
 from rhevmtests.system.user_tests.mla import common, config
+
+USER_NAME = config.USER_NAMES[0]
+CLUSTER = config.CLUSTER_NAME[0]
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(autouse=True, scope="module")
 def setup(request):
+
     def finalize():
+        testflow.teardown("Log in as admin.")
         common.login_as_admin()
 
-        common.remove_user(True, config.USER_NAMES[0])
-
-        if not config.GOLDEN_ENV:
-            test_utils.wait_for_tasks(
-                config.VDC_HOST,
-                config.VDC_ROOT_PASSWORD,
-                config.DC_NAME[0],
-            )
-            hl_sd.remove_storage_domain(
-                config.STORAGE_NAME[1],
-                config.DC_NAME[0],
-                config.HOSTS[0],
-            )
+        testflow.teardown("Removing user %s.", USER_NAME)
+        assert common.remove_user(True, USER_NAME)
 
     request.addfinalizer(finalize)
 
-    common.add_user(
-        True,
-        user_name=config.USER_NAMES[0],
+    testflow.setup("Adding user %s.", USER_NAME)
+    assert common.add_user(
+        positive=True,
+        user_name=USER_NAME,
         domain=config.USER_DOMAIN
     )
-    if not config.GOLDEN_ENV:
-        hl_sd.addNFSDomain(
-            config.HOSTS[0],
-            config.STORAGE_NAME[1],
-            config.DC_NAME[0],
-            config.ADDRESS[1],
-            config.PATH[1],
-        )
 
 
 @attr(tier=2)
-class DPCase147121(common.BaseTestCase):
+class TestDiskTemplate(common.BaseTestCase):
+    disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
+
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+
+        def finalize():
+            testflow.teardown("Log in as admin.")
+            common.login_as_admin()
+
+            for disk in [config.DISK_NAME, cls.disk_name]:
+                try:
+                    testflow.teardown("Removing disk %s.", disk)
+                    hl_disks.delete_disks([disk])
+                except EntityNotFound as err:
+                    logger.warning(err)
+
+            for vm in [config.VM_NAME, config.VM_NO_DISK]:
+                try:
+                    testflow.teardown("Removing VM %s.", vm)
+                    vms.removeVm(True, vm)
+                except EntityNotFound as err:
+                    logger.warning(err)
+
+            testflow.teardown(
+                "Removing user permissions from storage domain."
+            )
+            assert mla.removeUserPermissionsFromSD(
+                positive=True,
+                storage_domain=config.MASTER_STORAGE,
+                user_name=USER_NAME
+            )
+
+        request.addfinalizer(finalize)
+
+
+class TestDiskInheritedPermissions(TestDiskTemplate):
     """
     Check if SD has assigned permissions, then all disks in SD has inherit
     these permissions, Also check if disks is attached to VM, then disks,
@@ -76,78 +96,74 @@ class DPCase147121(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147121, cls).setup_class(request)
+        super(TestDiskInheritedPermissions, cls).setup_class(request)
 
-        def finalize():
-            vms.removeVm(True, config.VM_NO_DISK)
-            hl_disks.delete_disks([config.DISK_NAME])
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        ll_disks.addDisk(
-            True,
+        testflow.setup("Adding disk %s.", config.DISK_NAME)
+        assert ll_disks.addDisk(
+            positive=True,
             alias=config.DISK_NAME,
-            interface='virtio',
-            format='cow',
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         )
-        ll_disks.wait_for_disks_status(config.DISK_NAME)
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
+
+        testflow.setup("Waiting for disk status ok.")
+        assert ll_disks.wait_for_disks_status(config.DISK_NAME)
+
+        testflow.setup("Adding DiskOperator permissions to user.")
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=config.MASTER_STORAGE,
             role=config.role.DiskOperator
         )
 
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NO_DISK)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NO_DISK,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             network=config.MGMT_BRIDGE
         )
 
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NO_DISK
+        testflow.setup("Adding VM permissions to user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NO_DISK
         )
 
     @polarion("RHEVM3-7613")
     def test_disk_inherited_permissions(self):
         """ Check inheritance of disk permissions """
-        # Check inheritance from SD
+        testflow.step("Checking if user has permissions on disk.")
         assert mla.hasUserPermissionsOnObject(
-            config.USERS[0],
-            ll_disks.DISKS_API.find(config.DISK_NAME),
+            user_name=config.USERS[0],
+            obj=ll_disks.DISKS_API.find(config.DISK_NAME),
             role=config.role.DiskOperator
         ), "Permissions from SD was not delegated to disk."
-        logger.info("Disk inherit permissions from SD.")
-        # Check inheritance from vm
-        disk_name = "{0}{1}".format(config.VM_NO_DISK, "_Disk1")
+
+        testflow.step("Adding disk %s.", self.disk_name)
         assert vms.addDisk(
-            True,
-            config.VM_NO_DISK,
-            config.GB,
+            positive=True,
+            vm=config.VM_NO_DISK,
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE,
-            interface='virtio',
-            format='cow'
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW,
+            alias=self.disk_name
         ), "Unable to attach disk to vm."
+
+        testflow.step("Checking if user has permissions on disk.")
         assert mla.hasUserPermissionsOnObject(
-            config.USERS[0],
-            ll_disks.DISKS_API.find(disk_name),
+            user_name=config.USERS[0],
+            obj=ll_disks.DISKS_API.find(self.disk_name),
             role=config.role.UserVmManager
         ), "Permissions from vm was not delegated to disk."
-        logger.info("Disk inherit permissions from vm.")
 
 
-@attr(tier=2)
-class DPCase14722_2(common.BaseTestCase):
+class TestCreateDiskNegative(TestDiskTemplate):
     """
     User should not be able to create disk if he has not create disk AG
     """
@@ -156,47 +172,34 @@ class DPCase14722_2(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase14722_2, cls).setup_class(request)
+        super(TestCreateDiskNegative, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            try:
-                hl_disks.delete_disks([config.DISK_NAME])
-            except EntityNotFound:
-                pass
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
+        testflow.setup("Adding storage permissions to user.")
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=config.MASTER_STORAGE,
             role=config.role.UserRole
         )
-        common.login_as_user()
 
     @polarion("RHEVM3-12079")
     def test_create_disk_without_permissions(self):
         """ Create disk without permissions """
-        # Check if user has not StorageAdmin perms on SD he can't create Disk
+        testflow.step("Log in as user without required pemissions.")
+        common.login_as_user()
+
+        testflow.step("Adding disk %s.", config.DISK_NAME)
         assert ll_disks.addDisk(
-            False,
+            positive=False,
             alias=config.DISK_NAME,
-            interface='virtio',
-            format='cow',
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         ), "User without StorageAdmin permissions can create disk."
-        logger.info("User without StorageAdmin perms on SD can't create disk.")
 
 
-@attr(tier=2)
-class DPCase147122(common.BaseTestCase):
+class TestCreateDisk(TestDiskTemplate):
     """
     If user want create disks, he needs to have permissions on SD.
     Try to assign permissions on SD and create disk
@@ -206,227 +209,168 @@ class DPCase147122(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147122, cls).setup_class(request)
+        super(TestCreateDisk, cls).setup_class(request)
 
-        def finalize():
-            # Remove permissions from SD
-            common.login_as_admin()
-            if ll_disks.checkDiskExists(True, config.DISK_NAME):
-                hl_disks.delete_disks([config.DISK_NAME])
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
+        testflow.setup("Adding required storage domain permissions to user.")
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=config.MASTER_STORAGE,
             role=config.role.StorageAdmin
         )
 
     @polarion("RHEVM3-7625")
     def test_create_disk(self):
         """ Create disk with permissions """
-        # Check if user has StorageAdmin perms on SD he can create Disk
-        common.login_as_user(filter_=False)
+        testflow.step("Log in as user.")
+        common.login_as_user()
+
+        testflow.step("Adding disk %s.", config.DISK_NAME)
         assert ll_disks.addDisk(
-            True,
+            positive=True,
             alias=config.DISK_NAME,
-            interface='virtio',
-            format='cow',
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         ), "User with StorageAdmin permissions can't create disk."
-        hl_disks.delete_disks([config.DISK_NAME])
-        logger.info("User with StorageAdmin perms on SD can create disk.")
+
+        testflow.step("Waiting for disk status 'ok'.")
+        assert ll_disks.wait_for_disks_status([config.DISK_NAME])
+
+        testflow.step("Deleting disk %s.", config.DISK_NAME)
+        assert ll_disks.deleteDisk(
+            positive=True,
+            alias=config.DISK_NAME
+        ), "User with StorageAdmin permissions can't delete disk."
 
 
-@attr(tier=2)
-class DPCase147123(common.BaseTestCase):
-    """ General subcalss for TestCase 147123 """
-    __test__ = False
+class TestAttachDisk(TestDiskTemplate):
+    """ Test attach disk """
+    __test__ = True
 
-    disk_role = None
-    vm_role = None
-    pos = None
+    # Expected test outcomes (disk_role->vm_role->expected_result)
+    outcomes = {
+        config.role.DiskOperator: {
+            config.role.UserRole: False,
+            config.role.UserVmManager: True
+        },
+        config.role.UserRole: {
+            config.role.UserVmManager: False
+        }
+    }
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147123, cls).setup_class(request)
+        super(TestAttachDisk, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-
-            hl_disks.delete_disks([config.DISK_NAME])
-
-            vms.removeVm(True, config.VM_NO_DISK, wait=True)
-
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        ll_disks.addDisk(
-            True,
+        testflow.setup("Adding disk %s.", config.DISK_NAME)
+        assert ll_disks.addDisk(
+            positive=True,
             alias=config.DISK_NAME,
-            interface='virtio',
-            format='cow',
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         )
-        ll_disks.wait_for_disks_status(config.DISK_NAME)
 
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
-            role=cls.disk_role
-        )
+        testflow.setup("Waiting for disk status ok.")
+        assert ll_disks.wait_for_disks_status(config.DISK_NAME)
 
-        vms.createVm(
+        testflow.setup("Create VM %s.", config.VM_NO_DISK)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NO_DISK,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             network=config.MGMT_BRIDGE
-        )
-
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NO_DISK,
-            role=cls.vm_role
         )
 
     @polarion("RHEVM3-7626")
     def test_attach_disk_to_vm(self):
         """ Attach disk to vm """
-        # Attach disk need perm on disk and on VM.
-        msg = (
-            'User with UserVmManager on vm and DiskOperator on disk can'
-            'attach disk.'
-        )
-        common.login_as_user()
+        for disk_role, d in self.outcomes.items():
+            for vm_role, outcome in d.items():
+                testflow.step("Adding %s role permissions to user.", disk_role)
+                assert mla.addStoragePermissionsToUser(
+                    positive=True,
+                    user=USER_NAME,
+                    storage=config.MASTER_STORAGE,
+                    role=disk_role
+                )
 
-        assert ll_disks.attachDisk(
-            self.pos,
-            config.DISK_NAME,
-            config.VM_NO_DISK
-        ), "Unable to attach disk to vm."
-        logger.info(msg)
+                testflow.step("Adding %s role permissions to user.", vm_role)
+                assert mla.addVMPermissionsToUser(
+                    positive=True,
+                    user=USER_NAME,
+                    vm=config.VM_NO_DISK,
+                    role=vm_role
+                )
+
+                testflow.step("Log in as user.")
+                common.login_as_user()
+
+                testflow.step("Attaching disk %s.", config.DISK_NAME)
+                assert ll_disks.attachDisk(
+                    positive=outcome,
+                    alias=config.DISK_NAME,
+                    vm_name=config.VM_NO_DISK
+                )
 
 
-class DPCase147123_1(DPCase147123):
-    """
-    User should not be able to attach disk to vm if he has not perms on vm
-    """
+class TestDetachDisk(TestDiskTemplate):
+    """ Test detach disk """
     __test__ = True
 
-    disk_role = config.role.DiskOperator
-    vm_role = config.role.UserRole
-    pos = False
-
-
-class DPCase147123_2(DPCase147123):
-    """
-    User should not be able to attach disk to vm if he has not perms on disk
-    """
-    __test__ = True
-
-    disk_role = config.role.UserRole
-    vm_role = config.role.UserVmManager
-    pos = False
-
-
-class DPCase147123_3(DPCase147123):
-    """
-    In order to be able to attach disk to VM user must have a permission on
-    disk and an appropriate permission on VM.
-    """
-    __test__ = True
-    disk_role = config.role.DiskOperator
-    vm_role = config.role.UserVmManager
-    pos = True
-
-
-@attr(tier=2)
-class DPCase147124(common.BaseTestCase):
-    """
-    General case for detach disk
-    """
-    __test__ = False
-    tested_role = None
-    positive = None
+    # Expected test outcomes (role->expected_result)
+    outcomes = {config.role.UserRole: False, config.role.UserVmManager: True}
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147124, cls).setup_class(request)
+        super(TestDetachDisk, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            hl_disks.delete_disks([cls.disk_name])
-            vms.removeVm(True, config.VM_NAME)
-
-        request.addfinalizer(finalize)
-
-        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
-
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NAME)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             storageDomainName=config.MASTER_STORAGE,
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
 
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NAME,
-            role=cls.tested_role
-        )
-
     @polarion("RHEVM3-7627")
     def test_detach_disk(self):
         """ Detach disk from vm """
-        common.login_as_user()
-        assert ll_disks.detachDisk(
-            self.positive,
-            self.disk_name,
-            config.VM_NAME
-        ), "User with UserVmManager can't detach disk from VM."
-        logger.info("User who has UserVmManager perms on vm can detach disk.")
+        for role, outcome in self.outcomes.items():
+            testflow.step("Log in as admin.")
+            common.login_as_admin()
+
+            testflow.step("Adding %s role to user.", role)
+            assert mla.addVMPermissionsToUser(
+                positive=True,
+                user=USER_NAME,
+                vm=config.VM_NAME,
+                role=role
+            )
+
+            testflow.step("Log in as user.")
+            common.login_as_user()
+
+            testflow.step("Detaching disk %s.", self.disk_name)
+            try:
+                res = ll_disks.detachDisk(
+                    positive=outcome,
+                    alias=self.disk_name,
+                    vmName=config.VM_NAME
+                )
+                assert res and outcome
+            except AttributeError as err:
+                assert not outcome, err.message
 
 
-class DPCase147124_1(DPCase147124):
-    """
-    Detach disk from VM requires permissions on the VM only.
-    """
-    __test__ = True
-    tested_role = config.role.UserVmManager
-    positive = True
-
-
-class DPCase147124_2(DPCase147124):
-    """
-    Negative: Detach disk from VM requires permissions on the VM only.
-    """
-    __test__ = True
-    tested_role = config.role.UserRole
-    positive = False
-
-
-@attr(tier=2)
-class DPCase147125(common.BaseTestCase):
+class TestActivateDeactivateDisk(TestDiskTemplate):
     """
     To activate/deactivate user must have an manipulate permissions on VM.
     """
@@ -435,48 +379,47 @@ class DPCase147125(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147125, cls).setup_class(request)
+        super(TestActivateDeactivateDisk, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            vms.removeVm(True, config.VM_NAME)
-
-        request.addfinalizer(finalize)
-
-        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
-
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NAME)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             storageDomainName=config.MASTER_STORAGE,
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
 
-        mla.addVMPermissionsToUser(True, config.USER_NAMES[0], config.VM_NAME)
+        testflow.setup("Adding VM permissions to user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NAME
+        )
 
     @polarion("RHEVM3-7628")
     def test_activate_deactivate_disk(self):
         """ Activate/Deactivate Disk """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
+        testflow.step("Deactivating disk %s.", self.disk_name)
         assert vms.deactivateVmDisk(
-            True,
-            config.VM_NAME,
+            positive=True,
+            vm=config.VM_NAME,
             diskAlias=self.disk_name
         ), "User with UserVmManager role can't deactivate vm disk"
-        logger.info("User with UserVmManager perms can deactivate vm disk.")
 
+        testflow.step("Activating disk %s.", self.disk_name)
         assert vms.activateVmDisk(
-            True,
-            config.VM_NAME,
+            positive=True,
+            vm=config.VM_NAME,
             diskAlias=self.disk_name
         ), "User with UserVmManager role can't activate vm disk"
-        logger.info("User with UserVmManager permissions can active vm disk.")
 
 
-@attr(tier=2)
-class DPCase147126(common.BaseTestCase):
+class TestRemoveDisk(TestDiskTemplate):
     """
     User has to have delete_disk action group in order to remove disk.
     """
@@ -485,64 +428,65 @@ class DPCase147126(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147126, cls).setup_class(request)
+        super(TestRemoveDisk, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            if ll_disks.checkDiskExists(True, config.DISK_NAME):
-                ll_disks.deleteDisk(True, config.DISK_NAME)
-            ll_disks.waitForDisksGone(True, config.DISK_NAME)
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        ll_disks.addDisk(
-            True,
+        testflow.setup("Adding disk %s.", config.DISK_NAME)
+        assert ll_disks.addDisk(
+            positive=True,
             alias=config.DISK_NAME,
-            interface='virtio',
-            format='cow',
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE
         )
-        ll_disks.wait_for_disks_status(config.DISK_NAME)
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
+
+        testflow.setup("Waiting for disk status 'ok'.")
+        assert ll_disks.wait_for_disks_status(config.DISK_NAME)
+
+        testflow.setup(
+            "Adding storage domain UserRole role permissions to user."
+        )
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=config.MASTER_STORAGE,
             role=config.role.UserRole
         )
 
     @polarion("RHEVM3-7629")
     def test_remove_disk(self):
         """ Remove disk as user with and without permissions """
+        testflow.step("Log in as user without required permissions.")
         common.login_as_user()
-        assert ll_disks.deleteDisk(
-            False,
-            config.DISK_NAME
-        ), "User without delete_disk action group can remove disk."
-        logger.info("User without delete_disk action group can't remove disk.")
 
+        testflow.teardown("Removing disk %s.", config.DISK_NAME)
+        assert ll_disks.deleteDisk(
+            positive=False,
+            alias=config.DISK_NAME
+        ), "User without delete_disk action group can remove disk."
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
+
+        testflow.step("Adding DiskOperator permissions to user.")
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=config.MASTER_STORAGE,
             role=config.role.DiskOperator
         )
+
+        testflow.step("Log in as user with all required permissions.")
         common.login_as_user()
+
+        testflow.step("Removing disk %s.", config.DISK_NAME)
         assert ll_disks.deleteDisk(
-            True,
-            config.DISK_NAME
+            positive=True,
+            alias=config.DISK_NAME
         ), "User with delete_disk action group can't remove disk."
-        logger.info("User with delete_disk action group can remove disk.")
 
 
-@attr(tier=2)
-class DPCase147127(common.BaseTestCase):
+class TestUpdateDisk(TestDiskTemplate):
     """
     User has to have edit_disk_properties action group in order to remove disk.
     """
@@ -551,157 +495,151 @@ class DPCase147127(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147127, cls).setup_class(request)
+        super(TestUpdateDisk, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            vms.removeVm(True, config.VM_NAME)
-
-        request.addfinalizer(finalize)
-
-        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
-
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NAME)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             storageDomainName=config.MASTER_STORAGE,
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
 
-        mla.addVMPermissionsToUser(True, config.USER_NAMES[0], config.VM_NAME)
+        testflow.setup("Adding VM permissions to user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NAME
+        )
 
     @polarion("RHEVM3-7630")
     def test_update_vm_disk(self):
         """ Update vm disk """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
+        testflow.step("Updating disk %s.", self.disk_name)
         assert ll_disks.updateDisk(
-            True,
+            positive=True,
             vmName=config.VM_NAME,
             alias=self.disk_name,
-            interface='ide'
-        ), "User can't update vm disk."
-        logger.info("User can update vm disk.")
+            interface=config.INTERFACE_IDE
+        ), "User can't update VMs disk."
 
 
-@attr(tier=2)
-class DPCase147128(common.BaseTestCase):
+class TestMoveOrCopyDisk(TestDiskTemplate):
     """
     Move or copy disk requires permissions on the disk and on the target sd.
     """
     __test__ = True
 
+    source_storage_domain = config.STORAGE_NAME[0]
+    destination_storage_domain = config.STORAGE_NAME[1]
+    storage_domains = [source_storage_domain, destination_storage_domain]
+
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147128, cls).setup_class(request)
+        super(TestMoveOrCopyDisk, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Log in as admin.")
             common.login_as_admin()
-            ll_sd.waitForStorageDomainStatus(
-                True,
-                config.DC_NAME[0],
-                config.STORAGE_NAME[1],
-                'active'
-            )
-            hl_disks.delete_disks([cls.disk_name])
-            vms.removeVm(True, config.VM_NAME)
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.STORAGE_NAME[1],
-                config.USERS[0]
-            )
-            test_utils.wait_for_tasks(
-                config.VDC_HOST,
-                config.VDC_ROOT_PASSWORD,
-                config.DC_NAME[0]
-            )
+
+            testflow.teardown("Wait till move job ends.")
+            ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
 
         request.addfinalizer(finalize)
 
-        cls.disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
-
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NAME)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
-            cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            cluster=CLUSTER,
+            storageDomainName=cls.source_storage_domain,
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
 
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NAME,
-            role=config.role.StorageAdmin
+        testflow.setup("Adding UserVmManager role permissions to user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NAME,
+            role=config.role.UserVmManager
         )
 
     @polarion("RHEVM3-7631")
-    @bz({'1209505': {}})
     def test_move_disk(self):
         """ Move disk with and without having permissions on sds """
-        # Move disk without permissions
-        common.login_as_user(filter_=False)
-        try:
-            vms.move_vm_disk(
-                config.VM_NAME,
-                self.disk_name,
-                config.STORAGE_NAME[1]
-            )
-        except errors.DiskException:
-            logger.info("User without perms on sds can't move disk.")
-        # Move disk with permissions only on destination sd
+
+        def move_disk():
+            try:
+                vms.move_vm_disk(
+                    vm_name=config.VM_NAME,
+                    disk_name=self.disk_name,
+                    target_sd=self.destination_storage_domain
+                )
+                return True
+            except errors.DiskException as err:
+                logger.warning(err)
+            return False
+
+        testflow.step("Moving disk without permissions.")
+        common.login_as_user()
+
+        testflow.step("Moving disk %s.", self.disk_name)
+        assert not move_disk(), (
+            "User without permissions on storage domain can move disk."
+        )
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
-            role=config.role.StorageAdmin
-        )
-        common.login_as_user(filter_=False)
-        try:
-            vms.move_vm_disk(
-                config.VM_NAME,
-                self.disk_name,
-                config.STORAGE_NAME[1]
-            )
-        except errors.DiskException:
-            logger.info("User without perms on target sd can't move disk.")
 
-        # Move disk with permissions on both sds
+        testflow.step(
+            "Adding StorageAdmin role permissions only "
+            "on source storage domain."
+        )
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=self.source_storage_domain
+        )
+
+        testflow.step("Log in as user without all required permissions.")
+        common.login_as_user()
+
+        testflow.step("Moving disk.")
+        assert not move_disk(), (
+            "User without permission on target "
+            "storage domain can move disk."
+        )
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.STORAGE_NAME[1],
-            role=config.role.DiskCreator
+
+        testflow.step(
+            "Adding StorageAdmin role permissions"
+            "on destination storage domain."
+        )
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=self.destination_storage_domain
         )
 
-        common.login_as_user(filter_=False)
-        vms.move_vm_disk(
-            config.VM_NAME,
-            self.disk_name,
-            config.STORAGE_NAME[1]
+        testflow.step("Log in as user with all required permissions.")
+        common.login_as_user()
+
+        testflow.step("Moving disk.")
+        assert move_disk(), (
+            "User with all required permissions can't move disk!"
         )
-        time.sleep(5)
-        ll_disks.wait_for_disks_status([self.disk_name])
-        test_utils.wait_for_tasks(
-            config.VDC_HOST,
-            config.VDC_ROOT_PASSWORD,
-            config.DC_NAME[0]
-        )
-        logger.info("User with perms on target sd and disk can move disk.")
 
 
-@attr(tier=2)
-class DPCase147129(common.BaseTestCase):
+class TestAddDiskToVM(TestDiskTemplate):
     """
     Add disk to VM requires both permissions on the VM and on the sd
     """
@@ -710,89 +648,90 @@ class DPCase147129(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147129, cls).setup_class(request)
+        super(TestAddDiskToVM, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            vms.removeVm(True, config.VM_NO_DISK)
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NO_DISK)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NO_DISK,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             network=config.MGMT_BRIDGE
         )
 
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NO_DISK,
+        testflow.setup("Adding UserRole role permissions to user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NO_DISK,
             role=config.role.UserRole
         )
 
     @polarion("RHEVM3-7632")
-    @bz({'1209505': {}})
     def test_add_disk_to_vm(self):
         """ add disk to vm with and without permissions """
+        testflow.step("Log in as user without required permissions.")
         common.login_as_user()
-        assert vms.addDisk(
-            False,
-            config.VM_NO_DISK,
-            config.GB,
-            storagedomain=config.MASTER_STORAGE,
-            interface='virtio',
-            format='cow'
-        ), "UserRole can add disk to vm."
-        logger.info("User without permissions on vm, can't add disk to vm.")
 
+        testflow.step("Adding disk.")
+        assert vms.addDisk(
+            positive=False,
+            vm=config.VM_NO_DISK,
+            provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW
+        ), "UserRole can add disk to VM."
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NO_DISK,
+
+        testflow.step("Adding UserVmManager role permissions to user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NO_DISK,
             role=config.role.UserVmManager
         )
 
+        testflow.step("Log in as user with only VM permissions.")
         common.login_as_user()
-        assert vms.addDisk(
-            False,
-            config.VM_NO_DISK,
-            config.GB,
-            storagedomain=config.MASTER_STORAGE,
-            interface='virtio',
-            format='cow'
-        ), "User without permissions on sd can add disk to vm."
-        logger.info("User without permissions on sd, can't add disk to vm.")
 
+        testflow.step("Adding disk to VM.")
+        assert vms.addDisk(
+            positive=False,
+            vm=config.VM_NO_DISK,
+            provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW
+        ), "User without permissions on SD can add disk to VM."
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
+
+        testflow.step("Adding DiskCreator role permissions to user.")
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=config.MASTER_STORAGE,
             role=config.role.DiskCreator
         )
 
+        testflow.step("Log in as user with all required permissions.")
         common.login_as_user()
+
+        testflow.step("Adding disk to VM.")
         assert vms.addDisk(
-            True,
-            config.VM_NO_DISK,
-            config.GB,
+            positive=True,
+            vm=config.VM_NO_DISK,
+            provisioned_size=config.GB,
             storagedomain=config.MASTER_STORAGE,
-            interface='virtio',
-            format='cow'
-        ), "User with permissions on sd and vm can't add disk to vm."
-        logger.info("User with permissions on sd and vm, can add disk to vm.")
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW
+        ), "User with permissions on SD and VM can't add disk to VM."
 
 
-@attr(tier=2)
-class DPCase147130(common.BaseTestCase):
+class TestRemoveVM(TestDiskTemplate):
     """
     If disks are marked for deletion requires permissions on the removed
     disks and on the vm.
@@ -802,142 +741,218 @@ class DPCase147130(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147130, cls).setup_class(request)
+        super(TestRemoveVM, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            vms.waitForVmsGone(True, config.VM_NAME)
-            mla.removeUserPermissionsFromCluster(
-                True,
-                config.CLUSTER_NAME[0],
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NAME)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             storageDomainName=config.MASTER_STORAGE,
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
 
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NAME,
-            role=config.role.DiskOperator
+        testflow.setup("Adding disk %s.", config.DISK_NAME)
+        assert ll_disks.addDisk(
+            positive=True,
+            alias=config.DISK_NAME,
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_RAW,
+            provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE
         )
-        mla.addClusterPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.CLUSTER_NAME[0],
+
+        testflow.setup("Waiting for disk status 'ok'.")
+        assert ll_disks.wait_for_disks_status([config.DISK_NAME])
+
+        testflow.setup("Attaching disk.")
+        assert ll_disks.attachDisk(
+            positive=True,
+            alias=config.DISK_NAME,
+            vm_name=config.VM_NAME
+        )
+
+        testflow.setup("Adding cluster permissions for user.")
+        assert mla.addClusterPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            cluster=CLUSTER,
             role=config.role.UserRole
         )
 
     @polarion("RHEVM3-7624")
     def test_remove_vm(self):
         """ remove vm with disk without/with having apprirate permissions """
+        testflow.step(
+            "Log in as user without having VM and Disks permissions."
+        )
         common.login_as_user()
-        assert vms.removeVm(
-            False,
-            config.VM_NAME
-        ), "User can remove vm as DiskOperator."
-        logger.info("User can't remove vm as DiskOperator.")
 
+        testflow.step("Removing VM %s.", config.VM_NAME)
+        assert vms.removeVm(
+            positive=False,
+            vm=config.VM_NAME
+        ), "User can remove VM without any required permissions."
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NAME,
+
+        testflow.step("Adding DiskOperator permissions for user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NAME,
+            role=config.role.DiskOperator
+        )
+
+        testflow.step("Log in as user only with DiskOperator permissions.")
+        common.login_as_user()
+
+        testflow.step("Removing VM %s.", config.VM_NAME)
+        assert vms.removeVm(
+            positive=False,
+            vm=config.VM_NAME
+        ), "User can remove VM as DiskOperator."
+
+        testflow.step("Log in as admin.")
+        common.login_as_admin()
+
+        testflow.step("Adding UserVmManager permissions to user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NAME,
             role=config.role.UserVmManager
         )
 
+        testflow.step("Log in as user with all required permissions.")
         common.login_as_user()
+
+        testflow.step(
+            "Removing VM %s with all required permissions.",
+            config.VM_NAME
+        )
         assert vms.removeVm(
-            True,
-            config.VM_NAME,
-            wait=False
-        ), "User can't remove vm as DiskOperator and UserVmManager on vm."
-        logger.info("User can remove vm as UserVmManager, DiskOperator on vm")
+            positive=True,
+            vm=config.VM_NAME
+        ), "User can't remove VM as DiskOperator and UserVmManager roles."
 
 
-@attr(tier=2)
-class DPCase147137(common.BaseTestCase):
+class TestDisk(TestDiskTemplate):
     """
-    Create/attach/edit/delete shared disk.
+    Create/attach/update/delete disk as DiskOperator.
     """
     __test__ = True
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(DPCase147137, cls).setup_class(request)
+        super(TestDisk, cls).setup_class(request)
 
-        def finalize():
-            common.login_as_admin()
-            ll_disks.waitForDisksGone(True, config.DISK_NAME)
-            vms.removeVm(True, config.VM_NO_DISK),
-            mla.removeUserPermissionsFromSD(
-                True,
-                config.MASTER_STORAGE,
-                config.USERS[0]
-            )
-
-        request.addfinalizer(finalize)
-
-        ll_disks.addDisk(
-            True,
-            alias=config.DISK_NAME,
-            interface='virtio',
-            format='raw',
-            provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE,
-            shareable=True
-        )
-        ll_disks.wait_for_disks_status(config.DISK_NAME)
-        mla.addStoragePermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.MASTER_STORAGE,
+        testflow.setup("Adding DiskOperator permissions to user.")
+        assert mla.addStoragePermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            storage=config.MASTER_STORAGE,
             role=config.role.DiskOperator
         )
 
-        vms.createVm(
+        testflow.setup("Creating VM %s.", config.VM_NO_DISK)
+        assert vms.createVm(
             positive=True,
             vmName=config.VM_NO_DISK,
-            cluster=config.CLUSTER_NAME[0],
+            cluster=CLUSTER,
             network=config.MGMT_BRIDGE
         )
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NO_DISK
+
+        testflow.setup("Adding VM permissions for user.")
+        assert mla.addVMPermissionsToUser(
+            positive=True,
+            user=USER_NAME,
+            vm=config.VM_NO_DISK
         )
+
+    @polarion("RHEVM3-7617")
+    def test_floating_disk(self):
+        """ Basic operations with floating disk """
+        testflow.step("Log in as user.")
+        common.login_as_user()
+
+        testflow.step("Adding floating disk %s.", config.DISK_NAME)
+        assert ll_disks.addDisk(
+            positive=True,
+            alias=config.DISK_NAME,
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_RAW,
+            provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE
+        )
+
+        testflow.step("Waiting for disk status 'ok'.")
+        assert ll_disks.wait_for_disks_status([config.DISK_NAME])
+
+        testflow.step("Attaching floating disk %s.", config.DISK_NAME)
+        assert ll_disks.attachDisk(
+            positive=True,
+            alias=config.DISK_NAME,
+            vm_name=config.VM_NO_DISK
+        ), "Unable to attach disk to vm."
+
+        testflow.step("Updating floating disk %s.", config.DISK_NAME)
+        assert ll_disks.updateDisk(
+            positive=True,
+            vmName=config.VM_NO_DISK,
+            alias=config.DISK_NAME,
+            interface=config.INTERFACE_IDE
+        ), "User can't update floating disk."
+
+        testflow.step("Removing floating disk %s.", config.DISK_NAME)
+        assert ll_disks.deleteDisk(
+            positive=True,
+            alias=config.DISK_NAME
+        ), "User can't remove floating disk."
 
     @polarion("RHEVM3-7616")
     def test_shared_disk(self):
         """ Basic operations with shared disk """
+        testflow.step("Log in as user.")
         common.login_as_user()
-        assert ll_disks.attachDisk(
-            True,
-            config.DISK_NAME,
-            config.VM_NO_DISK
-        ), "Unable to attach disk to vm."
-        logger.info("Shared disk was attached by user.")
 
+        testflow.step("Adding shared disk %s.", config.DISK_NAME)
+        assert ll_disks.addDisk(
+            positive=True,
+            alias=config.DISK_NAME,
+            interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_RAW,
+            provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            shareable=True
+        )
+
+        testflow.step("Waiting for disk status 'ok'.")
+        assert ll_disks.wait_for_disks_status([config.DISK_NAME])
+
+        testflow.step("Attaching shared disk %s.", config.DISK_NAME)
+        assert ll_disks.attachDisk(
+            positive=True,
+            alias=config.DISK_NAME,
+            vm_name=config.VM_NO_DISK
+        ), "Unable to attach disk to vm."
+
+        testflow.step("Updating shared disk %s.", config.DISK_NAME)
         assert ll_disks.updateDisk(
-            True,
+            positive=True,
             vmName=config.VM_NO_DISK,
             alias=config.DISK_NAME,
-            interface='ide'
-        ), "User can't update vm shared disk."
-        logger.info("User can update vm shared disk.")
+            interface=config.INTERFACE_IDE
+        ), "User can't update shared disk."
 
+        testflow.step("Waiting for disk status 'ok'.")
+        assert ll_disks.wait_for_disks_status([config.DISK_NAME])
+
+        testflow.step("Removing shared disk %s.", config.DISK_NAME)
         assert ll_disks.deleteDisk(
-            True,
-            config.DISK_NAME
+            positive=True,
+            alias=config.DISK_NAME
         ), "User can't remove shared disk."
-        logger.info("User can remove shared disk.")
