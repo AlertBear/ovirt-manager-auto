@@ -68,7 +68,6 @@ def initializer_module(request):
     config.HOSTS.remove(host_name)
 
 
-@attr(tier=3)
 class TestCase4831(helpers.TestCaseNFSOptions):
     """
     Tests if data center with NFS storage domains with custom NFS options works
@@ -106,6 +105,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
     #          and a new version is created
 
     @pytest.fixture(scope='class')
+    @attr(tier=3)
     def initializer_class(self, request, initializer_module):
         """
         Getting the master domain
@@ -170,6 +170,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
         self.initialize_parameters()
 
     @pytest.fixture(scope='function')
+    @attr(tier=3)
     def initializer_TestCase4831(self, request, initializer_class):
         """
         Prepares environment - creates storage domains with different
@@ -322,6 +323,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
         logger.info("New master: %s", new_master['masterDomain'])
 
     @polarion("RHEVM3-4831")
+    @attr(tier=3)
     @pytest.mark.usefixtures("initializer_TestCase4831")
     def test_functionality_with_custom_nfs_options(self):
         """ Tests basic data center functionality with storage domain with
