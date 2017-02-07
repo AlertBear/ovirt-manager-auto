@@ -106,7 +106,6 @@ class BasicEnvironment(BaseTestCase):
     new_disks = []
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_disks.__name__,
     remove_disks.__name__,
@@ -331,6 +330,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
     new_disks = list()
 
     @polarion("RHEVM3-11252")
+    @attr(tier=2)
     @bz({'1334726': {'ppc': config.PPC_ARCH}})
     def test_same_domain_same_alias(self):
         """
@@ -339,22 +339,23 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         self.basic_copy()
 
     @polarion("RHEVM3-11253")
+    @attr(tier=2)
     def test_different_domain_different_alias(self):
         """
         Copy existing disk to different storage domain with different alias
         """
         self.basic_copy(same_domain=False, new_alias=self.new_alias)
 
-    @attr(tier=3)
     @polarion("RHEVM3-11254")
+    @attr(tier=3)
     def test_same_domain_different_alias(self):
         """
         Copy existing disk to the same storage domain with different alias
         """
         self.basic_copy(new_alias=self.new_alias)
 
-    @attr(tier=3)
     @polarion("RHEVM3-11251")
+    @attr(tier=3)
     def test_different_domain_same_alias(self):
         """
         Copy existing disk to different storage domain with the same alias
@@ -362,23 +363,18 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         self.basic_copy(same_domain=False)
 
 
-@attr(tier=3)
 class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
     """
     Copy floating disk -  Not enough space on target domain
     """
     __test__ = False
 
-    def setUp(self):
-        """
-        Configure the critical space threshold to save time in creating
-        large disks
-        """
-        # TODO: Implement when ticket
-        # https://projects.engineering.redhat.com/browse/RHEVM-2415
-        # is resolved
+    # TODO: Implement setup when ticket
+    # https://projects.engineering.redhat.com/browse/RHEVM-2415
+    # is resolved
 
     @polarion("RHEVM3-11262")
+    @attr(tier=3)
     def test_no_space_left_same_domain(self):
         """
         Copy existing disk to the same storage domain
@@ -386,6 +382,7 @@ class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
         self.basic_copy(positive=False)
 
     @polarion("RHEVM3-11263")
+    @attr(tier=3)
     def test_no_space_left_different_domain(self):
         """
         Copy existing disk to different storage domain
@@ -393,7 +390,6 @@ class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
         self.basic_copy(positive=False, same_domain=False)
 
 
-@attr(tier=3)
 class TestCase11264(CopyDiskWithContent):
     """
     Copy disk - VM in various states
@@ -401,6 +397,7 @@ class TestCase11264(CopyDiskWithContent):
     __test__ = True
 
     @polarion("RHEVM3-11246")
+    @attr(tier=3)
     def test_copy_when_vm_in_various_states(self):
         """
         Copy existing disk to the same storage when vm in different states
@@ -434,7 +431,6 @@ class TestCase11264(CopyDiskWithContent):
             )
 
 
-@attr(tier=3)
 class TestCase11339(CopyDiskWithContent):
     """
     Copy disk - Vm with snapshot
@@ -446,6 +442,7 @@ class TestCase11339(CopyDiskWithContent):
     # snapshot, will cause the original disk to remove
 
     @polarion("RHEVM3-11339")
+    @attr(tier=3)
     def test_copy_vm_disks_with_snapshot(self):
         """
         Copy existing disk when vm is with snapshot
@@ -463,7 +460,6 @@ class TestCase11339(CopyDiskWithContent):
         )
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_template.__name__,
     remove_vm.__name__,
@@ -477,6 +473,7 @@ class TestCase11140(CopyDiskWithContent):
     cloned_vm = 'cloned_vm_copy_disk_11140'
 
     @polarion("RHEVM3-11340")
+    @attr(tier=3)
     def test_copy_vm_disks_after_cloned_as_clone(self):
         """
         Copy existing disk when vm cloned from snapshot as clone
@@ -484,7 +481,6 @@ class TestCase11140(CopyDiskWithContent):
         self.copy_with_template()
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     remove_template.__name__,
     remove_vm.__name__,
@@ -498,6 +494,7 @@ class TestCase11141(CopyDiskWithContent):
     cloned_vm = 'cloned_vm_copy_disk_11141'
 
     @polarion("RHEVM3-11341")
+    @attr(tier=3)
     def test_copy_vm_disks_after_cloned_as_thin(self):
         """
         Copy existing disk when vm cloned from snapshot as thin
