@@ -127,7 +127,6 @@ def clean_host_interfaces(request):
         """
         Remove all networks from host interfaces
         """
-        testflow.teardown("Remove all networks from host interfaces")
         assert hl_host_networks.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
         )

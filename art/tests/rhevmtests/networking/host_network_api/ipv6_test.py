@@ -208,10 +208,6 @@ class TestHostNetworkApiIpV601(NetworkTest):
                 },
             }
         }
-        testflow.step(
-            "Attach network %s (%s) using %s boot protocol IPv6 over %s. %s",
-            network, type_, proto, host_nic, net_api_conf.BASIC_IPV6_DICT
-        )
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **sn_dict
         )
@@ -354,9 +350,6 @@ class TestHostNetworkApiIpV602(NetworkTest):
                 },
             }
         }
-        testflow.step(
-            "Update network %s with IPv6 %s, %s.", network, proto, ip_dict
-        )
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **sn_dict
         )

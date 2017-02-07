@@ -84,9 +84,6 @@ class TestBridgelessCase(NetworkTest):
         4) Attach non-VM network over bond
         """
         nic = conf.HOST_0_NICS[nic] if isinstance(nic, int) else nic
-        log = "host NIC %s" % nic if isinstance(nic, int) else "bond %s" % nic
-
-        testflow.step("Attach non-VM network %s to %s", net, log)
         local_dict = {
             "add": {
                 "1": {

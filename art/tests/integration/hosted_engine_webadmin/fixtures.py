@@ -181,9 +181,6 @@ def create_network(request):
             }
         }
     }
-    test_libs.testflow.setup(
-        "Create %s via setup_network on host %s", sn_dict, conf.HOSTS[0]
-    )
     assert hl_host_network.setup_networks(host_name=conf.HOSTS[0], **sn_dict)
 
 

@@ -101,9 +101,6 @@ def port_mirroring_prepare_setup(request):
         }
     }
     for host_name in port_mirroring.hosts_list:
-        testflow.setup(
-            "Attach networks %s to host %s", pm_conf.NETS_DICT, host_name
-        )
         assert hl_host_network.setup_networks(host_name=host_name, **sn_dict)
 
     testflow.setup("Create vnic profiles with port mirroring")

@@ -325,7 +325,6 @@ class TestVNICProfileCase02(NetworkTest):
         )
         testflow.step('Remove vNIC from VM')
         assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=self.vnic)
-        testflow.step('Clean host interfaces')
         assert hl_host_networks.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
         )
@@ -378,7 +377,7 @@ class TestVNICProfileCase02(NetworkTest):
                 positive=True, vm=self.vm_name, nic=nic, plugged="false"
             )
             assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=nic)
-        testflow.step('Clean host interfaces')
+
         assert hl_host_networks.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
         )

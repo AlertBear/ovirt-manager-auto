@@ -128,10 +128,6 @@ def import_export_prepare_setup(request):
         data_center=import_export.dc_0, cluster=import_export.cluster_0,
         network_dict=import_export_conf.LOCAL_DICT
     )
-    testflow.setup(
-        "Attach networks %s to host %s", import_export_conf.LOCAL_DICT,
-        import_export.host_0_name
-    )
     assert hl_host_network.setup_networks(
         host_name=import_export.host_0_name, **sn_dict
     )

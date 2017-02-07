@@ -118,7 +118,6 @@ class TestGatewaysCase01(NetworkTest):
                 }
             }
         }
-        testflow.step("Attach network %s to host %s", network, host)
         assert hl_host_network.setup_networks(host_name=host, **sn_dict)
         testflow.step(
             "Check correct configuration with ip rule command on %s network",
@@ -129,7 +128,6 @@ class TestGatewaysCase01(NetworkTest):
                 vds_resource=conf.VDS_0_HOST, subnet=multiple_gw_conf.SUBNET
             )
 
-        testflow.step("Clean host %s interfaces", host)
         assert hl_host_network.clean_host_interfaces(host_name=host)
 
 

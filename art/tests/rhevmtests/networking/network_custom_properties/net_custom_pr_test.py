@@ -421,9 +421,7 @@ class TestNetworkCustomPropertiesCase04(NetworkTest):
                 vds_resource=conf.VDS_0_HOST, bridge_name=network,
                 opts=self.priority_opts, value=self.priority_value
             )
-        testflow.step(
-            "Detach networks %s and %s from Host", self.net_1, self.net_2
-        )
+
         assert hl_host_network.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
         )
@@ -565,9 +563,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
                 )
             ]
         )
-        testflow.step(
-            "Update ethtool_opts with additional parameters"
-        )
+        testflow.step("Update ethtool_opts with additional parameters")
         network_host_api_dict = {
             "update": {
                 "1": {
@@ -641,9 +637,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
             ]
         )
 
-        testflow.step(
-            "Update ethtool_opts with additional parameters"
-        )
+        testflow.step("Update ethtool_opts with additional parameters")
         network_host_api_dict = {
             "update": {
                 "1": {

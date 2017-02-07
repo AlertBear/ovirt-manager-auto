@@ -75,7 +75,6 @@ def linking_prepare_setup(request):
         cluster=linking.cluster_0
     )
 
-    testflow.setup("Attaching networks to host: %s", linking.vds_0_host)
     assert hl_host_network.setup_networks(
         host_name=linking.host_0_name, **setup_net_dict
     )

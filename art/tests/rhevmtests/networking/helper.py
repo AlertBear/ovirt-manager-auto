@@ -450,10 +450,7 @@ def remove_networks_from_host(hosts=None):
     hosts = [conf.HOSTS[0]] if not hosts else hosts
     logger.info("Removing all networks from %s", hosts)
     for host_name in hosts:
-        if not hl_host_network.clean_host_interfaces(host_name=host_name):
-            logger.error(
-                "Failed to remove all networks from %s", host_name
-            )
+        hl_host_network.clean_host_interfaces(host_name=host_name)
 
 
 def send_icmp_sampler(

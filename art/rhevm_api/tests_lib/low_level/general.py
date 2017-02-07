@@ -418,8 +418,8 @@ def generate_logs(info=True, error=True, step=False):
             The call for the function
             """
             kwargs_for_log = kwargs.copy()
-            frame = inspect.stack()[1][3]
-            is_test = True if "test" in frame else False
+            stack = inspect.stack()
+            called_from = get_called_from_test(stack=stack)
             func_doc = inspect.getdoc(func)
             func_argspec = inspect.getargspec(func)
             try:
@@ -442,8 +442,9 @@ def generate_logs(info=True, error=True, step=False):
             log_info, log_err = get_log_msg(
                 log_action=log_action, **kwargs_for_log
             )
-            if is_test and step:
-                testflow.step(log_info)
+            if step and called_from:
+                test_flow_call = getattr(testflow, called_from)
+                test_flow_call(log_info)
 
             if info:
                 util.logger.info(log_info)
@@ -454,3 +455,26 @@ def generate_logs(info=True, error=True, step=False):
             return res
         return inner
     return generate_logs_decorator
+
+
+def get_called_from_test(stack):
+    """
+    Check if function was called from test or from fixture
+
+    Args:
+        stack (list): stack (inspect.stack()) list
+
+    Returns:
+        str: From where the function called (step (test), setup or teardown)
+    """
+    call_args = [i[3] for i in stack]
+    if "pytest_runtest_call" in call_args:
+        return "step"
+
+    if "pytest_fixture_setup" in call_args:
+        return "setup"
+
+    if "pytest_runtest_teardown" in call_args:
+        return "teardown"
+
+    return ""

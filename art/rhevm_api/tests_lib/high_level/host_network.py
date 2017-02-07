@@ -112,7 +112,7 @@ def update_network_on_host(host_name, nic_name=None, **kwargs):
     return res
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def setup_networks(host_name, **kwargs):
     """
     Sends setupNetwork action request to VDS host
@@ -275,10 +275,10 @@ def setup_networks(host_name, **kwargs):
     return res
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def clean_host_interfaces(host_name):
     """
-    Remove all networks beside management network from host
+    Remove all networks beside management network from host_name
 
     Args:
         host_name (str): Host name

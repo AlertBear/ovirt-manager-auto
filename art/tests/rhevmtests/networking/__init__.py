@@ -277,8 +277,7 @@ def clean_hosts_interfaces():
     Clean all hosts interfaces
     """
     for host in config.HOSTS:
-        if not hl_host_network.clean_host_interfaces(host_name=host):
-            logger.error("Failed to clean %s interfaces", host)
+        hl_host_network.clean_host_interfaces(host_name=host)
 
 
 @ignore_exception
