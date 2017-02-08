@@ -56,11 +56,11 @@ SN_DICT = {
     },
     NETS[2][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[1]
+        "vlan_id": VLAN_IDS.pop(0)
     },
     NETS[2][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[2]
+        "vlan_id": VLAN_IDS.pop(0)
     },
     NETS[2][3]: {
         "required": "false",
@@ -68,7 +68,7 @@ SN_DICT = {
     },
     NETS[2][4]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[3]
+        "vlan_id": VLAN_IDS.pop(0)
     },
     NETS[2][5]: {
         "required": "false",
@@ -88,46 +88,60 @@ SN_DICT = {
     },
     NETS[4][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[4],
+        "vlan_id": VLAN_IDS.pop(0),
         "mtu": MTU[1]
     },
     NETS[4][3]: {
         "required": "false",
         "mtu": MTU[1]
     },
-    NETS[5][0]: {
+    NETS[4][4]: {
         "required": "false",
         "usages": ""
+    },
+    NETS[4][5]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+        "usages": "",
+    },
+    NETS[4][6]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[4][7]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0),
+        "usages": ""
+    },
+    NETS[5][0]: {
+        "required": "false",
     },
     NETS[5][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[5],
-        "usages": "",
+        "vlan_id": VLAN_IDS.pop(0),
     },
     NETS[5][2]: {
         "required": "false",
-        "usages": ""
     },
     NETS[5][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[6],
-        "usages": ""
+        "vlan_id": VLAN_IDS.pop(0),
     },
     NETS[6][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[7]
+        "vlan_id": VLAN_IDS.pop(0)
     },
     NETS[6][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[8],
+        "vlan_id": VLAN_IDS.pop(0),
     },
     NETS[6][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[9]
+        "vlan_id": VLAN_IDS.pop(0)
     },
     NETS[6][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[10],
+        "vlan_id": VLAN_IDS.pop(0),
     },
     NETS[8][0]: {
         "required": "true",
@@ -136,25 +150,17 @@ SN_DICT = {
         "required": "false",
         "mtu": MTU[0]
     },
+    NETS[9][1]: {
+        "required": "false",
+    },
+    NETS[9][2]: {
+        "required": "false",
+    },
     NETS[10][0]: {
         "required": "false",
     },
     NETS[12][0]: {
         "required": "false",
-    },
-    NETS[14][0]: {
-        "required": "false",
-    },
-    NETS[14][1]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[12],
-    },
-    NETS[14][2]: {
-        "required": "false",
-    },
-    NETS[14][3]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[13],
     },
     NETS[15][0]: {
         "required": "true",
