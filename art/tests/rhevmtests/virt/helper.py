@@ -935,36 +935,19 @@ def check_thread_number(disk_id, counter):
     return True
 
 
-def check_clone_vm(
-    clone_vm_name,
-    base_vm_name,
-    check_disk_content=False,
-):
+def check_clone_vm(clone_vm_name, base_vm_name):
     """
     Check clone vm
         1. Check Nic: check the MAC address is diff then base
-        2. Check disk content: start vms and check that new disk contains
-        the same file as in base disk
-        3. Check that clone vm has the same attributes as base vm
+        2. Check that clone vm has the same attributes as base vm
 
     Args:
         clone_vm_name (str): clone vm name
         base_vm_name (str): base vm name
-        check_disk_content (bool): If True check clone vm content,
-        else don't check
 
     Returns:
          bool: Return True if all checks pass, else return False
     """
-    logger.info(
-        "Check clone vm: start vms %s, %s", clone_vm_name, base_vm_name
-    )
-    ll_vms.start_vms(vm_list=[clone_vm_name, base_vm_name])
-    if check_disk_content:
-        logger.info("Check disk content")
-        vm_resource = helpers.get_vm_resource(clone_vm_name)
-        testflow.step("Verify that file exists after vm restart")
-        check_if_file_exist(True, clone_vm_name, vm_resource, path='/home/')
     logger.info("Check Nic info")
     clone_vm_mac_address = ll_vms.get_vm_nic_mac_address(vm=clone_vm_name)
     base_vm_mac_address = ll_vms.get_vm_nic_mac_address(vm=base_vm_name)
@@ -991,14 +974,32 @@ def check_clone_vm(
             base_vm_disks_ids, clone_vm_disks_ids
         )
         return False
-    testflow.step("stop vms and check vm attributes")
-    ll_vms.stop_vms_safely(vms_list=[clone_vm_name, base_vm_name])
     vm_obj_clone_vm = ll_vms.get_vm_obj(clone_vm_name)
     vm_obj_base_vm = ll_vms.get_vm_obj(base_vm_name)
     return validator.compareElements(
         vm_obj_base_vm, vm_obj_clone_vm, logger=logger, root='Comparator',
         ignore=config_virt.VALIDATOR_IGNORE_LIST
     )
+
+
+def check_disk_contents_on_clone_vm(clone_vm_name):
+    """
+    Check disk content:
+    start clone and check that new disk contains the same file as in base disk
+
+    Args:
+        clone_vm_name (str): clone vm name
+
+    Raises:
+        VMException: If file don't exist
+    """
+    assert ll_vms.startVm(
+        positive=True, vm=clone_vm_name, wait_for_status=config.VM_UP
+    )
+    logger.info("Check disk content")
+    vm_resource = helpers.get_vm_resource(clone_vm_name)
+    testflow.step("Verify that file exists after vm restart")
+    check_if_file_exist(True, clone_vm_name, vm_resource, path='/home/')
 
 
 def clone_same_vm_twice(base_vm_name, clone_vm_list):

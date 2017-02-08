@@ -83,7 +83,9 @@ class CloneVMSanityTestCase2(VirtTest):
         assert virt_helper.check_clone_vm(
             clone_vm_name=config.CLONE_VM_TEST,
             base_vm_name=config.VM_FROM_BASE_TEMPLATE,
-            check_disk_content=True
+        )
+        virt_helper.check_disk_contents_on_clone_vm(
+            clone_vm_name=config.CLONE_VM_TEST
         )
 
 
@@ -133,7 +135,6 @@ class CloneVmDisksCase(VirtTest):
         assert virt_helper.check_clone_vm(
             clone_vm_name=config.TEST_CLONE_WITH_2_DISKS,
             base_vm_name=self.vm_name,
-            check_disk_content=False
         )
 
 
