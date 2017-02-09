@@ -39,7 +39,6 @@ NOT_GLUSTER = (
 )
 
 
-@attr(tier=1)
 class TestCase11513(TestCase):
     """
     Test sharing disk
@@ -75,6 +74,7 @@ class TestCase11513(TestCase):
             )
 
     @polarion("RHEVM3-11513")
+    @attr(tier=1)
     def test_shared(self):
         """Creates a shared disk and assign it to different vms
         """
@@ -196,7 +196,6 @@ class TestCase11624(TestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(delete_disks.__name__)
 class TestCase5897(TestCase):
     """
@@ -210,6 +209,7 @@ class TestCase5897(TestCase):
     cow_disk = 'cow_shared_disk'
 
     @polarion("RHEVM3-5897")
+    @attr(tier=2)
     def test_shared_disk_with_different_formats(self):
         """
         Update non sharable disk to be shareable
@@ -231,7 +231,6 @@ class TestCase5897(TestCase):
         ), "Succeeded to create shared disk with format COW"
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     add_disk.__name__,
     delete_disk.__name__
@@ -250,6 +249,7 @@ class TestCase16687(TestCase):
     }
 
     @polarion("RHEVM3-16687")
+    @attr(tier=3)
     def test_move_shared_disk_to_gluster_domain(self):
         """
         Move shared disk to GlusterFS storage domain - should fail
@@ -262,7 +262,6 @@ class TestCase16687(TestCase):
         ), "Succeeded to move shared disk to Gluster storage domain"
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(delete_disks.__name__)
 class TestCase16688(TestCase):
     """
@@ -272,6 +271,7 @@ class TestCase16688(TestCase):
     polarion_test_case = '16688'
 
     @polarion("RHEVM3-16688")
+    @attr(tier=3)
     def test_create_shared_disk_on_gluster_domain(self):
         """
         Create shared disk on GlusterFS storage domain - should fail
@@ -287,7 +287,6 @@ class TestCase16688(TestCase):
         self.disks_to_remove.append(self.disk_name)
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
@@ -307,6 +306,7 @@ class TestCase16685(TestCase):
     }
 
     @polarion("RHEVM3-16685")
+    @attr(tier=2)
     def test_update_disk_to_shared(self):
         """
         Update non sharable disk to be shareable
@@ -316,7 +316,6 @@ class TestCase16685(TestCase):
         ), "Failed to update disk sharable flag to 'True'"
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
@@ -336,6 +335,7 @@ class TestCase16783(TestCase):
     }
 
     @polarion("RHEVM3-16783")
+    @attr(tier=3)
     def test_update_disk_to_shared_when_vm_is_powering_up(self):
         """
         Update non sharable disk to be shareable when the VM is powering up
@@ -350,7 +350,6 @@ class TestCase16783(TestCase):
         ll_vms.stop_vms_safely([self.vm_name])
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
@@ -372,6 +371,7 @@ class TestCase16686(TestCase):
     }
 
     @polarion("RHEVM3-16686")
+    @attr(tier=3)
     def test_update_disk_with_snapshot_to_shared(self):
         """
         Update non sharable disk with snapshot to be shareable -> should fail
@@ -382,7 +382,6 @@ class TestCase16686(TestCase):
             "shareable")
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(create_vm.__name__)
 class TestCase16740(TestCase):
     """
@@ -393,6 +392,7 @@ class TestCase16740(TestCase):
     installation = False
 
     @polarion("RHEVM3-16740")
+    @attr(tier=3)
     def test_attach_non_shared_disk_to_second_vm(self):
         """
         Update non sharable disk to be shareable
@@ -405,7 +405,6 @@ class TestCase16740(TestCase):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_second_vm.__name__,
@@ -425,6 +424,7 @@ class TestCase16781(TestCase):
     }
 
     @polarion("RHEVM3-16781")
+    @attr(tier=2)
     def test_update_shared_disk_of_2_vms_to_non_shared(self):
         """
         Update sharable disk of 2 VMs to be non shareable

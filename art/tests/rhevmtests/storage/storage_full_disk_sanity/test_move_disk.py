@@ -22,7 +22,6 @@ from rhevmtests.storage.fixtures import (
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     add_disk.__name__,
     delete_disk.__name__
@@ -34,6 +33,7 @@ class TestCase16757(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16757")
+    @attr(tier=3)
     def test_move_disk_to_source_domain(self):
         """
         Move disk from source domain to source domain
@@ -43,7 +43,6 @@ class TestCase16757(TestCase):
         ), "Succeeded to move disk from source domain to source domain"
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     delete_disks.__name__,
 )
@@ -55,6 +54,7 @@ class TestCase16758(TestCase):
     disk_size = 20 * config.GB
 
     @polarion("RHEVM3-16758")
+    @attr(tier=3)
     def test_move_locked_disk(self):
         """
         Move locked disk
@@ -76,7 +76,6 @@ class TestCase16758(TestCase):
         ), "Succeeded to move locked disk %s" % self.disk_name
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_template.__name__,
 )
@@ -87,6 +86,7 @@ class TestCase16759(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16759")
+    @attr(tier=3)
     def test_move_template_disk(self):
         """
         Move template disk
@@ -104,7 +104,6 @@ class TestCase16759(TestCase):
         ), "Succeeded to move template's disk %s" % template_disk.get_alias()
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     initialize_storage_domains.__name__,
     add_disk.__name__,
@@ -118,6 +117,7 @@ class TestCase16760(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16760")
+    @attr(tier=3)
     def test_move_disk_to_deactivated_sd(self):
         """
         Move disk to storage domain in maintenance
@@ -130,7 +130,6 @@ class TestCase16760(TestCase):
         )
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_storage_domain.__name__,
@@ -143,6 +142,7 @@ class TestCase16762(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16762")
+    @attr(tier=3)
     def test_move_disk_based_on_template_to_sd_without_a_copy(self):
         """
         Move disk based on template to storage domain without a copy of it

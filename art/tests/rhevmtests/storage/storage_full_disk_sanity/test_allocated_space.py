@@ -149,7 +149,6 @@ class BaseCase(TestCase):
             )
 
 
-@attr(tier=1)
 @pytest.mark.usefixtures(delete_disks.__name__)
 class TestCase11536(BaseCase):
     """
@@ -166,6 +165,7 @@ class TestCase11536(BaseCase):
         self.create_disks()
 
     @polarion("RHEVM3-11536")
+    @attr(tier=1)
     def test_create_disks_and_check_size(self):
         """
         Create preallocated and thin provision disk then check if storage
@@ -175,7 +175,6 @@ class TestCase11536(BaseCase):
         self.run_scenario()
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(create_disks_fixture.__name__)
 class TestCase11537(BaseCase):
     """
@@ -187,6 +186,7 @@ class TestCase11537(BaseCase):
     polarion_test_case = '11537'
 
     @polarion("RHEVM3-11537")
+    @attr(tier=2)
     def test_delete_disks(self):
         """
         Delete disk and check storage details are updated
@@ -206,7 +206,6 @@ class TestCase11537(BaseCase):
             self.expected_allocated_size[self.domains[0]] -= provisioned_size
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_disks_fixture.__name__,
     delete_disks.__name__
@@ -239,6 +238,7 @@ class TestCase11547(BaseCase):
             self.expected_allocated_size[self.domains[1]] += provisioned_size
 
     @polarion("RHEVM3-11547")
+    @attr(tier=2)
     def test_move_disks(self):
         """
         Move disks and check domain details
@@ -246,7 +246,6 @@ class TestCase11547(BaseCase):
         self.run_scenario()
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     lun_size_calc.__name__,
     create_storage_domain.__name__,
@@ -345,6 +344,7 @@ class TestCase11546(BaseCase):
         )
 
     @polarion("RHEVM3-11546")
+    @attr(tier=2)
     def test_extend_domain_and_check_details(self):
         """
         Extend storage domain and check if total size is updated
@@ -352,7 +352,6 @@ class TestCase11546(BaseCase):
         self.run_scenario()
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_2_vms_pre_disk_thin_disk.__name__,
     remove_templates.__name__,
@@ -407,6 +406,7 @@ class TestCase11541(BaseCase):
                     )
 
     @polarion("RHEVM3-11541")
+    @attr(tier=3)
     def test_create_templates(self):
         """
         Create templates and check storage domain details
@@ -415,7 +415,6 @@ class TestCase11541(BaseCase):
 
 
 @bz({'1417456': {}})
-@attr(tier=4)
 @pytest.mark.usefixtures(
     create_disks_fixture.__name__,
     delete_disks.__name__
@@ -463,6 +462,7 @@ class TestCase11545(BaseCase):
         assert ll_disks.wait_for_disks_status([self.disk_name])
 
     @polarion("RHEVM3-11545")
+    @attr(tier=4)
     def test_rollback_disk_move(self):
         """
         Start disk move and fail it, then check details after rollback
