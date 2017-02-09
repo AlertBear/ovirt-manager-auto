@@ -5,6 +5,7 @@
 helper file for Host Network API
 """
 
+import shlex
 import logging
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -28,30 +29,29 @@ def get_networks_sync_status_and_unsync_reason(net_sync_reason):
         bool: True if network attachment is unsync and if unsync reason
             is correct, else False.
     """
+    host = conf.HOST_0_NAME
     networks = [i for i in net_sync_reason]
-    if network_helper.networks_sync_status(
-        host=conf.HOST_0_NAME, networks=networks
-    ):
+    if network_helper.networks_sync_status(host=host, networks=networks):
         logger.error("%s are synced but shouldn't", networks)
         return False
 
     for net, val in net_sync_reason.iteritems():
         reas = val.keys()[0]
-        dict_to_compare = net_sync_reason[net][reas]
+        dict_to_compare = net_sync_reason.get(net).get(reas)
         logger.info("Check if %s unsync reason is %s", net, reas)
         unsync_reason = hl_host_network.get_networks_unsync_reason(
-            conf.HOST_0_NAME, [net]
+            host_name=host, networks=[net]
         )
-        if not unsync_reason[net][reas] == dict_to_compare:
+        if not unsync_reason.get(net).get(reas) == dict_to_compare:
             logger.error(
                 "Expected reasons are %s, got %s instead",
-                dict_to_compare, unsync_reason[net][reas]
+                dict_to_compare, unsync_reason.get(net).get(reas)
             )
             return False
     return True
 
 
-def manage_host_ip(interface, ip=None, netmask="24", set_ip=True):
+def manage_host_ip(interface, ip=None, netmask="24"):
     """
     Set temporary IP on interface and refresh capabilities
 
@@ -59,62 +59,27 @@ def manage_host_ip(interface, ip=None, netmask="24", set_ip=True):
         interface (str): Interface name.
         ip (str): IP to set.
         netmask (str): Netmask for the IP.
-        set_ip (bool): True to set IP on interface.
 
     Raises:
-        AssertionError: If failed to set temporary IP on interface and
-            refresh capabilities.
+        AssertionError: If failed to set temporary IP on interface
     """
-    old_ip = None
     int_ip = conf.VDS_0_HOST.network.find_ip_by_int(interface)
     host_ips = conf.VDS_0_HOST.network.find_ips()
     if int_ip:
-        old_ip = [i for i in host_ips[1] if int_ip in i][0]
+        old_ip = [i for i in host_ips[1] if int_ip == i.split("/")[0]][0]
+        del_ip_cmd = "ip addr del %s dev %s" % (old_ip, interface)
+        assert not conf.VDS_0_HOST.run_command(shlex.split(del_ip_cmd))[0]
 
-    if old_ip:
-        remove_ip_from_interface(ip=old_ip, interface=interface)
-
-    if set_ip:
+    if ip or netmask != "24":
         ip = int_ip if not ip else ip
-        set_ip_on_interface(ip=ip, netmask=netmask, interface=interface)
-
-
-def remove_ip_from_interface(ip, interface):
-    """
-    Remove IP from interface using ip address.
-
-    Args:
-        ip (str): IP to remove.
-        interface (str): Interface where the IP is.
-
-     Raises:
-        AssertionError: If failed to remove IP from interface.
-    """
-    ip = ip.split("/")[0]
-    cmd = ["ip", "addr", "del", "%s" % ip, "dev", interface]
-    assert not conf.VDS_0_HOST.run_command(cmd)[0]
-
-
-def set_ip_on_interface(ip, netmask, interface):
-    """
-    Set IP on interface using ip address
-
-    Args:
-        ip (str): IP to set.
-        netmask (str): Netmask for the IP.
-        interface (str): Interface to set the IP on.
-
-     Raises:
-        AssertionError: If failed to set IP on interface.
-    """
-    assert test_utils.configure_temp_static_ip(
-        vds_resource=conf.VDS_0_HOST, ip=ip, nic=interface, netmask=netmask
-    )
+        assert test_utils.configure_temp_static_ip(
+            vds_resource=conf.VDS_0_HOST, ip=ip, nic=interface, netmask=netmask
+        )
 
 
 def attach_networks_for_parametrize(
-    network, nic, via, log_, ip=None, properties=None,
-    positive=True, update=False, remove=False
+    network, nic, via, log_, ip=None, properties=None, positive=True,
+    update=False, remove=False
 ):
     """
     Attach network to host via HostNic, Host and SetupNetwork API

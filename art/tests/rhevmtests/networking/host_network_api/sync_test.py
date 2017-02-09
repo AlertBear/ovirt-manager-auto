@@ -358,6 +358,29 @@ class TestHostNetworkApiSync01(NetworkTest):
             polarion("RHEVM3-13995")(vm_to_non_vm_bond),
             polarion("RHEVM3-13996")(non_vm_to_vm_bond),
             polarion("RHEVM3-13998")(vlan_mtu_vm_bond),
+        ],
+        ids=[
+            # Sync over NIC
+            "Change VLAN on NIC",
+            "Remove VLAN from NIC",
+            "Add VLAN to NIC",
+            "Change MTU on NIC",
+            "Remove MTU from NIC",
+            "Set MTU on NIC",
+            "Change VM to non-VM on NIC",
+            "Change Non-VM to VM on NIC",
+            "Mixed: Change VLAN, MTU and VM on NIC",
+
+            # Sync over BOND
+            "Change VLAN on BOND",
+            "Remove VLAN from BOND",
+            "Add VLAN to BOND",
+            "Change MTU on BOND",
+            "Remove MTU from BOND",
+            "Set MTU on BOND",
+            "Change VM to non-VM on BOND",
+            "Change Non-VM to VM on BOND",
+            "Mixed: Change VLAN, MTU and VM on BOND",
         ]
     )
     def test_vlan_mtu_bridge_unsync_networks(self, compare_dicts):
@@ -399,7 +422,7 @@ class TestHostNetworkApiSync02(NetworkTest):
     5. Check sync/un-sync for removed IP and sync the network.
     """
     # General params
-    ips = network_helper.create_random_ips(num_of_ips=10, mask=24)
+    ips = network_helper.create_random_ips(num_of_ips=20, mask=24)
 
     # Types
     proto = net_api_conf.BOOTPROTO_STR
@@ -419,7 +442,7 @@ class TestHostNetworkApiSync02(NetworkTest):
     # Sync IP to IP NIC
     net_1 = net_api_conf.SYNC_NETS_DC_1[2][0]
     net_1_ip = ips.pop(0)
-    net_1_ip_actual = "10.10.10.10"
+    net_1_ip_actual = ips.pop(0)
     net_1_ip_expected = net_1_ip
     ip_to_ip_nic = helper.get_dict(
         network=net_1, type_=ip, act=net_1_ip_actual, ex=net_1_ip_expected
@@ -447,7 +470,7 @@ class TestHostNetworkApiSync02(NetworkTest):
 
     # Sync no IP to IP NIC
     net_4 = net_api_conf.SYNC_NETS_DC_1[2][3]
-    net_4_ip = "10.10.10.11"
+    net_4_ip = ips.pop(0)
     net_case_4_boot_proto_actual = "STATIC_IP"
     net_case_4_boot_proto_expected = "NONE"
     no_ip_to_ip_nic = helper.get_dict(
@@ -469,7 +492,7 @@ class TestHostNetworkApiSync02(NetworkTest):
     # Sync IP to IP BOND
     net_6 = net_api_conf.SYNC_NETS_DC_1[2][5]
     net_6_ip = ips.pop(0)
-    net_6_ip_actual = "10.10.10.12"
+    net_6_ip_actual = ips.pop(0)
     net_6_ip_expected = net_6_ip
     ip_to_ip_bond = helper.get_dict(
         network=net_6, type_=ip, act=net_6_ip_actual, ex=net_6_ip_expected
@@ -497,7 +520,7 @@ class TestHostNetworkApiSync02(NetworkTest):
 
     # Sync no IP to IP BOND
     net_9 = net_api_conf.SYNC_NETS_DC_1[2][8]
-    net_9_ip = "10.10.10.13"
+    net_9_ip = ips.pop(0)
     net_case_9_boot_proto_actual = "STATIC_IP"
     net_case_9_boot_proto_expected = "NONE"
     no_ip_to_ip_bond = helper.get_dict(
@@ -519,18 +542,18 @@ class TestHostNetworkApiSync02(NetworkTest):
     # Network, IP, mask, set_ip
     manage_ip_list = [
         # NIC
-        (net_1, net_1_ip_actual, None, True),
-        (net_2, None, net_2_mask_actual, True),
-        (net_3, None, net_3_mask_actual, True),
-        (net_4, net_4_ip, None, True),
-        (net_5, None, None, False),
+        (net_1, net_1_ip_actual, None),
+        (net_2, None, net_2_mask_actual),
+        (net_3, None, net_3_mask_actual),
+        (net_4, net_4_ip, None),
+        (net_5, None, None),
 
         # BOND
-        (net_6, net_6_ip_actual, None, True),
-        (net_7, None, net_7_mask_actual, True),
-        (net_8, None, net_8_mask_actual, True),
-        (net_9, net_9_ip, None, True),
-        (net_10, None, None, False)
+        (net_6, net_6_ip_actual, None),
+        (net_7, None, net_7_mask_actual),
+        (net_8, None, net_8_mask_actual),
+        (net_9, net_9_ip, None),
+        (net_10, None, None)
     ]
 
     # setup_networks_fixture params
@@ -651,6 +674,21 @@ class TestHostNetworkApiSync02(NetworkTest):
             polarion("RHEVM3-14004")(prefix_to_prefix_bond),
             polarion("RHEVM3-14010")(no_ip_to_ip_bond),
             polarion("RHEVM3-14012")(ip_to_no_ip_bond),
+        ],
+        ids=[
+            # Sync over NIC
+            "Change IP on NIC",
+            "Change netmask on NIC",
+            "Change prefix on NIC",
+            "Add IP to NIC",
+            "Remove IP from NIC",
+
+            # Sync over BOND
+            "Change IP on BOND",
+            "Change netmask on BOND",
+            "Change prefix on BOND",
+            "Add IP to BOND",
+            "Remove IP from BOND",
         ]
     )
     def test_unsync_network_ip_mask_prefix_proto(self, compare_dict):
@@ -806,6 +844,17 @@ class TestHostNetworkApiSync03(NetworkTest):
             polarion("RHEVM3-14029")(qos_to_qos_bond),
             polarion("RHEVM3-14030")(no_qos_to_qos_bond),
             polarion("RHEVM3-14031")(qos_to_no_qos_bond),
+        ],
+        ids=[
+            # Sync over NIC
+            "Change QoS on NIC",
+            "Add QoS to NIC",
+            "Remove QoS from NIC",
+
+            # Sync over BOND
+            "Change QoS on BOND",
+            "Add QoS to BOND",
+            "Remove QoS from BOND",
         ]
     )
     def test_unsync_network_qos(self, compare_dicts):

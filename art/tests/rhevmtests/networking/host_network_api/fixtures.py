@@ -69,23 +69,22 @@ def manage_ip_and_refresh_capabilities(request):
     Set temporary IP on interface and refresh capabilities.
     """
     NetworkFixtures()
-    for net, actual_ip, actual_netmask, set_ip in (
+    host = conf.HOST_0_NAME
+    for net, actual_ip, actual_netmask in (
         request.node.cls.manage_ip_list
     ):
+        actual_netmask = actual_netmask or "24"
         testflow.setup(
-            "Set temporary IP %s on interface %s",
-            actual_ip, net
+            "Set temporary IP on %s with: IP=%s, Netmask=%s",
+            net, actual_ip, actual_netmask
         )
-        if not actual_netmask:
-            actual_netmask = "24"
-
         helper.manage_host_ip(
-            interface=net, ip=actual_ip, netmask=actual_netmask, set_ip=set_ip
+            interface=net, ip=actual_ip, netmask=actual_netmask
         )
     last_event = ll_events.get_max_event_id()
-    testflow.setup("Refresh host %s capabilities", conf.HOST_0_NAME)
-    ll_hosts.refresh_host_capabilities(
-        host=conf.HOST_0_NAME, start_event_id=last_event
+    testflow.setup("Refresh host %s capabilities", host)
+    assert ll_hosts.refresh_host_capabilities(
+        host=host, start_event_id=last_event
     )
 
 

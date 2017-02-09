@@ -783,22 +783,17 @@ def configure_temp_static_ip(
     """
     Configure temporary static IP on specific interface
 
-    :param vds_resource: VDS resource
-    :type vds_resource: resources.VDS
-    :param ip: temporary IP to configure on NIC
-    :type ip: string
-    :param nic: specific NIC to configure ip/netmask on
-    :type nic: string
-    :param netmask: netmask to configure on NIC (full or CIDR)
-    :type netmask: string
-    :return: True if command executed successfully, False otherwise
-    :rtype: bool
+    Args:
+        vds_resource (VDS): VDS resource
+        ip (str): temporary IP to configure on NIC
+        nic (str): specific NIC to configure ip/netmask on
+        netmask (str): netmask to configure on NIC (full or CIDR)
+
+    Returns:
+        bool:  True if command executed successfully, False otherwise
     """
     cmd = ["ip", "address", "add", "%s/%s" % (ip, netmask), "dev", nic]
-    rc, _, _ = vds_resource.run_command(cmd)
-    if rc:
-        return False
-    return True
+    return not vds_resource.run_command(cmd)[0]
 
 
 def build_list_files_mtu(
