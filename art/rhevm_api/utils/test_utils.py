@@ -45,9 +45,6 @@ from art.core_api.apis_exceptions import (
     EntityNotFound,
     TestCaseError,
 )
-from utilities.tools import (
-    GuestToolsMachine,
-)
 from art.rhevm_api.resources import Host, RootUser
 
 logger = logging.getLogger('test_utils')
