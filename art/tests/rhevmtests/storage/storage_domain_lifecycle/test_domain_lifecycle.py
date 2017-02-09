@@ -54,7 +54,6 @@ class BaseTestCase(TestCase):
 @pytest.mark.usefixtures(
     unblock_connectivity_engine_to_host.__name__
 )
-@attr(tier=4)
 class TestCase11598(BaseTestCase):
     """
     * Block connection from engine to host.
@@ -68,6 +67,7 @@ class TestCase11598(BaseTestCase):
     polarion_test_case = '11598'
 
     @polarion("RHEVM3-11598")
+    @attr(tier=4)
     def test_disconnect_engine_from_host(self):
         """
         Block connection from one engine to host.
@@ -90,7 +90,6 @@ class TestCase11598(BaseTestCase):
     init_hsm_host.__name__,
     create_storage_domain.__name__,
 )
-@attr(tier=3)
 class TestCase11784(TestCase):
     """
     Create storage domains from all types and attach them to datacenter
@@ -101,6 +100,7 @@ class TestCase11784(TestCase):
     polarion_test_case = '11784'
 
     @polarion("RHEVM3-11784")
+    @attr(tier=3)
     def test_add_another_storage_domain_test(self):
         """
         Sets up storage parameters, creates storage domain and check that both
@@ -119,7 +119,6 @@ class TestCase11784(TestCase):
     clean_dc.__name__,
     deactivate_and_remove_non_master_domains.__name__,
 )
-@attr(tier=2)
 class TestUpgrade(TestCase):
     """
     Base class for upgrade testing
@@ -148,6 +147,7 @@ class TestUpgrade(TestCase):
     polarion_test_case = '11743'
 
     @polarion("RHEVM3-11743")
+    @attr(tier=2)
     def test_data_center_upgrade(self):
         """
         Upgarde a DC with mixed types storage domains and a VM with disk on
