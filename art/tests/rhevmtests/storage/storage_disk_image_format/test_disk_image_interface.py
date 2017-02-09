@@ -174,7 +174,6 @@ class TestCaseMultipleDisks(BaseTestCase):
                 )
 
 
-@attr(tier=2)
 class TestCase14943(TestCaseMultipleDisks):
     """
     RHEVM-14943 - Change disk interface
@@ -185,6 +184,7 @@ class TestCase14943(TestCaseMultipleDisks):
     __test__ = True
 
     @polarion("RHEVM-14943")
+    @attr(tier=2)
     def test_change_disk_interface(self):
         """
         Test setup:
@@ -199,7 +199,6 @@ class TestCase14943(TestCaseMultipleDisks):
         self.change_vm_disks_interfaces()
 
 
-@attr(tier=2)
 class TestCase14944(TestCaseMultipleDisks):
     """
     RHEVM-14944 Change disk interface - Direct LUN
@@ -212,6 +211,7 @@ class TestCase14944(TestCaseMultipleDisks):
     lun_disks = True
 
     @polarion("RHEVM-14944")
+    @attr(tier=2)
     def test_change_disk_interface_direct_lun(self):
         """
         Test setup:
@@ -277,7 +277,6 @@ class BaseOneDiskAttachedTestCase(BaseTestCase):
             self.check_guest_os_disk_interface(expected_interface)
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     delete_disk.__name__,
     create_vm.__name__,
@@ -309,6 +308,7 @@ class TestCase14945(BaseTestCase):
     }
 
     @polarion("RHEVM-14945")
+    @attr(tier=2)
     def test_shared_disk_different_interfaces(self):
         """
         Test setup:
@@ -397,7 +397,6 @@ class TestCase14945(BaseTestCase):
         )
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_disks_to_vm.__name__,
@@ -421,6 +420,7 @@ class TestCase14946(BaseTestCase):
     ])
 
     @polarion("RHEVM-14946")
+    @attr(tier=3)
     def test_change_disk_ide_large_number_devices(self):
         """
         Test setup:
@@ -453,7 +453,6 @@ class TestCase14946(BaseTestCase):
         )
 
 
-@attr(tier=3)
 class TestCase14947(BaseOneDiskAttachedTestCase):
     """
     RHEVM_14947 - Negative - Try to change disk interface attach to a running
@@ -465,6 +464,7 @@ class TestCase14947(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14947")
+    @attr(tier=3)
     def test_change_disk_running_vm(self):
         """
         Test setup:
@@ -481,7 +481,6 @@ class TestCase14947(BaseOneDiskAttachedTestCase):
         self.update_disk_interface(positive=False)
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     delete_disk.__name__,
     create_vm.__name__,
@@ -513,6 +512,7 @@ class TestCase14948(BaseTestCase):
     }
 
     @polarion("RHEVM-14948")
+    @attr(tier=3)
     def test_attach_disk_without_interface(self):
         """
         Test setup:
@@ -538,7 +538,6 @@ class TestCase14948(BaseTestCase):
         )
 
 
-@attr(tier=3)
 class TestCase14949(BaseOneDiskAttachedTestCase):
     """
     RHEVM_14949 - Disk interface after restore snapshot
@@ -549,6 +548,7 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14949")
+    @attr(tier=3)
     def test_change_disk_and_restore_snapshot(self):
         """
         Test setup:
@@ -577,7 +577,6 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
         self.check_guest_os_disk_interface(self.base_interface)
 
 
-@attr(tier=3)
 class TestCase14955(BaseOneDiskAttachedTestCase):
     """
     RHEVM_14955 - Change disk interface for a suspended VM
@@ -588,6 +587,7 @@ class TestCase14955(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14955")
+    @attr(tier=3)
     def test_change_disk_suspended_vm(self):
         """
         Test setup:
@@ -607,7 +607,6 @@ class TestCase14955(BaseOneDiskAttachedTestCase):
         self.update_disk_interface(positive=False)
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     delete_disk.__name__,
     create_vm.__name__,
@@ -626,6 +625,7 @@ class TestCase16716(TestCase):
     }
 
     @polarion("RHEVM3-16716")
+    @attr(tier=3)
     def test_attach_virtio_scsi_disk_to_unsupported_vm(self):
         """
         Attach a disk to a VM when the interface is virtio-scsi and the VM does

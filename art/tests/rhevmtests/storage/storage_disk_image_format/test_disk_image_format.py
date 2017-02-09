@@ -154,7 +154,6 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         assert self.snapshot_desc not in vm_prealloc_snapshots
 
 
-@attr(tier=2)
 class TestCase11604(BaseTestDiskImageVms):
     """
     Polarion case 11604
@@ -167,6 +166,7 @@ class TestCase11604(BaseTestDiskImageVms):
     polarion_test_id = '11604'
 
     @polarion("RHEVM3-11604")
+    @attr(tier=2)
     def test_format_and_snapshots(self):
         """
         Create a snapshot
@@ -178,7 +178,6 @@ class TestCase11604(BaseTestDiskImageVms):
         self.check_disks({self.vm_prealloc: True})
 
 
-@attr(tier=2)
 @bz({'1405822': {}})
 class TestCase11621(BaseTestDiskImageVms):
     """
@@ -193,6 +192,7 @@ class TestCase11621(BaseTestDiskImageVms):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     @polarion("RHEVM3-11621")
+    @attr(tier=2)
     def test_move_disk_offline(self):
         """
         Move the disk
@@ -211,7 +211,6 @@ class TestCase11621(BaseTestDiskImageVms):
         self.check_disks()
 
 
-@attr(tier=3)
 class TestCase11620(BaseTestDiskImageVms):
     """
     Polarion case 11620
@@ -224,6 +223,7 @@ class TestCase11620(BaseTestDiskImageVms):
     polarion_test_id = '11620'
 
     @polarion("RHEVM3-11620")
+    @attr(tier=3)
     def test_add_snapshot_and_move_disk(self):
         """
         Create a snapshot and move the disk
@@ -244,7 +244,6 @@ class TestCase11620(BaseTestDiskImageVms):
         self.check_disks({self.vm_prealloc: True})
 
 
-@attr(tier=2)
 class TestCase11619(BaseTestDiskImageVms):
     """
     Polarion case 11619
@@ -257,6 +256,7 @@ class TestCase11619(BaseTestDiskImageVms):
     polarion_test_id = '11619'
 
     @polarion("RHEVM3-11619")
+    @attr(tier=2)
     def test_live_move_disk(self):
         """
         Start a live disk migration
@@ -305,7 +305,6 @@ class ExportVms(BaseTestDiskImageVms):
 
 
 @bz({'1409238': {}})
-@attr(tier=2)
 class TestCase11618(ExportVms):
     """
     Polarion case 11618
@@ -314,6 +313,7 @@ class TestCase11618(ExportVms):
     polarion_test_id = '11618'
 
     @polarion("RHEVM3-11618")
+    @attr(tier=2)
     def test_export_vm(self):
         """
         Export a vm
@@ -329,7 +329,6 @@ class TestCase11618(ExportVms):
 
 
 @bz({'1409238': {}})
-@attr(tier=2)
 class TestCase11617(ExportVms):
     """
     Polarion case 11617
@@ -338,6 +337,7 @@ class TestCase11617(ExportVms):
     polarion_test_id = '11617'
 
     @polarion("RHEVM3-11617")
+    @attr(tier=2)
     def test_add_snapshot_and_export_vm(self):
         """
         Create a snapshot and export the vm
@@ -355,7 +355,6 @@ class TestCase11617(ExportVms):
 
 
 @bz({'1409238': {}})
-@attr(tier=2)
 class TestCase11616(ExportVms):
     """
     Polarion case 11616
@@ -364,6 +363,7 @@ class TestCase11616(ExportVms):
     polarion_test_id = '11616'
 
     @polarion("RHEVM3-11616")
+    @attr(tier=2)
     def test_add_snapshot_export_vm_with_discard_snapshots(self):
         """
         Create a snapshot and export the vm choosing to discard the existing
@@ -380,7 +380,6 @@ class TestCase11616(ExportVms):
         self.check_disks()
 
 
-@attr(tier=2)
 class TestCase11615(ExportVms):
     """
     Polarion case 11615
@@ -389,6 +388,7 @@ class TestCase11615(ExportVms):
     polarion_test_id = '11615'
 
     @polarion("RHEVM3-11615")
+    @attr(tier=2)
     def test_import_vm(self):
         """
         Export a vm and import it back
@@ -402,7 +402,6 @@ class TestCase11615(ExportVms):
         self.check_disks()
 
 
-@attr(tier=3)
 class TestCase11614(ExportVms):
     """
     Polarion case 11614
@@ -411,6 +410,7 @@ class TestCase11614(ExportVms):
     polarion_test_id = '11614'
 
     @polarion("RHEVM3-11614")
+    @attr(tier=3)
     def test_export_vm_after_snapshot_and_import(self):
         """
         Create snapshot on vm, export the vm and import it back
@@ -425,7 +425,6 @@ class TestCase11614(ExportVms):
         self.check_disks({self.vm_prealloc: True})
 
 
-@attr(tier=2)
 class TestCase11613(ExportVms):
     """
     Polarion case 11613
@@ -434,6 +433,7 @@ class TestCase11613(ExportVms):
     polarion_test_id = '11613'
 
     @polarion("RHEVM3-11613")
+    @attr(tier=2)
     def test_export_vm_with_collapse(self):
         """
         Polarion case id: 11613
@@ -465,7 +465,6 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
     config.retrieve_disk_obj = lambda x: ll_vms.getVmDisks(x)
 
 
-@attr(tier=3)
 class TestCase11612(TestCasesImportVmLinked):
     """
     Polarion case 11612
@@ -474,6 +473,7 @@ class TestCase11612(TestCasesImportVmLinked):
     polarion_test_id = '11612'
 
     @polarion("RHEVM3-11612")
+    @attr(tier=3)
     def test_import_link_to_template(self):
         """
         Create a vm from a thin provisioned template, export the vm and
@@ -495,7 +495,6 @@ class TestCase11612(TestCasesImportVmLinked):
         self.check_disks()
 
 
-@attr(tier=3)
 class TestCase11611(TestCasesImportVmLinked):
     """
     Polarion case 11611
@@ -504,6 +503,7 @@ class TestCase11611(TestCasesImportVmLinked):
     polarion_test_id = '11611'
 
     @polarion("RHEVM3-11611")
+    @attr(tier=3)
     def test_import_link_to_template_collapse(self):
         """
         Create a vm from a thin provisioned template, export the vm and the
@@ -563,7 +563,6 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
         self.vm_names.append(self.new_vm_prealloc)
 
 
-@attr(tier=2)
 class TestCase11610(TestCasesImportVmWithNewName):
     """
     Polarion case 11610
@@ -572,6 +571,7 @@ class TestCase11610(TestCasesImportVmWithNewName):
     polarion_test_id = '11610'
 
     @polarion("RHEVM3-11610")
+    @attr(tier=2)
     def test_import_vm_without_removing_old_vm(self):
         """
         Import a vm without removing the original vm used in the export
@@ -582,7 +582,6 @@ class TestCase11610(TestCasesImportVmWithNewName):
         self.import_vm_with_new_name()
 
 
-@attr(tier=3)
 class TestCase11609(TestCasesImportVmWithNewName):
     """
     Polarion case 11609
@@ -591,6 +590,7 @@ class TestCase11609(TestCasesImportVmWithNewName):
     polarion_test_id = '11609'
 
     @polarion("RHEVM3-11609")
+    @attr(tier=3)
     def test_import_vm_without_removing_old_vm_with_snapshot(self):
         """
         Create a snapshot to a vm, export the vm and import without removing
@@ -638,7 +638,6 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         self.check_disks()
 
 
-@attr(tier=2)
 class TestCase11608(TestCasesCreateTemplate):
     """
     Polarion case 11608
@@ -647,6 +646,7 @@ class TestCase11608(TestCasesCreateTemplate):
     polarion_test_id = '11608'
 
     @polarion("RHEVM3-11608")
+    @attr(tier=2)
     def test_create_template_from_vm(self):
         """
         Create a template from a vm
@@ -656,7 +656,6 @@ class TestCase11608(TestCasesCreateTemplate):
         self.create_template_from_vm()
 
 
-@attr(tier=3)
 class TestCase11607(TestCasesCreateTemplate):
     """
     Polarion case 11607
@@ -665,6 +664,7 @@ class TestCase11607(TestCasesCreateTemplate):
     polarion_test_id = '11607'
 
     @polarion("RHEVM3-11607")
+    @attr(tier=3)
     def test_create_template_from_vm_with_snapshots(self):
         """
         Create a snapshot to the vm and create a template
@@ -682,7 +682,6 @@ class TestCase11607(TestCasesCreateTemplate):
     clean_export_domain.__name__,
     remove_template.__name__,
 )
-@attr(tier=3)
 class TestCase11606(BaseTestDiskImage):
     """
     Test vm with both disk formats
@@ -743,6 +742,7 @@ class TestCase11606A(TestCase11606):
     polarion_test_id = '11606'
 
     @polarion("RHEVM3-11606")
+    @attr(tier=3)
     def test_different_format_same_vm(self):
         """
         Polarion case id: 11606 - no snapshot
@@ -762,6 +762,7 @@ class TestCase11606B(TestCase11606):
     deep_copy = True
 
     @polarion("RHEVM3-11606")
+    @attr(tier=3)
     def test_different_format_same_vm_with_snapshot(self):
         """
         Polarion case id: 11606 - with snapshot
