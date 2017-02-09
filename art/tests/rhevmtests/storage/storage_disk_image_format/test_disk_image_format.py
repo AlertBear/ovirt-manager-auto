@@ -178,7 +178,9 @@ class TestCase11604(BaseTestDiskImageVms):
         self.check_disks({self.vm_prealloc: True})
 
 
-@bz({'1405822': {}})
+# Bugzilla 1403183 is a duplicate of 1405822 that was openned for this
+# test with more info about the cause of failure.
+@bz({'1403183': {}})
 class TestCase11621(BaseTestDiskImageVms):
     """
     Polarion case 11621
