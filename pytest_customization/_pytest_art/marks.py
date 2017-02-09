@@ -27,6 +27,17 @@ __all__ = [
 
 MIN = 60
 
+# upgrade order
+BEFORE_UPGRADE = 1
+UPGRADE = 2
+BEFORE_UPGRADE_HOSTS = 3
+UPGRADE_HOSTS = 4
+AFTER_UPGRADE_HOSTS = 5
+UPGRADE_CL = 6
+AFTER_UPGRADE_CL = 7
+UPGRADE_DC = 8
+AFTER_UPGRADE = 9
+
 # Polarion decorator
 polarion = pytest.mark.polarion
 polarion.name = 'polarion-testcase-id'
@@ -49,11 +60,23 @@ coresystem = pytest.mark.coresystem
 virt = pytest.mark.virt
 do_not_run = pytest.mark.do_not_run
 integration = pytest.mark.integration
+upgrade = pytest.mark.upgrade
 tier1 = pytest.mark.tier1
 tier2 = pytest.mark.tier2
 tier3 = pytest.mark.tier3
 tier4 = pytest.mark.tier4
 timeout = pytest.mark.timeout
+
+# order markers for ordering tests
+order_before_upgrade = pytest.mark.run(order=BEFORE_UPGRADE)
+order_upgrade = pytest.mark.run(order=UPGRADE)
+order_before_upgrade_hosts = pytest.mark.run(order=BEFORE_UPGRADE_HOSTS)
+order_upgrade_hosts = pytest.mark.run(order=UPGRADE_HOSTS)
+order_after_upgrade_hosts = pytest.mark.run(order=AFTER_UPGRADE_HOSTS)
+order_upgrade_cluster = pytest.mark.run(order=UPGRADE_CL)
+order_after_upgrade_cluster = pytest.mark.run(order=AFTER_UPGRADE_CL)
+order_upgrade_dc = pytest.mark.run(order=UPGRADE_DC)
+order_after_upgrade = pytest.mark.run(order=AFTER_UPGRADE)
 
 
 def pytest_addoption(parser):
@@ -73,6 +96,8 @@ class AttribDecorator(object):
 
     def __init__(self, expression):
         super(AttribDecorator, self).__init__()
+        self.version = None
+        self.upgrade_version = None
         self.expr = expression
         self._names = set()
         for node in ast.walk(ast.parse(expression)):
@@ -138,7 +163,6 @@ class AttribDecorator(object):
         values.update(
             dict((a, None) for a in self._names - set(values.keys()))
         )
-
         # This is maybe redundant
         if not self._names.issubset(set(values.keys())):
             return False
@@ -148,6 +172,22 @@ class AttribDecorator(object):
             return bool(eval(self.expr, values))
         except Exception:
             return False
+
+    def _match_upgrade_non_relevant_test(self, item):
+        after_upgrade = self.version == self.upgrade_version
+        attr_mark = item.get_marker('attr')
+        run_mark = item.get_marker('run')
+        if attr_mark and run_mark:
+            tier = attr_mark.kwargs.get('tier')
+            upgrade_order = run_mark.kwargs.get('order')
+            if tier == "upgrade" and upgrade_order is not None:
+                if after_upgrade:
+                    if upgrade_order < BEFORE_UPGRADE_HOSTS:
+                        return True
+                else:
+                    if upgrade_order > UPGRADE:
+                        return True
+        return False
 
     def set_tiers_timeout(self, items):
         """
@@ -167,9 +207,18 @@ class AttribDecorator(object):
             items[index].add_marker(item_timeout)
 
     def pytest_collection_modifyitems(self, session, config, items):
+        art_config = config.ART_CONFIG
+        self.version = art_config['DEFAULT'].get('VERSION')
+        self.upgrade_version = art_config['PARAMETERS'].get(
+            'upgrade_version', self.version
+        )
         for item in items[:]:
             if not self._matches(item):
                 items.remove(item)
+                continue
+            if self._match_upgrade_non_relevant_test(item):
+                items.remove(item)
+
         self.set_tiers_timeout(items)
 
 

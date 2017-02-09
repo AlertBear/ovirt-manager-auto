@@ -10,6 +10,7 @@ from _pytest_art.marks import (
     coresystem,
     virt,
     integration,
+    upgrade,
 )
 from _pytest_art.testlogger import TestFlowInterface
 from art.test_handler.exceptions import TearDownException
@@ -107,5 +108,14 @@ class CoreSystemTest(BaseTestCase):
 class IntegrationTest(BaseTestCase):
     """
     Basic class for integration test
+    """
+    __test__ = False
+
+
+@upgrade
+@attr(team="upgrade", tier="upgrade")
+class UpgradeTest(BaseTestCase):
+    """
+    Basic class for upgrade test
     """
     __test__ = False

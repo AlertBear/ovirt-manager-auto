@@ -54,6 +54,9 @@ polarion_user = string(default='ci-user')
 polarion_project = string(default='RHEVM3')
 polarion_response_myproduct = string(default='rhvm')
 
+# upgrade GE
+upgrade_version = string(default='4.2')
+
 [STORAGE]
 storage_pool=force_list(default=list())
 
