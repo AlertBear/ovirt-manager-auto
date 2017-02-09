@@ -477,13 +477,16 @@ def isHostInMaintenance(positive, host):
     return (host_status == ENUMS['host_state_maintenance']) == positive
 
 
+@ll_general.generate_logs(step=True)
 def deactivate_host(
     positive, host, expected_status=ENUMS['host_state_maintenance'],
     timeout=300
 ):
     """
+    Deactivate the host
     Check host state for SPM role, for 'timeout' seconds, and deactivate it
     if it is not contending to SPM. (set status to MAINTENANCE)
+
 
     __author__: jhenner
 

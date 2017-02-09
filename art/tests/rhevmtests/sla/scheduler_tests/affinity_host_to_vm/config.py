@@ -61,3 +61,5 @@ VM_TO_VM_AFFINITY_GROUP_2 = {
 }
 
 AFFINITY_START_VM_TEST = "affinity_start_vm"
+AFFINITY_MIGRATE_VM_TEST = "affinity_migrate_vm"
+AFFINITY_MAINTENANCE_HOST_TEST = "affinity_maintenance_vm"

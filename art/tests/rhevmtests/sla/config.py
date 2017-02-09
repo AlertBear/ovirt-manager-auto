@@ -255,6 +255,9 @@ VMS_TO_RUN_0 = vms_to_run = dict(
 VMS_TO_RUN_1 = dict(
     (VM_NAME[i], {VM_RUN_ONCE_HOST: i}) for i in xrange(2)
 )
+VMS_TO_RUN_2 = dict(
+    (VM_NAME[i], {}) for i in xrange(2)
+)
 
 ENGINE_STAT_UPDATE_INTERVAL = 15
 
