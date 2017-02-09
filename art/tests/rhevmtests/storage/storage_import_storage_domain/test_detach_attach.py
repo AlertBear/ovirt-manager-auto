@@ -170,7 +170,6 @@ class DomainImportWithTemplate(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     add_non_master_storage_domain.__name__,
     deactivate_detach_and_remove_domain_fin.__name__,
@@ -191,6 +190,8 @@ class TestCase5299(BasicEnvironment):
 
     @bz({'1138142': {'engine': ['rest', 'sdk']}})
     @bz({'1396969': {}})
+    @polarion("RHEVM3-5299")
+    @attr(tier=2)
     def test_register_vm_without_disks(self):
         """
         - Detach domain
@@ -217,7 +218,6 @@ class TestCase5299(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     add_non_master_storage_domain.__name__,
     deactivate_detach_and_remove_domain_fin.__name__,
@@ -240,6 +240,7 @@ class TestCase5300(BasicEnvironment):
     vm_names = list()
 
     @polarion("RHEVM3-5300")
+    @attr(tier=2)
     def test_detach_attach_new_domain(self):
         """
         - create vm + disk
@@ -295,7 +296,6 @@ class TestCase5300(BasicEnvironment):
         vm_names.append(self.cloned_vm)
 
 
-@attr(tier=4)
 class TestCase5302(BasicEnvironment):
     """
     IP block during import domain
@@ -315,6 +315,7 @@ class TestCase5302(BasicEnvironment):
         self.host_ip = ll_hosts.getHostIP(config.HOSTS[0])
 
     @polarion("RHEVM3-5302")
+    @attr(tier=4)
     def test_block_connection_during_import(self):
         """
         - verify that there are no IP blocks from vdsm->engine
@@ -362,7 +363,6 @@ class TestCase5302(BasicEnvironment):
         super(TestCase5302, self).tearDown()
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     add_non_master_storage_domain.__name__,
     deactivate_detach_and_remove_domain_fin.__name__,
@@ -380,6 +380,7 @@ class TestCase5193(BasicEnvironment):
     storages = set([NFS, GLUSTER])
 
     @polarion("RHEVM3-5193")
+    @attr(tier=3)
     def test_attach_file_domain(self):
         """
         - detach an nfs domain
@@ -401,7 +402,6 @@ class TestCase5193(BasicEnvironment):
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     add_non_master_storage_domain.__name__,
     deactivate_detach_and_remove_domain_fin.__name__,
@@ -419,6 +419,7 @@ class TestCase5194(BasicEnvironment):
     polarion_test_case = '5194'
 
     @polarion("RHEVM3-5194")
+    @attr(tier=3)
     def test_lv_exists_after_import_block_domain(self):
         """
         - detach block domain
@@ -444,7 +445,6 @@ class TestCase5194(BasicEnvironment):
         ), "VM %s failed to restart" % self.vm_name
 
 
-@attr(tier=4)
 @pytest.mark.usefixtures(
     add_non_master_storage_domain.__name__,
     deactivate_detach_and_remove_domain_fin.__name__,
@@ -494,6 +494,7 @@ class TestCase5205(BasicEnvironment):
         ]
 
     @polarion("RHEVM3-5205")
+    @attr(tier=4)
     def test_restart_vdsm_during_import_domain(self):
         """
         - import data domain on different dc
@@ -504,6 +505,7 @@ class TestCase5205(BasicEnvironment):
         )
 
     @polarion("RHEVM3-5205")
+    @attr(tier=4)
     def test_restart_engine_during_import_domain(self):
         """
         - import data domain on different dc
@@ -514,7 +516,6 @@ class TestCase5205(BasicEnvironment):
         )
 
 
-@attr(tier=4)
 @pytest.mark.usefixtures(
     add_non_master_storage_domain.__name__,
     deactivate_detach_and_remove_domain_fin.__name__,
@@ -530,6 +531,7 @@ class TestCase5304(BasicEnvironment):
     polarion_test_case = '5304'
 
     @polarion("RHEVM3-5304")
+    @attr(tier=4)
     def test_reboot_host_during_import_domain(self):
         """
         - Import data domain to different dc
@@ -615,7 +617,6 @@ class BaseCaseInitializeDataCenter(BasicEnvironment):
         assert status, "Failed to import storage domain"
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     secure_deactivate_and_detach_storage_domain.__name__,
     remove_storage_domain_setup.__name__,
@@ -632,6 +633,7 @@ class TestCase5201(BaseCaseInitializeDataCenter):
     remove_param = {'format': 'false'}
 
     @polarion("RHEVM3-5201")
+    @attr(tier=2)
     def test_initialize_dc_with_imported_domain(self):
         """
         - Configure 2 DCs: DC1 with 2 storage domains
@@ -664,7 +666,6 @@ class TestCase5201(BaseCaseInitializeDataCenter):
         ), "VM %s failed to restart" % self.vm_name
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     secure_deactivate_storage_domain.__name__,
     remove_storage_domain_setup.__name__,
@@ -682,6 +683,7 @@ class TestCase12207(BaseCaseInitializeDataCenter):
     destroy = True
 
     @polarion("RHEVM3-12207")
+    @attr(tier=2)
     def test_initialize_dc_with_destroyed_domain(self):
         """
         - Configure 2 DCs: DC1 with 2 storage domains
@@ -700,7 +702,6 @@ class TestCase12207(BaseCaseInitializeDataCenter):
         self.remove_param = {'format': 'true'}
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     secure_deactivate_and_detach_storage_domain.__name__,
     create_gluster_or_posix_export_domain.__name__,
@@ -722,6 +723,7 @@ class TestCase10951(BasicEnvironment):
     domain_to_detach = config.EXPORT_DOMAIN_NAME
 
     @polarion("RHEVM3-10951")
+    @attr(tier=2)
     def test_import_existing_export_domain(self):
         """
         - Import existing export storage domain
@@ -740,7 +742,6 @@ class TestCase10951(BasicEnvironment):
         ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_dc.__name__,
     add_master_storage_domain_to_new_dc.__name__,
@@ -757,9 +758,12 @@ class BaseTestCase5192(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5192
     """
+    polarion_test_case = '5192'
     dc_version = None
     vm_args = {'clone_from_template': False}
 
+    @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_attach_from_older_version(self):
         """
         Configure two data centers, one dc_verion and other > 3.6
@@ -807,7 +811,6 @@ class TestCase5192_4_0(BaseTestCase5192):
 # multiple disks on different domains
 @bz({'1393257': {}})
 # TODO: verify this test when the bug is fixed (refactor to fixture)
-@attr(tier=3)
 @pytest.mark.usefixtures(
     add_disk.__name__,
     attach_disk.__name__,
@@ -834,6 +837,8 @@ class TestCase5200(DomainImportWithTemplate):
         )[0]
     }
 
+    @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_import_template_cross_domain(self):
         """
         - One data center with one block storage domain and one file domain
@@ -845,7 +850,6 @@ class TestCase5200(DomainImportWithTemplate):
         self.new_vm_from_imported_domain_template()
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_template.__name__,
     secure_deactivate_and_detach_storage_domain.__name__,
@@ -862,6 +866,7 @@ class TestCase5297(DomainImportWithTemplate):
     polarion_test_case = '5297'
 
     @polarion("RHEVM3-5297")
+    @attr(tier=2)
     def test_new_vm_from_imported_domain_template(self):
         """
         - import data domain
