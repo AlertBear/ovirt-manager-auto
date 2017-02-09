@@ -35,6 +35,10 @@ def is_balancing_happen(
     Returns:
         bool: True, if host has expected number of vms, otherwise False
     """
+    if ll_hosts.is_hosted_engine_configured(host_name=host_name):
+        he_vm_host = ll_vms.get_vm_host(vm_name=conf.HE_VM)
+        if he_vm_host and he_vm_host == host_name:
+            expected_num_of_vms += 1
     log_msg = (
         conf.BALANCE_LOG_MSG_NEGATIVE
         if negative else conf.BALANCE_LOG_MSG_POSITIVE

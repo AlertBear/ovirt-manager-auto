@@ -342,14 +342,9 @@ class TestStartVmUnderHostAffinity08(BaseHostAffinityStartVm):
     with multiple hosts
     """
     affinity_groups = {
-        "{0}_08".format(conf.AFFINITY_START_VM_TEST): {
-            conf.AFFINITY_GROUP_HOSTS_RULES: {
-                conf.AFFINITY_GROUP_POSITIVE: False,
-                conf.AFFINITY_GROUP_ENFORCING: True
-            },
-            conf.AFFINITY_GROUP_HOSTS: [0, 1],
-            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:1]
-        }
+        "{0}_08".format(
+            conf.AFFINITY_START_VM_TEST
+        ): conf.HOST_TO_VM_AFFINITY_GROUP_5
     }
     vms_to_stop = conf.VM_NAME[:1]
 
@@ -704,4 +699,298 @@ class TestMaintenanceUnderHostAffinity04(BaseHostAffinityStartVm):
         assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
         assert self.check_vm_host(
             vm_name=conf.VM_NAME[0], host_name=conf.HOSTS[2]
+        )
+
+
+@pytest.mark.usefixtures(
+    run_once_vms.__name__,
+    create_affinity_groups.__name__
+)
+class BaseHostAffinityEnforcement(BaseHostAffinity):
+    """
+    Base class for all host to VM affinity enforcement tests
+    """
+    vms_to_run = None
+    affinity_groups = None
+
+
+@u_libs.attr(tier=1)
+@bz({"1304300": {"ppc": conf.PPC_ARCH}})
+class TestEnforcementUnderHostAffinity01(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement migrates the VM
+    from incorrect host to the correct one under hard positive affinity
+    """
+    vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 1}}
+    affinity_groups = {
+        "{0}_01".format(
+            conf.AFFINITY_ENFORCEMENT_TEST
+        ): conf.HOST_TO_VM_AFFINITY_GROUP_1
+    }
+
+    @polarion("RHEVM-17607")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine migrates the VM-0 from the host-1 to the host-0
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1
+        )
+
+
+@u_libs.attr(tier=1)
+@bz({"1304300": {"ppc": conf.PPC_ARCH}})
+class TestEnforcementUnderHostAffinity02(BaseHostAffinityEnforcement):
+    """
+    Test that affinity enforcement migrates the VM
+    from incorrect host to the correct one under hard negative affinity
+    """
+    vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0}}
+    affinity_groups = {
+        "{0}_02".format(
+            conf.AFFINITY_ENFORCEMENT_TEST
+        ): conf.HOST_TO_VM_AFFINITY_GROUP_5
+    }
+
+    @polarion("RHEVM-17608")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine migrates the VM-0 from the host-0 to the host-2
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[2], expected_num_of_vms=1
+        )
+
+
+@u_libs.attr(tier=2)
+class TestEnforcementUnderHostAffinity03(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement migrates the VM
+    from incorrect host to the correct one under soft positive affinity
+    """
+    vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 1}}
+    affinity_groups = {
+        "{0}_03".format(
+            conf.AFFINITY_ENFORCEMENT_TEST
+        ): conf.HOST_TO_VM_AFFINITY_GROUP_3
+    }
+
+    @polarion("RHEVM-18189")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine migrates the VM-0 from the host-1 to the host-0
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1
+        )
+
+
+@u_libs.attr(tier=2)
+class TestEnforcementUnderHostAffinity04(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement migrates the VM
+    from incorrect host to the correct one under soft negative affinity
+    """
+    vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0}}
+    affinity_groups = {
+        "{0}_04".format(
+            conf.AFFINITY_ENFORCEMENT_TEST
+        ): conf.HOST_TO_VM_AFFINITY_GROUP_5
+    }
+
+    @polarion("RHEVM-18190")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine migrates the VM-0 from the host-0 to the host-2
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[2], expected_num_of_vms=1
+        )
+
+
+@u_libs.attr(tier=2)
+class TestEnforcementUnderHostAffinity05(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement does not migrate the VM,
+    when VM placed under hard positive host to VM affinity group with the
+    additional affinity constraint
+    """
+    vms_to_run = {
+        conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 1},
+        conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 0}
+    }
+    affinity_groups = {
+        "{0}_05".format(conf.AFFINITY_ENFORCEMENT_TEST): {
+            conf.AFFINITY_GROUP_HOSTS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: True,
+                conf.AFFINITY_GROUP_ENFORCING: True
+            },
+            conf.AFFINITY_GROUP_VMS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: True,
+                conf.AFFINITY_GROUPS_ENABLED: True
+            },
+            conf.AFFINITY_GROUP_HOSTS: [0],
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
+        }
+    }
+
+    @polarion("RHEVM-18229")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine does not migrate VM-0 to the host-0
+        """
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=2
+        )
+
+
+@u_libs.attr(tier=2)
+class TestEnforcementUnderHostAffinity06(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement does not migrate the VM,
+    when VM placed under hard negative host to VM affinity group with the
+    additional affinity constraint
+    """
+    vms_to_run = conf.VMS_TO_RUN_3
+    affinity_groups = {
+        "{0}_06".format(conf.AFFINITY_ENFORCEMENT_TEST): {
+            conf.AFFINITY_GROUP_HOSTS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: True
+            },
+            conf.AFFINITY_GROUP_VMS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: True,
+                conf.AFFINITY_GROUPS_ENABLED: True
+            },
+            conf.AFFINITY_GROUP_HOSTS: [0],
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:3]
+        }
+    }
+
+    @polarion("RHEVM-18230")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine does not migrate the VM-0 from the host-0
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1
+        )
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=0
+        )
+
+
+@u_libs.attr(tier=2)
+class TestEnforcementUnderHostAffinity07(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement migrates the VM,
+    when VM placed under soft positive host to VM affinity group with the
+    additional affinity constraint
+    """
+    vms_to_run = {
+        conf.VM_NAME[0]: {
+            conf.VM_RUN_ONCE_HOST: 0,
+            conf.VM_RUN_ONCE_WAIT_FOR_STATE: conf.VM_UP
+        },
+        conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 0}
+    }
+    affinity_groups = {
+        "{0}_07".format(conf.AFFINITY_ENFORCEMENT_TEST): {
+            conf.AFFINITY_GROUP_HOSTS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: True,
+                conf.AFFINITY_GROUP_ENFORCING: False
+            },
+            conf.AFFINITY_GROUP_VMS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: True,
+                conf.AFFINITY_GROUPS_ENABLED: True
+            },
+            conf.AFFINITY_GROUP_HOSTS: [0],
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:2]
+        }
+    }
+
+    @polarion("RHEVM-18231")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine migrate the VM-0 from the host-0
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1
+        )
+
+
+@u_libs.attr(tier=2)
+class TestEnforcementUnderHostAffinity08(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement migrates the VM,
+    when VM placed under soft negative host to VM affinity group with the
+    additional affinity constraint
+    """
+    vms_to_run = {
+        conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 1},
+        conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1},
+        conf.VM_NAME[2]: {conf.VM_RUN_ONCE_HOST: 2}
+    }
+    affinity_groups = {
+        "{0}_08".format(conf.AFFINITY_ENFORCEMENT_TEST): {
+            conf.AFFINITY_GROUP_HOSTS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: False
+            },
+            conf.AFFINITY_GROUP_VMS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: True,
+                conf.AFFINITY_GROUPS_ENABLED: True
+            },
+            conf.AFFINITY_GROUP_HOSTS: [0],
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:3]
+        }
+    }
+
+    @polarion("RHEVM-18232")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine migrates some VM from the host-1 to the host-0
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1
+        )
+
+
+@u_libs.attr(tier=2)
+class TestEnforcementUnderHostAffinity09(BaseHostAffinityEnforcement):
+    """
+    Test that the affinity enforcement migrates the VM,
+    when VM placed under hard negative host to VM affinity group with the
+    additional affinity constraint and with VM to VM affinity disabled
+    """
+    vms_to_run = conf.VMS_TO_RUN_3
+    affinity_groups = {
+        "{0}_09".format(conf.AFFINITY_ENFORCEMENT_TEST): {
+            conf.AFFINITY_GROUP_HOSTS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: False
+            },
+            conf.AFFINITY_GROUP_VMS_RULES: {
+                conf.AFFINITY_GROUP_ENFORCING: True,
+                conf.AFFINITY_GROUPS_ENABLED: False
+            },
+            conf.AFFINITY_GROUP_HOSTS: [0],
+            conf.AFFINITY_GROUP_VMS: conf.VM_NAME[:3]
+        }
+    }
+
+    @polarion("RHEVM-18234")
+    def test_affinity_enforcement(self):
+        """
+        Check that the engine migrates the VM-0 from the host-0
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=1
+        )
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=0
         )
