@@ -152,7 +152,6 @@ class BaseTestCase(TestCase):
         self.run_cmd(WRITE_TO_FILE_CMD % self.file_path)
 
 
-@attr(tier=2)
 class TestCase14677(BaseTestCase):
     """
     RHEVM3-14677 - Basic freeze and thaw flow
@@ -160,6 +159,7 @@ class TestCase14677(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-14677")
+    @attr(tier=2)
     def test_basic_freeze_thaw_flow(self):
         """
         Test the basic flow
@@ -167,7 +167,6 @@ class TestCase14677(BaseTestCase):
         self.freeze_thaw_basic_flow()
 
 
-@attr(tier=3)
 class TestCase14717(BaseTestCase):
     """
     RHEVM3-14717 - Multiple freeze/thaw calls
@@ -176,6 +175,7 @@ class TestCase14717(BaseTestCase):
     NUMBER_OF_TIMES = 5
 
     @polarion("RHEVM3-14717")
+    @attr(tier=3)
     def test_multiple_freeze_thaw_flow(self):
         """
         Execute the basic flow multiple times
@@ -189,7 +189,6 @@ class TestCase14717(BaseTestCase):
     attach_disk.__name__,
     create_fs_on_disk.__name__,
 )
-@attr(tier=3)
 class TestCase14713(BaseTestCase):
     """
     RHEVM3-14713 - Freeze and thaw a vm with multiple disks
@@ -200,6 +199,7 @@ class TestCase14713(BaseTestCase):
     file_path = os.path.join(config.MOUNT_POINT, '/', "test_file")
 
     @polarion("RHEVM3-14713")
+    @attr(tier=3)
     def test_freeze_thaw_multiple_disks(self):
         """
         Execute the basic flow on an attached disk
@@ -207,7 +207,6 @@ class TestCase14713(BaseTestCase):
         self.freeze_thaw_basic_flow()
 
 
-@attr(tier=3)
 class TestCase14716(BaseTestCase):
     """
     RHEVM3-14716 - Freeze a vm and create a memory snapshot
@@ -216,6 +215,7 @@ class TestCase14716(BaseTestCase):
     snapshot_description = "before_freeze_call"
 
     @polarion("RHEVM3-14716")
+    @attr(tier=3)
     def test_preview_snapshot(self):
         """
         * Test basic flow
@@ -233,7 +233,6 @@ class TestCase14716(BaseTestCase):
         ), "Taking a snapshot while the vm's filesystems are frozen failed"
 
 
-@attr(tier=3)
 class TestCase14715(BaseTestCase):
     """
     RHEVM3-14715 - Negative cases
@@ -241,6 +240,7 @@ class TestCase14715(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-14715")
+    @attr(tier=3)
     def test_negative_cases(self):
         """
         * Suspend a vm
