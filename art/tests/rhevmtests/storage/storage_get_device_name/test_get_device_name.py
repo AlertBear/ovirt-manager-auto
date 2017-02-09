@@ -223,7 +223,6 @@ class BasicEnvironment(BaseTestCase):
         vms.stop_vms_safely(vm_names)
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     add_disks_permutation.__name__,
 )
@@ -242,12 +241,12 @@ class TestCase4572(BasicEnvironment):
     polarion_test_case = '4572'
 
     @polarion("RHEVM3-4572")
+    @attr(tier=2)
     def test_basic_flow_get_device_name(self):
         """ Polarion case 4572"""
         self.attach_disk_permutations_and_verify_in_os()
 
 
-@attr(tier=3)
 class TestCase4573(BasicEnvironment):
     """
     Device name of shared disk - 1 disk
@@ -267,6 +266,7 @@ class TestCase4573(BasicEnvironment):
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-4573")
+    @attr(tier=3)
     def test_one_shared_disk_on_2_vms(self):
         """ Polarion case 4573"""
         self.create_and_attach_disk_to_vms_performing_os_validation(
@@ -274,7 +274,6 @@ class TestCase4573(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 class TestCase4574(BasicEnvironment):
     """
     Device name of shared disk - several disks
@@ -294,6 +293,7 @@ class TestCase4574(BasicEnvironment):
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-4574")
+    @attr(tier=2)
     def test_one_non_shared_one_shared_disk_on_2_vms(self):
         """ Polarion case 4574"""
         self.create_and_attach_disk_to_vms_performing_os_validation(
@@ -304,7 +304,6 @@ class TestCase4574(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     add_disks_permutation.__name__,
 )
@@ -323,12 +322,12 @@ class TestCase4575(BasicEnvironment):
     polarion_test_case = '4575'
 
     @polarion("RHEVM3-4575")
+    @attr(tier=2)
     def test_basic_flow_get_device_name(self):
         """ Polarion case 4575"""
         self.attach_disk_permutations_and_verify_in_os(hot_plug=True)
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     add_disks_permutation.__name__,
 )
@@ -349,6 +348,7 @@ class TestCase4576(BasicEnvironment):
     polarion_test_case = '4576'
 
     @polarion("RHEVM3-4576")
+    @attr(tier=2)
     def test_basic_flow_get_device_name(self):
         """ Polarion case 4576"""
         self.attach_disk_permutations_and_verify_in_os(
