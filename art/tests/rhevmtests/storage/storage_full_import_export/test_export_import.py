@@ -39,7 +39,6 @@ class BaseExportImportTestCase(TestCase):
     vm_args = {'type': config.VM_TYPE_SERVER}
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_template.__name__,
     remove_template_from_export_domain.__name__,
@@ -56,6 +55,7 @@ class TestCase11976(BaseExportImportTestCase):
 
     @bz({'1365384': {}})
     @polarion("RHEVM3-11976")
+    @attr(tier=2)
     def test_import_force_override(self):
         """
         Export VM with force override enabled/disabled
@@ -125,7 +125,6 @@ class TestCase11976(BaseExportImportTestCase):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     remove_vm_from_export_domain.__name__,
     remove_vms.__name__,
@@ -139,6 +138,7 @@ class TestCase11995(BaseExportImportTestCase):
     snap_desc = 'snap_%s' % polarion_test_case
 
     @polarion("RHEVM3-11995")
+    @attr(tier=2)
     def test_collapse_snapshots(self):
         """
         Test export/import with collapse snapshots option works
@@ -192,7 +192,6 @@ class TestCase11995(BaseExportImportTestCase):
         )
 
 
-@attr(tier=1)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_template.__name__,
@@ -216,6 +215,7 @@ class TestCase11987(BaseExportImportTestCase):
     # 1269948: Failed to import VM / VM Template
 
     @polarion("RHEVM3-11987")
+    @attr(tier=1)
     def test_export_vm(self):
         """
         Sanity export from Blank
@@ -258,7 +258,6 @@ class TestCase11987(BaseExportImportTestCase):
         self.vm_names.append(self.vm_from_template)
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_template.__name__,
     remove_template_from_export_domain.__name__,
@@ -275,6 +274,7 @@ class TestCase11986(BaseExportImportTestCase):
     # 1254230: Operation of exporting template to Export domain stucks
 
     @polarion("RHEVM3-11986")
+    @attr(tier=2)
     def test_export_template(self):
         """
         Export template to an export domain

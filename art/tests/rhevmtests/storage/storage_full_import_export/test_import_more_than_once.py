@@ -22,7 +22,6 @@ from rhevmtests.storage.fixtures import (
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     initialize_export_domain_param.__name__,
     initialize_vm_and_template_names.__name__,
@@ -56,6 +55,7 @@ class TestCase11588(TestCase):
     # 1254230: Operation of exporting template to Export domain gets stuck
 
     @polarion("RHEVM3-11588")
+    @attr(tier=2)
     def test_import_more_than_once(self):
         """
         Import a vm and a template more than once and make sure it works

@@ -48,7 +48,6 @@ def deactivate_and_detach_export_domain(request):
     ), "Failed to detach export domain %s" % config.EXPORT_DOMAIN_NAME
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm.__name__,
     remove_vms.__name__,
@@ -66,6 +65,7 @@ class BaseTestCase(TestCase):
     exclusive = 'true'
 
     @polarion("RHEVM3-10951")
+    @attr(tier=2)
     def test_import_export_storage_domain(self):
         """
         Import an export storage domain
