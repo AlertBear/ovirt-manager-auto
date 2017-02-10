@@ -169,18 +169,32 @@ class RestUtil(api_utils.APIUtil):
                 url = "%s?%s" % (url, k)
         return url
 
-    def get(self, href=None, elm=None, abs_link=True, list_only=False,
-            no_parse=False, validate=True):
-        '''
-        Description: implements GET method and verify the response
-                     (codes 200,201)
-        Author: edolinin
-        Parameters:
-           * href - url for get request
-           * elm - element name
-           * abs_link - if href url is absolute url (True) or just a suffix
-        Return: parsed GET response
-        '''
+    def get(
+            self, href=None, elm=None, custom_headers=None, abs_link=True,
+            list_only=False, no_parse=False, validate=True
+    ):
+        """
+        Implements GET method and verify the response
+        (codes 200,201)
+
+        __author__: edolinin
+
+        Args:
+           href (str): url for get request
+           custom_headers (dict): custom header which will be added to API
+                                  call.
+                                  Ex.: {'Accept': 'application/x-virt-viewer'}
+           elm (str): element name
+           abs_link (bool): if href url is absolute url (True) or just a suffix
+           list_only (bool): True to list the element and return body, False -
+                             otherwise.
+           no_parse (bool): whether to parse the answer or not, False to parse,
+                            not to parse - True.
+           validate (bool): True - validate, otherwise - False.
+
+        Returns:
+           str: parsed GET response
+        """
         if href is None:
             href = self.collection_name
 
@@ -192,6 +206,10 @@ class RestUtil(api_utils.APIUtil):
 
         if not elm:
             elm = self.element_name
+
+        if custom_headers:
+            for header in custom_headers.keys():
+                self.api.headers[header] = custom_headers[header]
 
         self.logger.debug("GET request content is --  url:%(uri)s ",
                           {'uri': href})
@@ -844,6 +862,30 @@ class RestUtil(api_utils.APIUtil):
             self.element_name, elemStat
         )
         return False
+
+    def get_headers(self):
+        """
+        Retrieve headers dict.
+
+        Returns:
+            dict: dictionary with headers names and values.
+        """
+        return self.api.headers
+
+    def set_header(self, header, value):
+        """
+        Set header.
+
+        Args:
+            header (str): header name (example: 'Content-Type', 'Filter', etc.)
+            value (str): header value which will be set for chosen header.
+
+        """
+        if value is None:
+            if header in self.api.headers.keys():
+                self.api.headers.pop(header)
+        else:
+            self.api.headers[header] = value
 
 
 api_utils.APIUtil.register(RestUtil)

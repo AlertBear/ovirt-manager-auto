@@ -123,135 +123,79 @@ class DiskNotFound(Exception):
     pass
 
 
-def _prepareVmObject(**kwargs):
+def _prepare_vm_object(**kwargs):
     """
     Prepare vm object
 
-    :param name: vm name
-    :type name: str
-    :param description: new vm description
-    :type description: str
-    :param cluster: new vm cluster
-    :type cluster: str
-    :param memory: vm memory size in bytes
-    :type memory: int
-    :param cpu_socket: number of cpu sockets
-    :type cpu_socket: int
-    :param cpu_cores: number of cpu cores
-    :type cpu_cores: int
-    :param cpu_threads: number of threads per core
-    :type cpu_threads: int
-    :param cpu_mode: mode of cpu
-    :type cpu_mode: str
-    :param os_type: OS type of new vm
-    :type os_type: str
-    :param boot: type of boot
-    :type boot: str
-    :param template: name of template that should be used
-    :type template: str
-    :param type: vm type (SERVER or DESKTOP)
-    :type type: str
-    :param monitors: number of display monitors
-    :type monitors: int
-    :param display_type: type of vm display (VNC or SPICE)
-    :type display_type: str
-    :param kernel: kernel path
-    :type kernel: str
-    :param initrd: initrd path
-    :type initrd: str
-    :param cmdline: kernel parameters
-    :type cmdline: str
-    :param vcpu_pinning: vcpu pinning affinity
-    :type vcpu_pinning: dict
-    :param serial_console: set 'Enable VirtIO serial console' flag for vm
-    :type serial_console: bool
-    :param highly_available: set high-availability for vm ('true' or 'false')
-    :type highly_available: str
-    :param placement_affinity: vm to host affinity
-    :type placement_affinity: str
-    :param placement_host: host that the affinity holds for
-    :type placement_host: str
-    :param placement_hosts: multiple hosts for vm placement
-    :type placement_hosts: list
-    :param availablity_priority: priority for high-availability
-    (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
-    :type availablity_priority: int
-    :param custom_properties: custom properties set to the vm
-    :type custom_properties: str
-    :param stateless: if vm stateless or not
-    :type stateless: bool
-    :param memory_guaranteed: size of guaranteed memory in bytes
-    :type memory_guaranteed: int
-    :param ballooning: True of False - enable ballooning on vm
-    :type ballooning: bool
-    :param quota: vm quota id
-    :type quota: str
-    :param protected: true if vm is delete protected
-    :type protected: bool
-    :param templateUuid: id of template to be used
-    :type templateUuid: str
-    :param clusterUuid: uuid of cluster
-    :type clusterUuid: str
-    :param storagedomain: name of storagedomain
-    :type storagedomain: str
-    :param disk_clone: defines whether disk should be cloned from template
-    :type disk_clone: str
-    :param domainName: sys.prep domain name
-    :type domainName: str
-    :param snapshot: description of snapshot to use. Causes error if not unique
-    :type snapshot: str
-    :param cpu_profile_id: cpu profile id
-    :type cpu_profile_id: str
-    :param numa_mode: numa mode for vm(strict, preferred, interleave)
-    :type numa_mode: str
-    :param cpu_shares: cpu shares
-    :type cpu_shares: int
-    :param serial_number: serial number to use
-    :type serial_number: str
-    :param start_in_pause: start vm in pause
-    :type start_in_pause: bool
-    :param comment: vm comment
-    :type comment: str
-    :param usb_type: usb type to use (can work only with spice display type)
-    :type usb_type: str
-    :param custom_emulated_machine: add custom emulated machine value for vm
-    :type custom_emulated_machine: str
-    :param custom_cpu_model: overried cluster cpu model and set any cpu type
-    :type custom_cpu_model: str
-    :param disconnect_action: disconnect action for display console
-    :type disconnect_action: str
-    :param soundcard_enabled: enable sound card for display console
-    :type soundcard_enabled: bool
-    :param virtio_scsi: enable virtIO scsi
-    :type virtio_scsi: bool
-    :param migration_downtime: migration_downtime allowed (in miliseconds)
-    :type migration_downtime: int
-    :param io_threads: number of io threads
-    :type io_threads: int
-    :param boot_menu: enable boot menu on vm startup
-    :type boot_menu: bool
-    :param start_paused: enable start in pause mode
-    :type start_paused: bool
-    :param file_transfer_enabled: enable file transfer via spice
-    :type file_transfer_enabled: bool
-    :param time_zone: set specific time zone for vm
-    :type time_zone: str
-    :param time_zone_offset: time zone offset (from GMT)
-    :type time_zone_offset: str
-    :param template_version: template version of the specified template
-    :type template_version: int
-    :param migration_policy: Migration policy name
-    :type migration_policy: str
-    :param auto_converge: Enable auto converge (only with Legacy policy)
-    :type auto_converge: bool
-    :param compressed: Enable compressed (only with Legacy policy)
-    :type compressed: bool
-    :param instance_type: name of instance_type to be used for the vm
-    :type instance_type: str
-    :param max_memory: Upper bound for the memory hotplug
-    :type max_memory: int
-    :returns: vm object
-    :rtype: instance of VM
+    Args:
+        name (str): vm name
+        description (str): new vm description
+        cluster (str): new vm cluster
+        memory (int): vm memory size in bytes
+        cpu_socket (int): number of cpu sockets
+        cpu_cores (int): number of cpu cores
+        cpu_threads (int): number of threads per core
+        cpu_mode (str): mode of cpu
+        os_type (str): OS type of new vm
+        boot (str): type of boot
+        template (str): name of template that should be used
+        type (str): vm type (SERVER or DESKTOP)
+        monitors (int): number of display monitors
+        display_type (str): type of vm display (VNC or SPICE)
+        kernel (str): kernel path
+        initrd (str): initrd path
+        cmdline (str): kernel parameters
+        vcpu_pinning (dict): vcpu pinning affinity
+        serial_console (bool): set 'Enable VirtIO serial console' flag for vm
+        single_qxl_pci (bool): set Console -> 'Single PCI' flag.
+        highly_available (str): set high-availability for vm ('true'/'false')
+        placement_affinity (str): vm to host affinity
+        placement_host (str): host that the affinity holds for
+        placement_hosts (list): multiple hosts for vm placement
+        availablity_priority (int): priority for high-availability (an integer
+                                    in range 0-100 where 0 - Low, 50 - Medium,
+                                    100 - High priority)
+        custom_properties (str): custom properties set to the vm
+        stateless (bool): if vm stateless or not
+        memory_guaranteed (int): size of guaranteed memory in bytes
+        ballooning (bool): True of False - enable ballooning on vm
+        quota (str): vm quota id
+        protected (bool): true if vm is delete protected
+        templateUuid (str): id of template to be used
+        clusterUuid (str): uuid of cluster
+        storagedomain (str): name of storagedomain
+        disk_clone (str): defines whether disk should be cloned from template
+        domainName (str): sys.prep domain name
+        snapshot (str): description of snapshot to use. Causes error if not
+                        unique
+        cpu_profile_id (str): cpu profile id
+        numa_mode (str): numa mode for vm(strict, preferred, interleave)
+        cpu_shares (int): cpu shares
+        serial_number (str): serial number to use
+        start_in_pause (bool): start vm in pause
+        comment (str): vm comment
+        usb_type (str): usb type to use (can work only with spice display type)
+        custom_emulated_machine (str): add custom emulated machine value for vm
+        custom_cpu_model (str): overried cluster cpu model and set any cpu type
+        disconnect_action (str): disconnect action for display console
+        soundcard_enabled (bool): enable sound card for display console
+        virtio_scsi (bool): enable virtIO scsi
+        migration_downtime (int): migration_downtime allowed (in miliseconds)
+        io_threads (int): number of io threads
+        boot_menu (bool): enable boot menu on vm startup
+        start_paused (bool): enable start in pause mode
+        file_transfer_enabled (bool): enable file transfer via spice
+        time_zone (str): set specific time zone for vm
+        time_zone_offset (str): time zone offset (from GMT)
+        template_version (int): template version of the specified template
+        migration_policy (str): Migration policy name
+        auto_converge (bool): Enable auto converge (only with Legacy policy)
+        compressed (bool): Enable compressed (only with Legacy policy)
+        instance_type (str): name of instance_type to be used for the vm
+        max_memory (int): Upper bound for the memory hotplug
+
+    Returns:
+        instance of VM: vm object
     """
     add = kwargs.pop("add", False)
     description = kwargs.pop("description", None)
@@ -390,12 +334,14 @@ def _prepareVmObject(**kwargs):
     monitors = kwargs.pop("monitors", None)
     disconnect_action = kwargs.pop("disconnect_action", None)
     file_transfer_enabled = kwargs.pop("file_transfer_enabled", None)
-    if monitors or display_type or disconnect_action:
+    single_qxl_pci = kwargs.pop('single_qxl_pci', None)
+    if monitors or display_type or disconnect_action or single_qxl_pci:
         vm.set_display(
             data_st.Display(
                 type_=display_type, monitors=monitors,
                 disconnect_action=disconnect_action,
-                file_transfer_enabled=file_transfer_enabled
+                file_transfer_enabled=file_transfer_enabled,
+                single_qxl_pci=single_qxl_pci
             )
         )
 
@@ -756,8 +702,8 @@ def addVm(positive, wait=True, **kwargs):
     :rtype: bool
     """
     kwargs.update(add=True)
-    vm_obj = _prepareVmObject(**kwargs)
-    expected_vm = _prepareVmObject(**kwargs)
+    vm_obj = _prepare_vm_object(**kwargs)
+    expected_vm = _prepare_vm_object(**kwargs)
     log_info, log_error = ll_general.get_log_msg(
         log_action="add", obj_type="vm", obj_name=kwargs.get('name'),
         positive=positive, **kwargs
@@ -902,7 +848,7 @@ def updateVm(positive, vm, **kwargs):
     :rtype: bool
     """
     vm_obj = VM_API.find(vm)
-    vm_new_obj = _prepareVmObject(**kwargs)
+    vm_new_obj = _prepare_vm_object(**kwargs)
     compare = kwargs.get("compare", True)
     log_info, log_error = ll_general.get_log_msg(
         log_action="update",
@@ -2551,7 +2497,7 @@ def _createVmForClone(
     # TODO: Probaly better split this since the disk parameter is not that
     # similar for template and snapshots
     # Create the vm object
-    vm = _prepareVmObject(name=name, cluster=cluster, **kwargs)
+    vm = _prepare_vm_object(name=name, cluster=cluster, **kwargs)
     if template:
         templObj = TEMPLATE_API.find(template)
         vm.set_template(templObj)
@@ -4062,7 +4008,7 @@ def create_vm_from_ovf(new_vm_name, cluster_name, ovf, compare=False):
         * compare - If True, run compareElements, otherwise not.
     Return: True if operation succeeded, or False otherwise
     """
-    restored_vm_obj = _prepareVmObject(
+    restored_vm_obj = _prepare_vm_object(
         name=new_vm_name, cluster=cluster_name, initialization=ovf
     )
     logger.debug("Restoring vm %s from ovf file %s", new_vm_name, ovf)

@@ -19,7 +19,7 @@
 
 import logging
 
-from art.core_api.apis_exceptions import EntityNotFound
+from art.core_api import apis_exceptions
 from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
@@ -395,6 +395,26 @@ def updateTemplate(positive, template, version_number=1, **kwargs):
     )
 
     return status
+
+
+@ll_general.generate_logs()
+def safely_remove_templates(templates):
+    """
+    Safely remove templates.
+
+    Args:
+        templates (list): List of template names (str) which to be deleted.
+
+    Returns:
+        bool: False if any of stated templates still exists, otherwise - True.
+    """
+    if templates:
+        existing_templates = filter(check_template_existence, templates)
+        if existing_templates:
+            remove_templates(positive=True, templates=templates)
+            return waitForTemplatesGone(True, existing_templates)
+    logger.info("There are no templates to remove")
+    return True
 
 
 @ll_general.generate_logs()
@@ -1278,7 +1298,7 @@ def get_template_obj_from_export_domain(
     )
     try:
         templates_list = TEMPLATE_API.getElemFromLink(export_domain_object)
-    except EntityNotFound:
+    except apis_exceptions.EntityNotFound:
         logger.error(log_error)
         return None
     logger.info(log_info)

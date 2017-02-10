@@ -326,7 +326,7 @@ def update_instance_type(instance_type_name, **kwargs):
 @ll_general.generate_logs()
 def remove_instance_type(instance_type_name):
     """
-    Remove instance type
+    Remove instance type.
 
     Args:
         instance_type_name (str): Name of instance type that should be removed
@@ -343,7 +343,7 @@ def remove_instance_type(instance_type_name):
 @ll_general.generate_logs(error=False)
 def get_instance_type_object(instance_type):
     """
-    Get an instance type object by it's name
+    Get an instance type object by it's name.
 
     Args:
         instance_type (str): Name of instance type

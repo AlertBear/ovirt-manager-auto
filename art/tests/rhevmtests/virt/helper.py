@@ -30,7 +30,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vmpools as ll_vmpools,
     clusters as ll_clusters,
     general as ll_general,
-    disks as ll_disks,
+    disks as ll_disks
 )
 import config as config_virt
 
@@ -1129,3 +1129,19 @@ def test_basic_search_params(positive, api, query, resource_name):
         query=query
     )
     return positive == (resource_name in vms)
+
+
+@ll_general.generate_logs()
+def verify_ssh(vm_name):
+    """
+    Verify if SSH is working correctly.
+
+    Args:
+        vm_name (str): Name of VM to verify ssh on.
+
+    Returns:
+        bool: True if SSH works fine, otherwise - False.
+
+    """
+    host_resource = helpers.get_vm_resource(vm_name)
+    return host_resource.executor().is_connective()
