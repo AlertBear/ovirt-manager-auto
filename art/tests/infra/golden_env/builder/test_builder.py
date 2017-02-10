@@ -609,9 +609,19 @@ class CreateDC(TestCase):
             gi = ll_sd.GlanceImage(image, glance, timeout=1800)
 
             data_sds = self._get_data_storage_domains(data_center)
+            # We want to store all our images on nfs storage, since we know
+            # that we have enough space there.
+            # Filter only nfs storages.
+            target_sd = [sd for sd in data_sds if 'nfs' in sd]
+            if not target_sd:
+                # If there is no nfs storage use first available.
+                target_sd = data_sds[0]
+            else:
+                # Otherwise pick first nfs storage.
+                target_sd = target_sd[0]
 
             assert gi.import_image(
-                destination_storage_domain=data_sds[0],
+                destination_storage_domain=target_sd,
                 cluster_name=cluster,
                 new_disk_alias=glance_template_name,
                 new_template_name=glance_template_name,
