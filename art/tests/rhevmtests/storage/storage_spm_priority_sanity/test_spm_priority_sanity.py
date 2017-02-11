@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage.fixtures import (
     set_spm_priorities,
@@ -36,6 +36,7 @@ RETRY_INTERVAL = 10
     wait_for_spm.__name__,
     set_spm_priorities.__name__
 )
+@bz({'1421162': {}})
 class BasicEnvironment(BaseTestCase):
     """
     Base class that ensures SPM is elected and SPM priorities
