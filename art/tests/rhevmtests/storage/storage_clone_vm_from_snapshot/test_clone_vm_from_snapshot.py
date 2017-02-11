@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.test_handler import exceptions
 import rhevmtests.storage.helpers as helpers
 from rhevmtests.storage.fixtures import (
-    initialize_storage_domains, remove_vms, delete_disks
+    initialize_storage_domains, remove_vms, delete_disks, poweroff_vm
 )
 from rhevmtests.storage.storage_clone_vm_from_snapshot.fixtures import (
     initialize_vm, remove_additional_nic, remove_additional_snapshot,
@@ -172,6 +172,9 @@ class TestCase6119(BaseTestCase):
         )
 
 
+@pytest.mark.usefixtures(
+    poweroff_vm.__name__,
+)
 class TestCase6120(BaseTestCase):
     """
     Create VM from snapshot while original VM is Down ->  Success
