@@ -164,7 +164,6 @@ class BasicEnvironment(BaseTestCase):
     initialize_test_variables.__name__,
     poweroff_vm_setup.__name__,
 )
-@attr(tier=2)
 class TestCase6022(BasicEnvironment):
     """
     Create snapshot of first disk out of 4 and verify that the
@@ -176,6 +175,7 @@ class TestCase6022(BasicEnvironment):
     polarion_test_case = '6022'
 
     @polarion("RHEVM3-6022")
+    @attr(tier=2)
     def test_create_snapshot_of_first_disk(self):
         """
         - Create VM with 4 disks
@@ -193,7 +193,6 @@ class TestCase6022(BasicEnvironment):
     undo_snapshot.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=2)
 class TestCase6023(BasicEnvironment):
     """
     Preview snapshot of first disk out of 4 and verify
@@ -208,6 +207,7 @@ class TestCase6023(BasicEnvironment):
     cmd_del = 'rm -f %s' % file_name
 
     @polarion("RHEVM3-6023")
+    @attr(tier=2)
     def test_preview_snapshot(self):
         """
         - Write file on the first disk
@@ -261,7 +261,6 @@ class TestCase6023(BasicEnvironment):
     undo_snapshot.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=3)
 class TestCase6024(BasicEnvironment):
     """
     Preview snapshot of 2 disks out of 4 and verify that the
@@ -273,6 +272,7 @@ class TestCase6024(BasicEnvironment):
     polarion_test_case = '6024'
 
     @polarion("RHEVM3-6024")
+    @attr(tier=3)
     def test_create_snapshot_of_first_disk(self):
         """
         - Write some files on first and fourth disks
@@ -324,7 +324,6 @@ class TestCase6024(BasicEnvironment):
     undo_snapshot.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=3)
 class TestCase6026(BasicEnvironment):
     """
     Create snapshot of all vm's disks, preview it and undo the snapshot
@@ -335,6 +334,7 @@ class TestCase6026(BasicEnvironment):
     polarion_test_case = '6026'
 
     @polarion("RHEVM3-6026")
+    @attr(tier=3)
     def test_flow_create_preview_and_undo_snapshot_of_all_disks(self):
         """
         - Create VM with 4 disks
@@ -384,7 +384,6 @@ class TestCase6026(BasicEnvironment):
     undo_snapshot.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=3)
 class TestCase6007(BasicEnvironment):
     """
     Create snapshot of first disk out of 4, preview it and undo the snapshot
@@ -398,6 +397,7 @@ class TestCase6007(BasicEnvironment):
     cmd_del = 'rm -f %s' % file_name
 
     @polarion("RHEVM3-6007")
+    @attr(tier=3)
     def test_preview_snapshot(self):
         """
         - Create VM with 4 disks
@@ -451,7 +451,6 @@ class TestCase6007(BasicEnvironment):
     initialize_test_variables.__name__,
     remove_vms.__name__,
 )
-@attr(tier=2)
 class TestCase6013(BasicEnvironment):
     """
     Check that the new cloned VM was created only with 1 disk and the
@@ -467,6 +466,7 @@ class TestCase6013(BasicEnvironment):
     disk_count = 2
 
     @polarion("RHEVM3-6013")
+    @attr(tier=2)
     def test_clone_vm_from_snapshot(self):
         """
         - Create a VM with 3 disks attached
@@ -496,7 +496,6 @@ class TestCase6013(BasicEnvironment):
     undo_snapshot.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=2)
 class TestCase6010(BasicEnvironment):
     """
     Custom preview of vm configuration and 2 disks
@@ -508,6 +507,7 @@ class TestCase6010(BasicEnvironment):
     disks_for_custom_preview = 2
 
     @polarion("RHEVM3-6010")
+    @attr(tier=2)
     def test_custom_preview_with_configuration_and_two_disks(self):
         """
         - Create a Vm with 4 disks (file system on all of them)
@@ -553,7 +553,6 @@ class TestCase6010(BasicEnvironment):
     initialize_test_variables.__name__,
     poweroff_vm_setup.__name__,
 )
-@attr(tier=4)
 class TestCase6014(BasicEnvironment):
     """
     Restart vdsm during snapshot creation, check that snapshot creation
@@ -561,12 +560,12 @@ class TestCase6014(BasicEnvironment):
     deleted
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
-
     """
     __test__ = True
     polarion_test_case = '6014'
 
     @polarion("RHEVM3-6014")
+    @attr(tier=4)
     def test_restart_VDSM_during_snapshot_creation(self):
         """
         - Create a VM with 4 disks and OS installed
@@ -583,7 +582,6 @@ class TestCase6014(BasicEnvironment):
         ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
 
 
-@bz({'1408405': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disks.__name__,
@@ -591,7 +589,6 @@ class TestCase6014(BasicEnvironment):
     initialize_test_variables.__name__,
     poweroff_vm_setup.__name__,
 )
-@attr(tier=4)
 class TestCase6006(BasicEnvironment):
     """
     Restart ovirt-engine service during snapshot creation, check that
@@ -604,6 +601,7 @@ class TestCase6006(BasicEnvironment):
     polarion_test_case = '6006'
 
     @polarion("RHEVM3-6006")
+    @attr(tier=4)
     def test_restart_engine_during_snapshot_creation(self):
         """
         - Create a VM with 4 disks and OS installed
@@ -625,7 +623,6 @@ class TestCase6006(BasicEnvironment):
     undo_snapshot.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=2)
 class TestCase16779(BasicEnvironment):
     """
     Create snapshot only from VM configuration.
@@ -637,6 +634,7 @@ class TestCase16779(BasicEnvironment):
     commit = False
 
     @polarion("RHEVM3-16779")
+    @attr(tier=2)
     def test_create_snapshot_from_vm_configuration(self):
         """
         - Create VM with a disk and 2 NICs
@@ -676,14 +674,12 @@ class TestCase16779(BasicEnvironment):
         )
 
 
-@bz({'1410428': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disks.__name__,
     start_vm.__name__,
     initialize_test_variables.__name__,
 )
-@attr(tier=3)
 class TestCase14399(BasicEnvironment):
     """
     Create 3 snapshot and delete the second
@@ -698,6 +694,7 @@ class TestCase14399(BasicEnvironment):
     snaps = [snap_1, snap_2, snap_3]
 
     @polarion("RHEVM3-14399")
+    @attr(tier=3)
     def test_delete_second_snapshot_out_of_three(self):
         """
         - Create VM with 4 disks
@@ -766,7 +763,6 @@ class TestCase14399(BasicEnvironment):
     poweroff_vm_setup.__name__,
     unblock_connectivity_storage_domain_teardown.__name__,
 )
-@attr(tier=4)
 class TestCase6015(BasicEnvironment):
     """
     Block connectivity to storage server during snapshot creation, Check that
@@ -779,6 +775,7 @@ class TestCase6015(BasicEnvironment):
     polarion_test_case = '6015'
 
     @polarion("RHEVM3-6015")
+    @attr(tier=4)
     def test_block_connectivity_to_storage(self):
         """
         - Create a VM with 4 disks and OS installed
