@@ -98,7 +98,6 @@ class ReassignSPMWithStorageBlocked(BasicEnvironment):
             )
 
 
-@attr(tier=2)
 class TestCase5815(BasicEnvironment):
     """
     Assign HSM host to be SPM while another host is SPM of DC
@@ -107,6 +106,7 @@ class TestCase5815(BasicEnvironment):
     polarion_test_case = '5815'
 
     @polarion("RHEVM3-5815")
+    @attr(tier=2)
     def test_reassign_spm(self):
         """
         * Select HSM to be SPM
@@ -121,7 +121,6 @@ class TestCase5815(BasicEnvironment):
         ), "Unable to set host %s as SPM" % self.hsm_hosts[0]
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     fin_activate_host.__name__
 )
@@ -133,6 +132,7 @@ class TestCase5823(BasicEnvironment):
     polarion_test_case = '5823'
 
     @polarion("RHEVM3-5823")
+    @attr(tier=2)
     def test_reassign_spm_when_deactivate_spm_host(self):
         """
         * Put SPM host in maintenance
@@ -153,7 +153,6 @@ class TestCase5823(BasicEnvironment):
 @pytest.mark.usefixtures(
     delete_disks.__name__
 )
-@attr(tier=2)
 class TestCase5818(BasicEnvironment):
     """
     Manually reassign SPM during async task
@@ -164,6 +163,7 @@ class TestCase5818(BasicEnvironment):
     disks_to_remove = list()
 
     @polarion("RHEVM3-5818")
+    @attr(tier=2)
     def test_select_new_host_as_spm_during_async_task(self):
         """
         *  Run an async task (such as adding a disk)
@@ -191,7 +191,6 @@ class TestCase5818(BasicEnvironment):
         ), 'Host %s set as SPM' % self.hsm_hosts[0]
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     init_non_master_domains_params.__name__,
     activate_domain.__name__
@@ -204,6 +203,7 @@ class TestCase5819(BasicEnvironment):
     polarion_test_case = '5819'
 
     @polarion("RHEVM3-5819")
+    @attr(tier=2)
     def test_reassign_spm_during_deactivate_domain(self):
         """
         * Deactivate storage domain
@@ -222,7 +222,6 @@ class TestCase5819(BasicEnvironment):
         ), "Host %s set as SPM" % self.hsm_hosts[0]
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     retrieve_master_domain_for_vm_creation.__name__,
     create_vm.__name__,
@@ -241,6 +240,7 @@ class TestCase14812(BasicEnvironment):
     disks_to_remove = list()
 
     @polarion("RHEVM3-14812")
+    @attr(tier=3)
     def test_reassign_spm_to_host_with_vm_and_perform_storage_operation(self):
         """
         * Create VM and run it on HSM host
@@ -281,7 +281,6 @@ class TestCase14812(BasicEnvironment):
         testflow.step("Disk '%s' created successfully", self.disk_alias)
 
 
-@attr(tier=4)
 class TestCase5820(ReassignSPMWithStorageBlocked):
     """
     Resign SPM where host can't see non-Master Storage Domain
@@ -289,11 +288,8 @@ class TestCase5820(ReassignSPMWithStorageBlocked):
     __test__ = True
     polarion_test_case = '5820'
 
-    # Bug description - SPM Host become Non-responsive when block connection
-    # to Master/Non-master Storage Domain
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1326009
-    @bz({'1326009': {}})
     @polarion("RHEVM3-5820")
+    @attr(tier=4)
     def test_set_spm_with_blocked_non_master_domain(self):
         """
         * Block connection between SPM and non-master domain
@@ -307,7 +303,6 @@ class TestCase5820(ReassignSPMWithStorageBlocked):
         self.block_connection_and_reassign_spm()
 
 
-@attr(tier=4)
 class TestCase5821(ReassignSPMWithStorageBlocked):
     """
     Resign SPM where host can't see Master Storage Domain
@@ -315,11 +310,8 @@ class TestCase5821(ReassignSPMWithStorageBlocked):
     __test__ = True
     polarion_test_case = '5821'
 
-    # Bug description - SPM Host become Non-responsive when block connection
-    # to Master/Non-master Storage Domain
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1326009
-    @bz({'1326009': {}})
     @polarion("RHEVM3-5821")
+    @attr(tier=4)
     def test_set_spm_with_blocked_master_domain(self):
         """
         * Block connection between SPM and master domain
