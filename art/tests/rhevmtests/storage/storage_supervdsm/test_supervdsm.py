@@ -125,7 +125,6 @@ def restore_supervdsm_files(request):
 @pytest.mark.usefixtures(
     check_host_up.__name__,
 )
-@attr(tier=2)
 class TestCase6269(TestCase):
     """
     supervdsm test case, sanity
@@ -136,6 +135,7 @@ class TestCase6269(TestCase):
     storages = config.NOT_APPLICABLE
 
     @polarion("RHEVM3-6269")
+    @attr(tier=2)
     def test_supervdsm_sanity(self):
         """
         Test basic functionality is running after host is installed
@@ -160,7 +160,6 @@ class TestCase6269(TestCase):
 @pytest.mark.usefixtures(
     check_host_up.__name__,
 )
-@attr(tier=4)
 class TestCase6270(TestCase):
     """
     supervdsm test case, command options
@@ -170,6 +169,7 @@ class TestCase6270(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6270")
+    @attr(tier=4)
     def test_command_options_test(self):
         """
         Test command options
@@ -212,7 +212,6 @@ class TestCase6270(TestCase):
 @pytest.mark.usefixtures(
     check_host_up.__name__,
 )
-@attr(tier=4)
 class TestCase6271(TestCase):
     """
     supervdsm test case, communication between supervdsm and vdsm
@@ -222,6 +221,7 @@ class TestCase6271(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6271")
+    @attr(tier=4)
     def test_communication(self):
         """
         Test that both services work when one is stopped
@@ -265,7 +265,6 @@ class TestCase6271(TestCase):
 @pytest.mark.usefixtures(
     check_host_up.__name__,
 )
-@attr(tier=4)
 class TestCase6272(TestCase):
     """
     supervdsm test case, supervdsm stress test
@@ -275,6 +274,7 @@ class TestCase6272(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6272")
+    @attr(tier=4)
     def test_supervdsm_stress_test(self):
         """
         supervdsm stress tests
@@ -303,7 +303,6 @@ class TestCase6272(TestCase):
     check_host_up.__name__,
     restore_supervdsm_files.__name__,
 )
-@attr(tier=4)
 class TestCase6273(TestCase):
     """
     deleting supervdsm log and changing log file permissions
@@ -313,6 +312,7 @@ class TestCase6273(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6273")
+    @attr(tier=4)
     def test_change_supervdsm_log(self):
         """
         change permissions and delete supervdsm log
