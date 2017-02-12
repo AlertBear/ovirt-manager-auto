@@ -172,6 +172,7 @@ class TestCase10332_while_snapshot(basePlan.TestCase5988_while_snapshot):
     __test__ = True
     polarion_test_case = '10332'
 
+
 @attr(tier=2)
 class TestCase10330(basePlan.TestCase5986):
     """

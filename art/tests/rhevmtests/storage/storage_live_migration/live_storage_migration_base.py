@@ -1162,7 +1162,7 @@ class TestCase5976(BaseTestCase):
             self.vm_name, self.new_disk_name, target_sd=target_sd, wait=False
         )
         ll_disks.wait_for_disks_status(
-             disk_id, key='id', status=config.DISK_LOCKED
+            disk_id, key='id', status=config.DISK_LOCKED
         )
         testflow.step(
             "Try to deactivate disk %s while preforming live migration",
@@ -1201,9 +1201,10 @@ class BaseTestCase5977(BaseTestCase):
         return status
 
 
-
 class TestCase5977_vm_migration(BaseTestCase5977):
-
+    """
+    LSM during VM migration
+    """
     @polarion("RHEVM3-5977")
     @attr(tier=3)
     def test_LSM_during_vm_migration(self):
@@ -1242,6 +1243,9 @@ class TestCase5977_vm_migration(BaseTestCase5977):
 
 
 class TestCase5977_snapshot_creation(BaseTestCase5977):
+    """
+    Create snapshot during VM migration
+    """
 
     @polarion("RHEVM3-5977")
     @attr(tier=3)
@@ -1261,6 +1265,9 @@ class TestCase5977_snapshot_creation(BaseTestCase5977):
 
 
 class TestCase5977_after_lsm(BaseTestCase5977):
+    """
+    VM migration after LSM finishes
+    """
 
     @polarion("RHEVM3-5977")
     @attr(tier=3)
@@ -1277,7 +1284,6 @@ class TestCase5977_after_lsm(BaseTestCase5977):
         self.vms_to_wait.append(self.vm_name)
         status = self._migrate_vm_during_lsm_ops(wait=True)
         assert status, "Succeeded to migrate vm during LSM"
-
 
 
 @pytest.mark.usefixtures(
@@ -1327,6 +1333,9 @@ class BaseTestCase5975(StorageTest):
 
 
 class TestCase5975_src_domain(BaseTestCase5975):
+    """
+    Extend source domain during LSM
+    """
 
     @polarion("RHEVM3-5975")
     @attr(tier=2)
@@ -1353,6 +1362,9 @@ class TestCase5975_src_domain(BaseTestCase5975):
 
 
 class TestCase5975_dest_domain(BaseTestCase5975):
+    """
+    Extend target domain during LSM
+    """
 
     @polarion("RHEVM3-5975")
     @attr(tier=2)
@@ -1555,6 +1567,9 @@ class BaseTestCase5999(BaseTestCase):
 
 
 class TestCase5999_spm(BaseTestCase5999):
+    """
+    Reboot SPM duting LSM
+    """
 
     @bz({'1421417': {}})
     @polarion("RHEVM3-5999")
@@ -1572,6 +1587,9 @@ class TestCase5999_spm(BaseTestCase5999):
 
 
 class TestCase5999_hsm(BaseTestCase5999):
+    """
+    Reboot HSM duting LSM
+    """
 
     @polarion("RHEVM3-5999")
     @attr(tier=4)
@@ -1628,6 +1646,9 @@ class BaseTestCase5997(BaseTestCase):
 
 
 class TestCase5997_ha_vm(BaseTestCase5997):
+    """
+    Kill HA VM PID during LSM
+    """
 
     @polarion("RHEVM3-5997")
     @attr(tier=4)
@@ -1646,6 +1667,9 @@ class TestCase5997_ha_vm(BaseTestCase5997):
 
 
 class TestCase5997_regular_vm(BaseTestCase5997):
+    """
+    Kill VM PID during LSM
+    """
 
     @polarion("RHEVM3-5997")
     @attr(tier=4)
@@ -1811,7 +1835,8 @@ class TestCase5966(BaseTestCase):
         self.restart_vdsm_host = ll_hosts.getSPMHost(config.HOSTS)
         testflow.step("Start VM %s", self.vm_name)
         assert ll_vms.startVm(
-            True, self.vm_name, config.VM_UP, placement_host=spm
+            True, self.vm_name, config.VM_UP,
+            placement_host=self.restart_vdsm_host
         ), "Failed to start VM %s" % self.vm_name
         host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=self.restart_vdsm_host
@@ -1843,7 +1868,7 @@ class TestCase5966(BaseTestCase):
         """
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step("Start VM %s", self.vm_name)
-        assert ll_vms.startVm(True, self.vm_name, config.VM_UP),(
+        assert ll_vms.startVm(True, self.vm_name, config.VM_UP), (
             "Failed to start VM %s", self.vm_name
         )
         _, host = ll_vms.getVmHost(self.vm_name)
