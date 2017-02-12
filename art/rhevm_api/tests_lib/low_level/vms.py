@@ -5433,6 +5433,7 @@ def add_vm_host_device(vm_name, host_name, device_name):
     return status
 
 
+@ll_general.generate_logs()
 def remove_vm_host_device(vm_name, device_name):
     """
     Remove host device from VM
@@ -5444,18 +5445,17 @@ def remove_vm_host_device(vm_name, device_name):
     Returns:
         bool: True, if remove host device succeed, otherwise False
     """
-    host_device_obj = get_vm_host_device_by_name(
+    host_device = get_vm_host_device_by_name(
         vm_name=vm_name, device_name=device_name
     )
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Remove", obj_type="host device", obj_name=device_name,
-        extra_txt="from VM %s" % vm_name
+    if not host_device:
+        return False
+    vm_host_device_col_href = get_vm_host_devices_link(vm_name=vm_name)
+    new_host_device_obj = ll_general.prepare_ds_object(
+        object_name="HostDevice",
+        href="{0}/{1}".format(vm_host_device_col_href, host_device.get_id())
     )
-    logger.info(log_info)
-    status = HOST_DEVICE_API.delete(host_device_obj, True)
-    if not status:
-        logger.error(log_error)
-    return status
+    return HOST_DEVICE_API.delete(new_host_device_obj, True)
 
 
 def get_vm_placement_hosts(vm_name):

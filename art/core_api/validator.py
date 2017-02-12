@@ -227,7 +227,7 @@ def sort_elements(act_elms, exp_elms, logger, elm_class):
     for sort_attr in SORT_ATTRS:
         exp_elm_attr = getattr(exp_elms[0], sort_attr, None)
         act_elm_attr = getattr(act_elms[0], sort_attr, None)
-        if exp_elm_attr and act_elm_attr:
+        if exp_elm_attr is not None and act_elm_attr is not None:
             sort_elements_by_attr(
                 act_elms=act_elms, exp_elms=exp_elms, sort_attr=sort_attr
             )

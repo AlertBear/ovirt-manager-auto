@@ -615,7 +615,7 @@ def wait_for_dc_and_storagedomains():
     return True
 
 
-def get_pci_device_with_iommu(host_name):
+def get_pci_device(host_name):
     """
     Get PCI device with IOMMU from the host
 
@@ -626,8 +626,10 @@ def get_pci_device_with_iommu(host_name):
         HostDevice: Host device with IOMMU
     """
     host_devices = ll_hosts.get_host_devices(host_name=host_name)
-    host_devices_with_iommu = filter(
-        lambda x: x.get_iommu_group() and "USB" in x.get_product().get_name(),
-        host_devices
-    )
-    return host_devices_with_iommu[0] if host_devices_with_iommu else None
+    for host_device in host_devices:
+        device_product = host_device.get_product()
+        if device_product:
+            for correct_product in conf.HOST_DEVICES_TO_ATTACH:
+                if device_product.get_name() == correct_product:
+                    return host_device
+    return None

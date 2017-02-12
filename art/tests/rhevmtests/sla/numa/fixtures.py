@@ -184,9 +184,13 @@ def get_pci_device_name(request):
     """
     Get PCI device and save it to the class variable
     """
-    request.node.cls.pci_device_name = sla_helpers.get_pci_device_with_iommu(
-        host_name=conf.HOSTS[0]
-    ).get_name()
+    pci_device = sla_helpers.get_pci_device(host_name=conf.HOSTS[0])
+    if not pci_device:
+        pytest.skip(
+            "Can not find PCI device for passthrough on the host %s" %
+            conf.HOSTS[0]
+        )
+    request.node.cls.pci_device_name = pci_device.get_name()
 
 
 @pytest.fixture(scope="class")
@@ -198,4 +202,10 @@ def get_pci_device_numa_node(request):
     pci_devices = helpers.get_pci_devices_numa_node_from_resource(
         resource=conf.VDS_HOSTS[0]
     )
-    klass.pci_device_numa_node = pci_devices[klass.pci_device_name]
+    pci_device_numa_node = pci_devices[klass.pci_device_name]
+    if pci_device_numa_node == -1:
+        pytest.skip(
+            "PCI device %s does not have mapping to NUMA nodes" %
+            klass.pci_device_name
+        )
+    klass.pci_device_numa_node = pci_device_numa_node

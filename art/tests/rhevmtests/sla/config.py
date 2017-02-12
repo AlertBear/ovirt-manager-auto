@@ -257,3 +257,10 @@ VMS_TO_RUN_1 = dict(
 )
 
 ENGINE_STAT_UPDATE_INTERVAL = 15
+
+# I do not have way to recognize what the correct PCI device for the host
+# device passthrough test, so I will just add static list with such devices
+HOST_DEVICES_TO_ATTACH = [
+    "6 Series/C200 Series Chipset Family USB Enhanced Host Controller #2",
+    "7500/5520/5500/X58 Trusted Execution Technology Registers"
+]

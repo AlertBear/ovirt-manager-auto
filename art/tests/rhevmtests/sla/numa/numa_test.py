@@ -34,10 +34,14 @@ def setup_numa_test():
     """
     1) Install numactl package on hosts
     """
-    host_numa_nodes_l = ll_hosts.get_numa_nodes_from_host(conf.HOSTS[0])
+    host_numa_nodes_l = helpers.get_filtered_numa_parameters_from_resource(
+        resource=conf.VDS_HOSTS[0]
+    )
     if len(host_numa_nodes_l) < 2:
         pytest.skip(
-            "Number of NUMA nodes on host %s less than 2" % conf.HOSTS[0]
+            "Number of NUMA nodes with the memory greater "
+            "than zero on the host %s less than 2" %
+            conf.HOSTS[0]
         )
     helpers.install_numa_package(resource=conf.VDS_HOSTS[0])
 
@@ -269,7 +273,6 @@ class TestPreferModeOnVm(u_libs.SlaTest):
         """
         Check VM NUMA memory pinning
         """
-        helpers.skip_test_because_memory_condition()
         u_libs.testflow.step(
             "Check if VM %s NUMA memory pinning is correct", conf.VM_NAME[0]
         )
@@ -337,7 +340,6 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
         """
         Check VM NUMA memory pinning
         """
-        helpers.skip_test_because_memory_condition()
         u_libs.testflow.step(
             "Check if VM %s NUMA memory pinning is correct", conf.VM_NAME[0]
         )
@@ -891,10 +893,6 @@ class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
         1) Check NUMA memory pinning
         2) Check NUMA mode
         """
-        if not self.pci_device_numa_node or self.pci_device_numa_node == -1:
-            pytest.skip("Host device does not have correct numa node")
-        helpers.skip_test_because_memory_condition()
-
         u_libs.testflow.step(
             "Check if VM %s NUMA memory pinning is correct",
             conf.VM_NAME[0]
@@ -955,8 +953,6 @@ class TestNumaPinningOverrideHotsDeviceNuma(u_libs.SlaTest):
             numa_mode=self.vm_numa_mode,
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
-
-        helpers.skip_test_because_memory_condition()
 
         u_libs.testflow.step(
             "Check if VM %s NUMA memory pinning is correct",

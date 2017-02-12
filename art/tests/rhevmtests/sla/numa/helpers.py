@@ -7,7 +7,6 @@ import re
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import config as conf
-import pytest
 import rhevmtests.helpers as global_helpers
 
 logger = logging.getLogger(__name__)
@@ -85,6 +84,23 @@ def get_numa_parameters_from_resource(resource):
         param_dict[node][result[1]] = value
     logger.debug("%s: NUMA parameters: %s", resource, param_dict)
     return param_dict
+
+
+def get_filtered_numa_parameters_from_resource(resource):
+    """
+    Get NUMA parameters for the nodes with memory greater than zero
+
+    Args:
+        resource (VDS): VDS resource
+
+    Returns:
+        dict: Filtered NUMA nodes parameters({node_index: {cpus, memory}})
+    """
+    h_numa_nodes_params = get_numa_parameters_from_resource(resource=resource)
+    return dict(
+        (k, v) for k, v in h_numa_nodes_params.iteritems()
+        if v[conf.NUMA_NODE_MEMORY] != 0
+    )
 
 
 def get_numa_parameters_from_vm(vm_name):
@@ -203,7 +219,7 @@ def create_number_of_equals_numa_nodes(resource, vm_name, num_of_numa_nodes):
         list: NUMA nodes definitions
     """
     numa_nodes = []
-    h_numa_node_indexes = get_numa_parameters_from_resource(
+    h_numa_nodes_indexes = get_filtered_numa_parameters_from_resource(
         resource=resource
     ).keys()
     v_numa_node_memory = ll_vms.get_vm_memory(
@@ -222,7 +238,7 @@ def create_number_of_equals_numa_nodes(resource, vm_name, num_of_numa_nodes):
             "index": index,
             "memory": v_numa_node_memory,
             "cores": cores,
-            "pin_list": [h_numa_node_indexes[index]]
+            "pin_list": [h_numa_nodes_indexes[index]]
         }
         numa_nodes.append(numa_node)
     return numa_nodes
@@ -304,7 +320,7 @@ def is_numa_pinning_correct(pinning_type, numa_mode, num_of_vm_numa_nodes):
     Returns:
         bool: True, if VM NUMA pinning is correct, otherwise False
     """
-    h_numa_nodes_params = get_numa_parameters_from_resource(
+    h_numa_nodes_params = get_filtered_numa_parameters_from_resource(
         resource=conf.VDS_HOSTS[0]
     )
     vm_pinning = get_vm_numa_pinning(
@@ -331,21 +347,6 @@ def is_numa_pinning_correct(pinning_type, numa_mode, num_of_vm_numa_nodes):
                 vm_pinning=vm_pinning
             )
     return False
-
-
-def skip_test_because_memory_condition():
-    """
-    Skip memory tests, because one of NUMA nodes does not have enough memory
-    """
-    h_numa_nodes_params = get_numa_parameters_from_resource(
-        resource=conf.VDS_HOSTS[0]
-    )
-    for index, params in h_numa_nodes_params.items()[:2]:
-        if params[conf.NUMA_NODE_MEMORY] <= 0:
-            pytest.skip(
-                "Numa node with index %s does not have enough memory "
-                "to run memory check tests" % index
-            )
 
 
 def is_vm_has_correct_number_of_numa_nodes(expected_number_of_vm_numa_nodes):
@@ -421,15 +422,15 @@ def get_pci_devices_numa_node_from_resource(resource):
         ["tail", "-n", "1", "/sys/bus/pci/devices/*/numa_node"]
     )[1]
     pci_devices = {}
-    pci_device_name = ''
+    pci_device_name = ""
     for line in out.splitlines():
         if line:
-            if 'pci' in line:
-                pci_device_name = line.split('/')[-2]
+            if "pci" in line:
+                pci_device_name = line.split("/")[-2]
                 pci_device_name = pci_device_name.replace(
-                    ':', '_'
-                ).replace('.', '_')
-                pci_device_name = 'pci_{0}'.format(pci_device_name)
+                    ":", "_"
+                ).replace(".", "_")
+                pci_device_name = "pci_{0}".format(pci_device_name)
             elif pci_device_name:
                 pci_devices[pci_device_name] = int(line)
     return pci_devices

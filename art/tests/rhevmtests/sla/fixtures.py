@@ -674,11 +674,16 @@ def attach_host_device(request):
     """
     Attach host device to VM
     """
-    pci_device_name = getattr(
-        request.node.cls,
-        "pci_device_name",
-        sla_helpers.get_pci_device_with_iommu(sla_config.HOSTS[0]).get_name()
-    )
+    pci_device_name = getattr(request.node.cls, "pci_device_name", None)
+
+    if not pci_device_name:
+        pci_device = sla_helpers.get_pci_device(host_name=sla_config.HOSTS[0])
+        if not pci_device:
+            pytest.skip(
+                "Can not find PCI device for passthrough on the host %s" %
+                sla_config.HOSTS[0]
+            )
+        pci_device_name = pci_device.get_name()
 
     def fin():
         """
