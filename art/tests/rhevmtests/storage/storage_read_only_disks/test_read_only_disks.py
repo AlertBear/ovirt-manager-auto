@@ -188,7 +188,6 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=2)
 class TestCase4906(DefaultEnvironment):
     """
     Attach a read-only disk to vm and try to write to the disk
@@ -199,6 +198,7 @@ class TestCase4906(DefaultEnvironment):
     polarion_test_case = '4906'
 
     @polarion("RHEVM3-4906")
+    @attr(tier=2)
     def test_attach_RO_disk(self):
         """
         - VM with OS
@@ -212,7 +212,6 @@ class TestCase4906(DefaultEnvironment):
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
-@attr(tier=2)
 class TestCase4907(BaseTestCase):
     """
     Attach a read-only direct LUN disk to vm and try to write to the disk
@@ -227,6 +226,7 @@ class TestCase4907(BaseTestCase):
     # not disk.storage_domains is provided
 
     @polarion("RHEVM3-4907")
+    @attr(tier=2)
     @bz({'957788': {}})
     def test_attach_RO_direct_LUN_disk(self):
         """
@@ -266,7 +266,6 @@ class TestCase4907(BaseTestCase):
             helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
-@attr(tier=2)
 class TestCase4908(DefaultEnvironment):
     """
     Attach a read-only shared disk to vm and try to write to the disk
@@ -296,6 +295,7 @@ class TestCase4908(DefaultEnvironment):
             )
 
     @polarion("RHEVM3-4908")
+    @attr(tier=2)
     def test_shared_RO_disk(self):
         """
         - 2 VMs with OS
@@ -330,7 +330,6 @@ class TestCase4908(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=2)
 class TestCase4909(DefaultEnvironment):
     """
     Verifies that read-only shared disk is persistent after snapshot is
@@ -362,6 +361,7 @@ class TestCase4909(DefaultEnvironment):
                                          % self.test_vm_name)
 
     @polarion("RHEVM3-4909")
+    @attr(tier=2)
     def test_RO_persistent_after_snapshot_creation_to_a_shared_disk(self):
         """
         - 2 VMs with OS
@@ -418,7 +418,6 @@ class TestCase4909(DefaultEnvironment):
         BaseTestCase.teardown_exception()
 
 
-@attr(tier=2)
 class TestCase4910(BaseTestCase):
     """
     Checks that changing disk's write policy from RW to read-only will fails
@@ -430,6 +429,7 @@ class TestCase4910(BaseTestCase):
     polarion_test_case = '4910'
 
     @polarion("RHEVM3-4910")
+    @attr(tier=2)
     def test_change_disk_from_RW_to_RO(self):
         """
         - VM with OS
@@ -467,7 +467,6 @@ class TestCase4910(BaseTestCase):
             assert status, "Failed to change RW disk %s to read-only" % disk
 
 
-@attr(tier=2)
 class TestCase4912(BaseTestCase):
     """
     Check that booting from read-only disk should be impossible
@@ -480,6 +479,7 @@ class TestCase4912(BaseTestCase):
     polarion_test_case = '4912'
 
     @polarion("RHEVM3-4912")
+    @attr(tier=2)
     def test_boot_from_RO_disk(self):
         """
         - VM with OS
@@ -490,7 +490,6 @@ class TestCase4912(BaseTestCase):
         """
 
 
-@attr(tier=4)
 class TestCase4913(DefaultEnvironment):
     """
     Block connectivity from vdsm to the storage domain
@@ -507,6 +506,7 @@ class TestCase4913(DefaultEnvironment):
     # with host
 
     @polarion("RHEVM3-4913")
+    @attr(tier=4)
     def test_RO_persistent_after_block_connectivity_to_storage(self):
         """
         - VM with OS
@@ -605,7 +605,6 @@ class TestCase4913(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=3)
 class TestCase4914(DefaultEnvironment):
     """
     Migrate a vm with read-only disk, and check the disk is still
@@ -618,6 +617,7 @@ class TestCase4914(DefaultEnvironment):
     is_migrated = False
 
     @polarion("RHEVM3-4914")
+    @attr(tier=3)
     def test_migrate_vm_with_RO_disk(self):
         """
         - VM with OS
@@ -659,7 +659,6 @@ class TestCase4914(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=3)
 class TestCase4915(DefaultEnvironment):
     """
     Checks that suspending a vm with read-only disk shouldn't
@@ -671,6 +670,7 @@ class TestCase4915(DefaultEnvironment):
     polarion_test_case = '4915'
 
     @polarion("RHEVM3-4915")
+    @attr(tier=3)
     def test_RO_disk_persistent_after_suspend_the_vm(self):
         """
         - VM with OS
@@ -692,7 +692,6 @@ class TestCase4915(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=3)
 class TestCase4917(DefaultEnvironment):
     """
     Import more than once VM with read-only disk, and verify that it's
@@ -713,6 +712,7 @@ class TestCase4917(DefaultEnvironment):
         super(TestCase4917, self).setUp()
 
     @polarion("RHEVM3-4917")
+    @attr(tier=3)
     @bz({'1309788': {}})
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
@@ -788,7 +788,6 @@ class TestCase4917(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=2)
 class TestCase4918(DefaultSnapshotEnvironment):
     """
     Check that the read-only disk is part of vm snapshot, and also
@@ -806,6 +805,7 @@ class TestCase4918(DefaultSnapshotEnvironment):
         [config.JOB_CREATE_SNAPSHOT, config.JOB_PREVIEW_SNAPSHOT]
     )
     @polarion("RHEVM3-4918")
+    @attr(tier=2)
     def test_preview_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -850,7 +850,6 @@ class TestCase4918(DefaultSnapshotEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=3)
 class TestCase4919(DefaultSnapshotEnvironment):
     """
     Check that the read-only disk is part of vm snapshot, and the disk
@@ -865,6 +864,7 @@ class TestCase4919(DefaultSnapshotEnvironment):
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-4919")
+    @attr(tier=3)
     def test_preview_and_undo_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -921,7 +921,6 @@ class TestCase4919(DefaultSnapshotEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=2)
 class TestCase4920(DefaultSnapshotEnvironment):
     """
     Check that the read-only disk is part of vm snapshot, and the disk
@@ -936,6 +935,7 @@ class TestCase4920(DefaultSnapshotEnvironment):
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-4920")
+    @attr(tier=2)
     def test_preview_and_commit_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -983,7 +983,6 @@ class TestCase4920(DefaultSnapshotEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=3)
 class TestCase4921(DefaultSnapshotEnvironment):
     """
     Checks that deleting a snapshot with read-only disk shouldn't effect
@@ -997,6 +996,7 @@ class TestCase4921(DefaultSnapshotEnvironment):
     snapshot_removed = False
 
     @polarion("RHEVM3-4921")
+    @attr(tier=3)
     def test_delete_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1023,7 +1023,6 @@ class TestCase4921(DefaultSnapshotEnvironment):
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
-@attr(tier=2)
 class TestCase4922(DefaultEnvironment):
     """
     Checks that a cloned vm from a snapshot with read-only disk shouldn't
@@ -1038,6 +1037,7 @@ class TestCase4922(DefaultEnvironment):
     cloned_vm_name = 'cloned_vm'
 
     @polarion("RHEVM3-4922")
+    @attr(tier=2)
     @bz({'1201268': {}})
     def test_clone_vm_from_snapshot_with_RO_disk(self):
         """
@@ -1094,7 +1094,6 @@ class TestCase4922(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=2)
 class TestCase4923(DefaultEnvironment):
     """
     Create 2 VMs from a template with read-only disk in 2 provisioning methods:
@@ -1111,6 +1110,7 @@ class TestCase4923(DefaultEnvironment):
     cloned = False
 
     @polarion("RHEVM3-4923")
+    @attr(tier=2)
     def test_create_vms_from_template_with_RO_disk(self):
         """
         - VM with OS
@@ -1192,7 +1192,6 @@ class TestCase4923(DefaultEnvironment):
 
 
 @bz({'1390498': {}})
-@attr(tier=3)
 class TestCase4924(DefaultEnvironment):
     """
     Checks that moving read-only disk to a second storage domain will
@@ -1207,6 +1206,7 @@ class TestCase4924(DefaultEnvironment):
     # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4924")
+    @attr(tier=3)
     def test_moving_RO_disk(self):
         """
         - 2 storage domains
@@ -1256,7 +1256,6 @@ class TestCase4924(DefaultEnvironment):
             )
 
 
-@attr(tier=3)
 class TestCase4925(DefaultEnvironment):
     """
     Checks that Live Storage Migration of read-only disk should be possible
@@ -1274,6 +1273,7 @@ class TestCase4925(DefaultEnvironment):
     # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4925")
+    @attr(tier=3)
     @bz({'1246114': {}})
     def test_live_migrate_RO_disk(self):
         """
@@ -1309,7 +1309,6 @@ class TestCase4925(DefaultEnvironment):
             )
 
 
-@attr(tier=2)
 class TestCase4927(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1321,6 +1320,7 @@ class TestCase4927(BaseTestCase):
     polarion_test_case = '4927'
 
     @polarion("RHEVM3-4927")
+    @attr(tier=2)
     def test_copy_template_RO_disk_to_second_SD(self):
         """
         - 2 storage domains
@@ -1335,7 +1335,6 @@ class TestCase4927(BaseTestCase):
         pass
 
 
-@attr(tier=3)
 class TestCase4926(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RW disk should be possible, even
@@ -1351,6 +1350,7 @@ class TestCase4926(DefaultEnvironment):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_REMOVE_SNAPSHOT])
     @polarion("RHEVM3-4926")
+    @attr(tier=3)
     def test_live_migrate_RW_disk(self):
         """
         - 2 storage domains
@@ -1377,7 +1377,6 @@ class TestCase4926(DefaultEnvironment):
         ll_vms.move_vm_disk(self.vm_name, bootable, self.storage_domains[1])
 
 
-@attr(tier=4)
 class TestCase4930(DefaultEnvironment):
     """
     Check that the VM sees its second disk as read-only,
@@ -1389,6 +1388,7 @@ class TestCase4930(DefaultEnvironment):
     polarion_test_case = '4930'
 
     @polarion("RHEVM3-4930")
+    @attr(tier=4)
     def test_kill_qemu_of_vm_with_RO_disk_attached(self):
         """
         - VM with OS
@@ -1427,7 +1427,6 @@ class TestCase4930(DefaultEnvironment):
             logger.info("Failed to write to read-only disk")
 
 
-@attr(tier=4)
 class TestCase4931(BaseTestCase):
     """
     Restart vdsm during read-only disk activation
@@ -1440,6 +1439,7 @@ class TestCase4931(BaseTestCase):
     polarion_test_case = '4931'
 
     @polarion("RHEVM3-4931")
+    @attr(tier=4)
     def test_restart_vdsm_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1452,7 +1452,6 @@ class TestCase4931(BaseTestCase):
         """
 
 
-@attr(tier=4)
 class TestCase4932(BaseTestCase):
     """
     Restart ovirt-engine during read-only disk activation
@@ -1465,6 +1464,7 @@ class TestCase4932(BaseTestCase):
     polarion_test_case = '4932'
 
     @polarion("RHEVM3-4932")
+    @attr(tier=4)
     def test_restart_ovirt_engine_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1477,7 +1477,6 @@ class TestCase4932(BaseTestCase):
         """
 
 
-@attr(tier=4)
 class TestCase4933(BaseTestCase):
     """
     Restart libvirt during read-only disk activation
@@ -1490,6 +1489,7 @@ class TestCase4933(BaseTestCase):
     polarion_test_case = '4933'
 
     @polarion("RHEVM3-4933")
+    @attr(tier=4)
     def test_restart_libvirt_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1504,7 +1504,6 @@ class TestCase4933(BaseTestCase):
         """
 
 
-@attr(tier=2)
 class TestCase4934(BaseTestCase):
     """
     Changing RW disk to read-only while disk is plugged to a running VM
@@ -1517,6 +1516,7 @@ class TestCase4934(BaseTestCase):
     polarion_test_case = '4934'
 
     @polarion("RHEVM3-4934")
+    @attr(tier=2)
     def test_change_RW_disk_to_RO_while_disk_is_plugged_to_running_vm(self):
         """
         - VM with OS
