@@ -59,6 +59,7 @@ HOST_NICS_API = get_api("host_nic", "host_nics")
 Host = getDS("Host")
 Options = getDS("Options")
 Option = getDS("Option")
+Value = getDS("Value")
 PowerManagement = getDS("PowerManagement")
 PmProxyTypes = getDS("PmProxyTypes")
 PmProxy = getDS("PmProxy")
@@ -1984,7 +1985,8 @@ def __prepare_fence_agent_object(**kwargs):
     if options:
         options_obj = Options()
         for name, value in options.iteritems():
-            option = Option(name=name, value=value)
+            value_obj = Value(datum=int(value))
+            option = Option(name=name, value=value_obj)
             options_obj.add_option(option)
     agent_obj = ll_general.prepare_ds_object("Agent", **kwargs)
     agent_obj.set_options(options_obj)
