@@ -125,7 +125,6 @@ class BaseClassEditDescription(BasicEnvironment):
             ll_disks.detachDisk(True, disk_alias, self.vm_name)
 
 
-@attr(tier=3)
 class TestCase11500(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a block domain
@@ -139,6 +138,7 @@ class TestCase11500(BaseClassEditDescription):
     # 1211314: CLI auto complete option description is missing for add disk
 
     @polarion("RHEVM3-11500")
+    @attr(tier=3)
     def test_edit_description_on_block_or_file_domain(self):
         """
         1. Add VM with a block based disk, add a description and run the VM,
@@ -152,7 +152,6 @@ class TestCase11500(BaseClassEditDescription):
         self.basic_positive_flow()
 
 
-@attr(tier=3)
 class TestCase11501(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a file domain
@@ -169,6 +168,7 @@ class TestCase11501(BaseClassEditDescription):
     # 1211314: CLI auto complete option description is missing for add disk
 
     @polarion("RHEVM3-11501")
+    @attr(tier=3)
     def test_edit_description_on_block_or_file_domain(self):
         """
         1. Add VM with a file based disk, add a description and run the VM,
@@ -182,7 +182,6 @@ class TestCase11501(BaseClassEditDescription):
         self.basic_positive_flow()
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     create_second_vm.__name__,
     poweroff_vms.__name__,
@@ -199,8 +198,7 @@ class TestCase11503(BasicEnvironment):
     original_descriptions = dict()
 
     @polarion("RHEVM3-11503")
-    # Bugzilla history:
-    # 1350708: Hot unplug disk using REST API returns "Internal Server Error"
+    @attr(tier=3)
     def test_verify_disk_description_edit_works_across_hot_plug(self):
         """
         1. Add VM with a disk, run the VM and add a description while the VM
@@ -280,7 +278,6 @@ class TestCase11503(BasicEnvironment):
             ll_disks.detachDisk(True, disk_alias, self.vm_name_2)
 
 
-@attr(tier=3)
 @pytest.mark.usefixtures(
     poweroff_vms.__name__
 )
@@ -295,6 +292,7 @@ class TestCase11504(BasicEnvironment):
     polarion_test_case = '11504'
 
     @polarion("RHEVM3-11504")
+    @attr(tier=3)
     def test_ensure_disk_description_is_locked_during_lsm(self):
         """
         1. Add VM with a disk, run the VM and add a description while the VM
