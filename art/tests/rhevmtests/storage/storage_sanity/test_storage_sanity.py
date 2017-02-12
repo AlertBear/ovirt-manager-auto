@@ -36,7 +36,6 @@ ISCSI = config.STORAGE_TYPE_ISCSI
     create_storage_domain.__name__,
     get_storage_domain_size.__name__
 )
-@attr(tier=1)
 class TestCase11591(TestCase):
     """
     Storage sanity test, create and extend a data domain
@@ -48,6 +47,7 @@ class TestCase11591(TestCase):
     polarion_test_case = '11591'
 
     @polarion("RHEVM3-11591")
+    @attr(tier=1)
     def test_create_and_extend_storage_domain(self):
         """
         Creates and extends a storage domain
@@ -82,7 +82,6 @@ class TestCase11591(TestCase):
     create_storage_domain.__name__,
     get_storage_domain_size.__name__
 )
-@attr(tier=2)
 class TestCase11592(TestCase):
     """
     Storage sanity test, changing domain status
@@ -93,6 +92,7 @@ class TestCase11592(TestCase):
     polarion_test_case = '11592'
 
     @polarion("RHEVM3-11592")
+    @attr(tier=2)
     def test_change_domain_status_test(self):
         """
         Test checks if attaching/detaching storage domains works properly,
@@ -154,7 +154,6 @@ class TestCase11592(TestCase):
                % self.new_storage_domain
 
 
-@attr(tier=2)
 class TestCase11593(TestCase):
     """
     Storage sanity test, changing master domain
@@ -165,6 +164,7 @@ class TestCase11593(TestCase):
     polarion_test_case = '11593'
 
     @polarion("RHEVM3-11593")
+    @attr(tier=2)
     def test_change_master_domain_test(self):
         """
         Test checks if changing master domain works correctly
@@ -201,7 +201,6 @@ class TestCase11593(TestCase):
     prepare_storage_parameters.__name__,
     create_vm.__name__
 )
-@attr(tier=2)
 class TestCase11581(TestCase):
     """
     Ensure that creating disks of different types works with a guest OS across
@@ -214,6 +213,7 @@ class TestCase11581(TestCase):
     polarion_test_case = '11581'
 
     @polarion("RHEVM3-11581")
+    @attr(tier=2)
     def test_multiple_disks_on_different_sd(self):
         """
         * Create a vm
