@@ -118,7 +118,6 @@ class IscsiNfsSD(BaseCaseDCMixed):
 
 
 # TODO: doesn't work - need verification when FC is available
-@attr(tier=2)
 class TestCase4558(BaseCaseDCMixed):
     """
     * Create FC and iSCSI Storage Domains
@@ -146,6 +145,7 @@ class TestCase4558(BaseCaseDCMixed):
         helpers.add_disk_to_sd(self.fc, self.fc_disk)
 
     @polarion("RHEVM3-4558")
+    @attr(tier=2)
     def test_move_disks(self):
         """
         Move disk (offline movement) between domains
@@ -159,7 +159,6 @@ class TestCase4558(BaseCaseDCMixed):
             disk_name=self.fc_disk, target_domain=self.iscsi)
 
 
-@attr(tier=2)
 class TestCase4561(IscsiNfsSD):
     """
     * Create a shared DC
@@ -178,6 +177,7 @@ class TestCase4561(IscsiNfsSD):
     vm_name = "vm_%s" % polarion_test_case
 
     @polarion("RHEVM3-4561")
+    @attr(tier=2)
     def test_export_import_vm(self):
         """
         Export-import VMs
@@ -230,7 +230,6 @@ class TestCase4561(IscsiNfsSD):
                                self.nfs, self.cluster_name)
 
 
-@attr(tier=3)
 class TestCase4562(IscsiNfsSD):
     """
     * Create a shared DC
@@ -273,6 +272,7 @@ class TestCase4562(IscsiNfsSD):
         )
 
     @polarion("RHEVM3-4562")
+    @attr(tier=3)
     def test_clone_from_snapshot(self):
         """
         Creates a new snapshots and clones vm from it for both vms
@@ -302,7 +302,6 @@ class TestCase4562(IscsiNfsSD):
         add_snapshot_and_clone(self.vm_name)
 
 
-@attr(tier=3)
 class TestCase4563(IscsiNfsSD):
     """
     * Create a shared DC
@@ -336,6 +335,7 @@ class TestCase4563(IscsiNfsSD):
         self.vms_to_remove.append(self.vm_name)
 
     @polarion("RHEVM3-4563")
+    @attr(tier=3)
     def test_copy_template(self):
         """
         Make template and copy it
@@ -377,7 +377,6 @@ class TestCase4563(IscsiNfsSD):
         clone_and_verify(self.nfs)
 
 
-@attr(tier=2)
 class TestCase4565(IscsiNfsSD):
     """
     * Create a shared DC
@@ -413,6 +412,7 @@ class TestCase4565(IscsiNfsSD):
         self.vms_to_remove.append(self.vm_name)
 
     @polarion("RHEVM3-4565")
+    @attr(tier=2)
     def test_snapshot_operations(self):
         """
         Perform basic snapshot sanity (create, preview, commit, undo, delete)
@@ -449,7 +449,6 @@ class TestCase4565(IscsiNfsSD):
         assert ll_vms.removeSnapshot(True, self.vm_name, snap_name)
 
 
-@attr(tier=2)
 class TestCase4557(IscsiNfsSD):
     """
     * Create a shared DC
@@ -462,6 +461,7 @@ class TestCase4557(IscsiNfsSD):
     polarion_test_case = '4557'
 
     @polarion("RHEVM3-4557")
+    @attr(tier=2)
     def test_basic_operations_reconstruct(self):
         """
         Perform basic disk sanity after reconstruct
@@ -520,7 +520,6 @@ class TestCase4557(IscsiNfsSD):
 
 # TODO: doesn't work - wait until reinitialize is on rest
 # RFE https://bugzilla.redhat.com/show_bug.cgi?id=1092374
-@attr(tier=2)
 class TestCase4556(BaseCaseDCMixed):
     """
     * Create a shared DC
@@ -537,6 +536,7 @@ class TestCase4556(BaseCaseDCMixed):
     storagedomains = [config.ISCSI_DOMAIN_0]
 
     @polarion("RHEVM3-4556")
+    @attr(tier=2)
     def test_reinitialize(self):
         """
         Reinitialize from unattached storage domain
@@ -562,7 +562,6 @@ class TestCase4556(BaseCaseDCMixed):
 
 
 # TODO: doesn't work, need FC
-@attr(tier=2)
 class TestCase4555(IscsiNfsSD):
     """
     * Create DataCenter of shared type
@@ -584,6 +583,7 @@ class TestCase4555(IscsiNfsSD):
         # create disks
 
     @polarion("RHEVM3-4555")
+    @attr(tier=2)
     def test_move_between_types(self):
         """
         Move disk (offline movement) between domains (file to block and
@@ -593,7 +593,6 @@ class TestCase4555(IscsiNfsSD):
         # Make matrix...
 
 
-@attr(tier=3)
 class TestCase4554(BaseCaseDCMixed):
     """
     * Create DataCenter of shared type
@@ -608,6 +607,7 @@ class TestCase4554(BaseCaseDCMixed):
     storagedomains = [config.NFS_DOMAIN, config.GLUSTER_DOMAIN]
 
     @polarion("RHEVM3-4554")
+    @attr(tier=3)
     def test_move_nfs_to_nfs(self):
         """
         Move disks from one nfs storage to another
@@ -639,7 +639,6 @@ class TestCase4554(BaseCaseDCMixed):
         super(TestCase4554, self).tearDown()
 
 
-@attr(tier=4)
 class TestCase4566(IscsiNfsSD):
     """
     * Create a shared DC
@@ -673,6 +672,7 @@ class TestCase4566(IscsiNfsSD):
         self.disk_alias = "disk_{0}".format(self.polarion_test_case)
 
     @polarion("RHEVM3-4566")
+    @attr(tier=4)
     def test_reconstruct_master(self):
         """
         Block connectivity from the host to the storage.
@@ -767,7 +767,6 @@ class TestCase4566(IscsiNfsSD):
         super(TestCase4566, self).tearDown()
 
 
-@attr(tier=2)
 class TestCase4564(IscsiNfsSD):
     """
     * Create a shared DC
@@ -786,6 +785,7 @@ class TestCase4564(IscsiNfsSD):
     # 1265672: [SCALE] Disk performance is really slow
 
     @polarion("RHEVM3-4564")
+    @attr(tier=2)
     def test_vm_disk_two_domain_types(self):
         """
         Test having two disks in two different storage domain types
@@ -829,7 +829,6 @@ class TestCase4564(IscsiNfsSD):
         assert success, "Failed to create filesystem: %s" % output
 
 
-@attr(tier=3)
 class TestCase4551(IscsiNfsSD):
     """
     * Create a shared DC with two Storage Domains - ISCSI and NFS
@@ -865,6 +864,7 @@ class TestCase4551(IscsiNfsSD):
         self.templates_to_remove.append(self.template_name)
 
     @polarion("RHEVM3-4551")
+    @attr(tier=3)
     def test_thin_provision_on_block(self):
         """
         Thin provision disk on block form template that resides on NFS
@@ -887,7 +887,6 @@ class TestCase4551(IscsiNfsSD):
         )
 
 
-@attr(tier=2)
 class TestCase4553(IscsiNfsSD):
     """
     * Create shared DC
@@ -907,6 +906,7 @@ class TestCase4553(IscsiNfsSD):
     vm_imported = "vm_imported_%s" % polarion_test_case
 
     @polarion("RHEVM3-4553")
+    @attr(tier=2)
     def test_export_import(self):
         """
         Import VM and choose disk location on different SD
