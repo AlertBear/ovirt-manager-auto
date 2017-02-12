@@ -62,9 +62,11 @@ ISCSI_DOMAIN = {
 }
 
 
-sha1 = hashlib.sha1("%f" % time.time()).hexdigest()
-TARGETDIR = '/tmp/mnt%s' % sha1
+SHA1 = hashlib.sha1("%f" % time.time()).hexdigest()
+TARGETDIR = '/tmp/mnt%s' % SHA1
 MKDIR_CMD = 'mkdir %s' % TARGETDIR
 RMDIR_CMD = 'rm -rf %s' % TARGETDIR
 MOUNT_CMD = 'mount -t nfs %s:%s %s' % (iso_address, iso_path, TARGETDIR)
 UMOUNT_CMD = 'umount %s' % TARGETDIR
+
+ISO_UPLOADER_CONF_FILE = '/etc/ovirt-engine/isouploader.conf'

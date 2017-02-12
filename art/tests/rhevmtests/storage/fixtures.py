@@ -1201,3 +1201,19 @@ def create_second_vm(request):
     assert storage_helpers.create_vm_or_clone(**vm_args), (
         "Failed to create VM %s" % self.vm_name_2
     )
+
+
+@pytest.fixture(scope='class')
+def init_host_or_engine_executor(request):
+    """
+    Initialize executor later used for commands executions in the host or
+    engine
+    """
+    self = request.node.cls
+
+    executor_type = getattr(self, 'executor_type', 'host')
+    self.executor = rhevm_helpers.get_host_executor(
+        config.VDC, config.VDC_PASSWORD
+    ) if executor_type is 'engine' else (
+        rhevm_helpers.get_host_executor(self.host_ip, config.HOSTS_PW)
+    )

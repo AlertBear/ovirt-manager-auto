@@ -1,5 +1,5 @@
 """
-Test Iso Storage Domain
+Test ISO Storage Domain
 
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/2_3_Storage_Import_ISO_Export_Domains
@@ -11,13 +11,16 @@ Check with shared and local DCs
 Check with RHEL and windows OSs
 Check with NFS, POSIXFS and local ISO domains
 """
+
+
+import shlex
 import config
-import pytest
-import helpers
 from art.unittest_lib import (
     StorageTest as TestCase,
     attr
 )
+import helpers
+import pytest
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd
 )
@@ -29,15 +32,17 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
-import rhevmtests.helpers as rhevm_helpers
 from art.unittest_lib.common import testflow
 from art.test_handler.settings import opts
 from rhevmtests.storage.fixtures import (
-    create_vm, remove_vm, remove_storage_domain
+    create_vm, remove_storage_domain, init_host_or_engine_executor
 )
+
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 
 @pytest.mark.usefixtures(
+    init_host_or_engine_executor.__name__,
     create_vm.__name__,
     remove_vm.__name__,
     remove_storage_domain.__name__
@@ -53,12 +58,13 @@ class BaseCaseIsoDomains(TestCase):
     storagedomains = []
     dc_name = config.DATA_CENTER_NAME
     spm_host = None
+    executor_type = 'engine'
 
     def clean_environment(self):
         """
-        Make sure VM is stopped and doesn't have an iso attached
+        Make sure VM is stopped and doesn't have an ISO attached
         Remove the directory in the engine where the ISO repository is mounted
-        Clean the iso domains
+        Clean the ISO domains
         """
 
         testflow.setup("Ejecting CD from VM %s", self.vm_name)
@@ -72,21 +78,30 @@ class BaseCaseIsoDomains(TestCase):
         )
 
         testflow.setup(
-            "Unmounting ISO repository from the engine"
+            "Un-mounting ISO repository from the engine"
         )
-        assert not self.host_executor.run_cmd(config.UMOUNT_CMD.split())[0], (
-            "Failed to unmount ISO repository from the engine"
+        rc, _, error = self.executor.run_cmd(
+            shlex.split(config.UMOUNT_CMD)
+        )
+        assert not rc, (
+            "Failed to unmount ISO repository from the engine with error %s"
+            % error
         )
 
         testflow.setup(
             "Removing the target dir where the ISO repository is mounted"
         )
-        assert not self.host_executor.run_cmd(config.RMDIR_CMD.split())[0], (
-            "Failed to remove directory %s in the engine" % config.TARGETDIR
+        rc, _, error = self.executor.run_cmd(
+            shlex.split(config.RMDIR_CMD)
+        )
+        assert not rc, (
+            "Failed to remove directory %s in the engine with error %s" % (
+                config.TARGETDIR, error
+            )
         )
 
         if self.storage_domain:
-            testflow.setup("Removing iso domain %s", self.storage_domain)
+            testflow.setup("Removing ISO domain %s", self.storage_domain)
             assert hl_sd.remove_storage_domain(
                 self.storage_domain, self.dc_name, self.spm_host,
                 format_disk=True
@@ -102,7 +117,7 @@ class BaseCaseIsoDomains(TestCase):
         4. Eject the ISO and try to put the domain in maintenance
         """
 
-        testflow.setup("Adding iso domain %s", iso_domain['name'])
+        testflow.setup("Adding ISO domain %s", iso_domain['name'])
         self.storage_domain = None
         self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
         assert helpers.add_storage_domain(
@@ -113,29 +128,47 @@ class BaseCaseIsoDomains(TestCase):
         testflow.setup(
             "Mounting the ISO repository in the engine"
         )
-        self.host_executor = rhevm_helpers.get_host_executor(
-            config.VDC, config.VDC_PASSWORD
+        rc, _, error = self.executor.run_cmd(
+            shlex.split(config.MKDIR_CMD)
         )
-        assert not self.host_executor.run_cmd(config.MKDIR_CMD.split())[0], (
-            "Failed to create directory %s for mount point" % config.TARGETDIR
-        )
-
-        # Mount the nfs partition with all the isos
-        assert not self.host_executor.run_cmd(config.MOUNT_CMD.split())[0], (
-            "Failed to mount ISO repository"
+        assert not rc, (
+            "Failed to create directory %s for mount point with error %s" %
+            config.TARGETDIR, error
         )
 
-        testflow.setup("Uploading iso %s to the domain", config.ISO_IMAGE)
-        # This will upload one iso to the new created iso domain
-        find_cmd = 'find %s | grep %s' % (config.TARGETDIR, config.ISO_IMAGE)
-        path = self.host_executor.run_cmd(find_cmd.split())[1]
-        assert path, "Error finding iso path for %s" % config.TARGETDIR
+        # Mount the nfs partition with all the ISOs
+        rc, _, error = self.executor.run_cmd(
+            shlex.split(config.MOUNT_CMD)
+        )
+        assert not rc, (
+            "Failed to mount ISO repository with error %s" % error
+        )
 
-        upload_cmd = "engine-iso-uploader -f upload -i %s %s" % (
-            self.storage_domain, path
+        testflow.setup("Uploading ISO %s to the domain", config.ISO_IMAGE)
+        # This will upload one ISO to the new created ISO domain
+        find_cmd = 'find %s |grep %s' % (config.TARGETDIR, config.ISO_IMAGE)
+        rc, iso_file, error = self.executor.run_cmd(
+            shlex.split(find_cmd)
+        )
+        assert not rc, (
+            "Failed to find ISO file with error %s" % error
+        )
+        upload_cmd = (
+            "engine-iso-uploader --conf-file=%s -f upload -i %s %s --insecure"
+            % (
+                config.ISO_UPLOADER_CONF_FILE,
+                self.storage_domain, iso_file[:-1]
+            )
         )
         testflow.setup("Executing %s", upload_cmd)
-        assert not self.host_executor.run_cmd(upload_cmd.split())[0]
+        rc, _, error = self.executor.run_cmd(
+            shlex.split(upload_cmd)
+        )
+        assert not rc, (
+            "Failed to upload ISO %s to ISO domain %s with error %s" % (
+                config.ISO_IMAGE, self.storage_domain, error
+            )
+        )
 
         if run_once:
             assert ll_vms.runVmOnce(
@@ -155,7 +188,7 @@ class BaseCaseIsoDomains(TestCase):
             False, self.dc_name, self.storage_domain
         )
         assert status, (
-            "ISO domain %s was deactivated while one of the isos "
+            "ISO domain %s was deactivated while one of the ISOs "
             "is attached to VM %s" % (iso_domain['name'], self.vm_name)
         )
 
@@ -169,14 +202,14 @@ class BaseCaseIsoDomains(TestCase):
         assert ll_sd.deactivateStorageDomain(
             True, self.dc_name, self.storage_domain
         ), (
-            "ISO domain %s wasn't deactivated after ejecting one of the isos"
+            "ISO domain %s wasn't deactivated after ejecting one of the ISOs"
             "from the VM %s" % (self.storage_domain, self.vm_name)
         )
 
 
 class TestCase11576Shared(BaseCaseIsoDomains):
     """
-    Test detaching iso domains when an iso image is inserted in a VM under a
+    Test detaching ISO domains when an ISO image is inserted in a VM under a
     shared DC
     """
     # Please note that the following bug may cause this case to fail
@@ -199,24 +232,24 @@ class TestCase11576Shared(BaseCaseIsoDomains):
     @polarion("RHEVM3-11576")
     def test_detaching_iso_vm_and_vm_runonce(self):
         """
-        Try detaching a posixfs/nfs iso domain from VM while iso is attached
+        Try detaching a posixfs/nfs ISO domain from VM while ISO is attached
         """
         testflow.setup(
-            "Testing detaching posixfs iso domain while iso image is "
+            "Testing detaching posixfs ISO domain while ISO image is "
             "attached to VM"
         )
         self.attach_iso_and_maintenance(iso_domain=config.ISO_POSIX_DOMAIN)
         self.clean_environment()
 
         testflow.setup(
-            "Testing detaching nfs iso domain while iso image is "
+            "Testing detaching nfs ISO domain while ISO image is "
             "attached to VM"
         )
         self.attach_iso_and_maintenance(iso_domain=config.ISO_NFS_DOMAIN)
         self.clean_environment()
 
         testflow.setup(
-            "Testing detaching posixfs iso domain while iso image is "
+            "Testing detaching posixfs ISO domain while ISO image is "
             "attached to VM and run it once"
         )
         self.attach_iso_and_maintenance(
@@ -224,7 +257,7 @@ class TestCase11576Shared(BaseCaseIsoDomains):
         self.clean_environment()
 
         testflow.setup(
-            "Testing detaching nfs iso domain while iso image is "
+            "Testing detaching nfs ISO domain while ISO image is "
             "attached to VM and run it once"
         )
         self.attach_iso_and_maintenance(
@@ -234,7 +267,7 @@ class TestCase11576Shared(BaseCaseIsoDomains):
 
 class PlanIsoDomainLocal(BaseCaseIsoDomains):
     """
-    Test detaching iso domains when an iso image is inserted in a VM under a
+    Test detaching ISO domains when an ISO image is inserted in a VM under a
     local DC
     """
     # Local data center tests are not supported by the golden environment
@@ -246,7 +279,7 @@ class PlanIsoDomainLocal(BaseCaseIsoDomains):
     @polarion("RHEVM3-11859")
     def test_detaching_local_iso_vm(self):
         """
-        Try detaching a local iso domain from vm while iso is attached
+        Try detaching a local ISO domain from vm while ISO is attached
         """
         self.attach_iso_and_maintenance(iso_domain=config.ISO_LOCAL_DOMAIN)
 
@@ -254,7 +287,7 @@ class PlanIsoDomainLocal(BaseCaseIsoDomains):
     @polarion("RHEVM3-11860")
     def test_detaching_local_iso_vm_runonce(self):
         """
-        Try detaching a local iso domain from vm after attaching it with
+        Try detaching a local ISO domain from vm after attaching it with
         run once
         """
         self.attach_iso_and_maintenance(
