@@ -145,7 +145,6 @@ class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
             )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     remove_host.__name__
 )
@@ -157,6 +156,7 @@ class TestCase6220(BasicEnvironment):
     polarion_test_case = '6220'
 
     @polarion("RHEVM3-6220")
+    @attr(tier=2)
     def test_default_spm_priority(self):
         """
         * Remove host from the environment
@@ -183,7 +183,6 @@ class TestCase6220(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 class TestCase6212(BasicEnvironment):
     """
     RHEVM3-6212 - Legal values range validation
@@ -193,6 +192,7 @@ class TestCase6212(BasicEnvironment):
     __test__ = True
 
     @polarion("RHEVM3-6212")
+    @attr(tier=2)
     def test_legal_value_range_validation(self):
         """
         * Change and validate SPM priority to '-1, 10'
@@ -206,6 +206,7 @@ class TestCase6212(BasicEnvironment):
         )
 
     @polarion("RHEVM3-6213")
+    @attr(tier=2)
     def test_illegal_value_range_validation(self):
         """
         * Change and validate SPM priority to '-2, 11'
@@ -238,6 +239,7 @@ class TestCase6212(BasicEnvironment):
         )
 
     @polarion("RHEVM3-6209")
+    @attr(tier=2)
     def test_illegal_spm_priority_value(self):
         """
         * Change and validate SPM priority to '#'
@@ -252,7 +254,6 @@ class TestCase6212(BasicEnvironment):
         ), "Set SPM priority to illegal value succeded"
 
 
-@attr(tier=2)
 class TestCase6217(SPMHostsMinusOnePriorityFlow):
     """
     RHEVM3-6217 - All hosts with '-1' priority
@@ -261,6 +262,7 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
     polarion_test_case = '6217'
 
     @polarion("RHEVM3-6217")
+    @attr(tier=2)
     def test_all_hosts_with_minus_one_spm_priority(self):
         """
         * Set all host's SPM priority to '-1'
@@ -272,7 +274,6 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
         self.basic_flow(priorities=min_priorities)
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     deactivate_hsm_hosts.__name__
 )
@@ -285,6 +286,7 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
     polarion_test_case = '6205'
 
     @polarion("RHEVM3-6205")
+    @attr(tier=2)
     def test_all_hosts_with_minus_one_spm_priority(self):
         """
         * Switch all host except the SPM host to maintenance
@@ -312,7 +314,6 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
             )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     initialize_hosts_params.__name__
 )
@@ -337,6 +338,7 @@ class TestCase6206(BasicEnvironment):
         )
 
     @polarion("RHEVM3-6206")
+    @attr(tier=2)
     def test_two_hosts_swap_priorities(self):
         """
         * Set all hosts to maintenance
@@ -362,7 +364,6 @@ class TestCase6206(BasicEnvironment):
         self.basic_flow()
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     set_different_host_priorities.__name__
 )
@@ -399,6 +400,7 @@ class TestCase6224(BasicEnvironment):
         self.activate_and_verify_hosts(hosts=[host_name])
 
     @polarion("RHEVM3-6224")
+    @attr(tier=2)
     def test_restart_stop_vdsm(self):
         """
         * Set HSM hosts with '-1' SPM priority, and the SPM host with '2'
@@ -427,7 +429,6 @@ class TestCase6224(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     activate_old_master_domain.__name__
 )
@@ -439,6 +440,7 @@ class TestCase6222(BasicEnvironment):
     polarion_test_case = '6222'
 
     @polarion("RHEVM3-6222")
+    @attr(tier=2)
     def test_migrate_master_storage_domain(self):
         """
         * Switch Master domain to maintenance
@@ -461,7 +463,6 @@ class TestCase6222(BasicEnvironment):
         )
 
 
-@attr(tier=2)
 class TestCase6221(BasicEnvironment):
     """
     RHEVM3-6221 - Change the SPM priority value in the DB (negative test)
@@ -470,6 +471,7 @@ class TestCase6221(BasicEnvironment):
     polarion_test_case = '6221'
 
     @polarion("RHEVM3-6221")
+    @attr(tier=2)
     def test_db_illegal_spm_priority_value(self):
         """
         * Set illegal SPM priority on the DB (-2, 11)
@@ -500,7 +502,6 @@ class TestCase6221(BasicEnvironment):
         )
 
 
-@attr(tier=4)
 class TestCase6215(BasicEnvironment):
     """
     RHEVM3-6215 - Host with higher SPM Priority not responding
@@ -532,6 +533,7 @@ class TestCase6215(BasicEnvironment):
         )
 
     @polarion("RHEVM3-6215")
+    @attr(tier=4)
     def test_highest_spm_priority_host_non_responsive(self):
         """
         * Set different SPM priority to each host
@@ -593,7 +595,6 @@ class TestCase6215(BasicEnvironment):
         super(TestCase6215, self).tearDown()
 
 
-@attr(tier=4)
 class TestCase6219(BasicEnvironment):
     """
     RHEVM3-6219 - Storage disconnection and SPM re-election
@@ -635,6 +636,7 @@ class TestCase6219(BasicEnvironment):
         self.non_master_storage_domain_ip = non_master_domain['address']
 
     @polarion("RHEVM3-6219")
+    @attr(tier=4)
     def test_storage_disconnection_and_spm_reelection(self):
         """
         * Set HSM hosts SPM priorities to '-1' and SPM host
