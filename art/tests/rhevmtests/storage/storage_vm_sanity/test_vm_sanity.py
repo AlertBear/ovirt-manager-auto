@@ -127,7 +127,6 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     create_vm.__name__,
     clean_leftover_data.__name__,
 )
-@attr(tier=2)
 class TestCase11834(TestCase):
     """
     storage vm sanity test, creates and removes snapshots
@@ -210,6 +209,7 @@ class TestCase11834(TestCase):
         self._verify_data_on_vm(expected_data)
 
     @polarion("RHEVM3-11834")
+    @attr(tier=2)
     def test_delete_snapshots_advanced(self):
         """
         Deleting snapshots
@@ -266,7 +266,6 @@ class TestCase11834(TestCase):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=2)
 class TestCase11586(TestCase):
     """
     storage vm sanity test, creates 2 snapshots and removes them.
@@ -301,6 +300,7 @@ class TestCase11586(TestCase):
             ), "Removing snapshot %s failed!" % snapshot
 
     @polarion("RHEVM3-11586")
+    @attr(tier=2)
     @bz({'1185782': {}})
     def test_delete_snapshot(self):
         """
@@ -346,7 +346,6 @@ class TestCase11586(TestCase):
 @pytest.mark.usefixtures(
     remove_vms.__name__,
 )
-@attr(tier=3)
 class TestCase11830(TestCase):
     """
     Create 2 VMs from template at once.
@@ -357,6 +356,7 @@ class TestCase11830(TestCase):
     polarion_test_case = '11830'
 
     @polarion("RHEVM3-11830")
+    @attr(tier=3)
     def test_create_vm_from_template_basic_flow(self):
         """
         Start creating a VM from template
@@ -407,7 +407,6 @@ class TestCase11830(TestCase):
     prepare_data.__name__,
     remove_vms.__name__,
 )
-@attr(tier=2)
 class TestCase4710(TestCase):
     """
     storage vm sanity test, cloning vm from template with changing disk type
@@ -419,6 +418,7 @@ class TestCase4710(TestCase):
     template_names = {}
 
     @polarion("RHEVM3-4710")
+    @attr(tier=2)
     def create_vm_from_template_validate_disks(
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
@@ -458,6 +458,7 @@ class TestCase4710(TestCase):
         )
 
     @polarion("RHEVM3-4710")
+    @attr(tier=2)
     def test_disk_conv_from_sparse_cow_test(self):
         """ creates vms from template with sparse cow disk
         """
@@ -466,6 +467,7 @@ class TestCase4710(TestCase):
         )
 
     @polarion("RHEVM3-4710")
+    @attr(tier=2)
     def test_disk_conv_from_sparse_raw_test(self):
         """ creates vms from template with sparse raw disk
         """
@@ -475,6 +477,7 @@ class TestCase4710(TestCase):
             )
 
     @polarion("RHEVM3-4710")
+    @attr(tier=2)
     def test_disk_conv_from_preallocated_raw_test(self):
         """ creates vms from templates with preallocated raw disk
         """
