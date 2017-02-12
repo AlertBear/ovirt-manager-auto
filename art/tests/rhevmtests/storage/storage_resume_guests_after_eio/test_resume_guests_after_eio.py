@@ -245,7 +245,6 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         super(TestNoSpaceLeftOnDevice, self).tearDown()
 
 
-@attr(tier=4)
 class TestCase5012(TestCaseBlockedConnection):
     # TODO: Why is this not running glusterfs?
     __test__ = (NFS in opts['storages'])
@@ -253,6 +252,7 @@ class TestCase5012(TestCaseBlockedConnection):
     polarion_test_case = '5012'
 
     @polarion("RHEVM3-5012")
+    @attr(tier=4)
     def test_nfs_blocked_connection(self):
         """
         Checks if VM is paused after connection to sd is lost,
@@ -261,7 +261,6 @@ class TestCase5012(TestCaseBlockedConnection):
         self.run_flow()
 
 
-@attr(tier=2)
 class TestCase5013(TestNoSpaceLeftOnDevice):
     # TODO: Why is this not running glusterfs?
     # TODO: this cases is disable due to ticket RHEVM-2524
@@ -272,6 +271,7 @@ class TestCase5013(TestNoSpaceLeftOnDevice):
     left_space = 10 * config.GB
 
     @polarion("RHEVM3-5013")
+    @attr(tier=2)
     @bz({'1024353': {'engine': ['rest', 'sdk']}})
     def test_nfs_no_space_left_on_device(self):
         """
@@ -281,13 +281,13 @@ class TestCase5013(TestNoSpaceLeftOnDevice):
         self.run_flow()
 
 
-@attr(tier=4)
 class TestCase5014(TestCaseBlockedConnection):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     polarion_test_case = '5014'
 
     @polarion("RHEVM3-5014")
+    @attr(tier=4)
     def test_iscsi_blocked_connection(self):
         """
         Checks if VM is paused after connection to sd is lost,
@@ -296,7 +296,6 @@ class TestCase5014(TestCaseBlockedConnection):
         self.run_flow()
 
 
-@attr(tier=2)
 class TestCase5015(TestNoSpaceLeftOnDevice):
     # TODO: this cases is disable due to ticket RHEVM-2524
     # __test__ = (ISCSI in opts['storages'])
@@ -330,6 +329,7 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
         time.sleep(5)
 
     @polarion("RHEVM3-5015")
+    @attr(tier=2)
     def test_iscsi_no_space_left_on_device(self):
         """
         Checks if VM is paused after no-space-left error on sd,
@@ -357,13 +357,13 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
         super(TestCase5015, self).tearDown()
 
 
-@attr(tier=4)
 class TestCase5016(TestCaseBlockedConnection):
     __test__ = ('fcp' in opts['storages'])
     storages = set(['fcp'])
     polarion_test_case = '5016'
 
     @polarion("RHEVM3-5016")
+    @attr(tier=4)
     def test_fc_blocked_connection(self):
         """
         Checks if VM is paused after connection to sd is lost,
@@ -372,7 +372,6 @@ class TestCase5016(TestCaseBlockedConnection):
         self.run_flow()
 
 
-@attr(tier=2)
 class TestCase5017(TestNoSpaceLeftOnDevice):
     # TODO: this cases is disable due to ticket RHEVM-2524
     # __test__ = ('fcp' in opts['storages'])
@@ -381,6 +380,7 @@ class TestCase5017(TestNoSpaceLeftOnDevice):
     polarion_test_case = '5017'
 
     @polarion("RHEVM3-5017")
+    @attr(tier=2)
     def test_fc_no_space_left_on_device(self):
         """
         Checks if VM is paused after no-space-left error on sd,
