@@ -216,7 +216,6 @@ class BasicResize(BaseTestCase):
     attach_and_activate_disks.__name__,
     create_snapshot.__name__,
 )
-@attr(tier=3)
 class TestCase5061(BaseTestCase):
     """
     Resize virtual disk after snapshot creation
@@ -227,6 +226,7 @@ class TestCase5061(BaseTestCase):
     new_size = (config.DISK_SIZE + config.GB)
 
     @polarion("RHEVM3-5061")
+    @attr(tier=3)
     def test_virtual_disk_resize_after_snapshot_creation(self):
         """
         - VM with disk and OS
@@ -262,7 +262,6 @@ class TestCase5061(BaseTestCase):
     attach_and_activate_disks.__name__,
     create_snapshot.__name__,
 )
-@attr(tier=3)
 class TestCase5060(BaseTestCase):
     """
     Commit snapshot after resizing the disk
@@ -272,10 +271,9 @@ class TestCase5060(BaseTestCase):
     __test__ = True
     is_preview = False
     new_size = config.DISK_SIZE + config.GB
-    # Bugzilla history:
-    # 1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5060")
+    @attr(tier=3)
     def test_Commit_snapshot_after_disk_resize(self):
         """
         - VM with disk and OS
@@ -344,7 +342,6 @@ class TestCase5060(BaseTestCase):
     attach_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=1)
 class TestCase5062(BasicResize):
     """
     Virtual disk resize - preallocated  block disk
@@ -359,6 +356,7 @@ class TestCase5062(BasicResize):
     }
 
     @polarion("RHEVM3-5062")
+    @attr(tier=1)
     def test_preallocated_block_resize(self):
         """
         - VM with preallocated disk and OS
@@ -376,7 +374,6 @@ class TestCase5062(BasicResize):
     attach_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=1)
 class TestCase5063(BasicResize):
     """
     Virtual disk resize - Thin block disk
@@ -391,6 +388,7 @@ class TestCase5063(BasicResize):
     }
 
     @polarion("RHEVM3-5063")
+    @attr(tier=1)
     def test_thin_block_resize(self):
         """
         - VM with thin disk and OS
@@ -408,7 +406,6 @@ class TestCase5063(BasicResize):
     attach_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=1)
 class TestCase5065(BasicResize):
     """
     Virtual disk resize - Thin file disk
@@ -426,6 +423,7 @@ class TestCase5065(BasicResize):
     }
 
     @polarion("RHEVM3-5065")
+    @attr(tier=1)
     def test_thin_file_resize(self):
         """
         - VM with preallocated disk and OS
@@ -443,7 +441,6 @@ class TestCase5065(BasicResize):
     attach_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=4)
 class TestCase5066(BasicResize):
     """
     block connectivity from host to storage domain - preallocated disk
@@ -458,6 +455,7 @@ class TestCase5066(BasicResize):
     }
 
     @polarion("RHEVM3-5066")
+    @attr(tier=4)
     def test_block_connection_preallocated_resize(self):
         """
         - VM with preallocated disk and OS
@@ -476,7 +474,6 @@ class TestCase5066(BasicResize):
     attach_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=4)
 class TestCase5067(BasicResize):
     """
     block connectivity from host to storage domain - sparse disk
@@ -491,6 +488,7 @@ class TestCase5067(BasicResize):
     }
 
     @polarion("RHEVM3-5067")
+    @attr(tier=4)
     def test_block_connection_sparse_resize(self):
         """
         - VM with thin disk and OS
@@ -511,7 +509,6 @@ class TestCase5067(BasicResize):
     add_vm_with_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=2)
 class TestCase5069(BasicResize):
     """
     Resize shared disk
@@ -531,6 +528,7 @@ class TestCase5069(BasicResize):
     }
 
     @polarion("RHEVM3-5069")
+    @attr(tier=2)
     def test_shared_block_disk_resize(self):
         """
         - 2 VM with RAW disk and OS
@@ -562,7 +560,6 @@ class TestCase5069(BasicResize):
     wait_for_disks_status_ok.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=2)
 class TestCase5070(BasicResize):
     """
     Extend disk to more than available capacity
@@ -578,6 +575,7 @@ class TestCase5070(BasicResize):
     }
 
     @polarion("RHEVM3-5070")
+    @attr(tier=2)
     def test_thin_block_resize(self):
         """
         - VM with thin disk and OS
@@ -602,7 +600,6 @@ class TestCase5070(BasicResize):
     attach_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=4)
 class TestCase5071(BasicResize):
     """
     Stop libvirt service during disk extension
@@ -618,6 +615,7 @@ class TestCase5071(BasicResize):
     }
 
     @polarion("RHEVM3-5071")
+    @attr(tier=4)
     def test_stop_libvirt_during_resize(self):
         """
         - VM with thin disk and OS
@@ -685,7 +683,6 @@ class TestCase5071(BasicResize):
     initialize_storage_domains.__name__,
     create_multiple_vms.__name__,
 )
-@attr(tier=2)
 class TestCase5073(BasicResize):
     """
     Increase and decrease multiple disks
@@ -699,6 +696,7 @@ class TestCase5073(BasicResize):
     new_size = 20 * config.GB
 
     @polarion("RHEVM3-5073")
+    @attr(tier=2)
     def test_multiple_disks_resize_same_SD(self):
         """
         - 5 vms with OS, disks on same SD
@@ -714,7 +712,6 @@ class TestCase5073(BasicResize):
     initialize_storage_domains.__name__,
     create_multiple_vms.__name__,
 )
-@attr(tier=2)
 class TestCase11862(BasicResize):
     """
     Increase and decrease multiple disks
@@ -728,6 +725,7 @@ class TestCase11862(BasicResize):
     new_size = 20 * config.GB
 
     @polarion("RHEVM3-11862")
+    @attr(tier=2)
     def test_multiple_disks_resize_different_SD(self):
         """
         - 5 vms with OS, disks on different SD
