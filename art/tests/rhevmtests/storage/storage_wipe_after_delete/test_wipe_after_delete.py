@@ -110,7 +110,6 @@ class CommonUsage(BaseTestCase):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=2)
 class TestCase5116(CommonUsage):
     """
     wipe after delete on hotplugged disks
@@ -122,6 +121,7 @@ class TestCase5116(CommonUsage):
     polarion_test_case = '5116'
 
     @polarion("RHEVM3-5116")
+    @attr(tier=2)
     def test_behavior_on_hotplugged_disks(self):
         """
         Actions:
@@ -156,7 +156,6 @@ class TestCase5116(CommonUsage):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=2)
 class TestCase10443(CommonUsage):
     """
     wipe after delete on attached disk
@@ -168,6 +167,7 @@ class TestCase10443(CommonUsage):
     polarion_test_case = '10443'
 
     @polarion("RHEVM3-10443")
+    @attr(tier=2)
     def test_wipe_after_delete_on_attached_disk(self):
         """
         Actions:
@@ -185,7 +185,6 @@ class TestCase10443(CommonUsage):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=2)
 class TestCase5113(CommonUsage):
     """
     Checking functionality - checked box
@@ -197,6 +196,7 @@ class TestCase5113(CommonUsage):
     polarion_test_case = '5113'
 
     @polarion("RHEVM3-5113")
+    @attr(tier=2)
     def test_live_edit_wipe_after_delete(self):
         """
         Actions:
@@ -210,7 +210,6 @@ class TestCase5113(CommonUsage):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=2)
 class TestCase5115(CommonUsage):
     """
     Checking functionality - unchecked box negative case
@@ -222,6 +221,7 @@ class TestCase5115(CommonUsage):
     polarion_test_case = '5115'
 
     @polarion("RHEVM3-5115")
+    @attr(tier=2)
     def test_uncheck_wipe_after_delete(self):
         """
         Actions:
@@ -236,7 +236,6 @@ class TestCase5115(CommonUsage):
     create_vm.__name__,
     add_disk_start_vm.__name__
 )
-@attr(tier=3)
 class TestCase11864(CommonUsage):
     """
     Wipe after delete with LSM
@@ -249,6 +248,7 @@ class TestCase11864(CommonUsage):
     disk_name = "disk_%s" % polarion_test_case
 
     @polarion("RHEVM3-11864")
+    @attr(tier=3)
     def test_live_migration_wipe_after_delete(self):
         """
         Actions:
@@ -285,7 +285,6 @@ class TestCase11864(CommonUsage):
     create_vm.__name__,
     update_storage_domain_wipe_after_delete.__name__,
 )
-@attr(tier=2)
 class TestCase10432(CommonUsage):
     """
     Remove disk from configured domain with wipe after delete
@@ -297,6 +296,7 @@ class TestCase10432(CommonUsage):
     polarion_test_case = '10432'
 
     @polarion("RHEVM3-10432")
+    @attr(tier=2)
     def test_domain_configured_with_wipe_after_delete(self):
         """
         Actions:
