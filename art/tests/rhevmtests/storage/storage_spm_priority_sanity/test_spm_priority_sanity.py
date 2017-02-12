@@ -36,7 +36,6 @@ RETRY_INTERVAL = 10
     wait_for_spm.__name__,
     set_spm_priorities.__name__
 )
-@bz({'1421162': {}})
 class BasicEnvironment(BaseTestCase):
     """
     Base class that ensures SPM is elected and SPM priorities
