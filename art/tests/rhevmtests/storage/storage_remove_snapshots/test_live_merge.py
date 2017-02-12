@@ -22,7 +22,6 @@ class LiveMergeBaseClass(basePlan.BasicEnvironment):
     live_merge = True
 
 
-@attr(tier=1)
 class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     """
     Basic live delete and merge of snapshots
@@ -34,7 +33,6 @@ class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     test_case = '6038'
 
 
-@attr(tier=2)
 class TestCase6052(LiveMergeBaseClass, basePlan.TestCase6052):
     """
     Basic live delete and merge of snapshots with continuous I/O
@@ -46,7 +44,6 @@ class TestCase6052(LiveMergeBaseClass, basePlan.TestCase6052):
     test_case = '6052'
 
 
-@attr(tier=2)
 class TestCase16287(LiveMergeBaseClass, basePlan.TestCase16287):
     """
     Basic live delete and merge of a single snapshot's disk
@@ -58,7 +55,6 @@ class TestCase16287(LiveMergeBaseClass, basePlan.TestCase16287):
     test_case = '16287'
 
 
-@attr(tier=3)
 class TestCase12215(LiveMergeBaseClass, basePlan.TestCase12215):
     """
     Deleting all snapshots
@@ -70,7 +66,6 @@ class TestCase12215(LiveMergeBaseClass, basePlan.TestCase12215):
     test_case = '12215'
 
 
-@attr(tier=3)
 class TestCase6044(LiveMergeBaseClass, basePlan.TestCase6044):
     """
     Live delete and merge after deleting the base snapshot
@@ -82,7 +77,6 @@ class TestCase6044(LiveMergeBaseClass, basePlan.TestCase6044):
     test_case = '6044'
 
 
-@attr(tier=4)
 class TestCase6045(LiveMergeBaseClass, basePlan.TestCase6045):
     """
     Live snapshot delete and merge with restart of vdsm
@@ -94,7 +88,6 @@ class TestCase6045(LiveMergeBaseClass, basePlan.TestCase6045):
     test_case = '6045'
 
 
-@attr(tier=3)
 class TestCase6043(LiveMergeBaseClass, basePlan.TestCase6043):
     """
     Live delete and merge after deleting the last created snapshot
@@ -106,7 +99,6 @@ class TestCase6043(LiveMergeBaseClass, basePlan.TestCase6043):
     test_case = '6043'
 
 
-@attr(tier=4)
 class TestCase6046(LiveMergeBaseClass, basePlan.TestCase6046):
     """
     Live delete and merge of snapshot while stopping the engine
@@ -118,7 +110,6 @@ class TestCase6046(LiveMergeBaseClass, basePlan.TestCase6046):
     test_case = '6046'
 
 
-@attr(tier=3)
 class TestCase6048(LiveMergeBaseClass, basePlan.TestCase6048):
     """
     Consecutive delete and merge of snapshots
@@ -130,7 +121,6 @@ class TestCase6048(LiveMergeBaseClass, basePlan.TestCase6048):
     test_case = '6048'
 
 
-@attr(tier=3)
 class TestCase6050(LiveMergeBaseClass, basePlan.TestCase6050):
     """
     Delete a 2nd live snapshot during a delete and merge of another
@@ -143,7 +133,6 @@ class TestCase6050(LiveMergeBaseClass, basePlan.TestCase6050):
     test_case = '6050'
 
 
-@attr(tier=2)
 class TestCase6057(LiveMergeBaseClass, basePlan.TestCase6057):
     """
     Live delete and merge of snapshot after disk Migration
@@ -155,7 +144,6 @@ class TestCase6057(LiveMergeBaseClass, basePlan.TestCase6057):
     test_case = '6057'
 
 
-@attr(tier=2)
 class TestCase6058(LiveMergeBaseClass, basePlan.TestCase6058):
     """
     Live delete and merge of snapshot while crashing the VM
@@ -167,7 +155,6 @@ class TestCase6058(LiveMergeBaseClass, basePlan.TestCase6058):
     test_case = '6058'
 
 
-@attr(tier=3)
 class TestCase6062(LiveMergeBaseClass, basePlan.TestCase6062):
     """
     Live delete and merge of snapshot during Live Storage Migration
@@ -179,7 +166,6 @@ class TestCase6062(LiveMergeBaseClass, basePlan.TestCase6062):
     test_case = '6062'
 
 
-@attr(tier=2)
 class TestCase12216(LiveMergeBaseClass, basePlan.TestCase12216):
     """
     Basic live merge after disk with snapshot is extended
