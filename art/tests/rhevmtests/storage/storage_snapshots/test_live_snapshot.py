@@ -24,7 +24,6 @@ class SnapshotBaseClass(BasePlan.BasicEnvironmentSetUp):
     live_snapshot = True
 
 
-@attr(tier=2)
 class TestCase11660(BasePlan.TestCase18863, SnapshotBaseClass):
     """
     Full flow - Live Snapshot
@@ -43,7 +42,6 @@ class TestCase11660(BasePlan.TestCase18863, SnapshotBaseClass):
     polarion_test_case = '11660'
 
 
-@attr(tier=2)
 class TestCase11679(BasePlan.TestCase11679, SnapshotBaseClass):
     """
     Add a disk to the VMs
@@ -60,7 +58,6 @@ class TestCase11679(BasePlan.TestCase11679, SnapshotBaseClass):
     polarion_test_case = '11679'
 
 
-@attr(tier=3)
 class TestCase11676(BasePlan.TestCase11676, SnapshotBaseClass):
     """
     Try to create a snapshot with max chars length
@@ -75,7 +72,6 @@ class TestCase11676(BasePlan.TestCase11676, SnapshotBaseClass):
     polarion_test_case = '11676'
 
 
-@attr(tier=3)
 class TestCase11665(BasePlan.TestCase11665):
     """
     Create 2 additional disks on a VM, each on a different storage domain
@@ -89,7 +85,6 @@ class TestCase11665(BasePlan.TestCase11665):
     polarion_test_case = '11665'
 
 
-@attr(tier=3)
 class TestCase11680(BasePlan.TestCase11680):
     """
     Migrate a VM without waiting
@@ -104,7 +99,6 @@ class TestCase11680(BasePlan.TestCase11680):
     polarion_test_case = '11680'
 
 
-@attr(tier=2)
 class TestCase11674(BasePlan.TestCase11674):
     """
     Add a second disk to a VM
@@ -121,7 +115,6 @@ class TestCase11674(BasePlan.TestCase11674):
     polarion_test_case = '11674'
 
 
-@attr(tier=3)
 class TestCase11684(BasePlan.TestCase11684):
     """
     Create a template

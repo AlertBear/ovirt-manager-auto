@@ -83,7 +83,6 @@ class BasicEnvironmentSetUp(TestCase):
         return True
 
 
-@attr(tier=2)
 class TestCase18863(BasicEnvironmentSetUp):
     """
     Full flow snapshot operation:
@@ -159,6 +158,7 @@ class TestCase18863(BasicEnvironmentSetUp):
         )
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=2)
     def test_live_snapshot(self):
         """
         Create a snapshot while VM is running
@@ -174,7 +174,6 @@ class TestCase18863(BasicEnvironmentSetUp):
     create_fs_on_disk.__name__,
     poweroff_vm.__name__,
 )
-@attr(tier=2)
 class TestCase11679(BasicEnvironmentSetUp):
     """
     Add a disk to the VMs
@@ -256,6 +255,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         self.check_file_existence_operation(False)
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=2)
     def test_snapshot_operation(self):
         """
         Create a snapshot while VM is running
@@ -266,7 +266,6 @@ class TestCase11679(BasicEnvironmentSetUp):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=3)
 class TestCase11676(TestCase):
     """
     Try to create a snapshot with max chars length
@@ -282,6 +281,7 @@ class TestCase11676(TestCase):
     polarion_test_case = '11676'
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_snapshot_description_length_positive(self):
         """
         Try to create a snapshot with max chars length
@@ -300,6 +300,7 @@ class TestCase11676(TestCase):
         )
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_special_characters(self):
         """
         Try to create snapshots containing special characters
@@ -324,7 +325,6 @@ class TestCase11676(TestCase):
     initialize_storage_domains.__name__,
     add_disks_different_sd.__name__,
 )
-@attr(tier=3)
 class TestCase11665(TestCase):
     """
     Create 2 additional disks on a VM, each on a different storage domain
@@ -340,6 +340,7 @@ class TestCase11665(TestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_CREATE_SNAPSHOT])
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_snapshot_on_multiple_domains(self):
         """
         Tests whether snapshot can be created on VM that has disks on multiple
@@ -361,7 +362,6 @@ class TestCase11665(TestCase):
 @pytest.mark.usefixtures(
     create_vm.__name__,
 )
-@attr(tier=3)
 class TestCase11680(TestCase):
     """
     Migrate a VM without waiting
@@ -377,6 +377,7 @@ class TestCase11680(TestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MIGRATE_VM])
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_migration(self):
         """
         Tests live snapshot during migration
@@ -398,7 +399,6 @@ class TestCase11680(TestCase):
     initialize_storage_domains.__name__,
     add_disks_different_sd.__name__,
 )
-@attr(tier=2)
 class TestCase11674(TestCase):
     """
     Add a second disk to a VM
@@ -416,6 +416,7 @@ class TestCase11674(TestCase):
     polarion_test_case = '11674'
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=2)
     def test_snapshot_with_multiple_disks(self):
         """
         Checks that created snapshot appears only once although VM has more
@@ -445,7 +446,6 @@ class TestCase11674(TestCase):
     add_two_vms_from_template.__name__,
     remove_vms.__name__,
 )
-@attr(tier=3)
 class TestCase11684(TestCase):
     """
     Create a template
@@ -463,6 +463,7 @@ class TestCase11684(TestCase):
     polarion_test_case = '11684'
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_snapshot_on_thin_vm(self):
         """
         Try to make a live snapshot from thinly provisioned VM
@@ -473,6 +474,7 @@ class TestCase11684(TestCase):
         )
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
     def test_snapshot_on_cloned_vm(self):
         """
         Try to make a live snapshot from cloned VM

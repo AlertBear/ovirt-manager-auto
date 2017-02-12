@@ -31,7 +31,6 @@ from fixtures import (
 logger = logging.getLogger(__name__)
 
 
-@bz({'1412646': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     create_snapshot.__name__,
@@ -89,7 +88,6 @@ class CreateSnapshotWithMemoryState(TestCase):
     create_snapshot.__name__,
     start_vm.__name__,
 )
-@attr(tier=2)
 class TestCase5129(CreateSnapshotWithMemoryState):
     """
     Polarion Test Case 5129 - Create Snapshot with Memory State on SPM
@@ -98,6 +96,7 @@ class TestCase5129(CreateSnapshotWithMemoryState):
     vm_run_on_spm = True
 
     @polarion("RHEVM3-5129")
+    @attr(tier=2)
     def test_create_snapshot_spm(self):
         """
         Create ram snapshot on spm
@@ -110,7 +109,6 @@ class TestCase5129(CreateSnapshotWithMemoryState):
     create_snapshot.__name__,
     start_vm.__name__,
 )
-@attr(tier=2)
 class TestCase5140(CreateSnapshotWithMemoryState):
     """
     Polarion Test Case 5140 - Create Snapshot with Memory State on HSM
@@ -119,6 +117,7 @@ class TestCase5140(CreateSnapshotWithMemoryState):
     vm_run_on_spm = False
 
     @polarion("RHEVM3-5140")
+    @attr(tier=2)
     def test_create_snapshot_hsm(self):
         """
         Create ram snapshot on hsm
@@ -190,7 +189,6 @@ class TestCase5139(ReturnToSnapshot):
         self.return_to_ram_snapshot()
 
 
-@attr(tier=1)
 class TestCase5138(ReturnToSnapshot):
     """
     Polarion Test Case 5138 - Restore RAM Snapshot
@@ -199,6 +197,7 @@ class TestCase5138(ReturnToSnapshot):
     action_to_call = staticmethod(ll_vms.restore_snapshot)
 
     @polarion("RHEVM3-5138")
+    @attr(tier=1)
     def test_restore_snasphot(self):
         """
         restore snapshot
@@ -211,7 +210,6 @@ class TestCase5138(ReturnToSnapshot):
     create_snapshot.__name__,
     create_memory_snapsot_running_process.__name__,
 )
-@attr(tier=2)
 class TestCase5137(VMWithMemoryStateSnapshot):
     """
     Polarion Test Case 5137 - VM with multiple RAM Snapshots
@@ -221,6 +219,7 @@ class TestCase5137(VMWithMemoryStateSnapshot):
     vm_wait_for_ip = True
 
     @polarion("RHEVM3-5137")
+    @attr(tier=2)
     def test_vm_with_multiple_ram_snapshots(self):
         """
         * Start another process on the VM and create a new memory snapshot.
@@ -322,7 +321,6 @@ class TestCase5137(VMWithMemoryStateSnapshot):
     poweroff_vm_setup.__name__,
     remove_vms.__name__,
 )
-@attr(tier=2)
 class TestCase5136(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5136 - Create VM from snapshot with memory
@@ -331,6 +329,7 @@ class TestCase5136(VMWithMemoryStateSnapshot):
     persist_network = True
 
     @polarion("RHEVM3-5136")
+    @attr(tier=2)
     def test_create_vm_from_memory_state_snapshot(self):
         """
         Create VM from memory snapshot and check process is **not** running
@@ -375,7 +374,6 @@ class TestCase5136(VMWithMemoryStateSnapshot):
     poweroff_vm_setup.__name__,
     remove_vm_from_export_domain.__name__,
 )
-@attr(tier=2)
 class TestCase5134(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5134 - Import a VM with memory snapshot
@@ -384,6 +382,7 @@ class TestCase5134(VMWithMemoryStateSnapshot):
     persist_network = True
 
     @polarion("RHEVM3-5134")
+    @attr(tier=2)
     def test_import_vm_with_memory_state_snapshot(self):
         """
         Import a VM that has memory state snapshot and ensure it resumes memory
@@ -447,7 +446,6 @@ class TestCase5134(VMWithMemoryStateSnapshot):
     create_memory_snapsot_running_process.__name__,
     poweroff_vm_setup.__name__,
 )
-@attr(tier=2)
 class TestCase5133(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5133 - Remove a snapshot with memory state
@@ -455,6 +453,7 @@ class TestCase5133(VMWithMemoryStateSnapshot):
     __test__ = True
 
     @polarion("RHEVM3-5133")
+    @attr(tier=2)
     def test_remove_memory_state_snapshot(self):
         """
         Remove snapshot with memory state and check that VM starts
@@ -488,7 +487,6 @@ class TestCase5133(VMWithMemoryStateSnapshot):
     create_memory_snapsot_running_process.__name__,
     poweroff_vm_setup.__name__,
 )
-@attr(tier=4)
 class TestCase5131(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5131 - Stateless VM with memory snapshot
@@ -496,6 +494,7 @@ class TestCase5131(VMWithMemoryStateSnapshot):
     __test__ = True
 
     @polarion("RHEVM3-5131")
+    @attr(tier=4)
     def test_stateless_vm_with_memory_snapshot(self):
         """
         * Restore memory snapshot

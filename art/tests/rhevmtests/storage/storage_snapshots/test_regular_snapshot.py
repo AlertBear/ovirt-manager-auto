@@ -24,7 +24,6 @@ class SnapshotBaseClass(BasePlan.BasicEnvironmentSetUp):
     live_snapshot = False
 
 
-@attr(tier=2)
 class TestCase18868(BasePlan.TestCase18863, SnapshotBaseClass):
     """
     Full flow snapshot
@@ -43,7 +42,6 @@ class TestCase18868(BasePlan.TestCase18863, SnapshotBaseClass):
     polarion_test_case = '18868'
 
 
-@attr(tier=2)
 class TestCase18887(BasePlan.TestCase11679, SnapshotBaseClass):
     """
     Add a disk to the VMs
@@ -60,7 +58,6 @@ class TestCase18887(BasePlan.TestCase11679, SnapshotBaseClass):
     polarion_test_case = '18887'
 
 
-@attr(tier=3)
 class TestCase18884(BasePlan.TestCase11676, SnapshotBaseClass):
     """
     Try to create a snapshot with max chars length
@@ -75,7 +72,6 @@ class TestCase18884(BasePlan.TestCase11676, SnapshotBaseClass):
     polarion_test_case = '18884'
 
 
-@attr(tier=3)
 class TestCase18873(BasePlan.TestCase11665):
     """
     Create 2 additional disks on a VM, each on a different storage domain
@@ -89,7 +85,6 @@ class TestCase18873(BasePlan.TestCase11665):
     live_snapshot = False
 
 
-@attr(tier=2)
 class TestCase18882(BasePlan.TestCase11674):
     """
     Add a second disk to a VM
@@ -106,7 +101,6 @@ class TestCase18882(BasePlan.TestCase11674):
     live_snapshot = False
 
 
-@attr(tier=3)
 class TestCase18892(BasePlan.TestCase11684):
     """
     Create a template
