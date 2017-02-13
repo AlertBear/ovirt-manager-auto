@@ -5,7 +5,6 @@ Storage/3_1_Storage_Live_Storage_Migration
 """
 import config
 import pytest
-from art.unittest_lib import attr
 from art.test_handler.settings import opts
 import live_storage_migration_base as basePlan
 from art.test_handler.tools import bz
@@ -37,7 +36,6 @@ def inizialize_tests_params(request):
     config.MIGRATE_SAME_TYPE = True
 
 
-@attr(tier=2)
 class TestCase6004(basePlan.TestCase6004):
     """
     live migrate
@@ -47,7 +45,6 @@ class TestCase6004(basePlan.TestCase6004):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5990(basePlan.TestCase5990):
     """
     VM in paused mode
@@ -57,7 +54,6 @@ class TestCase5990(basePlan.TestCase5990):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5994_powering_off(basePlan.TestCase5994_powering_off):
     """
     different VM status
@@ -68,7 +64,6 @@ class TestCase5994_powering_off(basePlan.TestCase5994_powering_off):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5994_powering_up(basePlan.TestCase5994_powering_up):
     """
     different VM status
@@ -79,7 +74,6 @@ class TestCase5994_powering_up(basePlan.TestCase5994_powering_up):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5994_wait_for_lunch(basePlan.TestCase5994_wait_for_lunch):
     """
     different VM status
@@ -90,7 +84,6 @@ class TestCase5994_wait_for_lunch(basePlan.TestCase5994_wait_for_lunch):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5993(basePlan.TestCase5993):
     """
     live migration with thin provision copy
@@ -100,7 +93,6 @@ class TestCase5993(basePlan.TestCase5993):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5992(basePlan.TestCase5992):
     """
     snapshots and move VM
@@ -110,7 +102,6 @@ class TestCase5992(basePlan.TestCase5992):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5991(basePlan.TestCase5991):
     """
     live migration with shared disk
@@ -124,7 +115,6 @@ class TestCase5991(basePlan.TestCase5991):
     )
 
 
-@attr(tier=3)
 class TestCase5989(basePlan.TestCase5989):
     """
     suspended VM
@@ -134,7 +124,6 @@ class TestCase5989(basePlan.TestCase5989):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5988_before_snapshot(basePlan.TestCase5988_before_snapshot):
     """
     Create live snapshot during live storage migration
@@ -144,7 +133,6 @@ class TestCase5988_before_snapshot(basePlan.TestCase5988_before_snapshot):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5988_after_snapshot(basePlan.TestCase5988_after_snapshot):
     """
     Create live snapshot during live storage migration
@@ -154,7 +142,6 @@ class TestCase5988_after_snapshot(basePlan.TestCase5988_after_snapshot):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5988_while_snapshot(basePlan.TestCase5988_while_snapshot):
     """
     Create live snapshot during live storage migration
@@ -164,7 +151,6 @@ class TestCase5988_while_snapshot(basePlan.TestCase5988_while_snapshot):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5986(basePlan.TestCase5986):
     """
     Time out
@@ -174,7 +160,6 @@ class TestCase5986(basePlan.TestCase5986):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5995(basePlan.TestCase5995):
     """
     Images located on different domain
@@ -184,7 +169,6 @@ class TestCase5995(basePlan.TestCase5995):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5996_active_disk(basePlan.TestCase5996_active_disk):
     """
     hot plug disk
@@ -203,7 +187,6 @@ class TestCase5996_active_disk(basePlan.TestCase5996_active_disk):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5996_inactive_disk(basePlan.TestCase5996_inactive_disk):
     """
     hot plug disk
@@ -222,7 +205,6 @@ class TestCase5996_inactive_disk(basePlan.TestCase5996_inactive_disk):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase6003_active_disk(basePlan.TestCase6003_active_disk):
     """
     Attach disk during migration
@@ -232,7 +214,6 @@ class TestCase6003_active_disk(basePlan.TestCase6003_active_disk):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase6003_inactive_disk(basePlan.TestCase6003_inactive_disk):
     """
     Attach disk during migration
@@ -242,7 +223,6 @@ class TestCase6003_inactive_disk(basePlan.TestCase6003_inactive_disk):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase6001(basePlan.TestCase6001):
     """
     LSM to domain in maintenance
@@ -252,7 +232,6 @@ class TestCase6001(basePlan.TestCase6001):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5972(basePlan.TestCase5972):
     """
     live migrate VM with multiple disks on multiple domains
@@ -262,7 +241,6 @@ class TestCase5972(basePlan.TestCase5972):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5970(basePlan.TestCase5970):
     """
     Wipe after delete
@@ -272,7 +250,6 @@ class TestCase5970(basePlan.TestCase5970):
     __test__ = ISCSI in opts['storages']
 
 
-@attr(tier=2)
 class TestCase5968(basePlan.TestCase5968):
     """
     Auto-Shrink - Live Migration
@@ -282,7 +259,6 @@ class TestCase5968(basePlan.TestCase5968):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5967(basePlan.TestCase5967):
     """
     Auto-Shrink - Live Migration failure
@@ -293,7 +269,6 @@ class TestCase5967(basePlan.TestCase5967):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5979(basePlan.TestCase5979):
     """
     offline migration for disk attached to running VM
@@ -303,7 +278,6 @@ class TestCase5979(basePlan.TestCase5979):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5976(basePlan.TestCase5976):
     """
     Deactivate VM disk during live migrate
@@ -313,7 +287,6 @@ class TestCase5976(basePlan.TestCase5976):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5977_after_lsm(basePlan.TestCase5977_after_lsm):
     """
     migrate a VM between hosts + LSM
@@ -323,7 +296,6 @@ class TestCase5977_after_lsm(basePlan.TestCase5977_after_lsm):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5977_snapshot_creation(basePlan.TestCase5977_snapshot_creation):
     """
     migrate a VM between hosts + LSM
@@ -333,7 +305,6 @@ class TestCase5977_snapshot_creation(basePlan.TestCase5977_snapshot_creation):
     __test__ = True
 
 
-@attr(tier=3)
 class TestCase5977_vm_migration(basePlan.TestCase5977_vm_migration):
     """
     migrate a VM between hosts + LSM
@@ -343,7 +314,6 @@ class TestCase5977_vm_migration(basePlan.TestCase5977_vm_migration):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5975_dest_domain(basePlan.TestCase5975_dest_domain):
     """
     Extend storage domain while lsm
@@ -353,7 +323,6 @@ class TestCase5975_dest_domain(basePlan.TestCase5975_dest_domain):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5975_src_domain(basePlan.TestCase5975_src_domain):
     """
     Extend storage domain while lsm
@@ -363,7 +332,6 @@ class TestCase5975_src_domain(basePlan.TestCase5975_src_domain):
     __test__ = True
 
 
-@attr(tier=4)
 class TestCase6000(basePlan.TestCase6000):
     """
     live migrate - storage connectivity issues
@@ -371,11 +339,9 @@ class TestCase6000(basePlan.TestCase6000):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     # Bugzilla history: 1106593
-    # TODO: tier3 jobs have not been verified
     __test__ = True
 
 
-@attr(tier=4)
 class TestCase6002(basePlan.TestCase6002):
     """
     VDSM restart during live migration
@@ -386,7 +352,6 @@ class TestCase6002(basePlan.TestCase6002):
     __test__ = True
 
 
-@attr(tier=4)
 class TestCase5999_spm(basePlan.TestCase5999_spm):
     """
     live migrate during host restart
@@ -397,7 +362,6 @@ class TestCase5999_spm(basePlan.TestCase5999_spm):
     __test__ = True
 
 
-@attr(tier=4)
 class TestCase5999_hsm(basePlan.TestCase5999_hsm):
     """
     live migrate during host restart
@@ -408,7 +372,6 @@ class TestCase5999_hsm(basePlan.TestCase5999_hsm):
     __test__ = True
 
 
-@attr(tier=4)
 class TestCase5997_ha_vm(basePlan.TestCase5997_ha_vm):
     """
     kill VM's pid during live migration
@@ -418,7 +381,6 @@ class TestCase5997_ha_vm(basePlan.TestCase5997_ha_vm):
     __test__ = True
 
 
-@attr(tier=4)
 class TestCase5997_regular_vm(basePlan.TestCase5997_regular_vm):
     """
     kill VM's pid during live migration
@@ -428,7 +390,6 @@ class TestCase5997_regular_vm(basePlan.TestCase5997_regular_vm):
     __test__ = True
 
 
-@attr(tier=2)
 @bz({'1288862': {}})
 class TestCase5985(basePlan.TestCase5985):
     """
@@ -443,7 +404,6 @@ class TestCase5985(basePlan.TestCase5985):
     __test__ = False
 
 
-@attr(tier=2)
 class TestCase5971(basePlan.TestCase5971):
     """
     multiple domains - only one domain unreachable
@@ -453,18 +413,24 @@ class TestCase5971(basePlan.TestCase5971):
     __test__ = True
 
 
-@attr(tier=4)
-class TestCase5966(basePlan.TestCase5966):
+class TestCase5966_during_lsm(basePlan.TestCase5966_during_lsm):
     """
     kill vdsm during LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: tier3 jobs have not been verified
     __test__ = True
 
 
-@attr(tier=4)
+class TestCase5966_during_second_lsm(basePlan.TestCase5966_during_second_lsm):
+    """
+    kill vdsm during LSM
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+
+
 class TestCase5981(basePlan.TestCase5981):
     """
     merge after a failure in LSM
@@ -474,7 +440,6 @@ class TestCase5981(basePlan.TestCase5981):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5983_spm(basePlan.TestCase5983_spm):
     """
     migrate multiple VM's disks
@@ -484,7 +449,6 @@ class TestCase5983_spm(basePlan.TestCase5983_spm):
     __test__ = True
 
 
-@attr(tier=2)
 class TestCase5983_hsm(basePlan.TestCase5983_hsm):
     """
     migrate multiple VM's disks
@@ -494,25 +458,10 @@ class TestCase5983_hsm(basePlan.TestCase5983_hsm):
     __test__ = True
 
 
-@attr(tier=4)
-class TestCase5984(basePlan.TestCase5984):
-    """
-    connectivity issues to pool
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1078095
-    """
-    # Bugzilla history: 1106593
-    # TODO: tier3 jobs have not been verified
-    __test__ = True
-
-
-@attr(tier=4)
 class TestCase5974(basePlan.TestCase5974):
     """
     LSM during pause due to EIO
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: tier3 jobs have not been verified
     __test__ = True

@@ -1163,14 +1163,14 @@ def restart_vdsmd(request):
         assert test_utils.restartVdsmd(host_ip, config.HOSTS_PW), (
             "Failed to restart VDSM on host %s" % host
         )
-        assert ll_hosts.waitForHostsStates(True, host), (
-            "Host %s failed to reach status UP" % host
-        )
         assert ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.WAIT_FOR_SPM_INTERVAL
         ), "SPM host was not elected in data-center %s" % (
             config.DATA_CENTER_NAME
+        )
+        assert ll_hosts.waitForHostsStates(True, host), (
+            "Host %s failed to reach status UP" % host
         )
     request.addfinalizer(finalizer)
 

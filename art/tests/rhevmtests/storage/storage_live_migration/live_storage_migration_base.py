@@ -5,6 +5,7 @@ Storage/3_1_Storage_Live_Storage_Migration
 """
 from multiprocessing import Process, Queue
 from time import sleep
+import shlex
 import logging
 import pytest
 import config
@@ -1037,14 +1038,12 @@ class TestCase5967(AllPermutationsDisks):
             ll_vms.live_migrate_vm_disk(
                 self.vm_name, disk, target_sd, wait=False
             )
-            ll_disks.wait_for_disks_status(
-                [self.vm_disk_name], status=config.DISK_LOCKED
-            )
+            ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
             testflow.step("Stop VM %s", self.vm_name)
-            ll_vms.stop_vms_safely([self.vm_name])
-            ll_vms.waitForVmsDisks(self.vm_name)
-            ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-            ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
+            assert ll_vms.stop_vms_safely([self.vm_name]), (
+                "Failed to stop VM %s" % self.vm_name
+            )
+            helpers.wait_for_disks_and_snapshots(self.vm_name)
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk)
             actual_size = disk_obj.get_actual_size()
             virtual_size = disk_obj.get_provisioned_size()
@@ -1401,7 +1400,6 @@ class TestCase6000(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: tier4 jobs have not been verified
     __test__ = False
     # Bugzilla history:
     # 1106593: Failed recovering from crash or initializing after blocking
@@ -1482,10 +1480,16 @@ class TestCase6002(BaseTestCase):
         Expected Results:
             - Live migrate should fail
         """
-        spm_host = ll_hosts.getHostIP(ll_hosts.getSPMHost(config.HOSTS))
+        spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        spm_host_ip = ll_hosts.getHostIP(ll_hosts.getSPMHost(config.HOSTS))
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         self.target_sd = ll_disks.get_other_storage_domain(
             vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
+        testflow.step("Start VM %s", self.vm_name)
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name, placement_host=spm_host,
+            wait_for_status=config.VM_UP
         )
         testflow.step("Live migrate VM %s", self.vm_name)
         ll_vms.live_migrate_vm(
@@ -1493,18 +1497,19 @@ class TestCase6002(BaseTestCase):
             target_domain=self.target_sd
         )
         testflow.step("Restart vdsmd on host %s", spm_host)
-        assert restartVdsmd(spm_host, config.HOSTS_PW), (
+        assert restartVdsmd(spm_host_ip, config.HOSTS_PW), (
             "Failed to restart VDSM on host %s" % spm_host
         )
-        assert not ll_vms.verify_vm_disk_moved(
-            self.vm_name, vm_disk, self.storage_domain, self.target_sd
-        ),  "Succeeded to move disk %s" % vm_disk
         assert ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.WAIT_FOR_SPM_INTERVAL
         ), (
             'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
         )
+        ll_hosts.waitForHostsStates(positive=True, names=spm_host)
+        assert not ll_vms.verify_vm_disk_moved(
+            self.vm_name, vm_disk, self.storage_domain, self.target_sd
+        ),  "Succeeded to move disk %s" % vm_disk
 
 
 @pytest.mark.usefixtures(
@@ -1534,6 +1539,7 @@ class BaseTestCase5999(BaseTestCase):
         host = ll_hosts.getSPMHost(config.HOSTS) if spm else (
             ll_hosts.getHSMHost(config.HOSTS)
         )
+        host_ip = ll_hosts.getHostIP(host)
         testflow.step("Update VM %s to be HA", self.vm_name)
         assert ll_vms.updateVm(
             True, self.vm_name, highly_available='true',
@@ -1549,14 +1555,24 @@ class BaseTestCase5999(BaseTestCase):
         ll_vms.live_migrate_vm(
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
         )
-        testflow.step("Rebooting SPM Host %s", host)
-        assert ll_hosts.rebootHost(
-            True, host, config.HOSTS_USER, config.HOSTS_PW
-        )
-        logger.info("Waiting for host %s to come back up", host)
-        ll_hosts.waitForHostsStates(True, host)
-        ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
+        testflow.step("Rebooting Host %s", host)
+        executor = rhevm_helpers.get_host_executor(host_ip, config.HOSTS_PW)
+        rc, out, error = executor.run_cmd(cmd=shlex.split(config.REBOOT_CMD))
 
+        assert rc, "Failed to reboot Host %s, error: %s, out: %s" % (
+            host, error, out
+        )
+        assert ll_hosts.waitForSPM(
+            config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+            config.WAIT_FOR_SPM_INTERVAL
+        ), (
+            'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
+        )
+        ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
+        logger.info("Waiting for host %s to come back up", host)
+        ll_hosts.waitForHostsStates(
+            True, host, timeout=config.HOST_STATE_TIMEOUT
+        )
         assert not ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, source_sd
         ), (
@@ -1807,7 +1823,7 @@ class TestCase5971(BaseTestCase):
     restart_vdsmd.__name__,
     wait_for_disks_and_snapshots.__name__,
 )
-class TestCase5966(BaseTestCase):
+class BaseTestCase5966(BaseTestCase):
     """
     Kill VDSM during LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1816,7 +1832,33 @@ class TestCase5966(BaseTestCase):
     __test__ = False
     polarion_test_case = '5966'
     restart_vdsmd_host_ip = None
+    host_resource = None
+    source_sd = None
+    vm_disk = None
 
+    def basic_flow(self, wait=False):
+        self.vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        self.source_sd = ll_disks.get_disk_storage_domain_name(
+            self.vm_disk, self.vm_name
+        )
+        self.restart_vdsm_host = ll_hosts.getSPMHost(config.HOSTS)
+        testflow.step("Start VM %s", self.vm_name)
+        assert ll_vms.startVm(
+            True, self.vm_name, config.VM_UP,
+            placement_host=self.restart_vdsm_host
+        ), "Failed to start VM %s" % self.vm_name
+        self.host_resource = rhevm_helpers.get_host_resource_by_name(
+            host_name=self.restart_vdsm_host
+        )
+        testflow.step("Live migrate VM %s", self.vm_name)
+        ll_vms.live_migrate_vm(
+            self.vm_name, wait=wait, same_type=config.MIGRATE_SAME_TYPE
+        )
+
+
+class TestCase5966_during_lsm(BaseTestCase5966):
+
+    @bz({'1421417': {}})
     @polarion("RHEVM3-5966")
     @attr(tier=4)
     def test_kill_vdsm_during_lsm(self):
@@ -1828,32 +1870,19 @@ class TestCase5966(BaseTestCase):
         Expected Results:
             - LSM should fail nicely
         """
-        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
-        source_sd = ll_disks.get_disk_storage_domain_name(
-            vm_disk, self.vm_name
-        )
-        self.restart_vdsm_host = ll_hosts.getSPMHost(config.HOSTS)
-        testflow.step("Start VM %s", self.vm_name)
-        assert ll_vms.startVm(
-            True, self.vm_name, config.VM_UP,
-            placement_host=self.restart_vdsm_host
-        ), "Failed to start VM %s" % self.vm_name
-        host_resource = rhevm_helpers.get_host_resource_by_name(
-            host_name=self.restart_vdsm_host
-        )
-        testflow.step("Live migrate VM %s", self.vm_name)
-        ll_vms.live_migrate_vm(
-            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
-        )
-        sleep(5)
+        self.basic_flow()
         testflow.step("Kill vdsmd on host %s", self.restart_vdsm_host)
-        assert ll_hosts.kill_vdsmd(host_resource), (
+        assert ll_hosts.kill_vdsmd(self.host_resource), (
             "Failed to kill vdsmd on host %s" % self.restart_vdsm_host
         )
         assert not ll_vms.verify_vm_disk_moved(
-            self.vm_name, vm_disk, source_sd
-        ), "Failed to live migrate disk %s" % vm_disk
+            self.vm_name, self.vm_disk, self.source_sd
+        ), "Failed to live migrate disk %s" % self.vm_disk
 
+
+class TestCase5966_during_second_lsm(BaseTestCase5966):
+
+    @bz({'1421417': {}})
     @polarion("RHEVM3-5966")
     @attr(tier=4)
     def test_kill_vdsm_during_second_lsm(self):
@@ -1866,35 +1895,22 @@ class TestCase5966(BaseTestCase):
         Expected Results:
             - LSM should fail nicely
         """
-        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
-        testflow.step("Start VM %s", self.vm_name)
-        assert ll_vms.startVm(True, self.vm_name, config.VM_UP), (
-            "Failed to start VM %s", self.vm_name
-        )
-        _, host = ll_vms.getVmHost(self.vm_name)
-        vm_host = host['vmHoster']
-        host_resource = rhevm_helpers.get_host_resource_by_name(
-            host_name=vm_host
-        )
-
-        testflow.step("Live migrate VM %s", self.vm_name)
-        ll_vms.live_migrate_vm(
-            self.vm_name, wait=True, same_type=config.MIGRATE_SAME_TYPE
-        )
-        source_sd = ll_disks.get_disk_storage_domain_name(
-            vm_disk, self.vm_name
+        self.basic_flow(wait=True)
+        helpers.wait_for_disks_and_snapshots(self.vm_name)
+        self.source_sd = ll_disks.get_disk_storage_domain_name(
+            self.vm_disk, self.vm_name
         )
         testflow.step("Live migrate VM %s", self.vm_name)
         ll_vms.live_migrate_vm(
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
         )
-        sleep(5)
-        testflow.step("Kill vdsmd on host %s", vm_host)
-        assert ll_hosts.kill_vdsmd(host_resource), "Failed to restart vdsmd"
+        testflow.step("Kill vdsmd on host %s", self.restart_vdsm_host)
+        assert ll_hosts.kill_vdsmd(self.host_resource), (
+            "Failed to restart vdsmd"
+        )
         assert not ll_vms.verify_vm_disk_moved(
-            self.vm_name, vm_disk, source_sd
-        ), "Failed to live migrate disk %s" % vm_disk
-        self.restart_vdsm_host = vm_host
+            self.vm_name, self.vm_disk, self.source_sd
+        ), "Failed to live migrate disk %s" % self.vm_disk
 
 
 @pytest.mark.usefixtures(
@@ -2084,76 +2100,6 @@ class TestCase5983_hsm(BaseTestCase5983):
 
 
 @pytest.mark.usefixtures(
-    unblock_connectivity_storage_domain_teardown.__name__,
-    wait_for_disks_and_snapshots.__name__
-)
-class TestCase5984(BaseTestCase):
-    """
-    Connectivity issues to pool
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1078095
-    """
-    # TODO: tier4 jobs have not been verified
-    __test__ = False
-    # Bugzilla history:
-    # 1106593: Failed recovering from crash or initializing after blocking
-    # connection from host to target storage domain during LSM (marked as
-    # Won't Fix)
-    polarion_test_case = '5984'
-    storage_domain_ip = None
-
-    def _migrate_vm_disk_and_block_connection(
-        self, disk, source, username, password, target, target_ip
-    ):
-        if not ll_vms.startVm(True, self.vm_name, config.VM_UP):
-            raise exceptions.VMException(
-                "Failed to power on VM '%s'" % self.vm_name
-            )
-
-        ll_vms.live_migrate_vm_disk(self.vm_name, disk, target, wait=False)
-        status = blockOutgoingConnection(
-            source, username, password, target_ip
-        )
-        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-        assert status, "Failed to block connection"
-
-    @polarion("RHEVM3-5984")
-    @attr(tier=4)
-    def test_LSM_block_from_hsm_to_domain(self):
-        """
-        Actions:
-            - Live migrate a VM
-            - Block connectivity to target domain from host using iptables
-        Expected Results:
-            - We should fail migrate and roll back
-        """
-        hsm = ll_hosts.getHSMHost(config.HOSTS)
-        hsm_ip = ll_hosts.getHostIP(hsm)
-        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
-        source_sd = ll_disks.get_disk_storage_domain_name(
-            vm_disk, self.vm_name
-        )
-        self.target_sd = ll_disks.get_other_storage_domain(
-            vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
-        )
-        status, target_sd_ip = ll_sd.getDomainAddress(True, self.target_sd)
-        assert status
-        self.storage_domain_ip = target_sd_ip['address']
-        self.username = config.HOSTS_USER
-        self.password = config.HOSTS_PW
-        self.source_ip = hsm_ip
-        self._migrate_vm_disk_and_block_connection(
-            vm_disk, hsm_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.target_sd, target_sd_ip
-        )
-        status = ll_vms.verify_vm_disk_moved(
-            self.vm_name, vm_disk, source_sd, self.target_sd
-        )
-        assert not status, "Succeeded to live migrate vm disk %s" % vm_disk
-
-
-@pytest.mark.usefixtures(
     initialize_variables_block_domain.__name__,
     unblock_connectivity_storage_domain_teardown.__name__,
     wait_for_disks_and_snapshots.__name__
@@ -2164,50 +2110,52 @@ class TestCase5974(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: tier4 jobs have not been verified
     __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
     storages = set([config.STORAGE_TYPE_ISCSI])
     polarion_test_case = '5974'
     block_spm_host = False
 
+    @classmethod
     @polarion("RHEVM3-5974")
     @attr(tier=4)
-    def test_LSM_block_from_host_to_target(self):
+    def test_LSM_block_from_host_to_target(cls):
         """
         Actions:
             - Block connectivity to the storage from the HSM host
             - Start LSM
         Expected Results:
-            - We should no be able to LSM a VM which is paused on EIO
+            - We should not be able to LSM a VM which is paused on EIO
         """
-        testflow.step("Start VM %s", self.vm_name)
-        assert ll_vms.startVm(True, self.vm_name, config.VM_UP)
-        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        testflow.step("Start VM %s on host %s", cls.vm_name, cls.host)
+        assert ll_vms.startVm(
+            True, cls.vm_name, config.VM_UP, placement_host=cls.host
+        )
+        vm_disk = ll_vms.getVmDisks(cls.vm_name)[0].get_alias()
         source_sd = ll_disks.get_disk_storage_domain_name(
-            vm_disk, self.vm_name
+            vm_disk, cls.vm_name
         )
-        self.target_sd = ll_disks.get_other_storage_domain(
-            vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        cls.target_sd = ll_disks.get_other_storage_domain(
+            vm_disk, cls.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
-        status, target_sd_ip = ll_sd.getDomainAddress(True, self.target_sd)
-        self.storage_domain_ip = target_sd_ip.get('address')
+        status, target_sd_ip = ll_sd.getDomainAddress(True, cls.target_sd)
+        cls.storage_domain_ip = target_sd_ip.get('address')
         assert status
         testflow.step(
-            "Block connection between %s to %s", self.host_ip,
-            self.storage_domain_ip
+            "Block connection between %s to %s", cls.host_ip,
+            cls.storage_domain_ip
         )
         assert blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
+            cls.host_ip, config.HOSTS_USER, config.HOSTS_PW,
+            cls.storage_domain_ip
         ), "Failed to block connection from host %s to storage domain %s" % (
-            self.host_ip, self.storage_domain_ip
+            cls.host_ip, cls.storage_domain_ip
         )
-        testflow.step("Live migrate VM %s", self.vm_name)
+        testflow.step("Live migrate VM %s", cls.vm_name)
         ll_vms.live_migrate_vm(
-            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+            cls.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
+            target_domain=cls.target_sd
         )
-        assert ll_vms.waitForVMState(self.vm_name, config.VM_PAUSED)
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         assert not ll_vms.verify_vm_disk_moved(
-            self.vm_name, vm_disk, source_sd, self.target_sd
+            cls.vm_name, vm_disk, source_sd, target_sd=cls.target_sd
         ), "Succeeded to live migrate vm disk %s" % vm_disk
