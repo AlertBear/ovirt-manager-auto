@@ -9,7 +9,6 @@ Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
 import logging
 import config
 from art.rhevm_api.tests_lib.high_level import (
-    datacenters as hl_dc,
     storagedomains as hl_sd,
 )
 from art.rhevm_api.tests_lib.low_level import (
@@ -23,7 +22,7 @@ from art.rhevm_api.utils import storage_api as utils
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage.fixtures import (
     create_dc, clean_dc, create_template, remove_vm, add_disk, attach_disk,
@@ -51,23 +50,6 @@ POSIX = config.STORAGE_TYPE_POSIX
 CEPH = config.STORAGE_TYPE_CEPH
 
 
-@pytest.fixture(scope='module', autouse=True)
-def restart_ovirt_engine(request):
-    """
-    Restart the engine
-    """
-    # TODO: Seems the imported vms will get assign a mac address and will get
-    # released after the engine is restarted. Restart the engine as a W/A
-    # until this issue is investigated and fixed:
-    # https://projects.engineering.redhat.com/browse/RHEVM-2610
-
-    def finalizer():
-        testflow.teardown("Restart ovirt-engine")
-        test_utils.restart_engine(config.ENGINE, 10, 300)
-        hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
-    request.addfinalizer(finalizer)
-
-
 @pytest.mark.usefixtures(
     initialize_params.__name__,
 )
@@ -87,6 +69,7 @@ class BasicEnvironment(BaseTestCase):
     deactivate_detach_and_remove_domain_fin.__name__,
     create_vm.__name__,
 )
+@bz({'1422508': {}})
 class DomainImportWithTemplate(BasicEnvironment):
     """
     Create vm from imported domain's Template
@@ -94,6 +77,7 @@ class DomainImportWithTemplate(BasicEnvironment):
     vm_name = 'vm_from_temp'
     vm_created = False
     remove_param = {'format': 'false'}
+    partial_import = None
 
     def new_vm_from_imported_domain_template(self):
         """
@@ -153,68 +137,24 @@ class DomainImportWithTemplate(BasicEnvironment):
                 template.get_name() == self.template_name
             )
         ]
-        testflow.step("Registering template: %s", template_to_register[0])
+        testflow.step(
+            "Registering template: %s", template_to_register[0].get_name()
+        )
         self.template_exists = ll_sd.register_object(
-            template_to_register[0], cluster=config.CLUSTER_NAME
+            template_to_register[0], cluster=config.CLUSTER_NAME,
+            partial_import=self.partial_import
         )
         assert self.template_exists, "Template registration failed"
         testflow.step(
             "Clone VM %s from template: %s",
-            self.vm_name, template_to_register[0]
+            self.vm_name, template_to_register[0].get_name()
         )
+        assert ll_vms.safely_remove_vms([self.vm_name])
         assert ll_vms.cloneVmFromTemplate(
             positive=True, name=self.vm_name,
             template=self.template_name, cluster=config.CLUSTER_NAME
         ), "Unable to create vm %s from template %s" % (
             self.vm_name, self.template_name
-        )
-
-
-@pytest.mark.usefixtures(
-    add_non_master_storage_domain.__name__,
-    deactivate_detach_and_remove_domain_fin.__name__,
-    create_vm.__name__,
-    secure_deactivate_and_detach_storage_domain.__name__
-)
-class TestCase5299(BasicEnvironment):
-    """
-    Register vm without disks
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
-    workitem?id=RHEVM3-5299
-    """
-    __test__ = True
-    polarion_test_case = '5299'
-    vm_name = "vm_without_disks"
-    installation = False
-    master_domain = None
-
-    @bz({'1138142': {'engine': ['rest', 'sdk']}})
-    @bz({'1396969': {}})
-    @polarion("RHEVM3-5299")
-    @attr(tier=2)
-    def test_register_vm_without_disks(self):
-        """
-        - Detach domain
-        - Attach domain
-        - Verify no vm was unregistered
-        """
-        testflow.step("Attaching storage domain %s", self.non_master)
-        hl_sd.attach_and_activate_domain(
-            config.DATA_CENTER_NAME, self.non_master
-        )
-        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
-
-        unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
-        vm_to_import = [
-            vm.get_name() for vm in unregistered_vms if (
-                vm.get_name() == self.vm_name
-            )
-        ]
-        testflow.step("Unregistered vms: %s", vm_to_import)
-        assert len(vm_to_import) == 0, "VM with no disks was unregistered"
-        testflow.step("Verify VM exist after importing storage domain")
-        assert ll_vms.does_vm_exist(self.vm_name), (
-            "VM doesn't exist after importing storage domain"
         )
 
 
@@ -806,11 +746,6 @@ class TestCase5192_4_0(BaseTestCase5192):
     dc_version = "4.0"
 
 
-# Bugzilla history:
-# BZ1328071: Unexpected flow when importing a domain with a template with
-# multiple disks on different domains
-@bz({'1393257': {}})
-# TODO: verify this test when the bug is fixed (refactor to fixture)
 @pytest.mark.usefixtures(
     add_disk.__name__,
     attach_disk.__name__,
@@ -818,7 +753,6 @@ class TestCase5192_4_0(BaseTestCase5192):
     secure_deactivate_and_detach_storage_domain.__name__,
     remove_storage_domain_setup.__name__,
     remove_template_setup.__name__,
-    remove_vm.__name__
 )
 class TestCase5200(DomainImportWithTemplate):
     """
@@ -836,6 +770,7 @@ class TestCase5200(DomainImportWithTemplate):
             config.DATA_CENTER_NAME, NFS
         )[0]
     }
+    partial_import = True
 
     @polarion("RHEVM3-" + polarion_test_case)
     @attr(tier=3)

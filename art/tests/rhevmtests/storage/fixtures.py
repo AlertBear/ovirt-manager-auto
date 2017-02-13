@@ -723,18 +723,22 @@ def clean_dc(request):
     self = request.node.cls
 
     def finalizer():
-        found, master_domain = ll_sd.findMasterStorageDomain(
+        found, storage_domain = ll_sd.findMasterStorageDomain(
             True, self.new_dc_name
         )
-        assert found, (
-            "Could not find master storage domain on data center '%s'"
-            % self.new_dc_name
-        )
-        master_domain = master_domain['masterDomain']
-        testflow.teardown(
-            "Data center's %s master domain is %s", self.new_dc_name,
-            master_domain
-        )
+        if found:
+            master_domain = storage_domain['masterDomain']
+            testflow.teardown(
+                "Data center's %s master domain is %s", self.new_dc_name,
+                master_domain
+            )
+        else:
+            logger.warning(
+                "Could not find master storage domain on data center '%s'",
+                self.new_dc_name
+            )
+            master_domain = None
+        testflow.teardown("Cleaning Data-center %s", self.new_dc_name)
         storage_helpers.clean_dc(
             self.new_dc_name, self.cluster_name, self.host_name,
             sd_name=master_domain

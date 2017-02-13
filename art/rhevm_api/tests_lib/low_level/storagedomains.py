@@ -1148,6 +1148,8 @@ def register_object(obj, cluster, **kwargs):
             "cluster": "cluster_name_for_target_vnic_profile",
             "datacenter": "datacenter_name_for_target_vnic_profile"
             }]
+        partial_import (bool): Determines whether the import operation allows
+            to import only part of the object (e.g. VM without all it's disks)
 
     Returns:
         bool: True on success, False otherwise
@@ -1155,6 +1157,7 @@ def register_object(obj, cluster, **kwargs):
     cluster_obj = Cluster(name=cluster)
     reassign_bad_macs = kwargs.get("reassign_bad_macs", True)
     network_mappings = kwargs.get("network_mappings")
+    partial_import = kwargs.get("partial_import")
     vnic_profile_mappings = None
     if network_mappings:
         vnic_profile_mappings = prepare_vnic_profile_mappings_object(
@@ -1164,7 +1167,8 @@ def register_object(obj, cluster, **kwargs):
         util.syncAction(
             entity=obj, action='register', positive=True, cluster=cluster_obj,
             reassign_bad_macs=reassign_bad_macs,
-            vnic_profile_mappings=vnic_profile_mappings
+            vnic_profile_mappings=vnic_profile_mappings,
+            allow_partial_import=partial_import
         )
     )
 
