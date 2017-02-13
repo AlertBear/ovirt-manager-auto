@@ -207,3 +207,16 @@ def create_2_vms_pre_disk_thin_disk(request):
                 self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
             )
         )
+
+
+@pytest.fixture(scope='class')
+def initialize_disk_name(request):
+    """
+    Initialize disk name
+    """
+
+    self = request.node.cls
+
+    self.disk_name = storage_helpers.create_unique_object_name(
+        self.__name__, config.OBJECT_TYPE_DISK
+    )
