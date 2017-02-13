@@ -120,17 +120,14 @@ class CpuModelDenominator(object):
     def fetch_host_caps(self, host):
         """
         Retrieves host's cpu capabilities, provided by vdsm and /proc/cpuinfo.
-        :param host: instance of resources.Host
-        :return: host's cpu capabilities
-        :rtype: dict(models=list(str), vendor=str)
+
+        Args:
+            host (Host): instance of resources.Host
+
+        Returns
+            dict: host's cpu capabilities dict(models=list(str), vendor=str)
         """
         e = host.executor()
-        cmd_caps = (
-            'vdsClient', '-s', '0', 'getVdsCaps', '|',
-            'grep', 'cpuFlags', '|',
-            'tr', '-d', "' \t", '|',
-            'cut', '-d=', '-f2',
-        )
         cmd_cpuinfo = (
             'grep', 'vendor_id', '/proc/cpuinfo', '|',
             'sort', '|',
@@ -145,14 +142,10 @@ class CpuModelDenominator(object):
                 raise CpuModelError("Can not resolve host's cpuinfo: %s" % err)
 
             # List cpu models
-            rc, out, err = ss.run_cmd(cmd_caps)
-            models = [
-                line for line in out.strip().split(',')
-                if line.startswith('model_')
-            ]
-            if rc or not models:
-                if not err:
-                    err = "vdsClient failed, probably vdsm is not running"
+            vds_caps = host.vds_client(cmd="getCapabilities")
+            cpu_flags = vds_caps.get("cpuFlags", "").split(",")
+            models = [i for i in cpu_flags if "model_"in i]
+            if not models:
                 logger.warning("Can not resolve host's models: %s", err)
                 models = [
                     MIN_MODEL.get(self._id_to_vendor(vendor))

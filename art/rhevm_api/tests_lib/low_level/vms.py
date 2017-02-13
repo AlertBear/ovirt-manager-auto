@@ -1213,10 +1213,12 @@ def startVm(
         vm, wait_for_status.lower().replace('_', ''))
     started = VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     if started and wait_for_ip:
-        started = waitForIP(vm)[0]
+        started = wait_for_vm_ip(vm)[0]
         if started != positive:
-            VM_API.logger.error("waitForIP returned %s, positive is set to %s",
-                                started, positive)
+            VM_API.logger.error(
+                "wait_for_vm_ip returned %s, positive is set to %s",
+                started, positive
+            )
 
     return started == positive
 
@@ -2914,9 +2916,9 @@ def createVm(
         return True
 
 
-def waitForIP(
+def wait_for_vm_ip(
     vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False,
-    vm_password=VM_PASSWORD, json=False
+    vm_password=VM_PASSWORD
 ):
     """
     Waits until agent starts reporting IP address
@@ -2927,7 +2929,6 @@ def waitForIP(
         sleep (int): polling interval
         get_all_ips (bool): Get all VM ips
         vm_password (str): VM root password
-        json (bool): Use json client (default is to use xml)
 
     Returns:
         tuple: True/False whether it obtained the IP, IP if fetched or None
@@ -2953,30 +2954,19 @@ def waitForIP(
         Returns:
             str or list: IP or list of IPs depend on get_all_ips param
         """
-        logger.debug("Using %s vds_client", "json" if json else "xml")
-        cmd_args = ["table"] if not json else list()
-        out = vds_resource.vds_client(cmd="list", args=cmd_args, json=json)
-        if not out:
-            return None
-
-        vms_ids = [
-            _vm.get("vmId") for _vm in out.get("vmList", list())
-            ] if not json else out.get("items")
-        vm_ips = list()
+        vms_ids = vds_resource.vds_client(cmd="getVMList")
         if not vms_ids:
             return None
 
+        vm_ips = list()
         for vm_id in vms_ids:
             vm_info = vds_resource.vds_client(
-                cmd="getVmStats", args=[vm_id], json=json
+                cmd="VM.getStats", args={"vmID": vm_id}
             )
             if not vm_info:
                 return None
 
-            vm_info = (
-                vm_info.get("statsList")[0] if not json else
-                vm_info.get("items")[0]
-            )
+            vm_info = vm_info[0]
             vm_name = vm_info.get("vmName")
             if vm_name == vm:
                 vm_interfaces = vm_info.get("netIfaces")
@@ -3209,7 +3199,7 @@ def checkVMConnectivity(
         return False
 
     if not ip:
-        agent_status, ip = waitForIP(vm=vm, timeout=timeout)
+        agent_status, ip = wait_for_vm_ip(vm=vm, timeout=timeout)
         # agent should be installed so convertMacToIpAddress is irrelevant
         if not agent_status:
             status, mac = getVmMacAddress(positive, vm, nic=nic)
@@ -3886,7 +3876,7 @@ def is_pid_running_on_vm(vm_name, pid, user, password):
     :return: True if pid exists, False otherwise
     :rtype: bool
     """
-    status, vm_ip = waitForIP(vm_name)
+    status, vm_ip = wait_for_vm_ip(vm_name)
     if not status:
         raise exceptions.CanNotFindIP("Failed to get IP for vm %s" % vm_name)
     logger.debug('Got ip %s for vm %s', vm_ip['ip'], vm_name)
@@ -3920,7 +3910,7 @@ def run_cmd_on_vm(vm_name, cmd, user, password, timeout=15):
         * user - username used to login to vm
         * password - password for the user
     """
-    vm_ip = waitForIP(vm_name)[1]['ip']
+    vm_ip = wait_for_vm_ip(vm_name)[1]['ip']
     rc, out = runMachineCommand(
         True, ip=vm_ip, user=user, password=password, cmd=cmd, timeout=timeout)
     logger.debug("cmd output: %s, exit code: %s", out, rc)
@@ -4374,7 +4364,7 @@ def get_vm_machine(vm_name, user, password):
         * password - password for user
     Return value: vm machine
     '''
-    status, got_ip = waitForIP(vm_name, timeout=600, sleep=10)
+    status, got_ip = wait_for_vm_ip(vm_name, timeout=600, sleep=10)
     if not status:
         status, mac = getVmMacAddress(True, vm_name,
                                       nic='nic1')
@@ -4581,7 +4571,7 @@ def get_vm_storage_devices(vm_name, username, password,
     if ensure_vm_on:
         start_vms([vm_name], 1, wait_for_ip=False)
         waitForVMState(vm_name)
-    vm_ip = waitForIP(vm_name)[1]['ip']
+    vm_ip = wait_for_vm_ip(vm_name)[1]['ip']
     vm_machine = Machine(host=vm_ip, user=username,
                          password=password).util(LINUX)
     output = vm_machine.get_boot_storage_device()

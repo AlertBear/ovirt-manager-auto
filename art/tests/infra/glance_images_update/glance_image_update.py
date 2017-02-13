@@ -316,7 +316,7 @@ class GlanceImageUpdator(GlanceImageBase):
         :type repo_url: str
         """
         for vm in self.vms_description:
-            vm['ip'] = ll_vms.waitForIP(vm['name'])[1]['ip']
+            vm['ip'] = ll_vms.wait_for_vm_ip(vm['name'])[1]['ip']
             vm['disk_id'] = ll_disks.getVmDisk(
                 vm['name'], vm['disk_alias']
             ).get_id()

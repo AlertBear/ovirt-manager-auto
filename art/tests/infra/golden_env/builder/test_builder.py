@@ -392,7 +392,7 @@ class CreateDC(TestCase):
             ll_vms.startVm(True, vm_name, wait_for_status=ENUMS['vm_state_up'])
 
         logger.info("Waiting for IP of %s", vm_name)
-        status, result = ll_vms.waitForIP(vm_name)
+        status, result = ll_vms.wait_for_vm_ip(vm_name)
         assert status
 
         logger.info("Sealing: set persistent network for %s", vm_name)

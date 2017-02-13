@@ -29,7 +29,7 @@ def check_connectivity(vm=True, flags=None):
     :rtype: bool
     """
     if vm:
-        ip = ll_vms.waitForIP(vm=config.VM_0, timeout=TIMEOUT)
+        ip = ll_vms.wait_for_vm_ip(vm=config.VM_0, timeout=TIMEOUT)
         return ip[0]
 
     return network_helper.send_icmp_sampler(

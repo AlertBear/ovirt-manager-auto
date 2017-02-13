@@ -324,9 +324,10 @@ def get_vm_ip(vm_name):
     :return: ip address of a vm, or raise EntityNotFound exception
     :rtype: str or EntityNotFound exception
     """
-    return ll_vms.waitForIP(vm_name)[1]['ip']
+    return ll_vms.wait_for_vm_ip(vm_name)[1]['ip']
 
 
+# flake8: noqa
 def create_vm_or_clone(
     positive, vmName, vmDescription='', cluster=config.CLUSTER_NAME,
     **kwargs

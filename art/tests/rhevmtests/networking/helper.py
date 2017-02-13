@@ -128,7 +128,7 @@ def seal_vm(vm, root_password):
     if not ll_vms.startVm(positive=True, vm=vm):
         return False
 
-    rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
+    rc, out = ll_vms.wait_for_vm_ip(vm=vm, timeout=180, sleep=10)
     if not rc:
         return False
 
@@ -323,7 +323,7 @@ def is_network_in_vds_caps(host_resource, network):
     :rtype: bool
     """
     logger.info("Get vdsCaps output")
-    out = host_resource.vds_client("getVdsCapabilities", json=True)
+    out = host_resource.vds_client(cmd="getCapabilities")
     logger.info("Check if %s in vdsCaps output", network)
     if network not in out.get("networks", {}).keys():
         logger.error("Network %s is missing in vdsCaps", network)

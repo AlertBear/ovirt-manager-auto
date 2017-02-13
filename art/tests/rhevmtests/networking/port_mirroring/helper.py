@@ -244,7 +244,7 @@ def set_vms_network_params():
     for vm in vms_list:
         pm_conf.VMS_NETWORKS_PARAMS[vm] = dict()
         logger.info("Getting management network IP for %s.", vm)
-        main_ip = ll_vms.waitForIP(vm=vm, json=True)
+        main_ip = ll_vms.wait_for_vm_ip(vm=vm)
         assert main_ip[0]
         main_ip = main_ip[1].get("ip")
         pm_conf.MGMT_IPS.append(main_ip)

@@ -1,12 +1,14 @@
-import os
 import ast
+import os
 import shlex
+
+import yaml
 from repoze.lru import CacheMaker
 from rrmngmnt.host import Host
 from rrmngmnt.user import RootUser
 
-
 LIBVIRTD_PID_DIRECTORY = "/var/run/libvirt/qemu/"
+VDSM_API_YAML = "/usr/lib/python2.7/site-packages/vdsm/rpc/vdsm-api.yml"
 
 
 class VDS(Host):
@@ -73,58 +75,67 @@ class VDS(Host):
     def get_cpu_model(self):
         raise NotImplementedError()
 
-    def vds_client(self, cmd, args=list(), json=False):
+    @property
+    def vdsm_client_content(self):
+        return self._get_vdsm_client_content()
+
+    @cache.lrucache(name='vdsm_client_content')
+    def _get_vdsm_client_content(self):
+        vdsm_client_content = self.executor().run_cmd(
+            shlex.split("cat {path_}".format(path_=VDSM_API_YAML))
+        )[1]
+        return vdsm_client_content
+
+    def vds_client(self, cmd, args=None):
         """
         Run given command on host with vdsClient
-        All commands can be found in /usr/share/vdsm/rpc/bindingxmlrpc.py
+        All commands can be found under:
+        https://github.com/oVirt/vdsm/blob/master/lib/api/vdsm-api.yml
 
         Json code:
-            from vdsm import jsonrpcvdscli
-            from vdsm.config import config
-            requestQueues = config.get('addresses', 'request_queues')
-            requestQueue = requestQueues.split(',')[0]
-            conn = jsonrpcvdscli.connect(requestQueue)
+            from vdsm import client
+            cli = client.connect(localhost, 54321, use_tls=True)
 
         Args:
             cmd (str): command to execute
             args (list): command parameters optional
-            json (bool): Use json client (default is to use xml)
 
         Returns:
-            dict: command output
+            Any: vdsm-client output
 
         Examples:
             stop VM
-            out = config.VDS_HOSTS[0].vds_client("list")
-            vm_id = out['vmList'][0]['vmId']
-            config.VDS_HOSTS[0].vds_client("destroy", [vm_id])
+            out = config.VDS_HOSTS[0].vds_client("getVMList")
+            vm_id = out.get('vmList')[0].get('vmId')
+            config.VDS_HOSTS[0].vds_client("VM.destroy", {name:vm_id})
 
             getVdsCaps
-            out = config.VDS_HOSTS[0].vds_client("getVdsCapabilities")
+            out = config.VDS_HOSTS[0].vds_client("getCapabilities")
         """
-        cmd_args = "', '".join(args)
-        args_txt = "('{0}')".format(cmd_args) if cmd_args else "()"
-        if json:
-            command = (
-                'python -c "from vdsm import jsonrpcvdscli;'
-                'from vdsm.config import config;'
-                'requestQueues = config.get(\'addresses\',\'request_queues\');'
-                'requestQueue = requestQueues.split(\',\')[0];'
-                'conn = jsonrpcvdscli.connect(requestQueue);'
-                'print conn.{0}{1}"'.format(cmd, args_txt)
-            )
-        else:
-            command = (
-                'python -c "from vdsm import vdscli;'
-                'print vdscli.connect().{0}{1}"'.format(cmd, args_txt)
-            )
-        rc, out, err = self.executor().run_cmd(shlex.split(command))
-        if rc:
+        supported_actions = yaml.load(self.vdsm_client_content)
+        action = filter(lambda x: cmd in x, supported_actions.keys())
+        if not action:
+            self.logger.error("Command %s is not supported", cmd)
+            return None
+
+        if len(action) > 1:
             self.logger.error(
-                "Failed to run command '%s'; out: %s; err: %s",
-                command, out, err
+                "Found more then one value for command %s. action %s",
+                cmd, action
             )
-            return dict()
+            return None
+
+        action = action[0]
+        args = args if args else dict()
+        command = (
+            'python -c "from vdsm import client;'
+            'cli = client.connect(\'localhost\', 54321, use_tls=True);'
+            'print cli.{action}(**{args})"'.format(action=action, args=args)
+        )
+
+        rc, out, err = self.run_command(shlex.split(command))
+        if rc:
+            return None
         return ast.literal_eval(out)
 
     def get_vm_process_pid(self, vm_name):

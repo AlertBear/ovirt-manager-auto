@@ -139,4 +139,4 @@ class TestOsnp02(NetworkTest):
             )
         )[0]
         testflow.step("Check the VM %s got IP from neutron DHCP", self.vm)
-        assert ll_vms.waitForIP(vm=self.vm, get_all_ips=True, json=True)
+        assert ll_vms.wait_for_vm_ip(vm=self.vm, get_all_ips=True)

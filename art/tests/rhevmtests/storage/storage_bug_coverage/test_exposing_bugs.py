@@ -153,7 +153,9 @@ class TestCase11630(EnvironmentWithTwoHosts):
                 logger.error("Error creating vm %s", name)
 
         for name in self.vm_names:
-            self.vm_ips.append(ll_vms.waitForIP(name, timeout=30)[1]['ip'])
+            self.vm_ips.append(
+                ll_vms.wait_for_vm_ip(name, timeout=30)[1]['ip']
+            )
 
     def _shutdown_machine(self, ip):
         machine = test_utils.Machine(

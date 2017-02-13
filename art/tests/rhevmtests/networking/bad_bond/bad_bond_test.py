@@ -97,7 +97,7 @@ class TestLACPBond(NetworkTest):
             "Verifying that bond: %s on host: %s reported a %s MAC address "
             "by vdsClient", bond_name, host_name, outcome
         )
-        vds_mac =  helper.check_bond_ad_partner_mac_in_vds_client(
+        vds_mac = helper.check_bond_ad_partner_mac_in_vds_client(
             host_name=host_name, bond_name=bond_name
         )
         assert helper.check_mac_address(

@@ -99,7 +99,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     if not storage_helpers.create_vm_or_clone(**vm_args):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
     logger.info("Waiting for ip of %s", vm_name)
-    vm_ip = ll_vms.waitForIP(vm_name)[1]['ip']
+    vm_ip = ll_vms.wait_for_vm_ip(vm_name)[1]['ip']
     logger.info("Setting persistent network")
     test_utils.setPersistentNetwork(vm_ip, config.VM_LINUX_PASSWORD)
     logger.info("Stopping VM %s", vm_name)

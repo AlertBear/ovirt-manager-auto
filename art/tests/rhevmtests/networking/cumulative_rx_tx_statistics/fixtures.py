@@ -111,7 +111,7 @@ def vm_prepare_setup(request):
         assert network_helper.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )
-        ip = ll_vms.waitForIP(vm=vm, timeout=conf.TIMEOUT, json=True)[1]
+        ip = ll_vms.wait_for_vm_ip(vm=vm, timeout=conf.TIMEOUT)[1]
         mgmt_ip = ip.get("ip")
         assert mgmt_ip
 

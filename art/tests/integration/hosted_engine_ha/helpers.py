@@ -480,24 +480,23 @@ def run_power_management_command(
     """
     out = command_executor.vds_client(
         cmd="fenceNode",
-        args=[
-            host_to_fence_pm.get(conf.PM_ADDRESS),
-            host_to_fence_pm.get(conf.PM_SLOT, "0"),
-            host_to_fence_pm.get(conf.PM_TYPE),
-            host_to_fence_pm.get(conf.PM_USERNAME),
-            host_to_fence_pm.get(conf.PM_PASSWORD),
-            fence_command
-        ]
+        args={
+            "addr": host_to_fence_pm.get(conf.PM_ADDRESS),
+            "port": host_to_fence_pm.get(conf.PM_SLOT, "0"),
+            "agent": host_to_fence_pm.get(conf.PM_TYPE),
+            "username": host_to_fence_pm.get(conf.PM_USERNAME),
+            "password": host_to_fence_pm.get(conf.PM_PASSWORD),
+            "action": fence_command
+        }
     )
-    status = bool(out["status"]["code"])
-    if status:
+    if not out:
         logger.error(
             "%s: failed to %s host %s",
             command_executor,
             fence_command,
             host_to_fence_pm.get(conf.PM_ADDRESS)
         )
-    return status
+    return bool(out)
 
 
 def drop_host_he_score_to_max(host_resource):
@@ -583,11 +582,16 @@ def check_he_vm_state_via_vdsm(host_resource, expected_state=None):
     Returns:
         bool: True, if HE VM exists on the resource and has state UP
     """
-    vms = host_resource.vds_client(cmd="list")["vmList"]
+    vms = host_resource.vds_client(cmd="getVMList")
     if vms:
         logger.debug("%s: VM's that run %s", host_resource, vms)
         if expected_state:
-            return vms[0]["status"] == expected_state
+            vm_id = vms[0]
+            vm_info = host_resource.vds_client(
+                cmd="VM.getStats", args={"vmID": vm_id}
+            )
+            vm_status = vm_info[0].get("status")
+            return vm_status == expected_state
         return True
     return False
 

@@ -368,7 +368,7 @@ class TestCase14715(BaseTestCase):
 
         ll_vms.waitForVMState(self.vm_name, config.VM_UP)
 
-        ll_vms.waitForIP(self.vm_name, timeout=60)
+        ll_vms.wait_for_vm_ip(self.vm_name, timeout=60)
 
         command = WRITE_TO_FILE_CMD % self.file_path
         rc, _, error = self.vm_executor.run_cmd(

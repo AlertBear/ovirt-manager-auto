@@ -120,7 +120,7 @@ class GABaseTestCase(TestCase):
         ), "Failed to install '%s' on machine '%s'" % (package, self.machine)
         testflow.step("Starting %s service", config.AGENT_SERVICE_NAME)
         self.machine.service(config.AGENT_SERVICE_NAME).start()
-        vms.waitForIP(self.vm_name)
+        vms.wait_for_vm_ip(self.vm_name)
 
     def post_install(self, commands=None):
         """

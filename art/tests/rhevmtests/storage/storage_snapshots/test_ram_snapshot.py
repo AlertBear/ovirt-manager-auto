@@ -356,7 +356,7 @@ class TestCase5136(VMWithMemoryStateSnapshot):
         assert ll_vms.startVms([self.cloned_vm_name], config.VM_UP), (
             "Unable to start VM %s" % self.cloned_vm_name
         )
-        status, ip = ll_vms.waitForIP(self.cloned_vm_name)
+        status, ip = ll_vms.wait_for_vm_ip(self.cloned_vm_name)
         assert status, (
             "Failed to get IP for VM %s" % self.cloned_vm_name
         )

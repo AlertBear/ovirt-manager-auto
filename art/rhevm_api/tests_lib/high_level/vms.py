@@ -61,7 +61,7 @@ def get_vm_ip(vm_name, start_vm=True):
             raise errors.VMException("Failed to start vm %s" % vm_name)
 
     logging.info("Wait until vm %s is up and fetch ip", vm_name)
-    status, result = vms.waitForIP(vm_name)
+    status, result = vms.wait_for_vm_ip(vm_name)
     if not status:
         raise errors.VMException("Vm %s didn't get IP" % vm_name)
 
@@ -738,7 +738,7 @@ def create_windows_vm(
         if request.getcode() == 200:
             return request.read()
         elif request.getcode() == 404 and (
-            vms.waitForIP(vm_name, timeout=60) or
+            vms.wait_for_vm_ip(vm_name, timeout=60) or
             LookUpVMIpByName('', '').get_ip(vm_name)
         ):
             return WGT_SUCCESS_CODE

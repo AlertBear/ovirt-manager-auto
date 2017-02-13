@@ -102,7 +102,7 @@ def is_ksm_running(resource):
     Returns:
         bool: KSM state
     """
-    ksm_state = resource.vds_client(cmd="getVdsStats", json=True)["ksmState"]
+    ksm_state = resource.vds_client(cmd="Host.getStats").get("ksmState")
     logger.info("KSM state on resource %s is %s", resource, ksm_state)
     return ksm_state
 
@@ -152,8 +152,8 @@ def get_vms_ballooning_info(vm_list):
     for vm_name in vm_list:
         vm_id = ll_vms.get_vm(vm=vm_name).get_id()
         vm_stats = conf.VDS_HOSTS[0].vds_client(
-            cmd="getVmStats", args=[vm_id], json=True
-        )["items"]
+            cmd="VM.getStats", args={"vmID": vm_id}
+        )
         if not vm_stats:
             return mom_dict
         vm_stats = vm_stats[0]
