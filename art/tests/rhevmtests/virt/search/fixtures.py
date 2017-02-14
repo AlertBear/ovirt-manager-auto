@@ -65,7 +65,7 @@ def create_vm_for_search(request):
                 config.VM_UP_SEARCH_TEST),
             "memory": helper.get_gb(2),
             "memory_guaranteed": helper.get_gb(1),
-            "os_type": config.OS_TYPE,
+            "os_type": config.VM_OS_TYPE,
             "placement_affinity": config.VM_PINNED,
             "placement_host": config.HOSTS[0],
         },
