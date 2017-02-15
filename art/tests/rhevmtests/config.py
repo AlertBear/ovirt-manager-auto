@@ -2,13 +2,14 @@
 Consolidated config module
 """
 
-import logging
 import copy
-
-from art.test_handler.settings import ART_CONFIG, opts
-from art.rhevm_api.utils import test_utils
-from art.rhevm_api import resources
+import logging
+import socket
 from urlparse import urlparse
+
+from art.rhevm_api import resources
+from art.rhevm_api.utils import test_utils
+from art.test_handler.settings import ART_CONFIG, opts
 
 logger = logging.getLogger(__name__)
 
@@ -542,6 +543,12 @@ ENGINE = resources.Engine(
     schema=REST_CONNECTION.get('schema'),
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
+)
+
+# Slave host
+SLAVE_HOST = resources.Host("127.0.0.1")
+SLAVE_HOST.users.append(
+    resources.RootUser(VDC_ROOT_PASSWORD)
 )
 
 CPU_SHARE_DISABLED = 0

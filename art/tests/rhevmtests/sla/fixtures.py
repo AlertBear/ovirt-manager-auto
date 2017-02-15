@@ -285,6 +285,7 @@ def stop_guest_agent_service(request):
 
     u_libs.testflow.setup("Stop %s service", sla_config.SERVICE_GUEST_AGENT)
     assert vm_resource.service(name=sla_config.SERVICE_GUEST_AGENT).stop()
+    time.sleep(sla_config.GUEST_AGENT_TIMEOUT)
 
 
 @pytest.fixture(scope="class")

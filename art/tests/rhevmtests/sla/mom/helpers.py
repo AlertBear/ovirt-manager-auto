@@ -4,6 +4,8 @@ MOM Test Helpers
 import logging
 import shlex
 
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
@@ -34,9 +36,9 @@ def change_mom_pressure_percentage(resource, pressure_threshold):
         pressure_threshold,
         conf.BALLOON_FILE
     )
-    return not bool(
-        resource.run_command(command=shlex.split(command))[0]
-    )
+    if resource.run_command(command=shlex.split(command))[0]:
+        return False
+    return resource.service(conf.MOM_SERVICE).restart()
 
 
 def change_swapping(resource, enable):
@@ -249,3 +251,27 @@ def wait_for_vms_balloon_state(
     except APITimeout:
         logger.error("VM's %s balloons do not %s", vm_list, balloon_msg)
         return False
+
+
+def enable_host_ballooning(host_name, enable=True):
+    """
+    1) Update cluster ballooning
+    2) Deactivate the host
+    3) Activate the host
+
+    Args:
+        host_name (str): Host name
+        enable (bool): Enable or disable ballooning on the cluster
+
+    Returns:
+        bool: True, if all actions succeeds, otherwise False
+    """
+    if not ll_clusters.updateCluster(
+        positive=True,
+        cluster=conf.CLUSTER_NAME[0],
+        ballooning_enabled=enable
+    ):
+        return False
+    if not ll_hosts.deactivate_host(positive=True, host=host_name):
+        return False
+    return ll_hosts.activate_host(positive=True, host=host_name)

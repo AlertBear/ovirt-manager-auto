@@ -3,13 +3,13 @@ MOM Test Fixtures
 """
 import logging
 
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.unittest_lib as u_libs
 import config as conf
 import helpers
-import pytest
 from art.test_handler import find_test_file
 
 logger = logging.getLogger(__name__)
@@ -55,56 +55,60 @@ def stop_memory_allocation(request):
 @pytest.fixture(scope="module")
 def prepare_env_for_ballooning_test(request):
     """
-    1) Update cluster parameters
-    2) Change MOM pressure threshold to 0.40 on resources
-    3) Restart VDSM on the host
-    4) Copy memory allocation script on the host
+    1) Change MOM pressure threshold to 0.60 on resources
+    2) Restart VDSM on the host
+    3) Copy memory allocation script on the host
+    4) Enable ballooning for the host
     """
     def fin():
         """
-        1) Update balloon policy to the old value
-        2) Restart VDSM on the host
-        3) Delete memory allocation script from the host
+        1) Disable ballooning for the host
+        2) Update balloon policy to the old value
+        3) Restart VDSM on the host
+        4) Delete memory allocation script from the host
         """
-        helpers.change_mom_pressure_percentage(
-            resource=conf.VDS_HOSTS[0],
-            pressure_threshold=conf.DEFVAR_PRESSURE_THRESHOLD_020
+        results = []
+        u_libs.testflow.teardown(
+            "Disable ballooning for the host %s", conf.HOSTS[0]
         )
-        hl_hosts.restart_vdsm_and_wait_for_activation(
-            hosts_resource=[conf.VDS_HOSTS[0]],
-            dc_name=conf.DC_NAME[0],
-            storage_domain_name=conf.STORAGE_NAME[0]
+        results.append(helpers.enable_host_ballooning(host_name=conf.HOSTS[0]))
+        u_libs.testflow.teardown(
+            "Change ballooning pressure threshold to %s",
+            conf.DEFVAR_PRESSURE_THRESHOLD_020
+        )
+        results.append(
+            helpers.change_mom_pressure_percentage(
+                resource=conf.VDS_HOSTS[0],
+                pressure_threshold=conf.DEFVAR_PRESSURE_THRESHOLD_020
+            )
         )
         if conf.VDS_HOSTS[0].fs.exists(path=conf.HOST_ALLOC_PATH):
-            logger.info(
+            u_libs.testflow.teardown(
                 "Remove memory allocation script from the host %s",
                 conf.HOSTS[0]
             )
-            conf.VDS_HOSTS[0].fs.remove(path=conf.HOST_ALLOC_PATH)
+            results.append(
+                conf.VDS_HOSTS[0].fs.remove(path=conf.HOST_ALLOC_PATH)
+            )
+        assert all(results)
     request.addfinalizer(fin)
 
-    assert ll_clusters.updateCluster(
-        positive=True,
-        cluster=conf.CLUSTER_NAME[0],
-        ksm_enabled=False,
-        ballooning_enabled=True,
-        mem_ovrcmt_prc=conf.CLUSTER_OVERCOMMITMENT_DESKTOP
+    u_libs.testflow.setup(
+        "Change ballooning pressure threshold to %s",
+        conf.DEFVAR_PRESSURE_THRESHOLD_060
     )
     assert helpers.change_mom_pressure_percentage(
         resource=conf.VDS_HOSTS[0],
-        pressure_threshold=conf.DEFVAR_PRESSURE_THRESHOLD_040
+        pressure_threshold=conf.DEFVAR_PRESSURE_THRESHOLD_060
     )
-    assert hl_hosts.restart_vdsm_and_wait_for_activation(
-        hosts_resource=[conf.VDS_HOSTS[0]],
-        dc_name=conf.DC_NAME[0],
-        storage_domain_name=conf.STORAGE_NAME[0]
-    )
-    logger.info(
+    u_libs.testflow.setup(
         "Copy memory allocation script to the host %s directory %s",
         conf.HOSTS[0], conf.HOST_ALLOC_PATH
     )
-    conf.VDS_HOSTS[0].copy_to(
-        resource=conf.ENGINE_HOST,
-        src=find_test_file(conf.ALLOC_SCRIPT_LOCAL),
-        dst=conf.HOST_ALLOC_PATH
+    conf.SLAVE_HOST.fs.transfer(
+        path_src=find_test_file(conf.ALLOC_SCRIPT_LOCAL),
+        target_host=conf.VDS_HOSTS[0],
+        path_dst=conf.HOST_ALLOC_PATH
     )
+    u_libs.testflow.setup("Enable ballooning for the host %s", conf.HOSTS[0])
+    assert helpers.enable_host_ballooning(host_name=conf.HOSTS[0])

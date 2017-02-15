@@ -148,11 +148,6 @@ DEFAULT_VM_PARAMETERS = {
     VM_CPU_MODE: "custom"  # TODO W/A for 1337181
 }
 
-SLAVE_HOST = resources.Host('127.0.0.1')
-SLAVE_HOST.users.append(
-    resources.RootUser(VDC_ROOT_PASSWORD)
-)
-
 # general
 FQDN_TIMEOUT = 130
 

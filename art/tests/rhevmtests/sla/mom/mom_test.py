@@ -30,7 +30,7 @@ from rhevmtests.sla.fixtures import (
     stop_guest_agent_service,
     stop_vms,
     update_cluster,
-    update_cluster_to_default_parameters,
+    update_cluster_to_default_parameters,  # flake8: noqa
     update_vms,
     update_vms_to_default_parameters
 )
@@ -185,7 +185,6 @@ class TestKSM(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     update_vms.__name__,
     prepare_env_for_ballooning_test.__name__,
-    update_cluster_to_default_parameters.__name__,
     start_vms.__name__,
     stop_memory_allocation.__name__
 )
