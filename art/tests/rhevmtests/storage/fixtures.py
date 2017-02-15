@@ -116,27 +116,28 @@ def remove_vm(request):
 @pytest.fixture(scope='class')
 def start_vm(request):
     """
-    Start VM
+    Start VM (on a specific host if has requested)
     """
     self = request.node.cls
 
+    host = None
     wait_for_ip = getattr(self, 'vm_wait_for_ip', False)
-
-    run_on_spm = getattr(self, 'vm_run_on_spm', None)
-    if run_on_spm:
-        host = ll_hosts.getSPMHost(config.HOSTS)
-    elif run_on_spm is False:
-        host = ll_hosts.getHSMHost(config.HOSTS)
+    if hasattr(self, 'vm_run_on_spm'):
+        run_on_spm = getattr(self, 'vm_run_on_spm', None)
+        if run_on_spm:
+            host = ll_hosts.getSPMHost(config.HOSTS)
+        else:
+            host = ll_hosts.getHSMHost(config.HOSTS)
+    if host is not None:
+        testflow.setup("Starting VM %s", self.vm_name)
+        assert ll_vms.runVmOnce(True, self.vm_name, config.VM_UP, host=host), (
+            "Failed to start VM %s" % self.vm_name
+        )
     else:
-        host = None
-
-    testflow.setup("Starting VM %s", self.vm_name)
-    assert ll_vms.startVm(
-        True, self.vm_name, config.VM_UP, wait_for_ip,
-        placement_host=host
-    ), (
-        "Failed to start VM %s" % self.vm_name
-    )
+        testflow.setup("Starting VM %s", self.vm_name)
+        assert ll_vms.startVm(True, self.vm_name, config.VM_UP, wait_for_ip), (
+            "Failed to start VM %s" % self.vm_name
+        )
     if hasattr(self, 'get_vm_ip'):
         self.vm_ip = storage_helpers.get_vm_ip(self.vm_name)
 
@@ -1221,3 +1222,13 @@ def init_host_or_engine_executor(request):
     ) if executor_type is 'engine' else (
         rhevm_helpers.get_host_executor(self.host_ip, config.HOSTS_PW)
     )
+
+
+@pytest.fixture(scope='class')
+def init_vm_executor(request):
+    """
+    Initialize VM executor later used for commands executions in the VM
+    """
+    self = request.node.cls
+
+    self.vm_executor = storage_helpers.get_vm_executor(self.vm_name)
