@@ -53,6 +53,7 @@ CEPH = config.STORAGE_TYPE_CEPH
 @pytest.mark.usefixtures(
     initialize_params.__name__,
 )
+@bz({'1423027': {}})
 class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardowns of common things
