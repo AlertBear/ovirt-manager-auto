@@ -155,7 +155,7 @@ class TestActivateActiveHost(TestActiveHost):
     """
     __test__ = True
 
-    @polarion("RHEVM3-8433")
+    @polarion("RHEVM3-8821")
     def test_activate_active_host(self):
         testflow.step("Activating host %s.", hosts[0])
         assert ll_hosts.activate_host(False, host=hosts[0])
@@ -188,7 +188,7 @@ class TestUpdateHostName(TestCase):
                 )
         request.addfinalizer(finalize)
 
-    @polarion("RHEVM3-8418")
+    @polarion("RHEVM3-8839")
     def test_update_host_name(self):
         testflow.step("Updating host %s's name.", hosts[0])
         assert ll_hosts.updateHost(
@@ -350,7 +350,7 @@ class SetSPMToLow(TestCase):
                     )
                 )
 
-    @polarion("RHEVM3-8432")
+    @polarion("RHEVM3-8834")
     def test_set_spm_to_low(self):
         testflow.step("Set SPM priority on host: %s to low.", hosts[0])
         if not ll_hosts.updateHost(
@@ -394,7 +394,7 @@ class UpdateIPOfActiveHost(TestActiveHost):
                 )
         request.addfinalizer(finalize)
 
-    @polarion("RHEVM3-8419")
+    @polarion("RHEVM3-8844")
     def test_update_ip_of_activeHost(self):
         testflow.step(
             "Changing ip address for the active host: %s.",
@@ -418,7 +418,7 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
     """
     __test__ = True
 
-    @polarion("RHEVM3-8420")
+    @polarion("RHEVM3-8845")
     def test_set_active_host_to_maintenance(self):
         testflow.step("Waiting for tasks on host.")
         test_utils.wait_for_tasks(
@@ -448,7 +448,7 @@ class ReinstallHost(TestHostInMaintenance):
 
     __test__ = True
 
-    @polarion("RHEVM3-8421")
+    @polarion("RHEVM3-8846")
     def test_reinstall_host(self):
         testflow.step("Reinstall host: %s.", hosts[0])
         if not ll_hosts.install_host(
@@ -484,7 +484,7 @@ class ActivateInactiveHost(TestHostInMaintenance):
     """
     __test__ = True
 
-    @polarion("RHEVM3-8422")
+    @polarion("RHEVM3-8847")
     def test_activate_inactive_host(self):
         testflow.step("Activating host: %s.", hosts[0])
         if not ll_hosts.activate_host(True, host=hosts[0]):
@@ -498,7 +498,7 @@ class ReinstallActiveHost(TestActiveHost):
     """
     __test__ = True
 
-    @polarion("RHEVM3-8423")
+    @polarion("RHEVM3-8848")
     def test_reinstall_active_host(self):
         testflow.step("Reinstalling host: %s.", hosts[0])
         if ll_hosts.install_host(
@@ -535,7 +535,7 @@ class CreateHostWithWrongIPAddress(TestCase):
                     )
         request.addfinalizer(finalize)
 
-    @polarion("RHEVM3-8424")
+    @polarion("RHEVM3-8849")
     def test_create_host_with_wrong_IP_address(self):
         testflow.step("Adding a host with an invalid ip address.")
         if ll_hosts.add_host(
@@ -569,7 +569,7 @@ class CreateHostWithEmptyRootPassword(TestCase):
                     )
         request.addfinalizer(finalize)
 
-    @polarion("RHEVM3-8425")
+    @polarion("RHEVM3-8850")
     def test_create_host_with_empty_root_password(self):
         testflow.step("Adding a host without root password.")
         if ll_hosts.add_host(
@@ -599,7 +599,7 @@ class RemoveActiveHost(TestActiveHost):
 
         request.addfinalizer(finalizer)
 
-    @polarion("RHEVM3-8427")
+    @polarion("RHEVM3-8851")
     def test_remove_active_host(self):
         testflow.step("Removing host %s while active.", hosts[0])
         if not ll_hosts.removeHost(False, host=hosts[0]):
@@ -626,7 +626,7 @@ class SearchForHost(TestCase):
         testflow.setup("Adding host if it's missing.")
         add_host_if_missing()
 
-    @polarion("RHEVM3-8428")
+    @polarion("RHEVM3-8852")
     def test_search_for_host(self):
         testflow.step("Searching for host: %s.", hosts[0])
         if not ll_hosts.searchForHost(
