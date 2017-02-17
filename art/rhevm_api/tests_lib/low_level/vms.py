@@ -1366,6 +1366,31 @@ def getVmDisks(vm, storage_domain=None):
     return disks
 
 
+def getStorageDomainDisks(storage_domain):
+    """
+    Returns a list of the storage domain's disks formatted as data structured
+    objects
+
+    storage_domain(str): name of the VM which the disks will be retrieved
+
+    Returns:
+    list: list of disks' objects under the storage domain or None if
+    storage_domain does not exist
+    """
+
+    try:
+        storage_domain_obj = STORAGE_DOMAIN_API.find(storage_domain)
+        storage_domain_disks = STORAGE_DOMAIN_API.getElemFromLink(
+            storage_domain_obj, link_name='disks', attr='disks',
+            get_href=False,
+        )
+
+    except EntityNotFound:
+        storage_domain_disks = None
+
+    return storage_domain_disks
+
+
 def _getVmDiskById(vm, diskId):
     """
     Description: Searches for vm's disk by id
@@ -5681,3 +5706,23 @@ def get_vm_disks_ids(vm):
     else:
         return []
     pass
+
+
+def get_qcow_version_disks_snapshot(vm, snapshot):
+    """
+       Returns a list of qcow verion of each snapshot disk in a specific
+       snapshot
+
+       Args:
+           vm (str): Name of the VM
+           snapshot (str): snapshot name/description
+
+       Returns:
+           list: List of qcow version of each snapshot disk in a specific
+           snapshot
+       """
+
+    return [
+        snapshot_disk.get_qcow_version() for snapshot_disk in
+        get_snapshot_disks(vm, snapshot)
+    ]

@@ -59,7 +59,7 @@ def create_vm(request, remove_vm):
     if hasattr(self, 'vm_args'):
         vm_args.update(self.vm_args)
     testflow.setup("Creating VM %s", self.vm_name)
-    assert storage_helpers.create_vm_or_clone(**vm_args), (
+    assert storage_helpers.create_vm_or_clone(ge_cluster=True, **vm_args), (
         "Failed to create VM %s" % self.vm_name
     )
 
@@ -1068,8 +1068,9 @@ def create_export_domain(request):
         **self.storage_domain_kwargs
     ), "Unable to add export domain %s" % self.export_domain
 
+    data_center = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
     assert ll_sd.attachStorageDomain(
-        True, config.DATA_CENTER_NAME, self.export_domain
+        True, data_center, self.export_domain
     ), "Unable to attach export domain %s to data center" % (
         self.export_domain
     )
@@ -1085,8 +1086,9 @@ def remove_export_domain(request):
     def finalizer():
         if ll_sd.checkIfStorageDomainExist(True, self.export_domain):
             testflow.teardown("Remove export domain %s", self.export_domain)
+            data_center = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
             assert hl_sd.remove_storage_domain(
-                self.export_domain, config.DATA_CENTER_NAME, self.spm,
+                self.export_domain, data_center, self.spm,
                 engine=config.ENGINE, format_disk=True
             ), "Failed to remove export domain %s" % self.export_domain
     request.addfinalizer(finalizer)
@@ -1233,3 +1235,66 @@ def init_vm_executor(request):
     self = request.node.cls
 
     self.vm_executor = storage_helpers.get_vm_executor(self.vm_name)
+
+
+@pytest.fixture(scope='class')
+def create_several_snapshots(request):
+    """
+    Create several snapshot of VM
+    """
+    self = request.node.cls
+
+    self.snapshot_list = []
+
+    for snap in range(self.snap_count):
+
+        snapshot_description = getattr(
+            self, 'snapshot_description',
+            storage_helpers.create_unique_object_name(
+                self.__name__, config.OBJECT_TYPE_SNAPSHOT
+            ) + '%s' % snap
+        )
+        testflow.setup(
+            "Creating snapshot %s of VM %s",
+            snapshot_description, self.vm_name
+        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, snapshot_description
+        ), "Failed to create snapshot of VM %s" % self.vm_name
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK], snapshot_description
+        )
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+
+        self.snapshot_list.append(snapshot_description)
+
+
+@pytest.fixture(scope='class')
+def import_image_from_glance(request):
+    """
+    Import image from glance as template to new created domain
+    """
+    self = request.node.cls
+
+    getattr(
+        self, 'storage_domain', ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+    )
+
+    self.disk_alias = storage_helpers.create_unique_object_name(
+        self.__name__, config.OBJECT_TYPE_DISK
+    )
+    import_as_template = getattr(self, 'import_as_template', True)
+    cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
+
+    assert ll_sd.import_glance_image(
+        config.GLANCE_DOMAIN, config.GOLDEN_GLANCE_IMAGE,
+        self.storage_domain, cluster,
+        new_disk_alias=self.disk_alias,
+        import_as_template=import_as_template,
+    ), "Importing glance image %s from repository %s failed" % (
+        config.GOLDEN_GLANCE_IMAGE, config.GLANCE_DOMAIN
+    )
+
+    ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE])

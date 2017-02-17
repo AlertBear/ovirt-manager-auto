@@ -46,6 +46,7 @@ SNAPSHOT_API = get_api('snapshot', 'snapshots')
 TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
 CONN_API = get_api('storage_connection', 'storageconnections')
+DISK_SNAPSHOT_API = get_api('disk_snapshot', 'disk_snapshots')
 
 logger = logging.getLogger("art.ll_lib.disks")
 BLOCK_DEVICES = [ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']]
@@ -206,6 +207,8 @@ def _prepareDiskObject(**kwargs):
     :type snapshot: snapshot object
     :param update: Disk object to update with the kwargs
     :type update: disk object
+    :param qcow_version: Qcow disk version 'qcow2_v2' or 'qcow2_v3'
+    :type qcow_version: str
     :return: Disk object with the updated kwargs
     :rtype: Disk object
     """
@@ -282,6 +285,11 @@ def _prepareDiskObject(**kwargs):
     if description is not None:
         disk.set_description(description)
 
+    # qcow_version
+    qcow_version = kwargs.pop('qcow_version', None)
+    if qcow_version:
+        disk.set_qcow_version(qcow_version)
+
     return disk
 
 
@@ -350,6 +358,7 @@ def updateDisk(positive, **kwargs):
                                connection to use instead of creating a new one
         * active - True or False whether disk should be automatically activated
         You cannot set both storage_connection and lun_* in one call!
+        * qcow_version - 'qcow2_v3' or 'qcow2_v2' whether disk version v2 or v3
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
     """
@@ -380,6 +389,61 @@ def updateDisk(positive, **kwargs):
     )
     response, status = DISK_ATTACHMENTS_API.update(
         disk_attachment_object, new_disk_attachment_object, positive,
+    )
+    return status
+
+
+def update_disk_from_disk_api(positive, disk, attribute='name', **kwargs):
+    """
+    Update already existing disk directly from disk API
+
+    Arguments:
+        disk: mandatory , the name or id of the disk
+        attribute: The key to use for finding disk object ('id', 'name')
+
+    kwargs:
+        compare(bool) - True by default , check RESTAPI expected return value
+        right after update
+        description(str) - description for the current disk
+        provisioned_size(int) - size of the disk
+        interface(str) - IDE or virtio
+        format(str) - raw or cow
+        sparse(bool) - True or False whether disk should be sparse
+        bootable(bool) - True or False whether disk should be bootable
+        shareable(bool) - True or False whether disk should be sharable
+        allow_snapshot(bool) - True or False whether disk should allow
+        snapshots
+        propagate_errors(bool) - True or False whether disk should propagate
+         errors
+        wipe_after_delete(bool) - True or False whether disk should wiped after
+                              deletion
+        read_only(bool) - True if disk should be read only, False otherwise
+        storagedomain(str) - name of storage domain where disk will reside
+        quota(str) - disk quota
+        storage_connection(str) - in case of direct LUN - existing storage
+                               connection to use instead of creating a new one
+        active(bool) - True or False whether disk should be automatically
+         activated
+         You cannot set both storage_connection and lun_* in one call!
+        qcow_version(str) - 'qcow2_v3' or 'qcow2_v2' whether disk version
+         v2 or v3
+
+    Return:
+        bool: Status of the operation's result dependent on positive value
+    """
+
+    # Get the disk parameters and construct the disk object
+
+    if attribute == 'id':
+        disk_object = get_disk_obj(disk, attribute='id')
+    elif attribute == 'name':
+        disk_object = get_disk_obj(disk, attribute='name')
+
+    # Create the new disk object to be updated
+    new_disk_object = _prepareDiskObject(**kwargs)
+    # As update operation can take time thus compare value choice is given
+    response, status = DISKS_API.update(
+        disk_object, new_disk_object, positive, compare=compare
     )
     return status
 
@@ -1054,3 +1118,42 @@ def get_non_ovf_disks():
             d.get_alias() != ENUMS['ovf_disk_alias']
         )
     ]
+
+
+def get_qcow_version_disk(disk_name, attribute='name'):
+    """
+    Get the qcow_version info from disk name or id
+
+    Arguments:
+        disk_name(str) - The name of the disk
+        attribute(str)- The key to use for finding disk object ('id', 'name')
+
+    Returns:
+        str: Qcow value - 'qcow2_v2' or 'qcow2_v3'
+    """
+
+    disk_object = get_disk_obj(disk_name, attribute)
+    return disk_object.get_qcow_version()
+
+
+def get_storage_domain_diskssnapshots_objects(storagedomain, get_href=False):
+    """
+    Returns all disksnapshots objects list in the given storage domain
+
+    Arguments:
+        storagedomain(str) - name of the storage domain
+        get_href(bool)     - True if function should return href to objects,
+        False if it should return list of snapshot disks objects
+
+    Returns:
+        list : snapshot disks objects list
+    """
+
+    storage_domain_object = STORAGE_DOMAIN_API.find(storagedomain)
+    storage_domain_disksnapshots_objects = DISK_SNAPSHOT_API.getElemFromLink(
+        storage_domain_object,
+        link_name='disksnapshots',
+        attr='disk_snapshot',
+        get_href=get_href,
+    )
+    return storage_domain_disksnapshots_objects

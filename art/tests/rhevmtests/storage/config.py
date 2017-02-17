@@ -100,6 +100,9 @@ BLANK_TEMPLATE_ID = "00000000-0000-0000-0000-000000000000"
 COW_DISK = DISK_FORMAT_COW
 RAW_DISK = DISK_FORMAT_RAW
 
+QCOW_V3 = DISK_QCOW_V3
+QCOW_V2 = DISK_QCOW_V2
+
 KILL_VDSM = "kill `systemctl show vdsmd -p MainPID | awk -F '=' {'print $2'}`"
 RESTART_ENGINE = "systemctl restart ovirt-engine.service"
 
@@ -323,7 +326,7 @@ clone_vm_args = {
 }
 
 GLUSTER_REPLICA_PATH = PARAMETERS.get('gluster_replica_path', None)
-GLUSTER_REPLICA_SERVERS= get_list(PARAMETERS, 'gluster_replica_servers')
+GLUSTER_REPLICA_SERVERS = get_list(PARAMETERS, 'gluster_replica_servers')
 
 REGEX_DD_WIPE_AFTER_DELETE = 'dd.* if=/dev/zero.* of=.*/%s'
 

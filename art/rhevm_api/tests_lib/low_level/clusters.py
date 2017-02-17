@@ -307,10 +307,13 @@ def updateCluster(positive, cluster, **kwargs):
         migration_bandwidth (str): Bandwidth assignment method
         migration_custom_bandwidth (int): Custom bandwidth
         mac_pool (str): New MAC pool for the DC
+        compare (bool): True by default and run compareElements,
+            otherwise compareElements doesn't run
 
     Returns:
         bool: True, if update succeed, otherwise False
     """
+    compare = kwargs.get('compare', True)
     old_cluster_obj = util.find(cluster)
     new_cluster_obj = _prepareClusterObject(**kwargs)
     log_info, log_error = ll_general.get_log_msg(
@@ -319,7 +322,7 @@ def updateCluster(positive, cluster, **kwargs):
     )
     logger.info(log_info)
     new_cluster_obj, status = util.update(
-        old_cluster_obj, new_cluster_obj, positive
+        old_cluster_obj, new_cluster_obj, positive, compare=compare
     )
     if not status:
         logger.error(log_error)

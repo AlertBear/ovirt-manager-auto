@@ -438,6 +438,10 @@ DISK_INTERFACE = INTERFACE_VIRTIO
 DISK_FORMAT_COW = ENUMS['format_cow']
 DISK_FORMAT_RAW = ENUMS['format_raw']
 
+# Disk qcow version
+DISK_QCOW_V2 = ENUMS['qcow2_version2']
+DISK_QCOW_V3 = ENUMS['qcow2_version3']
+
 # Disk types
 DISK_TYPE_SYSTEM = ENUMS['disk_type_system']
 DISK_TYPE_DATA = ENUMS['disk_type_data']

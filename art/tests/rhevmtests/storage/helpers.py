@@ -333,7 +333,7 @@ def get_vm_ip(vm_name):
 # flake8: noqa
 def create_vm_or_clone(
     positive, vmName, vmDescription='', cluster=config.CLUSTER_NAME,
-    **kwargs
+    ge_cluster=True, **kwargs
 ):
     """
     Create a VM from scratch for non-GE environments, clones VM from
@@ -357,6 +357,8 @@ def create_vm_or_clone(
     True in case clone vm from template should be deep copy, False if clone
     should be thin copy (Default is thin copy - False)
     :type deep_copy: bool
+    :param ge_cluster: True if cluster is in ge
+    :type ge_cluster: bool
     :return: True if successful in creating the vm, False otherwise
     :rtype: bool
     """
@@ -371,7 +373,11 @@ def create_vm_or_clone(
     if installation:
         start = kwargs.get('start', 'false')
         storage_domains = ll_sd.get_storagedomain_names()
-        template_name = rhevm_helpers.get_golden_template_name(cluster)
+        if ge_cluster:
+            template_name = rhevm_helpers.get_golden_template_name(cluster)
+        else:
+            template_name = ll_templates.get_template_from_cluster(cluster)[0]
+
         # Create VM from template
         if clone_from_template and template_name:
             logger.info("Cloning vm %s", vmName)
