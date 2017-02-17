@@ -113,8 +113,12 @@ class AttribDecorator(object):
         keywords = {}
         tier = 0
         for _, kwargs in mark._arglist[::-1]:
-            if kwargs.get('tier', tier) > tier:
-                tier = kwargs['tier']
+            item_tier = kwargs.get('tier', tier)
+            if isinstance(item_tier, str):
+                tier = item_tier
+                break
+            if item_tier > tier:
+                tier = item_tier
             keywords.update(kwargs)
         if tier:
             keywords['tier'] = tier
@@ -154,8 +158,13 @@ class AttribDecorator(object):
             if not item_attr or item.get_marker('timeout'):
                 continue
             item_tier = item_attr.kwargs.get("tier")
-            if item_tier:
-                items[index].add_marker(timeout(MIN*60*item_tier))
+            if not item_tier:
+                break
+            _timeout = MIN*60
+            if isinstance(item_tier, int):
+                _timeout *= item_tier
+            item_timeout = timeout(_timeout)
+            items[index].add_marker(item_timeout)
 
     def pytest_collection_modifyitems(self, session, config, items):
         for item in items[:]:

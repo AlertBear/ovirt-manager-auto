@@ -28,12 +28,16 @@ class LogTestInfo(object):
             self.statistics[item.nodeid]['testname'] = item.nodeid
             item_attr = item.get_marker('attr')
             tier = 0
-            for _, kwargs in item_attr._arglist:
-                if kwargs.get('tier', tier) > tier:
-                    tier = kwargs['tier']
-            team = item_attr.kwargs.get('team')
-            if tier == 0 or team is None:
-                return
+            team = "undefined_team"
+            if hasattr(item_attr, "_arglist"):
+                for _, kwargs in item_attr._arglist:
+                    item_tier = kwargs.get('tier', tier)
+                    if isinstance(item_tier, str):
+                        tier = item_tier
+                        break
+                    if item_tier > tier:
+                        tier = item_tier
+                team = item_attr.kwargs.get('team', team)
             self.statistics[item.nodeid]['tier'] = tier
             self.statistics[item.nodeid]['team'] = team
             for when in ('setup', 'call', 'teardown'):
