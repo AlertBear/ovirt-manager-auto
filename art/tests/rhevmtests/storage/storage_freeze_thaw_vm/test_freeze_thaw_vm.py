@@ -11,7 +11,7 @@ import re
 import paramiko
 import socket
 from art.rhevm_api.tests_lib.low_level import (
-    vms as ll_vms
+    vms as ll_vms,
 )
 from rhevmtests.storage import config
 from art.test_handler.tools import polarion
@@ -231,6 +231,7 @@ class TestCase14716(BaseTestCase):
         assert ll_vms.addSnapshot(
             True, self.vm_name, self.snapshot_description
         ), "Taking a snapshot while the VM's filesystems are frozen failed"
+        ll_vms.waitForVMState(self.vm_name)
 
 
 class TestCase14715(BaseTestCase):
