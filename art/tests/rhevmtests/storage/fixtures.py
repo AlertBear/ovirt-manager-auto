@@ -1126,7 +1126,7 @@ def move_host_to_another_cluster(request):
         "Move host %s into the newly created cluster", self.host_name
     )
     assert hl_hosts.move_host_to_another_cluster(
-            self.host_name, self.cluster_name
+        self.host_name, self.cluster_name
     ), (
         "Could not move host '%s' into cluster '%s'" % (
             self.host_name, self.cluster_name

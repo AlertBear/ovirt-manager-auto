@@ -361,3 +361,6 @@ class TestCase11504(BasicEnvironment):
                 config.LIVE_SNAPSHOT_DESCRIPTION
             )
             assert ll_disks.wait_for_disks_status(disk_alias)
+            ll_vms.wait_for_vm_snapshots(
+                vm_name=self.vm_name, states=[config.SNAPSHOT_OK]
+            )
