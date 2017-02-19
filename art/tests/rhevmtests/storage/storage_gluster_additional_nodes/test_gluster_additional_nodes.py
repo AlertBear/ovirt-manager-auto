@@ -360,7 +360,7 @@ class BaseTestBlockingNodes(BaseGlusterMount):
         super(BaseTestBlockingNodes, self).tearDown()
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=2)
 class TestBlockingNodesBackupVolFile(BaseTestBlockingNodes):
     """
     Test gluster domain is available after blocking different nodes
@@ -370,7 +370,7 @@ class TestBlockingNodesBackupVolFile(BaseTestBlockingNodes):
     backup_vol_file_server = True
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=2)
 class TestBlockingNodesWithNoBackupVolFile(BaseTestBlockingNodes):
     """
     Test gluster domain is available after blocking different nodes
@@ -380,7 +380,7 @@ class TestBlockingNodesWithNoBackupVolFile(BaseTestBlockingNodes):
     backup_vol_file_server = False
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=3)
 class Test12320(BaseGlusterMount):
     """
     Test Gulester setup with Unavailable Master and 2 Available secondary
@@ -407,7 +407,7 @@ class Test12320(BaseGlusterMount):
         self.verify_add_storage_domain(positive=True)
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=3)
 class Test12322(BaseGlusterMount):
     """
     Test Gluster setup with Available Master and 1 Available Secondary
@@ -424,7 +424,7 @@ class Test12322(BaseGlusterMount):
         self.verify_add_storage_domain(positive=True)
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=3)
 class Test12323(BaseGlusterMount):
     """
     Test Gluster setup with Unavailable Master and 1 Available Secondary
@@ -443,7 +443,7 @@ class Test12323(BaseGlusterMount):
         self.verify_add_storage_domain(positive=False)
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=2)
 class Test12324(BaseGlusterMount):
     """
     Test Gluster setup with with All RHS servers available
@@ -461,7 +461,7 @@ class Test12324(BaseGlusterMount):
         self.verify_add_storage_domain(positive=True)
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=3)
 class Test12325(BaseGlusterMount):
     """
     Test a Gluster setup with an Available master and 2 Unavailable
@@ -480,7 +480,7 @@ class Test12325(BaseGlusterMount):
         self.verify_add_storage_domain(positive=False)
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=2)
 class Test12326(BaseGlusterMount):
     """
     Test Gluster setup with with All RHS servers unavailable
@@ -497,7 +497,7 @@ class Test12326(BaseGlusterMount):
         self.verify_add_storage_domain(positive=False)
 
 
-@attr(tier=config.DO_NOT_RUN)
+@attr(tier=3)
 class VerifyGlusterMountParameteres(BaseGlusterMount):
     """
     Test the backup-volfile-servers parameter works as expected.
