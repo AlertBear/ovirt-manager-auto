@@ -132,7 +132,6 @@ class TestUpgrade(TestCase):
     storage_domain = None
     name_pattern = None
     new_dc_name = None
-    new_dc_name = None
     nfs_sd_name = None
     iscsi_sd_name = None
     gluster_sd_name = None
