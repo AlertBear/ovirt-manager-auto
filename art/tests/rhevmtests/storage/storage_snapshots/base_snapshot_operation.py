@@ -6,7 +6,7 @@ import pytest
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage import config
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import StorageTest as TestCase, attr, testflow
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,

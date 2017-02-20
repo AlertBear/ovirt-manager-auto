@@ -1,7 +1,6 @@
 import logging
 from art.rhevm_api.utils.inventory import Inventory
 import config
-import helper
 
 logger = logging.getLogger(__name__)
 

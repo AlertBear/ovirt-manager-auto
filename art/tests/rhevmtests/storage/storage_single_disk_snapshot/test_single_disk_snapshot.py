@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.high_level import (
 from art.rhevm_api.utils import storage_api
 from art.rhevm_api.utils import test_utils
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 
 from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers

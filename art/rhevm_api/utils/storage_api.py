@@ -3,13 +3,8 @@ A collection of wrappers which allow the usage of general utils functions and
 storage API in the REST framework.
 """
 import logging
-import os
 
-import utilities.utils as utils
-import utilities.VDS4 as vds4
 from utilities import machine
-import utilities.storage_utils as st_util
-from utilities.host_utils import VdsLinuxMachine
 
 log = logging.getLogger("storage_api")
 

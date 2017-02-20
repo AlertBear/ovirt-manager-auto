@@ -232,7 +232,7 @@ class TestUpgrade_40_to_41(TestUpgrade):
     new_dc_name = 'dc_upgrade_%s_to_%s' % name_pattern
     cluster_name = 'cluster_upgrade_%s_to_%s' % name_pattern
     nfs_sd_name = "sd_upgrade_%s_to_%s_nfs" % name_pattern
-    iscsi_sd_name  = "sd_upgrade_%s_to_%s_iscsi" % name_pattern
+    iscsi_sd_name = "sd_upgrade_%s_to_%s_iscsi" % name_pattern
     gluster_sd_name = "sd_upgrade_%s_to_%s_gluster" % name_pattern
     fcp_sd_name = "sd_upgrade_%s_to_%s_fcp" % name_pattern
     cluster_version = '4.0'

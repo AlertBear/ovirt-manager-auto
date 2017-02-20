@@ -8,7 +8,7 @@ from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import users as usr
 from art.unittest_lib import testflow
-from rhevmtests.fixtures import start_vm
+from rhevmtests.fixtures import start_vm  # noqa
 import helper
 
 logger = logging.getLogger("serial_console_fixture")
@@ -130,7 +130,7 @@ def setup_vm(request, generate_and_upload_key):
     sc_conf.SC_VM_ID = ll_vms.get_vm(sc_conf.SERIAL_CONSOLE_VM).get_id()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='class')  # noqa
 def setup_env(setup_vm, start_vm):
     """
     Setup of services for SC on VM and Enable SC VM. Being executed after

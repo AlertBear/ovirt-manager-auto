@@ -11,7 +11,6 @@ from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_cluster
 )
 import rhevmtests.virt.helper as virt_helper
-import windows_helper
 import config
 
 

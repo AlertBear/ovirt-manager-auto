@@ -40,7 +40,7 @@ from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import (
-    searchForObj, getImageByOsType, convertMacToIpAddress,
+    searchForObj, convertMacToIpAddress,
     checkHostConnectivity, update_vm_status_in_database, get_api, split,
     waitUntilGone,
 )
@@ -2856,7 +2856,6 @@ def createVm(
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
-    ip = False
     if not vmDescription:
         vmDescription = vmName
     if not addVm(

@@ -7,7 +7,6 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     disks as ll_disks,
     jobs as ll_jobs,
-    hosts as ll_hosts,
 )
 import rhevmtests.storage.helpers as storage_helpers
 from art.unittest_lib.common import testflow

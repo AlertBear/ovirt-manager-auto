@@ -10,14 +10,14 @@ from art.test_handler.settings import opts
 import live_storage_migration_base as basePlan
 from art.test_handler.tools import bz
 
-from rhevmtests.storage.fixtures import (
+from rhevmtests.storage.fixtures import (  # noqa
     update_vm_disk, create_snapshot, delete_disks, deactivate_domain,
     add_disk_permutations, remove_templates, remove_vms, restart_vdsmd,
     unblock_connectivity_storage_domain_teardown, wait_for_disks_and_snapshots,
     initialize_storage_domains, initialize_variables_block_domain, create_vm,
     start_vm, create_second_vm, poweroff_vm
 )
-from rhevmtests.storage.storage_live_migration.fixtures import (
+from rhevmtests.storage.storage_live_migration.fixtures import (  # noqa
     initialize_params, initialize_disk_args, add_disk, attach_disk_to_vm,
     initialize_domain_to_deactivate, create_disks_for_vm, create_templates,
     prepare_disks_for_vm, initialize_vm_and_template_names,

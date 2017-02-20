@@ -1,4 +1,3 @@
-from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import BaseTestCase, testflow
 
 from art.rhevm_api.tests_lib.low_level import (

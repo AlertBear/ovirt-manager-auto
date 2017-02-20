@@ -6,7 +6,7 @@ from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.settings import opts
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 from art.unittest_lib.common import testflow
 from fixtures import (

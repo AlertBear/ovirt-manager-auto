@@ -6,7 +6,7 @@ Storage/3_3_Storage_Ram_Snapshots
 from rhevmtests.storage import config
 import logging
 import pytest
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     vms as ll_vms,

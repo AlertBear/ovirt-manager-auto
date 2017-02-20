@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage.fixtures import (

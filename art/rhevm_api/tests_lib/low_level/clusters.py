@@ -526,7 +526,7 @@ def _prepare_affinity_group_object(**kwargs):
                 getattr(collection_obj, add_method_name)(element_obj)
             affinity_group_elements[collection_name] = collection_obj
     kwargs.update(affinity_group_elements)
-    
+
     return ll_general.prepare_ds_object("AffinityGroup", **kwargs)
 
 

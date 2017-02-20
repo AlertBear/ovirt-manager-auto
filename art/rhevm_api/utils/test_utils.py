@@ -19,29 +19,22 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import threading
 
-from contextlib import contextmanager
 import logging
-from lxml import etree
-import random
 import re
 import time
 import os
 import shutil
-from socket import gethostname
 
-from art.test_handler.exceptions import QueryNotFoundException
 import art.test_handler.settings as settings
 from utilities.rhevm_tools.base import Setup
 from art.core_api.validator import compareCollectionSize
 from art.core_api.apis_utils import TimeoutingSampler
 from utilities.utils import (
     convertMacToIp,
-    pingToVms,
     createDirTree,
 )
-from utilities.machine import Machine, eServiceAction, LINUX
+from utilities.machine import Machine, LINUX
 from art.core_api.apis_exceptions import (
-    APITimeout,
     EntityNotFound,
     TestCaseError,
 )
