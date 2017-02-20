@@ -53,7 +53,7 @@ DISK_DEPLOY = "disk"
 
 # Appliance constants
 APPLIANCE_PATH = None
-RHEVM_APPLIANCE_PACKAGE = "rhevm-appliance"
+RHEVM_APPLIANCE_PACKAGE = "rhvm-appliance"
 OVIRT_APPLIANCE_PACKAGE = "ovirt-engine-appliance"
 RHEL_RHEVM_APPLIANCE_DIR = "/tmp"
 RHEVH_RHEVM_APPLIANCE_DIR = "/data"
