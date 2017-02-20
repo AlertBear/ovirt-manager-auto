@@ -143,8 +143,8 @@ def import_block_storage_domain(
     for id_ in sd_ids:
         # id == u'id="xxxx-yyyy-zzzz-qqqq">
         # str(id) ==> convert it to str (u' is removed)
-        # strip('id="">') ==> removes id=" and ">
-        sd_id = str(id_.strip('id="">'))
+        # strip('id=>')[1:-1] ==> removes id=" and ">
+        sd_id = str(id_.strip('id=>')[1:-1])
 
         storage_object = ll_sd.HostStorage()
         storage_object.set_type(storage_type)
