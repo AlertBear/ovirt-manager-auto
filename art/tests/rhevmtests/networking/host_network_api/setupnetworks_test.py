@@ -115,6 +115,8 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
     8. Create 3 BONDs.
     9. Attach label to BOND.
     10. Create BOND with 5 slaves.
+    11. Create BOND with custom BOND mode
+    12. Update BOND with custom MODE to another custom MODE
     """
     # test_01_create_bond params
     # test_02_update_bond_add_slave params
@@ -144,6 +146,14 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
     # test_10_create_bond_with_5_slaves params
     bond_5 = "bond025"
     dummys_5 = net_api_conf.DUMMYS[8:12]
+
+    # test_11_create_bond_custom_mode params
+    bond_6 = "bond026"
+    dummys_6 = net_api_conf.DUMMYS[13:15]
+    create_custom_mode = "balance-rr arp_interval=1"
+
+    # test_12_update_bond_custom_mode params
+    update_custom_mode = "active-backup arp_ip_target=192.168.0.2"
 
     # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
@@ -307,6 +317,43 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
         testflow.step(
             "Create BOND %s with 5 slaves %s", self.bond_5, self.dummys_5
         )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+
+    @polarion("RHEVM3-19345")
+    def test_11_create_bond_custom_mode(self):
+        """
+        Create BOND with custom mode
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": self.bond_6,
+                    "slaves": self.dummys_6,
+                    "mode": self.create_custom_mode
+                }
+            }
+        }
+        testflow.step("Create BOND %s with custom mode", self.bond_6)
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+
+    @polarion("RHEVM3-19346")
+    def test_12_update_bond_custom_mode(self):
+        """
+        Update BOND with custom mode
+        """
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "nic": self.bond_6,
+                    "mode": self.update_custom_mode
+                }
+            }
+        }
+        testflow.step("Update BOND %s with custom mode", self.bond_6)
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
