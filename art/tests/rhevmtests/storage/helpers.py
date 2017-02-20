@@ -1275,7 +1275,9 @@ def clean_dc(dc_name, cluster_name, dc_host, sd_name=None):
     )
 
 
-def add_storage_domain(storage_domain, data_center, index, storage_type):
+def add_storage_domain(
+    storage_domain, data_center, index, storage_type, **domain_kwargs
+):
     """
     Add storage domain to given data-center
 
@@ -1284,28 +1286,33 @@ def add_storage_domain(storage_domain, data_center, index, storage_type):
         data_center (str): Name of the data-center
         index (int): Index for the additional resources
         storage_type (str): Storage domain type
+        domain_kwargs (dict): storage domain key args
+
     Raises:
         StorageDomainException : If Fails to add the storage-domain
     """
+
     spm = ll_hosts.get_spm_host(config.HOSTS)
     if storage_type == config.STORAGE_TYPE_ISCSI:
-        status = hl_sd.addISCSIDataDomain(
+        status = hl_sd.add_iscsi_data_domain(
             spm,
             storage_domain,
             data_center,
             config.UNUSED_LUNS[index],
             config.UNUSED_LUN_ADDRESSES[index],
             config.UNUSED_LUN_TARGETS[index],
-            override_luns=True
+            override_luns=True,
+            **domain_kwargs
         )
 
     elif storage_type == config.STORAGE_TYPE_FCP:
-        status = hl_sd.addFCPDataDomain(
+        status = hl_sd.add_fcp_data_domain(
             spm,
             storage_domain,
             data_center,
             config.UNUSED_FC_LUNS[index],
-            override_luns=True
+            override_luns=True,
+            **domain_kwargs
         )
     elif storage_type == config.STORAGE_TYPE_NFS:
         nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[index]
@@ -1316,7 +1323,8 @@ def add_storage_domain(storage_domain, data_center, index, storage_type):
             data_center=data_center,
             address=nfs_address,
             path=nfs_path,
-            format=True
+            format=True,
+            **domain_kwargs
         )
     elif storage_type == config.STORAGE_TYPE_GLUSTER:
         gluster_address = (
@@ -1329,22 +1337,24 @@ def add_storage_domain(storage_domain, data_center, index, storage_type):
             data_center=data_center,
             address=gluster_address,
             path=gluster_path,
-            vfs_type=config.ENUMS['vfs_type_glusterfs']
+            vfs_type=config.ENUMS['vfs_type_glusterfs'],
+            **domain_kwargs
         )
     elif storage_type == config.STORAGE_TYPE_CEPH:
-            posix_address = (
-                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index]
-            )
-            posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index]
-            status = hl_sd.addPosixfsDataDomain(
-                host=spm,
-                storage=storage_domain,
-                data_center=data_center,
-                address=posix_address,
-                path=posix_path,
-                vfs_type=config.STORAGE_TYPE_CEPH,
-                mount_options=config.CEPH_MOUNT_OPTIONS
-            )
+        posix_address = (
+            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index]
+        )
+        posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index]
+        status = hl_sd.addPosixfsDataDomain(
+            host=spm,
+            storage=storage_domain,
+            data_center=data_center,
+            address=posix_address,
+            path=posix_path,
+            vfs_type=config.STORAGE_TYPE_CEPH,
+            mount_options=config.CEPH_MOUNT_OPTIONS,
+            **domain_kwargs
+        )
     assert status, "Creating %s storage domain '%s' failed" % (
         storage_type, storage_domain
     )
@@ -1462,3 +1472,66 @@ def kill_vdsm_on_hsm_executor(
     """
     host = hsm_host or get_hsm_host(job_description, step_description)
     return ll_hosts.kill_vdsmd(host)
+
+
+def maintenance_and_activate_hosts():
+    """
+    Put all data center's hosts in maintenance and activate them. Used mainly
+    in order to refresh the iSCSI sessions or issue SCSI bus rescan for FC
+    after LUNs list modification (i.e, new LUN creation or deletion (LUNs
+    deletion for FC require hosts reboot)).
+    """
+    logger.info("Deactivating hosts %s", config.HOSTS)
+    assert hl_hosts.deactivate_hosts_if_up(config.HOSTS), (
+        "Failed to deactivate hosts %s" % config.HOSTS
+    )
+
+    logger.info("Activating hosts %s", config.HOSTS)
+    for host in config.HOSTS:
+        assert hl_hosts.activate_host_if_not_up(host), (
+            "Failed to activate host %s" % host
+        )
+    assert ll_hosts.wait_for_spm(
+        config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+        config.WAIT_FOR_SPM_INTERVAL
+    ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
+
+
+def reboot_hosts():
+    """
+    Reboot all data center's hosts.
+    Necessary for updating hosts that use FC for LUNs list update after LUNs
+    removal.
+    """
+    hosts_ip = [ll_hosts.get_host_ip(host) for host in config.HOSTS]
+    logger.info("Deactivating hosts %s", config.HOSTS)
+    assert hl_hosts.deactivate_hosts_if_up(config.HOSTS), (
+        "Failed to deactivate hosts %s" % config.HOSTS
+    )
+
+    for host_ip in hosts_ip:
+        logger.info("Rebooting Host %s", host_ip)
+        executor = rhevm_helpers.get_host_executor(
+            host_ip, config.VDC_ROOT_PASSWORD
+        )
+        rc, out, error = executor.run_cmd(cmd=shlex.split(config.REBOOT_CMD))
+        assert rc, "Failed to reboot Host %s, error: %s, out: %s" % (
+            host_ip, error, out
+        )
+
+    for host_ip in hosts_ip:
+        executor = rhevm_helpers.get_host_executor(
+            host_ip, config.VDC_ROOT_PASSWORD
+        )
+        executor.wait_for_connectivity_state(positive=True)
+
+    logger.info("Activating hosts %s", config.HOSTS)
+    for host in config.HOSTS:
+        assert hl_hosts.activate_host_if_not_up(host), (
+            "Failed to activate host %s" % host
+        )
+
+    assert ll_hosts.wait_for_spm(
+        config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+        config.WAIT_FOR_SPM_INTERVAL
+    ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
