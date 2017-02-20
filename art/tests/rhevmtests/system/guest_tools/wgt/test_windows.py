@@ -5,6 +5,7 @@ product/services/drivers relevant to windows machine are installed/running.
 import logging
 import pytest
 import re
+import subprocess
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
@@ -23,6 +24,17 @@ from rhevmtests.system.guest_tools.wgt import config
 
 logger = logging.getLogger(__name__)
 GUEST_FAMILY = 'Windows'
+cd_with_tools = 'RHEV-toolsSetup_{}.iso'
+
+
+def get_latest_gt_iso_version_from_latest_repo_and_change_variable():
+    global cd_with_tools
+    cd_with_tools = cd_with_tools.format(
+        re.search(
+            "guest-tools-iso-(\d+\.\d+-\d+)",
+            subprocess.check_output(["curl", config.REPO]).decode("utf-8")
+        ).group(1).replace('-', '_')
+    )
 
 
 def import_image(disk_name):
@@ -53,6 +65,7 @@ def module_setup(request):
                 ll_disks.deleteDisk(True, disk.get_alias())
     request.addfinalizer(fin_vms)
 
+    get_latest_gt_iso_version_from_latest_repo_and_change_variable()
     if not ll_sds.is_storage_domain_active(
             config.DC_NAME[0], config.ISO_DOMAIN_NAME
     ):
@@ -111,7 +124,7 @@ class Windows(TestCase):
         testflow.setup("Create windows VM %s", cls.vm_name)
         ret = hl_vms.create_windows_vm(
             disk_name=cls.disk_name,
-            iso_name=config.CD_WITH_TOOLS,
+            iso_name=cd_with_tools,
             agent_url=config.AGENT_URL,
             positive=True,
             vmName=cls.vm_name,
