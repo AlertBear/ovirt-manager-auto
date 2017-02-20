@@ -7,9 +7,11 @@ Fixtures for Bad Bond feature
 
 import pytest
 
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import helper
 import rhevmtests.networking.config as conf
 from art.core_api import apis_utils
+from art.rhevm_api.tests_lib.low_level import events
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -29,3 +31,20 @@ def get_linux_ad_partner_mac_value(request):
         host_name=conf.HOSTS[host_index], bond_name=bond_name
     )
     assert sample.waitForFuncStatus(result=True)
+
+
+@pytest.fixture()
+def refresh_hosts_capabilities(request):
+    """
+    Refresh host(s) VDS capabilities
+    """
+    NetworkFixtures()
+
+    hosts_indexes = getattr(request.cls, "hosts_to_refresh", list())
+
+    for host_idx in hosts_indexes:
+        last_event = events.get_max_event_id()
+
+        assert ll_hosts.refresh_host_capabilities(
+            host=conf.HOSTS[host_idx], start_event_id=last_event
+        )

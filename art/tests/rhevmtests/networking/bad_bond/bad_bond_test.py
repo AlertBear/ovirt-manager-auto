@@ -14,7 +14,7 @@ import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, testflow, attr
-from fixtures import get_linux_ad_partner_mac_value
+from fixtures import get_linux_ad_partner_mac_value, refresh_hosts_capabilities
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture,
     clean_host_interfaces  # flake8: noqa
@@ -24,7 +24,8 @@ from rhevmtests.networking.fixtures import (
 @attr(tier=2)
 @pytest.mark.usefixtures(
     setup_networks_fixture.__name__,
-    get_linux_ad_partner_mac_value.__name__
+    get_linux_ad_partner_mac_value.__name__,
+    refresh_hosts_capabilities.__name__
 )
 class TestLACPBond(NetworkTest):
     """
@@ -72,12 +73,15 @@ class TestLACPBond(NetworkTest):
         }
     }
 
+    # refresh_hosts_capabilities fixture parameters
+    hosts_to_refresh = [0, 1]
+
     @attr(tier=2)
     @pytest.mark.parametrize(
         ("host_index", "bond_name", "check_valid"),
         [
-            polarion("RHEVM-19180") and bz({"1416805": {}})(valid),
-            polarion("RHEVM-19181") and bz({"1416805": {}})(invalid),
+            polarion("RHEVM-19180")(valid),
+            polarion("RHEVM-19181")(invalid),
             polarion("RHEVM-19182") and bz({"1418209": {}})(invalid_mixed)
         ],
         ids=[
