@@ -210,7 +210,7 @@ def get_vms_in_pool(vm_pool):
     :rtype: list
     """
     vms_in_pool = list()
-    for vm in VM_UTIL.get(absLink=False):
+    for vm in VM_UTIL.get(abs_link=False):
         if not hasattr(vm, "vm_pool"):
             continue
         if vm.get_vm_pool() and (
@@ -411,7 +411,7 @@ def get_all_vm_pools():
         list: Vm pool objects
     """
     logger.info("Getting all vm pools in the system")
-    return UTIL.get(absLink=False)
+    return UTIL.get(abs_link=False)
 
 
 def get_all_vm_pools_names():

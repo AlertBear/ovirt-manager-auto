@@ -364,7 +364,7 @@ def create_template(request):
     def finalizer():
         if ll_templates.check_template_existence(self.template_name):
             testflow.teardown("Remove template %s", self.template_name)
-            assert ll_templates.removeTemplate(True, self.template_name), (
+            assert ll_templates.remove_template(True, self.template_name), (
                 "Failed to remove template %s" % self.template_name
             )
 
@@ -396,7 +396,7 @@ def remove_template(request):
     def finalizer():
         if ll_templates.check_template_existence(self.template_name):
             testflow.teardown("Remove template %s", self.template_name)
-            assert ll_templates.removeTemplate(True, self.template_name), (
+            assert ll_templates.remove_template(True, self.template_name), (
                 "Failed to remove template %s" % self.template_name
             )
             ll_jobs.wait_for_jobs([config.JOB_REMOVE_TEMPLATE])
@@ -547,7 +547,7 @@ def create_storage_domain(request):
     ll_jobs.wait_for_jobs(
         [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
     )
-    ll_sd.waitForStorageDomainStatus(
+    ll_sd.wait_for_storage_domain_status(
         True, config.DATA_CENTER_NAME, name,
         config.SD_ACTIVE
     )
@@ -1015,7 +1015,7 @@ def remove_templates(request):
         for template in self.templates_names:
             if ll_templates.check_template_existence(template):
                 testflow.teardown("Remove template %s", template)
-                assert ll_templates.removeTemplate(True, template), (
+                assert ll_templates.remove_template(True, template), (
                     "Failed to remove template %s" % template
                 )
 

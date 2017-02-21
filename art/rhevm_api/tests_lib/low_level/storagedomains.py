@@ -396,7 +396,7 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
         util.syncAction(storDomObj, "activate", positive, async=async)
     )
     if status and positive and wait:
-        return waitForStorageDomainStatus(
+        return wait_for_storage_domain_status(
             True, datacenter, storagedomain,
             ACTIVE_DOMAIN, 180,
         )
@@ -424,7 +424,7 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
         util.syncAction(storDomObj, "deactivate", positive, async=async)
     )
     if positive and status and wait:
-        return waitForStorageDomainStatus(
+        return wait_for_storage_domain_status(
             True, datacenter, storagedomain,
             ENUMS['storage_domain_state_maintenance'],
             300,
@@ -614,7 +614,7 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
         storagedomains = storagedomains.split(',')
     else:
         storagedomains = storagedomains[:]
-    for dc in dcUtil.get(absLink=False):
+    for dc in dcUtil.get(abs_link=False):
         sds = util.getElemFromLink(dc, get_href=False)
         # detach and remove non master domains
         for sd in sds:
@@ -645,9 +645,9 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
     return status
 
 
-def waitForStorageDomainStatus(
-        positive, dataCenterName, storageDomainName, expectedStatus,
-        timeOut=900, sleepTime=10
+def wait_for_storage_domain_status(
+        positive, data_center_name, storage_domain_name, expected_status,
+        time_out=900, sleep_time=10
 ):
     """
     Wait till the storage domain gets the desired status or until it times out
@@ -657,23 +657,24 @@ def waitForStorageDomainStatus(
     :param positive: Determines whether the call for this function is
     positive or negative
     :type positive: bool
-    :param dataCenterName: Name of data center
-    :type dataCenterName: str
-    :param storageDomainName: Storage domain name
-    :type storageDomainName: str
-    :param expectedStatus: Storage domain status to wait for
-    :type expectedStatus: str
-    :param timeOut: Maximum timeout [sec]
-    :type timeOut: int
-    :param sleepTime: Sleep time [sec]
-    :type sleepTime: int
+    :param data_center_name: Name of data center
+    :type data_center_name: str
+    :param storage_domain_name: Storage domain name
+    :type storage_domain_name: str
+    :param expected_status: Storage domain status to wait for
+    :type expected_status: str
+    :param time_out: Maximum timeout [sec]
+    :type time_out: int
+    :param sleep_time: Sleep time [sec]
+    :type sleep_time: int
     :return: True if storage domain reaches the desired status, False otherwise
     :rtype: bool
     """
     for sd_object in TimeoutingSampler(
-        timeOut, sleepTime, getDCStorage, dataCenterName, storageDomainName
+        time_out, sleep_time, getDCStorage, data_center_name,
+        storage_domain_name
     ):
-        if sd_object.get_status() == expectedStatus:
+        if sd_object.get_status() == expected_status:
             return positive
 
     return not positive
@@ -1357,7 +1358,7 @@ def get_storage_domains():
     :return: List of storage domains object from the engine
     :rtype: list
     """
-    return util.get(absLink=False)
+    return util.get(abs_link=False)
 
 
 def get_storagedomain_names():
@@ -1527,7 +1528,7 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
                     SD_STATUS_OK_TIMEOUT, sd.get_name()
                 )
                 try:
-                    waitForStorageDomainStatus(
+                    wait_for_storage_domain_status(
                         True, datacenter_name, sd.get_name(),
                         ACTIVE_DOMAIN, SD_STATUS_OK_TIMEOUT, 1
                     )
@@ -1793,7 +1794,7 @@ def get_storagedomain_objects():
     :return: List of storage domain objects
     :rtype: list
     """
-    return util.get(absLink=False)
+    return util.get(abs_link=False)
 
 
 def wait_storage_domain_status_is_unchanged(

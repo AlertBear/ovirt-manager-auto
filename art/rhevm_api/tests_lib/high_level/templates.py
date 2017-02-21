@@ -24,7 +24,6 @@ High-level functions for templates.
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.templates as ll_template
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api
 
 VM_API = get_api('vm', 'vms')
@@ -44,15 +43,10 @@ def check_vnic_on_template_nic(template, nic, vnic):
         bool: True if VNIC profile with 'vnic' name is located on the nic
             of the Template.
     """
-    try:
-        template_nic_obj = ll_template.getTemplatesNic(
-            template=template, nic=nic
-        )
-    except EntityNotFound:
-        VM_API.logger.error(
-            "Template %s doesn't have nic '%s'", template, nic
-        )
+    template_nic_obj = ll_template.get_template_nic(template=template, nic=nic)
+    if not template_nic_obj:
+        VM_API.logger.error("Template %s doesn't have nic '%s'", template, nic)
         return False
-    vnic_obj = ll_vms.get_vm_vnic_profile_obj(nic=template_nic_obj)
 
+    vnic_obj = ll_vms.get_vm_vnic_profile_obj(nic=template_nic_obj)
     return vnic_obj.get_name() == vnic if vnic_obj else vnic is None

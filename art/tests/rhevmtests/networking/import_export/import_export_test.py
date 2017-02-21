@@ -71,7 +71,7 @@ class TestImportExportCase02(NetworkTest):
     import_template = import_export_conf.IE_TEMPLATE_NAME
     more_then_once_template = import_export_conf.IMP_MORE_THAN_ONCE_TEMP_NAME
     template_list = [more_then_once_template, import_template]
-    templates_to_import = [None, more_then_once_template]
+    templates_to_import = [import_template, more_then_once_template]
     net1 = import_export_conf.NETS[0]
     net2 = import_export_conf.NETS[1]
 

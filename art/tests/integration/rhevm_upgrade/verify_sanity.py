@@ -56,7 +56,7 @@ class UpgradeSanityVerification(TestCase):
     @polarion('RHEVM3-12864')
     def test_legacy_providers(self):
         """ test if legacy providers are accessible after upgrade """
-        domains = domUtil.get(absLink=False)
+        domains = domUtil.get(abs_link=False)
         for domain in domains:
             logger.info("Fetching users from domain %s", domain.name)
             users = userUtil.getElemFromLink(

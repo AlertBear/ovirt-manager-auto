@@ -63,13 +63,13 @@ def check_system_version_tag(positive):
     assert positive
 
     try:
-        version_caps = permitUtil.get(absLink=False)
+        version_caps = permitUtil.get(abs_link=False)
     except KeyError:
         util.logger.warn("Can't get list of permissions from capabilities")
         pass
 
     product_version = util.get(href='',
-                               absLink=False).get_product_info().get_version()
+                               abs_link=False).get_product_info().get_version()
     system_version = StrictVersion(
         '.'.join(
             (
@@ -131,76 +131,80 @@ def checkSummary(positive, domain):
     Return: status (True if all statistics values are correct, False otherwise)
     '''
 
-    getAll = util.get(href='', absLink=False)
+    get_all = util.get(href='', abs_link=False)
     status = True
 
-    vms = vmUtil.get(absLink=False)
-    sumVmsTotal = getAll.get_summary().get_vms().total
+    vms = vmUtil.get(abs_link=False)
+    sum_vms_total = get_all.get_summary().get_vms().total
     util.logger.info('Comparing total vms number')
-    if not validator.compareCollectionSize(vms, sumVmsTotal, util.logger):
+    if not validator.compareCollectionSize(vms, sum_vms_total, util.logger):
         status = False
 
-    vms = vmUtil.get(absLink=False)
-    sumVmsAct = getAll.get_summary().get_vms().active
+    vms = vmUtil.get(abs_link=False)
+    sum_vms_act = get_all.get_summary().get_vms().active
     vms = filter(lambda x: x.get_status() == 'up', vms)
     util.logger.info('Comparing active vms number')
-    if not validator.compareCollectionSize(vms, sumVmsAct, util.logger):
+    if not validator.compareCollectionSize(vms, sum_vms_act, util.logger):
         status = False
 
-    hosts = hostUtil.get(absLink=False)
-    sumHostsTotal = getAll.get_summary().get_hosts().total
+    hosts = hostUtil.get(abs_link=False)
+    sum_hosts_total = get_all.get_summary().get_hosts().total
     util.logger.info('Comparing total hosts number')
-    if not validator.compareCollectionSize(hosts, sumHostsTotal, util.logger):
+    if not validator.compareCollectionSize(
+        hosts, sum_hosts_total, util.logger
+    ):
         status = False
 
-    hosts = hostUtil.get(absLink=False)
-    sumHostsAct = getAll.get_summary().get_hosts().active
+    hosts = hostUtil.get(abs_link=False)
+    sum_hosts_act = get_all.get_summary().get_hosts().active
     hosts = filter(lambda x: x.get_status() == 'up', hosts)
     util.logger.info('Comparing active hosts number')
-    if not validator.compareCollectionSize(hosts, sumHostsAct, util.logger):
+    if not validator.compareCollectionSize(hosts, sum_hosts_act, util.logger):
         status = False
 
-    users = userUtil.get(absLink=False)
-    sumUsersTotal = getAll.get_summary().get_users().total
+    users = userUtil.get(abs_link=False)
+    sum_users_total = get_all.get_summary().get_users().total
     util.logger.info('Comparing total users number')
-    if not len(users) <= sumUsersTotal:
+    if not len(users) <= sum_users_total:
         util.logger.error(
             "Collection size is wrong, "
             "actual should be smaller or equal to expected. "
             "expected is: %(exp)s, actual is: %(act)s",
-            {'exp': sumUsersTotal, 'act': len(users)}
+            {'exp': sum_users_total, 'act': len(users)}
         )
         status = False
     else:
         util.logger.debug(
             "Collection size is correct: %(exp)s is bigger then %(act)s since "
             "the number of returned users is limited for performance reasons",
-            {'exp': sumUsersTotal, 'act': len(users)}
+            {'exp': sum_users_total, 'act': len(users)}
         )
 
     util.logger.info('Comparing total storage number')
-    sumSDTotal = getAll.get_summary().get_storage_domains().total
-    storageDomains = sdUtil.get(absLink=False)
+    sum_sd_total = get_all.get_summary().get_storage_domains().total
+    storage_domains = sdUtil.get(abs_link=False)
     if not validator.compareCollectionSize(
-            storageDomains, sumSDTotal, util.logger):
+            storage_domains, sum_sd_total, util.logger):
         status = False
 
     util.logger.info('Comparing active storages number')
-    sumSDActive = getAll.get_summary().get_storage_domains().active
-    sdActive = []
-    dcs = dcUtil.get(absLink=False)
+    sum_s_d_active = get_all.get_summary().get_storage_domains().active
+    sd_active = []
+    dcs = dcUtil.get(abs_link=False)
     for dc in dcs:
-        dcStorages = util.getElemFromLink(
+        dc_storages = util.getElemFromLink(
             dc, link_name='storagedomains', attr='storage_domain',
             get_href=False)
-        for dcSd in dcStorages:
+        for dcSd in dc_storages:
             try:
                 if dcSd.get_status() == 'active':
-                    sdActive.append(dcSd)
+                    sd_active.append(dcSd)
             except AttributeError:
                 pass
 
-    if not validator.compareCollectionSize(sdActive, sumSDActive, util.logger):
+    if not validator.compareCollectionSize(
+        sd_active, sum_s_d_active, util.logger
+    ):
         status = False
 
     return status
@@ -237,7 +241,7 @@ def getProductName():
     '''
     try:
         product_name = util.get(
-            href='', absLink=False).get_product_info().get_name()
+            href='', abs_link=False).get_product_info().get_name()
     except IndexError:
         return False, {'product_name': ''}
     return True, {'product_name': product_name}
@@ -422,14 +426,15 @@ def generate_logs(info=True, error=True, step=False):
             called_from = get_called_from_test(stack=stack)
             func_doc = inspect.getdoc(func)
             func_argspec = inspect.getargspec(func)
+            func_argspec_default = func_argspec.defaults or tuple()
+            f_args = [
+                i for i in func_argspec.args if i not in kwargs.keys()
+            ]
             try:
                 func_args_defaults = dict(
-                    zip(
-                        func_argspec.args[
-                            -len(func_argspec.defaults):
-                        ], func_argspec.defaults
-                    )
+                    zip(f_args, args + func_argspec_default)
                 )
+
             except TypeError:
                 func_args_defaults = dict()
 

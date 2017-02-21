@@ -260,7 +260,7 @@ def remove_all_networks(datacenter=None, cluster=None):
 
     else:
         logger.info("Get all networks")
-        networks_list = ll_networks.NET_API.get(absLink=False)
+        networks_list = ll_networks.NET_API.get(abs_link=False)
 
     for net in networks_list:
         if net.id not in mgmt_networks_ids:

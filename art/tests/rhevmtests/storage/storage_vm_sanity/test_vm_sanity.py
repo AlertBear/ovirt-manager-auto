@@ -41,7 +41,7 @@ def prepare_data(request):
     def finalizer():
         testflow.teardown("Removing templates %s" % self.template_names)
         for _, template_name in self.template_names.iteritems():
-            ll_templates.removeTemplate(True, template=template_name)
+            ll_templates.remove_template(True, template=template_name)
 
     request.addfinalizer(finalizer)
     testflow.setup(

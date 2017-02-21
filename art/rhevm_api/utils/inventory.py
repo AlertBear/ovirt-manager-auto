@@ -159,7 +159,7 @@ class Inventory(object):
         """
         data = []
         data_center_api = utils.get_api("data_center", "datacenters")
-        for current_data_center in data_center_api.get(absLink=False):
+        for current_data_center in data_center_api.get(abs_link=False):
             if current_data_center.name != DEFAULT_NAME:
                 current_clusters = []
                 data.append({
@@ -182,7 +182,7 @@ class Inventory(object):
         """
         current_storage_domains = utils.get_api(
             "storagedomain", "storagedomains"
-        ).get(absLink=False)
+        ).get(abs_link=False)
         for storage_domain in current_storage_domains.storage_domain:
             data.append(
                 {
@@ -203,7 +203,7 @@ class Inventory(object):
         """
         current_clusters = utils.get_api(
             "cluster", "clusters"
-        ).get(absLink=False)
+        ).get(abs_link=False)
         for cluster in current_clusters:
             data_center = cluster.get_data_center()
             if (

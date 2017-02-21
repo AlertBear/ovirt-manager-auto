@@ -200,7 +200,7 @@ class TestCase11843(TestCase):
         if not ll_vms.safely_remove_vms(self.vms):
             logger.error("Failed to remove vms %s", self.vms)
             TestCase.test_failed = True
-        if not ll_templates.removeTemplates(True, self.templates):
+        if not ll_templates.remove_templates(True, self.templates):
             logger.error("Failed to remove templates %s", self.templates)
             TestCase.test_failed = True
         if not ll_disks.deleteDisk(True, self.shared_disk_alias):

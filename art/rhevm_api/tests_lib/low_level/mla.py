@@ -64,15 +64,15 @@ def getPermits():
     Return: Permissions list
     '''
     try:
-        versionCaps = permitUtil.get(absLink=False)
-        if isinstance(versionCaps, list):
-            versionCaps = versionCaps[0]
+        version_caps = permitUtil.get(abs_link=False)
+        if isinstance(version_caps, list):
+            version_caps = version_caps[0]
     except KeyError:
         raise EntityNotFound("Can't get list of permissions from capabilities")
-    return versionCaps.get_permits().get_permit()
+    return version_caps.get_permits().get_permit()
 
 
-def checkSystemPermits(positive):
+def check_system_permits(positive):
     '''
     Description: check existed system permissions
     Author: edolinin
@@ -83,21 +83,21 @@ def checkSystemPermits(positive):
 
     status = True
 
-    confPermits = CONF_PERMITS.values()
+    conf_permits = CONF_PERMITS.values()
 
     for permit in getPermits():
-        if permit.get_name() not in confPermits:
+        if permit.get_name() not in conf_permits:
             util.logger.error(
                 "Permit '{0}' doesn't appear in permission list: {1}".format(
                     permit.get_name(), CONF_PERMITS.values()))
             status = False
         else:
             util.logger.info(permit.get_name())
-            confPermits.remove(permit.get_name())
+            conf_permits.remove(permit.get_name())
 
-    if confPermits:
+    if conf_permits:
         util.logger.error(
-            "The following permissions don't appear: {0}".format(confPermits))
+            "The following permissions don't appear: {0}".format(conf_permits))
         status = False
 
     return status
@@ -778,8 +778,8 @@ def removeUserRoleFromVm(positive, vm, user_name, role_name):
     return removeUserRoleFromObject(positive, vmObj, user_name, role_name)
 
 
-def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
-    def getGroupOrUser(perm):
+def has_user_or_group_permissions_on_object(name, obj, role, group=False):
+    def get_group_or_user(perm):
         return perm.get_group() if group else perm.get_user()
     extra_log_text = "for user/group %s on %s: %s" % (
         name, obj.__class__.__name__, obj.get_name()
@@ -788,8 +788,8 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
         "find", "permission", role, extra_txt=extra_log_text
     )
     logger.info(log_info)
-    objPermits = permisUtil.getElemFromLink(obj, get_href=False)
-    roleNAid = util.find(role).get_id()
+    obj_permits = permisUtil.getElemFromLink(obj, get_href=False)
+    role_n_aid = util.find(role).get_id()
     if group:
         user = groupUtil.find(name)
     else:
@@ -800,11 +800,11 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
         return False
 
     perms = []
-    for perm in objPermits:
-        mlaObj = getGroupOrUser(perm)
-        if mlaObj is not None:
-            perms.append((mlaObj.get_id(), perm.get_role().get_id()))
-    if not (user.get_id(), roleNAid) in perms:
+    for perm in obj_permits:
+        mla_obj = get_group_or_user(perm)
+        if mla_obj is not None:
+            perms.append((mla_obj.get_id(), perm.get_role().get_id()))
+    if not (user.get_id(), role_n_aid) in perms:
         logger.error(log_error)
         return False
     return True
@@ -820,10 +820,10 @@ def hasGroupPermissionsOnObject(group_name, obj, role):
        * role - name of the role to search for
     Return: True if user has permissions on object False otherwise
     """
-    return hasUserOrGroupPermissionsOnObject(group_name, obj, role, True)
+    return has_user_or_group_permissions_on_object(group_name, obj, role, True)
 
 
-def hasUserPermissionsOnObject(user_name, obj, role):
+def has_user_permissions_on_object(user_name, obj, role):
     """
     Description: Check if user has permission on object.
     Author: omachace
@@ -833,10 +833,10 @@ def hasUserPermissionsOnObject(user_name, obj, role):
        * role - name of the role to search for
     Return: True if user has permissions on object False otherwise
     """
-    return hasUserOrGroupPermissionsOnObject(user_name, obj, role)
+    return has_user_or_group_permissions_on_object(user_name, obj, role)
 
 
-def allowsViewChildren(role, database):
+def allows_view_children(role, database):
     """
     Paramters:
      * role - name of role we need to check

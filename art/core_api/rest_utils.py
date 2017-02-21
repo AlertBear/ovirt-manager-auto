@@ -169,8 +169,8 @@ class RestUtil(api_utils.APIUtil):
                 url = "%s?%s" % (url, k)
         return url
 
-    def get(self, href=None, elm=None, absLink=True, listOnly=False,
-            noParse=False, validate=True):
+    def get(self, href=None, elm=None, abs_link=True, list_only=False,
+            no_parse=False, validate=True):
         '''
         Description: implements GET method and verify the response
                      (codes 200,201)
@@ -178,13 +178,13 @@ class RestUtil(api_utils.APIUtil):
         Parameters:
            * href - url for get request
            * elm - element name
-           * absLink - if href url is absolute url (True) or just a suffix
+           * abs_link - if href url is absolute url (True) or just a suffix
         Return: parsed GET response
         '''
         if href is None:
             href = self.collection_name
 
-        if not absLink:
+        if not abs_link:
             if href:
                 href = self.links[href]
             else:
@@ -208,25 +208,25 @@ class RestUtil(api_utils.APIUtil):
         self.logger.debug("Response body for GET request is: %s ",
                           ret[RespKey.body])
 
-        if noParse:
+        if no_parse:
             return ret[RespKey.body]
 
-        parsedResp = None
+        parsed_resp = None
         try:
-            parsedResp = api_utils.parse(ret[RespKey.body], silence=True)
+            parsed_resp = api_utils.parse(ret[RespKey.body], silence=True)
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return None
 
-        if hasattr(parsedResp, elm):
-            return getattr(parsedResp, elm)
+        if hasattr(parsed_resp, elm):
+            return getattr(parsed_resp, elm)
         else:
-            if listOnly:
+            if list_only:
                 self.logger.error("Element '{0}' not found at {1} \
                 ".format(elm, ret[RespKey.body]))
-            return parsedResp
+            return parsed_resp
 
-    def parseDetail(self, ret):
+    def parse_detail(self, ret):
         '''
         Description: parsing the error details from ret
         Author: Kobi Hakimi
@@ -261,7 +261,7 @@ class RestUtil(api_utils.APIUtil):
             reason = ret[RespKey.reason] if(RespKey.reason in
                                             ret.keys()) else None
             self.print_error_msg(operation, ret[RespKey.status], reason,
-                                 self.parseDetail(ret), positive=positive)
+                                 self.parse_detail(ret), positive=positive)
         expected_statuses = (
             expected_pos_status if positive else expected_neg_status)
 
@@ -279,7 +279,7 @@ class RestUtil(api_utils.APIUtil):
         Keyword Args:
             expected_pos_status (list): Expected positive statuses
             expected_neg_status (list): Expected negative statuses
-            expectedEntity (DS object): Expected entity
+            expected_entity (DS object): Expected entity
             async (bool): Sync or async request
             collection (str): Collection name
             coll_elm_name (str): Collection element name
@@ -342,7 +342,7 @@ class RestUtil(api_utils.APIUtil):
         if not self.opts["validate"]:
             return None, True
 
-        collection = self.get(href, listOnly=True, elm=coll_elm_name)
+        collection = self.get(href, list_only=True, elm=coll_elm_name)
 
         self.logger.debug(
             "Response body for CREATE request is: %s ", ret[RespKey.body]
@@ -356,7 +356,7 @@ class RestUtil(api_utils.APIUtil):
                     self.element_name
                 )
 
-                expected_entity = kwargs.get("expectedEntity")
+                expected_entity = kwargs.get("expected_entity")
                 expected_entity = entity if not expected_entity else (
                     validator.dump_entity(expected_entity, self.element_name)
                 )
@@ -372,7 +372,7 @@ class RestUtil(api_utils.APIUtil):
                 if not async:
                     self.find(
                         api_utils.parse(actual_entity, silence=True).id, "id",
-                        collection=collection, absLink=False
+                        collection=collection, abs_link=False
                     )
             else:
                 return ret[RespKey.body], True
@@ -483,47 +483,54 @@ class RestUtil(api_utils.APIUtil):
         self.validateResponseViaXSD(href, ret)
         return True
 
-    def find(self, val, attribute='name', absLink=True, collection=None,
-             **kwargs):
-        '''
-        Description: find entity by name
-        Author: edolinin
-        Parameters:
-           * val - name of entity to look for
-           * attribute - attribute name for searching
-           * absLink - absolute link or just a  suffix
-           * **kwargs - additional search attribute=val pairs (the attribute
-                        can be a chain attribute such as 'attr_x.attr_y')
-        Return: found entity or exception EntityNotFound
-        '''
+    def find(
+        self, val, attribute='name', abs_link=True, collection=None, **kwargs
+    ):
+        """
+        Find entity by name
 
+        Args:
+            val (str): name of entity to look for
+            attribute (str): attribute name for searching
+            abs_link (bool): absolute link or just a suffix
+            kwargs (dict): additional search attribute=val pairs (the attribute
+                can be a chain attribute such as 'attr_x.attr_y')
+
+        Returns:
+            Entity: Found entity
+
+        Raises:
+            EntityNotFound: If entity not found
+        """
         href = self.collection_name
-        if absLink:
+        if abs_link:
             href = self.links[self.collection_name]
 
         if self.max_collection is not None:
             href = '{0};max={1}'.format(href, self.max_collection)
 
         if not collection:
-            collection = self.get(href, listOnly=True)
+            collection = self.get(href, list_only=True)
 
         if not collection:
             raise EntityNotFound("Empty collection %s" % href)
 
-        results = filter(lambda r: getattr(r, attribute) == val,
-                         collection)
-
+        results = filter(lambda r: getattr(r, attribute) == val, collection)
         for attr, value in kwargs.iteritems():
-            results = filter(lambda r: reduce(getattr,
-                                              attr.split('.'), r) == value,
-                             results)
+            results = filter(
+                lambda r: reduce(getattr, attr.split('.'), r) == value,
+                results
+            )
 
         if not results:
-            raise EntityNotFound("Entity %s not found on url '%s'." %
-                                 (val, href))
+            raise EntityNotFound(
+                "Entity %s not found on url '%s'." % (val, href)
+            )
         if len(results) > 1:
-            raise EntityNotFound("More than one Entities found for %s\
-                                  on url '%s'." % (val, href))
+            raise EntityNotFound(
+                "More than one Entities found for %s on url '%s'." %
+                (val, href)
+            )
         return results[0]
 
     def query(
@@ -696,7 +703,7 @@ class RestUtil(api_utils.APIUtil):
             return api_utils.api_error(
                 reason=ret[RespKey.reason],
                 status=ret[RespKey.status],
-                detail=self.parseDetail(ret)
+                detail=self.parse_detail(ret)
             )
 
         self.validateResponseViaXSD(action_href, ret)

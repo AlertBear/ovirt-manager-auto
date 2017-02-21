@@ -117,7 +117,7 @@ def get_clusters_connected_to_datacenter(dc_id):
     :rtype: list
     """
 
-    all_clusters = clusters.util.get(absLink=False)
+    all_clusters = clusters.util.get(abs_link=False)
     clusters_connected_to_dc = [
         cluster for cluster in all_clusters
         if cluster.get_data_center() is not None
@@ -326,7 +326,7 @@ def ensure_data_center_and_sd_are_active(
             "Waiting up to %s seconds for sd %s to be active",
             SD_STATUS_OK_TIMEOUT, sd.get_name()
         )
-        if not ll_sd.waitForStorageDomainStatus(
+        if not ll_sd.wait_for_storage_domain_status(
             True, datacenter, sd.get_name(),
             ENUMS['storage_domain_state_active'], SD_STATUS_OK_TIMEOUT, 1
         ):

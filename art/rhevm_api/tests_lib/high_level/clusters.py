@@ -17,7 +17,7 @@ def remove_templates_connected_cluster(cluster_name):
         logger.info(
             'Remove Template: %s from cluster: %s', template, cluster_name
         )
-        if not ll_templates.removeTemplate(True, template):
+        if not ll_templates.remove_template(True, template):
             logger.error("Remove template:%s failed", template)
 
 
@@ -29,7 +29,7 @@ def get_hosts_connected_to_cluster(cluster_id):
     :returns: list of hosts
     :rtype: list
     """
-    all_hosts = ll_hosts.HOST_API.get(absLink=False)
+    all_hosts = ll_hosts.HOST_API.get(abs_link=False)
     return filter(
         lambda x: x.get_cluster().get_id() == cluster_id,
         all_hosts

@@ -27,7 +27,7 @@ def check_recent_job(positive, description, last_jobs_num=None,
     **Returns**: True if exist job with given description, job and job time
             Else return False, None, None
     """
-    jobs = JOBS_API.get(absLink=False)[:last_jobs_num]
+    jobs = JOBS_API.get(abs_link=False)[:last_jobs_num]
     if not description:
         logger.warn("Description is empty")
         return False, None, None
@@ -52,7 +52,7 @@ def get_jobs():
     Returns:
         list: List of job objects
     """
-    return JOBS_API.get(absLink=False)
+    return JOBS_API.get(abs_link=False)
 
 
 def get_job_object(description, job_status=ENUMS['job_finished']):
@@ -106,7 +106,7 @@ def get_active_jobs(job_descriptions=None):
     :return: list of job objects
     :rtype: list
     """
-    jobs = JOBS_API.get(absLink=False)
+    jobs = JOBS_API.get(abs_link=False)
     # This is a W/A for BZ1248055, due to some GET request to /api/jobs
     # returning 400, just return a list of objects so wait_for_jobs() will
     # continue to call this funcion until the time out

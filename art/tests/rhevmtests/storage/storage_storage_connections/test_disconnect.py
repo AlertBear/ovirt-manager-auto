@@ -384,7 +384,7 @@ class TestCase11196(BaseTestCaseNewDC):
                     logger.error(
                         "Error activating host %s", self.host
                     )
-            if not ll_sd.waitForStorageDomainStatus(
+            if not ll_sd.wait_for_storage_domain_status(
                 True, self.dc, self.iscsi_domain, config.SD_ACTIVE
             ):
                 self.test_failed = True

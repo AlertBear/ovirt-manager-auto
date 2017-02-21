@@ -916,7 +916,7 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
             usage=conf.FULL_DISK_USAGE
         )
         u_libs.testflow.step("Remove the template %s", conf.TEMPLATE_NAME)
-        assert ll_templates.removeTemplate(
+        assert ll_templates.remove_template(
             positive=True, template=conf.TEMPLATE_NAME
         )
         self._check_limit_usage(

@@ -47,7 +47,7 @@ bzs = {
     },
 }
 
-for role in ll_mla.util.get(absLink=False):
+for role in ll_mla.util.get(abs_link=False):
     role_name = role.get_name()
     filter_ = not role.get_administrative()
     role_actions = get_action_groups(role_name)

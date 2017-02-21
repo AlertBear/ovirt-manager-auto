@@ -103,7 +103,7 @@ def get_host_list():
     Returns:
         list: list of host objects
     '''
-    return HOST_API.get(absLink=False)
+    return HOST_API.get(abs_link=False)
 
 
 def get_host_names_list():
@@ -214,7 +214,7 @@ def waitForHostsStates(
     [HOST_API.find(host) for host in list_names]
     number_of_hosts = len(list_names)
 
-    sampler = TimeoutingSampler(timeout, 10, HOST_API.get, absLink=False)
+    sampler = TimeoutingSampler(timeout, 10, HOST_API.get, abs_link=False)
 
     try:
         for sample in sampler:
@@ -1081,25 +1081,28 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
     """
 
     try:
-        clusters = CL_API.get(absLink=False)
-        dataCenterObj = DC_API.find(dataCenter)
+        clusters = CL_API.get(abs_link=False)
+        data_center_obj = DC_API.find(dataCenter)
     except EntityNotFound:
         return False, {'hostName': None}
 
-    clusters = (cl for cl in clusters if hasattr(cl, 'data_center')
-                and cl.get_data_center()
-                and cl.get_data_center().id == dataCenterObj.id)
+    clusters = (cl for cl in clusters if hasattr(cl, 'data_center') and
+                cl.get_data_center() and
+                cl.get_data_center().id == data_center_obj.id)
     for cluster in clusters:
-        elementStatus, hosts = searchElement(positive, ELEMENT, COLLECTION,
-                                             'cluster', cluster.name)
-        if not elementStatus:
+        element_status, hosts = searchElement(
+            positive, ELEMENT, COLLECTION, 'cluster', cluster.name
+        )
+        if not element_status:
             continue
         for host in hosts:
-            spmStatus = checkHostSpmStatus(positive, host.name)
-            if spm and spmStatus:
+            spm_status = checkHostSpmStatus(positive, host.name)
+            if spm and spm_status:
                 return True, {'hostName': host.name}
-            elif not spm and not spmStatus and (not hostName
-                                                or hostName == host.name):
+
+            elif not spm and not spm_status and (
+                (not hostName or hostName == host.name)
+            ):
                 return True, {'hostName': host.name}
     return False, {'hostName': None}
 
@@ -1487,7 +1490,7 @@ def stop_vdsm(host, password):
       * host - host name in RHEVM
       * password - password of host
     """
-    for vm in VM_API.get(absLink=False):
+    for vm in VM_API.get(abs_link=False):
         if get_vm_state(vm.name) == ENUMS['vm_state_down']:
             continue
         if getVmHost(vm.name)[1]['vmHoster'] == host:
@@ -1642,7 +1645,7 @@ def get_host_name_from_engine(vds_resource):
         str: Host name or None
     """
 
-    engine_hosts = HOST_API.get(absLink=False)
+    engine_hosts = HOST_API.get(abs_link=False)
     for host in engine_hosts:
         if (
             host.get_address() == vds_resource.fqdn or host.get_address() ==

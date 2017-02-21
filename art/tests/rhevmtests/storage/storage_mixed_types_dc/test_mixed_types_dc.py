@@ -104,7 +104,7 @@ class BaseCaseDCMixed(TestCase):
                 logger.error("Failed to remove vm %sd from export domain", vm)
                 TestCase.test_failed = True
         for template in self.templates_to_remove:
-            if not ll_templates.removeTemplate(True, template):
+            if not ll_templates.remove_template(True, template):
                 logger.error("Failed to remove template %s", template)
                 TestCase.test_failed = True
         TestCase.teardown_exception()
@@ -691,9 +691,9 @@ class TestCase4566(IscsiNfsSD):
         self.master_address = master_address['address']
 
         # Make sure non master domain is active
-        assert ll_sd.waitForStorageDomainStatus(
+        assert ll_sd.wait_for_storage_domain_status(
             True, self.data_center_name, self.non_master[0],
-            expectedStatus=config.ENUMS['storage_domain_state_active'])
+            expected_status=config.ENUMS['storage_domain_state_active'])
 
         logger.info(
             "Blocking outgoing connection from %s to %s", self.host_ip,

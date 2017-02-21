@@ -20,7 +20,7 @@ def setup_package():
         return
 
     # in case of golden environment, reorder the rhel/rhevh hosts
-    host_objs = ll_hosts.HOST_API.get(absLink=False)
+    host_objs = ll_hosts.HOST_API.get(abs_link=False)
     if host_objs:
         logger.info(
             "This GE includes the following hosts: %s",

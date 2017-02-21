@@ -223,7 +223,7 @@ def find_network(network, data_center=None, cluster=None):
 
     if data_center:
         dc_obj = DC_API.find(data_center)
-        nets = NET_API.get(absLink=False)
+        nets = NET_API.get(abs_link=False)
         for net in nets:
             if (
                 net.get_data_center().get_id() == dc_obj.get_id() and
@@ -1220,7 +1220,7 @@ def get_vnic_profile_objects():
     Returns
         list: List of vnic profiles objects
     """
-    return VNIC_PROFILE_API.get(absLink=False)
+    return VNIC_PROFILE_API.get(abs_link=False)
 
 
 @ll.general.generate_logs()
@@ -1448,7 +1448,7 @@ def get_supported_network_filters():
         dict: Dict with NetworkFilter name as key and NetworkFilter object
             as value
     """
-    network_filters = NF_API.get(absLink=False)
+    network_filters = NF_API.get(abs_link=False)
     return dict((i.name, i) for i in network_filters.get_network_filter())
 
 

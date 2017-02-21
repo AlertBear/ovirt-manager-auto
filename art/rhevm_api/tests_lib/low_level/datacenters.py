@@ -294,7 +294,7 @@ def get_sd_datacenter(storage_domain_name):
     Returns: DC name which storage_domain_name belongs to, False otherwise
     """
     storage_domain_id = STORAGE_API.find(storage_domain_name).get_id()
-    all_dcs = util.get(absLink=False)
+    all_dcs = util.get(abs_link=False)
     for dc in all_dcs:
         dc_sds = STORAGE_API.getElemFromLink(dc, get_href=False)
         for sd in dc_sds:
@@ -896,7 +896,7 @@ def get_datacenters_list():
     :return: datacenters
     :rtype: list
     """
-    return util.get(absLink=False)
+    return util.get(abs_link=False)
 
 
 def get_datacenters_names_list():

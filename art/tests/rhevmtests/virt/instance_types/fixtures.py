@@ -73,5 +73,5 @@ def remove_test_templates(request):
     """
     def fin():
         testflow.teardown("Removing template: %s", config.NEW_TEMPLATE_NAME)
-        ll_templates.removeTemplate(True, config.NEW_TEMPLATE_NAME)
+        ll_templates.remove_template(True, config.NEW_TEMPLATE_NAME)
     request.addfinalizer(fin)

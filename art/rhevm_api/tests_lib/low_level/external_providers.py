@@ -99,7 +99,7 @@ class OpenStackProvider(object):
 
         :return: list of openstack ep objects
         """
-        return self._api.get(absLink=False)
+        return self._api.get(abs_link=False)
 
     def remove(self, openstack_ep, key='name'):
         """
@@ -291,7 +291,7 @@ class OpenStackVolumeProvider(OpenStackProvider):
         )
         self.key_obj, created_success = self._api.create(
             key_obj, positive=True, collection=key_collection,
-            coll_elm_name=self.cinder_key_coll_name, expectedEntity=key_obj
+            coll_elm_name=self.cinder_key_coll_name, expected_entity=key_obj
         )
 
         return created_success

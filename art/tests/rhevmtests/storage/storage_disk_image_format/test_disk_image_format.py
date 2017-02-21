@@ -524,7 +524,7 @@ class TestCase11611(TestCasesImportVmLinked):
 
         assert ll_vms.removeVm(True, self.vm_name)
         ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
-        assert ll_templates.removeTemplate(True, self.template_name)
+        assert ll_templates.remove_template(True, self.template_name)
 
         assert ll_vms.importVm(
             True, self.vm_name, config.EXPORT_DOMAIN_NAME, self.storage_domain,

@@ -29,7 +29,7 @@ def cloud_init_setup(request):
     """
 
     def fin():
-        ll_templates.removeTemplate(
+        ll_templates.remove_template(
             positive=True, template=config.CLOUD_INIT_TEMPLATE
         )
 

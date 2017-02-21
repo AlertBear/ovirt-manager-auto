@@ -448,19 +448,20 @@ class XPathMatch(object):
         # A hack to make the XPathMatch able to match against the tags in the
         # RHEVM entry-point url.
         if link.startswith('/'):
-            matching_nodes = self.utils.getAndXpathEval(link, xpath)
+            matching_nodes = self.utils.get_and_xpath_eval(link, xpath)
         else:
             if 'api' == link:
-                matching_nodes = self.utils.getAndXpathEval('', xpath)
+                matching_nodes = self.utils.get_and_xpath_eval('', xpath)
             else:
-                matching_nodes = self.utils.getAndXpathEval(self.links[link],
-                                                            xpath)
+                matching_nodes = self.utils.get_and_xpath_eval(
+                    self.links[link], xpath
+                )
 
         boolean_positive = positive.lower() == 'true'
         if boolean_positive != eval(rslt_eval, None,
                                     {'result': matching_nodes}):
-            E = "XPath '%s' result evaluated using '%s' not equal to %s."
-            self.logger.error(E % (xpath, rslt_eval, boolean_positive))
+            e = "XPath '%s' result evaluated using '%s' not equal to %s."
+            self.logger.error(e % (xpath, rslt_eval, boolean_positive))
             return False
         else:
             self.logger.debug("XPath evaluation succeed.")

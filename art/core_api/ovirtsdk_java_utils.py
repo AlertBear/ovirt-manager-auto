@@ -923,7 +923,7 @@ class JavaSdkUtil(APIUtil):
         return python_results
 
     @jvm_thread_care
-    def create(self, entity, positive, expectedEntity=None,
+    def create(self, entity, positive, expected_entity=None,
                async=False, collection=None, current=None, compare=True,
                **kwargs):
         '''
@@ -932,7 +932,7 @@ class JavaSdkUtil(APIUtil):
         Parameters:
            * entity - entity for post body
            * positive - if positive or negative verification should be done
-           * expectedEntity - if there are some expected entity different from
+           * expected_entity - if there are some expected entity different from
                               sent
            * async -sycnh or asynch request
            * compare - True by default and run compareElements,
@@ -1021,7 +1021,7 @@ element:%(elm)s " % {'col': self.collection_name,
                           pythonic=False)
 
             self.logger.info("New entity was added successfully")
-            exp_entity = entity if not expectedEntity else expectedEntity
+            exp_entity = entity if not expected_entity else expected_entity
             if compare and not validator.compareElements(
                     exp_entity, python_response, self.logger,
                     self.element_name, java_sdk_mode=True):
@@ -1249,7 +1249,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
         return python_result
 
     @jvm_thread_care
-    def find(self, val, attribute='name', absLink=True, collection=None,
+    def find(self, val, attribute='name', abs_link=True, collection=None,
              pythonic=True, **kwargs):
         '''
         Find entity by name or id
@@ -1258,8 +1258,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
         :type val: str
         :param attribute: name or id, the key to look for
         :type attribute: str
-        :param absLink: True: absolute link, suffix otherwise
-        :type absLink: bool
+        :param abs_link: True: absolute link, suffix otherwise
+        :type abs_link: bool
         :param collection: list of entities, where to find your val
         :type collection: object
         :param pythonic: True if we are python context, java otherwise

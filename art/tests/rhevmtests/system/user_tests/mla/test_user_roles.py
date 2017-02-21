@@ -41,8 +41,8 @@ def setup_module(request):
         hl_vmpools.detach_vms_from_pool(config.VMPOOL_NAME)
         vms.removeVm(True, "{0}-{1}".format(config.VMPOOL_NAME, 1))
         ll_vmpools.removeVmPool(True, config.VMPOOL_NAME)
-        templates.removeTemplate(True, config.TEMPLATE_NAMES[0])
-        templates.removeTemplate(True, config.TEMPLATE_NO_DISK)
+        templates.remove_template(True, config.TEMPLATE_NAMES[0])
+        templates.remove_template(True, config.TEMPLATE_NO_DISK)
 
     request.addfinalizer(finalize)
 
@@ -109,7 +109,7 @@ def setup_module(request):
 
 def retrieve_current_role(curr_role):
     return [
-        temp_role for temp_role in mla.util.get(absLink=False)
+        temp_role for temp_role in mla.util.get(abs_link=False)
         if temp_role.name == curr_role.name
         ][0]
 
@@ -151,7 +151,7 @@ class RoleCase54413(common.BaseTestCase):
     def test_create_role_permissions(self):
         """ Check if user can add/del role if he has permissions for it """
         testing_msg = "Testing if role %s can add new role."
-        roles = mla.util.get(absLink=False)
+        roles = mla.util.get(abs_link=False)
         size = len(roles)
 
         for index, curr_role in enumerate(roles, start=1):
@@ -336,7 +336,7 @@ class RoleCase54415(common.BaseTestCase):
         ok_non_adm_msg = (
             "User with role %s can see only non administrative roles"
         )
-        all_roles = mla.util.get(absLink=False)
+        all_roles = mla.util.get(abs_link=False)
         non_admin_roles = [r for r in all_roles if not r.administrative]
         all_roles_size = len(all_roles)
         non_admin_size = len(non_admin_roles)
@@ -380,11 +380,11 @@ class RoleCase54415(common.BaseTestCase):
 
             # https://bugzilla.redhat.com/show_bug.cgi?id=1369219#c3
             if not curr_role.administrative:
-                assert len(mla.util.get(absLink=False)) == non_admin_size, \
+                assert len(mla.util.get(abs_link=False)) == non_admin_size, \
                     assertion_error()
                 logger.info(ok_non_adm_msg, curr_role_name)
             else:
-                assert len(mla.util.get(absLink=False)) == all_roles_size, \
+                assert len(mla.util.get(abs_link=False)) == all_roles_size, \
                     assertion_error()
                 logger.info(ok_adm_msg, curr_role_name)
 
@@ -472,7 +472,7 @@ class RoleCase54540(common.BaseTestCase):
     def test_remove_predefined_roles(self):
         """ Test that pre-defined roles can not be removed. """
         msg = "Predefined role %s can't be removed."
-        for role in mla.util.get(absLink=False):
+        for role in mla.util.get(abs_link=False):
             assert mla.util.delete(role, False)
             logger.info(msg, role.get_name())
 
@@ -488,8 +488,8 @@ class RoleCase54411(common.BaseTestCase):
     @polarion("RHEVM3-7143")
     def test_predefined_roles(self):
         """ Check if rhevm return still same predefined roles """
-        l = len(mla.util.get(absLink=False))
-        assert len(mla.util.get(absLink=False)) == l
+        l = len(mla.util.get(abs_link=False))
+        assert len(mla.util.get(abs_link=False)) == l
         logger.info("There are still same predefined roles.")
 
 

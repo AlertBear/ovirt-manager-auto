@@ -502,7 +502,7 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
         disks_list = disks
 
     logger.info("Waiting for status %s on disks %s", status, disks_list)
-    sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
+    sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, abs_link=False)
     is_incorrect_state = lambda d, s: (d.get_status() != s)  # flake8: noqa
     try:
         for sample in sampler:
@@ -911,7 +911,7 @@ def get_all_disks():
     Returns:
         list: List objects
     """
-    return DISKS_API.get(absLink=False)
+    return DISKS_API.get(abs_link=False)
 
 
 def prepare_disk_attachment_object(disk_id=None, **kwargs):

@@ -397,8 +397,9 @@ def updateTemplate(positive, template, version_number=1, **kwargs):
     return status
 
 
-def removeTemplate(
-    positive, template, version_number=1, wait=True, sleepTime=SAMPLER_SLEEP,
+@ll_general.generate_logs()
+def remove_template(
+    positive, template, version_number=1, wait=True, sleep_time=SAMPLER_SLEEP,
     timeout=SAMPLER_TIMEOUT
 ):
     """
@@ -411,43 +412,28 @@ def removeTemplate(
         template (str): Name of template that should be removed
         version_number (int): Template version number
         wait (str): Wait until end of action if true, else return without wait
-        sleepTime (int): Sleep between sampler iterations
+        sleep_time (int): Sleep between sampler iterations
         timeout (int): Timeout to wait for template removal
 
     Returns:
         bool: True if template was removed properly, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Remove", obj_type="template", obj_name=template,
-        positive=positive
-    )
     template_obj = get_template_obj(template, version=version_number)
     if not template_obj:
         return False
-    logger.info(log_info)
+
     status = TEMPLATE_API.delete(template_obj, positive)
     if status and positive and wait:
         sample = TimeoutingSampler(
-            timeout=timeout, sleep=sleepTime, func=validateTemplate,
+            timeout=timeout, sleep=sleep_time, func=validateTemplate,
             positive=False, template=template, version=version_number
         )
-        res = sample.waitForFuncStatus(result=True)
-        if not res:
-            logger.error(log_error)
-            return False
-        return True
+        return sample.waitForFuncStatus(result=True)
 
-    elif status and positive and not wait:
-        return True
-
-    elif status and not positive:
-        return True
-
-    logger.error(log_error)
-    return False
+    return status is positive
 
 
-def removeTemplates(positive, templates):
+def remove_templates(positive, templates):
     """
     Remove multiple templates
 
@@ -463,7 +449,7 @@ def removeTemplates(positive, templates):
     else:
         templates_list = templates
     jobs = [Job(
-        target=removeTemplate, args=(True, tmpl)) for tmpl in templates_list]
+        target=remove_template, args=(True, tmpl)) for tmpl in templates_list]
     js = JobsSet()
     js.addJobs(jobs)
     js.start()
@@ -540,7 +526,7 @@ def getTemplatesNics(template, version=BASE_TEMPLATE_VERSION):
 
 
 @ll_general.generate_logs()
-def getTemplatesNic(template, nic, version=BASE_TEMPLATE_VERSION):
+def get_template_nic(template, nic, version=BASE_TEMPLATE_VERSION):
     """
     Get NIC from template
 
@@ -555,6 +541,7 @@ def getTemplatesNic(template, nic, version=BASE_TEMPLATE_VERSION):
     template_obj = get_template_obj(template, version=version)
     if not template_obj:
         return None
+
     return TEMPLATE_API.getElemFromElemColl(template_obj, nic, 'nics', 'nic')
 
 
@@ -717,7 +704,7 @@ def updateTemplateNic(
         return False
     kwargs.update([('cluster', template_obj.cluster.id)])
 
-    nic_obj = getTemplatesNic(template, nic, version)
+    nic_obj = get_template_nic(template, nic, version)
     nic_new = _prepareNicObj(**kwargs)
 
     res, status = NIC_API.update(nic_obj, nic_new, positive)
@@ -742,7 +729,7 @@ def removeTemplateNic(positive, template, nic, version=BASE_TEMPLATE_VERSION):
         log_action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
         extra_txt="from template %s, version: %s" % (template, version)
     )
-    nic_obj = getTemplatesNic(template, nic, version)
+    nic_obj = get_template_nic(template, nic, version)
     logger.info(log_info_txt)
     res = NIC_API.delete(nic_obj, positive)
     if not res:
@@ -837,7 +824,7 @@ def validateTemplate(positive, template, version=BASE_TEMPLATE_VERSION):
         template (str): Template name
         version (int): Template version number
     Returns:
-        bool: True if template existence is as expected (postive),
+        bool: True if template existence is as expected (positive),
             False otherwise
     """
     return bool(
@@ -1152,7 +1139,7 @@ def get_template_from_cluster(cluster):
     """
     logging.info("Getting all templates in cluster %s", cluster)
     cluster_id = CLUSTER_API.find(cluster).get_id()
-    templates = TEMPLATE_API.get(absLink=False)
+    templates = TEMPLATE_API.get(abs_link=False)
     templates_in_cluster = [
         template.name for template in templates
         if template.cluster and template.cluster.id == cluster_id
@@ -1167,7 +1154,7 @@ def get_all_template_objects():
     :return: List of template objects
     :rtype: list
     """
-    return TEMPLATE_API.get(absLink=False)
+    return TEMPLATE_API.get(abs_link=False)
 
 
 def get_all_template_objects_names():
@@ -1222,26 +1209,22 @@ def wait_for_export_domain_template_state(
     return True
 
 
+@ll_general.generate_logs()
 def get_templates_obj(template_name, all_content=False):
     """
-    Get Template objects by using the Template name
+    Get template objects by using the template_name
 
-    :param template_name: The Template name from which the Template object
-    should be retrieved
-    :type template_name: str
-    :param all_content: Specifies whether the entire content for the Template
-    should be retrieved, False is the default
-    :type all_content: bool
-    :returns: A list of Template objects for the input template_name
-    :rtype: list
+    Args:
+        template_name (str): The template name from which the template object
+            should be retrieved
+        all_content (bool): Specifies whether the entire content for the
+            template should be retrieved, False is the default
+
+    Returns:
+        list: A list of Template objects for the input template_name
     """
     template_name_query = "name=%s" % template_name
-    # Retrieve the entire object content only in the case where this is
-    # requested
-    if all_content:
-        return TEMPLATE_API.query(template_name_query,
-                                  all_content=all_content)
-    return TEMPLATE_API.query(template_name_query)
+    return TEMPLATE_API.query(template_name_query, all_content=all_content)
 
 
 @ll_general.generate_logs()
@@ -1254,15 +1237,19 @@ def get_template_obj(
     Args:
         template_name (str): Name of the template.
         all_content (bool): True if we want to apply all_content header, False
-        otherwise.
+            otherwise.
         version (int): Template version number.
 
     Returns:
          Template: If found returns the template object, otherwise None
     """
     templates_list = get_templates_obj(template_name, all_content)
-    if template_name == 'Blank' and templates_list:
+    if not templates_list:
+        return None
+
+    if template_name == "Blank":
         return templates_list[0]
+
     for template in templates_list:
         if template.get_version().get_version_number() == version:
             return template

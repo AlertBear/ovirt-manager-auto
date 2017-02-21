@@ -78,7 +78,7 @@ def create_template_for_cpu_qos_test(request):
         """
         1) Remove template
         """
-        ll_templates.removeTemplate(positive=True, template=conf.QOS_TEMPLATE)
+        ll_templates.remove_template(positive=True, template=conf.QOS_TEMPLATE)
     request.addfinalizer(fin)
 
     assert ll_templates.createTemplate(

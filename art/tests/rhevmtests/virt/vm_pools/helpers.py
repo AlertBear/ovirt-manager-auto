@@ -220,7 +220,7 @@ def get_user_vms(pool_name, user_name, user_role, number_of_vms):
     )
     user_vms = []
     for vm in pool_vms:
-        if ll_mla.hasUserPermissionsOnObject(user_name, vm, user_role):
+        if ll_mla.has_user_permissions_on_object(user_name, vm, user_role):
             logger.info(
                 "User : %s successfully took vm: %s and got permission: %s "
                 "for it", user_name, vm.get_name(), user_role
@@ -253,7 +253,7 @@ def verify_vms_have_no_permissions_for_user(vms, user_name, user_role):
     )
     vm_objects = [ll_vms.get_vm(vm) for vm in vms]
     for vm in vm_objects:
-        if ll_mla.hasUserPermissionsOnObject(user_name, vm, user_role):
+        if ll_mla.has_user_permissions_on_object(user_name, vm, user_role):
             raise exceptions.VmPoolException(
                 "user: %s still has permission for vm: %s" % (
                     user_name, vm.get_name()
@@ -394,7 +394,7 @@ def stop_vm_in_pool_as_user(positive, vm, user, manual=False):
             config.VDC_PASSWORD, False
         )
     logger.info("Checking permissions of user: %s on vm: %s", user, vm)
-    user_has_permission = ll_mla.hasUserPermissionsOnObject(
+    user_has_permission = ll_mla.has_user_permissions_on_object(
         user_name, ll_vms.get_vm(vm), config.USER_ROLE
     )
     if manual:
@@ -455,7 +455,7 @@ def start_vm_in_pool_as_user(
         )
     if check_permission:
         logger.info("Checking permissions of user: %s on vm: %s", user, vm)
-        if not ll_mla.hasUserPermissionsOnObject(
+        if not ll_mla.has_user_permissions_on_object(
             user_name, ll_vms.get_vm(vm), config.USER_ROLE
         ):
             logger.error(

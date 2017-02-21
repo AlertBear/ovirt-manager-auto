@@ -61,7 +61,7 @@ class CpuModelDenominator(object):
                     ],
                     'current': v.get_id(),
                 }
-            ) for v in VERSION.get(absLink=False)
+            ) for v in VERSION.get(abs_link=False)
         )
 
     def _id_to_model(self, cpu_id):

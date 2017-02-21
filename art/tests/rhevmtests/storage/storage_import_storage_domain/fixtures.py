@@ -281,7 +281,7 @@ def remove_template_setup(request):
     """
     self = request.node.cls
 
-    assert ll_templates.removeTemplate(True, self.template_name), (
+    assert ll_templates.remove_template(True, self.template_name), (
         "Failed to remove template %s" % self.template_name
     )
 

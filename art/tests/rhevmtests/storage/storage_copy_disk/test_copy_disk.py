@@ -136,7 +136,7 @@ class CopyDiskWithoutContent(BasicEnvironment):
         }
 
         disk_objects = [
-            d for d in ll_disks.DISKS_API.get(absLink=False)
+            d for d in ll_disks.DISKS_API.get(abs_link=False)
             if d.get_id() in config.FLOATING_DISKS
         ]
         testflow.step(
@@ -403,7 +403,7 @@ class TestCase11264(CopyDiskWithContent):
         Copy existing disk to the same storage when vm in different states
         """
         disk_objects = [
-            d for d in ll_disks.DISKS_API.get(absLink=False)
+            d for d in ll_disks.DISKS_API.get(abs_link=False)
             if d.get_id() in config.DISKS_FOR_TEST[self.storage]
         ]
         copy_disk_args = copy_args.copy()

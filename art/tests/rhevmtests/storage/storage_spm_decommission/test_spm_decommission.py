@@ -65,11 +65,11 @@ class ActivateDeactivate(StorageTest):
             True, config.DATA_CENTER_NAME, self.domain2, wait=False
         )
         # Make sure both domains are in the expected state
-        assert ll_sd.waitForStorageDomainStatus(
+        assert ll_sd.wait_for_storage_domain_status(
             True, config.DATA_CENTER_NAME, self.domain1,
             config.SD_ACTIVE, TIMEOUT_SD_OPERATION
         )
-        assert ll_sd.waitForStorageDomainStatus(
+        assert ll_sd.wait_for_storage_domain_status(
             True, config.DATA_CENTER_NAME, self.domain2,
             config.SD_MAINTENANCE, TIMEOUT_SD_OPERATION
         )

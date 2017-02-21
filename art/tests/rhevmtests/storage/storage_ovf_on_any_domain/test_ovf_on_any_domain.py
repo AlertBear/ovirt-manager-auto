@@ -814,7 +814,7 @@ class EnvironmentWithNewVm(BasicEnvironment):
         ll_vms.safely_remove_vms([VM3_NAME])
         ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         if self.template_created:
-            ll_templates.removeTemplate(True, TEMPLATE_NAME)
+            ll_templates.remove_template(True, TEMPLATE_NAME)
 
 
 class TestCase6247(BasicEnvironment):

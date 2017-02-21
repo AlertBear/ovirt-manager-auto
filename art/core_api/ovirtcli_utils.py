@@ -1062,9 +1062,9 @@ class CliUtil(RestUtil):
         if not href:
             href = self.links[self.collection_name]
 
-        return self.get(href, listOnly=True)
+        return self.get(href, list_only=True)
 
-    def create(self, entity, positive, expectedEntity=None,
+    def create(self, entity, positive, expected_entity=None,
                async=False, collection=None, compare=True):
         """
         Description: creates a new element
@@ -1073,9 +1073,9 @@ class CliUtil(RestUtil):
         :type entity: str
         :param positive: if positive or negative verification should be done
         :type positive: bool
-        :param expectedEntity: if there are some expected entity different
+        :param expected_entity: if there are some expected entity different
                               from sent
-        :type expectedEntity: str
+        :type expected_entity: str
         :param async: sync or async request
         :type async: bool
         :param collection: collection to use for add command
@@ -1088,38 +1088,43 @@ class CliUtil(RestUtil):
         :rtype: tuple string, bool
         """
         out = ''
-        addEntity = cliEntety(entity, self.element_name)
-        createCmd = "add {0} {1}".format(self.cli_element_name, addEntity)
+        add_entity = cliEntety(entity, self.element_name)
+        create_cmd = "add {0} {1}".format(self.cli_element_name, add_entity)
 
         if not async:
-            createCmd = "{0} --expect '201-created'".format(createCmd)
+            create_cmd = "{0} --expect '201-created'".format(create_cmd)
 
         if collection:
             try:
-                ownerId, ownerName, entityName = self._getHrefData(collection)
+                owner_id, owner_name, entity_name = self._getHrefData(
+                    collection
+                )
             except EntityNotFound:
                 pass
             else:
                 # adding to some element collection
-                createCmd = (
+                create_cmd = (
                     "add {0} --{1}-identifier '{2}' {3} "
                     "--expect '201-created'".format(
                         self.cli_element_name,
-                        ownerId.rstrip('s'),
-                        entityName,
-                        addEntity
+                        owner_id.rstrip('s'),
+                        entity_name,
+                        add_entity
                     )
                 )
-        correlationId = self.getCorrelationId(ApiOperation.create)
-        if correlationId:
-            createCmd = "%s --correlation_id '%s'" % (createCmd, correlationId)
+        correlation_id = self.getCorrelationId(ApiOperation.create)
+        if correlation_id:
+            create_cmd = "%s --correlation_id '%s'" % (
+                create_cmd, correlation_id
+            )
 
         # checking if we have legal entity name
-        createCmd = self.cli.convertComplexNameToBaseEntityName(entity,
-                                                                createCmd)
+        create_cmd = self.cli.convertComplexNameToBaseEntityName(
+            entity, create_cmd
+        )
         if self.opts['validate_cli_command']:
             # validating command vs cli help
-            self.logger.warning('Generated command:\n%s', createCmd)
+            self.logger.warning('Generated command:\n%s', create_cmd)
 
             if entity.__class__.__name__ in ADD_WAIVER:
                 self.logger.warning(
@@ -1127,18 +1132,18 @@ class CliUtil(RestUtil):
                     entity.__class__.__name__
                 )
             else:
-                createCmd = self.cli.validateCommand(createCmd)
+                create_cmd = self.cli.validateCommand(create_cmd)
                 self.logger.warning(
-                    'Actual command after validation: %s', createCmd
+                    'Actual command after validation: %s', create_cmd
                 )
 
-        createCmd = "%s > %s" % (createCmd, TMP_FILE)
-        collHref = collection
-        collection = self.getCollection(collHref)
+        create_cmd = "%s > %s" % (create_cmd, TMP_FILE)
+        coll_href = collection
+        collection = self.getCollection(coll_href)
 
         response = None
         try:
-            out = self.cli.cliCmdRunner(createCmd, 'CREATE')
+            out = self.cli.cliCmdRunner(create_cmd, 'CREATE')
         except CLITracebackError as e:
             self.logger.error("%s", e)
             return response, False
@@ -1150,24 +1155,24 @@ class CliUtil(RestUtil):
         else:
             if positive:
                 # refresh collection
-                if collHref:
-                    collection = self.get(collHref, listOnly=True)
+                if coll_href:
+                    collection = self.get(coll_href, list_only=True)
                 else:
-                    collection = self.getCollection(collHref)
+                    collection = self.getCollection(coll_href)
                 # looking for id in cli output:
-                elemId = re.search(self.cli._id_extract_re, out).group().\
+                elem_id = re.search(self.cli._id_extract_re, out).group().\
                     split(':')[1].strip()
                 response = self.find(
-                    elemId,
+                    elem_id,
                     attribute='id',
                     collection=collection,
-                    absLink=False
+                    abs_link=False
                 )
 
-                expEntity = entity if not expectedEntity else expectedEntity
+                exp_entity = entity if not expected_entity else expected_entity
 
                 if response and compare and not validator.compareElements(
-                        expEntity, response, self.logger, self.element_name):
+                        exp_entity, response, self.logger, self.element_name):
                     return response, False
 
                 self.logger.info("New entity was added successfully")
@@ -1261,15 +1266,15 @@ class CliUtil(RestUtil):
             return None, True
 
         if collHref:
-            collection = self.get(collHref, listOnly=True)
+            collection = self.get(collHref, list_only=True)
         else:
             # refresh collection
             collection = self.getCollection(collHref)
         # looking for id in cli output:
-        elemId = re.search(self.cli._id_extract_re, out).group().\
+        elem_id = re.search(self.cli._id_extract_re, out).group().\
             split(':')[1].strip()
-        response = self.find(elemId, attribute='id', collection=collection,
-                             absLink=False)
+        response = self.find(elem_id, attribute='id', collection=collection,
+                             abs_link=False)
         compare_elements = True if not compare else validator.compareElements(
             newEntity, response, self.logger, self.element_name)
         if (positive and compare_elements) or (

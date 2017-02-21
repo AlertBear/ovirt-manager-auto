@@ -164,7 +164,7 @@ def get_all_storage_connections():
     :return: List of all storage connections
     :rtype: list
     """
-    return api.get(absLink=False)
+    return api.get(abs_link=False)
 
 
 def get_storage_connection_object(connection, attribute):

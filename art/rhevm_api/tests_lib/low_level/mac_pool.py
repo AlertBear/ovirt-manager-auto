@@ -99,7 +99,7 @@ def get_all_mac_pools():
     :rtype: list
     """
     logger.info("Get all MAC pools from setup")
-    return MACPOOL_API.get(absLink=False)
+    return MACPOOL_API.get(abs_link=False)
 
 
 def get_mac_range_values(mac_pool_obj):

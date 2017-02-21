@@ -509,7 +509,7 @@ class CreateDC(TestCase):
 
         self._is_vms_state_down(cloned_vms)
 
-        assert ll_templates.removeTemplate(True, tmp_template)
+        assert ll_templates.remove_template(True, tmp_template)
 
     def add_vms(self, vms_def, dc_name, cl_name):
         """ add description

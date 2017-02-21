@@ -82,9 +82,9 @@ SCRIPT = (
 
 POST_INSTALL = (
     "find %{{python_sitelib}}/art -type f -regex .*[.]py$ -exec "
-    "sed -i 's/art[.]\(rhevm\|gluster\|jasper\)_api/\\1_api/g' '{{}}' \;\n"
+    "sed -i 's/art[.]\(rhevm\|jasper\)_api/\\1_api/g' '{{}}' \;\n"
     "find /opt/art/conf -type f -regex .*[.]spec$ -exec "
-    "sed -i 's/art[.]\(rhevm\|gluster\|jasper\)_api/\\1_api/g' '{{}}' \;\n"
+    "sed -i 's/art[.]\(rhevm\|jasper\)_api/\\1_api/g' '{{}}' \;\n"
     "sed -i 's|^elements_conf.*$|elements_conf = "
     "path_exists(default=\"{elements_path}\")|g' {specs_file} &> /dev/null\n"
 ).format(
@@ -106,7 +106,6 @@ UN_SCRIPT = (
 MANIFEST = [
     'recursive-include art/conf *.conf *.spec *.yaml',
     'prune art/rhevm_api',
-    'prune art/gluster_api',
     'prune art/jasper_api',
     'prune art/tests',
 ]

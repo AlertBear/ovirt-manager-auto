@@ -95,7 +95,7 @@ class TestCasePosix(TestCase):
                 % (self.sd_name, config.DATA_CENTER_NAME)
             )
 
-        ll_sd.waitForStorageDomainStatus(
+        ll_sd.wait_for_storage_domain_status(
             True, config.DATA_CENTER_NAME, self.sd_name,
             config.SD_ACTIVE
         )

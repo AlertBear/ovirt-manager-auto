@@ -286,9 +286,9 @@ def restart_vdsm_and_wait_for_activation(
             services=["vdsmd"], host_resource=host_resource
         ):
             return False
-    return ll_sd.waitForStorageDomainStatus(
+    return ll_sd.wait_for_storage_domain_status(
         positive=True,
-        dataCenterName=dc_name,
-        storageDomainName=storage_domain_name,
-        expectedStatus=ENUMS["storage_domain_state_active"]
+        data_center_name=dc_name,
+        storage_domain_name=storage_domain_name,
+        expected_status=ENUMS["storage_domain_state_active"]
     )

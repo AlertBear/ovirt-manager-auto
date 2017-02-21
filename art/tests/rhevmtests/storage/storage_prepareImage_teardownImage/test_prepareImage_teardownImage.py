@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
 from art.rhevm_api.tests_lib.low_level.templates import (
-    createTemplate, removeTemplate,
+    createTemplate, remove_template,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, startVm, removeVm,
@@ -805,7 +805,7 @@ class TestCase4601(BasicEnvironment):
 
         logger.info("Remove the template so that there are no duplicate disk "
                     "aliases left")
-        assert removeTemplate(
+        assert remove_template(
             True, template_name, wait=True
         ), "Failed to remove template '%s'" % template_name
 

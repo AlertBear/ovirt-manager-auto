@@ -104,7 +104,7 @@ def stop_all_vms():
     Stop all VMs
     """
     logger.info("Stop all VMs if needed")
-    all_vms = ll_vms.VM_API.get(absLink=False)
+    all_vms = ll_vms.VM_API.get(abs_link=False)
     for vm in all_vms:
         vm_name = vm.name
         vm_state = ll_vms.get_vm_state(vm_name)
@@ -211,7 +211,7 @@ def remove_unneeded_vms():
     Remove all unneeded VMs
     """
     logger.info("Get all VMs")
-    vms = [vm.name for vm in ll_vms.VM_API.get(absLink=False)]
+    vms = [vm.name for vm in ll_vms.VM_API.get(abs_link=False)]
     vms_to_remove = [vm for vm in vms if "golden_env_mixed_virtio_" not in vm]
     if vms_to_remove:
         logger.warning("VMs to remove: %s", vms_to_remove)
@@ -224,13 +224,13 @@ def remove_unneeded_templates():
     Remove all templates besides [config.TEMPLATE_NAME]
     """
     logger.info("Get all templates")
-    all_templates = ll_templates.TEMPLATE_API.get(absLink=False)
+    all_templates = ll_templates.TEMPLATE_API.get(abs_link=False)
     for template in all_templates:
         if template.name == BLANK_TEMPLATE:
             continue
 
         if template.name not in config.TEMPLATE_NAME:
-            if not ll_templates.removeTemplate(
+            if not ll_templates.remove_template(
                 positive=True, template=template.name
             ):
                 logger.info("Failed to remove %s", template.name)
@@ -242,7 +242,7 @@ def remove_unneeded_dcs():
     Remove all DCs besides [config.DC_NAME]
     """
     logger.info("Get all DCs")
-    all_dcs = ll_networks.DC_API.get(absLink=False)
+    all_dcs = ll_networks.DC_API.get(abs_link=False)
     for dc in all_dcs:
         if dc.name == DEFAULT_DC_CL:
             continue
@@ -261,7 +261,7 @@ def remove_unneeded_clusters():
     Remove all clusters besides [config.CLUSTER_NAME]
     """
     logger.info("Get all clusters")
-    all_clusters = ll_vms.CLUSTER_API.get(absLink=False)
+    all_clusters = ll_vms.CLUSTER_API.get(abs_link=False)
     for cl in all_clusters:
         if cl.name == DEFAULT_DC_CL:
             continue

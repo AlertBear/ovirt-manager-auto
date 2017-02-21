@@ -556,7 +556,7 @@ def searchForObj(
     '''
     if expected_count is None:
         expected_count = 0
-        objs = util.get(absLink=False)
+        objs = util.get(abs_link=False)
 
         pattern = query_val
 

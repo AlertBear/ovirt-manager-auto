@@ -423,7 +423,7 @@ class PositiveNetworkPermissions231827(NetworkingPositive):
                 net,
                 name="{0}-x".format(net)
             )
-        nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
+        nets = [n.get_name() for n in networks.NET_API.get(abs_link=False)]
         logger.info("User can see networks: '%s'", nets)
         if not config.GOLDEN_ENV:
             assert len(nets) == 6
@@ -1203,13 +1203,13 @@ class PositiveNetworkPermissions317133(NetworkingPositive):
             data_center=self.dc_name,
         )
 
-        assert mla.hasUserPermissionsOnObject(
+        assert mla.has_user_permissions_on_object(
             config.USERS[0],
             vnic,
             role=config.role.NetworkAdmin
         ), "Permission was not created at datacenter for vnicprofile."
 
-        assert mla.hasUserPermissionsOnObject(
+        assert mla.has_user_permissions_on_object(
             config.USERS[0],
             net,
             role=config.role.NetworkAdmin
@@ -1322,7 +1322,7 @@ class PositiveNetworkPermissions317270(NetworkingPositive):
             config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
-        assert mla.hasUserPermissionsOnObject(
+        assert mla.has_user_permissions_on_object(
             config.USERS[0],
             vnic,
             role=config.role.UserRole
@@ -1333,7 +1333,7 @@ class PositiveNetworkPermissions317270(NetworkingPositive):
             data_center=config.DC_NAME[0],
             usages=''
         )
-        assert not mla.hasUserPermissionsOnObject(
+        assert not mla.has_user_permissions_on_object(
             config.USERS[0],
             vnic,
             role=config.role.UserRole

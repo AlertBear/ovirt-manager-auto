@@ -62,7 +62,7 @@ class NetworkingNegative(common.BaseTestCase):
                 vm=config.VM_NAME
             )
             ignore_all_exceptions(
-                templates.removeTemplate,
+                templates.remove_template,
                 positive=True,
                 template=config.TEMPLATE_NAMES[0]
             )
@@ -565,7 +565,7 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
                 network=config.NETWORK_NAMES[0],
                 interface='virtio'
             )
-        nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
+        nets = [n.get_name() for n in networks.NET_API.get(abs_link=False)]
         logger.info("User can see networks: '%s'", nets)
         # User can see network2 and default rhevm network, because has
         # Everyone VnicProfileUser permissons, None network is not count

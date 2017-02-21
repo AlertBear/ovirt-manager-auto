@@ -82,7 +82,7 @@ def mac_pool_per_cl_prepare_setup(request):
         Remove template
         """
         testflow.teardown("Remove template %s", template)
-        assert ll_templates.removeTemplate(positive=True, template=template)
+        assert ll_templates.remove_template(positive=True, template=template)
     request.addfinalizer(fin2)
 
     @global_helper.wait_for_jobs_deco(["Removing VM"])

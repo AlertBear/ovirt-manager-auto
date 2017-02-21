@@ -76,7 +76,7 @@ hosts_ips = []
 hosts_user = "root"
 hosts_password = parameters.as_list("vds_password")[0]
 
-hosts_objects = ll_hosts.HOST_API.get(absLink=False)
+hosts_objects = ll_hosts.HOST_API.get(abs_link=False)
 if not hosts_objects:
     raise EnvironmentError("No hosts in environment!")
 

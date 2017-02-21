@@ -1180,7 +1180,7 @@ class TestCase4923(DefaultEnvironment):
                 BaseTestCase.test_failed = True
         ll_templates.waitForTemplatesStates(self.template_name)
 
-        if not ll_templates.removeTemplate(
+        if not ll_templates.remove_template(
                 True, self.template_name, timeout=TEMPLATE_TIMEOUT
         ):
             logger.error(

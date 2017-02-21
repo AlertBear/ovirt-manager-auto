@@ -201,9 +201,9 @@ class TestCase11630(EnvironmentWithTwoHosts):
         )
 
         logger.info("Waiting for storage domain state")
-        ll_sds.waitForStorageDomainStatus(
+        ll_sds.wait_for_storage_domain_status(
             True, config.DATA_CENTER_NAME, self.sd,
-            ENUMS['storage_domain_state_unknown'], timeOut=900,
+            ENUMS['storage_domain_state_unknown'], time_out=900,
         )
 
         logger.info("Shutting down the VMs")
@@ -379,7 +379,7 @@ class TestCase11907(TestCase):
                 self.test_failed = True
 
         logger.info("Removing template %s", self.template_name)
-        if not ll_templates.removeTemplate(
+        if not ll_templates.remove_template(
             positive=True, template=self.template_name
         ):
             logger.error("Failed to remove template %s", self.template_name)

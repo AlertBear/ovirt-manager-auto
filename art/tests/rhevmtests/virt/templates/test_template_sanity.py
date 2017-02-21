@@ -69,7 +69,7 @@ class TestTemplateSanity(VirtTest):
             "Verify that template: %s got %s permissions for user: %s",
             conf.TEMPLATE_LIST[0], conf.USER_ROLE, user_name
         )
-        assert ll_mla.hasUserOrGroupPermissionsOnObject(
+        assert ll_mla.has_user_or_group_permissions_on_object(
             user_name, template_object, conf.USER_ROLE
         )
 
@@ -105,7 +105,7 @@ class TestTemplateSanity(VirtTest):
             "Attempting to remove template: %s, template is delete protected, "
             "expecting action to fail", conf.TEMPLATE_LIST[0]
         )
-        assert ll_templates.removeTemplate(False, conf.TEMPLATE_LIST[0])
+        assert ll_templates.remove_template(False, conf.TEMPLATE_LIST[0])
         testflow.step(
             "updating template: %s, disabling delete protection",
             conf.TEMPLATE_LIST[0]
@@ -117,7 +117,7 @@ class TestTemplateSanity(VirtTest):
             "Remove template: %s, expecting action to succeed",
             conf.TEMPLATE_LIST[0]
         )
-        assert ll_templates.removeTemplate(True, conf.TEMPLATE_LIST[0])
+        assert ll_templates.remove_template(True, conf.TEMPLATE_LIST[0])
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
@@ -277,7 +277,7 @@ class TestTemplateSanity(VirtTest):
             "Attempt to remove template: %s version: %s that is being used "
             "by a vm: %s", conf.TEMPLATE_LIST[0], 2, conf.VM_NO_DISK_2
         )
-        assert ll_templates.removeTemplate(
+        assert ll_templates.remove_template(
             False, conf.TEMPLATE_LIST[0], version_number=2
         )
 
@@ -326,7 +326,7 @@ class TestTemplateSanity(VirtTest):
             "Verify that vm: %s got %s permissions for user: %s",
             conf.VM_NO_DISK_2, conf.USER_ROLE, user_name
         )
-        assert ll_mla.hasUserOrGroupPermissionsOnObject(
+        assert ll_mla.has_user_or_group_permissions_on_object(
             user_name, vm_object, conf.USER_ROLE
         )
 
@@ -422,7 +422,7 @@ class TestTemplateSanity(VirtTest):
             exclusive='true'
         )
         testflow.step("Remove template: %s", conf.TEMPLATE_LIST[1])
-        assert ll_templates.removeTemplate(True, conf.TEMPLATE_LIST[1])
+        assert ll_templates.remove_template(True, conf.TEMPLATE_LIST[1])
         testflow.step(
             "Import template: %s from export domain back to SD",
             conf.TEMPLATE_LIST[1]

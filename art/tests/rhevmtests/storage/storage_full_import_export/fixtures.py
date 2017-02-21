@@ -71,7 +71,7 @@ def remove_template_setup(request):
     self = request.node.cls
 
     testflow.setup("Remove template %s" % self.template_name)
-    assert ll_templates.removeTemplate(
+    assert ll_templates.remove_template(
         positive=True, template=self.template_name
     ), "Failed to remove template %s" % self.template_name
 

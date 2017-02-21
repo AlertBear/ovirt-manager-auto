@@ -65,7 +65,7 @@ def get_scheduling_policies():
         list: Scheduling policies objects
     """
     logger.info("Get all scheduling policies")
-    return SCH_POL_API.get(absLink=False)
+    return SCH_POL_API.get(abs_link=False)
 
 
 def _prepare_scheduling_policy_object(**kwargs):
@@ -189,7 +189,7 @@ def _get_policy_unit(unit_name, unit_type):
     :returns: policy unit or None
     :rtype: SchedulingPolicyUnit instance or None
     """
-    policy_units = SCH_POL_UNITS_API.get(absLink=False)
+    policy_units = SCH_POL_UNITS_API.get(abs_link=False)
     for unit in policy_units:
         if unit.get_name() == unit_name and unit.get_type() == unit_type:
             return unit

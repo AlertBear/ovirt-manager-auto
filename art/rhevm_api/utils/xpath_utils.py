@@ -54,7 +54,7 @@ class XPathMatch(object):
         self.api = api_util
 
     def __call__(self, positive, link, xpath, rslt_eval='0. < result',
-                 absLink=False):
+                 abs_link=False):
         """
         See the doc for XPathMatch for more details.
         """
@@ -65,27 +65,27 @@ class XPathMatch(object):
                                   % self.api.opts['engine'])
 
         if link.startswith('/'):
-            matching_nodes = self.getAndXpathEval(link, xpath, absLink)
+            matching_nodes = self.get_and_xpath_eval(link, xpath, abs_link)
         else:
             if 'api' == link:
-                matching_nodes = self.getAndXpathEval(None, xpath, absLink)
+                matching_nodes = self.get_and_xpath_eval(None, xpath, abs_link)
             else:
-                matching_nodes = self.getAndXpathEval(link, xpath, absLink)
+                matching_nodes = self.get_and_xpath_eval(link, xpath, abs_link)
 
         if positive != eval(rslt_eval, None, {'result': matching_nodes}):
-            E = "XPath '%s' result evaluated using '%s' not equal to %s."
-            self.api.logger.error(E % (xpath, rslt_eval, positive))
+            e = "XPath '%s' result evaluated using '%s' not equal to %s."
+            self.api.logger.error(e % (xpath, rslt_eval, positive))
             return False
         else:
             self.api.logger.debug("XPath evaluation succeed.")
             return True
 
-    def getEtreeParsed(self, link, absLink):
-        return etree.fromstring(self.api.get(link, absLink=absLink,
-                                             noParse=True))
+    def get_etree_parsed(self, link, abs_link):
+        return etree.fromstring(self.api.get(link, abs_link=abs_link,
+                                             no_parse=True))
 
-    def getAndXpathEval(self, link, xpath, absLink):
-        return self.getEtreeParsed(link, absLink).xpath(xpath)
+    def get_and_xpath_eval(self, link, xpath, abs_link):
+        return self.get_etree_parsed(link, abs_link).xpath(xpath)
 
 
 class XPathLinks(XPathMatch):

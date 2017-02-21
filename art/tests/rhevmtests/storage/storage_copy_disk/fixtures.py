@@ -114,7 +114,7 @@ def remove_template(request):
 
     def finalizer():
         testflow.teardown("Removing  template %s", self.template_name)
-        assert ll_templates.removeTemplate(
+        assert ll_templates.remove_template(
             True, self.template_name, timeout=REMOVE_TEMPLATE_TIMEOUT
         ), "Failed to remove template %s" % self.template_name
 

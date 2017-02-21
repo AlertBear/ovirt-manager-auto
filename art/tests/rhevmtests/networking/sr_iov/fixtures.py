@@ -196,9 +196,9 @@ def prepare_setup_import_export(request):
             testflow.teardown("Remove template %s", template)
             result.append(
                 (
-                    ll_templates.removeTemplate(
+                    ll_templates.remove_template(
                         positive=True, template=template
-                    ), "fin3: ll_templates.removeTemplate %s" % template
+                    ), "fin3: ll_templates.remove_template %s" % template
                 )
             )
     request.addfinalizer(fin3)

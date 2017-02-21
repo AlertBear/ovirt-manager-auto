@@ -108,7 +108,7 @@ def activate_domain(request):
             config.RETRY_INTERVAL
         ), "SPM host was not elected"
 
-        assert ll_sd.waitForStorageDomainStatus(
+        assert ll_sd.wait_for_storage_domain_status(
             True, config.DATA_CENTER_NAME, self.non_master_domain,
             config.ENUMS['storage_domain_state_maintenance']
         ), "Storage domain '%s' failed to reach maintenance mode" % (

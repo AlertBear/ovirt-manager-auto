@@ -618,7 +618,7 @@ def get_vms_objects_from_cluster(cluster):
     """
     logging.info("Getting all vms in cluster %s", cluster)
     cluster_id = CLUSTER_API.find(cluster).get_id()
-    all_vms = VM_API.get(absLink=False)
+    all_vms = VM_API.get(abs_link=False)
     vms_in_cluster = [
         vm for vm in all_vms
         if vm.get_cluster().get_id() == cluster_id]

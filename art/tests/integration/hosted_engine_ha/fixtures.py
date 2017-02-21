@@ -30,7 +30,7 @@ def initialize_ge_constants():
         for cluster in clusters:
             for host in cluster["hosts"]:
                 conf.HOSTS.append(host["name"])
-        host_objs = ll_hosts.HOST_API.get(absLink=False)
+        host_objs = ll_hosts.HOST_API.get(abs_link=False)
         conf.HOSTS_IP = [host_obj.get_address() for host_obj in host_objs]
         if not ll_hosts.is_hosted_engine_configured(conf.HOSTS[0]):
             pytest.skip("GE does not configured as HE environment")

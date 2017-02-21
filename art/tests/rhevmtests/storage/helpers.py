@@ -1319,7 +1319,7 @@ def add_storage_domain(storage_domain, data_center, index, storage_type):
     ll_jobs.wait_for_jobs(
         [config.JOB_ADD_STORAGE_DOMAIN, config.JOB_ACTIVATE_DOMAIN]
     )
-    ll_sd.waitForStorageDomainStatus(
+    ll_sd.wait_for_storage_domain_status(
         True, data_center, storage_domain,
         config.SD_ACTIVE
     )

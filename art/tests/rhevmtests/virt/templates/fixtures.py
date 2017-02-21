@@ -73,7 +73,7 @@ def remove_base_templates():
                     True, template, version,
                     protected=not conf.DELETE_PROTECTED
                 )
-            ll_templates.removeTemplate(True, template, version)
+            ll_templates.remove_template(True, template, version)
 
 
 @pytest.fixture()
@@ -216,7 +216,7 @@ def remove_dummy_template(request):
         """
         Remove dummy template
         """
-        ll_templates.removeTemplate(True, conf.TEMPLATE_LIST[1])
+        ll_templates.remove_template(True, conf.TEMPLATE_LIST[1])
     request.addfinalizer(fin)
 
 

@@ -120,7 +120,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             if not ll_hosts.isHostUp(True, self.host):
                 ll_hosts.activate_host(True, self.host)
             try:
-                ll_templates.removeTemplate(True, self.template)
+                ll_templates.remove_template(True, self.template)
             except apis_exceptions.EntityNotFound:
                 pass
             try:
@@ -137,9 +137,9 @@ class TestCase4831(helpers.TestCaseNFSOptions):
                 ll_sd.activateStorageDomain(
                     True, config.DATA_CENTER_NAME, self.master_domain,
                 )
-                ll_sd.waitForStorageDomainStatus(
+                ll_sd.wait_for_storage_domain_status(
                     True, config.DATA_CENTER_NAME, self.master_domain,
-                    config.SD_ACTIVE, timeOut=DEFAULT_DC_TIMEOUT
+                    config.SD_ACTIVE, time_out=DEFAULT_DC_TIMEOUT
                 )
 
             for sd_remove in [self.sd_1, self.sd_2, self.sd_exp]:

@@ -60,7 +60,7 @@ def setup_module(request):
 
         ll_vmpools.removeVmPool(True, config.VMPOOL_NAME)
 
-        templates.removeTemplate(True, config.TEMPLATE_NAMES[0])
+        templates.remove_template(True, config.TEMPLATE_NAMES[0])
 
         test_utils.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
 
@@ -334,7 +334,7 @@ class PermissionsCase54425(common.BaseTestCase):
     def test_delegate_permissions(self):
         """ delegate permissions """
         # Test SuperUser that he can add permissions
-        for role_obj in mla.util.get(absLink=False):
+        for role_obj in mla.util.get(abs_link=False):
             role_name = role_obj.get_name()
 
             logger.info("Testing role - %s", role_name)
@@ -547,7 +547,7 @@ class PermissionsCase54420(common.BaseTestCase):
                     role_obj.administrative
                 )
                 common.login_as_admin()
-                templates.removeTemplate(True, config.TEMPLATE_NAMES[1])
+                templates.remove_template(True, config.TEMPLATE_NAMES[1])
 
             if 'create_disk' in r_permits:
                 logger.info("Testing createDisk.")

@@ -65,12 +65,12 @@ def setup_module(request):
             wait=True
         )
         testflow.step("Removing template %s", config.CREATE_TEMPLATE)
-        templates.removeTemplate(
+        templates.remove_template(
             True,
             config.CREATE_TEMPLATE
         )
         testflow.step("Removing template %s", config.DELETE_TEMPLATE)
-        templates.removeTemplate(
+        templates.remove_template(
             True,
             config.DELETE_TEMPLATE
         )
@@ -488,7 +488,7 @@ class CaseRoleActions(TestCase):
         Need to assign permissions for roles which are not supposed to view
         children to avoid EntityNotFound exception and rather test real action
         """
-        cls.creator = not mla.allowsViewChildren(cls.role, config.ENGINE.db)
+        cls.creator = not mla.allows_view_children(cls.role, config.ENGINE.db)
         if cls.creator:
             user_object_perm_map = {
                 config.USER_SYSTEM: {
@@ -565,7 +565,7 @@ class CaseRoleActions(TestCase):
 
     @user_case(
         login_as=config.USER_DC,
-        cleanup_func=templates.removeTemplate,
+        cleanup_func=templates.remove_template,
         positive=True,
         template=config.USER_DC
     )
@@ -961,7 +961,7 @@ class CaseRoleActions(TestCase):
     )
     def test_delete_template(self):
         """ delete_template """
-        assert templates.removeTemplate(self.positive, config.DELETE_TEMPLATE)
+        assert templates.remove_template(self.positive, config.DELETE_TEMPLATE)
 
     @user_case(
         login_as=config.USER_SYSTEM,

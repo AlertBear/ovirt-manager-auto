@@ -157,7 +157,7 @@ def import_export_prepare_setup(request):
         positive=True, vm=import_export.ie_vm, stopVM="true"
     )
     testflow.setup("Remove template %s", import_export.ie_template)
-    assert ll_templates.removeTemplate(
+    assert ll_templates.remove_template(
         positive=True, template=import_export.ie_template
     )
 
@@ -204,7 +204,7 @@ def import_templates(request, import_export_prepare_setup):
         """
         testflow.teardown("Remove templates %s", template_list)
         assert ll_templates.waitForTemplatesStates(names=template_list)
-        assert ll_templates.removeTemplates(
+        assert ll_templates.remove_templates(
             positive=True, templates=template_list
         )
     request.addfinalizer(fin)

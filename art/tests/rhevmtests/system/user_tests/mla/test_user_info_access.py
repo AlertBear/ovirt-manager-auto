@@ -105,7 +105,7 @@ class VmUserInfoTests(common.BaseTestCase):
             common.login_as_admin()
             vms.removeVm(True, config.VM_NAMES[1])
             vms.removeVm(True, config.VM_NAMES[0])
-            templates.removeTemplate(True, config.TEMPLATE_NAMES[1])
+            templates.remove_template(True, config.TEMPLATE_NAMES[1])
 
         request.addfinalizer(finalize)
 
@@ -163,7 +163,7 @@ class VmUserInfoTests(common.BaseTestCase):
             },
         }
 
-        for e in events.util.get(absLink=False):
+        for e in events.util.get(abs_link=False):
             if e is None:
                 continue
 
@@ -247,8 +247,8 @@ class VmUserInfoTests2(common.BaseTestCase):
             "User can see {0} where he has no permissions. Can see {1}"
         )
 
-        dcs = ll_dc.util.get(absLink=False)
-        cls = clusters.util.get(absLink=False)
+        dcs = ll_dc.util.get(abs_link=False)
+        cls = clusters.util.get(abs_link=False)
 
         # can user see parent objects of the one with permission?
         dc = ll_dc.util.find(datacenter)
@@ -278,7 +278,7 @@ class VmUserInfoTests2(common.BaseTestCase):
         assert vm1 is not None, msg_blind % config.VM_NAMES[0]
         with pytest.raises(EntityNotFound):
             vms.VM_API.find(config.VM_NAMES[1])
-        my_vms = vms.VM_API.get(absLink=False)
+        my_vms = vms.VM_API.get(abs_link=False)
         assert len(my_vms) == 1, msg_visible
         logger.info(msg_visible)
 
@@ -317,7 +317,7 @@ class VmUserInfoTests2(common.BaseTestCase):
         common.login_as_user()
 
         lst_of_vms = set()
-        for e in events.util.get(absLink=False):
+        for e in events.util.get(abs_link=False):
             if e.get_vm():
                 lst_of_vms.add(e.get_vm().get_id())
 
@@ -354,15 +354,17 @@ class VmUserInfoTests2(common.BaseTestCase):
         common.login_as_admin()
 
         def get_storage_domains():
-            return [s.get_name() for s in ll_sd.util.get(absLink=False)]
+            return [s.get_name() for s in ll_sd.util.get(abs_link=False)]
 
         def get_templates():
             return [
-                t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)
+                t.get_name() for t in templates.TEMPLATE_API.get(
+                    abs_link=False
+                )
             ]
 
         def get_networks():
-            return [n.get_name() for n in networks.NET_API.get(absLink=False)]
+            return [n.get_name() for n in networks.NET_API.get(abs_link=False)]
 
         admin_storage_domains = get_storage_domains()
         admin_templates = get_templates()
@@ -460,7 +462,7 @@ class ViewChildrenInfoTests(common.BaseTestCase):
                 role_can
             )
             common.login_as_user()
-            assert len(vms.VM_API.get(absLink=False)) > 0, err_msg
+            assert len(vms.VM_API.get(abs_link=False)) > 0, err_msg
             common.login_as_admin()
             mla.removeUserPermissionsFromCluster(
                 True,
@@ -481,7 +483,7 @@ class ViewChildrenInfoTests(common.BaseTestCase):
                 role_can
             )
             common.login_as_user()
-            assert len(vms.VM_API.get(absLink=False)) == 0, "User can see vms"
+            assert len(vms.VM_API.get(abs_link=False)) == 0, "User can see vms"
             common.login_as_admin()
             mla.removeUserPermissionsFromCluster(
                 True,
@@ -543,7 +545,7 @@ class VmCreatorClusterAdminInfoTests(common.BaseTestCase):
         err_msg_cant = "User can't see {0}"
         common.login_as_user()
         logger.info("Checking right permission on vms.")
-        my_vms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        my_vms = [vm.get_name() for vm in vms.VM_API.get(abs_link=False)]
         for idx in range(len(config.VM_NAMES)):
             if idx < 2:
                 assert config.VM_NAMES[idx] in my_vms, (
@@ -596,7 +598,7 @@ class VmCreatorInfoTests(common.BaseTestCase):
         msg = "User can see vms where he has no permissions. Can see {0}"
 
         common.login_as_user()
-        my_vms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        my_vms = [vm.get_name() for vm in vms.VM_API.get(abs_link=False)]
 
         assert len(my_vms) == 0, msg.format(my_vms)
         logger.info("User can't see vms where he has not perms. %s", my_vms)
@@ -607,7 +609,7 @@ class VmCreatorInfoTests(common.BaseTestCase):
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        my_vms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        my_vms = [vm.get_name() for vm in vms.VM_API.get(abs_link=False)]
         assert len(my_vms) == 1, msg.format(my_vms)
         logger.info("User can see only his vms %s", my_vms)
 
@@ -629,7 +631,7 @@ class TemplateCreatorInfoTests(common.BaseTestCase):
                 vms.removeVm(True, vm)
 
             for template in config.TEMPLATE_NAMES[:3]:
-                templates.removeTemplate(True, template)
+                templates.remove_template(True, template)
 
             mla.removeUserPermissionsFromDatacenter(
                 True,
@@ -679,7 +681,7 @@ class TemplateCreatorInfoTests(common.BaseTestCase):
         common.login_as_user()
         logger.info("Checking right permissions for all vms")
 
-        user_vms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        user_vms = [vm.get_name() for vm in vms.VM_API.get(abs_link=False)]
         assert config.VM_NAMES[0] in user_vms, msg_cant.format(
             'VM',
             config.VM_NAMES[0]
@@ -691,7 +693,9 @@ class TemplateCreatorInfoTests(common.BaseTestCase):
         logger.info("User can see %s", user_vms)
 
         logger.info("Checking right permissions for all templates")
-        tms = [t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)]
+        tms = [
+            t.get_name() for t in templates.TEMPLATE_API.get(abs_link=False)
+        ]
         err_msg = msg_can.format('Template', config.TEMPLATE_NAMES[0])
         assert config.TEMPLATE_NAMES[0] not in tms, err_msg
         err_msg = msg_can.format('Template', config.TEMPLATE_NAMES[1])
@@ -708,7 +712,9 @@ class TemplateCreatorInfoTests(common.BaseTestCase):
             "Checking right permission for %s",
             config.TEMPLATE_NAMES[2]
         )
-        tms = [t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)]
+        tms = [
+            t.get_name() for t in templates.TEMPLATE_API.get(abs_link=False)
+        ]
         # tms == 2(blank + newly created)
         err_msg = msg_can.format('Templates', tms)
         assert config.TEMPLATE_NAMES[2] in tms and len(tms) == 2, err_msg
@@ -736,7 +742,7 @@ class TemplateCreatorAndDCAdminInfoTest(common.BaseTestCase):
             for vm in config.VM_NAMES[:2]:
                 vms.removeVm(True, vm)
             for template in config.TEMPLATE_NAMES[:2]:
-                templates.removeTemplate(True, template)
+                templates.remove_template(True, template)
             mla.removeUserPermissionsFromDatacenter(
                 True,
                 config.DC_NAME[0],
@@ -808,7 +814,7 @@ class ComplexCombinationTest(common.BaseTestCase):
                 vms.removeVm(True, vm)
 
             for template in config.TEMPLATE_NAMES:
-                templates.removeTemplate(True, template)
+                templates.remove_template(True, template)
 
             common.remove_user(True, config.USER_NAMES[0])
             common.add_user(

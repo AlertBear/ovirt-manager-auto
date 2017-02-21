@@ -20,7 +20,7 @@ def sla_cleanup():
     3. Remove all redundant VMs
     """
     logger.info("SLA cleanup")
-    ll_vms.stop_vms_safely(ll_vms.VM_API.get(absLink=False))
+    ll_vms.stop_vms_safely(ll_vms.VM_API.get(abs_link=False))
     logger.info("Remove all exceed vms")
     hl_vms.remove_all_vms_from_cluster(
         config.CLUSTER_NAME[0], skip=config.VM_NAME

@@ -363,27 +363,29 @@ def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
         * samplingPeriod - Time in seconds for sampling the cluster list.
     '''
 
-    clsList = split(clusters)
+    cls_list = split(clusters)
     t_start = time.time()
     while time.time() - t_start < timeout and 0 < timeout:
-        clusters = util.get(absLink=False)
-        remainingCls = []
+        clusters = util.get(abs_link=False)
+        remaining_cls = []
         for cl in clusters:
-            clName = getattr(cl, 'name')
-            if clName in clsList:
-                remainingCls.append(clName)
+            cl_name = getattr(cl, 'name')
+            if cl_name in cls_list:
+                remaining_cls.append(cl_name)
 
-        if len(remainingCls) > 0:
-            util.logger.info("Waiting for %d clusters to disappear.",
-                             len(remainingCls))
+        if len(remaining_cls) > 0:
+            util.logger.info(
+                "Waiting for %d clusters to disappear.", len(remaining_cls)
+            )
             time.sleep(samplingPeriod)
         else:
-            util.logger.info("All %d clusters are gone.", len(clsList))
+            util.logger.info("All %d clusters are gone.", len(cls_list))
             return positive
 
-    remainingClsNames = [cl for cl in remainingCls]
-    util.logger.error("Clusters %s didn't disappear until timeout.",
-                      remainingClsNames)
+    remaining_cls_names = [cl for cl in remaining_cls]
+    util.logger.error(
+        "Clusters %s didn't disappear until timeout.", remaining_cls_names
+    )
     return not positive
 
 
@@ -799,7 +801,7 @@ def get_cluster_list():
     :return: List of cluster objects
     :rtype: list
     """
-    return util.get(absLink=False)
+    return util.get(abs_link=False)
 
 
 def get_cluster_names_list():

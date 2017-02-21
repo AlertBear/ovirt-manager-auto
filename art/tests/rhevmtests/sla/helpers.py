@@ -201,7 +201,7 @@ def wait_for_hosts_state_in_cluster(
         timeout=timeout,
         sleep=sleep,
         func=ll_hosts.HOST_API.get,
-        absLink=False
+        abs_link=False
     )
     try:
         for sample in sampler:
@@ -601,7 +601,7 @@ def wait_for_dc_and_storagedomains():
         for storage_domain in storage_domains:
             results.append(
                 executor.submit(
-                    ll_sds.waitForStorageDomainStatus,
+                    ll_sds.wait_for_storage_domain_status,
                     True,
                     conf.DC_NAME[0],
                     storage_domain.get_name(),

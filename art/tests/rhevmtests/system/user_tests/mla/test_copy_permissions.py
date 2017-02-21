@@ -19,7 +19,7 @@ def setup_module(request):
         for user_name in config.USER_NAMES[:2]:
             common.remove_user(True, user_name)
         vms.removeVm(True, config.VM_NAME)
-        templates.removeTemplate(True, config.TEMPLATE_NAMES[0])
+        templates.remove_template(True, config.TEMPLATE_NAMES[0])
 
     request.addfinalizer(finalize)
 
@@ -222,7 +222,7 @@ class CopyPermissions299328(common.BaseTestCase):
         super(CopyPermissions299328, cls).setup_class(request)
 
         def finalize():
-            templates.removeTemplate(True, config.TEMPLATE_NAMES[1])
+            templates.remove_template(True, config.TEMPLATE_NAMES[1])
 
         request.addfinalizer(finalize)
 
@@ -255,7 +255,7 @@ class CopyPermissions299331(common.BaseTestCase):
         super(CopyPermissions299331, cls).setup_class(request)
 
         def finalize():
-            templates.removeTemplate(True, config.TEMPLATE_NAMES[1])
+            templates.remove_template(True, config.TEMPLATE_NAMES[1])
 
         request.addfinalizer(finalize)
 

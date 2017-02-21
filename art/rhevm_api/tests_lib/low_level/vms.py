@@ -264,7 +264,7 @@ def _prepareVmObject(**kwargs):
     snapshot_name = kwargs.pop("snapshot", None)
     if snapshot_name:
         add = False
-        vms = VM_API.get(absLink=False)
+        vms = VM_API.get(abs_link=False)
         for temp_vm in vms:
             try:
                 snapshot_obj = _getVmSnapshot(temp_vm.name, snapshot_name)
@@ -775,7 +775,8 @@ def addVm(positive, wait=True, **kwargs):
     logger.info(log_info)
     if False in [positive, wait]:
         vm_obj, status = VM_API.create(
-            vm_obj, positive, expectedEntity=expected_vm, operations=operations
+            vm_obj, positive, expected_entity=expected_vm,
+            operations=operations
         )
         if not status:
             logger.error(log_error)
@@ -788,7 +789,7 @@ def addVm(positive, wait=True, **kwargs):
         wait_timeout = VM_DISK_CLONE_TIMEOUT
 
     vm_obj, status = VM_API.create(
-        vm_obj, positive, expectedEntity=expected_vm, operations=operations
+        vm_obj, positive, expected_entity=expected_vm, operations=operations
     )
 
     if status:
@@ -2635,7 +2636,7 @@ def cloneVmFromTemplate(positive, name, template, cluster,
         operations = ['clone=true']
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
     vm, status = VM_API.create(
-        newVm, positive, expectedEntity=expectedVm, async=(not wait),
+        newVm, positive, expected_entity=expectedVm, async=(not wait),
         compare=wait, operations=operations
     )
     if positive and status and wait:
@@ -2674,7 +2675,7 @@ def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
     expectedVm.set_snapshots(None)
     expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
     logger.info("Cloning vm %s from snapshot %s", name, snapshot)
-    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm,
+    vm, status = VM_API.create(newVm, positive, expected_entity=expectedVm,
                                compare=compare, operations=operations)
     if positive and status and wait:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
@@ -3310,7 +3311,7 @@ def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
     if not vnic_profile_name:
         return not bool(nic_obj.get_vnic_profile())
 
-    all_profiles = VNIC_PROFILE_API.get(absLink=False)
+    all_profiles = VNIC_PROFILE_API.get(abs_link=False)
     for profile in all_profiles:
         if profile.get_name() == vnic_profile_name:
             return profile.get_id() == nic_obj.get_vnic_profile().get_id()
@@ -4639,7 +4640,7 @@ def get_vms_from_cluster(cluster):
     """
     logging.info("Getting all vms in cluster %s", cluster)
     cluster_id = CLUSTER_API.find(cluster).get_id()
-    all_vms = VM_API.get(absLink=False)
+    all_vms = VM_API.get(abs_link=False)
     vms_in_cluster = [
         x.get_name() for x in all_vms
         if x.get_cluster().get_id() == cluster_id]
@@ -5474,7 +5475,7 @@ def get_all_vms():
     Returns:
         list: VM objects
     """
-    return VM_API.get(absLink=False)
+    return VM_API.get(abs_link=False)
 
 
 def get_all_vms_names():

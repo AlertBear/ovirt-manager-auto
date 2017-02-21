@@ -146,7 +146,7 @@ class SdkUtil(APIUtil):
 
         return results
 
-    def create(self, entity, positive, expectedEntity=None,
+    def create(self, entity, positive, expected_entity=None,
                async=False, collection=None, current=None, compare=True,
                **kwargs):
         '''
@@ -155,7 +155,7 @@ class SdkUtil(APIUtil):
         Parameters:
            * entity - entity for post body
            * positive - if positive or negative verification should be done
-           * expectedEntity - if there are some expected entity different from
+           * expected_entity - if there are some expected entity different from
                               entity
            * async -sycnh or asynch request
            * compare - True by default and run compareElements,
@@ -191,9 +191,9 @@ class SdkUtil(APIUtil):
                 self.find(response.id, 'id', collection=collection.list())
 
             self.logger.info("New entity was added successfully")
-            expEntity = entity if not expectedEntity else expectedEntity
+            exp_entity = entity if not expected_entity else expected_entity
             if compare and not validator.compareElements(
-                    expEntity, response, self.logger, self.element_name):
+                    exp_entity, response, self.logger, self.element_name):
                 return response, False
 
         except RequestError as e:
@@ -379,14 +379,14 @@ class SdkUtil(APIUtil):
 
         return search
 
-    def find(self, val, attribute='name', absLink=True, collection=None):
+    def find(self, val, attribute='name', abs_link=True, collection=None):
         '''
         Description: find entity by name
         Author: edolinin
         Parameters:
            * val - name of entity to look for
            * attribute - attribute name for searching
-           * absLink - absolute link or just a  suffix
+           * abs_link - absolute link or just a  suffix
         Return: found entity or exception EntityNotFound
         '''
 

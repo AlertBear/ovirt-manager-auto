@@ -138,7 +138,7 @@ class TestDiskInheritedPermissions(TestDiskTemplate):
     def test_disk_inherited_permissions(self):
         """ Check inheritance of disk permissions """
         testflow.step("Checking if user has permissions on disk.")
-        assert mla.hasUserPermissionsOnObject(
+        assert mla.has_user_permissions_on_object(
             user_name=config.USERS[0],
             obj=ll_disks.DISKS_API.find(config.DISK_NAME),
             role=config.role.DiskOperator
@@ -156,7 +156,7 @@ class TestDiskInheritedPermissions(TestDiskTemplate):
         ), "Unable to attach disk to vm."
 
         testflow.step("Checking if user has permissions on disk.")
-        assert mla.hasUserPermissionsOnObject(
+        assert mla.has_user_permissions_on_object(
             user_name=config.USERS[0],
             obj=ll_disks.DISKS_API.find(self.disk_name),
             role=config.role.UserVmManager

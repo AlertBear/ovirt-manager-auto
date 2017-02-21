@@ -170,7 +170,7 @@ def create_vm_and_template_with_small_disk(request):
         testflow.teardown("Remove vms %s", vms_list)
         assert ll_vms.safely_remove_vms(vms=vms_list)
         testflow.teardown("Remove template %s", base_template)
-        assert ll_templates.removeTemplate(True, template=base_template)
+        assert ll_templates.remove_template(True, template=base_template)
 
     request.addfinalizer(fin)
 

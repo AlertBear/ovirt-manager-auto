@@ -202,7 +202,7 @@ class BaseTestCase(TestCase):
         if not ll_vms.safely_remove_vms(self.vms):
             TestCase.test_failed = True
             logger.error("Failed to remove VMs %s", self.vms)
-        if not ll_templates.removeTemplates(True, self.templates):
+        if not ll_templates.remove_templates(True, self.templates):
             TestCase.test_failed = True
             logger.error("Failed to remove templates %s", self.templates)
         TestCase.teardown_exception()

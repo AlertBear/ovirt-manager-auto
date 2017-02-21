@@ -131,7 +131,7 @@ class JasperReports(object):
             Resource descriptor as XML string.
         '''
         uri = self.__createURL('resources/Reports/{0}'.format(path))
-        resp = self._reportUtil.get(uri, noParse=True)
+        resp = self._reportUtil.get(uri, no_parse=True)
         rd = self._parse(resp, 'name', report)
         return rd
 
@@ -193,7 +193,7 @@ class JasperReports(object):
             File pathname/None if failed
         '''
         uri = self.__createURL('{0}/{1}?file=report'.format('report/', uuid))
-        resp = self._reportUtil.get(uri, noParse=True, validate=False)
+        resp = self._reportUtil.get(uri, no_parse=True, validate=False)
         # TODO: response validation
         fname = None
         try:

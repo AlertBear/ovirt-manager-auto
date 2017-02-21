@@ -459,7 +459,7 @@ def make_template_from_vm(request):
         """
         if ll_templates.check_template_existence(template_name=template_name):
             u_libs.testflow.teardown("Remove the template %s", template_name)
-            ll_templates.removeTemplate(
+            ll_templates.remove_template(
                 positive=True, template=template_name
             )
 

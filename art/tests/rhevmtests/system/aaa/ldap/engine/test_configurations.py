@@ -22,7 +22,7 @@ def setup_module(request):
     testflow.setup("Setting up module %s", __name__)
     global DOMAIN_NAMES
     DOMAIN_NAMES = [
-        domain.get_name() for domain in mla.domUtil.get(absLink=False)
+        domain.get_name() for domain in mla.domUtil.get(abs_link=False)
     ]
     logger.info('Enabled domains are:\n%s', '\n'.join(DOMAIN_NAMES))
 

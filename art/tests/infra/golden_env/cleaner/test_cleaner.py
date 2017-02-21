@@ -44,7 +44,7 @@ def remove_vms_and_templates():
         template_names.remove('Blank')
     if template_names:
         testflow.step("Remove templates: %s", template_names)
-        ll_templates.removeTemplates(True, template_names)
+        ll_templates.remove_templates(True, template_names)
 
 
 def remove_disks_and_sds():

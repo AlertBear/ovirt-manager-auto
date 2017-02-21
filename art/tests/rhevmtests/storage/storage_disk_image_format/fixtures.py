@@ -98,7 +98,7 @@ def remove_test_templates(request):
         for template in [self.template_thin, self.template_preallocated]:
             if ll_templates.check_template_existence(template):
                 testflow.teardown("Removing template %s", template)
-                assert ll_templates.removeTemplate(True, template), (
+                assert ll_templates.remove_template(True, template), (
                     "Failed to remove template '%s'", template
                 )
     request.addfinalizer(finalizer)

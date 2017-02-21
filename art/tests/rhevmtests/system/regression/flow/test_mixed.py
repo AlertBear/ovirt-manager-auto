@@ -38,7 +38,7 @@ class TestCaseMixed(TestCase):
         check existing permissions
         """
         testflow.step('Check existing permissions')
-        assert ll_mla.checkSystemPermits(
+        assert ll_mla.check_system_permits(
             positive=True
         ), 'Failed to check existing permissions'
 

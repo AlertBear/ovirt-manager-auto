@@ -272,9 +272,9 @@ class BaseTestBlockingNodes(BaseGlusterMount):
             ), "Storage domain %s is not active" % self.domain_name
         else:
             try:
-                ll_sd.waitForStorageDomainStatus(
+                ll_sd.wait_for_storage_domain_status(
                     True, config.DATA_CENTER_NAME, self.domain_name,
-                    config.SD_INACTIVE, timeOut=SD_INACTIVE_TIMEOUT
+                    config.SD_INACTIVE, time_out=SD_INACTIVE_TIMEOUT
                 )
             except APITimeout:
                 domain_obj = ll_sd.getDCStorage(
@@ -348,7 +348,7 @@ class BaseTestBlockingNodes(BaseGlusterMount):
         """
         self.unblock_nodes(NODES)
         try:
-            ll_sd.waitForStorageDomainStatus(
+            ll_sd.wait_for_storage_domain_status(
                 True, config.DATA_CENTER_NAME, self.domain_name,
                 config.SD_ACTIVE,
             )

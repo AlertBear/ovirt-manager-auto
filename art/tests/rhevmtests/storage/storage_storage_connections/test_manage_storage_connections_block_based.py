@@ -821,7 +821,7 @@ class TestCase5242(TestCase):
             True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name
         ), "Failed to attach storage domain '%s'" % sd_name
         self.storage_domains.remove(sd_name)
-        assert ll_sd.waitForStorageDomainStatus(
+        assert ll_sd.wait_for_storage_domain_status(
             True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name,
             config.SD_ACTIVE
         ), "Storage domain '%s' failed to become active" % sd_name
@@ -993,11 +993,11 @@ class TestCase5245(TestCase):
                 "Failed to attach storage domain '%s' into Data center '%s'" %
                 (self.sd_name_1, config.DATACENTER_ISCSI_CONNECTIONS)
             )
-        ll_sd.waitForStorageDomainStatus(
+        ll_sd.wait_for_storage_domain_status(
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1,
             config.SD_ACTIVE
         )
-        ll_sd.waitForStorageDomainStatus(
+        ll_sd.wait_for_storage_domain_status(
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2,
             config.SD_ACTIVE
         )
@@ -1123,14 +1123,14 @@ class TestCase5244(TestCase):
                 "Failed to attach storage domain '%s' into Data center '%s'" %
                 (self.sd_name_2, config.DATACENTER_ISCSI_CONNECTIONS)
             )
-        if not ll_sd.waitForStorageDomainStatus(
+        if not ll_sd.wait_for_storage_domain_status(
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1,
             config.SD_ACTIVE
         ):
             raise exceptions.StorageDomainException(
                 "Storage domain '%s' did not reach OK status" % self.sd_name_1
             )
-        if not ll_sd.waitForStorageDomainStatus(
+        if not ll_sd.wait_for_storage_domain_status(
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2,
             config.SD_ACTIVE
         ):
@@ -1234,7 +1234,7 @@ class TestCase5241(TestCase):
                 "Failed to attach storage domain '%s' into Data center '%s'" %
                 (self.sd_name, config.DATACENTER_ISCSI_CONNECTIONS)
             )
-        ll_sd.waitForStorageDomainStatus(
+        ll_sd.wait_for_storage_domain_status(
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name,
             config.SD_ACTIVE
         )
