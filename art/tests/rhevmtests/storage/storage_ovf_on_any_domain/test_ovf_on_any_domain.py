@@ -619,7 +619,7 @@ class BasicEnvironment(BaseTestCase):
             if should_ovf_exist:
                 if positive:
                     assert OBJECT_NAME_IN_OVF % template_name in (
-                        ovf_file_content
+                        ovf_file_content,
                     ), (
                         "Template name '%s' was not found in the OVF file "
                         "contents '%s'" % (template_name, ovf_file_content)
@@ -632,7 +632,7 @@ class BasicEnvironment(BaseTestCase):
                     )
                 else:
                     assert OBJECT_NAME_IN_OVF % template_name not in (
-                        ovf_file_content
+                        ovf_file_content,
                     ), (
                         "Template name '%s' was found in the OVF file "
                         "contents '%s'" % (template_name, ovf_file_content)
