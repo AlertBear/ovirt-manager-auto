@@ -99,6 +99,17 @@ ENGINE_HOST = resources.Host(VDC)
 ENGINE_HOST.users.append(
     resources.RootUser(VDC_PASSWORD)
 )
+ENGINE = resources.Engine(
+    ENGINE_HOST,
+    resources.ADUser(
+        REST_CONNECTION['user'],
+        REST_CONNECTION['password'],
+        resources.Domain(REST_CONNECTION['user_domain']),
+    ),
+    schema=REST_CONNECTION.get('schema'),
+    port=REST_CONNECTION['port'],
+    entry_point=REST_CONNECTION['entry_point'],
+)
 
 IBM_POWER_8 = 'IBM POWER8'
 IBM_POWER_8E = 'IBM POWER8E'
