@@ -12,9 +12,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     users as ll_users,
     mla as ll_mla,
+    storagedomains as ll_sd
+
 )
 import rhevmtests.helpers as helper
-import rhevmtests.virt.helper as virt_helper
 
 
 @pytest.fixture(scope='class')
@@ -95,14 +96,27 @@ def create_vm_for_search(request):
         ll_vms.safely_remove_vms(config.VMS_SEARCH_TESTS)
 
     request.addfinalizer(fin)
-
+    existing_storages = ll_sd.getStorageDomainNamesForType(
+        config.DC_NAME[0], config.STORAGE_TYPE_NFS
+    )
+    if not existing_storages:
+        pytest.skip(
+            "Cannot run VM search test, needs at least one NFS storage domain"
+        )
     for vm_name in config.VMS_SEARCH_TESTS[:2]:
-        testflow.setup("Create VM %s", vm_name)
-        assert virt_helper.create_vm_from_template(
-            vm_name=vm_name,
-            cluster=config.CLUSTER_NAME[0],
+        testflow.setup(
+            "Create VM %s, with parameters %s",
+            vm_name, vm_parameters.get(vm_name)
+        )
+        assert ll_vms.addVm(
+            True,
+            name=vm_name,
             template=config.TEMPLATE_NAME[0],
-            vm_parameters=vm_parameters.get(vm_name)
+            cluster=config.CLUSTER_NAME[0],
+            storagedomain=existing_storages[0]
+        )
+        assert ll_vms.updateVm(
+            positive=True, vm=vm_name, **vm_parameters.get(vm_name)
         )
     testflow.setup("Start vm %s", config.VM_UP_SEARCH_TEST)
     assert ll_vms.startVm(
