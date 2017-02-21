@@ -12,6 +12,8 @@ REPO = "http://bob.eng.lab.tlv.redhat.com/builds/latest_%s/el%s/noarch/" % (
     "4.1", RHEL_VERSION  # TODO: fix this when there is WGT in 4.2
 )
 WESTMERE_CL_CPU_LVL = "Intel Westmere Family"
+TIMEZONE = ENUMS['timezone_win_gmt_standard_time']
+GUEST_TOOLS_INSTALLED_TIMEOUT = 600
 
 ELEMENTS_CONF = ART_CONFIG['elements_conf']
 # WGT

@@ -16,10 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     clusters as ll_clusters
 )
-from art.rhevm_api.tests_lib.high_level import (
-    vms as hl_vms,
-    storagedomains as hl_sds
-)
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sds
 from art.unittest_lib import (
     tier2,
     tier3,
@@ -42,33 +39,9 @@ def get_latest_gt_iso_version_from_latest_repo_and_change_variable():
     )
 
 
-def import_image(disk_name):
-    glance_image = ll_sds.GlanceImage(
-        image_name=disk_name,
-        glance_repository_name=config.GLANCE_DOMAIN,
-        timeout=3600
-    )
-    assert glance_image.import_image(
-        destination_storage_domain=config.STORAGE_NAME[0],
-        cluster_name=None,
-        new_disk_alias=disk_name
-    )
-    return glance_image
-
-
 @pytest.fixture(scope='module', autouse=True)
 def module_setup(request):
-    def fin_vms():
-        testflow.teardown("Remove remaining Windows VMs")
-        for vm in ll_vms.get_vms_from_cluster(config.CLUSTER_NAME[0]):
-            if vm.startswith("Win"):
-                ll_vms.removeVm(positive=True, vm=vm, stopVM=True)
-
-        testflow.teardown("Remove remaining Windows disks")
-        for disk in ll_disks.get_all_disks():
-            if disk.get_alias().startswith("Win"):
-                ll_disks.deleteDisk(True, disk.get_alias())
-
+    def fin_cluster():
         testflow.teardown(
             "Set %s cluster CPU level on cluster %s",
             old_cpu_level, config.CLUSTER_NAME[0]
@@ -77,7 +50,7 @@ def module_setup(request):
             cluster_name=config.CLUSTER_NAME[0],
             cluster_cpu_level=old_cpu_level
         )
-    request.addfinalizer(fin_vms)
+    request.addfinalizer(fin_cluster)
 
     testflow.setup(
         "Set %s cluster CPU level on cluster %s",
@@ -129,35 +102,61 @@ class Windows(TestCase):
 
         def fin():
             testflow.teardown("Remove VM %s", cls.vm_name)
-            ll_vms.removeVm(positive=True, vm=cls.vm_name, stopVM='true')
+            ll_vms.removeVm(positive=True, vm=cls.vm_name, stopVM=True)
         request.addfinalizer(fin)
 
-        cls.vm_name = '%s' % ((cls.disk_name[:9] + cls.disk_name[-6:]) if
-                              len(cls.disk_name) > 15 else cls.disk_name
-                              )
-        testflow.setup("Import image %s", cls.disk_name)
-        import_image(cls.disk_name)
-        testflow.setup("Create windows VM %s", cls.vm_name)
-        ret = hl_vms.create_windows_vm(
-            disk_name=cls.disk_name,
-            iso_name=cd_with_tools,
-            agent_url=config.AGENT_URL,
-            disk_interface=cls.disk_interface,
+        cls.vm_name = '%s' % (
+            (cls.disk_name[:9] + cls.disk_name[-6:])
+            if len(cls.disk_name) > 15
+            else cls.disk_name
+        )
+        testflow.setup("Create VM %s", cls.vm_name)
+        template_name = cls.disk_name + "_template"
+        ll_vms.createVm(
             positive=True,
+            template=template_name,
             vmName=cls.vm_name,
-            vmDescription=cls.vm_name,
             cluster=config.CLUSTER_NAME[0],
-            network=config.MGMT_BRIDGE,
-            nic=config.NIC_NAME,
-            nicType=config.NIC_TYPE_VIRTIO,
             cpu_cores=4,
             memory=4*config.GB,
             ballooning=True,
-            serial_number=cls.serial_number,
-            os_type=cls.os_type,
+            serial_number=cls.serial_number
         )
-        assert ret[0], "Failed to create vm with windows: '%s'" % ret[1]
-        ll_vms.wait_for_vm_ip(cls.vm_name, timeout=60)
+        testflow.setup("Update VM %s", cls.vm_name)
+        ll_vms.updateVm(
+            positive=True,
+            vm=cls.vm_name,
+            os_type=cls.os_type,
+            time_zone=config.TIMEZONE
+        )
+        testflow.setup("Add nic to VM %s", cls.vm_name)
+        ll_vms.addNic(
+            positive=True,
+            vm=cls.vm_name,
+            name=config.NIC_NAME,
+            network=config.MGMT_BRIDGE
+        )
+        testflow.setup("Update disk %s of VM %s", cls.disk_name, cls.vm_name)
+        ll_disks.updateDisk(
+            positive=True,
+            vmName=cls.vm_name,
+            alias=cls.disk_name,
+            bootable=True
+        )
+        testflow.setup("Run once VM %s", cls.vm_name)
+        ll_vms.runVmOnce(
+            positive=True,
+            vm=cls.vm_name,
+            use_sysprep=True,
+            wait_for_state=config.VM_UP
+        )
+        ll_vms.changeCDWhileRunning(cls.vm_name, cd_with_tools)
+        for sample in TimeoutingSampler(
+            config.GUEST_TOOLS_INSTALLED_TIMEOUT, config.SAMPLER_SLEEP,
+            LookUpVMIpByName('', '').get_ip, cls.vm_name, check_mac=False
+        ):
+            if sample:
+                break
 
     def check_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
@@ -231,11 +230,6 @@ class Windows(TestCase):
         assert len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
         testflow.step("Check if guest agent reports UTC offset")
         assert len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
-
-# **IMPORTANT**
-# py.test testclass execution order is same as order of classes in file
-# we import images alphabetically so please keep order of classes same
-# If in doubt run $grep '^class ' test_windows.py | sort
 
 
 @tier3
