@@ -9,6 +9,7 @@ to refactor our tests and keep @attr() decorator.
 See https://pytest.org/latest/mark.html
 """
 import ast
+import re
 
 from pkg_resources import parse_version
 
@@ -183,6 +184,7 @@ class JunitExtension(object):
         'polarion-project-id': None,
         'polarion-user-id': None,
         'polarion-response-myproduct': None,
+        'polarion-testrun-id': None,
     }
 
     global_properties = {
@@ -250,6 +252,24 @@ class JunitExtension(object):
         )
         self.polarion_importer_properties['polarion-response-myproduct'] = (
             config.ART_CONFIG['PARAMETERS']['polarion_response_myproduct']
+        )
+
+        # manipulate the tag expression to get the tier value
+        # it will get multiple values in case they exists,
+        # but it is not expected in production jobs
+        tag_exp = config.getoption('-A')
+        if tag_exp:
+            pattern = re.compile("tier==\S")
+            tag_exp = "_".join(re.findall(pattern, tag_exp)).replace("=", "")
+        else:
+            tag_exp = ''
+
+        self.polarion_importer_properties['polarion-testrun-id'] = (
+            "RHV_{0}_{1}_{2}".format(
+                config.ART_CONFIG['DEFAULT']['VERSION'],
+                tag_exp,
+                config.ART_CONFIG['PARAMETERS']['arch']
+            ).replace(".", "_")
         )
 
     def pytest_sessionstart(self, session):
