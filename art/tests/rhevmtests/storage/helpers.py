@@ -8,7 +8,6 @@ import re
 import shlex
 import hashlib
 import time
-
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources.storage as storage_resources
@@ -59,7 +58,8 @@ if config.PPC_ARCH:
     INTERFACES = INTERFACES + (config.INTERFACE_SPAPR_VSCSI,)
 FILE_SD_VOLUME_PATH_IN_FS = '/rhev/data-center/%s/%s/images/%s'
 GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
-LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
+DISK_LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
+LV_COUNT = 'lvs -o lv_name,lv_tags | wc -l'
 ENUMS = config.ENUMS
 LSBLK_CMD = 'lsblk -o NAME'
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
@@ -554,32 +554,39 @@ def get_voluuid(disk_object):
     return disk_object.get_image_id()
 
 
-def get_lv_count_for_block_disk(disk_id, host_ip, user, password):
+def get_lv_count_for_block_disk(host_ip, password, disk_id=None):
     """
     Get amount of volumes for disk name
 
-    __author__ = "ratamir"
-    :param disk_id: Disk ID
-    :type disk_id:  str
-    :param host_ip: Host IP or FQDN
-    :type host_ip: str
-    :param user: Username for host
-    :type user: str
-    :param password: Password for host
-    :type password: str
-    :return: Number of logical volumes found for input disk
-    :rtype: int
+    Author = "ratamir"
+
+    Arguments:
+        host_ip (str): Host IP or FQDN
+        password (str): Password for host
+        disk_id (str): Disk ID. In case of None - all LVs
+
+    Returns:
+        Int: Number of logical volumes found for input disk in case execution
+        succeeded, or 0 in case something goes wrong
     """
-    cmd = LV_COUNT % disk_id
-    rc, out = runMachineCommand(
-        True, ip=host_ip, user=user, password=password, cmd=cmd
+    if disk_id:
+        cmd = DISK_LV_COUNT % disk_id
+    else:
+        cmd = LV_COUNT
+    executor = rhevm_helpers.get_host_executor(
+        ip=host_ip, password=password
     )
-    if not rc:
-        raise exceptions.HostException(
-            "Failed to execute '%s' on %s - %s" %
-            (cmd, host_ip, out['out'])
-        )
-    return int(out['out'])
+    rc, out, err = executor.run_cmd(shlex.split(PVSCAN_CACHE_CMD))
+    if rc:
+        logger.error("Failed to execute '%s' on %s: %s" % (
+            PVSCAN_CACHE_CMD, host_ip, out
+        ))
+        return 0
+    rc, out, err = executor.run_cmd(shlex.split(cmd))
+    if rc:
+        logger.error("Failed to execute '%s' on %s: %s" % (cmd, host_ip, out))
+        return 0
+    return int(out)
 
 
 def get_amount_of_file_type_volumes(
@@ -659,8 +666,7 @@ def get_disks_volume_count(disk_ids, cluster_name=config.CLUSTER_NAME):
         storage_type = storage_domains_map[storage_id]
         if storage_type in config.BLOCK_TYPES:
             volume_count += get_lv_count_for_block_disk(
-                disk_id=disk_id, host_ip=host_ip,
-                user=config.HOSTS_USER, password=config.HOSTS_PW,
+                host_ip=host_ip, password=config.HOSTS_PW, disk_id=disk_id
             )
         else:
             sd_id = get_sduuid(disk_obj)
@@ -1389,3 +1395,44 @@ def create_filesystem(
             )
         )
     return targetDir
+
+
+def get_hsm_host(job_description, step_description):
+    """
+    Get Host resource
+
+    Arguments:
+        job_description (str): Job description for retrieving is HSM host
+        step_description (str): Step description for retrieving is HSM host
+
+    Returns:
+        Host resource
+    """
+    job_object = ll_jobs.get_job_object(job_description, config.JOB_STARTED)
+    step_object = ll_jobs.step_by_description(job_object, step_description)
+    if step_object:
+        host_obj = ll_hosts.get_host_object(
+            step_object.get_execution_host().get_id(), 'id'
+        )
+        return rhevm_helpers.get_host_resource(
+            host_obj.get_address(), config.HOSTS_PW
+        )
+    return None
+
+
+def kill_vdsm_on_hsm_executor(
+    job_description, step_description, hsm_host=None
+):
+    """
+    Kill 'vdsmd' service on HSM host
+
+    Arguments:
+        job_description (str): Job description for retrieving is HSM host
+        step_description (str): Step description for retrieving is HSM host
+        hsm_host (Host object): Host object of the HSM
+
+    Returns:
+        Bool: True if Kill vdsmd service succeeds, False otherwise
+    """
+    host = hsm_host or get_hsm_host(job_description, step_description)
+    return ll_hosts.kill_vdsmd(host)

@@ -80,7 +80,6 @@ IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 TIMEOUT_NON_RESPONSIVE_HOST = 360
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
-
 VIRSH_CMD = ["virsh", "-r"]
 VDSM_MAC_SPOOFING = "vdsm-no-mac-spoofing"
 NWF_XML_FILE = RHEVM_UTILS["NWFILTER_DUMPXML"]
@@ -1556,15 +1555,18 @@ def kill_vdsmd(resource):
     return not bool(rc)
 
 
-def get_host_object(host_name):
+def get_host_object(host_name, attribute='name'):
     """
     This function get host object by host name.
 
-    :param host_name: Name of host.
-    :type host_name: str.
-    :returns: Host object.
+    Arguments:
+        host_name (str): Name of host.
+        attribute (str): The ket for search - 'name' or 'id'
+
+    Returns:
+        Host object
     """
-    return HOST_API.find(host_name)
+    return HOST_API.find(host_name, attribute=attribute)
 
 
 def get_host_topology(host_name):

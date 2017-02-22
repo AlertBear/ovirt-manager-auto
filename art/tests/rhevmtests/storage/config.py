@@ -101,6 +101,9 @@ BLANK_TEMPLATE_ID = "00000000-0000-0000-0000-000000000000"
 COW_DISK = DISK_FORMAT_COW
 RAW_DISK = DISK_FORMAT_RAW
 
+KILL_VDSM = "kill `systemctl show vdsmd -p MainPID | awk -F '=' {'print $2'}`"
+RESTART_ENGINE = "systemctl restart ovirt-engine.service"
+
 MD5SUM_CMD = "md5sum %s"
 TEXT_CONTENT = (
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
@@ -337,3 +340,6 @@ MOUNT_POINT = None
 # FIXTURES SECTION
 MASTER_DOMAIN = None
 MOUNT_POINTS = dict()
+
+# HSM Verbs
+COPY_VOLUME_VERB = 'Copying Volume'

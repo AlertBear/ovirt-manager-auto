@@ -580,6 +580,9 @@ def remove_vms(request):
     self = request.node.cls
 
     def finalizer():
+        """
+        Remove VMs created during the test
+        """
         testflow.teardown("Remove VMs %s", ', '.join(self.vm_names))
         assert ll_vms.safely_remove_vms(self.vm_names), (
             "Failed to remove VM from %s" % self.vm_names

@@ -8,24 +8,29 @@ from threading import Thread
 import time
 import pytest
 import config
-from art.unittest_lib import attr
-from art.unittest_lib import StorageTest as TestCase, testflow
-from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils import resource_utils
-from art.test_handler import exceptions
+from art.unittest_lib import StorageTest as TestCase, testflow, attr
+from art.rhevm_api.utils import test_utils, resource_utils, log_listener
+from art.rhevm_api.tests_lib.high_level import (
+    datacenters as hl_dc,
+)
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms,
     templates as ll_templates,
+    hosts as ll_hosts,
+    storagedomains as ll_sd,
 )
-from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import polarion, bz
+from art.core_api.apis_exceptions import EntityNotFound
+import rhevmtests.helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
+from fixtures import (
+    deactivate_hsms, initialize_object_names, wait_for_hosts_to_be_up
+)
 from rhevmtests.storage.fixtures import (
     create_vm, remove_vms,
 )
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 logger = logging.getLogger(__name__)
 GB = config.GB
@@ -87,7 +92,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     vm_description = '%s_%s_prep' % (
         config.VM_BASE_NAME, storage_type)
     logger.info("Creating vm %s %s ...", sparse, vol_format)
-    storage_domain = storagedomains.getStorageDomainNamesForType(
+    storage_domain = ll_sd.getStorageDomainNamesForType(
         config.DATA_CENTER_NAME, storage_type)[0]
     vm_args = config.create_vm_args.copy()
     vm_args['vmName'] = vm_name
@@ -96,26 +101,25 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     vm_args['volumeFormat'] = vol_format
     vm_args['storageDomainName'] = storage_domain
     vm_args['start'] = 'true'
-    if not storage_helpers.create_vm_or_clone(**vm_args):
-        raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
+    assert storage_helpers.create_vm_or_clone(**vm_args), (
+        "Creation of vm %s failed!" % vm_name
+    )
     logger.info("Waiting for ip of %s", vm_name)
     vm_ip = ll_vms.wait_for_vm_ip(vm_name)[1]['ip']
     logger.info("Setting persistent network")
     test_utils.setPersistentNetwork(vm_ip, config.VM_LINUX_PASSWORD)
     logger.info("Stopping VM %s", vm_name)
-    if not ll_vms.shutdownVm(True, vm_name):
-        raise exceptions.VMException("Stopping vm %s failed" % vm_name)
+    assert ll_vms.shutdownVm(True, vm_name), "Stopping vm %s failed" % vm_name
     ll_vms.waitForVMState(vm_name, state=config.VM_DOWN)
     logger.info(
         "Creating template %s from vm %s", template_name, vm_name)
-    if not templates.createTemplate(
-            True, vm=vm_name, name=template_name, cluster=config.CLUSTER_NAME):
-        raise exceptions.TemplateException(
-            "Creation of template %s from vm %s failed!" % (
-                template_name, vm_name))
+    assert ll_templates.createTemplate(
+        True, vm=vm_name, name=template_name, cluster=config.CLUSTER_NAME
+    ), "Creation of template %s from vm %s failed" % (template_name, vm_name)
     logger.info("Removing vm %s", vm_name)
-    if not ll_vms.removeVm(True, vm=vm_name):
-        raise exceptions.VMException("Removal of vm %s failed" % vm_name)
+    assert ll_vms.removeVm(True, vm=vm_name), (
+        "Removal of vm %s failed" % vm_name
+    )
     logger.info(
         "Template for sparse=%s and volume format '%s' prepared",
         sparse, vol_format
@@ -143,7 +147,7 @@ class TestCase11834(TestCase):
         VMs as they will be eventually removed by module-level tearDown)
         """
         self.data_for_vm = []
-        logger.info("Preparing data for copying to VM")
+        testflow.step("Preparing data for copying to VM")
         for i in range(6):
             success, result = test_utils.prepareDataForVm(
                 root_dir=config.DATA_ROOT_DIR,
@@ -221,45 +225,45 @@ class TestCase11834(TestCase):
         self._prepare_data()
         logger.info("Data prepared")
         first_snap_name, second_snap_name = 'first_snapshot', 'second_snapshot'
-        logger.info("Loading data and creating first snapshot")
+        testflow.step("Loading data and creating first snapshot")
         self._copy_data_to_vm_and_make_snapshot(
             self.data_for_vm[0], first_snap_name)
-        logger.info("Verify that all data were really copied")
+        testflow.step("Verify that all data were really copied")
         self._verify_data_on_vm(self.data_for_vm[:1])
-        logger.info("Loading data and creating second snapshot")
+        testflow.step("Loading data and creating second snapshot")
         self._copy_data_to_vm_and_make_snapshot(
             self.data_for_vm[1], second_snap_name)
 
-        logger.info("Verify that all data were really copied")
+        testflow.step("Verify that all data were really copied")
         self._verify_data_on_vm(self.data_for_vm[:2])
 
-        logger.info("Removing first snapshot and verifying data")
+        testflow.step("Removing first snapshot and verifying data")
         self._remove_snapshot_verify_data(
             first_snap_name, self.data_for_vm[:2])
 
-        logger.info("Removing second snapshot and verifying data")
+        testflow.step("Removing second snapshot and verifying data")
         self._remove_snapshot_verify_data(
             second_snap_name, self.data_for_vm[:2])
 
         third_snap_name = 'third_snapshot'
-        logger.info("Loading data and creating third snapshot")
+        testflow.step("Loading data and creating third snapshot")
         self._copy_data_to_vm_and_make_snapshot(
             self.data_for_vm[2], third_snap_name)
-        logger.info("Loading data and creating fourth snapshot")
+        testflow.step("Loading data and creating fourth snapshot")
         self._copy_data_to_vm_and_make_snapshot(
             self.data_for_vm[3], 'fourth_snapshot')
-        logger.info("Loading data and creating fifth snapshot")
+        testflow.step("Loading data and creating fifth snapshot")
         self._copy_data_to_vm_and_make_snapshot(
             self.data_for_vm[4], 'fifth_snapshot')
 
-        logger.info("Removing third snapshot and verifying data")
+        testflow.step("Removing third snapshot and verifying data")
         self._remove_snapshot_verify_data(
             third_snap_name, self.data_for_vm[:5])
 
-        logger.info("Loading data and creating sixth snapshot")
+        testflow.step("Loading data and creating sixth snapshot")
         self._copy_data_to_vm_and_make_snapshot(
             self.data_for_vm[5], 'sixth_snapshot')
-        logger.info("Verifying data")
+        testflow.step("Verifying data")
         self._verify_data_on_vm(self.data_for_vm)
 
 
@@ -364,17 +368,17 @@ class TestCase11830(TestCase):
         Start creating another VM from the same template
         """
         self.vm_name_1 = storage_helpers.create_unique_object_name(
-            self.__name__, config.OBJECT_TYPE_VM
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
-        storage_domain = storagedomains.getStorageDomainNamesForType(
+        storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
 
         self.vm_name_2 = storage_helpers.create_unique_object_name(
-            self.__name__, config.OBJECT_TYPE_VM
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         t = Thread(target=log_listener.watch_logs, args=(
-            config.ENGINE_LOG, config.REGEX, None, 60, config.VDC,
-            config.HOSTS_USER, config.VDC_ROOT_PASSWORD
+            config.ENGINE_LOG, config.REGEX, None, config.LOG_LISTENER_TIMEOUT,
+            config.VDC, config.HOSTS_USER, config.VDC_ROOT_PASSWORD
         ))
         logger.info("Waiting for createVolume command in engine.log")
         t.start()
@@ -404,83 +408,219 @@ class TestCase11830(TestCase):
 
 
 @pytest.mark.usefixtures(
-    prepare_data.__name__,
+    initialize_object_names.__name__,
     remove_vms.__name__,
+    wait_for_hosts_to_be_up.__name__,
 )
-class TestCase4710(TestCase):
+class BaseClassKillProc(TestCase):
     """
-    storage vm sanity test, cloning vm from template with changing disk type
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_3_Storage_VM_Sanity
+    Kill 'vdsmd' on SPM when engine sends a regex command
+    """
+    __test__ = False
+    polarion_test_case = ''
+    regex = None
+
+    def get_lv_count_before(self):
+        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        self.spm_ip = ll_hosts.getHostIP(self.spm_host)
+        self.lv_count_before = storage_helpers.get_lv_count_for_block_disk(
+            self.spm_ip, config.HOSTS_PW
+        )
+
+    def kill_vdsm_on_spm_after_regex_copy_image(self):
+        self.get_lv_count_before()
+
+        t = Thread(target=log_listener.watch_logs, args=(
+            config.ENGINE_LOG, self.regex, config.KILL_VDSM,
+            config.LOG_LISTENER_TIMEOUT, config.VDC, config.HOSTS_USER,
+            config.VDC_ROOT_PASSWORD, self.spm_ip, config.HOSTS_USER,
+            config.HOSTS_PW
+        ))
+        t.start()
+        time.sleep(5)
+        testflow.step("Creating vm %s from template", self.vm_name)
+        vm_args = config.clone_vm_args.copy()
+        vm_args['storagedomain'] = self.storage_domain
+        vm_args['name'] = self.vm_name
+        vm_args['clone'] = True
+        testflow.step("Waiting for '%s' command in engine.log", self.regex)
+        ll_vms.cloneVmFromTemplate(**vm_args)
+        t.join()
+        self.check_status_after_clone_from_template()
+
+    def check_status_after_clone_from_template(self):
+        status = True
+        try:
+            ll_vms.wait_for_vm_states(self.vm_name, config.VM_DOWN)
+        except EntityNotFound:
+            testflow.step("Creation of VM %s Failed", self.vm_name)
+
+            # Uncomment when bug:
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1426136 is fixed
+            # testflow.step("Checking that there are no leftovers (LVs)")
+            # lv_count_after = storage_helpers.get_lv_count_for_block_disk(
+            #     self.spm_ip, config.HOSTS_PW
+            # )
+            # assert lv_count_after == self.lv_count_before, (
+            #     "There is a leftover LV after creation of VM failed"
+            # )
+            status = False
+        if status:
+            self.vm_names.append(self.vm_name)
+            testflow.step(
+                "Creation of VM %s succeeded.  Starting it", self.vm_name
+            )
+            assert ll_vms.startVm(
+                positive=True, vm=self.vm_name, wait_for_ip=True
+            ), (
+                "VM %s failed to start after killing 'vdsmd' during cloning "
+                "from template %s" % (self.vm_name, config.TEMPLATE_NAME[0])
+            )
+
+
+class TestCase18979(BaseClassKillProc):
+    """
+    Kill 'vdsmd' on SPM when engine sends create image container to SPM -
+    CreateVolumeContainerCommand
     """
     __test__ = True
-    polarion_test_case = '4710'
-    template_names = {}
+    polarion_test_case = '18979'
+    regex = 'CreateVolumeContainerCommand'
 
-    @polarion("RHEVM3-4710")
-    @attr(tier=2)
-    def create_vm_from_template_validate_disks(
-            self, name, template_name, sparse, vol_format):
-        vm_name = "%s_%s_clone_%s" % (
-            self.polarion_test_case, self.storage, name)
-        logger.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
-            vm_name, template_name, sparse, vol_format))
-        assert ll_vms.cloneVmFromTemplate(
-            True, name=vm_name, cluster=config.CLUSTER_NAME,
-            vol_sparse=sparse, vol_format=vol_format,
-            template=template_name, clone=True, timeout=900), (
-            "cloning vm %s from template %s failed" % (vm_name, template_name)
-        )
-        self.vm_names.append(vm_name)
-        logger.info("Validating disk type and format")
-        assert ll_vms.validateVmDisks(
-            True, vm=vm_name, sparse=sparse, format=vol_format), (
-            "Validation of disks on vm %s failed" % vm_name
-        )
-        logger.info("Validation passed")
+    @polarion("RHEVM3-%s" % polarion_test_case)
+    @attr(tier=3)
+    def test_kill_vdsm_on_spm_after_regex_copy_image(self):
+        self.kill_vdsm_on_spm_after_regex_copy_image()
 
-    def create_vms_from_template_convert_disks(
-            self, sparse, vol_format, name_prefix
-    ):
-        name = '%s_sparse_cow' % name_prefix
-        template_name = self.template_names[(sparse, vol_format)]
-        self.create_vm_from_template_validate_disks(
-            name, template_name, True, config.DISK_FORMAT_COW
-        )
-        if self.storage == config.STORAGE_TYPE_NFS:
-            name = '%s_sparse_raw' % name_prefix
-            self.create_vm_from_template_validate_disks(
-                name, template_name, True, config.DISK_FORMAT_RAW
+
+class TestCase18980(BaseClassKillProc):
+    """
+     Kill 'vdsmd' on SPM after CopyVolumeDataVDSCommand has been sent to HSM
+    """
+    __test__ = True
+    polarion_test_case = '18980'
+    regex = 'CopyVolumeDataVDSCommand'
+
+    @polarion("RHEVM3-%s" % polarion_test_case)
+    @attr(tier=3)
+    def test_kill_vdsm_on_spm_after_regex_copy_image(self):
+        self.kill_vdsm_on_spm_after_regex_copy_image()
+
+
+class TestCase16794(BaseClassKillProc):
+    """
+     Restart 'ovirt-engine' after CopyVolumeDataVDSCommand has been sent to HSM
+    """
+    __test__ = True
+    polarion_test_case = '16794'
+    regex = 'CopyVolumeDataVDSCommand'
+
+    @polarion("RHEVM3-%s" % polarion_test_case)
+    @attr(tier=3)
+    def test_restart_ovirt_engine_copy_image(self):
+        self.get_lv_count_before()
+
+        t = Thread(target=log_listener.watch_logs, args=(
+            config.ENGINE_LOG, self.regex, None,
+            config.LOG_LISTENER_TIMEOUT, config.VDC,
+            config.VDC_ROOT_USER, config.VDC_ROOT_PASSWORD,
+        ))
+        t.start()
+        time.sleep(5)
+
+        testflow.step("Creating vm %s from template", self.vm_name)
+        vm_args = config.clone_vm_args.copy()
+        vm_args['storagedomain'] = self.storage_domain
+        vm_args['wait'] = False
+        vm_args['name'] = self.vm_name
+        vm_args['clone'] = True
+        testflow.step("Waiting for '%s' command in engine.log", self.regex)
+        ll_vms.cloneVmFromTemplate(**vm_args)
+        t.join()
+        test_utils.restart_engine(config.ENGINE, 5, 30)
+        hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
+        self.check_status_after_clone_from_template()
+
+
+class TestCase18981(BaseClassKillProc):
+    """
+    Kill 'vdsmd' service on HSM during CopyVolumeDataVDSCommand
+    """
+    __test__ = True
+    polarion_test_case = '18981'
+    hsm_host = None
+
+    @polarion("RHEVM3-18981")
+    @attr(tier=3)
+    def test_restart_hsm_after_regex_copy_data(self):
+        self.get_lv_count_before()
+
+        def f():
+            """
+            Function the searches for the first occurrence of the hsm host and
+            initialize an Host resource object
+            """
+            log_listener.watch_logs(
+                config.ENGINE_LOG, 'CopyVolumeDataVDSCommand', None,
+                config.LOG_LISTENER_TIMEOUT, config.VDC, config.HOSTS_USER,
+                config.VDC_ROOT_PASSWORD,
             )
-        name = '%s_preallocated_raw' % name_prefix
-        self.create_vm_from_template_validate_disks(
-            name, template_name, False, config.DISK_FORMAT_RAW
-        )
-
-    @polarion("RHEVM3-4710")
-    @attr(tier=2)
-    def test_disk_conv_from_sparse_cow_test(self):
-        """ creates vms from template with sparse cow disk
-        """
-        self.create_vms_from_template_convert_disks(
-            True, config.DISK_FORMAT_COW, 'from_sparse_cow'
-        )
-
-    @polarion("RHEVM3-4710")
-    @attr(tier=2)
-    def test_disk_conv_from_sparse_raw_test(self):
-        """ creates vms from template with sparse raw disk
-        """
-        if self.storage == config.STORAGE_TYPE_NFS:
-            self.create_vms_from_template_convert_disks(
-                True, config.DISK_FORMAT_RAW, 'from_sparse_raw'
+            self.hsm_host = storage_helpers.get_hsm_host(
+                config.JOB_ADD_VM_FROM_TEMPLATE, config.COPY_VOLUME_VERB
             )
+        t = Thread(target=f, args=())
+        t.start()
+        time.sleep(5)
 
-    @polarion("RHEVM3-4710")
-    @attr(tier=2)
-    def test_disk_conv_from_preallocated_raw_test(self):
-        """ creates vms from templates with preallocated raw disk
-        """
-        self.create_vms_from_template_convert_disks(
-            False, config.DISK_FORMAT_RAW, 'from_prealloc_raw'
+        testflow.step("Creating vm %s from template", self.vm_name)
+        vm_args = config.clone_vm_args.copy()
+        vm_args['storagedomain'] = self.storage_domain
+        vm_args['name'] = self.vm_name
+        vm_args['clone'] = True
+        vm_args['wait'] = False
+        testflow.step(
+            "Waiting for 'CopyVolumeDataVDSCommand' command in engine.log"
         )
+        ll_vms.cloneVmFromTemplate(**vm_args)
+        t.join()
+
+        assert storage_helpers.kill_vdsm_on_hsm_executor(
+            config.JOB_ADD_VM_FROM_TEMPLATE, config.COPY_VOLUME_VERB,
+            hsm_host=self.hsm_host
+        )
+        self.check_status_after_clone_from_template()
+
+
+@pytest.mark.usefixtures(
+    deactivate_hsms.__name__,
+)
+class TestCase18982(BaseClassKillProc):
+    """
+    Create VM from Template and kill 'vdsmd' on SPM with only SPM and
+    no HSM available
+    """
+    __test__ = True
+    polarion_test_case = '18982'
+
+    @polarion("RHEVM3-18982")
+    @attr(tier=3)
+    def test_create_vm_from_template_with_spm_only(self):
+        self.get_lv_count_before()
+
+        spm_object = rhevm_helpers.get_host_resource(
+            self.spm_ip, config.HOSTS_PW
+        )
+        testflow.step("Creating vm %s from template", self.vm_name)
+        vm_args = config.clone_vm_args.copy()
+        vm_args['storagedomain'] = self.storage_domain
+        vm_args['name'] = self.vm_name
+        vm_args['clone'] = True
+        vm_args['wait'] = False
+        assert ll_vms.cloneVmFromTemplate(**vm_args)
+        testflow.step("Killing 'vdsmd' service on SPM host %s", self.spm_host)
+        assert ll_hosts.kill_vdsmd(spm_object)
+        assert ll_hosts.waitForSPM(
+            config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+            config.WAIT_FOR_SPM_INTERVAL
+        )
+        self.check_status_after_clone_from_template()

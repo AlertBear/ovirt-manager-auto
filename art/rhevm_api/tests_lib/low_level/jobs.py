@@ -167,6 +167,33 @@ def wait_for_jobs(
             return
 
 
+def wait_for_step_to_start(
+    job_object, step_description, timeout=JOB_TIMEOUT, sleep=TASK_POLL,
+):
+    """
+    Waits until all/requested jobs in data-center have completed
+
+    Author: ratamir
+
+    Arguments:
+        job_object (Object): job object that hold the step
+        step_description (str): Looking for step with this description
+        timeout (int): max seconds to wait
+        sleep (int): polling interval
+
+    Raises:
+        TimeoutExpiredError: in case the step hasn't started in the timeout
+            period
+    """
+    logger.info("Waiting for step %s to start", step_description)
+    sampler = TimeoutingSampler(
+        timeout, sleep, step_by_description, job_object, step_description
+    )
+    for step in sampler:
+        if step:
+            return
+
+
 def add_job(job_description, auto_cleared=True):
     '''
     Description: Add new job with given description
@@ -260,7 +287,7 @@ def step_by_description(job, step_description):
                                           get_href=False)
     if not steps_obj:
         warn_msg = 'No step with description %s under job with description %s'
-        logger.warn(warn_msg, step_description, job.get_description())
+        logger.warning(warn_msg, step_description, job.get_description())
     for step in steps_obj:
         if step_description in step.get_description():
             return step

@@ -556,6 +556,7 @@ CPU_SHARE_MEDIUM = 1024
 CPU_SHARE_HIGH = 2048
 
 # Common related jobs
+JOB_STARTED = ENUMS['job_started']
 # Disk section
 JOB_ADD_DISK = ENUMS['job_add_disk']
 JOB_IMPORT_IMAGE = ENUMS['job_import_repo_image']
