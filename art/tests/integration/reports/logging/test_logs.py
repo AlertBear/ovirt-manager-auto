@@ -14,7 +14,7 @@ import config
 @attr(tier=3)
 class DebugLogs(LoggingTest):
     """Log tests"""
-    __test__ = True
+    __test__ = False
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
