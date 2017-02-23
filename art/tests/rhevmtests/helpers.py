@@ -457,11 +457,11 @@ def raise_if_false_in_list(results):
         request.addfinalizer(fin3)
 
         def fin2():
-            results,append((some_function(), "ERROR for raise"))
+            results.append((some_function(), "ERROR for raise"))
         request.addfinalizer(fin2)
 
         def fin1():
-            results,append((some_function(), "ERROR for raise"))
+            results.append((some_function(), "ERROR for raise"))
         request.addfinalizer(fin1)
     """
     res = [r[1] for r in results if not r[0]]

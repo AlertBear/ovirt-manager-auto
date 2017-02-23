@@ -78,7 +78,7 @@ def remove_networks(positive, networks, data_center=None):
     return True
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def create_and_attach_networks(
     data_center=None, cluster=None, network_dict=None
 ):
@@ -132,11 +132,12 @@ def create_and_attach_networks(
     return True
 
 
+@ll_general.generate_logs(step=True)
 def remove_net_from_setup(
     host, network=list(), data_center=None, all_net=False, mgmt_network=None
 ):
     """
-    Function that removes networks from the host, Cluster and DC
+    Removes networks from the host, cluster and data_center
 
     Args:
         host (list): list or str of hosts names
