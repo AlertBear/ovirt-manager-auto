@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
     disks, mla, templates, users, vms,
     vmpools as ll_vmpools
 )
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 
 from rhevmtests.system.user_tests.mla import common, config
@@ -289,7 +289,7 @@ class RoleCase54401(common.BaseTestCase):
 
         common.login_as_admin()
         for permission in ['run_vm', 'stop_vm']:
-            assert mla.add_role_permissions(
+            assert mla.add_permission_to_role(
                 positive=True,
                 permission=permission,
                 role=config.USER_ROLE
@@ -327,7 +327,6 @@ class RoleCase54415(common.BaseTestCase):
 
         request.addfinalizer(finalize)
 
-    @bz({"1369219": {}})
     @polarion("RHEVM3-7140")
     def test_list_of_roles(self):
         """ Check if user can see all roles in system """

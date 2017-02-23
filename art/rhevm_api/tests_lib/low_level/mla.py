@@ -187,7 +187,8 @@ def add_permission_to_role(positive, permission, role):
         role_permission,
         positive,
         collection=role_permissions,
-        coll_elm_name='permit'
+        coll_elm_name='permit',
+        expected_entity=permission_object
     )
     return status
 
