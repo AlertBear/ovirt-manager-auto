@@ -95,6 +95,7 @@ class Windows(TestCase):
     drivers/services/products to tests.
     """
     __test__ = False
+
     disk_name = None
 
     @pytest.fixture(scope='class', autouse=True)
@@ -144,7 +145,7 @@ class Windows(TestCase):
         assert vm.get_fqdn() and len(vm.get_fqdn()) > 0
 
     def check_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         vm = ll_vms.get_vm(self.vm_name)
         apps = ll_vms.get_vm_applications(vm.get_name())
         logger.info("Windows '%s' apps are: %s", self.disk_name, apps)
@@ -160,10 +161,12 @@ class Windows(TestCase):
     def check_guest_os(self):
         """ Check guest OS info is reported """
         vm = ll_vms.get_vm(self.vm_name)
-        TimeoutingSampler(
+        for sample in TimeoutingSampler(
             config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
             lambda: vm.get_guest_operating_system() is not None
-        )
+        ):
+            if sample:
+                break
         guest_os = vm.get_guest_operating_system()
         logger.info("Guest '%s' os info:", self.vm_name)
         logger.info("Architecture: '%s'", guest_os.get_architecture())
@@ -185,12 +188,14 @@ class Windows(TestCase):
         )
 
     def check_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         vm = ll_vms.get_vm(self.vm_name)
-        TimeoutingSampler(
+        for sample in TimeoutingSampler(
             config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
             lambda: vm.get_guest_time_zone() is not None
-        )
+        ):
+            if sample:
+                break
         guest_timezone = vm.get_guest_time_zone()
         logger.info(
             "Guest timezone name is '%s', offset: '%s'",
@@ -215,6 +220,7 @@ class Win2008R2_CI_64b(Windows):
     GuestTools installation for windows 2008R2 64bit.
     """
     __test__ = True
+
     disk_name = 'Win2008R2_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN2008R2_64B['serial_number']
     architecture = config.WIN2008R2_64B['architecture']
@@ -223,7 +229,7 @@ class Win2008R2_CI_64b(Windows):
 
     @polarion("RHEVM3-14429")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14430")
@@ -238,7 +244,7 @@ class Win2008R2_CI_64b(Windows):
 
     @polarion("RHEVM3-14431")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -249,6 +255,7 @@ class Win2008R2_CI_core_64b(Windows):
     GuestTools installation for windows 2008R2 core 64bit.
     """
     __test__ = True
+
     disk_name = 'Win2008R2_CI_%s_core_64b' % config.PRODUCT
     serial_number = config.WIN2008R2_64B['serial_number']
     architecture = config.WIN2008R2_64B['architecture']
@@ -263,7 +270,7 @@ class Win2008R2_CI_core_64b(Windows):
 
     @polarion("RHEVM-14780")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM-14781")
@@ -278,7 +285,7 @@ class Win2008R2_CI_core_64b(Windows):
 
     @polarion("RHEVM-14782")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -289,6 +296,7 @@ class Win2012R2_CI_64b(Windows):
     GuestTools installation for windows 2012R2 64bit.
     """
     __test__ = True
+
     disk_name = 'Win2012R2_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN2012R2_64B['serial_number']
     architecture = config.WIN2012R2_64B['architecture']
@@ -297,7 +305,7 @@ class Win2012R2_CI_64b(Windows):
 
     @polarion("RHEVM3-14405")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14406")
@@ -312,7 +320,7 @@ class Win2012R2_CI_64b(Windows):
 
     @polarion("RHEVM3-14407")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -323,6 +331,7 @@ class Win2012R2_CI_core_64b(Windows):
     GuestTools installation for windows 2012R2 core 64bit.
     """
     __test__ = True
+
     disk_name = 'Win2012R2_CI_%s_core_64b' % config.PRODUCT
     serial_number = config.WIN2012R2_64B['serial_number']
     architecture = config.WIN2012R2_64B['architecture']
@@ -331,7 +340,7 @@ class Win2012R2_CI_core_64b(Windows):
 
     @polarion("RHEVM3-14769")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14770")
@@ -346,7 +355,7 @@ class Win2012R2_CI_core_64b(Windows):
 
     @polarion("RHEVM3-14771")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -357,6 +366,7 @@ class Win2012_CI_64b(Windows):
     GuestTools installation for windows 2012 64bit.
     """
     __test__ = True
+
     disk_name = 'Win2012_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN2012_64B['serial_number']
     architecture = config.WIN2012_64B['architecture']
@@ -365,7 +375,7 @@ class Win2012_CI_64b(Windows):
 
     @polarion("RHEVM3-14433")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14434")
@@ -380,7 +390,7 @@ class Win2012_CI_64b(Windows):
 
     @polarion("RHEVM3-14435")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -391,6 +401,7 @@ class Win2012_CI_core_64b(Windows):
     GuestTools installation for windows 2012 core 64bit.
     """
     __test__ = True
+
     disk_name = 'Win2012_CI_%s_core_64b' % config.PRODUCT
     serial_number = config.WIN2012_64B['serial_number']
     architecture = config.WIN2012_64B['architecture']
@@ -399,7 +410,7 @@ class Win2012_CI_core_64b(Windows):
 
     @polarion("RHEVM-14784")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM-14785")
@@ -414,7 +425,7 @@ class Win2012_CI_core_64b(Windows):
 
     @polarion("RHEVM-14786")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -425,6 +436,7 @@ class Win7_CI_32b(Windows):
     GuestTools installation for windows 7 32bit.
     """
     __test__ = True
+
     disk_name = 'Win7_CI_%s_32b' % config.PRODUCT
     serial_number = config.WIN7_32B['serial_number']
     architecture = config.WIN7_32B['architecture']
@@ -433,7 +445,7 @@ class Win7_CI_32b(Windows):
 
     @polarion("RHEVM3-14425")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14426")
@@ -448,7 +460,7 @@ class Win7_CI_32b(Windows):
 
     @polarion("RHEVM3-14427")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -459,6 +471,7 @@ class Win7_CI_64b(Windows):
     GuestTools installation for windows 7 64bit.
     """
     __test__ = True
+
     disk_name = 'Win7_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN7_64B['serial_number']
     architecture = config.WIN7_64B['architecture']
@@ -467,7 +480,7 @@ class Win7_CI_64b(Windows):
 
     @polarion("RHEVM3-14437")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14438")
@@ -482,7 +495,7 @@ class Win7_CI_64b(Windows):
 
     @polarion("RHEVM3-14439")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -493,6 +506,7 @@ class Win8_1_CI_32b(Windows):
     GuestTools installation for windows 8.1 32bit.
     """
     __test__ = True
+
     disk_name = 'Win8_1_CI_%s_32b' % config.PRODUCT
     serial_number = config.WIN8_1_32B['serial_number']
     architecture = config.WIN8_1_32B['architecture']
@@ -501,7 +515,7 @@ class Win8_1_CI_32b(Windows):
 
     @polarion("RHEVM3-14409")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14410")
@@ -516,7 +530,7 @@ class Win8_1_CI_32b(Windows):
 
     @polarion("RHEVM3-14411")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -527,6 +541,7 @@ class Win8_1_CI_64b(Windows):
     GuestTools installation for windows 8.1 64bit.
     """
     __test__ = True
+
     disk_name = 'Win8_1_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN8_1_64B['serial_number']
     architecture = config.WIN8_1_64B['architecture']
@@ -535,7 +550,7 @@ class Win8_1_CI_64b(Windows):
 
     @polarion("RHEVM3-14417")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14418")
@@ -550,7 +565,7 @@ class Win8_1_CI_64b(Windows):
 
     @polarion("RHEVM3-14419")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -561,6 +576,7 @@ class Win8_CI_32b(Windows):
     GuestTools installation for windows 8 32bit.
     """
     __test__ = True
+
     disk_name = 'Win8_CI_%s_32b' % config.PRODUCT
     serial_number = config.WIN8_32B['serial_number']
     architecture = config.WIN8_32B['architecture']
@@ -569,7 +585,7 @@ class Win8_CI_32b(Windows):
 
     @polarion("RHEVM-14792")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM-14793")
@@ -584,7 +600,7 @@ class Win8_CI_32b(Windows):
 
     @polarion("RHEVM-14794")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -595,6 +611,7 @@ class Win8_CI_64b(Windows):
     GuestTools installation for windows 8 64bit.
     """
     __test__ = True
+
     disk_name = 'Win8_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN8_64B['serial_number']
     architecture = config.WIN8_64B['architecture']
@@ -603,7 +620,7 @@ class Win8_CI_64b(Windows):
 
     @polarion("RHEVM-14788")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM-14789")
@@ -618,7 +635,7 @@ class Win8_CI_64b(Windows):
 
     @polarion("RHEVM-14790")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
         self.check_guest_timezone()
 
 
@@ -629,6 +646,7 @@ class Windows10_64b(Windows):
     GuestTools installation for windows 10 64bit.
     """
     __test__ = True
+
     disk_name = 'Win10_CI_rhevm_64b'
     serial_number = config.WIN10_64B['serial_number']
     architecture = config.WIN10_64B['architecture']
@@ -637,7 +655,7 @@ class Windows10_64b(Windows):
 
     @polarion("RHEVM3-14413")
     def test_guest_applications(self):
-        """ Check guest applications are reported """
+        """ Check guest's applications are reported """
         self.check_guest_applications()
 
     @polarion("RHEVM3-14414")
@@ -652,5 +670,75 @@ class Windows10_64b(Windows):
 
     @polarion("RHEVM3-14415")
     def test_guest_timezone(self):
-        """ Check guest timezone reported """
+        """ Check guest timezone is reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=3)
+class Windows2016_core_64b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2016 core 64bit.
+    """
+    __test__ = True
+
+    disk_name = 'Win2016_CI_rhevm_core_64b'
+    serial_number = config.WIN2016_64B['serial_number']
+    architecture = config.WIN2016_64B['architecture']
+    codename = config.WIN2016_64B['codename']
+    os_type = config.ENUMS['windows2016x64']
+
+    @polarion("RHEVM-19384")
+    def test_guest_applications(self):
+        """ Check guest's applications are reported """
+        self.check_guest_applications()
+
+    @polarion("RHEVM-19385")
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    @polarion("RHEVM-19387")
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    @polarion("RHEVM-19386")
+    def test_guest_timezone(self):
+        """ Check guest timezone is reported """
+        self.check_guest_timezone()
+
+
+@attr(tier=2)
+class Windows2016_64b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2016 64bit.
+    """
+    __test__ = True
+
+    disk_name = 'Win2016_CI_rhevm_64b'
+    serial_number = config.WIN2016_64B['serial_number']
+    architecture = config.WIN2016_64B['architecture']
+    codename = config.WIN2016_64B['codename']
+    os_type = config.ENUMS['windows2016x64']
+
+    @polarion("RHEVM-19380")
+    def test_guest_applications(self):
+        """ Check guest's applications are reported """
+        self.check_guest_applications()
+
+    @polarion("RHEVM-19381")
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    @polarion("RHEVM-19383")
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    @polarion("RHEVM-19382")
+    def test_guest_timezone(self):
+        """ Check guest timezone is reported """
         self.check_guest_timezone()

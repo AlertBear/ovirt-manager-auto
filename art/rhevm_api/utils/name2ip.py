@@ -137,10 +137,10 @@ class LookUpVMIpByName(LookUpIpByEntityName):
         )
         self.nic = nic
 
-    def get_ip(self, src_val):
+    def get_ip(self, src_val, check_mac=True):
         ip = self._get_ip_from_vm(src_val)
         ip = ip[0] if ip else None
-        if ip is None:
+        if ip is None and check_mac:
             ip = self._get_ip_from_mac(src_val)
         return ip
 

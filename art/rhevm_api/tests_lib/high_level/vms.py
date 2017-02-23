@@ -725,6 +725,8 @@ def create_windows_vm(
             if status == 200:
                 break
             elif status == 404:
+                if LookUpVMIpByName('', '').get_ip(vm_name, check_mac=False):
+                    break
                 logger.info('Still waiting for results...')
             else:
                 logger.error("Got invalid status: '%s'", status)
@@ -738,8 +740,8 @@ def create_windows_vm(
         if request.getcode() == 200:
             return request.read()
         elif request.getcode() == 404 and (
-            vms.wait_for_vm_ip(vm_name, timeout=60) or
-            LookUpVMIpByName('', '').get_ip(vm_name)
+            LookUpVMIpByName('', '').get_ip(vm_name, check_mac=False) or
+            vms.wait_for_vm_ip(vm_name, timeout=60)
         ):
             return WGT_SUCCESS_CODE
         return None
@@ -762,6 +764,11 @@ def create_windows_vm(
 
     if not disks.attachDisk(True, disk_name, vm_name):
         return False, "Failed to attach disk to vm '%s'" % vm_name
+
+    if not disks.updateDisk(
+            True, vmName=vm_name, alias=disk_name, bootable=True
+    ):
+        return False, "Failed to update disk of vm '%s'" % vm_name
 
     if not vms.runVmOnce(
         positive=True,
