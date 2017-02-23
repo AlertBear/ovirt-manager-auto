@@ -18,7 +18,7 @@ from rhevmtests.storage.fixtures import (
     add_disk, create_vm, create_template, create_storage_domain,
     deactivate_domain, delete_disks, initialize_storage_domains, delete_disk
 )
-
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 logger = logging.getLogger(__name__)
 
 
