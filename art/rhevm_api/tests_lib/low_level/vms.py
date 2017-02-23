@@ -3958,6 +3958,36 @@ def get_vm_snapshots(vm, all_content=False):
     return snapshots
 
 
+def wait_for_snapshot_creation(
+    vm_name, snapshot_description, timeout=VM_IMAGE_OPT_TIMEOUT,
+    sleep=SNAPSHOT_SAMPLING_PERIOD, wait_for_status=None
+):
+    """
+    Wait until snapshot creation initiated
+
+    Args:
+        vm_name(str): Name of the VM
+        snapshot_description(str): Name of the VM
+        timeout(int): Timeout for waiting
+        sleep(float): Polling interval while waiting
+        wait_for_status(str): Desired snapshot state
+
+    Returns:
+        bool: True if snapshot has been created, False otherwise
+    """
+    sampler = TimeoutingSampler(timeout, sleep, get_vm_snapshots, vm_name)
+    for sample in sampler:
+        for snapshot in sample:
+            if snapshot.get_description() == snapshot_description:
+                if wait_for_status:
+                    wait_for_vm_snapshots(
+                        vm_name=vm_name, states=wait_for_status,
+                        snapshots_description=snapshot_description
+                    )
+                return True
+    return False
+
+
 def create_vm_from_ovf(new_vm_name, cluster_name, ovf, compare=False):
     """
     Description: Creates a vm from ovf configuration file
@@ -4329,7 +4359,7 @@ def extend_vm_disk_size(positive, vm, disk, provisioned_size):
     )
 
 
-def live_migrate_vm_disk(
+def migrate_vm_disk(
     vm_name, disk_name, target_sd, timeout=VM_IMAGE_OPT_TIMEOUT*2,
     sleep=SNAPSHOT_SAMPLING_PERIOD, wait=True
 ):
@@ -4382,12 +4412,12 @@ def live_migrate_vm_disk(
         wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
 
 
-def live_migrate_vm(
+def migrate_vm_disks(
     vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True, ensure_on=True,
     same_type=True, target_domain=None
 ):
     """
-    Live migrate all VM's disks
+    Migrate all VM's disks
 
     __author__ = "ratamir"
 
@@ -4405,7 +4435,6 @@ def live_migrate_vm(
 
     Raises:
         DiskException: If failed to migrate disk
-        VMException: If vm is not up and ensure_on=False
         APITimeout: If waiting for snapshot was longer than 1800 seconds
     """
     logger.info("Start Live Migrating vm %s disks", vm_name)
@@ -4417,8 +4446,7 @@ def live_migrate_vm(
             start_vms([vm_name], 1, wait_for_ip=False)
             waitForVMState(vm_name)
         else:
-            raise exceptions.VMException("VM must be up to perform live "
-                                         "storage migration")
+            logger.warning("Performing cold move for VM %s", vm_name)
 
     disk_objecs = getObjDisks(vm_name, get_href=False)
     vm_disks_names = [disk.get_name() for disk in disk_objecs]
@@ -4434,7 +4462,7 @@ def live_migrate_vm(
             target_sd = get_other_storage_domain(
                 disk_id, vm_name, force_type=same_type, key='id'
             )
-        live_migrate_vm_disk(
+        migrate_vm_disk(
             vm_name, disk_name, target_sd, timeout=timeout, wait=wait
         )
     if wait:

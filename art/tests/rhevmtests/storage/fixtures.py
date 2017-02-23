@@ -1,4 +1,6 @@
+import shlex
 import pytest
+import os
 import logging
 import config
 from art.core_api.apis_exceptions import APITimeout
@@ -1234,28 +1236,35 @@ def import_image_from_glance(request):
     """
     self = request.node.cls
 
-    getattr(
-        self, 'storage_domain', ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
+    self.glance_templte_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_TEMPLATE
+        )
+
+    storage_domain = getattr(
+        self, 'new_storage_domain', self.storage_domain
     )
 
     self.disk_alias = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_DISK
     )
+
     import_as_template = getattr(self, 'import_as_template', True)
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
 
     assert ll_sd.import_glance_image(
         config.GLANCE_DOMAIN, config.GOLDEN_GLANCE_IMAGE,
-        self.storage_domain, cluster,
+        target_storage_domain=storage_domain, target_cluster=cluster,
         new_disk_alias=self.disk_alias,
-        import_as_template=import_as_template,
-    ), "Importing glance image %s from repository %s failed" % (
-        config.GOLDEN_GLANCE_IMAGE, config.GLANCE_DOMAIN
+        new_template_name=self.glance_templte_name,
+        import_as_template=import_as_template, async=False
+    ), """Importing glance image %s from repository %s to storage
+       domain %s failed""" % (
+        storage_domain, config.GOLDEN_GLANCE_IMAGE, config.GLANCE_DOMAIN
     )
 
     ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE])
+    # initialize for remove_templates fixture
+    self.templates_names.append(self.glance_templte_name)
 
 
 @pytest.fixture()
@@ -1394,3 +1403,105 @@ def skip_invalid_storage_type(request):
         pytest.skip(
             "Storage type %s is not valid for testing this case" % self.storage
         )
+
+
+@pytest.fixture()
+def create_disks_with_fs(request):
+    """
+    Create disks from all permutation and create filesystem on them,
+    saves all the needed data in dict object with vm_name as keys
+    and the value is dict (with keys: disks, mount_points, executor)
+    """
+    self = request.node.cls
+
+    add_file_on_each_disk = getattr(self, 'add_file_on_each_disk', False)
+
+    self.DISKS_MOUNTS_EXECUTOR = getattr(
+        self, 'DISKS_MOUNTS_EXECUTOR', config.DISKS_MOUNTS_EXECUTOR.copy()
+    )
+    self.CHECKSUM_FILES_RESULTS = getattr(
+        self, 'CHECKSUM_FILES_RESULTS', config.CHECKSUM_FILES.copy()
+    )
+
+    # verify self.storage value will not override in case of create few VMs
+    if self.storage not in self.CHECKSUM_FILES_RESULTS.keys():
+        self.CHECKSUM_FILES_RESULTS[self.storage] = dict()
+
+    self.DISKS_MOUNTS_EXECUTOR[self.vm_name] = dict()
+
+    storage_domain = getattr(self, 'new_storage_domain', self.storage_domain)
+
+    started = False
+    if ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
+        testflow.setup("Start VM %s", self.vm_name)
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name, wait_for_status=config.VM_UP
+        )
+        started = True
+
+    testflow.setup("Fetch VM %s executor", self.vm_name)
+    executor = storage_helpers.get_vm_executor(self.vm_name)
+
+    testflow.setup("Create disks with filesystem on VM %s", self.vm_name)
+    disk_ids, mount_points = (
+        storage_helpers.prepare_disks_with_fs_for_vm(
+            storage_domain, self.storage, self.vm_name, executor=executor
+        )
+    )
+    self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks'] = disk_ids
+    self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['mount_points'] = mount_points
+    self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['executor'] = executor
+
+    if add_file_on_each_disk:
+        file_name = getattr(self, 'file_name', 'test_file')
+        testflow.setup("Create file on all the VM's %s disks", self.vm_name)
+        for mount_point in mount_points:
+            assert storage_helpers.create_file_on_vm(
+                self.vm_name, file_name, mount_point, executor
+            ), "Failed to create file %s on VM %s with path %s" % (
+                file_name, self.vm_name, mount_point
+            )
+            full_path = os.path.join(mount_point, file_name)
+            assert storage_helpers.write_content_to_file(
+                vm_name=self.vm_name, file_name=full_path, vm_executor=executor
+            ), "Failed to write content to file %s on VM %s" % (
+                full_path, self.vm_name
+            )
+            testflow.setup("Save file %s checksum value", full_path)
+            self.CHECKSUM_FILES_RESULTS[self.storage][full_path] = (
+                storage_helpers.checksum_file(
+                    self.vm_name, full_path, executor
+                )
+            )
+        # verify the data will write to the backend
+        rc, _, error = executor.run_cmd(cmd=shlex.split('sync'))
+        if rc:
+            logger.error(
+                "Failed to run command 'sync' on %s, error: %s",
+                self.vm_name, error
+            )
+    if started:
+        testflow.setup("Stop VM %s", self.vm_name)
+        assert ll_vms.stop_vms_safely([self.vm_name])
+
+
+@pytest.fixture()
+def create_vms(request):
+    """
+    Add number of VMs to the environment according to num_on_vms attribute
+    """
+    self = request.node.cls
+
+    if not hasattr(self, 'storage_domain'):
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+
+    num_of_vms = getattr(self, 'num_on_vms', 2)
+
+    for index in range(num_of_vms):
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_VM
+        )
+        create_vm(request, remove_vm)
+        self.vm_names.append(self.vm_name)

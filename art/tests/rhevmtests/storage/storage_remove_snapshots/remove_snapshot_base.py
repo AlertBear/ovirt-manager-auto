@@ -606,7 +606,7 @@ class TestCase6057(BasicEnvironment):
     @attr(tier=2)
     def test_live_deletion_after_disk_migration(self):
         self.basic_flow()
-        ll_vms.live_migrate_vm(self.vm_name)
+        ll_vms.migrate_vm_disks(self.vm_name)
 
         self.delete_snapshot_with_verification(
             self.vm_name, self.snapshot_list[1]
@@ -678,7 +678,7 @@ class TestCase6062(BasicEnvironment):
         target_sd = ll_disks.get_other_storage_domain(
             self.disk_to_migrate, self.vm_name
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, self.disk_to_migrate, target_sd, wait=False
         )
         ll_disks.wait_for_disks_status(

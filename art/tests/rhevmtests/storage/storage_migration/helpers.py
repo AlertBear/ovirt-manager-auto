@@ -36,7 +36,7 @@ def add_new_disk_for_test(
         prepare_disks_for_vm(vm_name, [alias])
 
 
-def wait_for_disks_and_snapshots(vms_to_wait_for):
+def wait_for_disks_and_snapshots(vms_to_wait_for, live_operation=True):
     """
     Wait for given VMs snapshots and disks status to be 'OK'
     """
@@ -50,5 +50,8 @@ def wait_for_disks_and_snapshots(vms_to_wait_for):
                 assert False, (
                     "Snapshots failed to reach OK state on VM '%s'" % vm_name
                 )
-    ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-    ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
+    if live_operation:
+        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
+    else:
+        ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])

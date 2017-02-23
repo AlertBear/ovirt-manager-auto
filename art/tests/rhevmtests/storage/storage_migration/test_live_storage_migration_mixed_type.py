@@ -1,28 +1,9 @@
 """
-Storage live migration sanity test
+Storage live migration mixed type domains sanity test
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-Storage/3_1_Storage_Live_Storage_Migration
+Storage/3_6_Storage_Live_Storage_Migration
 """
-import config
-import pytest
-from art.test_handler.settings import opts
-import live_storage_migration_base as basePlan
-from art.test_handler.tools import bz
-
-from rhevmtests.storage.fixtures import (  # noqa
-    update_vm_disk, create_snapshot, delete_disks, deactivate_domain,
-    add_disk_permutations, remove_templates, remove_vms, restart_vdsmd,
-    unblock_connectivity_storage_domain_teardown, wait_for_disks_and_snapshots,
-    initialize_storage_domains, initialize_variables_block_domain, create_vm,
-    start_vm, create_second_vm, poweroff_vm
-)
-from rhevmtests.storage.storage_live_migration.fixtures import (  # noqa
-    initialize_params, initialize_disk_args, add_disk, attach_disk_to_vm,
-    initialize_domain_to_deactivate, create_disks_for_vm, create_templates,
-    prepare_disks_for_vm, initialize_vm_and_template_names,
-    create_vms_from_templates, add_two_storage_domains
-)
-from rhevmtests.storage.fixtures import remove_vm  # noqa
+from storage_migration_base import *  # flake8: noqa
 
 ISCSI = config.STORAGE_TYPE_ISCSI
 
@@ -33,435 +14,449 @@ def inizialize_tests_params(request):
     Determine whether to run plan on same storage type or on different types
     of storage
     """
-    config.MIGRATE_SAME_TYPE = True
+    config.MIGRATE_SAME_TYPE = False
 
 
-class TestCase6004(basePlan.TestCase6004):
+class TestCase10348(TestCase6004):
     """
     live migrate
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10348'
 
 
-class TestCase5990(basePlan.TestCase5990):
+class TestCase5990(TestCase5990):
     """
     VM in paused mode
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
 
 
-class TestCase5994_powering_off(basePlan.TestCase5994_powering_off):
+class TestCase10338_powering_up(TestCase5994_powering_up):
     """
     different VM status
-        https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10338'
 
 
-class TestCase5994_powering_up(basePlan.TestCase5994_powering_up):
+class TestCase10338_powering_off(TestCase5994_powering_off):
     """
     different VM status
-        https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10338'
 
 
-class TestCase5994_wait_for_lunch(basePlan.TestCase5994_wait_for_lunch):
+class TestCase10338_wait_for_lunch(TestCase5994_wait_for_lunch):
     """
     different VM status
-        https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10338'
 
 
-class TestCase5993(basePlan.TestCase5993):
+class TestCase10337(TestCase5993):
     """
     live migration with thin provision copy
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10337'
 
 
-class TestCase5992(basePlan.TestCase5992):
+class TestCase10336(TestCase5992):
     """
     snapshots and move VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10336'
 
 
-class TestCase5991(basePlan.TestCase5991):
+class TestCase10335(TestCase5991):
     """
     live migration with shared disk
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     # Gluster doesn't support shareable disks
     __test__ = (
         config.STORAGE_TYPE_NFS in opts['storages'] or
         config.STORAGE_TYPE_ISCSI in opts['storages']
     )
+    polarion_test_case = '10335'
 
 
-class TestCase5989(basePlan.TestCase5989):
+class TestCase10333(TestCase5989):
     """
     suspended VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10333'
 
 
-class TestCase5988_before_snapshot(basePlan.TestCase5988_before_snapshot):
+class TestCase10332_before_snapshot(TestCase5988_before_snapshot):
     """
     Create live snapshot during live storage migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10332'
 
 
-class TestCase5988_after_snapshot(basePlan.TestCase5988_after_snapshot):
+class TestCase10332_after_snapshot(TestCase5988_after_snapshot):
     """
     Create live snapshot during live storage migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10332'
 
 
-class TestCase5988_while_snapshot(basePlan.TestCase5988_while_snapshot):
+class TestCase10332_while_snapshot(TestCase5988_while_snapshot):
     """
     Create live snapshot during live storage migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10332'
 
 
-class TestCase5986(basePlan.TestCase5986):
+class TestCase10330(TestCase5986):
     """
     Time out
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10330'
 
 
-class TestCase5995(basePlan.TestCase5995):
+class TestCase10339(TestCase5995):
     """
     Images located on different domain
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10339'
 
 
-class TestCase5996_active_disk(basePlan.TestCase5996_active_disk):
+class TestCase10340_active_disk(TestCase5996_active_disk):
     """
     hot plug disk
     1) inactive disk
-    - create and run a VM
-    - hot plug a floating disk and keep it inactive
-    - move the disk images to a different domain
     2) active disk
-    - create and run a VM
-    - hot plug a disk and activate it
-    - move the images to a different domain
-
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10340'
 
 
-class TestCase5996_inactive_disk(basePlan.TestCase5996_inactive_disk):
+class TestCase10340_inactive_disk(TestCase5996_inactive_disk):
     """
     hot plug disk
     1) inactive disk
-    - create and run a VM
-    - hot plug a floating disk and keep it inactive
-    - move the disk images to a different domain
     2) active disk
-    - create and run a VM
-    - hot plug a disk and activate it
-    - move the images to a different domain
-
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10340'
 
 
-class TestCase6003_active_disk(basePlan.TestCase6003_active_disk):
+class TestCase10347_active_disk(TestCase6003_active_disk):
     """
     Attach disk during migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10347'
 
 
-class TestCase6003_inactive_disk(basePlan.TestCase6003_inactive_disk):
+class TestCase10347_inactive_disk(TestCase6003_inactive_disk):
     """
     Attach disk during migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10347'
 
 
-class TestCase6001(basePlan.TestCase6001):
+class TestCase10345(TestCase6001):
     """
     LSM to domain in maintenance
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10345'
 
 
-class TestCase5972(basePlan.TestCase5972):
+class TestCase10316(TestCase5972):
     """
     live migrate VM with multiple disks on multiple domains
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10316'
 
 
-class TestCase5970(basePlan.TestCase5970):
+class TestCase10314(TestCase5970):
     """
     Wipe after delete
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
-    __test__ = ISCSI in opts['storages']
+    polarion_test_case = '10314'
 
 
-class TestCase5968(basePlan.TestCase5968):
+class TestCase10311(TestCase5967):
     """
-    Auto-Shrink - Live Migration
+    Space Reclamation after Deleting snapshot after- Live Migration failure
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10311'
 
 
-class TestCase5967(basePlan.TestCase5967):
-    """
-    Auto-Shrink - Live Migration failure
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
-
-    """
-    __test__ = True
-
-
-class TestCase5979(basePlan.TestCase5979):
+class TestCase10323(TestCase5979):
     """
     offline migration for disk attached to running VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10323'
 
 
-class TestCase5976(basePlan.TestCase5976):
+class TestCase10320(TestCase5976):
     """
     Deactivate VM disk during live migrate
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10320'
 
 
-class TestCase5977_after_lsm(basePlan.TestCase5977_after_lsm):
+class TestCase10321_vm_migration(TestCase5977_vm_migration):
     """
     migrate a VM between hosts + LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10321'
 
 
-class TestCase5977_snapshot_creation(basePlan.TestCase5977_snapshot_creation):
+class TestCase10321_snapshot_creation(TestCase5977_snapshot_creation):
     """
     migrate a VM between hosts + LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10321'
 
 
-class TestCase5977_vm_migration(basePlan.TestCase5977_vm_migration):
+class TestCase10321_after_lsm(TestCase5977_after_lsm):
     """
     migrate a VM between hosts + LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10321'
 
 
-class TestCase5975_dest_domain(basePlan.TestCase5975_dest_domain):
+class TestCase10319_src_domain(TestCase5975_src_domain):
     """
     Extend storage domain while lsm
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10319'
 
 
-class TestCase5975_src_domain(basePlan.TestCase5975_src_domain):
+class TestCase10319_dest_domain(TestCase5975_dest_domain):
     """
     Extend storage domain while lsm
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10319'
 
 
-class TestCase6000(basePlan.TestCase6000):
+class TestCase10344(TestCase6000):
     """
     live migrate - storage connectivity issues
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     # Bugzilla history: 1106593
     __test__ = True
+    polarion_test_case = '10344'
 
 
-class TestCase6002(basePlan.TestCase6002):
+class TestCase10346(TestCase6002):
     """
     VDSM restart during live migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     # Bugzilla history: 1210771
     __test__ = True
+    polarion_test_case = '10346'
 
 
-class TestCase5999_spm(basePlan.TestCase5999_spm):
+class TestCase10343_spm(TestCase5999_spm):
     """
     live migrate during host restart
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     # Bugzilla history: 1210771
     __test__ = True
+    polarion_test_case = '10343'
 
 
-class TestCase5999_hsm(basePlan.TestCase5999_hsm):
+class TestCase10343_hsm(TestCase5999_hsm):
     """
     live migrate during host restart
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     # Bugzilla history: 1210771
     __test__ = True
+    polarion_test_case = '10343'
 
 
-class TestCase5997_ha_vm(basePlan.TestCase5997_ha_vm):
+class TestCase10341_ha_vm(TestCase5997_ha_vm):
     """
     kill VM's pid during live migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10341'
 
 
-class TestCase5997_regular_vm(basePlan.TestCase5997_regular_vm):
+class TestCase10341_regular_vm(TestCase5997_regular_vm):
     """
     kill VM's pid during live migration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10341'
 
 
-@bz({'1288862': {}})
-class TestCase5985(basePlan.TestCase5985):
+class TestCase10329(TestCase5985):
     """
     no space left
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     # TODO: Fix, our storage domains are too big for creating preallocated
-    # TODO: this cases is disable due to ticket RHEVM-2524
-    # disks
+    # TODO: this cases is disabled due to ticket RHEVM-2524
+    # disks, wait for threshold feature
+
     jira = {'RHEVM-2524': None}
     __test__ = False
+    polarion_test_case = '10329'
 
 
-class TestCase5971(basePlan.TestCase5971):
+class TestCase10315(TestCase5971):
     """
     multiple domains - only one domain unreachable
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10315'
 
 
-class TestCase5966_during_lsm(basePlan.TestCase5966_during_lsm):
+class TestCase10310_during_lsm(TestCase5966_during_lsm):
     """
     kill vdsm during LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10310'
 
 
-class TestCase5966_during_second_lsm(basePlan.TestCase5966_during_second_lsm):
+class TestCase10310_during_second_lsm(TestCase5966_during_second_lsm):
     """
-    kill vdsm during LSM
+    kill vdsm during second LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10310'
 
 
-class TestCase5981(basePlan.TestCase5981):
+class TestCase10325(TestCase5981):
     """
     merge after a failure in LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10325'
 
 
-class TestCase5983_spm(basePlan.TestCase5983_spm):
+class TestCase10327_spm(TestCase5983_spm):
     """
     migrate multiple VM's disks
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10327'
 
 
-class TestCase5983_hsm(basePlan.TestCase5983_hsm):
+class TestCase10327_hsm(TestCase5983_hsm):
     """
     migrate multiple VM's disks
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10327'
 
 
-class TestCase5974(basePlan.TestCase5974):
+class TestCase10318(TestCase5974):
     """
     LSM during pause due to EIO
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Live_Storage_Migration
+    Storage/3_6_Storage_Live_Storage_Migration
     """
     __test__ = True
+    polarion_test_case = '10318'

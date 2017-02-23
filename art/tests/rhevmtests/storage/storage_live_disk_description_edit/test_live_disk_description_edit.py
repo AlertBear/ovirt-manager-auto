@@ -329,7 +329,7 @@ class TestCase11504(BasicEnvironment):
             testflow.step(
                 "Migrate disk %s to storage-domain %s", disk_alias, target_sd
             )
-            ll_vms.live_migrate_vm_disk(
+            ll_vms.migrate_vm_disk(
                 self.vm_name, disk_alias, target_sd, wait=False
             )
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])

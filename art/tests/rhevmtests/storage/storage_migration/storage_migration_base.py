@@ -1,5 +1,5 @@
 """
-Storage live migration sanity test
+Storage migration sanity test
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_1_Storage_Live_Storage_Migration
 """
@@ -33,17 +33,17 @@ from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
-    update_vm_disk, create_snapshot, delete_disks, deactivate_domain,
+    create_snapshot, delete_disks, deactivate_domain,
     add_disk_permutations, remove_templates, remove_vms, restart_vdsmd,
     unblock_connectivity_storage_domain_teardown, wait_for_disks_and_snapshots,
     initialize_storage_domains, initialize_variables_block_domain, create_vm,
-    start_vm, create_second_vm, poweroff_vm
+    start_vm, create_second_vm, poweroff_vm,
 )
-from rhevmtests.storage.storage_live_migration.fixtures import (
-    initialize_params, initialize_disk_args, add_disk, attach_disk_to_vm,
+from rhevmtests.storage.storage_migration.fixtures import (
+    initialize_params, add_disk, attach_disk_to_vm,
     initialize_domain_to_deactivate, create_disks_for_vm, create_templates,
     prepare_disks_for_vm, initialize_vm_and_template_names,
-    create_vms_from_templates, add_two_storage_domains
+    create_vms_from_templates, add_two_storage_domains,
 )
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 
@@ -85,8 +85,6 @@ def inizialize_tests_params(request):
     initialize_storage_domains.__name__,
     initialize_params.__name__,
     create_vm.__name__,
-    initialize_disk_args.__name__,
-    update_vm_disk.__name__,
 )
 class BaseTestCase(StorageTest):
     """
@@ -95,6 +93,14 @@ class BaseTestCase(StorageTest):
     vm_sd = None
     vm_name = None
     storage_domains = None
+
+    def check_if_live_move(self, vms):
+        """
+        Start VM in case of live move
+        """
+        if config.LIVE_MOVE:
+            testflow.step("Start VM %s", vms)
+            ll_vms.start_vms(vm_list=vms, wait_for_status=config.VM_UP)
 
 
 @pytest.mark.usefixtures(
@@ -107,7 +113,7 @@ class AllPermutationsDisks(BaseTestCase):
     """
     __test__ = False
 
-    def verify_lsm(self, moved=True):
+    def verify_lsm(self, source_sd, moved=True):
         """
         Verifies if the disks have been moved
         """
@@ -115,11 +121,10 @@ class AllPermutationsDisks(BaseTestCase):
             failure_str = "Failed"
         else:
             failure_str = "Succeeded"
-
         for disk in config.DISK_NAMES[self.storage]:
             assert moved == ll_vms.verify_vm_disk_moved(
-                self.vm_name, disk, self.disk_sd
-            ), "%s to live migrate vm disk %s" % (disk, failure_str)
+                self.vm_name, disk, source_sd
+            ), "%s to migrate vm disk %s" % (failure_str, disk)
 
 
 @pytest.mark.usefixtures(
@@ -144,15 +149,13 @@ class TestCase6004(AllPermutationsDisks):
             - Move should succeed
         """
         testflow.step(
-            "Live migrate vm's %s disks to another storage domain "
-            "with %s storage type",
-            self.vm_name, "the same" if config.MIGRATE_SAME_TYPE else
-            "a different"
+            "Migrate vm's %s disks to another storage domain", self.vm_name
         )
-        ll_vms.live_migrate_vm(
-            self.vm_name, same_type=config.MIGRATE_SAME_TYPE
+        ll_vms.migrate_vm_disks(
+            self.vm_name, ensure_on=config.LIVE_MOVE,
+            same_type=config.MIGRATE_SAME_TYPE
         )
-        self.verify_lsm()
+        self.verify_lsm(source_sd=self.storage_domain)
 
 
 @pytest.mark.usefixtures(
@@ -180,16 +183,16 @@ class TestCase5990(BaseTestCase):
         testflow.step("Running VM %s in paused state", self.vm_name)
         ll_vms.runVmOnce(True, self.vm_name, pause=True)
         ll_vms.waitForVMState(self.vm_name, config.VM_PAUSED)
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, same_type=config.MIGRATE_SAME_TYPE
         )
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step("Verify VM %s disks moved", self.vm_name)
         assert ll_vms.verify_vm_disk_moved(
-            self.vm_name, vm_disk, self.disk_sd
-        ), "Failed to live migrate disk %s" % vm_disk
+            self.vm_name, vm_disk, self.storage_domain
+        ), "Failed to migrate disk %s" % vm_disk
 
 
 @pytest.mark.usefixtures(
@@ -219,8 +222,8 @@ class TestCase5994_wait_for_lunch(BaseTestCase5994):
         testflow.step("Start VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, config.VM_WAIT_FOR_LAUNCH)
         with pytest.raises(exceptions.DiskException):
-            testflow.step("Try to live migrate VM %s disks", self.vm_name)
-            ll_vms.live_migrate_vm(
+            testflow.step("Try to migrate VM %s disks", self.vm_name)
+            ll_vms.migrate_vm_disks(
                 vm_name=self.vm_name, timeout=TASK_TIMEOUT, wait=True,
                 ensure_on=False, same_type=config.MIGRATE_SAME_TYPE
             )
@@ -240,8 +243,8 @@ class TestCase5994_powering_up(BaseTestCase5994):
         testflow.step("Start VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, config.VM_POWERING_UP)
         with pytest.raises(exceptions.DiskException):
-            testflow.step("Try to live migrate VM %s disks", self.vm_name)
-            ll_vms.live_migrate_vm(
+            testflow.step("Try to migrate VM %s disks", self.vm_name)
+            ll_vms.migrate_vm_disks(
                 vm_name=self.vm_name, timeout=TASK_TIMEOUT, wait=True,
                 ensure_on=False, same_type=config.MIGRATE_SAME_TYPE
             )
@@ -264,11 +267,12 @@ class TestCase5994_powering_off(BaseTestCase5994):
         testflow.step("Stop VM %s", self.vm_name)
         ll_vms.waitForVMState(self.vm_name, config.VM_POWER_DOWN)
         with pytest.raises(exceptions.DiskException):
-            testflow.step("Try to live migrate VM %s disks", self.vm_name)
-            ll_vms.live_migrate_vm(
+            testflow.step("Try to migrate VM %s disks", self.vm_name)
+            ll_vms.migrate_vm_disks(
                 vm_name=self.vm_name, timeout=TASK_TIMEOUT, wait=True,
                 ensure_on=False, same_type=config.MIGRATE_SAME_TYPE
             )
+        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
 
 
 @pytest.mark.usefixtures(
@@ -290,6 +294,7 @@ class TestCase5993(BaseTestCase):
     vms_to_wait = list()
 
     @polarion("RHEVM3-5993")
+    @bz({'1420258': {}})
     @attr(tier=2)
     def test_thin_provision_copy_template_on_both_domains(self):
         """
@@ -300,24 +305,23 @@ class TestCase5993(BaseTestCase):
         - Create VM from template and run the VM
         - Move the VM to second domain
         """
-        testflow.step("Live migrate VM %s", self.vm_names[1])
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s", self.vm_names[1])
+        ll_vms.migrate_vm_disks(
             self.vm_names[1], LIVE_MIGRATION_TIMEOUT,
-            target_domain=self.second_domain
+            ensure_on=config.LIVE_MOVE, target_domain=self.second_domain
         )
         helpers.wait_for_disks_and_snapshots(self.vm_names[1])
 
-        testflow.step("Live migrate VM %s", self.vm_names[0])
+        testflow.step("Migrate VM %s", self.vm_names[0])
         with pytest.raises(exceptions.DiskException):
-            ll_vms.live_migrate_vm(
+            ll_vms.migrate_vm_disks(
                 self.vm_names[0], LIVE_MIGRATION_TIMEOUT,
-                same_type=config.MIGRATE_SAME_TYPE
+                ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
             )
 
 
 @pytest.mark.usefixtures(
     create_snapshot.__name__,
-    start_vm.__name__,
     wait_for_disks_and_snapshots.__name__
 )
 class TestCase5992(BaseTestCase):
@@ -338,9 +342,10 @@ class TestCase5992(BaseTestCase):
         - Run the VM
         - Migrate the VM to second domain
         """
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
-            self.vm_name, same_type=config.MIGRATE_SAME_TYPE
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
+            self.vm_name, ensure_on=config.LIVE_MOVE, wait=config.LIVE_MOVE,
+            same_type=config.MIGRATE_SAME_TYPE
         )
 
 
@@ -373,18 +378,25 @@ class TestCase5991(BaseTestCase):
         Create and run several VM's with the same shared disk
         - Try to move one of the VM's images
         """
+        self.check_if_live_move([self.vm_name, self.vm_name_2])
         target_sd = ll_disks.get_other_storage_domain(
             self.new_disk_name, self.vm_name,
             force_type=config.MIGRATE_SAME_TYPE,
             ignore_type=[config.STORAGE_TYPE_GLUSTER]
         )
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, self.new_disk_name, target_sd
         )
-        ll_vms.live_migrate_vm_disk(
-            self.vm_name, self.new_disk_name, target_sd
-        )
+        if config.LIVE_MOVE:
+            with pytest.raises(exceptions.DiskException):
+                ll_vms.migrate_vm_disk(
+                    self.vm_name, self.new_disk_name, target_sd
+                )
+        else:
+            ll_vms.migrate_vm_disk(
+                self.vm_name, self.new_disk_name, target_sd
+            )
 
 
 @pytest.mark.usefixtures(
@@ -411,10 +423,10 @@ class TestCase5989(BaseTestCase):
         assert ll_vms.waitForVMState(self.vm_name, state), (
             "VM %s failed to reach state %s" % (self.vm_name, state)
         )
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
-            self.vm_name, LIVE_MIGRATION_TIMEOUT, ensure_on=False,
-            same_type=config.MIGRATE_SAME_TYPE
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
+            self.vm_name, LIVE_MIGRATION_TIMEOUT, wait=config.LIVE_MOVE,
+            ensure_on=False, same_type=config.MIGRATE_SAME_TYPE
         )
 
     @polarion("RHEVM3-5989")
@@ -435,7 +447,6 @@ class TestCase5989(BaseTestCase):
 
 
 @pytest.mark.usefixtures(
-    start_vm.__name__,
     wait_for_disks_and_snapshots.__name__
 )
 class BaseTestCase5988(AllPermutationsDisks):
@@ -476,13 +487,15 @@ class TestCase5988_before_snapshot(BaseTestCase5988):
             - Try to create a live snapshot
         * We should succeed to create a live snapshot
         """
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
-            self.vm_name, LIVE_MIGRATION_TIMEOUT,
-            same_type=config.MIGRATE_SAME_TYPE
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
+            self.vm_name, LIVE_MIGRATION_TIMEOUT, wait=config.LIVE_MOVE,
+            ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
-        helpers.wait_for_disks_and_snapshots(self.vm_name)
-        self.verify_lsm()
+        helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
+        )
+        self.verify_lsm(source_sd=self.storage_domain)
         assert self._prepare_snapshots(self.vm_name)
 
 
@@ -499,12 +512,15 @@ class TestCase5988_after_snapshot(BaseTestCase5988):
         * We should succeed to move the VM
         """
         assert self._prepare_snapshots(self.vm_name)
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, LIVE_MIGRATION_TIMEOUT,
-            same_type=config.MIGRATE_SAME_TYPE
+            ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
-        self.verify_lsm()
+        helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
+        )
+        self.verify_lsm(source_sd=self.storage_domain)
 
 
 class TestCase5988_while_snapshot(BaseTestCase5988):
@@ -518,29 +534,35 @@ class TestCase5988_while_snapshot(BaseTestCase5988):
             - Try to create a live snapshot + move
         * We should block move+create live snapshot in backend.
         """
+        self.check_if_live_move([self.vm_name])
         for disk in config.DISK_NAMES[self.storage]:
             target_sd = ll_disks.get_other_storage_domain(
                 disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
             testflow.step(
-                "Live migrate VM %s disk %s to storage domain %s",
+                "Migrate VM %s disk %s to storage domain %s",
                 self.vm_name, disk, target_sd
             )
-            ll_vms.live_migrate_vm_disk(
+            ll_vms.migrate_vm_disk(
                 self.vm_name, disk, target_sd, timeout=LIVE_MIGRATION_TIMEOUT,
                 wait=False
             )
             ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
             assert self._prepare_snapshots(self.vm_name, expected_status=False)
             ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-            helpers.wait_for_disks_and_snapshots(self.vm_name)
+            helpers.wait_for_disks_and_snapshots(
+                self.vm_name, live_operation=config.LIVE_MOVE
+            )
+            assert ll_vms.verify_vm_disk_moved(
+                vm_name=self.vm_name, disk_name=disk,
+                source_sd=self.storage_domain, target_sd=target_sd
+            ), "Failed to migrate VM %s disk %s" % (self.vm_name, disk)
 
 
 @pytest.mark.usefixtures(
     delete_disks.__name__,
     add_disk.__name__,
     attach_disk_to_vm.__name__,
-    start_vm.__name__,
     wait_for_disks_and_snapshots.__name__
 )
 class TestCase5986(BaseTestCase):
@@ -567,15 +589,16 @@ class TestCase5986(BaseTestCase):
         Expected Results:
             - Move should failed, rollback should occur
         """
+        self.check_if_live_move([self.vm_name])
         target_sd = ll_disks.get_other_storage_domain(
             self.new_disk_name, self.vm_name,
             force_type=config.MIGRATE_SAME_TYPE
         )
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, self.new_disk_name, target_sd
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, self.new_disk_name, target_sd,
             LIVE_MIGRATE_LARGE_SIZE, wait=True
         )
@@ -611,18 +634,18 @@ class TestCase5995(AllPermutationsDisks):
         target_sd = ll_disks.get_other_storage_domain(
             self.disk_to_move, vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
-        testflow.step("Start VM %s", self.vm_name)
-        ll_vms.start_vms([vm_name], 1, config.VM_UP, False)
+        self.check_if_live_move([self.vm_name])
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, self.disk_to_move, target_sd
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, self.disk_to_move, target_sd, LIVE_MIGRATION_TIMEOUT
         )
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
-        testflow.step("Stop VM %s", self.vm_name)
-        ll_vms.stop_vms_safely([self.vm_name])
+        if config.LIVE_MOVE:
+            testflow.step("Stop VM %s", self.vm_name)
+            ll_vms.stop_vms_safely([self.vm_name])
 
     @polarion("RHEVM3-5995")
     @attr(tier=2)
@@ -636,7 +659,6 @@ class TestCase5995(AllPermutationsDisks):
 
 @pytest.mark.usefixtures(
     delete_disks.__name__,
-    start_vm.__name__,
     add_disk.__name__,
     wait_for_disks_and_snapshots.__name__
 )
@@ -662,6 +684,7 @@ class BaseTestCase5996(BaseTestCase):
         """
         Performs migration with hotplugged disk
         """
+        self.check_if_live_move([self.vm_name])
         testflow.step(
             "Attaching disk %s to VM %s", self.new_disk_name, vm_name
         )
@@ -692,9 +715,10 @@ class BaseTestCase5996(BaseTestCase):
             inactive_disk, type(inactive_disk)
         )
         ll_vms.waitForVmsDisks(vm_name)
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
-            vm_name, LIVE_MIGRATION_TIMEOUT, same_type=config.MIGRATE_SAME_TYPE
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
+            vm_name, LIVE_MIGRATION_TIMEOUT, wait=config.LIVE_MOVE,
+            ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
 
 
@@ -722,7 +746,6 @@ class TestCase5996_active_disk(BaseTestCase5996):
 
 @pytest.mark.usefixtures(
     delete_disks.__name__,
-    start_vm.__name__,
     add_disk.__name__,
     wait_for_disks_and_snapshots.__name__
 )
@@ -744,32 +767,40 @@ class BaseTestCase6003(BaseTestCase):
             active (bool): Specifies whether disk should be activated after
             being attached to VM
         """
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
+        self.check_if_live_move([self.vm_name])
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, timeout=LIVE_MIGRATION_TIMEOUT, wait=False,
-            same_type=config.MIGRATE_SAME_TYPE
+            ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
-        logger.info(
-            "Wait until the LSM start creating '%s'",
-            config.LIVE_SNAPSHOT_DESCRIPTION
-        )
-        ll_vms.wait_for_vm_snapshots(
-            vm_name=self.vm_name, states=config.SNAPSHOT_LOCKED,
-            snapshots_description=config.LIVE_SNAPSHOT_DESCRIPTION
-        )
+        if config.LIVE_MOVE:
+            logger.info(
+                "Wait until the migration start creating '%s'",
+                config.LIVE_SNAPSHOT_DESCRIPTION
+            )
+            assert ll_vms.wait_for_snapshot_creation(
+                vm_name=self.vm_name,
+                snapshot_description=config.LIVE_SNAPSHOT_DESCRIPTION
+            ), "Snapshot %s was not found" % config.LIVE_SNAPSHOT_DESCRIPTION
+        else:
+            disk_objecs = ll_vms.getObjDisks(self.vm_name, get_href=False)
+            vm_disks_names = [disk.get_name() for disk in disk_objecs]
+            ll_disks.wait_for_disks_status(
+                vm_disks_names, status=config.DISK_LOCKED
+            )
         testflow.step(
             "Attach disk %s to VM %s", self.new_disk_name, self.vm_name
         )
+        should_succeed = not config.LIVE_MOVE
         assert ll_disks.attachDisk(
-            positive=False, alias=self.new_disk_name, vm_name=self.vm_name,
-            active=active
-        ), "Succeeded to attach disk during LSM"
+            positive=should_succeed, alias=self.new_disk_name,
+            vm_name=self.vm_name, active=active
+        ), "Succeeded to attach disk during migration"
 
 
 class TestCase6003_active_disk(BaseTestCase6003):
 
     @polarion("RHEVM3-6003")
-    @bz({'1416382': {}})
     @attr(tier=3)
     def test_attach_active_disk_during_lsm(self):
         """
@@ -782,7 +813,6 @@ class TestCase6003_active_disk(BaseTestCase6003):
 class TestCase6003_inactive_disk(BaseTestCase6003):
 
     @polarion("RHEVM3-5980")
-    @bz({'1416382': {}})
     @attr(tier=3)
     def test_attach_inactive_disk_during_lsm(self):
         """
@@ -799,7 +829,6 @@ class TestCase6003_inactive_disk(BaseTestCase6003):
 
 
 @pytest.mark.usefixtures(
-    start_vm.__name__,
     initialize_domain_to_deactivate.__name__,
     deactivate_domain.__name__,
     wait_for_disks_and_snapshots.__name__
@@ -820,12 +849,13 @@ class TestCase6001(BaseTestCase):
         Try to migrate to a domain in maintenance
         * we should fail to attach disk
         """
+        self.check_if_live_move([self.vm_name])
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, self.vm_disk.get_alias(), self.target_sd
         )
         with pytest.raises(exceptions.DiskException):
-            ll_vms.live_migrate_vm_disk(
+            ll_vms.migrate_vm_disk(
                 self.vm_name, self.vm_disk.get_alias(), self.target_sd,
                 LIVE_MIGRATION_TIMEOUT, True
             )
@@ -834,7 +864,6 @@ class TestCase6001(BaseTestCase):
 @pytest.mark.usefixtures(
     delete_disks.__name__,
     create_disks_for_vm.__name__,
-    start_vm.__name__,
     wait_for_disks_and_snapshots.__name__
 )
 class TestCase5972(BaseTestCase):
@@ -857,12 +886,13 @@ class TestCase5972(BaseTestCase):
         Expected Results:
             - Move should succeed
         """
+        self.check_if_live_move([self.vm_name])
         for disk in self.disk_names[:-1]:
             testflow.step(
-                "Live migrate VM %s disk %s to storage domain %s",
+                "Migrate VM %s disk %s to storage domain %s",
                 self.vm_name, disk, self.storage_domains[2]
             )
-            ll_vms.live_migrate_vm_disk(
+            ll_vms.migrate_vm_disk(
                 self.vm_name, disk, self.storage_domains[2]
             )
 
@@ -871,7 +901,6 @@ class TestCase5972(BaseTestCase):
     delete_disks.__name__,
     add_disk.__name__,
     attach_disk_to_vm.__name__,
-    start_vm.__name__,
     wait_for_disks_and_snapshots.__name__
 )
 class TestCase5970(BaseTestCase):
@@ -899,41 +928,52 @@ class TestCase5970(BaseTestCase):
             - Make sure that we actually post zero when removing the source
               disk and snapshot
         """
-        host = ll_hosts.get_spm_host(config.HOSTS)
-        self.host_ip = ll_hosts.get_host_ip(host)
         target_sd = ll_disks.get_other_storage_domain(
             self.new_disk_name, self.vm_name,
             force_type=config.MIGRATE_SAME_TYPE
         )
-        disk_obj = ll_disks.getVmDisk(self.vm_name, self.new_disk_name)
-        self.regex = self.regex % disk_obj.get_image_id()
+        self.check_if_live_move([self.vm_name])
 
-        def f(q):
-            q.put(
-                watch_logs(
-                    files_to_watch=config.VDSM_LOG, regex=self.regex,
-                    time_out=LIVE_MIGRATION_TIMEOUT, ip_for_files=self.host_ip,
-                    username=config.HOSTS_USER, password=config.HOSTS_PW
+        if config.LIVE_MOVE:
+            host = ll_hosts.get_spm_host(config.HOSTS)
+            self.host_ip = ll_hosts.get_host_ip(host)
+            disk_obj = ll_disks.getVmDisk(self.vm_name, self.new_disk_name)
+            self.regex = self.regex % disk_obj.get_image_id()
+
+            def f(q):
+                q.put(
+                    watch_logs(
+                        files_to_watch=config.VDSM_LOG, regex=self.regex,
+                        time_out=LIVE_MIGRATION_TIMEOUT,
+                        ip_for_files=self.host_ip, username=config.HOSTS_USER,
+                        password=config.HOSTS_PW
+                    )
                 )
-            )
 
-        q = Queue()
-        p = Process(target=f, args=(q,))
-        p.start()
-        sleep(5)
+            q = Queue()
+            p = Process(target=f, args=(q,))
+            p.start()
+            sleep(5)
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, self.new_disk_name, target_sd
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, self.new_disk_name, target_sd, wait=False
         )
-        p.join()
-        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-        exception_code, output = q.get()
-        assert exception_code, "Couldn't find regex %s, output: %s" % (
-            self.regex, output
+        if config.LIVE_MOVE:
+            p.join()
+        helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
         )
+        assert ll_vms.verify_vm_disk_moved(
+            self.vm_name, self.new_disk_name, self.storage_domain, target_sd
+        ),  "Succeded to move disk %s" % self.new_disk_name
+        if config.LIVE_MOVE:
+            exception_code, output = q.get()
+            assert exception_code, "Couldn't find regex %s, output: %s" % (
+                self.regex, output
+            )
 
 
 @pytest.mark.usefixtures(
@@ -966,15 +1006,16 @@ class TestCase5968(AllPermutationsDisks):
             target_sd = ll_disks.get_other_storage_domain(
                 disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
-            testflow.step("Start VM %s", self.vm_name)
-            ll_vms.startVm(True, self.vm_name, config.VM_UP)
+            self.check_if_live_move([self.vm_name])
+
             testflow.step(
-                "Live migrate VM %s disk %s to storage domain %s",
+                "Migrate VM %s disk %s to storage domain %s",
                 self.vm_name, disk, target_sd
             )
-            ll_vms.live_migrate_vm_disk(self.vm_name, disk, target_sd)
-            testflow.step("Stop VM %s", self.vm_name)
-            assert ll_vms.stop_vms_safely([self.vm_name])
+            ll_vms.migrate_vm_disk(self.vm_name, disk, target_sd)
+            if config.LIVE_MOVE:
+                testflow.step("Stop VM %s", self.vm_name)
+                assert ll_vms.stop_vms_safely([self.vm_name])
             testflow.step("Remove VM %s snapshots", self.vm_name)
             ll_vms.remove_all_vm_lsm_snapshots(self.vm_name)
             ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
@@ -982,11 +1023,11 @@ class TestCase5968(AllPermutationsDisks):
             actual_size = disk_obj.get_actual_size()
             virtual_size = disk_obj.get_provisioned_size()
             logger.info(
-                "Actual size after live migrate disk %s is: %s",
+                "Actual size after migrate disk %s is: %s",
                 disk, actual_size
             )
             logger.info(
-                "Virtual size after live migrate disk %s is: %s",
+                "Virtual size after migrate disk %s is: %s",
                 disk, virtual_size
             )
             if self.storage in config.BLOCK_TYPES:
@@ -1028,34 +1069,34 @@ class TestCase5967(AllPermutationsDisks):
             target_sd = ll_disks.get_other_storage_domain(
                 disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
-            testflow.step("Start VM %s", self.vm_name)
-            ll_vms.startVm(True, self.vm_name, config.VM_UP)
+            self.check_if_live_move([self.vm_name])
             testflow.step(
-                "Live migrate VM %s disk %s to storage domain %s",
+                "Migrate VM %s disk %s to storage domain %s",
                 self.vm_name, disk, target_sd
             )
-            ll_vms.live_migrate_vm_disk(
+            ll_vms.migrate_vm_disk(
                 self.vm_name, disk, target_sd, wait=False
             )
             ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
-            testflow.step("Stop VM %s", self.vm_name)
-            assert ll_vms.stop_vms_safely([self.vm_name]), (
-                "Failed to stop VM %s" % self.vm_name
-            )
+            if config.LIVE_MOVE:
+                testflow.step("Stop VM %s", self.vm_name)
+                assert ll_vms.stop_vms_safely([self.vm_name]), (
+                    "Failed to stop VM %s" % self.vm_name
+                )
             helpers.wait_for_disks_and_snapshots(self.vm_name)
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk)
             actual_size = disk_obj.get_actual_size()
             virtual_size = disk_obj.get_provisioned_size()
             testflow.step(
-                "Verify disk %s actual size < Virtual size after live migrate",
+                "Verify disk %s actual size < Virtual size after migrate",
                 disk
             )
             logger.info(
-                "Actual size after live migrate disk %s is: %s",
+                "Actual size after migrate disk %s is: %s",
                 disk, actual_size
             )
             logger.info(
-                "Virtual size after live migrate disk %s is: %s",
+                "Virtual size after migrate disk %s is: %s",
                 disk, virtual_size
             )
             if self.storage in config.BLOCK_TYPES:
@@ -1101,10 +1142,10 @@ class TestCase5979(BaseTestCase):
             force_type=config.MIGRATE_SAME_TYPE
         )
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, self.new_disk_name, target_sd
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, self.new_disk_name, target_sd
         )
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
@@ -1153,22 +1194,22 @@ class TestCase5976(BaseTestCase):
             key='id'
         )
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, self.new_disk_name, target_sd
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, self.new_disk_name, target_sd=target_sd, wait=False
         )
         ll_disks.wait_for_disks_status(
             disk_id, key='id', status=config.DISK_LOCKED
         )
         testflow.step(
-            "Try to deactivate disk %s while preforming live migration",
+            "Try to deactivate disk %s while preforming migration",
             self.new_disk_name
         )
         assert ll_vms.deactivateVmDisk(
             False, self.vm_name, self.new_disk_name
-        ), "Succeeded to deactivate disk %s during live migration" % (
+        ), "Succeeded to deactivate disk %s during migration" % (
             self.new_disk_name
         )
 
@@ -1186,8 +1227,8 @@ class BaseTestCase5977(BaseTestCase):
     polarion_test_case = '5977'
 
     def _migrate_vm_during_lsm_ops(self, wait):
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, wait=wait, same_type=config.MIGRATE_SAME_TYPE
         )
         if wait:
@@ -1227,14 +1268,14 @@ class TestCase5977_vm_migration(BaseTestCase5977):
         testflow.step("Start VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         testflow.step(
-            "Migrate VM %s to another host and try to live migrate VM disk",
+            "Migrate VM %s to another host and try to migrate VM disk",
             self.vm_name
         )
         ll_vms.migrateVm(
             positive=True, vm=self.vm_name, host=spm_host, wait=False
         )
         with pytest.raises(exceptions.DiskException):
-            ll_vms.live_migrate_vm_disk(
+            ll_vms.migrate_vm_disk(
                 self.vm_name, disk_name, target_sd, wait=False
             )
         ll_jobs.wait_for_jobs([config.JOB_MIGRATE_VM])
@@ -1259,7 +1300,9 @@ class TestCase5977_snapshot_creation(BaseTestCase5977):
         """
         self.vms_to_wait.append(self.vm_name)
         status = self._migrate_vm_during_lsm_ops(wait=False)
-        assert not status, "Succeeded to migrate vm during LSM"
+        assert not status, (
+            "Succeeded to migrate vm during migration snapshot creation"
+        )
 
 
 class TestCase5977_after_lsm(BaseTestCase5977):
@@ -1281,7 +1324,7 @@ class TestCase5977_after_lsm(BaseTestCase5977):
         """
         self.vms_to_wait.append(self.vm_name)
         status = self._migrate_vm_during_lsm_ops(wait=True)
-        assert status, "Succeeded to migrate vm during LSM"
+        assert status, "Succeeded to migrate vm after storage migration"
 
 
 @pytest.mark.usefixtures(
@@ -1290,9 +1333,7 @@ class TestCase5977_after_lsm(BaseTestCase5977):
     add_two_storage_domains.__name__,
     initialize_params.__name__,
     create_vm.__name__,
-    initialize_disk_args.__name__,
     add_disk.__name__,
-    update_vm_disk.__name__,
     wait_for_disks_and_snapshots.__name__,
     poweroff_vm.__name__,
 )
@@ -1319,13 +1360,16 @@ class BaseTestCase5975(StorageTest):
 
     def basic_flow(self):
         disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
-        testflow.step("Start VM %s", self.vm_name)
-        assert ll_vms.startVm(True, self.vm_name, config.VM_UP)
+        if config.LIVE_MOVE:
+            testflow.step("Start VM %s", self.vm_name)
+            assert ll_vms.startVm(
+                positive=True, vm=self.vm_name, wait_for_status=config.VM_UP
+            )
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, disk_name, self.sd_target
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, disk_name, self.sd_target, wait=False
         )
 
@@ -1414,10 +1458,10 @@ class TestCase6000(BaseTestCase):
         testflow.step("Start VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, disk, target
         )
-        ll_vms.live_migrate_vm_disk(self.vm_name, disk, target, wait=False)
+        ll_vms.migrate_vm_disk(self.vm_name, disk, target, wait=False)
         testflow.step("Block connection between %s to %s", source, target_ip)
         status = blockOutgoingConnection(source, username, password, target_ip)
         assert status, "Failed to block connection"
@@ -1485,15 +1529,16 @@ class TestCase6002(BaseTestCase):
         self.target_sd = ll_disks.get_other_storage_domain(
             vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
-        testflow.step("Start VM %s", self.vm_name)
-        assert ll_vms.startVm(
-            positive=True, vm=self.vm_name, placement_host=spm_host,
-            wait_for_status=config.VM_UP
-        )
-        testflow.step("Live migrate VM %s", self.vm_name)
-        ll_vms.live_migrate_vm(
+        if config.LIVE_MOVE:
+            testflow.step("Start VM %s", self.vm_name)
+            assert ll_vms.startVm(
+                positive=True, vm=self.vm_name, placement_host=spm_host,
+                wait_for_status=config.VM_UP
+            )
+        testflow.step("Migrate VM %s", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
-            target_domain=self.target_sd
+            ensure_on=config.LIVE_MOVE, target_domain=self.target_sd
         )
         testflow.step("Restart vdsmd on host %s", spm_host)
         assert restartVdsmd(spm_host_ip, config.HOSTS_PW), (
@@ -1550,9 +1595,10 @@ class BaseTestCase5999(BaseTestCase):
         source_sd = ll_disks.get_disk_storage_domain_name(
             vm_disk, self.vm_name
         )
-        testflow.step("Live migrate VM %s", self.vm_name)
-        ll_vms.live_migrate_vm(
-            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        testflow.step("Migrate VM %s", self.vm_name)
+        ll_vms.migrate_vm_disks(
+            self.vm_name, wait=False, ensure_on=config.LIVE_MOVE,
+            same_type=config.MIGRATE_SAME_TYPE
         )
         testflow.step("Rebooting Host %s", host)
         executor = rhevm_helpers.get_host_executor(host_ip, config.HOSTS_PW)
@@ -1575,7 +1621,7 @@ class BaseTestCase5999(BaseTestCase):
         assert not ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, source_sd
         ), (
-            "Succeeded to live migrate VM %s disk %s during %s host reboot" % (
+            "Succeeded to migrate VM %s disk %s during %s host reboot" % (
                 self.vm_name, vm_disk, "SPM" if spm else "HSM"
             )
         )
@@ -1640,8 +1686,8 @@ class BaseTestCase5997(BaseTestCase):
         source_sd = ll_disks.get_disk_storage_domain_name(
             vm_disk, self.vm_name
         )
-        testflow.step("Live migrate VM %s disks", self.vm_name)
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
         )
         testflow.step("Killing VM's %s pid", self.vm_name)
@@ -1657,7 +1703,7 @@ class BaseTestCase5997(BaseTestCase):
         ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = ll_vms.verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
-        assert not status, "Succeeded to live migrate vm disk %s" % vm_disk
+        assert not status, "Succeeded to migrate vm disk %s" % vm_disk
 
 
 class TestCase5997_ha_vm(BaseTestCase5997):
@@ -1730,8 +1776,7 @@ class TestCase5985(BaseTestCase):
         self.disk_name = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
-        testflow.step("Start VM %s", self.vm_name)
-        ll_vms.startVm(True, self.vm_name, config.VM_UP)
+        self.check_if_live_move([self.vm_name])
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         source_sd = ll_disks.get_disk_storage_domain_name(
             vm_disk, self.vm_name
@@ -1741,10 +1786,10 @@ class TestCase5985(BaseTestCase):
         )
         sd_size = ll_sd.get_free_space(target_sd)
         testflow.step(
-            "Live migrate VM %s disk %s to storage domain %s",
+            "Migrate VM %s disk %s to storage domain %s",
             self.vm_name, vm_disk, target_sd
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, vm_disk, target_sd, wait=False
         )
         testflow.step("Add disk %s", self.disk_name)
@@ -1759,12 +1804,11 @@ class TestCase5985(BaseTestCase):
         )
         assert not ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, source_sd, target_sd
-        ), "Succeeded to live migrate vm disk %s" % vm_disk
+        ), "Succeeded to migrate vm disk %s" % vm_disk
 
 
 @pytest.mark.usefixtures(
     delete_disks.__name__,
-    start_vm.__name__,
     create_disks_for_vm.__name__,
     deactivate_domain.__name__,
     wait_for_disks_and_snapshots.__name__
@@ -1792,30 +1836,31 @@ class TestCase5971(BaseTestCase):
         Expected Results:
             - We should fail migrate
         """
+        self.check_if_live_move([self.vm_name])
         for index, disk in enumerate(self.disk_names):
             src_sd = ll_disks.get_disk_storage_domain_name(disk, self.vm_name)
             target_sd = ll_disks.get_other_storage_domain(
                 disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
             testflow.step(
-                "%sLive migrate VM %s disk %s to storage domain %s",
+                "%sMigrate VM %s disk %s to storage domain %s",
                 "Try to " if index == 2 else "",
                 self.vm_name, disk, self.storage_domains[2]
             )
             if index == 2:
                 with pytest.raises(exceptions.DiskException):
-                    ll_vms.live_migrate_vm_disk(self.vm_name, disk, target_sd)
+                    ll_vms.migrate_vm_disk(self.vm_name, disk, target_sd)
 
                 assert not ll_vms.verify_vm_disk_moved(
                     self.vm_name, disk, src_sd
-                ), "Succeeded to live migrate disk %s" % disk
+                ), "Succeeded to migrate disk %s" % disk
             else:
-                ll_vms.live_migrate_vm_disk(
+                ll_vms.migrate_vm_disk(
                     self.vm_name, disk, target_sd=target_sd
                 )
                 assert ll_vms.verify_vm_disk_moved(
                     self.vm_name, disk, src_sd
-                ), "Failed to live migrate disk %s" % disk
+                ), "Failed to migrate disk %s" % disk
 
 
 @pytest.mark.usefixtures(
@@ -1849,8 +1894,8 @@ class BaseTestCase5966(BaseTestCase):
         self.host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=self.restart_vdsm_host
         )
-        testflow.step("Live migrate VM %s", self.vm_name)
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, wait=wait, same_type=config.MIGRATE_SAME_TYPE
         )
 
@@ -1876,7 +1921,7 @@ class TestCase5966_during_lsm(BaseTestCase5966):
         )
         assert not ll_vms.verify_vm_disk_moved(
             self.vm_name, self.vm_disk, self.source_sd
-        ), "Failed to live migrate disk %s" % self.vm_disk
+        ), "Failed to migrate disk %s" % self.vm_disk
 
 
 class TestCase5966_during_second_lsm(BaseTestCase5966):
@@ -1899,8 +1944,8 @@ class TestCase5966_during_second_lsm(BaseTestCase5966):
         self.source_sd = ll_disks.get_disk_storage_domain_name(
             self.vm_disk, self.vm_name
         )
-        testflow.step("Live migrate VM %s", self.vm_name)
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s", self.vm_name)
+        ll_vms.migrate_vm_disks(
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
         )
         testflow.step("Kill vdsmd on host %s", self.restart_vdsm_host)
@@ -1909,7 +1954,7 @@ class TestCase5966_during_second_lsm(BaseTestCase5966):
         )
         assert not ll_vms.verify_vm_disk_moved(
             self.vm_name, self.vm_disk, self.source_sd
-        ), "Failed to live migrate disk %s" % self.vm_disk
+        ), "Failed to migrate disk %s" % self.vm_disk
 
 
 @pytest.mark.usefixtures(
@@ -1981,7 +2026,7 @@ class TestCase5981(AllPermutationsDisks):
                 "Live migrate VM %s disk %s to storage domain %s",
                 self.vm_name, disk, target_sd
             )
-            ll_vms.live_migrate_vm_disk(
+            ll_vms.migrate_vm_disk(
                 self.vm_name, disk, target_sd, wait=False
             )
             p.join()
@@ -2000,7 +2045,7 @@ class TestCase5981(AllPermutationsDisks):
             )
             assert status, "dd didn't start writing to disk"
             logger.info(
-                "Stop the vm while the live storage migration is running",
+                "Stop the VM while the storage migration is running",
             )
             vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
             source_sd = ll_disks.get_disk_storage_domain_name(
@@ -2032,7 +2077,7 @@ class TestCase5981(AllPermutationsDisks):
             ), "A new SPM host was not elected"
             assert not ll_vms.verify_vm_disk_moved(
                 self.vm_name, disk, source_sd, target_sd
-            ), "Succeeded to live migrate vm disk %s" % disk
+            ), "Succeeded to migrate vm disk %s" % disk
             testflow.step("Stop VM %s", self.vm_name)
             ll_vms.stop_vms_safely([self.vm_name])
 
@@ -2061,9 +2106,9 @@ class BaseTestCase5983(BaseTestCase):
             testflow.step("Run VM %s on host %s", vm, host)
             ll_vms.updateVm(True, vm, placement_host=host)
         ll_vms.start_vms(self.vm_names, 1, config.VM_UP, False)
-        testflow.step("Live migrate VM %s disks", self.vm_name)
+        testflow.step("Migrate VM %s disks", self.vm_name)
         for vm in self.vm_names:
-            ll_vms.live_migrate_vm(vm, same_type=config.MIGRATE_SAME_TYPE)
+            ll_vms.migrate_vm_disks(vm, same_type=config.MIGRATE_SAME_TYPE)
 
 
 class TestCase5983_spm(BaseTestCase5983):
@@ -2149,12 +2194,12 @@ class TestCase5974(BaseTestCase):
         ), "Failed to block connection from host %s to storage domain %s" % (
             cls.host_ip, cls.storage_domain_ip
         )
-        testflow.step("Live migrate VM %s", cls.vm_name)
-        ll_vms.live_migrate_vm(
+        testflow.step("Migrate VM %s", cls.vm_name)
+        ll_vms.migrate_vm_disks(
             cls.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
             target_domain=cls.target_sd
         )
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         assert not ll_vms.verify_vm_disk_moved(
             cls.vm_name, vm_disk, source_sd, target_sd=cls.target_sd
-        ), "Succeeded to live migrate vm disk %s" % vm_disk
+        ), "Succeeded to migrate VM disk %s" % vm_disk

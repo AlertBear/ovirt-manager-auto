@@ -10,7 +10,6 @@ import hashlib
 import time
 import multiprocessing
 import multiprocessing.dummy
-
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources.storage as storage_resources
@@ -797,20 +796,18 @@ def prepare_disks_with_fs_for_vm(
     """
     Prepare disks with filesystem for vm
 
-    :param storage_domain: Name of the storage domain to be used for
-    disk creation
-    :type storage_domain: str
-    :param storage_type: Storage type to be used with the disk creation
-    :type storage_type: str
-    :param vm_name: Name of the VM under which a disk with a file system
-    will be created
-    :type vm_name: str
-    :return: Tuple of 2 lists:
-    (
-    disk_ids - list of new disk IDs
-    mount_points - list of mount points for each disk
-    )
-    :rtype: tuple
+    Args:
+        storage_domain (str): Name of the storage domain to be used for disk
+        creation
+        storage_type (str): Storage type to be used with the disk creation
+        vm_name (str): Name of the VM under which a disk with a file system
+        will be created
+        executor (Host resource): Host resource on which commands can
+        be executed
+
+    Returns:
+        Tuple of 2 lists: disk_ids - list of new disk IDs,
+        mount_points - list of mount points for each disk
     """
     disk_ids = list()
     mount_points = list()
@@ -1449,18 +1446,24 @@ def create_filesystem(
     return targetDir
 
 
-def get_hsm_host(job_description, step_description):
+def get_hsm_host(
+    job_description, step_description, wait_for_step_to_start=False
+):
     """
     Get Host resource
 
     Arguments:
         job_description (str): Job description for retrieving is HSM host
         step_description (str): Step description for retrieving is HSM host
+        wait_for_step_to_start (bool): True if wait for step to start, False
+        otherwise
 
     Returns:
         Host resource
     """
     job_object = ll_jobs.get_job_object(job_description, config.JOB_STARTED)
+    if wait_for_step_to_start:
+        ll_jobs.wait_for_step_to_start(job_object, step_description)
     step_object = ll_jobs.step_by_description(job_object, step_description)
     if step_object:
         host_obj = ll_hosts.get_host_object(

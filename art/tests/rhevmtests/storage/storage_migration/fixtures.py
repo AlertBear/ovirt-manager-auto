@@ -13,6 +13,7 @@ from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
 from art.rhevm_api.utils import test_utils
+from rhevmtests.storage.fixtures import create_disks_with_fs
 import rhevmtests.storage.helpers as storage_helpers
 
 DEFAULT_DISK_TIMEOUT = 180
@@ -28,21 +29,6 @@ def initialize_params(request):
     self.vm_disk_name = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_DISK
     )
-    self.disk_sd = self.storage_domain
-
-
-@pytest.fixture()
-def initialize_disk_args(request):
-    """
-    Initialize disk parameters
-    """
-    self = request.node.cls
-
-    disk_obj = ll_vms.getVmDisks(self.vm_name)[0]
-    self.disk_kwargs = {
-        'vmName': self.vm_name, 'alias': self.vm_disk_name,
-        'id': disk_obj.get_id(), 'interface': config.VIRTIO
-    }
 
 
 @pytest.fixture()
@@ -364,3 +350,94 @@ def add_two_storage_domains(request):
             config.ENGINE, config.DATA_CENTER_NAME
         )
     self.storage_domain = self.disk_storage_domains = self.sd_src
+
+
+@pytest.fixture()
+def create_vm_on_different_sd(request):
+    """
+    Create VM on storage domain in a different data center
+    """
+    self = request.node.cls
+
+    def finalizer():
+        """
+        Remove the VM
+        """
+        testflow.teardown("Remove VM %s", self.vm_name)
+        assert ll_vms.safely_remove_vms([self.vm_name]), (
+            "Failed to power off and remove VM %s" % self.vm_name_2
+        )
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+    request.addfinalizer(finalizer)
+
+    self.vm_name = storage_helpers.create_unique_object_name(
+        self.__name__, config.OBJECT_TYPE_VM
+    )
+    vm_args = config.clone_vm_args.copy()
+    vm_args['storageDomainName'] = self.new_storage_domain
+    vm_args['name'] = self.vm_name
+    vm_args['cluster'] = self.cluster_name
+    vm_args['template'] = self.glance_templte_name
+    vm_args['clone'] = True
+    testflow.setup("Creating VM %s", self.vm_name)
+    assert ll_vms.cloneVmFromTemplate(**vm_args), (
+        "Failed to create VM %s" % self.vm_name
+    )
+    # TODO: mark the boot disk as workaround for bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1303320
+    disks_obj = ll_vms.getVmDisks(self.vm_name)
+    assert ll_disks.updateDisk(
+        positive=True, vmName=self.vm_name, id=disks_obj[0].get_id(),
+        bootable=True
+    )
+    assert ll_vms.addNic(
+            positive=True, vm=self.vm_name, name=config.NIC_NAME[0],
+            network=config.MGMT_BRIDGE
+    )
+
+
+@pytest.fixture(scope='class')
+def remove_storage_domain(request):
+    """
+    Remove storage domain
+    """
+    self = request.node.cls
+
+    def finalizer():
+        dc_name = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
+        if ll_sd.checkIfStorageDomainExist(
+            True, self.second_storage_domain_name
+        ):
+            testflow.teardown(
+                "Remove storage domain %s", self.second_storage_domain_name
+            )
+            assert hl_sd.remove_storage_domain(
+                self.second_storage_domain_name, dc_name, self.host_name,
+                engine=config.ENGINE, format_disk=True
+            ), "Failed to remove storage domain %s" % (
+                self.second_storage_domain_name
+            )
+    request.addfinalizer(finalizer)
+    self.second_storage_domain_name = (
+        storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SD
+        )
+    )
+
+
+@pytest.fixture()
+def create_disks_with_fs_for_vms(request):
+    """
+    Create disks from all permutation and create filesystem on them for each VM
+    in vm_names, saves all the needed data in dict object with vm_names as keys
+    and the value is dict (with keys: disks, mount_points, executor)
+    """
+    self = request.node.cls
+
+    ll_vms.start_vms(
+        vm_list=self.vm_names, max_workers=4, wait_for_status=config.VM_UP
+    )
+    for vm_name in self.vm_names:
+        self.vm_name = vm_name
+        create_disks_with_fs(request)
+    assert ll_vms.stop_vms_safely(vms_list=self.vm_names)

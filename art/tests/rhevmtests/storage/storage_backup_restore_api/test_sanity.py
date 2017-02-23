@@ -812,7 +812,7 @@ class TestCase6173(BaseTestCase):
         self.destination_sd = ll_vms.get_other_storage_domain(
             snapshot_disk_name, self.src_vm
         )
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.src_vm, snapshot_disk_name, self.destination_sd,
             wait=False
         )

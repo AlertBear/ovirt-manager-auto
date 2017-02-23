@@ -342,4 +342,12 @@ MOUNT_POINTS = dict()
 
 # HSM Verbs
 COPY_VOLUME_VERB = 'Copying Volume'
+
 REBOOT_CMD = 'reboot'
+
+CHECKSUM_FILES = dict()
+
+# Dictionary which contain vm_name as keys of each VM, the value is
+# another dictionary that holds the VM mount points, disks ids and vm executor
+# under the keys: 'disks', 'mount_points', 'executor'
+DISKS_MOUNTS_EXECUTOR = dict()

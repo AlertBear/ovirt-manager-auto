@@ -263,7 +263,7 @@ class TestCase11864(CommonUsage):
         self.disk_id = ll_disks.getVmDisk(
             self.vm_name, alias=self.disk_name
         ).get_id()
-        ll_vms.live_migrate_vm_disk(
+        ll_vms.migrate_vm_disk(
             self.vm_name, self.disk_name, second_domain, wait=False
         )
         ll_disks.wait_for_disks_status(

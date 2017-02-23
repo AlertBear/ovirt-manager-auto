@@ -452,6 +452,7 @@ DISK_TYPE_SYSTEM = ENUMS['disk_type_system']
 DISK_TYPE_DATA = ENUMS['disk_type_data']
 DISK_TYPE_LUN = ENUMS['disk_type_lun']
 DISK_LOCKED = ENUMS['disk_state_locked']
+DISK_OK = ENUMS['disk_state_ok']
 
 
 # Disk sizes
