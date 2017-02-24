@@ -205,55 +205,47 @@ def create_disks_from_requested_permutations(
 
 def perform_dd_to_disk(
     vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
-    write_to_file=False
+    write_to_file=False, vm_executor=None
 ):
     """
-    Function that performs dd command from the bootable device to the requested
-    disk (by alias)
-    **** Important note: Guest Agent must be installed in the OS for this
-    function to work ****
+    Args:
+        vm_name (str): Name of the vm which which contains the disk on which
+            the dd should be performed
+        disk_alias (str): The alias of the disk on which the dd operations
+            will occur
+        protect_boot_device (bool): True if boot device should be protected and
+            writing to this device ignored, False if boot device should be
+            overwritten (use with caution!)
+        size (int): Number of bytes to dd (Default size 20MB)
+        write_to_file (bool): Determines whether a file should be written into
+        the file system (True) or directly to the device (False)
 
-    __author__ = "glazarov"
-    :param vm_name: name of the vm which which contains the disk on which
-    the dd should be performed
-    :type: str
-    :param disk_alias: The alias of the disk on which the dd operations will
-    occur
-    :type disk_alias: str
-    :param protect_boot_device: True if boot device should be protected and
-    writing to this device ignored, False if boot device should be
-    overwritten (use with caution!)
-    : type protect_boot_device: bool
-    :param size: number of bytes to dd (Default size 20MB)
-    :type size: int
-    :param write_to_file: Determines whether a file should be written into the
-    file system (True) or directly to the device (False)
-    :param write_to_file: bool
-    :returns: ecode and output
-    :rtype: tuple
+    Returns
+        tuple: (bool, str) - Return code and output from 'dd' command execution
+
+    Raises:
+        AssertionError: In case of any failure
+
+
     """
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(
-        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
-    ).util(LINUX)
+    if not vm_executor:
+        vm_executor = get_vm_executor(vm_name)
     vm_disks = ll_vms.getVmDisks(vm_name)
     boot_disk = [
         disk.get_id() for disk in vm_disks if ll_vms.is_bootable_disk(
             vm_name, disk.get_id()
         )
     ][0]
-    boot_device = ll_vms.get_vm_disk_logical_name(
-        vm_name, boot_disk, key='id'
-    )
+    boot_device = ll_vms.get_vm_disk_logical_name(vm_name, boot_disk, key='id')
+
     disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
         vm_name, disk_alias
     )
-    if not disk_logical_volume_name:
-        # This function is used to test whether logical volume was found,
-        # raises an exception if it wasn't found
-        raise exceptions.DiskException(
-            "Failed to get %s disk logical name" % disk_alias
+    assert disk_logical_volume_name, (
+        "Failed to get VM's %s virtual disk %s logical name" % (
+            vm_name, disk_alias
         )
+    )
     logger.info(
         "The logical volume name for the requested disk is: '%s'",
         disk_logical_volume_name
@@ -265,7 +257,6 @@ def perform_dd_to_disk(
                 "disk alias translates into the boot device, this would "
                 "overwrite the OS"
             )
-
             return False, ERROR_MSG
 
     size_mb = size / config.MB
@@ -275,28 +266,32 @@ def perform_dd_to_disk(
             "Creating label: %s",
             CREATE_DISK_LABEL_CMD % disk_logical_volume_name
         )
-        rc, out = vm_machine.runCmd(
-            (CREATE_DISK_LABEL_CMD % disk_logical_volume_name).split()
+        rc, out, error = vm_executor.run_cmd(
+            shlex.split(CREATE_DISK_LABEL_CMD % disk_logical_volume_name)
         )
+        if rc:
+            logger.error("Failed to create disk label with error %s" % error)
+            return False, out
         logger.info("Output after creating disk label: %s", out)
-        if not rc:
-            return rc, out
+
         logger.info(
             "Creating partition %s",
             CREATE_DISK_PARTITION_CMD % disk_logical_volume_name
         )
-        rc, out = vm_machine.runCmd(
-            (CREATE_DISK_PARTITION_CMD % disk_logical_volume_name).split()
+        rc, out, error = vm_executor.run_cmd(
+            shlex.split(CREATE_DISK_PARTITION_CMD % disk_logical_volume_name)
         )
+        if rc:
+            logger.info(
+                "Failed to create disk partition with output %s and "
+                "error %s" % (out, error)
+            )
+            return False, out
         logger.info("Output after creating partition: %s", out)
-        if not rc:
-            return rc, out
-        # '1': create the fs as the first partition
-        # '?': createFileSystem will return a random mount point
-        mount_point = vm_machine.createFileSystem(
-            disk_logical_volume_name, '1', FILESYSTEM, '?',
+        rc, mount_point = create_fs_on_disk(vm_name, disk_alias, vm_executor)
+        assert rc, "Failed to create file system on disk %s" % (
+            disk_logical_volume_name
         )
-        assert mount_point
         destination = os.path.join(mount_point, TARGET_FILE)
         # IMPORTANT: This is exactly the size used by the ex4 partition data,
         # don't change
@@ -309,9 +304,17 @@ def perform_dd_to_disk(
     )
     logger.info("Performing command '%s'", command)
 
-    ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
+    rc, out, error = vm_executor.run_cmd(
+        shlex.split(command), io_timeout=DD_TIMEOUT
+    )
+    if rc:
+        logger.error(
+            "Failed to perform DD to disk %s with error %s" % (
+                disk_logical_volume_name, error
+            )
+        )
     logger.info("Output for dd: %s", out)
-    return ecode, out
+    return not rc, out
 
 
 def get_vm_ip(vm_name):
