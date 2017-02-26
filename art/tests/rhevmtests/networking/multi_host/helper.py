@@ -6,76 +6,100 @@ Helper for MultiHost
 """
 
 import logging
+
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as multi_host_conf
 import rhevmtests.networking.config as conf
-from art.rhevm_api.utils import test_utils
 import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+from art.rhevm_api.utils import test_utils
 
 logger = logging.getLogger("MultiHost_Helper")
 
 
 def update_network_and_check_changes(
-    net, nic=1, hosts=None, vds_hosts=None, matches=1, **kwargs
+    net, nic=1, hosts=None, matches=1, positive=True, **kwargs
 ):
     """
-    Update network and check that the updated network params are reflected
-    on engine and on the host
+    Update network and check that the network parameters are updated on engine
+    and host(s)
 
     Args:
         net (str): Network name
         nic (int or str): Host NIC index
-        hosts (list): Hosts list to check the changes on
-        vds_hosts (list): VDS resources list to check the changes on
+        hosts (list): Hosts indexes list to check the changes on
         matches (int): Number of matches to find in events
+        positive (bool): True for positive update, False for negative update
         kwargs (dict): Params for update network function
 
     Keyword Args:
-        vlan (str): VLAN id (str)
-        mtu (int): MTU value (int)
+        name (str): New network name
+        vlan (str): VLAN id
+        mtu (int): MTU value
         bridge (bool): Bridge value (True for VM network, False for non-VM)
 
     Returns:
-        bool: True/False
+        bool: If check for positive update, return True if update network
+            succeeded and applied successfully on engine and host.
+            If check for negative update, return True if update network failed,
+            False otherwise
     """
+    name = kwargs.get("name")
     vlan_id = kwargs.get("vlan_id")
     mtu = kwargs.get("mtu")
-    bridge = kwargs.get("bridge")
+    bridge = kwargs.pop("bridge", None)
     if bridge is not None:
-        kwargs.pop("bridge")
         kwargs["usages"] = "vm" if bridge else ""
+    hosts = hosts or [0]
 
-    hosts = hosts if hosts else [conf.HOST_0_NAME]
-    vds_hosts = vds_hosts if vds_hosts else [conf.VDS_0_HOST]
-    network_helper.call_function_and_wait_for_sn(
-        func=ll_networks.update_network, content=net, positive=True,
-        network=net, matches=matches, **kwargs
-    )
-    for host, vds_host in zip(hosts, vds_hosts):
-        #  Needed when NIC is BOND and not host NIC
-        nic = vds_host.nics[nic] if isinstance(nic, int) else nic
-        if mtu:
-            return check_mtu(
-                net=net, mtu=mtu, nic=nic, host=host,
-                vds_host=vds_host
-            )
-        if vlan_id:
-            return check_vlan(
-                net=net, vlan=vlan_id, nic=nic, host=host,
-                vds_host=vds_host
-            )
-        if bridge is not None:
-            return check_bridge(
-                net=net, bridge=bridge, nic=nic, host=host,
-                vds_host=vds_host
-            )
+    if positive:
+        # If network name will be changed, look for the new name in success
+        # event. Otherwise, look for the existing network name in event
+        content_to_search = name or net
+        # Wait for event id 1146, which indicate success to apply host network
+        # change
+        network_helper.call_function_and_wait_for_sn(
+            func=ll_networks.update_network, content=content_to_search,
+            positive=positive, network=net, matches=matches, **kwargs
+        )
+
+        # Go over the affected hosts and check for relevant OS changes
+        hosts_list = [conf.HOSTS[host_index] for host_index in hosts]
+        vds_hosts_list = [conf.VDS_HOSTS[host_index] for host_index in hosts]
+
+        for host, vds_host in zip(hosts_list, vds_hosts_list):
+            # Needed when NIC is BOND and not host NIC
+            nic = vds_host.nics[nic] if isinstance(nic, int) else nic
+
+            if mtu:
+                if not check_mtu(
+                    net=net, mtu=mtu, nic=nic, host=host, vds_host=vds_host
+                ):
+                    return False
+            if vlan_id:
+                if not check_vlan(
+                    net=net, vlan=vlan_id, nic=nic, host=host,
+                    vds_host=vds_host
+                ):
+                    return False
+            if bridge:
+                if not check_bridge(
+                    net=net, bridge=bridge, nic=nic, host=host,
+                    vds_host=vds_host
+                ):
+                    return False
+
+        return True
+    else:
+        # In negative check, return the response from engine
+        return ll_networks.update_network(
+            positive=positive, network=net, **kwargs
+        )
 
 
 def check_mtu(net, mtu, nic, host, vds_host):
     """
-    Check that the updated network MTU is reflected on engine and on
-    the host
+    Check that the updated network MTU is reflected on engine and on the host
 
     Args:
         net (str): Network name
@@ -85,42 +109,42 @@ def check_mtu(net, mtu, nic, host, vds_host):
         vds_host (resources.VDS): VDS resource to check the changes on
 
     Returns:
-        bool: True/False
+        bool: True if network MTU updated on engine and host, False otherwise
     """
+    logger.info(multi_host_conf.MSG_UPDATED_ENGINE.format(net=net, prop="MTU"))
     mtu_dict = {
         "mtu": mtu
     }
-    logger.info(multi_host_conf.UPDATE_CHANGES_ENGINE)
-    if not hl_networks.check_host_nic_params(
-        host=host, nic=nic, **mtu_dict
-    ):
+    if not hl_networks.check_host_nic_params(host=host, nic=nic, **mtu_dict):
         return False
 
-    logger.info(multi_host_conf.UPDATE_CHANGES_HOST)
     logger.info(
-        "Checking logical layer of bridged network %s on host %s", net, host
+        multi_host_conf.MSG_UPDATED_HOST.format(net=net, prop="MTU", host=host)
     )
-
     if not test_utils.check_mtu(
         vds_resource=vds_host, mtu=mtu, physical_layer=False,
         network=net, nic=nic
     ):
-        logger.error("Logical layer: MTU should be %s" % mtu)
+        logger.error(
+            multi_host_conf.MSG_NOT_UPDATED_HOST.format(
+                net=net, prop="MTU (logical layer)", host=host
+            )
+        )
         return False
 
-    logger.info(
-        "Checking physical layer of bridged network %s on host %s", net, host
-    )
     if not test_utils.check_mtu(vds_resource=vds_host, mtu=mtu, nic=nic):
-        logger.error("Physical layer: MTU should be %s" % mtu)
+        logger.error(
+            multi_host_conf.MSG_NOT_UPDATED_HOST.format(
+                net=net, prop="MTU (physical layer)", host=host
+            )
+        )
         return False
     return True
 
 
 def check_vlan(net, vlan, nic, host, vds_host):
     """
-    Check that the updated network VLAN is reflected on engine and on
-    the host
+    Check that the updated network VLAN is reflected on engine and on the host
 
     Args:
         net (str): Network name
@@ -130,29 +154,31 @@ def check_vlan(net, vlan, nic, host, vds_host):
         vds_host (resources.VDS): VDS resource to check the changes on
 
     Returns:
-        bool: True/False
+        bool: True if network VLAN updated on engine and host, False otherwise
     """
+    logger.info(
+        multi_host_conf.MSG_UPDATED_ENGINE.format(net=net, prop="VLAN_ID")
+    )
     vlan_dict = {
         "vlan_id": vlan
     }
-    logger.info(multi_host_conf.UPDATE_CHANGES_ENGINE)
-    if not hl_networks.check_host_nic_params(
-        host=host, nic=nic, **vlan_dict
-    ):
+    if not hl_networks.check_host_nic_params(host=host, nic=nic, **vlan_dict):
         return False
 
-    logger.info(multi_host_conf.UPDATE_CHANGES_HOST)
-    if not ll_networks.is_vlan_on_host_network(
+    logger.info(
+        multi_host_conf.MSG_UPDATED_HOST.format(
+            net=net, prop="VLAN_ID", host=host
+        )
+    )
+    return ll_networks.is_vlan_on_host_network(
         vds_resource=vds_host, interface=nic, vlan=vlan
-    ):
-        return False
-    return True
+    )
 
 
 def check_bridge(net, bridge, nic, host, vds_host):
     """
-    Check that the updated network bridge is reflected on engine and on
-    the host
+    Check that the updated network bridge is reflected on engine and on the
+    host
 
     Args:
         net (str): Network name
@@ -162,40 +188,25 @@ def check_bridge(net, bridge, nic, host, vds_host):
         vds_host (resources.VDS): VDS resource to check the changes on
 
     Returns:
-        bool: True/False
+        bool: True if network bridge updated on host and engine,
+            False otherwise
     """
+    logger.info(
+        multi_host_conf.MSG_UPDATED_ENGINE.format(net=net, prop="bridge")
+    )
     bridge_dict = {
         "bridge": bridge
     }
-    logger.info(multi_host_conf.UPDATE_CHANGES_ENGINE)
     if not hl_networks.check_host_nic_params(
         host=host, nic=nic, **bridge_dict
     ):
         return False
 
-    logger.info(multi_host_conf.UPDATE_CHANGES_HOST)
-    res = ll_networks.is_host_network_is_vm(
-        vds_resource=vds_host, net_name=net,
+    logger.info(
+        multi_host_conf.MSG_UPDATED_HOST.format(
+            net=net, prop="bridge", host=host
+        )
     )
-    return res == bridge
-
-
-def prepare_dict_for_sn_fixture(hosts, net):
-    """
-    Prepare dict for setup_networks_fixture
-
-    Args:
-        hosts (int): Number of hosts
-        net (str): Network name
-
-    Returns:
-        dict: Dict for setup_networks fixture
-    """
-    sn_dict = dict()
-    for i in range(hosts):
-        i_str = str(i)
-        sn_dict[i] = dict()
-        sn_dict[i][i_str] = dict()
-        sn_dict[i][i_str]["nic"] = 1
-        sn_dict[i][i_str]["network"] = net
-    return sn_dict
+    return ll_networks.is_host_network_is_vm(
+        vds_resource=vds_host, net_name=net
+    )

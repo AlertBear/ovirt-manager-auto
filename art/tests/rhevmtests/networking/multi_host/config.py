@@ -7,39 +7,90 @@ Config for MultiHost
 
 import rhevmtests.helpers as global_helper
 
+
 VNICS = global_helper.generate_object_names(
     num_of_cases=7, num_of_objects=3, prefix="multi_host_vnic"
 )
 
 NETS = global_helper.generate_object_names(
-    num_of_cases=11, prefix="MultiHost"
+    num_of_cases=2, num_of_objects=30, prefix="MultiHost"
 )
 
-VLAN_IDS = [str(i) for i in xrange(2, 60)]
-UPDATE_CHANGES_ENGINE = "Check that the host nic was updated via engine"
-UPDATE_CHANGES_HOST = "Check that the host nic was updated on the host"
-SLEEP = 10
+VLAN_IDS = [str(i) for i in range(2, 20)]
 
-NETS_DICT = {
+BOND_NAMES = ["bond%s" % i for i in range(0, 10)]
+
+NETWORK_RENAME_TEST = "MULTIHOST_TEST"
+EXTRA_CLUSTER_NAME = "Multi_Host_Cluster"
+
+MSG_UPDATED_PREFIX = "Checking if network: {net} property: {prop} updated on"
+MSG_UPDATED_ENGINE = "%s engine" % MSG_UPDATED_PREFIX
+MSG_UPDATED_HOST = "%s host: {host}" % MSG_UPDATED_PREFIX
+MSG_NOT_UPDATED_HOST = (
+    "Network: {net} property: {prop} not updated on host: {host}"
+)
+
+SETUP_NETWORKS_DICT = {
+    # Test case: VM network attached to host
     NETS[1][0]: {
-        "required": "false",  # case01 use VLAN_IDS[0] and VLAN_IDS[1]
+        "required": "false",
+        "usages": "vm"
     },
-    NETS[2][0]: {
+    # Test case: non-VM network attached to host
+    NETS[1][1]: {
+        "required": "false",
+        "usages": ""
+    },
+    # Test case: Network attached to host
+    NETS[1][2]: {
         "required": "false"
     },
-    NETS[3][0]: {
-        "required": "false"  # case03 use VLAN_IDS[2]
+    # Test case: Network with VLAN attached to host
+    NETS[1][3]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0)
     },
-    NETS[4][0]: {
-        "required": "false"  # case04 use VLAN_IDS[3]
+    # Test case: Network attached to running VM
+    NETS[1][4]: {
+        "required": "false"
     },
-    NETS[5][0]: {
-        "required": "false"  # case05 use VLAN_IDS[4]
+    # Test case: Network attached to non-running VM
+    NETS[1][5]: {
+        "required": "false"
     },
-    NETS[6][0]: {
-        "required": "false"  # case06 use VLAN_IDS[5]
+    # Test case: Network attached to template
+    NETS[1][6]: {
+        "required": "false"
     },
-    NETS[7][0]: {
-        "required": "false"  # case07 use VLAN_IDS[6] and VLAN_IDS[7]
+    # Test case: Network attached to two hosts
+    NETS[1][7]: {
+        "required": "false"
     },
+    # Test case: Network attached to two hosts, different cluster
+    NETS[1][8]: {
+        "required": "false"
+    },
+    # Test case: VM network attached to bond
+    NETS[1][9]: {
+        "required": "false"
+    },
+    # Test case: non-VM network attached to bond
+    NETS[1][10]: {
+        "required": "false",
+        "usages": ""
+    },
+    # Test case: network attached to bond
+    NETS[1][11]: {
+        "required": "false"
+    },
+    # Test case: network with VLAN attached to bond
+    NETS[1][12]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0)
+    },
+    # Test case: network with MTU attached to bond
+    NETS[1][13]: {
+        "required": "false",
+        "mtu": 9000
+    }
 }

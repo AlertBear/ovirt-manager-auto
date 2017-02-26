@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Fixtures for MultiHost
+Fixtures for MultiHost feature
 """
 
 import pytest
@@ -11,74 +11,54 @@ import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import helper
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def restore_hosts_mtu_interfaces(request):
-    """
-    Restore hosts interfaces MTU
-    """
-    NetworkFixtures()
-
-    def fin():
-        """
-        Restore interfaces default MTU
-        """
-        if request.node.cls.restore_mtu:
-            testflow.teardown("Restore hosts interfaces MTU to 1500")
-            net = request.node.cls.net
-            mtu_1500 = request.node.cls.mtu_1500
-            assert helper.update_network_and_check_changes(
-                net=net, mtu=mtu_1500, hosts=conf.HOSTS_LIST,
-                vds_hosts=conf.VDS_HOSTS_LIST
-            )
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
 def add_vnics_to_vms(request):
     """
-    Add vNIC to VMs
+    Add vNIC(s) to VM(s)
     """
     NetworkFixtures()
-    net = request.node.cls.net
-    vm_nic = request.node.cls.vm_nic
-    vm_list = request.node.cls.vm_list
-    vm_0 = request.node.cls.vm_name
+    vms_list = getattr(request.node.cls, "add_vnics_to_vms_params", dict())
 
     def fin():
         """
-        Un-plug vNIC
-        Remove vNIC from VMs
+        Remove vNIC(s) from VM(s)
         """
-        testflow.teardown("Un-plug vNIC %s from VM %s", vm_nic, vm_0)
-        assert ll_vms.updateNic(
-            positive=True, vm=vm_0, nic=vm_nic, plugged="false"
-        )
-        for vm in vm_list:
-            testflow.teardown("Remove vNIC %s from VM %s", vm_nic, vm)
-            assert ll_vms.removeNic(positive=True, vm=vm, nic=vm_nic)
+        for vm, settings in vms_list.items():
+            vnic_name = settings.get("vnic_name")
+            testflow.teardown("Unplugging vNIC: %s from VM: %s", vnic_name, vm)
+            assert ll_vms.updateNic(
+                positive=True, vm=vm, nic=vnic_name, plugged="false"
+            )
+
+            testflow.teardown("Removing vNIC: %s from VM: %s", vnic_name, vm)
+            assert ll_vms.removeNic(positive=True, vm=vm, nic=vnic_name)
     request.addfinalizer(fin)
 
-    for vm in vm_list:
-        testflow.setup("Add vNIC %s to VM %s", vm_nic, vm)
-        assert ll_vms.addNic(positive=True, vm=vm, name=vm_nic, network=net)
+    for vm, settings in vms_list.items():
+        net = settings.get("network")
+        vnic_name = settings.get("vnic_name")
+        testflow.setup(
+            "Adding vNIC: %s attached to network:%s to VM: %s", vnic_name, net,
+            vm
+        )
+        assert ll_vms.addNic(positive=True, vm=vm, name=vnic_name, network=net)
 
 
 @pytest.fixture(scope="class")
-def add_vnic_to_tamplate(request):
+def add_vnic_to_template(request):
     """
     Add vNIC to template
     """
     NetworkFixtures()
-    net = request.node.cls.net
-    vm_nic = request.node.cls.vm_nic
-    dc = request.node.cls.dc
-    template = request.node.cls.template
+    net = request.node.cls.template_network
+    vm_nic = request.node.cls.template_vm_nic
+    dc = request.node.cls.template_dc
+    template = request.node.cls.template_name
 
     def fin():
         """
@@ -102,39 +82,42 @@ def move_host_to_cluster(request):
     """
     Move host to new cluster
     """
-    multi_host = NetworkFixtures()
-    cl = request.node.cls.cl
-    cl_name2 = request.node.cls.cl_name2
+    NetworkFixtures()
+    src_cluster = request.node.cls.cl_src_cluster
+    dst_cluster = request.node.cls.cl_dst_cluster
+    host_idx = request.node.cls.cl_host
+    host_name = conf.HOSTS[host_idx]
 
-    def fin1():
+    def fin():
         """
         Move host back to original cluster
         """
         testflow.teardown(
-            "Move host %s to cluster %s", multi_host.host_1_name, cl
+            "Move host: %s back to cluster: %s", host_name, src_cluster
         )
         assert hl_hosts.move_host_to_another_cluster(
-            host=multi_host.host_1_name, cluster=cl
+            host=host_name, cluster=src_cluster
         )
-    request.addfinalizer(fin1)
+    request.addfinalizer(fin)
 
     testflow.setup(
-        "Move host %s to cluster %s", multi_host.host_1_name, cl_name2
+        "Move host: %s to cluster: %s", host_name, dst_cluster
     )
     assert hl_hosts.move_host_to_another_cluster(
-        host=multi_host.host_1_name, cluster=cl_name2
+        host=host_name, cluster=dst_cluster
     )
 
 
 @pytest.fixture(scope="class")
 def add_network_to_cluster(request):
     """
-    Attach network to cluster.
+    Attach network to cluster
     """
-    cl_name2 = request.node.cls.cl_name2
-    net = request.node.cls.net
+    NetworkFixtures()
+    cl_name = request.node.cls.cl_name
+    net = request.node.cls.cl_net
 
-    testflow.setup("Add network %s to cluster %s", net, cl_name2)
+    testflow.setup("Add network: %s to cluster: %s", net, cl_name)
     assert ll_networks.add_network_to_cluster(
-        positive=True, network=net, cluster=cl_name2, required=False
+        positive=True, network=net, cluster=cl_name, required=False
     )
