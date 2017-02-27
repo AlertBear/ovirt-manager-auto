@@ -169,3 +169,18 @@ VM_ACTION_TIMEOUT = 1000
 SNAPSHOT_DESCRIPTION = ['snapshot_1', 'snapshot_2']
 
 BASE_VM_VIRT = "base_vm_virt"
+
+# Windows
+DEFAULT_FILE_CONTENT = "line 1: test\n line 2: test"
+DEFAULT_FILE_NAME = "test.txt"
+USER = 'Administrator'
+PASSWORD = 'Heslo123'
+SYSTEM_PATH = "c:\\windows\\system32\\"
+SEAL_COMMAND = (
+    "{0}sysprep.exe /generalize /shutdown /oobe".format(SYSTEM_PATH)
+)
+TMP_PATH = 'C:\\Windows\\Temp\\'
+SYSTEM_INFO_NAMES = [
+    "Host Name", "Product ID", "System Locale", "Input Locale", "Time Zone",
+    "Domain"
+]
