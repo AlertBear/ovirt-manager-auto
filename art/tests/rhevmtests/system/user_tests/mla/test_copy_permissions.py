@@ -1,6 +1,5 @@
 """
 Testing copy permissions feauture.
-1 Host, 1 DC, 1 Cluster, 1 SD will be created.
 Every case create vm/template and check if permissions from it are/aren't
 copied, when copy_permissions flag is/isn't provided.
 """
@@ -8,31 +7,36 @@ import pytest
 
 from art.rhevm_api.tests_lib.low_level import mla, templates, vms
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import attr, testflow
 
-from rhevmtests.system.user_tests.mla import common, config
+import common
+import config
 
 
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
     def finalize():
         for user_name in config.USER_NAMES[:2]:
+            testflow.teardown(
+                "Removing user %s@%s.", user_name, config.USER_DOMAIN
+            )
             common.remove_user(True, user_name)
+
+        testflow.teardown("Removing VM %s.", config.VM_NAME)
         vms.removeVm(True, config.VM_NAME)
+
+        testflow.teardown("Removing template %s.", config.TEMPLATE_NAMES[0])
         templates.remove_template(True, config.TEMPLATE_NAMES[0])
 
     request.addfinalizer(finalize)
 
-    common.add_user(
-        True,
-        user_name=config.USER_NAMES[0],
-        domain=config.USER_DOMAIN
-    )
-    common.add_user(
-        True,
-        user_name=config.USER_NAMES[1],
-        domain=config.USER_DOMAIN
-    )
+    for user_name in config.USER_NAMES[:2]:
+        testflow.setup(
+            "Adding user %s@%s.", user_name, config.USER_DOMAIN
+        )
+        common.add_user(True, user_name, config.USER_DOMAIN)
+
+    testflow.setup("Adding VM %s.", config.VM_NAME)
     vms.createVm(
         positive=True,
         vmName=config.VM_NAME,
@@ -42,6 +46,7 @@ def setup_module(request):
         network=config.MGMT_BRIDGE
     )
 
+    testflow.setup("Creating template %s.", config.TEMPLATE_NAMES[0])
     templates.createTemplate(
         True,
         vm=config.VM_NAME,
@@ -49,49 +54,78 @@ def setup_module(request):
         cluster=config.CLUSTER_NAME[0]
     )
 
-    # ## Add permissions to vm ##
-    # ClusterAdmin role on cluster to user1 (should no be copied)
+    testflow.setup(
+        "Adding cluster %s permissions for user %s@%s.",
+        config.CLUSTER_NAME[0], config.USER_NAMES[0], config.USER_DOMAIN
+    )
     mla.addClusterPermissionsToUser(
         True,
         config.USER_NAMES[0],
         config.CLUSTER_NAME[0]
     )
-    # ClusterAdmin role on cluster to user2 (should no be copied)
+
+    testflow.setup(
+        "Adding cluster %s permissions for user %s@%s.",
+        config.CLUSTER_NAME[0], config.USER_NAMES[1], config.USER_DOMAIN
+    )
     mla.addClusterPermissionsToUser(
         True,
         config.USER_NAMES[1],
         config.CLUSTER_NAME[0],
-        role=config.role.UserRole
     )
-    # Add UserRole on vm to user1 (should be copied)
+
+    testflow.setup(
+        "Adding vm permission role %s to user %s@%s.",
+        config.role.UserRole, config.USER_NAMES[0], config.USER_DOMAIN
+    )
     mla.addVMPermissionsToUser(
         True,
         config.USER_NAMES[0],
         config.VM_NAME,
         role=config.role.UserRole
     )
-    # Add UserTemplateBasedVm on vm to user1 (should be copied)
+
+    testflow.setup(
+        "Adding vm permission role %s to user %s@%s.",
+        config.role.UserTemplateBasedVm,
+        config.USER_NAMES[0], config.USER_DOMAIN
+    )
     mla.addVMPermissionsToUser(
         True,
         config.USER_NAMES[0],
         config.VM_NAME,
         role=config.role.UserTemplateBasedVm
     )
-    # Add TemplateAdmin on vm to user1 (should be copied)
+
+    testflow.setup(
+        "Adding vm permission role %s to user %s@%s.",
+        config.role.TemplateAdmin,
+        config.USER_NAMES[0], config.USER_DOMAIN
+    )
     mla.addVMPermissionsToUser(
         True,
         config.USER_NAMES[0],
         config.VM_NAME,
         role=config.role.TemplateAdmin
     )
-    # Add TemplateAdmin on vm to user2 (should be copied)
+
+    testflow.setup(
+        "Adding vm permission role %s to user %s@%s.",
+        config.role.TemplateAdmin,
+        config.USER_NAMES[1], config.USER_DOMAIN
+    )
     mla.addVMPermissionsToUser(
         True,
         config.USER_NAMES[1],
         config.VM_NAME,
-        role=config.role.TemplateOwner
+        role=config.role.TemplateAdmin
     )
-    # Add DiskCreator on vm to user2 (should be copied)
+
+    testflow.setup(
+        "Adding vm permission role %s to user %s@%s.",
+        config.role.DiskCreator,
+        config.USER_NAMES[1], config.USER_DOMAIN
+    )
     mla.addVMPermissionsToUser(
         True,
         config.USER_NAMES[1],
@@ -99,43 +133,71 @@ def setup_module(request):
         role=config.role.DiskCreator
     )
 
-    # ## Add permissions to template ##
-    # PowerUserRole on template to user1 (should be copied)
+    testflow.setup(
+        "Adding template permission role %s to user %s@%s",
+        config.role.PowerUserRole,
+        config.USER_NAMES[0], config.USER_DOMAIN
+    )
     mla.addPermissionsForTemplate(
         True,
         config.USER_NAMES[0],
         config.TEMPLATE_NAMES[0],
         role=config.role.PowerUserRole
     )
-    # UserRole on template to user1 (should be copied)
+
+    testflow.setup(
+        "Adding template permission role %s to user %s@%s.",
+        config.role.UserRole,
+        config.USER_NAMES[0], config.USER_DOMAIN
+    )
     mla.addPermissionsForTemplate(
         True,
         config.USER_NAMES[0],
         config.TEMPLATE_NAMES[0],
         role=config.role.UserRole
     )
-    # TemplateAdmin on template to user2 (should be copied)
+
+    testflow.setup(
+        "Adding template permission role %s to user %s@%s.",
+        config.role.TemplateAdmin,
+        config.USER_NAMES[1], config.USER_DOMAIN
+    )
     mla.addPermissionsForTemplate(
         True,
         config.USER_NAMES[1],
         config.TEMPLATE_NAMES[0],
         role=config.role.TemplateAdmin
     )
-    # UserTemplateBasedVm on template to user1 (should not be copied)
+
+    testflow.setup(
+        "Adding template permission role %s to user %s@%s.",
+        config.role.UserTemplateBasedVm,
+        config.USER_NAMES[0], config.USER_DOMAIN
+    )
     mla.addPermissionsForTemplate(
         True,
         config.USER_NAMES[0],
         config.TEMPLATE_NAMES[0],
         role=config.role.UserTemplateBasedVm
     )
-    # TemplateOwner on template to user2 (should not be copied)
+
+    testflow.setup(
+        "Adding template permission role %s to user %s@%s.",
+        config.role.TemplateOwner,
+        config.USER_NAMES[1], config.USER_DOMAIN
+    )
     mla.addPermissionsForTemplate(
         True,
         config.USER_NAMES[1],
         config.TEMPLATE_NAMES[0],
         role=config.role.TemplateOwner
     )
-    # DataCenterAdmin on template to user2 (should not be copied)
+
+    testflow.setup(
+        "Adding datacenter permission role %s to user %s@%s.",
+        config.role.DataCenterAdmin,
+        config.USER_NAMES[1], config.USER_DOMAIN
+    )
     mla.addPermissionsForDataCenter(
         True,
         config.USER_NAMES[1],
@@ -155,10 +217,12 @@ class CopyPermissions299326(common.BaseTestCase):
         super(CopyPermissions299326, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Removing VM %s.", config.VM_NAMES[0])
             vms.removeVm(True, config.VM_NAMES[0])
 
         request.addfinalizer(finalize)
 
+        testflow.setup("Creating VM %s.", config.VM_NAMES[0])
         vms.createVm(
             positive=True,
             vmName=config.VM_NAMES[0],
@@ -171,6 +235,7 @@ class CopyPermissions299326(common.BaseTestCase):
     @polarion("RHEVM3-7367")
     def test_create_vm_with_copy_permissions_option(self):
         """ create vm with copy permissions option """
+        testflow.step("Checking for copied permissions.")
         common.check_for_vm_permissions(
             True,
             config.USER1_VM_ROLES,
@@ -189,10 +254,12 @@ class CopyPermissions299330(common.BaseTestCase):
         super(CopyPermissions299330, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Removing VM %s.", config.VM_NAMES[0])
             vms.removeVm(True, config.VM_NAMES[0])
 
         request.addfinalizer(finalize)
 
+        testflow.setup("Creating VM %s.", config.VM_NAMES[0])
         vms.createVm(
             positive=True,
             vmName=config.VM_NAMES[0],
@@ -204,6 +271,7 @@ class CopyPermissions299330(common.BaseTestCase):
     @polarion("RHEVM3-7371")
     def test_create_vm_without_copy_permissions_option(self):
         """ create vm without copy permissions option """
+        testflow.step("Checking for copied permissions.")
         common.check_for_vm_permissions(
             False,
             config.USER1_VM_ROLES,
@@ -222,10 +290,14 @@ class CopyPermissions299328(common.BaseTestCase):
         super(CopyPermissions299328, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown(
+                "Removing template %s.", config.TEMPLATE_NAMES[1]
+            )
             templates.remove_template(True, config.TEMPLATE_NAMES[1])
 
         request.addfinalizer(finalize)
 
+        testflow.setup("Creating template %s.", config.TEMPLATE_NAMES[1])
         templates.createTemplate(
             True,
             vm=config.VM_NAME,
@@ -237,6 +309,7 @@ class CopyPermissions299328(common.BaseTestCase):
     @polarion("RHEVM3-7369")
     def test_make_template_with_copy_permissions_option(self):
         """ make template with copy permissions option """
+        testflow.step("Checking for copied permissions.")
         common.check_for_template_permissions(
             True,
             config.USER1_TEMPLATE_ROLES,
@@ -255,10 +328,14 @@ class CopyPermissions299331(common.BaseTestCase):
         super(CopyPermissions299331, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown(
+                "Removing template %s.", config.TEMPLATE_NAMES[1]
+            )
             templates.remove_template(True, config.TEMPLATE_NAMES[1])
 
         request.addfinalizer(finalize)
 
+        testflow.setup("Creating template %s.", config.TEMPLATE_NAMES[1])
         templates.createTemplate(
             True,
             vm=config.VM_NAME,
@@ -269,6 +346,7 @@ class CopyPermissions299331(common.BaseTestCase):
     @polarion("RHEVM3-7372")
     def test_make_template_without_copy_permissions_option(self):
         """ make template without copy permissions option """
+        testflow.step("Checking for copied permissions.")
         common.check_for_template_permissions(
             False,
             config.USER1_TEMPLATE_ROLES,

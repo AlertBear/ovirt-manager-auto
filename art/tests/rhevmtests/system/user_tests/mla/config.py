@@ -26,7 +26,7 @@ USER1_TEMPLATE_ROLES = [
     role.UserTemplateBasedVm,
     role.TemplateAdmin
 ]
-USER2_TEMPLATE_ROLES = [role.TemplateOwner, role.DiskCreator]
+USER2_TEMPLATE_ROLES = [role.TemplateAdmin, role.DiskCreator]
 
 GROUP_USER_NAME = 'user_of_group'
 GROUP_USER = "{0}@{1}".format(GROUP_USER_NAME, AUTHZ)
