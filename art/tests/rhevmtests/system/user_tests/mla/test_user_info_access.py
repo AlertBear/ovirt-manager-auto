@@ -19,9 +19,10 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest as TestCase, attr
+from art.unittest_lib import CoreSystemTest as TestCase, attr, testflow
 
-from rhevmtests.system.user_tests.mla import common, config
+import common
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,25 @@ alt_host_id = None
 
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
+    def teardown_module():
+        testflow.teardown("Log in as admin.")
+        common.login_as_admin()
+
+        testflow.teardown("Removing user %s.", config.USER_NAMES[0])
+        common.remove_user(True, config.USER_NAMES[0])
+
+        if not config.GOLDEN_ENV:
+            clusters.removeCluster(True, config.CLUSTER_NAME[1])
+            hl_dc.clean_datacenter(
+                True, config.DC_NAME_B, engine=config.ENGINE
+            )
+
+    request.addfinalizer(teardown_module)
+
+    testflow.setup("Log in as admin.")
     common.login_as_admin()
+
+    testflow.setup("Adding user %s.", config.USER_NAMES[0])
     common.add_user(
         True,
         user_name=config.USER_NAMES[0],
@@ -78,18 +97,6 @@ def setup_module(request):
 
         global alt_host_id
         alt_host_id = hosts.HOST_API.find(config.HOSTS_IP[1]).get_id()
-
-    def teardown_module():
-        common.login_as_admin()
-        common.remove_user(True, config.USER_NAMES[0])
-
-        if not config.GOLDEN_ENV:
-            clusters.removeCluster(True, config.CLUSTER_NAME[1])
-            hl_dc.clean_datacenter(
-                True, config.DC_NAME_B, engine=config.ENGINE
-            )
-
-    request.addfinalizer(teardown_module)
 
 
 # extra_reqs={'datacenters_count': 2}
@@ -439,11 +446,15 @@ class ViewChildrenInfoTests(common.BaseTestCase):
         super(ViewChildrenInfoTests, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Log in as admin.")
             common.login_as_admin()
+
+            testflow.teardown("Removing VM %s.", config.VM_NAMES[0])
             vms.removeVm(True, config.VM_NAMES[0])
 
         request.addfinalizer(finalize)
 
+        testflow.setup("Creating VM %s.", config.VM_NAMES[0])
         vms.createVm(
             positive=True,
             vmName=config.VM_NAMES[0],
@@ -455,44 +466,71 @@ class ViewChildrenInfoTests(common.BaseTestCase):
     def test_can_view_children(self):
         """ CanViewChildren """
         err_msg = "User can't see vms"
-        for role_can in self.roles_can:
-            logger.info("Testing role: %s", role_can)
-            mla.addClusterPermissionsToUser(
+        for role in self.roles_can:
+            testflow.step("Testing role: %s", role)
+            testflow.step(
+                "Adding cluster permissions for user %s.", config.USER_NAMES[0]
+            )
+            assert mla.addClusterPermissionsToUser(
                 True,
                 config.USER_NAMES[0],
                 config.CLUSTER_NAME[0],
-                role_can
+                role
             )
+
+            testflow.step("Log in as user.")
             common.login_as_user()
+
+            testflow.step("Checking if user can see vms.")
             assert len(vms.VM_API.get(abs_link=False)) > 0, err_msg
+
+            testflow.step("Log in as admin.")
             common.login_as_admin()
+
+            testflow.step(
+                "Removing cluster permissions from user %s.",
+                config.USER_NAMES[0]
+            )
             mla.removeUserPermissionsFromCluster(
                 True,
                 config.CLUSTER_NAME[0],
                 config.USERS[0]
             )
-            logger.info("%s can see children", role_can)
 
     @polarion("RHEVM3-7637")
     def test_cant_view_children(self):
         """ CantViewChildren """
-        for role_can in self.roles_cant:
-            logger.info("Testing role: %s", role_can)
+        for role in self.roles_cant:
+            testflow.step("Testing role: %s", role)
+
+            testflow.step(
+                "Adding cluster permissions for user %s.", config.USER_NAMES[0]
+            )
             mla.addClusterPermissionsToUser(
                 True,
                 config.USER_NAMES[0],
                 config.CLUSTER_NAME[0],
-                role_can
+                role
             )
+
+            testflow.step("Log in as user.")
             common.login_as_user()
+
+            testflow.step("Checking if user can't see vms.")
             assert len(vms.VM_API.get(abs_link=False)) == 0, "User can see vms"
+
+            testflow.step("Log in as admin.")
             common.login_as_admin()
+
+            testflow.step(
+                "Removing cluster permissions from user %s.",
+                config.USER_NAMES[0]
+            )
             mla.removeUserPermissionsFromCluster(
                 True,
                 config.CLUSTER_NAME[0],
                 config.USERS[0]
             )
-            logger.info("%s can see children", role_can)
 
 
 # extra_reqs={'clusters_count': 2}
@@ -570,9 +608,17 @@ class VmCreatorInfoTests(common.BaseTestCase):
         super(VmCreatorInfoTests, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Log in as admin.")
             common.login_as_admin()
-            vms.removeVm(True, config.VM_NAMES[0])
-            vms.removeVm(True, config.VM_NAMES[1])
+
+            for vm in config.VM_NAMES[:2]:
+                testflow.teardown("Removing VM %s.", vm)
+                vms.removeVm(True, vm)
+
+            testflow.teardown(
+                "Removing user %s permissions from cluster %s.",
+                config.USERS[0], config.CLUSTER_NAME[0]
+            )
             mla.removeUserPermissionsFromCluster(
                 True,
                 config.CLUSTER_NAME[0],
@@ -581,12 +627,17 @@ class VmCreatorInfoTests(common.BaseTestCase):
 
         request.addfinalizer(finalize)
 
+        testflow.setup(
+            "Adding cluster permissions for user %s.", config.USER_NAMES[0]
+        )
         mla.addClusterPermissionsToUser(
             True,
             config.USER_NAMES[0],
             config.CLUSTER_NAME[0],
             config.role.VmCreator
         )
+
+        testflow.setup("Adding VM %s.", config.VM_NAMES[0])
         vms.createVm(
             positive=True,
             vmName=config.VM_NAMES[0],
@@ -599,21 +650,24 @@ class VmCreatorInfoTests(common.BaseTestCase):
         """ vmCreator_filter_vms """
         msg = "User can see vms where he has no permissions. Can see {0}"
 
+        testflow.step("Log in as user.")
         common.login_as_user()
+
+        testflow.step("Checking if user can't see vms.")
         my_vms = [vm.get_name() for vm in vms.VM_API.get(abs_link=False)]
-
         assert len(my_vms) == 0, msg.format(my_vms)
-        logger.info("User can't see vms where he has not perms. %s", my_vms)
 
+        testflow.step("Adding VM %s.", config.VM_NAMES[1])
         vms.createVm(
             positive=True,
             vmName=config.VM_NAMES[1],
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
+
+        testflow.step("Checking if user can see its VM.")
         my_vms = [vm.get_name() for vm in vms.VM_API.get(abs_link=False)]
         assert len(my_vms) == 1, msg.format(my_vms)
-        logger.info("User can see only his vms %s", my_vms)
 
 
 @attr(tier=config.DO_NOT_RUN)
