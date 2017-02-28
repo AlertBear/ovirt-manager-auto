@@ -11,10 +11,12 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (
     datacenters, mla, networks, templates, users, vms
 )
-from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr
+from art.test_handler.tools import polarion
+from art.unittest_lib import attr, testflow
 
-from rhevmtests.system.user_tests.mla import common, config
+import common
+import config
+
 from test_network_permissions_negative import (
     NetworkingNegative, ignore_all_exceptions
 )
@@ -28,13 +30,17 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
     def finalize():
+        testflow.teardown("Log in as admin.")
         common.login_as_admin()
+
         for user in config.USER_NAMES:
+            testflow.teardown("Removing user %s@%s.", user, config.USER_DOMAIN)
             assert common.remove_user(True, user)
 
     request.addfinalizer(finalize)
 
     for user in config.USER_NAMES:
+        testflow.setup("Adding user %s@%s.", user, config.USER_DOMAIN)
         assert common.add_user(
             True,
             user_name=user,
@@ -52,7 +58,10 @@ class NetworkingPositive(NetworkingNegative):
         super(NetworkingPositive, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Log in as admin.")
             common.login_as_admin()
+
+            testflow.teardown("Removing role %s.", ROLE_NAME)
             ignore_all_exceptions(
                 mla.removeRole,
                 positive=True,
@@ -70,17 +79,37 @@ class PositiveNetworkPermissions231821(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions231821, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding permission role %s for datacenter %s to user %s.",
+            config.role.SuperUser,
+            config.DC_NAME[0],
+            config.USER_NAMES[0]
+        )
         assert mla.addPermissionsForDataCenter(
             True,
             config.USER_NAMES[0],
             config.DC_NAME[0],
             role=config.role.SuperUser
         )
+
+        testflow.setup(
+            "Adding permission role %s for datacenter %s to user %s.",
+            config.role.DataCenterAdmin,
+            config.DC_NAME[0],
+            config.USER_NAMES[1]
+        )
         assert mla.addPermissionsForDataCenter(
             True,
             config.USER_NAMES[1],
             config.DC_NAME[0],
             role=config.role.DataCenterAdmin
+        )
+
+        testflow.setup(
+            "Adding permission role %s for datacenter %s to user %s.",
+            config.role.NetworkAdmin,
+            config.DC_NAME[0],
+            config.USER_NAMES[2]
         )
         assert mla.addPermissionsForDataCenter(
             True,
@@ -90,20 +119,29 @@ class PositiveNetworkPermissions231821(NetworkingPositive):
         )
 
     @polarion("RHEVM3-8369")
-    @bz({"1379356": {}})
     def test_create_network_in_datacenter(self):
         """ Create network in datacenter """
         for user_name in config.USER_NAMES:
-            common.login_as_user(
-                user_name=user_name,
-                filter_=False
+            testflow.step("Log in as user.")
+            common.login_as_user(user_name=user_name, filter_=False)
+
+            testflow.step(
+                "Adding network %s to datacenter %s.",
+                config.NETWORK_NAMES[0], config.DC_NAME[0]
             )
             assert networks.add_network(
                 True,
                 name=config.NETWORK_NAMES[0],
                 data_center=config.DC_NAME[0]
             )
+
+            testflow.step("Log in as admin.")
             common.login_as_admin()
+
+            testflow.step(
+                "Removing network %s from datacenter %s.",
+                config.NETWORK_NAMES[0], config.DC_NAME[0]
+            )
             assert networks.remove_network(
                 True,
                 network=config.NETWORK_NAMES[0],
@@ -112,8 +150,10 @@ class PositiveNetworkPermissions231821(NetworkingPositive):
 
 
 class PositiveNetworkPermissions231822(NetworkingPositive):
-    __test__ = True
+    MTU = 800
+    STP = True
 
+    __test__ = True
     apis = NetworkingPositive.apis - set(['java'])
 
     @classmethod
@@ -121,10 +161,21 @@ class PositiveNetworkPermissions231822(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions231822, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding permission role %s for "
+            "network %s in datacenter %s to user %s.",
+            config.role.DataCenterAdmin, config.NETWORK_NAMES[0],
+            config.DC_NAME[0], config.USER_NAMES[0]
         )
         assert mla.addPermissionsForNetwork(
             True,
@@ -132,6 +183,13 @@ class PositiveNetworkPermissions231822(NetworkingPositive):
             config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0],
             role=config.role.DataCenterAdmin
+        )
+
+        testflow.setup(
+            "Adding permission role %s for "
+            "network %s in datacenter %s to user %s.",
+            config.role.NetworkAdmin, config.NETWORK_NAMES[0],
+            config.DC_NAME[0], config.USER_NAMES[1]
         )
         assert mla.addPermissionsForNetwork(
             True,
@@ -144,22 +202,27 @@ class PositiveNetworkPermissions231822(NetworkingPositive):
     @polarion("RHEVM3-8384")
     def test_edit_network_in_datacenter(self):
         """ Edit network in DC """
-        mtu = 800
-        stp = True
         for user_name in config.USER_NAMES[:2]:
-            common.login_as_user(
-                user_name=user_name,
-                filter_=False
+            testflow.step(
+                "Log in as user %s@%s.", user_name, config.USER_DOMAIN
+            )
+            common.login_as_user(user_name=user_name, filter_=False)
+
+            testflow.step(
+                "Updating network %s "
+                "MTU and STP to %s and %s in datacenter %s.",
+                config.NETWORK_NAMES[0], self.MTU,
+                self.STP, config.DC_NAME[0]
             )
             assert networks.update_network(
                 True,
                 config.NETWORK_NAMES[0],
                 data_center=config.DC_NAME[0],
-                mtu=mtu,
-                stp=str(stp).lower()
+                mtu=self.MTU,
+                stp=str(self.STP).lower()
             )
-            mtu += 100
-            stp = not stp
+            self.MTU += 100
+            self.STP = not self.STP
 
 
 class PositiveNetworkPermissions231823(NetworkingPositive):
@@ -170,10 +233,21 @@ class PositiveNetworkPermissions231823(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions231823, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding permission role %s for network %s to user %s.",
+            config.role.NetworkAdmin,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
         )
         assert mla.addPermissionsForNetwork(
             True,
@@ -182,37 +256,59 @@ class PositiveNetworkPermissions231823(NetworkingPositive):
             data_center=config.DC_NAME[0],
             role=config.role.NetworkAdmin
         )
-        assert mla.addClusterPermissionsToUser(
-            True,
-            config.USER_NAMES[1],
-            cluster=config.CLUSTER_NAME[0]
-        )
+
+        for username in config.USER_NAMES[:2]:
+            testflow.setup(
+                "Adding cluster %s permissions for user %s.",
+                config.CLUSTER_NAME[0], username
+            )
+            assert mla.addClusterPermissionsToUser(
+                True,
+                username,
+                cluster=config.CLUSTER_NAME[0]
+            )
 
     @polarion("RHEVM3-8383")
     def test_attaching_network_to_cluster(self):
         """ Attaching network to cluster """
+        testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
+
+        testflow.step(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
         assert networks.add_network_to_cluster(
             True,
             config.NETWORK_NAMES[0],
             config.CLUSTER_NAME[0]
+        )
+
+        testflow.step(
+            "Removing network %s from cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
         )
         assert networks.remove_network_from_cluster(
             True,
             config.NETWORK_NAMES[0],
             config.CLUSTER_NAME[0]
         )
-        common.login_as_user(
-            user_name=config.USER_NAMES[1],
-            filter_=False
-        )
-        assert networks.add_network_to_cluster(
-            False,
-            config.NETWORK_NAMES[0],
-            config.CLUSTER_NAME[0]
-        )
 
-        logger.info("ClusterAdmin can't attach network to cluster.")
+        testflow.step(
+            "Log in as user %s@%s.", config.USER_NAMES[1], config.USER_DOMAIN
+        )
+        common.login_as_user(user_name=config.USER_NAMES[1])
+
+        testflow.step(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
+        with pytest.raises(EntityNotFound):
+            networks.add_network_to_cluster(
+                False,
+                config.NETWORK_NAMES[0],
+                config.CLUSTER_NAME[0]
+            )
 
 
 class TestSwitching(NetworkingPositive):
@@ -223,15 +319,29 @@ class TestSwitching(NetworkingPositive):
     def setup_class(cls, request):
         super(TestSwitching, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
+
+        testflow.setup(
+            "Adding cluster %s permissions to user %s.",
+            config.CLUSTER_NAME[0], config.USER_NAMES[0]
+        )
         assert mla.addClusterPermissionsToUser(
             True,
             config.USER_NAMES[0],
             cluster=config.CLUSTER_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding permissions for network %s to user %s.",
+            config.NETWORK_NAMES[0], config.USER_NAMES[1]
         )
         assert mla.addPermissionsForNetwork(
             True,
@@ -239,6 +349,11 @@ class TestSwitching(NetworkingPositive):
             config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0],
             role=config.role.NetworkAdmin
+        )
+
+        testflow.setup(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
         )
         assert networks.add_network_to_cluster(
             True,
@@ -258,6 +373,9 @@ class TestSwitching(NetworkingPositive):
                 'vm' if kwargs['usages'] == 'display' else 'display')
 
     def _test_switching_display_and_required(self, **kwargs):
+        testflow.step(
+            "Update network %s in cluster %s.", config.NETWORK_NAMES[0]
+        )
         assert networks.update_cluster_network(
             True,
             config.CLUSTER_NAME[0],
@@ -265,15 +383,32 @@ class TestSwitching(NetworkingPositive):
             **kwargs
         )
         for user_name in config.USER_NAMES[:2]:
+            testflow.step(
+                "Log in as user %s@%s.", user_name, config.USER_DOMAIN
+            )
             common.login_as_user(user_name=user_name, filter_=False)
+
+            testflow.step("Inverting params.")
             self._inverse_params(kwargs)
+
+            testflow.step(
+                "Updating network %s in cluster %s.",
+                config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+            )
             assert networks.update_cluster_network(
                 True,
                 config.CLUSTER_NAME[0],
                 config.NETWORK_NAMES[0],
                 **kwargs
             )
+
+            testflow.step("Inverting params.")
             self._inverse_params(kwargs)
+
+            testflow.step(
+                "Updating network %s in cluster %s.",
+                config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+            )
             assert networks.update_cluster_network(
                 True,
                 config.CLUSTER_NAME[0],
@@ -311,6 +446,7 @@ class PositiveNetworkPermissions231826(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions231826, cls).setup_class(request)
 
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
@@ -320,20 +456,43 @@ class PositiveNetworkPermissions231826(NetworkingPositive):
             network=config.MGMT_BRIDGE
         )
 
+        testflow.setup(
+            "Adding VM %s permissions to user %s.",
+            config.VM_NAME, config.USER_NAMES[0]
+        )
         assert mla.addVMPermissionsToUser(
             True,
             config.USER_NAMES[0],
             config.VM_NAME
+        )
+
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
         )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
+
+        testflow.setup(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
         assert networks.add_network_to_cluster(
             True,
             config.NETWORK_NAMES[0],
             config.CLUSTER_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding permission role %s to "
+            "vnic profile %s in network %s to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
         )
         assert mla.addPermissionsForVnicProfile(
             True,
@@ -347,13 +506,25 @@ class PositiveNetworkPermissions231826(NetworkingPositive):
     @polarion("RHEVM3-8381")
     def test_attach_detach_network_to_vm(self):
         """ Attach/Detach a network to VM  """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
+        testflow.step(
+            "Adding nic %s to network %s and VM %s.",
+            config.NIC_NAMES[0],
+            config.NETWORK_NAMES[0],
+            config.VM_NAME
+        )
         assert vms.addNic(
             True,
             config.VM_NAME,
             name=config.NIC_NAMES[0],
             network=config.NETWORK_NAMES[0],
             interface='virtio'
+        )
+
+        testflow.step(
+            "Removing nic %s from %s.", config.NIC_NAMES[0], config.VM_NAME
         )
         assert vms.removeNic(True, config.VM_NAME, config.NIC_NAMES[0])
 
@@ -368,10 +539,20 @@ class PositiveNetworkPermissions231827(NetworkingPositive):
 
         # Not possible to create public vnicprofile, just add Everyone perms
         for net in config.NETWORK_NAMES:
+            testflow.setup(
+                "Adding network %s to datacenter %s.", net, config.DC_NAME[0]
+            )
             assert networks.add_network(
                 True,
                 name=net,
                 data_center=config.DC_NAME[0]
+            )
+
+            testflow.setup(
+                "Add vnic profile %s in network %s "
+                "in datacenter %s permissions to group %s.",
+                net, net,
+                config.DC_NAME[0], EVERYONE
             )
             assert mla.addVnicProfilePermissionsToGroup(
                 True,
@@ -380,22 +561,40 @@ class PositiveNetworkPermissions231827(NetworkingPositive):
                 net,
                 config.DC_NAME[0]
             )
+
+            testflow.setup(
+                "Adding network %s to cluster %s.",
+                net, config.CLUSTER_NAME[0]
+            )
             assert networks.add_network_to_cluster(
                 True,
                 net,
                 config.CLUSTER_NAME[0]
             )
 
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
+
+        testflow.setup(
+            "Adding VM %s permissions to user %s.",
+            config.VM_NAME, config.USER_NAMES[0]
+        )
         assert mla.addVMPermissionsToUser(
             True,
             config.USER_NAMES[0],
             config.VM_NAME
+        )
+
+        testflow.setup(
+            "Adding nic %s to VM %s with network %s.",
+            config.NIC_NAMES[0],
+            config.VM_NAME,
+            config.NETWORK_NAMES[0]
         )
         assert vms.addNic(
             True,
@@ -408,8 +607,14 @@ class PositiveNetworkPermissions231827(NetworkingPositive):
     @polarion("RHEVM3-8380")
     def test_visible_networks_and_manipulations(self):
         """ Visible networks and manipulations """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
         for net in config.NETWORK_NAMES:
+            testflow.step(
+                "Adding nic %s to VM %s with network %s.",
+                net, config.VM_NAME, net
+            )
             assert vms.addNic(
                 True,
                 config.VM_NAME,
@@ -417,16 +622,24 @@ class PositiveNetworkPermissions231827(NetworkingPositive):
                 network=net,
                 interface='virtio'
             )
+
+            testflow.step("Updating nic %s on VM %s.", net, config.VM_NAME)
             assert vms.updateNic(
                 True,
                 config.VM_NAME,
                 net,
                 name="{0}-x".format(net)
             )
+
+        testflow.step("Getting networks names.")
         nets = [n.get_name() for n in networks.NET_API.get(abs_link=False)]
-        logger.info("User can see networks: '%s'", nets)
-        if not config.GOLDEN_ENV:
-            assert len(nets) == 6
+
+        testflow.step("User can see networks: %s", nets)
+
+        testflow.step(
+            "Removing nic %s from VM %s.",
+            config.NIC_NAMES[0], config.VM_NAME
+        )
         assert vms.removeNic(True, config.VM_NAME, config.NIC_NAMES[0])
 
 
@@ -440,27 +653,49 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions231830, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[1], config.DC_NAME[0]
         )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[1],
             data_center=config.DC_NAME[0]
         )
+
         for net in config.NETWORK_NAMES[:2]:
+            testflow.setup(
+                "Adding network %s to cluster %s.", net, config.CLUSTER_NAME[0]
+            )
             assert networks.add_network_to_cluster(
                 True,
                 net,
                 config.CLUSTER_NAME[0]
             )
+
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
+        )
+
+        testflow.setup(
+            "Adding nic %s with network %s to VM %s.",
+            config.NETWORK_NAMES[0],
+            config.NIC_NAMES[0],
+            config.VM_NAME
         )
         assert vms.addNic(
             True,
@@ -468,6 +703,11 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
             name=config.NIC_NAMES[0],
             network=config.NETWORK_NAMES[0],
             interface='virtio'
+        )
+
+        testflow.setup(
+            "Creating template %s from VM %s.",
+            config.TEMPLATE_NAMES[0], config.VM_NAME
         )
         assert templates.createTemplate(
             True,
@@ -493,16 +733,28 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
         """ wrap assert """
         net1 = config.NETWORK_NAMES[0]
         net2 = config.NETWORK_NAMES[1]
+
+        testflow.step("Log in as user.")
         common.login_as_user(filter_=filter_)
+
+        testflow.step("Checking if user can see networks.")
         self.can_see(
             self.filter_net(net1, p1, networks.find_network),
             self.filter_net(net2, p2, networks.find_network),
             self.filter_net(net1, p3, networks.VNIC_PROFILE_API.find),
             self.filter_net(net2, p4, networks.VNIC_PROFILE_API.find)
         )
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
 
     def _test_permissions_on_vnic_profile(self):
+        testflow.step(
+            "Adding role %s permissions for vnic profile %s to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
+        )
         mla.addPermissionsForVnicProfile(
             True,
             config.USER_NAMES[0],
@@ -511,7 +763,13 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
             config.DC_NAME[0],
             role=config.role.VnicProfileUser
         )
+
         self._test_wrap(True, False, True, False)
+
+        testflow.step(
+            "Removing user %s permissions from vnic profile %s.",
+            config.USERS[0], config.NETWORK_NAMES[0]
+        )
         mla.removeUserPermissionsFromVnicProfile(
             True,
             config.NETWORK_NAMES[0],
@@ -521,17 +779,37 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
         )
 
     def _test_permissions_on_vm(self):
+        testflow.step(
+            "Adding VM %s permissions to user %s.",
+            config.VM_NAME, config.USER_NAMES[0]
+        )
         mla.addVMPermissionsToUser(True, config.USER_NAMES[0], config.VM_NAME)
+
         self._test_wrap(True, False, True, False)
+
+        testflow.step(
+            "Removing user %s permissions from VM %s.",
+            config.USERS[0], config.VM_NAME
+        )
         mla.removeUserPermissionsFromVm(True, config.VM_NAME, config.USERS[0])
 
     def _test_permissions_on_template(self):
+        testflow.step(
+            "Adding permissions for template %s to user %s.",
+            config.TEMPLATE_NAMES[0], config.USER_NAMES[0]
+        )
         mla.addPermissionsForTemplate(
             True,
             config.USER_NAMES[0],
             config.TEMPLATE_NAMES[0]
         )
+
         self._test_wrap(True, False, True, False)
+
+        testflow.step(
+            "Removing user %s permissions from template %s.",
+            config.USERS[0], config.TEMPLATE_NAMES[0]
+        )
         mla.removeUserPermissionsFromTemplate(
             True,
             config.TEMPLATE_NAMES[0],
@@ -539,12 +817,22 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
         )
 
     def _test_permissions_on_datacenter(self):
+        testflow.step(
+            "Adding permissions for datacenter %s to user %s.",
+            config.DC_NAME[0], config.USER_NAMES[0]
+        )
         mla.addPermissionsForDataCenter(
             True,
             config.USER_NAMES[0],
             config.DC_NAME[0]
         )
+
         self._test_wrap(True, True, True, True, False)
+
+        testflow.step(
+            "Removing user %s permissions from datacenter %s.",
+            config.USERS[0], config.DC_NAME[0]
+        )
         mla.removeUserPermissionsFromDatacenter(
             True,
             config.DC_NAME[0],
@@ -552,12 +840,22 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
         )
 
     def _test_permissions_on_cluster(self):
+        testflow.step(
+            "Adding cluster %s permissions to user %s.",
+            config.CLUSTER_NAME[0], config.USER_NAMES[0]
+        )
         mla.addClusterPermissionsToUser(
             True,
             config.USER_NAMES[0],
             config.CLUSTER_NAME[0]
         )
+
         self._test_wrap(True, True, True, True, False)
+
+        testflow.step(
+            "Removing user %s permissions from cluster %s.",
+            config.USERS[0], config.CLUSTER_NAME[0]
+        )
         mla.removeUserPermissionsFromCluster(
             True,
             config.CLUSTER_NAME[0],
@@ -565,13 +863,26 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
         )
 
     def _test_permissions_on_system(self):
+        testflow.step(
+            "Adding role %s to user %s.",
+            config.role.UserRole, config.USER_NAMES[0]
+        )
         users.addRoleToUser(
             True,
             config.USER_NAMES[0],
             config.role.UserRole
         )
+
         self._test_wrap(True, True, True, True)
+
+        testflow.step(
+            "Removing user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
+        )
         common.remove_user(True, config.USER_NAMES[0])
+
+        testflow.step(
+            "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
+        )
         common.add_user(
             True,
             user_name=config.USER_NAMES[0],
@@ -579,6 +890,12 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
         )
 
     def _test_permissions_on_network(self):
+        testflow.step(
+            "Adding role %s permissions for network %s to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
+        )
         mla.addPermissionsForNetwork(
             True,
             config.USER_NAMES[0],
@@ -586,7 +903,13 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
             config.DC_NAME[0],
             config.role.VnicProfileUser
         )
+
         self._test_wrap(True, False, True, False)
+
+        testflow.step(
+            "Removing user %s permissions from network %s.",
+            config.USERS[0], config.NETWORK_NAMES[0]
+        )
         mla.removeUserPermissionsFromNetwork(
             True,
             config.NETWORK_NAMES[0],
@@ -614,15 +937,28 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions231832, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
+
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[1], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[1],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.setup(
+            "Updating vnic profile %s.", config.NETWORK_NAMES[0]
         )
         assert networks.update_vnic_profile(
             name=config.NETWORK_NAMES[0],
@@ -631,6 +967,7 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
             data_center=config.DC_NAME[0],
             port_mirroring=True
         )
+
         for user_name, user_role in zip(
                 config.USER_NAMES[:2],
                 [
@@ -639,6 +976,10 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
                 ]
         ):
             for vnic_profile in config.NETWORK_NAMES[:2]:
+                testflow.setup(
+                    "Adding role %s permissions for vnic profile to user %s.",
+                    user_role, vnic_profile, user_name
+                )
                 assert mla.addPermissionsForVnicProfile(
                     positive=True,
                     user=user_name,
@@ -648,13 +989,22 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
                     role=user_role
                 )
 
+        testflow.setup(
+            "Adding role %s permissions for datacenter %s to user %s.",
+            config.role.UserRole, config.DC_NAME[0], config.USER_NAMES[1]
+        )
         assert mla.addPermissionsForDataCenter(
             True,
             config.USER_NAMES[1],
             config.DC_NAME[0],
             config.role.UserRole
         )
+
         for net in config.NETWORK_NAMES[:2]:
+            testflow.setup(
+                "Adding network %s to cluster %s.",
+                net, config.CLUSTER_NAME[0]
+            )
             assert networks.add_network_to_cluster(
                 True,
                 net,
@@ -664,13 +1014,22 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
     @polarion("RHEVM3-8378")
     def test_port_mirroring(self):
         """ Port mirroring """
+        testflow.step("Log in as user %s.", config.USER_NAMES[1])
         common.login_as_user(user_name=config.USER_NAMES[1])
+
+        testflow.step(
+            "Updating vnic profile %s port mirroring.", config.NETWORK_NAMES[0]
+        )
         assert not networks.update_vnic_profile(
             name=config.NETWORK_NAMES[0],
             network=config.NETWORK_NAMES[0],
             port_mirroring=False,
             cluster=config.CLUSTER_NAME[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.step(
+            "Updating vnic profile %s port mirroring.", config.NETWORK_NAMES[1]
         )
         assert not networks.update_vnic_profile(
             name=config.NETWORK_NAMES[1],
@@ -680,13 +1039,22 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
             data_center=config.DC_NAME[0]
         )
 
+        testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
+
+        testflow.step(
+            "Updating vnic profile %s port mirroring.", config.NETWORK_NAMES[0]
+        )
         assert networks.update_vnic_profile(
             name=config.NETWORK_NAMES[0],
             network=config.NETWORK_NAMES[0],
             cluster=config.CLUSTER_NAME[0],
             data_center=config.DC_NAME[0],
             port_mirroring=False
+        )
+
+        testflow.step(
+            "Updating vnic profile %s port mirroring.", config.NETWORK_NAMES[1]
         )
         assert networks.update_vnic_profile(
             name=config.NETWORK_NAMES[1],
@@ -705,16 +1073,29 @@ class PositiveNetworkPermissions236367(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions236367, cls).setup_class(request)
 
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
+
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for vnic profile to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
         )
         assert mla.addPermissionsForVnicProfile(
             True,
@@ -724,12 +1105,22 @@ class PositiveNetworkPermissions236367(NetworkingPositive):
             config.DC_NAME[0],
             role=config.role.VnicProfileUser
         )
+
         for user_name in config.USER_NAMES[:2]:
+            testflow.setup(
+                "Adding VM %s permissions to user %s.",
+                config.VM_NAME, user_name
+            )
             assert mla.addVMPermissionsToUser(
                 True,
                 user_name,
                 config.VM_NAME
             )
+
+        testflow.setup(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
         assert networks.add_network_to_cluster(
             True,
             config.NETWORK_NAMES[0],
@@ -739,13 +1130,24 @@ class PositiveNetworkPermissions236367(NetworkingPositive):
     @polarion("RHEVM3-8376")
     def test_add_vnic_to_vm(self):
         """ Add a VNIC to VM  """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
+        testflow.step(
+            "Adding nic %s to VM %s.",
+            config.NIC_NAMES[0], config.VM_NAME
+        )
         assert vms.addNic(
             True,
             config.VM_NAME,
             name=config.NIC_NAMES[0],
             network=None,
             interface='virtio'
+        )
+
+        testflow.step(
+            "Adding nic %s with network %s to VM %s.",
+            config.NIC_NAMES[0], config.NETWORK_NAMES[0], config.VM_NAME
         )
         assert vms.addNic(
             True,
@@ -754,7 +1156,16 @@ class PositiveNetworkPermissions236367(NetworkingPositive):
             network=config.NETWORK_NAMES[0],
             interface='virtio'
         )
+
+        testflow.step(
+            "Log in as user %s@%s.", config.USER_NAMES[1], config.USER_DOMAIN
+        )
         common.login_as_user(user_name=config.USER_NAMES[1])
+
+        testflow.step(
+            "Adding nic %s to VM %s.",
+            config.NIC_NAMES[0], config.VM_NAME
+        )
         assert vms.addNic(
             True,
             config.VM_NAME,
@@ -772,16 +1183,29 @@ class PositiveNetworkPermissions236406(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions236406, cls).setup_class(request)
 
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
+
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for vnic profile %s to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
         )
         assert mla.addPermissionsForVnicProfile(
             True,
@@ -791,17 +1215,31 @@ class PositiveNetworkPermissions236406(NetworkingPositive):
             config.DC_NAME[0],
             role=config.role.VnicProfileUser
         )
+
         for user_name in config.USER_NAMES[:2]:
+            testflow.setup(
+                "Adding VM %s permissions to user %s.",
+                config.VM_NAME, user_name
+            )
             assert mla.addVMPermissionsToUser(
                 True,
                 user_name,
                 config.VM_NAME
             )
 
+        testflow.setup(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
         assert networks.add_network_to_cluster(
             True,
             config.NETWORK_NAMES[0],
             config.CLUSTER_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding nic %s with network %s to VM %s.",
+            config.NIC_NAMES[0], config.NETWORK_NAMES[0], config.VM_NAME
         )
         assert vms.addNic(
             True,
@@ -814,15 +1252,30 @@ class PositiveNetworkPermissions236406(NetworkingPositive):
     @polarion("RHEVM3-8375")
     def test_update_vnic_on_vm(self):
         """ Update a VNIC on VM """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
         for network in [None, config.NETWORK_NAMES[0]]:
+            testflow.step(
+                "Updating nic %s on VM %s.",
+                config.NIC_NAMES[0], config.VM_NAME
+            )
             assert vms.updateNic(
                 True,
                 config.VM_NAME,
                 config.NIC_NAMES[0],
                 network=network
             )
+
+        testflow.step(
+            "Log in as user %s@%s.", config.USER_NAMES[1], config.USER_DOMAIN
+        )
         common.login_as_user(user_name=config.USER_NAMES[1])
+
+        testflow.step(
+            "Updating nic %s on VM %s.",
+            config.NIC_NAMES[0], config.VM_NAME
+        )
         assert vms.updateNic(
             True,
             config.VM_NAME,
@@ -839,6 +1292,7 @@ class PositiveNetworkPermissions236408(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions236408, cls).setup_class(request)
 
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
@@ -847,10 +1301,22 @@ class PositiveNetworkPermissions236408(NetworkingPositive):
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
+
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for vnic %s to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
         )
         assert mla.addPermissionsForVnicProfile(
             True,
@@ -860,17 +1326,36 @@ class PositiveNetworkPermissions236408(NetworkingPositive):
             config.DC_NAME[0],
             role=config.role.VnicProfileUser
         )
+
         for user_name in config.USER_NAMES[:2]:
+            testflow.setup(
+                "Adding VM %s permissions to user %s.",
+                config.VM_NAME, user_name
+            )
             assert mla.addVMPermissionsToUser(
                 True,
                 user_name,
                 config.VM_NAME
             )
+
+        testflow.setup(
+            "Adding role %s permissions for datacenter %s to user %s.",
+            config.role.TemplateCreator,
+            config.DC_NAME[0],
+            config.USER_NAMES[0]
+        )
         assert mla.addPermissionsForDataCenter(
             positive=True,
             user=config.USER_NAMES[0],
             data_center=config.DC_NAME[0],
             role=config.role.TemplateCreator
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for datacenter %s to user %s.",
+            config.role.TemplateOwner,
+            config.DC_NAME[0],
+            config.USER_NAMES[1]
         )
         assert mla.addPermissionsForDataCenter(
             positive=True,
@@ -879,6 +1364,10 @@ class PositiveNetworkPermissions236408(NetworkingPositive):
             role=config.role.TemplateOwner
         )
 
+        testflow.setup(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
         assert networks.add_network_to_cluster(
             True,
             config.NETWORK_NAMES[0],
@@ -886,21 +1375,36 @@ class PositiveNetworkPermissions236408(NetworkingPositive):
         )
 
     @polarion("RHEVM3-8374")
-    @bz({'1209505': {}})
     def test_add_vnic_to_template(self):
         """ Add a VNIC to template """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
+        testflow.step(
+            "Creating template %s from VM %s.",
+            config.TEMPLATE_NAMES[0], config.VM_NAME
+        )
         assert templates.createTemplate(
             True,
             vm=config.VM_NAME,
             name=config.TEMPLATE_NAMES[0],
             cluster=config.CLUSTER_NAME[0]
         )
+
+        testflow.step(
+            "Adding nic %s to template %s.",
+            config.NIC_NAMES[0], config.TEMPLATE_NAMES[0]
+        )
         assert templates.addTemplateNic(
             True,
             config.TEMPLATE_NAMES[0],
             name=config.NIC_NAMES[0],
             network=None
+        )
+
+        testflow.step(
+            "Adding nic %s to template %s.",
+            config.NIC_NAMES[1], config.TEMPLATE_NAMES[0]
         )
         assert templates.addTemplateNic(
             True,
@@ -909,7 +1413,15 @@ class PositiveNetworkPermissions236408(NetworkingPositive):
             network=config.NETWORK_NAMES[0]
         )
 
+        testflow.step(
+            "Log in as user %s@%s.", config.USER_NAMES[1], config.USER_DOMAIN
+        )
         common.login_as_user(user_name=config.USER_NAMES[1])
+
+        testflow.step(
+            "Adding nic %s to template %s.",
+            config.NIC_NAMES[2], config.TEMPLATE_NAMES[0]
+        )
         assert templates.addTemplateNic(
             True,
             config.TEMPLATE_NAMES[0],
@@ -926,15 +1438,31 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions236409, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
+
+        testflow.setup(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
         assert networks.add_network_to_cluster(
             True,
             config.NETWORK_NAMES[0],
             config.CLUSTER_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for vnic profile %s to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
         )
         assert mla.addPermissionsForVnicProfile(
             True,
@@ -944,6 +1472,8 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
             config.DC_NAME[0],
             role=config.role.VnicProfileUser
         )
+
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
@@ -952,6 +1482,13 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
+
+        testflow.setup(
+            "Adding nic %s with network %s to VM %s.",
+            config.NIC_NAMES[0],
+            config.NETWORK_NAMES[0],
+            config.VM_NAME
+        )
         assert vms.addNic(
             True,
             config.VM_NAME,
@@ -959,9 +1496,18 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
             network=config.NETWORK_NAMES[0],
             interface='virtio'
         )
+
         for user_name in config.USER_NAMES[:2]:
+            testflow.setup(
+                "Adding VM %s permissions to user %s.",
+                config.VM_NAME, user_name
+            )
             assert mla.addVMPermissionsToUser(True, user_name, config.VM_NAME)
 
+        testflow.setup(
+            "Creating template %s from VM %s.",
+            config.TEMPLATE_NAMES[0], config.VM_NAME
+        )
         assert templates.createTemplate(
             True,
             vm=config.VM_NAME,
@@ -970,6 +1516,12 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
         )
 
         for user_name in config.USER_NAMES[:2]:
+            testflow.setup(
+                "Adding role %s permissions for template %s to user %s.",
+                config.role.TemplateOwner,
+                config.TEMPLATE_NAMES[0],
+                user_name
+            )
             assert mla.addPermissionsForTemplate(
                 positive=True,
                 user=user_name,
@@ -980,12 +1532,23 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
     @polarion("RHEVM3-8373")
     def test_update_vnic_on_template(self):
         """ Update a VNIC on the template """
+        testflow.step("Log in as user.")
         common.login_as_user()
+
+        testflow.step(
+            "Updating template %s nic %s.",
+            config.TEMPLATE_NAMES[0], config.NIC_NAMES[0]
+        )
         assert templates.updateTemplateNic(
             True,
             config.TEMPLATE_NAMES[0],
             config.NIC_NAMES[0],
             network=None
+        )
+
+        testflow.step(
+            "Updating template %s nic %s.",
+            config.TEMPLATE_NAMES[0], config.NIC_NAMES[0]
         )
         assert templates.updateTemplateNic(
             True,
@@ -993,11 +1556,21 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
             config.NIC_NAMES[0],
             network=config.NETWORK_NAMES[0]
         )
+
+        testflow.step(
+            "Updating template %s nic %s.",
+            config.TEMPLATE_NAMES[0], config.NIC_NAMES[0]
+        )
         assert templates.updateTemplateNic(
             True,
             config.TEMPLATE_NAMES[0],
             config.NIC_NAMES[0],
             name='_'
+        )
+
+        testflow.step(
+            "Updating template %s nic %s.",
+            config.TEMPLATE_NAMES[0], config.NIC_NAMES[0]
         )
         assert templates.updateTemplateNic(
             True,
@@ -1005,12 +1578,26 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
             '_',
             name=config.NIC_NAMES[0]
         )
+
+        testflow.step(
+            "Log in as user %s@%s.", config.USER_NAMES[1], config.USER_DOMAIN
+        )
         common.login_as_user(user_name=config.USER_NAMES[1])
+
+        testflow.step(
+            "Updating template %s nic %s.",
+            config.TEMPLATE_NAMES[0], config.NIC_NAMES[0]
+        )
         assert templates.updateTemplateNic(
             True,
             config.TEMPLATE_NAMES[0],
             config.NIC_NAMES[0],
             network=None
+        )
+
+        testflow.step(
+            "Updating template %s nic %s.",
+            config.TEMPLATE_NAMES[0], config.NIC_NAMES[0]
         )
         assert templates.updateTemplateNic(
             True,
@@ -1027,6 +1614,11 @@ class PositiveNetworkPermissions236577(NetworkingPositive):
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
         super(PositiveNetworkPermissions236577, cls).setup_class(request)
+
+        testflow.setup(
+            "Adding role %s permissions for datacenter %s to user %s.",
+            config.role.NetworkAdmin, config.DC_NAME[0], config.USER_NAMES[0]
+        )
         assert mla.addPermissionsForDataCenter(
             True,
             config.USER_NAMES[0],
@@ -1038,28 +1630,54 @@ class PositiveNetworkPermissions236577(NetworkingPositive):
     def test_remove_network_from_datacenter(self):
         """ Remove Network From DC """
         msg = "NetworkAdmin role wasn't removed after network {0} was removed."
+
+        testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
+
+        testflow.step(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.step(
+            "Removing network %s from datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
         )
         assert networks.remove_network(
             True,
             network=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
+
+        testflow.step("Log in as admin.")
         common.login_as_admin()
+
+        testflow.step(
+            "Removing user %s permissions from datacenter %s.",
+            config.USERS[0], config.DC_NAME[0]
+        )
         assert mla.removeUserPermissionsFromDatacenter(
             True,
             config.DC_NAME[0],
             config.USERS[0]
         )
-        # Check if permissions was removed
+
         perm_persist = False
+        testflow.step("Getting user %s object.", config.USER_NAMES[0])
         obj = mla.userUtil.find(config.USER_NAMES[0])
+
+        testflow.step("Getting user %s permits.", config.USER_NAMES[0])
         obj_permits = mla.permisUtil.getElemFromLink(obj, get_href=False)
+
+        testflow.step("Getting id of role %s.", config.role.NetworkAdmin)
         role_id = users.rlUtil.find(config.role.NetworkAdmin).get_id()
+
+        testflow.step("Checking if permissions were removed.")
         for perm in obj_permits:
             perm_persist = perm_persist or perm.get_role().get_id() == role_id
         assert not perm_persist, msg.format(config.NETWORK_NAMES[0])
@@ -1074,7 +1692,13 @@ class PositiveNetworkPermissions236664(NetworkingPositive):
         super(PositiveNetworkPermissions236664, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Log in as admin.")
             common.login_as_admin()
+
+            testflow.teardown(
+                "Removing user %s permissions from datacenter %s.",
+                config.USER_NAMES[0], config.DC_NAME[0]
+            )
             assert mla.removeUserPermissionsFromDatacenter(
                 True,
                 config.DC_NAME[0],
@@ -1083,11 +1707,17 @@ class PositiveNetworkPermissions236664(NetworkingPositive):
 
         request.addfinalizer(finalize)
 
+        testflow.setup("Adding role %s.", ROLE_NAME)
         assert mla.addRole(
             True,
             name=ROLE_NAME,
             administrative='true',
             permits='login create_storage_pool_network'
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for datacenter %s to user %s.",
+            ROLE_NAME, config.USER_NAMES[0], config.DC_NAME[0]
         )
         assert mla.addPermissionsForDataCenter(
             True,
@@ -1099,17 +1729,36 @@ class PositiveNetworkPermissions236664(NetworkingPositive):
     @polarion("RHEVM3-8371")
     def test_custom_role(self):
         """ Custom Role """
+        MTU = 1405
+
+        testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
+
+        testflow.step(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
+
+        testflow.step(
+            "Updating network %s MTU in datacenter %s to %s.",
+            config.NETWORK_NAMES[0],
+            config.DC_NAME[0], MTU
+        )
         assert networks.update_network(
             True,
             config.NETWORK_NAMES[0],
-            mtu=1405,
+            mtu=MTU,
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.step(
+            "Removing network %s from datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
         )
         assert networks.remove_network(
             True,
@@ -1128,6 +1777,7 @@ class PositiveNetworkPermissions317269(NetworkingPositive):
         super(PositiveNetworkPermissions317269, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Removing datacenter %s.", cls.dc_name)
             ignore_all_exceptions(
                 datacenters.remove_datacenter,
                 positive=True,
@@ -1136,6 +1786,10 @@ class PositiveNetworkPermissions317269(NetworkingPositive):
 
         request.addfinalizer(finalize)
 
+        testflow.setup(
+            "Adding datacenter %s with version %s.",
+            cls.dc_name, config.COMP_VERSION
+        )
         assert datacenters.addDataCenter(
             True,
             name=cls.dc_name,
@@ -1147,6 +1801,7 @@ class PositiveNetworkPermissions317269(NetworkingPositive):
     def test_automatic_creation_of_permissions(self):
         """ Check auto permission creation on new datacenter """
         # newly created dc, vnicprofile has VnicProfileUser role on Everyone
+        testflow.step("Checking if permissions were created.")
         assert mla.hasGroupPermissionsOnObject(
             'Everyone',
             mla.groupUtil.find('Everyone'),
@@ -1164,6 +1819,7 @@ class PositiveNetworkPermissions317133(NetworkingPositive):
         super(PositiveNetworkPermissions317133, cls).setup_class(request)
 
         def finalize():
+            testflow.teardown("Removing datacenter %s.", cls.dc_name)
             ignore_all_exceptions(
                 datacenters.remove_datacenter,
                 positive=True,
@@ -1172,14 +1828,23 @@ class PositiveNetworkPermissions317133(NetworkingPositive):
 
         request.addfinalizer(finalize)
 
+        testflow.setup(
+            "Adding role %s to user %s.",
+            config.role.DataCenterAdmin, config.USER_NAMES[0]
+        )
         assert users.addRoleToUser(
             True,
             config.USER_NAMES[0],
             config.role.DataCenterAdmin
         )
 
+        testflow.setup("Log in as user.")
         common.login_as_user(filter_=False)
 
+        testflow.setup(
+            "Adding datacenter %s with version %s.",
+            cls.dc_name, config.COMP_VERSION
+        )
         assert datacenters.addDataCenter(
             True,
             name=cls.dc_name,
@@ -1188,27 +1853,38 @@ class PositiveNetworkPermissions317133(NetworkingPositive):
         )
 
     @polarion("RHEVM3-4030")
-    @bz({'1214805': {}})
     def test_automatic_creation_to_user(self):
         """ Check that network admin permissions are added automatically  """
+        testflow.step("Log in as admin.")
         common.login_as_admin()
 
+        testflow.step("Getting vnic %s.", config.MGMT_BRIDGE)
         vnic = networks.get_vnic_profile_obj(
             config.MGMT_BRIDGE,
             config.MGMT_BRIDGE,
             data_center=self.dc_name
         )
+
+        testflow.step("Finding network %s.", config.MGMT_BRIDGE)
         net = networks.find_network(
             config.MGMT_BRIDGE,
             data_center=self.dc_name,
         )
 
+        testflow.step(
+            "Checking if user %s has role %s permissions on vnic %s.",
+            config.USERS[0], config.role.NetworkAdmin, config.MGMT_BRIDGE
+        )
         assert mla.has_user_permissions_on_object(
             config.USERS[0],
             vnic,
             role=config.role.NetworkAdmin
         ), "Permission was not created at datacenter for vnicprofile."
 
+        testflow.step(
+            "Checking if user %s has role %s permissions on network %s.",
+            config.USERS[0], config.role.NetworkAdmin, config.MGMT_BRIDGE
+        )
         assert mla.has_user_permissions_on_object(
             config.USERS[0],
             net,
@@ -1224,15 +1900,31 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions320610, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
+
+        testflow.setup(
+            "Adding network %s to cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
+        )
         networks.add_network_to_cluster(
             True,
             config.NETWORK_NAMES[0],
             config.CLUSTER_NAME[0]
+        )
+
+        testflow.setup(
+            "Adding vnic profile %s to network %s in "
+            "cluster %s in datacenter %s.",
+            config.NETWORK_NAMES[1], config.NETWORK_NAMES[0],
+            config.CLUSTER_NAME[0], config.DC_NAME[0]
         )
         networks.add_vnic_profile(
             True,
@@ -1240,6 +1932,13 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
             cluster=config.CLUSTER_NAME[0],
             data_center=config.DC_NAME[0],
             network=config.NETWORK_NAMES[0]
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for vnic profile %s to user %s.",
+            config.role.VnicProfileUser,
+            config.NETWORK_NAMES[0],
+            config.USER_NAMES[0]
         )
         mla.addPermissionsForVnicProfile(
             True,
@@ -1249,6 +1948,13 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
             config.DC_NAME[0],
             role=config.role.VnicProfileUser
         )
+
+        testflow.setup(
+            "Adding role %s permissions for "
+            "network %s in datacenter %s to user %s.",
+            config.role.VnicProfileUser, config.NETWORK_NAMES[0],
+            config.DC_NAME[0], config.USER_NAMES[0]
+        )
         mla.addPermissionsForNetwork(
             True,
             config.USER_NAMES[0],
@@ -1256,6 +1962,8 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
             data_center=config.DC_NAME[0],
             role=config.role.VnicProfileUser
         )
+
+        testflow.setup("Creating VM %s.", config.VM_NAME)
         vms.createVm(
             positive=True,
             vmName=config.VM_NAME,
@@ -1263,6 +1971,11 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
             storageDomainName=config.MASTER_STORAGE,
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
+        )
+
+        testflow.setup(
+            "Adding VM %s permissions to user %s.",
+            config.VM_NAME, config.USER_NAMES[0]
         )
         mla.addVMPermissionsToUser(True, config.USER_NAMES[0], config.VM_NAME)
 
@@ -1272,6 +1985,10 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
         vnicProfile perms on vNIC profile are restricted to specific profile
         """
         common.login_as_user()
+        testflow.step(
+            "Adding nic %s to VM %s.",
+            config.NIC_NAMES[0], config.VM_NAMES[0]
+        )
         assert vms.addNic(
             True,
             config.VM_NAME,
@@ -1281,6 +1998,10 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
             interface='virtio'
         )
         with pytest.raises(EntityNotFound):
+            testflow.step(
+                "Adding nic %s to VM %s.",
+                config.NIC_NAMES[0], config.VM_NAME[0]
+            )
             vms.addNic(
                 False,
                 config.VM_NAME,
@@ -1299,11 +2020,20 @@ class PositiveNetworkPermissions317270(NetworkingPositive):
     def setup_class(cls, request):
         super(PositiveNetworkPermissions317270, cls).setup_class(request)
 
+        testflow.setup(
+            "Adding network %s to datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0],
             usages='vm'
+        )
+
+        testflow.setup(
+            "Adding role %s permissions for vnic %s to user %s.",
+            config.role.UserRole, config.NETWORK_NAMES[0], config.USER_NAMES[0]
         )
         assert mla.addPermissionsForVnicProfile(
             True,
@@ -1317,21 +2047,37 @@ class PositiveNetworkPermissions317270(NetworkingPositive):
     @polarion("RHEVM3-4032")
     def test_non_vm_to_vm_network(self):
         """ When network is switched to nonvm permissions should be removed """
+        testflow.step("Getting vnic objects.")
         vnic = networks.get_vnic_profile_obj(
             config.NETWORK_NAMES[0],
             config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
+        )
+
+        testflow.step(
+            "Checking if user %s has permissions of role %s on vnic %s.",
+            config.USERS[0], vnic, config.role.UserRole
         )
         assert mla.has_user_permissions_on_object(
             config.USERS[0],
             vnic,
             role=config.role.UserRole
         )
+
+        testflow.step(
+            "Updating network %s in datacenter %s.",
+            config.NETWORK_NAMES[0], config.DC_NAME[0]
+        )
         assert networks.update_network(
             True,
             network=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0],
             usages=''
+        )
+
+        testflow.step(
+            "Checking if user %s hasn't permissions of role %s on vnic %s.",
+            config.USERS[0], vnic, config.role.UserRole
         )
         assert not mla.has_user_permissions_on_object(
             config.USERS[0],
