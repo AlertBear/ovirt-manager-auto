@@ -80,7 +80,8 @@ def deactivate_detach_and_remove_domain_fin(request):
         )
         spm_host = ll_hosts.getSPMHost(config.HOSTS)
         assert hl_sd.remove_storage_domain(
-            domain_to_remove, dc_name, spm_host, format_disk=True
+            domain_to_remove, dc_name, spm_host, engine=config.ENGINE,
+            format_disk=True
         ), "Failed to detach and remove storage-domain %s" % domain_to_remove
     request.addfinalizer(finalizer)
 
@@ -195,7 +196,7 @@ def secure_deactivate_storage_domain(request):
         "Deactivate storage domain %s", self.non_master
     )
     assert hl_sd.deactivate_domain(
-        self.dc_to_detach_from, self.domain_to_detach
+        self.dc_to_detach_from, self.domain_to_detach, config.ENGINE
     ), "Failed to detach domain %s" % self.domain_to_detach
 
 
@@ -215,7 +216,7 @@ def create_gluster_or_posix_export_domain(request, attach_export_domain):
         )
         assert hl_sd.remove_storage_domain(
             self.export_domain, config.DATA_CENTER_NAME, self.host,
-            format_disk=True
+            engine=config.ENGINE, format_disk=True
         ), "Failed to detach and remove storage-domain %s" % self.export_domain
     request.addfinalizer(finalizer)
 
@@ -253,8 +254,8 @@ def create_gluster_or_posix_export_domain(request, attach_export_domain):
         config.ENGINE, config.DATA_CENTER_NAME
     )
     hl_sd.remove_storage_domain(
-        self.export_domain, config.DATA_CENTER_NAME, self.host, False,
-        config.VDC, config.VDC_PASSWORD
+        self.export_domain, config.DATA_CENTER_NAME, self.host,
+        engine=config.ENGINE
     )
 
 

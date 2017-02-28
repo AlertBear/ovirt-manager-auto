@@ -321,7 +321,9 @@ def storage_cleanup():
                     "SD LEFTOVER FOUND: NAME: %s, ID: %s, TYPE: %s",
                     sd_name, sd_obj.id, sd_obj.storage.get_type()
                 )
-                hl_sd.destroy_storage_domain(sd_name, dc_name, host_name=spm)
+                hl_sd.destroy_storage_domain(
+                    sd_name, dc_name, host_name=spm, engine=config.ENGINE
+                )
     cleanup_file_resources(config.opts['storages'])
 
 

@@ -73,7 +73,9 @@ def remove_disks_and_sds():
                 dc_name = ll_dc.get_data_center(
                     sd_dc.get_id(), key="id"
                 ).get_name()
-                hl_sd.detach_and_deactivate_domain(dc_name, sd_name)
+                hl_sd.detach_and_deactivate_domain(
+                    dc_name, sd_name, engine=config.ENGINE
+                )
             if sd.get_type() != 'image':
                 testflow.step("Remove SD: %s", sd_name)
                 ll_sd.removeStorageDomain(True, sd_name, hosts[0])
@@ -143,8 +145,7 @@ class CleanGoldenEnv(BaseTestCase):
             hl_dc.clean_datacenter(
                 True,
                 dc.name,
-                vdc=config.VDC,
-                vdc_password=config.VDC_PASSWORD,
+                engine=config.ENGINE,
                 hosted_engine_vm=config.HE_VM_NAME,
                 hosted_engine_sd=config.HE_SD_NAME,
             )

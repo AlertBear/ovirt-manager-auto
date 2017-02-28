@@ -282,7 +282,7 @@ class UpgradeBaseClass(StorageTest):
         for sd in sds:
             if not sd.get_master():
                 hl_sd.detach_and_deactivate_domain(
-                    self.data_center_name, sd.get_name()
+                    self.data_center_name, sd.get_name(), engine=config.ENGINE
                 )
         status, master = ll_sd.findMasterStorageDomain(
             True, self.data_center_name

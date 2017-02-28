@@ -1,11 +1,10 @@
-
 import logging
-import pytest
 
+import pytest
 from configobj import ConfigObj
 
-from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api import resources
+from art.test_handler.settings import ART_CONFIG, opts
 
 __test__ = False
 
@@ -95,6 +94,21 @@ ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 ENGINE_EXTENSIONS_DIR = '/etc/ovirt-engine/extensions.d'
 VDSM_LOG = '/var/log/vdsm/vdsm.log'
 PGPASS = "123456"
+ENGINE_HOST = resources.Host(VDC_HOST)
+ENGINE_HOST.users.append(
+    resources.RootUser(VDC_PASSWORD)
+)
+ENGINE = resources.Engine(
+    ENGINE_HOST,
+    resources.ADUser(
+        VDC_ADMIN_USER,
+        VDC_PASSWORD,
+        resources.Domain(VDC_ADMIN_DOMAIN),
+    ),
+    schema=REST_CONNECTION.get('schema'),
+    port=VDC_PORT,
+    entry_point=ENGINE_ENTRY_POINT,
+)
 
 # STORAGE SECTION
 STORAGE_TYPE = PARAMETERS.get('storage_types', 'nfs')

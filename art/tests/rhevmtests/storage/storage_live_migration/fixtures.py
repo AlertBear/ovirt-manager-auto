@@ -329,7 +329,8 @@ def add_two_storage_domains(request):
         )
         for sd in [self.sd_src, self.sd_target]:
             assert hl_sd.remove_storage_domain(
-                name=sd, datacenter=config.DATA_CENTER_NAME, host=self.spm
+                name=sd, datacenter=config.DATA_CENTER_NAME, host=self.spm,
+                engine=config.ENGINE
             ), "Failed to Remove storage domains %s" % (
                 [self.sd_src, self.sd_target]
             )

@@ -55,8 +55,7 @@ def teardown_module():
 
     params = unittest_conf.ART_CONFIG['PARAMETERS']
     dc_name = params.get('dc_name', 'datacenter_%s' % params.get('basename'))
-    clean_datacenter(True, dc_name, vdc=params.get('host'),
-                     vdc_password=params.get('vdc_password'))
+    clean_datacenter(True, dc_name, unittest_conf.ENGINE)
 
 
 _multiprocess_can_split_ = True

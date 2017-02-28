@@ -731,37 +731,6 @@ def get_running_tasks(engine, sp_id):
     return tasks
 
 
-def wait_for_tasks_deprecated(
-        vdc, vdc_password, datacenter,
-        db_name=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-        db_user=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'], timeout=TASK_TIMEOUT,
-        sleep=TASK_POLL):
-    """
-    Description: Waits until all tasks in data-center are finished
-    Parameters:
-        * vdc - ip or hostname of rhevm
-        * vdc_password - root password for rhevm machine
-        * datacenter - name of the datacenter that has running tasks
-        * db_name - name of the rhevm database
-        * db_user - name of the user of database
-        * timeout - max seconds to wait
-        * sleep - polling interval
-    """
-    warnings.warn(
-        "wait_for_tasks_deprecated function is deprecated "
-        "please use wait_for_tasks instead", DeprecationWarning)
-    dc_util = get_api('data_center', 'datacenters')
-    sp_id = dc_util.find(datacenter).id
-    sampler = TimeoutingSampler(
-        timeout, sleep, get_running_tasks_deprecated, vdc, vdc_password,
-        sp_id, db_name, db_user,
-    )
-    for tasks in sampler:
-        if not tasks:
-            logger.info("All tasks are gone")
-            return
-
-
 def wait_for_tasks(engine, datacenter, timeout=TASK_TIMEOUT, sleep=TASK_POLL):
     """
     Waits until all tasks in data-center are finished

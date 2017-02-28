@@ -132,7 +132,8 @@ class TestCase11592(TestCase):
         )
         testflow.step("Deactivating non-master data domain")
         assert hl_sds.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, self.new_storage_domain
+            config.DATA_CENTER_NAME, self.new_storage_domain,
+            engine=config.ENGINE
         ), "Detaching and De-activating non-master domain '%s' failed" % (
             self.new_storage_domain
         )

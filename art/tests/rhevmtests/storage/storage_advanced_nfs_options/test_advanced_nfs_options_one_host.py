@@ -47,7 +47,8 @@ def detach_export_domain(request):
     )
     wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
     assert hl_sd.detach_and_deactivate_domain(
-        config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
+        config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME,
+        engine=config.ENGINE
     ), ("Failed to deactivate and detach export storage domain %s",
         config.EXPORT_DOMAIN_NAME)
 
@@ -344,8 +345,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
         self.sds_for_cleanup.append(self.name)
 
         hl_sd.remove_storage_domain(
-            self.name, DC_NAME, self.host, False, config.VDC,
-            config.VDC_PASSWORD
+            self.name, DC_NAME, self.host, engine=config.ENGINE
         )
 
         logger.info("Importing storage domain")
@@ -567,8 +567,7 @@ class TestCase4818(helpers.TestCaseNFSOptions):
 
         logger.info("Removing created storage domain")
         hl_sd.remove_storage_domain(
-            self.name, DC_NAME, self.host, False, config.VDC,
-            config.VDC_PASSWORD
+            self.name, DC_NAME, self.host, engine=config.ENGINE
         )
 
         logger.info("Creating second time with custom options")
@@ -583,8 +582,8 @@ class TestCase4818(helpers.TestCaseNFSOptions):
 
         logger.info("Destroying storage domain")
         hl_sd.remove_storage_domain(
-            self.name, DC_NAME, self.host, True, config.VDC,
-            config.VDC_PASSWORD
+            self.name, DC_NAME, self.host, engine=config.ENGINE,
+            format_disk=True
         )
 
         logger.info("Creating third time with default options")

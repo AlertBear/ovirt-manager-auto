@@ -44,7 +44,8 @@ def deactivate_and_detach_export_domain(request):
     request.addfinalizer(finalizer)
     testflow.teardown("Detach export domain %s", config.EXPORT_DOMAIN_NAME)
     assert hl_sd.detach_and_deactivate_domain(
-        config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
+        config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME,
+        engine=config.ENGINE
     ), "Failed to detach export domain %s" % config.EXPORT_DOMAIN_NAME
 
 

@@ -85,7 +85,9 @@ def setup_module(request):
 
         if not config.GOLDEN_ENV:
             clusters.removeCluster(True, config.CLUSTER_NAME[1])
-            hl_dc.clean_datacenter(True, config.DC_NAME_B)
+            hl_dc.clean_datacenter(
+                True, config.DC_NAME_B, engine=config.ENGINE
+            )
 
     request.addfinalizer(teardown_module)
 

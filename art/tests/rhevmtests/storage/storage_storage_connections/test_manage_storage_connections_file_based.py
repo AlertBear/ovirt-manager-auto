@@ -118,7 +118,7 @@ class TestCasePosix(TestCase):
             config.ENGINE, config.DATA_CENTER_NAME
         )
         if not hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, self.sd_name
+            config.DATA_CENTER_NAME, self.sd_name, engine=config.ENGINE
         ):
             logger.error(
                 "Failed to deactivate storage domain %s", self.sd_name
@@ -273,7 +273,8 @@ class TestCaseExport(TestCasePosix):
         self.additional_params = {}
         self.storage_domain_type = config.TYPE_EXPORT
         if not hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
+            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME,
+            engine=config.ENGINE
         ):
             raise exceptions.StorageDomainException(
                 "Failed to deactivate and detach export domain"

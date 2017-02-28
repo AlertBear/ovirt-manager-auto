@@ -25,10 +25,7 @@ def teardown_module():
     """
     Clean datacenter
     """
-    clean_datacenter(
-        True, config.DC_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD
-    )
+    clean_datacenter(True, config.DC_NAME, engine=config.ENGINE)
     logger.debug("tearDownClass: cleaned the DC")
 
 

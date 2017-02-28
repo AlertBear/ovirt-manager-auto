@@ -261,7 +261,8 @@ def deactivate_and_remove_non_master_domains(request):
                     ), ("Failed to deactivate storage domain %s" % sd_name)
                     testflow.teardown("Removing storage domain %s", sd_name)
                     assert hl_sd.remove_storage_domain(
-                        sd_name, self.new_dc_name, self.host_name, True
+                        sd_name, self.new_dc_name, self.host_name,
+                        engine=config.ENGINE, format_disk=True
                     ), ("Failed to remove storage domain %s", sd_name)
         self.storage_domain = master_domain
     request.addfinalizer(finalizer)

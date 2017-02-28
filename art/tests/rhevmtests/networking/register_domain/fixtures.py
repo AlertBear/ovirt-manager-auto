@@ -51,7 +51,8 @@ def prepare_setup(request):
             "Remove storage domain %s from DC %s", storage_name, dc
         )
         assert hl_storage.remove_storage_domain(
-            name=storage_name, datacenter=dc, host=host, format_disk=True
+            name=storage_name, datacenter=dc, host=host, format_disk=True,
+            engine=conf.ENGINE
         )
     request.addfinalizer(fin2)
 
@@ -78,7 +79,7 @@ def prepare_setup(request):
         "Remove storage domain %s from DC %s", storage_name, dc
     )
     assert hl_storage.remove_storage_domain(
-        name=storage_name, datacenter=dc, host=host
+        name=storage_name, datacenter=dc, host=host, engine=conf.ENGINE
     )
 
     vms_to_remove = register_domain_conf.VMS_DICT.keys()

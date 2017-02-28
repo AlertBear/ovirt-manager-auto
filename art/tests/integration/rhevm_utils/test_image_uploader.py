@@ -29,7 +29,7 @@ def teardown_module():
     if unittest_conf.GOLDEN_ENV:
         export_domain = ll_sds.findExportStorageDomains()[0]
         hl_sds.detach_and_deactivate_domain(
-            unittest_conf.DC_NAME, export_domain
+            unittest_conf.DC_NAME, export_domain, engine=unittest_conf.ENGINE
         )
     else:
         base.teardown_module()

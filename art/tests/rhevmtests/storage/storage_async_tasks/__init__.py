@@ -78,8 +78,5 @@ def teardown_package():
     if config.GOLDEN_ENV:
         return
     datacenters.clean_datacenter(
-        True,
-        config.DATA_CENTER_NAME,
-        vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD
+        True, config.DATA_CENTER_NAME, engine=config.ENGINE
     )

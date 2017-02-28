@@ -104,7 +104,7 @@ class BaseCaseIsoDomains(TestCase):
             testflow.setup("Removing ISO domain %s", self.storage_domain)
             assert hl_sd.remove_storage_domain(
                 self.storage_domain, self.dc_name, self.spm_host,
-                format_disk=True
+                engine=config.ENGINE, format_disk=True
             ), ("Failed to remove storage domain %s", self.storage_domain)
 
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])

@@ -151,7 +151,7 @@ def initializer_module(request):
     )
     for sd in ISCSI_SDS:
         hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, sd
+            config.DATA_CENTER_NAME, sd, engine=config.ENGINE
         )
         # We want to destroy the domains so we will be able to restore the
         # data on them
@@ -253,8 +253,8 @@ class BaseTestCaseNewDC(BaseTestCase):
         """
         wait_for_tasks(config.ENGINE, self.dc)
         if not hl_dc.clean_datacenter(
-            True, datacenter=self.dc, formatExpStorage='true',
-            vdc=config.VDC, vdc_password=config.VDC_PASSWORD
+            True, datacenter=self.dc, format_exp_storage='true',
+            engine=config.ENGINE
         ):
             self.test_failed = True
             logger.error(

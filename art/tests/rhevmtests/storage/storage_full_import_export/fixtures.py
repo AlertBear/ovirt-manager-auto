@@ -115,7 +115,8 @@ def remove_export_domain_setup(request):
     self.spm = getattr(self, 'spm', ll_hosts.getSPMHost(config.HOSTS))
 
     assert hl_sd.remove_storage_domain(
-        self.export_domain, config.DATA_CENTER_NAME, self.spm
+        self.export_domain, config.DATA_CENTER_NAME, self.spm,
+        engine=config.ENGINE
     ), "Failed to detach and remove export-domain %s" % self.export_domain
 
 

@@ -17,11 +17,12 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.test_handler.exceptions as errors
 from art.rhevm_api.resources import Host  # This import is not good here
 from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
-from art.rhevm_api.utils.test_utils import wait_for_tasks_deprecated
+from art.rhevm_api.utils import test_utils
 from art.test_handler.settings import opts
 
 
 logger = logging.getLogger("art.hl_lib.dcs")
+
 ENUMS = opts['elements_conf']['RHEVM Enums']
 SPM_TIMEOUT = 300
 SPM_SLEEP = 5
@@ -129,41 +130,25 @@ def get_clusters_connected_to_datacenter(dc_id):
 
 
 def clean_datacenter(
-        positive,
-        datacenter,
-        db_name=ll_sd.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-        db_user=ll_sd.RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
-        formatIsoStorage='false',
-        formatExpStorage='false',
-        vdc=None,
-        vdc_password=None,
-        hosted_engine_vm=None,
-        hosted_engine_sd=None,
+    positive, datacenter, engine=None, format_iso_storage='false',
+    format_exp_storage='false', hosted_engine_vm=None, hosted_engine_sd=None,
 ):
     """
-    Description: Remove data center: all clusters. vms, templates floating
-                 disks, storage domains and hosts
-    :param datacenter name
-    :type datacenter: str
-    :param db_name: engine database name
-    :type db_name: str
-    :param db_user: name of engine db user
-    :type db_user: str
-    :param formatIsoStorage - when removing should we format it
-    :type formatIsoStorage: bool
-    :param formatExpStorage - when removing should we format it
-    :type formatExpStorage: bool
-    :param vdc engine machine ip
-    :type vdc; str
-    :param vdc_password
-    :type vdc_password: str
-    :param hosted_engine_vm: the vm name of hosted engine
-    :type hosted_engine_vm: str
-    :param hosted_engine_sd: the sd name of hosted engine
-    :type hosted_engine_sd: str
-    :returns: True if relevant operations within this function pass,
-    False otherwise
-    :rtype: bool
+    Remove data center: all clusters. vms, templates floating disks, storage
+    domains and hosts
+
+    Args:
+        positive (bool): Expected results
+        datacenter (str): Datacenter name
+        engine (Engine): instance of resources.Engine
+        format_iso_storage (bool): when removing should we format it
+        format_exp_storage (bool): when removing should we format it
+        hosted_engine_vm (str): the vm name of hosted engine
+        hosted_engine_sd (str): the sd name of hosted engine
+
+    Returns:
+        bool: True if relevant operations within this function pass,
+            False otherwise
     """
     status = True
     hosted_engine = False
@@ -222,14 +207,8 @@ def clean_datacenter(
             ll_sd.remove_floating_disks(sd)
 
         dc_name = dc_obj.get_name()
-        if vdc and vdc_password:
-            wait_for_tasks_deprecated(
-                vdc=vdc,
-                vdc_password=vdc_password,
-                datacenter=dc_name,
-                db_name=db_name,
-                db_user=db_user
-            )
+        if engine:
+            test_utils.wait_for_tasks(engine=engine, datacenter=dc_name)
 
         logger.info("Deactivate and detach non-master storage domains")
         for sd in sds:
@@ -237,20 +216,14 @@ def clean_datacenter(
                 sd_name = sd.get_name()
                 logger.info("Detach and deactivate %s", sd_name)
                 if not hl_sd.detach_and_deactivate_domain(
-                    dc_name, sd_name
+                    dc_name, sd_name, engine=engine
                 ):
                     raise errors.StorageDomainException(
                         "Failed to deactivate storage domain %s" % sd_name
                     )
 
-        if vdc and vdc_password:
-            wait_for_tasks_deprecated(
-                vdc=vdc,
-                vdc_password=vdc_password,
-                datacenter=dc_name,
-                db_name=db_name,
-                db_user=db_user
-            )
+        if engine:
+            test_utils.wait_for_tasks(engine=engine, datacenter=dc_name)
 
         if not hosted_engine:
             logger.info("Deactivate master storage domain")
@@ -258,14 +231,9 @@ def clean_datacenter(
                 positive, datacenter
             )
 
-            if vdc and vdc_password:
-                wait_for_tasks_deprecated(
-                    vdc=vdc,
-                    vdc_password=vdc_password,
-                    datacenter=dc_name,
-                    db_name=db_name,
-                    db_user=db_user
-                )
+            if engine:
+                test_utils.wait_for_tasks(engine=engine, datacenter=dc_name)
+
     if not hosted_engine:
         logger.info("Remove data center")
         if not datacenters.remove_datacenter(positive, datacenter):
@@ -276,8 +244,8 @@ def clean_datacenter(
         logger.info("Remove storage domains")
         status = ll_sd.remove_storage_domains(
             sds, spm_host_obj.get_name(),
-            formatExpStorage,
-            formatIsoStorage
+            format_exp_storage,
+            format_iso_storage
         )
 
     logger.info("Remove hosts")

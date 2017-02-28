@@ -468,7 +468,7 @@ def create_storage_domain(request):
         )
         assert hl_sd.remove_storage_domain(
             self.new_storage_domain, config.DATA_CENTER_NAME,
-            config.HOSTS[0], True
+            config.HOSTS[0], engine=config.ENGINE, format_disk=True
         ), ("Failed to remove storage domain %s" % self.new_storage_domain)
     request.addfinalizer(finalizer)
     if not hasattr(self, 'new_storage_domain'):
@@ -566,7 +566,7 @@ def remove_storage_domain(request):
             testflow.teardown("Remove storage domain %s", self.storage_domain)
             assert hl_sd.remove_storage_domain(
                 self.storage_domain, config.DATA_CENTER_NAME,
-                config.HOSTS[0], True
+                config.HOSTS[0], engine=config.ENGINE, format_disk=True
             ), ("Failed to remove storage domain %s", self.storage_domain)
     request.addfinalizer(finalizer)
     self.storage_domain = None
@@ -1083,7 +1083,8 @@ def remove_export_domain(request):
         if ll_sd.checkIfStorageDomainExist(True, self.export_domain):
             testflow.teardown("Remove export domain %s", self.export_domain)
             assert hl_sd.remove_storage_domain(
-                self.export_domain, config.DATA_CENTER_NAME, self.spm, True
+                self.export_domain, config.DATA_CENTER_NAME, self.spm,
+                engine=config.ENGINE, format_disk=True
             ), "Failed to remove export domain %s" % self.export_domain
     request.addfinalizer(finalizer)
 

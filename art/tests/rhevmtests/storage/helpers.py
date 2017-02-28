@@ -1228,7 +1228,7 @@ def clean_dc(dc_name, cluster_name, dc_host, sd_name=None):
         )
         if ll_sd.is_storage_domain_active(dc_name, sd_name):
             testflow.step("Deactivate storage-domain %s ", sd_name)
-            hl_sd.deactivate_domain(dc_name, sd_name)
+            hl_sd.deactivate_domain(dc_name, sd_name, config.ENGINE)
 
     testflow.step("Remove data-center %s", dc_name)
     assert ll_dc.remove_datacenter(True, dc_name), (

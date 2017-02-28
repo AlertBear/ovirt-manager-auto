@@ -31,7 +31,8 @@ def run_once_setup(request):
         2. Remove the test specific vm.
         """
         hl_storagedomains.detach_and_deactivate_domain(
-            config.DC_NAME[0], config.SHARED_ISO_DOMAIN_NAME
+            config.DC_NAME[0], config.SHARED_ISO_DOMAIN_NAME,
+            engine=config.ENGINE
         )
         ll_vms.removeVm(True, config.VM_RUN_ONCE)
     request.addfinalizer(fin)

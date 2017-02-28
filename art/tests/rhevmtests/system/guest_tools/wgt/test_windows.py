@@ -61,6 +61,7 @@ def module_setup(request):
             hl_sds.detach_and_deactivate_domain(
                 datacenter=config.DC_NAME[0],
                 domain=config.ISO_DOMAIN_NAME,
+                engine=config.ENGINE
             )
         request.addfinalizer(fin_sd)
 

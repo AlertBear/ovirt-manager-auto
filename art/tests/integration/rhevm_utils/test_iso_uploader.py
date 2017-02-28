@@ -27,7 +27,7 @@ def teardown_module():
     if unittest_conf.GOLDEN_ENV:
         iso_domain = ll_sds.findIsoStorageDomains()[1]
         hl_sds.detach_and_deactivate_domain(
-            unittest_conf.DC_NAME[0], iso_domain
+            unittest_conf.DC_NAME[0], iso_domain, engine=unittest_conf.ENGINE
         )
     else:
         base.teardown_module()

@@ -65,7 +65,7 @@ def setup_module():
     )
     for sd in ISCSI_SDS:
         hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, sd
+            config.DATA_CENTER_NAME, sd, engine=config.ENGINE
         )
         # We want to destroy the domains so we will be able to restore the
         # data on them
@@ -112,8 +112,7 @@ def teardown_module():
     test_failed = False
     if not hl_dc.clean_datacenter(
         True, datacenter=config.DATACENTER_ISCSI_CONNECTIONS,
-        formatExpStorage='true', vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD
+        format_exp_storage='true', engine=config.ENGINE
     ):
         logger.error(
             "Failed to clean Data center '%s'",
@@ -203,8 +202,8 @@ def _restore_empty_dc():
     dc_name = config.DATACENTER_ISCSI_CONNECTIONS
     cluster_name = config.CLUSTER_ISCSI_CONNECTIONS
     if not hl_dc.clean_datacenter(
-        True, datacenter=dc_name, formatExpStorage='true', vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD
+        True, datacenter=dc_name, format_exp_storage='true',
+        engine=config.ENGINE
     ):
         raise exceptions.DataCenterException(
             "Failed to clean Data center '%s'" % dc_name

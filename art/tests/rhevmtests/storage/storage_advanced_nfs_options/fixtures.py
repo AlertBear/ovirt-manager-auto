@@ -42,7 +42,7 @@ def initializer_class(request):
                         executor.submit(
                             hl_sd.remove_storage_domain,
                             storage_domain, config.DATA_CENTER_NAME,
-                            self.host, True
+                            self.host, engine=config.ENGINE, format_disk=True
                         )
                     )
         for index, result in enumerate(results):
@@ -78,7 +78,6 @@ def create_and_remove_sd(request):
     )
 
     hl_sd.remove_storage_domain(
-        self.export_domain, DC_NAME, self.host, False, config.VDC,
-        config.VDC_PASSWORD
+        self.export_domain, DC_NAME, self.host, engine=config.ENGINE,
     )
     self.sds_for_cleanup.append(self.export_domain)

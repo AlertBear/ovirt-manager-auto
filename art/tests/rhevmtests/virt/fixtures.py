@@ -72,6 +72,7 @@ def create_dc(request):
             name=sd_name,
             datacenter=config.DC_NAME[0],
             host=host,
+            engine=config.ENGINE,
             format_disk=True
         )
 
