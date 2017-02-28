@@ -9,7 +9,7 @@ import art.unittest_lib as u_libs
 import config as conf
 import pytest
 import rhevmtests.sla.helpers as sla_helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from fixtures import (
     create_cpu_profile,
     create_cpu_qoss,
@@ -290,8 +290,9 @@ class TestCreateQoSVmFromTemplate(u_libs.SlaTest):
         assert vm_cpu_profile_id == conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_1
 
 
-@u_libs.attr(tier=2)
+@u_libs.attr(tier=1)
 @pytest.mark.usefixtures(start_vms.__name__)
+@bz({'1426727': {}})
 class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
     """
     Check VM CPU limitation after migration
