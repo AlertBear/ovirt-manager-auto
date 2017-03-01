@@ -102,10 +102,11 @@ class TestTemplateSanity(VirtTest):
         4. Positive - remove template
         """
         testflow.step(
-            "Attempting to remove template: %s, template is delete protected, "
+            "Negative: Attempting to remove template: "
+            "%s, template is delete protected, "
             "expecting action to fail", conf.TEMPLATE_LIST[0]
         )
-        assert ll_templates.remove_template(False, conf.TEMPLATE_LIST[0])
+        assert not ll_templates.remove_template(True, conf.TEMPLATE_LIST[0])
         testflow.step(
             "updating template: %s, disabling delete protection",
             conf.TEMPLATE_LIST[0]
@@ -271,14 +272,15 @@ class TestTemplateSanity(VirtTest):
     @polarion("RHEVM-15190")
     def test_12_negative_remove_template_used_by_vm(self):
         """
-        1. Attempt to remove a template that is being used by a vm
+        Attempt to remove a template that is being used by a vm
         """
         testflow.step(
-            "Attempt to remove template: %s version: %s that is being used "
+            "Negative: Attempt to remove template: %s version: %s that is "
+            "being used "
             "by a vm: %s", conf.TEMPLATE_LIST[0], 2, conf.VM_NO_DISK_2
         )
-        assert ll_templates.remove_template(
-            False, conf.TEMPLATE_LIST[0], version_number=2
+        assert not ll_templates.remove_template(
+            True, conf.TEMPLATE_LIST[0], version_number=2
         )
 
     @pytest.mark.usefixtures(supply_base_templates.__name__)

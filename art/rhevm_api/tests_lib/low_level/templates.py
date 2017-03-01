@@ -430,7 +430,7 @@ def remove_template(
         )
         return sample.waitForFuncStatus(result=True)
 
-    return status is positive
+    return status
 
 
 def remove_templates(positive, templates):
