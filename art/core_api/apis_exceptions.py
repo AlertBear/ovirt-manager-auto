@@ -40,6 +40,14 @@ class EntityNotFound(APIException):
     pass
 
 
+class MoreThanOneEntitiesFound(APIException):
+    '''
+    Raised when more than one RHEVM REST framework entities like a Host,
+    DataCenter or Storage domain, etc were found.
+    '''
+    pass
+
+
 class APITimeout(APIException):
     '''
     Raised when some action timeouts.

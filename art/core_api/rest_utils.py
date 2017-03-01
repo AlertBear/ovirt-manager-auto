@@ -24,7 +24,7 @@ from contextlib import contextmanager
 import art.core_api.apis_utils as api_utils
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound, APIException,\
-    APILoginError
+    APILoginError, MoreThanOneEntitiesFound
 from art.test_handler import settings
 from lxml import etree
 
@@ -527,9 +527,9 @@ class RestUtil(api_utils.APIUtil):
                 "Entity %s not found on url '%s'." % (val, href)
             )
         if len(results) > 1:
-            raise EntityNotFound(
-                "More than one Entities found for %s on url '%s'." %
-                (val, href)
+            raise MoreThanOneEntitiesFound(
+                "The entity %s occurs %d times on url '%s'." %
+                (val, len(results), href)
             )
         return results[0]
 
