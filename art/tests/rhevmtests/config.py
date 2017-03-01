@@ -4,7 +4,6 @@ Consolidated config module
 
 import copy
 import logging
-import socket
 from urlparse import urlparse
 
 from art.rhevm_api import resources
