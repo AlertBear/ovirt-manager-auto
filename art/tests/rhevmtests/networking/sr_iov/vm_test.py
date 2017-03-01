@@ -277,9 +277,7 @@ class TestSriovVm02(NetworkTest):
 
     # start_vm
     start_vms_dict = {
-        vm: {
-            "host": 0
-        }
+        vm: {}
     }
 
     @polarion("RHEVM3-6314")

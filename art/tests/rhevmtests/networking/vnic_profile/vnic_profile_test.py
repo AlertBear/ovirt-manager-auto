@@ -15,15 +15,16 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as vnic_conf
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from rhevmtests.fixtures import start_vm
 from fixtures import (
     vnic_profile_prepare_setup, create_dc, remove_nic_from_template,
     clean_host_interfaces, remove_nic_from_vm
 )
+from rhevmtests.fixtures import start_vm
 
 
 @attr(tier=2)
@@ -71,13 +72,10 @@ class TestVNICProfileCase02(NetworkTest):
 
     dc = conf.DC_0
     vm_name = conf.VM_0
-    cluster = conf.CLUSTER_NAME[0]
+    cluster = conf.CL_0
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
-
     # Test-01
     net_1 = vnic_conf.NETS[2][0]
     net_2 = vnic_conf.NETS[2][1]
@@ -267,20 +265,27 @@ class TestVNICProfileCase02(NetworkTest):
         5.  Remove vNIC from VM
         6.  Clean host interfaces
         """
+        vnic_conf.HOST_NAME = ll_vms.get_vm_host(vm_name=self.vm_name)
+        assert vnic_conf.HOST_NAME
+        vnic_conf.HOST_NICS = global_helper.get_host_resource_by_name(
+            host_name=vnic_conf.HOST_NAME
+        ).nics
+        assert vnic_conf.HOST_NICS
+
         network_setup = {
             "add": {
                 "1": {
                     "network": self.net_10,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": vnic_conf.HOST_NICS[1]
                 },
                 "2": {
                     "network": self.net_11,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": vnic_conf.HOST_NICS[1]
                 }
             }
         }
         assert hl_host_networks.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_setup
+            host_name=vnic_conf.HOST_NAME, **network_setup
         )
         for vpro in [self.vnic_profile_10, self.vnic_profile_10_2]:
             port_mirroring = True if vpro == self.vnic_profile_10_2 else False
@@ -326,7 +331,7 @@ class TestVNICProfileCase02(NetworkTest):
         testflow.step('Remove vNIC from VM')
         assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=self.vnic)
         assert hl_host_networks.clean_host_interfaces(
-            host_name=conf.HOST_0_NAME
+            host_name=vnic_conf.HOST_NAME
         )
 
     @polarion("RHEVM3-3976")
@@ -341,16 +346,16 @@ class TestVNICProfileCase02(NetworkTest):
             "add": {
                 "1": {
                     "network": self.net_12,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": vnic_conf.HOST_NICS[1]
                 },
                 "2": {
                     "network": self.net_13,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": vnic_conf.HOST_NICS[1]
                 }
             }
         }
         assert hl_host_networks.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_setup
+            host_name=vnic_conf.HOST_NAME, **network_setup
         )
         testflow.step(
             'Update vNIC profile on nic2 to have port mirroring enabled'
@@ -379,7 +384,7 @@ class TestVNICProfileCase02(NetworkTest):
             assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=nic)
 
         assert hl_host_networks.clean_host_interfaces(
-            host_name=conf.HOST_0_NAME
+            host_name=vnic_conf.HOST_NAME
         )
 
     @polarion("RHEVM3-3975")
@@ -404,12 +409,12 @@ class TestVNICProfileCase02(NetworkTest):
             "add": {
                 "1": {
                     "network": self.net_15,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": vnic_conf.HOST_NICS[1]
                 }
             }
         }
         assert hl_host_networks.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_setup
+            host_name=vnic_conf.HOST_NAME, **network_setup
         )
         testflow.step('Hotplug vNIC profile to the VMs nic2')
         assert ll_vms.addNic(
@@ -469,16 +474,16 @@ class TestVNICProfileCase02(NetworkTest):
             "add": {
                 "1": {
                     "network": self.net_17,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": vnic_conf.HOST_NICS[1]
                 },
                 "2": {
                     "network": self.net_18,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": vnic_conf.HOST_NICS[1]
                 }
             }
         }
         assert hl_host_networks.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_setup
+            host_name=vnic_conf.HOST_NAME, **network_setup
         )
         for vpro in [self.vnic_profile_17, self.vnic_profile_17_2]:
             port_mirroring = True if vpro == self.vnic_profile_17_2 else False

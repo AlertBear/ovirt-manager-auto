@@ -251,9 +251,7 @@ class TestLinkedCase04(NetworkTest):
         linking_conf.CASE_04_VNIC_1_REN, linking_conf.CASE_04_VNIC_2_REN
     ]
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
 
     add_vnics_vms_params = [

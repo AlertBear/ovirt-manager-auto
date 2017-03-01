@@ -28,7 +28,8 @@ HOST_0_PF_NAMES = list()  # Filled in setup_package
 HOST_1_PF_NAMES = list()  # Filled in setup_package
 HOST_0_PF_OBJECT = None  # Filled in setup_package
 HOST_1_PF_OBJECT = None  # Filled in setup_package
-
+HOST_NAME = None  # Filled in test
+PF_OBJECT = None  # Filled in test
 HOSTS_PARAM_DICT = None
 
 MIGRATION_TIMEOUT = 300

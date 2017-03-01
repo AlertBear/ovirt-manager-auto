@@ -173,9 +173,7 @@ class SriovMigration01(NetworkTest):
 
     # start_vm
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
 
     @polarion("RHEVM-17060")
@@ -187,17 +185,25 @@ class SriovMigration01(NetworkTest):
             "Try to migrate VM %s when 'migratable' is not enabled",
             self.vm_name
         )
-        assert ll_vms.migrateVm(
-            positive=False, vm=self.vm_name, host=conf.HOST_1_NAME
-        )
+        assert ll_vms.migrateVm(positive=False, vm=self.vm_name)
 
     @polarion("RHEVM-17061")
     def test_02_migrate_without_available_pf_on_dest_host(self):
         """
         Try to migrate when there are no available VFs on destination host
         """
-        testflow.step("Set number of VFs to 0 on host %s", conf.HOST_1_NAME)
-        assert sriov_conf.HOST_1_PF_OBJECT.set_number_of_vf(0)
+        # checking where vm running to disable VFs on destination host for
+        # negative test.
+        sriov_conf.HOST_NAME = ll_vms.get_vm_host(vm_name=self.vm_name)
+        assert sriov_conf.HOST_NAME
+        host = 0 if conf.HOST_0_NAME != sriov_conf.HOST_NAME else 1
+        host_pf = "HOST_%s_PF_OBJECT" % host
+        sriov_conf.PF_OBJECT = getattr(sriov_conf, host_pf)
+
+        testflow.step(
+            "Set number of VFs to 0 on host %s", sriov_conf.HOST_NAME
+        )
+        assert sriov_conf.PF_OBJECT.set_number_of_vf(0)
         testflow.step(
             "Set 'migratable' property on vNIC %s on VM %s",
             self.sriov_net_1, self.vm_name
@@ -209,11 +215,11 @@ class SriovMigration01(NetworkTest):
             "Try to migrate VM %s when no VFs are available on the "
             "destination host", self.vm_name
         )
-        assert ll_vms.migrateVm(
-            positive=False, vm=self.vm_name, host=conf.HOST_1_NAME
+        assert ll_vms.migrateVm(positive=False, vm=self.vm_name)
+        testflow.step(
+            "Set number of VFs to 2 on host %s", sriov_conf.HOST_NAME
         )
-        testflow.step("Set number of VFs to 2 on host %s", conf.HOST_1_NAME)
-        assert sriov_conf.HOST_1_PF_OBJECT.set_number_of_vf(2)
+        assert sriov_conf.PF_OBJECT.set_number_of_vf(2)
 
     @polarion("RHEVM-17177")
     def test_03_migrate_when_not_all_vnics_have_migratable_enabled(self):
@@ -239,9 +245,7 @@ class SriovMigration01(NetworkTest):
             "Try to migrate VM %s when not all vNIC profiles have "
             "'migratable' property enabled", self.vm_name
         )
-        assert ll_vms.migrateVm(
-            positive=False, vm=self.vm_name, host=conf.HOST_1_NAME
-        )
+        assert ll_vms.migrateVm(positive=False, vm=self.vm_name)
         testflow.step("Update vNIC %s to be un-plugged", self.sriov_vnic_2)
         assert ll_vms.updateNic(
             positive=True, vm=self.vm_name, nic=self.sriov_vnic_2,
@@ -266,9 +270,7 @@ class SriovMigration01(NetworkTest):
         )
         assert conf.ENGINE_HOST.network.send_icmp(dst=vm_ip)
         testflow.step("Migrate VM %s", self.vm_name)
-        assert ll_vms.migrateVm(
-            positive=True, vm=self.vm_name, host=conf.HOST_1_NAME
-        )
+        assert ll_vms.migrateVm(positive=True, vm=self.vm_name)
         testflow.step(
             "Check connectivity to VM %s after migration", self.vm_name
         )

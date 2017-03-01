@@ -14,10 +14,11 @@ NETS = global_helper.generate_object_names(num_of_cases=4, num_of_objects=20)
 VNIC_PROFILES = global_helper.generate_object_names(
     num_of_cases=3, num_of_objects=20, prefix="vnic-profile_vnic_profile"
 )
-
 VNICS = global_helper.generate_object_names(
     num_of_cases=3, num_of_objects=20, prefix="vnic-profile_vnic"
 )
+HOST_NICS = None  # Filled in test
+HOST_NAME = None  # Filled in test
 
 NETS_DICT = {
     NETS[2][0]: {

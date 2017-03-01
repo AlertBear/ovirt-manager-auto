@@ -17,11 +17,12 @@ import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-import rhevmtests.networking.multi_host.helper as multi_host_helper
 import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
+import rhevmtests.networking.multi_host.helper as multi_host_helper
 import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
@@ -490,9 +491,7 @@ class TestSanity06(TestSanityCaseBase):
     net_3 = nets[2]
     net_4 = nets[3]
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
     hosts_nets_nic_dict = {
         0: {
@@ -851,6 +850,7 @@ class TestSanity12(TestSanityCaseBase):
         )
 
 
+@pytest.mark.incremental
 @pytest.mark.usefixtures(start_vm.__name__)
 class TestSanity13(TestSanityCaseBase):
     """
@@ -859,9 +859,7 @@ class TestSanity13(TestSanityCaseBase):
     vm_name = conf.VM_0
     mgmt_profile = conf.MGMT_BRIDGE
     start_vms_dict = {
-        vm_name: {
-            "host": 0
-        }
+        vm_name: {}
     }
 
     @polarion("RHEVM3-3775")
@@ -885,11 +883,17 @@ class TestSanity13(TestSanityCaseBase):
         """
         Check that Network Filter is enabled by default on VDSM
         """
+        sanity_conf.HOST_NAME = ll_vms.get_vm_host(vm_name=self.vm_name)
+        assert sanity_conf.HOST_NAME
+        sanity_conf.HOST_VDS = global_helper.get_host_resource_by_name(
+            host_name=sanity_conf.HOST_NAME
+        )
+        assert sanity_conf.HOST_VDS
         testflow.step(
             "Check that Network Filter is enabled by default on VDSM"
         )
         assert ll_hosts.check_network_filtering(
-            positive=True, vds_resource=conf.VDS_0_HOST
+            positive=True, vds_resource=sanity_conf.HOST_VDS
         )
 
     @polarion("RHEVM3-3779")
@@ -901,6 +905,6 @@ class TestSanity13(TestSanityCaseBase):
             "Check that Network Filter is enabled by default via dumpxml"
         )
         assert ll_hosts.check_network_filtering_dumpxml(
-            positive=True, vds_resource=conf.VDS_0_HOST, vm=self.vm_name,
+            positive=True, vds_resource=sanity_conf.HOST_VDS, vm=self.vm_name,
             nics="1"
         )

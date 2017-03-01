@@ -26,6 +26,8 @@ VNIC_PROFILES = global_helper.generate_object_names(
 VNICS = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=10, prefix="sanity_vnic"
 )
+HOST_NAME = None  # Filled in test
+HOST_VDS = None  # Filled in test
 
 VLAN_IDS = [str(i) for i in xrange(2, 20)]
 DUMMIES = ["dummy_%s" % i for i in xrange(12)]
