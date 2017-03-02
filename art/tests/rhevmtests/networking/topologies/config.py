@@ -47,6 +47,7 @@ NETS_DICT = {
         "usages": ""
     },
     NETS[1][6]: {
+        "required": "false",
         "usages": ""
     },
     NETS[1][7]: {
