@@ -10,7 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as net_api_conf
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, attr, testflow
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
@@ -340,6 +340,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @bz({"1424810": {}})
     @polarion("RHEVM3-19346")
     def test_12_update_bond_custom_mode(self):
         """
