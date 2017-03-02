@@ -426,22 +426,17 @@ def generate_logs(info=True, error=True, step=False):
             called_from = get_called_from_test(stack=stack)
             func_doc = inspect.getdoc(func)
             func_argspec = inspect.getargspec(func)
-            func_argspec_default = func_argspec.defaults or tuple()
-            f_args = [
-                i for i in func_argspec.args if i not in kwargs.keys()
-            ]
-            try:
-                func_args_defaults = dict(
-                    zip(f_args, args + func_argspec_default)
+            func_argspec_default = dict(
+                zip(
+                    func_argspec.args[
+                        -len(func_argspec.defaults or list()):
+                    ], func_argspec.defaults or list()
                 )
+            )
 
-            except TypeError:
-                func_args_defaults = dict()
-
-            func_args = func_argspec.args
-            for arg in func_args:
-                if not kwargs_for_log.get(arg):
-                    kwargs_for_log[arg] = func_args_defaults.get(arg)
+            for k, v in func_argspec_default.iteritems():
+                if k not in kwargs_for_log.keys():
+                    kwargs_for_log[k] = v
 
             log_action = func_doc.split("\n")[0]
             log_info, log_err = get_log_msg(
