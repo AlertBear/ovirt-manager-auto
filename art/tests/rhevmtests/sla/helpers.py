@@ -445,7 +445,7 @@ def wait_for_vm_gets_to_full_consumption(vm_name, expected_load):
     )
     for sample in sampler:
         try:
-            if expected_load - 1 <= sample <= expected_load + 1:
+            if expected_load - 3 <= sample <= expected_load + 3:
                 logging.info(
                     "Current CPU usage is as expected: %d" % expected_load
                 )

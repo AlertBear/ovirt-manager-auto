@@ -708,3 +708,33 @@ def attach_host_device(request):
         device_name=pci_device_name,
         host_name=sla_config.HOSTS[0]
     )
+
+
+@pytest.fixture(scope="module")
+def migrate_he_vm(request):
+    """
+    Migrate the HE VM from the host
+    """
+    he_src_host = getattr(request.node.module, "he_src_host", 0)
+    he_dst_host = getattr(request.node.module, "he_dst_host", None)
+
+    if sla_config.PPC_ARCH and (he_src_host == 2 or he_dst_host == 2):
+        pytest.skip("The environment does not have enough hosts.")
+
+    he_src_host_name = sla_config.HOSTS[he_src_host]
+    he_dst_host_name = ""
+    if he_dst_host is not None:
+        he_dst_host_name = sla_config.HOSTS[he_dst_host]
+
+    if ll_hosts.is_hosted_engine_configured(host_name=he_src_host_name):
+        he_vm_host = ll_vms.get_vm_host(vm_name=sla_config.HE_VM)
+        if he_vm_host and he_vm_host == he_src_host_name:
+            u_libs.testflow.setup(
+                "Migrate the HE VM from the host %s", he_src_host_name
+            )
+            assert ll_vms.migrateVm(
+                positive=True,
+                vm=sla_config.HE_VM,
+                host=he_dst_host_name,
+                force=True
+            )

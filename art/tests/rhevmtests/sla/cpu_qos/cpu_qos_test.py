@@ -18,13 +18,12 @@ from fixtures import (
 )
 from rhevmtests.sla.fixtures import (
     create_vm_without_disk,
+    migrate_he_vm,
     start_vms,
     stop_guest_agent_service,
     update_vms,
     update_vms_cpus_to_hosts_cpus
 )
-
-logger = conf.logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -170,6 +169,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
 
 
 @pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
     create_cpu_qoss.__name__,
     create_cpu_profile.__name__,
     update_vms.__name__
@@ -180,22 +180,27 @@ class BaseCpuQoSAndCpuProfile(u_libs.SlaTest):
     """
 
     @staticmethod
-    def calculate_expected_values(vm_name):
+    def calculate_expected_values(load_dict):
         """
         Calculate expected values for test
 
         Args:
-            vm_name (str): VM name
+            load_dict (dict): Load to VM dictionary
 
         Returns:
-            dict: Expected CPU load percentage
+            dict: Keys - VM names, Values - Expected CPU load percentage
         """
-        host = ll_vms.get_vm_host(vm_name=vm_name)
-        host_cpu = ll_hosts.get_host_processing_units_number(host_name=host)
-        vm_cpu = ll_vms.get_vm_processing_units_number(vm_name=vm_name)
-        expected_value = host_cpu / vm_cpu * conf.QOSS[conf.CPU_QOS_10]
-        expected_value = 100 if expected_value > 100 else expected_value
-        return {vm_name: expected_value}
+        expected_values = {}
+        for vm_name, load_value in load_dict.iteritems():
+            host = ll_vms.get_vm_host(vm_name=vm_name)
+            host_cpu = ll_hosts.get_host_processing_units_number(
+                host_name=host
+            )
+            vm_cpu = ll_vms.get_vm_processing_units_number(vm_name=vm_name)
+            expected_value = host_cpu / vm_cpu * load_value
+            expected_value = 100 if expected_value > 100 else expected_value
+            expected_values[vm_name] = expected_value
+        return expected_values
 
 
 @u_libs.attr(tier=1)
@@ -221,7 +226,7 @@ class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
            that is taken from the host.
         """
         expected_dict = self.calculate_expected_values(
-            vm_name=conf.QOS_VMS[0]
+            load_dict=self.load_dict
         )
         assert sla_helpers.load_vm_and_check_the_load(
             load_dict=self.load_dict,
@@ -317,7 +322,7 @@ class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
         u_libs.testflow.step("Migrate VM %s", conf.QOS_VMS[0])
         assert ll_vms.migrateVm(positive=True, vm=conf.QOS_VMS[0])
         expected_dict = self.calculate_expected_values(
-            vm_name=conf.QOS_VMS[0]
+            load_dict=self.load_dict
         )
         assert sla_helpers.load_vm_and_check_the_load(
             load_dict=self.load_dict, expected_values=expected_dict
@@ -352,7 +357,12 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
         assert ll_vms.updateVm(
             positive=True, vm=conf.QOS_VMS[0], cpu_socket=vm_cpu_sockets
         )
-        assert sla_helpers.load_vm_and_check_the_load(load_dict=self.load_dict)
+        expected_dict = self.calculate_expected_values(
+            load_dict=self.load_dict
+        )
+        assert sla_helpers.load_vm_and_check_the_load(
+            load_dict=self.load_dict, expected_values=expected_dict
+        )
 
 
 @u_libs.attr(tier=2)
@@ -382,7 +392,12 @@ class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
         1. Load the 4 vms with different cpu profiles values CPU to 100%
         2. See that every VM take CPU resources exactly as set in cpu profile
         """
-        assert sla_helpers.load_vm_and_check_the_load(load_dict=self.load_dict)
+        expected_dict = self.calculate_expected_values(
+            load_dict=self.load_dict
+        )
+        assert sla_helpers.load_vm_and_check_the_load(
+            load_dict=self.load_dict, expected_values=expected_dict
+        )
 
 
 @u_libs.attr(tier=2)
@@ -412,7 +427,7 @@ class TestVmCpuLimitationWithoutGuestAgent(BaseCpuQoSAndCpuProfile):
         3. Check that VM take CPU resources exactly as set in cpu profile
         """
         expected_dict = self.calculate_expected_values(
-            vm_name=conf.QOS_VMS[0]
+            load_dict=self.load_dict
         )
         assert sla_helpers.load_vm_and_check_the_load(
             load_dict=self.load_dict, expected_values=expected_dict
