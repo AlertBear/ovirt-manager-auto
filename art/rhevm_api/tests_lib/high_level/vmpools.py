@@ -25,6 +25,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     vmpools as ll_vmpools,
+    general as ll_general
 )
 from art.test_handler.settings import opts
 import concurrent.futures as futures
@@ -288,71 +289,27 @@ def wait_for_prestarted_vms(vm_pool, running_vms=0, wait_until_up=False):
         raise exceptions.VmPoolException()
 
 
-def wait_for_empty_vm_pool(
-    vmpool, timeout=VM_POOL_ACTION_TIMEOUT, interval=VM_POOL_ACTION_SLEEP
-):
-    """
-    __Author__ = slitmano
-
-    Waits until vmpool is empty or TIMEOUT exceeds
-
-    :param vmpool: Name of vmpool.
-    :type vmpool: str
-    :param timeout: Timeout threshold for getting an empty vmpool
-    :type timeout: int
-    :param interval: Waiting time between each size check
-    :type interval: int
-    :return: True if vm pool got empty, False otherwise
-    :rtype: bool
-    """
-    logger.info(
-        'Waiting for vm pool %s to get empty up to %d seconds,'
-        'sampling every %d second.', vmpool, timeout, interval
-    )
-    sampler = timeout_api.TimeoutingSampler(
-        timeout=timeout, sleep=interval,
-        func=lambda x: ll_vmpools.get_vm_pool_size(x) == 0,
-        x=vmpool
-    )
-    timeout_message = (
-        "Timeout when waiting for vm pool: '{0}' to empty'".format(vmpool)
-    )
-    try:
-        for sample in sampler:
-            if sample:
-                return True
-    except timeout_api.TimeoutExpiredError:
-        logger.error(timeout_message)
-    return False
-
-
 def remove_whole_vm_pool(vmpool, remove_vms=True, stop_vms=False):
     """
-    Description: Detach vms, remove them and remove vm pool.
+    Detach vms, verify vm pool is removed subsequently. Remove vms that were
+    attached to the pool as optional step.
 
-    :param vmpool: Name of the VMPool
-    :type vmpool: str
-    :param remove_vms: Remove all vms in pool
-    :type remove_vms: bool
-    :param stop_vms: Stop vms before detaching
-    :type stop_vms: bool
-    :return: True if operation was successful, False otherwise
-    :rtype: bool
+    Args:
+        vmpool (str): Name of the VMPool
+        remove_vms (bool): Remove all vms in pool
+        stop_vms (bool): Stop vms before detaching
+
+    Returns:
+        bool: True if operation was successful, False otherwise
     """
+    results = []
     vms_in_pool = ll_vmpools.get_vms_in_pool_by_name(vm_pool=vmpool)
     func = stop_and_detach_vms_from_pool if stop_vms else detach_vms_from_pool
-    ret = func(vm_pool=vmpool, positive=True)
-    if not ret:
-        return False
-    if not wait_for_empty_vm_pool(vmpool=vmpool):
-        return False
+    results.append(func(vm_pool=vmpool, positive=True))
+    results.append(wait_for_vm_pool_gone(vmpool))
     if remove_vms:
-        ret = ll_vms.safely_remove_vms(vms=vms_in_pool)
-        if not ret:
-            logger.error("Failed to remove vms from pool: %s", vmpool)
-            return False
-    ret = ll_vmpools.removeVmPool(positive=True, vmpool=vmpool)
-    return ret
+        results.append(ll_vms.safely_remove_vms(vms=vms_in_pool))
+    return all(results)
 
 
 def create_vm_pool(positive, pool_name, pool_params):
@@ -384,3 +341,29 @@ def create_vm_pool(positive, pool_name, pool_params):
         vms = ll_vmpools.get_vms_in_pool_by_name(pool_name)
         for vm in vms:
             ll_vms.wait_for_vm_states(vm, possible_states)
+
+
+@ll_general.generate_logs()
+def wait_for_vm_pool_gone(
+    vm_pool, timeout=VM_POOL_ACTION_TIMEOUT, interval=VM_POOL_ACTION_SLEEP
+):
+    """
+    Wait until the vm pool is removed from the system
+
+    Args:
+        vm_pool (str): name of vm pool
+        timeout (int): waiting time for the pool to be removed
+        interval (int): interval between each sample of does_vm_pool_exist
+
+    Returns:
+        bool: True if vm pool was removed withing timeout, False otherwise
+    """
+    sampler = timeout_api.TimeoutingSampler(
+        timeout, interval, ll_vmpools.does_vm_pool_exist, vm_pool
+    )
+    try:
+        for sample in sampler:
+            if not sample:
+                return True
+    except timeout_api.TimeoutExpiredError:
+        return False
