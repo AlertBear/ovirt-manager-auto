@@ -15,10 +15,11 @@ import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, NetworkFixtures, clean_host_interfaces
-)  # flake8: noqa
 from fixtures import activate_host, create_network_on_setup
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, NetworkFixtures
+)
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)

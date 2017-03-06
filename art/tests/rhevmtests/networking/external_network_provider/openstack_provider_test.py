@@ -21,9 +21,8 @@ from fixtures import (
     get_provider_networks, import_openstack_network, run_packstack,
     add_vnic_to_vm, stop_vm, create_network
 )
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @attr(tier=3)

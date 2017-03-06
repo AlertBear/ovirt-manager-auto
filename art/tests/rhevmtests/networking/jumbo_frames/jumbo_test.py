@@ -22,9 +22,8 @@ from fixtures import (
     add_vnics_to_vms, update_cluster_network, restore_hosts_mtu,
     configure_mtu_on_host, prepare_setup_jumbo_frame
 )
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @attr(tier=2)

@@ -7,8 +7,8 @@ SR_IOV feature tests for VFs on VM
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.events as ll_events
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
@@ -24,9 +24,8 @@ from fixtures import (
     set_ip_on_vm_interface
 )
 from rhevmtests.fixtures import start_vm
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @attr(tier=2)

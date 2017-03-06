@@ -15,12 +15,11 @@ from rhevmtests.networking import helper as network_helper
 import rhevmtests.networking.config as conf
 import config as bridgeless_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow, NetworkTest
+from art.unittest_lib import attr, NetworkTest
 from rhevmtests.networking.fixtures import (
-    NetworkFixtures,
-    setup_networks_fixture,
-    clean_host_interfaces  # flake8: noqa
+    NetworkFixtures, setup_networks_fixture
 )
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)

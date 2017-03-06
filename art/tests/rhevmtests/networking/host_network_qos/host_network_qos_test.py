@@ -23,10 +23,8 @@ from fixtures import (
     NetworkFixtures, remove_qos_from_dc, create_host_net_qos,
     set_default_engine_properties, update_network_in_datacenter
 )
-from rhevmtests import helpers
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)

@@ -15,8 +15,9 @@ from art.test_handler.tools import polarion
 from fixtures import reboot_host
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
-)  # flake8: noqa
+    setup_networks_fixture, NetworkFixtures
+)
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)

@@ -16,9 +16,8 @@ from fixtures import (
     send_icmp, update_host_nics_stats, move_host_to_another_cluster,
     host_vm_prepare_setup
 )
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @attr(tier=2)

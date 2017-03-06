@@ -20,10 +20,9 @@ from art.unittest_lib import NetworkTest
 from art.unittest_lib import attr, testflow
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
-    NetworkFixtures,
-    setup_networks_fixture,
-    clean_host_interfaces  # flake8: noqa
+    NetworkFixtures, setup_networks_fixture
 )
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)

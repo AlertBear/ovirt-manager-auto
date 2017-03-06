@@ -16,9 +16,8 @@ from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     update_vms_nics_stats, vm_prepare_setup, host_vm_prepare_setup
 )
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @attr(tier=2)
@@ -72,6 +71,12 @@ class TestCumulativeNetworkUsageVmStatisticsCase01(NetworkTest):
             polarion("RHEVM3-13581")(rx_tx_conf.UPDATE_NIC.get("case_vm_2")),
             polarion("RHEVM3-6639")(rx_tx_conf.UPDATE_NIC.get("case_vm_3")),
             polarion("RHEVM3-13512")(rx_tx_conf.UPDATE_NIC.get("case_vm_4")),
+        ],
+        ids=[
+            "change vNIC network",
+            "change vNIC to empty network",
+            "hot unplug vNIC",
+            "hot plug vNIC"
         ]
     )
     def test_update_nic(self, update_nic_dict):

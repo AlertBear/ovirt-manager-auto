@@ -19,9 +19,9 @@ import rhevmtests.networking.network_custom_properties.config as cust_prop_conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import create_networks, remove_network
+
 from rhevmtests.networking.fixtures import (
-    setup_networks_fixture,
-    clean_host_interfaces  # flake8: noqa
+    setup_networks_fixture, clean_host_interfaces
 )
 
 
@@ -89,6 +89,20 @@ class TestHostNetworkApi01(NetworkTest):
             polarion("RHEVM3-10472")([net_10, 10, vlan_type, "sn"]),
             polarion("RHEVM3-10471")([net_11, 11, non_vm_type, "sn"]),
             polarion("RHEVM3-10473")([net_12, 12, non_vm_vlan_type, "sn"]),
+        ],
+        ids=[
+            "Attach VM network via host NIC",
+            "Attach VLAN network via host NIC",
+            "Attach Non-VM network via host NIC",
+            "Attach Non-VM VLAN network via host NIC",
+            "Attach VM network via host",
+            "Attach VLAN network via host",
+            "Attach Non-VM network via host ",
+            "Attach Non-VM VLAN network via host",
+            "Attach VM network via sn",
+            "Attach VLAN network via sn",
+            "Attach Non-VM network via sn",
+            "Attach Non-VM VLAN network via sn",
         ]
     )
     def test_attach_network_to_nic(self, network, nic, type_, via):
@@ -270,6 +284,34 @@ class TestHostNetworkApi02(NetworkTest):
             polarion("RHEVM3-19113")(sn_pre_non_vm),
             polarion("RHEVM3-10477")(sn_mask_non_vm_vlan),
             polarion("RHEVM3-19114")(sn_pre_non_vm_vlan),
+        ],
+        ids=[
+            "Attach VM network with IP (netmask) via host NIC",
+            "Attach VM network with IP (prefix) via host NIC",
+            "Attach VLAN network with IP (netmask) via host NIC",
+            "Attach VLAN network with IP (prefix) via host NIC",
+            "Attach Non-VM network with IP (netmask) via host NIC",
+            "Attach Non-VM network with IP (prefix) via host NIC",
+            "Attach Non-VM VLAN network with IP (netmask) via host NIC",
+            "Attach Non-VM VLAN network with IP (prefix) via host NIC",
+
+            "Attach VM network with IP (netmask) via host",
+            "Attach VM network with IP (prefix) via host",
+            "Attach VLAN network with IP (netmask) via host",
+            "Attach VLAN network with IP (prefix) via host",
+            "Attach Non-VM network with IP (netmask) via host",
+            "Attach Non-VM network with IP (prefix) via host",
+            "Attach Non-VM VLAN network with IP (netmask) via host",
+            "Attach Non-VM VLAN network with IP (prefix) via host",
+
+            "Attach VM network with IP (netmask) via sn",
+            "Attach VM network with IP (prefix) via sn",
+            "Attach VLAN network with IP (netmask) via sn",
+            "Attach VLAN network with IP (prefix) via sn",
+            "Attach Non-VM network with IP (netmask) via sn",
+            "Attach Non-VM network with IP (prefix) via sn",
+            "Attach Non-VM VLAN network with IP (netmask) via sn",
+            "Attach Non-VM VLAN network with IP (prefix) via sn",
         ]
     )
     def test_attach_network_with_ip_to_nic(
@@ -347,6 +389,11 @@ class TestHostNetworkApi03(NetworkTest):
             polarion("RHEVM3-10450")([net_1, 1, "host_nic"]),
             polarion("RHEVM3-10464")([net_2, 2, "host"]),
             polarion("RHEVM3-11880")([net_3, bond_1, "sn"]),
+        ],
+        ids=[
+            "Attach VM network with custom properties via host NIC",
+            "Attach VM network with custom properties via host",
+            "Attach VM network with custom properties via sn",
         ]
     )
     def test_network_custom_properties_on_nic(self, network, nic, via):
@@ -422,6 +469,11 @@ class TestHostNetworkApi04(NetworkTest):
             polarion("RHEVM3-10451")([1, "host_nic"]),
             polarion("RHEVM3-10465")([2, "host"]),
             polarion("RHEVM3-10513")([3, "sn"]),
+        ],
+        ids=[
+            "Attach VM network with via host NIC",
+            "Attach VM network with via host",
+            "Attach VM network with via sn",
         ]
     )
     def test_01_mtu_negative(self, nic, via):
@@ -446,6 +498,11 @@ class TestHostNetworkApi04(NetworkTest):
             polarion("RHEVM3-10452")([net_1, 1, "host_nic"]),
             polarion("RHEVM3-10466")([net_2, 2, "host"]),
             polarion("RHEVM3-10514")([net_3, 3, "sn"]),
+        ],
+        ids=[
+            "Remove network from host via host NIC",
+            "Remove network from host via host",
+            "Remove network from host via sn",
         ]
     )
     def test_02_remove_network_from_host(self, network, nic, via):
@@ -559,6 +616,14 @@ class TestHostNetworkApi05(NetworkTest):
             polarion("RHEVM3-19115")([host_ip_pre, "host"]),
             polarion("RHEVM3-10515")([sn_ip_pre, "sn"]),
             polarion("RHEVM3-19110")([sn_ip_pre, "sn"]),
+        ],
+        ids=[
+            "Update network to have IP (netmask) via host NIC",
+            "Update network to have IP (prefix) via host NIC",
+            "Update network to have IP (netmask) via host",
+            "Update network to have IP (prefix) via host",
+            "Update network to have IP (netmask) via sn",
+            "Update network to have IP (prefix) via sn",
         ]
     )
     def test_update_network_with_ip_nic(self, ip, via):
@@ -593,6 +658,11 @@ class TestHostNetworkApi05(NetworkTest):
             polarion("RHEVM3-10454")([net_5, bond_1, "host_nic"]),
             polarion("RHEVM3-10468")([net_6, bond_1, "host"]),
             polarion("RHEVM3-10516")([net_7, bond_1, "sn"]),
+        ],
+        ids=[
+            "Attach network to BOND via host NIC",
+            "Attach network to BOND via host",
+            "Attach network to BOND via sn",
         ]
     )
     def test_attach_network_on_bond_nic(self, network, nic, via):
@@ -612,6 +682,11 @@ class TestHostNetworkApi05(NetworkTest):
             polarion("RHEVM3-10455")([net_2, "host_nic"]),
             polarion("RHEVM3-10469")([net_3, "host"]),
             polarion("RHEVM3-10517")([net_4, "sn"]),
+        ],
+        ids=[
+            "Remove VLAN network and Non-VM network via host NIC",
+            "Remove VLAN network and Non-VM network via host",
+            "Remove VLAN network and Non-VM network via host NIC"
         ]
     )
     def test_remove_networks_from_bond(self, network, via):
@@ -822,6 +897,16 @@ class TestHostNetworkApi07(NetworkTest):
             polarion("RHEVM3-19123")([net_vm_host_bond, bond_2, "host"]),
             polarion("RHEVM3-14019")([net_vlan_sn_bond, bond_3, "sn"]),
             polarion("RHEVM3-14018")([net_vm_sn_bond, bond_4, "sn"]),
+        ],
+        ids=[
+            "Attach VLAN network to host NIC via host",
+            "Attach VM network to host NIC via host",
+            "Attach VLAN network to host NIC via sn",
+            "Attach VM network to host NIC via sn",
+            "Attach VLAN network to bond via host",
+            "Attach VM network to bond via host",
+            "Attach VLAN network to bond via sn",
+            "Attach VM network to bond via host",
         ]
     )
     def test_attach_network_to_nic_mixed(self, network, nic, via):

@@ -25,8 +25,9 @@ from fixtures import (
 from rhevmtests.fixtures import start_vm, create_datacenters, create_clusters
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
-)  # flake8: noqa
+    setup_networks_fixture, NetworkFixtures
+)
+from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)
