@@ -23,7 +23,6 @@ import config
 @attr(tier=1)
 @pytest.mark.usefixtures(
     create_vm_for_search.__name__,
-    add_user.__name__
 )
 class TestVMSearchCase(VirtTest):
     """
@@ -173,6 +172,7 @@ class TestVMSearchCase(VirtTest):
             positive, self.vm_api, query, vm_name
         )
 
+    @pytest.mark.usefixtures(add_user.__name__)
     @polarion("RHEVM-17307")
     def test_query_vm_created_by_user(self):
         """
