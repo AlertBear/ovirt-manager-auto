@@ -175,7 +175,7 @@ def secure_deactivate_and_detach_storage_domain(
         "Detach storage domain %s", self.domain_to_detach
     )
     assert hl_sd.detach_domain(
-        self.dc_to_detach_from, self.domain_to_detach
+        self.dc_to_detach_from, self.domain_to_detach, config.ENGINE
     ), "Unable to detach %s" % self.domain_to_detach
 
 
