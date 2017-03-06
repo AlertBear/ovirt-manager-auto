@@ -619,7 +619,9 @@ class T14ProxyChosenFromDataCenter(TestFenceProxySelection):
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def setup_class(cls):
-        cls.event = fence_proxy_event.format(HOST_WITH_PM, HOST_2)
+        # Since proxy host is chosen randomly from UP hosts, we have no way
+        # of knowing which one will be chosen, so we don't care here
+        cls.event = fence_proxy_event.format(HOST_WITH_PM, "")
 
     @polarion("RHEVM3-9143")
     def test_proxy_chosen_from_data_center(self):
