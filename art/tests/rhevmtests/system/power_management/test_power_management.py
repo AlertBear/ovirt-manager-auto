@@ -25,7 +25,7 @@ SIZE = 10 * config.GB
 VM_DESCRIPTION = 'test_vm'
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 fence_proxy_event = (
-    '\"Executing power management start on Host {0} using Proxy Host {1}\"'
+    '"Executing power management start on Host {0} using Proxy Host {1}"'
 )
 host_restart_event = None  # Filled in setup_module
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ def module_setup():
     HOST_WITH_PM_FQDN = config.VDS_HOSTS[0].fqdn
     HOST_1 = config.HOSTS[1]
     HOST_2 = config.HOSTS[2]
-    host_restart_event = '\"Host %s was restarted by\"' % HOST_WITH_PM
+    host_restart_event = '"Host %s was restarted by"' % HOST_WITH_PM
 
 
 def _fence_host(positive, fence_type):
