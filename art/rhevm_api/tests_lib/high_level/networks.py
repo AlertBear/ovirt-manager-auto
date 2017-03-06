@@ -211,7 +211,6 @@ def delete_dummy_interfaces(host):
         bool: True/False
     """
     host_name = ll_hosts.get_host_name_from_engine(vds_resource=host)
-    rhevh = RHEVH in host.os.distribution.distname
     all_interfaces = host.network.all_interfaces()
     dummy_list = [i for i in all_interfaces if 'dummy' in i]
     for dummy in dummy_list:
@@ -219,10 +218,6 @@ def delete_dummy_interfaces(host):
         host.network.delete_interface(interface=dummy)
         ifcfg_file = "/etc/sysconfig/network-scripts/ifcfg-%s" % dummy
         if host.fs.isfile(ifcfg_file):
-            if rhevh:
-                rc = host.run_command(["unpersist", ifcfg_file])[0]
-                if rc:
-                    return False
             host.network.delete_ifcfg_file(nic=dummy)
     last_event = ll_events.get_max_event_id()
     return ll_hosts.refresh_host_capabilities(
