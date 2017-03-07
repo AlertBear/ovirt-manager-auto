@@ -1,7 +1,7 @@
 """
 Test multiple pinning of VM under different conditions
 """
-import logging
+import pytest
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
@@ -9,7 +9,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
 import helpers as pinning_helpers
-import pytest
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
@@ -27,15 +26,19 @@ from rhevmtests.sla.fixtures import (
     import_vm,
     make_template_from_vm,
     make_vm_from_template,
+    migrate_he_vm,
     stop_vms,
     update_vms
 )
 
-logger = logging.getLogger(__name__)
 host_as_spm = 2
+he_dst_host = 2
 
 
-@pytest.mark.usefixtures(choose_specific_host_as_spm.__name__)
+@pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
+    choose_specific_host_as_spm.__name__
+)
 class BaseMultiplePinning(u_libs.SlaTest):
     """
     Base class for all multiple pinning tests

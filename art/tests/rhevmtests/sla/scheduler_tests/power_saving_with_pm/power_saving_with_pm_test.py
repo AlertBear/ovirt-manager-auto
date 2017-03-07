@@ -21,18 +21,20 @@ from fixtures import (
     disable_host_policy_control_flag,
     power_on_host
 )
-from rhevmtests.sla.fixtures import (
+from rhevmtests.sla.fixtures import (  # noqa: F401
     choose_specific_host_as_spm,
     deactivate_hosts,
+    migrate_he_vm,
     run_once_vms,
     stop_vms,
     update_cluster,
-    update_cluster_to_default_parameters,  # flake8: noqa
+    update_cluster_to_default_parameters,
     update_vms
 )
 from rhevmtests.sla.scheduler_tests.fixtures import load_hosts_cpu
 
 host_as_spm = 0
+he_dst_host = 0
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -79,6 +81,7 @@ def init_test(request):
 
 
 @u_lib.attr(tier=3)
+@pytest.mark.usefixtures(migrate_he_vm.__name__)
 class BasePowerSavingWithPM(u_lib.SlaTest):
     """
     Base class for power saving with power management tests

@@ -40,6 +40,7 @@ for affinity_group in (
 ):
     affinity_group[AFFINITY_GROUP_VMS] = VM_NAME[:1]
     affinity_group[AFFINITY_GROUP_HOSTS] = [0]
+    affinity_group[AFFINITY_GROUP_VMS_RULES] = {AFFINITY_GROUPS_ENABLED: False}
 
 HOST_TO_VM_AFFINITY_GROUP_5 = {
     AFFINITY_GROUP_HOSTS_RULES: {

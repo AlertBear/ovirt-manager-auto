@@ -14,6 +14,6 @@ DEFAULT_VMS_TO_RUN = {
 }
 DEFAULT_EVCD_PARAMS = {
     "HighVmCount": 2,
-    "MigrationThreshold": 2,
+    "MigrationThreshold": 3,
     "SpmVmGrace": 1
 }

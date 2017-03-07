@@ -18,17 +18,17 @@ from fixtures import (
     create_new_scheduling_policy,
     update_vms_nics
 )
-from rhevmtests.networking.fixtures import (
+from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
-    clean_host_interfaces  # flake8: noqa
+    clean_host_interfaces
 )
-from rhevmtests.sla.fixtures import (
+from rhevmtests.sla.fixtures import (  # noqa: F401
     choose_specific_host_as_spm,
     deactivate_hosts,
     start_vms,
     stop_vms,
     update_cluster,
-    update_cluster_to_default_parameters,  # flake8: noqa
+    update_cluster_to_default_parameters,
     update_vms,
     update_vms_cpus_to_hosts_cpus,
     update_vms_memory_to_hosts_memory,
@@ -100,7 +100,6 @@ class TestCRUD(u_libs.SlaTest):
     """
     Test class to create, update and remove the scheduling policy
     """
-    __test__ = True
     policy_name = 'crud_policy'
     new_policy_name = 'new_crud_policy'
 
@@ -134,7 +133,6 @@ class TestDeletePolicyInUse(BaseSchedulerSanity):
     """
     Delete attached to the cluster scheduling policy
     """
-    __test__ = True
     policy_name = "delete_policy_in_use"
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: "delete_policy_in_use"
@@ -156,7 +154,6 @@ class TestRemoveBuildInPolicy(u_libs.SlaTest):
     """
     Delete build-in scheduling policy
     """
-    __test__ = True
 
     @polarion("RHEVM3-9478")
     def test_delete_policy(self):
@@ -178,12 +175,13 @@ class TestPinToHostFilter(BaseSchedulerSanity):
     """
     Start and migrate the VM under PinToHost filter
     """
-    __test__ = True
     policy_name = "check_pin_to_host"
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: "check_pin_to_host"
     }
-    policy_units = {conf.FILTER_PIN_TO_HOST: conf.FILTER_TYPE}
+    policy_units = {
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+    }
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_HOSTS: [0],
@@ -217,12 +215,13 @@ class TestNegativePinToHostFilter(BaseSchedulerSanity):
     """
     Pin the VM to the deactivated host and start it
     """
-    __test__ = True
     policy_name = "negative_check_pin_to_host"
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: "negative_check_pin_to_host"
     }
-    policy_units = {conf.FILTER_PIN_TO_HOST: conf.FILTER_TYPE}
+    policy_units = {
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+    }
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_HOSTS: [0],
@@ -251,13 +250,14 @@ class TestMemoryFilter(BaseSchedulerSanity):
     """
     Start two VM's with the memory near hosts memory
     """
-    __test__ = True
     policy_name = "memory_filter"
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: "memory_filter",
         conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
-    policy_units = {conf.FILTER_MEMORY: conf.FILTER_TYPE}
+    policy_units = {
+        conf.FILTER_MEMORY: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+    }
     update_vms_memory = conf.VM_NAME[:2]
     update_to_default_params = conf.VM_NAME[:2]
     vms_to_start = conf.VM_NAME[:2]
@@ -291,14 +291,16 @@ class TestCpuFilter(BaseSchedulerSanity):
     Check that CPU filter does not prevent to start and migrate the VM,
     when VM has equal or less CPU's than host
     """
-    __test__ = True
     policy_name = "cpu_filter"
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: "cpu_filter"
     }
     policy_units = {
-        conf.FILTER_CPU: conf.FILTER_TYPE,
-        conf.FILTER_PIN_TO_HOST: conf.FILTER_TYPE
+        conf.FILTER_CPU: {conf.UNIT_TYPE: conf.FILTER_TYPE},
+        conf.PREFERRED_HOSTS: {
+            conf.UNIT_TYPE: conf.WEIGHT_TYPE,
+            conf.WEIGHT_FACTOR: 99
+        }
     }
     vms_to_hosts_cpus = {conf.VM_NAME[0]: 0}
     vms_to_params = {
@@ -340,14 +342,13 @@ class TestNegativeCpuFilter(BaseSchedulerSanity):
     Check that CPU filter prevents to start and migrate the VM,
     when VM has more CPU's than host
     """
-    __test__ = True
     policy_name = "negative_cpu_filter"
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: "negative_cpu_filter"
     }
     policy_units = {
-        conf.FILTER_CPU: conf.FILTER_TYPE,
-        conf.FILTER_PIN_TO_HOST: conf.FILTER_TYPE
+        conf.FILTER_CPU: {conf.UNIT_TYPE: conf.FILTER_TYPE},
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
     }
     vms_to_hosts_cpus = {conf.VM_NAME[0]: 0}
     double_vms_cpus = True
@@ -383,15 +384,13 @@ class TestNetworkFilter(BaseSchedulerSanity):
     the network and prevents to start and migrate VM
     on the host without the network
     """
-    __test__ = True
-    apis = set(["rest", "java", "sdk"])
     policy_name = conf.NETWORK_FILTER_NAME
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: conf.NETWORK_FILTER_NAME
     }
     policy_units = {
-        conf.FILTER_NETWORK: conf.FILTER_TYPE,
-        conf.FILTER_PIN_TO_HOST: conf.FILTER_TYPE
+        conf.FILTER_NETWORK: {conf.UNIT_TYPE: conf.FILTER_TYPE},
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
     }
     network_name = conf.NETWORK_FILTER_NAME
     hosts_nets_nic_dict = {

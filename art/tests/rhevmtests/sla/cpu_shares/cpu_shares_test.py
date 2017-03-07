@@ -11,7 +11,13 @@ import pytest
 import rhevmtests.sla.config as conf
 from art.test_handler.tools import polarion, bz
 from fixtures import update_vms_cpu_share
-from rhevmtests.sla.fixtures import start_vms
+from rhevmtests.sla.fixtures import (
+    migrate_he_vm,
+    start_vms
+)
+
+
+he_src_host = 0
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -47,6 +53,7 @@ def pin_vms_cpu(request):
 
 
 @pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
     update_vms_cpu_share.__name__,
     start_vms.__name__
 )

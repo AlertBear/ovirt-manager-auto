@@ -19,7 +19,7 @@ APC_SNMP_PASSWORD = "Al123456"
 
 PMS = {
     "master-vds10.qa.lab.tlv.redhat.com": {
-        PM_ADDRESS: "qabc3-mgmt.qa.lab.tlv.redhat.com",
+        PM_ADDRESS: "bc3-mgmt.qa.lab.tlv.redhat.com",
         PM_USERNAME: "USERID",
         PM_PASSWORD: "PASSW0RD",
         PM_TYPE: "bladecenter",
@@ -128,6 +128,7 @@ POLICY_EVEN_VM_DISTRIBUTION = ENUMS["scheduling_policy_vm_evenly_distributed"]
 POLICY_IN_CLUSTER_UPGRADE = "InClusterUpgrade"
 
 # Scheduling policies constants
+PREFERRED_HOSTS = "PreferredHosts"
 VM_TO_HOST_AFFINITY_UNIT = "VmToHostsAffinityGroups"
 VM_TO_VM_AFFINITY_UNIT = "VmAffinityGroups"
 AFFINITY_SCHEDULER_FILTERS = [
@@ -143,7 +144,7 @@ AFFINITY_SCHEDULER_FILTERS = [
 AFFINITY_SCHEDULER_WEIGHTS = [
     VM_TO_VM_AFFINITY_UNIT,
     VM_TO_HOST_AFFINITY_UNIT,
-    "PreferredHosts"
+    PREFERRED_HOSTS
 ]
 AFFINITY_POLICY_NAME = "affinity_policy"
 

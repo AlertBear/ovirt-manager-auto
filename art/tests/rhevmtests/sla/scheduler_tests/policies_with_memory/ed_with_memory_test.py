@@ -33,7 +33,10 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad1(BaseEDWithMemory):
         Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
+            host_name=conf.HOSTS[0],
+            expected_num_of_vms=1,
+            negative=True,
+            additional_vms=conf.VM_NAME[3:5]
         )
 
 
@@ -53,7 +56,9 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad2(BaseEDWithMemory):
         Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[1], expected_num_of_vms=2
+            host_name=conf.HOSTS[1],
+            expected_num_of_vms=2,
+            additional_vms=conf.VM_NAME[3:5]
         )
 
 
@@ -73,7 +78,9 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad3(BaseEDWithMemory):
         Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[1], expected_num_of_vms=2
+            host_name=conf.HOSTS[1],
+            expected_num_of_vms=2,
+            additional_vms=conf.VM_NAME[3:5]
         )
 
 
@@ -93,7 +100,9 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad4(BaseEDWithMemory):
         Check if VM from the Host_0 migrated on the Host_1
         """
         assert sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[1], expected_num_of_vms=2
+            host_name=conf.HOSTS[1],
+            expected_num_of_vms=2,
+            additional_vms=conf.VM_NAME[3:5]
         )
 
 
@@ -113,7 +122,10 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad5(BaseEDWithMemory):
         Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
+            host_name=conf.HOSTS[0],
+            expected_num_of_vms=1,
+            negative=True,
+            additional_vms=conf.VM_NAME[3:5]
         )
 
 
@@ -133,7 +145,10 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad6(BaseEDWithMemory):
         Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
+            host_name=conf.HOSTS[0],
+            expected_num_of_vms=2,
+            negative=True,
+            additional_vms=conf.VM_NAME[3:5]
         )
 
 
@@ -153,7 +168,10 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad7(BaseEDWithMemory):
         Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
+            host_name=conf.HOSTS[0],
+            expected_num_of_vms=2,
+            negative=True,
+            additional_vms=conf.VM_NAME[3:5]
         )
 
 
@@ -248,5 +266,8 @@ class TestTakeInAccountVmMemoryED(BaseUpdateAndStartVmED):
         Check if all VM's stay on old hosts
         """
         assert not sch_helpers.is_balancing_happen(
-            host_name=conf.HOSTS[2], expected_num_of_vms=1, negative=True
+            host_name=conf.HOSTS[2],
+            expected_num_of_vms=1,
+            negative=True,
+            additional_vms=conf.VM_NAME[3:5]
         )

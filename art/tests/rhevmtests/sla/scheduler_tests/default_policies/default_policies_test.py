@@ -3,15 +3,15 @@ Scheduler - Rhevm Cluster Policies Test
 Check different cases for migration when cluster police is Evenly Distributed
 and Power Saving
 """
-import logging
 import random
+
+import pytest
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.unittest_lib as u_libs
-import pytest
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
     run_once_vms,
@@ -21,7 +21,6 @@ from rhevmtests.sla.fixtures import (
 )
 from rhevmtests.sla.scheduler_tests.fixtures import load_hosts_cpu
 
-logger = logging.getLogger(__name__)
 host_as_spm = 2
 
 
@@ -247,7 +246,6 @@ class TestEvenDistributedWeightModule1(BasePowerEvenDistribution):
         )
 
 
-@bz({'1316456': {}})
 @u_libs.attr(tier=1)
 @pytest.mark.usefixtures(update_cluster_to_default_parameters.__name__)
 class TestCheckClusterPoliciesParameters(u_libs.SlaTest):

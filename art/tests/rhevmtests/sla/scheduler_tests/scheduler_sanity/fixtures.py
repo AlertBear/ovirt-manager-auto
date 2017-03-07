@@ -31,15 +31,15 @@ def create_new_scheduling_policy(request):
     u_libs.testflow.setup("Create new scheduling policy %s", policy_name)
     assert ll_sch.add_new_scheduling_policy(name=policy_name)
     if policy_units:
-        for unit_name, unit_type in policy_units.iteritems():
+        for unit_name, unit_params in policy_units.iteritems():
             u_libs.testflow.setup(
                 "Add the policy unit %s of the type %s to the policy %s",
-                unit_name, unit_type, policy_name
+                unit_name, unit_params[conf.UNIT_TYPE], policy_name
             )
             assert ll_sch.add_scheduling_policy_unit(
                 policy_name=policy_name,
                 unit_name=unit_name,
-                unit_type=unit_type
+                **unit_params
             )
 
 

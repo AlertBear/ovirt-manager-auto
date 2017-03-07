@@ -8,4 +8,7 @@ FILTER_PIN_TO_HOST = ENUMS["filter_pin_to_host"]
 FILTER_MEMORY = ENUMS["filter_memory"]
 FILTER_CPU = ENUMS["filter_cpu"]
 FILTER_NETWORK = ENUMS["filter_network"]
+WEIGHT_TYPE = ENUMS["policy_unit_type_weight"]
 NETWORK_FILTER_NAME = "network_filter"
+UNIT_TYPE = "unit_type"
+WEIGHT_FACTOR = "factor"

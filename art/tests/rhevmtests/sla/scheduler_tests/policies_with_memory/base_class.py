@@ -8,10 +8,10 @@ import art.unittest_lib as u_libs
 import config as conf
 import pytest
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from rhevmtests.sla.fixtures import (
+from rhevmtests.sla.fixtures import (  # noqa: F401
     run_once_vms,
     update_cluster,
-    update_cluster_to_default_parameters,  # flake8: noqa
+    update_cluster_to_default_parameters,
     update_vms
 )
 from rhevmtests.sla.scheduler_tests.fixtures import (
@@ -20,29 +20,14 @@ from rhevmtests.sla.scheduler_tests.fixtures import (
 )
 
 
-def update_configuration_constants():
+def update_configuration_constants(min_memory):
     """
     Update configuration file constants according to the host memory
+
+    Args:
+        min_memory (int): The minimal memory that hosts have
     """
-    first_host_sch_memory = ll_hosts.get_host_max_scheduling_memory(
-        host_name=conf.HOSTS[0]
-    )
-    for host_name in conf.HOSTS[1:3]:
-        host_sch_memory = ll_hosts.get_host_max_scheduling_memory(
-            host_name=host_name
-        )
-        if (
-            first_host_sch_memory - 512 * conf.MB > host_sch_memory or
-            host_sch_memory > first_host_sch_memory + 512 * conf.MB
-        ):
-            pytest.skip(
-                "Host %s scheduling memory %s does not equal "
-                "to the host %s scheduling memory %s" % (
-                    host_name, host_sch_memory,
-                    conf.HOSTS[0], first_host_sch_memory
-                )
-            )
-    half_host_memory = first_host_sch_memory / 2
+    half_host_memory = min_memory / 2
     conf.DEFAULT_PS_PARAMS[
         conf.MIN_FREE_MEMORY
     ] = (half_host_memory + 2 * conf.GB) / conf.MB
@@ -89,20 +74,37 @@ def update_configuration_constants():
 def prepare_environment_for_tests(request):
     """
     1) Update cluster overcommitment to NONE
-    2) Update memory parameters for EvenDistribution and PowerSaving policies
-    3) Create VM's for the memory load
+    2) Update and start VM's to equalize the scheduling memory on all hosts
+    3) Update memory parameters for EvenDistribution and PowerSaving policies
+    4) Create VM's for the memory load
     """
     def fin():
         """
         1) Remove memory load VM's
         2) Stop CPU load on all hosts
+        3) Stop VM's that used to equalize the scheduling memory of hosts
+        4) Update VM's to default parameters
         """
+        results = []
         u_libs.testflow.teardown(
             "Remove VM's: %s", conf.LOAD_MEMORY_VMS.keys()
         )
-        ll_vms.safely_remove_vms(conf.LOAD_MEMORY_VMS.keys())
+        results.append(ll_vms.safely_remove_vms(conf.LOAD_MEMORY_VMS.keys()))
         u_libs.testflow.teardown("Stop CPU load on all hosts")
         sch_helpers.stop_cpu_load_on_all_hosts()
+        u_libs.testflow.teardown("Stop VM's %s", conf.VM_NAME[3:5])
+        results.append(ll_vms.stop_vms_safely(vms_list=conf.VM_NAME[3:5]))
+        for vm_name in conf.VM_NAME[3:5]:
+            u_libs.testflow.teardown(
+                "Update the VM %s with parameters %s",
+                vm_name, conf.DEFAULT_VM_PARAMETERS
+            )
+            results.append(
+                ll_vms.updateVm(
+                    positive=True, vm=vm_name, **conf.DEFAULT_VM_PARAMETERS
+                )
+            )
+        assert all(results)
     request.addfinalizer(fin)
 
     u_libs.testflow.setup(
@@ -115,8 +117,41 @@ def prepare_environment_for_tests(request):
         mem_ovrcmt_prc=conf.CLUSTER_OVERCOMMITMENT_NONE
     )
 
+    hosts_to_memory = {}
+    for host_name in conf.HOSTS[:3]:
+        hosts_to_memory[host_name] = ll_hosts.get_host_max_scheduling_memory(
+            host_name=host_name
+        )
+    min_memory = min(hosts_to_memory.values())
+    update_params = {
+        conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED
+    }
+    vm_index = 3
+    for host_name, host_memory in hosts_to_memory.iteritems():
+        if host_memory != min_memory:
+            update_params[conf.VM_PLACEMENT_HOSTS] = [host_name]
+            # Will give me number divided by conf.MB without remainder
+            vm_memory = (
+                (host_memory - min_memory) / conf.MB * conf.MB
+            ) - conf.RESERVED_MEMORY * conf.MB
+            for vm_param in (
+                conf.VM_MEMORY, conf.VM_MEMORY_GUARANTEED, conf.VM_MAX_MEMORY
+            ):
+                update_params[vm_param] = vm_memory
+            u_libs.testflow.setup(
+                "Update the VM %s with parameters %s",
+                conf.VM_NAME[vm_index], update_params
+            )
+            assert ll_vms.updateVm(
+                positive=True, vm=conf.VM_NAME[vm_index], **update_params
+            )
+            vm_index += 1
+
+    u_libs.testflow.setup("Start VM's %s", conf.VM_NAME[3:5])
+    ll_vms.start_vms(vm_list=conf.VM_NAME[3:5])
+
     u_libs.testflow.setup("Update configuration constants")
-    update_configuration_constants()
+    update_configuration_constants(min_memory=min_memory)
 
     for vm_name, vm_params in conf.LOAD_MEMORY_VMS.iteritems():
         u_libs.testflow.setup(

@@ -9,7 +9,7 @@ import pytest
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
-from rhevmtests.sla.fixtures import (
+from rhevmtests.sla.fixtures import (  # noqa: F401
     choose_specific_host_as_spm,
     run_once_vms,
     start_vms,
@@ -17,7 +17,7 @@ from rhevmtests.sla.fixtures import (
     update_vms_memory_to_hosts_memory,
     update_vms_to_default_parameters,
     update_cluster,
-    update_cluster_to_default_parameters  # flake8: noqa
+    update_cluster_to_default_parameters
 )
 from rhevmtests.sla.scheduler_tests.fixtures import (
     create_affinity_groups,

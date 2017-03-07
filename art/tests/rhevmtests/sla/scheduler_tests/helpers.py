@@ -20,7 +20,9 @@ def is_balancing_happen(
     expected_num_of_vms,
     negative=False,
     sampler_timeout=conf.SHORT_BALANCE_TIMEOUT,
-    sampler_sleep=conf.SAMPLER_SLEEP
+    sampler_sleep=conf.SAMPLER_SLEEP,
+    additional_vms=None,
+    add_he_vm=True
 ):
     """
     Check if balance module works correct
@@ -31,14 +33,21 @@ def is_balancing_happen(
         negative (bool): Wait for positive or negative status
         sampler_timeout (int): Sampler timeout
         sampler_sleep (int): Sampler sleep
+        additional_vms (list): Additional VM's that can run on the host
+        add_he_vm (bool): Take HE VM in account
 
     Returns:
         bool: True, if host has expected number of vms, otherwise False
     """
-    if ll_hosts.is_hosted_engine_configured(host_name=host_name):
+    if add_he_vm and ll_hosts.is_hosted_engine_configured(host_name=host_name):
         he_vm_host = ll_vms.get_vm_host(vm_name=conf.HE_VM)
         if he_vm_host and he_vm_host == host_name:
             expected_num_of_vms += 1
+    if additional_vms:
+        for vm_name in additional_vms:
+            vm_host = ll_vms.get_vm_host(vm_name=vm_name)
+            if vm_host == host_name:
+                expected_num_of_vms += 1
     log_msg = (
         conf.BALANCE_LOG_MSG_NEGATIVE
         if negative else conf.BALANCE_LOG_MSG_POSITIVE

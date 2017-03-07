@@ -24,3 +24,4 @@ WATCHDOG_ACTION_DUMP = "dump"
 
 # Template test constants
 VM_FROM_TEMPLATE_WATCHDOG = "vm_from_template_watchdog"
+WAIT_FOR_VM_STATUS_SLEEP = 2

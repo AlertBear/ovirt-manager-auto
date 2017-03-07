@@ -25,12 +25,12 @@ from fixtures import (
     stop_memory_allocation,
     update_vms_for_ksm_test
 )
-from rhevmtests.sla.fixtures import (
+from rhevmtests.sla.fixtures import (  # noqa: F401
     start_vms,
     stop_guest_agent_service,
     stop_vms,
     update_cluster,
-    update_cluster_to_default_parameters,  # flake8: noqa
+    update_cluster_to_default_parameters,
     update_vms,
     update_vms_to_default_parameters
 )
@@ -83,7 +83,6 @@ class TestKSM(u_libs.SlaTest):
     """
     KSM tests
     """
-    __test__ = True
     update_to_default_params = conf.MOM_VMS
     threshold_list = []
     vms_to_stop = []
@@ -192,11 +191,10 @@ class Balloon(u_libs.SlaTest):
     """
     Balloon tests
     """
-    __test__ = False
 
     @staticmethod
     def check_balloon_deflation(
-        vm_list, negative=False, timeout=conf.SAMPLER_TIMEOUT
+        vm_list, negative=False, timeout=conf.BALLOON_TIMEOUT
     ):
         """
         Check VM's balloon deflation
@@ -244,7 +242,6 @@ class TestBalloonUsage(Balloon):
     """
     Test Balloon usage on one VM
     """
-    __test__ = True
     vms_to_params = {
         conf.MOM_VMS[0]: {
             conf.VM_PLACEMENT_HOSTS: [0],
@@ -294,38 +291,11 @@ class TestBalloonUsageDifferentMemory(Balloon):
 
 
 @u_libs.attr(tier=2)
-class TestBalloonMax(Balloon):
-    """
-    Negative: Test ballooning on the VM
-    which has memory equal to guaranteed memory
-    """
-    __test__ = True
-    vms_to_params = {
-        conf.MOM_VMS[0]: {
-            conf.VM_PLACEMENT_HOSTS: [0],
-            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
-            conf.VM_MEMORY: 2 * conf.GB,
-            conf.VM_MEMORY_GUARANTEED: 2 * conf.GB,
-            conf.VM_BALLOONING: True
-        }
-    }
-    vms_to_start = conf.MOM_VMS[:1]
-
-    @polarion("RHEVM3-4978")
-    def test_negative_balloon_max(self):
-        """
-        1) Tests deflation of the balloon
-        """
-        self.check_balloon_deflation(vm_list=self.vms_to_start, negative=True)
-
-
-@u_libs.attr(tier=2)
 @pytest.mark.usefixtures(stop_guest_agent_service.__name__)
 class TestBalloonWithoutAgent(Balloon):
     """
     Negative: Test ballooning of the VM without guest agent
     """
-    __test__ = True
     vms_to_params = {
         conf.MOM_VMS[0]: {
             conf.VM_PLACEMENT_HOSTS: [0],
@@ -347,11 +317,35 @@ class TestBalloonWithoutAgent(Balloon):
 
 
 @u_libs.attr(tier=2)
+class TestBalloonMax(Balloon):
+    """
+    Negative: Test ballooning on the VM
+    which has memory equal to guaranteed memory
+    """
+    vms_to_params = {
+        conf.MOM_VMS[0]: {
+            conf.VM_PLACEMENT_HOSTS: [0],
+            conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
+            conf.VM_MEMORY: 2 * conf.GB,
+            conf.VM_MEMORY_GUARANTEED: 2 * conf.GB,
+            conf.VM_BALLOONING: True
+        }
+    }
+    vms_to_start = conf.MOM_VMS[:1]
+
+    @polarion("RHEVM3-4978")
+    def test_negative_balloon_max(self):
+        """
+        1) Tests deflation of the balloon
+        """
+        self.check_balloon_deflation(vm_list=self.vms_to_start, negative=True)
+
+
+@u_libs.attr(tier=2)
 class TestBalloonMultipleVms(Balloon):
     """
     Test ballooning with multiple VM's
     """
-    __test__ = True
     vms_to_params = dict(
         (
             vm_name, {

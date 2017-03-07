@@ -164,7 +164,9 @@ class BaseWatchdogAction(u_libs.SlaTest):
         u_libs.testflow.step(
             "Wait until VM %s will have state %s", vm_name, vm_state
         )
-        assert ll_vms.waitForVMState(vm=vm_name, state=vm_state)
+        assert ll_vms.waitForVMState(
+            vm=vm_name, state=vm_state, sleep=conf.WAIT_FOR_VM_STATUS_SLEEP
+        )
 
 
 class TestWatchdogActionNone(BaseWatchdogAction):
@@ -361,7 +363,9 @@ class TestWatchdogHighAvailability(u_libs.SlaTest):
             conf.VM_NAME[0], conf.VM_POWERING_UP
         )
         assert ll_vms.waitForVMState(
-            vm=conf.VM_NAME[0], state=conf.VM_POWERING_UP
+            vm=conf.VM_NAME[0],
+            state=conf.VM_POWERING_UP,
+            sleep=conf.WAIT_FOR_VM_STATUS_SLEEP
         )
 
 

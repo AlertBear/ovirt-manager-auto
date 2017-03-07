@@ -26,6 +26,9 @@ from rhevmtests.sla.fixtures import (
 )
 
 
+he_src_host = 0
+
+
 @pytest.fixture(scope="module", autouse=True)
 def init_constants():
     """

@@ -95,11 +95,11 @@ def prepare_env_for_ballooning_test(request):
 
     u_libs.testflow.setup(
         "Change ballooning pressure threshold to %s",
-        conf.DEFVAR_PRESSURE_THRESHOLD_060
+        conf.DEFVAR_PRESSURE_THRESHOLD_040
     )
     assert helpers.change_mom_pressure_percentage(
         resource=conf.VDS_HOSTS[0],
-        pressure_threshold=conf.DEFVAR_PRESSURE_THRESHOLD_060
+        pressure_threshold=conf.DEFVAR_PRESSURE_THRESHOLD_040
     )
     u_libs.testflow.setup(
         "Copy memory allocation script to the host %s directory %s",

@@ -205,8 +205,7 @@ def deactivate_hosts(request):
     request.addfinalizer(fin)
 
     for host_name in hosts_to_deactivate:
-        u_libs.testflow.setup("Deactivate the host %s", host_name)
-        assert ll_hosts.deactivate_host(positive=True, host=host_name)
+        hl_hosts.deactivate_host_if_up(host=host_name)
 
 
 @pytest.fixture(scope="class")
@@ -381,6 +380,7 @@ def choose_specific_host_as_spm(request):
             host=sla_config.HOSTS[host_as_spm],
             data_center=sla_config.DC_NAME[0]
         )
+        time.sleep(sla_config.ENGINE_STAT_UPDATE_INTERVAL)
         assert sla_helpers.wait_for_dc_and_storagedomains()
 
 
@@ -713,28 +713,38 @@ def attach_host_device(request):
 @pytest.fixture(scope="module")
 def migrate_he_vm(request):
     """
-    Migrate the HE VM from the host
+    Migrate the HE VM from or to the host
     """
-    he_src_host = getattr(request.node.module, "he_src_host", 0)
+    he_src_host = getattr(request.node.module, "he_src_host", None)
     he_dst_host = getattr(request.node.module, "he_dst_host", None)
+
+    if he_src_host is None and he_dst_host is None:
+        return
 
     if sla_config.PPC_ARCH and (he_src_host == 2 or he_dst_host == 2):
         pytest.skip("The environment does not have enough hosts.")
 
-    he_src_host_name = sla_config.HOSTS[he_src_host]
+    he_src_host_name = ""
+    if he_src_host is not None:
+        he_src_host_name = sla_config.HOSTS[he_src_host]
+
     he_dst_host_name = ""
     if he_dst_host is not None:
         he_dst_host_name = sla_config.HOSTS[he_dst_host]
 
-    if ll_hosts.is_hosted_engine_configured(host_name=he_src_host_name):
-        he_vm_host = ll_vms.get_vm_host(vm_name=sla_config.HE_VM)
-        if he_vm_host and he_vm_host == he_src_host_name:
-            u_libs.testflow.setup(
-                "Migrate the HE VM from the host %s", he_src_host_name
-            )
-            assert ll_vms.migrateVm(
-                positive=True,
-                vm=sla_config.HE_VM,
-                host=he_dst_host_name,
-                force=True
-            )
+    he_vm_host = ll_vms.get_vm_host(vm_name=sla_config.HE_VM)
+    for host_name, positive in zip(
+        (he_src_host_name, he_dst_host_name), (True, False)
+    ):
+        if host_name and ll_hosts.is_hosted_engine_configured(
+            host_name=host_name
+        ):
+            if (he_vm_host == host_name) == positive:
+                u_libs.testflow.setup("Migrate the HE VM")
+                assert ll_vms.migrateVm(
+                    positive=True,
+                    vm=sla_config.HE_VM,
+                    host=he_dst_host_name,
+                    force=True
+                )
+                break

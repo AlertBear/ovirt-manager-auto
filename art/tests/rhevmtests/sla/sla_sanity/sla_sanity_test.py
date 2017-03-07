@@ -12,12 +12,12 @@ import config as conf
 import helpers
 import pytest
 from art.test_handler.tools import polarion
-from rhevmtests.sla.fixtures import (
+from rhevmtests.sla.fixtures import (  # noqa: F401
     create_vms,
     start_vms,
     stop_vms,
     update_cluster,
-    update_cluster_to_default_parameters,  # flake8: noqa
+    update_cluster_to_default_parameters,
     update_vms,
     update_vms_to_default_parameters,
     update_vms_cpus_to_hosts_cpus
