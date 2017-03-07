@@ -43,7 +43,7 @@ def prepare_setup_jumbo_frame(request):
         Stop VMs
         """
         testflow.teardown("Stop VMs %s", jumbo_frame.vms_list)
-        assert ll_vms.stopVms(vms=jumbo_frame.vms_list)
+        assert ll_vms.stop_vms(vms=jumbo_frame.vms_list)
     request.addfinalizer(fin1)
 
     testflow.setup("Create networks %s", jumbo_conf.NETS_DICT)

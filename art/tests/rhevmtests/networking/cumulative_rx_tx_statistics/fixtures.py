@@ -96,7 +96,7 @@ def vm_prepare_setup(request):
         Finalizer for stop VMs
         """
         testflow.teardown("Stop VMs %s", vms_list)
-        result.append((ll_vms.stopVms(vms=vms_list), "fin1: ll_vms.stopVms"))
+        result.append((ll_vms.stop_vms(vms=vms_list), "fin1: ll_vms.stop_vms"))
     request.addfinalizer(fin1)
 
     for host, vm, temp_ip in zip(

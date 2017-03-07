@@ -1014,7 +1014,7 @@ def removeVms(positive, vms, stop='false', timeout=180):
         raise ValueError("vms cannot be empty")
 
     if str(stop).lower() == 'true':
-        stopVms(vmsList)
+        stop_vms(vmsList)
 
     for i in vmsList:
         t = Thread(target=removeVmAsynch, name='VM removing',
@@ -1272,42 +1272,25 @@ def stopVm(positive, vm, async='false'):
     return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
 
 
-def stopVms(vms, wait='true'):
-    '''
-    Stop vms.
-    Author: mbenenso
-    Parameters:
-       * vms - comma separated string of VM names or list
-       * wait - if 'true' will wait till the end of stop action
-               ('true' by default)
-    Return: True iff all VMs stopped, False otherwise
-    '''
-    vmObjectsList = []
+def stop_vms(vms, async='true'):
+    """
+    Stop vms
+
+    Args:
+        vms (list or str): list of vm names OR
+            string of VM names comma separated, to be stopped
+        async (str): stop VMs asynchronously ('true' by default)
+
+    Returns:
+        bool: True if all VMs were stopped properly, False otherwise
+    """
     if isinstance(vms, basestring):
         vms = split(vms)
-    wait = wait.lower() == 'true'
-    async = 'false' if not wait else 'true'
+    results = list()
     for vm in vms:
-        stopVm(True, vm, async)
-        try:
-            vmObj = VM_API.find(vm)
-        except EntityNotFound:
-            logger.error("failed to find VM %s" % vm)
-        else:
-            vmObjectsList.append(vmObj)
+        results.append(stopVm(positive=True, vm=vm, async=async))
 
-    if not wait:
-        return True
-
-    resultsList = []
-    query_fmt = 'name={0} and status=down'
-    for vmObj in vmObjectsList:
-        query = query_fmt.format(vmObj.get_name())
-        querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT,
-                                      sleep=DEF_SLEEP)
-        resultsList.append(querySt)
-
-    return all(resultsList)
+    return all(results)
 
 
 def searchForVm(positive, query_key, query_val, key_name=None, **kwargs):

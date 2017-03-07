@@ -425,7 +425,7 @@ class GlanceImageUpdator(GlanceImageBase):
         """
         vms = [vm['name'] for vm in self.vms_description]
         templates = [vm['template'] for vm in self.vms_description]
-        ll_vms.stopVms(vms)
+        ll_vms.stop_vms(vms)
         ll_vms.removeVms(True, vms)
         ll_templates.remove_templates(True, templates)
         self.close_session()
