@@ -424,7 +424,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=list()):
     if cluster:
         for host in hosts:
             logger.info("Remove host %s for cluster %s", host, cluster)
-            if not ll_hosts.removeHost(
+            if not ll_hosts.remove_host(
                 positive=True, host=host, deactivate=True
             ):
                 logger.error("Failed to remove host %s ", host)

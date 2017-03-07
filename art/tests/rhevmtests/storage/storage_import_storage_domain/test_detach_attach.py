@@ -252,7 +252,7 @@ class TestCase5302(BasicEnvironment):
         self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        self.host_ip = ll_hosts.getHostIP(config.HOSTS[0])
+        self.host_ip = ll_hosts.get_host_ip(config.HOSTS[0])
 
     @polarion("RHEVM3-5302")
     @attr(tier=4)
@@ -496,9 +496,7 @@ class TestCase5304(BasicEnvironment):
                 True, config.DATA_CENTER_NAME, self.non_master, wait=False
             )
 
-        assert ll_hosts.rebootHost(
-            True, config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW
-        )
+        assert ll_hosts.reboot_host(host=config.VDS_HOSTS[0])
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
 
         non_master_domains = ll_sd.findNonMasterStorageDomains(

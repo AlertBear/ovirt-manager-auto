@@ -25,7 +25,7 @@ def init_hsm_host(request):
     """
     self = request.node.cls
 
-    status, hsm_host = ll_hosts.getAnyNonSPMHost(
+    status, hsm_host = ll_hosts.get_any_non_spm_host(
         config.HOSTS, cluster_name=config.CLUSTER_NAME
     )
     assert status, "Failed tp retrieve a non-SPM host on cluster '%s'" % (
@@ -66,7 +66,7 @@ def get_setup_info(request):
     logger.info("Master domain ip found : %s", self.master_domain_ip)
 
     self.engine_ip = utils.getIpAddressByHostName(config.VDC)
-    self.first_host_ip = ll_hosts.getHostIP(self.host_name)
+    self.first_host_ip = ll_hosts.get_host_ip(self.host_name)
 
 
 @pytest.fixture(scope='class')
@@ -103,7 +103,7 @@ def unblock_connectivity_engine_to_host(request):
                 ll_dc.waitForDataCenterState(
                     config.DATA_CENTER_NAME,
                     timeout=config.DATA_CENTER_INIT_TIMEOUT
-                ) and ll_hosts.isHostUp(True, self.host_name)
+                ) and ll_hosts.is_host_up(True, self.host_name)
             )
 
         if not check_dc_and_host_state():
@@ -146,7 +146,7 @@ def create_cluster(request):
     """
     self = request.node.cls
 
-    self.host_ip = ll_hosts.getHostIP(self.host_name)
+    self.host_ip = ll_hosts.get_host_ip(self.host_name)
     logger.info(
         "Retrieve the first host from the 2nd cluster (in original Data "
         "center)"

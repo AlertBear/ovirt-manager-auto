@@ -8,8 +8,8 @@ import logging
 import pytest
 
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    runDelayedControlService, waitForHostsStates, removeHost,
-    add_host, isHostUp, activate_host, select_host_as_spm, waitForSPM
+    run_delayed_control_service, wait_for_hosts_states, remove_host,
+    add_host, is_host_up, activate_host, select_host_as_spm, wait_for_spm
 )
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
@@ -77,7 +77,7 @@ def _check_host_state(host_num, service, job_status):
         service, config.HOSTS[host_num], job_status
     )
     testflow.step("Stop %s on host %s", service, config.HOSTS[host_num])
-    assert runDelayedControlService(
+    assert run_delayed_control_service(
             True, config.VDS_HOSTS[host_num].fqdn, config.HOSTS_USER,
             config.HOSTS_PW, service=service, command='stop'
     )
@@ -85,11 +85,11 @@ def _check_host_state(host_num, service, job_status):
         "Check if %s job was invoked for host: %s",
         JOB, config.HOSTS[host_num]
     )
-    if not waitForHostsStates(
+    if not wait_for_hosts_states(
             True, config.HOSTS[host_num], states=HOST_CONNECTING
     ):
         assert config.ENGINE.db.psql(sql, 'SELECT *')
-    assert waitForHostsStates(True, config.HOSTS[host_num])
+    assert wait_for_hosts_states(True, config.HOSTS[host_num])
     testflow.step("Check recent jobs for job %s", config.job_description)
     assert check_recent_job(
         True, description=config.job_description, job_status=job_status
@@ -117,7 +117,7 @@ class SoftFencing(TestCase):
         request.addfinalizer(fin)
 
         for host in config.host_with_pm, config.host_without_pm:
-            if not isHostUp(True, host=host):
+            if not is_host_up(True, host=host):
                 testflow.setup("Activate host %s", host)
                 assert activate_host(True, host=host)
 
@@ -239,16 +239,16 @@ class SoftFencingToHostNoProxies(SoftFencing):
                     cluster=config.CLUSTER_NAME[0]
                 )
                 testflow.teardown("Wait for host %s", config.HOSTS[host_num])
-                assert waitForHostsStates(True, config.HOSTS[host_num])
+                assert wait_for_hosts_states(True, config.HOSTS[host_num])
         request.addfinalizer(fin)
 
         select_host_as_spm(True, config.host_with_pm, config.DC_NAME[0])
-        waitForSPM(
+        wait_for_spm(
             config.DC_NAME[0], config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP
         )
         for host_num in 1, 2:
             testflow.setup("Remove host %s", config.HOSTS[host_num])
-            assert removeHost(
+            assert remove_host(
                 True, config.HOSTS[host_num], deactivate=True
             )
 

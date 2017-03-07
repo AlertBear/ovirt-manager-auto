@@ -54,7 +54,7 @@ class BasicEnvironment(BaseTestCase):
         False otherwise
         """
         logger.info("Waiting for SPM to be elected")
-        if not ll_hosts.waitForSPM(
+        if not ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, WAIT_FOR_SPM_TIMEOUT, RETRY_INTERVAL
         ):
             logger.error(
@@ -62,7 +62,7 @@ class BasicEnvironment(BaseTestCase):
             )
             return False
 
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        self.spm_host = ll_hosts.get_spm_host(config.HOSTS)
         testflow.step("Verify SPM host is '%s'", host_name)
         if self.spm_host is not host_name:
             logger.info(
@@ -81,14 +81,14 @@ class BasicEnvironment(BaseTestCase):
         :type hosts: list
         :raise: HostException
         """
-        hosts_sorted_by_spm_priority = ll_hosts._sort_hosts_by_priority(hosts)
+        hosts_sorted_by_spm_priority = ll_hosts.sort_hosts_by_priority(hosts)
 
         for host in hosts_sorted_by_spm_priority:
             testflow.step("Activate host '%s'", host)
             assert ll_hosts.activate_host(True, host), (
                 "Unable to activate host: %s " % host
             )
-        assert ll_hosts.waitForHostsStates(True, hosts, config.HOST_UP), (
+        assert ll_hosts.wait_for_hosts_states(True, hosts, config.HOST_UP), (
             "Hosts failed to activate"
         )
 
@@ -110,7 +110,7 @@ class BasicEnvironment(BaseTestCase):
             "Setting SPM priorities %s for hosts: %s", priorities, hosts
         )
         for host, priority in zip(hosts, priorities):
-            assert ll_hosts.setSPMPriority(positive, host, priority), (
+            assert ll_hosts.set_spm_priority(positive, host, priority), (
                 "Unable to set host %s priority" % host
             )
 
@@ -118,7 +118,8 @@ class BasicEnvironment(BaseTestCase):
             "Ensure that the SPM priority was configured on input hosts"
         )
         for host, priority in zip(hosts, priorities):
-            assert ll_hosts.checkSPMPriority(positive, host, str(priority)), (
+            assert ll_hosts.check_spm_priority(
+                positive, host, str(priority)), (
                 "Unable to check host %s priority" % host
             )
 
@@ -139,7 +140,7 @@ class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
 
         testflow.step("Waiting for SPM to be elected")
         with pytest.raises(apis_exceptions.APITimeout):
-            ll_hosts.waitForSPM(
+            ll_hosts.wait_for_spm(
                 datacenter=config.DATA_CENTER_NAME,
                 timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
             )
@@ -176,7 +177,7 @@ class TestCase6220(BasicEnvironment):
             "verify SPM priority of %s is equal to %s", self.removed_host,
             config.DEFAULT_SPM_PRIORITY
         )
-        assert ll_hosts.getSPMPriority(self.removed_host) == (
+        assert ll_hosts.get_spm_priority(self.removed_host) == (
             config.DEFAULT_SPM_PRIORITY
         ), "SPM priority of %s is not equal to %s" % (
             self.removed_host, config.DEFAULT_SPM_PRIORITY
@@ -217,10 +218,10 @@ class TestCase6212(BasicEnvironment):
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.BELOW_MIN_SPM_PRIORITY
         )
-        assert ll_hosts.setSPMPriority(
+        assert ll_hosts.set_spm_priority(
             False, self.hsm_hosts[0], config.BELOW_MIN_SPM_PRIORITY
         ), "Set SPM priority to illegal value succeded"
-        assert ll_hosts.checkSPMPriority(
+        assert ll_hosts.check_spm_priority(
             True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
         ), "Host %s SPM priority isn't %s" % (
             (self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY)
@@ -229,10 +230,10 @@ class TestCase6212(BasicEnvironment):
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.LARGER_THAN_MAX_SPM_PRIORITY
         )
-        assert ll_hosts.setSPMPriority(
+        assert ll_hosts.set_spm_priority(
             False, self.hsm_hosts[0], config.LARGER_THAN_MAX_SPM_PRIORITY
         ), "Set SPM priority to illegal value succeded"
-        assert ll_hosts.checkSPMPriority(
+        assert ll_hosts.check_spm_priority(
             True, self.hsm_hosts[0], str(config.DEFAULT_SPM_PRIORITY)
         ), "Host %s SPM priority isn't %s" % (
             self.hsm_hosts[0], config.DEFAULT_SPM_PRIORITY
@@ -249,7 +250,7 @@ class TestCase6212(BasicEnvironment):
             "Set host: '%s' SPM priority to '%s'", self.hsm_hosts[0],
             config.ILLEGAL_SPM_PRIORITY
         )
-        assert ll_hosts.setSPMPriority(
+        assert ll_hosts.set_spm_priority(
             False, self.hsm_hosts[0], config.ILLEGAL_SPM_PRIORITY
         ), "Set SPM priority to illegal value succeded"
 
@@ -300,15 +301,15 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
         self.basic_flow(priorities=min_priorities, hosts=[self.spm_host])
 
         testflow.step("Restarting vdsmd on %s", self.spm_host)
-        spm_host_ip = ll_hosts.getHostIP(self.spm_host)
+        spm_host_ip = ll_hosts.get_host_ip(self.spm_host)
         test_utils.restartVdsmd(spm_host_ip, config.HOSTS_PW)
-        assert ll_hosts.waitForHostsStates(
+        assert ll_hosts.wait_for_hosts_states(
             True, self.spm_host, config.HOST_UP
         ), "Host %s failed to reach 'UP' state" % self.spm_host
 
         testflow.step("Waiting for SPM to be elected")
         with pytest.raises(apis_exceptions.APITimeout):
-            ll_hosts.waitForSPM(
+            ll_hosts.wait_for_spm(
                 datacenter=config.DATA_CENTER_NAME,
                 timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
             )
@@ -395,7 +396,7 @@ class TestCase6224(BasicEnvironment):
             self.spm_host
         )
         testflow.step("Restarting vdsmd on %s", host_name)
-        host_ip = ll_hosts.getHostIP(host_name)
+        host_ip = ll_hosts.get_host_ip(host_name)
         test_utils.restartVdsmd(host_ip, config.HOSTS_PW)
         self.activate_and_verify_hosts(hosts=[host_name])
 
@@ -418,7 +419,7 @@ class TestCase6224(BasicEnvironment):
         )
         testflow.step("Waiting for SPM to be elected")
         with pytest.raises(apis_exceptions.APITimeout):
-            ll_hosts.waitForSPM(
+            ll_hosts.wait_for_spm(
                 datacenter=config.DATA_CENTER_NAME,
                 timeout=WAIT_FOR_SPM_TIMEOUT, sleep=RETRY_INTERVAL
             )
@@ -523,7 +524,7 @@ class TestCase6215(BasicEnvironment):
 
         self.second_spm_priority_host = self.hsm_hosts[1]
         self.max_spm_priority_host = self.hsm_hosts[2]
-        self.max_spm_priority_host_ip = ll_hosts.getHostIP(
+        self.max_spm_priority_host_ip = ll_hosts.get_host_ip(
             self.max_spm_priority_host
         )
         self.engine_ip = utils.getIpAddressByHostName(config.VDC)
@@ -576,7 +577,9 @@ class TestCase6215(BasicEnvironment):
                 self.max_spm_priority_host, self.engine_ip
             )
             BaseTestCase.test_failed = True
-        if not ll_hosts.waitForHostsStates(True, self.max_spm_priority_host):
+        if not ll_hosts.wait_for_hosts_states(
+            True, self.max_spm_priority_host
+        ):
             logger.error(
                 "Host failed to reach 'UP' state %s",
                 self.max_spm_priority_host
@@ -587,7 +590,7 @@ class TestCase6215(BasicEnvironment):
                 "Failed to activate host '%s'", self.former_spm
             )
             BaseTestCase.test_failed = True
-        if not ll_hosts.waitForHostsStates(True, self.former_spm):
+        if not ll_hosts.wait_for_hosts_states(True, self.former_spm):
             logger.error(
                 "Host failed to reach 'UP' state %s", self.former_spm
             )
@@ -617,7 +620,7 @@ class TestCase6219(BasicEnvironment):
         self.set_priorities(
             priorities=[config.MAX_SPM_PRIORITY], hosts=[self.spm_host]
         )
-        self.spm_host_ip = ll_hosts.getHostIP(
+        self.spm_host_ip = ll_hosts.get_host_ip(
             self.spm_host
         )
 
@@ -656,7 +659,7 @@ class TestCase6219(BasicEnvironment):
         ), "Unable to block connection between %s and %s" % (
             self.spm_host, self.non_master_storage_domain_ip
         )
-        assert ll_hosts.waitForHostsStates(
+        assert ll_hosts.wait_for_hosts_states(
             True, self.spm_host, states=config.HOST_NONOPERATIONAL
         ), "Host %s failed to reach non-operational state" % self.spm_host
         self.set_priorities(
@@ -681,7 +684,7 @@ class TestCase6219(BasicEnvironment):
                 self.former_spm, self.non_master_storage_domain_ip
             )
             BaseTestCase.test_failed = True
-        if not ll_hosts.waitForHostsStates(True, self.former_spm):
+        if not ll_hosts.wait_for_hosts_states(True, self.former_spm):
             logger.error(
                 "Host failed to reach 'UP' state %s", self.former_spm
             )

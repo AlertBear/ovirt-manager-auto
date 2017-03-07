@@ -74,7 +74,7 @@ def change_host_cluster(cluster_name):
     u_libs.testflow.setup(
         "Change the host %s cluster to %s", conf.HOSTS[0], cluster_name
     )
-    if not ll_hosts.updateHost(
+    if not ll_hosts.update_host(
         positive=True, host=conf.HOSTS[0], cluster=cluster_name
     ):
         return False

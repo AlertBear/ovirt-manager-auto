@@ -307,7 +307,7 @@ def wait_for_up_state_and_reactivate(host):
         bool: True if result was successful, False otherwise
 
     """
-    wait = ll_hosts.waitForHostsStates(positive=True, names=host)
+    wait = ll_hosts.wait_for_hosts_states(positive=True, names=host)
     deactivate = hl_hosts.deactivate_host_if_up(host=host)
     activate = hl_hosts.activate_host_if_not_up(host=host)
     return wait and deactivate and activate

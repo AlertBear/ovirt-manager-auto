@@ -24,7 +24,7 @@ def deactivate_hosts(host=None):
     """
     host = host if host else conf.HOST_0_NAME
     test_utils.wait_for_tasks(engine=conf.ENGINE, datacenter=conf.DC_0)
-    if not ll_hosts.checkHostSpmStatus(positive=True, hostName=host):
+    if not ll_hosts.check_host_spm_status(positive=True, host=host):
         if not ll_hosts.select_host_as_spm(
             positive=True, host=host, data_center=conf.DC_0
         ):
@@ -55,7 +55,7 @@ def set_nics_and_wait_for_host_status(nics, nic_status, host_status="up"):
         if not func(nic=nic):
             return False
 
-    if not ll_hosts.waitForHostsStates(
+    if not ll_hosts.wait_for_hosts_states(
         positive=True, names=conf.HOST_0_NAME, timeout=300, states=host_status
     ):
         return False

@@ -114,7 +114,7 @@ def move_host_to_another_cluster(request):
             "Move host %s to cluster %s", labels.host_1_name, labels.cluster_0
         )
         assert hl_host.deactivate_host_if_up(host=labels.host_1_name)
-        assert ll_hosts.updateHost(
+        assert ll_hosts.update_host(
             positive=True, host=labels.host_1_name, cluster=labels.cluster_0
         )
         assert ll_hosts.activate_host(positive=True, host=labels.host_1_name)

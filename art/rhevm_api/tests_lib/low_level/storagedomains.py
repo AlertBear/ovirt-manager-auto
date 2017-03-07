@@ -31,7 +31,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    getHostCompatibilityVersion,
+    get_host_compatibility_version,
 )
 from art.rhevm_api.utils.test_utils import (
     validateElementStatus, get_api, )
@@ -99,8 +99,8 @@ def _prepareStorageDomainObject(positive, **kwargs):
 
     host = kwargs.pop('host', None)
     if host:
-        hostObj = hostUtil.find(host)
-        sd.set_host(Host(name=hostObj.get_name()))
+        host_obj = hostUtil.find(host)
+        sd.set_host(Host(name=host_obj.get_name()))
 
     storage_type = kwargs.pop('storage_type', None)
 
@@ -108,13 +108,13 @@ def _prepareStorageDomainObject(positive, **kwargs):
     if type_ and type_.lower() == DATA_DOMAIN_TYPE:
         storage_format = kwargs.pop('storage_format', None)
         if host and storage_format is None:
-            hostCompVer = getHostCompatibilityVersion(host)
-            if not hostCompVer:
+            host_comp_ver = get_host_compatibility_version(host)
+            if not host_comp_ver:
                 util.logger.error("Can't determine storage domain version")
                 return False
-            if hostCompVer == '2.2':
+            if host_comp_ver == '2.2':
                 storage_format = ENUMS['storage_format_version_v1']
-            elif hostCompVer == '3.0':
+            elif host_comp_ver == '3.0':
                 # NFS does not support storage metadata format V2
                 storage_format = (ENUMS['storage_format_version_v2'] if
                                   storage_type == ENUMS['storage_type_iscsi']

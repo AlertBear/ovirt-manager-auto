@@ -168,7 +168,7 @@ class CleanGoldenEnv(BaseTestCase):
                     "Remove host: %s from cluster: %s", host.get_name(),
                     cl_name
                 )
-                ll_hosts.removeHost(
+                ll_hosts.remove_host(
                     positive=True, host=host.get_name(), deactivate=True
                 )
             if cl_name != config.HE_CL_NAME:

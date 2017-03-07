@@ -881,7 +881,7 @@ class CaseRoleActions(TestCase):
     def test_edit_host_configuration(self):
         """ edit_host_configuration """
         try:
-            assert hosts.updateHost(
+            assert hosts.update_host(
                 self.positive,
                 config.HOSTS[0],
                 spm_priority=random.randint(1, 5),

@@ -627,7 +627,7 @@ def stop_host_network(request):
             "Wait until the host %s will have 'Up' state",
             host_name
         )
-        ll_hosts.waitForHostsStates(positive=True, names=host_name)
+        ll_hosts.wait_for_hosts_states(positive=True, names=host_name)
     request.addfinalizer(fin)
 
     u_libs.testflow.setup("Stop network service on the host %s", host_name)
@@ -639,7 +639,7 @@ def stop_host_network(request):
         "Wait until the host %s will have 'Non-Responsive' state",
         host_name
     )
-    assert ll_hosts.waitForHostsStates(
+    assert ll_hosts.wait_for_hosts_states(
         positive=True, names=host_name, states=sla_config.HOST_NONRESPONSIVE
     )
 

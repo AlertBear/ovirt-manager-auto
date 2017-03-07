@@ -48,8 +48,8 @@ def _perform_iptables_action_and_wait(action, source,
         return success
 
     logger.info("wait for state : '%s' ", expected_state)
-    response = hosts.waitForHostsStates(True, wait_for_entity,
-                                        states=expected_state)
+    response = hosts.wait_for_hosts_states(True, wait_for_entity,
+                                           states=expected_state)
 
     host_state = hosts.get_host_status(wait_for_entity)
     if not response:

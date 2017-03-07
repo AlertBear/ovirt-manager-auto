@@ -17,7 +17,7 @@ def initialize_params(request):
     self = request.node.cls
 
     self.snapshot_list = list()
-    self.spm = ll_hosts.getSPMHost(config.HOSTS)
+    self.spm = ll_hosts.get_spm_host(config.HOSTS)
     self.snapshot_description = storage_helpers.create_unique_object_name(
         self.test_case, config.OBJECT_TYPE_SNAPSHOT
     )

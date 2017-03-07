@@ -543,7 +543,7 @@ class TestCase4913(DefaultEnvironment):
             "Found IP %s for storage domain %s",
             self.storage_domain_ip, storage_domain_name
         )
-        self.host_ip = ll_hosts.getHostIP(
+        self.host_ip = ll_hosts.get_host_ip(
             ll_hosts.getVmHost(self.vm_name)[1]['vmHoster']
         )
         logger.info("Blocking connection from vdsm to storage domain")

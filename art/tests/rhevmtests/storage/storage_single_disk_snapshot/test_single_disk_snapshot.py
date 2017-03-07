@@ -573,13 +573,13 @@ class TestCase6014(BasicEnvironment):
         - Restart vdsm during snapshot creation
         """
         self._perform_snapshot_operation(wait=False)
-        self.host = ll_hosts.getSPMHost(config.HOSTS)
-        self.host_ip = ll_hosts.getHostIP(self.host)
+        self.host = ll_hosts.get_spm_host(config.HOSTS)
+        self.host_ip = ll_hosts.get_host_ip(self.host)
         testflow.step("Restarting vdsm on host %s", self.host)
         assert test_utils.restartVdsmd(self.host_ip, config.HOSTS_PW), (
             "Failure to restart vdsm service on host %s" % self.host
         )
-        ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
+        ll_hosts.wait_for_spm(config.DATA_CENTER_NAME, 600, 30)
 
 
 @pytest.mark.usefixtures(

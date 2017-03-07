@@ -97,7 +97,7 @@ class TestActiveHost(TestCase):
     @pytest.fixture(scope="class")
     def setup_class(cls, request):
         testflow.setup("Checking if host is not active.")
-        if not ll_hosts.isHostUp(True, host=hosts[0]):
+        if not ll_hosts.is_host_up(True, host=hosts[0]):
             testflow.setup("Activating host.")
             if not ll_hosts.activate_host(True, host=hosts[0]):
                 raise HostException(
@@ -118,7 +118,7 @@ class TestHostInMaintenance(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Checking if host if active.")
-            if not ll_hosts.isHostUp(True, host=hosts[0]):
+            if not ll_hosts.is_host_up(True, host=hosts[0]):
                 testflow.teardown("Activating host: %s.", hosts[0])
                 if not ll_hosts.activate_host(True, host=hosts[0]):
                     raise HostException(
@@ -130,7 +130,7 @@ class TestHostInMaintenance(TestCase):
         test_utils.wait_for_tasks(ENGINE, dcs_names[0])
 
         testflow.setup("Checking if host is active.")
-        if ll_hosts.isHostUp(True, host=hosts[0]):
+        if ll_hosts.is_host_up(True, host=hosts[0]):
             testflow.setup(
                 "Setting host: %s to maintenance.",
                 hosts[0]
@@ -173,7 +173,7 @@ class TestUpdateHostName(TestCase):
             Restore host's name.
             """
             testflow.teardown("Restoring host %s's name.", hosts[0])
-            if not ll_hosts.updateHost(
+            if not ll_hosts.update_host(
                 True,
                 host=cls.NEW_NAME,
                 name=hosts[0]
@@ -186,7 +186,7 @@ class TestUpdateHostName(TestCase):
     @polarion("RHEVM3-8839")
     def test_update_host_name(self):
         testflow.step("Updating host %s's name.", hosts[0])
-        assert ll_hosts.updateHost(
+        assert ll_hosts.update_host(
             True,
             host=hosts[0],
             name=self.NEW_NAME
@@ -312,7 +312,7 @@ class SetSPMToLow(TestCase):
                 "Set SPM priority on host: %s back to normal.",
                 hosts[0]
             )
-            if not ll_hosts.updateHost(
+            if not ll_hosts.update_host(
                 True,
                 host=hosts[0],
                 spm_priority=cls.NORMAL_SPM_LEVEL
@@ -328,13 +328,13 @@ class SetSPMToLow(TestCase):
             "Check that SPM priority on host: %s is set to normal.",
             hosts[0]
         )
-        if not ll_hosts.checkSPMPriority(
+        if not ll_hosts.check_spm_priority(
             True,
-            hostName=hosts[0],
-            expectedPriority=cls.NORMAL_SPM_LEVEL
+            host=hosts[0],
+            expected_priority=cls.NORMAL_SPM_LEVEL
         ):
             testflow.setup("Updating host.")
-            if not ll_hosts.updateHost(
+            if not ll_hosts.update_host(
                 True,
                 host=hosts[0],
                 spm_priority=cls.NORMAL_SPM_LEVEL
@@ -348,7 +348,7 @@ class SetSPMToLow(TestCase):
     @polarion("RHEVM3-8834")
     def test_set_spm_to_low(self):
         testflow.step("Set SPM priority on host: %s to low.", hosts[0])
-        if not ll_hosts.updateHost(
+        if not ll_hosts.update_host(
             True,
             host=hosts[0],
             spm_priority=self.LOW_SPM_LEVEL
@@ -377,7 +377,7 @@ class UpdateIPOfActiveHost(TestActiveHost):
                 "Set host %s to correct address.",
                 hosts[0]
             )
-            if not ll_hosts.updateHost(
+            if not ll_hosts.update_host(
                 True,
                 host=hosts[0],
                 address=hosts_ips[0]
@@ -395,7 +395,7 @@ class UpdateIPOfActiveHost(TestActiveHost):
             "Changing ip address for the active host: %s.",
             hosts[0]
         )
-        if not ll_hosts.updateHost(
+        if not ll_hosts.update_host(
             False,
             host=hosts[0],
             address=hosts_ips[1]
@@ -518,9 +518,9 @@ class CreateHostWithWrongIPAddress(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Checking if host exists.")
-            if ll_hosts.is_host_exist(host_name=cls.NAME):
+            if ll_hosts.is_host_exist(host=cls.NAME):
                 testflow.teardown("Removing host.")
-                if not ll_hosts.removeHost(True, host=cls.NAME):
+                if not ll_hosts.remove_host(True, host=cls.NAME):
                     raise HostException(
                         "Unable to remove host: {0}.".format(cls.NAME)
                     )
@@ -552,9 +552,9 @@ class CreateHostWithEmptyRootPassword(TestCase):
     def setup_class(cls, request):
         def finalize():
             testflow.teardown("Checking if host exists.")
-            if ll_hosts.is_host_exist(host_name=cls.NAME):
+            if ll_hosts.is_host_exist(host=cls.NAME):
                 testflow.teardown("Removing host.")
-                if not ll_hosts.removeHost(True, host=cls.NAME):
+                if not ll_hosts.remove_host(True, host=cls.NAME):
                     raise HostException(
                         "Unable to remove host: {0}.".format(cls.NAME)
                     )
@@ -593,7 +593,7 @@ class RemoveActiveHost(TestActiveHost):
     @polarion("RHEVM3-8851")
     def test_remove_active_host(self):
         testflow.step("Removing host %s while active.", hosts[0])
-        if not ll_hosts.removeHost(False, host=hosts[0]):
+        if not ll_hosts.remove_host(False, host=hosts[0]):
             raise HostException(
                 "Host {0} was removed although still active.".format(
                     hosts[0]
@@ -620,7 +620,7 @@ class SearchForHost(TestCase):
     @polarion("RHEVM3-8852")
     def test_search_for_host(self):
         testflow.step("Searching for host: %s.", hosts[0])
-        if not ll_hosts.searchForHost(
+        if not ll_hosts.search_for_host(
                 True,
                 query_key=self.QUERY_KEY,
                 query_val=hosts[0],

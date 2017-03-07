@@ -93,7 +93,7 @@ class ReassignSPMWithStorageBlocked(BasicEnvironment):
 
         if positive:
             logger.info("Ensuring host %s is SPM", self.hsm_hosts[0])
-            assert ll_hosts.checkHostSpmStatus(True, self.hsm_hosts[0]), (
+            assert ll_hosts.check_host_spm_status(True, self.hsm_hosts[0]), (
                 "Host %s doesn't elected as SPM" % self.hsm_hosts[0]
             )
 
@@ -144,7 +144,7 @@ class TestCase5823(BasicEnvironment):
             True, self.spm_host
         ), "Unable to deactivate host %s " % self.spm_host
         testflow.step("Waiting for new SPM to be elected")
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.RETRY_INTERVAL
         ), "A new SPM host was not elected"
@@ -299,7 +299,9 @@ class TestCase5820(ReassignSPMWithStorageBlocked):
         """
         self.target_host_address = self.non_master_address
         self.blocked_domain_name = self.spm_host
-        self.origin_host_address = ll_hosts.getHostIP(self.blocked_domain_name)
+        self.origin_host_address = ll_hosts.get_host_ip(
+            self.blocked_domain_name
+        )
         self.block_connection_and_reassign_spm()
 
 
@@ -321,5 +323,7 @@ class TestCase5821(ReassignSPMWithStorageBlocked):
         """
         self.target_host_address = self.master_domain_address
         self.blocked_domain_name = self.spm_host
-        self.origin_host_address = ll_hosts.getHostIP(self.blocked_domain_name)
+        self.origin_host_address = ll_hosts.get_host_ip(
+            self.blocked_domain_name
+        )
         self.block_connection_and_reassign_spm()

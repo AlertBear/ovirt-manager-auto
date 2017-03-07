@@ -30,9 +30,6 @@ from art.core_api.apis_utils import TimeoutingSampler, data_st, getDS
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState
 )
-from art.rhevm_api.tests_lib.low_level.networks import (
-    create_properties
-)
 from art.rhevm_api.tests_lib.low_level.vms import (
     stopVm, getVmHost, get_vm_state
 )
@@ -42,6 +39,7 @@ from art.rhevm_api.utils.test_utils import (
 )
 from art.test_handler import settings
 from utilities import machine
+from utilities.rhevm_tools.errors import ExecuteDBQueryError
 
 ELEMENT = "host"
 COLLECTION = "hosts"
@@ -80,6 +78,7 @@ IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 TIMEOUT_NON_RESPONSIVE_HOST = 360
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
+
 VIRSH_CMD = ["virsh", "-r"]
 VDSM_MAC_SPOOFING = "vdsm-no-mac-spoofing"
 NWF_XML_FILE = RHEVM_UTILS["NWFILTER_DUMPXML"]
@@ -96,98 +95,96 @@ logger = logging.getLogger("art.ll_lib.hosts")
 
 
 def get_host_list():
-    '''
-    Return list of all hosts
+    """
+    Get list of all hosts
 
     Returns:
-        list: list of host objects
-    '''
+        list: List of host objects
+    """
     return HOST_API.get(abs_link=False)
 
 
 def get_host_names_list():
-    '''
-    Return list of all host names
+    """
+    Get list of all host names
 
     Returns:
-        list: list of host names(string)
-    '''
+        list: List of host names(string)
+    """
     return [host.get_name() for host in get_host_list()]
 
 
+@ll_general.generate_logs()
 def get_host_status(host):
     """
-    Description: Returns a host's status
-    Author: cmestreg
-    Parameters:
-        * host - host to check
-    Return: Returns the host's status [str] or raises EntityNotFound
+    Returns host status
+
+    Args:
+        host (str): Host name
+
+    Returns:
+        str: Host status
+
+    Raises:
+        EntityNotFound: If host not found
     """
-    return HOST_API.find(host).get_status()
+    return get_host_object(host_name=host).get_status()
 
 
-def getHostIP(host):
+@ll_general.generate_logs()
+def get_host_ip(host):
     """
-    Description: Returns IP of a host with given name in RHEVM
-    Parameters:
-        * host - host name in rhevm to check
-    Return: Returns the host IP [str] or raises EntityNotFound
+    Get IP of a host with given name in RHEVM
+
+    Args:
+        host (str): Host name in rhevm to check
+
+    Returns:
+        str: Host IP
+
+    Raises:
+        EntityNotFound: If host not found
     """
-    return HOST_API.find(host).get_address()
+    return get_host_object(host_name=host).get_address()
 
 
-def getHostCluster(host):
+@ll_general.generate_logs()
+def get_host_cluster(host):
     """
-    Returns the name of the cluster that contains the input host
+    Get the name of the cluster that contains the host
 
-    :param host: host name
-    :type host: str
-    :returns: Returns the cluster name or raises EntityNotFound
-    :rtype: str
+    Args:
+        host (str): host name
+
+    Returns:
+        str: Cluster name
+
+    Raises:
+        EntityNotFound: If host not found
     """
-    host_obj = HOST_API.find(host)
+    host_obj = get_host_object(host_name=host)
     cluster = CL_API.find(host_obj.get_cluster().get_id(), attribute='id')
     return cluster.get_name()
 
 
-def isHostUp(positive, host):
+@ll_general.generate_logs()
+def is_host_up(positive, host):
     """
     Checks if host is in state "up"
 
-    __author__ = "cmestreg"
-    :param positive: True if action should succeed, False otherwise
-    :type positive: bool
-    :param host: name of the host
-    :type host: str
-    :return: True if host is in state "up", False otherwise
-    :rtype: bool
+    Args:
+        positive (bool): True if action should succeed, False otherwise
+        host (str): Name of the host
+
+    Returns:
+        bool: True if host is in state "up", False otherwise
     """
     host_status = get_host_status(host)
 
     return (host_status == ENUMS['host_state_up']) == positive
 
 
-def waitForOvirtAppearance(positive, host, attempts=10, interval=3):
-    """
-    Wait till ovirt host appears in rhevm.
-    Author: atal
-    parameters:
-    host - name of the host
-    attempts - number of tries
-    interval - wait between tries
-    return True/False
-    """
-    while attempts:
-        try:
-            HOST_API.find(host)
-            return True
-        except EntityNotFound:
-            attempts -= 1
-            time.sleep(interval)
-    return False
-
-
-def waitForHostsStates(
+def wait_for_hosts_states(
     positive, names, states='up', timeout=HOST_STATE_TIMEOUT,
     stop_states=[ENUMS['host_state_install_failed']]
 ):
@@ -210,7 +207,7 @@ def waitForHostsStates(
     else:
         list_names = names[:]
 
-    [HOST_API.find(host) for host in list_names]
+    [get_host_object(host_name=host) for host in list_names]
     number_of_hosts = len(list_names)
 
     sampler = TimeoutingSampler(timeout, 10, HOST_API.get, abs_link=False)
@@ -239,7 +236,7 @@ def waitForHostsStates(
                         return True
 
     except APITimeout:
-        HOST_API.logger.error(
+        logger.error(
             "Timeout waiting for hosts (%s) in state %s", names, states
         )
         return False
@@ -287,9 +284,10 @@ def add_host(name, address, root_password, wait=True, **kwargs):
     return status
 
 
-def updateHost(positive, host, **kwargs):
+@ll_general.generate_logs()
+def update_host(positive, host, **kwargs):
     """
-    Update properties of existed host (provided in parameters)
+    Update properties of host (provided in parameters)
 
     Args:
         positive (bool): Expected result for update host.
@@ -316,13 +314,7 @@ def updateHost(positive, host, **kwargs):
     Returns:
         bool: True if host was updated properly, False otherwise.
     """
-
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Update", obj_type="host", obj_name=host,
-        positive=positive, **kwargs
-    )
-    logger.info(log_info)
-    host_obj = HOST_API.find(host)
+    host_obj = get_host_object(host_name=host)
     host_upd = Host()
 
     if 'name' in kwargs:
@@ -377,51 +369,49 @@ def updateHost(positive, host, **kwargs):
         # if this is not a negative case, continue raising exception upwards
         else:
             raise
-    if not status:
-        logger.error(log_error)
     return status
 
 
-def removeHost(positive, host, deactivate=False, force=False):
+@ll_general.generate_logs()
+def remove_host(positive, host, deactivate=False, force=False):
     """
     Remove existing host
 
-    :param positive: If positive or negative verification should be done
-    :type positive: bool
-    :param host: Name of a host to be removed
-    :type host: str
-    :param deactivate: Flag to put host in maintenance before remove
-    :type deactivate: bool
-    :param force: True if the host should be forcefully removed
-    :type force: bool
-    :return: If the removal status is same as expected
-    :rtype: bool
+    Args:
+        positive (bool): If positive or negative verification should be done
+        host (str): Name of a host to be removed
+        deactivate (bool): Flag to put host in maintenance before remove
+        force (bool): True if the host should be forcefully removed
+
+    Returns:
+        bool: If the removal status is same as expected
     """
 
-    hostObj = HOST_API.find(host)
+    host_obj = get_host_object(host_name=host)
     if deactivate:
-        if not isHostInMaintenance(positive, host):
+        if not is_host_in_maintenance(positive, host):
             if not deactivate_host(positive=positive, host=host):
                 return False
 
     operations = ['force=true'] if force else None
 
-    return HOST_API.delete(hostObj, positive, operations=operations)
+    return HOST_API.delete(host_obj, positive, operations=operations)
 
 
+@ll_general.generate_logs()
 def activate_host(positive, host, wait=True):
     """
-    Description:
-        Activate host (set status to UP)
+    Activate host (set status to UP)
+
     Args:
         positive (bool): Expected result
         host (str): Name of a host to be activated
         wait (bool): Wait for host to be up
+
     Returns:
         bool: True if host was activated properly, False otherwise
     """
-    host_obj = HOST_API.find(host)
-    logger.info("Activate host %s", host)
+    host_obj = get_host_object(host_name=host)
     status = bool(HOST_API.syncAction(host_obj, "activate", positive))
 
     if status and wait and positive:
@@ -433,41 +423,45 @@ def activate_host(positive, host, wait=True):
     else:
         test_host_status = True
 
-    res = status and test_host_status
-    if not res:
-        logger.error("Failed to activate host %s", host)
-    return res
+    return status and test_host_status
 
 
-def _sort_hosts_by_priority(hosts, reverse=True):
+def sort_hosts_by_priority(hosts, reverse=True):
     """
-    Description: Set hosts by priorities, default is DESC order
-    Author: mbourvin
-    Parameters:
-    * hosts - hosts to be sorted
-    Returns: A list of hosts, order by priority (default: DESC)
+    Sort hosts by priorities, default is DESC order
+
+    Args:
+        hosts (str or list): Hosts to be sorted
+
+    Returns:
+        list: A list of hosts, sorted by priority (default: DESC)
     """
-    if type(hosts) == str:
+    if isinstance(hosts, str):
         hosts = hosts.split(',')
 
     hosts_priorities_dic = {}
     for host in hosts:
-        spm_priority = getSPMPriority(host)
+        spm_priority = get_spm_priority(host)
         hosts_priorities_dic[host] = spm_priority
 
-    sorted_list = sorted(hosts_priorities_dic, key=hosts_priorities_dic.get,
-                         reverse=reverse)
-    HOST_API.logger.info('Sorted hosts list: %s', sorted_list)
+    sorted_list = sorted(
+        hosts_priorities_dic, key=hosts_priorities_dic.get, reverse=reverse
+    )
+    logger.info('Sorted hosts list: %s', sorted_list)
     return sorted_list
 
 
-def isHostInMaintenance(positive, host):
+@ll_general.generate_logs()
+def is_host_in_maintenance(positive, host):
     """
-    Description: Checks if host is in maintenance state
-    Author: ratamir
-    Parameters:
-        * host - name of host to check
-    Return: positive if host is up, False otherwise
+    Checks if host is in maintenance state
+
+    Args:
+        host (str): Name of host to check
+        positive (bool): Expected results
+
+    Returns:
+        bool: positive if host is up, False otherwise
     """
     try:
         host_status = get_host_status(host)
@@ -483,12 +477,9 @@ def deactivate_host(
     timeout=300
 ):
     """
-    Deactivate the host
+    Deactivate the host.
     Check host state for SPM role, for 'timeout' seconds, and deactivate it
     if it is not contending to SPM. (set status to MAINTENANCE)
-
-
-    __author__: jhenner
 
     Args:
         positive (bool): Expected result
@@ -500,12 +491,11 @@ def deactivate_host(
         bool: True if host was deactivated properly and positive,
             False otherwise
     """
-    host_obj = HOST_API.find(host)
+    host_obj = get_host_object(host_name=host)
     sampler = TimeoutingSampler(
         timeout, 1, lambda x: x.get_spm().status, host_obj
     )
 
-    logger.info("Deactivate host %s", host)
     for sample in sampler:
         if not sample == ENUMS['spm_state_contending']:
             if not HOST_API.syncAction(host_obj, "deactivate", positive):
@@ -516,7 +506,7 @@ def deactivate_host(
             # for the final one. If it didn't, we certainly can
             # return immediately.
             host_state = host_obj.get_status()
-            get_host_state_again = HOST_API.find(host).get_status()
+            get_host_state_again = get_host_object(host_name=host).get_status()
             state_changed = host_state != get_host_state_again
             if state_changed:
                 test_host_status = HOST_API.waitForElemStatus(
@@ -568,6 +558,7 @@ def install_host(host, root_password, **kwargs):
     )
 
 
+@ll_general.generate_logs()
 def commit_network_config(host):
     """
     Save host network configuration
@@ -579,18 +570,10 @@ def commit_network_config(host):
         bool: True if host network configuration was saved properly,
             False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Commit", obj_type="network config", obj_name="",
-        positive=True, extra_txt="on host %s" % host
-    )
-    logger.info(log_info)
-    host_obj = HOST_API.find(host)
-    res = bool(
+    host_obj = get_host_object(host_name=host)
+    return bool(
         HOST_API.syncAction(host_obj, "commitnetconfig", True)
     )
-    if not res:
-        logger.error(log_error)
-    return res
 
 
 @ll_general.generate_logs()
@@ -618,97 +601,21 @@ def fence_host(host, fence_type, timeout=500):
         fence_type=fence_type.upper()
     ):
         return False
+
     if fence_type in ("restart", "start"):
         status = "maintenance" if host_in_maintenance else "up"
+
     elif fence_type == "stop":
         status = "down"
     else:
         return True
+
     return HOST_API.waitForElemStatus(
         host_obj, status=status, timeout=timeout
     )
 
 
-def _prepareHostNicObject(**kwargs):
-    """
-    preparing Host Nic object
-    Author: atal
-    if update exists in kwargs the nic_obj should be updated and not created
-    return: Host Nic data structure object
-    """
-    add = True
-    if 'update' in kwargs:
-        nic_obj = kwargs.get('update')
-        kwargs['name'] = nic_obj.get_name()
-        add = False
-    else:
-        nic_obj = data_st.HostNic()
-
-    if 'vlan' in kwargs:
-        nic_obj.set_vlan(data_st.Vlan(id=kwargs.get('vlan')))
-        name = '{0}.{1}'.format(kwargs.get('name'), kwargs.get('vlan'))
-        kwargs.update([('name', name)])
-
-    if 'name' in kwargs:
-        nic_obj.set_name(kwargs.get('name'))
-
-    if 'network' in kwargs:
-        nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
-
-    if 'boot_protocol' in kwargs:
-        nic_obj.set_boot_protocol(kwargs.get('boot_protocol'))
-
-    if 'override_configuration' in kwargs:
-        nic_obj.set_override_configuration(kwargs.get(
-            'override_configuration'))
-    if kwargs.get('properties'):
-        properties_obj = create_properties(**kwargs.get('properties'))
-        nic_obj.set_properties(properties_obj)
-
-    address = kwargs.get('address')
-    netmask = kwargs.get('netmask')
-    gateway = kwargs.get('gateway')
-    if (address or netmask or gateway) is not None:
-        ip_obj = data_st.Ip() if add else nic_obj.get_ip()
-        if 'address' in kwargs:
-            ip_obj.set_address(kwargs.get('address'))
-        if 'netmask' in kwargs:
-            ip_obj.set_netmask(kwargs.get('netmask'))
-        if 'gateway' in kwargs:
-            ip_obj.set_gateway(kwargs.get('gateway'))
-        nic_obj.set_ip(ip_obj)
-
-    slave_list = kwargs.get('slaves')
-    mode = kwargs.get('mode')
-    miimon = kwargs.get('miimon')
-
-    if slave_list:
-        bond_obj = data_st.Bonding()
-        slaves = data_st.HostNics()
-        for nic in slave_list:
-            slaves.add_host_nic(data_st.HostNic(name=nic.strip()))
-
-        bond_obj.set_slaves(slaves)
-
-        if mode:
-            options = data_st.Options()
-            options.add_option(data_st.Option(name='mode', value=mode))
-            # for bond mode 1 miimon is reuqired
-            if (mode == 1 or mode == 2) and not miimon:
-                miimon = 100
-
-            if miimon:
-                options.add_option(data_st.Option(name='miimon', value=miimon))
-            bond_obj.set_options(options)
-
-        nic_obj.set_bonding(bond_obj)
-
-    if 'check_connectivity' in kwargs:
-        nic_obj.set_check_connectivity(kwargs.get('check_connectivity'))
-
-    return nic_obj
-
-
+@ll_general.generate_logs()
 def get_host_nic(host, nic, all_content=False):
     """
     Get host NIC
@@ -720,208 +627,209 @@ def get_host_nic(host, nic, all_content=False):
 
     Returns:
         HostNic: Host NIC object
-
     """
-    host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromElemColl(
-        host_obj, nic, 'nics', 'host_nic', all_content=all_content
-    )
+    host_nics = get_host_nics_list(host=host, all_content=all_content)
+    nic = filter(lambda x: nic == x.name, host_nics)
+    return nic[0] if nic else None
 
 
+@ll_general.generate_logs()
 def get_host_nics_list(host, all_content=False):
     """
     Get host NICs
 
-    :param host: Host name
-    :type host: str
-    :param all_content: Get NICs objects with all content
-    :type all_content: bool
-    :return: Host NICs list
-    :rtype: list
+    Args:
+        host (str): Host name
+        all_content (bool): Get NICs objects with all content
+
+    Returns:
+        list: Host NICs list
     """
-    host_obj = HOST_API.find(host)
+    host_obj = get_host_object(host_name=host)
     logger.info("Get %s NICs list", host)
     return HOST_API.getElemFromLink(
         host_obj, 'nics', 'host_nic', get_href=False, all_content=all_content
     )
 
 
-def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
+@ll_general.generate_logs()
+def search_for_host(positive, query_key, query_val, key_name=None, **kwargs):
     """
-    Description: search for a host by desired property
-    Author: edolinin
-    Parameters:
-       * query_key - name of property to search for
-       * query_val - value of the property to search for
-       * key_name - name of the property in host object equivalent to query_key
-    Return: status (True if expected number of hosts equal to found by search,
-    False otherwise)
-    """
+    Search for a host by desired property
 
+    Args:
+        positive (bool): Expected results
+        query_key (str): Name of property to search for
+        query_val (str): Value of the property to search for
+        key_name (str): Name of the property in host object equivalent to
+            query_key
+
+    Returns:
+        bool: True if expected number of hosts equal to found by search,
+            False otherwise
+    """
     return searchForObj(HOST_API, query_key, query_val, key_name, **kwargs)
 
 
-def rebootHost(positive, host, username, password):
+@ll_general.generate_logs()
+def reboot_host(host):
     """
     Rebooting host via ssh session
 
-    __author__ = "edolinin"
-    :param host: name of the host to be rebooted
-    :type host: str
-    :param username: user name for ssh session
-    :type username: str
-    :param password: password for ssh session
-    :type password: str
-    :returns: True if host was rebooted successfully, False otherwise
-    :rtype: bool
+    Args:
+        host (Host): Host resource
+
+    Returns:
+        bool: True if host was rebooted successfully, False otherwise
     """
-    host_ip = getHostIP(host)
-    host_machine = machine.Machine(
-        host=host_ip, user=username, password=password,
-    ).util(machine.LINUX)
-    host_machine.reboot()
-    return waitForHostsStates(
-        positive, host, ENUMS['host_state_non_responsive'],
+    host_name = get_host_name_from_engine(vds_resource=host)
+    rc = host.run_command(cmd=["reboot"])[0]
+    if not rc:
+        return False
+
+    return wait_for_hosts_states(
+        True, host_name, ENUMS['host_state_non_responsive'],
         TIMEOUT_NON_RESPONSIVE_HOST,
     )
 
 
-def runDelayedControlService(positive, host, host_user, host_passwd, service,
-                             command='restart', delay=0):
+@ll_general.generate_logs()
+def run_delayed_control_service(
+    positive, host, host_user, host_passwd, service, command='restart',
+    delay=0
+):
     """
-    Description: Restarts a service on the host after a delay
-    Author: adarazs
-    Parameters:
-      * host - ip or fqdn of the host
-      * host_user - user name for the host
-      * host_passwd - password for the user
-      * service - the name of the service (eg. vdsmd)
-      * command - command to issue (eg. start/stop/restart)
-      * delay - the required delay in seconds
-    Return: True if the command is sent successfully, False otherwise,
-    or inverted in case of negative test
-    """
-    cmd = '( sleep %d; service %s %s 1>/dev/null; echo $? )' \
-          % (delay, service, command)
-    host_obj = machine.Machine(
-        host, host_user, host_passwd
-    ).util(machine.LINUX)
-    output = host_obj.runCmd(cmd.split(), bg=('/tmp/delayed-stdout',
-                                              '/tmp/delayed-stderr'))
-    if not output[0]:
-        HOST_API.logger.error("Sending delayed service control command failed."
-                              " Output: %s", output[1])
-    return output[0] == positive
-
-
-def addTagToHost(positive, host, tag):
-    """
-    Description: add tag to a host
-    Author: edolinin
-    Parameters:
-       * host - name of a host to add a tag to
-       * tag - tag name that should be added
-    Return: status (True if tag was added properly, False otherwise)
-    """
-
-    hostObj = HOST_API.find(host)
-    tagObj = Tag(name=tag)
-    hostTags = HOST_API.getElemFromLink(hostObj, link_name='tags', attr='tag',
-                                        get_href=True)
-    tagObj, status = TAG_API.create(tagObj, positive, collection=hostTags)
-    return status
-
-
-def removeTagFromHost(positive, host, tag):
-    """
-    Description: remove tag from a host
-    Author: edolinin
-    Parameters:
-       * host - name of a host to remove a tag from
-       * tag - tag name that should be removed
-    Return: status (True if tag was removed properly, False otherwise)
-    """
-
-    hostObj = HOST_API.find(host)
-    tagObj = HOST_API.getElemFromElemColl(hostObj, tag, 'tags', 'tag')
-    if tagObj:
-        return HOST_API.delete(tagObj, positive)
-    else:
-        HOST_API.logger.error("Tag {0} is not found at host {1}".format(tag,
-                                                                        host))
-        return False
-
-
-def checkHostSpmStatus(positive, hostName):
-    """
-    The function checkHostSpmStatus checking Storage Pool Manager (SPM)
-        status of the host.
+    Restarts a service on the host after a delay
 
     Args:
         positive (bool): Expected results
-        hostName (str): Host name
+        host (str): IP or fqdn of the host
+        host_user (str):  User name for the host
+        host_passwd (str): - Password for the user
+        service (str): The name of the service (eg. vdsmd)
+        command (str): Command to issue (eg. start/stop/restart)
+        delay (int): The required delay in seconds
+
+    Returns:
+        bool: True if the command is sent successfully, False otherwise,
+            or inverted in case of negative test
+    """
+    # TODO: Implement bg in Host.executor
+    cmd = (
+        '( sleep %d; service %s %s 1>/dev/null; echo $? )'
+        % (delay, service, command)
+    )
+    host_obj = machine.Machine(
+        host, host_user, host_passwd
+    ).util(machine.LINUX)
+    output = host_obj.runCmd(
+        cmd.split(), bg=('/tmp/delayed-stdout', '/tmp/delayed-stderr')
+    )
+    return output[0] == positive
+
+
+@ll_general.generate_logs()
+def add_tag_to_host(positive, host, tag):
+    """
+    Add tag to a host
+
+    Args:
+        positive (bool): Expected results
+        host (str): Name of a host to add a tag to
+        tag (str): Tag name that should be added
+
+    Returns:
+        bool: True if tag was added properly, False otherwise
+    """
+    host_obj = get_host_object(host_name=host)
+    tag_obj = Tag(name=tag)
+    host_tags = HOST_API.getElemFromLink(
+        host_obj, link_name='tags', attr='tag', get_href=True
+    )
+    return TAG_API.create(tag_obj, positive, collection=host_tags)[1]
+
+
+@ll_general.generate_logs()
+def remove_tag_from_host(positive, host, tag):
+    """
+    Remove tag from a host
+
+    Args:
+        positive (bool): Expected results
+        host (str): Name of a host to remove a tag from
+        tag (str): Tag name that should be removed
+
+    Returns:
+        bool: True if tag was removed properly, False otherwise
+    """
+    host_obj = get_host_object(host_name=host)
+    tag_obj = HOST_API.getElemFromElemColl(host_obj, tag, 'tags', 'tag')
+    if tag_obj:
+        return HOST_API.delete(tag_obj, positive)
+    else:
+        logger.error("Tag {0} is not found at host {1}".format(tag, host))
+        return False
+
+
+@ll_general.generate_logs()
+def check_host_spm_status(positive, host):
+    """
+    Checking Storage Pool Manager (SPM) status of the host.
+
+    Args:
+        positive (bool): Expected results
+        host (str): Host name
 
     Returns:
         bool: True when the host is SPM status == positive, otherwise return
             False.
     """
     attribute = 'spm'
-    host_object = HOST_API.find(hostName)
+    host_object = get_host_object(host_name=host)
 
     if not hasattr(host_object, attribute):
-        HOST_API.logger.error(
-            "Element host %s doesn't have attribute %s", hostName, attribute
+        logger.error(
+            "Element host %s doesn't have attribute %s", host, attribute
         )
         return False
 
     spm_status = host_object.get_spm().get_status()
-    HOST_API.logger.info(
-        "checkHostSpmStatus - SPM Status of host %s is: %s", hostName,
+    logger.info(
+        "check_host_spm_status - SPM Status of host %s is: %s", host,
         spm_status
     )
     return (spm_status == 'spm') == positive
 
 
-def returnSPMHost(hosts):
+@ll_general.generate_logs()
+def get_any_non_spm_host(hosts, expected_states=None, cluster_name=None):
     """
-    Description: get SPM host from the list of hosts
-    Author: gickowic
-    Parameters:
-    * hosts - the list of hosts to be searched through
-    """
-    if isinstance(hosts, str):
-        hosts = hosts.split(',')
-    hosts = [HOST_API.find(host) for host in hosts]
+    Get any not SPM host from the list of hosts in the expected state
 
-    for host in hosts:
-        if host.get_spm().get_status() == 'spm':
-            return True, {'spmHost': host.get_name()}
-    return False, {'spmHost': None}
+    Args:
+        hosts (list): The list of hosts to be searched through
+        expected_states (list): List of states to filter hosts by. Set to
+            None to disable filtering by host state
+        cluster_name (str): Filter for hosts belonging to a specific cluster
 
-
-def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
-    """
-    Description: get any not SPM host from the list of hosts in the expected
-    state
-    Author: gickowic
-    Parameters:
-    * hosts - the list of hosts to be searched through
-    * expected_states - list of states to filter hosts by. Set to None to
-    disable filtering by host state
-    * cluster_name - filter for hosts belonging to a specific cluster
+    Returns:
+        tuple: (bool, dict() with HSM host name)
     """
     if isinstance(hosts, str):
         hosts = hosts.split(',')
 
-    hosts = [HOST_API.find(host) for host in hosts]
+    hosts = [get_host_object(host_name=host) for host in hosts]
 
     if expected_states:
-        HOST_API.logger.info('Filtering host list for hosts in states %s',
-                             expected_states)
-        hosts = [host for host in hosts
-                 if host.get_status() in expected_states]
-        HOST_API.logger.info('New hosts list is %s',
-                             [host.get_name() for host in hosts])
+        logger.info(
+            'Filtering host list for hosts in states %s', expected_states
+        )
+        hosts = [
+            host for host in hosts if host.get_status() in expected_states
+        ]
+        logger.info(
+            'New hosts list is %s', [host.get_name() for host in hosts]
+        )
 
     for host in hosts:
         if cluster_name and cluster_name != CL_API.find(
@@ -933,295 +841,311 @@ def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
     return False, {'hsmHost': None}
 
 
-def getSPMPriority(hostName):
+def get_spm_priority(host):
     """
-    Description: Get SPM priority of host
-    Author: mbourvin
-    Parameters:
-    * hostName - name/ip of host
-    Return: The SPM priority of the host.
-    """
+    Get SPM priority of host
 
+    Args:
+        host (str): Name/ip of host
+
+    Returns:
+        str: The SPM priority of the host.
+    """
     attribute = 'spm'
-    hostObj = HOST_API.find(hostName)
+    host_obj = get_host_object(host_name=host)
 
-    if not hasattr(hostObj, attribute):
-        HOST_API.logger.error("Element host %s doesn't have attribute %s",
-                              hostName, attribute)
+    if not hasattr(host_obj, attribute):
+        logger.error(
+            "Element host %s doesn't have attribute %s", host, attribute
+        )
         return False
 
-    spmPriority = hostObj.get_spm().get_priority()
-    HOST_API.logger.info("checkSPMPriority - SPM Value of host %s is %s",
-                         hostName, spmPriority)
-    return spmPriority
+    spm_priority = host_obj.get_spm().get_priority()
+    logger.info(
+        "check_spm_priority - SPM Value of host %s is %s", host, spm_priority
+    )
+    return spm_priority
 
 
-def checkSPMPriority(positive, hostName, expectedPriority):
+@ll_general.generate_logs()
+def check_spm_priority(positive, host, expected_priority):
     """
-    Description: check SPM priority of host
-    Author: imeerovi
-    Parameters:
-    * hostName - name/ip of host
-    * expected priority - expected value of SPM priority on host
-    Return: True if SPM priority value is equal to expected value.
+    Check SPM priority of host
+
+    Args:
+        positive (bool): Expected results
+        host (str): nName/ip of host
+        expected_priority (str): Expected value of SPM priority on host
+
+    Returns:
+        True if SPM priority value is equal to expected value.
             False in other case.
     """
-    spmPriority = getSPMPriority(hostName)
+    spm_priority = get_spm_priority(host)
 
-    return (str(spmPriority) == expectedPriority)
+    return str(spm_priority) == expected_priority
 
 
-def setSPMPriority(positive, hostName, spmPriority):
+def set_spm_priority(positive, host, spm_priority):
     """
-    Description: set SPM priority on host
-    Author: imeerovi
-    Parameters:
-    * hostName - name/ip of host
-    * spmPriority - expecded value of SPM priority on host
-    Return: True if spm value is set OK.
-            False in other case.
-    """
+    Set SPM priority on host
 
+    Args:
+        positive (bool): Expected results
+        host (str): Name/ip of host
+        spm_priority (str): Expecded value of SPM priority on host
+
+    Returns:
+        True if spm value is set OK. False in other case.
+    """
     attribute = 'spm'
-    hostObj = HOST_API.find(hostName)
+    host_obj = get_host_object(host_name=host)
 
-    if not hasattr(hostObj, attribute):
-        HOST_API.logger.error("Element host %s doesn't have attribute %s",
-                              hostName, attribute)
+    if not hasattr(host_obj, attribute):
+        logger.error(
+            "Element host %s doesn't have attribute %s", host, attribute
+        )
         return False
 
     # Update host
-    HOST_API.logger.info("Updating Host %s priority to %s", hostName,
-                         spmPriority)
-    updateStat = updateHost(
-        positive=positive, host=hostName, spm_priority=spmPriority
+    logger.info("Updating Host %s priority to %s", host, spm_priority)
+    update_stat = update_host(
+        positive=positive, host=host, spm_priority=spm_priority
     )
 
     # no need to continue checking what the new priority is in case of
     # negative test
     if not positive:
-        return updateStat
+        return update_stat
 
-    if not updateStat:
+    if not update_stat:
         return False
 
-    hostObj = HOST_API.find(hostName)
-    new_priority = hostObj.get_spm().get_priority()
-    HOST_API.logger.info("setSPMPriority - SPM Value of host %s is set to %s",
-                         hostName, new_priority)
+    new_priority = get_spm_priority(host=host)
+    logger.info(
+        "set_spm_priority - SPM Value of host %s is set to %s", host,
+        new_priority
+    )
 
-    return new_priority == int(spmPriority)
+    return new_priority == int(spm_priority)
 
 
 # noinspection PyBroadException
+@ll_general.generate_logs()
 def set_spm_priority_in_db(host_name, spm_priority, engine):
     """
-    Description: set SPM priority for host in DB
+    Set SPM priority for host in DB
 
-    :param host_name: the name of the host
-    :type host_name: string
-    :param spm_priority: SPM priority to be set for host
-    :type spm_priority: int
-    :param engine: engine machine
-    :type engine: instance of Engine
-    :return: True if update of db success, otherwise False
+    Args:
+        host_name (str): The name of the host
+        spm_priority (int): SPM priority to be set for host
+        engine (Engine): Engine machine
+
+    Returns
+        bool: True if update of db success, otherwise False
     """
     sql = "UPDATE vds_static SET vds_spm_priority = '%s' WHERE vds_name = '%s'"
     try:
         engine.db.psql(sql, spm_priority, host_name)
-    except Exception:
+    except ExecuteDBQueryError:
         return False
     return True
 
 
-def getSPMHost(hosts):
+@ll_general.generate_logs()
+def get_spm_host(hosts):
     """
-    Description: get SPM host from the list of hosts
-    Author: pdufek
-    Parameters:
-    * hosts - the list of hosts to be searched through
-    Returns: hostName (success) / raises EntityNotFound exception
+    Get SPM host from the list of hosts
+
+    Args:
+        hosts (list): List of hosts to be searched through
+
+    Returns:
+        str: SPM host name
+
+    Raises:
+        EntityNotFound: If host not found
     """
     for host in hosts:
-        if checkHostSpmStatus(True, host):
+        if check_host_spm_status(True, host):
             return host
     else:
-        raise EntityNotFound('SPM not found among these hosts: %s'
-                             % (str(hosts),))
+        raise EntityNotFound('SPM not found among these hosts: %s' % hosts)
 
 
-def getHSMHost(hosts):
+def get_hsm_host(hosts):
     """
-    Description: get HSM host from the list of hosts
-    Author: ratamir
-    Parameters:
-    * hosts - the list of hosts to be searched through
-    Returns: hostName (success) / raises EntityNotFound exception
+    Get HSM host from the list of hosts
+
+    Args:
+        hosts (list): List of hosts to be searched through
+
+    Returns:
+        str: HSM host name
+
+    Raises:
+        EntityNotFound: If host not found
     """
     for host in hosts:
-        if not checkHostSpmStatus(True, host):
+        if not check_host_spm_status(True, host):
             return host
     else:
-        raise EntityNotFound('HSM not found among these hosts: %s'
-                             % hosts)
+        raise EntityNotFound('HSM not found among these hosts: %s' % hosts)
 
 
-def getHost(positive, dataCenter='Default', spm=True, hostName=None):
+@ll_general.generate_logs()
+def get_host(positive, datacenter='Default', spm=True, host=None):
     """
-    Locate and return SPM or HSM host from specific data center (given by name)
-        dataCenter  - The data center name
-        spm      - When true return SPM host, false locate and return the
-        HSM host
-        hostName - Optionally, when the host name exist, the function locates
-                   the specific HSM host. When such host doesn't exist, the
-                   first HSM found will be returned.
-    return: True and located host name in case of success,
-    otherwise false and None
+    Locate and return SPM or HSM host from specific datacenter
+
+    Args:
+        positive (bool): Expeted results
+        datacenter (str): The data center name
+        spm (bool): When true return SPM host, false locate and return the
+            HSM host
+        host (str): Optionally, when the host name exist, the function
+            locates the specific HSM host. When such host doesn't exist,
+            the first HSM found will be returned.
+
+    Returns:
+        tuple: (bool, dict() with host name)
     """
 
     try:
         clusters = CL_API.get(abs_link=False)
-        data_center_obj = DC_API.find(dataCenter)
+        data_center_obj = DC_API.find(datacenter)
     except EntityNotFound:
-        return False, {'hostName': None}
+        return False, {'host': None}
 
-    clusters = (cl for cl in clusters if hasattr(cl, 'data_center') and
-                cl.get_data_center() and
-                cl.get_data_center().id == data_center_obj.id)
+    clusters = (
+        cl for cl in clusters if
+        hasattr(cl, 'data_center') and
+        cl.get_data_center() and
+        cl.get_data_center().id == data_center_obj.id
+    )
     for cluster in clusters:
         element_status, hosts = searchElement(
             positive, ELEMENT, COLLECTION, 'cluster', cluster.name
         )
         if not element_status:
             continue
+
         for host in hosts:
-            spm_status = checkHostSpmStatus(positive, host.name)
+            spm_status = check_host_spm_status(positive, host.name)
             if spm and spm_status:
-                return True, {'hostName': host.name}
+                return True, {'host': host.name}
 
             elif not spm and not spm_status and (
-                (not hostName or hostName == host.name)
+                (not host or host == host.name)
             ):
-                return True, {'hostName': host.name}
-    return False, {'hostName': None}
+                return True, {'host': host.name}
+    return False, {'host': None}
 
 
-def waitForSPM(datacenter, timeout, sleep):
+@ll_general.generate_logs()
+def wait_for_spm(datacenter, timeout, sleep):
     """
-    Description: waits until SPM gets elected in DataCenter
-    Author: jhenner
-    Parameters:
-      * datacenter - the name of the datacenter
-      * timeout - how much seconds to wait until it fails
-      * sleep - how much to sleep between checks
-    Return: True if an SPM gets elected before timeout. It rises
-    RESTTimeout exception on timeout.
+    Waits until SPM gets elected in DataCenter
+
+    Args:
+        datacenter (str): The name of the datacenter
+        timeout (int): How much seconds to wait until it fails
+        sleep (int): How much to sleep between checks
+
+    Returns:
+        bool: True if an SPM gets elected before timeout.
+
+    Raises:
+        RESTTimeout: If no SPM in given time
     """
-    sampler = TimeoutingSampler(timeout, sleep,
-                                getHost, True, datacenter, True)
-    sampler.timeout_exc_args = "Timeout when waiting for SPM to appear"
-    " in DC %s." % datacenter,
+    sampler = TimeoutingSampler(
+        timeout, sleep, get_host, True, datacenter, True
+    )
+    sampler.timeout_exc_args = (
+        "Timeout when waiting for SPM to appear in DC %s." % datacenter,
+    )
     for s in sampler:
         if s[0]:
             return True
 
 
-def getHostNicAttr(host, nic, attr):
-    """
-    get host's nic attribute value
-    Author: atal
-    Parameters:
-       * host - name of a host
-       * nic - name of nic we'd like to check
-       * attr - attribute of nic we would like to recive. attr can dive deeper
-         as a string with DOTS ('.').
-    return: True if the function succeeded, otherwise False
-    """
-    try:
-        nic_obj = get_host_nic(host, nic)
-    except EntityNotFound:
-        return False, {'attrValue': None}
-
-    for tag in attr.split('.'):
-        try:
-            nic_obj = getattr(nic_obj, tag)
-        except AttributeError as err:
-            HOST_API.logger.error(str(err))
-            return False, {'attrValue': None}
-
-    return True, {'attrValue': nic_obj}
-
-
-def is_host_exist(host_name):
+@ll_general.generate_logs()
+def is_host_exist(host):
     """
     Check if host exists under engine
 
     Args:
-        host_name (str): Host name
+        host (str): Host name
 
     Returns:
         bool: True, if host exists under the engine, otherwise False
     """
-    return host_name in get_host_names_list()
+    return host in get_host_names_list()
 
 
-def getHostCompatibilityVersion(host):
+@ll_general.generate_logs()
+def get_host_compatibility_version(host):
     """
-    Description: Get Host compatibility version
-    Author: istein, gickowic
-    Parameters:
-       * host - host name
-    Return: Compatibility version if found else None
-    """
+    Get Host compatibility version
 
+    Args:
+        host(str): Host name
+
+    Returns:
+        str or None: Compatibility version if found else None
+    """
     # check if given hostname exists in the setup
     try:
-        hostObj = HOST_API.find(host)
+        host_obj = get_host_object(host_name=host)
     except EntityNotFound:
         return None
 
     # Since host returned from API supplies the cluster ID, cluster *must*
     # exist in rhevm - no need to check
-    clId = hostObj.get_cluster().get_id()
-    clObj = CL_API.find(clId, 'id')
+    cl_id = host_obj.get_cluster().get_id()
+    cl_obj = CL_API.find(cl_id, 'id')
 
-    cluster = clObj.get_name()
-    return getClusterCompatibilityVersion(cluster)
+    cluster = cl_obj.get_name()
+    return get_cluster_compatibility_version(cluster)
 
 
-def getClusterCompatibilityVersion(cluster):
+@ll_general.generate_logs()
+def get_cluster_compatibility_version(cluster):
     """
-    Description: Get Cluster compatibility version
-    Author: istein, gickowic
-    Parameters:
-       * cluster - cluster name
-    Return: Compatibilty version or None
+    Get Cluster compatibility version
+
+    Args:
+        cluster(str): Cluster name
+
+    Returns:
+        str: Compatibility version or None
     """
     try:
-        clusterObj = CL_API.find(cluster)
+        cluster_obj = CL_API.find(cluster)
     except EntityNotFound as err:
-        HOST_API.logger.error(err)
+        logger.error(err)
         return None
-    clVersion = '{0}.{1}'.format(clusterObj.get_version().get_major(),
-                                 clusterObj.get_version().get_minor())
-    return clVersion
+
+    cl_version = '{0}.{1}'.format(
+        cluster_obj.get_version().get_major(),
+        cluster_obj.get_version().get_minor()
+    )
+    return cl_version
 
 
-def waitForHostPmOperation(host, engine):
+def wait_for_host_pm_operation(host, engine):
     """
     Wait for next PM operation availability
-    Author: lustalov
 
-    :param host: vds host name
-    :type host: string
-    :param engine: engine
-    :type engine: instance of resources.Engine
-## CONTINUE
-    Return: True if success, False otherwise
+    Args:
+        host (str): vds host name
+        engine (Engine): engine
+
+    Returns:
+        bool: True if success, False otherwise
     """
-
-    timeToWait = 0
-    returnVal = True
+    time_to_wait = 0
+    return_val = True
     db = engine.db
     try:
         sql = (
@@ -1229,30 +1153,30 @@ def waitForHostPmOperation(host, engine):
             "where option_name = 'FenceQuietTimeBetweenOperationsInSec';"
         )
         res = db.psql(sql)
-        waitSec = res[0][0]
+        wait_sec = res[0][0]
         events = ['USER_VDS_STOP', 'USER_VDS_START', 'USER_VDS_RESTART']
         for event in events:
             sql = (
                 "select get_seconds_to_wait_before_pm_operation("
                 "'%s','%s', %s);"
             )
-            res = db.psql(sql, host, event, waitSec)
-            timeSec = int(res[0][0])
-            if timeSec > timeToWait:
-                timeToWait = timeSec
+            res = db.psql(sql, host, event, wait_sec)
+            time_sec = int(res[0][0])
+            if time_sec > time_to_wait:
+                time_to_wait = time_sec
     except Exception as ex:
-        HOST_API.logger.error(
+        logger.error(
             'Failed to get wait time before host %s PM operation: %s',
             host, ex
         )
-        returnVal = False
-    if timeToWait > 0:
-        HOST_API.logger.info(
+        return_val = False
+    if time_to_wait > 0:
+        logger.info(
             'Wait %d seconds until PM operation will be permitted.',
-            timeToWait
+            time_to_wait
         )
-        time.sleep(timeToWait)
-    return returnVal
+        time.sleep(time_to_wait)
+    return return_val
 
 
 def check_network_filtering(positive, vds_resource):
@@ -1374,35 +1298,7 @@ def check_network_filtering_ebtables(host_obj, vm_macs):
     return True
 
 
-def killProcesses(hostObj, procName, **kwargs):
-    """
-    Description: pkill procName
-
-    **Author**: talayan
-    **Parameters**:
-      **hostObj* - Object represnts the hostObj
-      **procName* - process to kill
-    """
-    # check if there is zombie qemu proccess
-    pgrep_proc = ['pgrep', procName]
-    HOST_API.logger.info("Run %s to check there are running processes.."
-                         % " ".join(pgrep_proc))
-    res, out = hostObj.runCmd(pgrep_proc)
-    if not res:
-        HOST_API.logger.info("Run %s Res: %s",
-                             " ".join(pgrep_proc), out)
-        return
-
-    HOST_API.logger.info("performing: pkill %s" % procName)
-
-    pkill_proc = ['pkill', procName]
-
-    HOST_API.logger.info("Run %s" % " ".join(pkill_proc))
-    res, out = hostObj.runCmd(pkill_proc)
-    if not res:
-        HOST_API.logger.info(str(out))
-
-
+@ll_general.generate_logs()
 def select_host_as_spm(
     positive, host, data_center, timeout=HOST_STATE_TIMEOUT, sleep=10,
     wait=True
@@ -1413,7 +1309,7 @@ def select_host_as_spm(
     Args:
         positive (bool): Expected result
         host (str): Name of a host to be selected as spm
-        datacenter (str): Datacenter name
+        data_center (str): Datacenter name
         timeout (int): Timeout to wait for the host to be SPM
         sleep (int): Time to sleep between iterations
         wait (bool): True to wait for spm election to be completed before
@@ -1422,18 +1318,15 @@ def select_host_as_spm(
     Returns:
         bool: True if host was elected as spm properly, False otherwise
     """
-    if not checkHostSpmStatus(True, host):
-        host_obj = HOST_API.find(host)
-        HOST_API.logger.info('Selecting host %s as SPM', host)
+    if not check_host_spm_status(True, host):
+        host_obj = get_host_object(host_name=host)
         response = HOST_API.syncAction(host_obj, "forceselectspm", positive)
         if response:
             if positive and wait:
-                waitForSPM(data_center, timeout=timeout, sleep=sleep)
-                return checkHostSpmStatus(True, host)
+                wait_for_spm(data_center, timeout=timeout, sleep=sleep)
+                return check_host_spm_status(True, host)
             else:
                 return positive
-        else:
-            logger.error("Failed to select host %s as SPM", host)
         return response == positive
     else:
         logger.info("Host %s already SPM", host)
@@ -1442,8 +1335,7 @@ def select_host_as_spm(
 
 def set_host_non_operational_nic_down(host_resource, nic):
     """
-    Helper Function for check_vm_migration.
-    It puts the NIC with required network down and causes the Host
+    Set host NIC with required network down and causes the Host
     to become non-operational
 
     Args:
@@ -1458,7 +1350,7 @@ def set_host_non_operational_nic_down(host_resource, nic):
     if not host_resource.network.if_down(nic=nic):
         return False
 
-    return waitForHostsStates(
+    return wait_for_hosts_states(
         True, names=host_name, states='non_operational', timeout=TIMEOUT * 2
     )
 
@@ -1466,17 +1358,22 @@ def set_host_non_operational_nic_down(host_resource, nic):
 def start_vdsm(host, password, datacenter):
     """
     Start vdsm. Before that stop all vms and deactivate host.
-    Parameters:
-      * host - host name in RHEVM
-      * password - password of host
-      * datacenter - datacenter of host
+
+    Args:
+        host(str): Host name in RHEVM
+        password (str): Password of host
+        datacenter (str): Datacenter of host
+
+    Returns:
+        bool: True if VDSM started, otherwise False
     """
-    ip = getHostIP(host)
+    ip = get_host_ip(host)
     if not startVdsmd(vds=ip, password=password):
-        HOST_API.logger.error("Unable to start vdsm on host %s", host)
+        logger.error("Unable to start vdsm on host %s", host)
         return False
+
     if not activate_host(True, host):
-        HOST_API.logger.error("Unable to activate host %s", host)
+        logger.error("Unable to activate host %s", host)
         return False
 
     return waitForDataCenterState(datacenter)
@@ -1485,22 +1382,28 @@ def start_vdsm(host, password, datacenter):
 def stop_vdsm(host, password):
     """
     Stop vdsm. Before that stop all vms and deactivate host.
-    Parameters:
-      * host - host name in RHEVM
-      * password - password of host
+
+    Args:
+        host (str): Host name in RHEVM
+        password (str): Password of host
+
+    Returns:
+        bool: True if VDSM stopped, otherwise False
     """
     for vm in VM_API.get(abs_link=False):
         if get_vm_state(vm.name) == ENUMS['vm_state_down']:
             continue
+
         if getVmHost(vm.name)[1]['vmHoster'] == host:
-            HOST_API.logger.error("Stopping vm %s", vm.name)
+            logger.error("Stopping vm %s", vm.name)
             if not stopVm(True, vm.name):
                 return False
 
     if not deactivate_host(True, host):
-        HOST_API.logger.error("Unable to deactivate host %s", host)
+        logger.error("Unable to deactivate host %s", host)
         return False
-    ip = getHostIP(host)
+
+    ip = get_host_ip(host)
     return stopVdsmd(vds=ip, password=password)
 
 
@@ -1509,8 +1412,8 @@ def kill_vm_process(resource, vm_name):
     Kill VM process of a given vm
 
     Args:
-        resource (VDS): resource
-        vm_name (str): name of VM to kill
+        resource (VDS): Host resource
+        vm_name (str): Name of VM to kill
 
     Returns:
         bool: True, if function succeed to kill VM process, otherwise False
@@ -1519,6 +1422,7 @@ def kill_vm_process(resource, vm_name):
     if not vm_pid:
         logger.error("Failed to get VM pid from resource %s", resource)
         return False
+
     rc = resource.run_command(['kill', '-9', vm_pid])[0]
     return not bool(rc)
 
@@ -1540,6 +1444,7 @@ def kill_vdsmd(resource):
             resource, out, err
         )
         return False
+
     vdsm_process = out.rstrip('\n').split('\n')
     rc, out, err = resource.run_command(shlex.split('pgrep super'))
     if rc:
@@ -1548,6 +1453,7 @@ def kill_vdsmd(resource):
             resource, out, err
         )
         return False
+
     super_vdsm_process = out.rstrip('\n').split('\n')
     vdsm_pid = set(vdsm_process).symmetric_difference(super_vdsm_process).pop()
     logger.info("kill VDSM pid: %s on host %s", vdsm_pid, resource.ip)
@@ -1555,28 +1461,32 @@ def kill_vdsmd(resource):
     return not bool(rc)
 
 
-def get_host_object(host_name, attribute='name'):
+def get_host_object(host_name, attribute="name"):
     """
-    This function get host object by host name.
+    Get host object by host name.
 
-    Arguments:
+    Args:
         host_name (str): Name of host.
-        attribute (str): The ket for search - 'name' or 'id'
+        attribute (str): The key for search - 'name' or 'id'
 
     Returns:
-        Host object
+        host: Host object.
     """
-    return HOST_API.find(host_name, attribute=attribute)
+    return HOST_API.find(host_name,  attribute=attribute)
 
 
 def get_host_topology(host_name):
     """
-    This function get host topology object by host name.
+    Get host topology object by host name.
 
-    :param host_name: Name of host.
-    :type host_name: str.
-    :returns: Host topology object.
-    :raises: EntityNotFound
+    Args:
+        host_name (str): Name of host.
+
+    Returns:
+        Topology: Host topology object.
+
+    Raises:
+        EntityNotFound: If host not found
     """
     host_obj = get_host_object(host_name)
     if not host_obj:
@@ -1586,20 +1496,21 @@ def get_host_topology(host_name):
 
 def run_command(host, user, password, cmd):
     """
-    Description: ssh to user@hostname and run cmd on cli
+    Ssh to user@hostname and run cmd on cli
 
-    Parameters:
-        * host_name - str , the name of the host
-        * user - str , a string of the login user
-        * password - str , a string of the login password
-        * cmd - str , a string of the command to run
+    Args:
+        host (str): The name of the host
+        user (str): User name
+        password (str): User password
+        cmd (str): Command to run
 
-    Returns :
-        * out - str , the command's output.
+    Returns:
+        str: the command's output.
     """
-    connection = machine.Machine(host=getHostIP(host),
-                                 user=user,
-                                 password=password).util(machine.LINUX)
+    #  TODO: Remove usage of Machine
+    connection = machine.Machine(
+        host=get_host_ip(host), user=user, password=password
+    ).util(machine.LINUX)
     rc, out = connection.runCmd(shlex.split(cmd))
     if not rc:
         raise RuntimeError("Output: %s" % out)
@@ -1607,47 +1518,19 @@ def run_command(host, user, password, cmd):
     return out
 
 
-def check_host_nic_status(host_resource, nic, status):
-    """
-    Get NIC status from host
-
-    Args:
-        host_resource (Host): Host resource
-        nic (str): Host NIC name
-        status (str): Status to check for
-
-    Returns:
-        bool: True/False
-    """
-    logger.info("Check if host NIC %s status is %s", nic, status)
-    status = "yes" if status.lower() == "up" else "no"
-    cmd = ["ethtool", nic]
-    rc, out, _ = host_resource.run_command(cmd)
-    if not rc:
-        return False
-
-    cmd_out = out.rsplit("\r\n\t", 1)[1].split(":")[-1].strip()
-    nic_status = cmd_out.lower()
-    if nic_status == status:
-        logger.error(
-            "Host NIC %s status is %s. Should be %s", nic, nic_status, status
-        )
-        return True
-    return False
-
-
+@ll_general.generate_logs()
 def get_host_name_from_engine(vds_resource):
     """
-    Get host name from engine by host IP
+    Get host name from engine by host IP (vds_resource)
 
     Args:
         vds_resource (VDS): resources.VDS object
 
     Returns:
-        str: Host name or None
+        str or None: Host name or None
     """
 
-    engine_hosts = HOST_API.get(abs_link=False)
+    engine_hosts = get_host_list()
     for host in engine_hosts:
         if (
             host.get_address() == vds_resource.fqdn or host.get_address() ==
@@ -1657,17 +1540,23 @@ def get_host_name_from_engine(vds_resource):
     return None
 
 
+@ll_general.generate_logs()
 def get_host_ip_from_engine(host):
     """
-    Get host name from engine by host IP
-    :param host: resources.VDS object
-    :return: host.name or None
+    Get host IP from engine by host name
+
+    Args:
+        host (Host): resources.VDS object
+
+    Returns:
+        str or None: Host.name or None
     """
 
-    host_name = HOST_API.find(host)
+    host_name = get_host_object(host_name=host)
     return host_name.get_address()
 
 
+@ll_general.generate_logs()
 def refresh_host_capabilities(host, start_event_id):
     """
     Refresh Host Capabilities
@@ -1679,44 +1568,50 @@ def refresh_host_capabilities(host, start_event_id):
     Returns:
         bool: True/False
     """
-    host_obj = HOST_API.find(host)
+    host_obj = get_host_object(host_name=host)
     code = [606, 607]
     query = "type={0} OR type={1}".format(code[0], code[1])
     HOST_API.syncAction(entity=host_obj, action="refresh", positive=True)
-    logger.info("Refresh capabilities for %s", host)
     for event in EVENT_API.query(query):
         if int(event.get_id()) < int(start_event_id):
             return False
         if event.get_code() in code:
             return True if event.get_code() == code[0] else False
 
-    logger.error("Failed to refresh capabilities for: %s", host)
     return False
 
 
 def get_cluster_hosts(cluster_name, host_status=ENUMS['host_state_up']):
     """
     Get a list of host names for a given cluster.
-        * cluster_name: name of the cluster
-        * host_status: status of the host
-    Return: List of host names in a cluster with host_status or empty list
+
+    Args:
+        cluster_name (str): Name of the cluster
+        host_status (str): Status of the host
+
+    Returns:
+        list: List of host names in a cluster with host_status or empty list
     """
     elm_status, hosts = searchElement(
         True, ELEMENT, COLLECTION, 'cluster', cluster_name
     )
     if elm_status:
-        return [host.get_name() for host in hosts
-                if host.get_status() == host_status]
-    return []
+        return [
+            host.get_name() for host in hosts if
+            host.get_status() == host_status
+        ]
+    return list()
 
 
 def get_host_max_scheduling_memory(host_name):
     """
     Get host max scheduling memory
 
-    :param host_name: host name
-    :type host_name: str
-    :returns: host max scheduling memory
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        int: Host max scheduling memory
     """
     host_obj = get_host_object(host_name)
     return host_obj.get_max_scheduling_memory()
@@ -1726,25 +1621,27 @@ def get_host_free_memory(host_name):
     """
     Get host free memory
 
-    :param host_name: host name
-    :type host_name: str
-    :returns: total host free memory
-    :rtype: int
+    Args:
+        host_name (str): host name
+
+    Returns:
+        int: Total host free memory
     """
     stats = getStat(host_name, ELEMENT, COLLECTION, ["memory.free"])
     return stats["memory.free"]
 
 
+@ll_general.generate_logs()
 def get_host_nic_statistics(host, nic):
     """
-    Get HOST NIC statistics collection
+    Get host NIC statistics collection
 
-    :param host: Host name
-    :type host: str
-    :param nic: NIC name
-    :type nic: str
-    :return: VM NIC statistics list
-    :rtype: list
+    Args:
+        host (str): Host name
+        nic (str): NIC name
+
+    Returns:
+        list: Host NIC statistics list
     """
     host_nic = get_host_nic(host, nic)
     return HOST_NICS_API.getElemFromLink(
@@ -1756,10 +1653,11 @@ def get_numa_nodes_from_host(host_name):
     """
     Get list of host numa nodes objects
 
-    :param host_name: name of host
-    :type host_name: str
-    :returns: list of NumaNode objects
-    :rtype: list
+    Args:
+        host_name (str): Name of host
+
+    Returns:
+        list: List of NumaNode objects
     """
     host_obj = get_host_object(host_name)
     return HOST_API.getElemFromLink(host_obj, "numanodes", "host_numa_node")
@@ -1769,10 +1667,11 @@ def get_numa_node_memory(numa_node_obj):
     """
     Get numa node memory
 
-    :param numa_node_obj: object of NumaNode
-    :type numa_node_obj: instance of NumaNode
-    :returns: total amount of memory of numa node
-    :rtype: int
+    Args:
+        numa_node_obj (NumaNode): Object of NumaNode
+
+    Returns:
+        int: Total amount of memory of numa node
     """
     return numa_node_obj.get_memory()
 
@@ -1781,12 +1680,13 @@ def get_numa_node_cpus(numa_node_obj):
     """
     Get numa node cpu's
 
-    :param numa_node_obj: object of NumaNode
-    :type numa_node_obj: instance of NumaNode
-    :returns: list of cores indexes of numa node
-    :rtype: list
+    Args:
+        numa_node_obj (NumaNode): object of NumaNode
+
+    Returns:
+        list: List of cores indexes of numa node
     """
-    cores = []
+    cores = list()
     numa_node_cpus = numa_node_obj.get_cpu()
     if numa_node_cpus:
         numa_node_cores = numa_node_cpus.get_cores().get_core()
@@ -1796,11 +1696,13 @@ def get_numa_node_cpus(numa_node_obj):
 
 def get_numa_node_index(numa_node_obj):
     """
+    Get numa node index
 
-    :param numa_node_obj: object of NumaNode
-    :type numa_node_obj: instance of NumaNode
-    :returns: index of numa node
-    :rtype: int
+    Args:
+        numa_node_obj (NumaNode): Object of NumaNode
+
+    Returns:
+        int: Index of numa node
     """
     return numa_node_obj.get_index()
 
@@ -1809,12 +1711,12 @@ def get_numa_node_by_index(host_name, index):
     """
     Get numa node by index
 
-    :param host_name: name of host
-    :type host_name: str
-    :param index: index of numa node
-    :type index: int
-    :returns: NumaNode object or None
-    :rtype: instance of NumaNode or None
+    Args:
+        host_name (str): Name of host
+        index (int): Index of numa node
+
+    Returns:
+        NumaNode or None: NumaNode object or None
     """
     numa_nodes = get_numa_nodes_from_host(host_name)
     for numa_node in numa_nodes:
@@ -1827,10 +1729,11 @@ def get_num_of_numa_nodes_on_host(host_name):
     """
     Get number of numa nodes that host has
 
-    :param host_name: name of host
-    :type host_name: str
-    :returns: number of numa nodes
-    :rtype: int
+    Args:
+        host_name (str): Name of host
+
+    Returns:
+        int: Number of numa nodes
     """
     return len(get_numa_nodes_from_host(host_name))
 
@@ -1839,10 +1742,11 @@ def get_numa_nodes_indexes(host_name):
     """
     Get list of host numa indexes
 
-    :param host_name: name of host
-    :type host_name: str
-    :returns: list of host numa indexes
-    :rtype: list
+    Args:
+        host_name (str): Name of host
+
+    Returns:
+        list: List of host numa indexes
     """
     return [
         get_numa_node_index(
@@ -1855,23 +1759,16 @@ def upgrade_host(host_name, image=None):
     """
     Upgrade host
 
-    :param host_name: Name of the host to be upgraded
-    :type host_name: str
-    :param image: Image to use in upgrading host (RHEV-H only)
-    :type image: str
-    :return: True if host was upgraded, otherwise False
-    :rtype: bool
+    Ags:
+        host_name (str): Name of the host to be upgraded
+        image (str): Image to use in upgrading host (RHEV-H only)
+
+    Returns:
+        bool: True if host was upgraded, otherwise False
     """
-    host = HOST_API.find(host_name)
-    if bool(
-        HOST_API.syncAction(
-            host,
-            'upgrade',
-            True,
-            image=image,
-        )
-    ):
-        return waitForHostsStates(True, [host_name], states='up')
+    host = get_host_object(host_name=host_name)
+    if bool(HOST_API.syncAction(host, 'upgrade', True, image=image)):
+        return wait_for_hosts_states(True, [host_name], states='up')
 
     return False
 
@@ -1880,22 +1777,24 @@ def is_upgrade_available(host_name):
     """
     Check if upgrade is available for host
 
-    :param host_name: Name of the host to be upgraded
-    :type host_name: str
-    :return: True if upgrade is available for host, otherwise False
-    :rtype: bool
+    Args:
+        host_name (str): Name of the host to be upgraded
+
+    Returns:
+        bool: True if upgrade is available for host, otherwise False
     """
-    return bool(HOST_API.find(host_name).get_update_available())
+    return bool(get_host_object(host_name=host_name).get_update_available())
 
 
 def get_host_vm_run_on(vm_name):
     """
     Return host address where vm run
 
-    :param vm_name: name of vm
-    :type vm_name: str
-    :return: address of the host where vm run
-    :rtype: str
+    Args:
+        vm_name (str): Name of vm
+
+    Returns:
+        str: Address of the host where vm run
     """
     vm_obj = VM_API.find(vm_name)
     return HOST_API.find(vm_obj.host.id, 'id').get_address()
@@ -1905,10 +1804,11 @@ def get_host_cpu_load(host_name):
     """
     Get host cpu load
 
-    :param host_name: host name
-    :type host_name: str
-    :return: host current cpu load
-    :rtype: float
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        float: Host current cpu load
     """
     stats = getStat(host_name, ELEMENT, COLLECTION, ["cpu.current.user"])
     return stats["cpu.current.user"]
@@ -2114,10 +2014,11 @@ def get_host_cores(host_name):
     """
     Get the host cores number
 
-    :param host_name: host name
-    :type host_name: str
-    :return: number of host cores
-    :rtype: int
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        int: Number of host cores
     """
     cores = get_host_topology(host_name).cores
     if cores:
@@ -2130,10 +2031,11 @@ def get_host_sockets(host_name):
     """
     Get the host sockets number
 
-    :param host_name: host name
-    :type host_name: str
-    :return: number of host sockets
-    :rtype: int
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        int: Number of host sockets
     """
     sockets = get_host_topology(host_name).sockets
     if sockets:
@@ -2146,10 +2048,11 @@ def get_host_threads(host_name):
     """
     Get the host sockets number
 
-    :param host_name: host name
-    :type host_name: str
-    :return: number of host threads
-    :rtype: int
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        int: Number of host threads
     """
     threads = get_host_topology(host_name).threads
     if threads:
@@ -2163,10 +2066,11 @@ def get_host_processing_units_number(host_name):
     Get the host processing units number
     ( sockets * cores * threads )
 
-    :param host_name: host name
-    :type host_name: str
-    :return: number of host processing units
-    :rtype: int
+    Args:
+        host_name (str): host name
+
+    Returns:
+        int: Number of host processing units
     """
     return (
         get_host_cores(host_name) *
@@ -2185,7 +2089,7 @@ def get_host_devices(host_name):
     Returns:
         list: All host devices
     """
-    host_obj = HOST_API.find(host_name)
+    host_obj = get_host_object(host_name=host_name)
     logger.info("Get all devices from host %s", host_name)
     return HOST_API.getElemFromLink(host_obj, "devices", "host_device")
 

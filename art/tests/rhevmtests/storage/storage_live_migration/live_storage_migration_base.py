@@ -899,8 +899,8 @@ class TestCase5970(BaseTestCase):
             - Make sure that we actually post zero when removing the source
               disk and snapshot
         """
-        host = ll_hosts.getSPMHost(config.HOSTS)
-        self.host_ip = ll_hosts.getHostIP(host)
+        host = ll_hosts.get_spm_host(config.HOSTS)
+        self.host_ip = ll_hosts.get_host_ip(host)
         target_sd = ll_disks.get_other_storage_domain(
             self.new_disk_name, self.vm_name,
             force_type=config.MIGRATE_SAME_TYPE
@@ -1218,8 +1218,8 @@ class TestCase5977_vm_migration(BaseTestCase5977):
         target_sd = ll_disks.get_other_storage_domain(
             disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
-        hsm_host = ll_hosts.getHSMHost(config.HOSTS)
-        spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        hsm_host = ll_hosts.get_hsm_host(config.HOSTS)
+        spm_host = ll_hosts.get_spm_host(config.HOSTS)
         assert ll_vms.updateVm(
             True, self.vm_name, highly_available='true',
             placement_host=hsm_host
@@ -1479,8 +1479,8 @@ class TestCase6002(BaseTestCase):
         Expected Results:
             - Live migrate should fail
         """
-        spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        spm_host_ip = ll_hosts.getHostIP(ll_hosts.getSPMHost(config.HOSTS))
+        spm_host = ll_hosts.get_spm_host(config.HOSTS)
+        spm_host_ip = ll_hosts.get_host_ip(ll_hosts.get_spm_host(config.HOSTS))
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         self.target_sd = ll_disks.get_other_storage_domain(
             vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
@@ -1499,13 +1499,13 @@ class TestCase6002(BaseTestCase):
         assert restartVdsmd(spm_host_ip, config.HOSTS_PW), (
             "Failed to restart VDSM on host %s" % spm_host
         )
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.WAIT_FOR_SPM_INTERVAL
         ), (
             'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
         )
-        ll_hosts.waitForHostsStates(positive=True, names=spm_host)
+        ll_hosts.wait_for_hosts_states(positive=True, names=spm_host)
         assert not ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, self.storage_domain, self.target_sd
         ),  "Succeeded to move disk %s" % vm_disk
@@ -1535,10 +1535,10 @@ class BaseTestCase5999(BaseTestCase):
         Expected Results:
             - We should fail migration
         """
-        host = ll_hosts.getSPMHost(config.HOSTS) if spm else (
-            ll_hosts.getHSMHost(config.HOSTS)
+        host = ll_hosts.get_spm_host(config.HOSTS) if spm else (
+            ll_hosts.get_hsm_host(config.HOSTS)
         )
-        host_ip = ll_hosts.getHostIP(host)
+        host_ip = ll_hosts.get_host_ip(host)
         testflow.step("Update VM %s to be HA", self.vm_name)
         assert ll_vms.updateVm(
             True, self.vm_name, highly_available='true',
@@ -1561,7 +1561,7 @@ class BaseTestCase5999(BaseTestCase):
         assert rc, "Failed to reboot Host %s, error: %s, out: %s" % (
             host, error, out
         )
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.WAIT_FOR_SPM_INTERVAL
         ), (
@@ -1569,7 +1569,7 @@ class BaseTestCase5999(BaseTestCase):
         )
         ll_disks.wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
         logger.info("Waiting for host %s to come back up", host)
-        ll_hosts.waitForHostsStates(
+        ll_hosts.wait_for_hosts_states(
             True, host, timeout=config.HOST_STATE_TIMEOUT
         )
         assert not ll_vms.verify_vm_disk_moved(
@@ -1840,7 +1840,7 @@ class BaseTestCase5966(BaseTestCase):
         self.source_sd = ll_disks.get_disk_storage_domain_name(
             self.vm_disk, self.vm_name
         )
-        self.restart_vdsm_host = ll_hosts.getSPMHost(config.HOSTS)
+        self.restart_vdsm_host = ll_hosts.get_spm_host(config.HOSTS)
         testflow.step("Start VM %s", self.vm_name)
         assert ll_vms.startVm(
             True, self.vm_name, config.VM_UP,
@@ -1945,7 +1945,7 @@ class TestCase5981(AllPermutationsDisks):
             - We should be able to run the VM
         """
         for index, disk in enumerate(config.DISK_NAMES[self.storage]):
-            hsm_host = ll_hosts.getHSMHost(config.HOSTS)
+            hsm_host = ll_hosts.get_hsm_host(config.HOSTS)
             testflow.step(
                 "Update VM %s to run on host %s", self.vm_name, hsm_host
             )
@@ -2026,7 +2026,7 @@ class TestCase5981(AllPermutationsDisks):
                 self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
                 self.storage_domain_ip
             )
-            assert ll_hosts.waitForSPM(
+            assert ll_hosts.wait_for_spm(
                 config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
                 config.WAIT_FOR_SPM_INTERVAL
             ), "A new SPM host was not elected"
@@ -2078,7 +2078,7 @@ class TestCase5983_spm(BaseTestCase5983):
         Expected Results:
             - We should succeed in migrating all disks
         """
-        spm = ll_hosts.getSPMHost(config.HOSTS)
+        spm = ll_hosts.get_spm_host(config.HOSTS)
         self._perform_action(spm)
 
 
@@ -2094,7 +2094,7 @@ class TestCase5983_hsm(BaseTestCase5983):
         Expected Results:
             - We should succeed in migrating all disks
         """
-        hsm = ll_hosts.getHSMHost(config.HOSTS)
+        hsm = ll_hosts.get_hsm_host(config.HOSTS)
         self._perform_action(hsm)
 
 

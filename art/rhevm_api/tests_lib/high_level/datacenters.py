@@ -100,7 +100,7 @@ def get_spm_host(positive, datacenter):
     :rtype: str
     """
 
-    is_spm_exists, spm_host = ll_hosts.getHost(positive, datacenter, True)
+    is_spm_exists, spm_host = ll_hosts.get_host(positive, datacenter, True)
 
     if not is_spm_exists:
         logger.error("No SPM found in data center %s, storage", datacenter)
@@ -251,7 +251,7 @@ def clean_datacenter(
     logger.info("Remove hosts")
     for host in hosts_to_remove:
         logger.info("Put host %s to maintenance & remove it", host.get_name())
-        if not ll_hosts.removeHost(True, host.get_name(), deactivate=True):
+        if not ll_hosts.remove_host(True, host.get_name(), deactivate=True):
             logger.error("Failed to remove %s", host.get_name())
 
     logger.info("Remove cluster")
@@ -281,7 +281,7 @@ def ensure_data_center_and_sd_are_active(
             "The Data center was not up within 3 minutes, aborting test"
         )
 
-    if not ll_hosts.waitForSPM(
+    if not ll_hosts.wait_for_spm(
         datacenter, SPM_TIMEOUT, SPM_SLEEP
     ):
         raise errors.StorageDomainException(

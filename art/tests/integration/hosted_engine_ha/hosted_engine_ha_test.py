@@ -522,4 +522,4 @@ class TestFenceFlowWhenHostWithHeVmKilled(HostedEngineTest):
 
         host_name = conf.HOSTS[conf.VDS_HOSTS.index(self.he_vm_host)]
         u_libs.testflow.step("Wait for the host %s state 'UP'", host_name)
-        assert ll_hosts.waitForHostsStates(positive=True, names=host_name)
+        assert ll_hosts.wait_for_hosts_states(positive=True, names=host_name)

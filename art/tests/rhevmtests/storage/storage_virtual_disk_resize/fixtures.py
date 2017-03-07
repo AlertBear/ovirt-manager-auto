@@ -25,8 +25,8 @@ def initialize_attributes_start_vm(request):
         ), "Failed to flush iptables rules on host %s" % self.host_ip
 
     request.addfinalizer(finalizer)
-    self.host = ll_hosts.getSPMHost(config.HOSTS)
-    self.host_ip = ll_hosts.getHostIP(self.host)
+    self.host = ll_hosts.get_spm_host(config.HOSTS)
+    self.host_ip = ll_hosts.get_host_ip(self.host)
     ll_vms.start_vms(
         [self.vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=False
     )

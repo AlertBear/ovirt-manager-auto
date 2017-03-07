@@ -62,9 +62,9 @@ class CommonUsage(BaseTestCase):
 
         self.disk_id = ll_disks.get_disk_obj(config.DISK_ALIAS).get_id()
         logger.info("Selecting host from %s", config.HOSTS)
-        host = ll_hosts.getSPMHost(config.HOSTS)
+        host = ll_hosts.get_spm_host(config.HOSTS)
         logger.info("Host %s", host)
-        self.host_ip = ll_hosts.getHostIP(host)
+        self.host_ip = ll_hosts.get_host_ip(host)
         assert self.host_ip
         disk_obj = ll_disks.getVmDisk(self.vm_name, disk_id=self.disk_id)
         regex = (

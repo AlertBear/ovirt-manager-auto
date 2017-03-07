@@ -255,7 +255,7 @@ class TestAddHostAndDeployHostedEngine(u_libs.SlaTest):
             u_libs.testflow.step(
                 "Remove the host %s from the engine", conf.HOSTS[1]
             )
-            assert ll_hosts.removeHost(
+            assert ll_hosts.remove_host(
                 positive=True, host=conf.HOSTS[1], deactivate=True
             )
         u_libs.testflow.step("Add the host %s to the engine", conf.HOSTS[1])

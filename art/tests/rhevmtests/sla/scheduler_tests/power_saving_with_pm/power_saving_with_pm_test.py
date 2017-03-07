@@ -395,7 +395,7 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
             "Wait until the host %s will have %s state",
             conf.HOSTS[1], conf.HOST_NONRESPONSIVE
         )
-        assert ll_hosts.waitForHostsStates(
+        assert ll_hosts.wait_for_hosts_states(
             positive=True,
             names=conf.HOSTS[1],
             states=conf.HOST_NONRESPONSIVE

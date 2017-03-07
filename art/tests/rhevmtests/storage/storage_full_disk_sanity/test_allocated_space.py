@@ -294,7 +294,7 @@ class TestCase11546(BaseCase):
                 domain
             ]
 
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        self.spm_host = ll_hosts.get_spm_host(config.HOSTS)
         assert len(config.EXTEND_LUNS) >= MIN_UNUSED_LUNS, (
             "There are less than %s unused Extend LUNs, aborting test" %
             MIN_UNUSED_LUNS
@@ -446,15 +446,15 @@ class TestCase11545(BaseCase):
             [self.disk_name], status=config.DISK_LOCKED
         ), 'Disk {0} never moved to locked status'.format(self.disk_name)
 
-        self.spm = ll_hosts.getSPMHost(config.HOSTS)
-        self.spm_ip = ll_hosts.getHostIP(self.spm)
+        self.spm = ll_hosts.get_spm_host(config.HOSTS)
+        self.spm_ip = ll_hosts.get_host_ip(self.spm)
         logger.info('Restarting vdsm on host %s [%s]', self.spm, self.spm_ip)
         assert restartVdsmd(self.spm_ip, config.HOSTS_PW), (
             'Unable to restart vdsm on host %s' % self.spm
         )
 
         logger.info('Waiting for host to come back up')
-        assert ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 60, 5), (
+        assert ll_hosts.wait_for_spm(config.DATA_CENTER_NAME, 60, 5), (
             'SPM was not elected on datacenter %s' % config.DATA_CENTER_NAME
         )
 

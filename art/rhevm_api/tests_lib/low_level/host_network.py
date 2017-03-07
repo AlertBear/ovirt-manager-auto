@@ -9,7 +9,6 @@ http://www.ovirt.org/Features/NetworkingApi
 
 import logging
 
-import art.core_api.apis_exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -216,9 +215,8 @@ def prepare_network_attachment_obj(host_name, **kwargs):
 
     if nic:
         if BOND in nic:
-            try:
-                host_nic = ll_hosts.get_host_nic(host_name, nic)
-            except exceptions.EntityNotFound:
+            host_nic = ll_hosts.get_host_nic(host_name, nic)
+            if not host_nic:
                 host_nic = data_st.HostNic()
                 host_nic.set_name(nic)
         else:

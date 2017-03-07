@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.test_utils import wait_for_tasks, restart_engine
-from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates
+from art.rhevm_api.tests_lib.low_level.hosts import wait_for_hosts_states
 
 logger = logging.getLogger(__name__)
 VDSM_LOG = '/var/log/vdsm/vdsm.log'
@@ -123,7 +123,7 @@ class TestCase6160(RestartOvirt):
 
         wait_for_tasks(
             config.ENGINE, config.DATA_CENTER_NAME)
-        assert waitForHostsStates(True, config.HOSTS[0])
+        assert wait_for_hosts_states(True, config.HOSTS[0])
 
     def perform_action(self):
         logger.info("Create snapshot %s", self.snapshot_name)

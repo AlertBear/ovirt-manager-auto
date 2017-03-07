@@ -44,7 +44,7 @@ def initialize_params(request):
             raise exceptions.StorageDomainException(
                 "Unable to find master storage domain"
             )
-    self.host = ll_hosts.getSPMHost(config.HOSTS)
+    self.host = ll_hosts.get_spm_host(config.HOSTS)
     self.non_master = storage_helpers.create_unique_object_name(
                 self.__class__.__name__, config.OBJECT_TYPE_SD
             )
@@ -78,7 +78,7 @@ def deactivate_detach_and_remove_domain_fin(request):
         testflow.teardown(
             "Detach and remove storage domain %s", domain_to_remove
         )
-        spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        spm_host = ll_hosts.get_spm_host(config.HOSTS)
         assert hl_sd.remove_storage_domain(
             domain_to_remove, dc_name, spm_host, engine=config.ENGINE,
             format_disk=True
@@ -223,7 +223,7 @@ def create_gluster_or_posix_export_domain(request, attach_export_domain):
     self.export_domain = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_SD
     )
-    self.host = ll_hosts.getSPMHost(config.HOSTS)
+    self.host = ll_hosts.get_spm_host(config.HOSTS)
     if self.storage == POSIX:
         self.export_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[1]
         self.export_path = config.UNUSED_DATA_DOMAIN_PATHS[1]
@@ -301,7 +301,7 @@ def remove_storage_domain_setup(request):
     )
     remove_param = getattr(self, 'remove_param', {'format', 'true'})
 
-    spm_host = ll_hosts.getSPMHost(config.HOSTS)
+    spm_host = ll_hosts.get_spm_host(config.HOSTS)
 
     assert ll_sd.removeStorageDomain(
         True, domain_to_remove, spm_host, **remove_param

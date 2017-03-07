@@ -178,7 +178,7 @@ class BasicEnvironment(BaseTestCase):
         self.host_machine = host_to_use()
 
         # The name of the SPM host in the default Data center and cluster
-        self.host = ll_hosts.getSPMHost(config.HOSTS)
+        self.host = ll_hosts.get_spm_host(config.HOSTS)
 
         # Initialize variables to be used across all tests
         self.initialize_variables()

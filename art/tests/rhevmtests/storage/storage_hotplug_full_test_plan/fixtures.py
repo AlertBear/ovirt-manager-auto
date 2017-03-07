@@ -52,7 +52,7 @@ def initializer_hotplug_hook(request):
         )
 
     self.host_name = ll_vms.get_vm_host(vm_name=self.vm_name)
-    self.host_address = ll_hosts.getHostIP(self.host_name)
+    self.host_address = ll_hosts.get_host_ip(self.host_name)
 
     self.user = config.HOSTS_USER
     self.password = config.HOSTS_PW
@@ -168,7 +168,7 @@ def wait_for_dc_and_hosts(request):
         assert ll_dc.waitForDataCenterState(name=config.DATA_CENTER_NAME), (
             "Data-center failed to reach state %s" % config.DATA_CENTER_UP
         )
-        assert ll_hosts.waitForHostsStates(
+        assert ll_hosts.wait_for_hosts_states(
             positive=True, names=[self.host_name]
         ), "Host failed to reach state %s" % config.HOST_UP
     request.addfinalizer(finalizer)

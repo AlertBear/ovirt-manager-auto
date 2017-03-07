@@ -166,7 +166,7 @@ class BasicResize(BaseTestCase):
             raise exceptions.DiskException(
                 "Disk %s is not in the expected state 'OK" % self.disk_name
             )
-        ll_hosts.waitForHostsStates(True, self.host)
+        ll_hosts.wait_for_hosts_states(True, self.host)
 
         disks_objs = ll_vms.getVmDisks(self.vm_name)
         disk_obj = [
@@ -622,8 +622,8 @@ class TestCase5071(BasicResize):
         - Resize the VM disk to 2G total
         - When SPM get The task, stop libvirt service
         """
-        self.host = ll_hosts.getSPMHost(config.HOSTS)
-        host_ip = ll_hosts.getHostIP(self.host)
+        self.host = ll_hosts.get_spm_host(config.HOSTS)
+        host_ip = ll_hosts.get_host_ip(self.host)
         t = Thread(target=watch_logs, args=(
             config.VDSM_LOG, self.look_for_regex, self.stop_libvirt, None,
             host_ip, config.HOSTS_USER, config.HOSTS_PW))

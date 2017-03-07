@@ -58,7 +58,7 @@ def disable_host_policy_control_flag(request):
         u_lib.testflow.teardown(
             "Enable the host %s policy control flag", conf.HOSTS[1]
         )
-        assert ll_hosts.updateHost(
+        assert ll_hosts.update_host(
             positive=True,
             host=conf.HOSTS[1],
             pm=True,
@@ -69,7 +69,7 @@ def disable_host_policy_control_flag(request):
     u_lib.testflow.setup(
         "Disable the host %s policy control flag", conf.HOSTS[1]
     )
-    assert ll_hosts.updateHost(
+    assert ll_hosts.update_host(
         positive=True,
         host=conf.HOSTS[1],
         pm=True,

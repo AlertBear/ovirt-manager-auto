@@ -102,7 +102,7 @@ def prepare_host_for_installation(
 
     virsh_remove_network(vds_resource=conf.VDS_1_HOST, network=network)
 
-    if not ll_hosts.removeHost(positive=True, host=host_name):
+    if not ll_hosts.remove_host(positive=True, host=host_name):
         return False
 
     return remove_persistence_nets(host_resource=host_resource)
@@ -171,7 +171,7 @@ def move_host_new_cl(host, cl, positive=True, activate_host=False):
     Returns:
         bool: True if host move was successful, otherwise False
     """
-    if not ll_hosts.updateHost(positive=positive, host=host, cluster=cl):
+    if not ll_hosts.update_host(positive=positive, host=host, cluster=cl):
         return False
 
     if activate_host:

@@ -112,7 +112,7 @@ def remove_export_domain_setup(request):
 
     testflow.teardown("Remove export domain %s", self.export_domain)
 
-    self.spm = getattr(self, 'spm', ll_hosts.getSPMHost(config.HOSTS))
+    self.spm = getattr(self, 'spm', ll_hosts.get_spm_host(config.HOSTS))
 
     assert hl_sd.remove_storage_domain(
         self.export_domain, config.DATA_CENTER_NAME, self.spm,

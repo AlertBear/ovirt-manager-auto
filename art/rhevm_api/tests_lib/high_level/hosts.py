@@ -44,7 +44,7 @@ def add_hosts(hosts_list, passwords, cluster):
                                        hosts_list[index])
         logger.debug("Host %s installed", hosts_list[index])
 
-    if not ll_hosts.waitForHostsStates(True, ",".join(hosts_list)):
+    if not ll_hosts.wait_for_hosts_states(True, ",".join(hosts_list)):
         raise errors.HostException("Some of hosts didn't come to up status")
 
 
@@ -61,14 +61,14 @@ def move_host_to_another_cluster(host, cluster, activate=True):
     :return: True if succeed to move it False otherwise
     :rtype: bool
     """
-    if not ll_hosts.isHostInMaintenance(positive=True, host=host):
+    if not ll_hosts.is_host_in_maintenance(positive=True, host=host):
         logger.info("Set %s to maintenance", host)
         if not ll_hosts.deactivate_host(positive=True, host=host):
             logger.error("Failed to set %s to maintenance", host)
             return False
 
     logger.info("Moving %s to %s", host, cluster)
-    if not ll_hosts.updateHost(positive=True, host=host, cluster=cluster):
+    if not ll_hosts.update_host(positive=True, host=host, cluster=cluster):
         logger.error("Failed to move %s to %s", host, cluster)
         return False
 
@@ -94,7 +94,7 @@ def deactivate_host_if_up(host):
             False otherwise.
     """
     logger.info("Deactivate Host %s", host)
-    if not ll_hosts.isHostInMaintenance(True, host):
+    if not ll_hosts.is_host_in_maintenance(True, host):
         if not ll_hosts.deactivate_host(True, host):
             logger.error("Failed to deactivate Host %s")
             return False
@@ -118,12 +118,12 @@ def deactivate_hosts_if_up(hosts_list):
 
     spm = None
     try:
-        spm = ll_hosts.getSPMHost(_hosts_list)
+        spm = ll_hosts.get_spm_host(_hosts_list)
         logger.info("spm host - %s", spm)
     except apis_exceptions.EntityNotFound:
         logger.warning("No SPM host was found from the input hosts_list")
 
-    sorted_hosts = ll_hosts._sort_hosts_by_priority(_hosts_list, False)
+    sorted_hosts = ll_hosts.sort_hosts_by_priority(_hosts_list, False)
     if spm:
         sorted_hosts.remove(spm)
         sorted_hosts.append(spm)
@@ -168,7 +168,7 @@ def add_power_management(host_name, pm_agents, **kwargs):
             return False
     logger.info("Enable power management under host %s", host_name)
 
-    if not ll_hosts.updateHost(
+    if not ll_hosts.update_host(
         positive=True,
         host=host_name,
         pm=True,
@@ -198,7 +198,7 @@ def remove_power_management(host_name):
             return False
     logger.info("Disable power management on host %s", host_name)
 
-    if not ll_hosts.updateHost(
+    if not ll_hosts.update_host(
         positive=True, host=host_name, pm=False
     ):
         logger.error(

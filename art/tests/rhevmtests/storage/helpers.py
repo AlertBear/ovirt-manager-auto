@@ -475,8 +475,8 @@ def host_to_use():
     :returns: Machine object on which commands can be executed
     :rtype: Machine
     """
-    host = ll_hosts.getSPMHost(config.HOSTS)
-    host = ll_hosts.getHostIP(host)
+    host = ll_hosts.get_spm_host(config.HOSTS)
+    host = ll_hosts.get_host_ip(host)
     return Machine(host=host, user=config.HOSTS_USER,
                    password=config.HOSTS_PW).util(LINUX)
 
@@ -638,7 +638,7 @@ def get_disks_volume_count(disk_ids, cluster_name=config.CLUSTER_NAME):
     :rtype: int
     """
     host = ll_hosts.get_cluster_hosts(cluster_name=cluster_name)[0]
-    host_ip = ll_hosts.getHostIP(host)
+    host_ip = ll_hosts.get_host_ip(host)
     if not storage_resources.pvscan(host):
         raise exceptions.HostException(
             "Failed to execute '%s' on %s" % (PVSCAN_CMD, host_ip)
@@ -1116,7 +1116,7 @@ def is_dir_empty(host_name, dir_path=None, excluded_files=[]):
         )
         return False
 
-    host_ip = ll_hosts.getHostIP(host_name)
+    host_ip = ll_hosts.get_host_ip(host_name)
     host_machine = rhevm_helpers.get_host_resource(host_ip, config.HOSTS_PW)
     rc, out, err = host_machine.run_command(['ls', dir_path])
     files = out.split()
@@ -1261,7 +1261,7 @@ def add_storage_domain(storage_domain, data_center, index, storage_type):
     Raises:
         StorageDomainException : If Fails to add the storage-domain
     """
-    spm = ll_hosts.getSPMHost(config.HOSTS)
+    spm = ll_hosts.get_spm_host(config.HOSTS)
     if storage_type == config.STORAGE_TYPE_ISCSI:
         status = hl_sd.addISCSIDataDomain(
             spm,

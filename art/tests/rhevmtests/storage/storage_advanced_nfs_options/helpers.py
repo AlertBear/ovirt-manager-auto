@@ -66,7 +66,7 @@ def verify_nfs_options(
 
 
 def _run_ssh_command(host, password, cmd, exc):
-    host_ip = ll_hosts.getHostIP(host)
+    host_ip = ll_hosts.get_host_ip(host)
     ssh_session = sshConnection.SSHSession(
         hostname=host_ip, username='root', password=password)
     rc, out, err = ssh_session.runCmd(cmd)
@@ -228,7 +228,7 @@ class TestCaseNFSOptions(TestCase):
         if host is None:
             host = self.host
 
-        host_ip = ll_hosts.getHostIP(host)
+        host_ip = ll_hosts.get_host_ip(host)
 
         if password is None:
             password = config.HOSTS_PW

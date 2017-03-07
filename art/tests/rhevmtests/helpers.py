@@ -316,7 +316,7 @@ def storage_cleanup():
         for sd_obj in engine_sds_objs:
             sd_name = sd_obj.get_name()
             if sd_name not in config.SD_LIST:
-                spm = spm if spm else ll_hosts.getSPMHost(config.HOSTS)
+                spm = spm if spm else ll_hosts.get_spm_host(config.HOSTS)
                 logger.error(
                     "SD LEFTOVER FOUND: NAME: %s, ID: %s, TYPE: %s",
                     sd_name, sd_obj.id, sd_obj.storage.get_type()

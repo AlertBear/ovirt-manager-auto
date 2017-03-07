@@ -339,7 +339,7 @@ def add_two_storage_domains(request):
             config.ENGINE, config.DATA_CENTER_NAME
         )
     request.addfinalizer(finalizer)
-    self.spm = ll_hosts.getSPMHost(config.HOSTS)
+    self.spm = ll_hosts.get_spm_host(config.HOSTS)
     self.sd_src = "{0}_{1}".format(
         "source_domain_", storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_SD

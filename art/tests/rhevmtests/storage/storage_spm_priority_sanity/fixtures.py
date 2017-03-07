@@ -19,7 +19,7 @@ def wait_for_spm(request):
     """
 
     def finalizer():
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME,
             config.WAIT_FOR_SPM_TIMEOUT, config.RETRY_INTERVAL
         ), 'SPM host was not elected in %s' % config.DATA_CENTER_NAME
@@ -40,7 +40,7 @@ def remove_host(request):
     testflow.setup(
         "Remove host '%s' from %s", self.removed_host, config.DATA_CENTER_NAME
     )
-    assert ll_hosts.removeHost(True, self.removed_host, True), (
+    assert ll_hosts.remove_host(True, self.removed_host, True), (
         "Failed to remove host %s" % self.removed_host
     )
 
@@ -151,10 +151,10 @@ def set_different_host_priorities(request):
     )
     testflow.setup("Setting HSM priorities for hosts: %s", self.hsm_hosts)
     for host, priority in zip(self.hsm_hosts, self.hsm_priorities):
-        assert ll_hosts.setSPMPriority(True, host, priority), (
+        assert ll_hosts.set_spm_priority(True, host, priority), (
             'Unable to set host %s priority' % host
         )
     testflow.setup("Setting SPM priority for hosts: %s", self.spm_host)
-    assert ll_hosts.setSPMPriority(True, self.spm_host, 2), (
+    assert ll_hosts.set_spm_priority(True, self.spm_host, 2), (
         'Unable to set host %s priority' % self.spm_host
     )

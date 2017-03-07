@@ -84,7 +84,7 @@ def move_host_to_cluster(request):
         Move host to a specified cluster
         """
         testflow.teardown("Update host %s to specified cluster %s", host, cl)
-        assert ll_hosts.updateHost(positive=True, host=host, cluster=cl)
+        assert ll_hosts.update_host(positive=True, host=host, cluster=cl)
     request.addfinalizer(fin1)
 
 

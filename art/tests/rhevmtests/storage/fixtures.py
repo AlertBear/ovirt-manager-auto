@@ -125,9 +125,9 @@ def start_vm(request):
     if hasattr(self, 'vm_run_on_spm'):
         run_on_spm = getattr(self, 'vm_run_on_spm', None)
         if run_on_spm:
-            host = ll_hosts.getSPMHost(config.HOSTS)
+            host = ll_hosts.get_spm_host(config.HOSTS)
         else:
-            host = ll_hosts.getHSMHost(config.HOSTS)
+            host = ll_hosts.get_hsm_host(config.HOSTS)
     if host is not None:
         testflow.setup("Starting VM %s", self.vm_name)
         assert ll_vms.runVmOnce(True, self.vm_name, config.VM_UP, host=host), (
@@ -480,7 +480,7 @@ def create_storage_domain(request):
     if not hasattr(self, 'index'):
         self.index = 0
     name = self.new_storage_domain
-    self.spm = ll_hosts.getSPMHost(config.HOSTS)
+    self.spm = ll_hosts.get_spm_host(config.HOSTS)
     testflow.setup(
         "Create new storage domain %s", self.new_storage_domain
     )
@@ -623,7 +623,7 @@ def set_spm_priorities(request):
             "Resetting SPM priority to %s for all hosts", self.spm_priorities
         )
         for host, priority in zip(config.HOSTS, self.spm_priorities):
-            result_list.append(ll_hosts.setSPMPriority(True, host, priority))
+            result_list.append(ll_hosts.set_spm_priority(True, host, priority))
         assert all(result_list)
     request.addfinalizer(finalizer)
 
@@ -636,12 +636,12 @@ def set_spm_priorities(request):
         "Setting SPM priorities for hosts: %s", self.spm_priorities
     )
     for host, priority in zip(config.HOSTS, self.spm_priorities):
-        if not ll_hosts.setSPMPriority(True, host, priority):
+        if not ll_hosts.set_spm_priority(True, host, priority):
             raise exceptions.HostException(
                 'Unable to set host %s priority' % host
             )
     self.spm_host = getattr(
-        self, 'spm_host', ll_hosts.getSPMHost(config.HOSTS)
+        self, 'spm_host', ll_hosts.get_spm_host(config.HOSTS)
     )
     if not hasattr(self, 'hsm_hosts'):
         self.hsm_hosts = [
@@ -649,7 +649,7 @@ def set_spm_priorities(request):
         ]
     testflow.setup("Ensuring SPM priority is for all hosts")
     for host, priority in zip(config.HOSTS, self.spm_priorities):
-        if not ll_hosts.checkSPMPriority(True, host, str(priority)):
+        if not ll_hosts.check_spm_priority(True, host, str(priority)):
             raise exceptions.HostException(
                 'Unable to check host %s priority' % host
             )
@@ -703,7 +703,7 @@ def create_dc(request):
     )
     self.dc_version = getattr(self, 'dc_version', config.COMPATIBILITY_VERSION)
     self.host_name = getattr(
-        self, 'host_name', ll_hosts.getHSMHost(config.HOSTS)
+        self, 'host_name', ll_hosts.get_hsm_host(config.HOSTS)
     )
     testflow.setup(
         "Create data-center %s with cluster %s and host %s", self.new_dc_name,
@@ -755,7 +755,7 @@ def clean_mount_point(request):
 
     def finalizer():
 
-        spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        spm_host = ll_hosts.get_spm_host(config.HOSTS)
 
         if self.storage == NFS or self.storage == POSIX:
             assert storage.clean_mount_point(
@@ -959,10 +959,10 @@ def initialize_variables_block_domain(request):
     self.host = getattr(self, 'host', None)
 
     if self.host is None:
-        self.host = ll_hosts.getSPMHost(config.HOSTS) if spm_host else (
-            ll_hosts.getHSMHost(config.HOSTS)
+        self.host = ll_hosts.get_spm_host(config.HOSTS) if spm_host else (
+            ll_hosts.get_hsm_host(config.HOSTS)
         )
-    self.host_ip = ll_hosts.getHostIP(self.host)
+    self.host_ip = ll_hosts.get_host_ip(self.host)
     found, address = ll_sd.getDomainAddress(True, self.storage_domain)
     assert found, "IP for storage domain %s not found" % self.storage_domain
     self.storage_domain_ip = address['address']
@@ -1061,7 +1061,7 @@ def create_export_domain(request):
     self.export_domain = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_SD
     )
-    self.spm = getattr(self, 'spm', ll_hosts.getSPMHost(config.HOSTS))
+    self.spm = getattr(self, 'spm', ll_hosts.get_spm_host(config.HOSTS))
     testflow.setup("Creating export domain %s", self.export_domain)
     assert ll_sd.addStorageDomain(
         True, name=self.export_domain, host=self.spm, type=config.EXPORT_TYPE,
@@ -1160,20 +1160,20 @@ def restart_vdsmd(request):
 
     def finalizer():
         host = getattr(
-            self, 'restart_vdsmd_host', ll_hosts.getSPMHost(config.HOSTS)
+            self, 'restart_vdsmd_host', ll_hosts.get_spm_host(config.HOSTS)
         )
-        host_ip = ll_hosts.getHostIP(host)
+        host_ip = ll_hosts.get_host_ip(host)
         testflow.teardown("Restart vdsmd on host %s", host)
         assert test_utils.restartVdsmd(host_ip, config.HOSTS_PW), (
             "Failed to restart VDSM on host %s" % host
         )
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.WAIT_FOR_SPM_INTERVAL
         ), "SPM host was not elected in data-center %s" % (
             config.DATA_CENTER_NAME
         )
-        assert ll_hosts.waitForHostsStates(True, host), (
+        assert ll_hosts.wait_for_hosts_states(True, host), (
             "Host %s failed to reach status UP" % host
         )
     request.addfinalizer(finalizer)

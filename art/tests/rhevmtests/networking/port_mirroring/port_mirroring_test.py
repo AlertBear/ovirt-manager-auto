@@ -309,7 +309,7 @@ class TestPortMirroringCase05(Base):
         )
 
         testflow.step("Check that %s is UP", conf.HOST_0_NAME)
-        assert ll_hosts.waitForHostsStates(
+        assert ll_hosts.wait_for_hosts_states(
             positive=True, names=conf.HOST_0_NAME
         )
 

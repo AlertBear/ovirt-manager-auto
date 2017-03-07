@@ -140,7 +140,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
         rc, host = ll_vms.getVmHost(self.vm)
         if not rc:
             raise exceptions.HostException("host of %s not found" % self.vm)
-        self.host_ip = ll_hosts.getHostIP(host)
+        self.host_ip = ll_hosts.get_host_ip(host)
         self.sd = ll_vms.get_vms_disks_storage_domain_name(self.vm)
         self.sd_ip = ll_sd.getDomainAddress(True, self.sd)
 

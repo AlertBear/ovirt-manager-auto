@@ -60,8 +60,8 @@ def initializer_class(request):
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
     request.addfinalizer(finalizer)
     self.sds_for_cleanup = []
-    self.host = ll_hosts.getSPMHost(config.HOSTS)
-    self.host_ip = ll_hosts.getHostIP(self.host)
+    self.host = ll_hosts.get_spm_host(config.HOSTS)
+    self.host_ip = ll_hosts.get_host_ip(self.host)
     self.password = config.HOSTS_PW
 
 

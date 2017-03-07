@@ -76,12 +76,12 @@ def check_host_up(request):
     self = request.node.cls
 
     # Wait a few seconds for host to be up
-    hosts.waitForHostsStates(
+    hosts.wait_for_hosts_states(
         True, config.HOSTS[0], states=config.HOST_UP, timeout=30
     )
     # If there's a problem with vdsm the host switches between
     # non_operational - non_responsive status
-    if not hosts.isHostUp(True, config.HOSTS[0]):
+    if not hosts.is_host_up(True, config.HOSTS[0]):
         logger.error(
             "Host %s was down unexpectedly. Starting it up" %
             config.HOSTS[0]
@@ -89,7 +89,7 @@ def check_host_up(request):
         assert hosts.activate_host(
             True, config.HOSTS[0]
         ), "Host %s was not activated" % config.HOSTS[0]
-    host_ip = hosts.getHostIP(config.HOSTS[0])
+    host_ip = hosts.get_host_ip(config.HOSTS[0])
     self.machine = Machine(
         host_ip, config.HOSTS_USER,
         config.HOSTS_PW).util(LINUX)
@@ -113,8 +113,9 @@ def restore_supervdsm_files(request):
         # (rhel7 and up)
         self.machine.startService(VDSMD)
         # After start vdsm wait for host to be up
-        hosts.waitForHostsStates(True, config.HOSTS[0], states=config.HOST_UP,
-                                 timeout=60)
+        hosts.wait_for_hosts_states(
+            True, config.HOSTS[0], states=config.HOST_UP, timeout=60
+        )
 
         # after restarting supervdsm, run vdsm command that requires
         # supervdsm in order to trigger reconnection between supervdsm and vdsm
@@ -237,7 +238,7 @@ class TestCase6271(TestCase):
         logger.info("Starting vdsmd")
         assert self.machine.startService(VDSMD), "vdsm didn't start"
         # After restart vdsm wait for host to be up
-        assert hosts.waitForHostsStates(
+        assert hosts.wait_for_hosts_states(
             True, config.HOSTS[0], states=config.HOST_UP, timeout=60
         ), "Host never activated after vdsm restarted."
         time.sleep(SLEEP_SERVICE)
@@ -254,7 +255,7 @@ class TestCase6271(TestCase):
         logger.info("Starting vdsmd")
         self.machine.startService(VDSMD)
         # After restart vdsm wait for host to be up
-        assert hosts.waitForHostsStates(
+        assert hosts.wait_for_hosts_states(
             True, config.HOSTS[0], states=config.HOST_UP, timeout=60
         ), "Host never activated after vdsm restarted."
         time.sleep(SLEEP_SERVICE)

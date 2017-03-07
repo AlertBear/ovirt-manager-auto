@@ -305,14 +305,14 @@ class TestCaseTags(TestCase):
         )
 
         testflow.step("Associating tag with host.")
-        assert ll_hosts.addTagToHost(
+        assert ll_hosts.add_tag_to_host(
             positive=True,
             tag=tag_name,
             host=hosts[0]
         )
 
         testflow.step("Searching host by tag.")
-        assert ll_hosts.searchForHost(
+        assert ll_hosts.search_for_host(
             positive=True,
             query_key='tag',
             query_val=tag_name,
@@ -320,7 +320,7 @@ class TestCaseTags(TestCase):
         )
 
         testflow.step("Removing tag from host.")
-        assert ll_hosts.removeTagFromHost(
+        assert ll_hosts.remove_tag_from_host(
             positive=True,
             host=hosts[0],
             tag=tag_name

@@ -39,7 +39,7 @@ def setup_package():
         for host_obj in host_objs:
             host_name = host_obj.name
             new_name = "temp_%s" % host_name
-            if ll_hosts.updateHost(True, host_name, name=new_name):
+            if ll_hosts.update_host(True, host_name, name=new_name):
                 host_obj.name = new_name
 
         # run on GE yaml structure (dcs > clusters > hosts)
@@ -51,11 +51,11 @@ def setup_package():
                 for host in cluster['hosts']:
                     new_name = host['name']
                     host_name = host_objs[i].name
-                    if ll_hosts.updateHost(True, host_name, name=new_name):
+                    if ll_hosts.update_host(True, host_name, name=new_name):
                         host_objs[i].name = new_name
                     cluster_name = cluster['name']
 
-                    if cluster_name != ll_hosts.getHostCluster(new_name):
+                    if cluster_name != ll_hosts.get_host_cluster(new_name):
                         hl_hosts.move_host_to_another_cluster(
                             new_name, cluster_name
                         )

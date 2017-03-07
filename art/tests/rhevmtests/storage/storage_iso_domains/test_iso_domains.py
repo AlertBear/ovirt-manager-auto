@@ -119,7 +119,7 @@ class BaseCaseIsoDomains(TestCase):
 
         testflow.setup("Adding ISO domain %s", iso_domain['name'])
         self.storage_domain = None
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        self.spm_host = ll_hosts.get_spm_host(config.HOSTS)
         assert helpers.add_storage_domain(
             self.dc_name, self.spm_host, **iso_domain
         )

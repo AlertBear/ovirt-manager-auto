@@ -47,8 +47,8 @@ def setup_module():
         )
     NODES = config.GLUSTER_REPLICA_SERVERS
     global SPM_HOST, SPM_HOST_IP
-    SPM_HOST = ll_hosts.getSPMHost(config.HOSTS)
-    SPM_HOST_IP = ll_hosts.getHostIP(SPM_HOST)
+    SPM_HOST = ll_hosts.get_spm_host(config.HOSTS)
+    SPM_HOST_IP = ll_hosts.get_host_ip(SPM_HOST)
     for host in config.HOSTS:
         if host != SPM_HOST:
             if not hl_hosts.deactivate_host_if_up(host):

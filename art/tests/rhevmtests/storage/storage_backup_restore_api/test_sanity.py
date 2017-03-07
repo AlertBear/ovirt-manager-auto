@@ -150,7 +150,7 @@ class TestCase6182(BaseTestCase):
         assert utils.restartVdsmd(backup_vm_vdsm_host_ip, config.HOSTS_PW), (
             "Failed restarting VDSM service"
         )
-        ll_hosts.waitForHostsStates(True, self.host)
+        ll_hosts.wait_for_hosts_states(True, self.host)
         logger.info("Successfully restarted VDSM service")
 
         vm_disks = ll_vms.getVmDisks(self.backup_vm)
@@ -459,8 +459,8 @@ class TestCase6168(BaseTestCase):
             config.DATA_CENTER_NAME, self.storage
         )
 
-        self.host = ll_hosts.getSPMHost(config.HOSTS)
-        self.host_ip = ll_hosts.getHostIP(self.host)
+        self.host = ll_hosts.get_spm_host(config.HOSTS)
+        self.host_ip = ll_hosts.get_host_ip(self.host)
 
         status, self.storage_domain_ip = ll_sd.getDomainAddress(
             True, self.storage_domains[0]

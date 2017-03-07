@@ -961,7 +961,7 @@ class TestNetLabels07(NetworkTest):
             testflow.step(
                 "Move the host %s to cluster %s", conf.HOST_1_NAME, cluster
             )
-            assert ll_hosts.updateHost(
+            assert ll_hosts.update_host(
                 positive=True, host=conf.HOST_1_NAME, cluster=cluster
             )
             # Sleep until setupNetworks is done when moving host

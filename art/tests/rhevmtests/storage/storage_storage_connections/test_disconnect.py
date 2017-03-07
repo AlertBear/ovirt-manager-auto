@@ -171,7 +171,7 @@ def initializer_module(request):
     # iscsi connections sessions are not closed when there are multiple
     # consumers on the target, logout from all session in all hosts
     for host in config.HOSTS:
-        host_ip = ll_hosts.getHostIP(host)
+        host_ip = ll_hosts.get_host_ip(host)
         host = Host(host_ip)
         user = User(config.HOSTS_USER, config.HOSTS_PW)
         host.users.append(user)
@@ -378,7 +378,7 @@ class TestCase11196(BaseTestCaseNewDC):
             """
             Reactivate host
             """
-            if ll_hosts.isHostInMaintenance(True, self.host):
+            if ll_hosts.is_host_in_maintenance(True, self.host):
                 if not ll_hosts.activate_host(True, self.host):
                     self.test_failed = True
                     logger.error(

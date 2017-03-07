@@ -272,7 +272,7 @@ class CreateDC(TestCase):
                     "Cannot add host %s (%s/%s)" %
                     (host_name, vds_obj.ip, vds_obj.root_user.password)
                 )
-        if not hosts.waitForHostsStates(
+        if not hosts.wait_for_hosts_states(
                 True, ",".join([host_name for host_name in hosts_names])
         ):
             raise errors.HostException("Hosts are not up")

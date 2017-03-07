@@ -123,8 +123,8 @@ class BaseTestCase(TestCase):
             )
         self.templates.append(self.template_name)
 
-        host = ll_hosts.getSPMHost(config.HOSTS)
-        host_ip = ll_hosts.getHostIP(host)
+        host = ll_hosts.get_spm_host(config.HOSTS)
+        host_ip = ll_hosts.get_host_ip(host)
         self.host_executor = rhevm_helpers.get_host_executor(
             host_ip, config.HOSTS_PW
         )

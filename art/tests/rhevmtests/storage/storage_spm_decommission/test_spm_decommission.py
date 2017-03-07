@@ -183,7 +183,7 @@ class UpgradeBaseClass(StorageTest):
             """
             try:
                 found_regex = False
-                host_ip = ll_hosts.getHostIP(host)
+                host_ip = ll_hosts.get_host_ip(host)
                 found_regex, cmd_rc = watch_logs(
                     config.VDSM_LOG, regex, ip_for_files=host_ip,
                     username=config.HOSTS_USER, password=config.HOSTS_PW,

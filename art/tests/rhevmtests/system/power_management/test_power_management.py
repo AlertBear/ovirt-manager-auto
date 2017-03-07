@@ -46,7 +46,7 @@ def module_setup():
 
 def _fence_host(positive, fence_type):
     testflow.step("Wait for host %s power management operation", HOST_WITH_PM)
-    assert ll_hosts.waitForHostPmOperation(
+    assert ll_hosts.wait_for_host_pm_operation(
         host=HOST_WITH_PM,
         engine=config.ENGINE,
     )
@@ -59,14 +59,14 @@ def _fence_host(positive, fence_type):
         is positive
     )
     testflow.step("Wait for host %s power management operation", HOST_WITH_PM)
-    assert ll_hosts.waitForHostPmOperation(
+    assert ll_hosts.wait_for_host_pm_operation(
         host=HOST_WITH_PM,
         engine=config.ENGINE,
     )
 
 
 def _move_host_to_up(host):
-    if not ll_hosts.isHostUp(True, host=host):
+    if not ll_hosts.is_host_up(True, host=host):
         assert ll_hosts.activate_host(True, host=host)
 
 
@@ -81,7 +81,7 @@ def _block_outgoing_vdsm_port(host_num):
         ["iptables", "-A", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
          "-j", "DROP"]
     )
-    ll_hosts.waitForHostsStates(
+    ll_hosts.wait_for_hosts_states(
         True, config.HOSTS[host_num], config.HOST_NONRESPONSIVE
     )
 
@@ -93,7 +93,7 @@ def _unblock_outgoing_vdsm_port(host_num):
         ["iptables", "-D", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
          "-j", "DROP"]
     )
-    ll_hosts.waitForHostsStates(True, config.HOSTS[host_num])
+    ll_hosts.wait_for_hosts_states(True, config.HOSTS[host_num])
 
 
 def _add_power_management(host_num=0, **kwargs):
@@ -479,7 +479,7 @@ class T06HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
     @polarion("RHEVM3-12448")
     def test_host_in_non_responsive_state_with_high_available_vm(self):
         testflow.step("Stop network on host %s", HOST_WITH_PM)
-        assert ll_hosts.runDelayedControlService(
+        assert ll_hosts.run_delayed_control_service(
             True, host=HOST_WITH_PM_FQDN, host_user=config.HOSTS_USER,
             host_passwd=config.HOSTS_PW, service=self.service_network,
             command=self.stop_command
@@ -487,11 +487,11 @@ class T06HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
         testflow.step(
             "Wait for host %s to be in non responsive state", HOST_WITH_PM
         )
-        assert ll_hosts.waitForHostsStates(
+        assert ll_hosts.wait_for_hosts_states(
             True, names=HOST_WITH_PM, states=config.HOST_NONRESPONSIVE
         )
         testflow.step("Wait for host %s to be up", HOST_WITH_PM)
-        assert ll_hosts.waitForHostsStates(
+        assert ll_hosts.wait_for_hosts_states(
             True, names=HOST_WITH_PM, states=config.HOST_UP
         )
         assert vms.waitForVmsStates(True, names=self.vm_ha_name), (

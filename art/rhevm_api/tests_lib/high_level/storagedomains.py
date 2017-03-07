@@ -596,7 +596,7 @@ class StorageAdder(object):
             return []
         created_storages = []
         created_storages.append(self.add_storage(0))
-        hosts.waitForSPM(self.datacenter, 600, 10)
+        hosts.wait_for_spm(self.datacenter, 600, 10)
         for i in range(1, self.no_of_data_storages):
             created_storages.append(self.add_storage(i))
         self.add_export_domains()

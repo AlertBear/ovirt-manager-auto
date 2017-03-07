@@ -79,7 +79,7 @@ if host_order in ("rhevh_first", "rhel_first"):
     for host_object in hosts_objects:
         host_name = host_object.name
         new_name = "temp_{0}".format(host_name)
-        if ll_hosts.updateHost(True, host_name, name=new_name):
+        if ll_hosts.update_host(True, host_name, name=new_name):
             host_object.name = new_name
 
     for i in range(len(dcs)):
@@ -88,11 +88,11 @@ if host_order in ("rhevh_first", "rhel_first"):
             for host in cluster["hosts"]:
                 new_name = host["name"]
                 host_name = hosts_objects[i].name
-                if ll_hosts.updateHost(True, host_name, name=new_name):
+                if ll_hosts.update_host(True, host_name, name=new_name):
                     hosts_objects[i].name = new_name
                     cluster_name = cluster["name"]
 
-                    if cluster_name != ll_hosts.getHostCluster(new_name):
+                    if cluster_name != ll_hosts.get_host_cluster(new_name):
                         hl_hosts.move_host_to_another_cluster(
                             new_name, cluster_name
                         )

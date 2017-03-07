@@ -70,9 +70,9 @@ def flush_iptable_block(request):
         ), "Datacenter %s failed to reach status 'up'" % (
             config.DATA_CENTER_NAME
         )
-        assert ll_hosts.waitForHostsStates(True, self.blocked_domain_name), (
-            "Host %s failed to reach status 'up'" % self.spm_host
-        )
+        assert ll_hosts.wait_for_hosts_states(
+            True, self.blocked_domain_name
+        ), ("Host %s failed to reach status 'up'" % self.spm_host)
     request.addfinalizer(finalizer)
 
 
@@ -88,7 +88,7 @@ def fin_activate_host(request):
         assert ll_hosts.activate_host(True, self.spm_host), (
             "Unable to activate host %s ", self.spm_host
         )
-        ll_hosts.waitForHostsStates(True, self.spm_host)
+        ll_hosts.wait_for_hosts_states(True, self.spm_host)
     request.addfinalizer(finalizer)
 
 
@@ -103,7 +103,7 @@ def activate_domain(request):
         testflow.teardown(
             "Activating storage domain %s", self.non_master_domain
         )
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.RETRY_INTERVAL
         ), "SPM host was not elected"

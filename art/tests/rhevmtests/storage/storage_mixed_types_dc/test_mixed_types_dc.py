@@ -652,7 +652,7 @@ class TestCase4566(IscsiNfsSD):
         For GE, set all hosts except for one to maintenance mode
         """
         if config.GOLDEN_ENV:
-            status, host = ll_hosts.getAnyNonSPMHost(
+            status, host = ll_hosts.get_any_non_spm_host(
                 config.HOSTS, cluster_name=self.cluster_name
             )
             self.host = host['hsmHost']
@@ -663,7 +663,7 @@ class TestCase4566(IscsiNfsSD):
                     ll_hosts.deactivate_host(True, host)
         else:
             self.host = config.HOSTS[0]
-        self.host_ip = ll_hosts.getHostIP(self.host)
+        self.host_ip = ll_hosts.get_host_ip(self.host)
         super(TestCase4566, self).setUp()
         self.disk_alias = "disk_{0}".format(self.polarion_test_case)
 
@@ -753,7 +753,7 @@ class TestCase4566(IscsiNfsSD):
 
         if config.GOLDEN_ENV:
             for host in config.HOSTS:
-                if ll_hosts.isHostInMaintenance(True, host):
+                if ll_hosts.is_host_in_maintenance(True, host):
                     ll_hosts.activate_host(True, host)
 
         super(TestCase4566, self).tearDown()

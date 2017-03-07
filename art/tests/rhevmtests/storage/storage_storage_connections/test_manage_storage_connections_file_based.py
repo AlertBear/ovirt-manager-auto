@@ -49,12 +49,12 @@ def initializer_module(request):
     # Remove the host, this is needed to copy the data between
     # storage domains
     global HOST_CLUSTER
-    HOST_CLUSTER = ll_hosts.getHostCluster(config.HOST_FOR_MOUNT)
+    HOST_CLUSTER = ll_hosts.get_host_cluster(config.HOST_FOR_MOUNT)
     if not ll_hosts.deactivate_host(True, config.HOST_FOR_MOUNT):
         raise exceptions.HostException(
             "Failed to deactivate host %s" % config.HOST_FOR_MOUNT
         )
-    if not ll_hosts.removeHost(True, config.HOST_FOR_MOUNT):
+    if not ll_hosts.remove_host(True, config.HOST_FOR_MOUNT):
         raise exceptions.HostException(
             "Failed to remove host %s" % config.HOST_FOR_MOUNT
         )
@@ -76,7 +76,7 @@ class TestCasePosix(TestCase):
         self.address = config.UNUSED_RESOURCE_ADDRESS[self.storage][0]
         self.path = config.UNUSED_RESOURCE_PATH[self.storage][0]
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-        self.host = ll_hosts.getSPMHost(config.HOSTS_FOR_TEST)
+        self.host = ll_hosts.get_spm_host(config.HOSTS_FOR_TEST)
         if not ll_sd.addStorageDomain(
             True, address=self.address, path=self.path,
             storage_type=self.storage_type, host=self.host,
@@ -516,7 +516,7 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
         )
 
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-        ll_hosts.waitForHostsStates(True, self.host)
+        ll_hosts.wait_for_hosts_states(True, self.host)
 
         result = ll_sd_conn.update_connection(
             conn_id=self.conn, address=new_address, path=new_path,

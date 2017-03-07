@@ -6,7 +6,7 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Storage/
 import pytest
 import config
 import logging
-from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
+from art.rhevm_api.tests_lib.low_level.hosts import get_host_ip
 from art.unittest_lib.common import StorageTest as TestCase, testflow
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import (
@@ -298,7 +298,7 @@ class TestCase5934(DirectLunAttachTestCase):
         ), "Failed to update vm %s HA attribute to 'true" % self.vm_name
         ll_vms.startVm(True, self.vm_name)
         _, host = ll_vms.getVmHost(self.vm_name)
-        host_ip = getHostIP(host['vmHoster'])
+        host_ip = get_host_ip(host['vmHoster'])
         host_machine = Machine(
             host_ip, config.HOSTS_USER, config.HOSTS_PW).util(LINUX)
         assert host_machine.kill_qemu_process(

@@ -68,8 +68,8 @@ class EnvironmentWithTwoHosts(TestCase):
             config.ENGINE, config.DATA_CENTER_NAME
         )
         for host in config.HOSTS:
-            if ll_hosts.getHostCluster(host) == config.CLUSTER_NAME:
-                if ll_hosts.isHostUp(True, host):
+            if ll_hosts.get_host_cluster(host) == config.CLUSTER_NAME:
+                if ll_hosts.is_host_up(True, host):
                     if cls.num_active_hosts > 0:
                         cls.num_active_hosts -= 1
                     else:
@@ -77,13 +77,13 @@ class EnvironmentWithTwoHosts(TestCase):
             else:
                 ll_hosts.deactivate_host(True, host)
 
-        ll_hosts.waitForSPM(
+        ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME)
         logger.info("Getting SPM host")
-        cls.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        cls.spm_host = ll_hosts.get_spm_host(config.HOSTS)
 
         logger.info("Getting HSM host")
-        cls.hsm_host = ll_hosts.getAnyNonSPMHost(
+        cls.hsm_host = ll_hosts.get_any_non_spm_host(
             config.HOSTS,
             expected_states=[config.HOST_UP],
             cluster_name=config.CLUSTER_NAME,
@@ -95,7 +95,7 @@ class EnvironmentWithTwoHosts(TestCase):
     def teardown_class(cls):
         """Activate all the hosts"""
         for host in config.HOSTS:
-            if not ll_hosts.isHostUp(True, host):
+            if not ll_hosts.is_host_up(True, host):
                 logger.info("Activating host %s", host)
                 ll_hosts.activate_host(True, host)
 
@@ -133,8 +133,8 @@ class TestCase11630(EnvironmentWithTwoHosts):
         self.sd = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        self.spm_host_ip = ll_hosts.getHostIP(self.spm_host)
+        self.spm_host = ll_hosts.get_spm_host(config.HOSTS)
+        self.spm_host_ip = ll_hosts.get_host_ip(self.spm_host)
         self.spm_admin = config.HOSTS_USER
         self.spm_password = config.HOSTS_PW
 
@@ -189,7 +189,7 @@ class TestCase11630(EnvironmentWithTwoHosts):
         assert rc
 
         logger.info("Waiting for host being non responsive")
-        ll_hosts.waitForHostsStates(
+        ll_hosts.wait_for_hosts_states(
             True, self.spm_host, ENUMS['search_host_state_non_responsive'],
             timeout=TIMEOUT_10_MINUTES,
         )
@@ -219,10 +219,10 @@ class TestCase11630(EnvironmentWithTwoHosts):
             True, self.spm_host_ip, self.spm_admin, self.spm_password, LINUX)
 
         logger.info("Wait for hosts being up")
-        assert ll_hosts.waitForHostsStates(True, [self.spm_host])
+        assert ll_hosts.wait_for_hosts_states(True, [self.spm_host])
 
         logger.info("Wait for SPM")
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, 2 * TIMEOUT_10_MINUTES, SLEEP_TIME,
         )
 
@@ -246,11 +246,11 @@ class TestCase11630(EnvironmentWithTwoHosts):
             )
 
             logger.info("Wait for the host to come up")
-            if not ll_hosts.waitForHostsStates(True, [self.spm_host]):
+            if not ll_hosts.wait_for_hosts_states(True, [self.spm_host]):
                 logger.error("Host %s didn't came back up", self.spm_host)
 
         logger.info("Make sure the Data Center is up before cleaning up")
-        if not ll_hosts.waitForSPM(
+        if not ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME
         ):
             logger.error(
@@ -416,9 +416,9 @@ class TestCase11625(TestCase):
         self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        if ll_hosts.getHostCluster(spm_host) != config.CLUSTER_NAME:
-            _, host_dict = ll_hosts.getAnyNonSPMHost(
+        spm_host = ll_hosts.get_spm_host(config.HOSTS)
+        if ll_hosts.get_host_cluster(spm_host) != config.CLUSTER_NAME:
+            _, host_dict = ll_hosts.get_any_non_spm_host(
                 config.HOSTS, cluster_name=config.CLUSTER_NAME,
             )
             host = host_dict['hsmHost']
@@ -427,7 +427,7 @@ class TestCase11625(TestCase):
             )
             spm_host = host
 
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
         )
         self.vm_name = self.vm_name_base = (
@@ -445,7 +445,7 @@ class TestCase11625(TestCase):
             )
         logger.info("Adding snapshot")
         assert ll_vms.addSnapshot(True, self.vm_name, self.snap_name)
-        hsm_host = ll_hosts.getAnyNonSPMHost(
+        hsm_host = ll_hosts.get_any_non_spm_host(
             config.HOSTS, cluster_name=config.CLUSTER_NAME,
         )[1]['hsmHost']
         assert hsm_host
@@ -485,8 +485,8 @@ class TestCase11624(TestCase):
     def setUp(self):
         # on the spm host - trigger "read error" by manipulating dd behaviour
         self.test_failed = False
-        self.spm_host_name = ll_hosts.getSPMHost(config.HOSTS)
-        self.spm_host_ip = ll_hosts.getHostIP(self.spm_host_name)
+        self.spm_host_name = ll_hosts.get_spm_host(config.HOSTS)
+        self.spm_host_ip = ll_hosts.get_host_ip(self.spm_host_name)
         connection = Machine(
             host=self.spm_host_ip, user=config.HOSTS_USER,
             password=config.HOSTS_PW
@@ -497,9 +497,9 @@ class TestCase11624(TestCase):
         )[0]
         # put all other hosts in maintenance
         for host in config.HOSTS:
-            if host != self.spm_host_name and ll_hosts.isHostUp(True, host):
+            if host != self.spm_host_name and ll_hosts.is_host_up(True, host):
                 ll_hosts.deactivate_host(True, host)
-        ll_hosts.waitForHostsStates(True, [self.spm_host_name])
+        ll_hosts.wait_for_hosts_states(True, [self.spm_host_name])
         self.vm_name = self.vm_name_base = (
             storage_helpers.create_unique_object_name(
                 self.__class__.__name__, config.OBJECT_TYPE_VM
@@ -574,7 +574,7 @@ class TestCase11624(TestCase):
 
         logger.info("Restarting vdsmd")
         test_utils.restartVdsmd(self.spm_host_ip, config.HOSTS_PW)
-        if not ll_hosts.waitForHostsStates(
+        if not ll_hosts.wait_for_hosts_states(
             True, [self.spm_host_name], ENUMS['host_state_connecting'],
         ):
             logger.error("Host %s didn't change to status 'connecting'",
@@ -582,12 +582,12 @@ class TestCase11624(TestCase):
             self.test_failed = True
 
         logger.info("Waiting for host %s to be back up", self.spm_host_name)
-        if not ll_hosts.waitForHostsStates(True, [self.spm_host_name]):
+        if not ll_hosts.wait_for_hosts_states(True, [self.spm_host_name]):
             logger.error("Waiting for Host %s status 'up' failed",
                          self.spm_host_name)
             self.test_failed = True
 
-        if not ll_hosts.waitForSPM(
+        if not ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME
         ):
             logger.error("Waiting for SPM host status 'up' failed")
@@ -618,7 +618,7 @@ class TestCase11624(TestCase):
         """Make sure that the hosts are activated even if tearDown fails"""
         logger.info("Activating hosts back again")
         for host in config.HOSTS:
-            if not ll_hosts.isHostUp(True, host):
+            if not ll_hosts.is_host_up(True, host):
                 ll_hosts.activate_host(True, host, True)
 
     @polarion("RHEVM3-11624")

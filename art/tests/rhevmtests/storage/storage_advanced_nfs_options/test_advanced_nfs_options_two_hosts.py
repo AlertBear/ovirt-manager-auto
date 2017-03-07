@@ -41,7 +41,7 @@ def initializer_module(request):
             )
             if ll_hosts.get_host_status(host_ip) == config.HOST_UP:
                 ll_hosts.deactivate_host(True, host_ip)
-            ll_hosts.removeHost(True, host_ip)
+            ll_hosts.remove_host(True, host_ip)
         except EntityNotFound:
             pass
 
@@ -56,15 +56,15 @@ def initializer_module(request):
         config.HOSTS.append(host_name)
 
     request.addfinalizer(finalizer_module)
-    status, hsm_host = ll_hosts.getAnyNonSPMHost(
+    status, hsm_host = ll_hosts.get_any_non_spm_host(
         config.HOSTS, cluster_name=config.CLUSTER_NAME
     )
     assert status, "Unable to get a hsm from cluster %s" % config.CLUSTER_NAME
     host_name = hsm_host['hsmHost']
-    host_ip = ll_hosts.getHostIP(host_name)
+    host_ip = ll_hosts.get_host_ip(host_name)
     config.HOST_FOR_30_DC = {'name': host_name, 'ip': host_ip}
     assert ll_hosts.deactivate_host(True, host_name)
-    assert ll_hosts.removeHost(True, host_name)
+    assert ll_hosts.remove_host(True, host_name)
     config.HOSTS.remove(host_name)
 
 
@@ -117,7 +117,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             commands may fail which is OK.
             """
             ll_vms.stop_vms_safely([self.vm_1])
-            if not ll_hosts.isHostUp(True, self.host):
+            if not ll_hosts.is_host_up(True, self.host):
                 ll_hosts.activate_host(True, self.host)
             try:
                 ll_templates.remove_template(True, self.template)
@@ -150,10 +150,10 @@ class TestCase4831(helpers.TestCaseNFSOptions):
                     )
             try:
                 logger.info("Removing host %s", self.host_for_dc)
-                if ll_hosts.isHostUp(True, self.host_for_dc):
+                if ll_hosts.is_host_up(True, self.host_for_dc):
                     ll_hosts.deactivate_host(True, self.host_for_dc)
-                ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
-                ll_hosts.removeHost(True, self.host_for_dc)
+                ll_hosts.wait_for_spm(config.DATA_CENTER_NAME, 600, 30)
+                ll_hosts.remove_host(True, self.host_for_dc)
             except apis_exceptions.EntityNotFound:
                 pass
             self.cleanup_class()
@@ -293,12 +293,12 @@ class TestCase4831(helpers.TestCaseNFSOptions):
             )
 
         logger.info("Changing SPM host")
-        old_spm_host = ll_hosts.getSPMHost(hosts)
+        old_spm_host = ll_hosts.get_spm_host(hosts)
         if not ll_hosts.deactivate_host(True, old_spm_host):
             logger.error("Cannot deactivate host %s", old_spm_host)
             self.fail("Cannot deactivate host %s" % old_spm_host)
-        ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
-        new_spm_host = ll_hosts.getSPMHost(hosts)
+        ll_hosts.wait_for_spm(config.DATA_CENTER_NAME, 600, 30)
+        new_spm_host = ll_hosts.get_spm_host(hosts)
         logger.info("New SPM host: %s", new_spm_host)
 
         logger.info("Getting master storage domain")
