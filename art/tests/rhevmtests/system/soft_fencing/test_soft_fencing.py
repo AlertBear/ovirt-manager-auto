@@ -99,7 +99,7 @@ def _check_host_state(host_num, service, job_status):
     )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class SoftFencing(TestCase):
     """
     Soft fencing base class

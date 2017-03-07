@@ -130,7 +130,7 @@ def _remove_power_management(host=None):
     assert hosts.remove_power_management(host_name=host)
 
 
-@attr(tier=1, extra_reqs={'mgmt': True})
+@attr(tier=2, extra_reqs={'mgmt': True})
 class TestWithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
@@ -190,7 +190,7 @@ class TestWithHighAvailableVm(TestCase):
         assert vms.runVmOnce(True, cls.vm2_name, host=HOST_WITH_PM)
 
 
-@attr(tier=1, extra_reqs={'mgmt': True})
+@attr(tier=2, extra_reqs={'mgmt': True})
 class TestPMWithBadParameters(TestCase):
     """
     Base class for tests with wrong parameters
@@ -221,7 +221,7 @@ class TestPMWithBadParameters(TestCase):
             cls.t_agent[key] = value
 
 
-@attr(tier=1, extra_reqs={'fence': True})
+@attr(tier=2, extra_reqs={'fence': True})
 class TestFenceOnHost(TestCase):
     """
     Base class for fence tests
@@ -249,7 +249,7 @@ class TestFenceOnHost(TestCase):
             _move_host_to_maintenance(HOST_WITH_PM)
 
 
-@attr(tier=1, extra_reqs={'mgmt': True})
+@attr(tier=2, extra_reqs={'mgmt': True})
 class TestFenceHostWithTwoPMAgents(TestCase):
     """
     Base class for fence tests with two power management agents
@@ -325,7 +325,7 @@ class TestFenceHostWithTwoPMAgents(TestCase):
             )
 
 
-@attr(tier=1, extra_reqs={'mgmt': True})
+@attr(tier=2, extra_reqs={'mgmt': True})
 class TestFenceProxySelection(TestCase):
     """
     Base class for fencing proxy selection tests
@@ -432,7 +432,6 @@ class T03AddPMWithNoAddress(TestPMWithBadParameters):
         ), "Adding PM with no address succeeded"
 
 
-@bz({'1420302': {}})
 class T04AddPMWithInvalidType(TestPMWithBadParameters):
     """
     Test adding power management with invalid type
@@ -467,6 +466,7 @@ class T05FenceHostWithHighAvailableVm(TestWithHighAvailableVm):
         ), "VM %s is up" % self.vm2_name
 
 
+@bz({'1423657': {}})
 class T06HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
     """
     Test non responsive host with high available VM running
