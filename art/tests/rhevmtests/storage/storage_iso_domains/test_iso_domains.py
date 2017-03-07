@@ -153,16 +153,17 @@ class BaseCaseIsoDomains(TestCase):
         assert not rc, (
             "Failed to find ISO file with error %s" % error
         )
+
         upload_cmd = (
-            "engine-iso-uploader --conf-file=%s -f upload -i %s %s --insecure"
-            % (
+            "engine-iso-uploader --conf-file=%s -f upload -i %s "
+            "%s --insecure" % (
                 config.ISO_UPLOADER_CONF_FILE,
                 self.storage_domain, iso_file[:-1]
             )
         )
         testflow.setup("Executing %s", upload_cmd)
         rc, _, error = self.executor.run_cmd(
-            shlex.split(upload_cmd)
+            shlex.split(upload_cmd), tcp_timeout=600
         )
         assert not rc, (
             "Failed to upload ISO %s to ISO domain %s with error %s" % (
