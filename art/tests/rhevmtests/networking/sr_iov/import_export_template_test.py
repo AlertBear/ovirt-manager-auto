@@ -37,7 +37,6 @@ class TestSriovImportExport01(NetworkTest):
     """
     Cases for Import/Export with VM and VFs
     """
-    __test__ = True
 
     # General
     vm_nic_1 = sriov_conf.TEMPLATE_TEST_VNICS[1][0]

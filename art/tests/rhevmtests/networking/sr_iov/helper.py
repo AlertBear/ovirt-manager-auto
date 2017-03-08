@@ -10,14 +10,16 @@ import shlex
 import socket
 from xml.etree import ElementTree
 
-from utilities import jobs
-
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.events as ll_events
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sriov_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    vms as ll_vms,
+    events as ll_events
+)
+from utilities import jobs
 
 logger = logging.getLogger("SR_IOV_Helper")
 
@@ -193,3 +195,24 @@ def wait_for_refresh_caps(last_event):
         last_event=last_event, event_code=sriov_conf.REFRESH_CAPS_CODE,
         content=content, matches=1
     )
+
+
+def get_first_free_vf_host_device(hostname):
+    """
+    Get the first free (unallocated to a VM) VF network host device name
+
+    Args:
+        hostname (str): Host name to get the device from
+
+    Returns:
+        str: Host device name, or empty string if none found
+    """
+    # Look for unallocated (without VM instance) host devices with product name
+    # containing "Virtual Function"
+    vf_devices_on_host = [
+        dev for dev in ll_hosts.get_host_devices(host_name=hostname)
+        if hasattr(dev.product, "name") and
+        "virtual function" in dev.product.name.lower() and
+        not dev.vm
+    ]
+    return vf_devices_on_host[0].name if vf_devices_on_host else ""

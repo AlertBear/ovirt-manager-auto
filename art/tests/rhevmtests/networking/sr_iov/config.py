@@ -11,7 +11,7 @@ GENERAL_TEST_VNICS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=5, prefix="general_sriov_vnic"
 )
 VM_TEST_VNICS = global_helper.generate_object_names(
-    num_of_cases=5, num_of_objects=5, prefix="vm_sriov_vnic"
+    num_of_cases=6, num_of_objects=5, prefix="vm_sriov_vnic"
 )
 TEMPLATE_TEST_VNICS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=5, prefix="template_sriov_vnic"
@@ -20,16 +20,23 @@ MIGRATION_TEST_VNICS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=5, prefix="migration_sriov_vnic"
 )
 
-HOST_O_SRIOV_NICS_OBJ = None  # Filled in setup_package
-HOST_1_SRIOV_NICS_OBJ = None  # Filled in setup_package
-HOST_0_PF_LIST = list()  # Filled in setup_package
-HOST_1_PF_LIST = list()  # Filled in setup_package
-HOST_0_PF_NAMES = list()  # Filled in setup_package
-HOST_1_PF_NAMES = list()  # Filled in setup_package
-HOST_0_PF_OBJECT = None  # Filled in setup_package
-HOST_1_PF_OBJECT = None  # Filled in setup_package
-HOST_NAME = None  # Filled in test
-PF_OBJECT = None  # Filled in test
+# All the following objects will be filled during runtime
+HOST_O_SRIOV_NICS_OBJ = None
+HOST_1_SRIOV_NICS_OBJ = None
+HOST_0_PF_LIST = list()
+HOST_1_PF_LIST = list()
+HOST_0_PF_NAMES = list()
+HOST_1_PF_NAMES = list()
+HOST_0_PF_OBJECTS = None
+HOST_1_PF_OBJECTS = None
+# First listed SR-IOV PF NIC object of HOST-0
+HOST_0_PF_OBJECT_1 = None
+# Second listed SR-IOV PF NIC object of HOST-0
+HOST_0_PF_OBJECT_2 = None
+# First listed SR-IOV PF NIC object of HOST-1
+HOST_1_PF_OBJECT_1 = None
+HOST_NAME = None
+PF_OBJECT = None
 HOSTS_PARAM_DICT = None
 
 MIGRATION_TIMEOUT = 300
@@ -105,6 +112,9 @@ VM_DICT = {
     },
     VM_NETS[4][3]: {
         "required": "false",
+    },
+    VM_NETS[6][0]: {
+        "required": "false"
     },
 }
 

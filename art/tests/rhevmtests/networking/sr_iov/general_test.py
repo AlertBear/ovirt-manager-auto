@@ -243,8 +243,8 @@ class TestSriov03(NetworkTest):
         """
         Check for the same number of VFs on engine and on host file
         """
-        nic_name = sriov_conf.HOST_0_PF_OBJECT.nic_name
-        num_vf = sriov_conf.HOST_0_PF_OBJECT.get_number_of_vf()
+        nic_name = sriov_conf.HOST_0_PF_OBJECT_1.nic_name
+        num_vf = sriov_conf.HOST_0_PF_OBJECT_1.get_number_of_vf()
         path = sriov_conf.NUM_VF_PATH % nic_name
         rc, out, _ = conf.VDS_0_HOST.run_command(["cat", path])
         testflow.step(
@@ -261,8 +261,8 @@ class TestSriov03(NetworkTest):
             "Check that putting link up and down doesn't change the number of "
             "VFs"
         )
-        nic_name = sriov_conf.HOST_0_PF_OBJECT.nic_name
-        num_vf = sriov_conf.HOST_0_PF_OBJECT.get_number_of_vf()
+        nic_name = sriov_conf.HOST_0_PF_OBJECT_1.nic_name
+        num_vf = sriov_conf.HOST_0_PF_OBJECT_1.get_number_of_vf()
         assert conf.VDS_0_HOST.network.if_down(nic=nic_name)
         assert conf.VDS_0_HOST.network.if_up(nic=nic_name)
         assert num_vf == num_vf
@@ -273,7 +273,7 @@ class TestSriov03(NetworkTest):
         Check that it's impossible to configure negative value for num VF
         """
         testflow.step("Try to configure negative VF value for PF")
-        assert not sriov_conf.HOST_0_PF_OBJECT.set_number_of_vf(-2)
+        assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(-2)
 
     @polarion("RHEVM3-14635")
     def test_over_max_vf_number(self):
@@ -282,8 +282,8 @@ class TestSriov03(NetworkTest):
         supported by PF
         """
         testflow.step("Try to configure value bigger than max supported by PF")
-        max_vf = sriov_conf.HOST_0_PF_OBJECT.get_max_number_of_vf()
-        assert not sriov_conf.HOST_0_PF_OBJECT.set_number_of_vf(max_vf+1)
+        max_vf = sriov_conf.HOST_0_PF_OBJECT_1.get_max_number_of_vf()
+        assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(max_vf + 1)
 
 
 @attr(tier=2)
@@ -328,14 +328,14 @@ class TestSriov04(NetworkTest):
             "add": {
                 "1": {
                     "network": self.net1,
-                    "nic": sriov_conf.HOST_0_PF_OBJECT.get_all_vf_names()[0]
+                    "nic": sriov_conf.HOST_0_PF_OBJECT_1.get_all_vf_names()[0]
                 }
             }
         }
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-        assert not sriov_conf.HOST_0_PF_OBJECT.set_number_of_vf(2)
+        assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(2)
 
     @polarion("RHEVM-19156")
     def test_change_vf_num_for_non_occupied_vf_network(self):
@@ -350,7 +350,7 @@ class TestSriov04(NetworkTest):
         assert hl_host_network.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
         )
-        assert sriov_conf.HOST_0_PF_OBJECT.set_number_of_vf(2)
+        assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(2)
 
 
 @attr(tier=2)

@@ -157,7 +157,6 @@ class SriovMigration01(NetworkTest):
     Migrate only with vf vNIC(no connection)
     Migrate with vf and virtIO vNIcs (BOND on guest)
     """
-    __test__ = True
 
     # General
     vm_name = sriov_conf.SRIOV_MIGRATION_VM
@@ -197,7 +196,7 @@ class SriovMigration01(NetworkTest):
         sriov_conf.HOST_NAME = ll_vms.get_vm_host(vm_name=self.vm_name)
         assert sriov_conf.HOST_NAME
         host = 0 if conf.HOST_0_NAME != sriov_conf.HOST_NAME else 1
-        host_pf = "HOST_%s_PF_OBJECT" % host
+        host_pf = "HOST_%s_PF_OBJECT_1" % host
         sriov_conf.PF_OBJECT = getattr(sriov_conf, host_pf)
 
         testflow.step(
