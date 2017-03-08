@@ -1,5 +1,5 @@
 """ Test configuration - login data to the servers and test setup options.  """
-__test__ = False
+from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 
 from rhevmtests.system.config import *  # flake8:  noqa
 from art.test_handler.settings import opts
@@ -36,8 +36,17 @@ USER_VM = 'auto_user_vm'
 USER_TEST = 'user3'
 USERS = [USER_SYSTEM, USER_DC, USER_CLUSTER, USER_STORAGE, USER_VM, USER_TEST]
 
+VMPOOL_PARAMS = {
+    "cluster": CLUSTER_NAME[0],
+    "template": TEMPLATE_NAME[0],
+    "size": 1,
+    "prestarted_vms": False
+}
+
+AAA_TOOL = 'ovirt-aaa-jdbc-tool'
+
 UserVmManager = ENUMS['role_name_user_vm_manager']
 UserTemplateBasedVm = ENUMS['role_name_user_template_based_vm']
 UserRole = ENUMS['role_name_user_role']
 
-MASTER_STORAGE = None
+master_storage = ll_sd.get_master_storage_domain_name(DC_NAME[0])
