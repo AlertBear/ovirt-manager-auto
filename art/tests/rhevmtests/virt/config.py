@@ -173,8 +173,8 @@ BASE_VM_VIRT = "base_vm_virt"
 # Windows
 DEFAULT_FILE_CONTENT = "line 1: test\n line 2: test"
 DEFAULT_FILE_NAME = "test.txt"
-USER = 'Administrator'
-PASSWORD = 'Heslo123'
+WIN_USER = 'Administrator'
+WIN_PASSWORD = 'Heslo123'
 SYSTEM_PATH = "c:\\windows\\system32\\"
 SEAL_COMMAND = (
     "{0}sysprep.exe /generalize /shutdown /oobe".format(SYSTEM_PATH)

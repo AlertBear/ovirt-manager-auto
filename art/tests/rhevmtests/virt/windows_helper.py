@@ -43,7 +43,7 @@ def temp_data_file(data):
 
 
 class WindowsGuest(object):
-    def __init__(self, ip, user=config.USER, password=config.PASSWORD):
+    def __init__(self, ip, user=config.WIN_USER, password=config.WIN_PASSWORD):
         """
         Connect to windows machine,
         Initialize: windows session, power shell
