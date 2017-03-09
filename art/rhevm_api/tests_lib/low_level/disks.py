@@ -23,9 +23,12 @@ from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Disk, Fault
 from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
-from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
+from art.rhevm_api.tests_lib.low_level.general import (
+    prepare_ds_object, generate_logs
+)
 from art.rhevm_api.utils.test_utils import get_api, waitUntilGone, split
 from art.test_handler.settings import opts
+
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
@@ -1102,3 +1105,18 @@ def get_storage_domain_diskssnapshots_objects(storagedomain, get_href=False):
         attr='disk_snapshot',
         get_href=get_href,
     )
+
+
+@generate_logs()
+def get_read_only(vm_name, disk_id):
+    """
+    Check if certain disk is attached to VM as Read Only
+
+    Args:
+        vm_name (str): Name of the VM the disk is attached to
+        disk_id (str): ID of the disk
+
+    Returns:
+        bool: True if the disk is Read Only, False otherwise
+    """
+    return get_disk_attachment(vm_name, disk_id).get_read_only()

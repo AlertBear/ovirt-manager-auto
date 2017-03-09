@@ -21,7 +21,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.resources import storage
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 from concurrent.futures import ThreadPoolExecutor
 import rhevmtests.storage.helpers as storage_helpers
 import rhevmtests.helpers as rhevm_helpers
@@ -110,7 +109,10 @@ def attach_and_activate_disks(request):
     """
     self = request.node.cls
 
-    storage_helpers.prepare_disks_for_vm(self.vm_name, self.disk_names)
+    read_only = getattr(self, 'read_only', False)
+    storage_helpers.prepare_disks_for_vm(
+        self.vm_name, self.disk_names, read_only
+    )
 
 
 @pytest.fixture(scope='class')
@@ -904,16 +906,18 @@ def unblock_connectivity_storage_domain_teardown(request):
     self = request.node.cls
 
     def finalizer():
-        testflow.teardown(
-            "Unblock connection from host %s to domain %s",
-            self.host_ip, self.storage_domain_ip
-        )
-        assert unblockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
-        ), "Failed to unblock connection from host %s to domain %s" % (
-            self.host_ip, self.storage_domain_ip
-        )
+        self.blocked = getattr(self, 'blocked', True)
+
+        if self.blocked:
+            testflow.teardown(
+                "Unblock connection from host %s to domain %s",
+                self.host_ip, self.storage_domain_ip
+            )
+            assert rhevm_helpers.config_iptables_connection(
+                self.host_ip, self.storage_domain_ip, block=False
+            ), "Failed to unblock connection from host %s to domain %s" % (
+                self.host_ip, self.storage_domain_ip
+            )
 
     request.addfinalizer(finalizer)
 
@@ -1526,3 +1530,36 @@ def create_file_than_snapshot_several_times(request):
         )
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         self.snapshots_descriptions_list.append(self.snapshot_description)
+
+
+@pytest.fixture(scope='class')
+def detach_disks(request):
+    """
+    Detach disks from VM before removing them
+    """
+
+    self = request.node.cls
+
+    def finalizer():
+        for disk in self.disk_names:
+            ll_disks.detachDisk(True, disk, self.vm_name)
+            self.disks_to_remove.append(disk)
+
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='class')
+def delete_snapshot(request):
+    """
+    Delete the snapshot created in the test
+    """
+
+    self = request.node.cls
+
+    def finalizer():
+        testflow.teardown("Deleting snapshot %s", self.snapshot_description)
+        assert ll_vms.removeSnapshot(
+            True, self.vm_name, self.snapshot_description
+        ), "Failed to remove snapshot %s" % self.snapshot_description
+
+    request.addfinalizer(finalizer)

@@ -11,6 +11,7 @@ import time
 import multiprocessing
 import multiprocessing.dummy
 from art.core_api.apis_utils import TimeoutingSampler
+from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources.storage as storage_resources
 from art.rhevm_api import resources
@@ -329,7 +330,10 @@ def perform_dd_to_disk(
                 disk_logical_volume_name, error
             )
         )
-    logger.info("Output for dd: %s", out)
+        out = error
+    else:
+        logger.info("Output for dd: %s", out)
+
     return not rc, out
 
 
@@ -1912,3 +1916,24 @@ def get_lun_storage_info(lun_id):
     logger.info("The LUN free space in bytes is '%s'", str(lun_free_bytes))
 
     return int(lun_size_bytes), int(lun_free_bytes)
+
+
+def wait_for_disks_and_snapshots(vms_to_wait_for, live_operation=True):
+    """
+    Wait for given VMs snapshots and disks status to be 'OK'
+    """
+    for vm_name in vms_to_wait_for:
+        if ll_vms.does_vm_exist(vm_name):
+            try:
+                disks = [d.get_id() for d in ll_vms.getVmDisks(vm_name)]
+                ll_disks.wait_for_disks_status(disks, key='id')
+                ll_vms.wait_for_vm_snapshots(vm_name, config.SNAPSHOT_OK)
+            except APITimeout:
+                assert False, (
+                    "Snapshots failed to reach OK state on VM '%s'" % vm_name
+                )
+    if live_operation:
+        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
+    else:
+        ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])

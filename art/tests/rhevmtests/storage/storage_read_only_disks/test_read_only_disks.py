@@ -3,6 +3,7 @@
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_RO_Disks
 """
+import pytest
 import logging
 import config
 import helpers
@@ -13,9 +14,6 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
-from art.rhevm_api.utils.storage_api import (
-    blockOutgoingConnection, unblockOutgoingConnection,
-)
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -25,6 +23,18 @@ from art.unittest_lib.common import StorageTest as TestCase
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.networking.helper import seal_vm
 from rhevmtests.storage import helpers as storage_helpers
+from fixtures import (
+    initialize_template_name,
+)
+from rhevmtests.storage.fixtures import (
+    create_vm, add_disk_permutations,
+    attach_and_activate_disks, create_snapshot,
+    delete_disks, remove_vm_from_export_domain,
+    remove_template, unblock_connectivity_storage_domain_teardown,
+    create_second_vm, remove_vms, initialize_storage_domains, detach_disks
+)
+
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -32,12 +42,12 @@ logger = logging.getLogger(__name__)
 DISK_TIMEOUT = 600
 REMOVE_SNAPSHOT_TIMEOUT = 900
 TEMPLATE_TIMEOUT = 360
-DISK_NAMES = helpers.DISK_NAMES
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
 
 ISCSI = config.STORAGE_TYPE_ISCSI
 NFS = config.STORAGE_TYPE_NFS
+GLUSTER = config.STORAGE_TYPE_GLUSTER
 
 
 def not_bootable(vm_name):
@@ -56,6 +66,10 @@ def not_bootable(vm_name):
     ]
 
 
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    create_vm.__name__,
+)
 class BaseTestCase(TestCase):
     """
     Common class for all tests with some common methods
@@ -63,33 +77,16 @@ class BaseTestCase(TestCase):
     __test__ = False
     deep_copy = False
 
-    def setUp(self):
-        global DISK_NAMES
-        self.vm_name = config.VM_NAME % self.storage
-        self.storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.storage_domain
-        vm_args['vmName'] = self.vm_name
-        vm_args['deep_copy'] = self.deep_copy
-
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.vm_name
-            )
-        DISK_NAMES[self.storage] = list()
-
     def prepare_disks_for_vm(self, read_only, vm_name=None):
-        """Attach read-only disks to the vm"""
+        """Attach read-only disks to the VM"""
         vm_name = self.vm_name if not vm_name else vm_name
+        disk_names = self.disk_names
         return storage_helpers.prepare_disks_for_vm(
-            vm_name, DISK_NAMES[self.storage], read_only=read_only
+            vm_name, disk_names, read_only=read_only
         )
 
     def set_persistent_network(self, vm_name=None):
-        """Set persistent network to vm"""
+        """Set persistent network to VM"""
         vm_name = self.vm_name if not vm_name else vm_name
         ll_vms.start_vms([vm_name], max_workers=1, wait_for_ip=True)
         assert ll_vms.waitForVMState(vm_name)
@@ -102,7 +99,7 @@ class BaseTestCase(TestCase):
         """
         Verifies that the snapshot's disks are read-only
 
-        :param vm_name: The vm that contains the snapshot to verify
+        :param vm_name: The VM that contains the snapshot to verify
         :type vm_name: str
         :param snapshot: Snapshot that contains the disks to verify
         :type snapshot: str
@@ -125,17 +122,10 @@ class BaseTestCase(TestCase):
                     "was taken" % ro_disk.get_alias()
                 )
 
-    def tearDown(self):
-        """
-        Clean environment
-        """
-        ll_vms.waitForVmsDisks(self.vm_name)
-        if not ll_vms.safely_remove_vms([self.vm_name]):
-            logger.error("Failed to stop and remove vm %s" % self.vm_name)
-            BaseTestCase.test_failed = True
-        BaseTestCase.teardown_exception()
 
-
+@pytest.mark.usefixtures(
+    add_disk_permutations.__name__,
+)
 class DefaultEnvironment(BaseTestCase):
     """
     A class with common setup and teardown methods
@@ -144,26 +134,11 @@ class DefaultEnvironment(BaseTestCase):
     shared = False
     polarion_test_case = None
 
-    def setUp(self):
-        """
-        Creating all possible combinations of disks for test
-        """
-        global DISK_NAMES
-        super(DefaultEnvironment, self).setUp()
-        self.storage_domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
-        DISK_NAMES[self.storage] = (
-            storage_helpers.create_disks_from_requested_permutations(
-                domain_to_use=self.storage_domains[0],  size=config.DISK_SIZE,
-                shared=self.shared, test_name=self.polarion_test_case
-            )
-        )
-        assert ll_disks.wait_for_disks_status(
-            DISK_NAMES[self.storage], timeout=DISK_TIMEOUT
-        )
 
-
+@pytest.mark.usefixtures(
+    attach_and_activate_disks.__name__,
+    create_snapshot.__name__,
+)
 class DefaultSnapshotEnvironment(DefaultEnvironment):
     """
     A class with common setup and teardown methods
@@ -173,24 +148,12 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
 
     spm = None
     snapshot_description = 'test_snap'
-
-    def setUp(self):
-        """
-        Creating all possible combinations of disks for test
-        """
-        super(DefaultSnapshotEnvironment, self).setUp()
-        self.prepare_disks_for_vm(read_only=True)
-
-        logger.info("Adding new snapshot %s", self.snapshot_description)
-        assert ll_vms.addSnapshot(
-            True, self.vm_name, self.snapshot_description
-        )
+    read_only = True
 
 
-@bz({'1390498': {}})
 class TestCase4906(DefaultEnvironment):
     """
-    Attach a read-only disk to vm and try to write to the disk
+    Attach a read-only disk to VM and try to write to the disk
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
     """
@@ -199,6 +162,7 @@ class TestCase4906(DefaultEnvironment):
 
     @polarion("RHEVM3-4906")
     @attr(tier=2)
+    @bz({'1390498': {}})
     def test_attach_RO_disk(self):
         """
         - VM with OS
@@ -209,12 +173,12 @@ class TestCase4906(DefaultEnvironment):
         """
         self.prepare_disks_for_vm(read_only=True)
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
+        helpers.write_on_vms_ro_disks(self.vm_name)
 
 
 class TestCase4907(BaseTestCase):
     """
-    Attach a read-only direct LUN disk to vm and try to write to the disk
+    Attach a read-only direct LUN disk to VM and try to write to the disk
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
     """
@@ -253,9 +217,9 @@ class TestCase4907(BaseTestCase):
 
             logger.info("Creating disk %s", disk_alias)
             assert ll_disks.addDisk(True, **direct_lun_args)
-            DISK_NAMES[self.storage].append(disk_alias)
+            self.disk_names[self.storage].append(disk_alias)
 
-            logger.info("Attaching disk %s as read-only disk to vm %s",
+            logger.info("Attaching disk %s as read-only disk to VM %s",
                         disk_alias, self.vm_name)
             status = ll_disks.attachDisk(
                 True, disk_alias, self.vm_name, active=True,
@@ -263,12 +227,18 @@ class TestCase4907(BaseTestCase):
             )
             assert status, "Failed to attach direct lun as read-only"
             ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-            helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
+            helpers.write_on_vms_ro_disks(self.vm_name)
 
 
+@pytest.mark.usefixtures(
+    attach_and_activate_disks.__name__,
+    delete_disks.__name__,
+    detach_disks.__name__,
+    create_second_vm.__name__,
+)
 class TestCase4908(DefaultEnvironment):
     """
-    Attach a read-only shared disk to vm and try to write to the disk
+    Attach a read-only shared disk to VM and try to write to the disk
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
     """
@@ -276,23 +246,8 @@ class TestCase4908(DefaultEnvironment):
     __test__ = ISCSI in opts['storages'] or NFS in opts['storages']
     storages = set([ISCSI, NFS])
     polarion_test_case = '4908'
-    test_vm_name = ''
-
-    def setUp(self):
-        self.shared = True
-        super(TestCase4908, self).setUp()
-        self.prepare_disks_for_vm(read_only=False)
-
-        self.test_vm_name = 'test_%s' % self.polarion_test_case
-        vm_args = config.create_vm_args.copy()
-        vm_args['vmName'] = self.test_vm_name
-        vm_args['storageDomainName'] = self.storage_domains[0]
-
-        logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                "Failed to create vm %s" % self.test_vm_name
-            )
+    shared = True
+    disks_to_remove = []
 
     @polarion("RHEVM3-4908")
     @attr(tier=2)
@@ -303,33 +258,24 @@ class TestCase4908(DefaultEnvironment):
         - Attach VM1 shared disk to VM2 as read-only disk and activate it
         - On VM2, Verify that it's impossible to write to the read-only disk
         """
-        self.prepare_disks_for_vm(read_only=True, vm_name=self.test_vm_name)
-
-        ll_vms.start_vms([self.test_vm_name], 1, wait_for_ip=True)
-        for disk in DISK_NAMES[self.storage]:
+        self.prepare_disks_for_vm(read_only=True, vm_name=self.vm_name_2)
+        ll_vms.start_vms([self.vm_name, self.vm_name_2], 1, wait_for_ip=True)
+        for disk in self.disk_names:
             logger.info("Trying to write to read-only disk %s", disk)
             state, out = storage_helpers.perform_dd_to_disk(
-                self.test_vm_name, disk
+                self.vm_name_2, disk
             )
             status = (not state) and (READ_ONLY in out or NOT_PERMITTED in out)
             assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
-    def tearDown(self):
-        if not ll_vms.safely_remove_vms([self.test_vm_name]):
-            logger.error(
-                "Failed to stop and remove vm %s" % self.test_vm_name
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase4908, self).tearDown()
-        for disk in DISK_NAMES[self.storage]:
-            if not ll_disks.deleteDisk(True, disk):
-                logger.error("Failed to remove disk %s", disk)
-                BaseTestCase.test_failed = True
-        BaseTestCase.teardown_exception()
 
-
-@bz({'1390498': {}})
+@pytest.mark.usefixtures(
+    attach_and_activate_disks.__name__,
+    delete_disks.__name__,
+    detach_disks.__name__,
+    create_second_vm.__name__,
+)
 class TestCase4909(DefaultEnvironment):
     """
     Verifies that read-only shared disk is persistent after snapshot is
@@ -342,80 +288,57 @@ class TestCase4909(DefaultEnvironment):
     storages = set([ISCSI, NFS])
     polarion_test_case = '4909'
     snapshot_description = 'test_snap'
-    test_vm_name = ''
-
-    def setUp(self):
-        self.shared = True
-        super(TestCase4909, self).setUp()
-
-        self.prepare_disks_for_vm(read_only=False)
-
-        self.test_vm_name = 'test_%s' % self.polarion_test_case
-        vm_args = config.create_vm_args.copy()
-        vm_args['vmName'] = self.test_vm_name
-        vm_args['storageDomainName'] = self.storage_domains[0]
-
-        logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException("Failed to create vm %s"
-                                         % self.test_vm_name)
+    shared = True
+    disks_to_remove = []
 
     @polarion("RHEVM3-4909")
     @attr(tier=2)
+    @bz({'1390498': {}})
     def test_RO_persistent_after_snapshot_creation_to_a_shared_disk(self):
         """
         - 2 VMs with OS
         - On one of the VM, create a second shared disk
-        - Attach the shared disk also to the second vm as read-only
+        - Attach the shared disk also to the second VM as read-only
         - Check that the disk is actually read-only for the second VM
         - Create a snapshot to the first VM that sees the disk as RW
         - Check that the disk is still read-only for the second VM
         """
-        self.prepare_disks_for_vm(read_only=True, vm_name=self.test_vm_name)
-        ro_vm_disks = not_bootable(self.test_vm_name)
+        self.prepare_disks_for_vm(read_only=True, vm_name=self.vm_name_2)
+        ro_vm_disks = not_bootable(self.vm_name_2)
         rw_vm_disks = not_bootable(self.vm_name)
 
         for ro_disk, rw_disk in zip(ro_vm_disks, rw_vm_disks):
             logger.info(
-                'check if disk %s is visible as read-only to vm %s'
-                % (ro_disk.get_alias(), self.test_vm_name)
+                "check if disk %s is visible as read-only to VM %s",
+                ro_disk.get_alias(), self.vm_name_2
             )
-            is_read_only = ro_disk.get_read_only()
+            is_read_only = ll_disks.get_read_only(
+                self.vm_name_2, ro_disk.get_id()
+            )
             assert is_read_only, (
-                "Disk %s is not visible to vm %s as read-only disk"
-                % (ro_disk.get_alias(), self.test_vm_name)
+                "Disk %s is not visible to VM %s as read-only disk"
+                % (ro_disk.get_alias(), self.vm_name_2)
             )
         logger.info("Adding new snapshot %s", self.snapshot_description)
         assert ll_vms.addSnapshot(
             True, self.vm_name, self.snapshot_description
         )
-        ro_vm_disks = not_bootable(self.test_vm_name)
+        ro_vm_disks = not_bootable(self.vm_name_2)
         rw_vm_disks = not_bootable(self.vm_name)
 
         for ro_disk, rw_disk in zip(ro_vm_disks, rw_vm_disks):
             logger.info(
-                'check if disk %s is still visible as read-only to vm %s'
-                ' after snapshot was taken', ro_disk.get_alias(),
-                self.test_vm_name
+                "check if disk %s is still visible as read-only to VM %s"
+                " after snapshot was taken", ro_disk.get_alias(),
+                self.vm_name_2
             )
-            is_read_only = ro_disk.get_read_only()
+            is_read_only = ll_disks.get_read_only(
+                self.vm_name_2, ro_disk.get_id()
+            )
             assert is_read_only, (
-                "Disk %s is not visible to vm %s as read-only disk" %
-                (ro_disk.get_alias(), self.test_vm_name)
+                "Disk %s is not visible to VM %s as read-only disk" %
+                (ro_disk.get_alias(), self.vm_name_2)
             )
-
-    def tearDown(self):
-        if not ll_vms.safely_remove_vms([self.test_vm_name]):
-            logger.error(
-                "Failed to stop and remove vm %s" % self.test_vm_name
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase4909, self).tearDown()
-        for disk in DISK_NAMES[self.storage]:
-            if not ll_disks.deleteDisk(True, disk):
-                logger.error("Failed to remove disk %s", disk)
-                BaseTestCase.test_failed = True
-        BaseTestCase.teardown_exception()
 
 
 class TestCase4910(BaseTestCase):
@@ -442,7 +365,7 @@ class TestCase4910(BaseTestCase):
           to read-only
         - Activate the disk
         """
-        DISK_NAMES[self.storage] = (
+        self.disk_names = (
             storage_helpers.create_disks_from_requested_permutations(
                 domain_to_use=self.storage_domain,
                 test_name=self.polarion_test_case
@@ -490,6 +413,12 @@ class TestCase4912(BaseTestCase):
         """
 
 
+@pytest.mark.skip(
+    reason="rrmngmnt Firewall module which is used in this case not merged yet"
+)
+@pytest.mark.usefixtures(
+    unblock_connectivity_storage_domain_teardown.__name__,
+)
 class TestCase4913(DefaultEnvironment):
     """
     Block connectivity from vdsm to the storage domain
@@ -507,6 +436,7 @@ class TestCase4913(DefaultEnvironment):
 
     @polarion("RHEVM3-4913")
     @attr(tier=4)
+    @bz({'1431432': {}})
     def test_RO_persistent_after_block_connectivity_to_storage(self):
         """
         - VM with OS
@@ -515,7 +445,8 @@ class TestCase4913(DefaultEnvironment):
         - Write to the disk from the guest, it shouldn't be allowed
         - Block connectivity from vdsm to the storage domain
           where the VM disk is located
-        - VM should enter to 'paused' state
+        - VM should enter to 'paused' state if the storage type is iscsi
+          and to 'not responding' state if the storage type is nfs
         - Resume connectivity to the storage and wait for the
           VM to start again
         - Write to the disk from the guest, it shouldn't be allowed
@@ -523,7 +454,7 @@ class TestCase4913(DefaultEnvironment):
         self.prepare_disks_for_vm(read_only=True)
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        for disk in DISK_NAMES[self.storage]:
+        for disk in self.disk_names:
             logger.info("Trying to write to read-only disk %s", disk)
             state, out = storage_helpers.perform_dd_to_disk(
                 self.vm_name, disk
@@ -543,32 +474,49 @@ class TestCase4913(DefaultEnvironment):
             "Found IP %s for storage domain %s",
             self.storage_domain_ip, storage_domain_name
         )
-        vm_host = ll_hosts.get_vm_host(vm_name=self.vm_name)
+
+        vm_host = ll_hosts.get_vm_host(self.vm_name)
         assert vm_host, "Failed to get VM: %s hoster" % self.vm_name
-        self.host_ip = ll_hosts.get_host_ip(host=vm_host)
+        self.host_ip = ll_hosts.get_host_ip(vm_host)
         logger.info("Blocking connection from vdsm to storage domain")
-        status = blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
+        status = rhevm_helpers.config_iptables_connection(
+            self.host_ip, self.storage_domain_ip, block=True
         )
+
         assert status, "Blocking connection from %s to %s failed" % (
             (self.host_ip, self.storage_domain_ip)
         )
         if status:
             self.blocked = True
 
-        assert ll_vms.waitForVMState(self.vm_name, state=config.VM_PAUSED)
+        # BZ 1431432: When blocking connection from VM's host to the storage
+        # domain where the VM's disks are located, VM is paused. except when
+        # the storage domain is NFS, in this case the VM becomes not responding
+        if self.storage in [
+            config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_FCP,
+            config.STORAGE_TYPE_GLUSTER
+        ]:
+            assert ll_vms.waitForVMState(
+                self.vm_name, state=config.VM_PAUSED
+            ), "Timeout when waiting for VM %s in status %s" % (
+                self.vm_name, config.VM_PAUSED
+            )
+        elif self.storage == config.STORAGE_TYPE_NFS:
+            assert ll_vms.waitForVMState(
+                self.vm_name, state=config.VM_NOT_RESPONDING
+            ), "Timeout when waiting for VM %s in status %s" % (
+                self.vm_name, config.VM_NOT_RESPONDING
+            )
 
         logger.info("Unblocking connection from vdsm to storage domain")
-        status = unblockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
+        status = rhevm_helpers.config_iptables_connection(
+            self.host_ip, self.storage_domain_ip, block=False
         )
         if status:
             self.blocked = False
 
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        for disk in DISK_NAMES[self.storage]:
+        for disk in self.disk_names:
             state, out = storage_helpers.perform_dd_to_disk(
                 self.vm_name, disk
             )
@@ -578,36 +526,10 @@ class TestCase4913(DefaultEnvironment):
             assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
-    def tearDown(self):
-        """
-        Unblocking connection in case test fails
-        """
-        if self.blocked:
-            logger.info(
-                "Unblocking connectivity from host %s to storage domain %s",
-                self.host_ip, self.storage_domains[0]
-            )
 
-            logger.info("Unblocking connection from vdsm to storage domain")
-            status = unblockOutgoingConnection(
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-                self.storage_domain_ip
-            )
-
-            if not status:
-                logger.error(
-                    "Failed to unblock connectivity from host %s to "
-                    "storage domain %s", (self.host, self.storage_domain_ip)
-                )
-                BaseTestCase.test_failed = True
-        super(TestCase4913, self).tearDown()
-        BaseTestCase.teardown_exception()
-
-
-@bz({'1390498': {}})
 class TestCase4914(DefaultEnvironment):
     """
-    Migrate a vm with read-only disk, and check the disk is still
+    Migrate a VM with read-only disk, and check the disk is still
     visible as read-only
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
@@ -618,6 +540,7 @@ class TestCase4914(DefaultEnvironment):
 
     @polarion("RHEVM3-4914")
     @attr(tier=3)
+    @bz({'1390498': {}})
     def test_migrate_vm_with_RO_disk(self):
         """
         - VM with OS
@@ -634,12 +557,11 @@ class TestCase4914(DefaultEnvironment):
         vm_disks = not_bootable(self.vm_name)
         for ro_disk in vm_disks:
             logger.info(
-                'check if disk %s is visible as read-only to vm %s'
+                'check if disk %s is visible as read-only to VM %s'
                 % (ro_disk.get_alias(), self.vm_name)
             )
-            is_read_only = ro_disk.get_read_only()
-            assert is_read_only, (
-                "Disk %s is not visible to vm %s as read-only disk" %
+            assert ll_disks.get_read_only(self.vm_name, ro_disk.get_id()), (
+                "Disk %s is not visible to VM %s as read-only disk" %
                 (ro_disk.get_alias(), self.vm_name)
             )
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -648,20 +570,18 @@ class TestCase4914(DefaultEnvironment):
         vm_disks = not_bootable(self.vm_name)
         for ro_disk in vm_disks:
             logger.info(
-                'check if disk %s is still visible as read-only to vm %s'
+                'check if disk %s is still visible as read-only to VM %s'
                 'after migration', ro_disk.get_alias(), self.vm_name
             )
-            is_read_only = ro_disk.get_read_only()
-            assert is_read_only, (
-                "Disk %s is not visible to vm %s as Read Only disk" %
+            assert ll_disks.get_read_only(self.vm_name, ro_disk.get_id()), (
+                "Disk %s is not visible to VM %s as read-only disk" %
                 (ro_disk.get_alias(), self.vm_name)
             )
 
 
-@bz({'1390498': {}})
 class TestCase4915(DefaultEnvironment):
     """
-    Checks that suspending a vm with read-only disk shouldn't
+    Checks that suspending a VM with read-only disk shouldn't
     change disk configuration
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
@@ -671,6 +591,7 @@ class TestCase4915(DefaultEnvironment):
 
     @polarion("RHEVM3-4915")
     @attr(tier=3)
+    @bz({'1390498': {}})
     def test_RO_disk_persistent_after_suspend_the_vm(self):
         """
         - VM with OS
@@ -684,14 +605,17 @@ class TestCase4915(DefaultEnvironment):
         self.prepare_disks_for_vm(read_only=True)
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         assert ll_vms.waitForVMState(self.vm_name)
-        logger.info("Suspending vm %s", self.vm_name)
+        logger.info("Suspending VM %s", self.vm_name)
         ll_vms.suspendVm(True, self.vm_name)
-        logger.info("Re activating vm %s", self.vm_name)
+        logger.info("Re activating VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
-        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
+        helpers.write_on_vms_ro_disks(self.vm_name)
 
 
-@bz({'1390498': {}})
+@pytest.mark.usefixtures(
+    remove_vm_from_export_domain.__name__,
+    remove_vms.__name__,
+)
 class TestCase4917(DefaultEnvironment):
     """
     Import more than once VM with read-only disk, and verify that it's
@@ -703,17 +627,17 @@ class TestCase4917(DefaultEnvironment):
     polarion_test_case = '4917'
     imported_vm_1 = 'imported_vm_1'
     imported_vm_2 = 'imported_vm_2'
-    export_domain = ''
+    vm_names = [imported_vm_1, imported_vm_2]
+    export_domain = ll_sd.findExportStorageDomains(
+        config.DATA_CENTER_NAME
+    )[0]
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
     # Same issue happens after the vm is imported
-
-    def setUp(self):
-        self.deep_copy = True
-        super(TestCase4917, self).setUp()
+    deep_copy = True
 
     @polarion("RHEVM3-4917")
     @attr(tier=3)
-    @bz({'1309788': {}})
+    @bz({'1309788': {}, '1390498': {}})
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
         - VM with OS
@@ -729,10 +653,6 @@ class TestCase4917(DefaultEnvironment):
         logger.info("Setting persistent network configuration")
         seal_vm(self.vm_name, config.VM_PASSWORD)
 
-        self.export_domain = ll_sd.findExportStorageDomains(
-            config.DATA_CENTER_NAME
-        )[0]
-
         logger.info("Exporting vm %s", self.vm_name)
         self.vm_exported = ll_vms.exportVm(
             True, self.vm_name, self.export_domain
@@ -742,7 +662,7 @@ class TestCase4917(DefaultEnvironment):
             "Importing vm %s as %s", self.vm_name, self.imported_vm_1
         )
         assert ll_vms.importVm(
-            True, self.vm_name, self.export_domain, self.storage_domains[0],
+            True, self.vm_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME, name=self.imported_vm_1
         )
         ll_vms.start_vms(
@@ -754,40 +674,16 @@ class TestCase4917(DefaultEnvironment):
             "Importing vm %s as %s", self.vm_name, self.imported_vm_2
         )
         assert ll_vms.importVm(
-            True, self.vm_name, self.export_domain, self.storage_domains[0],
+            True, self.vm_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME, name=self.imported_vm_2
         )
         ll_vms.start_vms(
             [self.imported_vm_2], max_workers=1, wait_for_ip=True
         )
-        helpers.write_on_vms_ro_disks(
-            self.imported_vm_1, self.storage, imported_vm=True
-        )
-        helpers.write_on_vms_ro_disks(
-            self.imported_vm_2, self.storage, imported_vm=True
-        )
-
-    def tearDown(self):
-        vm_list = filter(
-            ll_vms.does_vm_exist, [self.imported_vm_1, self.imported_vm_2]
-        )
-        if not ll_vms.safely_remove_vms(vm_list):
-            logger.error("Failed to stop and remove vms %s" % vm_list)
-            BaseTestCase.test_failed = True
-        if self.vm_exported and not ll_vms.remove_vm_from_export_domain(
-                True, vm=self.vm_name, datacenter=config.DATA_CENTER_NAME,
-                export_storagedomain=self.export_domain
-        ):
-            logger.error(
-                "Failed to remove vm %s from export domain %s",
-                self.imported_vm, self.export_domain
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase4917, self).tearDown()
-        BaseTestCase.teardown_exception()
+        helpers.write_on_vms_ro_disks(self.imported_vm_1)
+        helpers.write_on_vms_ro_disks(self.imported_vm_2)
 
 
-@bz({'1390498': {}})
 class TestCase4918(DefaultSnapshotEnvironment):
     """
     Check that the read-only disk is part of vm snapshot, and also
@@ -806,6 +702,7 @@ class TestCase4918(DefaultSnapshotEnvironment):
     )
     @polarion("RHEVM3-4918")
     @attr(tier=2)
+    @bz({'1390498': {}})
     def test_preview_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -830,26 +727,9 @@ class TestCase4918(DefaultSnapshotEnvironment):
             [self.snapshot_description],
         )
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
-
-    def tearDown(self):
-        ll_vms.stop_vms_safely([self.vm_name])
-        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
-        if self.create_snapshot:
-            logger.info("Undoing snapshot %s", self.snapshot_description)
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                logger.error("Error undoing snapshot snapshot preview for %s",
-                             self.vm_name)
-                BaseTestCase.test_failed = True
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-
-        super(TestCase4918, self).tearDown()
-        BaseTestCase.teardown_exception()
+        helpers.write_on_vms_ro_disks(self.vm_name)
 
 
-@bz({'1390498': {}})
 class TestCase4919(DefaultSnapshotEnvironment):
     """
     Check that the read-only disk is part of vm snapshot, and the disk
@@ -865,6 +745,7 @@ class TestCase4919(DefaultSnapshotEnvironment):
 
     @polarion("RHEVM3-4919")
     @attr(tier=3)
+    @bz({'1390498': {}})
     def test_preview_and_undo_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -902,25 +783,9 @@ class TestCase4919(DefaultSnapshotEnvironment):
         self.create_snapshot = not status
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
-
-    def tearDown(self):
-        if not ll_vms.stop_vms_safely([self.vm_name]):
-            logger.error("Failed to stop vm %s", self.vm_name)
-            BaseTestCase.test_failed = True
-        if self.create_snapshot:
-            logger.info("Undoing snapshot %s", self.snapshot_description)
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                logger.error("Error undoing snapshot for %s", self.vm_name)
-                BaseTestCase.test_failed = True
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase4919, self).tearDown()
-        BaseTestCase.teardown_exception()
+        helpers.write_on_vms_ro_disks(self.vm_name)
 
 
-@bz({'1390498': {}})
 class TestCase4920(DefaultSnapshotEnvironment):
     """
     Check that the read-only disk is part of vm snapshot, and the disk
@@ -936,6 +801,7 @@ class TestCase4920(DefaultSnapshotEnvironment):
 
     @polarion("RHEVM3-4920")
     @attr(tier=2)
+    @bz({'1390498': {}})
     def test_preview_and_commit_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -954,7 +820,9 @@ class TestCase4920(DefaultSnapshotEnvironment):
             True, self.vm_name, self.snapshot_description
         )
         self.create_snapshot = True
-        assert status
+        assert status, "Failed to preview snapshot %s" % (
+            self.snapshot_description
+        )
         ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
             [self.snapshot_description],
@@ -962,27 +830,14 @@ class TestCase4920(DefaultSnapshotEnvironment):
 
         logger.info("Committing snapshot %s", self.snapshot_description)
         status = ll_vms.commit_snapshot(True, self.vm_name)
-        assert status
+        assert status, "Failed to commit snapshot %s" % (
+            self.snapshot_description
+        )
         self.create_snapshot = not status
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
-
-    def tearDown(self):
-        ll_vms.stop_vms_safely([self.vm_name])
-        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
-        if self.create_snapshot:
-            logger.info("Undoing snapshot %s", self.snapshot_description)
-            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
-                logger.error("Error undoing snapshot for %s", self.vm_name)
-                BaseTestCase.test_failed = True
-            ll_vms.wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK]
-            )
-        super(TestCase4920, self).tearDown()
-        BaseTestCase.teardown_exception()
+        helpers.write_on_vms_ro_disks(self.vm_name)
 
 
-@bz({'1390498': {}})
 class TestCase4921(DefaultSnapshotEnvironment):
     """
     Checks that deleting a snapshot with read-only disk shouldn't effect
@@ -997,6 +852,7 @@ class TestCase4921(DefaultSnapshotEnvironment):
 
     @polarion("RHEVM3-4921")
     @attr(tier=3)
+    @bz({'1390498': {}, '1450866': {}})
     def test_delete_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1020,9 +876,12 @@ class TestCase4921(DefaultSnapshotEnvironment):
             (self.snapshot_description, self.vm_name)
         )
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
-        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
+        helpers.write_on_vms_ro_disks(self.vm_name)
 
 
+@pytest.mark.usefixtures(
+    remove_vms.__name__,
+)
 class TestCase4922(DefaultEnvironment):
     """
     Checks that a cloned vm from a snapshot with read-only disk shouldn't
@@ -1035,10 +894,11 @@ class TestCase4922(DefaultEnvironment):
     snapshot_description = 'test_snap'
     cloned = False
     cloned_vm_name = 'cloned_vm'
+    vm_names = [cloned_vm_name]
 
     @polarion("RHEVM3-4922")
     @attr(tier=2)
-    @bz({'1201268': {}})
+    @bz({'1201268': {}, '1435967': {}})
     def test_clone_vm_from_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1062,7 +922,8 @@ class TestCase4922(DefaultEnvironment):
         )
         status = ll_vms.cloneVmFromSnapshot(
             True, name=self.cloned_vm_name, snapshot=self.snapshot_description,
-            cluster=config.CLUSTER_NAME, vm=self.vm_name
+            cluster=config.CLUSTER_NAME, vm=self.vm_name, sparse=None,
+            vol_format=None,
         )
         if status:
             self.cloned = True
@@ -1080,20 +941,12 @@ class TestCase4922(DefaultEnvironment):
             assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
-    def tearDown(self):
-        if self.cloned:
-            if not ll_vms.removeVm(
-                    True, self.cloned_vm_name, stopVM='true', wait=True
-            ):
-                logger.error(
-                    "Failed to remove cloned vms %s", self.cloned_vm_name
-                )
-                BaseTestCase.test_failed = True
-        super(TestCase4922, self).tearDown()
-        BaseTestCase.teardown_exception()
 
-
-@bz({'1390498': {}})
+@pytest.mark.usefixtures(
+    initialize_template_name.__name__,
+    remove_template.__name__,
+    remove_vms.__name__,
+)
 class TestCase4923(DefaultEnvironment):
     """
     Create 2 VMs from a template with read-only disk in 2 provisioning methods:
@@ -1103,13 +956,13 @@ class TestCase4923(DefaultEnvironment):
     """
     __test__ = True
     polarion_test_case = '4923'
-    template_name = 'test_template'
     cloned_vm_name = 'cloned_vm'
     thin_cloned_vm_name = 'thin_cloned_vm'
-    cloned_vms = [cloned_vm_name, thin_cloned_vm_name]
+    vm_names = [cloned_vm_name, thin_cloned_vm_name]
     cloned = False
 
     @polarion("RHEVM3-4923")
+    @bz({'1390498': {}})
     @attr(tier=2)
     def test_create_vms_from_template_with_RO_disk(self):
         """
@@ -1130,23 +983,24 @@ class TestCase4923(DefaultEnvironment):
         logger.info("creating template %s", self.template_name)
         assert ll_templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name,
-            cluster=config.CLUSTER_NAME, storagedomain=self.storage_domains[0]
+            cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain,
         )
         logger.info("Cloning vm from template")
         self.cloned = ll_vms.cloneVmFromTemplate(
-            True, self.cloned_vm_name, self.template_name, config.CLUSTER_NAME,
-            storagedomain=self.storage_domains[0]
+            True, self.cloned_vm_name, self.template_name,
+            config.CLUSTER_NAME, storagedomain=self.storage_domain
         )
         assert self.cloned, "Failed to clone vm from template"
 
         logger.info("Cloning vm from template as Thin copy")
         self.cloned = ll_vms.cloneVmFromTemplate(
             True, self.thin_cloned_vm_name, self.template_name,
-            config.CLUSTER_NAME, clone=False
+            config.CLUSTER_NAME, clone=False,
+            vol_format=config.VOLUME_FORMAT_COW
         )
         assert self.cloned, "Failed to clone vm from template"
-        ll_vms.start_vms(self.cloned_vms, 2, wait_for_ip=True)
-        for vm in self.cloned_vms:
+        ll_vms.start_vms(self.vm_names, 2, wait_for_ip=True)
+        for vm in self.vm_names:
             cloned_vm_disks = ll_vms.getVmDisks(vm)
             cloned_vm_disks = [
                 disk for disk in cloned_vm_disks if not
@@ -1155,10 +1009,10 @@ class TestCase4923(DefaultEnvironment):
 
             for disk in cloned_vm_disks:
                 logger.info(
-                    'check if disk %s is visible as read-only to vm %s',
+                    "check if disk %s is visible as read-only to vm %s",
                     disk.get_alias(), vm
                 )
-                is_read_only = disk.get_read_only()
+                is_read_only = ll_disks.get_read_only(vm, disk.get_id())
                 assert is_read_only, (
                     "Disk %s is not visible to vm %s as read-only disk"
                     % (disk.get_alias(), vm)
@@ -1168,30 +1022,13 @@ class TestCase4923(DefaultEnvironment):
                 state, out = storage_helpers.perform_dd_to_disk(
                     vm, disk.get_alias(),
                 )
-                status = (not state) and ((READ_ONLY in out) or
-                                          (NOT_PERMITTED in out))
+                status = (not state) and (
+                    (READ_ONLY in out) or (NOT_PERMITTED in out)
+                )
                 assert status, "Write operation to read-only disk succeeded"
                 logger.info("Failed to write to read-only disk")
 
-    def tearDown(self):
-        if self.cloned:
-            if not ll_vms.removeVms(True, self.cloned_vms, stop='true'):
-                logger.error("Failed to remove cloned vms")
-                BaseTestCase.test_failed = True
-        ll_templates.waitForTemplatesStates(self.template_name)
 
-        if not ll_templates.remove_template(
-                True, self.template_name, timeout=TEMPLATE_TIMEOUT
-        ):
-            logger.error(
-                "Failed to remove template %s", self.template_name
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase4923, self).tearDown()
-        BaseTestCase.teardown_exception()
-
-
-@bz({'1390498': {}})
 class TestCase4924(DefaultEnvironment):
     """
     Checks that moving read-only disk to a second storage domain will
@@ -1207,6 +1044,7 @@ class TestCase4924(DefaultEnvironment):
 
     @polarion("RHEVM3-4924")
     @attr(tier=3)
+    @bz({'1390498': {}})
     def test_moving_RO_disk(self):
         """
         - 2 storage domains
@@ -1229,23 +1067,24 @@ class TestCase4924(DefaultEnvironment):
             logger.info(
                 "Trying to write to read-only disk %s...", disk.get_alias(),
             )
-            status = (not state) and (READ_ONLY in out) or (NOT_PERMITTED
-                                                            in out)
+            status = (not state) and (
+                (READ_ONLY in out) or (NOT_PERMITTED in out)
+            )
             assert status, "Write operation to read-only disk succeeded"
             logger.info("Failed to write to read-only disk")
 
         for index, disk in enumerate(ro_vm_disks):
-            logger.info("Unplugging vm disk %s", disk.get_alias())
+            logger.info("Unplugging VM disk %s", disk.get_alias())
             assert ll_vms.deactivateVmDisk(
                 True, self.vm_name, disk.get_alias()
             )
             ll_vms.move_vm_disk(
-                self.vm_name, disk.get_alias(), self.storage_domains[1]
+                self.vm_name, disk.get_alias(), self.storage_domain_1
             )
             ll_disks.wait_for_disks_status(disk.get_alias())
             logger.info("disk %s moved", disk.get_alias())
             vm_disk = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
-            is_disk_ro = vm_disk.get_read_only()
+            is_disk_ro = ll_disks.get_read_only(self.vm_name, disk.get_id())
             assert is_disk_ro, (
                 "Disk %s is not read-only after move to different storage "
                 "domain" % vm_disk.get_alias()
@@ -1274,7 +1113,7 @@ class TestCase4925(DefaultEnvironment):
 
     @polarion("RHEVM3-4925")
     @attr(tier=3)
-    @bz({'1246114': {}})
+    @bz({'1246114': {}, '1390498': {}})
     def test_live_migrate_RO_disk(self):
         """
         - 2 storage domains
@@ -1293,19 +1132,19 @@ class TestCase4925(DefaultEnvironment):
 
         for index, disk in enumerate(ro_vm_disks):
             ll_vms.move_vm_disk(
-                self.vm_name, disk.get_alias(), self.storage_domains[1]
+                self.vm_name, disk.get_alias(), self.storage_domain_1,
             )
+            storage_helpers.wait_for_disks_and_snapshots(self.vm_name)
 
             logger.info("disk %s moved", disk.get_alias())
             vm_disk = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
-            is_disk_ro = vm_disk.get_read_only()
-            assert is_disk_ro, (
-                "Disk %s is not read-only after move "
-                "to different storage domain" % vm_disk.get_alias()
+            assert ll_disks.get_read_only(self.vm_name, disk.get_id()), (
+                "Disk %s is not read-only after move to different storage"
+                "domain" % disk.get_alias()
             )
             logger.info(
-                "Disk %s is read-only after move to different storage domain"
-                % vm_disk.get_alias()
+                "Disk %s is read-only after move to different storage domain",
+                vm_disk.get_alias()
             )
 
 
@@ -1374,7 +1213,7 @@ class TestCase4926(DefaultEnvironment):
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         assert ll_vms.waitForVMState(self.vm_name)
 
-        ll_vms.move_vm_disk(self.vm_name, bootable, self.storage_domains[1])
+        ll_vms.move_vm_disk(self.vm_name, bootable, self.storage_domain_1)
 
 
 class TestCase4930(DefaultEnvironment):
@@ -1398,7 +1237,9 @@ class TestCase4930(DefaultEnvironment):
         - Start the VM again
         """
         self.prepare_disks_for_vm(read_only=True)
-        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
+        ll_vms.start_vms(
+            [self.vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=False
+        )
         logger.info("Killing qemu process")
         self.host = ll_hosts.get_vm_host(vm_name=self.vm_name)
         host_resource = rhevm_helpers.get_host_resource_by_name(
@@ -1408,6 +1249,7 @@ class TestCase4930(DefaultEnvironment):
             resource=host_resource, vm_name=self.vm_name
         )
         assert status, "Failed to kill qemu process"
+        ll_vms.wait_for_vm_states(self.vm_name, states=config.VM_DOWN)
         logger.info("qemu process killed")
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         ro_vm_disks = ll_vms.getVmDisks(self.vm_name)
@@ -1423,7 +1265,9 @@ class TestCase4930(DefaultEnvironment):
             )
             logger.info("Trying to write to read-only disk...")
             status = not state and (READ_ONLY in out or NOT_PERMITTED in out)
-            assert status, "Write operation to read-only disk succeeded"
+            assert status, (
+                "Write operation to read-only disk %s succeeded", disk
+            )
             logger.info("Failed to write to read-only disk")
 
 

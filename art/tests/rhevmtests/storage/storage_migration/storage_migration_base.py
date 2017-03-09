@@ -310,7 +310,7 @@ class TestCase5993(BaseTestCase):
             self.vm_names[1], LIVE_MIGRATION_TIMEOUT,
             ensure_on=config.LIVE_MOVE, target_domain=self.second_domain
         )
-        helpers.wait_for_disks_and_snapshots([self.vm_names[1]])
+        storage_helpers.wait_for_disks_and_snapshots(self.vm_names[1])
 
         testflow.step("Migrate VM %s", self.vm_names[0])
         with pytest.raises(exceptions.DiskException):
@@ -492,8 +492,8 @@ class TestCase5988_before_snapshot(BaseTestCase5988):
             self.vm_name, LIVE_MIGRATION_TIMEOUT, wait=config.LIVE_MOVE,
             ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
-        helpers.wait_for_disks_and_snapshots(
-            [self.vm_name], live_operation=config.LIVE_MOVE
+        storage_helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
         )
         self.verify_lsm(source_sd=self.storage_domain)
         assert self._prepare_snapshots(self.vm_name)
@@ -517,8 +517,8 @@ class TestCase5988_after_snapshot(BaseTestCase5988):
             self.vm_name, LIVE_MIGRATION_TIMEOUT,
             ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
-        helpers.wait_for_disks_and_snapshots(
-            [self.vm_name], live_operation=config.LIVE_MOVE
+        storage_helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
         )
         self.verify_lsm(source_sd=self.storage_domain)
 
@@ -550,8 +550,8 @@ class TestCase5988_while_snapshot(BaseTestCase5988):
             ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
             assert self._prepare_snapshots(self.vm_name, expected_status=False)
             ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
-            helpers.wait_for_disks_and_snapshots(
-                [self.vm_name], live_operation=config.LIVE_MOVE
+            storage_helpers.wait_for_disks_and_snapshots(
+                self.vm_name, live_operation=config.LIVE_MOVE
             )
             assert ll_vms.verify_vm_disk_moved(
                 vm_name=self.vm_name, disk_name=disk,
@@ -963,8 +963,8 @@ class TestCase5970(BaseTestCase):
         )
         if config.LIVE_MOVE:
             p.join()
-        helpers.wait_for_disks_and_snapshots(
-            [self.vm_name], live_operation=config.LIVE_MOVE
+        storage_helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
         )
         assert ll_vms.verify_vm_disk_moved(
             self.vm_name, self.new_disk_name, self.storage_domain, target_sd
@@ -1083,7 +1083,7 @@ class TestCase5967(AllPermutationsDisks):
                 assert ll_vms.stop_vms_safely([self.vm_name]), (
                     "Failed to stop VM %s" % self.vm_name
                 )
-            helpers.wait_for_disks_and_snapshots([self.vm_name])
+            storage_helpers.wait_for_disks_and_snapshots(self.vm_name)
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk)
             actual_size = disk_obj.get_actual_size()
             virtual_size = disk_obj.get_provisioned_size()
@@ -1232,7 +1232,7 @@ class BaseTestCase5977(BaseTestCase):
             self.vm_name, wait=wait, same_type=config.MIGRATE_SAME_TYPE
         )
         if wait:
-            helpers.wait_for_disks_and_snapshots([self.vm_name])
+            storage_helpers.wait_for_disks_and_snapshots(self.vm_name)
         testflow.step("Try to migrate VM %s to another host", self.vm_name)
         status = ll_vms.migrateVm(True, self.vm_name, wait=False)
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
@@ -1493,7 +1493,7 @@ class TestCase6000(BaseTestCase):
             vm_disk, self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.target_sd, self.storage_domain_ip
         )
-        helpers.wait_for_disks_and_snapshots([self.vm_name])
+        storage_helpers.wait_for_disks_and_snapshots([self.vm_name])
         assert not ll_vms.verify_vm_disk_moved(
             self.vm_name, vm_disk, source_sd, self.target_sd
         ),  "Succeded to move disk %s" % vm_disk
@@ -1942,7 +1942,7 @@ class TestCase5966_during_second_lsm(BaseTestCase5966):
             - LSM should fail nicely
         """
         self.basic_flow(wait=True)
-        helpers.wait_for_disks_and_snapshots([self.vm_name])
+        storage_helpers.wait_for_disks_and_snapshots(self.vm_name)
         self.source_sd = ll_disks.get_disk_storage_domain_name(
             self.vm_disk, self.vm_name
         )

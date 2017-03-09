@@ -35,6 +35,7 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 from rrmngmnt import ssh
 from utilities.foremanApi import ForemanActions
 
+
 NFS = config.STORAGE_TYPE_NFS
 GLUSTERFS = config.STORAGE_TYPE_GLUSTER
 GLUSTER_MNT_OPTS = ['-t', 'glusterfs']
@@ -704,3 +705,25 @@ def reboot_hosts():
         config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
         config.WAIT_FOR_SPM_INTERVAL
     ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
+
+
+def config_iptables_connection(
+    source, dest, protocol='all', ports=None, block=True
+):
+    """
+    Blocks or unblocks outgoing connection to an address
+
+    Args:
+        source (str): ip or fqdn of the source machine
+        dest (dict): ip or fqdn of host or hosts to which to prevent traffic
+        protocol (str): affected network protocol, Default is 'all'
+        ports (list): outgoing ports we want to block, default is None
+        block (bool): True for blocking outgoing connections, False for
+            unblocking
+
+    Returns:
+        bool: True if commands successed, False otherwise
+
+    """
+    # TODO: Add Firewall object and config_firewall function after Firewall
+    # module is merged into rrmngmnt

@@ -8,6 +8,9 @@ VM_NAME = "{0}_vm_%s".format(TEST_NAME)
 
 VM_COUNT = 2
 
+DISK_NAMES = dict()  # dictionary with storage type as key
+DISK_TIMEOUT = 600
+
 # allocation policies
 SPARSE = True
 DIRECT_LUNS = UNUSED_LUNS

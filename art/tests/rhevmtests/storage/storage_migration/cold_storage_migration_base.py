@@ -9,7 +9,6 @@ import os
 import logging
 import pytest
 import config
-import helpers
 import shlex
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
@@ -81,8 +80,8 @@ class ColdMoveBase(StorageTest):
                 ll_vms.migrate_vm_disk(
                     vm_name=vm, disk_name=disk_name, target_sd=target_sd
                 )
-                helpers.wait_for_disks_and_snapshots(
-                    [self.vm_name], live_operation=config.LIVE_MOVE
+                storage_helpers.wait_for_disks_and_snapshots(
+                    self.vm_name, live_operation=config.LIVE_MOVE
                 )
                 testflow.step(
                     "Verify disk %s of VM %s moved to %s",
@@ -237,8 +236,8 @@ class BaseKillSpmVdsm(basePlan.BaseTestCase, ColdMoveBase):
             "Wait for command %s to appear on the engine log file", self.regex
         )
         t.join()
-        helpers.wait_for_disks_and_snapshots(
-           [self.vm_name], live_operation=config.LIVE_MOVE
+        storage_helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
         )
         testflow.step(
             "Verify migration %s after kill SPM VDSM process",
@@ -356,8 +355,8 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
             config.WAIT_FOR_SPM_INTERVAL
         ), 'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
 
-        helpers.wait_for_disks_and_snapshots(
-            [self.vm_name], live_operation=config.LIVE_MOVE
+        storage_helpers.wait_for_disks_and_snapshots(
+            self.vm_name, live_operation=config.LIVE_MOVE
         )
 
         unsatisfied_disks = self.verify_cold_move(
@@ -520,8 +519,8 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
         ), "Failed to unblock connection from host %s to %s" % (
             self.host_ip, target
         )
-        helpers.wait_for_disks_and_snapshots(
-              [self.vm_name], live_operation=config.LIVE_MOVE
+        storage_helpers.wait_for_disks_and_snapshots(
+              self.vm_name, live_operation=config.LIVE_MOVE
         )
         unsetisfied_disks = self.verify_cold_move(
             source_sd=self.storage_domain, moved=migration_succeed
@@ -688,7 +687,7 @@ class TestCase19012(ColdMoveBase):
                 vm, wait=False, same_type=config.MIGRATE_SAME_TYPE,
                 ensure_on=config.LIVE_MOVE, target_domain=target_sd
             )
-        helpers.wait_for_disks_and_snapshots(
+        storage_helpers.wait_for_disks_and_snapshots(
             vms_to_wait_for=vms_names, live_operation=config.LIVE_MOVE
         )
         assert not self.verify_cold_move(source_sd=self.storage_domain)
@@ -907,7 +906,9 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
             ensure_on=config.LIVE_MOVE, target_domain=target_sd
         )
-        helpers.wait_for_disks_and_snapshots([self.vm_name], config.LIVE_MOVE)
+        storage_helpers.wait_for_disks_and_snapshots(
+            self.vm_name, config.LIVE_MOVE
+        )
 
         testflow.step(
             "Preview VM %s snapshot %s", self.vm_name,
@@ -917,8 +918,8 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
             positive=True, vm=self.vm_name,
             description=self.snapshot_description
         ), "Failed to preview snapshot %s" % self.snapshot_description
-        assert not self.verify_cold_move(source_sd=self.storage_domain)
 
+        assert not self.verify_cold_move(source_sd=self.storage_domain)
         assert self.check_files_after_operation()
 
         testflow.step("Stop VM %s", self.vm_name)

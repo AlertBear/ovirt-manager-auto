@@ -815,27 +815,44 @@ def remove_storage_domains(
     return True
 
 
-def getDomainAddress(positive, storageDomain):
-    '''
-    Description: find the address of a storage domain
-    Author: gickowic
-    Parameters:
-       * storageDomain - storage domain name
-    return: address of the storage domain, empty string if name not found
-    '''
+def getDomainAddress(positive, storage_domain):
+    """
+    Find the address of a storage domain
+
+       Args:
+           positive (bool): Represents if the call for this function is
+                positive or negative
+           storage_domain (str): Storage domain name
+
+       Returns:
+           tuple: bool for positive or negative and dictionary with key
+                'address' of storage domain and list of ip's in the value
+
+       Raises:
+           EntityNotFound: In case storage domain entity is not found
+
+    """
 
     # Get the storage domain object
     try:
-        storageDomainObject = get_storage_domain_obj(storageDomain)
-
         # Check for iscsi storage domain
-        if storageDomainObject.get_storage().get_type() == 'iscsi':
+        if get_storage_domain_storage_type(storage_domain) == 'iscsi':
             # Return the address of the first LUN of the domain
-            return positive, {'address': storageDomainObject.get_storage(
-            ).get_volume_group().get_logical_units(
-            ).get_logical_unit()[0].get_address()}
+            logical_units = get_storage_domain_logical_units(storage_domain)
+            return positive, {
+                'address': [
+                    logical_units[x].get_address() for x in range(
+                        len(logical_units)
+                    )
+                ]
+            }
         return positive, {
-            'address': storageDomainObject.get_storage().get_address()}
+            'address': [
+                get_storage_domain_obj(
+                    storage_domain
+                ).get_storage().get_address()
+            ]
+        }
 
     except EntityNotFound:
         return not positive, {'address': ''}

@@ -13,7 +13,7 @@ FILE_HANDLER_TIMEOUT = 15
 
 def setupIptables(source, userName, password, dest, command, chain,
                   target, protocol='all', persistently=False, *ports):
-    """Wrapper for utilities.machine.setupIptables() method."""
+    """Wrapper for resources.storage.set_ipatbles() method"""
     hostObj = machine.Machine(source, userName, password).util('linux')
     return hostObj.setupIptables(dest, command, chain, target,
                                  protocol, persistently, *ports)

@@ -489,6 +489,7 @@ VM_SAVING = ENUMS['vm_state_saving_state']
 VM_WAIT_FOR_LAUNCH = ENUMS['vm_state_wait_for_launch']
 VM_POWERING_UP = ENUMS['vm_state_powering_up']
 VM_HOST_PASS_THROUGH = 'host_passthrough'
+VM_NOT_RESPONDING = ENUMS['vm_state_not_responding']
 
 # VM types
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
