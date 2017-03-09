@@ -170,17 +170,36 @@ SNAPSHOT_DESCRIPTION = ['snapshot_1', 'snapshot_2']
 
 BASE_VM_VIRT = "base_vm_virt"
 
-# Windows
+# Windows #
+# OS types
+WIN_10_OS = 'windows_10_64B'
+WIN_2012_R2_64B_OS = 'windows_2012_R2_64B'
+WIN_7_64B_OS = 'windows_7_64B'
+
 DEFAULT_FILE_CONTENT = "line 1: test\n line 2: test"
 DEFAULT_FILE_NAME = "test.txt"
-WIN_USER = 'Administrator'
+WIN_ADMIN_USER = 'Administrator'
+WIN_QE_USER = 'QE'
 WIN_PASSWORD = 'Heslo123'
 SYSTEM_PATH = "c:\\windows\\system32\\"
 SEAL_COMMAND = (
-    "{0}sysprep.exe /generalize /shutdown /oobe".format(SYSTEM_PATH)
+    "{0}Sysprep\\sysprep.exe /generalize /oobe /shutdown /quiet".format(
+        SYSTEM_PATH
+    )
 )
 TMP_PATH = 'C:\\Windows\\Temp\\'
 SYSTEM_INFO_NAMES = [
     "Host Name", "Product ID", "System Locale", "Input Locale", "Time Zone",
     "Domain"
 ]
+
+# Sysprep files under(/usr/share/ovirt-engine/conf/sysprep) at the engine:
+SYSPREP_FILE_ENG_PATH = "/usr/share/ovirt-engine/conf/sysprep"
+WINDOWS_10_SYSPREP_FILE = "sysprep.w10x64"
+WINDOWS_2012R2_SYSPREP_FILE = "sysprep.2k12x64"
+WINDOWS_7_SYSPREP_FILE = "sysprep.w7x64"
+WIN_OS_TO_SYSPREP_FILE = {
+    WIN_10_OS: WINDOWS_10_SYSPREP_FILE,
+    WIN_2012_R2_64B_OS: WINDOWS_2012R2_SYSPREP_FILE,
+    WIN_7_64B_OS: WINDOWS_7_SYSPREP_FILE
+}

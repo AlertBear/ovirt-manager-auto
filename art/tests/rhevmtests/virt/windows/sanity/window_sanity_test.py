@@ -12,32 +12,26 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import rhevmtests.virt.helper as virt_helper
 import rhevmtests.virt.windows.config as config
-import rhevmtests.virt.windows.windows_helper as helper
-from rhevmtests.fixtures import (
-    start_vm
-)
+import rhevmtests.virt.windows.helper as helper
 from rhevmtests.virt.windows.fixtures import (
     create_windows_vms,
     remove_vm_from_storage_domain,
     stop_vms,
-    update_cluster  # flake8: noqa
+    update_cluster,     # flake8: noqa
+    set_product_keys,    # flake8: noqa
 )
 
 
 @attr(tier=3)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
-    create_windows_vms.__name__, start_vm.__name__,
-    remove_vm_from_storage_domain.__name__
+    create_windows_vms.__name__, remove_vm_from_storage_domain.__name__
 )
-class WindowsSanityTest01(VirtTest):
+class TestWindowsSanity01(VirtTest):
     """
     Case 1: Migrate Windows VM test
     Case 2: Snapshot test
     """
-    __test__ = True
-    vm_name = config.WINDOWS_VM_NAMES
-    start_vms_dict = config.VM_START_STOP_SETTINGS
     master_domain, export_domain, non_master_domain = (
         virt_helper.get_storage_domains()
     )
@@ -71,12 +65,12 @@ class WindowsSanityTest01(VirtTest):
 @attr(tier=3)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(create_windows_vms.__name__)
-class WindowsSanityTest02(VirtTest):
+class TestWindowsSanity02(VirtTest):
     """
     VM action testing with Windows VMs
     """
 
-    __test__ = True
+    start_vm = False
 
     @polarion("RHEVM-18239")
     @pytest.mark.usefixtures(stop_vms.__name__)

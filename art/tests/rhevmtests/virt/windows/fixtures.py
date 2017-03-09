@@ -4,14 +4,33 @@
 Fixtures module for Windows testing
 """
 import pytest
-from art.unittest_lib import testflow
+import config
+import helper
+import rhevmtests.virt.helper as virt_helper
+import rhevmtests.virt.windows.helper as win_helper
+from art import test_handler
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
-    disks as ll_disks,
-    clusters as ll_cluster
+    clusters as ll_cluster,
+    templates as ll_templates
 )
-import rhevmtests.virt.helper as virt_helper
-import config
+from art.unittest_lib import testflow
+
+test_handler.find_test_file.__test__ = False
+
+
+@pytest.fixture(scope="module")
+def remove_seal_templates(request):
+    """
+    Remove seal templates
+    """
+
+    def fin():
+        ll_templates.remove_templates(
+            positive=True, templates=config.WINDOWS_SEAL_TEMPLATES
+        )
+
+    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="module")
@@ -51,47 +70,86 @@ def update_cluster(request):
 
 
 @pytest.fixture(scope="module")
-def create_windows_vms(request, update_cluster):
+def set_product_keys(request):
     """
-    Init Window module
-    Setup: Create windows VMs: win_7, win_10, win2012
+    Set windows product keys
+    Setup: Copy product keys file to engine and restart engine
+    TearDown: Remove product keys file from engine and restart engine
+    """
+
+    def fin():
+        """
+        Remove product keys file from engine and restart engine
+        """
+        testflow.teardown(
+            "Remove product keys file from engine and restart engine"
+        )
+        assert config.ENGINE_HOST.fs.remove(
+            path=config.REMOTE_KEY_PRODUCT_FILE
+        )
+        config.ENGINE.restart()
+
+    request.addfinalizer(fin)
+    if config.ENGINE_HOST.fs.exists(path=config.REMOTE_KEY_PRODUCT_FILE):
+        assert config.ENGINE_HOST.fs.remove(
+            path=config.REMOTE_KEY_PRODUCT_FILE
+        )
+    testflow.setup("Copy product keys file to engine and restart engine")
+    config.ENGINE_HOST.fs.put(
+        path_src=test_handler.find_test_file(
+            path=config.LOCAL_KEY_PRODUCT_FILE
+        ), path_dst=config.REMOTE_KEY_PRODUCT_FILE
+    )
+    config.ENGINE.restart()
+
+
+@pytest.fixture(scope='class')
+def create_windows_vms(request, update_cluster, set_product_keys):
+    """
+    Setup: Create and start windows VMs according to vms list, and start vm
+    by demand
     Teardown: Remove all VMs
     """
+    start_vm = getattr(request.cls, "start_vm", True)
+    vms_name = getattr(request.cls, "vms_name", config.WINDOWS_VM_NAMES)
 
     def fin():
         """
         Remove all windows VM
         """
-        testflow.teardown("Remove windows VMS %s", config.WINDOWS_VM_NAMES)
-        ll_vms.safely_remove_vms(config.WINDOWS_VM_NAMES)
+        testflow.teardown("Remove windows VMS %s", vms_name)
+        ll_vms.safely_remove_vms(vms_name)
 
     request.addfinalizer(fin)
-    testflow.setup("Create Windows VMS %s", config.WINDOWS_VM_NAMES)
-    windows_templates_names = [
-        config.TEMPLATE_NAME[1], config.TEMPLATE_NAME[2],
-        config.TEMPLATE_NAME[3]
-    ]
-    for vm_name, template_name in zip(
-        config.WINDOWS_VM_NAMES, windows_templates_names
-    ):
-        assert virt_helper.create_vm_from_template(
-            vm_name=vm_name,
-            cluster=config.CLUSTER_NAME[0],
-            template=template_name,
-            vm_parameters=config.VM_PARAMETERS[vm_name]
-        )
-        if vm_name == config.WINDOWS_2012:
-            testflow.setup("update disk interface to IDE for windows 2012")
-            first_disk_id = ll_disks.getObjDisks(
-                name=vm_name, get_href=False
-            )[0].id
-            assert ll_disks.updateDisk(
-                positive=True,
-                vmName=vm_name,
-                id=first_disk_id,
-                bootable=True,
-                interface=config.INTERFACE_IDE
-            )
+    win_helper.create_and_start_windows_vm(
+        template_names=helper.get_windows_templates(vms=vms_name),
+        vms_names=vms_name, start_vm=start_vm
+    )
+
+
+@pytest.fixture(scope='class')
+def create_windows_vms_from_sealed_template(
+    request, update_cluster, set_product_keys, remove_seal_templates
+):
+    """
+    Init windows case
+    Setup: Create and windows vm from sealed template
+    Teardown: Remove VMs
+    """
+    vms = config.WINDOWS_SEAL_VMS
+
+    def fin():
+        """
+        Remove windows VM
+        """
+        testflow.teardown("Remove windows VMS %s", vms)
+        ll_vms.safely_remove_vms(vms)
+
+    request.addfinalizer(fin)
+    win_helper.create_and_start_windows_vm(
+        template_names=config.WINDOWS_SEAL_TEMPLATES,
+        vms_names=vms, start_vm=False
+    )
 
 
 @pytest.fixture()
@@ -130,26 +188,52 @@ def stop_vms(request):
     request.addfinalizer(fin)
 
 
-@pytest.fixture(scope="class")
-def start_windows_vms(request):
+@pytest.fixture()
+def update_sysprep_with_custom_file(request):
     """
-    Start/Stop VM's
+    1. Update sysprep with custom file
+    2. Run VM
     """
-    vms = config.WINDOWS_VM_NAMES
-    wait_for_ip = getattr(request.cls, "wait_for_ip", False)
 
-    def fin():
-        """
-        Stop VM's
-        """
-        testflow.teardown("Stop vms %s", vms)
-        ll_vms.stop_vms_safely(vms_list=vms)
+    vm_name = request.getfixturevalue('vm_name')
+    os_type = request.getfixturevalue('os_type')
+    win_version = request.getfixturevalue('win_version')
 
-    request.addfinalizer(fin)
-    testflow.setup("Start vms %s and wait for IP", vms)
-    ll_vms.start_vms(
-        vm_list=vms,
-        wait_for_ip=wait_for_ip,
-        wait_for_status=config.VM_UP,
-        max_workers=3
+    testflow.setup("Create sysprep file")
+    custom_script = helper.init_sysprep_file(
+        windows_version=win_version, os_type=os_type
     )
+    config.INIT_PARAMS_CUSTOM_FILE['custom_script'] = custom_script
+    testflow.setup("Start VM with sysprep file")
+    assert ll_vms.runVmOnce(
+        positive=True, vm=vm_name, use_sysprep=True,
+        wait_for_state=config.VM_UP,
+        initialization=ll_vms.init_initialization_obj(
+            config.INIT_PARAMS_CUSTOM_FILE
+        )
+    ), "Failed to start VM %s " % vm_name
+
+
+@pytest.fixture()
+def update_sysprep_parameters(request):
+    """
+    1. Update sysprep parameters
+    2. Run VM
+    """
+
+    vm_name = request.getfixturevalue('vm_name')
+    os_type = request.getfixturevalue('os_type')
+
+    testflow.setup("Update VM initialization parameters")
+    configuration = helper.get_sysprep_configuration(
+        os_type=os_type
+    )
+    assert ll_vms.updateVm(
+        positive=True, vm=vm_name,
+        initialization=ll_vms.init_initialization_obj(configuration)
+    )
+    testflow.setup("Start VM")
+    assert ll_vms.runVmOnce(
+        positive=True, vm=vm_name, use_sysprep=True,
+        wait_for_state=config.VM_UP
+    ), "Failed to start VM %s " % vm_name

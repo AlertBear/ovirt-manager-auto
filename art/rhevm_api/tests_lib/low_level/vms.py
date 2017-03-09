@@ -5682,3 +5682,17 @@ def set_he_global_maintenance(vm_name, enabled):
             maintenance_enabled=enabled
         )
     )
+
+
+def init_initialization_obj(params):
+    """
+    Returns Initialization object to set sysperp
+
+    Args:
+        params (dict): Dict with initialization parameters
+
+    Returns:
+        obj: Initialization obj
+    """
+    logger.info("Initialization params: %s", params)
+    return data_st.Initialization(**params)

@@ -3,10 +3,11 @@
 """
 Windows helper
 """
-
+import shlex
 import os
 import logging
 import winrm
+
 from tempfile import mkstemp
 from winremote import winremote
 from contextlib import contextmanager
@@ -17,9 +18,13 @@ from winremote.modules import (
     services,
     system
 )
+from art.core_api.apis_utils import TimeoutingSampler
+from art.core_api.apis_exceptions import APITimeout
 import config
 
 logger = logging.getLogger(__name__)
+
+USER_LIST_COMMAND = 'WMIC USERACCOUNT LIST BRIEF'
 
 
 @contextmanager
@@ -43,25 +48,55 @@ def temp_data_file(data):
 
 
 class WindowsGuest(object):
-    def __init__(self, ip, user=config.WIN_USER, password=config.WIN_PASSWORD):
+    def __init__(
+            self, ip, user=config.WIN_ADMIN_USER, password=config.WIN_PASSWORD,
+            connectivity_check=False
+    ):
         """
         Connect to windows machine,
         Initialize: windows session, power shell
 
         Args:
             ip (str): ip of the windows guest
-            user (str): windows user to login with
-            password (str): password of user
+            user (str): Windows user to login with
+            password (str): Password of user
+            connectivity_check (bool): Run command on remote server to check
+                if connection establish.
         """
         super(WindowsGuest, self).__init__()
         self.user = user
         self.password = password
         self.ip = ip
-        _session = winrm.Session(
-            target=ip,
-            auth=(user, password),
+        self.timeout = 600
+        self.sleep = 30
+        logger.info(
+            "Create session to windows vm. IP:%s User name:%s, Password:%s",
+            ip, user, password
         )
+        _session = winrm.Session(target=ip, auth=(user, password))
         self.win = winremote.Windows(_session, winremote.WMI(_session))
+        if connectivity_check:
+            def check_connection():
+                """
+                Run command on remote vm to check if connection established
+                and WinRM service is running
+                """
+                try:
+                    _session.protocol.open_shell()
+                    output = self.win.run_cmd(cmd="echo 'test'")
+                except Exception, err:
+                    logger.warning("Failed to connect: %s", err)
+                    return None
+                return output
+            try:
+                for check in TimeoutingSampler(
+                    self.timeout, self.sleep, check_connection
+                ):
+                    if check:
+                        logger.info("Connectivity check pass")
+                        break
+            except APITimeout:
+                logger.error("Failed to connect to VM: %s", ip)
         self.shell_id = _session.protocol.open_shell()
 
     def run_command(self, cmd, params=list()):
@@ -75,24 +110,26 @@ class WindowsGuest(object):
         Returns:
             str: Command output
         """
+        logger.info("cmd: %s, params: %s", cmd, params)
         status, std_out, std_err = self.win.run_cmd(cmd=cmd, params=params)
-        if status:
+        if not status:
+            logging.error("ERR:%s\n", std_err)
             return ""
-        logging.info("Output:\n", std_out)
+        logging.info("Output:%s\n", std_out)
         return std_out
 
     def seal_vm(self):
         """
         Run seal command on VM, the VM will be down after sealing done
-
-        Returns:
-            bool: True if seal success, else False
+        Connection to VM should drop after running command
+        After running the command we should check the VM status
         """
-        status, _, std_err = self.run_command(config.SEAL_COMMAND)
-        if status:
-            logging.error(std_err)
-            return False
-        return True
+        logger.info("Seal VM")
+        try:
+            _, _, err = self.win.run_cmd(cmd=config.SEAL_COMMAND, params=[])
+        except Exception, err:
+            logger.info("Connection to VM drop since sealing disconnect nic")
+            logger.info("ERR: %s", err)
 
     def get_all_products(self):
         """
@@ -194,3 +231,20 @@ class WindowsGuest(object):
                     system_info[tmp[0].strip()] = tmp[1].strip()
         logging.info("system info: %s", system_info)
         return system_info
+
+    def get_users_list(self):
+        """
+        Get users list
+
+        Returns:
+            list: users list
+        """
+
+        user_list = []
+        user_info = self.run_command(cmd=USER_LIST_COMMAND)
+        lines = user_info.splitlines(False)
+        for line in lines[2:]:
+            if len(line) > 1:
+                user_list.append(shlex.split(line)[3])
+        logger.info("Users list: %s", user_list)
+        return user_list
