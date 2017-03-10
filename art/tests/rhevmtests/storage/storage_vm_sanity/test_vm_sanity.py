@@ -421,8 +421,8 @@ class BaseClassKillProc(TestCase):
     regex = None
 
     def get_lv_count_before(self):
-        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        self.spm_ip = ll_hosts.getHostIP(self.spm_host)
+        self.spm_host = ll_hosts.get_spm_host(config.HOSTS)
+        self.spm_ip = ll_hosts.get_host_ip(self.spm_host)
         self.lv_count_before = storage_helpers.get_lv_count_for_block_disk(
             self.spm_ip, config.HOSTS_PW
         )
@@ -619,7 +619,7 @@ class TestCase18982(BaseClassKillProc):
         assert ll_vms.cloneVmFromTemplate(**vm_args)
         testflow.step("Killing 'vdsmd' service on SPM host %s", self.spm_host)
         assert ll_hosts.kill_vdsmd(spm_object)
-        assert ll_hosts.waitForSPM(
+        assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.WAIT_FOR_SPM_INTERVAL
         )

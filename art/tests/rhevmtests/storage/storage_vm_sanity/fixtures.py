@@ -27,7 +27,7 @@ def deactivate_hsms(request):
 
     request.addfinalizer(finalizer)
 
-    spm_host = ll_hosts.getSPMHost(config.HOSTS)
+    spm_host = ll_hosts.get_spm_host(config.HOSTS)
     self.hosts_to_activate = list()
     testflow.setup("Deactivating all HSMs")
     for host in config.HOSTS:
@@ -60,6 +60,6 @@ def wait_for_hosts_to_be_up(request):
     Wait for all host to be in 'up' state
     """
     def finalizer():
-        assert ll_hosts.waitForHostsStates(True, config.HOSTS)
+        assert ll_hosts.wait_for_hosts_states(True, config.HOSTS)
 
     request.addfinalizer(finalizer)
