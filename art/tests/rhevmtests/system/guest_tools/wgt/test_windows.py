@@ -635,6 +635,41 @@ class Win8_CI_64b(Windows):
         self.check_guest_timezone()
 
 
+@attr(tier=3)
+class Windows10_32b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 10 32bit.
+    """
+    __test__ = True
+    disk_name = 'Win10_CI_rhevm_32b'
+    serial_number = config.WIN10_32B['serial_number']
+    architecture = config.WIN10_32B['architecture']
+    codename = config.WIN10_32B['codename']
+    os_type = config.ENUMS['windows10']
+    disk_interface = config.ENUMS['interface_virtio_scsi']
+
+    @polarion("RHEVM-19563")
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        self.check_guest_applications()
+
+    @polarion("RHEVM-19564")
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
+        self.check_vm_ip_fqdn_info()
+
+    @polarion("RHEVM-19566")
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        self.check_guest_os()
+
+    @polarion("RHEVM-19565")
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        self.check_guest_timezone()
+
+
 @attr(tier=2)
 class Windows10_64b(Windows):
     """
