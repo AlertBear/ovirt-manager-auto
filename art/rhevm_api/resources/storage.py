@@ -13,6 +13,8 @@ LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
 DEFAULT_MNT_DIR = "/tmp/mnt_point"
+VDC_ROOT_USER = "root"
+VDC_ROOT_PASS = "qum5net"
 
 
 def get_host_resource(host_name):
@@ -20,14 +22,15 @@ def get_host_resource(host_name):
     Takes the host name and returns the Host resource on which commands can be
     executed
 
-    __author__ = "glazarov"
     :param host_name: Name of the host
     :type host_name: str
     :return: Host resource on which commands can be executed
     :rtype: Host resource
     """
     host_obj = hosts.get_host_object(host_name)
-    return resources.Host.get(host_obj.get_address())
+    host = resources.Host(host_obj.get_address())
+    host.users.append(resources.User(VDC_ROOT_USER, VDC_ROOT_PASS))
+    return host
 
 
 def lvchange(host_name, vg_name, lv_name, activate=True):

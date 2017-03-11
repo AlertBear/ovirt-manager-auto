@@ -10,6 +10,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils import log_listener
 from utilities.machine import LINUX, Machine
+from rhevmtests.helpers import get_host_resource_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ def get_ovf_file_path_and_num_ovf_files(
     :returns: The full path of the extracted OVF file name
     :rtype: str
     """
-    host_to_use = storage_resources.get_host_resource(host)
+    host_to_use = get_host_resource_by_name(host)
 
     # Add the default results
     error_result = None
@@ -236,7 +237,7 @@ def remove_ovf_store_extracted(host, disk_or_template_or_vm_name):
     OVF store (either disk or template)
     :type disk_or_template_or_vm_name: str
     """
-    host_to_use = storage_resources.get_host_resource(host)
+    host_to_use = get_host_resource_by_name(host)
 
     logger.info("Removing directory created to extract the OVF store")
     rc, output, error = host_to_use.run_command(
