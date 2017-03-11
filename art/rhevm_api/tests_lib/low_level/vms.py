@@ -2939,6 +2939,7 @@ def wait_for_vm_ip(
         """
         vms_ids = vds_resource.vds_client(cmd="getVMList")
         if not vms_ids:
+            logger.error("No VMs found in host %s", vds_resource)
             return None
 
         vm_ips = list()
@@ -2947,6 +2948,7 @@ def wait_for_vm_ip(
                 cmd="VM.getStats", args={"vmID": vm_id}
             )
             if not vm_info:
+                logger.error("VDS didn't return getStats for VM %s", vm_id)
                 return None
 
             vm_info = vm_info[0]
@@ -2954,22 +2956,28 @@ def wait_for_vm_ip(
             if vm_name == vm:
                 vm_interfaces = vm_info.get("netIfaces")
                 if not vm_interfaces:
+                    logger.error("No interfaces found for VM %s", vm_name)
                     return None
 
                 for vm_interface in vm_interfaces:
                     vm_ips.extend(vm_interface.get("inet"))
+                break
 
-                if not vm_ips:
-                    return None
+        if not vm_ips:
+            logger.error("No IP was found for VM %s", vm)
+            return None
 
-                vm_ip = None
-                for ip_ in vm_ips:
-                    logger.info("Send ICMP to %s", ip_)
-                    if vds_resource.network.send_icmp(dst=ip_):
-                        vm_ip = ip_
-                        break
-                return vm_ip if not get_all_ips else vm_ips
-        return None
+        if get_all_ips:
+            return vm_ips
+
+        vm_ip = None
+        for ip_ in vm_ips:
+            logger.info("Send ICMP to %s", ip_)
+            if vds_resource.network.send_icmp(dst=ip_):
+                vm_ip = ip_
+                break
+
+        return vm_ip
 
     logger.info("Waiting for IP from %s", vm)
     try:
