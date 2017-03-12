@@ -106,7 +106,7 @@ def get_spm_host(positive, datacenter):
         logger.error("No SPM found in data center %s, storage", datacenter)
         return None
 
-    return ll_hosts.HOST_API.find(spm_host['hostName'])
+    return ll_hosts.HOST_API.find(spm_host['host'])
 
 
 def get_clusters_connected_to_datacenter(dc_id):
