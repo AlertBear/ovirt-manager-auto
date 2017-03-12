@@ -13,7 +13,6 @@ from art.unittest_lib import VirtTest, testflow
 from art.unittest_lib import attr
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import polarion, bz
 from rhevmtests.virt.reg_vms.fixtures import (
     test_snapshot_and_import_export_fixture
@@ -45,8 +44,6 @@ class ImportExportVm(VirtTest):
             2) Export vm, that override existing one
             3) Import exported vm
             4) Negative: import existed vm
-            5) Move vm disks to non master storage domain
-            6) Move vm disks back to master storage domain
         """
         testflow.step("Export vm %s", self.vm_name)
         assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
@@ -79,11 +76,3 @@ class ImportExportVm(VirtTest):
             self.master_domain,
             config.CLUSTER_NAME[0]
         )
-        testflow.step(
-            "Move vm disks to storage domain %s", self.non_master_domain
-        )
-        hl_vms.move_vm_disks(self.vm_name, self.non_master_domain)
-        testflow.step(
-            "Move vm disks to storage domain %s", self.master_domain
-        )
-        hl_vms.move_vm_disks(self.vm_name, self.master_domain)
