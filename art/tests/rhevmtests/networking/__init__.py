@@ -67,24 +67,23 @@ def network_cleanup():
     Remove all non management bridges from hosts
     Remove unneeded NFS storage domains
     """
-    if config.GOLDEN_ENV:
-        logger.info("Running network cleanup")
-        stop_all_vms()
-        remove_unneeded_vms()
-        remove_unneeded_vms_nics()
-        remove_unneeded_templates()
-        remove_unneeded_templates_nics()
-        set_hosts_up()
-        clean_hosts_interfaces()
-        remove_unneeded_networks()
-        remove_unneeded_vnic_profiles()
-        remove_unneeded_clusters()
-        remove_unneeded_dcs()
-        set_default_mac_pool_for_dcs()
-        remove_unneeded_mac_pools()
-        delete_dummy_interfaces_from_hosts()
-        remove_qos_from_setup()
-        remove_bridges_from_hosts()
+    logger.info("Running network cleanup")
+    stop_all_vms()
+    remove_unneeded_vms()
+    remove_unneeded_vms_nics()
+    remove_unneeded_templates()
+    remove_unneeded_templates_nics()
+    set_hosts_up()
+    clean_hosts_interfaces()
+    remove_unneeded_networks()
+    remove_unneeded_vnic_profiles()
+    remove_unneeded_clusters()
+    remove_unneeded_dcs()
+    set_default_mac_pool_for_dcs()
+    remove_unneeded_mac_pools()
+    delete_dummy_interfaces_from_hosts()
+    remove_qos_from_setup()
+    remove_bridges_from_hosts()
 
 
 @ignore_exception
