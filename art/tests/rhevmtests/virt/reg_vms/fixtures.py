@@ -463,3 +463,12 @@ def create_vm_for_vcpu(request):
         display_type=config.VM_DISPLAY_TYPE,
 
     )
+
+
+@pytest.fixture(scope="class")
+def make_sure_vm_is_down(request):
+    """
+    Power Down VM in case it's running
+    """
+    vm_name = request.cls.vm_name
+    assert ll_vms.stop_vms_safely([vm_name])

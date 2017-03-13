@@ -6,22 +6,25 @@ from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.unittest_lib import attr, VirtTest, testflow
 from rhevmtests.virt.reg_vms.fixtures import (
-    change_cpu_limitations,
-    default_cpu_settings,
-    create_vm_for_vcpu
+    change_cpu_limitations, default_cpu_settings,
+    create_vm_for_vcpu, make_sure_vm_is_down
 )
 from rhevmtests.virt.fixtures import create_dc
 import config
 
 
-@pytest.mark.usefixtures(default_cpu_settings.__name__)
-class Vcpu(VirtTest):
+@pytest.mark.usefixtures(
+    default_cpu_settings.__name__,
+    make_sure_vm_is_down.__name__
+)
+@attr(tier=2)
+class TestVcpu(VirtTest):
     """
     VCPU cases
     """
-    __test__ = True
 
     comp_version = config.COMP_VERSION
+    vm_name = config.VM_NAME[0]
 
     @attr(tier=1)
     @polarion("RHEVM3-17327")
@@ -34,13 +37,12 @@ class Vcpu(VirtTest):
         )
         assert ll_vms.updateVm(
             positive=True,
-            vm=config.VM_NAME[0],
+            vm=self.vm_name,
             cpu_cores=16,
             cpu_socket=9,
             cpu_threads=2
         )
 
-    @attr(tier=2)
     @polarion("RHEVM3-17328")
     def test_negative_update_vm_cpu_to_more_then_max(self):
         """
@@ -51,13 +53,12 @@ class Vcpu(VirtTest):
         )
         assert not ll_vms.updateVm(
             positive=True,
-            vm=config.VM_NAME[0],
+            vm=self.vm_name,
             cpu_cores=15,
             cpu_socket=10,
             cpu_threads=2
         )
 
-    @attr(tier=2)
     @pytest.mark.usefixtures(change_cpu_limitations.__name__)
     @polarion("RHEVM3-10623")
     def test_check_cpu_hotplug_over_limit(self):
@@ -69,7 +70,7 @@ class Vcpu(VirtTest):
         )
         assert ll_vms.updateVm(
             positive=True,
-            vm=config.VM_NAME[0],
+            vm=self.vm_name,
             cpu_cores=5,
             cpu_socket=2,
             cpu_threads=1
@@ -79,7 +80,7 @@ class Vcpu(VirtTest):
         )
         assert not ll_vms.updateVm(
             positive=True,
-            vm=config.VM_NAME[0],
+            vm=self.vm_name,
             cpu_cores=3,
             cpu_socket=4,
             cpu_threads=1
@@ -89,11 +90,10 @@ class Vcpu(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(default_cpu_settings.__name__)
-class VcpuVersion40(VirtTest):
+class TestVcpuVersion40(VirtTest):
     """
     VCPU cases for 4.0 cluster
     """
-    __test__ = True
 
     vm_name = "vcpu_vm"
     host_index = 2

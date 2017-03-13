@@ -13,9 +13,9 @@ from art.rhevm_api.tests_lib.low_level import (
     users as ll_users,
     mla as ll_mla,
     storagedomains as ll_sd
-
 )
 import rhevmtests.helpers as helper
+import shlex
 
 
 @pytest.fixture(scope='class')
@@ -41,6 +41,23 @@ def add_user(request):
         )
     request.addfinalizer(fin)
     testflow.setup("Add External User %s", config.USER)
+
+    with config.ENGINE_HOST.executor().session() as session:
+        if not session.run_cmd(shlex.split(config.SHOW_USER_CMD))[0]:
+            testflow.skip("User %s already exists", config.USER)
+        else:
+            testflow.setup("Create User %s ", config.USER)
+            assert not (
+                session.run_cmd(shlex.split(config.ADD_USER_CMD))[0],
+                'Failed to add user'
+            )
+            assert not (
+                session.run_cmd(
+                    shlex.split(config.RESET_USER_PASSWORD_CMD)
+                )[0],
+                'Failed to reset password'
+            )
+
     assert ll_users.addExternalUser(
         positive=True,
         user_name=config.USER,

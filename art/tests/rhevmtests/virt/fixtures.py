@@ -82,6 +82,7 @@ def create_dc(request):
         "and storage domain %s",
         dc_name, comp_version, sd_name
     )
+
     create_data_center(
         dc_name=dc_name,
         cluster_name=cluster_name,
