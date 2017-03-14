@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Helper functions for External Network Provider
+External Network Provider helper functions
 """
 
 import logging
@@ -223,21 +223,26 @@ def check_dns_resolver(vm, ip_address):
     return ip_address in resolv_content
 
 
-def check_hot_unplug_and_plug(vm, vnic, network=None, vnic_profile=None):
+def check_hot_unplug_and_plug(
+        vm, vnic, network=None, vnic_profile=None, mac_address=None
+):
     """
-    Check hot-plug and hot-unplug vNIC on VM, and change network and/or vNIC
-    profile values
+    Check hot-plug and hot-unplug vNIC on VM, and change network, vNIC
+    profile or MAC address values
 
     Args:
         vm (str): VM name
         vnic (str): vNIC name (as represented in the OS)
         network (str): Network name
         vnic_profile (str): vNIC profile
+        mac_address (str): MAC address
 
     Returns:
-        bool: True if test was successful, False otherwise
+        bool: True if action was successful, False otherwise
 
     """
+    msg = "Changing vNIC: {vnic} {prop} to: {val}"
+
     for state, action in zip(
         ("False", "True"), ("Hot-unplugging", "Hot-plugging")
     ):
@@ -246,19 +251,25 @@ def check_hot_unplug_and_plug(vm, vnic, network=None, vnic_profile=None):
             "vm": vm,
             "nic": vnic,
             "plugged": state,
+            "mac_address": mac_address
         }
 
         testflow.step("%s vNIC: %s on VM: %s", action, ovn_conf.OVN_VNIC, vm)
 
         if network and state == "True":
-            testflow.step("Changing vNIC: %s network to: %s", vnic, network)
+            testflow.step(msg.format(vnic=vnic, prop="network", val=network))
             update_nic_args["network"] = network
 
         if vnic_profile and state == "True":
             testflow.step(
-                "Changing vNIC: %s vNIC profile to: %s", vnic, vnic_profile
+                msg.format(vnic=vnic, prop="vNIC profile", val=vnic_profile)
             )
             update_nic_args["vnic_profile"] = vnic_profile
+
+        if mac_address and state == "True":
+            testflow.step(
+                msg.format(vnic=vnic, prop="MAC address", val=mac_address)
+            )
 
         if not ll_vms.updateNic(**update_nic_args):
             return False
@@ -348,11 +359,12 @@ def rpm_install(host, rpm_name):
         rpm_name (str): RPM package name
 
     Returns:
-        True if install was successful, False otherwise
+        True if install was successful or package already installed,
+            False otherwise
 
     """
     if host.package_manager.exist(rpm_name):
-        return host.package_manager.update(packages=[rpm_name])
+        return True
 
     host.package_manager.install(rpm_name)
     return host.package_manager.exist(rpm_name)

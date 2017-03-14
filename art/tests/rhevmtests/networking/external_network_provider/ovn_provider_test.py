@@ -18,8 +18,7 @@ import config as ovn_conf
 import helper
 import rhevmtests.networking.config as net_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr
-from art.unittest_lib import testflow
+from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     deploy_ovn, remove_ovn_provider, remove_ovn_networks_from_provider,
     remove_ovn_networks_from_engine, remove_vnics_from_vms,
@@ -55,10 +54,9 @@ class TestOVNProvider01(NetworkTest):
     11. OVN network with subnet DHCP
     12. OVN network with subnet configuration validation tests
     13. OVN network with subnet ping test
-    14. Migrate a VM with OVN network and subnet
+    14. Change MAC address of vNIC attached to OVN network
+    15. Migrate a VM with OVN network and subnet
     """
-    __test__ = True
-
     dc = net_conf.DC_0
     cl = net_conf.CL_0
 
@@ -66,10 +64,7 @@ class TestOVNProvider01(NetworkTest):
         net_conf.VM_0: ovn_conf.OVN_VNIC,
         net_conf.VM_1: ovn_conf.OVN_VNIC
     }
-    vms_to_stop = {
-        net_conf.VM_0: None,
-        net_conf.VM_1: None
-    }
+    vms_to_stop = [net_conf.VM_0, net_conf.VM_1]
     remove_vnic_profiles_params = {
         ovn_conf.OVN_VNIC_PROFILE: ovn_conf.OVN_NET_1
     }
@@ -131,7 +126,7 @@ class TestOVNProvider01(NetworkTest):
         testflow.step(
             "Starting VM: %s on host: %s", net_conf.VM_0, net_conf.HOST_0_NAME
         )
-        helper.run_vm_on_host(vm=net_conf.VM_0, host=net_conf.HOSTS[0])
+        helper.run_vm_on_host(vm=net_conf.VM_0, host=net_conf.HOST_0_NAME)
 
     @polarion("RHEVM3-17296")
     def test_05_hot_add_vnic_with_ovn_network_on_live_vm(self):
@@ -142,7 +137,7 @@ class TestOVNProvider01(NetworkTest):
         testflow.step(
             "Starting VM: %s on host: %s", net_conf.VM_1, net_conf.HOST_0_NAME
         )
-        helper.run_vm_on_host(vm=net_conf.VM_1, host=net_conf.HOSTS[0])
+        helper.run_vm_on_host(vm=net_conf.VM_1, host=net_conf.HOST_0_NAME)
 
         testflow.step(
             "Hot-adding vNIC: %s with OVN network: %s on live VM: %s",
@@ -355,12 +350,12 @@ class TestOVNProvider01(NetworkTest):
         2. Hot-unplug OVN vNIC on VM-0
         3. Attach VM-0 OVN vNIC network: OVN_NET_3
         4. Hot-plug OVN vNIC on VM-0
-        5. Request DHCP address on OVN vNIC
+        5. Request DHCP IP address on OVN vNIC
         6. Verify that VM-0 acquired IP address from DHCP
         7. Hot-unplug OVN vNIC on VM-1
         8. Attach VM-1 OVN vNIC network: OVN_NET_3
         9. Hot-plug OVN vNIC on VM-1
-        10. Request DHCP address on OVN vNIC
+        10. Request DHCP IP address on OVN vNIC
         11. Verify that VM-1 acquired IP address from DHCP
         """
         for vm_name in (net_conf.VM_0, net_conf.VM_1):
@@ -380,7 +375,7 @@ class TestOVNProvider01(NetworkTest):
                 vnic_profile=ovn_conf.OVN_NET_3, network=ovn_conf.OVN_NET_3
             )
 
-            testflow.step("Requesting DHCP from VM: %s", vm_name)
+            testflow.step("Requesting IP from DHCP on VM: %s", vm_name)
             ip = helper.set_ip_non_mgmt_nic(vm=vm_name, address_type="dhcp")
 
             testflow.step(
@@ -407,7 +402,7 @@ class TestOVNProvider01(NetworkTest):
                 vm=vm_name, ip_address=ovn_conf.OVN_NETS_DNS[0]
             )
 
-        testflow.step("Verifing that IP: %s is unique", self.vms_ips[0])
+        testflow.step("Verifying that IP: %s is unique", self.vms_ips[0])
         assert self.vms_ips[0] != self.vms_ips[1]
 
     @polarion("RHEVM3-17437")
@@ -422,8 +417,31 @@ class TestOVNProvider01(NetworkTest):
             vm=net_conf.VM_0, dst_ip=self.vms_ips[1]
         )
 
+    @polarion("RHEVM-19599")
+    def test_14_static_mac_change_on_ovn_network(self):
+        """
+        Change MAC address of vNIC attached to OVN network and check
+        network connectivity
+        """
+        assert helper.check_hot_unplug_and_plug(
+            vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
+            mac_address=ovn_conf.OVN_ARBITRARY_MAC_ADDRESS
+        )
+
+        testflow.step("Requesting IP from DHCP on VM: %s", net_conf.VM_0)
+        assert helper.set_ip_non_mgmt_nic(
+            vm=net_conf.VM_0, address_type="dhcp"
+        )
+
+        testflow.step(
+            "Testing ping from VM: %s to VM: %s", net_conf.VM_0, net_conf.VM_1
+        )
+        assert helper.check_ping(
+            vm=net_conf.VM_0, dst_ip=self.vms_ips[1]
+        )
+
     @polarion("RHEVM3-17365")
-    def test_14_migrate_vm_with_subnet(self):
+    def test_15_migrate_vm_with_subnet(self):
         """
         1. Migrate VM-0 from host-1 to host-0
         2. Test ping from VM-1 to VM-0 IP during VM-0 migration
