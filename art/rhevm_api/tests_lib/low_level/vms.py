@@ -2937,35 +2937,34 @@ def wait_for_vm_ip(
         Returns:
             str or list: IP or list of IPs depend on get_all_ips param
         """
-        vms_ids = vds_resource.vds_client(cmd="getVMList")
-        if not vms_ids:
+        vms_info = vds_resource.vds_client(cmd="getVMFullList")
+        vm_id = [i.get("vmId") for i in vms_info if i.get("vmName") == vm]
+        if not vm_id:
             logger.error("No VMs found in host %s", vds_resource)
-            return None
+            return ""
 
         vm_ips = list()
-        for vm_id in vms_ids:
-            vm_info = vds_resource.vds_client(
-                cmd="VM.getStats", args={"vmID": vm_id}
-            )
-            if not vm_info:
-                logger.error("VDS didn't return getStats for VM %s", vm_id)
-                return None
+        vm_info = vds_resource.vds_client(
+            cmd="VM.getStats", args={"vmID": vm_id[0]}
+        )
+        if not vm_info:
+            logger.error("VDS didn't return getStats for VM %s", vm_id)
+            return ""
 
-            vm_info = vm_info[0]
-            vm_name = vm_info.get("vmName")
-            if vm_name == vm:
-                vm_interfaces = vm_info.get("netIfaces")
-                if not vm_interfaces:
-                    logger.error("No interfaces found for VM %s", vm_name)
-                    return None
+        vm_info = vm_info[0]
+        vm_name = vm_info.get("vmName")
+        if vm_name == vm:
+            vm_interfaces = vm_info.get("netIfaces")
+            if not vm_interfaces:
+                logger.error("No interfaces found for VM %s", vm_name)
+                return ""
 
-                for vm_interface in vm_interfaces:
-                    vm_ips.extend(vm_interface.get("inet"))
-                break
+            for vm_interface in vm_interfaces:
+                vm_ips.extend(vm_interface.get("inet"))
 
         if not vm_ips:
             logger.error("No IP was found for VM %s", vm)
-            return None
+            return ""
 
         if get_all_ips:
             return vm_ips

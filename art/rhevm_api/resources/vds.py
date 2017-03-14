@@ -90,7 +90,7 @@ class VDS(Host):
         """
         Run given command on host with vdsClient
         All commands can be found under:
-        https://github.com/oVirt/vdsm/blob/master/lib/api/vdsm-api.yml
+        https://github.com/oVirt/vdsm/blob/master/lib/vdsm/api/vdsm-api.yml
 
         Json code:
             from vdsm import client
