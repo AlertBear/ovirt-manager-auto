@@ -70,7 +70,7 @@ def initializer_module(request):
                 iscsi_sds, config.LUNS, config.LUN_TARGETS,
                 config.LUN_ADDRESSES
         ):
-            hl_sd.addISCSIDataDomain(
+            hl_sd.add_iscsi_data_domain(
                 config.HOST_FOR_MOUNT, name, config.DATA_CENTER_NAME,
                 lun, address, target, override_luns=True, login_all=True
             )
@@ -327,7 +327,7 @@ class BaseTestCaseNewDC(BaseTestCase):
         )
 
         if self.add_iscsi_domain:
-            if not hl_sd.addISCSIDataDomain(
+            if not hl_sd.add_iscsi_data_domain(
                 self.host, self.iscsi_domain, self.dc,
                 config.UNUSED_LUNS[0], config.UNUSED_LUN_ADDRESSES[0],
                 config.UNUSED_LUN_TARGETS[0],
@@ -517,7 +517,7 @@ class TestCase11201(BaseTestCaseNewDC):
         self.iscsi_domain2 = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_SD
         )
-        if not hl_sd.addISCSIDataDomain(
+        if not hl_sd.add_iscsi_data_domain(
             self.host, self.iscsi_domain2, self.dc,
             config.UNUSED_LUNS[1], config.UNUSED_LUN_ADDRESSES[1],
             config.UNUSED_LUN_TARGETS[1],
