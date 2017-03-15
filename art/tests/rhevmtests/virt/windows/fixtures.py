@@ -54,7 +54,7 @@ def update_cluster(request):
 def create_windows_vms(request, update_cluster):
     """
     Init Window module
-    Setup: Create windows VMs: win_7, win_2008R2, win2012
+    Setup: Create windows VMs: win_7, win_10, win2012
     Teardown: Remove all VMs
     """
 
