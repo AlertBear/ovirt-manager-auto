@@ -13,13 +13,18 @@ import uuid
 
 from utilities import jobs
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.events as ll_events
-import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
+    events as ll_events,
+    host_network as ll_host_network,
+    hosts as ll_hosts,
+    vms as ll_vms,
+    general as ll_general
+)
 import config as conf
 import rhevmtests.helpers as global_helper
 from art.core_api import apis_utils
@@ -78,18 +83,18 @@ def create_random_ips(num_of_ips=2, mask=16, ip_version=4, base_ip_prefix="5"):
     return ips
 
 
+@ll_general.generate_logs(step=True)
 def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
     """
     Run VM once on specific host
 
-    :param vm: VM name
-    :type vm: str
-    :param host: Host name
-    :type host: str
-    :param wait_for_up_status: Wait for VM to be UP
-    :type wait_for_up_status: bool
-    :return: True if action succeeded, False otherwise
-    :rtype: bool
+    Args:
+        vm (str): VM name
+        host (str): Host name
+        wait_for_up_status (bool): Wait for VM to be UP
+
+    Returns:
+        bool: True if action succeeded, False otherwise
     """
     logger.info("Check if %s is up", host)
     host_status = ll_hosts.get_host_status(host)
@@ -97,9 +102,7 @@ def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
         logger.error("%s status is %s, cannot run VM", host, host_status)
         return False
 
-    logger.info("Run %s once on host %s", vm, host)
     if not ll_vms.runVmOnce(positive=True, vm=vm, host=host):
-        logger.error("Couldn't run %s on host %s", vm, host)
         return False
 
     if wait_for_up_status:

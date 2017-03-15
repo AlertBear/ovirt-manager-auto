@@ -7,8 +7,11 @@ Fixtures for cumulative_rx_tx_statistics
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+from art.rhevm_api.tests_lib.high_level import (
+    hosts as hl_hosts,
+    networks as hl_networks,
+    vms as hl_vms
+)
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.utils.test_utils as test_utils
 import config as rx_tx_conf
@@ -66,7 +69,7 @@ def vm_prepare_setup(request):
     """
     rx_tx_state = NetworkFixtures()
     vms_list = rx_tx_state.vms_list
-    nic_name = request.node.cls.nic_name
+    nic = request.node.cls.nic_name
     network = request.node.cls.net_1
     result = list()
 
@@ -79,40 +82,46 @@ def vm_prepare_setup(request):
 
     def fin2():
         """
-        Finalizer for remove vNIC from VMs
+        Remove vNIC from VMs
         """
         for vm in vms_list:
-            testflow.teardown("Remove vNIC %s from VM %s", nic_name, vm)
+            log = "Remove vNIC {nic} from VM {vm}".format(nic=nic, vm=vm)
+            testflow.teardown(log)
             result.append(
                 (
-                    ll_vms.removeNic(positive=True, vm=vm, nic=nic_name),
-                    "fin2: ll_vms.removeNic"
+                    ll_vms.removeNic(positive=True, vm=vm, nic=nic),
+                    "fin2: {log}".format(log=log)
                 )
             )
     request.addfinalizer(fin2)
 
     def fin1():
         """
-        Finalizer for stop VMs
+        Stop VMs
         """
-        testflow.teardown("Stop VMs %s", vms_list)
-        result.append((ll_vms.stop_vms(vms=vms_list), "fin1: ll_vms.stop_vms"))
+        log = "Stop VMs {vms}".format(vms=vms_list)
+        testflow.teardown(log)
+        result.append(
+            (
+                ll_vms.stop_vms(
+                    vms=vms_list, async="false"
+                ), "fin1: {log}".format(log=log)
+            )
+        )
     request.addfinalizer(fin1)
 
     for host, vm, temp_ip in zip(
         rx_tx_state.hosts_list, vms_list, rx_tx_conf.VM_IPS
     ):
-        testflow.setup("Add vNIC %s to VM %s", nic_name, vm)
+        testflow.setup("Add vNIC %s to VM %s", nic, vm)
         assert ll_vms.addNic(
-            positive=True, vm=vm, name=nic_name, network=network,
+            positive=True, vm=vm, name=nic, network=network,
             vnic_profile=network
         )
-        testflow.setup("Run VM %s on host %s", vm, host)
         assert network_helper.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )
-        ip = ll_vms.wait_for_vm_ip(vm=vm, timeout=conf.TIMEOUT)[1]
-        mgmt_ip = ip.get("ip")
+        mgmt_ip = hl_vms.get_vm_ip(vm_name=vm, start_vm=False)
         assert mgmt_ip
 
         vm_resource = global_helper.get_vm_resource(vm=vm, start_vm=False)
@@ -121,13 +130,14 @@ def vm_prepare_setup(request):
         )
         interface = network_helper.get_non_mgmt_nic_name(vm=vm)
         assert interface, "Failed to get interface from %s" % vm
+        interface = interface[0]
 
         testflow.setup(
             "Configure temporary static IP %s on specific interface %s",
-            temp_ip, interface[0]
+            temp_ip, interface
         )
         assert test_utils.configure_temp_static_ip(
-            vds_resource=vm_resource, ip=temp_ip, nic=interface[0],
+            vds_resource=vm_resource, ip=temp_ip, nic=interface,
             netmask="255.255.0.0"
         )
         rx_tx_conf.VMS_IPS_PARAMS[vm] = dict()
