@@ -77,7 +77,7 @@ def deactivate_hsm_hosts(request, activate_hosts):
         Activate all HSM hosts
         """
         testflow.teardown("Activate hosts: %s ", self.hsm_hosts)
-        helpers.hosts_to_activate = self.hsm_hosts
+        self.hosts_to_activate = self.hsm_hosts
     request.addfinalizer(finalizer)
 
     helpers.deactivate_and_verify_hosts(hosts=self.hsm_hosts)
