@@ -4,13 +4,32 @@
 """
 Helper functions for fixture.py
 """
-
+import operator
 from _pytest.fixtures import FixtureLookupError
 from concurrent.futures import ThreadPoolExecutor
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
+
+
+def get_attr_helper(attribute, obj, default=None):
+    """
+    Helper to get attribute value from any object, works with nested
+    attributes like obj.attr1.attr2.attr3
+
+    Args:
+        attribute (str): path to the attribute
+        obj (object): object to get attribute from
+        default: default value is attribute is not found
+
+    Returns:
+        any: attr value if present, default otherwise
+    """
+    try:
+        return operator.attrgetter(attribute)(obj)
+    except AttributeError:
+        return default
 
 
 def start_vm_helper(vms_dict):

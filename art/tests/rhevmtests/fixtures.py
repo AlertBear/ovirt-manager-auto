@@ -7,10 +7,12 @@ Global fixtures
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import fixtures_helper
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_clusters,
+    datacenters as ll_datacenters,
+    vms as ll_vms,
+)
 from art.unittest_lib import testflow
 
 
