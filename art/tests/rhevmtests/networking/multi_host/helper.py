@@ -26,7 +26,7 @@ def update_network_and_check_changes(
 
     Args:
         net (str): Network name
-        nic (int or str): Host NIC index
+        nic (int or str): Host NIC index or host BOND name
         hosts (list): Hosts indexes list to check the changes on
         matches (int): Number of matches to find in events
         positive (bool): True for positive update, False for negative update
@@ -69,22 +69,23 @@ def update_network_and_check_changes(
 
         for host, vds_host in zip(hosts_list, vds_hosts_list):
             # Needed when NIC is BOND and not host NIC
-            nic = vds_host.nics[nic] if isinstance(nic, int) else nic
+            nic_name = vds_host.nics[nic] if isinstance(nic, int) else nic
 
             if mtu:
                 if not check_mtu(
-                    net=net, mtu=mtu, nic=nic, host=host, vds_host=vds_host
+                    net=net, mtu=mtu, nic=nic_name, host=host,
+                    vds_host=vds_host
                 ):
                     return False
             if vlan_id:
                 if not check_vlan(
-                    net=net, vlan=vlan_id, nic=nic, host=host,
+                    net=net, vlan=vlan_id, nic=nic_name, host=host,
                     vds_host=vds_host
                 ):
                     return False
             if bridge:
                 if not check_bridge(
-                    net=net, bridge=bridge, nic=nic, host=host,
+                    net=net, bridge=bridge, nic=nic_name, host=host,
                     vds_host=vds_host
                 ):
                     return False
