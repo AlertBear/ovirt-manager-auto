@@ -483,23 +483,40 @@ class TestCase6221(BasicEnvironment):
             "Change SPM priority to %s in the DB to %s", self.spm_host,
             config.LARGER_THAN_MAX_SPM_PRIORITY
         )
-        assert not ll_hosts.set_spm_priority_in_db(
-            host_name=self.spm_host,
-            spm_priority=config.LARGER_THAN_MAX_SPM_PRIORITY,
-            engine=config.ENGINE
-        ), "SPM priority on the DB for host '%s' changed to '%s'" % (
-            self.spm_host, config.MIN_SPM_PRIORITY + 1
+        status = False
+        try:
+            ll_hosts.set_spm_priority_in_db(
+                host_name=self.spm_host,
+                spm_priority=config.LARGER_THAN_MAX_SPM_PRIORITY,
+                engine=config.ENGINE
+            ), "SPM priority on the DB for host '%s' changed to '%s'" % (
+                self.spm_host, config.LARGER_THAN_MAX_SPM_PRIORITY
+            )
+        # Exception is raised from engine.db.psql in rrmngmt
+        except Exception:
+            status = True
+        assert status, (
+            "SPM priority on the DB for host '%s' changed to '%s'" % (
+                self.spm_host, config.MIN_SPM_PRIORITY + 1
+            )
         )
         testflow.step(
             "Change SPM priority to %s in the DB to %s", self.spm_host,
             config.BELOW_MIN_SPM_PRIORITY
         )
-        assert not ll_hosts.set_spm_priority_in_db(
-            host_name=self.spm_host,
-            spm_priority=config.BELOW_MIN_SPM_PRIORITY,
-            engine=config.ENGINE
-        ), "SPM priority on the DB for host '%s' changed to '%s'" % (
-            self.spm_host, config.MIN_SPM_PRIORITY + 1
+        status = False
+        try:
+            ll_hosts.set_spm_priority_in_db(
+                host_name=self.spm_host,
+                spm_priority=config.BELOW_MIN_SPM_PRIORITY,
+                engine=config.ENGINE
+            )
+        except Exception:
+            status = True
+        assert status, (
+            "SPM priority on the DB for host '%s' changed to '%s'" % (
+                self.spm_host, config.BELOW_MIN_SPM_PRIORITY
+            )
         )
 
 
