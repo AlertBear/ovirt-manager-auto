@@ -6,6 +6,7 @@ SR_IOV feature config
 """
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
+import rhevmtests.networking.config as conf
 
 GENERAL_TEST_VNICS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=5, prefix="general_sriov_vnic"
@@ -47,7 +48,6 @@ NUM_VF_PATH = "/sys/class/net/%s/device/sriov_numvfs"
 MAC_ADDR_FILE = "/sys/class/net/%s/address"
 BW_VALUE = 10
 BURST_VALUE = 100
-VLAN_IDS = [str(i) for i in xrange(2, 60)]
 NETWORK_QOS = "network_qos"
 REFRESH_CAPS_CODE = 606
 LABELS = global_helper.generate_object_names(
@@ -86,7 +86,7 @@ VM_DICT = {
     },
     VM_NETS[2][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[2]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     VM_NETS[3][0]: {
         "required": "false"
@@ -96,7 +96,7 @@ VM_DICT = {
     },
     VM_NETS[3][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[3]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     VM_NETS[3][3]: {
         "required": "false"
@@ -121,7 +121,7 @@ VM_DICT = {
 IMPORT_EXPORT_DICT = {
     IMPORT_EXPORT_NETS[1][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[4],
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     IMPORT_EXPORT_NETS[1][1]: {
         "required": "false"

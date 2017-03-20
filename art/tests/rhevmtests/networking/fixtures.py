@@ -43,7 +43,6 @@ class NetworkFixtures(object):
         self.vm_0 = conf.VM_0
         self.vm_1 = conf.VM_1
         self.vms_list = [self.vm_0, self.vm_1]
-        self.num_dummies = conf.NUM_DUMMYS
         self.mgmt_bridge = conf.MGMT_BRIDGE
         conf.HOSTS_LIST = self.hosts_list
         conf.VDS_HOSTS_LIST = self.vds_list

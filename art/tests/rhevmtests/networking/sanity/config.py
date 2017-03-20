@@ -5,8 +5,9 @@
 Config file for sanity test
 """
 
-from rhevmtests.networking.config import *  # flake8: noqa
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
+
 
 # Host network QoS
 QOS_NAME = global_helper.generate_object_names(
@@ -28,9 +29,6 @@ VNICS = global_helper.generate_object_names(
 )
 HOST_NAME = None  # Filled in test
 HOST_VDS = None  # Filled in test
-
-VLAN_IDS = [str(i) for i in xrange(2, 20)]
-DUMMIES = ["dummy_%s" % i for i in xrange(12)]
 
 BASIC_IP_DICT_NETMASK = {
     "ip_netmask": {
@@ -58,11 +56,11 @@ SN_DICT = {
     },
     NETS[2][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0)
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0)
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][3]: {
         "required": "false",
@@ -70,7 +68,7 @@ SN_DICT = {
     },
     NETS[2][4]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0)
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][5]: {
         "required": "false",
@@ -81,21 +79,21 @@ SN_DICT = {
     },
     NETS[4][0]: {
         "required": "false",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     NETS[4][1]: {
         "required": "false",
         "usages": "",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     NETS[4][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
-        "mtu": MTU[1]
+        "vlan_id": conf.VLAN_IDS.pop(0),
+        "mtu": conf.MTU[1]
     },
     NETS[4][3]: {
         "required": "false",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     NETS[4][4]: {
         "required": "false",
@@ -103,7 +101,7 @@ SN_DICT = {
     },
     NETS[4][5]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "usages": "",
     },
     NETS[4][6]: {
@@ -112,7 +110,7 @@ SN_DICT = {
     },
     NETS[4][7]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "usages": ""
     },
     NETS[5][0]: {
@@ -120,37 +118,37 @@ SN_DICT = {
     },
     NETS[5][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     NETS[5][2]: {
         "required": "false",
     },
     NETS[5][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     NETS[6][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0)
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[6][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     NETS[6][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0)
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[6][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     NETS[8][0]: {
         "required": "true",
     },
     NETS[9][0]: {
         "required": "false",
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     NETS[9][1]: {
         "required": "false",

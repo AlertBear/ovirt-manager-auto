@@ -390,7 +390,7 @@ class TestNetLabels03(NetworkTest):
     net_1 = label_conf.NETS[3][0]
     net_2 = label_conf.NETS[3][1]
     label_1 = label_conf.LABEL_NAME[3][0]
-    vlan_id_1 = label_conf.VLAN_IDS[5]
+    vlan_id_1 = conf.VLAN_IDS.pop(0)
     labels_list = [
         {
             "label": label_1,
@@ -945,7 +945,6 @@ class TestNetLabels07(NetworkTest):
         },
     }
     nets = label_conf.NETS[7][:4]
-    vlan_id_list = label_conf.VLAN_IDS[9:11]
     sleep_timeout = 30
 
     @polarion("RHEVM3-4124")

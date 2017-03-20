@@ -6,6 +6,7 @@ Config for Host Network QoS job
 """
 
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 
 MB_CONVERTER = 1000000
 QOS_NAME = global_helper.generate_object_names(
@@ -14,7 +15,6 @@ QOS_NAME = global_helper.generate_object_names(
 NETS = global_helper.generate_object_names(
     num_of_cases=7, num_of_objects=6, prefix="ho_net_qos"
 )
-VLAN_IDS = [str(i) for i in xrange(2, 50)]
 
 QOS_SHARE = "MaxHostNetworkQosShares"
 DEFAULT_SHARE = 100
@@ -44,11 +44,11 @@ QOS_2 = {
 
 NETS_DICT = {
     NETS[1][0]: {
-        "vlan_id": VLAN_IDS[15],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
     },
     NETS[1][1]: {
-        "vlan_id": VLAN_IDS[16],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
     },
     NETS[1][2]: {
@@ -72,19 +72,19 @@ NETS_DICT = {
         "required": "false"
     },
     NETS[6][0]: {
-        "vlan_id": VLAN_IDS[10],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
     },
     NETS[6][1]: {
-        "vlan_id": VLAN_IDS[11],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
     },
     NETS[7][0]: {
-        "vlan_id": VLAN_IDS[13],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
     },
     NETS[7][1]: {
-        "vlan_id": VLAN_IDS[14],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
     },
 }

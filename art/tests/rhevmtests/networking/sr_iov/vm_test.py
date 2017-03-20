@@ -253,7 +253,7 @@ class TestSriovVm02(NetworkTest):
     vm = conf.VM_0
     vm_nic = sriov_conf.VM_TEST_VNICS[2][0]
     net_1 = sriov_conf.VM_NETS[2][0]
-    vlan_id = sriov_conf.VLAN_IDS[2]
+    vlan_id = sriov_conf.VM_DICT.get(net_1).get("vlan_id")
     dc = conf.DC_0
 
     # remove_vnics_from_vm

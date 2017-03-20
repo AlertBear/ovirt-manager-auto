@@ -13,7 +13,6 @@ CASE_4_IPS = None
 CASE_5_IPS = None
 CASE_7_IPS = None
 CASE_IPS = None
-VLAN_IDS = [str(i) for i in xrange(2, 60)]
 REAL_VLANS = [str(i) for i in xrange(162, 169)]
 VMS_RESOURCES = dict()
 
@@ -44,13 +43,13 @@ NETS_DICT = {
     NETS[2][0]: {
         "required": "false",
         "mtu": conf.MTU[1],
-        "vlan_id": VLAN_IDS[0],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "usages": "",
     },
     NETS[2][1]: {
         "required": "false",
         "mtu": conf.MTU[0],
-        "vlan_id": VLAN_IDS[1],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "usages": "",
     },
     NETS[3][0]: {
@@ -59,7 +58,7 @@ NETS_DICT = {
     },
     NETS[4][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[9],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "mtu": conf.MTU[1]
     },
     NETS[4][1]: {
@@ -69,12 +68,12 @@ NETS_DICT = {
     },
     NETS[4][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[11],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "mtu": conf.MTU[2]
     },
     NETS[4][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[12],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "mtu": conf.MTU[3]
     },
     NETS[5][0]: {
@@ -85,7 +84,7 @@ NETS_DICT = {
     NETS[6][0]: {
         "required": "false",
         "mtu": conf.MTU[0],
-        "vlan_id": VLAN_IDS[5],
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     NETS[6][1]: {
         "required": "false",
@@ -105,14 +104,14 @@ NETS_DICT = {
     NETS[8][0]: {
         "required": "false",
         "mtu": conf.MTU[1],
-        "vlan_id": VLAN_IDS[6],
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     NETS[8][1]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[7],
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
     NETS[9][0]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[8],
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
 }

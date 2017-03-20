@@ -6,6 +6,7 @@ Config for acquire connections created by NetworkManager
 """
 
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 
 TIMEOUT = 10
 VLAN_IDS = [str(i) for i in xrange(2, 10)]
@@ -43,6 +44,6 @@ NETS_DICT = {
     },
     NETS[1][2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0),
+        "vlan_id": conf.VLAN_IDS.pop(0),
     },
 }

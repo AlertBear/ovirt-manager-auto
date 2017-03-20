@@ -6,6 +6,7 @@ Config for MultiHost
 """
 
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 
 
 VNICS = global_helper.generate_object_names(
@@ -15,8 +16,6 @@ VNICS = global_helper.generate_object_names(
 NETS = global_helper.generate_object_names(
     num_of_cases=2, num_of_objects=30, prefix="MultiHost"
 )
-
-VLAN_IDS = [str(i) for i in range(2, 20)]
 
 BOND_NAMES = ["bond%s" % i for i in range(0, 10)]
 
@@ -48,7 +47,7 @@ SETUP_NETWORKS_DICT = {
     # Test case: Network with VLAN attached to host
     NETS[1][3]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0)
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     # Test case: Network attached to running VM
     NETS[1][4]: {
@@ -86,7 +85,7 @@ SETUP_NETWORKS_DICT = {
     # Test case: network with VLAN attached to bond
     NETS[1][12]: {
         "required": "false",
-        "vlan_id": VLAN_IDS.pop(0)
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     # Test case: network with MTU attached to bond
     NETS[1][13]: {

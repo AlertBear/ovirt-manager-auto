@@ -81,7 +81,7 @@ class TestAcquireNmConnections(NetworkTest):
     vlan_connection = "vlan_nm_net"
     vlan_type = "nic"
     vlan_rhv_network = nm_conf.NETS[1][2]
-    vlan_vlan_id = nm_conf.VLAN_IDS.pop(0)
+    vlan_vlan_id = conf.VLAN_IDS.pop(0)
     vlan_param = [
         vlan_connection, vlan_type, vlan_rhv_network, vlan_vlan_id,
         hosts_nets_nic_dict

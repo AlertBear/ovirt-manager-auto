@@ -81,8 +81,8 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     __test__ = True
     net_1 = jumbo_conf.NETS[2][0]
     net_2 = jumbo_conf.NETS[2][1]
-    vlan_1 = jumbo_conf.VLAN_IDS[0]
-    vlan_2 = jumbo_conf.VLAN_IDS[1]
+    vlan_1 = jumbo_conf.NETS_DICT.get(net_1).get("vlan_id")
+    vlan_2 = jumbo_conf.NETS_DICT.get(net_2).get("vlan_id")
     mtu_5000 = conf.MTU[1]
     mtu_9000 = conf.MTU[0]
     hosts_nets_nic_dict = {
@@ -576,8 +576,8 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     __test__ = True
     net_1 = jumbo_conf.NETS[8][0]
     net_2 = jumbo_conf.NETS[8][1]
-    vlan_1 = jumbo_conf.VLAN_IDS[6]
-    vlan_2 = jumbo_conf.VLAN_IDS[7]
+    vlan_1 = jumbo_conf.NETS_DICT.get(net_1).get("vlan_id")
+    vlan_2 = jumbo_conf.NETS_DICT.get(net_2).get("vlan_id")
     mtu_5000 = conf.MTU[1]
     mtu_1500 = conf.MTU[3]
     bond = "bond8"

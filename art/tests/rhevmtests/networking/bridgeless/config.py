@@ -6,8 +6,8 @@ DOCS
 """
 
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 
-BRIDGELESS_VLAN_IDS = [str(i) for i in xrange(2, 4)]
 BRIDGELESS_NETS = global_helper.generate_object_names(
     num_of_cases=4, num_of_objects=3, prefix="bridge_net"
 )
@@ -26,12 +26,12 @@ BRIDGELESS_NET_DICT = {
         "usages": ""
     },
     BRIDGELESS_NETS[2][0]: {
-        "vlan_id": BRIDGELESS_VLAN_IDS[0],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false",
         "usages": ""
     },
     BRIDGELESS_NETS[3][0]: {
-        "vlan_id": BRIDGELESS_VLAN_IDS[1],
+        "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false",
         "usages": ""
     },

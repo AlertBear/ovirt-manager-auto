@@ -6,8 +6,8 @@ Config file for vNIC profile test
 """
 
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 
-VLAN_IDS = [str(i) for i in xrange(2, 20)]
 
 NETS = global_helper.generate_object_names(num_of_cases=4, num_of_objects=20)
 
@@ -53,19 +53,19 @@ NETS_DICT = {
     },
     NETS[2][9]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[0]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][10]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[1]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][11]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[3]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][12]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[4]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][13]: {
         "required": "false",
@@ -75,11 +75,11 @@ NETS_DICT = {
     },
     NETS[2][16]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[5]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[2][17]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[6]
+        "vlan_id": conf.VLAN_IDS.pop(0)
     },
     NETS[3][0]: {
         "required": "false",

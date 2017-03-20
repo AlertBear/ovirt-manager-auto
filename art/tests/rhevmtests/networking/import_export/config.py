@@ -10,7 +10,6 @@ import rhevmtests.networking.config as conf
 from rhevmtests.config import ENUMS
 
 SD_NAME = None  # Filled in setup_package
-VLAN_IDS = [str(i) for i in xrange(2, 5)]
 NETS = ["ie_net_%s" % i for i in xrange(1, 4)]
 VNICS = ["import_export_vnic_%s" % i for i in xrange(5)]
 NAME_INT = randint(1, 100)
@@ -36,6 +35,6 @@ LOCAL_DICT = {
     },
     NETS[2]: {
         "required": "false",
-        "vlan_id": VLAN_IDS[0],
+        "vlan_id": conf.VLAN_IDS.pop(0),
     }
 }

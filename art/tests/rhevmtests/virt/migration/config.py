@@ -6,6 +6,7 @@ Migration config file
 """
 
 from rhevmtests.virt.config import *  # flake8: noqa
+import rhevmtests.networking.config as network_conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
 
@@ -20,7 +21,7 @@ DATA_CENTER_NAME = DC_NAME[0]
 # for network migration check
 NUM_PACKETS = 500
 
-REAL_VLANS = [str(i) for i in xrange(162, 169)]
+REAL_VLANS = network_conf.VLAN_ID
 NETS = global_helper.generate_object_names(
     num_of_cases=13, num_of_objects=5, prefix="mig"
 )

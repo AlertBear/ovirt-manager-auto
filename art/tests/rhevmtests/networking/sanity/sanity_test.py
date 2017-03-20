@@ -681,7 +681,7 @@ class TestSanity09(TestSanityCaseBase):
 
     # Update VLAN params
     vlan_net = sanity_conf.NETS[9][1]
-    vlan_dict = {"vlan_id": sanity_conf.VLAN_IDS.pop(0)}
+    vlan_dict = {"vlan_id": conf.VLAN_IDS.pop(0)}
     vlan_params = [vlan_net, vlan_dict, 2]
 
     # Update Non-VM params
