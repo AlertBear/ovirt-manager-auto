@@ -69,7 +69,7 @@ class VDS(Host):
 
     @property
     def cpu_model(self):
-        return self.cpu_model()
+        return self.get_cpu_model()
 
     @cache.lrucache(name='cpu_model')
     def get_cpu_model(self):
