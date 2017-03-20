@@ -27,6 +27,10 @@ from rhevmtests.networking.fixtures import (
     get_linux_ad_partner_mac_value.__name__,
     refresh_hosts_capabilities.__name__
 )
+@pytest.mark.skipif(
+    conf.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+)
 class TestLACPBond(NetworkTest):
     """
     1. Check if bond of slaves connected to LACP switch ports, report
