@@ -18,6 +18,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.active_bond_slave.helper as active_bond_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
@@ -27,15 +28,24 @@ import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
 import rhevmtests.networking.network_filter.config as nf_conf
-from art.test_handler.tools import polarion
+import rhevmtests.networking.register_domain.helper as register_helper
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     add_labels, add_network_to_dc, add_vnic_profile, create_cluster,
-    create_vnics_on_vm, remove_qos, update_vnic_profile
+    create_vnics_on_vm, remove_qos, update_vnic_profile,
+    prepare_setup_for_register_domain, nmcli_create_networks
 )
 from rhevmtests.fixtures import create_clusters, create_datacenters, start_vm
 from rhevmtests.networking.fixtures import (
-    NetworkFixtures, clean_host_interfaces, setup_networks_fixture
+    NetworkFixtures, clean_host_interfaces, setup_networks_fixture,
+)
+from rhevmtests.networking.register_domain.fixtures import (
+    import_vm_from_data_domain
+)
+from rhevmtests.networking.sr_iov.fixtures import (
+    init_fixture, reset_host_sriov_params, set_num_of_vfs,
+    update_vnic_profiles, add_vnics_to_vm,
 )
 
 
@@ -907,4 +917,203 @@ class TestSanity13(TestSanityCaseBase):
         assert ll_hosts.check_network_filtering_dumpxml(
             positive=True, vds_resource=sanity_conf.HOST_VDS, vm=self.vm_name,
             nics="1"
+        )
+
+
+@pytest.mark.usefixtures(clean_host_interfaces.__name__)
+class TestSanity14(TestSanityCaseBase):
+    """
+    Attach VM network with static IPv6 over bridge:
+    """
+    net_1 = sanity_conf.NETS[14][0]
+    ip_v6_1 = sanity_conf.IPV6_IPS.pop(0)
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
+    def test_static_ipv6_network_on_host(self):
+        """
+        Attach network with static IPv6 over bridge.
+        """
+        conf.BASIC_IPV6_DICT["ip"]["address"] = self.ip_v6_1
+        sn_dict = {
+            "add": {
+                "1": {
+                    "network": self.net_1,
+                    "nic": conf.HOST_0_NICS[1],
+                    "ip": conf.BASIC_IPV6_DICT
+                },
+            }
+        }
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **sn_dict
+        )
+
+
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestSanity15(TestSanityCaseBase):
+    """
+    1. Create bond with mode 1 - active-backup.
+    2. Check that the engine report the correct active slave of the BOND.
+    """
+    # setup_networks_fixture params
+    bond_1 = "bond01"
+    hosts_nets_nic_dict = {
+        0: {
+            bond_1: {
+                "nic": bond_1,
+                "slaves": [2, 3],
+                "mode": 1
+            },
+        }
+    }
+
+    def test_report_active_slave(self,):
+        """
+        Verify that RHV is report primary/active interface of the bond mode 1.
+        """
+        testflow.step(
+            "Check that the active slave name bond %s mode 1 that reported "
+            "via engine match to the active slave name on the host",
+            self.bond_1
+        )
+        assert active_bond_helper.compare_active_slave_from_host_to_engine(
+            bond=self.bond_1
+        ), (
+            "Active slave name bond %s mode 1 that reported via engine "
+            "isn't match to the active slave name on the host" % self.bond_1
+        )
+
+
+@pytest.mark.usefixtures(
+    prepare_setup_for_register_domain.__name__,
+    import_vm_from_data_domain.__name__
+)
+class TestSanity16(TestSanityCaseBase):
+    """
+    Import VM from storage data domain when MAC is not from pool and network
+    not is datacenter and reassessing MAC is checked and mapping the network
+    in the import process
+    """
+    data_domain_name = sanity_conf.EXTRA_SD_NAME
+    vm = sanity_conf.REGISTER_VM_NAME
+    vm_nic = sanity_conf.REGISTER_VM_NIC
+    net = sanity_conf.NETS[16][0]
+    src_net = net
+    dst_net = sanity_conf.NETS[16][1]
+    network_mappings = [{
+        "source_network_profile_name": src_net,
+        "source_network_name": src_net,
+        "target_network": dst_net,
+        "target_vnic_profile": dst_net
+    }]
+
+    @polarion("RHEVM-16998")
+    def test_mac_pool_not_in_mac_range_with_reassign(self):
+        """
+        Check that MAC of imported VM is from the MAC pool
+        """
+        testflow.step(
+            "Check the MAC of imported VM %s is from the MAC pool", self.vm
+        )
+        assert register_helper.check_mac_in_mac_range(
+            vm=self.vm, nic=self.vm_nic
+        )
+
+    @polarion("RHEVM-17163")
+    def test_network_not_in_dc_with_mapping(self):
+        """
+        Check that network of imported VM was mapped to new network
+        """
+        testflow.step(
+            "Check the network %s of imported VM %s changed to %s",
+            self.src_net, self.vm, self.dst_net
+        )
+        assert ll_vms.check_vnic_on_vm_nic(
+            vm=self.vm, nic=self.vm_nic, vnic=self.dst_net
+        )
+
+
+@pytest.mark.usefixtures(
+    init_fixture.__name__,
+    reset_host_sriov_params.__name__,
+    set_num_of_vfs.__name__,
+    update_vnic_profiles.__name__,
+    add_vnics_to_vm.__name__,
+    start_vm.__name__,
+)
+@pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
+class TestSanity17(TestSanityCaseBase):
+    """
+    Test start VM with passthrough vNIC profile.
+    """
+
+    # General
+    vm = conf.VM_0
+    vm_nic_1 = sanity_conf.VNIC_PROFILES[17][0]
+    net_1 = sanity_conf.NETS[17][0]
+    dc = conf.DC_0
+
+    # remove_vnics_from_vm
+    nics = [vm_nic_1]
+
+    # set_num_of_vfs
+    num_of_vfs = 1
+
+    # update_vnic_profiles
+    vnics_profiles = {
+        net_1: {
+            "pass_through": True
+        }
+    }
+
+    # add_vnics_to_vm
+    pass_through_vnic = [True]
+    profiles = [net_1]
+    vms = [vm]
+    nets = profiles
+
+    # start_vm
+    vms_to_stop = vms
+
+    @polarion("RHEVM-19654")
+    def test_01_run_vm_with_passthrough_vnic_profile_and_one_vf(self):
+        """
+        Start VM when there are one VF with passthrough vNIC profile.
+        """
+        testflow.step(
+            "Start VM: %s which uses passthrough vNIC profile", self.vm
+        )
+        assert ll_vms.startVm(positive=True, vm=self.vm)
+
+
+@pytest.mark.usefixtures(
+    clean_host_interfaces.__name__,
+    nmcli_create_networks.__name__
+)
+class TestSanity18(TestSanityCaseBase):
+    """
+    Create flat connection via NetworkManager and use it via VDSM
+    """
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+    # NetworkManager flat network params
+    flat_connection = "flat_nm_net"
+    flat_type = "nic"
+    flat_rhv_network = sanity_conf.NETS[18][0]
+
+    @bz({"1426225": {}})
+    def test_acquire_nm_connetion(self):
+        """
+        Use network that was created via NetworkManager in VDSM
+        """
+        sn_dict = {
+            "add": {
+                "1": {
+                    "network": self.flat_rhv_network,
+                    "nic": conf.HOST_0_NICS[1],
+                }
+            }
+        }
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **sn_dict
         )

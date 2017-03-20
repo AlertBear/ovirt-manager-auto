@@ -7,6 +7,7 @@ Config file for sanity test
 
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
 
 
 # Host network QoS
@@ -27,6 +28,16 @@ VNIC_PROFILES = global_helper.generate_object_names(
 VNICS = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=10, prefix="sanity_vnic"
 )
+# Register_domain
+EXTRA_SD_NAME = "sanity_register_domain_network_SD"
+EXTRA_SD_PATH = conf.UNUSED_DATA_DOMAIN_PATHS[0]
+EXTRA_SD_ADDRESS = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
+REGISTER_VM_NAME = "sanity_register_domain_network_vm"
+MAC_NOT_IN_POOL = "00:00:00:00:00:01"
+REGISTER_VM_NIC = "sanity_register_domain_vnic"
+
+IPV6_IPS = network_helper.create_random_ips(mask=24, ip_version=6)
+
 HOST_NAME = None  # Filled in test
 HOST_VDS = None  # Filled in test
 
@@ -162,7 +173,19 @@ SN_DICT = {
     NETS[12][0]: {
         "required": "false",
     },
-    NETS[15][0]: {
-        "required": "true",
+    NETS[14][0]: {
+        "required": "false",
+    },
+    NETS[16][0]: {
+        "required": "false",
+    },
+    NETS[16][1]: {
+        "required": "false",
+    },
+    NETS[17][0]: {
+        "required": "false",
+    },
+    NETS[18][0]: {
+        "required": "false"
     },
 }

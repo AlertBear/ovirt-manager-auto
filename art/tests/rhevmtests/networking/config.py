@@ -88,3 +88,13 @@ SASL_ON = "sasl"
 
 # Network Filter
 VDSM_NO_MAC_SPOOFING = "vdsm-no-mac-spoofing"
+
+# Host network api
+BASIC_IPV6_DICT = {
+    "ip": {
+        "address": None,
+        "netmask": "24",
+        "boot_protocol": "static",
+        "version": "v6"
+    }
+}

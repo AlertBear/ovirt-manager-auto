@@ -7,7 +7,7 @@ Acquire connections created by NetworkManager
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as ll_host_network
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as nm_conf
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, attr
@@ -34,8 +34,9 @@ def nm_networks_prepare_setup(request):
         Remove networks from setup
         """
         assert network_helper.remove_networks_from_setup(
-                    hosts=nm_networks.host_0_name
-                )
+            hosts=nm_networks.host_0_name
+        )
+    request.addfinalizer(fin)
 
     network_helper.prepare_networks_on_setup(
         networks_dict=nm_conf.NETS_DICT, dc=nm_networks.dc_0,
@@ -123,6 +124,6 @@ class TestAcquireNmConnections(NetworkTest):
                 }
             }
         }
-        assert ll_host_network.setup_networks(
+        assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **sn_dict
         )

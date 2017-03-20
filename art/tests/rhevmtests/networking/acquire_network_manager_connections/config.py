@@ -9,7 +9,6 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 
 TIMEOUT = 10
-VLAN_IDS = [str(i) for i in xrange(2, 10)]
 CON_DOWN_CMD = "nmcli connection down {connection}"
 CON_UP_CMD = "nmcli connection up {connection}"
 CONNECT_CMD = "nmcli device connect {nic}"

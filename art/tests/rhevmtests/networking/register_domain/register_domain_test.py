@@ -31,6 +31,7 @@ class TestRegisterDomain01(NetworkTest):
     exists on datacenter
     """
     __test__ = True
+    data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[1][0]
     reassessing_mac = False
 
@@ -70,6 +71,7 @@ class TestRegisterDomain02(NetworkTest):
     in the import process
     """
     __test__ = True
+    data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[2][0]
     src_net = register_domain_conf.NETS[2][0]
     dst_net = register_domain_conf.NETS[2][1]
@@ -118,6 +120,7 @@ class TestRegisterDomain03(NetworkTest):
     the network in the import process
     """
     __test__ = True
+    data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[3][0]
     net = register_domain_conf.NETS[3][0]
     reassessing_mac = False
@@ -162,6 +165,7 @@ class TestRegisterDomain04(NetworkTest):
     with reassessing MAC flag
     """
     __test__ = True
+    data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[4][0]
 
     @polarion("RHEVM-17153")
@@ -222,6 +226,7 @@ class TestRegisterDomain06(NetworkTest):
     without reassessing MAC flag and allow duplicate flag in MAC pool
     """
     __test__ = True
+    data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[6][0]
     reassessing_mac = False
 
@@ -286,6 +291,7 @@ class TestRegisterDomain08(NetworkTest):
     datacenter but force to import with empty vNIC
     """
     __test__ = True
+    data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[8][0]
     reassessing_mac = False
     net = register_domain_conf.NETS[8][0]

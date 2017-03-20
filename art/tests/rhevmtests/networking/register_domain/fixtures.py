@@ -119,12 +119,12 @@ def import_vm_from_data_domain(request):
     Import VM from data domain
     """
     register_domain = NetworkFixtures()
-    data_domain_name = register_domain_conf.EXTRA_SD_NAME
+    data_domain_name = request.node.cls.data_domain_name
     vm = request.node.cls.vm
     reassessing_mac = getattr(request.node.cls, "reassessing_mac", True)
     network_mappings = getattr(request.node.cls, "network_mappings", list())
     unregistered_vms = ll_storage.get_unregistered_vms(
-        storage_domain=register_domain_conf.EXTRA_SD_NAME
+        storage_domain=data_domain_name
     )
     vm_to_import = [i for i in unregistered_vms if i.name == vm]
     assert vm_to_import

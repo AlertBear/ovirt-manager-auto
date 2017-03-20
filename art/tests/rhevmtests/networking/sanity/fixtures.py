@@ -4,15 +4,21 @@
 """
 Fixtures for sanity
 """
+import re
+import shlex
 
 import pytest
 
+import art.rhevm_api.tests_lib.high_level.storagedomains as hl_storage
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storage
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
+import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking.acquire_network_manager_connections import helper
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
@@ -192,3 +198,113 @@ def add_labels(request):
         }
         testflow.setup("Add label %s to %s", lb, nets)
         assert ll_networks.add_label(**label_dict)
+
+
+@pytest.fixture(scope="class")
+def prepare_setup_for_register_domain(request):
+    """
+    Add storage domain to setup.
+    Create VM.
+    """
+    sanity_register_domain = NetworkFixtures()
+    storage_name = sanity_conf.EXTRA_SD_NAME
+    storage_address = sanity_conf.EXTRA_SD_ADDRESS
+    storage_path = sanity_conf.EXTRA_SD_PATH
+    dc = sanity_register_domain.dc_0
+    cluster = sanity_register_domain.cluster_0
+    host = sanity_register_domain.host_0_name
+    vm = request.node.cls.vm
+    mac = sanity_conf.MAC_NOT_IN_POOL
+    network = request.node.cls.net
+    vm_nic = request.node.cls.vm_nic
+
+    def fin():
+        """
+        Remove storage domain from setup
+        """
+        testflow.teardown(
+            "Remove storage domain %s from DC %s", storage_name, dc
+        )
+        assert hl_storage.remove_storage_domain(
+            name=storage_name, datacenter=dc, host=host,
+            format_disk=True, engine=conf.ENGINE
+        )
+    request.addfinalizer(fin)
+
+    testflow.setup("Add NFS storage domain %s to DC %s", storage_name, dc)
+    assert hl_storage.addNFSDomain(
+        host=host, storage=storage_name, data_center=dc,
+        address=storage_address, path=storage_path
+    )
+    testflow.setup(
+        "Create VM %s with: %s, %s", vm, network, mac or "MAC from pool"
+    )
+    assert ll_vms.createVm(
+        positive=True, vmName=vm, cluster=cluster, network=network,
+        vnic_profile=network, mac_address=mac, nic=vm_nic
+    )
+    testflow.setup(
+        "Remove storage domain %s from DC %s", storage_name, dc
+    )
+    assert hl_storage.remove_storage_domain(
+        name=storage_name, datacenter=dc, host=host, engine=conf.ENGINE
+    )
+    testflow.setup("Remove VMs: %s", vm)
+    assert ll_vms.removeVm(positive=True, vm=vm)
+
+    testflow.setup("Remove networks %s from setup", network)
+    assert ll_networks.remove_network(positive=True, network=network)
+
+    testflow.setup("Import storage domain %s", storage_name)
+    assert ll_storage.importStorageDomain(
+        positive=True, type=conf.ENUMS['storage_dom_type_data'],
+        storage_type=conf.STORAGE_TYPE_NFS, address=storage_address,
+        path=storage_path, host=host
+    )
+    testflow.setup("Attach storage domain to data center %s", dc)
+    assert ll_storage.attachStorageDomain(
+        positive=True, datacenter=dc, storagedomain=storage_name
+    )
+
+
+@pytest.fixture(scope="class")
+def nmcli_create_networks(request):
+    """
+    Create networks on host via nmcli (NetworkManager)
+    """
+    nm_networks = NetworkFixtures()
+    nic_type = request.node.cls.flat_type
+    network = request.node.cls.flat_connection
+    vlan_id = None
+    host_nics = [nm_networks.host_0_nics[1]]
+
+    def fin():
+        """
+        Clean all NetworkManager networks from the host
+        """
+        all_connections = "nmcli connection show"
+        delete_cmd = "nmcli connection delete {uuid}"
+        rc, out, _ = nm_networks.vds_0_host.run_command(
+            command=shlex.split(all_connections)
+        )
+        assert not rc
+
+        for match in re.findall(r'\w+-\w+-\w+-\w+-\w+', out):
+            testflow.teardown(
+                "Remove connection %s from NetworkManager", match
+            )
+            nm_networks.vds_0_host.run_command(
+                command=shlex.split(delete_cmd.format(uuid=match))
+            )
+    request.addfinalizer(fin)
+
+    testflow.setup("Remove existing NetworkManager connections")
+    helper.remove_nm_controlled(nics=host_nics)
+    testflow.setup("Reload NetworkManager")
+    helper.reload_nm()
+
+    testflow.setup("Create connection via NetworkManager")
+    helper.create_eth_connection(
+        nic_type=nic_type, nics=host_nics, vlan_id=vlan_id,
+        connection=network
+    )

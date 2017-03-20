@@ -371,15 +371,6 @@ BASIC_IP_DICT_PREFIX = {
     }
 }
 
-BASIC_IPV6_DICT = {
-    "ip": {
-        "address": None,
-        "netmask": "24",
-        "boot_protocol": "static",
-        "version": "v6"
-    }
-}
-
 BASIC_IPV4_AND_IPV6_DICT = {
     "ipv6": {
         "address": None,
@@ -396,7 +387,7 @@ BASIC_IPV4_AND_IPV6_DICT = {
 
 IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip"]
 IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip"]
-IPV6_IP_DICT = BASIC_IPV6_DICT["ip"]
+IPV6_IP_DICT = conf.BASIC_IPV6_DICT["ip"]
 
 SN_DICT = {
     # test_multiple_vlans_networks_on_nic params
