@@ -14,13 +14,14 @@ from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
 )
 from rhevmtests.storage.fixtures import (
-    create_vm, delete_disks, remove_vm  # flake8: noqa
+    create_vm, delete_disks,
 )
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 from rhevmtests.storage.storage_live_disk_description_edit.fixtures import (
     add_disks_permutation, create_second_vm, poweroff_vms,
 )
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 
 logger = logging.getLogger(__name__)
@@ -233,8 +234,8 @@ class TestCase11503(BasicEnvironment):
                 vmName=self.vm_name
             )
         testflow.step("Start VMs %s and %s",  self.vm_name,  self.vm_name_2)
-        ll_vms.startVm(True, self.vm_name)
-        ll_vms.startVm(True, self.vm_name_2)
+        ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
+        ll_vms.startVm(True, self.vm_name_2, wait_for_ip=True)
         assert ll_vms.waitForVmsStates(True, [self.vm_name, self.vm_name_2])
 
         for disk_alias in disks_to_hotplug:
