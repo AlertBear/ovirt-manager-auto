@@ -261,7 +261,7 @@ NETS_CLASS_06_DICT = {
 }
 
 NETS_CLASS_07_DICT = {
-    # host_network_api: test_attach_network_to_nic_mixeds etup_network_fixture
+    # host_network_api: test_attach_network_to_nic_mixeds setup_network_fixture
     NETS[7][0]: {
         "required": "false",
     },
@@ -467,6 +467,14 @@ SN_DICT = {
     },
     SN_NETS[4][3]: {
         "required": "false"
+    },
+    SN_NETS[5][0]: {
+        "required": "false",
+        "usages": ""
+    },
+    SN_NETS[5][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS.pop(0)
     },
 }
 

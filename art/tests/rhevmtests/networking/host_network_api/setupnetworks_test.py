@@ -499,3 +499,53 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
+
+
+@attr(tier=2)
+@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+class TestHostNetworkApiSetupNetworks05(NetworkTest):
+    """
+    1) Detach the non-vm network and verify that the static ip was removed
+       from the interface on the host
+    """
+    non_vm_net = net_api_conf.SN_NETS[5][0]
+    non_vm_ip = net_api_conf.IPS.pop(0)
+    vlan_net = net_api_conf.SN_NETS[5][1]
+
+    # setup_networks_fixture params
+    net_api_conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = non_vm_ip
+    hosts_nets_nic_dict = {
+        0: {
+            non_vm_net: {
+                "nic": 1,
+                "network": non_vm_net,
+                "ip": net_api_conf.BASIC_IP_DICT_NETMASK,
+            },
+            vlan_net: {
+                "nic": 1,
+                "network": vlan_net,
+            }
+        }
+    }
+
+    @bz({"1432386": {}})
+    @polarion("RHEVM-19629")
+    def test_ip_wiped_after_non_vm_delete(self):
+        """
+        Detach the non-vm network and verify that the static ip was removed
+        from the interface on the host
+        """
+        host_nic = conf.HOST_0_NICS[1]
+        remove_sn = {
+            "remove": {
+                "networks": [self.non_vm_net]
+            }
+        }
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **remove_sn
+        )
+        testflow.step(
+            "Check that IP %s was removed from host NIC %s",
+            self.non_vm_ip, host_nic
+        )
+        assert not conf.VDS_0_HOST.network.find_ip_by_int(host_nic)
