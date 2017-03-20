@@ -676,6 +676,7 @@ class TestCase6230(TestCase):
                 )
 
 
+@bz({'1433949': {}})
 @pytest.mark.usefixtures(
     create_vm.__name__,
     delete_disks.__name__,
