@@ -11,7 +11,8 @@ import copy
 import logging
 import pytest
 from fixtures import (
-    vm_pool_teardown, create_vm_pool, add_user, set_cluster_mac_pool
+    vm_pool_teardown, create_vm_pool, add_user, set_cluster_mac_pool,
+    stop_pool_vms_safely_before_removal
 )
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
@@ -22,7 +23,7 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest, attr, testflow
 from rhevmtests.virt.vm_pools import helpers
 import rhevmtests.helpers as gen_helper
@@ -79,7 +80,6 @@ class TestAddVmsToPool(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     new_pool_size = 3
 
-    @bz({'1408577': {}})
     @polarion("RHEVM3-9870")
     def test_add_vms_to_pool(self):
         """
@@ -144,7 +144,8 @@ class TestAdminStartedVmNotStateless(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestUserStartedVmIsStateless(VirtTest):
     """

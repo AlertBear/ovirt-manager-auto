@@ -33,7 +33,6 @@ def vm_pool_teardown(request):
         """
         base finalizer for all vm pool test cases
         """
-        ll_vms.stop_vms_safely([config.CPU_HOTPLUG_VM])
         testflow.teardown("Base teardown for VM pool test")
         for pool in pool_name:
             if ll_vmpools.does_vm_pool_exist(pool):
@@ -42,6 +41,44 @@ def vm_pool_teardown(request):
                 else:
                     if not ll_vmpools.removeVmPool(True, pool, wait=True):
                         helpers.wait_for_vm_pool_removed(pool)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope='class')
+def stop_pool_vms_safely_before_removal(request):
+    """
+    Stops the vms in the pool safely before removing the pool.
+    This fixture is used when a stateless pool has running vms which require
+    a stateless snapshot to be restored when they are stopped
+    """
+    pool_name = request.node.cls.pool_name
+    prestarted = bool(ll_vmpools.get_vm_pool_number_of_prestarted_vms(
+        pool_name)
+    )
+
+    def fin():
+        """
+        Stops all vms in the pool safely
+        """
+        if prestarted:
+            testflow.teardown(
+                "Canceling prestarted vms setting for pool: %s", pool_name
+            )
+            assert ll_vmpools.updateVmPool(True, pool_name, prestarted_vms=0)
+        testflow.teardown(
+            "Removing userRole permissions for user Admin from vms in "
+            "pool: %s", pool_name
+        )
+        if ll_vmpools.get_vm_pool_type(pool_name) == config.POOL_TYPE_MANUAL:
+            for vm in helpers.get_user_vms(
+                pool_name, config.ADMIN_USER_NAME, config.USER_ROLE
+            ):
+                assert ll_mla.removeUserRoleFromVm(
+                    True, vm, config.ADMIN_USER_NAME, config.USER_ROLE
+                )
+        testflow.teardown("Stop vms in pool: %s safely", pool_name)
+        assert hl_vmpools.stop_vm_pool(pool_name)
+
     request.addfinalizer(fin)
 
 

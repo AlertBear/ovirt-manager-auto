@@ -11,7 +11,7 @@ import helpers
 import logging
 import pytest
 from fixtures import (
-    create_vm_pool, add_user,
+    create_vm_pool, add_user, stop_pool_vms_safely_before_removal,
     vm_pool_teardown  # flake8: noqa
 )
 from art.rhevm_api.tests_lib.low_level import (
@@ -30,9 +30,7 @@ logger = logging.getLogger("virt.vm_pools.manual_test")
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
-)
+@pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestManualPoolCannotRecycleVm(VirtTest):
     """
     Checks that in a manual pool once a user allocated a vm from the pool, no
@@ -47,7 +45,7 @@ class TestManualPoolCannotRecycleVm(VirtTest):
 
     pool_name = 'Virt_manual_pool_cannot_recycle_vm'
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
-    pool_params['type_'] = 'manual'
+    pool_params['type_'] = config.POOL_TYPE_MANUAL
     pool_params['max_user_vms'] = 2
     users = [config.USER, config.VDC_ADMIN_USER]
 
@@ -74,7 +72,8 @@ class TestManualPoolCannotRecycleVm(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestManualPoolRememberUser(VirtTest):
     """
@@ -96,7 +95,7 @@ class TestManualPoolRememberUser(VirtTest):
 
     pool_name = 'Virt_manual_pool_remember_user'
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
-    pool_params['type_'] = 'manual'
+    pool_params['type_'] = config.POOL_TYPE_MANUAL
     users = [config.USER, config.VDC_ADMIN_USER]
 
     @polarion("RHEVM3-9876")
@@ -142,7 +141,8 @@ class TestManualPoolRememberUser(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestManualPoolRecycleVm(VirtTest):
     """
@@ -164,7 +164,7 @@ class TestManualPoolRecycleVm(VirtTest):
     pool_name = 'Virt_manual_pool_recycle_vm'
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     pool_params['size'] = 1
-    pool_params['type_'] = 'manual'
+    pool_params['type_'] = config.POOL_TYPE_MANUAL
     users = [config.USER, config.VDC_ADMIN_USER]
 
     def test_manual_pool_recycle_vm(self):

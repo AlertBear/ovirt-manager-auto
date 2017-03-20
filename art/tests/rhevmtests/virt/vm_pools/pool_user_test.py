@@ -9,7 +9,7 @@ import config
 import copy
 import pytest
 from fixtures import (
-    create_vm_pool, add_user,
+    create_vm_pool, add_user, stop_pool_vms_safely_before_removal,
     vm_pool_teardown  # flake8: noqa
 )
 from rhevmtests.virt.vm_pools import helpers
@@ -23,14 +23,14 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest, attr, testflow
 
 
 @attr(tier=2)
-@bz({'1408599': {}})
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestUserVmContinuity(VirtTest):
     """
@@ -91,9 +91,7 @@ class TestUserVmContinuity(VirtTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
-)
+@pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestTwoUsersTakeVmFromPool(VirtTest):
     """
     Tests vm allocation from pool as user + allocating remaining vm with
@@ -141,9 +139,7 @@ class TestTwoUsersTakeVmFromPool(VirtTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
-)
+@pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestNoAvailableVmsForUser(VirtTest):
     """
     Negative case - user fails to allocate vm after admin started all vms in
@@ -168,7 +164,8 @@ class TestNoAvailableVmsForUser(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestCannotStealVmFromOtherUser(VirtTest):
     """
@@ -200,7 +197,8 @@ class TestCannotStealVmFromOtherUser(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestVmReturnsToPoolAfterUse(VirtTest):
     """

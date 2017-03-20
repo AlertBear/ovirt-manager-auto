@@ -18,14 +18,15 @@ VM_POOL_ACTION_SLEEP = 5
 USER_ROLE = ENUMS['role_name_user_role']
 FILE_NAME = 'test_file'
 TEMP_PATH = '/var/tmp/'
-
+POOL_TYPE_MANUAL = 'manual'
+POOL_TYPE_AUTO = 'automatic'
 VM_POOLS_PARAMS = {
     'size': 2,
     'cluster': CLUSTER_NAME[0],
     'template': TEMPLATE_NAME[0],
     'max_user_vms': 1,
     'prestarted_vms': 0,
-    'type_': 'automatic',
+    'type_': POOL_TYPE_AUTO,
 }
 MAX_VMS_IN_POOL_TEST = 20
 MAC_POOL_SIZE = 60

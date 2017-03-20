@@ -194,7 +194,7 @@ def allocate_vms_as_user(
             )
 
 
-def get_user_vms(pool_name, user_name, user_role, number_of_vms):
+def get_user_vms(pool_name, user_name, user_role, number_of_vms=-1):
     """
     Verifies that a vm from the pool is allocated to the user and that user was
     given user_role permissions on the vm. Returns the list of vms for the pool
@@ -227,7 +227,7 @@ def get_user_vms(pool_name, user_name, user_role, number_of_vms):
             )
             user_vms.append(vm)
             ll_vms.wait_for_vm_states(vm.get_name())
-    if len(user_vms) == number_of_vms:
+    if number_of_vms == -1 or len(user_vms) == number_of_vms:
         return [vm.get_name() for vm in user_vms]
     else:
         logger.error("User got an unexpected number of vms: %d", len(user_vms))

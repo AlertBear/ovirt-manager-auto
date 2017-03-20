@@ -84,15 +84,16 @@ def _control_vms_in_pool(
         test_utils.raise_if_exception(results)
     else:
         for vm_name in vms_list:
-            if not ll_vms.changeVMStatus(
-                positive=positive, vm=vm_name, action=action,
-                expectedStatus=expected_status, async='false'
-            ):
-                logger.error(
-                    "Failed to set status: %s for vm: %s",
-                    expected_status, vm_name
-                )
-                return False
+            if ll_vms.get_vm_state(vm_name) != expected_status:
+                if not ll_vms.changeVMStatus(
+                    positive=positive, vm=vm_name, action=action,
+                    expectedStatus=expected_status, async='false'
+                ):
+                    logger.error(
+                        "Failed to set status: %s for vm: %s",
+                        expected_status, vm_name
+                    )
+                    return False
         if action == ENUMS['stop_vm']:
             for vm_name in vms_list:
                 if not hl_vms.wait_for_restored_stateless_snapshot(vm_name):

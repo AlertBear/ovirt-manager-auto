@@ -10,7 +10,7 @@ import copy
 import logging
 import pytest
 from fixtures import (
-    create_vm_pool, add_user,
+    create_vm_pool, add_user, stop_pool_vms_safely_before_removal,
     vm_pool_teardown  # flake8: noqa
 )
 from rhevmtests.virt.vm_pools import helpers
@@ -20,14 +20,16 @@ from art.rhevm_api.tests_lib.low_level import (
     vmpools as ll_vmpools,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest, attr, testflow
 
 logger = logging.getLogger("virt.vm_pools.prestarted_vms")
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(create_vm_pool.__name__)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__
+)
 class TestAdminStartVmAndPrestartedVms(VirtTest):
     """
     Tests that the running VMs in the pool amount to VMs started by admin +
@@ -42,7 +44,6 @@ class TestAdminStartVmAndPrestartedVms(VirtTest):
     updated_prestarted = 2
 
     @polarion("RHEVM3-9860")
-    @bz({'1408577': {}})
     def test_add_vm_and_increase_prestarted_vms(self):
         """
         Tests that the running VMs in the pool amount to VMs started by admin +
@@ -67,7 +68,9 @@ class TestAdminStartVmAndPrestartedVms(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
+
 )
 class TestPoolSizeMoreThanPrestartedUserTakeVms(VirtTest):
     """
@@ -121,7 +124,8 @@ class TestPoolSizeMoreThanPrestartedUserTakeVms(VirtTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestPoolSizeMoreThanPrestartedUserAndAdminTakeVms(VirtTest):
     """
@@ -188,9 +192,9 @@ class TestPoolSizeMoreThanPrestartedUserAndAdminTakeVms(VirtTest):
 
 
 @attr(tier=2)
-@bz({'1408599': {}})
 @pytest.mark.usefixtures(
-    create_vm_pool.__name__, add_user.__name__
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
+    add_user.__name__,
 )
 class TestUserTakeAllPrestartedVmsFromPool(VirtTest):
     """
@@ -247,7 +251,9 @@ class TestUserTakeAllPrestartedVmsFromPool(VirtTest):
 
 
 @attr(tier=1)
-@pytest.mark.usefixtures(create_vm_pool.__name__)
+@pytest.mark.usefixtures(
+    create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__
+)
 class TestUpdatePoolWithPrestartedVms(VirtTest):
     """
     Tests update of prestarted_vms paramter value in pool.
@@ -260,7 +266,6 @@ class TestUpdatePoolWithPrestartedVms(VirtTest):
     update_prestarted_vms = 2
 
     @polarion("RHEVM3-9873")
-    @bz({'1408577': {}})
     def test_update_vm_pool_with_prestarted_vms(self):
         """
         Tests update of prestarted_vms parameter value in pool:
@@ -289,7 +294,6 @@ class TestUpdatePoolWithTooManyPrestartedVms(VirtTest):
     updated_prestarted_vms = 3
 
     @polarion("RHEVM3-12740")
-    @bz({'1408577': {}})
     def test_create_pool_with_too_many_prestarted_vms(self):
         """
         Negative - update of prestarted vms parametr with an invalid value:
