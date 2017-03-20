@@ -96,15 +96,6 @@ class Windows(TestCase):
     """
     __test__ = False
     disk_name = None
-    polarion_map = {}  # Store polarion id of specific windows cases
-
-    def __init__(self, *args, **kwargs):
-        """ create a copy of method with relevant polarion_id """
-        super(Windows, self).__init__(*args, **kwargs)
-        pid = self.polarion_map.get(self._testMethodName, None)
-        if pid:
-            m = getattr(self, self._testMethodName)
-            polarion(pid)(m.__func__)
 
     @pytest.fixture(scope='class', autouse=True)
     def setup_vm(self, request):
@@ -229,25 +220,23 @@ class Win2008R2_CI_64b(Windows):
     architecture = config.WIN2008R2_64B['architecture']
     codename = config.WIN2008R2_64B['codename']
     os_type = config.ENUMS['windows2008r2x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14429',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14430',
-        'test_guest_timezone': 'RHEVM3-14431',
-        'test_guest_os': 'RHEVM3-14432',
-    }
 
+    @polarion("RHEVM3-14429")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14430")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14432")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14431")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -265,12 +254,6 @@ class Win2008R2_CI_core_64b(Windows):
     architecture = config.WIN2008R2_64B['architecture']
     codename = config.WIN2008R2_64B['codename']
     os_type = config.ENUMS['windows2008r2x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM-14780',
-        'test_vm_ip_fqdn_info': 'RHEVM-14781',
-        'test_guest_timezone': 'RHEVM-14782',
-        'test_guest_os': 'RHEVM-14783',
-    }
 
     # Windows2008 Core needs restart after GT installation to work properly
     @classmethod
@@ -278,18 +261,22 @@ class Win2008R2_CI_core_64b(Windows):
     def setup_w2008r2_core(cls):
         ll_vms.restartVm(cls.vm_name, wait_for_ip=True)
 
+    @polarion("RHEVM-14780")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM-14781")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM-14783")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM-14782")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -307,25 +294,23 @@ class Win2012R2_CI_64b(Windows):
     architecture = config.WIN2012R2_64B['architecture']
     codename = config.WIN2012R2_64B['codename']
     os_type = config.ENUMS['windows2012r2x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14405',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14406',
-        'test_guest_timezone': 'RHEVM3-14407',
-        'test_guest_os': 'RHEVM3-14408',
-    }
 
+    @polarion("RHEVM3-14405")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14406")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14408")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14407")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -343,25 +328,23 @@ class Win2012R2_CI_core_64b(Windows):
     architecture = config.WIN2012R2_64B['architecture']
     codename = config.WIN2012R2_64B['codename']
     os_type = config.ENUMS['windows2012r2x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14769',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14770',
-        'test_guest_timezone': 'RHEVM3-14771',
-        'test_guest_os': 'RHEVM3-14772',
-    }
 
+    @polarion("RHEVM3-14769")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14770")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14772")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14771")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -379,25 +362,23 @@ class Win2012_CI_64b(Windows):
     architecture = config.WIN2012_64B['architecture']
     codename = config.WIN2012_64B['codename']
     os_type = config.ENUMS['windows2012x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14433',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14434',
-        'test_guest_timezone': 'RHEVM3-14435',
-        'test_guest_os': 'RHEVM3-14436',
-    }
 
+    @polarion("RHEVM3-14433")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14434")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14436")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14435")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -415,25 +396,23 @@ class Win2012_CI_core_64b(Windows):
     architecture = config.WIN2012_64B['architecture']
     codename = config.WIN2012_64B['codename']
     os_type = config.ENUMS['windows2012x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM-14784',
-        'test_vm_ip_fqdn_info': 'RHEVM-14785',
-        'test_guest_timezone': 'RHEVM-14786',
-        'test_guest_os': 'RHEVM-14787',
-    }
 
+    @polarion("RHEVM-14784")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM-14785")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM-14787")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM-14786")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -451,25 +430,23 @@ class Win7_CI_32b(Windows):
     architecture = config.WIN7_32B['architecture']
     codename = config.WIN7_32B['codename']
     os_type = config.ENUMS['windows7']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14425',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14426',
-        'test_guest_timezone': 'RHEVM3-14427',
-        'test_guest_os': 'RHEVM3-14428',
-    }
 
+    @polarion("RHEVM3-14425")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14426")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14428")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14427")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -487,25 +464,23 @@ class Win7_CI_64b(Windows):
     architecture = config.WIN7_64B['architecture']
     codename = config.WIN7_64B['codename']
     os_type = config.ENUMS['windows7x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14437',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14438',
-        'test_guest_timezone': 'RHEVM3-14439',
-        'test_guest_os': 'RHEVM3-14440',
-    }
 
+    @polarion("RHEVM3-14437")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14438")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14440")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14439")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -523,25 +498,23 @@ class Win8_1_CI_32b(Windows):
     architecture = config.WIN8_1_32B['architecture']
     codename = config.WIN8_1_32B['codename']
     os_type = config.ENUMS['windows8']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14409',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14410',
-        'test_guest_timezone': 'RHEVM3-14411',
-        'test_guest_os': 'RHEVM3-14412',
-    }
 
+    @polarion("RHEVM3-14409")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14410")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14412")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14411")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -559,25 +532,23 @@ class Win8_1_CI_64b(Windows):
     architecture = config.WIN8_1_64B['architecture']
     codename = config.WIN8_1_64B['codename']
     os_type = config.ENUMS['windows8x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14417',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14418',
-        'test_guest_timezone': 'RHEVM3-14419',
-        'test_guest_os': 'RHEVM3-14420',
-    }
 
+    @polarion("RHEVM3-14417")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14418")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14420")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14419")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -595,25 +566,23 @@ class Win8_CI_32b(Windows):
     architecture = config.WIN8_32B['architecture']
     codename = config.WIN8_32B['codename']
     os_type = config.ENUMS['windows8']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM-14792',
-        'test_vm_ip_fqdn_info': 'RHEVM-14793',
-        'test_guest_timezone': 'RHEVM-14794',
-        'test_guest_os': 'RHEVM-14795',
-    }
 
+    @polarion("RHEVM-14792")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM-14793")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM-14795")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM-14794")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -631,25 +600,23 @@ class Win8_CI_64b(Windows):
     architecture = config.WIN8_64B['architecture']
     codename = config.WIN8_64B['codename']
     os_type = config.ENUMS['windows8x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM-14788',
-        'test_vm_ip_fqdn_info': 'RHEVM-14789',
-        'test_guest_timezone': 'RHEVM-14790',
-        'test_guest_os': 'RHEVM-14791',
-    }
 
+    @polarion("RHEVM-14788")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM-14789")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM-14791")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM-14790")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
@@ -667,25 +634,23 @@ class Windows10_64b(Windows):
     architecture = config.WIN10_64B['architecture']
     codename = config.WIN10_64B['codename']
     os_type = config.ENUMS['windows10x64']
-    polarion_map = {
-        'test_guest_applications': 'RHEVM3-14413',
-        'test_vm_ip_fqdn_info': 'RHEVM3-14414',
-        'test_guest_timezone': 'RHEVM3-14415',
-        'test_guest_os': 'RHEVM3-14416',
-    }
 
+    @polarion("RHEVM3-14413")
     def test_guest_applications(self):
         """ Check guest applications are reported """
         self.check_guest_applications()
 
+    @polarion("RHEVM3-14414")
     def test_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
         self.check_vm_ip_fqdn_info()
 
+    @polarion("RHEVM3-14416")
     def test_guest_os(self):
         """ Check guest OS info is reported """
         self.check_guest_os()
 
+    @polarion("RHEVM3-14415")
     def test_guest_timezone(self):
         """ Check guest timezone reported """
         self.check_guest_timezone()
