@@ -5,7 +5,6 @@ from rhevmtests.config import *  # flake8: noqa
 
 __test__ = False
 
-
 TESTNAME = "GlobalStorage"
 DATA_CENTER_NAME = DC_NAME[0]
 CLUSTER_NAME = CLUSTER_NAME[0]
@@ -337,7 +336,6 @@ DEV_ZERO = '/dev/zero'
 DEV_URANDOM = '/dev/urandom'
 MOUNT_POINT = None
 
-# FIXTURES SECTION
 MASTER_DOMAIN = None
 MOUNT_POINTS = dict()
 
