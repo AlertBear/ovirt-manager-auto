@@ -4,7 +4,6 @@ Testing working with permissions.
 Tests if permissions are correctly inherited/viewed/assigned/removed.
 """
 import logging
-
 import pytest
 
 from art.rhevm_api.tests_lib.high_level import (
@@ -64,9 +63,6 @@ def setup_module(request):
 
         testflow.teardown("Removing VM %s.", vm_name)
         vms.removeVm(True, vm_name, wait=True)
-
-        testflow.teardown("Removing pool %s.", config.VMPOOL_NAME)
-        ll_vmpools.removeVmPool(True, config.VMPOOL_NAME)
 
         testflow.teardown("Removing template %s.", config.TEMPLATE_NAMES[0])
         templates.remove_template(True, config.TEMPLATE_NAMES[0])
