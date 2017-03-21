@@ -45,7 +45,7 @@ def cpu_hot_plug_setup(request):
         vm=vm_name,
         memory=config.GB,
         max_memory=gen_helper.get_gb(4),
-        os_type=config.OS_RHEL_7,
+        os_type=config.VM_OS_TYPE,
         compare=False
     )
 
@@ -77,7 +77,7 @@ def create_vm_from_glance(request):
         memory=gen_helper.get_gb(4),
         max_memory=gen_helper.get_gb(8),
         memory_guaranteed=gen_helper.get_gb(2),
-        os_type=config.OS_RHEL_7,
+        os_type=config.VM_OS_TYPE,
         compare=False
     )
     ll_vms.start_vms(

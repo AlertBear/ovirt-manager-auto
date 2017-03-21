@@ -166,7 +166,7 @@ def create_vm_from_glance(request):
         memory=gen_helper.get_gb(2),
         max_memory=gen_helper.get_gb(4),
         memory_guaranteed=config.GB,
-        os_type=config.OS_RHEL_7
+        os_type=config.VM_OS_TYPE
     ), virt_helper.get_err_msg(action=action[1], vm_name=vm_name)
     hosts = [config.HOSTS[0], config.HOSTS[1]]
     status, host_index_max_mem = (
@@ -425,7 +425,7 @@ def over_load_test(request, update_cluster_over_commit):
     virt_helper.set_host_status()
     testflow.setup("Updates 2 VMs %s to 85 percent of host memory", test_vms)
     assert hl_vms.update_os_type(
-        os_type=config.OS_RHEL_7, test_vms=test_vms
+        os_type=config.VM_OS_TYPE, test_vms=test_vms
     ), virt_helper.get_err_msg(update_os_type, vm_name=test_vms)
     status, config.HOST_INDEX_MAX_MEMORY = (
         hl_vms.set_vms_with_host_memory_by_percentage(

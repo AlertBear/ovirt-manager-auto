@@ -51,8 +51,9 @@ VM_RUN_ONCE = "vm_run_once"
 VM_DESCRIPTION = PARAMETERS.get('vm_description', '%s_test' % TEST_NAME)
 
 USERNAME = VDC_ADMIN_USER
+OS_RHEL_7 = ENUMS['rhel7x64']
 
-VM_OS_TYPE = ENUMS[RHEL7PPC64] if PPC_ARCH else ENUMS['rhel6x64']
+VM_OS_TYPE = ENUMS[RHEL7PPC64] if PPC_ARCH else OS_RHEL_7
 VM_DISPLAY_TYPE = ENUMS[
     'display_type_vnc'
 ] if PPC_ARCH else ENUMS['display_type_spice']
@@ -67,7 +68,6 @@ MIGRATION_VM = VM_NAME[0]
 MIGRATION_VM_LOAD = "migration_vm_test"
 CONNECTIVITY_CHECK = False if PPC_ARCH else True
 MIGRATION_IMAGE_VM = "vm_with_loadTool"
-OS_RHEL_7 = ENUMS['rhel7x64']
 HOST_INDEX_MAX_MEMORY = -1
 # for network migration check
 NUM_PACKETS = 500
