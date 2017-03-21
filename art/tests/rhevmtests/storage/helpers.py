@@ -418,7 +418,7 @@ def create_vm_or_clone(
             update_keys = [
                 'vmDescription', 'type', 'placement_host',
                 'placement_affinity', 'highly_available',
-                'display_type', 'os_type',
+                'display_type', 'os_type', 'lease',
             ]
             update_args = dict((key, kwargs.get(key)) for key in update_keys)
             args_clone.update(update_args)
@@ -453,6 +453,7 @@ def create_vm_or_clone(
             kwargs['cluster'] = cluster
             kwargs['vmName'] = vmName
             kwargs['vmDescription'] = vmDescription
+            kwargs['lease'] = kwargs.pop('lease', None)
             glance_image = config.GOLDEN_GLANCE_IMAGE
             if not hl_vms.create_vm_using_glance_image(
                 config.GLANCE_DOMAIN, glance_image, **kwargs
@@ -1750,38 +1751,42 @@ def import_storage_domain(storage_domain, host, storage, index=0):
         AssertionError: In case of any failure
     """
     testflow.step("Import storage domain %s", storage_domain)
-    status = False
     if storage == ISCSI:
-        status = hl_sd.import_iscsi_storage_domain(
-            host, lun_address=config.UNUSED_LUN_ADDRESSES[index],
+        assert hl_sd.import_iscsi_storage_domain(
+            host, lun_address=config.UNUSED_LUNS[index],
             lun_target=config.UNUSED_LUN_TARGETS[index]
         )
 
     elif storage == FCP:
-        status = hl_sd.import_fcp_storage_domain(host)
+        assert hl_sd.import_fcp_storage_domain(host)
 
     elif storage == NFS:
-        status = ll_sd.importStorageDomain(
+        assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, NFS,
             config.UNUSED_DATA_DOMAIN_ADDRESSES[index],
             config.UNUSED_DATA_DOMAIN_PATHS[index], host
         )
     elif storage == GLUSTER:
-        status = ll_sd.importStorageDomain(
+        assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, GLUSTER,
             config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[index],
             config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[index], host,
             vfs_type=GLUSTER
         )
     elif storage == CEPH:
-        status = ll_sd.importStorageDomain(
+        assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, POSIX,
             config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index],
             config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index], host,
             vfs_type=CEPH, mount_options=config.CEPH_MOUNT_OPTIONS
         )
 
-    assert status, "Failed to import storage domain %s" % storage_domain
+    else:
+        assert False, (
+            "Storage type %s not supported, can't import storage domain %s" % (
+                storage, storage_domain
+            )
+        )
 
 
 def register_vm_from_data_domain(storage_domain, vm_name, cluster):

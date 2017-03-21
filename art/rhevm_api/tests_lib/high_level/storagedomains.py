@@ -23,9 +23,9 @@ import shlex
 from art.rhevm_api import resources
 from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import (
-    storagedomains as ll_sd,
+    disks as ll_disks,
     hosts as ll_hosts,
-    disks as ll_disks
+    storagedomains as ll_sd,
 )
 from art.rhevm_api.tests_lib.high_level import datastructures
 from art.test_handler.settings import opts
@@ -1085,3 +1085,24 @@ def get_file_storage_disks_paths(disks_ids, storage_domain_name):
             data_center_id, storage_domain_id, disk_id
         )
     return disks_paths
+
+
+def get_storage_domain_addresses(sd_name):
+    """
+    Return a list of storage domain access addresses
+
+    Args:
+        sd_name (str): Name of the storage-domain
+
+    Return:
+       list: List of addresses
+    """
+    sd_object = ll_sd.get_storage_domain_obj(sd_name)
+    sd_type = sd_object.get_storage().get_type()
+
+    if sd_type in (
+        ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']
+    ):
+        units = ll_sd.get_storage_domain_logical_units(sd_name)
+        return [lun.get_address() for lun in units]
+    return [sd_object.get_storage().get_address()]

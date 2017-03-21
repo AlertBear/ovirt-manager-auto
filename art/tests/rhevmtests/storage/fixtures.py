@@ -12,6 +12,7 @@ from art.rhevm_api.tests_lib.high_level import (
     hosts as hl_hosts
 )
 from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
     disks as ll_disks,
     hosts as ll_hosts,
     vms as ll_vms,
@@ -525,7 +526,7 @@ def create_storage_domain(request):
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def remove_storage_domain(request):
     """
     Remove storage domain
@@ -544,7 +545,7 @@ def remove_storage_domain(request):
     self.storage_domain = None
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def remove_vms(request):
     """
     Remove VM
@@ -1054,7 +1055,7 @@ def create_export_domain(request):
     )
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def remove_export_domain(request):
     """
     Remove export domain
@@ -1064,9 +1065,15 @@ def remove_export_domain(request):
     def finalizer():
         if ll_sd.checkIfStorageDomainExist(True, self.export_domain):
             testflow.teardown("Remove export domain %s", self.export_domain)
-            data_center = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
+            data_center_id = ll_sd.get_storage_domain_obj(
+                self.export_domain
+            ).get_data_centers().get_data_center()[0].get_id()
+            data_center_name = ll_dc.get_data_center(
+                data_center_id, 'id'
+            ).get_name()
+            test_utils.wait_for_tasks(config.ENGINE, data_center_name)
             assert hl_sd.remove_storage_domain(
-                self.export_domain, data_center, self.spm,
+                self.export_domain, data_center_name, self.spm,
                 engine=config.ENGINE, format_disk=True
             ), "Failed to remove export domain %s" % self.export_domain
     request.addfinalizer(finalizer)
@@ -1565,3 +1572,27 @@ def delete_snapshot(request):
         ), "Failed to remove snapshot %s" % self.snapshot_description
 
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='class')
+def deactivate_and_detach_export_domain(request):
+    """
+    Deactivate and detach the export domain and add it back
+    """
+    def finalizer():
+        testflow.teardown(
+            "Attaching and activating export domain %s to data center %s",
+            config.EXPORT_DOMAIN_NAME, config.DATA_CENTER_NAME
+        )
+        assert hl_sd.attach_and_activate_domain(
+            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
+        )
+    request.addfinalizer(finalizer)
+    testflow.setup(
+        "Deactivating and detaching export domain %s from data center %s",
+        config.EXPORT_DOMAIN_NAME, config.DATA_CENTER_NAME
+    )
+    test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
+    assert hl_sd.detach_and_deactivate_domain(
+        config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME, config.ENGINE
+    )

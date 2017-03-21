@@ -202,6 +202,8 @@ def _prepare_vm_object(**kwargs):
         rng_device (bool): Enable rng device
         rng_bytes (int): Bytes per period
         rng_period (int): Period duration (ms)
+        lease (str): Storage domain name for the lease or ''(empty string) to
+            remove the lease
 
     Returns:
         instance of VM: vm object
@@ -375,6 +377,20 @@ def _prepare_vm_object(**kwargs):
                 enabled=ha, priority=ha_priority
             )
         )
+
+    from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
+    lease = kwargs.pop("lease", None)
+    if lease is not None:
+        if lease:
+            storage_domain_obj = ll_sd.get_storage_domain_obj(lease)
+            lease_st = data_st.StorageDomainLease(
+                storage_domain=data_st.StorageDomain(
+                    id=storage_domain_obj.get_id()
+                )
+            )
+        else:
+            lease_st = data_st.StorageDomainLease()
+        vm.set_lease(lease_st)
 
     # custom properties
     custom_prop = kwargs.pop("custom_properties", None)
@@ -2682,7 +2698,7 @@ def createVm(
     watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
     numa_mode=None, ballooning=None, memory_guaranteed=None,
     initialization=None, cpu_shares=None, serial_number=None,
-    max_memory=None, **kwargs
+    max_memory=None, lease=None, **kwargs
 ):
     """
     Create new vm with nic, disk and OS
@@ -2789,10 +2805,13 @@ def createVm(
     :type serial_number: str
     :param max_memory: Upper bound for the memory hotplug
     :type max_memory: int
-    :returns: True, if create vm success, otherwise False
-    :rtype: bool
+    :param lease: Storage domain name for the lease or '' to remove the
+        lease
+    :type lease: str
     :param kwargs: additional params supported by addVm method.
     :type kwargs: dict
+    :returns: True, if create vm success, otherwise False
+    :rtype: bool
     """
     if not vmDescription:
         vmDescription = vmName

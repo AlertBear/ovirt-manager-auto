@@ -492,6 +492,7 @@ VM_WAIT_FOR_LAUNCH = ENUMS['vm_state_wait_for_launch']
 VM_POWERING_UP = ENUMS['vm_state_powering_up']
 VM_HOST_PASS_THROUGH = 'host_passthrough'
 VM_NOT_RESPONDING = ENUMS['vm_state_not_responding']
+VM_UNKNOWN = ENUMS['vm_state_unknown']
 
 # VM types
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
@@ -614,6 +615,7 @@ JOB_MIGRATE_VM = ENUMS['job_migrate_vm']
 JOB_REMOVE_VM = ENUMS['job_remove_vm']
 JOB_REMOVE_VM_FROM_EXPORT = ENUMS['job_remove_vm_from_export_domain']
 JOB_STOP_VM = ENUMS['job_stop_vm']
+JOB_UPDATE_VM = ENUMS['job_update_vm']
 
 # agent URL for guest tools testing
 AGENT_URL = 'http://10.34.63.72/cirunner/ci.php?action={action}&hostID={vm_id}'
