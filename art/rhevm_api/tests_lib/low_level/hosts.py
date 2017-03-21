@@ -1890,8 +1890,7 @@ def __prepare_fence_agent_object(**kwargs):
     if options:
         options_obj = Options()
         for name, value in options.iteritems():
-            value_obj = Value(datum=int(value))
-            option = Option(name=name, value=value_obj)
+            option = Option(name=name, value=value)
             options_obj.add_option(option)
     agent_obj = ll_general.prepare_ds_object("Agent", **kwargs)
     agent_obj.set_options(options_obj)

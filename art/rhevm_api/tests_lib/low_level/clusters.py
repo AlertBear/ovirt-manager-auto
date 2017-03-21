@@ -571,7 +571,7 @@ def get_affinity_groups_obj(cluster_name):
     )
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def create_affinity_group(cluster_name, **kwargs):
     """
     Create new affinity group under given cluster
@@ -607,7 +607,7 @@ def create_affinity_group(cluster_name, **kwargs):
     )[1]
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def update_affinity_group(cluster_name, old_name, **kwargs):
     """
     Update affinity group under the given cluster

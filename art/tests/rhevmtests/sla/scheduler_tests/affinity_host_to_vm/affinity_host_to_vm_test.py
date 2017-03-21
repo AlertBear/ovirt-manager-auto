@@ -1,29 +1,38 @@
 """
 Host To VM affinity tests
 """
-import pytest
-
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
+import pytest
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion, bz
-from rhevmtests.sla.fixtures import (
+from rhevmtests.sla.fixtures import (  # noqa: F401
     activate_hosts,
     choose_specific_host_as_spm,
+    configure_hosts_power_management,
+    migrate_he_vm,
     run_once_vms,
+    skip_if_not_he_environment,
+    stop_host_network,
     stop_vms,
+    update_cluster,
+    update_cluster_to_default_parameters,
     update_vms
 )
-from rhevmtests.sla.scheduler_tests.fixtures import create_affinity_groups
+from rhevmtests.sla.scheduler_tests.fixtures import (
+    create_affinity_groups,
+    load_hosts_cpu
+)
 
 host_as_spm = 2
+he_dst_host = 2
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def init_affinity_test(request):
     """
     1) Create 'affinity' scheduling policy
@@ -34,26 +43,12 @@ def init_affinity_test(request):
         1) Update cluster scheduling policy to 'none' policy
         2) Remove 'affinity' scheduling policy
         """
-        result_list = []
-        u_libs.testflow.teardown(
-            "Update cluster %s scheduling policy", conf.CLUSTER_NAME[0]
-        )
-        result_list.append(
-            ll_clusters.updateCluster(
-                positive=True,
-                cluster=conf.CLUSTER_NAME[0],
-                scheduling_policy=conf.POLICY_NONE
-            )
-        )
         u_libs.testflow.teardown(
             "Remove %s scheduling policy", conf.AFFINITY_POLICY_NAME
         )
-        result_list.append(
-            ll_sch_policies.remove_scheduling_policy(
-                policy_name=conf.AFFINITY_POLICY_NAME
-            )
+        assert ll_sch_policies.remove_scheduling_policy(
+            policy_name=conf.AFFINITY_POLICY_NAME
         )
-        assert all(result_list)
     request.addfinalizer(fin)
 
     u_libs.testflow.setup(
@@ -61,21 +56,20 @@ def init_affinity_test(request):
     )
     sch_helpers.add_affinity_scheduler_policy()
 
-    u_libs.testflow.setup(
-        "Update cluster %s scheduling policy", conf.CLUSTER_NAME[0]
-    )
-    assert ll_clusters.updateCluster(
-        positive=True,
-        cluster=conf.CLUSTER_NAME[0],
-        scheduling_policy=conf.AFFINITY_POLICY_NAME
-    )
 
-
-@pytest.mark.usefixtures(choose_specific_host_as_spm.__name__)
+@pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
+    choose_specific_host_as_spm.__name__,
+    init_affinity_test.__name__,
+    update_cluster.__name__
+)
 class BaseHostAffinity(u_libs.SlaTest):
     """
     Base class for all affinity tests
     """
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.AFFINITY_POLICY_NAME
+    }
 
     @staticmethod
     def check_vm_host(vm_name, host_name):
@@ -993,4 +987,225 @@ class TestEnforcementUnderHostAffinity09(BaseHostAffinityEnforcement):
         )
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0], expected_num_of_vms=0
+        )
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(create_affinity_groups.__name__)
+class TestNegativeAddAffinityGroup(u_libs.SlaTest):
+    """
+    Add affinity group negative test cases
+    """
+    affinity_group_name = "name_in_use_affinity_group"
+    affinity_groups = {
+        affinity_group_name: conf.HOST_TO_VM_AFFINITY_GROUP_1
+    }
+
+    @polarion("RHEVM-18985")
+    def test_add_affinity_group_with_name_in_use(self):
+        """
+        Add the affinity group with the name that already in use
+        """
+        assert not ll_clusters.create_affinity_group(
+            cluster_name=conf.CLUSTER_NAME[0], name=self.affinity_group_name
+        )
+
+    @polarion("RHEVM-18986")
+    def test_add_affinity_group_with_long_name(self):
+        """
+        Add the affinity group with the name that exceeds the defined limit
+        """
+        affinity_group_name = "a" * 256
+        assert not ll_clusters.create_affinity_group(
+            cluster_name=conf.CLUSTER_NAME[0], name=affinity_group_name
+        )
+
+    @polarion("RHEVM-18987")
+    def test_add_affinity_group_with_special_characters_name(self):
+        """
+        Add the affinity group with the name that includes special characters
+        """
+        affinity_group_name = "@_@"
+        assert not ll_clusters.create_affinity_group(
+            cluster_name=conf.CLUSTER_NAME[0], name=affinity_group_name
+        )
+
+
+@u_libs.attr(tier=1)
+class TestAffinityModuleExistenceUnderPolicies(u_libs.SlaTest):
+    """
+    Test that affinity filter and weight modules exist under each
+    engine policy except the InClusterUpgrade policy
+    """
+
+    @polarion("RHEVM-19282")
+    def test_modules_existence(self):
+        """
+        Verify that affinity units exist under the scheduling policies
+        """
+        affinity_host_to_vm_filter_id = ll_sch_policies.get_policy_unit(
+            unit_name=conf.VM_TO_HOST_AFFINITY_UNIT,
+            unit_type=conf.SCH_UNIT_TYPE_FILTER
+        ).get_id()
+        affinity_host_to_vm_weight_id = ll_sch_policies.get_policy_unit(
+            unit_name=conf.VM_TO_HOST_AFFINITY_UNIT,
+            unit_type=conf.SCH_UNIT_TYPE_WEIGHT
+        ).get_id()
+        for policy_name in conf.ENGINE_POLICIES:
+            if policy_name == conf.POLICY_IN_CLUSTER_UPGRADE:
+                continue
+            for unit_type, affinity_module_id in zip(
+                (conf.SCH_UNIT_TYPE_FILTER, conf.SCH_UNIT_TYPE_WEIGHT),
+                (affinity_host_to_vm_filter_id, affinity_host_to_vm_weight_id)
+            ):
+                policy_units = ll_sch_policies.get_sch_policy_units(
+                    policy_name=policy_name, unit_type=unit_type
+                )
+                policy_modules_ids = [
+                    policy_unit.get_id() for policy_unit in policy_units
+                ]
+                u_libs.testflow.step(
+                    "Verify that affinity unit with id %s "
+                    "exists under the scheduling policy %s",
+                    affinity_module_id, policy_name
+                )
+                assert affinity_module_id in policy_modules_ids
+
+
+@u_libs.attr(tier=3)
+@pytest.mark.usefixtures(
+    configure_hosts_power_management.__name__,
+    update_vms.__name__,
+    run_once_vms.__name__,
+    stop_host_network.__name__
+)
+class TestHaVmUnderHostAffinity(BaseHostAffinityStartVm):
+    """
+    Test that the engine restart the HA VM that placed under soft, positive
+    affinity group with the problematic host
+    """
+    affinity_groups = {"test_ha_vm": conf.HOST_TO_VM_AFFINITY_GROUP_3}
+    hosts_to_pms = [0]
+    vms_to_params = {conf.VM_NAME[0]: {conf.VM_HIGHLY_AVAILABLE: True}}
+    vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0}}
+    stop_network_on_host = 0
+
+    @polarion("RHEVM-19283")
+    def test_ha_vm_restart(self):
+        """
+        Verify that the engine restart the HA VM
+        """
+        u_libs.testflow.step("Wait for the HA VM restart")
+        assert ll_vms.waitForVmsStates(
+            positive=True, names=conf.VM_NAME[:1], states=conf.VM_POWERING_UP
+        )
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    skip_if_not_he_environment.__name__,
+    stop_vms.__name__
+)
+class TestEnforcementUnderHostAffinityWithHeVm(BaseHostAffinityStartVm):
+    """
+    Test that the affinity enforcement does not try to balance the HE VM
+    """
+    affinity_group_name = "test_enforcement_with_he_vm"
+    affinity_groups = {
+        affinity_group_name: {
+            conf.AFFINITY_GROUP_HOSTS_RULES: {
+                conf.AFFINITY_GROUP_POSITIVE: False,
+                conf.AFFINITY_GROUP_ENFORCING: True
+            },
+            conf.AFFINITY_GROUP_VMS_RULES: {
+                conf.AFFINITY_GROUPS_ENABLED: False
+            },
+            conf.AFFINITY_GROUP_VMS: [conf.VM_NAME[0], conf.HE_VM]
+        }
+    }
+    vms_to_stop = conf.VM_NAME[:1]
+
+    @polarion("RHEVM-19314")
+    def test_he_vm_host(self):
+        """
+        Verify that the HE VM stays on the old host
+        """
+        he_vm_host = ll_vms.get_vm_host(vm_name=conf.HE_VM)
+
+        run_once_params = {
+            conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: he_vm_host}
+        }
+        u_libs.testflow.step(
+            "Run the VM %s on the host %s", conf.VM_NAME[0], he_vm_host
+        )
+        ll_vms.run_vms_once(vms=[conf.VM_NAME[0]], **run_once_params)
+
+        assert ll_clusters.update_affinity_group(
+            cluster_name=conf.CLUSTER_NAME[0],
+            old_name=self.affinity_group_name,
+            hosts=[he_vm_host]
+        )
+
+        assert not sch_helpers.is_balancing_happen(
+            host_name=he_vm_host, expected_num_of_vms=0, add_he_vm=False
+        )
+
+        assert self.check_vm_host(vm_name=conf.HE_VM, host_name=he_vm_host)
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(load_hosts_cpu.__name__)
+class TestEnforcementAndPowerSavingBalancingLoop(BaseHostAffinityMigrateVm):
+    """
+    Test that the engine does not migrate the VM in the loop, because of
+    power saving load balancing and affinity enforcement
+    """
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_POWER_SAVING,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_PARAMS
+    }
+    affinity_groups = {
+        "test_balancing_loop_ps": conf.HOST_TO_VM_AFFINITY_GROUP_3
+    }
+    vms_to_run = conf.VMS_TO_RUN_1
+    hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
+
+    @polarion("RHEVM-18236")
+    def test_balancing_loop(self):
+        """
+        Verify that the affinity enforcement has stronger effect on the VM
+        balancing
+        """
+        assert not sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[0], expected_num_of_vms=0
+        )
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(load_hosts_cpu.__name__)
+class TestEnforcementAndEvenDistributionBalancingLoop(
+    BaseHostAffinityMigrateVm
+):
+    """
+    Test that the engine does not migrate the VM in the loop, because of
+    even distribution load balancing and affinity enforcement
+    """
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_EVEN_DISTRIBUTION,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_ED_PARAMS
+    }
+    affinity_groups = {
+        "test_balancing_loop_ed": conf.HOST_TO_VM_AFFINITY_GROUP_3
+    }
+    vms_to_run = conf.VMS_TO_RUN_1
+    hosts_cpu_load = {conf.CPU_LOAD_100: [0]}
+
+    @polarion("RHEVM-18237")
+    def test_balancing_loop(self):
+        """
+        Verify that the high CPU utilization has
+        priority over affinity enforcement
+        """
+        assert sch_helpers.is_balancing_happen(
+            host_name=conf.HOSTS[1], expected_num_of_vms=2
         )

@@ -748,3 +748,12 @@ def migrate_he_vm(request):
                     force=True
                 )
                 break
+
+
+@pytest.fixture(scope="class")
+def skip_if_not_he_environment():
+    """
+    Skip the test if the environment does not configure as hosted engine
+    """
+    if not ll_vms.get_vm_host(vm_name=sla_config.HE_VM):
+        pytest.skip("Does not hosted engine environment")

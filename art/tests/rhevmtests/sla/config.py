@@ -128,6 +128,9 @@ POLICY_EVEN_VM_DISTRIBUTION = ENUMS["scheduling_policy_vm_evenly_distributed"]
 POLICY_IN_CLUSTER_UPGRADE = "InClusterUpgrade"
 
 # Scheduling policies constants
+SCH_UNIT_TYPE_FILTER = ENUMS["policy_unit_type_filter"]
+SCH_UNIT_TYPE_WEIGHT = ENUMS["policy_unit_type_weight"]
+
 PREFERRED_HOSTS = "PreferredHosts"
 VM_TO_HOST_AFFINITY_UNIT = "VmToHostsAffinityGroups"
 VM_TO_VM_AFFINITY_UNIT = "VmAffinityGroups"

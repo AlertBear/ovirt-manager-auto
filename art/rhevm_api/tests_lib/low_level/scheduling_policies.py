@@ -178,16 +178,16 @@ def remove_scheduling_policy(policy_name):
     return status
 
 
-def _get_policy_unit(unit_name, unit_type):
+def get_policy_unit(unit_name, unit_type):
     """
-    Get policy unit by name and by type
+    Get policy unit by name and type
 
-    :param unit_name: unit name
-    :type unit_name: str
-    :param unit_type: unit type
-    :type unit_type: str
-    :returns: policy unit or None
-    :rtype: SchedulingPolicyUnit instance or None
+    Args:
+        unit_name (str): Scheduling policy unit name
+        unit_type (str): Scheduling policy unit type(filter, weight, balance)
+
+    Returns:
+        SchedulingPolicyUnit: SchedulingPolicyUnit instance
     """
     policy_units = SCH_POL_UNITS_API.get(abs_link=False)
     for unit in policy_units:
@@ -200,25 +200,25 @@ def _get_policy_unit(unit_name, unit_type):
     return None
 
 
-def _get_policy_units(policy_name, unit_type, attr=None, get_href=False):
+def get_sch_policy_units(policy_name, unit_type, get_href=False):
     """
-    Get all scheduling policy units of specific type from scheduling policy
+    Get all scheduling policy units of the specific type
+    from the scheduling policy
 
-    :param policy_name: name of scheduling policy
-    :type policy_name: str
-    :param unit_type: type of scheduling policy units
-    :type unit_type: str
-    :param attr: attribute to get (usually name of desired element)
-    :type attr: str
-    :param get_href: to get list of objects or link
-    :type get_href: bool
-    :returns: list of scheduling policy units object or link on collection
-    :rtype: list
+    Args:
+        policy_name (str): Scheduling policy name
+        unit_type (str): Scheduling policy unit type (filter, weight, balance)
+        get_href (bool): Get list of object or link on collection
+
+    Returns:
+        list: Scheduling policy units objects or link on collection
     """
     policy_obj = SCH_POL_API.find(policy_name)
-    unit_link = UNIT_LINK.get(unit_type)
     return SCH_POL_API.getElemFromLink(
-        policy_obj, link_name=unit_link, attr=attr, get_href=get_href
+        policy_obj,
+        link_name=UNIT_LINK[unit_type],
+        attr=UNIT_ATTR[unit_type],
+        get_href=get_href
     )
 
 
@@ -240,8 +240,8 @@ def add_scheduling_policy_unit(
         bool: True, if succeeds to add scheduling policy unit
             to the scheduling policy, otherwise False
     """
-    policy_unit_id = _get_policy_unit(unit_name, unit_type).get_id()
-    policy_units_link = _get_policy_units(
+    policy_unit_id = get_policy_unit(unit_name, unit_type).get_id()
+    policy_units_link = get_sch_policy_units(
         policy_name, unit_type, get_href=True
     )
     pl_unit = data_st.SchedulingPolicyUnit(id=policy_unit_id)
