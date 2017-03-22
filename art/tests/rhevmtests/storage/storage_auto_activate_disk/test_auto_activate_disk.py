@@ -1,6 +1,7 @@
 """
 Adding Disk to a VM which is not down adds a Disk that is activated tests
 """
+import datetime
 import logging
 import pytest
 import config
@@ -32,12 +33,13 @@ class VmWithOs(TestCase):
         """
         Add a new disk, the disk status should match should_be_active input
         """
-        disk_alias = "%s_%s_%s_%s_%s_disk" % (
+        disk_alias = "%s_%s_%s_%s_%s_%s_disk" % (
             polarion_case,
             vm_name,
             permutation["interface"],
             permutation["format"],
-            permutation["sparse"]
+            permutation["sparse"],
+            datetime.datetime.now().strftime("%d%H%M%S%f")[:10]
         )
         disk_args = {
             "interface": permutation["interface"],
