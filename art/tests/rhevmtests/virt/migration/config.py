@@ -183,10 +183,6 @@ HOST_NET_NIC_DICT = {
                     "address": IPS[0],
                     "netmask": NETMASK
                 },
-                "2": {
-                    "address": IPS[1],
-                    "netmask": NETMASK
-                }
             }
         }
     }
