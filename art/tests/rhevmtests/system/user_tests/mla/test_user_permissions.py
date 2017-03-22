@@ -51,18 +51,8 @@ def setup_module(request):
         disks.deleteDisk(True, config.DISK_NAME, async=False)
         disks.waitForDisksGone(True, config.DISK_NAME)
 
-        testflow.teardown("Detaching VMs from pool %s.", config.VMPOOL_NAME)
-        hl_vmpools.detach_vms_from_pool(config.VMPOOL_NAME)
-
-        vm_name = "{}-1".format(config.VMPOOL_NAME)
-        testflow.teardown("Waiting from VM %s status down.", vm_name)
-        vms.wait_for_vm_states(
-            vm_name,
-            states=[common.ENUMS["vm_state_down"]]
-        )
-
-        testflow.teardown("Removing VM %s.", vm_name)
-        vms.removeVm(True, vm_name, wait=True)
+        testflow.teardown("Removing pool %s.", config.VMPOOL_NAME)
+        hl_vmpools.remove_whole_vm_pool(config.VMPOOL_NAME)
 
         testflow.teardown("Removing template %s.", config.TEMPLATE_NAMES[0])
         templates.remove_template(True, config.TEMPLATE_NAMES[0])

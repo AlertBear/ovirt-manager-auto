@@ -35,46 +35,36 @@ def setup_module(request):
         testflow.teardown(
             "Removing user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
         )
-        assert common.remove_user(True, config.USER_NAMES[0])
+        common.remove_user(True, config.USER_NAMES[0])
 
         for vm_name in [config.VM_NAME, config.VM_NO_DISK]:
             testflow.teardown("Removing VM %s.", vm_name)
             vms.removeVm(True, vm_name)
 
         testflow.teardown("Removing disk %s.", config.DISK_NAME)
-        assert disks.deleteDisk(True, config.DISK_NAME)
-        assert disks.waitForDisksGone(True, config.DISK_NAME)
-
-        testflow.teardown(
-            "Detaching VMs from pool %s.", config.VMPOOL_NAME
-        )
-        assert hl_vmpools.detach_vms_from_pool(config.VMPOOL_NAME)
-
-        testflow.teardown(
-            "Removing VM %s.", "{0}-{1}".format(config.VMPOOL_NAME, 1)
-        )
-        assert vms.removeVm(True, "{0}-{1}".format(config.VMPOOL_NAME, 1))
+        disks.deleteDisk(True, config.DISK_NAME)
+        disks.waitForDisksGone(True, config.DISK_NAME)
 
         testflow.teardown("Removing pool %s.", config.VMPOOL_NAME)
-        assert ll_vmpools.removeVmPool(True, config.VMPOOL_NAME)
+        hl_vmpools.remove_whole_vm_pool(config.VMPOOL_NAME)
 
         for template in [config.TEMPLATE_NAMES[0], config.TEMPLATE_NO_DISK]:
             testflow.teardown("Removing template %s.", template)
-            assert templates.remove_template(True, template)
+            templates.remove_template(True, template)
 
     request.addfinalizer(finalize)
 
     testflow.setup(
         "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
     )
-    assert common.add_user(
+    common.add_user(
         True,
         user_name=config.USER_NAMES[0],
         domain=config.USER_DOMAIN
     )
 
     testflow.setup("Creating VM %s.", config.VM_NO_DISK)
-    assert vms.createVm(
+    vms.createVm(
         positive=True,
         vmName=config.VM_NO_DISK,
         cluster=config.CLUSTER_NAME[0],
@@ -82,7 +72,7 @@ def setup_module(request):
     )
 
     testflow.setup("Creating VM %s.", config.VM_NAME)
-    assert vms.createVm(
+    vms.createVm(
         positive=True,
         vmName=config.VM_NAME,
         cluster=config.CLUSTER_NAME[0],
@@ -92,7 +82,7 @@ def setup_module(request):
     )
 
     testflow.setup("Creating template %s.", config.TEMPLATE_NAMES[0])
-    assert templates.createTemplate(
+    templates.createTemplate(
         True,
         vm=config.VM_NAME,
         name=config.TEMPLATE_NAMES[0],
@@ -100,7 +90,7 @@ def setup_module(request):
     )
 
     testflow.setup("Creating template %s.", config.TEMPLATE_NO_DISK)
-    assert templates.createTemplate(
+    templates.createTemplate(
         True,
         vm=config.VM_NO_DISK,
         name=config.TEMPLATE_NO_DISK,
@@ -108,7 +98,7 @@ def setup_module(request):
     )
 
     testflow.setup("Adding pool %s.", config.VMPOOL_NAME)
-    assert ll_vmpools.addVmPool(
+    ll_vmpools.addVmPool(
         True,
         name=config.VMPOOL_NAME,
         size=1,
@@ -121,7 +111,7 @@ def setup_module(request):
     )
 
     testflow.setup("Adding disk %s.", config.DISK_NAME)
-    assert disks.addDisk(
+    disks.addDisk(
         True,
         alias=config.DISK_NAME,
         interface='virtio',
@@ -129,7 +119,7 @@ def setup_module(request):
         provisioned_size=config.GB,
         storagedomain=config.MASTER_STORAGE
     )
-    assert disks.wait_for_disks_status(config.DISK_NAME)
+    disks.wait_for_disks_status(config.DISK_NAME)
 
 
 def retrieve_current_role(curr_role):
@@ -172,7 +162,7 @@ class RoleCase54413(common.BaseTestCase):
             common.remove_user(True, config.USER_NAMES[0])
 
             testflow.teardown(
-                "Adding user %s.", config.USER_NAMES[0], config.USER_DOMAIN
+                "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
             )
             common.add_user(
                 True,
@@ -206,7 +196,9 @@ class RoleCase54413(common.BaseTestCase):
             curr_role = retrieve_current_role(curr_role)
             curr_role_name = curr_role.get_name()
 
-            testflow.step("Getting current role %s permissions.", curr_role)
+            testflow.step(
+                "Getting current role %s permissions.", curr_role.get_name()
+            )
             role_permits = get_role_permits(curr_role)
             permit_list = [temp_role.get_name() for temp_role in role_permits]
             if 'login' not in permit_list:
@@ -633,7 +625,7 @@ class RoleCase54540(common.BaseTestCase):
     def test_remove_predefined_roles(self):
         """ Test that pre-defined roles can not be removed. """
         for role in mla.util.get(abs_link=False):
-            testflow.step("Removing role %s.", role)
+            testflow.step("Removing role %s.", role.get_name())
             assert mla.util.delete(role, False)
 
 

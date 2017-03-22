@@ -977,7 +977,7 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
         ):
             for vnic_profile in config.NETWORK_NAMES[:2]:
                 testflow.setup(
-                    "Adding role %s permissions for vnic profile to user %s.",
+                    "Adding role %s permissions for vnic %s to user %s.",
                     user_role, vnic_profile, user_name
                 )
                 assert mla.addPermissionsForVnicProfile(
@@ -1092,7 +1092,7 @@ class PositiveNetworkPermissions236367(NetworkingPositive):
         )
 
         testflow.setup(
-            "Adding role %s permissions for vnic profile to user %s.",
+            "Adding role %s permissions for vnic %s to user %s.",
             config.role.VnicProfileUser,
             config.NETWORK_NAMES[0],
             config.USER_NAMES[0]

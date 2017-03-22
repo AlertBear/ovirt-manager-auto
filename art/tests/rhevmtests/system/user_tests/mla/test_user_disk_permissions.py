@@ -14,6 +14,7 @@ from art.rhevm_api.tests_lib.high_level import (
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     disks as ll_disks,
+    storagedomains as ll_sd,
     mla, vms
 )
 from art.test_handler.tools import polarion
@@ -916,6 +917,13 @@ class TestDisk(TestDiskTemplate):
     @polarion("RHEVM3-7616")
     def test_shared_disk(self):
         """ Basic operations with shared disk """
+        if ll_sd.get_storage_domain_storage_type(
+                config.MASTER_STORAGE
+        ) == config.STORAGE_TYPE_GLUSTER:
+            pytest.skip(
+                "Shareable disks are not supported on Gluster domains."
+            )
+
         testflow.step("Log in as user.")
         common.login_as_user()
 
