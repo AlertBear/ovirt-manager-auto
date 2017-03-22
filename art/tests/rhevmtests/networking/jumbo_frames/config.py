@@ -13,7 +13,6 @@ CASE_4_IPS = None
 CASE_5_IPS = None
 CASE_7_IPS = None
 CASE_IPS = None
-REAL_VLANS = [str(i) for i in xrange(162, 169)]
 VMS_RESOURCES = dict()
 
 VNICS = global_helper.generate_object_names(
@@ -63,7 +62,7 @@ NETS_DICT = {
     },
     NETS[4][1]: {
         "required": "false",
-        "vlan_id": REAL_VLANS[2],
+        "vlan_id": conf.VLAN_ID[2],
         "mtu": conf.MTU[0]
     },
     NETS[4][2]: {
@@ -78,7 +77,7 @@ NETS_DICT = {
     },
     NETS[5][0]: {
         "required": "false",
-        "vlan_id": REAL_VLANS[3],
+        "vlan_id": conf.VLAN_ID[3],
         "mtu": conf.MTU[1],
     },
     NETS[6][0]: {
@@ -94,12 +93,12 @@ NETS_DICT = {
     NETS[7][0]: {
         "required": "false",
         "mtu": conf.MTU[1],
-        "vlan_id": REAL_VLANS[0],
+        "vlan_id": conf.VLAN_ID[0],
     },
     NETS[7][1]: {
         "required": "false",
         "mtu": conf.MTU[0],
-        "vlan_id": REAL_VLANS[1],
+        "vlan_id": conf.VLAN_ID[1],
     },
     NETS[8][0]: {
         "required": "false",

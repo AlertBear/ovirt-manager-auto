@@ -36,7 +36,7 @@ from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 @pytest.mark.usefixtures(prepare_setup_jumbo_frame.__name__)
 class TestJumboFramesTestCaseBase(NetworkTest):
     """
-    Base class which provides teardown class method for each test case
+    Base class
     """
     pass
 
@@ -296,7 +296,8 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
             net_1: {
                 "nic": bond,
                 "network": net_1,
-                "slaves": [2, 3]
+                "slaves": [2, 3],
+                "mode": 1,
             },
             net_2: {
                 "nic": bond,
@@ -318,7 +319,8 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
             net_1: {
                 "nic": bond,
                 "network": net_1,
-                "slaves": [2, 3]
+                "slaves": [2, 3],
+                "mode": 1,
             },
             net_2: {
                 "nic": bond,
@@ -489,8 +491,8 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     __test__ = True
     net_1 = jumbo_conf.NETS[7][0]
     net_2 = jumbo_conf.NETS[7][1]
-    vlan_1 = jumbo_conf.REAL_VLANS[0]
-    vlan_2 = jumbo_conf.REAL_VLANS[1]
+    vlan_1 = conf.VLAN_ID[0]
+    vlan_2 = conf.VLAN_ID[1]
     mtu_5000 = conf.MTU[1]
     mtu_9000 = conf.MTU[0]
     mtu_4500 = str(conf.SEND_MTU[0])
