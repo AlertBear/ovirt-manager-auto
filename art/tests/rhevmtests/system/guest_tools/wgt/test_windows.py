@@ -97,6 +97,7 @@ class Windows(TestCase):
     __test__ = False
 
     disk_name = None
+    disk_interface = config.ENUMS["interface_virtio"]
 
     @pytest.fixture(scope='class', autouse=True)
     def setup_vm(self, request):
@@ -118,6 +119,7 @@ class Windows(TestCase):
             disk_name=cls.disk_name,
             iso_name=cd_with_tools,
             agent_url=config.AGENT_URL,
+            disk_interface=cls.disk_interface,
             positive=True,
             vmName=cls.vm_name,
             vmDescription=cls.vm_name,
@@ -652,6 +654,7 @@ class Windows10_64b(Windows):
     architecture = config.WIN10_64B['architecture']
     codename = config.WIN10_64B['codename']
     os_type = config.ENUMS['windows10x64']
+    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @polarion("RHEVM3-14413")
     def test_guest_applications(self):
@@ -687,6 +690,7 @@ class Windows2016_core_64b(Windows):
     architecture = config.WIN2016_64B['architecture']
     codename = config.WIN2016_64B['codename']
     os_type = config.ENUMS['windows2016x64']
+    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @polarion("RHEVM-19384")
     def test_guest_applications(self):
@@ -722,6 +726,7 @@ class Windows2016_64b(Windows):
     architecture = config.WIN2016_64B['architecture']
     codename = config.WIN2016_64B['codename']
     os_type = config.ENUMS['windows2016x64']
+    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @polarion("RHEVM-19380")
     def test_guest_applications(self):

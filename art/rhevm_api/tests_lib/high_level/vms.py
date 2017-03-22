@@ -668,6 +668,7 @@ def create_windows_vm(
     disk_name,
     iso_name,
     agent_url,
+    disk_interface=None,
     glance_domain=None,
     storage_name=None,
     use_sysprep=True,
@@ -682,6 +683,8 @@ def create_windows_vm(
     :type iso_name: str
     :param agent_url: URL where agent of guest tools is running
     :type agent_url: str
+    :param disk_interface: Interface for disk to use
+    :type disk_interface: str
     :param glance_domain: Name of glance domain to use
     :type glance_domain: str
     :param storage_name: Name of storage where import glance image
@@ -762,7 +765,9 @@ def create_windows_vm(
     if not vms.createVm(**vm_kwargs):
         return False, "Failed to create vm '%s'" % vm_name
 
-    if not disks.attachDisk(True, disk_name, vm_name):
+    if not disks.attachDisk(
+        True, disk_name, vm_name, interface=disk_interface
+    ):
         return False, "Failed to attach disk to vm '%s'" % vm_name
 
     if not disks.updateDisk(
