@@ -264,12 +264,6 @@ class Win2008R2_CI_core_64b(Windows):
     codename = config.WIN2008R2_64B['codename']
     os_type = config.ENUMS['windows2008r2x64']
 
-    # Windows2008 Core needs restart after GT installation to work properly
-    @classmethod
-    @pytest.fixture(scope='class', autouse=True)
-    def setup_w2008r2_core(cls):
-        ll_vms.restartVm(cls.vm_name, wait_for_ip=True)
-
     @polarion("RHEVM-14780")
     def test_guest_applications(self):
         """ Check guest's applications are reported """
