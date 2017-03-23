@@ -12,11 +12,13 @@ OVN provider, 3 external OVN networks (one with OVN subnet),
 import netaddr
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as ovn_conf
 import helper
 import rhevmtests.networking.config as net_conf
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    vms as ll_vms
+)
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
@@ -27,7 +29,7 @@ from fixtures import (
 from rhevmtests.fixtures import start_vm
 
 
-@attr(tier=3)
+@attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     deploy_ovn.__name__,

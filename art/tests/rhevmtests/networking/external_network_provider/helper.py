@@ -9,13 +9,17 @@ import logging
 import re
 import shlex
 
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as ovn_conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as net_helper
+from art.rhevm_api.tests_lib.high_level import (
+    vms as hl_vms,
+    hosts as hl_hosts
+)
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    vms as ll_vms
+)
 from art.unittest_lib import testflow
 from utilities import jobs
 
@@ -341,6 +345,8 @@ def service_handler(host, service, action="stop"):
             "state" to get service state
 
     Returns:
+        bool: True if action was successful or if service state is running,
+            False otherwise
 
     """
     if action == "start":
@@ -365,7 +371,7 @@ def rpm_install(host, rpm_name):
         rpm_name (str): RPM package name
 
     Returns:
-        True if install was successful or package already installed,
+        bool: True if install was successful or package already installed,
             False otherwise
 
     """

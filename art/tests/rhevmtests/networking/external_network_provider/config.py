@@ -6,29 +6,38 @@ External Network Provider config file
 """
 
 import rhevmtests.networking.config as conf
+import rhevmtests.config as global_conf
 
 # OVN provider parameters
 OVN_PROVIDER_NAME = "ovn-network-provider"
 OVN_PROVIDER_PROTOCOL = "http"
 OVN_PROVIDER_PORT = 9696
-OVN_PROVIDER_API_URL_SUFFIX = "/v2.0"
+OVN_PROVIDER_API_URL_SUFFIX = "v2.0"
 OVN_PROVIDER_TENENT_NAME = "oVirt"
+OVN_PROVIDER_KEYSTONE_PORT = 35357
 
 # OVN class parameters
+OVN_EXTERNAL_PROVIDER_URL = "{http}://{hostname}:{port}/{api_url}"
 OVN_EXTERNAL_PROVIDER_PARAMS = {
     "name": OVN_PROVIDER_NAME,
     "url": "{http}://{hostname}:{port}".format(
         http=OVN_PROVIDER_PROTOCOL, hostname=conf.VDC_HOST,
         port=OVN_PROVIDER_PORT
     ),
-    "api_url": "{http}://{hostname}:{port}{api_url}".format(
+    "api_url": OVN_EXTERNAL_PROVIDER_URL.format(
         http=OVN_PROVIDER_PROTOCOL, hostname=conf.VDC_HOST,
         port=OVN_PROVIDER_PORT, api_url=OVN_PROVIDER_API_URL_SUFFIX,
     ),
     "provider_api_element_name": "openstack_network_provider",
     "requires_authentication": False,
     "tenant_name": OVN_PROVIDER_TENENT_NAME,
-    "read_only": False
+    "read_only": False,
+    "keystone_url": OVN_EXTERNAL_PROVIDER_URL.format(
+        http=OVN_PROVIDER_PROTOCOL, hostname=conf.VDC_HOST,
+        port=OVN_PROVIDER_KEYSTONE_PORT, api_url=OVN_PROVIDER_API_URL_SUFFIX
+    ),
+    "keystone_username": global_conf.VDC_ADMIN_USER,
+    "keystone_password": global_conf.VDC_PASSWORD
 }
 # OVN class instance
 OVN_PROVIDER = None
@@ -94,30 +103,18 @@ OVN_ARBITRARY_MAC_ADDRESS = "00:01:11:11:11:11"
 # OVN Bridge interface file
 OVN_BRIDGE_INTERFACE_FILE = "/var/run/openvswitch/br-int.mgmt"
 
-# RPM packages to install on servers
-OVN_COMMON_RPMS = [
-    "openvswitch-ovn-common",
-    "python-openvswitch"
-]
-
-# Specific RPM packages to install
-OVN_PROVIDER_RPMS = [
-    "openvswitch-ovn-central",
-    "ovirt-provider-ovn"
-]
-OVN_DRIVER_RPMS = [
-    "openvswitch-ovn-host",
-    "ovirt-provider-ovn-driver"
-]
+# OVN feature RPM packages
+OVN_PROVIDER_RPM = "ovirt-provider-ovn"
+OVN_DRIVER_RPM = "ovirt-provider-ovn-driver"
 
 # RPM packages to remove
+# All OVN releated packages are depend on openvswitch-ovn-common except
+# python-openvswitch
 OVN_PROVIDER_REMOVE_RPMS = [
-    "ovirt-provider-ovn",
     "openvswitch-ovn-common",
     "python-openvswitch"
 ]
 OVN_DRIVER_REMOVE_RPMS = [
-    "ovirt-provider-ovn-driver",
     "openvswitch-ovn-common",
     "python-openvswitch"
 ]
@@ -142,8 +139,10 @@ OVN_SERVICES_RUNNING = dict()
 
 # Commands and constants to be used with SSH terminal
 OVN_CMD_PING = "ping -c {count} -s {size} -I {eth} {ip}"
-OVN_CMD_SET_IP = "ip addr flush dev {eth} && ip addr add {net} dev {eth} && " \
-                 "ip link set dev {eth} up"
+OVN_CMD_SET_IP = (
+    "ip addr flush dev {eth} && ip addr add {net} dev {eth} && "
+    "ip link set dev {eth} up"
+)
 OVN_CMD_RESOLV_CONFIG = "/etc/resolv.conf"
 OVN_CMD_NET_SCRIPT = "/etc/sysconfig/network-scripts/ifcfg-{eth}"
 OVN_CMD_DHCLIENT = "dhclient -r {eth} && dhclient {eth}"

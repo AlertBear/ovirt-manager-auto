@@ -9,11 +9,15 @@ import logging
 
 import requests
 
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
-import art.rhevm_api.tests_lib.low_level.general as ll_general
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 from art.core_api.apis_utils import getDS
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_datacenters,
+    general as ll_general,
+    networks as ll_networks
+)
 from art.rhevm_api.utils.test_utils import get_api
+import art.core_api.apis_exceptions as api_exceptions
+
 
 CEPH = 'ceph'
 AUTH_KEY = 'authenticationkey'
@@ -412,7 +416,8 @@ class ExternalNetworkProvider(OpenStackProvider):
     def __init__(
         self, provider_api_element_name, name, url, requires_authentication,
         username=None, password=None, authentication_url=None,
-        tenant_name=None, read_only=True, api_url=None
+        tenant_name=None, read_only=True, api_url=None, keystone_url=None,
+        keystone_username=None, keystone_password=None
     ):
         """
         ExternalNetworkProvider class
@@ -430,7 +435,10 @@ class ExternalNetworkProvider(OpenStackProvider):
             tenant_name (str): Provider tenant name
             read_only (bool): True (default) to enable provider
                 read-only mode, False to enable read/write mode
-            api_url (str): Provider API URL
+            api_url (str): Provider API URL address
+            keystone_url (str): Keystone URL address
+            keystone_username (str): Keystone username
+            keystone_password (str): Keystone password
 
         """
         if provider_api_element_name:
@@ -448,19 +456,31 @@ class ExternalNetworkProvider(OpenStackProvider):
             authentication_url=authentication_url, tenant_name=tenant_name
         )
         self._read_only = read_only
+        self._keystone_username = keystone_username
+        self._keystone_password = keystone_password
+        self._api_keystone_token = None
+        self._api_keystone_token_request_retries = 1
+        self._keystone_token_invalid_ret_codes = (
+            requests.codes.unauthorized, requests.codes.forbidden
+        )
 
         if api_url:
             self.api_url_networks = "%s/networks" % api_url
             self.api_url_subnets = "%s/subnets" % api_url
             self.api_requests = requests.session()
 
+        if keystone_url and keystone_username and keystone_password:
+            self._keystone_tokens_url = "%s/tokens" % keystone_url
+            self.__request_keystone_token()
+
     @property
     def read_only(self):
-        """Set external provider read_only or read_write access"""
+        """Get external provider read_only property"""
         return self._read_only
 
     @read_only.setter
     def read_only(self, read_only):
+        """Set external provider read_only property"""
         self._read_only = read_only
 
     def _init(self):
@@ -520,7 +540,7 @@ class ExternalNetworkProvider(OpenStackProvider):
             cluster (str): Cluster to import the network into
 
         Returns:
-            bool: True if network imported, False otherwise
+            bool: True if network imported successfully, False otherwise
 
         """
         network_obj = self.get_network(network=network)
@@ -562,11 +582,11 @@ class ExternalNetworkProvider(OpenStackProvider):
         return True
 
     # All methods below provide support for interacting with the provider
-    # server directly (not through the REST API)
+    # server directly (not through the engine REST API)
 
     def __api_request(self, request, url, json=None, timeout=30):
         """
-        Handler for provider http server requests
+        Handler for provider HTTP server requests
 
         Args:
             request (str): Server request type: "get", post" or "delete"
@@ -576,24 +596,39 @@ class ExternalNetworkProvider(OpenStackProvider):
             timeout (int): Timeout in seconds to wait for server response
 
         Returns:
-            tuple: Tuple (server request return code, json response),
+            tuple: Tuple (server request return code, JSON response),
                 or (None, None) in case of error
-
         """
+        ret = None
+        headers = None
+
         req = getattr(self.api_requests, request)
         if not req:
             return None, None
 
-        try:
-            ret = req(url=url, timeout=timeout, json=json)
-        except requests.ConnectionError as conn_err:
-            logger.error(
-                "Server connection error has occurred: %s", conn_err
-            )
-            return None, None
+        if self._api_keystone_token:
+            headers = {"X-Auth-Token": self._api_keystone_token}
 
         try:
-            json_response = ret.json() if request != "delete" else ""
+            ret = req(url=url, timeout=timeout, json=json, headers=headers)
+        except requests.ConnectionError as conn_err:
+            logger.error("Server connection error has occurred: %s", conn_err)
+            return None, None
+
+        # Check for token expiration and request a new token if needed
+        if (
+            self._api_keystone_token and
+            ret.status_code in self._keystone_token_invalid_ret_codes and
+            self._api_keystone_token_request_retries
+        ):
+            logger.warn("Token seems to be expired. Requesting a new token.")
+            self.__request_keystone_token()
+            self._api_keystone_token_request_retries -= 1
+            return self.__api_request(
+                request=request, url=url, json=json, timeout=timeout
+            )
+        try:
+            json_response = ret.json() if request != "delete" and ret else ""
         except ValueError as val_err:
             logger.error(
                 "Failed to parse external provider response: %s error: %s",
@@ -602,6 +637,46 @@ class ExternalNetworkProvider(OpenStackProvider):
             return None, None
 
         return ret.status_code, json_response
+
+    def __request_keystone_token(self):
+        """
+        Request a token from Keystone server to authenticate provider API
+            requests
+
+        Raises:
+            APITokenError: In case of Keystone error or token not received
+        """
+        logger.info("Requesting token from Keystone service")
+        payload = {
+            "access": {
+                "passwordCredentials": {
+                    "username": self._keystone_username,
+                    "password": self._keystone_password
+                }
+            }
+        }
+        ret_code, response = self.__api_request(
+            request="post", url=self._keystone_tokens_url, json=payload
+        )
+
+        logger.debug("Keystone service returned response: %s", response)
+
+        if ret_code != requests.codes.ok:
+            logger.error(
+                "Keystone returned unexpected error: %s", ret_code
+            )
+            raise api_exceptions.APITokenError
+
+        # Expected JSON response structure:
+        # { "access": { "token": { "id": <unicode encoded str - token> } } }
+        token = response.get("access", dict()).get("token", dict())
+        self._api_keystone_token = token.get("id", str())
+
+        if not self._api_keystone_token:
+            logger.error("Keystone service did not return a token")
+            raise api_exceptions.APITokenError
+
+        logger.info("Received a token from Keystone service")
 
     def get_networks_list_from_provider_server(self):
         """

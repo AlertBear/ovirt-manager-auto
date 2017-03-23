@@ -10,15 +10,19 @@ import shlex
 import pytest
 
 import art.core_api.apis_exceptions as api_exceptions
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as osnp_conf
+import config as enp_conf
 import helper
-import rhevmtests.config as conf
-import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
-from art.rhevm_api.tests_lib.low_level import external_providers
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    vms as ll_vms,
+    external_providers
+)
 from art.unittest_lib import testflow
+from rhevmtests import (
+    config as conf,
+    helpers as global_helper
+)
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -28,11 +32,11 @@ def remove_ovn_provider(request):
     Remove OVN provider from engine
     """
     NetworkFixtures()
-    name = osnp_conf.OVN_PROVIDER_NAME
+    name = enp_conf.OVN_PROVIDER_NAME
 
     def fin():
         testflow.teardown("Removing OVN external network provider: %s", name)
-        assert osnp_conf.OVN_PROVIDER.remove(openstack_ep=name)
+        assert enp_conf.OVN_PROVIDER.remove(openstack_ep=name)
     request.addfinalizer(fin)
 
 
@@ -46,21 +50,21 @@ def remove_ovn_networks_from_provider(request):
     def fin():
         result_list = list()
 
-        for name, subnet in osnp_conf.OVN_NETS.iteritems():
+        for name, subnet in enp_conf.OVN_NETS.iteritems():
             if subnet:
                 subnet_name = subnet.get("name")
                 testflow.teardown(
                     "Removing OVN subnet: %s from provider", subnet_name
                 )
                 result_list.append(
-                    osnp_conf.OVN_PROVIDER.remove_subnet(
+                    enp_conf.OVN_PROVIDER.remove_subnet(
                         subnet_name=subnet_name
                     )
                 )
 
             testflow.teardown("Removing OVN network: %s from provider", name)
             result_list.append(
-                osnp_conf.OVN_PROVIDER.remove_network(network_name=name)
+                enp_conf.OVN_PROVIDER.remove_network(network_name=name)
             )
         assert all(result_list)
     request.addfinalizer(fin)
@@ -72,7 +76,7 @@ def remove_ovn_networks_from_engine(request):
     Remove OVN networks from engine
     """
     NetworkFixtures()
-    networks = osnp_conf.OVN_NET_NAMES
+    networks = enp_conf.OVN_NET_NAMES
 
     def fin():
         results_list = list()
@@ -141,7 +145,7 @@ def remove_ifcfg_from_vms(request):
     def fin():
         testflow.teardown("Removing ifcfg files from running VM's")
         vms_resources = [
-            rsc for rsc in osnp_conf.OVN_VMS_RESOURCES.values() if rsc
+            rsc for rsc in enp_conf.OVN_VMS_RESOURCES.values() if rsc
         ]
         assert network_helper.remove_ifcfg_files(vms_resources=vms_resources)
     request.addfinalizer(fin)
@@ -175,7 +179,7 @@ def deploy_ovn(request):
         """
         Restore stopped services on all servers
         """
-        for host, services in osnp_conf.OVN_SERVICES_RUNNING.iteritems():
+        for host, services in enp_conf.OVN_SERVICES_RUNNING.iteritems():
             for service in services:
                 testflow.teardown(
                     "Restoring service: %s state on host: %s",
@@ -195,14 +199,14 @@ def deploy_ovn(request):
         Removing OVN bridge from provider driver servers
         """
         for host in provider_driver_servers:
-            if host.fs.exists(osnp_conf.OVN_BRIDGE_INTERFACE_FILE):
+            if host.fs.exists(enp_conf.OVN_BRIDGE_INTERFACE_FILE):
                 testflow.teardown(
                     "Removing OVN bridge from host: %s", host.fqdn
                 )
                 results.append(
                     (
                         not host.run_command(
-                            shlex.split(osnp_conf.OVN_CMD_DEL_OVN_BRIDGE)
+                            shlex.split(enp_conf.OVN_CMD_DEL_OVN_BRIDGE)
                         )[0],
                         "Failed to remove OVN bridge from host: %s" % host.fqdn
                     )
@@ -213,7 +217,7 @@ def deploy_ovn(request):
         """
         Removing OVN packages from provider server
         """
-        for rpm_name in osnp_conf.OVN_PROVIDER_REMOVE_RPMS:
+        for rpm_name in enp_conf.OVN_PROVIDER_REMOVE_RPMS:
             testflow.teardown(
                 "Removing OVN package: %s from OVN provider server: %s",
                 rpm_name, provider_server.fqdn
@@ -232,10 +236,10 @@ def deploy_ovn(request):
         """
         testflow.teardown(
             "Stopping OVN service: %s on OVN provider: %s",
-            osnp_conf.OVN_PROVIDER_SERVICE, provider_server.fqdn
+            enp_conf.OVN_PROVIDER_SERVICE, provider_server.fqdn
         )
         helper.service_handler(
-            host=host, service=osnp_conf.OVN_PROVIDER_SERVICE
+            host=host, service=enp_conf.OVN_PROVIDER_SERVICE
         )
     request.addfinalizer(fin3)
 
@@ -244,7 +248,7 @@ def deploy_ovn(request):
         Removing OVN packages from driver servers
         """
         for host in provider_driver_servers:
-            for rpm_name in osnp_conf.OVN_DRIVER_REMOVE_RPMS:
+            for rpm_name in enp_conf.OVN_DRIVER_REMOVE_RPMS:
                 testflow.teardown(
                     "Removing OVN package: %s from OVN driver driver: %s",
                     rpm_name, host.fqdn
@@ -264,14 +268,14 @@ def deploy_ovn(request):
         for host in provider_driver_servers:
             testflow.teardown(
                 "Stopping service: %s on OVN driver server: %s",
-                osnp_conf.OVN_DRIVER_SERVICE, host.fqdn
+                enp_conf.OVN_DRIVER_SERVICE, host.fqdn
             )
             results.append(
                 (
                     helper.service_handler(
-                        host=host, service=osnp_conf.OVN_DRIVER_SERVICE
+                        host=host, service=enp_conf.OVN_DRIVER_SERVICE
                     ),
-                    "Failed to stop service: %s" % osnp_conf.OVN_DRIVER_SERVICE
+                    "Failed to stop service: %s" % enp_conf.OVN_DRIVER_SERVICE
                 )
             )
     request.addfinalizer(fin1)
@@ -280,13 +284,13 @@ def deploy_ovn(request):
     for host in all_servers:
         # Stop firewall services that blocks OVN traffic as a workaround for BZ
         # ticket: https://bugzilla.redhat.com/show_bug.cgi?id=1390938
-        for service in osnp_conf.OVN_FW_SERVICES:
+        for service in enp_conf.OVN_FW_SERVICES:
             testflow.setup(
                 "Stopping firewall service: %s on host: %s", service, host.fqdn
             )
             assert helper.service_handler(host=host, service=service)
 
-        for service in osnp_conf.OVN_SERVICES_TO_STOP_AND_START:
+        for service in enp_conf.OVN_SERVICES_TO_STOP_AND_START:
             state = helper.service_handler(
                 host=host, service=service, action="state"
             )
@@ -295,67 +299,60 @@ def deploy_ovn(request):
                     "Saving service: %s is-active state: %s on host: %s",
                     service, state, host
                 )
-                if host not in osnp_conf.OVN_SERVICES_RUNNING:
-                    osnp_conf.OVN_SERVICES_RUNNING[host] = list()
-                osnp_conf.OVN_SERVICES_RUNNING[host].append(service)
-
-        for rpm_name in osnp_conf.OVN_COMMON_RPMS:
-            testflow.setup(
-                "Installing common package: %s on host: %s", rpm_name,
-                host.fqdn
-            )
-            assert helper.rpm_install(host=host, rpm_name=rpm_name)
+                if host not in enp_conf.OVN_SERVICES_RUNNING:
+                    enp_conf.OVN_SERVICES_RUNNING[host] = list()
+                enp_conf.OVN_SERVICES_RUNNING[host].append(service)
 
     # OVN provider deployment
-    for rpm_name in osnp_conf.OVN_PROVIDER_RPMS:
-        testflow.setup(
-            "Installing OVN provider package: %s on host: %s", rpm_name,
-            provider_server.fqdn
-        )
-        assert helper.rpm_install(host=provider_server, rpm_name=rpm_name)
+    testflow.setup(
+        "Installing OVN provider packages: %s on host: %s",
+        enp_conf.OVN_PROVIDER_RPM, provider_server.fqdn
+    )
+    assert helper.rpm_install(
+        host=provider_server, rpm_name=enp_conf.OVN_PROVIDER_RPM
+    )
 
     testflow.setup(
         "Reloading systemd daemon on host: %s", provider_server.fqdn
     )
     assert not provider_server.run_command(
-        shlex.split(osnp_conf.OVN_CMD_SYSD_RELOAD)
+        shlex.split(enp_conf.OVN_CMD_SYSD_RELOAD)
     )[0]
 
     testflow.setup("Starting OVN provider on host: %s", provider_server.fqdn)
     assert provider_server.service(
-        name=osnp_conf.OVN_PROVIDER_SERVICE
+        name=enp_conf.OVN_PROVIDER_SERVICE
     ).start()
 
     # OVN driver deployment
     for host in provider_driver_servers:
-        for rpm_name in osnp_conf.OVN_DRIVER_RPMS:
-            testflow.setup(
-                "Installing OVN controller package: %s on host: %s",
-                rpm_name, host.fqdn
-            )
-            assert helper.rpm_install(host=host, rpm_name=rpm_name)
+        testflow.setup(
+            "Installing OVN controller packages: %s on host: %s",
+            enp_conf.OVN_DRIVER_RPM, host.fqdn
+        )
+        assert helper.rpm_install(host=host, rpm_name=enp_conf.OVN_DRIVER_RPM)
 
         testflow.setup("Reloading systemd daemon on host %s", host.fqdn)
         assert not host.run_command(
-            shlex.split(osnp_conf.OVN_CMD_SYSD_RELOAD)
+            shlex.split(enp_conf.OVN_CMD_SYSD_RELOAD)
         )[0]
 
         testflow.setup("Starting OVN driver service on host: %s", host.fqdn)
-        assert host.service(name=osnp_conf.OVN_DRIVER_SERVICE).start()
+        assert host.service(name=enp_conf.OVN_DRIVER_SERVICE).start()
 
         testflow.setup("Configuring vdsm-tool on host: %s", host.fqdn)
         assert not host.run_command(
             shlex.split(
-                osnp_conf.OVN_CMD_VDSM_TOOL.format(
+                enp_conf.OVN_CMD_VDSM_TOOL.format(
                     provider_ip=provider_server.ip, host_ip=host.ip
                 )
             )
         )[0]
 
     # Initialize OVN provider class
-    osnp_conf.OVN_PROVIDER = external_providers.ExternalNetworkProvider(
-        **osnp_conf.OVN_EXTERNAL_PROVIDER_PARAMS
+    enp_conf.OVN_PROVIDER = external_providers.ExternalNetworkProvider(
+        **enp_conf.OVN_EXTERNAL_PROVIDER_PARAMS
     )
 
-    # Check for existing OVN objects
+    # Check for existing OVN objects in the DB
     helper.check_for_ovn_objects()
