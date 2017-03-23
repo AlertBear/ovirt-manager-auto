@@ -344,7 +344,7 @@ class TestCase16780(TestCase):
         Try Remove template's disk of locked template - should fail
         """
         template_disk = ll_template.getTemplateDisks(self.template_name)[0]
-        ll_disks.copy_template_disks(
+        ll_template.copy_template_disks(
             self.template_name, [self.storage_domain[1]], False
         )
         assert ll_template.remove_template_disk_from_storagedomain(
