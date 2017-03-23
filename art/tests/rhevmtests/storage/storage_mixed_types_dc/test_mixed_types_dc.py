@@ -3,6 +3,7 @@ Test mixed types DC suite
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Mixed_Types_Data_Center]
 """
+
 import config
 import helpers
 import logging
@@ -256,6 +257,8 @@ class TestCase4562(IscsiNfsSD):
         vm_args = VM_ARGS.copy()
         vm_args['vmName'] = self.vm_name
         vm_args['storageDomainName'] = self.storage_domains[0]
+        vm_args['volumeType'] = True
+        vm_args['volumeFormat'] = config.DISK_FORMAT_COW
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
@@ -352,6 +355,7 @@ class TestCase4563(IscsiNfsSD):
         logger.info("Copy template disk %s to %s storage domain",
                     disk.get_alias(), self.iscsi)
         ll_disks.copy_disk(disk_id=disk.get_id(), target_domain=self.iscsi)
+        ll_disks.wait_for_disks_status(disk.get_id(), key='id')
 
         def clone_and_verify(storagedomain):
             logger.info("Clone a vm from the Template for storage domains %s",
@@ -844,6 +848,8 @@ class TestCase4551(IscsiNfsSD):
         vm_args = VM_ARGS.copy()
         vm_args['vmName'] = self.vm_name
         vm_args['storageDomainName'] = self.nfs
+        vm_args['volumeType'] = True
+        vm_args['volumeFormat'] = config.DISK_FORMAT_COW
 
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
@@ -865,6 +871,7 @@ class TestCase4551(IscsiNfsSD):
         disk_id = ll_templates.getTemplateDisks(self.template_name)[0].get_id()
 
         assert ll_disks.copy_disk(disk_id=disk_id, target_domain=self.iscsi)
+        ll_disks.wait_for_disks_status(disk_id, key='id')
 
         logger.info("Cloning vm from template with thin privisioning")
         assert ll_vms.cloneVmFromTemplate(
