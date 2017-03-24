@@ -34,20 +34,16 @@ def initialize_params(request):
     """
     self = request.node.cls
 
-    self.test_failed = False
     self.vm_name = getattr(self, 'vm_name', None)
     if not hasattr(self, 'master_domain'):
         status, master_domain = ll_sd.findMasterStorageDomain(
             True, datacenter=config.DATA_CENTER_NAME
         )
-        if not status:
-            raise exceptions.StorageDomainException(
-                "Unable to find master storage domain"
-            )
+        assert status, "Unable to find master storage domain"
     self.host = ll_hosts.get_spm_host(config.HOSTS)
     self.non_master = storage_helpers.create_unique_object_name(
-                self.__class__.__name__, config.OBJECT_TYPE_SD
-            )
+        self.__class__.__name__, config.OBJECT_TYPE_SD
+    )
     # initialize for create_vm fixture
     if not hasattr(self, 'storage_domain'):
         self.storage_domain = self.non_master

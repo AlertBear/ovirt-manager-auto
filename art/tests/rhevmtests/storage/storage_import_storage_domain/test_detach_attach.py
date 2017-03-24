@@ -354,7 +354,7 @@ class TestCase5194(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5194
     """
-    __test__ = BaseTestCase.storage in config.BLOCK_TYPES
+    __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
     storages = set([ISCSI, FCP])
     polarion_test_case = '5194'
 
