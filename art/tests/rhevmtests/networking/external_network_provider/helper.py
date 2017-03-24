@@ -60,7 +60,9 @@ def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
         str: IP address of the VM, or empty string if error has occurred
 
     """
-    interface = net_helper.get_non_mgmt_nic_name(vm=vm)
+    interface = net_helper.get_non_mgmt_nic_name(
+        vm_resource=ovn_conf.OVN_VMS_RESOURCES[vm]
+    )
     if not interface:
         return ""
     interface = interface[0]
@@ -113,7 +115,9 @@ def create_ifcfg_on_vm(vm, action="create"):
         "DEFROUTE": "no"
     }
 
-    interface = net_helper.get_non_mgmt_nic_name(vm=vm)
+    interface = net_helper.get_non_mgmt_nic_name(
+        vm_resource=ovn_conf.OVN_VMS_RESOURCES[vm]
+    )
     if not interface:
         return False
     interface = interface[0]
@@ -171,7 +175,9 @@ def check_ping(vm, dst_ip, max_loss=0, count=ovn_conf.OVN_PING_COUNT):
         bool: True if ping was successful, False otherwise
 
     """
-    interface = net_helper.get_non_mgmt_nic_name(vm=vm)
+    interface = net_helper.get_non_mgmt_nic_name(
+        vm_resource=ovn_conf.OVN_VMS_RESOURCES[vm]
+    )
     if not interface:
         return False
     interface = interface[0]

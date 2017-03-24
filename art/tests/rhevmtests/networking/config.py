@@ -55,6 +55,7 @@ LAST_VM = VM_NAME[-1]
 CLEAN_HOSTS_DICT = {
     0: {}
 }
+VMS_TO_STORE = dict()
 
 # MultiHost and multiple_gw parameters
 SUBNET = "5.5.5.0"

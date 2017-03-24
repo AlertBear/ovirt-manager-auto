@@ -10,6 +10,8 @@ import pytest
 import fixtures_helper as network_fixture_helper
 import rhevmtests.networking.config as conf
 from rhevmtests import fixtures_helper
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import rhevmtests.helpers as global_helper
 
 
 class NetworkFixtures(object):
@@ -115,3 +117,19 @@ def setup_networks_fixture_function(
         hosts_nets_nic_dict=hosts_nets_nic_dict, sriov_nics=sriov_nics,
         persist=persist
     )
+
+
+@pytest.fixture(scope="class")
+def store_vms_params(request):
+    """
+    Store VM params (IP, resource) into config variable
+    """
+    vms = getattr(request.node.cls, "vms_to_store", list())
+    for vm in vms:
+        ip = hl_vms.get_vm_ip(vm_name=vm)
+        resource = global_helper.get_host_resource(
+            ip=ip, password=conf.VDC_ROOT_PASSWORD
+        )
+        conf.VMS_TO_STORE[vm] = dict()
+        conf.VMS_TO_STORE[vm]["ip"] = ip
+        conf.VMS_TO_STORE[vm]["resource"] = resource

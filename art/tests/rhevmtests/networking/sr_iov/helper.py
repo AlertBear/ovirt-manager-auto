@@ -10,13 +10,14 @@ import shlex
 import socket
 from xml.etree import ElementTree
 
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+from art.rhevm_api.tests_lib.high_level import (
+    vms as hl_vms,
+    networks as hl_networks
+)
 import config as sriov_conf
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
-    vms as ll_vms,
     events as ll_events
 )
 from utilities import jobs
@@ -60,88 +61,133 @@ def get_vlan_id_from_vm_xml(vm):
     return vlan_interface[0].find("tag").get("id")
 
 
-def create_bond_on_vm(vm_name, vm_resource, vnic):
+def create_bond_on_vm(vm_name, vm_resource, vnics, mode=1, proto="auto"):
     """
     Create BOND on VM
 
     Args:
         vm_name (str): VM name
         vm_resource (Host): VM resource
-        vnic (str): Primary vNIC of the VM
+        vnics (list): Primary vNIC of the VM
+        mode (int): BOND mode
+        proto (str): ipv4.method for BOND (auto, disabled)
 
-    Returns:
-        bool: True if creation of the BOND fails, False otherwise
+    Raises:
+        AssertionError: If creation of the BOND fails.
     """
-    vm_interfaces = vm_resource.network.all_interfaces()
-    sriov_vnic_mac = ll_vms.get_vm_nic_mac_address(
-        vm=vm_name, nic=vnic
-    )
-    assert sriov_vnic_mac
-    sriov_int = None
-    virtio_int = None
-
-    for inter in vm_interfaces:
-        inter_mac = vm_resource.network.find_mac_by_int(interfaces=[inter])
-        logger.info("Interface %s with MAC %s", inter, inter_mac)
-        if inter_mac and inter_mac[0] == sriov_vnic_mac:
-            sriov_int = inter
-        else:
-            virtio_int = inter
-
-    assert sriov_int
-    assert virtio_int
-    nm_control_cmd = "sed -i /NM_CONTROLLED=no/d {ifcfg_file}".format(
-        ifcfg_file="{ifcfg_path}/ifcfg-{inter}".format(
-            ifcfg_path=network_helper.IFCFG_PATH, inter=virtio_int
+    vm_params = dict()
+    bond = "bond1"
+    bond_created = False
+    for idx, vnic in enumerate(vnics):
+        inter = hl_networks.get_vm_interface_by_vnic(
+            vm=vm_name, vm_resource=vm_resource, vnic=vnic
         )
-    )
-    assert not vm_resource.run_command(shlex.split(nm_control_cmd))[0]
-    nmcli_reload_cmd = "nmcli connection reload {inter}".format(
-        inter=virtio_int
-    )
-    assert not vm_resource.run_command(
-        command=shlex.split(nmcli_reload_cmd)
-    )[0]
-    nmcli_cmd = [
-        "nmcli connection add type ethernet con-name {sriov_int_1} ifname"
-        " {sriov_int_2}".format(sriov_int_1=sriov_int, sriov_int_2=sriov_int),
-        "nmcli connection add type bond con-name bond1 ifname bond1 mode "
-        "active-backup primary {sriov_int}".format(sriov_int=sriov_int),
-        "nmcli connection modify id bond1 ipv4.method auto ipv6.method ignore",
-        "nmcli connection modify id {sriov_int} ipv4.method disabled"
-        " ipv6.method ignore".format(sriov_int=sriov_int),
-        "nmcli connection modify id {reg_int} ipv4.method disabled ipv6.method"
-        " ignore".format(reg_int=virtio_int),
-        "nmcli connection modify id {sriov_int} connection.slave-type bond "
-        "connection.master bond1 connection.autoconnect yes".format(
-            sriov_int=sriov_int
-        ),
-        "nmcli connection modify id {reg_int} connection.slave-type bond "
-        "connection.master bond1 connection.autoconnect yes".format(
-            reg_int=virtio_int
+        vm_params[vnic] = dict()
+        vm_params[vnic]["interface"] = inter
+        primary = True if idx == 0 else False
+        vm_params[vnic]["primary"] = primary
+
+        nmcli_add_con = [
+            "nmcli connection add type ethernet con-name {vnic} ifname"
+            " {inter}".format(vnic=vnic, inter=inter),
+            "nmcli connection modify id {vnic} ipv4.method disabled"
+            " ipv6.method ignore".format(vnic=vnic),
+            ]
+        assert not all(
+            [
+                vm_resource.run_command(
+                    command=shlex.split(cmd))[0] for cmd in
+                nmcli_add_con
+            ]
         )
-    ]
-    assert not all(
-        [vm_resource.run_command(
-            command=shlex.split(cmd))[0] for cmd in nmcli_cmd]
-    )
+        if not bond_created:
+            create_bond_cmds = [
+                "nmcli connection add type bond con-name {bond} ifname "
+                "bond1 mode {mode} {primary}".format(
+                    bond=bond, mode=mode, primary="primary {inter}".format(
+                        inter=inter
+                    ) if mode == 1 else ""
+                ),
+                "nmcli connection modify id {bond} ipv4.method {proto} "
+                "ipv6.method ignore".format(bond=bond, proto=proto)
+            ]
+            assert not all(
+                [
+                    vm_resource.run_command(
+                        command=shlex.split(cmd))[0] for cmd in
+                    create_bond_cmds
+                ]
+            )
+            bond_created = True
+
+        nmcli_add_slave = [
+            "nmcli connection modify id {vnic} connection.slave-type "
+            "bond connection.master {bond} connection.autoconnect "
+            "yes".format(bond=bond, vnic=vnic)
+        ]
+        assert not all(
+            [
+                vm_resource.run_command(
+                    command=shlex.split(cmd))[0] for cmd in
+                nmcli_add_slave
+            ]
+        )
+
     nmcli_up_cmd = (
-        "nmcli connection down id {sriov_int_1}; "
-        "nmcli connection up id {sriov_int_2}; "
-        "nmcli connection down id {reg_int_1}; "
-        "nmcli connection up id {reg_int_2}; "
-        "nmcli connection up bond1".format(
-            sriov_int_1=sriov_int, sriov_int_2=sriov_int, reg_int_1=virtio_int,
-            reg_int_2=virtio_int
-        )
+        "nmcli connection down {con1};"
+        "nmcli connection down {con2};"
+        "nmcli connection up {con3};"
+        "nmcli connection up {con4};"
+        "nmcli connection up {bond}"
+    ).format(
+        con1=vnics[0],
+        con2=vnics[1],
+        con3=vnics[0],
+        con4=vnics[1],
+        bond=bond
     )
+
+    for vnic, params in vm_params.iteritems():
+        second_vnic = filter(lambda x: x != vnic, vm_params.keys())[0]
+        nmcli_con_down_cmd = "nmcli connection down {con}"
+        nmcli_con_up_cmd = "nmcli connection up {con}"
+        inter = params.get("interface")
+        primary_inter = params.get("primary")
+        ip_link_cmd = "ip link show {inter}".format(inter=inter)
+        out = vm_resource.run_command(command=shlex.split(ip_link_cmd))[1]
+        if bond not in out:
+            if primary_inter:
+                try:
+                    vm_resource.run_command(
+                        command=shlex.split(
+                            nmcli_con_down_cmd.format(con=second_vnic)
+                        ), tcp_timeout=10, io_timeout=10
+                    )
+                    vm_resource.run_command(
+                        command=shlex.split(
+                            nmcli_con_down_cmd.format(con=vnic)
+                        ), tcp_timeout=10, io_timeout=10
+                    )
+                    vm_resource.run_command(
+                        command=shlex.split(
+                            nmcli_con_up_cmd.format(con=vnic)
+                        ), tcp_timeout=10, io_timeout=10
+                    )
+                    vm_resource.run_command(
+                        command=shlex.split(
+                            nmcli_con_up_cmd.format(con=second_vnic)
+                        ), tcp_timeout=10, io_timeout=10
+                    )
+                except socket.timeout:
+                    pass
+
     try:
         vm_resource.run_command(
             command=shlex.split(nmcli_up_cmd), tcp_timeout=10, io_timeout=10
 
         )
     except socket.timeout:
-        return True
+        pass
 
 
 def check_ping_during_vm_migration(ping_kwargs, migration_kwargs):

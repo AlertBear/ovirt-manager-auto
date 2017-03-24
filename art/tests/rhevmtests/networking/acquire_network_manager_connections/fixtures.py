@@ -5,13 +5,11 @@
 Fixtures for acquire connections created by NetworkManager
 """
 
-import re
-import shlex
 from art.unittest_lib import testflow
 import pytest
 
 import helper as nm_helper
-from rhevmtests.networking import fixtures
+from rhevmtests.networking import fixtures, helper
 
 
 @pytest.fixture()
@@ -33,19 +31,9 @@ def nmcli_create_networks(request):
         """
         Clean all NetworkManager networks from the host
         """
-        all_connections = "nmcli connection show"
-        delete_cmd = "nmcli connection delete {uuid}"
-        rc, out, _ = nm_networks.vds_0_host.run_command(
-            command=shlex.split(all_connections)
+        assert helper.network_manager_remove_all_connections(
+            host=nm_networks.vds_0_host
         )
-        assert not rc
-        for match in re.findall(r'\w+-\w+-\w+-\w+-\w+', out):
-            testflow.teardown(
-                "Remove connection %s from NetworkManager", match
-            )
-            nm_networks.vds_0_host.run_command(
-                command=shlex.split(delete_cmd.format(uuid=match))
-            )
     request.addfinalizer(fin)
 
     testflow.setup("Remove existing NetworkManager connections")

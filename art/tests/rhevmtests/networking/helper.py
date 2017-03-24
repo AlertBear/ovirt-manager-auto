@@ -26,7 +26,6 @@ from art.rhevm_api.tests_lib.low_level import (
     general as ll_general
 )
 import config as conf
-import rhevmtests.helpers as global_helper
 from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import events
 from art.rhevm_api.utils import test_utils
@@ -711,7 +710,6 @@ def remove_none_from_dict(dict_):
 
     Returns:
         dict: Dict without None values
-
     """
     if isinstance(dict_, dict):
         return dict(
@@ -722,26 +720,53 @@ def remove_none_from_dict(dict_):
         return dict_
 
 
-def get_non_mgmt_nic_name(vm):
+def get_non_mgmt_nic_name(vm_resource):
     """
     Get VM interface list excluding management network.
 
     Args:
-        vm: VM name.
+        vm_resource (Host): VM resource.
 
     Returns:
         list: VM interface list.
     """
-    vm_resource = global_helper.get_vm_resource(vm=vm, start_vm=False)
     mgmt_interface = vm_resource.network.find_mgmt_interface()
 
     logger.info(
-        "Get VM %s interface excluding mgmt interface %s", vm,
-        mgmt_interface
+        "Get VM interface excluding mgmt interface %s", mgmt_interface
     )
     return get_vm_interfaces_list(
         vm_resource=vm_resource, exclude_nics=[mgmt_interface]
     )
+
+
+@ll_general.generate_logs(step=True)
+def network_manager_remove_all_connections(host):
+    """
+    Remove all NetworkManager connections from host.
+
+    Args:
+        host (Host): Host resource.
+
+    Returns:
+        bool: True if all connections deleted, False otherwise.
+    """
+    res = list()
+    all_connections = "nmcli connection show"
+    delete_cmd = "nmcli connection delete {uuid}"
+    rc, out, _ = host.run_command(
+        command=shlex.split(all_connections)
+    )
+    if rc:
+        return False
+
+    for match in re.findall(r'\w+-\w+-\w+-\w+-\w+', out):
+        res.append(
+            host.run_command(
+                command=shlex.split(delete_cmd.format(uuid=match))
+            )[0]
+        )
+    return not all(res)
 
 
 if __name__ == "__main__":

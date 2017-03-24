@@ -9,8 +9,10 @@ Non-VM related cases
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    sriov as ll_sriov
+)
 import config as sriov_conf
 import helper
 import rhevmtests.networking.config as conf

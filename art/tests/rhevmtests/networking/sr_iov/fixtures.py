@@ -4,21 +4,28 @@
 """
 Fixtures for SR-IOV
 """
+import shlex
 
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    storagedomains as ll_storagedomains,
+    datacenters as ll_datacenters,
+    networks as ll_networks,
+    sriov as ll_sriov,
+    templates as ll_templates,
+    vms as ll_vms
+)
+
 import art.rhevm_api.utils.test_utils as test_utils
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -31,6 +38,9 @@ class SRIOV(NetworkFixtures):
         """
         Prepare SR-IOV params
         """
+        sriov_conf.SD_NAME = ll_storagedomains.getStorageDomainNamesForType(
+            datacenter_name=self.dc_0, storage_type=conf.STORAGE_TYPE
+        )[0]
         # Create SR-IOV host NIC class instances to work with SR-IOV interfaces
         sriov_conf.HOST_O_SRIOV_NICS_OBJ = (
             ll_sriov.SriovHostNics(self.host_0_name)
@@ -145,7 +155,6 @@ def prepare_setup_import_export(request):
     templates_list = request.node.cls.templates_list
     export_domain = request.node.cls.export_domain
     vms_list = request.node.cls.vms_list
-    sd_name = request.node.cls.sd_name
     result = list()
 
     def fin6():
@@ -248,7 +257,7 @@ def prepare_setup_import_export(request):
     testflow.setup("Create VM %s", vm)
     assert ll_vms.createVm(
         positive=True, vmName=vm, vmDescription="",
-        cluster=cluster, storageDomainName=sd_name,
+        cluster=cluster, storageDomainName=sriov_conf.SD_NAME,
         provisioned_size=conf.VM_DISK_SIZE
     )
     for net, vm_nic in zip(net_list, vm_nic_list):
@@ -334,13 +343,14 @@ def set_num_of_vfs(request):
     pf_index = getattr(request.node.cls, "set_num_of_vfs_host_nic_index", 1)
 
     for host in hosts:
-        host_pf = "HOST_%s_PF_OBJECT_%s" % (host, pf_index)
-        pf_object = getattr(sriov_conf, host_pf)
-        testflow.setup(
-            "Set number %s of virtual functions on host %s", num_of_vfs,
-            conf.HOSTS[host]
-        )
-        pf_object.set_number_of_vf(num_of_vfs)
+        for pf in range(pf_index):
+            host_pf = "HOST_%s_PF_OBJECT_%s" % (host, pf + 1)
+            pf_object = getattr(sriov_conf, host_pf)
+            testflow.setup(
+                "Set number %s of virtual functions on host %s", num_of_vfs,
+                conf.HOSTS[host]
+            )
+            pf_object.set_number_of_vf(num_of_vfs)
 
 
 @pytest.fixture(scope="class")
@@ -516,6 +526,7 @@ def add_vnic_profile(request):
     port_mirroring = request.node.cls.port_mirroring
     net_1 = request.node.cls.net_1
     profiles = request.node.cls.profiles
+    exclude_profile = getattr(request.node.cls, "net_3", "")
     result_list = list()
 
     def fin1():
@@ -524,6 +535,9 @@ def add_vnic_profile(request):
         """
         testflow.teardown("Remove vNIC profile %s", profiles)
         for profile in profiles:
+            if profile == exclude_profile:
+                continue
+
             result_list.append(
                 ll_networks.remove_vnic_profile(
                     positive=True, vnic_profile_name=profile,
@@ -558,15 +572,21 @@ def set_ip_on_vm_interface(request):
     """
     Set IP on VM interface
     """
-    sriov = SRIOV()
-    ips = request.node.cls.ips
+    SRIOV()
+    vm_ips = request.node.cls.vm_ips
 
-    for vm, ip in zip(sriov.vms_list, ips):
-        vm_resource = global_helper.get_vm_resource(vm=vm, start_vm=False)
+    for vm, ips in vm_ips.iteritems():
+        vm_resource = conf.VMS_TO_STORE.get(vm).get("resource")
+        inter = ips.get("inter")
+        ip = ips.get("ip")
         testflow.setup(
             "Get VM %s interface excluding mgmt interface", vm
         )
-        interface = network_helper.get_non_mgmt_nic_name(vm=vm)
+        interface = (
+            [inter] if inter else network_helper.get_non_mgmt_nic_name(
+                vm_resource=vm_resource
+            )
+        )
         assert interface, "Failed to get interface from %s" % vm
 
         testflow.setup(
@@ -608,3 +628,59 @@ def add_sriov_host_device_to_vm(request):
     assert ll_vms.add_vm_host_device(
         vm_name=vm, host_name=hostname, device_name=device_name
     )
+
+
+@pytest.fixture(scope="class")
+def create_bond(request):
+    """
+    Create BOND on VM
+    """
+    SRIOV()
+    vm_name = getattr(request.node.cls, "vm_name")
+    vnics = getattr(request.node.cls, "sriov_vnics")
+    mode = getattr(request.node.cls, "mode", 4)
+    vm_resource = conf.VMS_TO_STORE.get(vm_name).get("resource")
+
+    testflow.setup("Create BOND on VM %s", vm_name)
+    helper.create_bond_on_vm(
+        vm_name=vm_name, vm_resource=vm_resource, vnics=vnics, mode=mode,
+        proto="disabled"
+    )
+
+
+@pytest.fixture(scope="class")
+def modify_ifcfg_nm_controlled(request):
+    """
+    Remove NM_CONTROLLED=no from ifcfg files
+    """
+    vm_name = getattr(request.node.cls, "vm_name")
+    vm_resource = global_helper.get_vm_resource(vm=vm_name, start_vm=False)
+    ifcfg_files = "{ifcfg_path}/ifcfg-*".format(
+        ifcfg_path=network_helper.IFCFG_PATH
+    )
+    nmcli_reload = "nmcli con reload"
+    nm_control_cmd = (
+        "sed -i s/NM_CONTROLLED=no/NM_CONTROLLED=yes/g {ifcfg_file}".format(
+            ifcfg_file=ifcfg_files
+        )
+    )
+    assert not vm_resource.run_command(shlex.split(nm_control_cmd))[0]
+    assert not vm_resource.run_command(shlex.split(nmcli_reload))[0]
+
+
+@pytest.fixture(scope="class")
+def remove_network_manager_connection(request):
+    """
+    Remove all NetworkManager connections
+    """
+    vm_name = getattr(request.node.cls, "vm_name")
+
+    def fin():
+        """
+        Remove all NetworkManager connections from VM
+        """
+        vm_resource = conf.VMS_TO_STORE.get(vm_name).get("resource")
+        assert network_helper.network_manager_remove_all_connections(
+            host=vm_resource
+        )
+    request.addfinalizer(fin)

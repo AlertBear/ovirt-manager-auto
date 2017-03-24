@@ -597,3 +597,29 @@ def remove_unneeded_vnic_profiles(dc_name):
                 logger.error("Failed removing vNIC profile: %s", profile.name)
                 success = False
     return success
+
+
+@ll_general.generate_logs()
+def get_vm_interface_by_vnic(vm, vm_resource, vnic):
+    """
+    Get VM interface (eth0, eth1..) by VM vNIC (nic1, nic2...)
+
+    Args:
+        vm (str): VM name
+        vm_resource (Host): VM Host resource
+        vnic (str): VM vNIC name
+
+    Returns:
+        str: VM interface name
+    """
+    vm_interfaces = vm_resource.network.all_interfaces()
+    vm_mac = ll_vms.get_vm_nic_mac_address(vm=vm, nic=vnic)
+    vm_macs_interfaces = dict(
+        [
+            (
+                vm_resource.network.find_mac_by_int(interfaces=[inter])[0],
+                inter
+            ) for inter in vm_interfaces
+        ]
+    )
+    return vm_macs_interfaces.get(vm_mac, "")

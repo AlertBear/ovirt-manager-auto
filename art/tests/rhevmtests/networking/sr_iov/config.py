@@ -40,6 +40,8 @@ HOST_NAME = None
 PF_OBJECT = None
 HOSTS_PARAM_DICT = None
 
+SD_NAME = None
+
 MIGRATION_TIMEOUT = 300
 MIGRATION_NIC_1_MAC = None  # Filled in remove_vnic_and_save_mac fixture
 SRIOV_MIGRATION_VM = "SR-IOV-migration-vm"
@@ -111,6 +113,9 @@ VM_DICT = {
         "required": "false",
     },
     VM_NETS[4][3]: {
+        "required": "false",
+    },
+    VM_NETS[5][0]: {
         "required": "false",
     },
     VM_NETS[6][0]: {

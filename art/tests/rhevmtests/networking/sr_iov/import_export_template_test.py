@@ -7,12 +7,15 @@ SR_IOV cases with import/export and templates
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    templates as ll_templates,
+    vms as ll_vms
+)
 import config as sriov_conf
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -57,9 +60,6 @@ class TestSriovImportExport01(NetworkTest):
     templates_list = [import_template_name, export_template_name]
     export_domain = conf.EXPORT_DOMAIN_NAME
     vms_list = [import_vm_name, vm, vm_from_template]
-    sd_name = ll_storagedomains.getStorageDomainNamesForType(
-        datacenter_name=dc, storage_type=conf.STORAGE_TYPE
-    )[0]
 
     # clean_host_interfaces
     hosts_nets_nic_dict = {
@@ -88,7 +88,7 @@ class TestSriovImportExport01(NetworkTest):
         testflow.step("Import VM with VF from export domain")
         assert ll_vms.importVm(
             positive=True, vm=self.vm, export_storagedomain=self.export_domain,
-            import_storagedomain=self.sd_name, cluster=self.cluster,
+            import_storagedomain=sriov_conf.SD_NAME, cluster=self.cluster,
             name=self.import_vm_name
         )
         testflow.step("Start VM")
@@ -119,13 +119,13 @@ class TestSriovImportExport01(NetworkTest):
         assert ll_templates.import_template(
             positive=True, template=self.export_template_name,
             source_storage_domain=self.export_domain,
-            destination_storage_domain=self.sd_name, cluster=self.cluster,
-            name=self.import_template_name
+            destination_storage_domain=sriov_conf.SD_NAME,
+            cluster=self.cluster, name=self.import_template_name
         )
         testflow.step("Create VM from template")
         assert ll_vms.createVm(
             positive=True, vmName=self.vm_from_template, vmDescription="",
-            cluster=self.cluster, storageDomainName=self.sd_name,
+            cluster=self.cluster, storageDomainName=sriov_conf.SD_NAME,
             provisioned_size=conf.VM_DISK_SIZE,
             template=self.import_template_name
         )

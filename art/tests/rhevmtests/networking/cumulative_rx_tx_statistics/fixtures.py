@@ -128,7 +128,9 @@ def vm_prepare_setup(request):
         testflow.setup(
             "Get VM %s interface excluding mgmt interface", vm
         )
-        interface = network_helper.get_non_mgmt_nic_name(vm=vm)
+        interface = network_helper.get_non_mgmt_nic_name(
+            vm_resource=vm_resource
+        )
         assert interface, "Failed to get interface from %s" % vm
         interface = interface[0]
 

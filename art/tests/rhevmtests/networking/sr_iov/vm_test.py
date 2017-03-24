@@ -10,8 +10,10 @@ import pytest
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import (
     events as ll_events,
@@ -22,11 +24,14 @@ from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     reset_host_sriov_params, update_vnic_profiles, add_vnics_to_vm,
     init_fixture, prepare_setup_vm, set_num_of_vfs, create_qos, update_qos,
-    add_labels, add_vnic_profile, set_all_networks_allowed,
-    set_ip_on_vm_interface, add_sriov_host_device_to_vm
+    add_labels, add_vnic_profile, set_all_networks_allowed, create_bond,
+    set_ip_on_vm_interface, add_sriov_host_device_to_vm,
+    remove_network_manager_connection
 )
 from rhevmtests.fixtures import start_vm
-from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture, store_vms_params
+)
 from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
@@ -556,10 +561,15 @@ class TestSriovVm04(NetworkTest):
     init_fixture.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
+    prepare_setup_vm.__name__,
+    setup_networks_fixture.__name__,
     add_vnic_profile.__name__,
     add_vnics_to_vm.__name__,
     start_vm.__name__,
-    set_ip_on_vm_interface.__name__
+    store_vms_params.__name__,
+    create_bond.__name__,
+    set_ip_on_vm_interface.__name__,
+    remove_network_manager_connection.__name__,
 )
 @pytest.mark.skipif(
     conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
@@ -575,18 +585,22 @@ class TestSriovVm05(NetworkTest):
 
     # set_num_of_vfs
     num_of_vfs = 1
-    set_num_of_vfs_host_nic_index = 2
+    set_num_of_vfs_host_nic_index = 1
 
     # add_vnic_profile
     net_1 = conf.MGMT_BRIDGE
     port_mirroring = [False, False]
 
     # add_vnics_to_vm
-    nics = [sriov_conf.VM_TEST_VNICS[5][0], sriov_conf.VM_TEST_VNICS[5][0]]
-    nets = [conf.MGMT_BRIDGE, conf.MGMT_BRIDGE]
-    vms = [vm_1, vm_2]
-    profiles = ["mgmt_passthrough", "mgmt_vitio"]
-    pass_through_vnic = [True, False]
+    vnic_1 = sriov_conf.VM_TEST_VNICS[5][0]
+    vnic_2 = sriov_conf.VM_TEST_VNICS[5][0]
+    vnic_3 = sriov_conf.VM_TEST_VNICS[5][1]
+    net_3 = sriov_conf.VM_NETS[5][0]
+    nics = [vnic_1, vnic_2, vnic_3]
+    nets = [conf.MGMT_BRIDGE, conf.MGMT_BRIDGE, net_3]
+    vms = [vm_1, vm_2, vm_1]
+    profiles = ["mgmt_passthrough", "mgmt_vitio", net_3]
+    pass_through_vnic = [True, False, False]
 
     # start_vm
     start_vms_dict = {
@@ -598,16 +612,48 @@ class TestSriovVm05(NetworkTest):
         }
     }
 
+    # store_vms_params
+    vms_to_store = [vm_1, vm_2]
+
     # set_ip_on_vm_interface
-    ips = sriov_conf.IPS[:2]
+    vm_1_ip = sriov_conf.IPS.pop(0)
+    vm_2_ip = sriov_conf.IPS.pop(0)
+    vm_ips = {
+        vm_1: {
+            "ip": vm_1_ip,
+            "inter": "bond1"
+        },
+        vm_2: {
+            "ip": vm_2_ip,
+            "inter": None
+        }
+    }
+
+    # create_bond
+    vm_name = vm_1
+    sriov_vnics = [vnic_1, vnic_3]
+
+    # setup_networks_fixture
+    hosts_nets_nic_dict = {
+        0: {
+            net_3: {
+                "nic": 3,
+                "network": net_3,
+            }
+        }
+    }
 
     @polarion("RHEVM3-6728")
     def test_check_connectivity(self):
         """
         Ping between VMs using VF and bridge vNICs
         """
-        vm_resource = global_helper.get_vm_resource(vm=self.vm_1)
-        assert vm_resource.network.send_icmp(dst=sriov_conf.IPS[1])
+        testflow.step(
+            "Send ICMP from VM %s (%s) to VM %s (%s)", self.vm_1,
+            self.vm_1_ip, self.vm_2, self.vm_2_ip
+        )
+        vm_resource = conf.VMS_TO_STORE.get(self.vm_1).get("resource")
+        assert vm_resource.network.send_icmp(dst=self.vm_2_ip)
 
 
 @attr(tier=2)
@@ -663,7 +709,7 @@ class TestSriovVm06(NetworkTest):
 
     @bz({"1427202": {}})
     @polarion("RHEVM-19420")
-    def test_01_vm_with_sriov_network_and_hostdev(self):
+    def test_vm_with_sriov_network_and_hostdev(self):
         """
         Start VM that uses SR-IOV network and VF host device
         """

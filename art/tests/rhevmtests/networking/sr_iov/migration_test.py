@@ -9,27 +9,35 @@ from time import sleep
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.high_level import (
+    networks as hl_networks,
+    vms as hl_vms
+)
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    vms as ll_vms
+)
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
-from art.test_handler.tools import polarion, bz
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     SRIOV, init_fixture, reset_host_sriov_params, set_num_of_vfs,
+    modify_ifcfg_nm_controlled
 )
 from rhevmtests.fixtures import start_vm
+from rhevmtests.networking.fixtures import store_vms_params
 
 
 @pytest.fixture(scope="module", autouse=True)
-def prepare_setup_vm(request):
+def prepare_setup_migration(request):
     """
-    Prepare networks for VM cases
+    Prepare networks for migration cases
     """
     sriov_migration = SRIOV()
     vm = sriov_conf.SRIOV_MIGRATION_VM
@@ -146,9 +154,11 @@ def prepare_setup_vm(request):
     init_fixture.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
-    start_vm.__name__
+    start_vm.__name__,
+    store_vms_params.__name__,
+    modify_ifcfg_nm_controlled.__name__,
 )
-class SriovMigration01(NetworkTest):
+class TestSriovMigration01(NetworkTest):
     """
     Try to migrate when:
         1. The 'passthrough' vNIC has no 'migratable' property
@@ -174,6 +184,9 @@ class SriovMigration01(NetworkTest):
     start_vms_dict = {
         vm_name: {}
     }
+
+    # store_vms_params
+    vms_to_store = [vm_name]
 
     @polarion("RHEVM-17060")
     def test_01_migrate_without_migratable_enables(self):
@@ -262,8 +275,7 @@ class SriovMigration01(NetworkTest):
         """
         Migrate only with vf vNIC (no connection while migration)
         """
-        vm_ip = hl_vms.get_vm_ip(vm_name=self.vm_name, start_vm=False)
-        assert vm_ip
+        vm_ip = conf.VMS_TO_STORE.get(self.vm_name).get("ip")
         testflow.step(
             "Check connectivity to VM %s before migration", self.vm_name
         )
@@ -276,7 +288,6 @@ class SriovMigration01(NetworkTest):
         assert conf.ENGINE_HOST.network.send_icmp(dst=vm_ip)
 
     @polarion("RHEVM-19183")
-    @bz({"1417217": {}})
     def test_05_check_vnic_plugged_after_migration(self):
         """
         Check that SR-IOV vNIC is plugged after migration
@@ -286,21 +297,16 @@ class SriovMigration01(NetworkTest):
             vm=self.vm_name, nic=self.sriov_vnic_1
         )
 
-    @bz({"1410076": {}})
     @polarion("RHEVM-17059")
     def test_06_migrate_with_bond_in_guest(self):
         """
         Migrate with vf and virtIO vNIcs (BOND on guest)
         """
-        vm_ip = hl_vms.get_vm_ip(vm_name=self.vm_name, start_vm=False)
-        assert vm_ip
-        vm_resource = global_helper.get_host_resource(
-            ip=vm_ip, password=conf.VDC_ROOT_PASSWORD
-        )
+        vm_resource = conf.VMS_TO_STORE.get(self.vm_name).get("resource")
         testflow.step("Create BOND on VM %s", self.vm_name)
-        assert helper.create_bond_on_vm(
+        helper.create_bond_on_vm(
             vm_name=self.vm_name, vm_resource=vm_resource,
-            vnic=self.sriov_vnic_1
+            vnics=[self.sriov_vnic_1, conf.VM_NIC_0]
         )
         testflow.step("Get VM %s IP after BOND creation", self.vm_name)
         vm_ip = hl_vms.get_vm_ip(vm_name=self.vm_name, start_vm=False)
