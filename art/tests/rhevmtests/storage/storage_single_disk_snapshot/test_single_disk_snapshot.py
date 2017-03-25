@@ -416,7 +416,7 @@ class TestCase6007(BasicEnvironment):
         disks_for_snap = [self.boot_disk]
         self._perform_snapshot_operation(disks_for_snap)
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
-        ll_vms.start_vms([self.vm_name], 1, config.VM_UP, wait_for_ip=False)
+        ll_vms.start_vms([self.vm_name], 1, config.VM_UP, wait_for_ip=True)
         assert storage_helpers._run_cmd_on_remote_machine(
             self.vm_name, self.cmd_del, self.vm_executor
         )
