@@ -749,103 +749,61 @@ def updateVm(positive, vm, **kwargs):
     """
     Update existed vm
 
-    :param vm: name of vm
-    :type : str
-    :param name: new vm name
-    :type name: str
-    :param description: new vm description
-    :type description: str
-    :param data_center: new vm data center
-    :type data_center: str
-    :param cluster: new vm cluster
-    :type cluster: str
-    :param memory: vm memory size in bytes
-    :type memory: int
-    :param cpu_socket: number of cpu sockets
-    :type cpu_socket: int
-    :param cpu_cores: number of cpu cores
-    :type cpu_cores: int
-    :param cpu_threads: number of cpu threads
-    :type cpu_threads: int
-    :param cpu_mode: mode of cpu
-    :type cpu_mode: str
-    :param os_type: OS type of new vm
-    :type os_type: str
-    :param boot: type of boot
-    :type boot: str
-    :param template: name of template that should be used
-    :type template: str
-    :param type: vm type (SERVER or DESKTOP)
-    :type type: str
-    :param monitors: number of display monitors
-    :type monitors: int
-    :param display_type: type of vm display (VNC or SPICE)
-    :type display_type: str
-    :param kernel: kernel path
-    :type kernel: str
-    :param initrd: initrd path
-    :type initrd: str
-    :param cmdline: kernel parameters
-    :type cmdline: str
-    :param highly_available: set high-availability for vm ('true' or 'false')
-    :type highly_available: str
-    :param availablity_priority: priority for high-availability
-    (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
-    :type availablity_priority: int
-    :param custom_properties: custom properties set to the vm
-    :type custom_properties: str
-    :param stateless: if vm stateless or not
-    :type stateless: bool
-    :param memory_guaranteed: size of guaranteed memory in bytes
-    :type memory_guaranteed: int
-    :param ballooning: memory ballooning device enable or disable
-    :type ballooning: bool
-    :param domainName: sys.prep domain name
-    :type domainName: str
-    :param placement_affinity: vm to host affinity
-    :type placement_affinity: str
-    :param placement_host: host that the affinity holds for
-    :type placement_host: str
-    :param placement_hosts: multiple hosts for vm placement
-    :type placement_hosts: list
-    :param quota: vm quota id
-    :type quota: str
-    :param protected: true if vm is delete protected
-    :type protected: bool
-    :param watchdog_model: model of watchdog card (ib6300)
-    :type watchdog_model: str
-    :param watchdog_action: action of watchdog card
-    :type watchdog_action: str
-    :param time_zone: set to timezone out of product possible timezones
-    :type time_zone: str
-    :param time_zone_offset: set to utc_offset out of product possible offsets
-    :type time_zone_offset: str
-    :param compare: disable or enable validation for update
-    :type compare: bool
-    :param cpu_profile_id: cpu profile id
-    :type cpu_profile_id: str
-    :param numa_mode: numa mode for vm(strict, preferred, interleave)
-    :type numa_mode: str
-    :param initialization: Initialization obj for cloud init
-    :type initialization: Initialization
-    :param cpu_shares: cpu shares
-    :type cpu_shares: int
-    :param start_in_pause: start vm in pause mode
-    :type start_in_pause: bool
-    :param comment: vm comment
-    :type comment: str
-    :param migration_policy: Migration policy name
-    :type migration_policy: str
-    :param auto_converge: Enable auto converge (only with Legacy policy)
-    :type auto_converge: bool
-    :param compressed: Enable compressed (only with Legacy policy)
-    :type compressed: bool
-    :param instance_type: name of instance_type to be used for the vm
-    :type instance_type: str
-    :param max_memory: Upper bound for the memory hotplug
-    :type max_memory: int
-    :returns: True, if update success, otherwise False
-    :rtype: bool
+    Args:
+        vm (str): Name of vm
+        name (str): New vm name
+        description (str): New vm description
+        data_center (str): New vm data center
+        cluster (str): New vm cluster
+        memory (int): VM memory size in bytes
+        cpu_socket (int): Number of cpu sockets
+        cpu_cores (int): Number of cpu cores
+        cpu_threads (int): Number of cpu threads
+        cpu_mode (str): Mode of cpu
+        os_type (str): OS type of new vm
+        boot (str): Type of boot
+        template (str): Name of template that should be used
+        type (str): VM type (SERVER or DESKTOP)
+        monitors (int): Number of display monitors
+        display_type (str): Type of vm display (VNC or SPICE)
+        kernel (str): Kernel path
+        initrd (str): Initrd path
+        cmdline (str): Kernel parameters
+        highly_available(str): Set high-availability for vm ('true' or 'false')
+        availablity_priority(int) : Priority for high-availability
+            (an integer in range 0-100: 0 - Low,
+            50 - Medium, 100 - High priority)
+        custom_properties (str) : Custom properties set to the vm
+        stateless(bool): If vm stateless or not
+        memory_guaranteed (int): Size of guaranteed memory in bytes
+        ballooning (bool): Memory ballooning device enable or disable
+        domainName (str):  Sys.prep domain name
+        placement_affinity (str): VM to host affinity
+        placement_host (str): Host that the affinity holds for
+        placement_hosts (list): Multiple hosts for vm placement
+        quota (str): VM quota id
+        protected (bool) : True if vm is delete protected
+        watchdog_model (str): Model of watchdog card (ib6300)
+        watchdog_action (str): Action of watchdog card
+        time_zone (str): Set to timezone out of product possible timezones
+        time_zone_offset (str): Set to utc_offset out of product
+            possible offsets
+        compare (bool): Disable or enable validation for update
+        cpu_profile_id (str): Cpu profile id
+        numa_mode (str): Numa mode for vm (strict, preferred, interleave)
+        initialization (Initialization): Initialization obj for cloud init
+        cpu_shares (int): Cpu shares
+        start_in_pause (bool): Start vm in pause mode
+        comment (str): VM comment
+        migration_policy (str): Migration policy name
+        auto_converge (bool): Enable auto converge (only with Legacy policy)
+        compressed (bool): Enable compressed (only with Legacy policy)
+        instance_type (str): Name of instance_type to be used for the vm
+        max_memory (int): Upper bound for the memory hotplug
+        virtio_scsi (bool): Enable/Disable virtIO scsi
+
+    Returns:
+        bool: True, if update success, otherwise False
     """
     vm_obj = VM_API.find(vm)
     vm_new_obj = _prepare_vm_object(**kwargs)
