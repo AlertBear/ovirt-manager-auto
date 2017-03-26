@@ -159,10 +159,6 @@ class BasePowerSavingWithPM(u_lib.SlaTest):
         """
         sch_properties = copy.deepcopy(conf.DEFAULT_PS_WITH_PM_PARAMS)
         sch_properties.update({conf.HOSTS_IN_RESERVE: 2})
-        u_lib.testflow.step(
-            "Update cluster %s scheduling policy parameter %s to 2",
-            conf.CLUSTER_NAME[0], conf.HOSTS_IN_RESERVE
-        )
         assert ll_clusters.updateCluster(
             positive=True,
             cluster=conf.CLUSTER_NAME[0],

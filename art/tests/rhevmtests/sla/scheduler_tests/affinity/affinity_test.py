@@ -34,29 +34,21 @@ host_as_spm = 1
 @pytest.fixture(scope="module")
 def init_affinity_test(request):
     """
-    1) Disable AREM manager
-    2) Change cluster overcommitment
+    1) Create the affinity scheduler policy
+    2) Update the cluster with the affinity scheduler policy
     """
     def fin():
         """
-        1) Change cluster overcommitment
-        2) Enable AREM manager
+        1) Update the cluster scheduler policy to the 'none'
+        2) Remove the affinity scheduler policy
         """
-        result_list = []
-        u_libs.testflow.teardown(
-            "Update cluster %s over-commitment and scheduling policy",
-            conf.CLUSTER_NAME[0]
-        )
+        result_list = list()
         result_list.append(
             ll_clusters.updateCluster(
                 positive=True,
                 cluster=conf.CLUSTER_NAME[0],
-                mem_ovrcmt_prc=200,
                 scheduling_policy=conf.POLICY_NONE
             )
-        )
-        u_libs.testflow.teardown(
-            "Remove %s scheduling policy", conf.AFFINITY_POLICY_NAME
         )
         result_list.append(
             ll_sch_policies.remove_scheduling_policy(
@@ -66,14 +58,16 @@ def init_affinity_test(request):
         assert all(result_list)
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup(
-        "Add %s scheduling policy", conf.AFFINITY_POLICY_NAME
-    )
-    sch_helpers.add_affinity_scheduler_policy()
-
-    u_libs.testflow.setup(
-        "Update cluster %s over-commitment and scheduling policy",
-        conf.CLUSTER_NAME[0]
+    sch_helpers.add_scheduler_policy(
+        policy_name=conf.AFFINITY_POLICY_NAME,
+        policy_units={
+            conf.SCH_UNIT_TYPE_FILTER: conf.DEFAULT_SCHEDULER_FILTERS,
+            conf.SCH_UNIT_TYPE_WEIGHT: conf.AFFINITY_SCHEDULER_WEIGHTS
+        },
+        additional_params={
+            conf.PREFERRED_HOSTS: {conf.WEIGHT_FACTOR: 99},
+            conf.VM_TO_HOST_AFFINITY_UNIT: {conf.WEIGHT_FACTOR: 10}
+        }
     )
     assert ll_clusters.updateCluster(
         positive=True,

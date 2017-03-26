@@ -52,14 +52,13 @@ def init_scheduler_sanity_test(request):
         2) Remove all redundant scheduler policies
         3) Activate third host
         """
-        u_libs.testflow.teardown(
-            "Update cluster %s scheduling policy to %s",
-            conf.CLUSTER_NAME[0], conf.POLICY_NONE
-        )
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=conf.CLUSTER_NAME[0],
-            scheduling_policy=conf.POLICY_NONE
+        results = list()
+        results.append(
+            ll_clusters.updateCluster(
+                positive=True,
+                cluster=conf.CLUSTER_NAME[0],
+                scheduling_policy=conf.POLICY_NONE
+            )
         )
         sched_policies = ll_sch.get_scheduling_policies()
         sched_policies = filter(
@@ -70,10 +69,14 @@ def init_scheduler_sanity_test(request):
             u_libs.testflow.teardown(
                 "Remove the scheduling policy %s", policy_name
             )
-            ll_sch.remove_scheduling_policy(policy_name=policy_name)
+            results.append(
+                ll_sch.remove_scheduling_policy(policy_name=policy_name)
+            )
         if not conf.PPC_ARCH:
-            u_libs.testflow.teardown("Activate the host %s", conf.HOSTS[2])
-            ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
+            results.append(
+                ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
+            )
+        assert all(results)
     request.addfinalizer(fin)
 
     if not conf.PPC_ARCH:
@@ -180,7 +183,7 @@ class TestPinToHostFilter(BaseSchedulerSanity):
         conf.CLUSTER_SCH_POLICY: "check_pin_to_host"
     }
     policy_units = {
-        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER}
     }
     vms_to_params = {
         conf.VM_NAME[0]: {
@@ -220,7 +223,7 @@ class TestNegativePinToHostFilter(BaseSchedulerSanity):
         conf.CLUSTER_SCH_POLICY: "negative_check_pin_to_host"
     }
     policy_units = {
-        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER}
     }
     vms_to_params = {
         conf.VM_NAME[0]: {
@@ -256,7 +259,7 @@ class TestMemoryFilter(BaseSchedulerSanity):
         conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
     policy_units = {
-        conf.FILTER_MEMORY: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+        conf.FILTER_MEMORY: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER}
     }
     update_vms_memory = conf.VM_NAME[:2]
     update_to_default_params = conf.VM_NAME[:2]
@@ -296,9 +299,9 @@ class TestCpuFilter(BaseSchedulerSanity):
         conf.CLUSTER_SCH_POLICY: "cpu_filter"
     }
     policy_units = {
-        conf.FILTER_CPU: {conf.UNIT_TYPE: conf.FILTER_TYPE},
+        conf.FILTER_CPU: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER},
         conf.PREFERRED_HOSTS: {
-            conf.UNIT_TYPE: conf.WEIGHT_TYPE,
+            conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_WEIGHT,
             conf.WEIGHT_FACTOR: 99
         }
     }
@@ -347,8 +350,8 @@ class TestNegativeCpuFilter(BaseSchedulerSanity):
         conf.CLUSTER_SCH_POLICY: "negative_cpu_filter"
     }
     policy_units = {
-        conf.FILTER_CPU: {conf.UNIT_TYPE: conf.FILTER_TYPE},
-        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+        conf.FILTER_CPU: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER},
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER}
     }
     vms_to_hosts_cpus = {conf.VM_NAME[0]: 0}
     double_vms_cpus = True
@@ -389,8 +392,8 @@ class TestNetworkFilter(BaseSchedulerSanity):
         conf.CLUSTER_SCH_POLICY: conf.NETWORK_FILTER_NAME
     }
     policy_units = {
-        conf.FILTER_NETWORK: {conf.UNIT_TYPE: conf.FILTER_TYPE},
-        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.FILTER_TYPE}
+        conf.FILTER_NETWORK: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER},
+        conf.FILTER_PIN_TO_HOST: {conf.UNIT_TYPE: conf.SCH_UNIT_TYPE_FILTER}
     }
     network_name = conf.NETWORK_FILTER_NAME
     hosts_nets_nic_dict = {

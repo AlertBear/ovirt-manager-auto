@@ -398,7 +398,7 @@ def remove_host(positive, host, deactivate=False, force=False):
     return HOST_API.delete(host_obj, positive, operations=operations)
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def activate_host(positive, host, wait=True):
     """
     Activate host (set status to UP)

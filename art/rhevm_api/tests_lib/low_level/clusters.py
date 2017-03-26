@@ -275,6 +275,7 @@ def addCluster(positive, **kwargs):
     return status
 
 
+@ll_general.generate_logs(step=True)
 def updateCluster(positive, cluster, **kwargs):
     """
     Update cluster
@@ -316,17 +317,9 @@ def updateCluster(positive, cluster, **kwargs):
     compare = kwargs.get('compare', True)
     old_cluster_obj = util.find(cluster)
     new_cluster_obj = _prepareClusterObject(**kwargs)
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Update", obj_type=CLUSTER_NAME, obj_name=cluster,
-        positive=positive, **kwargs
-    )
-    logger.info(log_info)
-    new_cluster_obj, status = util.update(
+    return util.update(
         old_cluster_obj, new_cluster_obj, positive, compare=compare
-    )
-    if not status:
-        logger.error(log_error)
-    return status
+    )[1]
 
 
 def removeCluster(positive, cluster):

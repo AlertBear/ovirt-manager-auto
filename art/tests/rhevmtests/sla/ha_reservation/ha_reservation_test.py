@@ -8,7 +8,7 @@ Tests covers:
     multiple VMs
     host-maintenance
 """
-import logging
+import pytest
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -16,7 +16,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
 import helpers
-import pytest
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
@@ -28,7 +27,6 @@ from rhevmtests.sla.fixtures import (
     update_vms_memory_to_hosts_memory
 )
 
-logger = logging.getLogger(__name__)
 host_as_spm = 0
 
 
@@ -42,10 +40,6 @@ def update_ha_reservation_interval(ha_reservation_interval):
     Returns:
         bool: True, if update succeed, otherwise False
     """
-    logger.info(
-        "Change HA reservation interval to %s via engine-config",
-        ha_reservation_interval
-    )
     cmd = [
         "{0}={1}".format(
             conf.HA_RESERVATION_INTERVAL,
@@ -67,28 +61,43 @@ def init_ha_reservation(request):
     """
     def fin():
         """
-        1) Update cluster to default parameters
+        1) Disable cluster HA reservation option
         2) Activate third host
         3) Update HA reservation time interval
         """
-        ll_clusters.updateCluster(
-            positive=True,
-            cluster=conf.CLUSTER_NAME[0],
-            ha_reservation=False,
-            mem_ovrcmt_prc=conf.CLUSTER_OVERCOMMITMENT_DESKTOP
+        results = list()
+        results.append(
+            ll_clusters.updateCluster(
+                positive=True,
+                cluster=conf.CLUSTER_NAME[0],
+                ha_reservation=False
+            )
         )
-        ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
-        update_ha_reservation_interval(
-            ha_reservation_interval=conf.DEFAULT_RESERVATION_INTERVAL
+        results.append(
+            ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
         )
+        u_libs.testflow.teardown(
+            "Change HA reservation interval to %s via the engine-config",
+            conf.DEFAULT_RESERVATION_INTERVAL
+        )
+        results.append(
+            update_ha_reservation_interval(
+                ha_reservation_interval=conf.DEFAULT_RESERVATION_INTERVAL
+            )
+        )
+        assert all(results)
     request.addfinalizer(fin)
 
     assert ll_hosts.deactivate_host(
         positive=True,
         host=conf.HOSTS[2]
     )
+    u_libs.testflow.setup(
+        "Change HA reservation interval to %s via the engine-config",
+        conf.NEW_RESERVATION_INTERVAL
+    )
     assert update_ha_reservation_interval(
-        ha_reservation_interval=conf.NEW_RESERVATION_INTERVAL / 60
+        ha_reservation_interval=conf.NEW_RESERVATION_INTERVAL
     )
     assert ll_clusters.updateCluster(
         positive=True,

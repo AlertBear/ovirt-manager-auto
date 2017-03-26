@@ -4,12 +4,14 @@ Configuration file for scheduler_policies_with_memory package
 from rhevmtests.sla.config import *  # flake8: noqa
 
 # Load VMS
-LOAD_NORMALUTILIZED_VMS = ["vm_normalutilized_%d" % i for i in range(2)]
-LOAD_OVERUTILIZED_VMS = ["vm_overutilized_%d" % i for i in range(2)]
+LOAD_NORMALUTILIZED_VMS = ["vm_normalutilized_%d" % i for i in range(3)]
+LOAD_OVERUTILIZED_VMS = ["vm_overutilized_%d" % i for i in range(3)]
 LOAD_MEMORY_VMS = {}
 
 DEFAULT_VMS_TO_RUN_0 = dict(
-    (VM_NAME[i], {VM_RUN_ONCE_HOST: i}) for i in xrange(2)
+    (VM_NAME[i], {
+        VM_RUN_ONCE_HOST: i, VM_RUN_ONCE_WAIT_FOR_STATE: VM_UP
+    }) for i in xrange(2)
 )
 DEFAULT_VMS_TO_RUN_1 = dict(
     (
@@ -40,7 +42,10 @@ MEMORY_LOAD_VMS_TO_RUN_1 = merge_dicts(
 )
 MEMORY_LOAD_VMS_TO_RUN_2 = merge_dicts(
     DEFAULT_VMS_TO_RUN_0,
-    {LOAD_OVERUTILIZED_VMS[0]: {VM_RUN_ONCE_HOST: 0}}
+    {
+        LOAD_OVERUTILIZED_VMS[0]: {VM_RUN_ONCE_HOST: 0},
+        LOAD_OVERUTILIZED_VMS[2]: {VM_RUN_ONCE_HOST: 2}
+    }
 )
 MEMORY_LOAD_VMS_TO_RUN_3 = merge_dicts(
     DEFAULT_VMS_TO_RUN_0,
@@ -53,16 +58,27 @@ MEMORY_LOAD_VMS_TO_RUN_4 = merge_dicts(
     DEFAULT_VMS_TO_RUN_0,
     {
         LOAD_OVERUTILIZED_VMS[0]: {VM_RUN_ONCE_HOST: 0},
-        LOAD_OVERUTILIZED_VMS[1]: {VM_RUN_ONCE_HOST: 1}
+        LOAD_OVERUTILIZED_VMS[1]: {VM_RUN_ONCE_HOST: 1},
+        LOAD_OVERUTILIZED_VMS[2]: {VM_RUN_ONCE_HOST: 2}
     }
 )
 MEMORY_LOAD_VMS_TO_RUN_5 = merge_dicts(
     DEFAULT_VMS_TO_RUN_0,
-    {LOAD_OVERUTILIZED_VMS[1]: {VM_RUN_ONCE_HOST: 1}}
+    {
+        LOAD_OVERUTILIZED_VMS[1]: {VM_RUN_ONCE_HOST: 1},
+        LOAD_OVERUTILIZED_VMS[2]: {VM_RUN_ONCE_HOST: 2}
+    },
 )
 MEMORY_LOAD_VMS_TO_RUN_6 = merge_dicts(
     DEFAULT_VMS_TO_RUN_1,
-    {LOAD_OVERUTILIZED_VMS[1]: {VM_RUN_ONCE_HOST: 1}}
+    {
+        LOAD_OVERUTILIZED_VMS[0]: {VM_RUN_ONCE_HOST: 0},
+        LOAD_OVERUTILIZED_VMS[1]: {VM_RUN_ONCE_HOST: 1}
+    }
+)
+MEMORY_LOAD_VMS_TO_RUN_7 = merge_dicts(
+    DEFAULT_VMS_TO_RUN_0,
+    {LOAD_OVERUTILIZED_VMS[2]: {VM_RUN_ONCE_HOST: 2}}
 )
 
 # Constants to create CPU load on hosts
@@ -75,4 +91,4 @@ HOST_CPU_LOAD_5 = {CPU_LOAD_100: [1]}
 HOST_CPU_LOAD_6 = {CPU_LOAD_100: xrange(2)}
 HOST_CPU_LOAD_7 = {CPU_LOAD_100: [0, 2]}
 
-RESERVED_MEMORY = 65
+RESERVED_MEMORY = 65 * MB

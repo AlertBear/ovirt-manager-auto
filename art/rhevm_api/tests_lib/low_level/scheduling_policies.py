@@ -29,7 +29,7 @@ BALANCE_API = get_api('balance', 'balances')
 ENUMS = opts['elements_conf']['RHEVM Enums']
 FILTER_TYPE = ENUMS['policy_unit_type_filter']
 WEIGHT_TYPE = ENUMS['policy_unit_type_weight']
-BALANCE_TYPE = ENUMS['policy_unit_type_load_balancing']
+BALANCE_TYPE = ENUMS['policy_unit_type_balance']
 UNIT_API = {
     FILTER_TYPE: FILTER_API,
     WEIGHT_TYPE: WEIGHT_API,
@@ -96,6 +96,7 @@ def _prepare_scheduling_policy_object(**kwargs):
     return sch_pol_obj
 
 
+@ll_general.generate_logs(step=True)
 def add_new_scheduling_policy(**kwargs):
     """
     Add new scheduling policy to the engine
@@ -109,18 +110,8 @@ def add_new_scheduling_policy(**kwargs):
         bool: True, if succeeds to create the scheduling policy,
             otherwise False
     """
-    policy_name = kwargs.get("name")
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Create", obj_type=SCHEDULING_POLICY, obj_name=policy_name
-    )
     sch_pol_obj = _prepare_scheduling_policy_object(**kwargs)
-
-    logger.info(log_info)
-    status = SCH_POL_API.create(sch_pol_obj, True)[1]
-
-    if not status:
-        logger.error(log_error)
-    return status
+    return SCH_POL_API.create(sch_pol_obj, True)[1]
 
 
 def update_scheduling_policy(policy_name, **kwargs):
@@ -158,24 +149,19 @@ def update_scheduling_policy(policy_name, **kwargs):
     return status
 
 
+@ll_general.generate_logs(step=True)
 def remove_scheduling_policy(policy_name):
     """
-    Remove scheduling policy
+    Remove the scheduler policy
 
-    :param policy_name: policy name
-    :type policy_name: str
-    :returns: True, if policy deleted successfully, otherwise False
-    :rtype: bool
+    Args:
+        policy_name (str): Scheduler policy name
+
+    Returns:
+        bool: True, if the policy deleted successfully, otherwise False
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Remove", obj_type=SCHEDULING_POLICY, obj_name=policy_name
-    )
-    logger.info(log_info)
     sch_pol_obj = SCH_POL_API.find(policy_name)
-    status = SCH_POL_API.delete(sch_pol_obj, True)
-    if not status:
-        logger.error(log_error)
-    return status
+    return SCH_POL_API.delete(sch_pol_obj, True)
 
 
 def get_policy_unit(unit_name, unit_type):
@@ -222,6 +208,7 @@ def get_sch_policy_units(policy_name, unit_type, get_href=False):
     )
 
 
+@ll_general.generate_logs(step=True)
 def add_scheduling_policy_unit(
     policy_name, unit_name, unit_type, position=None, factor=None
 ):
@@ -257,21 +244,9 @@ def add_scheduling_policy_unit(
     else:
         unit_obj = UNIT_CLASS.get(unit_type)(scheduling_policy_unit=pl_unit)
 
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Add",
-        obj_type=SCHEDULING_POLICY_UNIT,
-        obj_name=unit_name,
-        extra_txt="to the scheduling policy %s" % policy_name
-    )
-    logger.info(log_info)
-    status = UNIT_API.get(unit_type).create(
+    return UNIT_API.get(unit_type).create(
         unit_obj, True, async=True, collection=policy_units_link
     )[1]
-
-    if not status:
-        logger.error(log_error)
-
-    return status
 
 
 def get_scheduling_policy_id(scheduling_policy_name):

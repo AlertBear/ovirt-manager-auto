@@ -1,14 +1,18 @@
 """
 Base module for scheduler tests with memory load
 """
+import pytest
+from concurrent.futures import ThreadPoolExecutor
+
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
-import pytest
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from rhevmtests.sla.fixtures import (  # noqa: F401
+    migrate_he_vm,
     run_once_vms,
     update_cluster,
     update_cluster_to_default_parameters,
@@ -18,6 +22,18 @@ from rhevmtests.sla.scheduler_tests.fixtures import (
     load_hosts_cpu,
     wait_for_scheduling_memory_update
 )
+
+he_dst_host = 2
+
+
+@pytest.fixture(scope="class")
+def update_vm_parameters_variable(request):
+    """
+    Update parameters for the VM update
+    """
+    request.node.cls.vms_to_params = {
+        conf.VM_NAME[2]: conf.MEMORY_NEAR_OVERUTILIZED,
+    }
 
 
 def update_configuration_constants(min_memory):
@@ -77,24 +93,32 @@ def prepare_environment_for_tests(request):
     2) Update and start VM's to equalize the scheduling memory on all hosts
     3) Update memory parameters for EvenDistribution and PowerSaving policies
     4) Create VM's for the memory load
+    5) Create custom PowerSaving and EvenDistribution policies
     """
     def fin():
         """
-        1) Remove memory load VM's
-        2) Stop CPU load on all hosts
-        3) Stop VM's that used to equalize the scheduling memory of hosts
-        4) Update VM's to default parameters
+        1) Remove custom PowerSaving and EvenDistribution policies
+        2) Remove memory load VM's
+        3) Stop CPU load on all hosts
+        4) Stop VM's that used to equalize the scheduling memory of hosts
+        5) Update VM's to default parameters
         """
         results = []
+        for policy_name in conf.POLICY_CUSTOM_FACTOR.iterkeys():
+            results.append(
+                ll_sch_policies.remove_scheduling_policy(
+                    policy_name=policy_name
+                )
+            )
         u_libs.testflow.teardown(
             "Remove VM's: %s", conf.LOAD_MEMORY_VMS.keys()
         )
         results.append(ll_vms.safely_remove_vms(conf.LOAD_MEMORY_VMS.keys()))
         u_libs.testflow.teardown("Stop CPU load on all hosts")
         sch_helpers.stop_cpu_load_on_all_hosts()
-        u_libs.testflow.teardown("Stop VM's %s", conf.VM_NAME[3:5])
-        results.append(ll_vms.stop_vms_safely(vms_list=conf.VM_NAME[3:5]))
-        for vm_name in conf.VM_NAME[3:5]:
+        u_libs.testflow.teardown("Stop VM's %s", conf.VM_NAME[4:6])
+        results.append(ll_vms.stop_vms_safely(vms_list=conf.VM_NAME[4:6]))
+        for vm_name in conf.VM_NAME[4:6]:
             u_libs.testflow.teardown(
                 "Update the VM %s with parameters %s",
                 vm_name, conf.DEFAULT_VM_PARAMETERS
@@ -107,10 +131,6 @@ def prepare_environment_for_tests(request):
         assert all(results)
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup(
-        "Update the cluster %s overcommitment to %s",
-        conf.CLUSTER_NAME[0], conf.CLUSTER_OVERCOMMITMENT_NONE
-    )
     assert ll_clusters.updateCluster(
         positive=True,
         cluster=conf.CLUSTER_NAME[0],
@@ -126,55 +146,78 @@ def prepare_environment_for_tests(request):
     update_params = {
         conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED
     }
-    vm_index = 3
+    vm_index = 4
     for host_name, host_memory in hosts_to_memory.iteritems():
-        if host_memory != min_memory:
-            update_params[conf.VM_PLACEMENT_HOSTS] = [host_name]
-            # Will give me number divided by conf.MB without remainder
-            vm_memory = (
-                (host_memory - min_memory) / conf.MB * conf.MB
-            ) - conf.RESERVED_MEMORY * conf.MB
-            for vm_param in (
-                conf.VM_MEMORY, conf.VM_MEMORY_GUARANTEED, conf.VM_MAX_MEMORY
-            ):
-                update_params[vm_param] = vm_memory
-            u_libs.testflow.setup(
-                "Update the VM %s with parameters %s",
-                conf.VM_NAME[vm_index], update_params
-            )
-            assert ll_vms.updateVm(
-                positive=True, vm=conf.VM_NAME[vm_index], **update_params
-            )
-            vm_index += 1
+        if host_memory == min_memory:
+            continue
 
-    u_libs.testflow.setup("Start VM's %s", conf.VM_NAME[3:5])
-    ll_vms.start_vms(vm_list=conf.VM_NAME[3:5])
+        # Will give me number divided by conf.MB without remainder
+        vm_memory = (host_memory - min_memory) / conf.MB * conf.MB
+        if vm_memory <= conf.RESERVED_MEMORY:
+            continue
+        update_params[conf.VM_PLACEMENT_HOSTS] = [host_name]
+        vm_memory -= conf.RESERVED_MEMORY
+        for vm_param in (
+            conf.VM_MEMORY, conf.VM_MEMORY_GUARANTEED, conf.VM_MAX_MEMORY
+        ):
+            update_params[vm_param] = vm_memory
+        u_libs.testflow.setup(
+            "Update the VM %s with parameters %s",
+            conf.VM_NAME[vm_index], update_params
+        )
+        assert ll_vms.updateVm(
+            positive=True, vm=conf.VM_NAME[vm_index], **update_params
+        )
+        vm_index += 1
+
+    u_libs.testflow.setup("Start VM's %s", conf.VM_NAME[4:6])
+    ll_vms.start_vms(vm_list=conf.VM_NAME[4:6])
 
     u_libs.testflow.setup("Update configuration constants")
     update_configuration_constants(min_memory=min_memory)
 
-    for vm_name, vm_params in conf.LOAD_MEMORY_VMS.iteritems():
-        u_libs.testflow.setup(
-            "Create VM %s with parameters: %s", vm_name, vm_params
-        )
-        assert ll_vms.createVm(
-            positive=True,
-            vmName=vm_name,
-            cluster=conf.CLUSTER_NAME[0],
-            storageDomainName=conf.STORAGE_NAME[0],
-            provisioned_size=conf.GB,
-            nic=conf.NIC_NAME[0],
-            network=conf.MGMT_BRIDGE,
-            **vm_params
-        )
+    with ThreadPoolExecutor(max_workers=len(conf.LOAD_MEMORY_VMS)) as executor:
+        results = []
+        for vm_name, vm_params in conf.LOAD_MEMORY_VMS.iteritems():
+            u_libs.testflow.setup(
+                "Create VM %s with parameters: %s", vm_name, vm_params
+            )
+            results.append(
+                executor.submit(
+                    fn=ll_vms.createVm,
+                    positive=True,
+                    vmName=vm_name,
+                    cluster=conf.CLUSTER_NAME[0],
+                    storageDomainName=conf.STORAGE_NAME[0],
+                    provisioned_size=conf.GB,
+                    nic=conf.NIC_NAME[0],
+                    network=conf.MGMT_BRIDGE,
+                    **vm_params
+                )
+            )
+    assert all([result.result() for result in results])
+
+    for policy_type, policies_names in conf.TEST_SCH_POLICIES.iteritems():
+        for policy_name in policies_names:
+            sch_helpers.add_scheduler_policy(
+                policy_name=policy_name,
+                policy_units=conf.TEST_SCHEDULER_POLICIES_UNITS[policy_type],
+                additional_params={
+                    conf.PREFERRED_HOSTS: {conf.WEIGHT_FACTOR: 99},
+                    conf.POLICY_CUSTOM_FACTOR[policy_name]: {
+                        conf.WEIGHT_FACTOR: 10
+                    }
+                }
+            )
 
 
 @u_libs.attr(tier=3)
 @pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,
+    wait_for_scheduling_memory_update.__name__,
     run_once_vms.__name__,
     load_hosts_cpu.__name__,
-    wait_for_scheduling_memory_update.__name__,
     update_cluster.__name__
 )
 class BaseStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
@@ -188,18 +231,41 @@ class BaseStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
 
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,
     update_vms.__name__,
+    wait_for_scheduling_memory_update.__name__,
     run_once_vms.__name__,
     load_hosts_cpu.__name__,
-    wait_for_scheduling_memory_update.__name__,
     update_cluster.__name__
 )
 class BaseUpdateAndStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
     """
-    Base class for start and migrate vm test
+    Base class for VM start and migrate tests
     """
     vms_to_params = None
     hosts_cpu_load = {conf.CPU_LOAD_50: xrange(3)}
     vms_to_run = None
+    cluster_to_update_params = None
+
+
+@u_libs.attr(tier=2)
+@pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
+    prepare_environment_for_tests.__name__,
+    update_vm_parameters_variable.__name__,
+    update_vms.__name__,
+    wait_for_scheduling_memory_update.__name__,
+    run_once_vms.__name__,
+    load_hosts_cpu.__name__,
+    update_cluster.__name__
+)
+class BaseTakeVmMemoryInAccount(u_libs.SlaTest):
+    """
+    Base class to verify that the scheduler take in account the VM memory
+    before balancing operation
+    """
+    vms_to_params = None
+    hosts_cpu_load = {conf.CPU_LOAD_50: xrange(3)}
+    vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_6
     cluster_to_update_params = None

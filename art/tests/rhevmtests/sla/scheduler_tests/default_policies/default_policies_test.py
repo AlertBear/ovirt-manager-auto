@@ -8,6 +8,7 @@ import random
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.unittest_lib as u_libs
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
@@ -24,9 +25,50 @@ from rhevmtests.sla.scheduler_tests.fixtures import load_hosts_cpu
 host_as_spm = 2
 
 
+@pytest.fixture(scope="module")
+def init_default_policies_test(request):
+    """
+    1) Create PowerSaving and EvenDistribution scheduler policies
+    """
+    def fin():
+        """
+        1) Remove PowerSaving and EvenDistribution scheduler policies
+        """
+        results = list()
+        for policy_name in (
+            sla_conf.POLICY_CUSTOM_PS, sla_conf.POLICY_CUSTOM_ED
+        ):
+            results.append(
+                ll_sch_policies.remove_scheduling_policy(
+                    policy_name=policy_name
+                )
+            )
+        assert all(results)
+    request.addfinalizer(fin)
+
+    for policy_name, unit_name in zip(
+        (sla_conf.POLICY_CUSTOM_PS, sla_conf.POLICY_CUSTOM_ED),
+        (sla_conf.PS_OPTIMAL_FOR_CPU_UNIT, sla_conf.ED_OPTIMAL_FOR_CPU_UNIT)
+    ):
+        sch_helpers.add_scheduler_policy(
+            policy_name=policy_name,
+            policy_units=sla_conf.TEST_SCHEDULER_POLICIES_UNITS[policy_name],
+            additional_params={
+                sla_conf.PREFERRED_HOSTS: {sla_conf.WEIGHT_FACTOR: 99},
+                unit_name: {sla_conf.WEIGHT_FACTOR: 10}
+            }
+        )
+    assert ll_clusters.updateCluster(
+        positive=True,
+        cluster=sla_conf.CLUSTER_NAME[0],
+        mem_ovrcmt_prc=100
+    )
+
+
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
+    init_default_policies_test.__name__,
     run_once_vms.__name__,
     load_hosts_cpu.__name__,
     update_cluster.__name__
@@ -43,7 +85,7 @@ class BasePowerSavingPolicy(BaseDefaultPolicies):
     Base class for all tests with power_saving policy
     """
     cluster_to_update_params = {
-        sla_conf.CLUSTER_SCH_POLICY: sla_conf.POLICY_POWER_SAVING,
+        sla_conf.CLUSTER_SCH_POLICY: sla_conf.POLICY_CUSTOM_PS,
         sla_conf.CLUSTER_SCH_POLICY_PROPERTIES: sla_conf.DEFAULT_PS_PARAMS
     }
 
@@ -52,7 +94,6 @@ class TestPowerSavingBalanceModule1(BasePowerSavingPolicy):
     """
     VM run on under utilized host and must migrate to normal utilized host
     """
-    __test__ = True
     vms_to_run = {
         sla_conf.VM_NAME[0]: {sla_conf.VM_RUN_ONCE_HOST: 0},
         sla_conf.VM_NAME[1]: {sla_conf.VM_RUN_ONCE_HOST: 1},
@@ -76,7 +117,6 @@ class TestPowerSavingBalanceModule2(BasePowerSavingPolicy):
     VM run on under utilized host, but another hosts in cluster over or under
     utilized, so VM must stay on old host
     """
-    __test__ = True
     vms_to_run = {
         sla_conf.VM_NAME[0]: {
             sla_conf.VM_RUN_ONCE_HOST: 0,
@@ -103,7 +143,6 @@ class TestPowerSavingBalanceModule3(BasePowerSavingPolicy):
     VM run on under utilized host, check that VM migrate
     to normal utilized host and not to over utilized host
     """
-    __test__ = True
     vms_to_run = {
         sla_conf.VM_NAME[0]: {sla_conf.VM_RUN_ONCE_HOST: 0},
         sla_conf.VM_NAME[1]: {sla_conf.VM_RUN_ONCE_HOST: 1},
@@ -128,7 +167,6 @@ class TestPowerSavingWeightModule1(BasePowerSavingPolicy):
     VM run on normal utilized host, we put host to
     maintenance and check that VM migrated to normal utilized host
     """
-    __test__ = True
     vms_to_run = {
         sla_conf.VM_NAME[0]: {sla_conf.VM_RUN_ONCE_HOST: 0},
         sla_conf.VM_NAME[1]: {sla_conf.VM_RUN_ONCE_HOST: 1},
@@ -159,7 +197,7 @@ class BasePowerEvenDistribution(BaseDefaultPolicies):
     Base class for all tests with even_distribution policy
     """
     cluster_to_update_params = {
-        sla_conf.CLUSTER_SCH_POLICY: sla_conf.POLICY_EVEN_DISTRIBUTION,
+        sla_conf.CLUSTER_SCH_POLICY: sla_conf.POLICY_CUSTOM_ED,
         sla_conf.CLUSTER_SCH_POLICY_PROPERTIES: sla_conf.DEFAULT_ED_PARAMS
     }
 
@@ -168,7 +206,6 @@ class TestEvenDistributedBalanceModule1(BasePowerEvenDistribution):
     """
     VM run on over utilized host and must migrate to normal utilized host
     """
-    __test__ = True
     vms_to_run = {
         sla_conf.VM_NAME[0]: {sla_conf.VM_RUN_ONCE_HOST: 0},
         sla_conf.VM_NAME[1]: {sla_conf.VM_RUN_ONCE_HOST: 1},
@@ -192,7 +229,6 @@ class TestEvenDistributedBalanceModule2(BasePowerEvenDistribution):
     VM run on over utilized host, but other cluster hosts also over utilized,
     so VM must stay on old host
     """
-    __test__ = True
     vms_to_run = {
         sla_conf.VM_NAME[0]: {
             sla_conf.VM_RUN_ONCE_HOST: 0,
@@ -220,7 +256,6 @@ class TestEvenDistributedWeightModule1(BasePowerEvenDistribution):
     VM run on normal utilized host, we put host to
     maintenance and check that VM migrated on normal utilized host
     """
-    __test__ = True
     vms_to_run = {
         sla_conf.VM_NAME[0]: {sla_conf.VM_RUN_ONCE_HOST: 0},
         sla_conf.VM_NAME[1]: {sla_conf.VM_RUN_ONCE_HOST: 1},
@@ -257,7 +292,6 @@ class TestCheckClusterPoliciesParameters(u_libs.SlaTest):
     Added, because the bug
         https://bugzilla.redhat.com/show_bug.cgi?id=1070704
     """
-    __test__ = True
 
     @polarion("RHEVM-14841")
     def test_check_cluster_policies_parameters(self):
@@ -285,10 +319,6 @@ class TestCheckClusterPoliciesParameters(u_libs.SlaTest):
             }
         }
         for policy, properties in policies_params.iteritems():
-            u_libs.testflow.step(
-                "Update the cluster %s to the policy %s with parameters %s",
-                sla_conf.CLUSTER_NAME[0], policy, properties
-            )
             assert ll_clusters.updateCluster(
                 positive=True,
                 cluster=sla_conf.CLUSTER_NAME[0],

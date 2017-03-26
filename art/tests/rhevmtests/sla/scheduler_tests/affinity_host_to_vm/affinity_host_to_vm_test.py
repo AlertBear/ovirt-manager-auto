@@ -35,26 +35,30 @@ he_dst_host = 2
 @pytest.fixture(scope="module")
 def init_affinity_test(request):
     """
-    1) Create 'affinity' scheduling policy
-    2) Update cluster scheduling policy to 'affinity' policy
+    1) Create the affinity scheduler policy
+    2) Update the cluster with the affinity scheduler policy
     """
     def fin():
         """
-        1) Update cluster scheduling policy to 'none' policy
-        2) Remove 'affinity' scheduling policy
+        1) Update the cluster scheduler policy to the 'none'
+        2) Remove the affinity scheduler policy
         """
-        u_libs.testflow.teardown(
-            "Remove %s scheduling policy", conf.AFFINITY_POLICY_NAME
-        )
         assert ll_sch_policies.remove_scheduling_policy(
             policy_name=conf.AFFINITY_POLICY_NAME
         )
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup(
-        "Add %s scheduling policy", conf.AFFINITY_POLICY_NAME
+    sch_helpers.add_scheduler_policy(
+        policy_name=conf.AFFINITY_POLICY_NAME,
+        policy_units={
+            conf.SCH_UNIT_TYPE_FILTER: conf.DEFAULT_SCHEDULER_FILTERS,
+            conf.SCH_UNIT_TYPE_WEIGHT: conf.AFFINITY_SCHEDULER_WEIGHTS
+        },
+        additional_params={
+            conf.PREFERRED_HOSTS: {conf.WEIGHT_FACTOR: 99},
+            conf.VM_TO_HOST_AFFINITY_UNIT: {conf.WEIGHT_FACTOR: 10}
+        }
     )
-    sch_helpers.add_affinity_scheduler_policy()
 
 
 @pytest.mark.usefixtures(
@@ -1104,9 +1108,10 @@ class TestHaVmUnderHostAffinity(BaseHostAffinityStartVm):
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     skip_if_not_he_environment.__name__,
+    create_affinity_groups.__name__,
     stop_vms.__name__
 )
-class TestEnforcementUnderHostAffinityWithHeVm(BaseHostAffinityStartVm):
+class TestEnforcementUnderHostAffinityWithHeVm(BaseHostAffinity):
     """
     Test that the affinity enforcement does not try to balance the HE VM
     """

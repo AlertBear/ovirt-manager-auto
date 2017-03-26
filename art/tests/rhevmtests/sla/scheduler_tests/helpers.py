@@ -139,26 +139,26 @@ def configure_pm_on_hosts(hosts):
     return True
 
 
-def add_affinity_scheduler_policy():
+def add_scheduler_policy(
+    policy_name, policy_units, additional_params=None
+):
     """
-    Add scheduling policy for affinity tests
+    Add the scheduling policy for the tests
+
+    Args:
+        policy_name (str): Scheduling policy name
+        policy_units (dict): Scheduling policy units
+        additional_params (dict): Additional scheduling units parameters
     """
-    u_libs.testflow.setup(
-        "Add scheduling policy %s", conf.AFFINITY_POLICY_NAME
-    )
-    assert ll_sch_policies.add_new_scheduling_policy(
-        name=conf.AFFINITY_POLICY_NAME
-    )
-    for units_names, unit_type in zip(
-        (conf.AFFINITY_SCHEDULER_FILTERS, conf.AFFINITY_SCHEDULER_WEIGHTS),
-        (ll_sch_policies.FILTER_TYPE, ll_sch_policies.WEIGHT_TYPE)
-    ):
-        factor = 10 if unit_type == ll_sch_policies.WEIGHT_TYPE else None
-        u_libs.testflow.setup("Add %s's to the scheduling policy", unit_type)
+    assert ll_sch_policies.add_new_scheduling_policy(name=policy_name)
+    for unit_type, units_names in policy_units.iteritems():
         for unit_name in units_names:
+            unit_params = {}
+            if additional_params and unit_name in additional_params:
+                unit_params = additional_params[unit_name]
             assert ll_sch_policies.add_scheduling_policy_unit(
-                policy_name=conf.AFFINITY_POLICY_NAME,
+                policy_name=policy_name,
                 unit_name=unit_name,
                 unit_type=unit_type,
-                factor=factor
+                **unit_params
             )

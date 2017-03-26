@@ -610,7 +610,7 @@ def wait_for_dc_and_storagedomains():
             )
     for result in results:
         if result.exception():
-            logger.error(result.exception().msg)
+            logger.error(result.exception())
             return False
     return True
 
