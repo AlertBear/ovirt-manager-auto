@@ -52,15 +52,14 @@ def stop_pool_vms_safely_before_removal(request):
     a stateless snapshot to be restored when they are stopped
     """
     pool_name = request.node.cls.pool_name
-    prestarted = bool(ll_vmpools.get_vm_pool_number_of_prestarted_vms(
-        pool_name)
-    )
 
     def fin():
         """
         Stops all vms in the pool safely
         """
-        if prestarted:
+        if ll_vmpools.get_vm_pool_number_of_prestarted_vms(
+            pool_name
+        ):
             testflow.teardown(
                 "Canceling prestarted vms setting for pool: %s", pool_name
             )

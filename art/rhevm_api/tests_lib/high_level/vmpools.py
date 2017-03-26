@@ -20,7 +20,6 @@
 High-level functions above VM pools
 """
 import logging
-import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
@@ -28,7 +27,6 @@ from art.rhevm_api.tests_lib.low_level import (
     general as ll_general
 )
 from art.test_handler.settings import opts
-import concurrent.futures as futures
 from art.test_handler import exceptions
 import utilities.timeout as timeout_api
 
@@ -40,33 +38,27 @@ VM_POOL_ACTION_SLEEP = 5
 logger = logging.getLogger("art.hl_libs.vmpools")
 
 
-def _control_vms_in_pool(
-    positive, vm_pool, action, max_workers=2, threading=False
-):
+def _control_vms_in_pool(positive, vm_pool, action):
     """
     __Author__ = edolinin, alukiano, slitmano
 
     Common function for starting, stopping and detaching
     all VMs in a pool.
 
-    :param positive: Determines what is the expected result of the action
-    :type positive: bool
-    :param vm_pool: Name of the pool
-    :type vm_pool: str
-    :param action: Action to run on VMs, can be start, stop or detach
-    :type action: str
-    :param max_workers: Max number of threads to be used
-    :type max_workers: int
-    :param threading: Determines with to use threads or not
-    :type threading: bool
-    :return: True if every operation was successful, False otherwise
-    :rtype: bool
+    Args:
+        positive (bool): Determines what is the expected result of the action
+        vm_pool (str): Name of the pool
+        action (str): Action to run on VMs, can be start, stop or detach
+    Returns:
+        bool: True if every operation was successful, False otherwise
     """
+    func_args = [True, None]
     if action == ENUMS['start_vm']:
         action_function = ll_vms.startVm
         expected_status = ENUMS['vm_state_up']
     elif action == ENUMS['stop_vm']:
         action_function = ll_vms.stopVm
+        func_args.append('true')
         expected_status = ENUMS['vm_state_down']
     elif action == ENUMS['detach_vm']:
         action_function = ll_vms.detachVm
@@ -76,39 +68,28 @@ def _control_vms_in_pool(
         return False
 
     vms_list = ll_vmpools.get_vms_in_pool_by_name(vm_pool)
-    if threading:
-        results = list()
-        with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for vm_name in vms_list:
-                results.append(executor.submit(action_function, True, vm_name))
-        test_utils.raise_if_exception(results)
-    else:
-        for vm_name in vms_list:
-            if ll_vms.get_vm_state(vm_name) != expected_status:
-                if not ll_vms.changeVMStatus(
-                    positive=positive, vm=vm_name, action=action,
-                    expectedStatus=expected_status, async='false'
-                ):
-                    logger.error(
-                        "Failed to set status: %s for vm: %s",
-                        expected_status, vm_name
-                    )
-                    return False
-        if action == ENUMS['stop_vm']:
-            for vm_name in vms_list:
-                if not hl_vms.wait_for_restored_stateless_snapshot(vm_name):
-                    logger.error(
-                        "Vm: %s did not restore to original state", vm_name
-                    )
-                    return False
-        if not ll_vms.waitForVmsStates(
-            positive=positive, names=vms_list, states=expected_status
-        ):
-            logger.error(
-                "At least one vm from pool: %s has the wrong state,"
-                " expected: %s.", (vm_pool, expected_status)
-            )
+    for vm_name in vms_list:
+        vm_state = ll_vms.get_vm_state(vm_name)
+        if action != ENUMS['detach_vm'] and vm_state == expected_status:
+            continue
+        func_args[1] = vm_name
+        if not action_function(*func_args):
             return False
+    if action == ENUMS['stop_vm']:
+        for vm_name in vms_list:
+            if not hl_vms.wait_for_restored_stateless_snapshot(vm_name):
+                logger.error(
+                    "Vm: %s did not restore to original state", vm_name
+                )
+                return False
+    if not ll_vms.waitForVmsStates(
+        positive=positive, names=vms_list, states=expected_status
+    ):
+        logger.error(
+            "At least one vm from pool: %s has the wrong state,"
+            " expected: %s.", (vm_pool, expected_status)
+        )
+        return False
     return True
 
 
