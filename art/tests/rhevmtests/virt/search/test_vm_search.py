@@ -128,8 +128,7 @@ class TestVMSearchCase(VirtTest):
                  config.VM_DOWN_SEARCH_TEST, False]
             ),
             polarion("RHEVM-19227")(
-                ["os!={0}".format(config.VM_OS_TYPE),
-                 config.VM_DOWN_SEARCH_TEST, False]
+                ["os!=rhel_5", config.VM_DOWN_SEARCH_TEST, True]
             ),
             polarion("RHEVM-19259")(
                 ["memory!=1024", config.VM_DOWN_SEARCH_TEST, False]
