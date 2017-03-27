@@ -54,8 +54,8 @@ def setup_module():
     """
     global VM_ARGS
     VM_ARGS = config.create_vm_args.copy()
-    VM_ARGS['volumeType'] = False  # Preallocated
-    VM_ARGS['volumeFormat'] = config.DISK_FORMAT_RAW
+    VM_ARGS['volumeType'] = True
+    VM_ARGS['volumeFormat'] = config.DISK_FORMAT_COW
 
 
 class BaseCaseDCMixed(TestCase):
@@ -257,8 +257,6 @@ class TestCase4562(IscsiNfsSD):
         vm_args = VM_ARGS.copy()
         vm_args['vmName'] = self.vm_name
         vm_args['storageDomainName'] = self.storage_domains[0]
-        vm_args['volumeType'] = True
-        vm_args['volumeFormat'] = config.DISK_FORMAT_COW
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
@@ -848,8 +846,6 @@ class TestCase4551(IscsiNfsSD):
         vm_args = VM_ARGS.copy()
         vm_args['vmName'] = self.vm_name
         vm_args['storageDomainName'] = self.nfs
-        vm_args['volumeType'] = True
-        vm_args['volumeFormat'] = config.DISK_FORMAT_COW
 
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
