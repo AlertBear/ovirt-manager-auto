@@ -375,7 +375,7 @@ class TestCase16782(TestCase):
         Remove template's disk
         """
         template_disk = ll_template.getTemplateDisks(self.template_name)[0]
-        assert ll_template.copy_template_disks(
+        ll_template.copy_template_disks(
             self.template_name, [self.storage_domain[1]]
         ), "Failed to copy template's %s disk" % self.template_name
         assert ll_template.remove_template_disk_from_storagedomain(
