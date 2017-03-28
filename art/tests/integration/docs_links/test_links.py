@@ -11,7 +11,7 @@ class TestDocsLinks(CoreSystemTest):
     __test__ = True
 
     @staticmethod
-    @polarion("RHEVM3-8685")
+    @polarion("RHEVM3-8689")
     @attr(tier=1)
     def test_docs_links():
         result, failed_link = check_links()
