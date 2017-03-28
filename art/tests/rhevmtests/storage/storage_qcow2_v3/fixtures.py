@@ -29,7 +29,7 @@ def init_hsm_host(request):
         config.HOSTS, cluster_name=config.CLUSTER_NAME
     )
     assert status, "Failed to retrieve a non-SPM host on cluster '%s'" % (
-                   config.CLUSTER_NAME
+        config.CLUSTER_NAME
     )
     self.host_name = hsm_host['hsmHost']
 
@@ -43,58 +43,24 @@ def init_spm_host(request):
 
     self.spm_host = ll_hosts.get_spm_host(config.HOSTS)
     assert self.spm_host, "Failed tp retrieve SPM host on cluster '%s'" % (
-                   config.CLUSTER_NAME
+        config.CLUSTER_NAME
     )
 
 
 @pytest.fixture(scope='class')
-def init_storage_domains_params(request):
-    """
-    Initialize storage domain parameters
-    """
-    self = request.node.cls
-
-    self.nfs_sd_path = []
-    self.nfs_sd_address = []
-    self.gluster_sd_path = []
-    self.gluster_sd_address = []
-    self.sd_lun = []
-    self.sd_lun_address = []
-    self.sd_lun_target = []
-    self.sd_fc_lun = []
-
-    for sd in range(self.new_storage_domains_count):
-        self.nfs_sd_path.append(config.UNUSED_DATA_DOMAIN_PATHS[sd])
-        self.nfs_sd_address.append(config.UNUSED_DATA_DOMAIN_ADDRESSES[sd])
-
-        self.gluster_sd_path.append(
-            config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[sd]
-        )
-        self.gluster_sd_address.append(
-            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[sd]
-        )
-        self.sd_lun.append(config.UNUSED_LUNS[sd])
-        self.sd_lun_address.append(config.UNUSED_LUN_ADDRESSES[sd])
-        self.sd_lun_target.append(config.UNUSED_LUN_TARGETS[sd])
-        if config.UNUSED_FC_LUNS:
-            self.sd_fc_lun.append(config.UNUSED_FC_LUNS[sd])
-
-
-@pytest.fixture(scope='class')
-def create_dc(request):
+def create_dc_with_no_hosts(request):
     """
     Creates a data center with no hosts
     """
     self = request.node.cls
 
     assert ll_dc.addDataCenter(
-            True, name=self.new_dc_name, local=False,
-            version=self.dc_version
-    ), "Failed to create Data center '%s'" % self.new_dc_name
+        True, name=self.new_dc_name, local=False, version=self.dc_version
+    ), "Failed to create data center '%s'" % self.new_dc_name
 
 
 @pytest.fixture(scope='class')
-def create_cluster(request):
+def create_cluster_with_no_hosts(request):
     """
     Creates a cluster with no hosts
     """
@@ -112,97 +78,23 @@ def create_cluster(request):
 
 
 @pytest.fixture(scope='class')
-def create_storage_domain_for_upgrade(request):
+def create_one_or_more_storage_domains_same_type_for_upgrade(request):
     """
-    Creates storage domain for upgrade tests
+    Creates one or more storage domain for upgrade tests
     """
     self = request.node.cls
 
     self.sd_names = []
     for sd in range(self.new_storage_domains_count):
 
-        if config.NFS in self.storage:
-            self.nfs_sd_name = (
-                'upgrade_%s_to_%s_NFS' % self.name_pattern + str(sd)
+            self.storage_domain = (
+                'upgrade_%s_to_%s' % self.name_pattern + self.storage + str(sd)
             )
 
-            testflow.setup("Adding NFS storage domain needed for tests")
-            testflow.setup(
-                "Address: %s, Path: %s", self.nfs_sd_address[sd],
-                self.nfs_sd_path[sd]
+            storage_helpers.add_storage_domain(
+                self.storage_domain, self.new_dc_name, sd,
+                self.storage
             )
-            assert hl_sd.addNFSDomain(
-                self.host_name, self.nfs_sd_name, self.new_dc_name,
-                self.nfs_sd_address[sd], self.nfs_sd_path[sd],
-                storage_format=self.storage_format
-            ), "Failed to create NFS Storage domain '%s'" % self.nfs_sd_name
-            testflow.setup(
-                "NFS storage domain %s was created successfully",
-                self.nfs_sd_name
-            )
-            self.sd_names.append(self.nfs_sd_name)
-
-        if config.ISCSI in self.storage:
-            self.iscsi_sd_name = (
-                'upgrade_%s_to_%s_iSCSI' % self.name_pattern + str(sd)
-            )
-
-            testflow.setup("Adding iSCSI storage domain needed for tests")
-            assert hl_sd.addISCSIDataDomain(
-                self.host_name, self.iscsi_sd_name, self.new_dc_name,
-                self.sd_lun[sd], self.sd_lun_address[sd],
-                self.sd_lun_target[sd], storage_format=self.storage_format,
-                override_luns=True
-            ), "Failed to create iSCSI Storage domain %s" % self.iscsi_sd_name
-            testflow.setup(
-                "iSCSI storage domain %s was created successfully",
-                self.iscsi_sd_name
-            )
-            self.sd_names.append(self.iscsi_sd_name)
-
-        if config.GLUSTER in self.storage:
-            self.gluster_sd_name = (
-                'upgrade_%s_to_%s_gluster' % self.name_pattern + str(sd)
-            )
-            testflow.setup("Adding Gluster storage domain needed for tests")
-            testflow.setup(
-                "Address: %s, Path: %s", self.gluster_sd_address[sd],
-                self.gluster_sd_path[sd]
-            )
-            assert hl_sd.addGlusterDomain(
-                self.host_name, self.gluster_sd_name, self.new_dc_name,
-                self.gluster_sd_address[sd], self.gluster_sd_path[sd],
-                vfs_type=config.ENUMS['vfs_type_glusterfs']
-            ), (
-                "Failed to create Gluster Storage domain '%s'" %
-                self.gluster_sd_name
-            )
-            testflow.setup(
-                "Gluster storage domain %s was created successfully",
-                self.gluster_sd_name
-            )
-            self.sd_names.append(self.gluster_sd_name)
-
-        # Verify whether FC LUNs exists
-        if config.UNUSED_FC_LUNS:
-            if config.FCP in self.storage:
-                self.fcp_sd_name = (
-                    'upgrade_%s_to_%s_FCP' % self.name_pattern + str(sd)
-                )
-                testflow.setup("Adding FCP storage domain needed for tests")
-                assert hl_sd.addFCPDataDomain(
-                    self.host_name, self.fcp_sd_name, self.new_dc_name,
-                    self.sd_fc_lun[sd], override_luns=True
-                ), "Failed to create FCP Storage domain '%s'" % (
-                    self.fcp_sd_name
-                )
-                testflow.setup(
-                    "FCP storage domain %s was created successfully",
-                    self.fcp_sd_name
-                )
-                self.sd_names.append(self.fcp_sd_name)
-
-    self.storage_domain = self.sd_names[0]
 
 
 @pytest.fixture(scope='class')

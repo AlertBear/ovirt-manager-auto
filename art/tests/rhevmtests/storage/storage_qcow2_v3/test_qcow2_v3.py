@@ -33,17 +33,16 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 
 from fixtures import (
-    init_hsm_host, init_storage_domains_params, create_dc, create_cluster,
-    create_storage_domain_for_upgrade, remove_unattached_domain,
-    initialize_dc_parameters_for_upgrade, init_spm_host,
-    remove_another_vm, init_params, init_base_params,
+    init_hsm_host, create_one_or_more_storage_domains_same_type_for_upgrade,
+    remove_unattached_domain, initialize_dc_parameters_for_upgrade,
+    init_spm_host, init_params, init_base_params,
     deactivate_and_remove_non_master_domains
 )
 
 from rhevmtests.storage.fixtures import (
-    move_host_to_another_cluster, clean_dc, create_vm, add_disk, export_vm,
+    clean_dc, create_vm, add_disk, export_vm,
     remove_template, attach_disk, create_export_domain, remove_export_domain,
-    create_several_snapshots, import_image_from_glance,
+    create_several_snapshots, import_image_from_glance, remove_vms, create_dc
 )
 
 from art.unittest_lib import attr, StorageTest as TestCase
@@ -60,23 +59,20 @@ __THIS_MODULE = modules[__name__]
     init_base_params.__name__,
     init_spm_host.__name__,
     init_hsm_host.__name__,
-    init_storage_domains_params.__name__,
     initialize_dc_parameters_for_upgrade.__name__,
     create_dc.__name__,
-    create_cluster.__name__,
-    move_host_to_another_cluster.__name__,
-    create_storage_domain_for_upgrade.__name__,
+    create_one_or_more_storage_domains_same_type_for_upgrade.__name__,
     remove_unattached_domain.__name__,
     clean_dc.__name__,
     deactivate_and_remove_non_master_domains.__name__,
 )
 class BaseTestCase(TestCase):
     """
-    Implement the common setup for upgrading v3 ->v4
+    Implement the common setup for upgrading v3 -> v4
 
     1. Create DC + cluster + sd's on ver3 first
 
-    Two functions to use by need :
+    Two functions to use by need:
     - DC Upgrade from ver3->ver4 function + verification
     - DC Upgrade from ver3->ver4 function without verification(for engine/vdsm
     restart/kill)
@@ -313,7 +309,7 @@ class TestCase18337(BaseTestCase2):
         testflow.step("Check DC is up %s", self.host_name)
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
         testflow.step(
-            "check disk and snapshot status , see all OK"
+            "check disk and snapshot status, see all OK"
         )
         assert ll_disks.wait_for_disks_status(self.disk_name), (
             "Disk %s did not reach OK state" % self.disk_name
@@ -374,11 +370,11 @@ class TestCase18338(BaseTestCase3):
     def test_import_vm_with_snapshot_from_export_domain(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
-            "Upgrade DC %s to v4" % self.new_dc_name
+            "Upgrade DC %s to v4.1" % self.new_dc_name
         )
         self.data_center_upgrade()
         testflow.step(
-            "remove vm %s to v4" % self.vm_name
+            "remove vm %s to v4.1" % self.vm_name
         )
         assert ll_vms.safely_remove_vms([self.vm_name]), (
             "Failed to power off and remove VM %s" % self.vm_name
@@ -392,7 +388,7 @@ class TestCase18338(BaseTestCase3):
         assert ll_vms.importVm(
             True, self.vm_name, self.export_domain, self.storage_domain,
             self.cluster_name
-        ), "Import VM %s from export domain %s to SD %s failed" % (
+        ), "Import VM %s from export domain %s to data domain %s failed" % (
             self.vm_name, self.export_domain, self.storage_domain
         )
         testflow.step(
@@ -442,7 +438,7 @@ class TestCase18338(BaseTestCase3):
     add_disk.__name__,
     attach_disk.__name__,
     remove_template.__name__,
-    remove_another_vm.__name__,
+    remove_vms.__name__,
 )
 class TestCase18340(TestCase):
     """
@@ -526,6 +522,8 @@ class TestCase18340(TestCase):
         # helpers.verify_qcow_snapdisks_version(
         #     self.new_vm_name, self.snapshot_list, qcow_ver=config.QCOW_V3
         # )
+        self.vm_names = list()
+        self.vm_names[0] = self.new_vm_name
 
 
 class TestCase18305(BaseTestCase):
