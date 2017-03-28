@@ -280,15 +280,14 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
             self.INVALID_TYPE,
             hosts[0]
         )
-        if not ll_hosts.update_fence_agent(
+        assert not ll_hosts.update_fence_agent(
             host_name=hosts[0],
             agent_address=self.pm_address,
             agent_type=self.INVALID_TYPE
-        ):
-            raise HostException(
-                "Power management type changed successfully "
-                "although provided with an invalid type."
-            )
+        ), (
+            "Power management type changed successfully "
+            "although provided with an invalid type."
+        )
 
 
 @attr(tier=1)
