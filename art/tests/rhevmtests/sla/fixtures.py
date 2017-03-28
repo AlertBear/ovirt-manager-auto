@@ -757,3 +757,32 @@ def skip_if_not_he_environment():
     """
     if not ll_vms.get_vm_host(vm_name=sla_config.HE_VM):
         pytest.skip("Does not hosted engine environment")
+
+
+@pytest.fixture(scope="class")
+def wait_for_hosts_status_up(request):
+    """
+    Wait until hosts will have the status equal to 'up'
+    """
+    hosts_indexes_status_up = request.node.cls.hosts_indexes_status_up
+    hosts_names = [sla_config.HOSTS[i] for i in hosts_indexes_status_up]
+
+    def fin():
+        u_libs.testflow.teardown(
+            "Wait until hosts %s will have status different from 'up'",
+            hosts_names
+        )
+        ll_hosts.wait_for_hosts_states(
+            positive=True,
+            names=hosts_names,
+            states=[
+                sla_config.HOST_NONRESPONSIVE,
+                sla_config.HOST_CONNECTING,
+                sla_config.HOST_REBOOTING
+            ]
+        )
+        u_libs.testflow.teardown(
+            "Wait until hosts %s will have status 'up'", hosts_names
+        )
+        ll_hosts.wait_for_hosts_states(positive=True, names=hosts_names)
+    request.addfinalizer(fin)

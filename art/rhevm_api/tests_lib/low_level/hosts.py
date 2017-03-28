@@ -226,7 +226,7 @@ def wait_for_hosts_states(
                         )
                         return False
 
-                    elif host.get_status() == states:
+                    elif host.get_status() in states:
                         logger.info(
                             "Host %s has state %s", host.name, states
                         )
@@ -577,7 +577,7 @@ def commit_network_config(host):
 
 
 @ll_general.generate_logs()
-def fence_host(host, fence_type, timeout=500):
+def fence_host(host, fence_type, timeout=500, wait_for_status=True):
     """
     Fence host
 
@@ -585,6 +585,8 @@ def fence_host(host, fence_type, timeout=500):
         host (str): Host name
         fence_type (str): Fence type(start/stop/restart/status/manual)
         timeout (int): Wait for the host status timeout
+        wait_for_status (bool): Wait for the host status
+            after the fence command
 
     Returns:
         bool: True, if fence action succeeds and host receives expected state
@@ -594,13 +596,14 @@ def fence_host(host, fence_type, timeout=500):
     host_in_maintenance = (
         get_host_status(host=host) == ENUMS['host_state_maintenance']
     )
-    if not HOST_API.syncAction(
+    status = HOST_API.syncAction(
         entity=host_obj,
         action="fence",
         positive=True,
         fence_type=fence_type.upper()
-    ):
-        return False
+    )
+    if not (wait_for_status and status):
+        return status
 
     if fence_type in ("restart", "start"):
         status = "maintenance" if host_in_maintenance else "up"
