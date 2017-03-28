@@ -10,7 +10,8 @@ from art.unittest_lib.common import testflow
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
-    vms as ll_vms
+    vms as ll_vms,
+    hosts as ll_hosts
 )
 from rhevmtests.virt import config
 import rhevmtests.helpers as gen_helper
@@ -214,7 +215,11 @@ def set_cpu_toplogy(request):
 
     request.addfinalizer(fin)
     testflow.setup("Set cpu topology parameter")
-    cpu_number = helper.get_number_of_cores(config.VDS_HOSTS[0]) * 2
+    host = ll_vms.get_vm_host(vm_name=config.CPU_HOTPLUG_VM)
+    host_threads = ll_hosts.get_host_threads(host_name=host)
+    cpu_number = (
+        min(helper.get_number_of_cores(config.VDS_HOSTS[0]), 16) * host_threads
+    )
     config.CPU_TOPOLOGY = helper.calculate_the_cpu_topology(cpu_number)
     config.CPU_HOTPLUG_VM_PARAMS['cpu_cores'] = config.CPU_TOPOLOGY[1]
 

@@ -131,7 +131,9 @@ class CPUHotPlugClass(common.VirtTest):
             "Fetch the number of cpu cores in host: %s",
             config.VDS_HOSTS[host_index]
         )
-        cpu_number = helper.get_number_of_cores(config.VDS_HOSTS[host_index])
+        cpu_number = min(
+            helper.get_number_of_cores(config.VDS_HOSTS[host_index]), 16
+        )
         testflow.step(
             "Updating number of sockets on vm: %s to %d",
             self.vm_name, cpu_number
