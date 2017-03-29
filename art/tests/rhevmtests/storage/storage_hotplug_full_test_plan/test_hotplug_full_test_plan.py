@@ -685,7 +685,7 @@ class TestCase6234(TestCase):
     """
     Hot unplug bootable disk
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '6234'
 
     @polarion("RHEVM3-6234")
@@ -693,6 +693,7 @@ class TestCase6234(TestCase):
     def test_hot_unplug_bootable_disk(self):
         """
         Hot unplug a bootable disk from a VM
+        Test = False because bz 1433949 that will not be fixed
         """
         # Fetch VM boot disk
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
