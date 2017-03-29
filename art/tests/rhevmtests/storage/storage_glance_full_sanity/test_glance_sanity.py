@@ -116,26 +116,24 @@ class BasicEnvironment(BaseTestCase):
                 )
 
     def basic_flow_clone_vm_from_template(
-            self, vm_name, template_name, storage_domain, wait=True,
-            start_vm=True
+        self, vm_name, template_name, storage_domain, wait=True, start_vm=True
     ):
         self.clone_vm_args['storagedomain'] = storage_domain
         self.clone_vm_args['name'] = vm_name
         self.clone_vm_args['template'] = template_name
         self.clone_vm_args['wait'] = wait
 
-        if not ll_vms.cloneVmFromTemplate(**self.clone_vm_args):
-            raise errors.VMException(
-                'Unable to create vm %s for test' % vm_name
-            )
+        assert ll_vms.cloneVmFromTemplate(**self.clone_vm_args), (
+            'Unable to create VM %s for test' % vm_name
+        )
         ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
         self.add_nic_to_vm(vm_name)
         ll_vms.wait_for_vm_states(vm_name, [config.VM_DOWN])
         if start_vm:
-            assert ll_vms.startVm(
-                True, vm_name, wait_for_ip=True
-            ), "Unable to start vm %s cloned from template %s" % (
-                vm_name, template_name
+            assert ll_vms.startVm(True, vm_name, config.VM_UP, True), (
+                "Unable to start VM %s cloned from template %s" % (
+                    vm_name, template_name
+                )
             )
 
 
@@ -390,6 +388,8 @@ class TestCase5743(BasicEnvironment):
             "Disk %s was not in the expected state 'OK" %
             self.disks_to_remove[0]
         )
+        ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+
         self.basic_flow_clone_vm_from_template(
             self.vm_names[0], self.templates_names[0], self.storage_domains[1]
         )
