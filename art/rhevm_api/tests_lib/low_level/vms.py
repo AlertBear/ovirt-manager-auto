@@ -1276,29 +1276,34 @@ def getVmDisks(vm, storage_domain=None):
     return disks
 
 
-def getStorageDomainDisks(storage_domain):
+def get_storage_domain_disks(storage_domain):
     """
     Returns a list of the storage domain's disks formatted as data structured
     objects
 
-    storage_domain(str): name of the VM which the disks will be retrieved
+    Args:
+        storage_domain (str): name of the storage domain which the disks will
+            be retrieved
 
     Returns:
-    list: list of disks' objects under the storage domain or None if
-    storage_domain does not exist
+        list : list of disks objects under the storage domain or None if
+        storage_domain does not exist
     """
+    # Local import to prevent import recursion loop
+    from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 
     try:
-        storage_domain_obj = STORAGE_DOMAIN_API.find(storage_domain)
-        storage_domain_disks = STORAGE_DOMAIN_API.getElemFromLink(
-            storage_domain_obj, link_name='disks', attr='disks',
-            get_href=False,
+        storage_domain_obj = ll_sd.get_storage_domain_obj(
+            storage_domain
+        )
+        storage_domain_disks_objects = ll_sd.getObjList(
+            storage_domain_obj, 'disks'
         )
 
     except EntityNotFound:
-        storage_domain_disks = None
+        storage_domain_disks_objects = list()
 
-    return storage_domain_disks
+    return storage_domain_disks_objects
 
 
 def _getVmDiskById(vm, diskId):

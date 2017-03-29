@@ -1745,3 +1745,31 @@ def reduce_luns_from_storage_domain(
                 "LUNs %s reduction from storage domain %s did not fail"
                 "as should have been expected" % (luns, storage_domain)
             )
+
+
+def create_test_file_and_check_existance(
+    vm_name, mount_path, file_name, vm_executor=None
+):
+    """
+    Create test file and check it exists
+
+    Args:
+        vm_name (str): name of the VM
+        mount_path (str): mount path to create the file on
+        vm_executor (Host resource): VM executor
+
+    Raises:
+        AssertionError: If created file does not exist
+    """
+    if not vm_executor:
+        vm_executor = get_vm_executor(vm_name)
+    full_path = os.path.join(mount_path, file_name)
+    testflow.setup("Writing data to file %s", full_path)
+    create_file_on_vm(
+        vm_name, file_name, mount_path,
+        vm_executor=vm_executor
+    )
+    logger.info("Checking full path %s", full_path)
+    assert does_file_exist(
+        vm_name, full_path, vm_executor=vm_executor
+    ), "File %s does not exist" % full_path

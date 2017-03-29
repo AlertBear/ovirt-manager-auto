@@ -9,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
     jobs as ll_jobs,
     vms as ll_vms,
+    templates as ll_templates,
 )
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd
@@ -86,15 +87,16 @@ def create_one_or_more_storage_domains_same_type_for_upgrade(request):
 
     self.sd_names = []
     for sd in range(self.new_storage_domains_count):
+        self.storage_domain = (
+            'upgrade_%s_to_%s' % self.name_pattern + self.storage + str(sd)
+        )
 
-            self.storage_domain = (
-                'upgrade_%s_to_%s' % self.name_pattern + self.storage + str(sd)
-            )
-
-            storage_helpers.add_storage_domain(
-                self.storage_domain, self.new_dc_name, sd,
-                self.storage
-            )
+        storage_helpers.add_storage_domain(
+            storage_domain=self.storage_domain, data_center=self.new_dc_name,
+            index=sd, storage_type=self.storage
+        )
+        self.sd_names.append(self.storage_domain)
+    self.storage_domain = self.sd_names[0]
 
 
 @pytest.fixture(scope='class')
@@ -246,4 +248,25 @@ def init_base_params(request):
     self.storage_format = None
     self.upgraded_storage_format = None
     self.disk_count = None
-    self.template_name = config.TEMPLATE_NAME[0]
+    self.template_name = None
+    self.templates_names = list()
+    self.template_disk_name = None
+
+
+@pytest.fixture(scope='class')
+def get_template_from_cluster(request):
+    """
+    Get existing first template from cluster
+    """
+
+    self = request.node.cls
+
+    templates_names_list = ll_templates.get_template_from_cluster(
+        self.cluster_name
+    )
+
+    if templates_names_list:
+        self.template_name = templates_names_list[0]
+        self.template_disk_name = ll_templates.getTemplateDisks(
+            self.template_name
+        )[0].get_name()

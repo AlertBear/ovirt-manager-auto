@@ -9,14 +9,11 @@ import helpers
 from rhevmtests.storage import helpers as storage_helpers
 from art.unittest_lib.common import testflow
 import pytest
-from sys import modules
 import config
-from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
 )
 from art.test_handler.tools import polarion, bz
-
 import rhevmtests.helpers as rhevm_helpers
 
 from rhevmtests.storage.fixtures import remove_vm  # noqa
@@ -37,22 +34,18 @@ from fixtures import (
     remove_unattached_domain, initialize_dc_parameters_for_upgrade,
     init_spm_host, init_test_vm_name, init_base_params,
     deactivate_and_remove_non_master_domains, init_test_template_name,
+    get_template_from_cluster,
 )
 
 from rhevmtests.storage.fixtures import (
     clean_dc, create_vm, add_disk, export_vm,
     remove_template, attach_disk, create_export_domain, remove_export_domain,
-    create_several_snapshots, import_image_from_glance, remove_vms, create_dc
+    create_several_snapshots, import_image_from_glance, remove_vms, create_dc,
+    add_nic, create_file_than_snapshot_several_times,
 )
 
 from art.unittest_lib import attr, StorageTest as TestCase
-
-
 logger = logging.getLogger(__name__)
-ENUMS = config.ENUMS
-
-
-__THIS_MODULE = modules[__name__]
 
 
 @pytest.mark.usefixtures(
@@ -126,6 +119,118 @@ class BaseTestCase(TestCase):
                      "SD %s is not data type" % sd_obj.get_name()
                  )
 
+    def migration_test(self, live):
+        """
+        Live/cold migration test flow for TCs 18344/3
+
+        Args:
+            live (bool): True if live migration , False if cold migration
+        """
+        disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        assert disk_name, "No disks were found on VM %s" % self.vm_name
+        testflow.step(
+            "Upgrade DC %s to v4 & restart engine ", self.new_dc_name
+        )
+        self.data_center_upgrade()
+        testflow.step(
+            "Verify that the snapshot images are version %s", config.QCOW_V2
+        )
+        helpers.verify_qcow_version_vm_disks(
+            self.vm_name, qcow_ver=config.DISK_QCOW_V2
+        )
+        helpers.verify_qcow_disks_snapshots_version_sd(
+            self.storage_domain, expected_qcow_version=config.QCOW_V2
+        )
+        if live:
+            testflow.step("Start the VM %s", self.vm_name)
+            assert ll_vms.startVm(
+                True, self.vm_name, config.VM_UP, wait_for_ip=True
+            ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
+        testflow.step(
+            "Copy template disk %s to target SD %s for migration",
+            self.template_disk_name, self.sd_names[1]
+        )
+        ll_templates.copyTemplateDisk(
+            self.template_name, self.template_disk_name, self.sd_names[1])
+        ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+        ll_disks.wait_for_disks_status(self.template_disk_name)
+
+        testflow.step(
+            "Storage migration of VM %s from SD %s to SD %s",
+            self.vm_name, self.sd_names[0], self.sd_names[1]
+        )
+        ll_vms.migrate_vm_disks(
+            self.vm_name, target_domain=self.sd_names[1]
+        ), "Migration of vm %s to SD %s failed" % (
+            self.vm_name, self.sd_names[1]
+        )
+        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        assert ll_vms.verify_vm_disk_moved(
+            self.vm_name, vm_disk, self.sd_names[0],
+            self.sd_names[1]
+        ), "Failed to migrate disk %s" % vm_disk
+        testflow.step(
+            "Verify that the snapshot images are version %s", config.QCOW_V3
+        )
+        helpers.verify_qcow_version_vm_disks(
+            self.vm_name, qcow_ver=config.DISK_QCOW_V3
+        )
+        helpers.verify_qcow_disks_snapshots_version_sd(
+            self.sd_names[1], expected_qcow_version=config.QCOW_V3
+        )
+        if live is True:
+            testflow.step(
+                "Power off VM %s and preview snapshot %s", self.vm_name,
+                self.snapshot_list[0]
+            )
+            assert ll_vms.stop_vms_safely([self.vm_name]), (
+                "Shutdown to vm % failed" % self.vm_name
+            )
+            ll_vms.waitForVMState(self.vm_name, config.VM_POWER_DOWN)
+
+        assert ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_list[0]
+        ), "Failed to preview snapshot %s" % self.snapshot_list[0]
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
+        testflow.step("Commit snapshot on VM %s", self.vm_name)
+        assert ll_vms.commit_snapshot(True, self.vm_name), (
+            "Failed restoring a previewed snapshot %s"
+            % self.snapshot_description
+        )
+        testflow.step(
+            "Start the VM %s and verify that data can be written to the disk",
+            self.vm_name
+        )
+        assert ll_vms.startVm(
+            True, self.vm_name, config.VM_UP, wait_for_ip=True
+        ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
+        logger.info("Trying to write to disk %s" % disk_name)
+        status, out = storage_helpers.perform_dd_to_disk(
+            self.vm_name, disk_name
+        )
+        assert status, "Error found %s" % out
+        snapshot_description = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_SNAPSHOT
+        )
+        testflow.step(
+            "Creating snapshot %s of VM %s",
+            snapshot_description, self.new_vm_name
+        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, snapshot_description
+        ), "Failed to create snapshot of VM %s" % self.new_vm_name
+        ll_vms.wait_for_vm_snapshots(
+            self.new_vm_name, [config.SNAPSHOT_OK], snapshot_description
+        )
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+
+        testflow.step("Verify all disks & snapshot disks are v1.1")
+        helpers.verify_qcow_version_vm_disks(self.vm_name)
+        helpers.verify_qcow_disks_snapshots_version_sd(
+            self.sd_names[1], expected_qcow_version=config.QCOW_V3
+        )
+
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
@@ -137,7 +242,9 @@ class BaseTestCase2(BaseTestCase):
 
 @pytest.mark.usefixtures(
     import_image_from_glance.__name__,
+    get_template_from_cluster.__name__,
     create_vm.__name__,
+    add_nic.__name__,
     create_several_snapshots.__name__,
 )
 class BaseTestCase3(BaseTestCase):
@@ -201,7 +308,7 @@ class TestCase18307(BaseTestCase):
             )
         )
         self.data_center_upgrade_without_verification()
-        testflow.step("kill vdsmd on host %s", self.host_name)
+        testflow.step("Kill vdsmd on host %s", self.host_name)
         self.host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=self.host_name
         )
@@ -219,13 +326,14 @@ class TestCase18307(BaseTestCase):
         self.data_center_upgrade()
 
 
+@bz({'1444120': {}})
 class TestCase18336(BaseTestCase2):
     """
     1. Create DC + cluster on v3
     2. Create a VM with thin disk and 2 snapshots
     3. Upgrade cluster &DC to version 4
-    4. Amend the snapshot images to version 1.0 & restart engine
-    5. Re-ammend the snapshot images to version 1.0
+    4. Amend the snapshot images to version 1.1 & restart engine
+    5. Re-ammend the snapshot images to version 1.1
     """
     __test__ = True
     snap_count = 2
@@ -248,10 +356,10 @@ class TestCase18336(BaseTestCase2):
         )
 
         testflow.step("Restarting ovirt-engine")
-        test_utils.restart_engine(config.ENGINE, 5, 30)
+        config.ENGINE.restart()
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
         testflow.step(
-            "check disk and snapshot status, see all OK"
+            "Check disk and snapshot status, see all OK"
         )
         assert ll_disks.wait_for_disks_status(self.disk_name), (
             "Disk %s did not reach OK state" % self.disk_name
@@ -264,6 +372,9 @@ class TestCase18336(BaseTestCase2):
         )
         helpers.amend_disk_attachment_api(
             self.vm_name, self.disk_name, qcow_ver=config.QCOW_V3
+        )
+        assert ll_disks.wait_for_disks_status(self.disk_name), (
+            "Disk %s did not reach OK state" % self.disk_name
         )
         testflow.step(
             "Check qcow version was upgraded to %s" % config.QCOW_V3
@@ -279,14 +390,12 @@ class TestCase18336(BaseTestCase2):
         # )
 
 
-@bz({'1431619': {}})
 class TestCase18337(BaseTestCase2):
-
     """
     1. Create DC + cluster on v3
     2. Create a VM with thin disk and create 5 snapshots
     3. Upgrade cluster &DC to version 4
-    4. Amend the snapshot images to version 1.0 & kill vdsmd on SPM
+    4. Amend the snapshot images to version 1.1 & kill vdsmd on SPM
     5. Re-amend the remaining snapshot images once the SPM has recovered
     """
     __test__ = True
@@ -308,7 +417,7 @@ class TestCase18337(BaseTestCase2):
             self.vm_name, self.disk_name, qcow_ver=config.QCOW_V3
         )
 
-        testflow.step("kill vdsmd on host %s", self.spm_host)
+        testflow.step("Kill vdsmd on host %s", self.spm_host)
         self.host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=self.host_name
         )
@@ -316,7 +425,13 @@ class TestCase18337(BaseTestCase2):
             "Failed to kill vdsmd on host %s" % self.spm_host
         )
         testflow.step("Check DC is up %s", self.host_name)
+        assert ll_hosts.wait_for_hosts_states(
+            True, self.host_name, states=config.CONNECTING
+        ), "Host %s did not reach connecting state" % self.host_name
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
+        assert ll_hosts.wait_for_hosts_states(True, self.host_name), (
+            "Host %s did not reach up state" % self.host_name
+        )
         testflow.step(
             "check disk and snapshot status, see all OK"
         )
@@ -332,7 +447,9 @@ class TestCase18337(BaseTestCase2):
         helpers.amend_disk_attachment_api(
             self.vm_name, self.disk_name, qcow_ver=config.QCOW_V3
         )
-
+        assert ll_disks.wait_for_disks_status(self.disk_name), (
+            "Disk %s did not reach OK state" % self.disk_name
+        )
         testflow.step(
             "Check qcow version was upgraded to %s" % config.QCOW_V3
         )
@@ -340,11 +457,6 @@ class TestCase18337(BaseTestCase2):
         helpers.verify_qcow_disks_snapshots_version_sd(
             self.storage_domain, expected_qcow_version=config.QCOW_V3
         )
-        # TODO: Due to bug 1430447 checking qcow_version return wrong value
-        # helpers.verify_qcow_snapdisks_version(
-        #     self.vm_name, self.snapshot_list,
-        #     expected_qcow_version=config.QCOW_V3
-        # )
 
 
 @pytest.mark.usefixtures(
@@ -352,7 +464,7 @@ class TestCase18337(BaseTestCase2):
     export_vm.__name__,
     remove_export_domain.__name__,
 )
-@bz({'1432493': {}})
+@bz({'1446640': {}})
 class TestCase18338(BaseTestCase3):
     """
     1. Create DC + cluster on v3
@@ -360,8 +472,8 @@ class TestCase18338(BaseTestCase3):
     3. Create export domain on v3 DC
     4. Export VM to export domain
     5. Upgrade cluster &DC to version 4
-    6. Import the VM and verify snapshot images version 1.0
-    7. Create a new snapshot and verify that the images are version 1.0
+    6. Import the VM and verify snapshot images version 1.1
+    7. Create a new snapshot and verify that the images are version 1.1
     8. Start the VM & verify data can be written to the disks
     """
     __test__ = True
@@ -382,7 +494,7 @@ class TestCase18338(BaseTestCase3):
         )
         self.data_center_upgrade()
         testflow.step(
-            "remove vm %s to v4.1" % self.vm_name
+            "Remove vm %s to v4.1" % self.vm_name
         )
         assert ll_vms.safely_remove_vms([self.vm_name]), (
             "Failed to power off and remove VM %s" % self.vm_name
@@ -400,7 +512,7 @@ class TestCase18338(BaseTestCase3):
             self.vm_name, self.export_domain, self.storage_domain
         )
         testflow.step(
-            "verify disk and snapshots on storage domain %s has version 1.0"
+            "Verify disk and snapshots on storage domain %s has version 1.1"
             % self.storage_domain
         )
         helpers.verify_qcow_version_vm_disks(
@@ -410,21 +522,14 @@ class TestCase18338(BaseTestCase3):
             self.storage_domain, expected_qcow_version=config.QCOW_V3
         )
 
-        testflow.step(
-            "Create a new snapshot %s" % self.new_snap_description
+        snapshot_description = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_SNAPSHOT
         )
         assert ll_vms.addSnapshot(
-            True, self.vm_name, self.new_snap_description
-        ), "Failed to create snapshot of VM %s" % self.vm_name
+            True, self.new_vm_name, snapshot_description, wait=True
+        ), "Failed to create snapshot of VM %s" % self.new_vm_name
         ll_vms.wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_OK], self.new_snap_description
-        )
-        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
-        self.snapshot_list.append(self.new_snap_description)
-        testflow.step(
-            "Verify the new snapshot %s disks are in version 1.0" % (
-                self.new_snap_description
-            )
+            self.new_vm_name, [config.SNAPSHOT_OK], snapshot_description
         )
         testflow.step(
             "Check qcow version was upgraded to %s" % config.QCOW_V3
@@ -433,13 +538,22 @@ class TestCase18338(BaseTestCase3):
         helpers.verify_qcow_disks_snapshots_version_sd(
             self.storage_domain, expected_qcow_version=config.QCOW_V3
         )
-        # TODO: Due to bug 1430447 checking qcow_version return wrong value
-        # helpers.verify_qcow_snapdisks_version(
-        #     self.vm_name, self.snapshot_list, qcow_ver=config.QCOW_V3
-        # )
+        testflow.step("Start the VM %s", self.vm_name)
+        assert ll_vms.startVm(
+            True, self.vm_name, config.VM_UP, wait_for_ip=True
+        ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
+        status, mount_path = storage_helpers.create_fs_on_disk(
+            self.vm_name, self.disk_name
+        )
+        assert status, (
+            "Unable to create a filesystem on disk: %s of VM %s" %
+            (self.disk_name, self.vm_name)
+        )
+        storage_helpers.create_test_file_and_check_existance(
+            self.vm_name, mount_path, file_name=config.FILE_NAME
+        )
 
 
-@bz({'1433052': {}})
 @pytest.mark.usefixtures(
     init_test_vm_name.__name__,
     create_vm.__name__,
@@ -457,7 +571,7 @@ class TestCase18340(TestCase):
     4. Create a new Thin VM from the Template and verify that all
       the disk images are created as qcow version 1.1
     5. Start the VM and verify that data can be written to the disks
-    6. Create a snapshot and verify that the images are qcow version 1.0
+    6. Create a snapshot and verify that the images are qcow version 1.1
     """
     __test__ = True
     new_disks_names = []
@@ -496,10 +610,11 @@ class TestCase18340(TestCase):
         helpers.verify_qcow_version_vm_disks(self.new_vm_name)
         testflow.step(
             "Start the VM %s and verify that data can be written to the disk"
-            % self.vm_name
+            % self.new_vm_name
         )
-        ll_vms.startVm(True, self.new_vm_name)
-        ll_vms.waitForVMState(self.new_vm_name)
+        assert ll_vms.startVm(
+            True, self.new_vm_name, config.VM_UP, wait_for_ip=True
+        ), "VM %s did not reach %s state" % (self.new_vm_name, config.VM_UP)
 
         logger.info("Trying to write to disk %s" % self.new_disks_names[0])
         status, out = storage_helpers.perform_dd_to_disk(
@@ -527,12 +642,9 @@ class TestCase18340(TestCase):
         helpers.verify_qcow_disks_snapshots_version_sd(
             self.storage_domain, expected_qcow_version=config.QCOW_V3
         )
-        # TODO: Due to bug 1430447 checking qcow_version return wrong value
-        # helpers.verify_qcow_snapdisks_version(
-        #     self.new_vm_name, self.snapshot_list, qcow_ver=config.QCOW_V3
-        # )
 
 
+@bz({'1444120': {}})
 class TestCase18305(BaseTestCase):
     """
     1. Create DC + cluster on v3
@@ -555,7 +667,7 @@ class TestCase18305(BaseTestCase):
             version=self.cluster_upgraded_version, compare=False
         ), "Failed to upgrade compatibility version of cluster"
         testflow.step("Restarting ovirt-engine")
-        test_utils.restart_engine(config.ENGINE, 5, 30)
+        config.ENGINE.restart()
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
 
         testflow.step(
@@ -564,12 +676,13 @@ class TestCase18305(BaseTestCase):
         assert ll_hosts.get_cluster_compatibility_version(
             self.cluster_name
         ) == self.cluster_upgraded_version, (
-            "cluster %s is not on version %s" % self.cluster_upgraded_version
+            "Cluster %s is not on version %s" % (
+                self.cluster_name, self.cluster_upgraded_version
+            )
         )
 
 
-@polarion("RHEVM3-18334")
-@attr(tier=3)
+@bz({'1444120': {}})
 class TestCase18334(BaseTestCase):
     """
     1. Create DC + cluster on v3
@@ -581,11 +694,11 @@ class TestCase18334(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-18334")
-    @attr(tier=1)
+    @attr(tier=3)
     def test_restart_engine_during_upgrade_dc(self):
         self.data_center_upgrade_without_verification()
         testflow.step("Restarting ovirt-engine")
-        test_utils.restart_engine(config.ENGINE, 5, 30)
+        config.ENGINE.restart()
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
         storage_domain_name = ll_sd.getStorageDomainNamesForType(
             self.new_dc_name, self.storage
@@ -598,3 +711,205 @@ class TestCase18334(BaseTestCase):
         assert ll_sd.checkStorageFormatVersion(
             True, storage_domain_name, self.upgraded_storage_format
         ), "SD %s is not on v4" % storage_domain_name
+
+
+@bz({'1446640': {}})
+class TestCase18343(BaseTestCase3):
+    """
+    1. Create DC + cluster on v3 + 2 new storage domains
+    2. Create a VM with thin disk and create 2 snapshots
+    3. Upgrade the cluster+DC from v3 to v4
+    4. Verify that the snapshot images are version 0.10
+    5. Start the VM previously created
+    6. Move all the disks of the VM to Version 4 Domain
+    7. Verify that the snapshot images have been upgraded to version 1.1
+    8. Power off the VM and Preview the Snasphot
+    9. Commit the Previewed snapshot
+    10. Start the VM and verify that data can be written to all disks
+    11. Create a new snapshot and verify that the disk image is version is 1.1
+
+    """
+    __test__ = True
+    snap_count = 2
+    new_storage_domains_count = 2
+
+    @polarion("RHEVM3-18343")
+    @attr(tier=2)
+    def test_live_migration_old_image(self):
+        self.migration_test(live=config.LIVE_MIGRATION)
+
+
+@bz({'1446640': {}})
+class TestCase18344(BaseTestCase3):
+    """
+    1. Create DC + cluster on v3 + 2 new storage domains
+    2. Create a VM with thin disk and create 2 snapshots
+    3. Upgrade the cluster+DC from v3 to v4
+    4. Verify that the snapshot images are version 0.10
+    5. Move all the disks of the VM to Version 4 Domain
+    6. Verify that the snapshot images have been upgraded to version 1.1
+    7. Preview the snapshot
+    8. Commit the Previewed snapshot
+    9. Start the VM and verify that data can be written to all disks
+    10.  Create a new snapshot and verify that the disk image is version is 1.1
+
+    """
+    __test__ = True
+    snap_count = 2
+    new_storage_domains_count = 2
+
+    @polarion("RHEVM3-18344")
+    @attr(tier=2)
+    def test_cold_migration_old_image(self):
+        self.migration_test(live=config.COLD_MIGRATION)
+
+
+@pytest.mark.usefixtures(
+    import_image_from_glance.__name__,
+    get_template_from_cluster.__name__,
+    create_vm.__name__,
+    add_nic.__name__,
+    add_disk.__name__,
+    attach_disk.__name__,
+    create_file_than_snapshot_several_times.__name__,
+)
+@bz({'1446640': {}})
+class TestCase18346(BaseTestCase):
+    """
+    1. Create DC + cluster on v3
+    2. Create a VM with thin disk & start VM
+    3. Write data (file1) and Create snapshots s1
+    4. Write data (file2) and Create snapshots s2
+    5. Upgrade the cluster+DC from v3 to v4
+    4. Verify that the snapshot images are version 0.10
+    5. Write data (file3)
+    6. Create snapshot s3 & verify the snapshot image is version 0.10
+    7. Create snapshot s4 & verify the snapshot image is version 1.1
+    8. Deleted snapshot s3 and verify that the live merge is successful
+    and that the merged image (s3->s4) is now version 0.10
+    9. Power off the VM and Preview the Merged snapshot
+    10. Commit the Previewed snapshot
+    11. Start the VM, verify existing data and write new data to the disks
+    """
+    __test__ = True
+    write_to_file_than_snapshot_number_of_times = 2
+    snapshots_descriptions_list = []
+    checksum_file_list = []
+    full_path_list = []
+
+    @polarion("RHEVM3-18346")
+    @attr(tier=2)
+    def test_live_merge_old_version_image_with_new_version_image(self):
+        testflow.step(
+            "Upgrade DC %s to v4", self.new_dc_name
+        )
+        self.data_center_upgrade()
+        testflow.step(
+            "Verify that the snapshot images are version %s", config.QCOW_V2
+        )
+        sd_disks_objects = ll_vms.get_storage_domain_disks(self.storage_domain)
+        logger.info(
+            "The following disks exist %s in storage domain %s", [
+                sd_disk.get_alias() for sd_disk in sd_disks_objects
+            ], self.storage_domain
+        )
+        logger.info(
+            "Qcow version on snapshot %s disks version before merge are: %s",
+            self.snapshots_descriptions_list[0],
+            ll_vms.get_qcow_version_disks_snapshot(
+                self.vm_name, self.snapshots_descriptions_list[0]
+            )
+        )
+        helpers.verify_qcow_version_vm_disks(
+            self.vm_name, qcow_ver=config.DISK_QCOW_V2
+        )
+        helpers.verify_qcow_disks_snapshots_version_sd(
+            self.storage_domain, expected_qcow_version=config.QCOW_V2
+        )
+        testflow.step("Create file on VM %s", self.vm_name)
+        storage_helpers.create_file_on_vm(
+            self.vm_name, config.FILE_NAME + '3', self.mount_path,
+            vm_executor=self.vm_executor
+        )
+
+        for index in range(config.CURRENT_VALUE, config.CURRENT_VALUE+2):
+            snapshot_description = storage_helpers.create_unique_object_name(
+                self.__name__, config.OBJECT_TYPE_SNAPSHOT
+            ) + str(index)
+
+            testflow.step(
+                "Create snapshot #%s with description %s ", str(index),
+                snapshot_description
+            )
+            assert ll_vms.addSnapshot(
+                True, self.vm_name, snapshot_description, wait=True
+            ), "Failed to create snapshot of VM %s" % self.vm_name
+            self.snapshots_descriptions_list.append(snapshot_description)
+            testflow.step(
+                "Verify that qcow version of snapshot %s disks are %s ",
+                snapshot_description, config.QCOW_V2
+            )
+            if index is config.CURRENT_VALUE:
+                helpers.verify_qcow_specific_snapshot(
+                    self.vm_name, snapshot_description, self.storage_domain,
+                    expected_qcow=config.QCOW_V2
+                )
+            else:
+                helpers.verify_qcow_specific_snapshot(
+                    self.vm_name, snapshot_description, self.storage_domain,
+                    expected_qcow=config.QCOW_V3
+                )
+
+        testflow.step(
+            "Deleted snapshot s%s named %s and verify that the live merge"
+            " is successful", config.CURRENT_VALUE,
+            self.snapshots_descriptions_list[2]
+        )
+        testflow.step(
+            "Removing snapshot '%s' of vm %s",
+            self.snapshots_descriptions_list[2], self.vm_name
+        )
+        assert ll_vms.removeSnapshot(
+            True, self.vm_name, self.snapshots_descriptions_list[2]
+        ), (
+            "Failed to live merge snapshot %s" %
+            self.snapshots_descriptions_list[2]
+        )
+        testflow.step(
+            "Verify merged snapshot s4 named %s is now version 0.1",
+            self.snapshots_descriptions_list[3]
+        )
+        helpers.verify_qcow_specific_snapshot(
+            self.vm_name, self.snapshots_descriptions_list[3],
+            self.storage_domain, expected_qcow=config.DISK_QCOW_V2
+        )
+        testflow.step(
+            "Power off the VM %s and Preview the Merged snapshot %s",
+            self.vm_name, self.snapshots_descriptions_list[3]
+        )
+        assert ll_vms.stop_vms_safely([self.vm_name]), (
+            "Failed to power off VM %s" % self.vm_name
+        )
+        assert ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshots_descriptions_list[3]
+        ), ("Failed to preview snapshot %s" % self.snapshot_description)
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
+        testflow.step(
+            "Commit snapshot %s", self.snapshots_descriptions_list[3]
+        )
+        assert ll_vms.commit_snapshot(True, self.vm_name), (
+            "Failure to commit VM's %s snapshot" % self.vm_name
+        )
+        testflow.step("Start the VM %s", self.vm_name)
+        assert ll_vms.startVm(
+            True, self.vm_name, config.VM_UP, wait_for_ip=True
+        ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
+        testflow.step("Verify existing data and write new data to the disks")
+        helpers.verify_test_files_checksum(
+            self.vm_name, self.checksum_file_list, self.full_path_list,
+            vm_executor=self.vm_executor
+        )
+        storage_helpers.create_test_file_and_check_existance(
+            self.vm_name, self.mount_path, file_name=config.FILE_NAME + '4',
+            vm_executor=self.vm_executor
+        )

@@ -21,7 +21,6 @@ from rrmngmnt.host import Host as HostResource
 from rrmngmnt.user import User
 from utilities import sshConnection, machine
 from utilities.utils import getIpAddressByHostName
-
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.disks import (

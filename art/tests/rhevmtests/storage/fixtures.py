@@ -47,8 +47,10 @@ def create_vm(request, remove_vm):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-    self.vm_name = storage_helpers.create_unique_object_name(
-        self.__name__, config.OBJECT_TYPE_VM
+    self.vm_name = getattr(
+        self, 'vm_name', storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_VM
+        )
     )
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
@@ -1236,9 +1238,12 @@ def import_image_from_glance(request):
     """
     self = request.node.cls
 
-    self.glance_templte_name = storage_helpers.create_unique_object_name(
+    self.glance_template_name = getattr(
+        self, 'glance_template_name',
+        storage_helpers.create_unique_object_name(
             self.__name__, config.OBJECT_TYPE_TEMPLATE
         )
+    )
 
     storage_domain = getattr(
         self, 'new_storage_domain', self.storage_domain
@@ -1255,7 +1260,7 @@ def import_image_from_glance(request):
         config.GLANCE_DOMAIN, config.GOLDEN_GLANCE_IMAGE,
         target_storage_domain=storage_domain, target_cluster=cluster,
         new_disk_alias=self.disk_alias,
-        new_template_name=self.glance_templte_name,
+        new_template_name=self.glance_template_name,
         import_as_template=import_as_template, async=False
     ), """Importing glance image %s from repository %s to storage
        domain %s failed""" % (
@@ -1264,7 +1269,7 @@ def import_image_from_glance(request):
 
     ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE])
     # initialize for remove_templates fixture
-    self.templates_names.append(self.glance_templte_name)
+    self.templates_names.append(self.glance_template_name)
 
 
 @pytest.fixture()
@@ -1537,3 +1542,56 @@ def extend_storage_domain(request):
     self.extension_luns = storage_helpers.extend_storage_domain(
         storage_domain=self.new_storage_domain, extend_indices=extend_indices
     )
+
+
+def create_file_than_snapshot_several_times(request):
+    """
+    Create file ,take checksum & than snapshot several times
+    """
+
+    self = request.node.cls
+
+    out, self.mount_path = storage_helpers.create_fs_on_disk(
+        self.vm_name, self.disk_name
+    )
+
+    assert out, (
+        "Unable to create a filesystem on disk: %s of VM %s" %
+        (self.disk_name, self.vm_name)
+    )
+
+    write_to_file_than_snapshot_number_of_times = getattr(
+        self, 'write_to_file_than_snapshot_number_of_times', 1
+    )
+    self.vm_executor = getattr(
+        self, 'vm_executor', storage_helpers.get_vm_executor(self.vm_name)
+    )
+    for time in range(write_to_file_than_snapshot_number_of_times):
+        file_name = config.FILE_NAME + str(time)
+        full_path = os.path.join(self.mount_path, file_name)
+
+        storage_helpers.create_test_file_and_check_existance(
+            self.vm_name, self.mount_path, file_name, self.vm_executor
+        )
+
+        checksum_file = storage_helpers.checksum_file(
+            self.vm_name, full_path, vm_executor=self.vm_executor
+        )
+        self.checksum_file_list.append(checksum_file)
+        self.full_path_list.append(full_path)
+
+        self.snapshot_description = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_SNAPSHOT
+        ) + str(time)
+        testflow.setup(
+            "Creating snapshot %s of VM %s",
+            self.snapshot_description, self.vm_name
+        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, self.snapshot_description
+        ), "Failed to create snapshot of VM %s" % self.vm_name
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_description
+        )
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        self.snapshots_descriptions_list.append(self.snapshot_description)

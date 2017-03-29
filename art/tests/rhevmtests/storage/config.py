@@ -351,3 +351,4 @@ CHECKSUM_FILES = dict()
 # another dictionary that holds the VM mount points, disks ids and vm executor
 # under the keys: 'disks', 'mount_points', 'executor'
 DISKS_MOUNTS_EXECUTOR = dict()
+FILE_NAME = 'test_file'
