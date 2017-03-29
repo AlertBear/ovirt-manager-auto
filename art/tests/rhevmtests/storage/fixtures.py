@@ -50,6 +50,7 @@ def create_vm(request, remove_vm):
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
     clone_from_template = getattr(self, 'clone_from_template', True)
+    template_name = getattr(self, 'template_name')
     self.installation = getattr(self, 'installation', True)
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
@@ -58,10 +59,11 @@ def create_vm(request, remove_vm):
     vm_args['installation'] = self.installation
     vm_args['deep_copy'] = clone
     vm_args['clone_from_template'] = clone_from_template
+    vm_args['template_name'] = template_name
     if hasattr(self, 'vm_args'):
         vm_args.update(self.vm_args)
     testflow.setup("Creating VM %s", self.vm_name)
-    assert storage_helpers.create_vm_or_clone(ge_cluster=True, **vm_args), (
+    assert storage_helpers.create_vm_or_clone(**vm_args), (
         "Failed to create VM %s" % self.vm_name
     )
 

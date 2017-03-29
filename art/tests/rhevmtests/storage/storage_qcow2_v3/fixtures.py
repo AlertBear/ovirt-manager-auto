@@ -194,9 +194,9 @@ def remove_another_vm(request):
 
 
 @pytest.fixture(scope='class')
-def init_params(request):
+def init_test_vm_name(request):
     """
-    Initialize new vm name & new template name
+    Initialize test vm name
     """
 
     self = request.node.cls
@@ -204,6 +204,18 @@ def init_params(request):
     self.new_vm_name = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_VM
     )
+    self.vm_names = list()
+    self.vm_names.append(self.new_vm_name)
+
+
+@pytest.fixture(scope='class')
+def init_test_template_name(request):
+    """
+    Initialize test template name
+    """
+
+    self = request.node.cls
+
     self.template_name = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_TEMPLATE
     )
@@ -234,4 +246,4 @@ def init_base_params(request):
     self.storage_format = None
     self.upgraded_storage_format = None
     self.disk_count = None
-    self.template = config.TEMPLATE_NAME[0]
+    self.template_name = config.TEMPLATE_NAME[0]

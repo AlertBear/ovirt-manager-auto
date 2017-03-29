@@ -35,8 +35,8 @@ from art.rhevm_api.tests_lib.low_level import (
 from fixtures import (
     init_hsm_host, create_one_or_more_storage_domains_same_type_for_upgrade,
     remove_unattached_domain, initialize_dc_parameters_for_upgrade,
-    init_spm_host, init_params, init_base_params,
-    deactivate_and_remove_non_master_domains
+    init_spm_host, init_test_vm_name, init_base_params,
+    deactivate_and_remove_non_master_domains, init_test_template_name,
 )
 
 from rhevmtests.storage.fixtures import (
@@ -358,7 +358,6 @@ class TestCase18338(BaseTestCase3):
     __test__ = True
     polarion_test_case = '18338'
     snap_count = 5
-    ge_cluster = False
     storage_domain_kwargs = {
         'storage_type': config.STORAGE_TYPE_NFS,
         'address': config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
@@ -433,8 +432,9 @@ class TestCase18338(BaseTestCase3):
 
 @bz({'1433052': {}})
 @pytest.mark.usefixtures(
-    init_params.__name__,
+    init_test_vm_name.__name__,
     create_vm.__name__,
+    init_test_template_name.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     remove_template.__name__,
@@ -522,8 +522,6 @@ class TestCase18340(TestCase):
         # helpers.verify_qcow_snapdisks_version(
         #     self.new_vm_name, self.snapshot_list, qcow_ver=config.QCOW_V3
         # )
-        self.vm_names = list()
-        self.vm_names[0] = self.new_vm_name
 
 
 class TestCase18305(BaseTestCase):
