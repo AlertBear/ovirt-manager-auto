@@ -9,6 +9,7 @@ import shlex
 import hashlib
 import time
 import multiprocessing
+import multiprocessing.dummy
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils import test_utils
@@ -880,7 +881,11 @@ def create_fs_on_disk(vm_name, disk_alias, executor=None):
     is mounted if success, error code and error message in case of failure
     :rtype: tuple
     """
-    ll_vms.startVm(True, vm_name, wait_for_ip=True)
+    if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+        ll_vms.startVm(
+            True, vm_name, wait_for_status=config.VM_UP,
+            wait_for_ip=True
+        )
     if not executor:
         executor = get_vm_executor(vm_name)
     # TODO: Workaround for bug:
