@@ -393,61 +393,6 @@ def updateDisk(positive, **kwargs):
     return status
 
 
-def update_disk_from_disk_api(positive, disk, attribute='name', **kwargs):
-    """
-    Update already existing disk directly from disk API
-
-    Arguments:
-        disk: mandatory , the name or id of the disk
-        attribute: The key to use for finding disk object ('id', 'name')
-
-    kwargs:
-        compare(bool) - True by default , check RESTAPI expected return value
-        right after update
-        description(str) - description for the current disk
-        provisioned_size(int) - size of the disk
-        interface(str) - IDE or virtio
-        format(str) - raw or cow
-        sparse(bool) - True or False whether disk should be sparse
-        bootable(bool) - True or False whether disk should be bootable
-        shareable(bool) - True or False whether disk should be sharable
-        allow_snapshot(bool) - True or False whether disk should allow
-        snapshots
-        propagate_errors(bool) - True or False whether disk should propagate
-         errors
-        wipe_after_delete(bool) - True or False whether disk should wiped after
-                              deletion
-        read_only(bool) - True if disk should be read only, False otherwise
-        storagedomain(str) - name of storage domain where disk will reside
-        quota(str) - disk quota
-        storage_connection(str) - in case of direct LUN - existing storage
-                               connection to use instead of creating a new one
-        active(bool) - True or False whether disk should be automatically
-         activated
-         You cannot set both storage_connection and lun_* in one call!
-        qcow_version(str) - 'qcow2_v3' or 'qcow2_v2' whether disk version
-         v2 or v3
-
-    Return:
-        bool: Status of the operation's result dependent on positive value
-    """
-
-    # Get the disk parameters and construct the disk object
-
-    if attribute == 'id':
-        disk_object = get_disk_obj(disk, attribute='id')
-    elif attribute == 'name':
-        disk_object = get_disk_obj(disk, attribute='name')
-
-    # Create the new disk object to be updated
-    new_disk_object = _prepareDiskObject(**kwargs)
-    # As update operation can take time thus compare value choice is given
-    response, status = DISKS_API.update(
-        disk_object, new_disk_object, positive, compare=compare
-    )
-    return status
-
-
 def deleteDisk(positive, alias=None, async=True, disk_id=None):
     """
     Removes disk from system
@@ -713,7 +658,7 @@ def do_disk_action(
         ):
             for target_disk in sample:
                 if disk.get_id() == target_disk.get_id() and (
-                        disk.get_status() == ENUMS['disk_state_ok']
+                        target_disk.get_status() == ENUMS['disk_state_ok']
                 ):
                     return True
     return True
@@ -1125,15 +1070,13 @@ def get_qcow_version_disk(disk_name, attribute='name'):
     Get the qcow_version info from disk name or id
 
     Arguments:
-        disk_name(str) - The name of the disk
-        attribute(str)- The key to use for finding disk object ('id', 'name')
+        disk_name (str): The name of the disk
+        attribute (str): The key to use for finding disk object ('id', 'name')
 
     Returns:
         str: Qcow value - 'qcow2_v2' or 'qcow2_v3'
     """
-
-    disk_object = get_disk_obj(disk_name, attribute)
-    return disk_object.get_qcow_version()
+    return get_disk_obj(disk_name, attribute).get_qcow_version()
 
 
 def get_storage_domain_diskssnapshots_objects(storagedomain, get_href=False):
@@ -1141,19 +1084,20 @@ def get_storage_domain_diskssnapshots_objects(storagedomain, get_href=False):
     Returns all disksnapshots objects list in the given storage domain
 
     Arguments:
-        storagedomain(str) - name of the storage domain
-        get_href(bool)     - True if function should return href to objects,
-        False if it should return list of snapshot disks objects
+        storagedomain (str): Name of the storage domain
+        get_href (bool): True if function should return href to objects,
+            False if it should return list of snapshot disks objects
 
     Returns:
-        list : snapshot disks objects list
+        list: Snapshot disks objects list
     """
-
-    storage_domain_object = STORAGE_DOMAIN_API.find(storagedomain)
-    storage_domain_disksnapshots_objects = DISK_SNAPSHOT_API.getElemFromLink(
+    from art.rhevm_api.tests_lib.low_level.storagedomains import (
+        get_storage_domain_obj
+    )
+    storage_domain_object = get_storage_domain_obj(storagedomain)
+    return DISK_SNAPSHOT_API.getElemFromLink(
         storage_domain_object,
         link_name='disksnapshots',
         attr='disk_snapshot',
         get_href=get_href,
     )
-    return storage_domain_disksnapshots_objects

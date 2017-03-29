@@ -129,27 +129,3 @@ def amend_disk_attachment_api(
     ), "Failed to update disk %s on VM %s to qcow version %s" % (
         disk_name, vm_name, qcow_ver
     )
-
-
-def amend_disk_disk_api(disk_name, qcow_version=config.QCOW_V3, wait=True):
-    """
-    Amend disk & disk snapshots in its chain to qcow v2 or v3 via disk API
-
-    Args:
-        disk_name(str) - name of the disk
-        qcow_version(str) - target qcow version v2 or v3 of disk/disksnapshot
-        wait(bool) - wait for disk status to be 'OK'
-.
-    """
-    # Changed updateDisk function to update_disk_from_disk_api
-    # to support new update directly DISK API and to enable amend tests
-    # Currently due to bug 1429437 we can not amend disk with updateDisk
-
-    assert ll_disks.update_disk_from_disk_api(
-        True, disk_name,
-        qcow_version=qcow_version, compare=False
-    ), "Failed to update disk %s to qcow version %s" % (
-        disk_name, qcow_version
-    )
-    if wait:
-        ll_disks.wait_for_disks_status([disk_name])
