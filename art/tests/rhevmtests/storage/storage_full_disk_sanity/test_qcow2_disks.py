@@ -208,6 +208,7 @@ class BaseTestCase(TestCase):
         TestCase.teardown_exception()
 
 
+@bz({'1435967': {}})
 class TestCase16405(BaseTestCase):
     """
     Create a template with QCOW2 format disks
@@ -234,6 +235,7 @@ class TestCase16405(BaseTestCase):
         )
 
 
+@bz({'1435967': {}})
 class TestCase16407(BaseTestCase):
     """
     Create a VM from a QCOW2 template as QCOW2
@@ -269,6 +271,7 @@ class TestCase16407(BaseTestCase):
         )
 
 
+@bz({'1435967': {}})
 class TestCase16408(BaseTestCase):
     """
     Create a VM from QCOW2 template as RAW

@@ -345,7 +345,7 @@ class TestCase16780(TestCase):
         """
         template_disk = ll_template.getTemplateDisks(self.template_name)[0]
         ll_template.copy_template_disks(
-            self.template_name, [self.storage_domain[1]], False
+            self.template_name, [self.storage_domain_1], False
         )
         assert ll_template.remove_template_disk_from_storagedomain(
             False, self.template_name, self.storage_domain,
@@ -354,6 +354,10 @@ class TestCase16780(TestCase):
             "Succeeded to delete disk %s of locked template %s" % (
                 template_disk.get_alias(), self.template_name
             )
+        )
+        # wait for template copy disk to end so teardown will succeed
+        ll_disks.wait_for_disks_status(
+            template_disk.get_alias(), timeout=config.DEFAULT_DISK_TIMEOUT
         )
 
 
@@ -376,10 +380,10 @@ class TestCase16782(TestCase):
         """
         template_disk = ll_template.getTemplateDisks(self.template_name)[0]
         ll_template.copy_template_disks(
-            self.template_name, [self.storage_domain[1]]
-        ), "Failed to copy template's %s disk" % self.template_name
+            self.template_name, [self.storage_domain_1]
+        )
         assert ll_template.remove_template_disk_from_storagedomain(
-            False, self.template_name, self.storage_domain[1],
+            False, self.template_name, self.storage_domain_1,
             disk_id=template_disk.get_id(),
         ), ("Failed to delete disk %s of template %s from storage domain %s"
             % (template_disk.get_alias(), self.template_name,
