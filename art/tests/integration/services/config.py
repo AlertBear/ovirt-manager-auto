@@ -61,7 +61,7 @@ MACHINE_SERVICES = {
     'host_rhvh': HOST_SERVICES
 }
 
-ACTIONS = ('enabled', 'running')
+ACTIONS = ('enabled', 'running', 'is-faultless')
 
 # Can't be in class scope
 # Python2 leaks the loop control variable
@@ -75,3 +75,5 @@ DISABLED_SERVICES = [
     'momd',
     'sanlock'
 ]
+
+DAYS_TO_CHECK_LOGS = 7

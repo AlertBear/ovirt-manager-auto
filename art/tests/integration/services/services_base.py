@@ -1,6 +1,13 @@
+import re
 import pytest
+import logging
+from datetime import datetime, timedelta
 
 from art.unittest_lib import testflow, attr
+
+import config
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.coresystem
@@ -41,3 +48,60 @@ class ServicesTest(object):
             machine.fqdn
         )
         assert machine.service(service).is_enabled() is positive
+
+    @staticmethod
+    def assert_service_is_faultless(machine, service):
+        """
+        Check if services unit file contains any errors or warnings.
+        Fails when it finds a traceback,
+        otherwise only logger warning is reported.
+
+        Args:
+            machine (Host): host where service should run
+            service (str): service that should run
+        """
+        date_since = (
+            datetime.now() - timedelta(days=config.DAYS_TO_CHECK_LOGS)
+        ).strftime("%F")
+        cmd = ['journalctl', '--unit', service, '-p', '0..4', '-S', date_since]
+        testflow.step(
+            "Running command %s on machine %s", " ".join(cmd), machine.fqdn
+        )
+        rc, out, err = machine.executor().run_cmd(cmd)
+        assert not int(rc), (
+            "journalctl cmd on machine %s failed with error %s" % (
+                machine.fqdn, err
+            )
+        )
+        out = out.split('\n', 1)[1]
+        if out:
+            testflow.step(
+                "Check if unit file of %s service on host %s "
+                "contains any errors or warnings",
+                service,
+                machine.fqdn
+            )
+            logger.warning(
+                "On machine %s there were these errors/warnings: %s",
+                machine.fqdn, out
+            )
+            tracebacks = []
+            for match in re.finditer(
+                "((.*\n)^.*?traceback.*?$(.*\n)*?)[a-z]{3} [0-9]{1,2}",
+                out, re.MULTILINE | re.IGNORECASE
+            ):
+                tracebacks.append(match.group(1))
+            testflow.step(
+                "Check if there are any tracebacks on machine %s",
+                machine.fqdn
+            )
+            assert not tracebacks, (
+                "On machine %s these tracebacks were found: %s" % (
+                    machine.fqdn, '\n'.join(tracebacks)
+                )
+            )
+        else:
+            logger.info(
+                "journalctl output was empty, "
+                "no errors nor warnings were found"
+            )
