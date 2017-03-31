@@ -133,9 +133,9 @@ VV_FILE_VALUES_PARAMS = [
 ]
 
 VV_FILE_FIELDS_PARAMS = [
-    polarion("RHEVM-19531") and bz({"1429482": {}})("spice"),
+    polarion("RHEVM-19531")(bz({"1429482": {}})("spice")),
     polarion("RHEVM-19532")("vnc"),
-    polarion("RHEVM-19533") and bz({"1429482": {}})("spice_plus_vnc")
+    polarion("RHEVM-19533")(bz({"1429482": {}})("spice_plus_vnc"))
 ]
 GB = helpers.get_gb(1)
 

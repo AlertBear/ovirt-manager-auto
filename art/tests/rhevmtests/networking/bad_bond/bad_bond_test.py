@@ -86,7 +86,7 @@ class TestLACPBond(NetworkTest):
         [
             polarion("RHEVM-19180")(valid),
             polarion("RHEVM-19181")(invalid),
-            polarion("RHEVM-19182") and bz({"1418209": {}})(invalid_mixed)
+            polarion("RHEVM-19182")(bz({"1418209": {}})(invalid_mixed))
         ],
         ids=[
             "valid LACP bond",

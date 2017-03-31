@@ -22,7 +22,7 @@ class TestVirtConsoleHeadlessInheritanceClass(VirtTest):
         "obj_type",
         [
             polarion("RHEVM-19609")("template"),
-            polarion("RHEVM-19608") and bz({"1406394": {}})("instance_type"),
+            polarion("RHEVM-19608")(bz({"1406394": {}})("instance_type")),
             polarion("RHEVM-19607")("template_and_instance_type")
         ]
     )
