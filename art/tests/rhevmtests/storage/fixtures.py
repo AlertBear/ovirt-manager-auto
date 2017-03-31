@@ -50,7 +50,7 @@ def create_vm(request, remove_vm):
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
     clone_from_template = getattr(self, 'clone_from_template', True)
-    template_name = getattr(self, 'template_name')
+    template_name = getattr(self, 'template_name', None)
     self.installation = getattr(self, 'installation', True)
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
