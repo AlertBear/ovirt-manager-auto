@@ -102,7 +102,7 @@ def remove_users_groups():
                     'delete', what_remove, remove_name
                 )
                 assert not delete_results[0], (
-                    "Failed to delete %s: %s with err: " % (
+                    "Failed to delete %s: %s with err: %s" % (
                         what_remove, remove_name, delete_results[2]
                     )
                 )
