@@ -374,9 +374,9 @@ def create_vm_or_clone(
     installation = kwargs.get('installation', False)
     clone_from_template = kwargs.pop('clone_from_template', True)
     deep_copy = kwargs.pop('deep_copy', False)
-    template_name = kwargs.pop(
-        'template_name', rhevm_helpers.get_golden_template_name(cluster)
-    )
+    template_name = kwargs.pop('template_name', None)
+    if template_name is None:
+        template_name = rhevm_helpers.get_golden_template_name(cluster)
 
     # If the vm doesn't need installation don't waste time cloning the vm
     if installation:
