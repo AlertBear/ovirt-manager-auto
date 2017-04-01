@@ -7,19 +7,24 @@ Utilities used by the test cases of Management As A Role
 
 import logging
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.high_level import (
+    networks as hl_networks,
+    hosts as hl_hosts
+)
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    networks as ll_networks
+)
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
+import rhevmtests.helpers as global_helper
 
 logger = logging.getLogger("MGMT_Net_Role_Helper")
 
 
 def install_host_new_mgmt(
-        dc, cl, dest_cl, net_setup, mgmt_net, host_resource=None,
-        network=conf.MGMT_BRIDGE, new_setup=True, remove_setup=False,
-        maintenance=True
+    dc, cl, dest_cl, net_setup, mgmt_net, host_resource=None,
+    network=conf.MGMT_BRIDGE, new_setup=True, remove_setup=False,
 ):
     """
     Install host with MGMT network different from the previous one
@@ -36,15 +41,16 @@ def install_host_new_mgmt(
             install a new setup
         remove_setup (bool, optional): Flag indicating if there is a need to
             remove setup
-        maintenance (bool, optional): Set host to maintenance before move
 
     Returns:
         bool: True if install host succeeded, otherwise False
     """
     if host_resource is None:
-        host_resource = conf.VDS_1_HOST
+        host_resource = conf.VDS_2_HOST
 
-    host_name = ll_hosts.get_host_name_from_engine(host_resource)
+    host_name = global_helper.get_host_name_by_resource(
+        host_resource=host_resource
+    )
 
     if not host_name:
         return False
@@ -52,7 +58,6 @@ def install_host_new_mgmt(
     if not prepare_host_for_installation(
         host_resource=host_resource, network=network,
         dc=dc, cl=cl, new_setup=new_setup, host_name=host_name,
-        maintenance=maintenance
     ):
         return False
 
@@ -64,7 +69,7 @@ def install_host_new_mgmt(
 
 
 def prepare_host_for_installation(
-    host_resource, network, dc, cl, new_setup, host_name, maintenance=True
+    host_resource, network, dc, cl, new_setup, host_name
 ):
     """
     Prepares host for installation with new MGMT network
@@ -77,13 +82,12 @@ def prepare_host_for_installation(
         new_setup (bool): Flag indicating if there is a need to install a new
             setup
         host_name (str): Name of the Host
-        maintenance (bool): Set host to maintenance before move
 
     Returns:
         bool: True if prepare host succeeded, otherwise False
     """
-    if maintenance:
-        assert ll_hosts.deactivate_host(positive=True, host=host_name)
+    vds = global_helper.get_host_resource_by_name(host_name=host_name)
+    assert hl_hosts.deactivate_host_if_up(host=host_name, host_resource=vds)
 
     if new_setup:
         if not hl_networks.create_basic_setup(
@@ -99,8 +103,6 @@ def prepare_host_for_installation(
         func=ll_networks.update_network, content=network, positive=True,
         network=network, data_center=dc, usages=""
     )
-
-    virsh_remove_network(vds_resource=conf.VDS_1_HOST, network=network)
 
     if not ll_hosts.remove_host(positive=True, host=host_name):
         return False
@@ -139,7 +141,12 @@ def add_host_new_mgmt(
 
         if not ll_networks.update_cluster_network(
             positive=True, cluster=cl, network=mgmt_net,
-                usages=conf.MANAGEMENT_NET_USAGE
+                usages=(
+                    "{management},{default_route}".format(
+                        management=conf.MANAGEMENT_NET_USAGE,
+                        default_route=conf.DEFAULT_ROUTE_USAGE
+                    )
+                )
         ):
             return False
 
@@ -191,72 +198,9 @@ def remove_persistence_nets(host_resource):
     Returns:
         bool: True if persistence networks were removed, otherwise False
     """
-    for location in ("lib/vdsm/persistence", "run/vdsm"):
+    for location in ("lib/vdsm/persistence", "lib/vdsm/staging"):
         if host_resource.executor().run_cmd(
             ["rm", "-rf", "/".join(["/var", location, "netconf/nets/*"])]
         )[0]:
             return False
     return True
-
-
-def virsh_remove_network(vds_resource, network):
-    """
-    Undefine and destroy network on virsh
-
-    Args:
-        vds_resource (VDS): VDS resource
-        network (str): Network name
-    """
-    temp_file = create_virsh_python_file(
-        vds_resource=vds_resource, network=network
-    )
-    out = vds_resource.run_command(["python", temp_file])[1]
-    logger.info(out)
-    vds_resource.fs.remove(temp_file)
-
-
-def create_virsh_python_file(vds_resource, network):
-    """
-    Create python script for undefine and destroy network on virsh
-
-    Args:
-        vds_resource (VDS): VDS resource
-        network (str): Network name
-
-    Returns:
-        str: File name with the content
-    """
-    username = conf.VIRSH_USER
-    password = conf.VIRSH_PASS
-    pe_expect = "pe.expect"
-    pe_sendline = "pe.sendline"
-    file_name = "/tmp/virsh_delete_%s.py" % network
-    with vds_resource.executor().session() as resource_session:
-        with resource_session.open_file(file_name, 'w') as resource_file:
-            resource_file.write("import pexpect\n")
-            resource_file.write("from time import sleep\n")
-            resource_file.write("output = ''\n")
-            resource_file.write(
-                "sasl_cmd = 'saslpasswd2 -a libvirt %s'\n" % username
-            )
-            resource_file.write("pe = pexpect.spawn(sasl_cmd)\n")
-            resource_file.write("%s('.*Password:')\n" % pe_expect)
-            resource_file.write("%s('%s')\n" % (pe_sendline, password))
-            resource_file.write("%s('Again.*:')\n" % pe_expect)
-            resource_file.write("%s('%s')\n" % (pe_sendline, password))
-            resource_file.write(
-                "cmd_destroy = 'virsh net-destroy vdsm-%s'\n" % network
-            )
-            resource_file.write(
-                "cmd_undefine = 'virsh net-undefine vdsm-%s'\n" % network
-            )
-            resource_file.write("for cmd in [cmd_undefine, cmd_destroy]:\n")
-            resource_file.write("    sleep(5)\n")
-            resource_file.write("    pe = pexpect.spawn(cmd)\n")
-            resource_file.write("    %s('.*name:')\n" % pe_expect)
-            resource_file.write("    %s('%s')\n" % (pe_sendline, username))
-            resource_file.write("    %s('.*password:')\n" % pe_expect)
-            resource_file.write("    %s('%s')\n" % (pe_sendline, password))
-            resource_file.write("    output += pe.read()\n")
-            resource_file.write("print output\n")
-    return file_name

@@ -19,7 +19,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as mgmt_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
     remove_all_networks,
@@ -41,7 +41,6 @@ class TestMGMTNetRole01(NetworkTest):
     2.  Check that the management of the DC and cluster is the default
             management network (ovirtmgmt)
     """
-    __test__ = True
 
     ext_dc = mgmt_conf.DATA_CENTERS[1][0]
     ext_cluster = mgmt_conf.CLUSTERS[1][0]
@@ -91,7 +90,6 @@ class TestMGMTNetRole02(NetworkTest):
     1.  Try to update default management to network that is non-required
     2.  Update default management to network that is required
     """
-    __test__ = True
 
     dc = conf.DC_0
     cluster = mgmt_conf.CLUSTERS[2][0]
@@ -154,7 +152,6 @@ class TestMGMTNetRole03(NetworkTest):
     2.  Remove default management network when it is detached from all clusters
             in the DC
     """
-    __test__ = True
 
     ext_cluster = mgmt_conf.CLUSTERS[3][0]
     ext_cluster_1 = mgmt_conf.CLUSTERS[3][1]
@@ -257,7 +254,6 @@ class TestMGMTNetRole04(NetworkTest):
     3.  Management network becomes migration network when original migration
             network is removed
     """
-    __test__ = True
 
     net_1 = mgmt_conf.NETS[4][0]
     net_2 = mgmt_conf.NETS[4][1]
@@ -313,13 +309,12 @@ class TestMGMTNetRole05(NetworkTest):
     2.  Negative: try to move host between clusters with different management
         networks
     """
-    __test__ = True
 
     dc = conf.DC_0
     ext_cls_0 = mgmt_conf.CLUSTERS[5][0]
     net_1 = mgmt_conf.NETS[5][0]
     net_dict = mgmt_conf.NET_DICT_CASE_05
-    move_host_to_cluster_params = [1, conf.CL_0]
+    move_host_to_cluster_params = [2, conf.CL_0]
     clusters_dict = {
         ext_cls_0: {
             "name": ext_cls_0,
@@ -344,19 +339,17 @@ class TestMGMTNetRole05(NetworkTest):
             'Move the host to another cluster with the default management'
             ' network'
         )
-        assert ll_hosts.deactivate_host(positive=True, host=conf.HOST_1_NAME)
-        assert helper.move_host_new_cl(host=conf.HOST_1_NAME, cl=conf.CL_1)
-        assert ll_hosts.activate_host(positive=True, host=conf.HOST_1_NAME)
-        assert ll_hosts.deactivate_host(
-            positive=True, host=conf.HOST_1_NAME
-        )
+        assert ll_hosts.deactivate_host(positive=True, host=conf.HOST_2_NAME)
+        assert helper.move_host_new_cl(host=conf.HOST_2_NAME, cl=conf.CL_1)
+        assert ll_hosts.activate_host(positive=True, host=conf.HOST_2_NAME)
+        assert ll_hosts.deactivate_host(positive=True, host=conf.HOST_2_NAME)
 
         testflow.step(
             'Negative: try to move the host to the cluster with non-default'
             ' management network'
         )
         assert helper.move_host_new_cl(
-            host=conf.HOST_1_NAME, cl=self.ext_cls_0, positive=False
+            host=conf.HOST_2_NAME, cl=self.ext_cls_0, positive=False
         )
 
 
@@ -379,7 +372,6 @@ class TestMGMTNetRole06(NetworkTest):
         explicitly and fail
     5.  Create a new cluster when providing net1 as management network
     """
-    __test__ = True
 
     ext_dc = mgmt_conf.DATA_CENTERS[6][0]
     ext_cls_0 = mgmt_conf.CLUSTERS[6][0]
@@ -518,7 +510,6 @@ class TestMGMTNetRole07(NetworkTest):
     2.  Remove Cluster and then the network from DC
     3.  Negative: Try to add a new cluster when there is no network on DC
     """
-    __test__ = True
 
     ext_dc = mgmt_conf.DATA_CENTERS[7][0]
     net_1 = mgmt_conf.NETS[7][0]
@@ -578,7 +569,6 @@ class TestMGMTNetRole07(NetworkTest):
         )
 
 
-@bz({"1415748": {}})
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
@@ -603,7 +593,6 @@ class TestMGMTNetRole08(NetworkTest):
     8.  Change management network on Extra Cluster to net1
     9.  Check that the change succeeded
     """
-    __test__ = True
 
     dc = mgmt_conf.DATA_CENTERS[8][0]
     ext_cls_0 = mgmt_conf.CLUSTERS[8][0]
@@ -631,7 +620,7 @@ class TestMGMTNetRole08(NetworkTest):
     add_networks_to_clusters_params = [(ext_cls_1, net_2), (ext_cls_2, net_1)]
     create_and_attach_network_params = [[(dc, None)], net_dict]
     install_host_with_new_management_params = [
-        1, net_1, conf.CL_0, ext_cls_0, dc, mgmt_conf.NET_DICT_CASE_08_1, net_1
+        2, net_1, conf.CL_0, ext_cls_0, dc, mgmt_conf.NET_DICT_CASE_08_1, net_1
     ]
 
     @polarion("RHEVM3-6470")
@@ -642,7 +631,7 @@ class TestMGMTNetRole08(NetworkTest):
         testflow.step(
             'Check that the non-default management network exists on host'
         )
-        assert conf.VDS_1_HOST.network.find_mgmt_interface() == self.net_1
+        assert conf.VDS_2_HOST.network.find_mgmt_interface() == self.net_1
 
     @polarion("RHEVM3-6467")
     def test_02_moving_host(self):
@@ -652,23 +641,23 @@ class TestMGMTNetRole08(NetworkTest):
             (net_1)
         3.  Try to move the host to the setup with net_2 as management network
         """
-        host_1 = conf.HOST_1_NAME
+        host_2 = conf.HOST_2_NAME
 
         testflow.step('Deactivate host')
-        assert ll_hosts.deactivate_host(positive=True, host=host_1)
+        assert ll_hosts.deactivate_host(positive=True, host=host_2)
 
         testflow.step(
             'Move the host to another cluster with the same management '
             'network (net_1)'
         )
-        assert helper.move_host_new_cl(host=host_1, cl=self.ext_cls_1)
+        assert helper.move_host_new_cl(host=host_2, cl=self.ext_cls_1)
 
         testflow.step(
             'Try to move the host to the setup with net_2 as management '
             'network'
         )
         assert helper.move_host_new_cl(
-            host=host_1, cl=self.ext_cls_2, positive=False
+            host=host_2, cl=self.ext_cls_2, positive=False
         )
 
     @polarion("RHEVM3-6472")
@@ -694,7 +683,7 @@ class TestMGMTNetRole08(NetworkTest):
 
         testflow.step('Move host to its original DC/Cluster')
         assert helper.move_host_new_cl(
-            host=conf.HOST_1_NAME, cl=self.ext_cls_0
+            host=conf.HOST_2_NAME, cl=self.ext_cls_0
         )
         assert ll_networks.update_cluster_network(
             positive=True, cluster=self.ext_cls_1, network=self.net_2,

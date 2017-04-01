@@ -61,7 +61,7 @@ def update_cluster_network_usages(request):
 @pytest.fixture(scope="class")
 def move_host_to_cluster(request):
     """
-    Move vds host to a specified cluster
+    Move host to a specified cluster
     """
     mgmt_as_role = NetworkFixtures()
     host = mgmt_as_role.hosts_list[request.cls.move_host_to_cluster_params[0]]
@@ -133,8 +133,7 @@ def install_host_with_new_management(request):
         """
         assert helper.install_host_new_mgmt(
             dc=dc, cl=dst_cl, dest_cl=src_cl, net_setup=net_setup,
-            mgmt_net=mgmt_net, network=net, remove_setup=True,
-            maintenance=False, new_setup=False
+            mgmt_net=mgmt_net, network=net, remove_setup=True, new_setup=False
         )
     request.addfinalizer(fin)
 

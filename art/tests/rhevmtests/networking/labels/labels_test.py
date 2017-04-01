@@ -925,20 +925,16 @@ class TestNetLabels07(NetworkTest):
         "Label_cluster_%s_case07" % conf.COMP_VERSION_4_0[i]
         for i in range(len(conf.COMP_VERSION_4_0) - 1)
     ]
-    clusters_dict = {
-        cluster_list[0]: {
-            "name": cluster_list[0],
+    clusters_dict = dict()
+    for idx, cl in enumerate(cluster_list):
+        cluster_dict = {
+            "name": cl,
             "data_center": datacenter,
             "cpu": conf.CPU_NAME,
-            "version": conf.COMP_VERSION_4_0[0],
-        },
-        cluster_list[1]: {
-            "name": cluster_list[1],
-            "data_center": datacenter,
-            "cpu": conf.CPU_NAME,
-            "version": conf.COMP_VERSION_4_0[1],
-        },
-    }
+            "version": conf.COMP_VERSION_4_0[idx]
+        }
+        clusters_dict[cl] = cluster_dict
+
     nets = label_conf.NETS[7][:4]
     sleep_timeout = 30
 

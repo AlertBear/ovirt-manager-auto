@@ -383,9 +383,10 @@ def get_pm_details(host_name):
     return pm_host_details
 
 
+@ll_general.generate_logs()
 def get_host_resource_by_name(host_name):
     """
-    Get host resource by name
+    Get host resource by host_name
 
     Args:
         host_name (str): host name
@@ -396,6 +397,23 @@ def get_host_resource_by_name(host_name):
     return (
         net_config.VDS_HOSTS[net_config.HOSTS.index(host_name)]
         if host_name in net_config.HOSTS else None
+    )
+
+
+@ll_general.generate_logs()
+def get_host_name_by_resource(host_resource):
+    """
+    Get host name by host_resource
+
+    Args:
+        host_resource (Host): Host resource
+
+    Returns:
+        str: Host name
+    """
+    return (
+        net_config.HOSTS[net_config.VDS_HOSTS.index(host_resource)]
+        if host_resource in net_config.VDS_HOSTS else None
     )
 
 

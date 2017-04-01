@@ -132,13 +132,14 @@ def update_cluster_network(request):
         Update management cluster network to default
         """
         testflow.teardown(
-            "Update cluster network %s as display,vm,migration,management",
+            "Update cluster network %s as "
+            "display,vm,migration,management,default_route",
             jumbo_frame.mgmt_bridge
         )
         assert ll_networks.update_cluster_network(
             positive=True, cluster=jumbo_frame.cluster_0,
             network=jumbo_frame.mgmt_bridge,
-            usages="display,vm,migration,management"
+            usages="display,vm,migration,management,default_route"
         )
     request.addfinalizer(fin)
 

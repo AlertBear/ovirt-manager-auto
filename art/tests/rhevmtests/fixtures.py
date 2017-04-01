@@ -62,7 +62,8 @@ def start_vms_fixture_function(request, stop_vms_fixture_function):
     Run VMs once.
     """
     vms_dict = request.getfixturevalue("start_vms_dict") or dict()
-    fixtures_helper.start_vm_helper(vms_dict=vms_dict)
+    if vms_dict:
+        fixtures_helper.start_vm_helper(vms_dict=vms_dict)
 
 
 @pytest.fixture(scope="class")

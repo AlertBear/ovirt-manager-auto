@@ -28,6 +28,8 @@ from fixtures import (
 )
 from rhevmtests.fixtures import start_vm
 
+pytestmark = pytest.mark.skip('skipping all tests. BUG in OVN installation')
+
 
 @attr(tier=2)
 @pytest.mark.incremental
