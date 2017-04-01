@@ -455,15 +455,13 @@ class BaseClassKillProc(TestCase):
         except EntityNotFound:
             testflow.step("Creation of VM %s Failed", self.vm_name)
 
-            # Uncomment when bug:
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1426136 is fixed
-            # testflow.step("Checking that there are no leftovers (LVs)")
-            # lv_count_after = storage_helpers.get_lv_count_for_block_disk(
-            #     self.spm_ip, config.HOSTS_PW
-            # )
-            # assert lv_count_after == self.lv_count_before, (
-            #     "There is a leftover LV after creation of VM failed"
-            # )
+            testflow.step("Checking that there are no leftovers (LVs)")
+            lv_count_after = storage_helpers.get_lv_count_for_block_disk(
+                self.spm_ip, config.HOSTS_PW
+            )
+            assert lv_count_after == self.lv_count_before, (
+                "There is a leftover LV after creation of VM failed"
+            )
             status = False
         if status:
             self.vm_names.append(self.vm_name)
