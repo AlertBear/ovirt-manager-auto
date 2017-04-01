@@ -3,16 +3,8 @@
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_5_Storage_Live_Merge
 """
-import pytest
+from remove_snapshot_base import *  # flake8: noqa
 import remove_snapshot_base as basePlan
-from rhevmtests.storage.fixtures import (
-    create_vm, prepare_disks_with_fs_for_vm, delete_disks,
-    wait_for_disks_and_snapshots, remove_vm
-)  # flake8: noqa
-from rhevmtests.storage.storage_remove_snapshots.fixtures import (
-    initialize_params,
-)  # flake8: noqa
-from art.unittest_lib import attr
 from art.test_handler.tools import bz
 
 
