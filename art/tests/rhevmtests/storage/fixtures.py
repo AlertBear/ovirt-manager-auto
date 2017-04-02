@@ -5,6 +5,7 @@ from art.core_api.apis_exceptions import APITimeout
 from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
+    datacenters as hl_dc,
     storagedomains as hl_sd,
     hosts as hl_hosts
 )
@@ -475,12 +476,14 @@ def create_storage_domain(request):
         testflow.teardown(
             "Remove storage domain %s", self.new_storage_domain
         )
-        spm = ll_hosts.get_spm_host(config.HOSTS)
+        spm = hl_dc.get_spm_host(positive=True, datacenter=self.datacenter)
+        assert spm, "Failed to find SPM on data center %s" % self.datacenter
         assert hl_sd.remove_storage_domain(
             self.new_storage_domain, self.datacenter,
             spm, engine=config.ENGINE, format_disk=True
         ), ("Failed to remove storage domain %s" % self.new_storage_domain)
     request.addfinalizer(finalizer)
+
     if not hasattr(self, 'new_storage_domain'):
         self.new_storage_domain = (
             storage_helpers.create_unique_object_name(
@@ -670,7 +673,7 @@ def clean_dc(request):
         master_domain = None
         new_storage_domain = getattr(self, 'new_storage_domain', False)
         if new_storage_domain:
-            master_domain = self.storage_domain
+            master_domain = new_storage_domain
         else:
             master_domain = getattr(
                 self, 'master_domain', config.MASTER_DOMAIN
@@ -693,7 +696,7 @@ def clean_dc(request):
                 "Removing storage domain %s", self.storage_domain
             )
             assert ll_sd.removeStorageDomain(
-                True, self.storage_domain, self.host_name, format='true',
+                True, master_domain, self.host_name, format='true',
             )
     request.addfinalizer(finalizer)
 
