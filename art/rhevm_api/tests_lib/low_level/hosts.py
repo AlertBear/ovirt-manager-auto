@@ -1556,7 +1556,7 @@ def get_host_ip_from_engine(host):
     return host_name.get_address()
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def refresh_host_capabilities(host, start_event_id):
     """
     Refresh Host Capabilities

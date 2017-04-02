@@ -313,22 +313,23 @@ def delete_dummies(host_resource):
     sample.waitForFuncStatus(result=False)
 
 
-def is_network_in_vds_caps(host_resource, network):
+def is_network_in_vds_caps(host_resource, network, type_="networks"):
     """
     Check if network exists in vdsCaps output
 
-    :param host_resource: Host resource object
-    :type host_resource: resources.VDS
-    :param network: Network name
-    :type network: str
-    :return: True/False
-    :rtype: bool
+    Args:
+        host_resource (VDS): Host resource object
+        network (str): Network name
+        type_ (str): Network type (vlans, bridges, networks)
+
+    Returns:
+        bool: True if network found, false otherwise
     """
     logger.info("Get vdsCaps output")
     out = host_resource.vds_client(cmd="getCapabilities")
     logger.info("Check if %s in vdsCaps output", network)
-    if network not in out.get("networks", {}).keys():
-        logger.error("Network %s is missing in vdsCaps", network)
+    if network not in out.get(type_, dict()).keys():
+        logger.error("%s %s is missing in vdsCaps", type_, network)
         return False
     return True
 
