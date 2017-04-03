@@ -48,6 +48,7 @@ class TestCase16287(LiveMergeBaseClass, basePlan.TestCase16287):
     test_case = '16287'
 
 
+@bz({'1438575': {}})
 class TestCase12215(LiveMergeBaseClass, basePlan.TestCase12215):
     """
     Deleting all snapshots
