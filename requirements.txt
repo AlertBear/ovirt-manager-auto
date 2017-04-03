@@ -32,3 +32,4 @@ git+git://github.com/rhevm-qe-automation/pytest-catchlog.git@rhevm_customization
 git+git://github.com/rhevm-qe-automation/pytest-marker-bugzilla.git
 uritemplate
 ovirt-engine-sdk-python
+requests

@@ -1,12 +1,13 @@
-
-import urllib2
 import contextlib
 import time
-from rrmngmnt.service import Service
-from rrmngmnt.db import Database
-from rrmngmnt.user import User
-from rrmngmnt.host import Host
+import urllib2
 
+import requests
+
+from rrmngmnt.db import Database
+from rrmngmnt.host import Host
+from rrmngmnt.service import Service
+from rrmngmnt.user import User
 
 DATABASE_CONFIG = "/etc/ovirt-engine/engine.conf.d/10-setup-database.conf"
 
@@ -63,40 +64,23 @@ class Engine(Service):
         return "http://%s/ovirt-engine/services/health" % self.host.fqdn
 
     @property
-    def api_page(self):
-        return "https://%s/ovirt-engine/api" % self.host.fqdn
-
-    # TODO: urllib2 has problems with ssl insecure access until python2.7.9
-    # change it to the internal python call instead of curl
-    # ctx = ssl.create_default_context()
-    # ctx.check_hostname = False
-    # ctx.verify_mode = ssl.CERT_NONE
-    # request = urllib2.Request(url)
-    # base64string = base64.b64encode("%s:%s" % (username, password))
-    # request.add_header("Authorization", "Basic %s" % base64string)
-    # with urllib2.urlopen(request, context=ctx):
-    #     ...
-    @property
     def api_page_status(self):
         """
         Get API page status
 
         Returns:
-            bool: True, if return status is 200, otherwise False
+            bool: True, if the engine API is reachable, otherwise False
         """
-        command = [
-            "curl", "-s", "-D", "-",
-            self.api_page,
-            "--insecure",
-            "-u", "%s:%s" % (self.admin.get_full_name(), self.admin.password),
-            "-o", "/dev/null",
-            "|", "head", "-n", "1"
-        ]
-        out = self.host.run_command(command=command)[1]
-        if "200 OK" in out:
-            return True
-        self.logger.debug("Engine API does not reachable: %s", out)
-        return False
+        response = requests.get(
+            url=self.url,
+            auth=(self.admin.get_full_name(), self.admin.password),
+            verify=False
+        )
+        self.logger.debug(
+            "Engine response: %s - %s",
+            response.status_code, response.reason
+        )
+        return response.ok
 
     @property
     def health_page_status(self):
