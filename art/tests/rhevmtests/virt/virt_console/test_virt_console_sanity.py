@@ -46,6 +46,10 @@ class TestVirtConsoleSanityClass(VirtTest):
                 )
 
     @polarion('RHEVM3-9896')
+    @pytest.mark.skipif(
+        vcons_conf.PPC_ARCH,
+        reason=vcons_conf.PPC_SKIP_MESSAGE
+    )
     @pytest.mark.usefixtures(fixtures.setup_2_vms_env.__name__)
     def test_2_multiple_monitors_mem_size(self):
         """

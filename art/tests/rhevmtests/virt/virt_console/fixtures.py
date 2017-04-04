@@ -3,7 +3,6 @@ import pytest
 import config as vcons_conf
 
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
-from art.rhevm_api.tests_lib.low_level import storagedomains as ll_storage_dom
 from art.rhevm_api.tests_lib.low_level import templates as ll_templates
 from art.rhevm_api.tests_lib.low_level import instance_types as ll_inst_type
 import helper
@@ -142,14 +141,11 @@ def setup_vm(request):
     ), "Failed to create instance_type."
 
     testflow.setup("Create a Template for Virt console test cases execution.")
-    assert ll_storage_dom.import_glance_image(
-        vcons_conf.GLANCE_DOMAIN,
-        vcons_conf.VIRT_GLANCE_IMAGE,
-        vcons_conf.STORAGE_NAME[0],
-        vcons_conf.CLUSTER_NAME[0],
-        new_disk_alias=vcons_conf.VIRT_NEW_DISK_ALIAS,
-        new_template_name=vcons_conf.VIRT_CONSOLE_TEMPLATE,
-        import_as_template=True
+    assert ll_templates.createTemplate(
+        positive=True,
+        vm=vcons_conf.VM_NAME[0],
+        name=vcons_conf.VIRT_CONSOLE_TEMPLATE,
+        cluster=vcons_conf.CLUSTER_NAME[0]
     ), "Was not able to create template."
 
     testflow.setup("Create a VM for Virt console test cases execution.")
@@ -354,14 +350,11 @@ def setup_vm_adv(request):
     )
 
     testflow.setup("Create a Template for Virt console test cases execution.")
-    assert ll_storage_dom.import_glance_image(
-        vcons_conf.GLANCE_DOMAIN,
-        vcons_conf.VIRT_GLANCE_IMAGE,
-        vcons_conf.STORAGE_NAME[0],
-        vcons_conf.CLUSTER_NAME[0],
-        new_disk_alias=vcons_conf.VIRT_NEW_DISK_ALIAS,
-        new_template_name=vcons_conf.VIRT_CONSOLE_TEMPLATE,
-        import_as_template=True
+    assert ll_templates.createTemplate(
+        positive=True,
+        vm=vcons_conf.VM_NAME[0],
+        name=vcons_conf.VIRT_CONSOLE_TEMPLATE,
+        cluster=vcons_conf.CLUSTER_NAME[0]
     ), "Was not able to create template."
 
     testflow.setup("Set created template as headless")
