@@ -1,5 +1,6 @@
 import config
 import logging
+import shlex
 import os
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import (
@@ -143,6 +144,7 @@ def create_files_on_vm_disks(vm_name, storage_type):
                 vm_name, full_path, vm_executor
             )
         )
+    vm_executor.run_cmd(shlex.split(config.SYNC_CMD))
     return True
 
 
@@ -153,7 +155,9 @@ def check_file_existence(
     """
     Determines whether file exists on mounts
     """
-    ll_vms.start_vms([vm_name], 1, wait_for_ip=True)
+    ll_vms.start_vms(
+        [vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=True
+    )
     result_list = []
     state = not should_exist
     vm_executor = storage_helpers.get_vm_executor(vm_name)

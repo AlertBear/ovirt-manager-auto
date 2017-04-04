@@ -89,7 +89,7 @@ def create_vms_per_storage(request):
             )
         config.VM_NAMES[storage_type] = vm_name
         helpers.prepare_disks_for_test(vm_name, storage_type, storage_domain)
-        ll_vms.shutdownVm(True, vm_name, 'false')
+        ll_vms.stop_vms_safely([vm_name])
 
 
 @pytest.mark.usefixtures(
@@ -189,7 +189,7 @@ class CopyDiskWithContent(BasicEnvironment):
         """
         executors = []
         vm_disks = ll_vms.getVmDisks(vm_name)
-        ll_vms.shutdownVm(positive=True, vm=vm_name, async='false')
+        ll_vms.stop_vms_safely([vm_name])
         sealed = seal_vm(vm_name, config.VM_PASSWORD)
         if not sealed:
             logger.error("Failed to seal vm %s", vm_name)

@@ -130,7 +130,7 @@ def seal_vm(vm, root_password):
     if not ll_vms.startVm(positive=True, vm=vm):
         return False
 
-    rc, out = ll_vms.wait_for_vm_ip(vm=vm, timeout=180, sleep=10)
+    rc, out = ll_vms.wait_for_vm_ip(vm=vm, timeout=300, sleep=10)
     if not rc:
         return False
 
