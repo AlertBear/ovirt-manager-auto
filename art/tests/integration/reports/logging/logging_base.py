@@ -28,9 +28,9 @@ class LoggingTest(ReportsTest):
         """
         testflow.step("Grepping dwh log")
         cmd = [
-            'diff', '-e', backup_log_file, log_file,
-            '|', 'grep', search,
-            '-A'+str(lines)
+            'diff', '-e', backup_log_file, log_file, '|',
+            'grep', '-F', search, '-A' + str(lines), '|',
+            'grep', '-Fv', 'tWarn'
         ]
         result = config.ENGINE_HOST.run_command(command=cmd)
         assert not result[0]

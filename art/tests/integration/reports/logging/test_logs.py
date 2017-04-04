@@ -4,17 +4,18 @@ Sanity testing of report and dwh installation
 import pytest
 from time import sleep
 
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, testflow
 
 from logging_base import LoggingTest
 import config
 
 
+@bz({'1434326': {}})
 @attr(tier=3)
 class DebugLogs(LoggingTest):
     """Log tests"""
-    __test__ = False
+    __test__ = True
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
@@ -22,6 +23,7 @@ class DebugLogs(LoggingTest):
         def fin():
             testflow.teardown("Class %s tearDown", cls.__name__)
             testflow.step("Disabling debug mode")
+
             assert config.ENGINE_HOST.run_command(['rm', config.DEBUG_CONF])
 
             cls.assert_remove_backup(config.DWH_LOG_BACKUP)
@@ -42,12 +44,10 @@ class DebugLogs(LoggingTest):
         request.addfinalizer(fin)
 
         testflow.setup("Set up class %s", cls.__name__)
-
         testflow.step("Enabling debug mode")
         assert config.ENGINE_HOST.run_command(
             ['echo', config.ENABLE_LOG, '>', config.DEBUG_CONF]
         )
-
         cls.assert_backup_file(config.DWH_LOG, config.DWH_LOG_BACKUP)
 
         testflow.step("Stopping ntp")
@@ -60,6 +60,7 @@ class DebugLogs(LoggingTest):
         )
 
         config.ENGINE.restart()
+        config.OVIRT_ENGINE_DWH_SERVICE.restart()
 
         testflow.step("Wait 2 minutes till next day")
         sleep(120)
