@@ -85,7 +85,10 @@ class BasicEnvironment(BaseTestCase):
             assert storage_helpers._run_cmd_on_remote_machine(
                 self.vm_name, self.cmd_del % path, self.vm_executor
             )
-        assert ll_vms.shutdownVm(True, self.vm_name, async='false'), (
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, config.SYNC_CMD, self.vm_executor
+        )
+        assert ll_vms.stop_vms_safely([self.vm_name]), (
             "Failed to shutdown vm %s" % self.vm_name
         )
 
@@ -95,7 +98,12 @@ class BasicEnvironment(BaseTestCase):
         )
         if not live:
             if not ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
-                ll_vms.shutdownVm(True, self.vm_name, 'false')
+                assert storage_helpers._run_cmd_on_remote_machine(
+                    self.vm_name, config.SYNC_CMD, self.vm_executor
+                )
+                assert ll_vms.stop_vms_safely([self.vm_name]), (
+                    "Failed to shutdown vm %s" % self.vm_name
+                )
         if disks:
             snapshot_disks = '%s disks: %s' % (len(disks), disks)
         elif disks is None:
@@ -716,7 +724,10 @@ class TestCase14399(BasicEnvironment):
                     self.vm_name, self.cmd_create % (path, index),
                     self.vm_executor
                 )
-            ll_vms.shutdownVm(True, self.vm_name, 'false')
+            assert storage_helpers._run_cmd_on_remote_machine(
+                self.vm_name, config.SYNC_CMD, self.vm_executor
+            )
+            ll_vms.stop_vms_safely([self.vm_name])
             ll_vms.addSnapshot(
                 True, self.vm_name, snap_desc,
                 disks_lst=[self.disks_names[0]], wait=True
