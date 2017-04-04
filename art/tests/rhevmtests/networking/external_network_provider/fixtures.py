@@ -308,9 +308,7 @@ def deploy_ovn(request):
         "Installing OVN provider packages: %s on host: %s",
         enp_conf.OVN_PROVIDER_RPM, provider_server.fqdn
     )
-    assert helper.rpm_install(
-        host=provider_server, rpm_name=enp_conf.OVN_PROVIDER_RPM
-    )
+    assert provider_server.package_manager.install(enp_conf.OVN_PROVIDER_RPM)
 
     testflow.setup(
         "Reloading systemd daemon on host: %s", provider_server.fqdn
@@ -330,7 +328,7 @@ def deploy_ovn(request):
             "Installing OVN controller packages: %s on host: %s",
             enp_conf.OVN_DRIVER_RPM, host.fqdn
         )
-        assert helper.rpm_install(host=host, rpm_name=enp_conf.OVN_DRIVER_RPM)
+        assert host.package_manager.install(enp_conf.OVN_DRIVER_RPM)
 
         testflow.setup("Reloading systemd daemon on host %s", host.fqdn)
         assert not host.run_command(

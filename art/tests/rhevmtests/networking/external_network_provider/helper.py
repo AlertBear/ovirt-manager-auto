@@ -360,23 +360,3 @@ def service_handler(host, service, action="stop"):
         return host.run_command(
             shlex.split(ovn_conf.OVN_CMD_SERVICE_STATUS.format(name=service))
         )[0] == 0
-
-
-def rpm_install(host, rpm_name):
-    """
-    Installs RPM package
-
-    Args:
-        host (Host): Host object
-        rpm_name (str): RPM package name
-
-    Returns:
-        bool: True if install was successful or package already installed,
-            False otherwise
-
-    """
-    if host.package_manager.exist(rpm_name):
-        return True
-
-    host.package_manager.install(rpm_name)
-    return host.package_manager.exist(rpm_name)
