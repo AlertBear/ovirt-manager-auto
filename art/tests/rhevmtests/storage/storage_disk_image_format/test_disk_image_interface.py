@@ -567,12 +567,13 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
         testflow.step(
             "Add snapshot %s to VM %s", self.snapshot_name, self.vm_name
         )
-        ll_vms.addSnapshot(True, self.vm_name, self.snapshot_name)
+        assert ll_vms.addSnapshot(True, self.vm_name, self.snapshot_name)
         self.update_disk_interface()
+        assert ll_vms.stop_vms_safely([self.vm_name])
         testflow.step(
             "Restore VM %s to snapshot %s", self.vm_name, self.snapshot_name
         )
-        ll_vms.restore_snapshot(True, self.vm_name, self.snapshot_name)
+        assert ll_vms.restore_snapshot(True, self.vm_name, self.snapshot_name)
         self.check_engine_disk_interface(self.base_interface)
         self.check_guest_os_disk_interface(self.base_interface)
 

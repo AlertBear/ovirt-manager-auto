@@ -21,7 +21,8 @@ from rhevmtests.storage.fixtures import (
     remove_vms, clean_export_domain, remove_template, add_disk, attach_disk,
 )  # flake8: noqa
 from rhevmtests.storage.storage_disk_image_format.fixtures import (
-    initialize_params, create_test_vms, remove_vm_setup, remove_test_templates
+    initialize_params, create_test_vms, remove_vm_setup, remove_test_templates,
+    initialize_template_name
 )
 
 ENUMS = config.ENUMS
@@ -678,11 +679,12 @@ class TestCase11607(TestCasesCreateTemplate):
 
 
 @pytest.mark.usefixtures(
+    remove_template.__name__,
     create_vm.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     clean_export_domain.__name__,
-    remove_template.__name__,
+    initialize_template_name.__name__,
 )
 class TestCase11606(BaseTestDiskImage):
     """

@@ -21,10 +21,18 @@ def initialize_params(request):
 
     if not hasattr(self, 'disk_keywords'):
         self.disk_keywords = config.DISK_KWARGS.copy()
-    if not hasattr(self, 'template_name'):
-        self.template_name = storage_helpers.create_unique_object_name(
-            self.__name__, config.OBJECT_TYPE_TEMPLATE
-        )
+
+
+@pytest.fixture(scope='class')
+def initialize_template_name(request):
+    """
+    Initialize template_name parameter
+    """
+    self = request.node.cls
+
+    self.template_name = storage_helpers.create_unique_object_name(
+        self.__name__, config.OBJECT_TYPE_TEMPLATE
+    )
 
 
 @pytest.fixture()
