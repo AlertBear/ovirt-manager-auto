@@ -25,6 +25,7 @@ from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.high_level import datastructures
+
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils import test_utils
@@ -202,11 +203,9 @@ def import_fcp_storage_domain(host):
     )
 
 
-def add_iscsi_data_domain(
-    host, storage, data_center, lun, lun_address, lun_target, lun_port=3260,
-    storage_format=None, override_luns=None, login_all=False,
-    discard_after_delete=None
-):
+def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
+                       lun_target, lun_port=3260, storage_format=None,
+                       override_luns=None, login_all=False):
     '''
     positive flow for adding ISCSI Storage including all the necessary steps
     __author__: atal
@@ -230,8 +229,6 @@ def add_iscsi_data_domain(
     :type override_luns: bool
     :param login_all: when True login to all lun addresses and targets
     :type login_all: bool
-    :param discard_after_delete: True for passing the discard flag for deletion
-    :type discard_after_delete: bool
     :return: True if succeeded, False otherwise
     :rtype: bool
     '''
@@ -240,12 +237,10 @@ def add_iscsi_data_domain(
         return False
 
     if not ll_sd.addStorageDomain(
-        True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
-        storage_type=ENUMS['storage_type_iscsi'], lun=lun,
-        lun_address=lun_address, lun_target=lun_target, lun_port=lun_port,
-        storage_format=storage_format, override_luns=override_luns,
-        discard_after_delete=discard_after_delete
-    ):
+            True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
+            storage_type=ENUMS['storage_type_iscsi'], lun=lun,
+            lun_address=lun_address, lun_target=lun_target, lun_port=lun_port,
+            storage_format=storage_format, override_luns=override_luns):
         logger.error('Failed to add (%s, %s, %s) to %s' % (
             lun_address, lun_target, lun, host))
         return False
@@ -451,10 +446,7 @@ def addPosixfsDataDomain(
     return True
 
 
-def add_fcp_data_domain(
-    host, storage, data_center, lun, override_luns=None,
-    discard_after_delete=None
-):
+def addFCPDataDomain(host, storage, data_center, lun, override_luns=None):
     """
     Positive flow for adding FCP storage including all the necessary steps
 
@@ -469,15 +461,13 @@ def add_fcp_data_domain(
     :param override_luns: True if the block device should be formatted
     (when not empty), False if block device should be used as is
     :type override_luns: bool
-    :param discard_after_delete: True for passing the discard flag for deletion
-    :type discard_after_delete: bool
     :return: True if succeeded, False otherwise
     :rtype: bool
     """
     if not ll_sd.addStorageDomain(
         True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
         storage_type=ENUMS['storage_type_fcp'], lun=lun,
-        override_luns=override_luns, discard_after_delete=discard_after_delete
+        override_luns=override_luns
     ):
         logger.error('Failed to add fcp storage %s to %s' % (lun, storage))
         return False
@@ -689,8 +679,8 @@ class ISCSIStorageAdder(StorageAdder):
         """
         name = "iscsi_%d" % i
         self._add_storage(
-            add_iscsi_data_domain, self.host, name, self.datacenter,
-            self.luns[i], self.lun_addresses[i], self.lun_targets[i])
+            addISCSIDataDomain, self.host, name, self.datacenter, self.luns[i],
+            self.lun_addresses[i], self.lun_targets[i])
         return name
 
 
@@ -706,8 +696,7 @@ class FCPStorageAdder(StorageAdder):
         """
         name = "iscsi_%d" % i
         self._add_storage(
-            add_fcp_data_domain, self.host, name, self.datacenter,
-            self.luns[i])
+            addFCPDataDomain, self.host, name, self.datacenter, self.luns[i])
         return name
 
 

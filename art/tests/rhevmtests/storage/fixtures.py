@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     jobs as ll_jobs,
 )
-from art.rhevm_api.resources import storage
+from art.rhevm_api.resources import VDS, storage
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 from concurrent.futures import ThreadPoolExecutor
@@ -496,10 +496,8 @@ def create_storage_domain(request):
     testflow.setup(
         "Create new storage domain %s", self.new_storage_domain
     )
-    domain_kwargs = getattr(self, 'create_domain_kwargs', dict())
     storage_helpers.add_storage_domain(
-        self.new_storage_domain, self.datacenter, self.index, self.storage,
-        **domain_kwargs
+        self.new_storage_domain, self.datacenter, self.index, self.storage
     )
 
 
@@ -1277,6 +1275,7 @@ def remove_hsm_host(request):
 
     request.addfinalizer(finalizer)
     self.hsm_host = ll_hosts.get_hsm_host(config.HOSTS)
-    self.hsm_host_vds = config.VDS_HOSTS[config.HOSTS.index(self.hsm_host)]
+    self.hsm_host_ip = ll_hosts.get_host_ip(self.hsm_host)
+    self.hsm_host_vds = VDS(self.hsm_host_ip, config.HOSTS_PW)
     testflow.setup("Removing host %s from the env", self.hsm_host)
     assert ll_hosts.remove_host(True, self.hsm_host, deactivate=True)

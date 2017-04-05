@@ -5,7 +5,6 @@ Consolidated config module
 import copy
 import logging
 from urlparse import urlparse
-import os
 
 from art.rhevm_api import resources
 from art.rhevm_api.utils import test_utils
@@ -103,15 +102,12 @@ STORAGE_TYPE_GLANCE = ENUMS['storage_type_glance']
 STORAGE_TYPE_CINDER = ENUMS['storage_type_cinder']
 STORAGE_TYPE_GLUSTER = ENUMS['storage_type_gluster']
 
-STORAGE_SERVER_XTREMIO = 'xtremio'
-STORAGE_SERVER_NETAPP = 'netapp'
-
 if STORAGE_TYPE is None:
     LOCAL = PARAMETERS.get('local', None)
 else:
     LOCAL = (STORAGE_TYPE == STORAGE_TYPE_LOCAL)
 
-WAIT_FOR_DISCARD = 10
+
 STORAGE_TYPE_PROVIDERS = [STORAGE_TYPE_GLANCE, STORAGE_TYPE_CINDER]
 # We provision for posix with the subtype, like: "posixfs_subfix"
 # For the moment just revert back
@@ -156,8 +152,6 @@ GLUSTER_ADDRESS = get_list(PARAMETERS, 'gluster_data_domain_address')
 GLUSTER_PATH = get_list(PARAMETERS, 'gluster_data_domain_path')
 VFS_TYPE = ENUMS['vfs_type_glusterfs']
 SD_LIST = []
-ISCSI_STORAGE_MANAGER = get_list(PARAMETERS, 'iscsi_storage_manager')
-FCP_STORAGE_MANAGER = get_list(PARAMETERS, 'fcp_storage_manager')
 
 # Hosted engine constants
 HE_VM = "HostedEngine"
@@ -653,11 +647,3 @@ USER_DOMAIN = "%s-authz" % VDC_ADMIN_DOMAIN
 USER = 'user1'
 USER_NAME = '%s@%s' % (USER, USER_DOMAIN)
 ADMIN_USER_NAME = '%s@%s' % (VDC_ADMIN_USER, USER_DOMAIN)
-
-WORKSPACE_ENV = os.getenv('WORKSPACE')
-WORKSPACE_PATH = 'jenkins/qe/conf/infra/storageManagerWrapper.conf'
-STORAGE_CONFIG = os.path.join(WORKSPACE_ENV, WORKSPACE_PATH)
-STORAGE_SERVER = {
-    'xtremio-xms': 'xtremio',
-    'vserver-san01-iscsi01.qa.lab.tlv.redhat.com': 'netapp'
-}

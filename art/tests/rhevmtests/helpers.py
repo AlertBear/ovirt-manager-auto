@@ -11,8 +11,6 @@ import os
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import config
-from storageapi.storageErrors import GetLUNInfoError
-from storageapi.storageManagerWrapper import StorageManagerWrapper
 from art.core_api import apis_utils
 from art.rhevm_api.resources import User, Host, storage
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
@@ -502,73 +500,3 @@ def search_object(util, query, identity='name'):
     return [
         getattr(obj, identity) for obj in objects if hasattr(obj, identity)
         ]
-
-
-def get_storage_manager(storage_type, storage_server, storage_config):
-    """
-    Given the storage type manager and config, returns the storage manager
-    instance
-
-    Args:
-        storage_type (str): The type of the storage
-        storage_server (str): The storage server manager address
-        storage_config (str): The configuration file of the storage managers
-
-    Returns:
-        StorageManager: Instance of StorageManager from storage_api
-    """
-
-    assert storage_type in (
-        config.STORAGE_TYPE_ISCSI or config.STORAGE_TYPE_FCP
-    ), "Storage domain type is not block (FC/iSCSI)"
-
-    return StorageManagerWrapper(
-        storage_server, storage_type, storage_config
-    ).manager
-
-
-def get_lun_id(storage_domain, storage_manager, storage_server):
-    """
-    Connect to storage manager using StorageManager instance and fetch the
-    storage domain LUN ID
-
-    Args:
-        storage_domain (str): The name of the storage domain
-        storage_manager (StorageManager): The storage manager instance
-        storage_server (str): The storage server address
-
-    Returns:
-        str: The LUN ID as written in the storage server manager
-    """
-    lun_id = ""
-    if storage_server == config.STORAGE_SERVER_XTREMIO:
-        sd_lun_ids = ll_sd.get_storage_domain_luns_ids(storage_domain)
-        lun_id = storage_manager.get_lun_id(sd_lun_ids[0])
-    elif storage_server == config.STORAGE_SERVER_NETAPP:
-        sd_lun_serials = ll_sd.get_storage_domain_luns_serials(storage_domain)
-        lun_id = storage_manager.get_lun_id(
-            sd_lun_serials[0].split('Mode_')[-1]
-        )
-    return lun_id
-
-
-def get_lun_actual_size(storage_manager, lun_id):
-    """
-    Connects to storage server using storage_api manager instance and fetches
-    the LUN actual used size for the given LUN id
-
-    Args:
-        lun_id (str): The ID of the LUN as written in the storage server
-        storage_manager (StorageManager): Instance of StorageManager from
-            storage_api repository
-
-    Returns:
-        float or None: The actual used space of the given LUN, in GB
-    """
-    try:
-        lun_info = storage_manager.getLun(lun_id)
-    except GetLUNInfoError:
-        logger.error("Failed to get info of lun %s", lun_id)
-        return None
-    logger.info("Used space of lun: %s is: %s", lun_id, lun_info['used_size'])
-    return float(lun_info['used_size'].replace('G', '').replace('B', ''))
