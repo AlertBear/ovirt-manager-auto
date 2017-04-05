@@ -162,6 +162,7 @@ OBJECT_TYPE_TEMPLATE = "templ"
 OBJECT_TYPE_VM = "vm"
 OBJECT_TYPE_MOUNT_POINT = "mount_point"
 OBJECT_TYPE_NIC = "nic"
+OBJECT_TYPE_LUN = "lun"
 
 # These lists of keywords are useful for low_level addStorageDomain:
 # addStorageDomain(True, name='my_name', **NFS_DOMAINS_KWARGS[0])
@@ -341,3 +342,4 @@ MOUNT_POINTS = dict()
 
 # HSM Verbs
 COPY_VOLUME_VERB = 'Copying Volume'
+REBOOT_CMD = 'reboot'
