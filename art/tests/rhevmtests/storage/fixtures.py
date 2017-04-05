@@ -477,10 +477,10 @@ def create_storage_domain(request):
             "Remove storage domain %s", self.new_storage_domain
         )
         spm = hl_dc.get_spm_host(positive=True, datacenter=self.datacenter)
-        assert spm, ("Failed to find SPM on data center %s" % self.datacenter)
+        assert spm, "Failed to find SPM on data center %s" % self.datacenter
         assert hl_sd.remove_storage_domain(
             self.new_storage_domain, self.datacenter,
-            spm.get_name(), engine=config.ENGINE, format_disk=True
+            spm, engine=config.ENGINE, format_disk=True
         ), ("Failed to remove storage domain %s" % self.new_storage_domain)
     request.addfinalizer(finalizer)
 
@@ -1280,104 +1280,3 @@ def remove_hsm_host(request):
     self.hsm_host_vds = config.VDS_HOSTS[config.HOSTS.index(self.hsm_host)]
     testflow.setup("Removing host %s from the env", self.hsm_host)
     assert ll_hosts.remove_host(True, self.hsm_host, deactivate=True)
-
-
-@pytest.fixture(scope='class')
-def copy_template_disk(request):
-    """
-    Copy template disk to another storage domain
-    """
-    self = request.node.cls
-
-    testflow.setup(
-        "Copying template %s disks to storage domain %s",
-        self.template, self.new_storage_domain
-    )
-    template_disks_objs = ll_templates.getTemplateDisks(self.template)
-    template_disks = [disk.get_alias() for disk in template_disks_objs]
-    assert template_disks, "Failed to get disks of template %s" % self.template
-    for disk in template_disks:
-        ll_templates.copyTemplateDisk(
-            self.template, disk, self.new_storage_domain
-        )
-        ll_disks.wait_for_disks_status(
-            disk, timeout=ll_templates.CREATE_TEMPLATE_TIMEOUT
-        )
-
-
-@pytest.fixture(scope='class')
-def create_lun_on_storage_server(request):
-    """
-    Create a LUN on storage server and refresh hosts LUNs list by maintenance
-    and activate them
-    """
-    self = request.node.cls
-
-    def finalizer():
-        """
-        Remove the LUN from storage server. Refresh the hosts LUNs list by
-        maintenance and activate them for iSCSI and maintenance, reboot and
-        activate for FC
-        """
-        if self.new_lun_id:
-            testflow.teardown(
-                "Removing LUN %s from storage server %s", self.new_lun_id,
-                self.storage_server
-            )
-            self.storage_manager.removeLun(self.new_lun_id)
-            if self.storage == config.STORAGE_TYPE_ISCSI:
-                config.UNUSED_LUNS.pop(self.index)
-                config.UNUSED_LUN_ADDRESSES.pop(self.index)
-                config.UNUSED_LUN_TARGETS.pop(self.index)
-                testflow.teardown(
-                    "Deactivating and activating hosts %s after LUN removal",
-                    config.HOSTS
-                )
-                storage_helpers.maintenance_and_activate_hosts()
-            elif self.storage == config.STORAGE_TYPE_FCP:
-                config.UNUSED_FC_LUNS.pop(self.index)
-                testflow.teardown(
-                    "Rebooting hosts %s after LUN removal", config.HOSTS
-                )
-                storage_helpers.reboot_hosts()
-    request.addfinalizer(finalizer)
-    testflow.setup(
-        "Creating a new LUN in storage server %s", self.storage_server
-    )
-    lun_name = storage_helpers.create_unique_object_name(
-        self.__name__, config.OBJECT_TYPE_LUN
-    )
-    new_lun_size = getattr(self, 'new_lun_size', '60')
-    existing_sd = ll_sd.getStorageDomainNamesForType(
-        config.DATA_CENTER_NAME, self.storage
-    )[0]
-    existing_lun = rhevm_helpers.get_lun_id(
-        existing_sd, self.storage_manager, self.storage_server
-    )
-    self.new_lun_id, self.new_lun_identifier = (
-        self.storage_manager.create_and_map_lun(
-            lun_name, new_lun_size, existing_lun
-        )
-    )
-    assert self.new_lun_id, "Failed to get LUN ID"
-    assert self.new_lun_identifier, "Failed to get LUN identifier"
-    self.lun_params = {
-        'space-allocation': 'enabled', 'space-reserve': 'enabled'
-    }
-    if self.storage_server == config.STORAGE_SERVER_NETAPP:
-        self.storage_manager.modify_lun(
-            self.new_lun_id, **self.lun_params
-        )
-
-    if self.storage == config.STORAGE_TYPE_ISCSI:
-        config.UNUSED_LUNS.append(self.new_lun_identifier)
-        config.UNUSED_LUN_ADDRESSES.append(config.UNUSED_LUN_ADDRESSES[0])
-        config.UNUSED_LUN_TARGETS.append(config.UNUSED_LUN_TARGETS[0])
-        self.index = len(config.UNUSED_LUNS)-1
-    elif self.storage == config.STORAGE_TYPE_FCP:
-        config.UNUSED_FC_LUNS.append(self.new_lun_identifier)
-        self.index = len(config.UNUSED_FC_LUNS)-1
-    testflow.setup(
-        "Deactivating and activating hosts %s after LUN creation", config.HOSTS
-    )
-    storage_helpers.maintenance_and_activate_hosts()
