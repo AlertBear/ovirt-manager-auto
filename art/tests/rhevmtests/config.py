@@ -5,6 +5,7 @@ Consolidated config module
 import copy
 import logging
 from urlparse import urlparse
+import os
 
 from art.rhevm_api import resources
 from art.rhevm_api.utils import test_utils
@@ -647,3 +648,11 @@ USER_DOMAIN = "%s-authz" % VDC_ADMIN_DOMAIN
 USER = 'user1'
 USER_NAME = '%s@%s' % (USER, USER_DOMAIN)
 ADMIN_USER_NAME = '%s@%s' % (VDC_ADMIN_USER, USER_DOMAIN)
+
+WORKSPACE_ENV = os.getenv('WORKSPACE', '')
+WORKSPACE_PATH = 'jenkins/qe/conf/infra/storageManagerWrapper.conf'
+STORAGE_CONFIG = os.path.join(WORKSPACE_ENV, WORKSPACE_PATH)
+STORAGE_SERVER = {
+    'xtremio-xms': 'xtremio',
+    'vserver-san01-iscsi01.qa.lab.tlv.redhat.com': 'netapp'
+}
