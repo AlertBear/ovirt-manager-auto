@@ -348,9 +348,12 @@ def get_log_msg(
             with_kwargs=with_kwargs, extra_txt=extra_txt
         )
     ).strip()
+    info_text = info_text.replace("  ", "")
 
-    log_info_txt = info_text if positive else "Negative: %s" % info_text
-    log_error_txt = "%s %s" % (state, info_text)
+    log_info_txt = (
+        info_text if positive else "Negative: %s" % info_text.capitalize()
+    )
+    log_error_txt = "%s %s" % (state, info_text.lower())
     return log_info_txt, log_error_txt
 
 
@@ -426,6 +429,8 @@ def generate_logs(info=True, error=True, step=False):
             called_from = get_called_from_test(stack=stack)
             func_doc = inspect.getdoc(func)
             func_argspec = inspect.getargspec(func)
+
+            # Get function default args
             func_argspec_default = dict(
                 zip(
                     func_argspec.args[
@@ -434,7 +439,22 @@ def generate_logs(info=True, error=True, step=False):
                 )
             )
 
-            for k, v in func_argspec_default.iteritems():
+            # Get actual function args
+            func_args = dict(zip(func_argspec.args, args))
+
+            # Filter missing args from default if not sent by user
+            missing_args = dict(
+                (k, v) for k, v in func_argspec_default.iteritems() if
+                k not in func_args.keys()
+            )
+
+            # Update func_args with missing args
+            for k, v in missing_args.iteritems():
+                if k not in func_args.keys():
+                    func_args[k] = v
+
+            # Update kwargs_for_log with all args
+            for k, v in func_args.iteritems():
                 if k not in kwargs_for_log.keys():
                     kwargs_for_log[k] = v
 
