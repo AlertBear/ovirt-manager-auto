@@ -103,12 +103,15 @@ STORAGE_TYPE_GLANCE = ENUMS['storage_type_glance']
 STORAGE_TYPE_CINDER = ENUMS['storage_type_cinder']
 STORAGE_TYPE_GLUSTER = ENUMS['storage_type_gluster']
 
+STORAGE_SERVER_XTREMIO = 'xtremio'
+STORAGE_SERVER_NETAPP = 'netapp'
+
 if STORAGE_TYPE is None:
     LOCAL = PARAMETERS.get('local', None)
 else:
     LOCAL = (STORAGE_TYPE == STORAGE_TYPE_LOCAL)
 
-
+WAIT_FOR_DISCARD = 10
 STORAGE_TYPE_PROVIDERS = [STORAGE_TYPE_GLANCE, STORAGE_TYPE_CINDER]
 # We provision for posix with the subtype, like: "posixfs_subfix"
 # For the moment just revert back
@@ -153,6 +156,8 @@ GLUSTER_ADDRESS = get_list(PARAMETERS, 'gluster_data_domain_address')
 GLUSTER_PATH = get_list(PARAMETERS, 'gluster_data_domain_path')
 VFS_TYPE = ENUMS['vfs_type_glusterfs']
 SD_LIST = []
+ISCSI_STORAGE_MANAGER = get_list(PARAMETERS, 'iscsi_storage_manager')
+FCP_STORAGE_MANAGER = get_list(PARAMETERS, 'fcp_storage_manager')
 
 # Hosted engine constants
 HE_VM = "HostedEngine"

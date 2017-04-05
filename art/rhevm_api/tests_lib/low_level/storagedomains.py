@@ -40,7 +40,7 @@ from art.test_handler.settings import opts
 from art.rhevm_api.tests_lib.low_level.networks import (
     prepare_vnic_profile_mappings_object
 )
-
+from art.rhevm_api.tests_lib.low_level.general import generate_logs
 ENUMS = opts['elements_conf']['RHEVM Enums']
 ACTIVE_DOMAIN = ENUMS['storage_domain_state_active']
 DATA_DOMAIN_TYPE = ENUMS['storage_dom_type_data']
@@ -103,6 +103,14 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_host(Host(name=host_obj.get_name()))
 
     storage_type = kwargs.pop('storage_type', None)
+    if storage_type in [
+        ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']
+    ]:
+        discard_after_delete = kwargs.pop('discard_after_delete', None)
+        if discard_after_delete is not None:
+            sd.set_discard_after_delete(
+                discard_after_delete=discard_after_delete
+            )
 
     # Set storage domain metadata format - only for data domains
     if type_ and type_.lower() == DATA_DOMAIN_TYPE:
@@ -142,25 +150,32 @@ def _prepareStorageDomainObject(positive, **kwargs):
             )
         )
     elif storage_type == ENUMS['storage_type_iscsi']:
-        lun = kwargs.pop('lun', None)
-        lun_address = getIpAddressByHostName(kwargs.pop('lun_address', None))
+        logical_unit_object = None
+        lun = kwargs.get('lun', None)
+        lun_address = getIpAddressByHostName(kwargs.get('lun_address', None))
         lun_target = kwargs.pop('lun_target', None)
         lun_port = kwargs.pop('lun_port', None)
-        logical_unit = LogicalUnit(
-            id=lun, address=lun_address, target=lun_target, port=lun_port)
+        if lun and lun_address and lun_target:
+            logical_unit = LogicalUnit(
+                id=lun, address=lun_address, target=lun_target, port=lun_port
+            )
+            logical_unit_object = LogicalUnits(logical_unit=[logical_unit])
         sd.set_storage(
             HostStorage(
                 type_=storage_type,
-                logical_units=LogicalUnits(logical_unit=[logical_unit]),
+                logical_units=logical_unit_object,
                 override_luns=kwargs.pop('override_luns', None)
             )
         )
     elif storage_type == ENUMS['storage_type_fcp']:
-        logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
+        logical_unit_object = None
+        if kwargs.get('lun'):
+            logical_unit = LogicalUnit(id=kwargs.get('lun', None))
+            logical_unit_object = LogicalUnits(logical_unit=[logical_unit])
         sd.set_storage(
             HostStorage(
                 type_=storage_type,
-                logical_units=LogicalUnits(logical_unit=[logical_unit]),
+                logical_units=logical_unit_object,
                 override_luns=kwargs.pop('override_luns', None)
             )
         )
@@ -195,6 +210,9 @@ def addStorageDomain(positive, wait=True, **kwargs):
        * lun_address - lun address (for ISCSI)
        * lun_target - lun target name (for ISCSI)
        * lun_port - lun port (for ISCSI)
+       * discard_after_delete - boolean (for ISCSI and FC). Send discard
+            flag to the storage server, discard will be performed after disk
+            deletion if true. If it's None, the flag won't be sent.
        * nfs_version - version of NFS protocol
        * nfs_retrans - the number of times the NFS client retries a request
        * nfs_timeo - time before client retries NFS request
@@ -1186,6 +1204,23 @@ def get_used_size(storagedomain):
     return sdObj.get_used()
 
 
+def get_discard_after_delete(storage_domain, attribute='name'):
+    """
+    Gets the discard_after_delete flag value
+
+    Args:
+        storage_domain (str): The name or id of the storage domain
+        attribute (str): Key to look for the storage domain, name or id
+
+    Returns:
+        bool: true if discard_after_delete is set
+
+    """
+    return get_storage_domain_obj(
+        storage_domain, attribute
+    ).get_discard_after_delete()
+
+
 def _parse_mount_output_line(line):
     """
     Parses one line of mount output
@@ -1892,4 +1927,64 @@ def get_storage_domains_by_type(storage_domain_type=DATA_DOMAIN_TYPE):
     return [
         storage_domain for storage_domain in storage_domains
         if storage_domain.get_type() == storage_domain_type
+    ]
+
+
+def get_storage_domain_logical_units(storage_domain, attribute='name'):
+    """
+    Get the block storage domain logical units
+
+    Args:
+        storage_domain(str): The name or ID of the storage domain
+        attribute(str): The method to get the domain: name or ID
+
+    Returns:
+        list: The storage domain's logical units
+    """
+    assert get_storage_domain_storage_type(storage_domain) in [
+        ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']
+    ], "Storage domain is not from block type"
+
+    return get_storage_domain_obj(
+        storage_domain, attribute).get_storage().get_volume_group(
+    ).get_logical_units().get_logical_unit()
+
+
+def get_storage_domain_luns_ids(storage_domain, attribute='name'):
+    """
+    Get the block storage domain's LUNs IDs
+
+    Args:
+        storage_domain (str): The name or ID of the storage domain
+        attribute (str): The method to get the domain: name or ID
+
+    Returns:
+        list: The LUNs IDs of the storage domain
+    """
+    sd_logical_units = get_storage_domain_logical_units(
+        storage_domain, attribute
+    )
+
+    return [
+        sd_logical_units[x].get_id() for x in range(len(sd_logical_units))
+    ]
+
+
+@generate_logs()
+def get_storage_domain_luns_serials(storage_domain, attribute='name'):
+    """
+    Get the storage domain LUNs serial numbers
+
+    Args:
+        storage_domain (str): Name of storage domain
+        attribute (str): The method to get the domain: name or ID
+    Returns:
+        list: The serial numbers of storage domain's LUNs
+    """
+    sd_logical_units = get_storage_domain_logical_units(
+        storage_domain, attribute
+    )
+
+    return [
+        sd_logical_units[x].get_serial() for x in range(len(sd_logical_units))
     ]

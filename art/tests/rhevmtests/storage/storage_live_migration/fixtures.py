@@ -352,7 +352,7 @@ def add_two_storage_domains(request):
     )
     for index, sd_name in zip(xrange(2), [self.sd_src, self.sd_target]):
         testflow.setup("Add ISCSI storage domain %s", sd_name)
-        assert hl_sd.addISCSIDataDomain(
+        assert hl_sd.add_iscsi_data_domain(
             host=self.spm, storage=sd_name,
             data_center=config.DATA_CENTER_NAME, lun=config.UNUSED_LUNS[index],
             lun_address=config.UNUSED_LUN_ADDRESSES[index],

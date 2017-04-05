@@ -183,7 +183,7 @@ def create_storage_domains_for_upgrade(request):
     if config.ISCSI in self.storage_types_for_exec:
         self.iscsi_sd_name = 'upgrade_%s_to_%s_iSCSI' % self.name_pattern
         testflow.setup("Adding iSCSI storage domain needed for tests")
-        assert hl_sd.addISCSIDataDomain(
+        assert hl_sd.add_iscsi_data_domain(
             self.host_name, self.iscsi_sd_name, self.new_dc_name, self.sd_lun,
             self.sd_lun_address, self.sd_lun_target,
             storage_format=self.storage_format, override_luns=True
@@ -218,7 +218,7 @@ def create_storage_domains_for_upgrade(request):
         if config.FCP in self.storage_types_for_exec:
             self.fcp_sd_name = 'upgrade_%s_to_%s_FCP' % self.name_pattern
             testflow.setup("Adding FCP storage domain needed for tests")
-            assert hl_sd.addFCPDataDomain(
+            assert hl_sd.add_fcp_data_domain(
                 self.host_name, self.fcp_sd_name, self.new_dc_name,
                 self.sd_fc_lun, override_luns=True
             ), "Failed to create FCP Storage domain '%s'" % self.fcp_sd_name

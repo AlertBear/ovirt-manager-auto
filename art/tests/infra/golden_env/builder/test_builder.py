@@ -301,7 +301,7 @@ class CreateDC(TestCase):
                 if storage_exist:
                     continue
                 login_all = False if config.PPC_ARCH else True
-                assert storagedomains.addISCSIDataDomain(
+                assert storagedomains.add_iscsi_data_domain(
                     host,
                     sd_name,
                     datacenter_name,
@@ -344,7 +344,7 @@ class CreateDC(TestCase):
                 fcp = storage_conf.get_fcp_share()
                 if storage_exist:
                     continue
-                assert storagedomains.addFCPDataDomain(
+                assert storagedomains.add_fcp_data_domain(
                     host,
                     sd_name,
                     datacenter_name,
