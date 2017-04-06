@@ -16,6 +16,10 @@ import helper
 class TestVirtConsoleClass(VirtTest):
 
     @polarion('RHEVM3-12357')
+    @pytest.mark.skipif(
+        vcons_conf.PPC_ARCH,
+        reason=vcons_conf.PPC_SKIP_MESSAGE
+    )
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
         fixtures.shutdown_vm.__name__

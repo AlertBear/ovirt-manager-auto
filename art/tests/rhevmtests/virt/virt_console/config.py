@@ -3,7 +3,8 @@ Virt - serial console config
 """
 
 import uuid
-from rhevmtests.virt.config import *  # noqa
+import pytest
+from rhevmtests.virt.config import *  # noqa: F403
 from rhevmtests import helpers
 from rhevmtests.networking import config as net_conf
 from art.test_handler.tools import polarion, bz
@@ -57,12 +58,13 @@ IMPORT_EXPORT_HEADLESS_VAL = [
 HEADLESS_STATE_ARGS = "console_protocol,  obj_name, obj_type"
 HEADLESS_STATE_PARAMS = [
     polarion("RHEVM-19537")(
-        [
-            "spice",
-            VIRT_CONSOLE_VM_SYSTEM,
-            "vm"
-         ]
-    ),
+        pytest.mark.skipif(PPC_ARCH, reason=PPC_SKIP_MESSAGE)(  # noqa: F405
+            [
+                "spice",
+                VIRT_CONSOLE_VM_SYSTEM,
+                "vm"
+            ]
+        )),
     polarion("RHEVM-19538")(
         [
             "vnc",
@@ -71,19 +73,21 @@ HEADLESS_STATE_PARAMS = [
         ]
     ),
     polarion("RHEVM-19539")(
-        [
-            "spice_plus_vnc",
-            VIRT_CONSOLE_VM_SYSTEM,
-            "vm"
-        ]
-    ),
+        pytest.mark.skipif(PPC_ARCH, reason=PPC_SKIP_MESSAGE)(  # noqa: F405
+            [
+                "spice_plus_vnc",
+                VIRT_CONSOLE_VM_SYSTEM,
+                "vm"
+            ]
+        )),
     polarion("RHEVM-19540")(
-        [
-            "spice",
-            VIRT_CONSOLE_TEMPLATE,
-            "template"
-        ]
-    ),
+        pytest.mark.skipif(PPC_ARCH, reason=PPC_SKIP_MESSAGE)(  # noqa: F405
+            [
+                "spice",
+                VIRT_CONSOLE_TEMPLATE,
+                "template"
+            ]
+        )),
     polarion("RHEVM-19541")(
         [
             "vnc",
@@ -92,12 +96,13 @@ HEADLESS_STATE_PARAMS = [
         ]
     ),
     polarion("RHEVM-19542")(
-        [
-            "spice_plus_vnc",
-            VIRT_CONSOLE_TEMPLATE,
-            "template"
-        ]
-    ),
+        pytest.mark.skipif(PPC_ARCH, reason=PPC_SKIP_MESSAGE)(  # noqa: F405
+            [
+                "spice_plus_vnc",
+                VIRT_CONSOLE_TEMPLATE,
+                "template"
+            ]
+        )),
     polarion("RHEVM-19543")(
         [
             "spice",
@@ -123,9 +128,15 @@ HEADLESS_STATE_PARAMS = [
 
 VV_FILE_ARGS = "console_protocol"
 VV_FILE_VALUES_PARAMS = [
-    polarion("RHEVM-19534")("spice"),
+    polarion("RHEVM-19534")(
+        pytest.mark.skipif(PPC_ARCH, reason=PPC_SKIP_MESSAGE)  # noqa: F405
+        ("spice")
+    ),
     polarion("RHEVM-19535")("vnc"),
-    polarion("RHEVM-19536")("spice_plus_vnc"),
+    polarion("RHEVM-19536")(
+        pytest.mark.skipif(PPC_ARCH, reason=PPC_SKIP_MESSAGE)  # noqa: F405
+        ("spice_plus_vnc")
+    ),
 ]
 
 VV_FILE_FIELDS_PARAMS = [
