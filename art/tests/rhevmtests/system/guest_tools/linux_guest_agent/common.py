@@ -2,10 +2,13 @@ import ast
 import logging
 import shlex
 import re
+import pytest
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.unittest_lib import CoreSystemTest as TestCase
-from art.rhevm_api.tests_lib.low_level import vms, storagedomains, hosts, disks
+from art.rhevm_api.tests_lib.low_level import (
+    vms, storagedomains, hosts, disks, clusters
+)
 from art.rhevm_api.utils import test_utils
 from art.unittest_lib import testflow
 
@@ -16,6 +19,10 @@ from art.rhevm_api.resources import Host, RootUser
 VM_API = test_utils.get_api('vm', 'vms')
 HOST_API = test_utils.get_api('host', 'hosts')
 logger = logging.getLogger(__name__)
+
+GA_HOOKS_FOLDER = "/etc/ovirt-guest-agent/hooks.d"
+HOOK_NAME = "10_test"
+PREFIX = "hooks"
 
 
 def import_image(diskName, async=True):
@@ -93,11 +100,33 @@ class GABaseTestCase(TestCase):
     __test__ = False
     stats = 'vdsClient -s 0 getVmStats'
 
+    @pytest.fixture(scope="function")
+    def clean_after_hooks(self, request):
+        def fin():
+            testflow.teardown(
+                "Remove all files from /tmp starting with %s", PREFIX
+            )
+            self.machine.fs.remove("/tmp/%s*" % PREFIX)
+            testflow.teardown("Remove created hooks")
+            self.machine.fs.remove(
+                "{0}/*/{1}".format(GA_HOOKS_FOLDER, HOOK_NAME)
+            )
+            testflow.teardown(
+                "Update cluster %s to migration policy %s",
+                config.CLUSTER_NAME[0], config.MIGRATION_POLICY_LEGACY
+            )
+            clusters.updateCluster(
+                True, config.CLUSTER_NAME[0],
+                migration_policy_id=config.MIGRATION_POLICY_LEGACY
+            )
+        request.addfinalizer(fin)
+
     @classmethod
     def ga_base_setup(cls):
         image = config.TEST_IMAGES[cls.disk_name]
         cls.vm_id = image['id']
         cls.machine = image['machine']
+        cls.ga_hooks = GAHooks(cls.machine, cls.vm_name)
 
     def upgrade_guest_agent(self, package):
         testflow.step("Installing package %s", package)
@@ -326,3 +355,109 @@ class GABaseTestCase(TestCase):
             return None
 
         return out.strip()
+
+
+class GAHooks:
+    """ Base class for guest agent hooks tests """
+    def __init__(self, machine, vm_name):
+        """
+        Initialize GA hooks object
+
+        Args:
+            machine (Host): VM object
+            vm_name (str): name of VM
+        """
+        self.machine = machine
+        self.vm_name = vm_name
+
+    def create_hooks(self, action):
+        """
+        Create GA hooks on VM
+
+        Args:
+            action (str): migration/hibernation
+        """
+        for folder in (
+            "{0}_{1}".format(time, action)
+            for time in ["before", "after"]
+        ):
+            test_filename = "/tmp/{0}_{1}".format(PREFIX, folder)
+            file_content = "#!/bin/bash\n\ntouch {0}\n".format(
+                test_filename
+            )
+            hook_path = "{0}/{1}/{2}".format(
+                GA_HOOKS_FOLDER, folder, HOOK_NAME
+            )
+            testflow.step(
+                "Create hook file %s with content: %s",
+                hook_path, file_content
+            )
+            self.machine.fs.create_script(file_content, hook_path)
+
+    def check_file_existence(self, filename):
+        """
+        Check if file exists in /tmp folder
+
+        Args:
+            filename (str): filename to check
+
+        Returns:
+            bool: True if file was found, False otherwise
+        """
+        return self.machine.fs.exists("/tmp/%s" % filename)
+
+    def check_both_tmp_files(self, positive, action):
+        """
+        Check if both before and after files of action exists
+
+        Args:
+            positive (bool): files should or should not be present
+            action (str): migration/hibernation
+        """
+        for filename in (
+            "{0}_{1}_{2}".format(PREFIX, time, action)
+            for time in ["before", "after"]
+        ):
+            testflow.step("Check if file %s exists in /tmp", filename)
+            assert self.check_file_existence(filename) is positive, (
+                "File {0} {1} exist".format(
+                    filename, "should" if positive else "shouldn't"
+                )
+            )
+
+    def hooks_test(
+            self, positive, action,
+            policy=config.MIGRATION_POLICY_SUSPEND_WORK_IF_NEEDED
+    ):
+        """
+        Basic test if GA hooks for migration are executed
+
+        Args:
+            positive (bool): test result should be positive or negative
+            action (str): migration/hibernation
+            policy (str): ID of migration policy to use
+        """
+        testflow.step(
+            "Update cluster %s to migration policy %s",
+            config.CLUSTER_NAME[0], policy
+        )
+        clusters.updateCluster(
+            True, config.CLUSTER_NAME[0], migration_policy_id=policy
+        )
+        testflow.step("Create hooks for action %s", action)
+        self.create_hooks(action)
+        if action == "migration":
+            testflow.step("Migrate VM %s", self.vm_name)
+            vms.migrateVm(True, self.vm_name)
+        elif action == "hibernation":
+            testflow.step("Suspend VM %s", self.vm_name)
+            vms.suspendVm(True, self.vm_name)
+            testflow.step("Start VM %s", self.vm_name)
+            vms.startVm(True, self.vm_name, wait_for_status=config.VM_UP)
+        else:
+            logger.error("Invalid action")
+        testflow.step(
+            "Check if both files from hooks for action %s %s created",
+            action, "were" if positive else "were not"
+        )
+        self.check_both_tmp_files(positive, action)
