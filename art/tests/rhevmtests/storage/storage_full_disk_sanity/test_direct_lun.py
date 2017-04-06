@@ -478,6 +478,9 @@ class TestCase5913(DirectLunAttachTestCase):
         ), "Failed to add direct LUN with shareable attribute set to 'true'"
 
 
+@pytest.mark.usefixtures(
+    delete_direct_lun_disk.__name__,
+)
 class TestCase5918(DirectLunAttachTestCase):
     """
     Update a direct LUN attached to VM
