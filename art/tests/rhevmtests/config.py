@@ -111,7 +111,6 @@ if STORAGE_TYPE is None:
 else:
     LOCAL = (STORAGE_TYPE == STORAGE_TYPE_LOCAL)
 
-WAIT_FOR_DISCARD = 10
 STORAGE_TYPE_PROVIDERS = [STORAGE_TYPE_GLANCE, STORAGE_TYPE_CINDER]
 # We provision for posix with the subtype, like: "posixfs_subfix"
 # For the moment just revert back

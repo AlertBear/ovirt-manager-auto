@@ -112,9 +112,11 @@ def init_storage_manager(request):
         config.STORAGE_TYPE_ISCSI
     ) else config.FCP_STORAGE_MANAGER[0]
 
+    # Initialize the storage manager with iscsi as the storage type since
+    # storage_api has only iscsi manager which is good also for fc
     self.storage_manager = (
         rhevm_helpers.get_storage_manager(
-            self.storage, manager, config.STORAGE_CONFIG
+            config.STORAGE_TYPE_ISCSI, manager, config.STORAGE_CONFIG
         )
     )
     self.storage_server = config.STORAGE_SERVER[manager]

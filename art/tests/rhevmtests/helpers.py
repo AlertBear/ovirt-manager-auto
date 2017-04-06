@@ -517,11 +517,6 @@ def get_storage_manager(storage_type, storage_server, storage_config):
     Returns:
         StorageManager: Instance of StorageManager from storage_api
     """
-
-    assert storage_type in (
-        config.STORAGE_TYPE_ISCSI or config.STORAGE_TYPE_FCP
-    ), "Storage domain type is not block (FC/iSCSI)"
-
     return StorageManagerWrapper(
         storage_server, storage_type, storage_config
     ).manager

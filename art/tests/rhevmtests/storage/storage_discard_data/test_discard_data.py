@@ -14,6 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms
 )
+from art.unittest_lib.fixtures import skip_invalid_storage_type  # noqa F401
 from rhevmtests.storage.fixtures import (
     create_storage_domain, copy_template_disk, create_lun_on_storage_server
 )
@@ -23,17 +24,12 @@ from fixtures import (
 )
 
 
-@pytest.mark.usefixtures(
-    init_storage_manager.__name__,
-    create_lun_on_storage_server.__name__,
-    create_storage_domain.__name__,
-)
 class BaseTestCase(TestCase):
     """
     Common class for all tests with some common methods
     """
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_FCP])
-    index = None
+    __test__ = False
 
     def perform_delete(self):
         """
@@ -149,6 +145,9 @@ class BaseTestCase(TestCase):
 
 
 @pytest.mark.usefixtures(
+    init_storage_manager.__name__,
+    create_lun_on_storage_server.__name__,
+    create_storage_domain.__name__,
     copy_template_disk.__name__,
     create_vm_for_test.__name__,
     start_vm_for_test.__name__,
@@ -160,6 +159,7 @@ class BaseDelete(BaseTestCase):
     Basic class for various delete verbs
     """
     __test__ = False
+    index = None
     create_domain_kwargs = {'discard_after_delete': True}
     template = config.TEMPLATE_NAME[0]
     delete_verb = None
@@ -176,6 +176,9 @@ class BaseDelete(BaseTestCase):
         self.discard_basic_flow()
 
 
+@pytest.mark.usefixtures(
+    create_storage_domain.__name__
+)
 class TestCase19569(BaseTestCase):
     """
     RHEVM-19569 Update storage domain with discard to true
@@ -217,13 +220,13 @@ class DiscardVariousDeleteVerbs(BaseDelete):
     after delete validation
     """
     # TODO:
-    # Due storage server issues (XtremIO LUN mapping failures and Netapp not
+    # Due to storage server issues (XtremIO LUN mapping failures and Netapp not
     # reclaiming LUN used space upon deletion), all the cases in this class
     # won't be tested until issues are fixed
     __test__ = False
 
     @polarion("RHEVM3-17273")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_delete_disk(self):
         """
         RHEVM-17273 Discard data after disk deletion
@@ -233,7 +236,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_both_allocation_policies()
 
     @polarion("RHEVM3-17572")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_live_merge(self):
         """
         RHEVM-17572 Discard data after live merge of snapshot
@@ -243,7 +246,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_snapshot_flows()
 
     @polarion("RHEVM3-17573")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_cold_merge(self):
         """
         RHEVM-17573 Discard data after cold merge of snapshot
@@ -253,7 +256,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_snapshot_flows()
 
     @polarion("RHEVM3-17574")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_merge_with_memory(self):
         """
         RHEVM-17574 Discard data after deletion of snapshot with memory
@@ -263,7 +266,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_snapshot_flows()
 
     @polarion("RHEVM3-17575")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_restore_snapshot(self):
         """
         RHEVM-17575 Discard data after preview and commit of snapshot
@@ -273,7 +276,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_snapshot_flows()
 
     @polarion("RHEVM3-17576")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_snapshot_preview_and_undo(self):
         """
         Checking basic flow with snapshot preview and undo as delete verb
@@ -283,7 +286,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_snapshot_flows()
 
     @polarion("RHEVM3-19397")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_restore_snapshot_with_memory(self):
         """
         Checking basic flow with restore snapshot with memory delete verb
@@ -293,7 +296,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_snapshot_flows()
 
     @polarion("RHEVM3-19398")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_remove_snapshot_single_disk(self):
         """
         Checking basic flow with remove snapshot single disk delete verb
@@ -303,7 +306,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_snapshot_flows()
 
     @polarion("RHEVM3-17571")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_cold_move(self):
         """
         RHEVM-17571 Discard data after move disk on VM that is down
@@ -313,7 +316,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.discard_both_allocation_policies()
 
     @polarion("RHEVM3-19396")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_discard_data_after_live_storage_migration(self):
         """
         Checking basic flow with live storage migration delete verb
