@@ -11,6 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
 
     storagedomains as ll_sds,
     vms as ll_vms,
+    hosts as ll_hosts,
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.tools import polarion
@@ -52,6 +53,7 @@ class TestCase11591(TestCase):
         """
         Creates and extends a storage domain
         """
+        self.spm = ll_hosts.get_spm_host(config.HOSTS)
         extend_lun = {
             "lun_list": [config.UNUSED_LUNS["lun_list"][1]],
             "lun_addresses": [config.UNUSED_LUNS["lun_addresses"][1]],
