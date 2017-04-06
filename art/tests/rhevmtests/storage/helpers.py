@@ -77,6 +77,10 @@ CREATE_DISK_LABEL_CMD = '/sbin/parted %s --script -- mklabel gpt'
 CREATE_DISK_PARTITION_CMD = \
     '/sbin/parted %s --script -- mkpart primary ext4 0 100%%'
 DEVICE_SIZE_CMD = 'lsblk -o NAME,SIZE | grep %s'
+REGEX_UUID = (
+    'UUID="(?P<uuid>[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}'
+    '-?[89ab][a-f0-9]{3}-?[a-f0-9]{12})"'
+)
 NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
@@ -1391,7 +1395,8 @@ def create_filesystem(
     Raises:
          AssertionError: In case of any failure
     """
-    create_fs_cmd = CREATE_FILESYSTEM_CMD % (fs, device + partition)
+    device_name = device + partition
+    create_fs_cmd = CREATE_FILESYSTEM_CMD % (fs, device_name)
     out = _run_cmd_on_remote_machine(vm_name, create_fs_cmd, executor)
     assert out, (
         errors.CreateFileSystemError(create_fs_cmd, out)
@@ -1409,8 +1414,18 @@ def create_filesystem(
                 "failed to create target directory" % out
             )
         )
-        fstab_line = '%s %s %s defaults 0 0' % (
-            device + partition, targetDir, fs
+        rc, out, error = executor.run_cmd(
+            shlex.split("blkid {0}".format(device_name))
+        )
+        assert not rc, (
+            "Failed to get the UUID of device {0} {1}".format(
+                device_name, error
+            )
+        )
+        uuid_regex = re.search(REGEX_UUID, out)
+        assert uuid_regex, "Failed to find UUUID in output {0}".format(out)
+        fstab_line = 'UUID="%s" %s %s defaults 0 0' % (
+            uuid_regex.group('uuid'), targetDir, fs
         )
         insert_to_fstab = (
             'echo "{0}" >> {1}'.format(fstab_line, '/etc/fstab')
