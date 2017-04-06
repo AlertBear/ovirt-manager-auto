@@ -85,7 +85,7 @@ VDC_ADMIN_USER = REST_CONNECTION['user']
 VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 ENGINE_URL = '%s://%s:%s/%s' % (
-    REST_CONNECTION.get('scheme'),
+    REST_CONNECTION.get('schema'),
     VDC_HOST,
     VDC_PORT,
     ENGINE_ENTRY_POINT

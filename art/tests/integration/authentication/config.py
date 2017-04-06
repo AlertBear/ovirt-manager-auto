@@ -162,7 +162,7 @@ VDC_PASSWORD = REST_CONNECTION['password']
 VDC_PORT = REST_CONNECTION['port']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 ENGINE_URL = '%s://%s:%s/%s' % (
-    REST_CONNECTION.get('scheme'),
+    REST_CONNECTION.get('schema'),
     VDC_HOST,
     VDC_PORT,
     ENGINE_ENTRY_POINT

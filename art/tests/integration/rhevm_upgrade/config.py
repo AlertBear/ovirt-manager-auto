@@ -63,7 +63,7 @@ VDC_ADMIN_DOMAIN = 'internal'
 VDC_PORT = REST_CONNECTION['port']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 ENGINE_URL = '%s://%s:%s/%s' % (
-    REST_CONNECTION.get('scheme'),
+    REST_CONNECTION.get('schema'),
     RHEVM_NAME,
     VDC_PORT,
     ENGINE_ENTRY_POINT

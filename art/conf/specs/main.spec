@@ -20,7 +20,7 @@ storage_type = option('nfs', 'iscsi', 'fcp', 'glusterfs', 'posixfs_nfs', 'posixf
 golden_environment = string(default=None)
 
 [REST_CONNECTION]
-scheme = option('http', 'https', default='http')
+schema = option('http', 'https', default='http')
 host = is_alive()
 port = integer(default=80)
 user = string()
