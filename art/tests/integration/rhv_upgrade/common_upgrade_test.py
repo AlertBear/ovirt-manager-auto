@@ -41,17 +41,29 @@ Skipping tests after or before upgrade:
 
 import logging
 
+import pytest
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_cluster,
+    datacenters as ll_dc
+)
+from art.test_handler.tools import polarion
+from art.unittest_lib import (
+    testflow, UpgradeTest, order_upgrade, order_upgrade_hosts,
+    order_upgrade_cluster, order_upgrade_dc,
+)
 from utilities.ansible_runner import (
     run_ansible_playbook,
     prepare_env_group_vars
 )
-from art.unittest_lib import testflow, UpgradeTest, order_upgrade
 
 import config
+import helpers
+from upgrade_fixtures import populate_host_list
 
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.usefixtures(populate_host_list.__name__)
 class TestUpgradeCommon(UpgradeTest):
     __test__ = True
 
@@ -78,3 +90,43 @@ class TestUpgradeCommon(UpgradeTest):
             rc, out, err
         )
         assert not rc, log_msg
+
+    @polarion("RHEVM3-14102")
+    @order_upgrade_hosts
+    def test_upgrade_hosts_rhel(self):
+        """
+        Upgrade RHEL hosts
+        """
+        assert helpers.upgrade_hosts(config.hosts_rhel_names)
+
+    @polarion("RHEVM3-14441")
+    @order_upgrade_hosts
+    def test_upgrade_hosts_rhvh(self):
+        """
+        Upgrade RHV-H hosts
+        """
+        assert helpers.upgrade_hosts(config.hosts_rhvh_names)
+
+    @polarion("RHEVM3-14271")
+    @order_upgrade_cluster
+    def test_upgrade_clusters(self):
+        """
+        This tests upgrades all clusters to latest versions
+        """
+        for cluster in ll_cluster.get_cluster_names_list():
+            testflow.step("Upgrading cluster %s", cluster)
+            assert ll_cluster.updateCluster(
+                True, cluster, version=config.current_version
+            )
+
+    @polarion("RHEVM3-14441")
+    @order_upgrade_dc
+    def test_upgrade_dcs(self):
+        """
+        This tests upgrades all datacenters to latest versions
+        """
+        for dc in ll_dc.get_datacenters_names_list():
+            testflow.step("Upgrading datacenter %s", dc)
+            assert ll_dc.update_datacenter(
+                True, dc, version=config.current_version
+            )

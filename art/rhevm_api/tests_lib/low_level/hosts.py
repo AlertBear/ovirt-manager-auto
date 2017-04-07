@@ -2235,3 +2235,18 @@ def remove_affinity_label(host_name, affinity_label_name):
         element_type="host",
         affinity_label_name=affinity_label_name
     )
+
+
+def check_host_upgrade(host_name):
+    """
+    Check for update of packages on host by engine
+    Note: this is async task
+
+    Args:
+        host_name (str): Name of the host to be check upgrade for
+
+    Returns:
+        bool: True if action succeeds otherwise False
+    """
+    host = get_host_object(host_name=host_name)
+    return bool(HOST_API.syncAction(host, 'upgradecheck', True))

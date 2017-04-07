@@ -20,6 +20,11 @@ next run of pytest on upgraded version.
 
 import inspect
 import logging
+
+from art.rhevm_api import resources
+import pytest
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+
 import config
 
 logger = logging.getLogger(__name__)
@@ -63,3 +68,40 @@ def skip_after_upgrade_check():
         )
         return True
     return False
+
+
+@pytest.fixture(scope="session")
+def populate_host_list():
+    """
+    Populate list of hosts in GE
+
+    Raises:
+          EnvironmnentError: if hosts do not exist
+    """
+    host_objs = ll_hosts.get_host_list()
+    if not host_objs:
+        raise EnvironmentError("This environment doesn't include hosts")
+    logger.info(
+        "This GE includes the following hosts: %s",
+        [host_obj.name for host_obj in host_objs]
+    )
+    for host in host_objs:
+        config.hosts.add(host.name)
+
+        host_type = host.get_type()
+
+        resource_host = resources.Host(host.address)
+        resource_host.users.append(
+            resources.RootUser(config.root_password)
+        )
+
+        if host_type == config.HOST_RHEL_TYPE:
+            config.hosts_rhel.add(resource_host)
+            config.hosts_rhel_names.add(host.name)
+        elif host_type == config.HOST_RHVH_TYPE:
+            config.hosts_rhvh.add(resource_host)
+            config.hosts_rhvh_names.add(host.name)
+        else:
+            raise EnvironmentError("Unknown host type {} - {} [{}]".format(
+                host_type, host.name, host.address
+            ))
