@@ -549,7 +549,7 @@ ENGINE = resources.Engine(
         VDC_PASSWORD,
         resources.Domain(VDC_ADMIN_DOMAIN),
     ),
-    schema=REST_CONNECTION.get('schema'),
+    schema=REST_CONNECTION.get('scheme'),
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
 )
