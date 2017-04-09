@@ -204,8 +204,8 @@ class CPUHotPlugClass(common.VirtTest):
 
     @polarion("RHEVM3-9630")
     @pytest.mark.usefixtures(
-        set_cpu_toplogy.__name__, enable_cluster_cpu_threading.__name__,
-        base_setup_fixture.__name__
+        base_setup_fixture.__name__, set_cpu_toplogy.__name__,
+        enable_cluster_cpu_threading.__name__,
     )
     @pytest.mark.args_marker(placement_host=0)
     @common.attr(tier=2)
