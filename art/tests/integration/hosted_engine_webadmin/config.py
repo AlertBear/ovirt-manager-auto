@@ -53,12 +53,13 @@ ENGINE = resources.Engine(
         VDC_PASSWORD,
         resources.Domain(VDC_ADMIN_DOMAIN),
     ),
-    schema=REST_CONNECTION.get("schema"),
+    schema=REST_CONNECTION.get("scheme"),
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
 )
 
 HE_VM_NAME = "HostedEngine"
+HE_SD_NAME = "hosted_storage"
 STORAGE_TYPE = PARAMETERS.get("storage_type")
 
 OVF_UPDATE_INTERVAL = "OvfUpdateIntervalInMinutes"
@@ -72,6 +73,7 @@ WAIT_FOR_OVF_UPDATE = 90
 HOSTED_ENGINE_CMD = "hosted-engine"
 
 SAMPLER_TIMEOUT = 600
+UPDATE_HE_STATS_TIMEOUT = 120
 SAMPLER_SLEEP = 30
 
 # Maintenance modes for HE

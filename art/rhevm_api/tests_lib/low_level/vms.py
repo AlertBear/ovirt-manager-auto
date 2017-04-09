@@ -5654,3 +5654,26 @@ def get_qcow_version_disks_snapshot(vm, snapshot):
         snapshot_disk.get_qcow_version() for snapshot_disk in
         get_snapshot_disks(vm, snapshot)
     ]
+
+
+@ll_general.generate_logs(step=True)
+def set_he_global_maintenance(vm_name, enabled):
+    """
+    Set hosted engine global maintenance
+
+    Args:
+        vm_name (str): Hosted engine VM name
+        enabled (bool): Enable/Disable global maintenance
+
+    Returns:
+        bool: True, if the action succeeded, otherwise False
+    """
+    vm_obj = get_vm(vm=vm_name)
+    return bool(
+        VM_API.syncAction(
+            entity=vm_obj,
+            action="maintenance",
+            positive=True,
+            maintenance_enabled=enabled
+        )
+    )

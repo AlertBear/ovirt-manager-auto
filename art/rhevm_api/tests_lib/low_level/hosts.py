@@ -2141,6 +2141,7 @@ def get_host_device_id_by_name(host_name, device_name):
         return host_device_obj.get_id()
 
 
+@ll_general.generate_logs()
 def get_hosted_engine_obj(host_name):
     """
     Get host hosted-engine object

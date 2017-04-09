@@ -9,6 +9,7 @@ import art.core_api.apis_exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as test_libs
+import art.unittest_lib as u_libs
 import config as conf
 from art.core_api.apis_utils import TimeoutingSampler
 
@@ -271,3 +272,82 @@ def wait_until_host_will_deploy_he(
             "Host does not HE configured after %s seconds", timeout
         )
         return False
+
+
+def get_hosts_he_attrs(hosts_names, he_attr):
+    """
+    Get hosts hosted engine attribute values
+
+    Args:
+        hosts_names (list): Hosts names
+        he_attr (str): Hosted engine object attribute name
+
+    Returns:
+        list: Hosts hosted engine attribute values
+    """
+    hosts_he_attr_values = list()
+    for host_name in hosts_names:
+        host_he_obj = ll_hosts.get_hosted_engine_obj(host_name=host_name)
+        if not host_he_obj:
+            return list()
+        host_he_attr_value = getattr(host_he_obj, he_attr)
+        logger.debug(
+            "Host %s hosted engine attribute %s: %s",
+            host_name, he_attr, host_he_attr_value
+        )
+        hosts_he_attr_values.append(host_he_attr_value)
+
+    return hosts_he_attr_values
+
+
+def wait_for_hosts_he_attributes(
+    hosts_names,
+    expected_values,
+    timeout=conf.UPDATE_HE_STATS_TIMEOUT,
+    sleep=conf.SAMPLER_SLEEP
+):
+    """
+    Wait until hosts will have hosted engine attributes
+    values equal to the expected values
+
+    Args:
+        hosts_names (list): Host names
+        expected_values (dict): Expected values
+            {he_attr_name: he_attr_expected_values, ...}
+        timeout (int): Sampler timeout in seconds
+        sleep (int): Sampler sleep interval in seconds
+
+    Returns:
+        bool: True, if all hosts have hosted engine attributes values equal
+            to expected values, otherwise False
+    """
+    for he_attr, expected_value in expected_values.iteritems():
+        u_libs.testflow.step(
+            "Wait until the HE attribute %s of hosts %s will be equal to %s",
+            he_attr, hosts_names, expected_value
+        )
+        sampler = TimeoutingSampler(
+            timeout=timeout,
+            sleep=sleep,
+            func=get_hosts_he_attrs,
+            hosts_names=hosts_names,
+            he_attr=he_attr
+        )
+        try:
+            for sample in sampler:
+                status = all(
+                    [
+                        host_he_attr_value == expected_value
+                        for host_he_attr_value in sample
+                    ]
+                )
+                if status:
+                    break
+        except exceptions.APITimeout:
+            logger.error(
+                "Hosts %s does not have the expected %s"
+                "HE attribute value after %s seconds",
+                hosts_names, expected_values, timeout
+            )
+            return False
+    return True
