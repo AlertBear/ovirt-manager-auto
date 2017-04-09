@@ -52,9 +52,6 @@ def initialize_vm_and_template_names(request):
     self.vm_cloned2 = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_VM
     ) + '_cloned_2'
-    self.template_name = storage_helpers.create_unique_object_name(
-        self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
-    ) + '_template_original'
     self.from_template1 = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
     ) + '_1'
@@ -130,3 +127,15 @@ def fetch_golden_template_name(request):
     self.template_name = rhevm_helpers.get_golden_template_name(
         config.CLUSTER_NAME
     )
+
+
+@pytest.fixture(scope='class')
+def initialize_first_template_name(request):
+    """
+    Create unique name for first template
+    """
+    self = request.node.cls
+
+    self.template_name = storage_helpers.create_unique_object_name(
+        self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
+    ) + '_template_original'

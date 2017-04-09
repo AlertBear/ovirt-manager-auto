@@ -13,6 +13,7 @@ from art.unittest_lib import StorageTest as TestCase, attr
 from art.unittest_lib.common import testflow
 from rhevmtests.storage.storage_full_import_export.fixtures import (
     initialize_export_domain_param, initialize_vm_and_template_names,
+    initialize_first_template_name,
 )
 from rhevmtests.storage.fixtures import (
     create_vm, create_template, export_vm, export_template,
@@ -26,6 +27,7 @@ from rhevmtests.storage.fixtures import remove_vm  # noqa
     initialize_export_domain_param.__name__,
     initialize_vm_and_template_names.__name__,
     create_vm.__name__,
+    initialize_first_template_name.__name__,
     create_template.__name__,
     export_vm.__name__,
     export_template.__name__,
