@@ -593,6 +593,10 @@ class CreateDC(TestCase):
                 name=template_name,
                 cluster=cluster
             )
+            # Update template properties
+            self.update_template_properties(
+                template_name, template,
+            )
 
     def add_glance_templates(
         self, glance_templates, data_center, cluster, existing_templates
@@ -627,6 +631,10 @@ class CreateDC(TestCase):
                 new_template_name=glance_template_name,
                 import_as_template=True,
                 async=False,
+            )
+            # Update template properties
+            self.update_template_properties(
+                glance_template_name, glance_template
             )
             self.add_nic_to_glance_template(glance_template_name)
             assert ll_templates.waitForTemplatesStates(glance_template_name)
@@ -687,6 +695,22 @@ class CreateDC(TestCase):
                 cluster=cluster,
                 name=export_template['name']
             )
+            # Update properties of template
+            self.update_template_properties(
+                export_template['name'], export_template,
+            )
+
+    def update_template_properties(self, name, properties):
+        whitelisted_properties = (
+            'cpu_cores',
+            'memory',
+        )
+        kwargs = dict(
+            (key, value) for key, value in properties.items()
+            if key in whitelisted_properties
+        )
+        if kwargs:
+            assert ll_templates.updateTemplate(True, name, **kwargs)
 
     def build_dc(self, dc_def, host_conf, storage_conf, ep_conf=None):
         datacenter_name = dc_def['name']
