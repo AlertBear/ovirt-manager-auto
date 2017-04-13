@@ -447,7 +447,23 @@ class T04AddPMWithInvalidType(TestPMWithBadParameters):
         ), "Adding PM with invalid type succeeded"
 
 
-class T05FenceHostWithHighAvailableVm(TestWithHighAvailableVm):
+class T05AddPMWithInvalidOptionPort(TestPMWithBadParameters):
+    """
+    Test adding power management with invalid option 'port'
+    """
+    __test__ = True
+    bad_parameter = {'options': {'port': 'rhv01'}}
+
+    @polarion("RHEVM-21341")
+    @bz({'1442056': {}})
+    def test_add_power_management_with_invalid_type(self):
+        testflow.step("Add power management to host %s", HOST_WITH_PM)
+        assert not hosts.add_power_management(
+            host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
+        ), "Adding PM with invalid option 'port' succeeded"
+
+
+class T06FenceHostWithHighAvailableVm(TestWithHighAvailableVm):
     """
     Test fencing host with high available VM running
     """
@@ -467,7 +483,7 @@ class T05FenceHostWithHighAvailableVm(TestWithHighAvailableVm):
 
 
 @bz({'1423657': {}})
-class T06HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
+class T07HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
     """
     Test non responsive host with high available VM running
     """
@@ -502,7 +518,7 @@ class T06HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
         ), "VM %s is up" % self.vm2_name
 
 
-class T07StartHostInUpState(TestFenceOnHost):
+class T08StartHostInUpState(TestFenceOnHost):
     """
     Test starting a host in up state
     """
@@ -515,7 +531,7 @@ class T07StartHostInUpState(TestFenceOnHost):
         _fence_host(False, config.FENCE_START)
 
 
-class T08StopThenStartHostInMaintenance(TestFenceOnHost):
+class T09StopThenStartHostInMaintenance(TestFenceOnHost):
     """
     Test stopping and then starting a host in maintenance
     """
@@ -532,7 +548,7 @@ class T08StopThenStartHostInMaintenance(TestFenceOnHost):
         _fence_host(True, config.FENCE_START)
 
 
-class T09RestartHostInUpState(TestFenceOnHost):
+class T10RestartHostInUpState(TestFenceOnHost):
     """
     Test restarting a host in up state
     """
@@ -545,7 +561,7 @@ class T09RestartHostInUpState(TestFenceOnHost):
         _fence_host(True, config.FENCE_RESTART)
 
 
-class T10RestartHostInMaintenance(TestFenceOnHost):
+class T11RestartHostInMaintenance(TestFenceOnHost):
     """
     Test restarting a host in maintenance
     """
@@ -558,7 +574,7 @@ class T10RestartHostInMaintenance(TestFenceOnHost):
         _fence_host(True, config.FENCE_RESTART)
 
 
-class T11NoFallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
+class T12NoFallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
     """
     Test restarting a host without fallback to secondary power management
     """
@@ -571,7 +587,7 @@ class T11NoFallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
         _fence_host(True, config.FENCE_RESTART)
 
 
-class T12FallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
+class T13FallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
     """
     Test restarting a host with fallback to secondary power management
     """
@@ -584,7 +600,7 @@ class T12FallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
         _fence_host(True, config.FENCE_RESTART)
 
 
-class T13ProxyChosenFromCluster(TestFenceProxySelection):
+class T14ProxyChosenFromCluster(TestFenceProxySelection):
     """
     Tests default proxy selection: from same cluster as host to fence
     """
@@ -607,7 +623,7 @@ class T13ProxyChosenFromCluster(TestFenceProxySelection):
         ), "Fence proxy wasn't chosen from cluster"
 
 
-class T14ProxyChosenFromDataCenter(TestFenceProxySelection):
+class T15ProxyChosenFromDataCenter(TestFenceProxySelection):
     """
     Tests proxy selection when DC is priority
     """
@@ -633,7 +649,7 @@ class T14ProxyChosenFromDataCenter(TestFenceProxySelection):
         ), "Fence proxy wasn't chosen from data center"
 
 
-class T15ProxyChosenFromSecondClusterAsFallback(TestFenceProxySelection):
+class T16ProxyChosenFromSecondClusterAsFallback(TestFenceProxySelection):
     """
     Test proxy selection when priority is (cluster, dc) and host in cluster
     is non_operational.
