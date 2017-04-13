@@ -93,6 +93,7 @@ def _prepareVmPoolObject(**kwargs):
     return pool
 
 
+@ll_general.generate_logs(step=True)
 def addVmPool(positive, wait=True, **kwargs):
     """
     Description: create vm pool
@@ -122,15 +123,9 @@ def addVmPool(positive, wait=True, **kwargs):
     """
     size = kwargs.get('size', 0)
     pool = _prepareVmPoolObject(**kwargs)
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="create", obj_type="vmpool", obj_name=pool,
-        positive=positive, **kwargs
-    )
-    logger.info(log_info)
     pool, status = UTIL.create(pool, positive)
 
     if not status:
-        logger.error(log_error)
         return False
 
     if positive is False:
@@ -234,6 +229,7 @@ def get_vms_in_pool_by_name(vm_pool):
     return [vm_obj.get_name() for vm_obj in vms_object_list]
 
 
+@ll_general.generate_logs(step=True)
 def removeVmPool(positive, vmpool, wait=False):
     """
     Description: remove vm pool
@@ -252,19 +248,11 @@ def removeVmPool(positive, vmpool, wait=False):
     """
     pool = UTIL.find(vmpool)
     pool_vms = get_vms_in_pool_by_name(vmpool)
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="remove", obj_type="vmpool", obj_name=vmpool,
-        positive=positive
-    )
-    logger.info(log_info)
     status = UTIL.delete(pool, positive)
-    if not status:
-        logger.error(log_error)
     if wait and positive:
         try:
             ll_vms.waitForVmsGone(positive, pool_vms)
         except exceptions.APITimeout:
-            logger.error(log_error)
             return False
     return status
 

@@ -992,7 +992,7 @@ def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
     return all_removed
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def clone_vm(positive, vm, clone_vm_name, wait=True):
     """
     Clone vm to clone_vm_name

@@ -602,6 +602,7 @@ def createCustomPropertiesFromArg(prop_arg):
     return cps
 
 
+@ll_general.generate_logs(step=True)
 def addVm(positive, wait=True, **kwargs):
     """
     Description: add new vm (without starting it)
@@ -725,10 +726,6 @@ def addVm(positive, wait=True, **kwargs):
     kwargs.update(add=True)
     vm_obj = _prepare_vm_object(**kwargs)
     expected_vm = _prepare_vm_object(**kwargs)
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="add", obj_type="vm", obj_name=kwargs.get('name'),
-        positive=positive, **kwargs
-    )
     operations = []
     # disk_clone
     disk_clone = kwargs.pop("disk_clone", None)
@@ -739,14 +736,11 @@ def addVm(positive, wait=True, **kwargs):
     if copy_permissions:
         operations.append('clone_permissions')
 
-    logger.info(log_info)
     if False in [positive, wait]:
         vm_obj, status = VM_API.create(
             vm_obj, positive, expected_entity=expected_vm,
             operations=operations
         )
-        if not status:
-            logger.error(log_error)
         return status
 
     wait_timeout = kwargs.pop('timeout', VM_ACTION_TIMEOUT)
@@ -761,11 +755,10 @@ def addVm(positive, wait=True, **kwargs):
 
     if status:
         status = VM_API.waitForElemStatus(vm_obj, "DOWN", wait_timeout)
-    else:
-        logger.error(log_error)
     return status
 
 
+@ll_general.generate_logs(step=True)
 def updateVm(positive, vm, **kwargs):
     """
     Update existed vm
@@ -832,22 +825,13 @@ def updateVm(positive, vm, **kwargs):
     vm_obj = VM_API.find(vm)
     vm_new_obj = _prepare_vm_object(**kwargs)
     compare = kwargs.get("compare", True)
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="update",
-        obj_type=VM,
-        obj_name=vm,
-        positive=positive,
-        **kwargs
-    )
-    logger.info(log_info)
     vm_new_obj, status = VM_API.update(
         vm_obj, vm_new_obj, positive, compare=compare
     )
-    if not status:
-        logger.error(log_error)
     return status
 
 
+@ll_general.generate_logs(step=True)
 def removeVm(positive, vm, **kwargs):
     """
     Remove VM
@@ -877,11 +861,7 @@ def removeVm(positive, vm, **kwargs):
     if str(stop_vm).lower() == 'true' and vm_status != ENUMS['vm_state_down']:
         if not stopVm(positive, vm):
             return False
-    logger.info("Remove VM %s", vm)
     status = VM_API.delete(vm_obj, positive, operations=href_params)
-
-    if not status:
-        logger.error("Failed to remove VM %s", vm)
 
     wait = kwargs.pop('wait', True)
     if positive and wait and status:
@@ -1056,6 +1036,7 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     return status
 
 
+@ll_general.generate_logs(step=True)
 def restartVm(
     vm, wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, async='false',
     wait_for_status=ENUMS['vm_state_up'], placement_host=None
@@ -1810,6 +1791,7 @@ def _getVmSnapshot(vm, snap, all_content=False):
     return None
 
 
+@ll_general.generate_logs(step=True)
 def addSnapshot(
     positive, vm, description, wait=True, persist_memory=None, disks_lst=None
 ):
@@ -1857,7 +1839,6 @@ def addSnapshot(
 
     vmSnapshots = _getVmSnapshots(vm)
 
-    logger.info("Adding new snapshot to vm %s", vm)
     snapshot, status = SNAPSHOT_API.create(snapshot, positive,
                                            collection=vmSnapshots,
                                            compare=wait)
@@ -1967,7 +1948,7 @@ def removeSnapshot(
     return True
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def runVmOnce(
     positive, vm, wait_for_state=ENUMS['vm_state_powering_up_or_up'],
     pause=False, use_cloud_init=False, use_sysprep=False, **kwargs
@@ -4633,6 +4614,7 @@ def get_vms_disks_storage_domain_name(vm_name, disk_alias=None):
     return STORAGE_DOMAIN_API.find(sd_id, attribute='id').get_name()
 
 
+@ll_general.generate_logs()
 def get_vm(vm):
     """
     Description: Get vm object

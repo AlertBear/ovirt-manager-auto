@@ -224,7 +224,7 @@ def _prepare_instance_type_object(**kwargs):
     return instance_type
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def create_instance_type(instance_type_name, **kwargs):
     """
     create new instance type
@@ -272,7 +272,7 @@ def create_instance_type(instance_type_name, **kwargs):
     return status
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def update_instance_type(instance_type_name, **kwargs):
     """
     Update existed instance type
@@ -323,7 +323,7 @@ def update_instance_type(instance_type_name, **kwargs):
     return status
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def remove_instance_type(instance_type_name):
     """
     Remove instance type.
