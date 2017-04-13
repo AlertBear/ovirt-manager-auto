@@ -94,8 +94,12 @@ def clean_host_interfaces_helper(hosts_nets_nic_dict):
 
     Args:
         hosts_nets_nic_dict (dict): Networks dict
+
+    Returns:
+        bool: True if operation succeeded, False otherwise
     """
+    res = list()
     for key in hosts_nets_nic_dict.iterkeys():
         host_name = conf.HOSTS[key]
-        testflow.teardown("Clean host %s interface", host_name)
-        hl_host_network.clean_host_interfaces(host_name=host_name)
+        res.append(hl_host_network.clean_host_interfaces(host_name=host_name))
+    return all(res)

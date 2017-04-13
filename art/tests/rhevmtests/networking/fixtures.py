@@ -61,7 +61,7 @@ def clean_host_interfaces(request):
         """
         Clean host(s) interfaces networks (except the management network)
         """
-        network_fixture_helper.clean_host_interfaces_helper(
+        assert network_fixture_helper.clean_host_interfaces_helper(
             hosts_nets_nic_dict=hosts_nets_nic_dict
         )
     request.addfinalizer(fin)
