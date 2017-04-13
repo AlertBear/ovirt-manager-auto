@@ -45,6 +45,7 @@ def setup_network_helper(hosts_nets_nic_dict, sriov_nics, persist):
             datacenter = value.get("datacenter")
             ip_dict = value.get("ip")
             mode = value.get("mode")
+            labels = value.get("labels")
             qos = value.get("qos")
             properties = value.get("properties")
             if properties and ethtool_opts_str in properties.keys():
@@ -67,6 +68,7 @@ def setup_network_helper(hosts_nets_nic_dict, sriov_nics, persist):
                 "datacenter": datacenter,
                 "slaves": slaves_list,
                 "mode": mode,
+                "labels": labels,
                 "properties": properties
             }
             sn_dict["add"][net]["qos"] = qos
