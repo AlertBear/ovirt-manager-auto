@@ -567,3 +567,45 @@ def get_lun_actual_size(storage_manager, lun_id):
         return None
     logger.info("Used space of lun: %s is: %s", lun_id, lun_info['used_size'])
     return float(lun_info['used_size'].replace('G', '').replace('B', ''))
+
+
+def get_test_parametrize_ids(item, params):
+    """
+    Get test parametrize IDs from the current parametrize run
+
+    Args:
+        item (instance): pytest mark object (<func_name>.parametrize)
+        params (list): Test parametrize params
+
+    Returns:
+        str: Test Id
+
+    Examples:
+        _id = get_test_parametrize_ids(
+            self.test_create_networks.parametrize,
+            ["param_1", "param_2"]
+        )
+        testflow.step(_id)
+    """
+    _id = ""
+    param = [i for i in item if i.name == "parametrize"]
+    param = param[0] if param else None
+    if not param:
+        return _id
+
+    param_args = param.args
+    if not param_args or len(param_args) < 2:
+        return _id
+
+    param_args_values = param_args[1]
+    param_ids = param.kwargs.get("ids")
+    for i in param_args:
+        if isinstance(i, list) or isinstance(i, tuple):
+            for x in i:
+                try:
+                    x_args = x.args
+                except AttributeError:
+                    continue
+                if params in x_args:
+                    return param_ids[param_args_values.index(x)]
+    return _id

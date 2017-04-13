@@ -11,16 +11,16 @@ This test will use the following elements on the engine:
 Host (VDS_HOST0), networks (vm & non-vm), BONDS, VLANS, Bridge
 """
 
-import pytest
-
 import config as vlan_name_conf
-import rhevmtests.networking.config as network_conf
+
+import pytest
+from fixtures import create_networks_on_engine, create_vlans_on_host
+from rhevmtests import helpers
+
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import rhevmtests.networking.config as network_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow, NetworkTest
-from fixtures import (
-    create_vlans_on_host, create_networks_on_engine
-)
+from art.unittest_lib import NetworkTest, attr, testflow
 from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture, clean_host_interfaces
 )
@@ -91,21 +91,23 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
             polarion("RHEVM3-4175")([vlan_names[10]])
         ],
         ids=(
-            "VLAN on host NIC",
-            "VLAN on host BOND",
-            "Multiple VLANs on host NIC",
-            "Multiple VLANs on host BOND",
-            "Mixed VLANs types",
-            "Vlan on non-VM network"
+            "Check VLAN on host NIC",
+            "Check VLAN on host BOND",
+            "Check multiple VLANs on host NIC",
+            "Check multiple VLANs on host BOND",
+            "Check mixed VLANs types",
+            "Check VLAN on non-VM network"
         )
     )
     def test_vlan_on_nic_and_on_bond(self, vlan_names):
         """
-        1) Check that the VLAN network exists on host via engine.
+        Check that the VLAN network exists on host via engine.
         """
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_vlan_on_nic_and_on_bond.parametrize,
+            params=vlan_names
+        )
         host = network_conf.HOST_0_NAME
+        testflow.step(_id)
         for vlan in vlan_names:
-            testflow.step("Check if VLAN name %s exists on host NICs", vlan)
-            assert vlan in [
-                nic.name for nic in ll_hosts.get_host_nics_list(host=host)
-            ]
+            assert ll_hosts.get_host_nic(host=host, nic=vlan)

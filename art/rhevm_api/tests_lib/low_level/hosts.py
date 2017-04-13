@@ -649,7 +649,6 @@ def get_host_nics_list(host, all_content=False):
         list: Host NICs list
     """
     host_obj = get_host_object(host_name=host)
-    logger.info("Get %s NICs list", host)
     return HOST_API.getElemFromLink(
         host_obj, 'nics', 'host_nic', get_href=False, all_content=all_content
     )
@@ -1464,9 +1463,10 @@ def kill_vdsmd(resource):
     return not bool(rc)
 
 
+@ll_general.generate_logs()
 def get_host_object(host_name, attribute="name"):
     """
-    Get host object by host name.
+    Get host object by host_name.
 
     Args:
         host_name (str): Name of host.
