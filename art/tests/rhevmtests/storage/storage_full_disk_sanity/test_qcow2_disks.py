@@ -5,7 +5,6 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage_4_0/4_0_Storage_Ability_to_choose_qcow2_disk_format_when_creating
 _a_VM_from_%20template
 """
-import re
 import config
 import logging
 import pytest
@@ -28,10 +27,6 @@ ENUMS = config.ENUMS
 QCOW2 = 'qcow2'
 
 logger = logging.getLogger(__name__)
-
-CHECK_IMAGE_FORMAT_CMD = "qemu-img info /rhev/data-center/%s/%s/images/%s/%s"
-PREPARE_IMAGE_CMD = "vdsClient -s 0 prepareImage %s %s %s %s"
-TEARDOWN_IMAGE_CMD = "vdsClient -s 0 teardownImage %s %s %s %s"
 
 
 class BaseTestCase(TestCase):
@@ -124,10 +119,7 @@ class BaseTestCase(TestCase):
         self.templates.append(self.template_name)
 
         host = ll_hosts.get_spm_host(config.HOSTS)
-        host_ip = ll_hosts.get_host_ip(host)
-        self.host_executor = rhevm_helpers.get_host_executor(
-            host_ip, config.HOSTS_PW
-        )
+        self.host_resource = rhevm_helpers.get_host_resource_by_name(host)
 
     def verify_object_disks_format(self, name, _format, object_type):
         """
@@ -145,54 +137,28 @@ class BaseTestCase(TestCase):
         disks = ll_disks.get_disk_attachments(name, object_type=object_type)
         for disk in disks:
             vol_id = ll_disks.get_disk_obj(disk.get_id(), 'id').get_image_id()
-            command = CHECK_IMAGE_FORMAT_CMD % (
-                self.data_center_id, self.storage_domain_id,
-                disk.get_id(), vol_id
-            )
+            args = {
+                "storagepoolID": self.data_center_id,
+                "storagedomainID": self.storage_domain_id,
+                "imageID": disk.get_id(),
+                "volumeID": vol_id,
+            }
             if self.storage in config.BLOCK_TYPES:
-                prepare_image_cmd = PREPARE_IMAGE_CMD % (
-                    self.data_center_id, self.storage_domain_id,
-                    disk.get_id(), vol_id
-                )
-                rc, _, error = self.host_executor.run_cmd(
-                    prepare_image_cmd.split()
-                )
-                if rc and error:
-                    raise Exception(
-                        "Error executing %s: %s" % (prepare_image_cmd, error)
-                    )
-
+                self.host_resource.vds_client(cmd="Volume.prepare", args=args)
             try:
                 # Verify the disk format
-                rc, out, error = self.host_executor.run_cmd(command.split())
-                if rc and error:
-                    raise Exception(
-                        "Error executing %s: %s" % (command, error)
-                    )
+                vol_format = self.host_resource.vds_client(
+                    cmd="Volume.getQemuImageInfo", args=args
+                ).get("format")
             finally:
                 if self.storage in config.BLOCK_TYPES:
-                    teardown_image_cmd = TEARDOWN_IMAGE_CMD % (
-                        self.data_center_id, self.storage_domain_id,
-                        disk.get_id(), vol_id
-                    )
-                    rc, _, error = self.host_executor.run_cmd(
-                        teardown_image_cmd.split()
-                    )
-                    if rc and error:
-                        raise Exception(
-                            "Error executing %s: %s" %
-                            (teardown_image_cmd, error)
+                    if self.storage in config.BLOCK_TYPES:
+                        self.host_resource.vds_client(
+                            cmd="Volume.teardown", args=args
                         )
-            match = re.search('file format: ([\w]+)', out)
-            if not match:
-                raise Exception(
-                    "Error finding file format in output %s" % out
-                )
-            assert (
-                match.group(1) == _format
-            ), (
+            assert vol_format == _format, (
                 "Disk %s format is %s, expected format is %s"
-                % (disk.get_id(), match.group(1), _format)
+                % (disk.get_id(), vol_format, _format)
             )
 
     def finalizer_BaseTestCase(self):
@@ -227,8 +193,8 @@ class TestCase16405(BaseTestCase):
         Test flow:
         - Create a template from the VM. Create the template disks as QCOW2
         - Verify that for both disks, the disks format is QCOW2 with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         """
         self.verify_object_disks_format(
             self.template_name, self.template_disks_format, 'template'
@@ -255,8 +221,8 @@ class TestCase16407(BaseTestCase):
         - Create a template from the VM. Create the template disks as QCOW2
         - Create a VM from the template. Create a VM disks as QCOW2
         - Verify that for both disks, the disks format is QCOW2 with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         """
         self.vm_name_2 = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
@@ -324,8 +290,8 @@ class TestCase16406(BaseTestCase):
         Test flow:
         - Create a template from the VM. Create the template disks as RAW
         - Verify that for both disks, the disks format is RAW with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         """
         self.verify_object_disks_format(
             self.template_name, self.template_disks_format, 'template'
@@ -351,8 +317,8 @@ class TestCase16410(BaseTestCase):
         - Create a template from the VM. Create the template disks as RAW
         - Create a VM from the template. Create the VM disks as RAW
         - Verify that for both disks, the disks format is RAW with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         """
         self.vm_name_2 = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
@@ -386,8 +352,8 @@ class TestCase16411(BaseTestCase):
         - Create a template from the VM. Create the template disks as RAW
         - Create a VM from the template. Create the VM disks as COW2
         - Verify that for both disks, the disks format is QCOW2 with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         """
         self.vm_name_3 = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
@@ -423,16 +389,16 @@ class TestCase16409(BaseTestCase):
         - Create a snapshot for the VM that includes disks and configuration
         - Create a template from the VM. Create the template disks as RAW
         - Verify that for both disks, the disks format is RAW with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         - Create a VM from the template with QCOW2 disk -> Should succeed
         - Verify that for both disks, the disks format is QCOW2 with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         - Create a VM from the template with RAW disk -> Should succeed
         - Verify that for both disks, the disks format is RAW with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         """
         self.verify_object_disks_format(
             self.template_name, self.template_disks_format, 'template'
@@ -484,12 +450,12 @@ class TestCase16412(BaseTestCase):
         - Create a snapshot for the VM that includes disks and configuration
         - Create a template from the VM. Create the template disks as QCOW2
         - Verify that for both disks, the disks format is QCOW2 with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         - Create a template from the VM. Create the template disks as QCOW2
         - Verify that for both disks, the disks format is QCOW2 with:
-        qemu-img info /rhev/data-center/<SPUUID>/<SDUUID/images/<IMGUUID>/
-        <VOLUUID>
+        vdsm-client Volume getQemuImageInfo storagepoolID=<SPUUID>
+        storagedomainID=<SDUUID> imageID=<IMGUUID> volumeID=<VOLUUID>
         - Create a VM from the template with RAW disk -> Should not be allowed
         """
         self.verify_object_disks_format(

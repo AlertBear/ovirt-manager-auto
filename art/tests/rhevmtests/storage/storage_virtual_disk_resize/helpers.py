@@ -16,6 +16,8 @@ import config
 logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 250
+GB = 1024 ** 3
+MB = 1024 ** 2
 
 
 # TODO: Move this function to the storage.helpers and remove
@@ -51,38 +53,33 @@ def get_vm_storage_devices(vm_name):
 
 
 def get_volume_size(
-    hostname, user, password, disk_object, dc_obj, size_format='g'
+    hostname, disk_object, dc_obj, size_format='g'
 ):
     """
     Get volume size in GB
+
     Author: ratamir
-    Parameters:
-        * hostname - ip or fqdn of the host
-        * user - user name for host
-        * password - password for host
-        * disk_object - disk object that need checksum
-        * dc_obj - data center that the disk belongs to
-        * size_format - 'g' for Gigabyte, 'm' for Megabyte, ...
-    Return:
-        Volume size (integer), or raise exception otherwise
+
+    Args:
+        hostname (str): Name of the host to use
+        disk_object (Disk object): Disk object that need checksum
+        dc_obj (DataCenter object): Data center that the disk belongs to
+        size_format (str): 'b': bytes, 'm': Mb, 'g': Gb
+
+    Returns:
+        int: Volume size, or -1 in case of an error
     """
-    host_machine = Machine(host=hostname, user=user,
-                           password=password).util('linux')
-
-    vol_id = disk_object.get_image_id()
-    sd_id = disk_object.get_storage_domains().get_storage_domain()[0].get_id()
-    image_id = disk_object.get_id()
-    sp_id = dc_obj.get_id()
-
-    lv_size = host_machine.get_volume_size(
-        sd_id, sp_id, image_id, vol_id, size_format
+    volume_info = storage_helpers.get_volume_info(
+        hostname, disk_object, dc_obj
     )
-    logger.info(
-        "Volume size of disk %s is %s %sb",
-        disk_object.get_alias(), lv_size, size_format.upper()
-    )
-
-    return lv_size
+    if volume_info:
+        if size_format is 'b':
+            return int(volume_info['truesize'])
+        if size_format is 'm':
+            return int(volume_info['truesize']) / MB
+        return int(volume_info['truesize']) / GB
+    logger.error("Could not calculate the volume size")
+    return -1
 
 
 def get_vm_device_size(vm_name, device_name):

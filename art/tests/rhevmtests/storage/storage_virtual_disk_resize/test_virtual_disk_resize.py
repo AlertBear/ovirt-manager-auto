@@ -112,9 +112,9 @@ class BasicResize(BaseTestCase):
             disk_obj.get_alias(), self.host
         )
         lv_size = helpers.get_volume_size(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
-            datacenter_obj, size_format='m'
+            self.host, disk_obj, datacenter_obj, size_format='m'
         )
+        assert not lv_size == -1
         EXPECTED_THRESHOLD = 50 * config.MB
         assert (
             ((self.new_size/config.MB) - lv_size) < EXPECTED_THRESHOLD
@@ -177,9 +177,9 @@ class BasicResize(BaseTestCase):
 
         testflow.step("Check volume size for disk %s", disk_obj.get_alias())
         lv_size = helpers.get_volume_size(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
-            datacenter_obj
+            self.host_ip, disk_obj, datacenter_obj
         )
+        assert not lv_size == -1
         assert lv_size == self.new_size / config.GB
         devices, boot_device = helpers.get_vm_storage_devices(self.vm_name)
         ll_vms.start_vms([self.vm_name], max_workers=1, wait_for_ip=False)
@@ -673,9 +673,9 @@ class TestCase5071(BasicResize):
         datacenter_obj = ll_dcs.get_data_center(config.DATA_CENTER_NAME)
 
         lv_size = helpers.get_volume_size(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, disk_obj,
-            datacenter_obj
+            self.host_ip, disk_obj, datacenter_obj
         )
+        assert not lv_size == -1
         assert lv_size == self.new_size / config.GB
 
 

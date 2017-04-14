@@ -33,6 +33,7 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 import rhevmtests.helpers as rhevm_helpers
+from rhevmtests.helpers import get_host_resource_by_name
 from rhevmtests.storage import config
 from utilities import errors
 from utilities.machine import Machine, LINUX
@@ -1550,3 +1551,62 @@ def reboot_hosts():
         config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
         config.WAIT_FOR_SPM_INTERVAL
     ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
+
+
+def get_volume_info(hostname, disk_object, dc_obj):
+    """
+    Get volume info from vdsm-client
+
+    Author: ratamir
+
+    Args:
+        hostname (str): IP or fqdn of the host
+        disk_object (Disk object): Disk object to return his volume info
+        dc_obj (DataCenter object): Data center that the disk belongs to
+
+    Returns:
+        Volume info (dict), or None otherwise
+
+        Example:
+        {
+            "status": "OK",
+            "lease": {
+                "owners": [],
+                "version": null
+            },
+            "domain": "111",
+            "capacity": "222",
+            "voltype": "LEAF",
+            "description": "",
+            "parent": "00000000-0000-0000-0000-000000000000",
+            "format": "RAW",
+            "generation": 0,
+            "image": "aaa",
+            "uuid": "bbb",
+            "disktype": "2",
+            "legality": "LEGAL",
+            "mtime": "0",
+            "apparentsize": "222",
+            "truesize": "222",
+            "type": "PREALLOCATED",
+            "children": [],
+            "pool": "",
+            "ctime": "123"
+        }
+
+    """
+    host_resource = get_host_resource_by_name(hostname)
+
+    vol_id = disk_object.get_image_id()
+    sd_id = disk_object.get_storage_domains().get_storage_domain()[0].get_id()
+    image_id = disk_object.get_id()
+    sp_id = dc_obj.get_id()
+
+    args = {
+        "storagepoolID": sp_id,
+        "storagedomainID": sd_id,
+        "imageID": image_id,
+        "volumeID": vol_id,
+    }
+
+    return host_resource.vds_client(cmd="Volume.getInfo", args=args)
