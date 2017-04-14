@@ -1,5 +1,4 @@
 import logging
-import pytest
 from unittest2 import TestCase
 
 from _pytest_art.marks import (
@@ -12,7 +11,6 @@ from _pytest_art.marks import (
     integration,
     upgrade,
 )
-from fixtures import skip_invalid_storage_type
 from _pytest_art.testlogger import TestFlowInterface
 from art.test_handler.exceptions import TearDownException
 from art.test_handler.settings import opts, ART_CONFIG
@@ -54,9 +52,6 @@ class BaseTestCase(TestCase):
     storage = None
 
 
-@pytest.mark.usefixtures(
-    skip_invalid_storage_type.__name__
-)
 @storage
 @attr(team="storage")
 class StorageTest(BaseTestCase):

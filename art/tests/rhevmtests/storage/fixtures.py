@@ -1381,3 +1381,16 @@ def create_lun_on_storage_server(request):
         "Deactivating and activating hosts %s after LUN creation", config.HOSTS
     )
     storage_helpers.maintenance_and_activate_hosts()
+
+
+@pytest.fixture(scope='class')
+def skip_invalid_storage_type(request):
+    """
+    Skip the test case if the storage type is not valid for it
+    """
+    self = request.node.cls
+
+    if self.storage not in self.storages:
+        pytest.skip(
+            "Storage type %s is not valid for testing this case" % self.storage
+        )

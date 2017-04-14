@@ -14,16 +14,19 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms
 )
-from art.unittest_lib.fixtures import skip_invalid_storage_type  # noqa F401
 from rhevmtests.storage.fixtures import (
     create_storage_domain, copy_template_disk, create_lun_on_storage_server
 )
+from rhevmtests.storage.fixtures import skip_invalid_storage_type  # noqa F401
 from fixtures import (
     add_disks, create_vm_for_test, attach_disks, get_second_storage_domain,
     start_vm_for_test, init_storage_manager
 )
 
 
+@pytest.mark.usefixtures(
+    skip_invalid_storage_type.__name__
+)
 class BaseTestCase(TestCase):
     """
     Common class for all tests with some common methods
