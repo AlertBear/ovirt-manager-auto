@@ -49,7 +49,13 @@ class BasicEnvironmentSetUp(TestCase):
     def _perform_snapshot_operation(self, vm_name, disks=None, wait=True):
         if not self.live_snapshot:
             if not ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
-                ll_vms.shutdownVm(True, vm_name)
+                vm_executor = storage_helpers.get_vm_executor(vm_name)
+                assert storage_helpers._run_cmd_on_remote_machine(
+                    vm_name, config.SYNC_CMD, vm_executor
+                )
+                assert ll_vms.stop_vms_safely([vm_name]), (
+                    "Failed to power off vm %s" % vm_name
+                )
                 ll_vms.waitForVMState(vm_name, config.VM_DOWN)
         if disks:
             is_disks = "disks: %s" % disks

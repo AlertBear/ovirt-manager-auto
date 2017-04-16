@@ -106,10 +106,16 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     )
     logger.info("Waiting for ip of %s", vm_name)
     vm_ip = ll_vms.wait_for_vm_ip(vm_name)[1]['ip']
+    vm_executor = storage_helpers.get_vm_executor(vm_name)
     logger.info("Setting persistent network")
     test_utils.setPersistentNetwork(vm_ip, config.VM_LINUX_PASSWORD)
     logger.info("Stopping VM %s", vm_name)
-    assert ll_vms.shutdownVm(True, vm_name), "Stopping vm %s failed" % vm_name
+    assert storage_helpers._run_cmd_on_remote_machine(
+        vm_name, config.SYNC_CMD, vm_executor
+    )
+    assert ll_vms.stop_vms_safely([vm_name]), (
+        "Failed to power off vm %s" % vm_name
+    )
     ll_vms.waitForVMState(vm_name, state=config.VM_DOWN)
     logger.info(
         "Creating template %s from vm %s", template_name, vm_name)
@@ -160,6 +166,7 @@ class TestCase11834(TestCase):
     def _copy_data_to_vm_and_make_snapshot(self, source_path, snapshot_name):
         logger.info("Copying data from %s to %s", source_path, self.vm_name)
         vm_ip = storage_helpers.get_vm_ip(self.vm_name)
+        vm_executor = storage_helpers.get_vm_executor(self.vm_name)
         assert resource_utils.copyDataToVm(
             ip=vm_ip, user=config.VM_LINUX_USER,
             password=config.VM_LINUX_PASSWORD, osType='linux',
@@ -168,9 +175,12 @@ class TestCase11834(TestCase):
         logger.info("Verify that all data were really copied")
         self._verify_data_on_vm([source_path])
         logger.info("Stopping VM %s", self.vm_name)
-        assert ll_vms.shutdownVm(
-            True, self.vm_name
-        ), "Stopping vm %s failed!" % self.vm_name
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, config.SYNC_CMD, vm_executor
+        )
+        assert ll_vms.stop_vms_safely([self.vm_name]), (
+            "Failed to power off vm %s" % self.vm_name
+        )
         ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
         logger.info("Creating snapshot %s", snapshot_name)
         assert ll_vms.addSnapshot(
@@ -193,10 +203,14 @@ class TestCase11834(TestCase):
             ), "Data verification of %s on %s failed!" % (path, self.vm_name)
 
     def _remove_snapshot_verify_data(self, snapshot_name, expected_data):
+        vm_executor = storage_helpers.get_vm_executor(self.vm_name)
         logger.info("Stopping VM %s", self.vm_name)
-        assert ll_vms.shutdownVm(
-            True, vm=self.vm_name
-        ), "Stopping vm %s failed!" % self.vm_name
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, config.SYNC_CMD, vm_executor
+        )
+        assert ll_vms.stop_vms_safely([self.vm_name]), (
+            "Failed to power off vm %s" % self.vm_name
+        )
         ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
         logger.info("Removing snapshot %s", snapshot_name)
         assert ll_vms.removeSnapshot(

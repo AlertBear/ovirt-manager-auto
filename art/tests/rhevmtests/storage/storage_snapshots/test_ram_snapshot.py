@@ -527,7 +527,13 @@ class TestCase5131(VMWithMemoryStateSnapshot):
             self.vm_name, self.pids[0], config.VM_USER, config.VM_PASSWORD
         )
         testflow.step("Power VM %s off", self.vm_name)
-        assert ll_vms.shutdownVm(True, self.vm_name)
+        vm_executor = storage_helpers.get_vm_executor(self.vm_name)
+        assert storage_helpers._run_cmd_on_remote_machine(
+            self.vm_name, config.SYNC_CMD, vm_executor
+        )
+        assert ll_vms.stop_vms_safely([self.vm_name]), (
+            "Failed to power off vm %s" % self.vm_name
+        )
         ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
         # This is need it for RestoreFromSnapshot tasks on the background
