@@ -251,6 +251,15 @@ class TestCase18336(BaseTestCase2):
         test_utils.restart_engine(config.ENGINE, 5, 30)
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
         testflow.step(
+            "check disk and snapshot status, see all OK"
+        )
+        assert ll_disks.wait_for_disks_status(self.disk_name), (
+            "Disk %s did not reach OK state" % self.disk_name
+        )
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_list
+        ), "Snapshot %s did not reach OK state" % self.snapshot_list
+        testflow.step(
             "Re-amend qcow disk %s to v3 after engine restart" % self.disk_name
         )
         helpers.amend_disk_attachment_api(
