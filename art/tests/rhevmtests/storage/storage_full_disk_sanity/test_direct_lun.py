@@ -297,8 +297,9 @@ class TestCase5934(DirectLunAttachTestCase):
             True, self.vm_name, highly_available='true'
         ), "Failed to update vm %s HA attribute to 'true" % self.vm_name
         ll_vms.startVm(True, self.vm_name)
-        _, host = ll_vms.getVmHost(self.vm_name)
-        host_ip = get_host_ip(host['vmHoster'])
+        host = ll_vms.get_vm_host(vm_name=self.vm_name)
+        assert host, "Failed to get VM: %s hoster" % self.vm_name
+        host_ip = get_host_ip(host=host)
         host_machine = Machine(
             host_ip, config.HOSTS_USER, config.HOSTS_PW).util(LINUX)
         assert host_machine.kill_qemu_process(

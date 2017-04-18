@@ -31,7 +31,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
-    stopVm, getVmHost, get_vm_state
+    stopVm, get_vm_host, get_vm_state, get_all_vms
 )
 from art.rhevm_api.utils.test_utils import (
     get_api, split, getStat, searchElement, searchForObj, stopVdsmd,
@@ -1392,11 +1392,15 @@ def stop_vdsm(host, password):
     Returns:
         bool: True if VDSM stopped, otherwise False
     """
-    for vm in VM_API.get(abs_link=False):
+    for vm in get_all_vms():
         if get_vm_state(vm.name) == ENUMS['vm_state_down']:
             continue
 
-        if getVmHost(vm.name)[1]['vmHoster'] == host:
+        vm_host = get_vm_host(vm_name=vm)
+        if not vm_host:
+            return False
+
+        if vm_host == host:
             logger.error("Stopping vm %s", vm.name)
             if not stopVm(True, vm.name):
                 return False

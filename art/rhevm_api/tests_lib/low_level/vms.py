@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010 Red Hat, Inc.
 #
 # This is free software; you can redistribute it and/or modify it
@@ -1602,9 +1603,10 @@ def get_vm_nic(vm, nic):
     return VM_API.getElemFromElemColl(vm_obj, nic, 'nics', 'nic')
 
 
+@ll_general.generate_logs(step=True)
 def addNic(positive, vm, **kwargs):
     """
-    Add NIC to VM
+    Add vNIC name to VM
 
     Args:
         positive (bool): Expected status
@@ -3148,23 +3150,6 @@ def checkVMConnectivity(
     return status
 
 
-def getVmHost(vm):
-    """
-    Get host name for given running VM
-
-    :param vm: vm name
-    :type vm: str
-    :return:tuple (True, hostname in dict or False, None)
-    :rtype: tuple
-    """
-    try:
-        vm_obj = VM_API.find(vm)
-        host_obj = HOST_API.find(vm_obj.get_host().id, "id")
-    except EntityNotFound:
-        return False, {"vmHoster": None}
-    return True, {"vmHoster": host_obj.get_name()}
-
-
 def get_vm_nic_plugged(vm, nic='nic1', positive=True):
     """
     Get nic plugged parameter value of the NIC
@@ -4645,11 +4630,16 @@ def get_vms_disks_storage_domain_name(vm_name, disk_alias=None):
 @ll_general.generate_logs()
 def get_vm(vm):
     """
-    Description: Get vm object
-    Author: ratamir
-    Parameters:
-        * vm: name of the vm
-    Returns vm object, EntityNotFound if a vm doesn't exist
+    Get VM object
+
+    Args:
+        vm (str): VM name
+
+    Returns:
+        Vm: VM object
+
+    Raises:
+        EntityNotFound: If VM object not found
     """
     return VM_API.find(vm)
 

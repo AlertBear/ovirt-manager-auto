@@ -11,7 +11,6 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr, VirtTest, testflow
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib.network as network_lib
 from rhevmtests.virt.migration.fixtures import (
     migration_init, start_vm_on_spm
 )
@@ -54,9 +53,11 @@ class TestMigrationVirtSanityCase2(VirtTest):
     @polarion("RHEVM3-12332")
     def test_maintenance_of_spm(self):
         testflow.step("Check maintenance on SPM host with one VM")
+        vm_host = ll_vms.get_vm_host(vm_name=config.MIGRATION_VM)
+        assert vm_host, "Failed to get VM: %s hoster" % config.MIGRATION_VM
         assert hl_vms.migrate_by_maintenance(
             vms_list=[config.MIGRATION_VM],
-            src_host=network_lib.get_host(config.MIGRATION_VM),
+            src_host=vm_host,
             vm_os_type=config.RHEL_OS_TYPE_FOR_MIGRATION,
             vm_user=config.VMS_LINUX_USER,
             vm_password=config.VMS_LINUX_PW,

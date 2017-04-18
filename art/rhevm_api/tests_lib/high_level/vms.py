@@ -9,20 +9,24 @@ import urllib
 
 from concurrent.futures import ThreadPoolExecutor
 from utilities.timeout import TimeoutingSampler
-
-import art.rhevm_api.tests_lib.low_level.disks as disks
-import art.rhevm_api.tests_lib.low_level.general as ll_general
-import art.rhevm_api.tests_lib.low_level.hosts as hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
-import art.rhevm_api.tests_lib.low_level.vms as vms
+from art.rhevm_api.tests_lib.low_level import (
+    disks as disks,
+    general as ll_general,
+    hosts as hosts,
+    storagedomains as storagedomains,
+    vms as vms
+)
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api import resources
-from art.rhevm_api.utils.test_utils import getStat
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.utils.test_utils import getStat, get_api
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
+from art.rhevm_api.tests_lib.low_level import (
+    vms as ll_vms,
+    hosts as ll_hosts
+)
 
 logger = logging.getLogger("art.hl_lib.vms")
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -68,52 +72,40 @@ def get_vm_ip(vm_name, start_vm=True):
     return result.get('ip')
 
 
-def start_vm_on_specific_host(vm, host, wait_for_ip=False):
+@ll_general.generate_logs(step=True)
+def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
     """
-    Start vm on specific host
-    :param vm: vm name
-    :type vm: str
-    :param host: host name in the engine
-    :type host: str
-    :param wait_for_ip: Wait for VM IP
-    :type wait_for_ip: bool
-    :return: True if vm started successfully on host otherwise False
-    :rtype: bool
+    Run VM once on specific host
+
+    Args:
+        vm (str): VM name
+        host (str): Host name
+        wait_for_up_status (bool): Wait for VM to be UP
+
+    Returns:
+        bool: True if action succeeded, False otherwise
     """
-    logging.info("Update vm %s to run on host %s", vm, host)
-    if not vms.updateVm(True, vm, placement_host=host):
+    logger.info("Check if %s is up", host)
+    host_status = ll_hosts.get_host_status(host)
+    if not host_status == ENUMS["host_state_up"]:
+        logger.error("%s status is %s, cannot run VM", host, host_status)
         return False
 
-    logging.info("Start vm %s", vm)
-    if vms.startVm(True, vm, wait_for_ip=wait_for_ip):
-        vm_host = vms.getVmHost(vm)[1]["vmHoster"]
-        if not host == vm_host:
-            logging.error(
-                "VM should start on %s instead off %s", host, vm_host)
-            return False
+    if not ll_vms.runVmOnce(positive=True, vm=vm, host=host):
+        return False
+
+    if wait_for_up_status:
+        ll_vms.wait_for_vm_states(vm_name=vm)
+
+    logger.info("Check that %s was started on host %s", vm, host)
+    vm_host = ll_vms.get_vm_host(vm_name=vm)
+    if not vm_host:
+        return False
+    if not host == vm_host:
+        logger.error(
+            "%s should run on %s instead of %s", vm, host, vm_host)
+        return False
     return True
-
-
-def start_vms_on_specific_host(
-    vm_list, max_workers, host,
-    wait_for_status=ENUMS['vm_state_powering_up'],
-    wait_for_ip=True
-):
-    """
-    Description: Starts all vms in vm_list. Throws an exception if it fails
-
-    Parameters:
-        * vm_list - List of vm names
-        * max_workers - In how many threads should vms start
-        * host name
-        * wait_for_status - from ENUMS, to which state we wait for
-        * wait_for_ip - Boolean, wait to get an ip from the vm
-    """
-    logging.info("Update vms %s to run on host %s", vm_list, host)
-    for vm_name in vm_list:
-        if not vms.updateVm(True, vm_name, placement_host=host):
-            return False
-    return vms.start_vms(vm_list, max_workers, wait_for_status, wait_for_ip)
 
 
 def calculate_memory_for_memory_filter(hosts_list, difference=10):
@@ -253,9 +245,25 @@ def check_vms_after_migration(
     :return: True/False
     :rtype: bool
     """
-    vms_host = []
+    vms_host = list()
     for vm in vms_list:
-        logger.info("Waiting for %s to be UP after migration", vm)
+        sampler = TimeoutingSampler(
+            timeout=MIGRATION_TIMEOUT, sleep=1, func=vms.get_vm_host,
+            vm_name=vm
+        )
+        logger.info(
+            "Waiting for VM: %s to migrate from its source host: %s",
+            vm, src_host
+        )
+        try:
+            for sample in sampler:
+                if sample != src_host:
+                    vms_host.append(sample)
+                    break
+        except APITimeout as e:
+            logger.error(e.message)
+            return False
+
         vm_obj = VM_API.find(vm)
         if not VM_API.waitForElemStatus(vm_obj, "up", MIGRATION_TIMEOUT):
             logger.info("%s is not UP after migration", vm)
@@ -269,17 +277,7 @@ def check_vms_after_migration(
         ):
             logger.error("Check connectivity to %s failed", vm)
             return False
-        sampler = TimeoutingSampler(
-            timeout=MIGRATION_TIMEOUT, sleep=1, func=vms.getVmHost, vm=vm
-        )
-        logger.info("Checking that the %s switched hosts", vm)
-        try:
-            for sample in sampler:
-                if sample[0] and sample[1]["vmHoster"] != src_host:
-                    vms_host.append(sample[1]["vmHoster"])
-                    break
-        except APITimeout as e:
-            logger.error(e.message)
+
     if dst_host:
         logger.info(
             "Checking that all VMs moved to destination host (%s)", dst_host

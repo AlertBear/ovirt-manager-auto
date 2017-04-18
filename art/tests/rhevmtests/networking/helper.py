@@ -82,40 +82,6 @@ def create_random_ips(num_of_ips=2, mask=16, ip_version=4, base_ip_prefix="5"):
     return ips
 
 
-@ll_general.generate_logs(step=True)
-def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
-    """
-    Run VM once on specific host
-
-    Args:
-        vm (str): VM name
-        host (str): Host name
-        wait_for_up_status (bool): Wait for VM to be UP
-
-    Returns:
-        bool: True if action succeeded, False otherwise
-    """
-    logger.info("Check if %s is up", host)
-    host_status = ll_hosts.get_host_status(host)
-    if not host_status == ENUMS["host_state_up"]:
-        logger.error("%s status is %s, cannot run VM", host, host_status)
-        return False
-
-    if not ll_vms.runVmOnce(positive=True, vm=vm, host=host):
-        return False
-
-    if wait_for_up_status:
-        ll_vms.wait_for_vm_states(vm_name=vm)
-
-    logger.info("Check that %s was started on host %s", vm, host)
-    vm_host = ll_vms.getVmHost(vm)[1]["vmHoster"]
-    if not host == vm_host:
-        logger.error(
-            "%s should run on %s instead of %s", vm, host, vm_host)
-        return False
-    return True
-
-
 def seal_vm(vm, root_password):
     """
     Start VM, seal VM and stop VM

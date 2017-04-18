@@ -1691,8 +1691,8 @@ class BaseTestCase5997(BaseTestCase):
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
         )
         testflow.step("Killing VM's %s pid", self.vm_name)
-        _, host = ll_vms.getVmHost(self.vm_name)
-        vm_host = host['vmHoster']
+        vm_host = ll_vms.get_vm_host(vm_name=self.vm_name)
+        assert vm_host, "Failed to get VM: %s hoster" % self.vm_name
         host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=vm_host
         )

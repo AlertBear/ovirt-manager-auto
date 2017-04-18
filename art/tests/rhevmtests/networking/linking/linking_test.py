@@ -8,17 +8,23 @@ The following elements will be created for the testing:
 1 DC, 1 Cluster, 1 Hosts, 8 vNICs, 3 vNIC profiles, 7 networks and 2 VMs
 """
 
+import config as linking_conf
+
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as linking_conf
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    vms as hl_vms
+)
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import add_vnics_to_vms, add_vnic_profile
 from rhevmtests.fixtures import start_vm
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -422,7 +428,7 @@ class TestLinkedCase05(NetworkTest):
         testflow.step(
             "Run once VM: %s on host: %s", self.vm, conf.HOST_0_NAME
         )
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 

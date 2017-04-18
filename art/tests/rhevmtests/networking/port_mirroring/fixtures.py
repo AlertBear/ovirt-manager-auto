@@ -135,7 +135,7 @@ def return_vms_to_original_host(request):
         Migrate all VMs back to original host
         """
         testflow.teardown("Return VMs to original host")
-        helper.return_vms_to_original_host()
+        assert helper.migrate_vms_to_origin_host()
     request.addfinalizer(fin)
 
 

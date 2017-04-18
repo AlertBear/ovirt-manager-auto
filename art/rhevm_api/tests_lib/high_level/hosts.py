@@ -1,3 +1,5 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 """
 High-level functions above data-center
 """
@@ -6,6 +8,7 @@ import logging
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.test_handler.exceptions as errors
 from art.core_api import apis_exceptions
 from art.test_handler.settings import opts
@@ -80,6 +83,7 @@ def move_host_to_another_cluster(host, cluster, activate=True):
     return True
 
 
+@ll_general.generate_logs(step=True)
 def deactivate_host_if_up(host):
     """
     Deactivate host if it's not in maintenance
@@ -208,9 +212,10 @@ def remove_power_management(host_name):
     return True
 
 
+@ll_general.generate_logs(step=True)
 def activate_host_if_not_up(host):
     """
-    Activate the host if the host is not up
+    Activate host if not up
 
     Args:
         host (str): IP/FQDN of the host

@@ -11,11 +11,9 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms
 )
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import config as sriov_conf
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
-)
+from rhevmtests.networking import config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -92,7 +90,7 @@ class TestSriovImportExport01(NetworkTest):
             name=self.import_vm_name
         )
         testflow.step("Start VM")
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.import_vm_name, host=conf.HOST_0_NAME,
             wait_for_up_status=True
         )
@@ -130,7 +128,7 @@ class TestSriovImportExport01(NetworkTest):
             template=self.import_template_name
         )
         testflow.step("Start VM")
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.vm_from_template, host=conf.HOST_0_NAME,
             wait_for_up_status=True
         )

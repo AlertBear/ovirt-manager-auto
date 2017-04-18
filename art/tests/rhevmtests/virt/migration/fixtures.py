@@ -16,12 +16,10 @@ from art.rhevm_api.tests_lib.high_level import (
 from art.rhevm_api.tests_lib.low_level import (
     clusters as cluster_api,
     disks as ll_disks,
-    networks as ll_networks,
     vms as ll_vms,
     storagedomains as ll_sd
 )
 import rhevmtests.helpers as gen_helper
-import rhevmtests.networking.helper as net_helper
 import rhevmtests.virt.helper as virt_helper
 import config
 import migration_helper
@@ -53,37 +51,6 @@ def migration_init(request):
         vm_list=[config.MIGRATION_VM],
         wait_for_status=config.VM_UP,
         wait_for_ip=True
-    )
-
-
-@pytest.fixture(scope="module")
-def network_migrate_init(request):
-    """
-    For network migration cases:
-    prepare all networks (in config)
-    """
-
-    def fin():
-        """
-        Remove the all networks configure in setup from data center
-        """
-        testflow.teardown(
-            "Remove the all networks configure in setup from data center"
-        )
-        assert hl_networks.remove_net_from_setup(
-            host=config.HOSTS[:2], data_center=config.DC_NAME[0], all_net=True
-        )
-    request.addfinalizer(fin)
-
-    testflow.setup(
-        "Set all but 2 hosts in the Cluster %s to the maintenance "
-        "state", config.CLUSTER_NAME[0]
-    )
-    virt_helper.set_host_status()
-    net_helper.prepare_networks_on_setup(
-        networks_dict=config.NETS_DICT,
-        dc=config.DC_NAME[0],
-        cluster=config.CLUSTER_NAME[0]
     )
 
 
@@ -145,7 +112,7 @@ def create_vm_for_load(request):
         testflow.teardown(
             "Restart migrate vm %s on first host", config.MIGRATION_VM
         )
-        hl_vms.start_vm_on_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=config.MIGRATION_VM,
             host=config.HOSTS[0],
             wait_for_ip=True
@@ -175,7 +142,7 @@ def create_vm_for_load(request):
     )
     assert status, virt_helper.get_err_msg(action[2])
     testflow.setup("Start vm on host %s", config.HOSTS[host_index_max_mem])
-    assert net_helper.run_vm_once_specific_host(
+    assert hl_vms.run_vm_once_specific_host(
         vm=vm_name,
         wait_for_up_status=True,
         host=config.HOSTS[host_index_max_mem]
@@ -231,7 +198,7 @@ def start_vms_on_specific_host(request):
     testflow.setup("Start vms on different hosts")
     for host, vms in vms_to_host.items():
         for vm_to_start in vms:
-            assert net_helper.run_vm_once_specific_host(
+            assert hl_vms.run_vm_once_specific_host(
                 vm=vm_to_start,
                 host=host,
                 wait_for_up_status=True
@@ -354,7 +321,7 @@ def migrate_to_diff_dc(request):
         "Stop vm and run in on host %s only host in cluster", config.HOSTS[0]
     )
     ll_vms.stop_vms_safely([config.MIGRATION_VM])
-    net_helper.run_vm_once_specific_host(
+    assert hl_vms.run_vm_once_specific_host(
         vm=config.MIGRATION_VM,
         host=config.HOSTS[0],
         wait_for_up_status=True
@@ -409,7 +376,7 @@ def over_load_test(request, update_cluster_over_commit):
             vms_list=test_vms, memory=int(vm_default_mem),
             max_memory=gen_helper.get_gb(4)
         )
-        hl_vms.start_vm_on_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=config.MIGRATION_VM,
             host=config.HOSTS[0],
             wait_for_ip=True
@@ -472,57 +439,6 @@ def migration_options_test(request):
         wait_for_status=config.VM_UP,
         wait_for_ip=False
     ), virt_helper.get_err_msg(action=actions[0], vm_name=vm_name)
-
-
-@pytest.fixture(scope="class")
-def add_nic_to_vm(request):
-    """
-    Add NIC to VM
-    """
-    vm_name = request.node.cls.vm_name
-    nic = request.node.cls.nic
-    network = request.node.cls.network
-
-    def fin():
-        """
-        Remove NIC
-        """
-        testflow.teardown("Remove NIC")
-        ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=nic, plugged="false"
-        )
-        ll_vms.removeNic(positive=True, vm=config.VM_NAME[0], nic=nic)
-    request.addfinalizer(fin)
-
-    testflow.setup("Add new NIC to VM")
-    assert ll_vms.addNic(positive=True, vm=vm_name, name=nic, network=network)
-
-
-@pytest.fixture(scope="class")
-def update_migration_network_on_cluster(request):
-    """
-    Update network to be migration network on cluster
-    """
-    migration_network = request.node.cls.migration_network
-    networks = request.node.cls.networks
-
-    def fin():
-        """
-        Set network as non-required network
-        """
-        testflow.teardown("Set network as non-required network")
-        for network in networks:
-            ll_networks.update_cluster_network(
-                positive=True, cluster=config.CLUSTER_NAME[0],
-                network=network, required=False, usages="vm"
-            )
-    request.addfinalizer(fin)
-
-    testflow.setup("Update network to be migration network on cluster")
-    assert ll_networks.update_cluster_network(
-        positive=True, cluster=config.CLUSTER_NAME[0],
-        network=migration_network, usages="migration"
-    )
 
 
 @pytest.fixture(scope="class")
@@ -592,7 +508,7 @@ def start_vm_on_spm(request):
         positive=True,
         datacenter=config.DATA_CENTER_NAME
     )
-    assert net_helper.run_vm_once_specific_host(
+    assert hl_vms.run_vm_once_specific_host(
         vm=config.MIGRATION_VM,
         host=spm_host.get_name(),
         wait_for_up_status=True

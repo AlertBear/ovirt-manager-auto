@@ -118,7 +118,7 @@ def vm_prepare_setup(request):
             positive=True, vm=vm, name=nic, network=network,
             vnic_profile=network
         )
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )
         mgmt_ip = hl_vms.get_vm_ip(vm_name=vm, start_vm=False)

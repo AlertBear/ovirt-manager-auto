@@ -543,9 +543,9 @@ class TestCase4913(DefaultEnvironment):
             "Found IP %s for storage domain %s",
             self.storage_domain_ip, storage_domain_name
         )
-        self.host_ip = ll_hosts.get_host_ip(
-            ll_hosts.getVmHost(self.vm_name)[1]['vmHoster']
-        )
+        vm_host = ll_hosts.get_vm_host(vm_name=self.vm_name)
+        assert vm_host, "Failed to get VM: %s hoster" % self.vm_name
+        self.host_ip = ll_hosts.get_host_ip(host=vm_host)
         logger.info("Blocking connection from vdsm to storage domain")
         status = blockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
@@ -1400,7 +1400,7 @@ class TestCase4930(DefaultEnvironment):
         self.prepare_disks_for_vm(read_only=True)
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         logger.info("Killing qemu process")
-        self.host = ll_hosts.getVmHost(self.vm_name)[1]['vmHoster']
+        self.host = ll_hosts.get_vm_host(vm_name=self.vm_name)
         host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=self.host
         )

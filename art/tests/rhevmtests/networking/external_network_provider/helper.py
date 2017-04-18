@@ -5,21 +5,15 @@
 External Network Provider helper functions
 """
 
+import config as ovn_conf
 import logging
 import re
 import shlex
 
-import config as ovn_conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as net_helper
-from art.rhevm_api.tests_lib.high_level import (
-    vms as hl_vms,
-    hosts as hl_hosts
-)
-from art.rhevm_api.tests_lib.low_level import (
-    hosts as ll_hosts,
-    vms as ll_vms
-)
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
+from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.unittest_lib import testflow
 from utilities import jobs
 
@@ -38,7 +32,7 @@ def run_vm_on_host(vm, host):
         bool: True if VM started successfully, False otherwise
 
     """
-    if net_helper.run_vm_once_specific_host(
+    if hl_vms.run_vm_once_specific_host(
         vm=vm, host=host, wait_for_up_status=True
     ):
         ovn_conf.OVN_VMS_RESOURCES[vm] = global_helper.get_vm_resource(
@@ -234,7 +228,7 @@ def check_dns_resolver(vm, ip_address):
 
 
 def check_hot_unplug_and_plug(
-        vm, vnic, network=None, vnic_profile=None, mac_address=None
+    vm, vnic, network=None, vnic_profile=None, mac_address=None
 ):
     """
     Check hot-plug and hot-unplug vNIC on VM, and change network, vNIC
@@ -315,23 +309,6 @@ def check_ping_during_vm_migration(ping_kwargs, migration_kwargs):
     )
 
     return migrate_job.result and ping_job.result
-
-
-def wait_for_up_state_and_reactivate(host):
-    """
-    Wait for host up state and reactivate host
-
-    Args:
-        host (str): Host name
-
-    Returns:
-        bool: True if result was successful, False otherwise
-
-    """
-    wait = ll_hosts.wait_for_hosts_states(positive=True, names=host)
-    deactivate = hl_hosts.deactivate_host_if_up(host=host)
-    activate = hl_hosts.activate_host_if_not_up(host=host)
-    return wait and deactivate and activate
 
 
 def service_handler(host, service, action="stop"):

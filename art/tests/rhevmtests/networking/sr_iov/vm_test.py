@@ -10,15 +10,13 @@ import pytest
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
-)
+import rhevmtests.networking.config as conf
 from art.core_api import apis_utils
 from art.rhevm_api.tests_lib.low_level import (
     events as ll_events,
     vms as ll_vms
 )
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -86,7 +84,7 @@ class TestSriovVm01(NetworkTest):
         Try to run VM when there are zero VFs
         """
         testflow.step("Try to run VM when there are zero VFs")
-        assert not network_helper.run_vm_once_specific_host(
+        assert not hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
@@ -97,7 +95,7 @@ class TestSriovVm01(NetworkTest):
         Try to change the number of VFs and fail when the only VF is occupied
         """
         assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(1)
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
         testflow.step(
@@ -141,7 +139,7 @@ class TestSriovVm01(NetworkTest):
             "Try to run a second VM when there is only one VF that is already"
             "occupied by the first VM"
         )
-        assert not network_helper.run_vm_once_specific_host(
+        assert not hl_vms.run_vm_once_specific_host(
             vm=self.extra_vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
         assert ll_vms.removeNic(
@@ -204,7 +202,7 @@ class TestSriovVm01(NetworkTest):
         Hotplug new vNIC profile with passthrough property
         Try to edit vNIC profile with passthrough property to be virtIO
         """
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
         last_event = ll_events.get_last_event(
@@ -411,7 +409,7 @@ class TestSriovVm03(NetworkTest):
         Run VM with different types of vNIC profile
         """
         testflow.step("Run VM with different types of vNIC profile")
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
@@ -490,7 +488,7 @@ class TestSriovVm04(NetworkTest):
             "Try to run a VM with network not specified in "
             "all_networks_allowed"
         )
-        assert not network_helper.run_vm_once_specific_host(
+        assert not hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
@@ -507,7 +505,7 @@ class TestSriovVm04(NetworkTest):
         testflow.step(
             "Try to run VM with label not specified in all_networks_allowed"
         )
-        assert not network_helper.run_vm_once_specific_host(
+        assert not hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
@@ -528,7 +526,7 @@ class TestSriovVm04(NetworkTest):
         testflow.step(
             "Add network to all_networks_allowed and run VM"
         )
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
         testflow.step("Stop VM %s", self.vm)
@@ -551,7 +549,7 @@ class TestSriovVm04(NetworkTest):
         testflow.step(
             "Set all_networks_allowed to specific label and run VM"
         )
-        assert network_helper.run_vm_once_specific_host(
+        assert hl_vms.run_vm_once_specific_host(
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 

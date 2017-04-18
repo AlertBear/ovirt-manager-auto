@@ -10,6 +10,7 @@ import os
 
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import rhevmtests.networking.config as net_config
 import config
 from storageapi.storageErrors import GetLUNInfoError
 from storageapi.storageManagerWrapper import StorageManagerWrapper
@@ -384,13 +385,12 @@ def get_host_resource_by_name(host_name):
         host_name (str): host name
 
     Returns:
-        VDS: host resource
+        VDS: host resource, or None if not found
     """
-    host_ip = ll_hosts.get_host_ip_from_engine(host_name)
-    for host_resource in config.VDS_HOSTS:
-        if host_ip in (host_resource.ip, host_resource.fqdn):
-            return host_resource
-    return None
+    return (
+        net_config.VDS_HOSTS[net_config.HOSTS.index(host_name)]
+        if host_name in net_config.HOSTS else None
+    )
 
 
 def wait_for_vm_gets_to_full_memory(vm_name, expected_memory, threshold=0.9):

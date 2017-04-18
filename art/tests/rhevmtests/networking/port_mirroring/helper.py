@@ -77,21 +77,30 @@ def set_port_mirroring(
     return True
 
 
-def return_vms_to_original_host():
+def migrate_vms_to_origin_host():
     """
-    Returns all the VMs to original host they were on
+    Migrate all VM's to their origin host
+
+    Returns:
+        bool: True if succeeded to migrate all VM's, False otherwise
     """
-    logger.info(
-        "Return (migrate) all vms to %s", conf.HOST_0_NAME
-    )
+    vms = list()
+    src_host = conf.HOST_1_NAME
+    dst_host = conf.HOST_0_NAME
+
+    logger.info("Migrate VM's to HOST: %s", dst_host)
     vms = filter(
-        lambda x: ll_vms.getVmHost(x)[1]["vmHoster"] == conf.HOST_1_NAME,
+        lambda x: ll_vms.get_vm_host(vm_name=x) == src_host,
         conf.VM_NAME[:pm_conf.NUM_VMS]
     )
-    hl_vms.migrate_vms(
-        vms_list=vms, src_host=conf.HOST_1_NAME,
-        vm_os_type="rhel", vm_user=conf.VMS_LINUX_USER,
-        vm_password=conf.VMS_LINUX_PW, dst_host=conf.HOST_0_NAME
+    if not vms:
+        logger.error("Failed to locate the origin host of VM's")
+        return False
+
+    return hl_vms.migrate_vms(
+        vms_list=vms, src_host=src_host, vm_os_type="rhel",
+        vm_user=conf.VMS_LINUX_USER, vm_password=conf.VMS_LINUX_PW,
+        dst_host=dst_host
     )
 
 

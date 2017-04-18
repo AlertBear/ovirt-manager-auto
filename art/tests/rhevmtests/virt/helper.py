@@ -19,12 +19,9 @@ from art.test_handler import exceptions
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
-import art.unittest_lib.network as lib_network
-import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
-    networks as ll_networks,
     storagedomains as ll_sd,
     vms as ll_vms,
     vmpools as ll_vmpools,
@@ -60,110 +57,6 @@ VIRSH_VM_IOTHREADS_DRIVERS_CMD = "virsh -r dumpxml %s | grep 'iothread='"
 test_handler.find_test_file.__test__ = False
 
 
-def get_origin_host(vm):
-    """
-    Check where VM is located
-
-    Args:
-    vm (str): vm on the host
-
-    Returns:
-        tuple: host obj and host name where the VM is located
-    """
-    orig_host = lib_network.get_host(vm)
-    if orig_host not in config.HOSTS[:2]:
-        logger.error("VM doesn't reside on provided hosts")
-        return None, None
-    orig_host_ip = ll_hosts.get_host_ip_from_engine(orig_host)
-    orig_host_obj = resources.VDS(orig_host_ip, config.HOSTS_PW)
-    return orig_host_obj, orig_host
-
-
-def get_dst_host(orig_host_obj):
-    """
-    Check what is dst Host for migration
-
-    Args:
-    orig_host_obj (host): Origin host object
-
-    Returns:
-        tuple: host obj and host name where to migrate VM
-    """
-    dst_host_obj = filter(
-        lambda x: x.ip != orig_host_obj.ip, config.VDS_HOSTS[:2]
-    )[0]
-    dst_host = ll_hosts.get_host_name_from_engine(dst_host_obj)
-    return dst_host_obj, dst_host
-
-
-def migrate_vms_and_check_traffic(
-    vms, nic_index=1, vlan=None, bond=None, req_nic=None, maintenance=False,
-    non_vm=False
-):
-    """
-    Check migration by putting required network down or put host to maintenance
-    and check migration traffic via tcpdump.
-    Send only req_nic or maintenance
-
-    Args:
-        vms (list): VMs to migrate
-        nic_index (int): index for the nic where the migration happens
-        vlan (str): Network VLAN
-        bond (str): Network Bond
-        req_nic (int): index for nic with required network
-        maintenance (bool): Migrate by set host to maintenance
-        non_vm (bool): True if network is Non-VM network
-    Raises:
-            AssertionError: if migration failed
-    """
-    (
-        orig_host_obj,
-        orig_host,
-        dst_host_obj,
-        dst_host
-    ) = get_orig_and_dest_hosts(vms)
-
-    if req_nic:
-        log_msg = "by putting %s down" % req_nic
-    elif maintenance:
-        log_msg = "by putting %s to maintenance" % orig_host
-    else:
-        log_msg = ""
-
-    logger.info(
-        "Getting src IP and dst IP from %s", " and ".join(config.HOSTS[:2])
-    )
-    if nic_index == 0:
-        src, dst = orig_host_obj.ip, dst_host_obj.ip
-    else:
-        src, dst = lib_network.find_ip(
-            vm=vms[0], host_list=config.VDS_HOSTS[:2], nic_index=nic_index,
-            vlan=vlan, bond=bond
-        )
-        network_helper.send_icmp_sampler(host_resource=orig_host_obj, dst=dst)
-
-    logger.info("Found: src IP: %s. dst IP: %s", src, dst)
-
-    nic = orig_host_obj.nics[nic_index] if not bond else bond
-    nic = "%s.%s" % (nic, vlan) if vlan else nic
-    nic = nic if non_vm else ll_networks.get_network_on_host_nic(
-        orig_host, nic
-    )
-    logger.info(
-        "Start migration from %s to %s over %s (%s)", orig_host, dst_host,
-        nic, src
-    )
-    if bond:
-        logger.info("Migrate over BOND, sleep for 30 seconds")
-        time.sleep(30)
-    err = "Couldn't migrate %s over %s %s" % (vms, nic, log_msg)
-    assert check_traffic_while_migrating(
-        vms=vms, orig_host_obj=orig_host_obj, orig_host=orig_host,
-        dst_host=dst_host, nic=nic, src_ip=src, dst_ip=dst,
-        req_nic=req_nic, maintenance=maintenance
-    ), err
-
-
 def set_host_status(activate=False):
     """
     Set host to operational/maintenance state
@@ -181,86 +74,6 @@ def set_host_status(activate=False):
     for host in config.HOSTS[2:]:
         err = "Couldn't put %s into %s" % (host, host_state)
         assert call_func(True, host), err
-
-
-def check_traffic_while_migrating(
-    vms, orig_host_obj, orig_host, dst_host, nic, src_ip, dst_ip,
-    req_nic=None, maintenance=False
-):
-    """
-    Search for packets in tcpdump output during migration
-
-    Args:
-        vms (list): VMs to migrate
-        orig_host_obj (resources.VDS object): Host object of original Host
-        orig_host (str): orig host
-        dst_host (str): destination host
-        nic (str): NIC where IP is configured for migration
-        src_ip (str): IP from where the migration should be sent
-        dst_ip (str): IP where the migration should be sent
-        req_nic (int): NIC with required network
-        maintenance (bool): Migrate by set host to maintenance
-
-    Returns:
-        bool: True is migrate succeed, otherwise False
-    """
-    dump_timeout = config.TIMEOUT * 3 if not req_nic else config.TIMEOUT * 4
-    req_nic = orig_host_obj.nics[req_nic] if req_nic else None
-    check_vm_migration_kwargs = {
-        "vms_list": vms,
-        "src_host": orig_host,
-        "vm_user": config.HOSTS_USER,
-        "vm_password": config.VMS_LINUX_PW,
-        "vm_os_type": "rhel"
-    }
-    tcpdump_kwargs = {
-        "host_obj": orig_host_obj,
-        "nic": nic,
-        "src": src_ip,
-        "dst": dst_ip,
-        "numPackets": config_virt.NUM_PACKETS,
-    }
-    if req_nic:
-        func = hl_vms.migrate_by_nic_down
-        check_vm_migration_kwargs["nic"] = req_nic
-        check_vm_migration_kwargs["password"] = config.HOSTS_PW
-        tcpdump_kwargs["timeout"] = str(config.TIMEOUT * 4)
-
-    elif maintenance:
-        func = hl_vms.migrate_by_maintenance
-
-    else:
-        func = hl_vms.migrate_vms
-        check_vm_migration_kwargs["dst_host"] = dst_host
-
-    tcpdump_job = jobs.Job(test_utils.run_tcp_dump, (), tcpdump_kwargs)
-    migration_job = jobs.Job(func, (), check_vm_migration_kwargs)
-    job_set = jobs.JobsSet()
-    job_set.addJobs([tcpdump_job, migration_job])
-    job_set.start()
-    job_set.join(dump_timeout)
-    return tcpdump_job.result and migration_job.result
-
-
-def get_orig_and_dest_hosts(vms):
-    """
-    Get orig_host_obj, orig_host, dst_host_obj, dst_host for VMs and check
-    that all VMs are started on the same host
-
-    Args:
-        vms (list): VMs to check
-
-    Returns
-        tuple: orig_host_obj, orig_host, dst_host_obj, dst_host
-    """
-    orig_hosts = [ll_vms.get_vm_host(vm) for vm in vms]
-    logger.info("Checking if all VMs are on the same host")
-    res = (orig_hosts[1:] == orig_hosts[:-1])
-    assert res, "Not all VMs are on the same host"
-
-    orig_host_obj, orig_host = get_origin_host(vms[0])
-    dst_host_obj, dst_host = get_dst_host(orig_host_obj)
-    return orig_host_obj, orig_host, dst_host_obj, dst_host
 
 
 def copy_file_to_vm(vm_ip, source_file_path, destination_path):
