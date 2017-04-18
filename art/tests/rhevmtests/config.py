@@ -569,6 +569,7 @@ CPU_SHARE_HIGH = 2048
 
 # Common related jobs
 JOB_STARTED = ENUMS['job_started']
+JOB_FAILED = ENUMS['job_failed']
 # Disk section
 JOB_ADD_DISK = ENUMS['job_add_disk']
 JOB_IMPORT_IMAGE = ENUMS['job_import_repo_image']
@@ -593,6 +594,7 @@ JOB_ADD_GLUSTERFS_DOMAIN = ENUMS['job_add_glusterfs_storage_domain']
 JOB_ADD_STORAGE_DOMAIN = ENUMS['job_add_storage_domain']
 JOB_DETACH_DOMAIN = ENUMS['job_detach_storage_domain']
 JOB_REMOVE_DOMAIN = ENUMS['job_remove_storage_domain']
+JOB_REDUCE_DOMAIN = ENUMS['job_reduce_storage_domain']
 # Template section
 JOB_ADD_TEMPLATE = ENUMS['job_add_template']
 JOB_ADD_VM_FROM_TEMPLATE = ENUMS['job_add_vm_from_template']

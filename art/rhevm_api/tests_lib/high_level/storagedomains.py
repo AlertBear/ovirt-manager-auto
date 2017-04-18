@@ -219,7 +219,7 @@ def add_iscsi_data_domain(
     :param lun: lun number
     :type lun: str
     :param lun_address: iscsi server address
-    :type lun_address:str
+    :type lun_address: str
     :param lun_target: iscsi target (name of lun on iscsi address)
     :type lun_target: str
     :param lun_port: lun port
@@ -238,7 +238,6 @@ def add_iscsi_data_domain(
 
     if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target, login_all):
         return False
-
     if not ll_sd.addStorageDomain(
         True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
         storage_type=ENUMS['storage_type_iscsi'], lun=lun,
@@ -256,31 +255,31 @@ def add_iscsi_data_domain(
 
 
 def extendISCSIDomain(
-        storage_domain, host, extend_lun, extend_lun_address,
-        extend_lun_target, extend_lun_port=3260, override_luns=None):
+    storage_domain, host, extend_lun, extend_lun_address,
+    extend_lun_target, extend_lun_port=3260, override_luns=None
+):
     """
-    Extends iSCSI storage domain using the requested LUN parameters
+    Extend iSCSI storage domain using the requested LUN parameters
 
-    __author__ = "kjachim, glazarov"
-    :param storage_domain: The storage domain which is to be extended
-    :type storage_domain: str
-    :param host: The host to be used with which to extend the storage domain
-    :type host: str
-    :param extend_lun: The LUN to be used when extending storage domain
-    :type extend_lun: str
-    :param extend_lun_address: The iSCSI server address which contains the LUN
-    :type extend_lun_address: str
-    :param extend_lun_target: The iSCSI target (name of the LUN in iSCSI
-    server)
-    :type extend_lun_target: str
-    :param extend_lun_port: The iSCSI server port (default is 3260)
-    :type extend_lun_port: int
-    :param override_luns: True if the block device should be formatted
-    (when not empty), False if block device should be used as is
-    :type override_luns: bool
-    :returns: True when storage domain is successfully extended,
-    False otherwise
-    :rtype: bool
+    Args:
+        storage_domain (str): The name of the storage domain to extend
+        host (str): The host name to use in order to extend the storage domain
+        extend_lun (str): The LUN to use for storage domain extension
+        extend_lun_address (str): The iSCSI portal address that the LUN is
+            exposed from
+        extend_lun_target (str): The iSCSI portal target that the LUN is
+            exposed from
+        extend_lun_port (int): The iSCSI server port (default is 3260)
+        override_luns (bool): True if the block device should be formatted
+            (when not empty), False if block device should be used as is
+
+    Returns:
+        bool: True when storage domain is successfully extended, False
+        otherwise
+
+    Raises:
+        EntityNotFound: In case storage domain or the host object is not found
+
     """
     if not _ISCSIdiscoverAndLogin(host, extend_lun_address, extend_lun_target):
         return False
@@ -292,19 +291,27 @@ def extendISCSIDomain(
         override_luns=override_luns)
 
 
-def extendFCPDomain(storage_domain, host, lun):
+def extendFCPDomain(storage_domain, host, lun, override_luns=None):
     """
-    Description: extends fcp storage domain with given lun
-    Author: kjachim
-    Parameters:
-        * host - host on which storage domain is created
-        * lun - lun which we want to extend storage domain with
-        * storage_domain - storage domain to extend
-    returns True in case of success, False otherwise
+    Extend FCP storage domain with given LUN
+
+    Args:
+        host (str): Host that will perform storage domain creation
+        lun (str): LUN id which we want to extend storage domain with
+        storage_domain (str): The name of the storage domain to extend
+        override_luns (bool): True when storage domain is successfully
+            extended, False otherwise
+
+    returns:
+        bool: True in case of success, False otherwise
+
+    Raises:
+        EntityNotFound: In case storage domain object is not found
+
     """
     return ll_sd.extendStorageDomain(
         True, storagedomain=storage_domain, lun=lun, host=host,
-        storage_type=ENUMS['storage_type_fcp'])
+        storage_type=ENUMS['storage_type_fcp'], override_luns=override_luns)
 
 
 def addGlusterDomain(host, name, data_center, address, path, vfs_type,
@@ -505,7 +512,8 @@ def extend_storage_domain(storage_domain, type_, host, **kwargs):
         __extend_fcp_domain(storage_domain, host, **kwargs)
     else:
         raise errors.UnkownConfigurationException(
-            "Extending storage domain is supported for iscsi/fcp data centers")
+            "The provided storage type is not supported for extend"
+        )
 
 
 def __extend_iscsi_domain(storage_domain, host, **kwargs):

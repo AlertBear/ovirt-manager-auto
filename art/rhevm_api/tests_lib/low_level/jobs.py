@@ -14,18 +14,21 @@ JOB_TIMEOUT = 1200
 TASK_POLL = 5
 
 
-def check_recent_job(positive, description, last_jobs_num=None,
-                     job_status=ENUMS['job_finished']):
+def check_recent_job(
+    description, last_jobs_num=None, job_status=ENUMS['job_finished']
+):
     """
-    Description: Check if in recent jobs exist job with given description
-    **Author**: alukiano
-    **Parameters**:
-      * *description* - search for job with given description
-      * *last_jobs_num* - number of recent jobs you want search in, if None,
-        check all exist jobs
-      * *job_status* - to job must be given state
-    **Returns**: True if exist job with given description, job and job time
-            Else return False, None, None
+    Check if in recent jobs exist job with given description
+
+    Args:
+        description (str): Search for job with given description
+        last_jobs_num (int): Number of recent jobs you want search in, if None,
+            check all exist jobs
+        job_status (str): The job state to look for
+
+    Returns:
+        tuple: (bool: True if job with given description exist, False
+            otherwise; job object)
     """
     jobs = JOBS_API.get(abs_link=False)[:last_jobs_num]
     if not description:
@@ -33,10 +36,12 @@ def check_recent_job(positive, description, last_jobs_num=None,
         return False, None, None
 
     job_status = job_status.lower()
-    jobs = filter(lambda j: (description in j.get_description() and
-                             j.get_status() == job_status), jobs)
-    last_job = max(jobs, key=lambda j: j.get_start_time())
-
+    required_jobs = [
+        job for job in jobs if (
+            re.match(description, job.get_description())
+        ) and job.get_status() == job_status
+    ]
+    last_job = max(required_jobs, key=lambda j: j.get_start_time())
     if last_job:
         return True, last_job
     else:
@@ -240,7 +245,6 @@ def add_step(
             ENUMS['job_unknown']
     ]:
         _, job_obj = check_recent_job(
-            True,
             job_description,
             job_status=status
         )
@@ -307,7 +311,6 @@ def end_job(job_description, job_status, end_status):
         bool: True, if ending job succeeds, False otherwise
     """
     _, job_object = check_recent_job(
-        True,
         job_description,
         job_status=job_status
     )
@@ -335,9 +338,7 @@ def end_step(job_description, job_status, step_description, end_status):
       * *end_status* - end step with specific status False or True
     **Returns**: True, if ending job success,else False
     """
-    job_obj = check_recent_job(True,
-                               job_description,
-                               job_status=job_status)[1]
+    job_obj = check_recent_job(job_description, job_status=job_status)[1]
     if not job_obj:
         logger.warn("Job with given description not exist")
         return False

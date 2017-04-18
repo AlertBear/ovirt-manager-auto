@@ -171,7 +171,6 @@ def add_disk(request):
         self.__name__, config.OBJECT_TYPE_DISK
     )
     disk_params['alias'] = self.disk_name
-
     testflow.setup("Creating disk %s", self.disk_name)
     assert ll_disks.addDisk(True, **disk_params), (
         "Failed to create disk %s" % self.disk_name
@@ -1516,3 +1515,25 @@ def storage_cleanup(request):
     def finalizer():
         rhevm_helpers.storage_cleanup()
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='class')
+def extend_storage_domain(request):
+    """
+    Extend a block based storage domain
+    """
+    self = request.node.cls
+
+    extend_indices = getattr(self, 'extend_indices', [1])
+
+    self.domain_size = ll_sd.get_total_size(
+        storagedomain=self.new_storage_domain
+    )
+
+    testflow.setup(
+        "Extending storage domain %s, current size is %s",
+        self.new_storage_domain, self.domain_size
+    )
+    self.extension_luns = storage_helpers.extend_storage_domain(
+        storage_domain=self.new_storage_domain, extend_indices=extend_indices
+    )

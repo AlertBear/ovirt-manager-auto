@@ -92,7 +92,7 @@ def _check_host_state(host_num, service, job_status):
     assert wait_for_hosts_states(True, config.HOSTS[host_num])
     testflow.step("Check recent jobs for job %s", config.job_description)
     assert check_recent_job(
-        True, description=config.job_description, job_status=job_status
+        description=config.job_description, job_status=job_status
     ), "No job with given description"
     logger.info(
         "SSH soft fencing to host %s %s", config.HOSTS[host_num], job_status

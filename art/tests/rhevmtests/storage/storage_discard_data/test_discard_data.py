@@ -32,7 +32,6 @@ class BaseTestCase(TestCase):
     Common class for all tests with some common methods
     """
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_FCP])
-    __test__ = False
 
     def perform_delete(self):
         """
@@ -162,7 +161,6 @@ class BaseDelete(BaseTestCase):
     Basic class for various delete verbs
     """
     __test__ = False
-    index = None
     create_domain_kwargs = {'discard_after_delete': True}
     template = config.TEMPLATE_NAME[0]
     delete_verb = None

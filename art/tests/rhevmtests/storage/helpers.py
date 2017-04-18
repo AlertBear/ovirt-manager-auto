@@ -1293,7 +1293,6 @@ def add_storage_domain(
     Raises:
         StorageDomainException : If Fails to add the storage-domain
     """
-
     spm = ll_hosts.get_spm_host(config.HOSTS)
     if storage_type == config.STORAGE_TYPE_ISCSI:
         status = hl_sd.add_iscsi_data_domain(
@@ -1613,3 +1612,136 @@ def get_volume_info(hostname, disk_object, dc_obj):
     }
 
     return host_resource.vds_client(cmd="Volume.getInfo", args=args)
+
+
+def extend_storage_domain(storage_domain, extend_indices):
+    """
+    Extend storage domain
+
+    Args:
+        storage_domain (str): Storage domain name
+        extend_indices (list): The indices of the LUNs for extension
+
+    Returns:
+        list: The extension LUNs
+
+    Raises:
+        AssertionError: In case of any failure
+    """
+    storage_type = ll_sd.get_storage_domain_storage_type(storage_domain)
+    extend_kwargs = dict()
+    extension_luns = list()
+    spm = ll_hosts.get_spm_host(config.HOSTS)
+    domain_size = ll_sd.get_total_size(storage_domain)
+
+    if storage_type == config.STORAGE_TYPE_ISCSI:
+        extension_lun_addresses = list()
+        extension_lun_targets = list()
+        for index in range(len(extend_indices)):
+            extension_luns.append(config.UNUSED_LUNS[extend_indices[index]])
+            extension_lun_addresses.append(config.UNUSED_LUN_ADDRESSES[index])
+            extension_lun_targets.append(config.UNUSED_LUN_TARGETS[index])
+        extend_kwargs = {
+            'lun_list': extension_luns,
+            'lun_addresses': extension_lun_addresses,
+            'lun_targets': extension_lun_targets,
+            'override_luns': True
+        }
+
+    elif storage_type == config.STORAGE_TYPE_FCP:
+        for index in range(len(extend_indices)):
+            extension_luns.append(config.UNUSED_FC_LUNS[extend_indices[index]])
+        extend_kwargs = {'lun_list': extension_luns, 'override_luns': True}
+
+    hl_sd.extend_storage_domain(
+        storage_domain=storage_domain, type_=storage_type, host=spm,
+        **extend_kwargs
+    )
+    assert ll_sd.wait_for_change_total_size(
+        storagedomain_name=storage_domain, original_size=domain_size
+    ), "Storage domain %s size hasn't been changed" % storage_domain
+    extended_sd_size = ll_sd.get_total_size(storagedomain=storage_domain)
+    logger.info(
+        "Total size for domain %s after extend is %s",
+        storage_domain, extended_sd_size
+    )
+
+    return extension_luns
+
+
+def reduce_luns_from_storage_domain(
+    storage_domain, luns, expected_size=None, wait=True, positive=True
+):
+    """
+    Reduce LUNs from storage domain
+
+    Args:
+        storage_domain (str): The name of the storage domain to reduce the
+            LUNs from
+        luns (list): The LUNs IDs to remove from the storage domain
+        expected_size (str): The domain size in bytes expected to be after
+            LUNs reduction
+        wait (bool): True for waiting for storage domain reduction, False
+            otherwise
+        positive (bool): True for expecting a success, False otherwise
+
+    Raises:
+        AssertionError: In case of any failure
+    """
+    size_before_reduce = ll_sd.get_total_size(storage_domain)
+    logger.info(
+        "Reducing storage domain %s, size before reduce is %s",
+        storage_domain, size_before_reduce
+    )
+    logger.info("Deactivating storage domain %s", storage_domain)
+    assert hl_sd.deactivate_domain(
+        dc_name=config.DATA_CENTER_NAME, sd_name=storage_domain,
+        engine=config.ENGINE
+    ), "Failed to deactivate storage domain %s" % storage_domain
+    logger.info(
+        "Reducing LUNs %s from storage domain %s" % (luns, storage_domain)
+    )
+    assert ll_sd.reduce_storage_domain_luns(
+        storage_domain=storage_domain, logical_unit_ids=luns
+    ), (
+        "Failed to reduce LUNs %s from storage domain %s" % (
+            luns, storage_domain
+        )
+    )
+    if wait:
+        ll_jobs.wait_for_jobs(job_descriptions=[config.JOB_REDUCE_DOMAIN])
+        if positive:
+            logger.info("Activating storage domain %s", storage_domain)
+            assert ll_sd.activateStorageDomain(
+                positive=True, datacenter=config.DATA_CENTER_NAME,
+                storagedomain=storage_domain
+            ), "Failed to activate storage domain %s" % storage_domain
+
+            assert ll_sd.wait_for_change_total_size(
+                storagedomain_name=storage_domain,
+                original_size=size_before_reduce
+            ), "Storage domain %s size hasn't been changed" % storage_domain
+            size_after_reduce = ll_sd.get_total_size(
+                storagedomain=storage_domain
+            )
+            assert size_after_reduce == expected_size, (
+                "Storage domain %s size hasn't been decreased after LUN "
+                "reduce" % storage_domain
+            )
+
+        else:
+            failed_job_description = (
+                'Reducing Storage Domain %s' % storage_domain
+            )
+            # Checking with the exact job description as there may be other
+            # finished reduce LUNs jobs of previous tests
+            job_exist, job = ll_jobs.check_recent_job(
+                description=failed_job_description,
+                job_status=config.ENUMS['job_failed']
+            )
+            assert job_exist and (
+                re.match(failed_job_description, job.get_description())
+            ), (
+                "LUNs %s reduction from storage domain %s did not fail"
+                "as should have been expected" % (luns, storage_domain)
+            )

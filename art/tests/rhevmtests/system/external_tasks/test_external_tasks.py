@@ -50,7 +50,6 @@ class JobTestTemplate(TestBase):
 
     def check_job(self):
         return job_api.check_recent_job(
-            positive=True,
             description=self.job_description,
             job_status=self.started_state
         )[0]
@@ -93,7 +92,6 @@ class StepTestTemplate(JobTestTemplate):
 
     def get_job_object(self):
         _, job_object = job_api.check_recent_job(
-            positive=True,
             description=self.job_description,
             job_status=self.started_state
         )

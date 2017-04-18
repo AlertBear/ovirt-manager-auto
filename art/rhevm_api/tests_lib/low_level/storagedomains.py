@@ -150,35 +150,38 @@ def _prepareStorageDomainObject(positive, **kwargs):
             )
         )
     elif storage_type == ENUMS['storage_type_iscsi']:
-        logical_unit_object = None
+        logical_units = LogicalUnits()
         lun = kwargs.get('lun', None)
-        lun_address = getIpAddressByHostName(kwargs.get('lun_address', None))
+        lun_address = kwargs.get('lun_address', None)
         lun_target = kwargs.pop('lun_target', None)
         lun_port = kwargs.pop('lun_port', None)
         if lun and lun_address and lun_target:
-            logical_unit = LogicalUnit(
-                id=lun, address=lun_address, target=lun_target, port=lun_port
+            logical_units.add_logical_unit(
+                LogicalUnit(
+                    address=getIpAddressByHostName(lun_address),
+                    target=lun_target, id=lun, port=lun_port
+                )
             )
-            logical_unit_object = LogicalUnits(logical_unit=[logical_unit])
         sd.set_storage(
             HostStorage(
-                type_=storage_type,
-                logical_units=logical_unit_object,
+                type_=storage_type, logical_units=logical_units,
                 override_luns=kwargs.pop('override_luns', None)
             )
         )
+
     elif storage_type == ENUMS['storage_type_fcp']:
-        logical_unit_object = None
-        if kwargs.get('lun'):
-            logical_unit = LogicalUnit(id=kwargs.get('lun', None))
-            logical_unit_object = LogicalUnits(logical_unit=[logical_unit])
+        logical_units = LogicalUnits()
+        lun = kwargs.get('lun', None)
+        if lun:
+            logical_units.add_logical_unit(LogicalUnit(id=lun))
         sd.set_storage(
             HostStorage(
                 type_=storage_type,
-                logical_units=logical_unit_object,
+                logical_units=logical_units,
                 override_luns=kwargs.pop('override_luns', None)
             )
         )
+
     elif (storage_type == ENUMS['storage_type_posixfs'] or
           storage_type == ENUMS['storage_type_gluster']):
         sd.set_storage(
@@ -1988,3 +1991,27 @@ def get_storage_domain_luns_serials(storage_domain, attribute='name'):
     return [
         sd_logical_units[x].get_serial() for x in range(len(sd_logical_units))
     ]
+
+
+@generate_logs()
+def reduce_storage_domain_luns(storage_domain, logical_unit_ids):
+    """
+    Reduce LUNs from block based storage domain
+
+    Args:
+        storage_domain (str): Storage domain name
+        logical_unit_ids (list): Logical units IDs to reduce from the storage
+            domain
+
+    Returns:
+        bool: True in case of success, False otherwise
+    """
+    sd_obj = get_storage_domain_obj(storage_domain)
+
+    lu = LogicalUnits()
+    [lu.add_logical_unit(LogicalUnit(id=lu_id)) for lu_id in logical_unit_ids]
+    return bool(
+        util.syncAction(
+            sd_obj, "reduceluns", positive=True, logical_units=lu
+        )
+    )
