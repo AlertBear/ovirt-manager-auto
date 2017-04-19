@@ -24,7 +24,7 @@ def check_host_upgrade_wait_for_status(host_name):
         host_name (str): Name of the host to be check upgrade for
 
     Returns:
-        bool: True if action finnished without timeout, otherwise False
+        bool: True if action finished without timeout, otherwise False
 
     Raises:
         APITimeouet: When check for upgrade did not start
@@ -53,8 +53,8 @@ def check_host_upgrade_wait_for_status(host_name):
         config.HOST_AVAILABLE_UPDATES_FINISHED, start_id=last_event_id
     ):
         testflow.step(
-            "Check for update finnished timed out, waiting for event - %s",
-            config.HOST_AVAILABLE_UPDATES_FINISHED
+            "Check for update finished timed out, waiting for event - %s",
+            config.HOST_AVAILABLE_UPDATES_FAILED
         )
 
         if not ll_events.wait_for_event(
