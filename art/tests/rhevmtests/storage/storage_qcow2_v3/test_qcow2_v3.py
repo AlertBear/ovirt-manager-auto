@@ -463,7 +463,7 @@ class TestCase18340(TestCase):
     new_disks_names = []
 
     @polarion("RHEVM3-18340")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_create_new_thin_vm_from_template(self):
         testflow.step(
             "Create a template of VM %s" % self.vm_name

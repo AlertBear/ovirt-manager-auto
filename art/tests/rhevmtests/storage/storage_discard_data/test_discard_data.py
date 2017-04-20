@@ -189,7 +189,7 @@ class TestCase19569(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-19569")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_update_discard_flag_on_storage_domain(self):
         """
         Checking update discard_after_delete flag from false to true
