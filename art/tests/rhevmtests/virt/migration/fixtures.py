@@ -124,10 +124,10 @@ def update_cluster_over_commit(request):
 
 
 @pytest.fixture(scope="module")
-def create_vm_from_glance(request):
+def create_vm_for_load(request):
     """
     1. Stop Migrate VM
-    2. Create VM with load tool (pig) from glance
+    2. Create VM with load tool (pig) from template
     3. Update VM memory to 85% of host memory
     4. Run VM on host with maximum memory
     """
@@ -154,11 +154,8 @@ def create_vm_from_glance(request):
 
     testflow.setup("Stop migrate vm %s ", config.MIGRATION_VM)
     assert ll_vms.stop_vms_safely(vms_list=[config.MIGRATION_VM])
-    testflow.setup("Create vm with load tool from glance")
-    assert virt_helper.create_vm_from_glance_image(
-        image_name=config.MIGRATION_IMAGE_VM,
-        vm_name=vm_name
-    ), virt_helper.get_err_msg(action=action[0], vm_name=vm_name)
+    testflow.setup("Create VM for load %s", vm_name)
+    assert virt_helper.create_vm_from_template(vm_name)
     testflow.setup("Update vm memory to 85 percent of host memory")
     assert ll_vms.updateVm(
         positive=True,
@@ -242,10 +239,10 @@ def start_vms_on_specific_host(request):
 
 
 @pytest.fixture(scope="class")
-def setting_migration_vm(request, create_vm_from_glance):
+def setting_migration_vm(request, create_vm_for_load):
     """
     Setting migration vm for cases with load and large memory
-    With vm created from Glance
+    With vm created from template
     """
 
     def fin():

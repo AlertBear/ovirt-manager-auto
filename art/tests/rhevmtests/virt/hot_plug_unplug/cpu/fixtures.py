@@ -52,9 +52,9 @@ def cpu_hot_plug_setup(request):
 
 
 @pytest.fixture(scope="module")
-def create_vm_from_glance(request):
+def create_vm_for_load(request):
     """
-    Setup: Creates a vm with pig load tool from glance.
+    Setup: Creates a vm with pig load tool from template.
     Teardown: Removes vm from engine.
     """
     vm_name = config.CPU_HOTPLUG_VM_LOAD
@@ -67,11 +67,8 @@ def create_vm_from_glance(request):
         ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin)
-    testflow.setup("Import from glance vm %s for CPU hotplug test", vm_name)
-    virt_helper.create_vm_from_glance_image(
-        image_name=config.MIGRATION_IMAGE_VM,
-        vm_name=vm_name
-    )
+    testflow.setup("Create VM %s", vm_name)
+    assert virt_helper.create_vm_from_template(vm_name)
     assert ll_vms.updateVm(
         positive=True,
         vm=vm_name,
@@ -156,7 +153,7 @@ def init_and_start_vm(params, vm_name):
 
 
 @pytest.fixture(scope='function')
-def migrate_vm_for_test(request, create_vm_from_glance):
+def migrate_vm_for_test(request, create_vm_for_load):
     """
     Load vm and migrate it in order to hot plug vm while migrating
     """

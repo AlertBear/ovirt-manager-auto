@@ -48,7 +48,7 @@ RUN_SCRIPT_COMMAND = (
     'python /tmp/memoryLoad.py -s %s -r %s &> /tmp/OUT1 & echo $!'
 )
 LOAD_VM_COMMAND = (
-    '/home/loadTool -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
+    '/home/pig -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
 )
 VIRSH_VM_LIST_CMD = "virsh -r list | grep "
 VIRSH_VM_DUMP_XML_CMD = "virsh -r dumpxml "
@@ -369,31 +369,6 @@ def compare_resources_lists(before_list, after_list):
                     return False
     logging.info("Resources cleaned from hosts")
     return True
-
-
-def create_vm_from_glance_image(image_name, vm_name):
-    """
-    Create VM with glance image on NFS storage domain
-
-    Args:
-        image_name (str): The image name in glance
-        vm_name (str): VM name to create
-
-    Returns:
-        bool: True if VM created else False
-    """
-    sd_name = ll_sd.getStorageDomainNamesForType(
-        datacenter_name=config.DC_NAME[0],
-        storage_type=config.STORAGE_TYPE
-    )[0]
-    return hl_vms.create_vm_using_glance_image(
-        vmName=vm_name, vmDescription=vm_name,
-        cluster=config.CLUSTER_NAME[0], nic=config.NIC_NAME[0],
-        storageDomainName=sd_name, network=config.MGMT_BRIDGE,
-        glance_storage_domain_name=config.GLANCE_DOMAIN,
-        glance_image=image_name
-
-    )
 
 
 def load_vm_memory_with_load_tool(
