@@ -50,7 +50,7 @@ def add_host_if_missing():
             raise HostException("Add host {0} failed.".format(hosts[0]))
 
 
-class TestPowerManagement(TestCase):
+class PowerManagement(TestCase):
     """
     Base class for test cases including power management
     """
@@ -58,8 +58,6 @@ class TestPowerManagement(TestCase):
     pm_address = None
     pm_user = None
     pm_password = None
-
-    __test__ = False
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
@@ -86,13 +84,10 @@ class TestPowerManagement(TestCase):
             raise HostException()
 
 
-class TestActiveHost(TestCase):
+class ActiveHost(TestCase):
     """
     Base class for test cases using an active host
     """
-
-    __test__ = False
-
     @classmethod
     @pytest.fixture(scope="class")
     def setup_class(cls, request):
@@ -106,13 +101,10 @@ class TestActiveHost(TestCase):
                 )
 
 
-class TestHostInMaintenance(TestCase):
+class HostInMaintenance(TestCase):
     """
     Base class for test cases using a host in maintenance state
     """
-
-    __test__ = False
-
     @classmethod
     @pytest.fixture(scope="class")
     def setup_class(cls, request):
@@ -144,12 +136,10 @@ class TestHostInMaintenance(TestCase):
 
 
 @attr(tier=1)
-class TestActivateActiveHost(TestActiveHost):
+class TestActivateActiveHost(ActiveHost):
     """
     Negative - Try to activate an active host - should fail
     """
-    __test__ = True
-
     @polarion("RHEVM3-8821")
     def test_activate_active_host(self):
         testflow.step("Activating host %s.", hosts[0])
@@ -162,8 +152,6 @@ class TestUpdateHostName(TestCase):
     Positive  - Update host's name
     """
     NEW_NAME = "test_new_name"
-
-    __test__ = True
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
@@ -199,8 +187,6 @@ class TestAddRemovePowerManagement(TestCase):
     Positive - add power management to host then remove it
     Test does not check PM only adding PM entity
     """
-    __test__ = True
-
     @polarion("RHEVM3-8840")
     def test_add_power_management(self):
         agent = {
@@ -229,7 +215,7 @@ class TestAddRemovePowerManagement(TestCase):
 
 
 @attr(tier=1, extra_reqs={"pm": PM1_TYPE})
-class TestUpdatePowerManagementType(TestPowerManagement):
+class TestUpdatePowerManagementType(PowerManagement):
     """
     Positive - update power management type on host
     """
@@ -237,8 +223,6 @@ class TestUpdatePowerManagementType(TestPowerManagement):
     pm_address = config.PM1_ADDRESS
     pm_user = config.PM1_USER
     pm_password = config.PM1_PASS
-
-    __test__ = True
 
     @polarion("RHEVM3-8841")
     def test_update_power_management_type(self):
@@ -260,7 +244,7 @@ class TestUpdatePowerManagementType(TestPowerManagement):
 
 
 @attr(tier=1, extra_reqs={'pm': PM1_TYPE})
-class TestUpdatePowerManagementInvalidType(TestPowerManagement):
+class TestUpdatePowerManagementInvalidType(PowerManagement):
     """
     Negative - update power management type on host
     """
@@ -270,8 +254,6 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
     pm_address = config.PM1_ADDRESS
     pm_user = config.PM1_USER
     pm_password = config.PM1_PASS
-
-    __test__ = True
 
     @polarion("RHEVM3-8842")
     def test_update_power_management_invalid_type(self):
@@ -291,14 +273,12 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
 
 
 @attr(tier=1)
-class SetSPMToLow(TestCase):
+class TestSetSPMToLow(TestCase):
     """
     Positive - Set SPM priority on host to low
     """
     NORMAL_SPM_LEVEL = 5
     LOW_SPM_LEVEL = 2
-
-    __test__ = True
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
@@ -360,16 +340,14 @@ class SetSPMToLow(TestCase):
 
 
 @attr(tier=1)
-class UpdateIPOfActiveHost(TestActiveHost):
+class TestUpdateIPOfActiveHost(ActiveHost):
     """
     Negative - update ip address on the active host expecting failure
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(UpdateIPOfActiveHost, cls).setup_class(request)
+        super(TestUpdateIPOfActiveHost, cls).setup_class(request)
 
         def finalize():
             testflow.teardown(
@@ -406,12 +384,10 @@ class UpdateIPOfActiveHost(TestActiveHost):
 
 
 @attr(tier=1)
-class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
+class TestSetActiveHostToMaintenanceForReinstallation(ActiveHost):
     """
     Positive = set host to maintenance
     """
-    __test__ = True
-
     @polarion("RHEVM3-8845")
     def test_set_active_host_to_maintenance(self):
         testflow.step("Waiting for tasks on host.")
@@ -427,7 +403,7 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
 
 
 @attr(tier=1)
-class ReinstallHost(TestHostInMaintenance):
+class TestReinstallHost(HostInMaintenance):
     """
     Positive - Reinstall host using password authentication
     """
@@ -435,8 +411,6 @@ class ReinstallHost(TestHostInMaintenance):
     # installation of rhevh - here or in rhevh test suite??
     # OS_RHEL = 'rhel'
     # OS_RHEVH = 'rhevh'
-
-    __test__ = True
 
     @polarion("RHEVM3-8846")
     def test_reinstall_host(self):
@@ -452,12 +426,10 @@ class ReinstallHost(TestHostInMaintenance):
 
 
 @attr(tier=1)
-class ManualFenceForHost(TestHostInMaintenance):
+class TestManualFenceForHost(HostInMaintenance):
     """
     Positive - Manual fence host
     """
-    __test__ = True
-
     @polarion("RHEVM3-8835")
     def test_manual_fence_for_host(self):
         testflow.step("Manual fence host: %s.", hosts[0])
@@ -468,12 +440,10 @@ class ManualFenceForHost(TestHostInMaintenance):
 
 
 @attr(tier=1)
-class ActivateInactiveHost(TestHostInMaintenance):
+class TestActivateInactiveHost(HostInMaintenance):
     """
     Positive - activate host
     """
-    __test__ = True
-
     @polarion("RHEVM3-8847")
     def test_activate_inactive_host(self):
         testflow.step("Activating host: %s.", hosts[0])
@@ -482,12 +452,10 @@ class ActivateInactiveHost(TestHostInMaintenance):
 
 
 @attr(tier=1)
-class ReinstallActiveHost(TestActiveHost):
+class TestReinstallActiveHost(ActiveHost):
     """
     Negative - re install host when active should fail
     """
-    __test__ = True
-
     @polarion("RHEVM3-8848")
     def test_reinstall_active_host(self):
         testflow.step("Reinstalling host: %s.", hosts[0])
@@ -504,13 +472,11 @@ class ReinstallActiveHost(TestActiveHost):
 
 
 @attr(tier=1)
-class CreateHostWithWrongIPAddress(TestCase):
+class TestCreateHostWithWrongIPAddress(TestCase):
     """
     Negative - add host with wrong ip
     """
     NAME = "newhost"
-
-    __test__ = True
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
@@ -538,13 +504,11 @@ class CreateHostWithWrongIPAddress(TestCase):
 
 
 @attr(tier=1)
-class CreateHostWithEmptyRootPassword(TestCase):
+class TestCreateHostWithEmptyRootPassword(TestCase):
     """
     Negative - add host without filling out the root password field
     """
     NAME = "newhost"
-
-    __test__ = True
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
@@ -572,16 +536,14 @@ class CreateHostWithEmptyRootPassword(TestCase):
 
 
 @attr(tier=1)
-class RemoveActiveHost(TestActiveHost):
+class TestRemoveActiveHost(ActiveHost):
     """
     Negative - attempt to remove host while active
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(RemoveActiveHost, cls).setup_class(request)
+        super(TestRemoveActiveHost, cls).setup_class(request)
 
         def finalizer():
             testflow.teardown("Adding host if it's missing.")
@@ -601,14 +563,12 @@ class RemoveActiveHost(TestActiveHost):
 
 
 @attr(tier=1)
-class SearchForHost(TestCase):
+class TestSearchForHost(TestCase):
     """
     Positive - send a query to search for host
     """
     QUERY_KEY = "name"
     KEY_NAME = "name"
-
-    __test__ = True
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
@@ -631,7 +591,7 @@ class SearchForHost(TestCase):
 
 
 @attr(tier=1, extra_reqs={'pm': PM1_TYPE})
-class AddSecondaryPowerManagement(TestPowerManagement):
+class TestAddSecondaryPowerManagement(PowerManagement):
     """
     Positive - add secondary power management
     """
@@ -639,8 +599,6 @@ class AddSecondaryPowerManagement(TestPowerManagement):
     pm_address = config.PM1_ADDRESS
     pm_user = config.PM1_USER
     pm_password = config.PM1_PASS
-
-    __test__ = True
 
     @polarion("RHEVM3-8836")
     def test_add_secondary_power_management(self):

@@ -1,9 +1,6 @@
 """
 Config module for Guest Tools
 """
-
-__test__ = False
-
 import logging
 from rhevmtests.system.config import *  # flake8: noqa
 

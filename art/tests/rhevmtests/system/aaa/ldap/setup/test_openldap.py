@@ -11,36 +11,31 @@ class OpenLdapAutoSetup(base.TestCase):
         pass
 
 
-class OpenLdapUserFromGroup(base.BaseUserFromGroup):
+@bz({'1446525': {}})
+class TestOpenLdapUserFromGroup(base.BaseUserFromGroup):
     """ Login as user from group. """
-    __test__ = True
     domain = 'openldap'
 
-    @bz({'1313516': {}})
     @polarion('RHEVM3-13057')
     def test_user_from_group(self):
         """ Authenticate as user from group """
         self.user_from_group()
 
 
-class OpenLdapExpiredPassword(base.BaseExpiredPassword):
+class TestOpenLdapExpiredPassword(base.BaseExpiredPassword):
     """ Login as user with expired password """
-    __test__ = True
     domain = 'openldap'
 
-    @bz({'1313516': {}})
     @polarion('RHEVM3-13047')
     def test_expired_password(self):
         """ Login as user with expired password """
         self.expired_password()
 
 
-class OpenLdapDisabledAccount(base.BaseDisabledAccount):
+class TestOpenLdapDisabledAccount(base.BaseDisabledAccount):
     """ Login as disabled user """
-    __test__ = True
     domain = 'openldap'
 
-    @bz({'1313516': {}})
     @polarion('RHEVM3-13056')
     def test_disabled_account(self):
         """ Login as user with disabled account """

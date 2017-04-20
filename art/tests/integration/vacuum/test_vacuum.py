@@ -16,8 +16,6 @@ class TestNegative(VacuumTest):
     """
     Check negative test-cases on un-existing table
     """
-    __test__ = True
-
     @polarion("RHEVM-18943")
     def test_wrong_table(self):
         """
@@ -45,8 +43,6 @@ class TestSanityOptions(VacuumTest):
     """
     Check basic options of utility
     """
-    __test__ = True
-
     @polarion("RHEVM-17206")
     def test_run_full(self):
         """
@@ -123,8 +119,6 @@ class TestSpecificTable(VacuumTest):
     """
     Check vacuum utility on specific table
     """
-    __test__ = True
-
     @polarion("RHEVM-17513")
     def test_run_full_table(self):
         """
@@ -189,8 +183,6 @@ class TestVerboseMode(VacuumTest):
     """
     Check verbose mode and logging
     """
-    __test__ = True
-
     @polarion("RHEVM-19093")
     def test_verbose_mode(self):
         """

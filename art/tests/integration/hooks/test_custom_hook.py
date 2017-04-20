@@ -21,8 +21,6 @@ REMOVE_HOOKS = "rm -f /var/tmp/*.hook"
 HOOK_DIR = "/usr/libexec/vdsm/hooks"
 TMP = "/var/tmp"
 
-__test__ = True
-
 logger = logging.getLogger(__name__)
 
 
@@ -99,7 +97,6 @@ def setup_module(request):
 
 class TestCaseVm(TestCase):
     """ vm hooks """
-    __test__ = False
     CUSTOM_HOOK = "auto_custom_hook"
     PY = "py"
 
@@ -162,8 +159,6 @@ class TestCaseVm(TestCase):
 
 class TestCaseVdsm(TestCase):
     """ vdsm hooks """
-    __test__ = False
-
     SHELL = "sh"
 
     @classmethod
@@ -241,8 +236,6 @@ class TestCaseVdsm(TestCase):
 @attr(tier=3)
 class TestCaseAfterVdsmStop(TestCaseVdsm):
     """ after_vdsm_stop hook """
-    __test__ = True
-
     name = 'after_vdsm_stop'
 
     @polarion("RHEVM3-8482")
@@ -262,8 +255,6 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
 @attr(tier=3)
 class TestCaseBeforeVdsmStart(TestCaseVdsm):
     """ before_vdsm_start hook """
-    __test__ = True
-
     name = "before_vdsm_start"
 
     @polarion("RHEVM3-8483")
@@ -297,8 +288,6 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
 @attr(tier=3)
 class TestCaseBeforeVmStart(TestCaseVm):
     """ before_vm_start hook """
-    __test__ = True
-
     name = "before_vm_start"
 
     @polarion("RHEVM3-8484")
@@ -334,7 +323,6 @@ class TestCaseBeforeVmStart(TestCaseVm):
 @attr(tier=3)
 class TestCaseAfterVmPause(TestCaseVm):
     """ after_vm_pause hook """
-    __test__ = True
     name = "after_vm_pause"
 
     @polarion("RHEVM3-8485")

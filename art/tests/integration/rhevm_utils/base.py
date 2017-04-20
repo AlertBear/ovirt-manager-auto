@@ -3,7 +3,7 @@ File contains base classes for this module.
 """
 
 import logging
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import IntegrationTest as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import (
     build_setup,
     clean_datacenter,

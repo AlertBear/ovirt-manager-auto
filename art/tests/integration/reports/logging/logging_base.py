@@ -6,8 +6,6 @@ import config
 
 class LoggingTest(ReportsTest):
     """Base class for logging test"""
-    __test__ = False
-
     @staticmethod
     def assert_grep_diff_logs(
             search,

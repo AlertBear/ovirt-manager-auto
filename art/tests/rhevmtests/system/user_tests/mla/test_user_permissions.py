@@ -119,14 +119,12 @@ def setup_module(request):
 
 
 @attr(tier=1)
-class PermissionsCase54408(common.BaseTestCase):
+class TestPermissionsCase54408(common.BaseTestCase):
     """ objects and user permissions """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PermissionsCase54408, cls).setup_class(request)
+        super(TestPermissionsCase54408, cls).setup_class(request)
 
         # Test these object for adding/removing/viewing perms on it
         cls.objects = {
@@ -155,14 +153,12 @@ class PermissionsCase54408(common.BaseTestCase):
 
 
 @attr(tier=1)
-class PermissionsCase54409(common.BaseTestCase):
+class TestPermissionsCase54409(common.BaseTestCase):
     """" permissions inheritance """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PermissionsCase54409, cls).setup_class(request)
+        super(TestPermissionsCase54409, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -246,10 +242,8 @@ class PermissionsCase54409(common.BaseTestCase):
 # that were associated with the selected object in the main grid or one of
 # its ancestors.
 @attr(tier=1)
-class PermissionsCase5441054414(common.BaseTestCase):
+class TestPermissionsCase5441054414(common.BaseTestCase):
     """" permissions subtab """
-    __test__ = True
-
     @polarion("RHEVM3-7186")  # Also RHEVM3-7187, can not have multiple IDs
     def test_permissions_sub_tab(self):
         """ permissions subtab """
@@ -293,10 +287,8 @@ class PermissionsCase5441054414(common.BaseTestCase):
 # Try to remove last super-admin user with permission on system object.
 # Try to remove super-admin + system permission from the user.
 @attr(tier=2)
-class PermissionsCase5441854419(common.BaseTestCase):
+class TestPermissionsCase5441854419(common.BaseTestCase):
     """ last permission on object and test removal of SuperUser """
-    __test__ = True
-
     @polarion("RHEVM3-7188")
     def test_last_permission_on_object(self):
         """ last permission on object """
@@ -334,14 +326,12 @@ class PermissionsCase5441854419(common.BaseTestCase):
 # When you're user/super user ,try to delegate permission to another
 # user/super user. - SUCCESS
 @attr(tier=2)
-class PermissionsCase54425(common.BaseTestCase):
+class TestPermissionsCase54425(common.BaseTestCase):
     """ test delegate perms """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PermissionsCase54425, cls).setup_class(request)
+        super(TestPermissionsCase54425, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -500,14 +490,12 @@ class PermissionsCase54425(common.BaseTestCase):
 
 # Check if user is under some Group if it has permissions of its group
 @attr(tier=2)
-class PermissionsCase54446(common.BaseTestCase):
+class TestPermissionsCase54446(common.BaseTestCase):
     """ Check if user is under some Group if has permissions of its group """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PermissionsCase54446, cls).setup_class(request)
+        super(TestPermissionsCase54446, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -567,10 +555,8 @@ class PermissionsCase54446(common.BaseTestCase):
 # user API - createVm - should add perms UserVmManager on VM
 # https://bugzilla.redhat.com/show_bug.cgi?id=881145
 @attr(tier=2)
-class PermissionsCase54420(common.BaseTestCase):
+class TestPermissionsCase54420(common.BaseTestCase):
     """ Object creating from User and Admin portal """
-    __test__ = True
-
     @polarion("RHEVM3-7190")
     def test_object_admin_user(self):
         """ Object creating from User portal """
@@ -720,14 +706,12 @@ class PermissionsCase54420(common.BaseTestCase):
 # Check that group still exist in the Configure-->System.
 # Check that group's permissions still exist
 @attr(tier=2)
-class PermissionsCase108233(common.BaseTestCase):
+class TestPermissionsCase108233(common.BaseTestCase):
     """ Removing user that part of the group. """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PermissionsCase108233, cls).setup_class(request)
+        super(TestPermissionsCase108233, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -788,14 +772,12 @@ class PermissionsCase108233(common.BaseTestCase):
 # Check that permission was inherited from data-center
 # Ensure that user can take a machine from created pool
 @attr(tier=2)
-class PermissionsCase109086(common.BaseTestCase):
+class TestPermissionsCase109086(common.BaseTestCase):
     """ Permission inheritance for desktop pool """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PermissionsCase109086, cls).setup_class(request)
+        super(TestPermissionsCase109086, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -856,16 +838,14 @@ class PermissionsCase109086(common.BaseTestCase):
 # destroy the SD take a look in the user under permission tab
 # extra_reqs={'datacenters_count': 2}
 @attr(tier=config.DO_NOT_RUN)
-class PermissionsCase111082(common.BaseTestCase):
+class TestPermissionsCase111082(common.BaseTestCase):
     """ Test if perms removed after object is removed """
-    __test__ = True
-
     apis = set(['rest'])
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PermissionsCase111082, cls).setup_class(request)
+        super(TestPermissionsCase111082, cls).setup_class(request)
 
         def finalize():
             common.login_as_admin()
@@ -966,17 +946,15 @@ class PermissionsCase111082(common.BaseTestCase):
 
 
 @attr(tier=1)
-class AdminPropertiesOfTemplate(common.BaseTestCase):
+class TestAdminPropertiesOfTemplate(common.BaseTestCase):
     """
     Test create of vm as PowerUserRole from template which has set
     administrator properties. He should be able to create such vm.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(AdminPropertiesOfTemplate, cls).setup_class(request)
+        super(TestAdminPropertiesOfTemplate, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")

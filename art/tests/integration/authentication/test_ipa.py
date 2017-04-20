@@ -1,15 +1,15 @@
-'''
+"""
 Testing authentication of users from IPA.
 Nothing is created using default DC and default cluster.
 Authentication of expired users, users from group and correct users.
 Login formats, user with many groups and if updating of user is propagated.
-'''
+"""
 
 
 from authentication import config
 import logging
 
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import IntegrationTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand

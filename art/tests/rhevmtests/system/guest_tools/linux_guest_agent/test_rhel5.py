@@ -28,7 +28,6 @@ class RHEL5GATest(common.GABaseTestCase):
     """
     Cover basic testing of GA of rhel 5
     """
-    __test__ = False
     package = config.GA_NAME
     list_app_cmd = ['rpm -qa']
     application_list = ['kernel', 'rhevm-guest-agent']
@@ -70,11 +69,10 @@ class RHEL5GATest(common.GABaseTestCase):
     config.UPSTREAM is None,
     reason="Cannot run on oVirt since 4.0"
 )
-class RHEL532bGATest(RHEL5GATest):
+class TestRHEL532bGATest(RHEL5GATest):
     """
     Cover basic testing of GA of rhel 5 32b
     """
-    __test__ = True
     vm_name = disk_name = DISKx86_NAME
     os_codename = disk_name[2:5]
 
@@ -94,11 +92,6 @@ class RHEL532bGATest(RHEL5GATest):
     def test_aa_install_guest_agent(self):
         """ RHEL5_32b install_guest_agent """
         self.install_guest_agent(config.OLD_GA_NAME)
-
-    @polarion("RHEVM3-7406")
-    def test_zz_uninstall_guest_agent(self):
-        """ RHEL5_32b uninstall_guest_agent """
-        self.uninstall('%s*' % config.OLD_GA_NAME)
 
     @polarion("RHEVM3-7425")
     def test_post_install(self):
@@ -152,17 +145,21 @@ class RHEL532bGATest(RHEL5GATest):
             True, "hibernation", config.MIGRATION_POLICY_LEGACY
         )
 
+    @polarion("RHEVM3-7406")
+    def test_zz_uninstall_guest_agent(self):
+        """ RHEL5_32b uninstall_guest_agent """
+        self.uninstall('%s*' % config.OLD_GA_NAME)
+
 
 @attr(tier=3)
 @pytest.mark.skipif(
     config.UPSTREAM is None,
     reason="Cannot run on oVirt since 4.0"
 )
-class RHEL564bGATest(RHEL5GATest):
+class TestRHEL564bGATest(RHEL5GATest):
     """
     Cover basic testing of GA of rhel 5 64b
     """
-    __test__ = True
     vm_name = disk_name = DISKx64_NAME
     os_codename = disk_name[2:5]
 
@@ -182,11 +179,6 @@ class RHEL564bGATest(RHEL5GATest):
     def test_aa_install_guest_agent(self):
         """ install_guest_agent """
         self.install_guest_agent(config.OLD_GA_NAME)
-
-    @polarion("RHEVM3-7408")
-    def test_zz_uninstall_guest_agent(self):
-        """ uninstall_guest_agent """
-        self.uninstall('%s*' % config.OLD_GA_NAME)
 
     @polarion("RHEVM3-7431")
     def test_post_install(self):
@@ -239,3 +231,8 @@ class RHEL564bGATest(RHEL5GATest):
         self.ga_hooks.hooks_test(
             True, "hibernation", config.MIGRATION_POLICY_LEGACY
         )
+
+    @polarion("RHEVM3-7408")
+    def test_zz_uninstall_guest_agent(self):
+        """ uninstall_guest_agent """
+        self.uninstall('%s*' % config.OLD_GA_NAME)

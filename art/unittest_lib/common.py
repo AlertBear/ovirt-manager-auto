@@ -8,7 +8,6 @@ from _pytest_art.marks import (
     storage,
     coresystem,
     virt,
-    integration,
     upgrade,
 )
 from _pytest_art.testlogger import TestFlowInterface
@@ -95,15 +94,15 @@ class SlaTest(object):
 
 @coresystem
 @attr(team="coresystem")
-class CoreSystemTest(BaseTestCase):
+class CoreSystemTest(object):
     """
     Basic class for core system tests
     """
-    __test__ = False
+    apis = set(["rest", "java", "sdk"])
 
 
-@integration
-@attr(team="integration")
+@coresystem
+@attr(team="coresystem")
 class IntegrationTest(BaseTestCase):
     """
     Basic class for integration test

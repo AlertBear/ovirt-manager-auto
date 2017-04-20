@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 @attr(tier=2)
 class AuthBaseCase(TestCase):
     """ test login with user """
-    __test__ = False
     password = '123456'
     domain = None
     user = None
@@ -22,7 +21,7 @@ class AuthBaseCase(TestCase):
     @pytest.fixture(autouse=True, scope="class")
     def setup_base_class(self, request):
         def finalize():
-            testflow.teardown("Tearing down class %s", self.__name__)
+            testflow.teardown("Tearing down class %s", self.__class__.__name__)
 
             testflow.teardown("Login as admin")
             common.loginAsAdmin()
@@ -32,7 +31,7 @@ class AuthBaseCase(TestCase):
 
         request.addfinalizer(finalize)
 
-        testflow.setup("Setting up class %s", self.__name__)
+        testflow.setup("Setting up class %s", self.__class__.__name__)
 
         testflow.setup("Adding user %s", self.user)
         authz = '%s-authz' % self.domain
@@ -69,14 +68,13 @@ class AuthBaseCase(TestCase):
 
 class BaseUserFromGroup(AuthBaseCase):
     """ Login as user from group. """
-    __test__ = False
     group = 'automation_users_group'
     user = 'automation_user_with_group'
 
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(self, request):
         def finalize():
-            testflow.teardown("Tearing down class %s", self.__name__)
+            testflow.teardown("Tearing down class %s", self.__class__.__name__)
 
             testflow.teardown("Login as admin")
             common.loginAsAdmin()
@@ -89,7 +87,7 @@ class BaseUserFromGroup(AuthBaseCase):
 
         request.addfinalizer(finalize)
 
-        testflow.setup("Setting up class %s", self.__name__)
+        testflow.setup("Setting up class %s", self.__class__.__name__)
 
         testflow.setup("Adding group %s", self.group)
         assert users.addGroup(
@@ -113,7 +111,6 @@ class BaseUserFromGroup(AuthBaseCase):
 
 class BaseExpiredAccount(AuthBaseCase):
     """ Login as user with expired account """
-    __test__ = False
     user = 'automation_expired_account'
 
     def expired_account(self):
@@ -123,7 +120,6 @@ class BaseExpiredAccount(AuthBaseCase):
 
 class BaseExpiredPassword(AuthBaseCase):
     """ Login as user with expired password """
-    __test__ = False
     user = 'automation_expired_password'
 
     def expired_password(self):
@@ -133,7 +129,6 @@ class BaseExpiredPassword(AuthBaseCase):
 
 class BaseDisabledAccount(AuthBaseCase):
     """ Login as disabled user """
-    __test__ = False
     user = 'automation_disabled_account'
 
     def disabled_account(self):
@@ -144,8 +139,6 @@ class BaseDisabledAccount(AuthBaseCase):
 @attr(tier=2)
 class BaseSpecialCharsSearch(TestCase):
     """ Test search of special characters """
-    __test__ = False
-
     def search(self, special_characters=('#', '%', '$',)):
         """ search special characters """
         testflow.step(

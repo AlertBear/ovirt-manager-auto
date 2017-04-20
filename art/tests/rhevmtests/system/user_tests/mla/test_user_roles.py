@@ -139,16 +139,14 @@ def get_role_permits(curr_role):
 
 
 @attr(tier=2)
-class RoleCase54413(common.BaseTestCase):
+class TestRoleCase54413(common.BaseTestCase):
     """
     Check that only users which are permitted to create role, can create role.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(RoleCase54413, cls).setup_class(request)
+        super(TestRoleCase54413, cls).setup_class(request)
 
         def finalize():
             """ Recreate user """
@@ -264,16 +262,14 @@ class RoleCase54413(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RoleCase54401(common.BaseTestCase):
+class TestRoleCase54401(common.BaseTestCase):
     """
     Assign new role to users, check that role behave correctly after update.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(RoleCase54401, cls).setup_class(request)
+        super(TestRoleCase54401, cls).setup_class(request)
 
         def finalize():
             """ Recreate user """
@@ -421,14 +417,12 @@ class RoleCase54401(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RoleCase54415(common.BaseTestCase):
+class TestRoleCase54415(common.BaseTestCase):
     """ Try to get list of roles as user and non-admin user """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(RoleCase54415, cls).setup_class(request)
+        super(TestRoleCase54415, cls).setup_class(request)
 
         def finalize():
             """ Recreate user """
@@ -526,16 +520,14 @@ class RoleCase54415(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RoleCase54402(common.BaseTestCase):
+class TestRoleCase54402(common.BaseTestCase):
     """
     Try to remove role which is assigned to user and that is not assigned
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(RoleCase54402, cls).setup_class(request)
+        super(TestRoleCase54402, cls).setup_class(request)
 
         def finalize():
             """ Recreate user """
@@ -604,10 +596,8 @@ class RoleCase54402(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RoleCase54366(common.BaseTestCase):
+class TestRoleCase54366(common.BaseTestCase):
     """ Try to create role with illegal characters. """
-    __test__ = True
-
     @polarion("RHEVM3-7138")
     def test_role_creation(self):
         """ Try to create role name with invalid characters """
@@ -617,10 +607,8 @@ class RoleCase54366(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RoleCase54540(common.BaseTestCase):
+class TestRoleCase54540(common.BaseTestCase):
     """ Try to remove predefined roles """
-    __test__ = True
-
     @polarion("RHEVM3-7147")
     def test_remove_predefined_roles(self):
         """ Test that pre-defined roles can not be removed. """
@@ -630,13 +618,11 @@ class RoleCase54540(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RoleCase54411(common.BaseTestCase):
+class TestRoleCase54411(common.BaseTestCase):
     """
     Check there are some predefined roles. Names could change in future, so
     test if engine returns still same roles.
     """
-    __test__ = True
-
     @polarion("RHEVM3-7143")
     def test_predefined_roles(self):
         """ Check if rhevm return still same predefined roles """
@@ -648,13 +634,11 @@ class RoleCase54411(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RoleCase54403(common.BaseTestCase):
+class TestRoleCase54403(common.BaseTestCase):
     """
     There is no support to copy role in REST.
     So testing copy role, as a get/add.
     """
-    __test__ = True
-
     @polarion("RHEVM3-7144")
     def test_clone_role(self):
         """ Clone role """
@@ -666,17 +650,15 @@ class RoleCase54403(common.BaseTestCase):
 
 
 @attr(tier=2)
-class RolesCase54412(common.BaseTestCase):
+class TestRolesCase54412(common.BaseTestCase):
     """
     Assigning a Role to a object, means that the role apply to all the
     objects that are contained within object hierarchy.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(RolesCase54412, cls).setup_class(request)
+        super(TestRolesCase54412, cls).setup_class(request)
 
         def finalize():
             """ Recreate user """

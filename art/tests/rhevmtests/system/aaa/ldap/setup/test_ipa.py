@@ -1,4 +1,4 @@
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 
 from rhevmtests.system.aaa.ldap.setup import base
 
@@ -11,9 +11,9 @@ class IPAAutoSetup(base.TestCase):
         pass
 
 
-class IPAUserFromGroup(base.BaseUserFromGroup):
+@bz({'1446525': {}})
+class TestIPAUserFromGroup(base.BaseUserFromGroup):
     """ Login as user from group. """
-    __test__ = True
     domain = 'ipa'
 
     @polarion('RHEVM3-13060')
@@ -22,9 +22,8 @@ class IPAUserFromGroup(base.BaseUserFromGroup):
         self.user_from_group()
 
 
-class IPAExpiredPassword(base.BaseExpiredPassword):
+class TestIPAExpiredPassword(base.BaseExpiredPassword):
     """ Login as user with expired password """
-    __test__ = True
     domain = 'ipa'
 
     @polarion('RHEVM3-13048')
@@ -33,9 +32,8 @@ class IPAExpiredPassword(base.BaseExpiredPassword):
         self.expired_password()
 
 
-class IPADisabledAccount(base.BaseDisabledAccount):
+class TestIPADisabledAccount(base.BaseDisabledAccount):
     """ Login as disabled user """
-    __test__ = True
     domain = 'ipa'
 
     @polarion('RHEVM3-13055')

@@ -7,12 +7,10 @@ import logging
 import pytest
 
 from art.rhevm_api.tests_lib.low_level import users, mla
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 
 from rhevmtests.system.aaa.ldap import config, common
-
-__test__ = True
 
 logger = logging.getLogger(__name__)
 CONF_NAME = '99-krb_ipa.conf'
@@ -36,11 +34,11 @@ def setup_module(request):
 
 
 @attr(tier=2)
+@bz({'1446525': {}})
 class DirectLogin(TestCase):
     """
     TestCase to add user, assign him permissions and try to login.
     """
-    __test__ = True
     conf = None
     FILTER = True
     USER = None
@@ -102,11 +100,10 @@ class DirectLogin(TestCase):
         assert common.connectionTest(), "User %s can't login." % self.USER
 
 
-class ADDigestMD5(DirectLogin):
+class TestADDigestMD5(DirectLogin):
     """
     Test digest md5 auth in AD.
     """
-    __test__ = True
     conf = config.ADDIGEST_EXTENSION
     USER = config.ADDIGEST_USER
     PASSWORD = config.ADDIGEST_PASSWORD
@@ -120,11 +117,10 @@ class ADDigestMD5(DirectLogin):
         self.login()
 
 
-class IPAGSSAPI(DirectLogin):
+class TestIPAGSSAPI(DirectLogin):
     """
     Test gssapi auth in IPA.
     """
-    __test__ = True
     conf = config.IPAGSSAPI_EXTENSION
     USER = config.IPAGSSAPI_USER
     PASSWORD = config.IPAGSSAPI_PASSWORD

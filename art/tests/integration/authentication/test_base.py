@@ -3,7 +3,7 @@
 
 from authentication import config
 import logging
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, IntegrationTest as TestCase
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.core_api.apis_exceptions import APIException
 from art.test_handler.tools import bz

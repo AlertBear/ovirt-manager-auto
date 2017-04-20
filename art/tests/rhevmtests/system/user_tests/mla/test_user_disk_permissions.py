@@ -92,8 +92,6 @@ class TestDiskInheritedPermissions(TestDiskTemplate):
     these permissions, Also check if disks is attached to VM, then disks,
     of vm inherit vm's permissions.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -168,8 +166,6 @@ class TestCreateDiskNegative(TestDiskTemplate):
     """
     User should not be able to create disk if he has not create disk AG
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -205,8 +201,6 @@ class TestCreateDisk(TestDiskTemplate):
     If user want create disks, he needs to have permissions on SD.
     Try to assign permissions on SD and create disk
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -248,8 +242,6 @@ class TestCreateDisk(TestDiskTemplate):
 
 class TestAttachDisk(TestDiskTemplate):
     """ Test attach disk """
-    __test__ = True
-
     # Expected test outcomes (disk_role->vm_role->expected_result)
     outcomes = {
         config.role.DiskOperator: {
@@ -321,8 +313,6 @@ class TestAttachDisk(TestDiskTemplate):
 
 class TestDetachDisk(TestDiskTemplate):
     """ Test detach disk """
-    __test__ = True
-
     # Expected test outcomes (role->expected_result)
     outcomes = {config.role.UserRole: False, config.role.UserVmManager: True}
 
@@ -375,8 +365,6 @@ class TestActivateDeactivateDisk(TestDiskTemplate):
     """
     To activate/deactivate user must have an manipulate permissions on VM.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -424,8 +412,6 @@ class TestRemoveDisk(TestDiskTemplate):
     """
     User has to have delete_disk action group in order to remove disk.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -491,8 +477,6 @@ class TestUpdateDisk(TestDiskTemplate):
     """
     User has to have edit_disk_properties action group in order to remove disk.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -534,8 +518,6 @@ class TestMoveOrCopyDisk(TestDiskTemplate):
     """
     Move or copy disk requires permissions on the disk and on the target sd.
     """
-    __test__ = True
-
     source_storage_domain = config.STORAGE_NAME[0]
     destination_storage_domain = config.STORAGE_NAME[1]
     storage_domains = [source_storage_domain, destination_storage_domain]
@@ -644,8 +626,6 @@ class TestAddDiskToVM(TestDiskTemplate):
     """
     Add disk to VM requires both permissions on the VM and on the sd
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -737,8 +717,6 @@ class TestRemoveVM(TestDiskTemplate):
     If disks are marked for deletion requires permissions on the removed
     disks and on the vm.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -844,8 +822,6 @@ class TestDisk(TestDiskTemplate):
     """
     Create/attach/update/delete disk as DiskOperator.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):

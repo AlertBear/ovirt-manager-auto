@@ -1,15 +1,15 @@
-'''
+"""
 Testing authentication of users from active directory.
 Nothing is created using default DC and default cluster.
 Authentication of users expiredPw/expiredAcc/disabled is tested.
 Testing authentication user from groups and users from 2 AD.
-'''
+"""
 
 
 import time
 import logging
 from authentication import config
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import IntegrationTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand

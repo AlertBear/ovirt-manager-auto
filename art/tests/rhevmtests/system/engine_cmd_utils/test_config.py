@@ -18,10 +18,7 @@ def set_sslenable_to_true(request):
 
 
 @attr(tier=1)
-class ConfigTestCase(CoreSystemTest):
-
-    __test__ = True
-
+class TestConfigTestCase(CoreSystemTest):
     sslenabled = "SSLEnabled"
 
     @polarion("RHEVM3-7664")

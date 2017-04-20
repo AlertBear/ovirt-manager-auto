@@ -22,8 +22,6 @@ class TestCaseVM(TestCase):
     """
     BAD_CONFIG = "bad_config"
 
-    __test__ = True
-
     alias = "test_disk"
     disk_format = enums["format_cow"]
     disk_type = enums["disk_type_system"]

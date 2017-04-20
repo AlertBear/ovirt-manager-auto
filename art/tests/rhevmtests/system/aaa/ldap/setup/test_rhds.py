@@ -1,4 +1,4 @@
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 
 from rhevmtests.system.aaa.ldap.setup import base
 
@@ -11,9 +11,9 @@ class RHDSAutoSetup(base.TestCase):
         pass
 
 
-class RHDSUserFromGroup(base.BaseUserFromGroup):
+@bz({'1446525': {}})
+class TestRHDSUserFromGroup(base.BaseUserFromGroup):
     """ Login as user from group. """
-    __test__ = True
     domain = 'rhds'
 
     @polarion('RHEVM3-13059')
@@ -22,9 +22,8 @@ class RHDSUserFromGroup(base.BaseUserFromGroup):
         self.user_from_group()
 
 
-class RHDSExpiredAccount(base.BaseExpiredAccount):
+class TestRHDSExpiredAccount(base.BaseExpiredAccount):
     """ Login as user with expired account """
-    __test__ = True
     domain = 'rhds'
 
     @polarion('RHEVM3-13051')
@@ -33,9 +32,8 @@ class RHDSExpiredAccount(base.BaseExpiredAccount):
         self.expired_account()
 
 
-class RHDSExpiredPassword(base.BaseExpiredPassword):
+class TestRHDSExpiredPassword(base.BaseExpiredPassword):
     """ Login as user with expired password """
-    __test__ = True
     domain = 'rhds'
 
     @polarion('RHEVM3-13050')
@@ -44,9 +42,8 @@ class RHDSExpiredPassword(base.BaseExpiredPassword):
         self.expired_password()
 
 
-class RHDSDisabledAccount(base.BaseDisabledAccount):
+class TestRHDSDisabledAccount(base.BaseDisabledAccount):
     """ Login as disabled user """
-    __test__ = True
     domain = 'rhds'
 
     @polarion('RHEVM3-13054')
@@ -60,7 +57,6 @@ class RHDSSpecialCharsSearch(base.BaseSpecialCharsSearch):
     # https://bugzilla.redhat.com/show_bug.cgi?id=1186039
     # They've decided to not fix, but I will let the case here for time
     # being as if some customer insist they will have to fix it.
-    __test__ = False
     domain = 'rhds-authz'
 
     @polarion('RHEVM3-14523')

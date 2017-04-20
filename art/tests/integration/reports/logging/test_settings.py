@@ -13,12 +13,10 @@ import config
 
 
 @attr(tier=2)
-class ApplicationSettings(LoggingTest):
+class TestApplicationSettings(LoggingTest):
     """
     Test application setting of dwh
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def set_up(cls, request):

@@ -15,9 +15,9 @@ from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow, CoreSystemTest as TestCase
 from rhevmtests.helpers import get_pm_details
 
@@ -78,8 +78,8 @@ def _check_host_state(host_num, service, job_status):
     )
     testflow.step("Stop %s on host %s", service, config.HOSTS[host_num])
     assert run_delayed_control_service(
-            True, config.VDS_HOSTS[host_num].fqdn, config.HOSTS_USER,
-            config.HOSTS_PW, service=service, command='stop'
+        True, config.VDS_HOSTS[host_num].fqdn, config.HOSTS_USER,
+        config.HOSTS_PW, service=service, command='stop'
     )
     testflow.step(
         "Check if %s job was invoked for host: %s",
@@ -104,8 +104,6 @@ class SoftFencing(TestCase):
     """
     Soft fencing base class
     """
-    __test__ = False
-
     @pytest.fixture(scope="class", autouse=True)
     def base_class_setup(self, request):
         def fin():
@@ -122,12 +120,10 @@ class SoftFencing(TestCase):
                 assert activate_host(True, host=host)
 
 
-class SoftFencingPassedWithoutPM(SoftFencing):
+class TestSoftFencingPassedWithoutPM(SoftFencing):
     """
     Positive: Soft fencing success on host without PM
     """
-    __test__ = True
-
     @polarion("RHEVM3-8403")
     def test_check_host_state(self):
         """
@@ -139,13 +135,10 @@ class SoftFencingPassedWithoutPM(SoftFencing):
         )
 
 
-@bz({'1423657': {}})
-class SoftFencingFailedWithPM(SoftFencing):
+class TestSoftFencingFailedWithPM(SoftFencing):
     """
     Positive: After soft fencing failed, fence with power management
     """
-    __test__ = True
-
     @polarion("RHEVM3-8402")
     def test_check_host_state(self):
         """
@@ -154,16 +147,14 @@ class SoftFencingFailedWithPM(SoftFencing):
         """
         _check_host_state(
             config.host_with_pm_num, config.service_network,
-            config.job_finished
+            config.job_failed
         )
 
 
-class SoftFencingPassedWithPM(SoftFencing):
+class TestSoftFencingPassedWithPM(SoftFencing):
     """
     Positive: Soft fencing success on host with PM
     """
-    __test__ = True
-
     @polarion("RHEVM3-8407")
     def test_check_host_state(self):
         """
@@ -174,12 +165,10 @@ class SoftFencingPassedWithPM(SoftFencing):
         )
 
 
-class CheckVmAfterSoftFencing(SoftFencing):
+class TestCheckVmAfterSoftFencing(SoftFencing):
     """
     Positive: Check vm after soft fencing
     """
-    __test__ = True
-
     vm_test = "vm_test"
 
     @classmethod
@@ -187,7 +176,7 @@ class CheckVmAfterSoftFencing(SoftFencing):
     def class_setup(cls, request):
         def fin():
             testflow.teardown("Delete VM %s", cls.vm_test)
-            assert vms.removeVms(True, cls.vm_test, stop='true')
+            assert vms.removeVm(True, cls.vm_test, stopVM='true')
         request.addfinalizer(fin)
 
         testflow.setup("Create VM %s", cls.vm_test)
@@ -215,12 +204,10 @@ class CheckVmAfterSoftFencing(SoftFencing):
         assert checkVmState(True, self.vm_test, ENUMS['vm_state_up'])
 
 
-class SoftFencingToHostNoProxies(SoftFencing):
+class TestSoftFencingToHostNoProxies(SoftFencing):
     """
     Positive: Soft fencing to host with power management without proxies
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def class_setup(cls, request):
@@ -236,12 +223,14 @@ class SoftFencingToHostNoProxies(SoftFencing):
                     name=config.HOSTS[host_num],
                     address=config.VDS_HOSTS[host_num].fqdn,
                     root_password=config.HOSTS_PW,
-                    cluster=config.CLUSTER_NAME[0]
+                    cluster=config.CLUSTER_NAME[0],
+                    comment=config.VDS_HOSTS[host_num].ip
                 )
                 testflow.teardown("Wait for host %s", config.HOSTS[host_num])
                 assert wait_for_hosts_states(True, config.HOSTS[host_num])
         request.addfinalizer(fin)
 
+        wait_for_tasks(config.ENGINE, config.DC_NAME[0])
         select_host_as_spm(True, config.host_with_pm, config.DC_NAME[0])
         wait_for_spm(
             config.DC_NAME[0], config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP

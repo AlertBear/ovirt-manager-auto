@@ -60,9 +60,8 @@ def setup_vms(request):
 
 
 @attr(tier=3)
-class Ubuntu1204TestCase(common.GABaseTestCase):
+class TestUbuntu1204TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
-    __test__ = True
     vm_name = disk_name = DISK_NAME
     list_app = ['dpkg --list']
     application_list = [
@@ -76,17 +75,12 @@ class Ubuntu1204TestCase(common.GABaseTestCase):
             testflow.teardown("Stop VM %s safely", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
         request.addfinalizer(fin)
-        super(Ubuntu1204TestCase, cls).ga_base_setup()
+        super(TestUbuntu1204TestCase, cls).ga_base_setup()
 
     @polarion("RHEVM3-9331")
     def test_aa_install_guest_agent(self):
         """ Ubuntu rhevm-guest-agent install """
         self.install_guest_agent(NAME)
-
-    @polarion("RHEVM3-9337")
-    def test_zz_uninstall_guest_agent(self):
-        """ Ubuntu rhevm-guest-agent uninstall """
-        self.uninstall(NAME)
 
     @polarion("RHEVM3-9333")
     def test_post_install(self):
@@ -107,3 +101,8 @@ class Ubuntu1204TestCase(common.GABaseTestCase):
     def test_function_continuity(self):
         """ Ubuntu rhevm-guest-agent function continuity """
         self.function_continuity(self.application_list, self.list_app)
+
+    @polarion("RHEVM3-9337")
+    def test_zz_uninstall_guest_agent(self):
+        """ Ubuntu rhevm-guest-agent uninstall """
+        self.uninstall(NAME)

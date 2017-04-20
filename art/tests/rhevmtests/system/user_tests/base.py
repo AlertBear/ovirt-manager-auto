@@ -24,6 +24,31 @@ DETACH_TIMEOUT = 5
 logger = logging.getLogger(__name__)
 
 
+def iexs(method, *args, **kwargs):
+    """
+    Ignore IndexError and EntityNotFound exceptions. We need this function,
+    because these tests are so generic, where we don't know if
+    action succeeded or not. So in the end we remove all objects
+    which could be created or not.
+
+    Args:
+        method (function): function to invoke
+        *args: arguments of the function
+
+    Kwargs:
+        **kwargs: keyword arguments of the function
+
+    Returns:
+        None: this function returns nothing as we don't need any result.
+    """
+    try:
+        method(*args, **kwargs)
+    except IndexError:
+        logger.warning("Index error: %s%s", method.__name__, str(args))
+    except EntityNotFound:
+        logger.warning("Entity not found: %s%s", method.__name__, str(args))
+
+
 def skip_if_fails(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -47,25 +72,25 @@ def setup_module(request):
         vms.removeVm(True, config.RUNNING_VM, stopVM='true')
 
         testflow.teardown("Removing disk %s", config.DELETE_DISK)
-        ienf(disks.deleteDisk, True, config.DELETE_DISK, async=False)
+        iexs(disks.deleteDisk, True, config.DELETE_DISK, async=False)
 
         testflow.teardown("Removing cluster %s", config.DELETE_CLUSTER)
-        ienf(clusters.removeCluster, True, config.DELETE_CLUSTER)
+        iexs(clusters.removeCluster, True, config.DELETE_CLUSTER)
 
         testflow.teardown("Removing vm %s", config.DELETE_VM)
-        ienf(vms.removeVm, True, config.DELETE_VM)
+        iexs(vms.removeVm, True, config.DELETE_VM)
 
         testflow.teardown("Removing vmpool %s", config.DELETE_POOL)
-        ienf(vmpools.removeVmPool, True, config.DELETE_POOL)
+        iexs(vmpools.removeVmPool, True, config.DELETE_POOL)
 
         testflow.teardown("Removing template %s", config.CREATE_TEMPLATE)
         templates.remove_template(True, config.CREATE_TEMPLATE)
 
         testflow.teardown("Removing template %s", config.DELETE_TEMPLATE)
-        ienf(templates.remove_template, True, config.DELETE_TEMPLATE)
+        iexs(templates.remove_template, True, config.DELETE_TEMPLATE)
 
         testflow.teardown("Removing datacenter %s", config.DELETE_DC)
-        ienf(datacenters.remove_datacenter, True, config.DELETE_DC, force=True)
+        iexs(datacenters.remove_datacenter, True, config.DELETE_DC, force=True)
 
         with config.ENGINE_HOST.executor().session() as ss:
             user_cli = EngineCLI(
@@ -178,29 +203,6 @@ def setup_module(request):
     )
 
 
-def ienf(method, *args, **kwargs):
-    """
-    Ignore EntityNotFound exception. We need this function,
-    because these tests are so generic, where we don't know if
-    action succeeded or not. So in the end we remove all objects
-    which could be created or not.
-
-    Args:
-        method (function): function to invoke
-        *args: arguments of the function
-
-    Kwargs:
-        **kwargs: keyword arguments of the function
-
-    Returns:
-        None: this function returns nothing as we don't need any result.
-    """
-    try:
-        method(*args, **kwargs)
-    except EntityNotFound:
-        logger.warning('Entity not found: %s%s', method.__name__, str(args))
-
-
 @ll_general.generate_logs(step=True)
 def login_as_user(user, filter_):
     """
@@ -246,7 +248,7 @@ def user_case(func=None, login_as=None, cleanup_func=None, **kwargs_glob):
     if func is None:
         return partial(
             user_case, login_as=login_as,
-            cleanup_func=cleanup_func, kwargs_glob=kwargs_glob
+            cleanup_func=cleanup_func, **kwargs_glob
         )
 
     @wraps(func)
@@ -290,7 +292,7 @@ def user_case(func=None, login_as=None, cleanup_func=None, **kwargs_glob):
 
 
 @attr(tier=2, team="coresystem")
-class CaseRoleActions():
+class CaseRoleActions(object):
     """
     This class includes all test actions role can have.
     Every test action is the one test case method.
@@ -334,7 +336,7 @@ class CaseRoleActions():
                     config.RUNNING_VM
             ]:
                 testflow.teardown("Waiting for vm %s.", vm)
-                ienf(
+                iexs(
                     vms.wait_for_vm_states,
                     vm, states=[config.VM_UP, config.VM_DOWN]
                 )
@@ -343,42 +345,46 @@ class CaseRoleActions():
             vmpools.removeVmPool(True, config.CREATE_POOL)
 
             testflow.teardown(
-                "Removing users permissions from cluster %s.",
-                config.CLUSTER_NAME[0]
+                "Removing %s user's permissions from cluster %s.",
+                config.USER_CLUSTER, config.CLUSTER_NAME[0]
             )
-            mla.removeUsersPermissionsFromCluster(
-                True, config.CLUSTER_NAME[0], config.USERS
-            )
-
-            testflow.teardown(
-                "Removing users permissions from datacenter %s.",
-                config.DC_NAME[0]
-            )
-            mla.removeUsersPermissionsFromDatacenter(
-                True, config.DC_NAME[0], config.USERS
+            iexs(
+                mla.removeUsersPermissionsFromCluster,
+                True, config.CLUSTER_NAME[0], [config.USER_CLUSTER]
             )
 
             testflow.teardown(
-                "Removing users permissions from storage domain %s.",
-                config.master_storage
+                "Removing %s user's permissions from datacenter %s.",
+                config.USER_DC, config.DC_NAME[0]
             )
-            mla.removeUsersPermissionsFromSD(
-                True, config.master_storage, config.USERS
+            iexs(
+                mla.removeUsersPermissionsFromDatacenter,
+                True, config.DC_NAME[0], [config.USER_DC]
+            )
+
+            testflow.teardown(
+                "Removing %s user's permissions from storage domain %s.",
+                config.USER_STORAGE, config.master_storage
+            )
+            iexs(
+                mla.removeUsersPermissionsFromSD,
+                True, config.master_storage, [config.USER_STORAGE]
             )
 
             for user in config.USERS:
                 testflow.teardown(
                     "Removing user %s@%s.", user, config.USER_DOMAIN
                 )
-                users.removeUser(True, user, config.USER_DOMAIN)
-
-            testflow.teardown("Removing role %s.", config.UPDATE_ROLE)
-            ienf(mla.removeRole, True, config.UPDATE_ROLE)
+                # users.removeUser(True, user, config.USER_DOMAIN)
+                users.removeUser(True, user)
 
             testflow.teardown(
                 "Removing user %s@%s.", config.REMOVE_USER, config.USER_DOMAIN
             )
-            ienf(users.removeUser, True, config.REMOVE_USER)
+            iexs(users.removeUser, True, config.REMOVE_USER)
+
+            testflow.teardown("Removing role %s.", config.UPDATE_ROLE)
+            iexs(mla.removeRole, True, config.UPDATE_ROLE)
 
         request.addfinalizer(finalize)
 
@@ -511,7 +517,7 @@ class CaseRoleActions():
         login_as=config.USER_SYSTEM,
         cleanup_func=datacenters.remove_datacenter,
         positive=True,
-        datacenter=config.USER_SYSTEM
+        datacenter=config.USER_SYSTEM,
     )
     def test_create_storage_pool(self):
         """ create_storage_pool """
@@ -527,7 +533,7 @@ class CaseRoleActions():
         login_as=config.USER_CLUSTER,
         cleanup_func=vms.removeVm,
         positive=True,
-        vm=config.USER_CLUSTER
+        vm=config.USER_CLUSTER,
     )
     def test_create_vm(self):
         """ create_vm """
@@ -543,7 +549,7 @@ class CaseRoleActions():
         login_as=config.USER_DC,
         cleanup_func=templates.remove_template,
         positive=True,
-        template=config.USER_DC
+        template=config.USER_DC,
     )
     def test_create_template(self):
         """ create_template """
@@ -558,7 +564,7 @@ class CaseRoleActions():
         login_as=config.USER_DC,
         cleanup_func=vmpools.removeVmPool,
         positive=True,
-        vmpool=config.USER_DC
+        vmpool=config.USER_DC,
     )
     def test_create_vm_pool(self):
         """ create_vm_pool """
@@ -571,7 +577,7 @@ class CaseRoleActions():
         login_as=config.USER_STORAGE,
         cleanup_func=disks.deleteDisk,
         positive=True,
-        alias=config.USER_STORAGE
+        alias=config.USER_STORAGE,
     )
     def test_create_disk(self):
         """ create_disk """
@@ -589,7 +595,7 @@ class CaseRoleActions():
         login_as=config.USER_DC,
         cleanup_func=clusters.removeCluster,
         positive=True,
-        cluster=config.USER_DC
+        cluster=config.USER_DC,
     )
     def test_create_cluster(self):
         """ create_cluster """
@@ -615,7 +621,7 @@ class CaseRoleActions():
         login_as=config.USER_SYSTEM,
         cleanup_func=mla.removeRole,
         positive=True,
-        role=config.CREATE_ROLE
+        role=config.CREATE_ROLE,
     )
     def test_manipulate_roles(self):
         """ manipulate_roles """
@@ -643,7 +649,7 @@ class CaseRoleActions():
         login_as=config.USER_SYSTEM,
         cleanup_func=users.removeUser,
         positive=True,
-        user=config.CREATE_USER
+        user=config.CREATE_USER,
     )
     def test_manipulate_users(self):
         """ manipulate_users """
@@ -656,7 +662,7 @@ class CaseRoleActions():
 
     @user_case(
         login_as=config.USER_DC,
-     )
+    )
     def test_vm_pool_basic_operations(self):
         """ vm_pool_basic_operations """
         testflow.step("Allocating vm from pool %s.", config.CREATE_POOL)
@@ -705,7 +711,7 @@ class CaseRoleActions():
         cleanup_func=templates.removeTemplateNic,
         positive=True,
         template=config.CREATE_TEMPLATE,
-        nic=config.CREATE_TEMPLATE_NIC2
+        nic=config.CREATE_TEMPLATE_NIC2,
     )
     def test_configure_template_network(self):
         """ configure_template_network """
@@ -865,7 +871,7 @@ class CaseRoleActions():
     def test_edit_host_configuration(self):
         """ edit_host_configuration """
         testflow.step("Updating host %s.", config.HOSTS[0])
-        assert hosts.updateHost(
+        assert hosts.update_host(
             self.positive, config.HOSTS[0], spm_priority=random.randint(1, 5)
         )
 
@@ -910,7 +916,7 @@ class CaseRoleActions():
         name=config.DELETE_CLUSTER,
         cpu=config.CPU_NAME,
         data_center=config.DC_NAME[0],
-        version=config.COMP_VERSION
+        version=config.COMP_VERSION,
     )
     def test_delete_cluster(self):
         """ delete_cluster """
@@ -924,7 +930,7 @@ class CaseRoleActions():
         vmName=config.DELETE_VM,
         vmDescription=config.DELETE_VM,
         cluster=config.CLUSTER_NAME[0],
-        network=config.MGMT_BRIDGE
+        network=config.MGMT_BRIDGE,
     )
     def test_delete_vm(self):
         """ delete_vm """
@@ -936,7 +942,7 @@ class CaseRoleActions():
         cleanup_func=templates.createTemplate,
         positive=True,
         vm=config.CREATE_VM,
-        name=config.DELETE_TEMPLATE
+        name=config.DELETE_TEMPLATE,
     )
     def test_delete_template(self):
         """ delete_template """
@@ -951,7 +957,7 @@ class CaseRoleActions():
         positive=True,
         name=config.DELETE_DC,
         version=config.COMP_VERSION,
-        local=True
+        local=True,
     )
     def test_delete_storage_pool(self):
         """ delete_storage_pool """
@@ -963,7 +969,7 @@ class CaseRoleActions():
         cleanup_func=hl_vmpools.create_vm_pool,
         positive=True,
         pool_name=config.DELETE_POOL,
-        pool_params=config.VMPOOL_PARAMS
+        pool_params=config.VMPOOL_PARAMS,
     )
     def test_delete_vm_pool(self):
         """ delete_vm_pool """

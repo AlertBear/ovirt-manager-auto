@@ -5,18 +5,18 @@ Test possible configuration option of properties file.
 import pytest
 
 from art.rhevm_api.tests_lib.low_level import users, mla
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 
 from rhevmtests.system.aaa.ldap import config, common
 
 
 @attr(tier=2)
-class ADTLS(TestCase):
+@bz({'1446525': {}})
+class TestADTLS(TestCase):
     """
     Test if start tls connection to AD succeed.
     """
-    __test__ = True
     conf = config.ADTLS_EXTENSION
 
     @classmethod
@@ -86,7 +86,6 @@ class ADGroupWithSpacesInName(TestCase):
     """
     # They've decided to not fix, but I will let the case here for time
     # being as if some customer insist they will have to fix it.
-    __test__ = False
     conf = config.ADTLS_EXTENSION
     group = config.ADW2k12_GROUP_SPACE
     princ = '%s@%s' % (config.ADW2k12_USER_SPACE, config.ADW2K12_DOMAINS[0])

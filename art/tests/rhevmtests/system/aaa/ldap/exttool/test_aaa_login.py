@@ -47,7 +47,6 @@ def setup_module(request):
 @attr(tier=1)
 class ExttoolAAALogin(TestCase):
     """ Test login action with generic provider """
-    __test__ = False
     profile = None
     extended_properties = {}
 
@@ -123,9 +122,8 @@ class ExttoolAAALogin(TestCase):
         )[0], "Failed to run login-user action"
 
 
-class ExttoolAAALoginAD(ExttoolAAALogin):
+class TestExttoolAAALoginAD(ExttoolAAALogin):
     """ Test login action with Active Directory """
-    __test__ = True
     profile = 'ad-w2k12r2'
     cert_url = 'http://ad-w2k12r2.rhev.lab.eng.brq.redhat.com/w2k12r2.cer'
 
@@ -154,9 +152,8 @@ class ExttoolAAALoginAD(ExttoolAAALogin):
         self.login(password='pass:Heslo123')
 
 
-class ExttoolAAALoginOpenLDAP(ExttoolAAALogin):
+class TestExttoolAAALoginOpenLDAP(ExttoolAAALogin):
     """ Test login action with OpenLDAP """
-    __test__ = True
     profile = 'openldap'
     cert_url = 'http://brq-openldap.rhev.lab.eng.brq.redhat.com/cacert.pem'
     bz = {'1313516': {}}

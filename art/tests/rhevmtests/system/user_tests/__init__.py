@@ -211,7 +211,6 @@ for role in ll_mla.util.get(abs_link=False):
     setattr(test_class, "role", role_name)
     setattr(test_class, "filter_", filter_)
     setattr(test_class, "perms", role_permits)
-    setattr(test_class, "__test__", True)
 
     module = test_user if filter_ else test_admin
 

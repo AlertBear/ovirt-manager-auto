@@ -10,10 +10,8 @@ import config
 
 
 @attr(tier=1)
-class SanityServicesLogs(ServiceTest):
+class TestSanityServicesLogs(ServiceTest):
     """Service and logs tests"""
-    __test__ = True
-
     @polarion("RHEVM-17077")
     def test_dwh_service_is_running(self):
         """

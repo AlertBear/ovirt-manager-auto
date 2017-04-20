@@ -27,7 +27,6 @@ class RHEL6GATest(common.GABaseTestCase):
     """
     Cover basic testing of GA of rhel 6
     """
-    __test__ = False
     list_app = ['rpm -qa']
     application_list = ['kernel', 'rhevm-guest-agent-common']
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
@@ -61,9 +60,8 @@ class RHEL6GATest(common.GABaseTestCase):
 
 
 @attr(tier=2)
-class RHEL664bGATest(RHEL6GATest):
-    ''' test installation of guest agent on rhel 6 64b '''
-    __test__ = True
+class TestRHEL664bGATest(RHEL6GATest):
+    """ test installation of guest agent on rhel 6 64b """
     vm_name = disk_name = DISKx64_NAME
     os_codename = disk_name[2:5]
 
@@ -83,11 +81,6 @@ class RHEL664bGATest(RHEL6GATest):
     def test_aa_install_guest_agent(self):
         """ RHEL6_64b install_guest_agent """
         self.install_guest_agent(config.GA_NAME)
-
-    @polarion("RHEVM3-7423")
-    def test_zz_uninstall_guest_agent(self):
-        """ RHEL6_64b uninstall_guest_agent """
-        self.uninstall('%s*' % config.GA_NAME)
 
     @polarion("RHEVM3-7437")
     def test_post_install(self):
@@ -158,11 +151,15 @@ class RHEL664bGATest(RHEL6GATest):
             True, "hibernation", config.MIGRATION_POLICY_LEGACY
         )
 
+    @polarion("RHEVM3-7423")
+    def test_zz_uninstall_guest_agent(self):
+        """ RHEL6_64b uninstall_guest_agent """
+        self.uninstall('%s*' % config.GA_NAME)
+
 
 @attr(tier=2)
-class RHEL632bGATest(RHEL6GATest):
-    ''' test installation of guest agent on rhel 6 32b '''
-    __test__ = True
+class TestRHEL632bGATest(RHEL6GATest):
+    """ test installation of guest agent on rhel 6 32b """
     vm_name = disk_name = DISKx86_NAME
     os_codename = disk_name[2:5]
 
@@ -182,11 +179,6 @@ class RHEL632bGATest(RHEL6GATest):
     def test_aa_install_guest_agent(self):
         """ RHEL6_32b install_guest_agent """
         self.install_guest_agent(config.GA_NAME)
-
-    @polarion("RHEVM3-7419")
-    def test_zz_uninstall_guest_agent(self):
-        """ RHEL6_32b uninstall_guest_agent """
-        self.uninstall('%s*' % config.GA_NAME)
 
     @polarion("RHEVM3-7410")
     def test_post_install(self):
@@ -257,11 +249,15 @@ class RHEL632bGATest(RHEL6GATest):
             True, "hibernation", config.MIGRATION_POLICY_LEGACY
         )
 
+    @polarion("RHEVM3-7419")
+    def test_zz_uninstall_guest_agent(self):
+        """ RHEL6_32b uninstall_guest_agent """
+        self.uninstall('%s*' % config.GA_NAME)
+
 
 @attr(tier=2)
-class UpgradeRHEL664bGATest(RHEL6GATest):
-    ''' test of upgrade guest agent on rhel 6 64b '''
-    __test__ = True
+class TestUpgradeRHEL664bGATest(RHEL6GATest):
+    """ test of upgrade guest agent on rhel 6 64b """
     vm_name = disk_name = DISKx64_NAME
     os_codename = disk_name[2:5]
 
@@ -289,9 +285,8 @@ class UpgradeRHEL664bGATest(RHEL6GATest):
 
 
 @attr(tier=2)
-class UpgradeRHEL632bGATest(RHEL6GATest):
-    ''' test of upgrade guest agent on rhel 6 32b '''
-    __test__ = True
+class TestUpgradeRHEL632bGATest(RHEL6GATest):
+    """ test of upgrade guest agent on rhel 6 32b """
     vm_name = disk_name = DISKx86_NAME
     os_codename = disk_name[2:5]
 

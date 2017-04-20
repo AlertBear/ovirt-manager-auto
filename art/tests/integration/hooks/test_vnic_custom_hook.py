@@ -197,9 +197,7 @@ def setup_module(request):
 
 
 @attr(tier=3)
-class TestCaseVnic(TestCase):
-    __test__ = False
-
+class CaseVnic(TestCase):
     CUSTOM_HOOK = "speed"
     hooks_names = None
 
@@ -275,10 +273,8 @@ class TestCaseVnic(TestCase):
             )
 
 
-class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
+class TestCaseAfterBeforeNicHotplug(CaseVnic):
     """ after_before_nic_hotplug hook """
-    __test__ = True
-
     NIC_NAME = "hot_plugged_nic"
     hooks_names = {
         "after_nic_hotplug": SCRIPT_TYPES["shell"],
@@ -341,10 +337,8 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
         sleep(SLEEP_TIME)
 
 
-class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
+class TestCaseAfterBeforeNicHotunplug(CaseVnic):
     """ before_after_nic_hotunplug hook """
-    __test__ = True
-
     hooks_names = {
         "before_nic_hotunplug": SCRIPT_TYPES["shell"],
         "after_nic_hotunplug": SCRIPT_TYPES["python"]
@@ -391,10 +385,8 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
         self.check_for_files()
 
 
-class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
+class TestCaseAfterBeforeUpdateDevice(CaseVnic):
     """ before_after_update_device hook """
-    __test__ = True
-
     hooks_names = {
         "before_update_device": SCRIPT_TYPES["python"],
         "after_update_device": SCRIPT_TYPES["python"]
@@ -423,10 +415,8 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
         self.check_for_files()
 
 
-class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
+class TestCaseAfterUpdateDeviceFail(CaseVnic):
     """ after_update_device_fail hook """
-    __test__ = True
-
     NONEXISTENT = "xxxyxxx"
     UPDATE_FAIL = (
         "vdsClient -s 0 vmUpdateDevice {0} deviceType=interface "

@@ -29,8 +29,6 @@ class TestCaseCluster(TestCase):
     """
     MEMORY_OVER_COMMIT = 77
 
-    __test__ = True
-
     cluster_name = clusters_names[0]
     dc_name = dcs_names[0]
 

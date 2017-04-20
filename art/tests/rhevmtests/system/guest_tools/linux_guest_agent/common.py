@@ -97,7 +97,6 @@ def prepare_vms(vm_disks):
 
 class GABaseTestCase(TestCase):
     """ Base class handles preparation of glance image """
-    __test__ = False
     stats = 'vdsClient -s 0 getVmStats'
 
     @pytest.fixture(scope="function")

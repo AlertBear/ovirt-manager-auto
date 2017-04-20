@@ -33,13 +33,13 @@ HOST_RHEL = 'rhel'
 MACHINES = ('engine', 'host_rhel', 'host_rhvh')
 
 ENGINE_SERVICES = {
-     'ovirt-engine',
-     'ovirt-engine-dwhd',
-     'ovirt-fence-kdump-listener',
-     'ovirt-imageio-proxy',
-     'ovirt-vmconsole-proxy-sshd',
-     'ovirt-websocket-proxy',
-     'ntpd'
+    'ovirt-engine',
+    'ovirt-engine-dwhd',
+    'ovirt-fence-kdump-listener',
+    'ovirt-imageio-proxy',
+    'ovirt-vmconsole-proxy-sshd',
+    'ovirt-websocket-proxy',
+    'ntpd'
 }
 
 HOST_SERVICES = {

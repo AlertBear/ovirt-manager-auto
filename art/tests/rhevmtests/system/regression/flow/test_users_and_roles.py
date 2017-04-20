@@ -14,6 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
     mla as ll_mla,
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
+from art.test_handler.tools import bz
 from art.unittest_lib import (
     attr, testflow,
     CoreSystemTest as TestCase,
@@ -30,8 +31,6 @@ class TestCaseUserAndRoles(TestCase):
     """
     User And Roles tests
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -172,6 +171,7 @@ class TestCaseUserAndRoles(TestCase):
             logger.info("xPath is only supported for rest.")
 
     @attr(tier=1)
+    @bz({"1446525": {}})
     def test_check_userp_properties_in_active_directory(self):
         """
         verify users functionality

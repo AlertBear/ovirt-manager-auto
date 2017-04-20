@@ -44,7 +44,7 @@ def module_setup():
     host_restart_event = '"Host %s was restarted by"' % HOST_WITH_PM
 
 
-def _fence_host(positive, fence_type):
+def _fence_host(positive, fence_type, timeout=500):
     testflow.step("Wait for host %s power management operation", HOST_WITH_PM)
     assert ll_hosts.wait_for_host_pm_operation(
         host=HOST_WITH_PM,
@@ -55,8 +55,9 @@ def _fence_host(positive, fence_type):
         HOST_WITH_PM, fence_type, "positive" if positive else "negative"
     )
     assert (
-        ll_hosts.fence_host(host=HOST_WITH_PM, fence_type=fence_type)
-        in [positive, None if not positive else positive]
+        ll_hosts.fence_host(
+            host=HOST_WITH_PM, fence_type=fence_type, timeout=timeout
+        ) in [positive, None if not positive else positive]
     )
     testflow.step("Wait for host %s power management operation", HOST_WITH_PM)
     assert ll_hosts.wait_for_host_pm_operation(
@@ -131,12 +132,10 @@ def _remove_power_management(host=None):
 
 
 @attr(tier=2, extra_reqs={'mgmt': True})
-class TestWithHighAvailableVm(TestCase):
+class WithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
     """
-    __test__ = False
-
     vm_ha_name = 'vm_ha'
     vm2_name = 'vm_2'
 
@@ -191,12 +190,10 @@ class TestWithHighAvailableVm(TestCase):
 
 
 @attr(tier=2, extra_reqs={'mgmt': True})
-class TestPMWithBadParameters(TestCase):
+class PMWithBadParameters(TestCase):
     """
     Base class for tests with wrong parameters
     """
-    __test__ = False
-
     t_agent = None
     bad_parameter = None
 
@@ -222,12 +219,10 @@ class TestPMWithBadParameters(TestCase):
 
 
 @attr(tier=2, extra_reqs={'fence': True})
-class TestFenceOnHost(TestCase):
+class FenceOnHost(TestCase):
     """
     Base class for fence tests
     """
-    __test__ = False
-
     up = False
     maintenance = False
     non_responsive = False
@@ -250,12 +245,10 @@ class TestFenceOnHost(TestCase):
 
 
 @attr(tier=2, extra_reqs={'mgmt': True})
-class TestFenceHostWithTwoPMAgents(TestCase):
+class FenceHostWithTwoPMAgents(TestCase):
     """
     Base class for fence tests with two power management agents
     """
-    __test__ = False
-
     host_pm = None
     pm1_address = None
     pm2_address = None
@@ -326,12 +319,10 @@ class TestFenceHostWithTwoPMAgents(TestCase):
 
 
 @attr(tier=2, extra_reqs={'mgmt': True})
-class TestFenceProxySelection(TestCase):
+class FenceProxySelection(TestCase):
     """
     Base class for fencing proxy selection tests
     """
-    __test__ = False
-
     hosts_state = None
     pm_proxies = ['cluster', 'dc']
 
@@ -387,11 +378,10 @@ class TestFenceProxySelection(TestCase):
                 )
 
 
-class T01AddPMWithNoPassword(TestPMWithBadParameters):
+class Test01AddPMWithNoPassword(PMWithBadParameters):
     """
     Test adding power management with no password
     """
-    __test__ = True
     bad_parameter = {'agent_password': ''}
 
     @polarion("RHEVM3-8919")
@@ -402,11 +392,10 @@ class T01AddPMWithNoPassword(TestPMWithBadParameters):
         ), "Adding PM with no password succeeded"
 
 
-class T02AddPMWithNoUsername(TestPMWithBadParameters):
+class Test02AddPMWithNoUsername(PMWithBadParameters):
     """
     Test adding power management with no username
     """
-    __test__ = True
     bad_parameter = {'agent_username': ''}
 
     @polarion("RHEVM3-8917")
@@ -417,11 +406,10 @@ class T02AddPMWithNoUsername(TestPMWithBadParameters):
         ), "Adding PM with no username succeeded"
 
 
-class T03AddPMWithNoAddress(TestPMWithBadParameters):
+class Test03AddPMWithNoAddress(PMWithBadParameters):
     """
     Test adding power management with no address
     """
-    __test__ = True
     bad_parameter = {'agent_address': ''}
 
     @polarion("RHEVM3-8918")
@@ -432,11 +420,10 @@ class T03AddPMWithNoAddress(TestPMWithBadParameters):
         ), "Adding PM with no address succeeded"
 
 
-class T04AddPMWithInvalidType(TestPMWithBadParameters):
+class Test04AddPMWithInvalidType(PMWithBadParameters):
     """
     Test adding power management with invalid type
     """
-    __test__ = True
     bad_parameter = {'agent_type': 'invalid_type'}
 
     @polarion("RHEVM3-8916")
@@ -447,11 +434,10 @@ class T04AddPMWithInvalidType(TestPMWithBadParameters):
         ), "Adding PM with invalid type succeeded"
 
 
-class T05AddPMWithInvalidOptionPort(TestPMWithBadParameters):
+class Test05AddPMWithInvalidOptionPort(PMWithBadParameters):
     """
     Test adding power management with invalid option 'port'
     """
-    __test__ = True
     bad_parameter = {'options': {'port': 'rhv01'}}
 
     @polarion("RHEVM-21341")
@@ -463,12 +449,10 @@ class T05AddPMWithInvalidOptionPort(TestPMWithBadParameters):
         ), "Adding PM with invalid option 'port' succeeded"
 
 
-class T06FenceHostWithHighAvailableVm(TestWithHighAvailableVm):
+class Test06FenceHostWithHAVm(WithHighAvailableVm):
     """
     Test fencing host with high available VM running
     """
-    __test__ = True
-
     @polarion("RHEVM3-12447")
     def test_fence_host_with_high_available_vm(self):
         _fence_host(True, fence_type=config.FENCE_RESTART)
@@ -482,13 +466,10 @@ class T06FenceHostWithHighAvailableVm(TestWithHighAvailableVm):
         ), "VM %s is up" % self.vm2_name
 
 
-@bz({'1423657': {}})
-class T07HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
+class Test07HostInNonResponsiveStateWithHAVM(WithHighAvailableVm):
     """
     Test non responsive host with high available VM running
     """
-    __test__ = True
-
     service_network = 'network'
     stop_command = 'stop'
 
@@ -514,16 +495,14 @@ class T07HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
             "VM %s is not up" % self.vm_ha_name
         )
         assert vms.waitForVmsStates(
-                True, names=self.vm2_name, states=config.VM_DOWN
+            True, names=self.vm2_name, states=config.VM_DOWN
         ), "VM %s is up" % self.vm2_name
 
 
-class T08StartHostInUpState(TestFenceOnHost):
+class Test08StartHostInUpState(FenceOnHost):
     """
     Test starting a host in up state
     """
-    __test__ = True
-
     up = True
 
     @polarion("RHEVM3-8914")
@@ -531,12 +510,10 @@ class T08StartHostInUpState(TestFenceOnHost):
         _fence_host(False, config.FENCE_START)
 
 
-class T09StopThenStartHostInMaintenance(TestFenceOnHost):
+class Test09StopThenStartHostInMaintenance(FenceOnHost):
     """
     Test stopping and then starting a host in maintenance
     """
-    __test__ = True
-
     maintenance = True
 
     @polarion("RHEVM3-8927")
@@ -548,12 +525,10 @@ class T09StopThenStartHostInMaintenance(TestFenceOnHost):
         _fence_host(True, config.FENCE_START)
 
 
-class T10RestartHostInUpState(TestFenceOnHost):
+class Test10RestartHostInUpState(FenceOnHost):
     """
     Test restarting a host in up state
     """
-    __test__ = True
-
     up = True
 
     @polarion("RHEVM3-8925")
@@ -561,12 +536,10 @@ class T10RestartHostInUpState(TestFenceOnHost):
         _fence_host(True, config.FENCE_RESTART)
 
 
-class T11RestartHostInMaintenance(TestFenceOnHost):
+class Test11RestartHostInMaintenance(FenceOnHost):
     """
     Test restarting a host in maintenance
     """
-    __test__ = True
-
     maintenance = True
 
     @polarion("RHEVM3-8923")
@@ -574,12 +547,10 @@ class T11RestartHostInMaintenance(TestFenceOnHost):
         _fence_host(True, config.FENCE_RESTART)
 
 
-class T12NoFallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
+class Test12NoFallbackToSecondaryPMAgent(FenceHostWithTwoPMAgents):
     """
     Test restarting a host without fallback to secondary power management
     """
-    __test__ = True
-
     pm2_address = 'blabla.blibli.com'
 
     @polarion("RHEVM3-8930")
@@ -587,25 +558,23 @@ class T12NoFallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
         _fence_host(True, config.FENCE_RESTART)
 
 
-class T13FallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
+class Test13FallbackToSecondaryPMAgent(FenceHostWithTwoPMAgents):
     """
     Test restarting a host with fallback to secondary power management
     """
-    __test__ = True
-
     pm1_address = 'blabla.blibli.com'
 
     @polarion("RHEVM3-8929")
     def test_fallback_to_secondary_pm_agent(self):
-        _fence_host(True, config.FENCE_RESTART)
+        # Timeout set to 20 minutes because timeouts on first (fake) PM
+        # fencing operations are too long
+        _fence_host(True, config.FENCE_RESTART, timeout=1200)
 
 
-class T14ProxyChosenFromCluster(TestFenceProxySelection):
+class Test14ProxyChosenFromCluster(FenceProxySelection):
     """
     Tests default proxy selection: from same cluster as host to fence
     """
-    __test__ = True
-
     event = None
 
     @classmethod
@@ -623,12 +592,10 @@ class T14ProxyChosenFromCluster(TestFenceProxySelection):
         ), "Fence proxy wasn't chosen from cluster"
 
 
-class T15ProxyChosenFromDataCenter(TestFenceProxySelection):
+class Test15ProxyChosenFromDataCenter(FenceProxySelection):
     """
     Tests proxy selection when DC is priority
     """
-    __test__ = True
-
     event = None
     pm_proxies = ['dc', 'cluster']
 
@@ -649,7 +616,7 @@ class T15ProxyChosenFromDataCenter(TestFenceProxySelection):
         ), "Fence proxy wasn't chosen from data center"
 
 
-class T16ProxyChosenFromSecondClusterAsFallback(TestFenceProxySelection):
+class Test16ProxyChosenFromSecondClusterAsFallback(FenceProxySelection):
     """
     Test proxy selection when priority is (cluster, dc) and host in cluster
     is non_operational.
@@ -657,8 +624,6 @@ class T16ProxyChosenFromSecondClusterAsFallback(TestFenceProxySelection):
 
     TODO: add another host with pm to this test to allow further test cases
     """
-    __test__ = True
-
     hosts_state = None
     event = None
 
@@ -682,6 +647,6 @@ class T16ProxyChosenFromSecondClusterAsFallback(TestFenceProxySelection):
         _fence_host(True, config.FENCE_RESTART)
         testflow.step("Search for recent event %s", self.event)
         assert events.search_for_recent_event(
-                True, win_start_query=self.event, query=host_restart_event,
-                expected_count=1, max_events=1
+            True, win_start_query=self.event, query=host_restart_event,
+            expected_count=1, max_events=1
         )

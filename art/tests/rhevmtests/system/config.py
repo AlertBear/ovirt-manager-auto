@@ -1,8 +1,6 @@
 """
  CoreSystem config
 """
-__test__ = False
-
 from rhevmtests.config import *  # flake8: noqa
 
 PM1_TYPE = 'ipmilan'

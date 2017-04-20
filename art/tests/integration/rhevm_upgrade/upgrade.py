@@ -6,7 +6,7 @@ import logging
 from pprint import pformat
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import IntegrationTest as TestCase
 from utilities.rhevm_tools.base import Setup
 from utilities.rhevm_tools.setup import SetupUtility
 

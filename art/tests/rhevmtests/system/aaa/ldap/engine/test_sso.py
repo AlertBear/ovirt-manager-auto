@@ -34,7 +34,7 @@ def setup_module(request):
 
         testflow.teardown("Removing Kerberos")
         with config.ENGINE_HOST.executor().session() as engine_session:
-            engine_session.package_manager.remove(
+            config.ENGINE_HOST.package_manager.remove(
                 config.GSSAPI_MODULE,
                 config.SESSION_MODULE,
                 config.MISC_PKG
@@ -67,7 +67,7 @@ def setup_module(request):
 
     testflow.setup("Installing and configuring Kerberos")
     with config.ENGINE_HOST.executor().session() as engine_session:
-        engine_session.package_manager.install(
+        config.ENGINE_HOST.package_manager.install(
             config.GSSAPI_MODULE,
             config.SESSION_MODULE,
             config.MISC_PKG
@@ -103,13 +103,11 @@ def setup_module(request):
 
 
 @attr(tier=2)
-@bz({'1399479': {}})
-class SSOLogin(TestCase):
+@bz({'1446525': {}})
+class TestSSOLogin(TestCase):
     """
     Test sso login.
     """
-    __test__ = True
-
     conf = config.OPENLDAP_SSO
     COOKIE_FILE = '/tmp/cookiejar.txt'
     USER = config.SSO_USER

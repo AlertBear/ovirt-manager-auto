@@ -51,8 +51,6 @@ def ignore_all_exceptions(method, **kwargs):
 
 @attr(tier=2)
 class NetworkingNegative(common.BaseTestCase):
-    __test__ = False
-
     # Network is not supported in CLI
     apis = set(['rest', 'sdk', 'java'])
 
@@ -114,13 +112,11 @@ class NetworkingNegative(common.BaseTestCase):
         request.addfinalizer(finalize)
 
 
-class NegativeNetworkPermissions231915(NetworkingNegative):
-    __test__ = True
-
+class TestNegativeNetworkPermissions231915(NetworkingNegative):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions231915, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions231915, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -159,13 +155,11 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
             )
 
 
-class NegativeNetworkPermissions231916(NetworkingNegative):
-    __test__ = True
-
+class TestNegativeNetworkPermissions231916(NetworkingNegative):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions231916, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions231916, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -232,13 +226,11 @@ class NegativeNetworkPermissions231916(NetworkingNegative):
             )
 
 
-class NegativeNetworkPermissions231917(NetworkingNegative):
-    __test__ = True
-
+class TestNegativeNetworkPermissions231917(NetworkingNegative):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions231917, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions231917, cls).setup_class(request)
 
         for network_name in config.NETWORK_NAMES[:2]:
             testflow.setup(
@@ -332,13 +324,11 @@ class NegativeNetworkPermissions231917(NetworkingNegative):
             )
 
 
-class NegativeNetworkPermissions231918(NetworkingNegative):
-    __test__ = True
-
+class TestNegativeNetworkPermissions231918(NetworkingNegative):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions231918, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions231918, cls).setup_class(request)
 
         testflow.setup(
             "Adding datacenter %s permission for user %s@%s.",
@@ -416,13 +406,11 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
             )
 
 
-class NegativeNetworkPermissions231919(NetworkingNegative):
-    __test__ = True
-
+class TestNegativeNetworkPermissions231919(NetworkingNegative):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions231919, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions231919, cls).setup_class(request)
 
         testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
@@ -503,13 +491,11 @@ class NegativeNetworkPermissions231919(NetworkingNegative):
         )
 
 
-class NegativeNetworkPermissions234215(NetworkingNegative):
-    __test__ = True
-
+class TestNegativeNetworkPermissions234215(NetworkingNegative):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions234215, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions234215, cls).setup_class(request)
 
         testflow.setup(
             "Adding permissions for datacenter %s to user %s@%s.",
@@ -585,14 +571,12 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
         )
 
 
-class NegativeNetworkPermissions236686(NetworkingNegative):
+class TestNegativeNetworkPermissions236686(NetworkingNegative):
     """ Attach a network to VM """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions236686, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions236686, cls).setup_class(request)
 
         testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
@@ -696,14 +680,12 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
             )
 
 
-class NegativeNetworkPermissions236736(NetworkingNegative):
+class TestNegativeNetworkPermissions236736(NetworkingNegative):
     """ Visible networks and manipulation """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(NegativeNetworkPermissions236736, cls).setup_class(request)
+        super(TestNegativeNetworkPermissions236736, cls).setup_class(request)
 
         testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(

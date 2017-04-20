@@ -23,8 +23,6 @@ class TestCaseDataCenter(TestCase):
     """
     Data Center sanity test the basic operations of data center
     """
-    __test__ = True
-
     dc_name = dcs_names[0]
     tmp_dc_name = "temp_data_center"
 

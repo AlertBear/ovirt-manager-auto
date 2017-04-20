@@ -115,8 +115,6 @@ class Windows(TestCase):
     Every child(win version) of this class needs to specify relevant
     drivers/services/products to tests.
     """
-    __test__ = False
-
     disk_name = None
     disk_interface = config.ENUMS["interface_virtio"]
 
@@ -237,13 +235,11 @@ class Windows(TestCase):
 
 
 @attr(tier=3)
-class Win2008R2_CI_64b(Windows):
+class TestWin2008R2_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2008R2 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2008R2_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN2008R2_64B['serial_number']
     architecture = config.WIN2008R2_64B['architecture']
@@ -272,13 +268,11 @@ class Win2008R2_CI_64b(Windows):
 
 
 @attr(tier=3)
-class Win2008R2_CI_core_64b(Windows):
+class TestWin2008R2_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2008R2 core 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2008R2_CI_%s_core_64b' % config.PRODUCT
     serial_number = config.WIN2008R2_64B['serial_number']
     architecture = config.WIN2008R2_64B['architecture']
@@ -307,13 +301,11 @@ class Win2008R2_CI_core_64b(Windows):
 
 
 @attr(tier=2)
-class Win2012R2_CI_64b(Windows):
+class TestWin2012R2_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2012R2 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2012R2_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN2012R2_64B['serial_number']
     architecture = config.WIN2012R2_64B['architecture']
@@ -342,13 +334,11 @@ class Win2012R2_CI_64b(Windows):
 
 
 @attr(tier=3)
-class Win2012R2_CI_core_64b(Windows):
+class TestWin2012R2_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2012R2 core 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2012R2_CI_%s_core_64b' % config.PRODUCT
     serial_number = config.WIN2012R2_64B['serial_number']
     architecture = config.WIN2012R2_64B['architecture']
@@ -377,13 +367,11 @@ class Win2012R2_CI_core_64b(Windows):
 
 
 @attr(tier=3)
-class Win2012_CI_64b(Windows):
+class TestWin2012_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2012 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2012_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN2012_64B['serial_number']
     architecture = config.WIN2012_64B['architecture']
@@ -412,13 +400,11 @@ class Win2012_CI_64b(Windows):
 
 
 @attr(tier=3)
-class Win2012_CI_core_64b(Windows):
+class TestWin2012_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2012 core 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2012_CI_%s_core_64b' % config.PRODUCT
     serial_number = config.WIN2012_64B['serial_number']
     architecture = config.WIN2012_64B['architecture']
@@ -447,13 +433,11 @@ class Win2012_CI_core_64b(Windows):
 
 
 @attr(tier=3)
-class Win7_CI_32b(Windows):
+class TestWin7_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 7 32bit.
     """
-    __test__ = True
-
     disk_name = 'Win7_CI_%s_32b' % config.PRODUCT
     serial_number = config.WIN7_32B['serial_number']
     architecture = config.WIN7_32B['architecture']
@@ -482,13 +466,11 @@ class Win7_CI_32b(Windows):
 
 
 @attr(tier=2)
-class Win7_CI_64b(Windows):
+class TestWin7_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 7 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win7_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN7_64B['serial_number']
     architecture = config.WIN7_64B['architecture']
@@ -517,13 +499,11 @@ class Win7_CI_64b(Windows):
 
 
 @attr(tier=3)
-class Win8_1_CI_32b(Windows):
+class TestWin8_1_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 8.1 32bit.
     """
-    __test__ = True
-
     disk_name = 'Win8_1_CI_%s_32b' % config.PRODUCT
     serial_number = config.WIN8_1_32B['serial_number']
     architecture = config.WIN8_1_32B['architecture']
@@ -552,13 +532,11 @@ class Win8_1_CI_32b(Windows):
 
 
 @attr(tier=2)
-class Win8_1_CI_64b(Windows):
+class TestWin8_1_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 8.1 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win8_1_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN8_1_64B['serial_number']
     architecture = config.WIN8_1_64B['architecture']
@@ -587,13 +565,11 @@ class Win8_1_CI_64b(Windows):
 
 
 @attr(tier=3)
-class Win8_CI_32b(Windows):
+class TestWin8_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 8 32bit.
     """
-    __test__ = True
-
     disk_name = 'Win8_CI_%s_32b' % config.PRODUCT
     serial_number = config.WIN8_32B['serial_number']
     architecture = config.WIN8_32B['architecture']
@@ -622,13 +598,11 @@ class Win8_CI_32b(Windows):
 
 
 @attr(tier=3)
-class Win8_CI_64b(Windows):
+class TestWin8_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 8 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win8_CI_%s_64b' % config.PRODUCT
     serial_number = config.WIN8_64B['serial_number']
     architecture = config.WIN8_64B['architecture']
@@ -657,12 +631,11 @@ class Win8_CI_64b(Windows):
 
 
 @attr(tier=3)
-class Windows10_32b(Windows):
+class TestWindows10_32b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 10 32bit.
     """
-    __test__ = True
     disk_name = 'Win10_CI_rhevm_32b'
     serial_number = config.WIN10_32B['serial_number']
     architecture = config.WIN10_32B['architecture']
@@ -692,13 +665,11 @@ class Windows10_32b(Windows):
 
 
 @attr(tier=2)
-class Windows10_64b(Windows):
+class TestWindows10_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 10 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win10_CI_rhevm_64b'
     serial_number = config.WIN10_64B['serial_number']
     architecture = config.WIN10_64B['architecture']
@@ -728,13 +699,11 @@ class Windows10_64b(Windows):
 
 
 @attr(tier=3)
-class Windows2016_core_64b(Windows):
+class TestWindows2016_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2016 core 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2016_CI_rhevm_core_64b'
     serial_number = config.WIN2016_64B['serial_number']
     architecture = config.WIN2016_64B['architecture']
@@ -764,13 +733,11 @@ class Windows2016_core_64b(Windows):
 
 
 @attr(tier=2)
-class Windows2016_64b(Windows):
+class TestWindows2016_64b(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2016 64bit.
     """
-    __test__ = True
-
     disk_name = 'Win2016_CI_rhevm_64b'
     serial_number = config.WIN2016_64B['serial_number']
     architecture = config.WIN2016_64B['architecture']

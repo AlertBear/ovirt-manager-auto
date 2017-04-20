@@ -158,9 +158,7 @@ class SubStepTemplate(StepTestTemplate):
         )
 
 
-class AddJobWithCorrectDescription(JobTestTemplate):
-    __test__ = True
-
+class TestAddJobWithCorrectDescription(JobTestTemplate):
     @polarion("RHEVM3-7154")
     def test_add_job_with_correct_description(self):
         """
@@ -172,9 +170,7 @@ class AddJobWithCorrectDescription(JobTestTemplate):
         assert self.check_job()
 
 
-class AddJobWithEmptyDescription(JobTestTemplate):
-    __test__ = True
-
+class TestAddJobWithEmptyDescription(JobTestTemplate):
     job_negative = True
     job_description = str()
 
@@ -189,9 +185,7 @@ class AddJobWithEmptyDescription(JobTestTemplate):
         assert not self.check_job()
 
 
-class AddStepWithCorrectParameters(StepTestTemplate):
-    __test__ = True
-
+class TestAddStepWithCorrectParameters(StepTestTemplate):
     @polarion("RHEVM3-7159")
     def test_add_step_with_correct_parameters(self):
         """
@@ -203,9 +197,7 @@ class AddStepWithCorrectParameters(StepTestTemplate):
         assert self.check_step()
 
 
-class AddStepWithIncorrectType(StepTestTemplate):
-    __test__ = True
-
+class TestAddStepWithIncorrectType(StepTestTemplate):
     step_negative = True
     step_type = StepTestTemplate.bad_step_type
 
@@ -220,9 +212,7 @@ class AddStepWithIncorrectType(StepTestTemplate):
         assert not self.check_step()
 
 
-class AddSubStepWithCorrectParameters(SubStepTemplate):
-    __test__ = True
-
+class TestAddSubStepWithCorrectParameters(SubStepTemplate):
     @polarion("RHEVM3-7162")
     def test_add_sub_step_with_correct_parameters(self):
         """
@@ -235,9 +225,7 @@ class AddSubStepWithCorrectParameters(SubStepTemplate):
         assert self.check_sub_step()
 
 
-class EndJobWithCorrectDescription(JobTestTemplate):
-    __test__ = True
-
+class TestEndJobWithCorrectDescription(JobTestTemplate):
     needs_job_finalizer = False
 
     @polarion("RHEVM3-7158")
@@ -249,9 +237,7 @@ class EndJobWithCorrectDescription(JobTestTemplate):
         assert self.end_job()
 
 
-class EndStepWithCorrectDescription(StepTestTemplate):
-    __test__ = True
-
+class TestEndStepWithCorrectDescription(StepTestTemplate):
     def end_step(self):
         return job_api.end_step(
             job_description=self.job_description,

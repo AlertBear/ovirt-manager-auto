@@ -21,10 +21,8 @@ logger = logging.getLogger('test_info')
 
 
 @attr(tier=1)
-class ExttoolInfo(TestCase):
+class TestExttoolInfo(TestCase):
     """ Test info module of ovirt-engine-extensions-tool """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):

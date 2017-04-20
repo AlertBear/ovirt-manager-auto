@@ -5,8 +5,6 @@ import re
 
 from rhevmtests.system.guest_tools.config import *  # flake8: noqa
 
-__test__ = False
-
 PRODUCT = 'rhevm'
 RHEVM_VERSION = re.search("^\d+.\d+", PRODUCT_BUILD).group(0)
 RHEL_VERSION = re.search("^\d+", ENGINE_HOST.os.distribution.version).group(0)

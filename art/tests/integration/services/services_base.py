@@ -1,18 +1,15 @@
 import re
-import pytest
 import logging
 from datetime import datetime, timedelta
 
-from art.unittest_lib import testflow, attr
+from art.unittest_lib import testflow, CoreSystemTest as TestCase
 
 import config
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.coresystem
-@attr(team="coresystem")
-class ServicesTest(object):
+class ServicesTest(TestCase):
     """ Base class for tests services """
 
     apis = set(["rest", "java", "sdk"])

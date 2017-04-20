@@ -11,8 +11,6 @@ from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 
 from rhevmtests.system.aaa.ldap import common, config
 
-__test__ = True
-
 logger = logging.getLogger(__name__)
 DOMAIN_NAMES = []
 
@@ -28,19 +26,16 @@ def setup_module(request):
 
 
 class Configuration(TestCase):
-    __test__ = False
-
     def _isExtensionAvailable(self, extName):
         testflow.step("Checking for existence of %s.", extName)
         return extName in DOMAIN_NAMES
 
 
 @attr(tier=2)
-class WrongConfiguration(Configuration):
+class TestWrongConfiguration(Configuration):
     """
     Test if wrong configuration is ignored.
     """
-    __test__ = True
     conf = config.WRONG_EXTENSION
 
     @polarion('RHEVM3-12860')
@@ -54,11 +49,10 @@ class WrongConfiguration(Configuration):
 
 
 @attr(tier=2)
-class DisabledConfiguration(Configuration):
+class TestDisabledConfiguration(Configuration):
     """
     Test if disabled configuration is ignored.
     """
-    __test__ = True
     conf = config.DISABLED_EXTENSION
 
     @polarion('RHEVM3-12859')

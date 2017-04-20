@@ -7,17 +7,18 @@ test_tags
 import logging
 import pytest
 
-from art.unittest_lib import (
-    attr, testflow,
-    CoreSystemTest as TestCase,
-)
+from art.core_api.apis_exceptions import EngineTypeError, EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     vms as ll_vms,
     tags as ll_tags,
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.core_api.apis_exceptions import EngineTypeError, EntityNotFound
+from art.test_handler.tools import bz
+from art.unittest_lib import (
+    attr, testflow,
+    CoreSystemTest as TestCase,
+)
 
 from rhevmtests.config import (
     HOSTS as hosts,
@@ -34,8 +35,6 @@ class TestCaseTags(TestCase):
     Tag tests
     """
     TAG_PREFIX = 'tag_'
-
-    __test__ = True
 
     tag_set = set()
 
@@ -236,6 +235,7 @@ class TestCaseTags(TestCase):
         )
 
     @attr(tier=1)
+    @bz({'1446525': {}})
     def test_associate_tag_with_vm_and_search_by_tag(self):
         """
         verify tags functionality
@@ -288,6 +288,7 @@ class TestCaseTags(TestCase):
         )
 
     @attr(tier=1)
+    @bz({'1446525': {}})
     def test_associate_tag_with_host_and_search_host_by_tag(self):
         """
         verify tags functionality

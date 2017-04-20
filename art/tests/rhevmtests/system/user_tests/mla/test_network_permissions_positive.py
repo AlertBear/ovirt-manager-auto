@@ -50,8 +50,6 @@ def setup_module(request):
 
 @attr(tier=2)
 class NetworkingPositive(NetworkingNegative):
-    __test__ = False
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -71,13 +69,11 @@ class NetworkingPositive(NetworkingNegative):
         request.addfinalizer(finalize)
 
 
-class PositiveNetworkPermissions231821(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions231821(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions231821, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions231821, cls).setup_class(request)
 
         testflow.setup(
             "Adding permission role %s for datacenter %s to user %s.",
@@ -149,17 +145,16 @@ class PositiveNetworkPermissions231821(NetworkingPositive):
             )
 
 
-class PositiveNetworkPermissions231822(NetworkingPositive):
+class TestPositiveNetworkPermissions231822(NetworkingPositive):
     MTU = 800
     STP = True
 
-    __test__ = True
     apis = NetworkingPositive.apis - set(['java'])
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions231822, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions231822, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -225,13 +220,11 @@ class PositiveNetworkPermissions231822(NetworkingPositive):
             self.STP = not self.STP
 
 
-class PositiveNetworkPermissions231823(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions231823(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions231823, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions231823, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -312,8 +305,6 @@ class PositiveNetworkPermissions231823(NetworkingPositive):
 
 
 class TestSwitching(NetworkingPositive):
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -417,18 +408,14 @@ class TestSwitching(NetworkingPositive):
             )
 
 
-class PositiveNetworkPermissions231824(TestSwitching):
-    __test__ = True
-
+class TestPositiveNetworkPermissions231824(TestSwitching):
     @polarion("RHEVM3-8382")
     def test_required_to_non_required_and_vice_versa(self):
         """ Required to non-required and vice versa """
         self._test_switching_display_and_required(required=True)
 
 
-class PositiveNetworkPermissions236073(TestSwitching):
-    __test__ = True
-
+class TestPositiveNetworkPermissions236073(TestSwitching):
     @polarion("RHEVM3-8377")
     def test_display_network(self):
         """ Display network """
@@ -438,13 +425,11 @@ class PositiveNetworkPermissions236073(TestSwitching):
         )
 
 
-class PositiveNetworkPermissions231826(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions231826(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions231826, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions231826, cls).setup_class(request)
 
         testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
@@ -529,13 +514,11 @@ class PositiveNetworkPermissions231826(NetworkingPositive):
         assert vms.removeNic(True, config.VM_NAME, config.NIC_NAMES[0])
 
 
-class PositiveNetworkPermissions231827(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions231827(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions231827, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions231827, cls).setup_class(request)
 
         # Not possible to create public vnicprofile, just add Everyone perms
         for net in config.NETWORK_NAMES:
@@ -643,15 +626,13 @@ class PositiveNetworkPermissions231827(NetworkingPositive):
         assert vms.removeNic(True, config.VM_NAME, config.NIC_NAMES[0])
 
 
-class PositiveNetworkPermissions231830(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions231830(NetworkingPositive):
     apis = set(['rest'])
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions231830, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions231830, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -929,13 +910,11 @@ class PositiveNetworkPermissions231830(NetworkingPositive):
         self._test_permissions_on_system()
 
 
-class PositiveNetworkPermissions231832(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions231832(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions231832, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions231832, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -1065,13 +1044,11 @@ class PositiveNetworkPermissions231832(NetworkingPositive):
         )
 
 
-class PositiveNetworkPermissions236367(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions236367(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions236367, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions236367, cls).setup_class(request)
 
         testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
@@ -1175,13 +1152,11 @@ class PositiveNetworkPermissions236367(NetworkingPositive):
         )
 
 
-class PositiveNetworkPermissions236406(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions236406(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions236406, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions236406, cls).setup_class(request)
 
         testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
@@ -1284,13 +1259,11 @@ class PositiveNetworkPermissions236406(NetworkingPositive):
         )
 
 
-class PositiveNetworkPermissions236408(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions236408(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions236408, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions236408, cls).setup_class(request)
 
         testflow.setup("Creating VM %s.", config.VM_NAME)
         assert vms.createVm(
@@ -1430,13 +1403,11 @@ class PositiveNetworkPermissions236408(NetworkingPositive):
         )
 
 
-class PositiveNetworkPermissions236409(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions236409(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions236409, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions236409, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -1607,13 +1578,11 @@ class PositiveNetworkPermissions236409(NetworkingPositive):
         )
 
 
-class PositiveNetworkPermissions236577(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions236577(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions236577, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions236577, cls).setup_class(request)
 
         testflow.setup(
             "Adding role %s permissions for datacenter %s to user %s.",
@@ -1683,13 +1652,11 @@ class PositiveNetworkPermissions236577(NetworkingPositive):
         assert not perm_persist, msg.format(config.NETWORK_NAMES[0])
 
 
-class PositiveNetworkPermissions236664(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions236664(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions236664, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions236664, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -1767,14 +1734,13 @@ class PositiveNetworkPermissions236664(NetworkingPositive):
         )
 
 
-class PositiveNetworkPermissions317269(NetworkingPositive):
-    __test__ = True
+class TestPositiveNetworkPermissions317269(NetworkingPositive):
     dc_name = 'rand_dc_name'
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions317269, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions317269, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Removing datacenter %s.", cls.dc_name)
@@ -1809,14 +1775,13 @@ class PositiveNetworkPermissions317269(NetworkingPositive):
         ), "Permission was not created at datacenter for Everyone."
 
 
-class PositiveNetworkPermissions317133(NetworkingPositive):
-    __test__ = True
+class TestPositiveNetworkPermissions317133(NetworkingPositive):
     dc_name = 'rand_dc_name'
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions317133, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions317133, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Removing datacenter %s.", cls.dc_name)
@@ -1892,13 +1857,11 @@ class PositiveNetworkPermissions317133(NetworkingPositive):
         ), "Permission was not created at datacenter for network."
 
 
-class PositiveNetworkPermissions320610(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions320610(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions320610, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions320610, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",
@@ -2012,13 +1975,11 @@ class PositiveNetworkPermissions320610(NetworkingPositive):
             )
 
 
-class PositiveNetworkPermissions317270(NetworkingPositive):
-    __test__ = True
-
+class TestPositiveNetworkPermissions317270(NetworkingPositive):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(PositiveNetworkPermissions317270, cls).setup_class(request)
+        super(TestPositiveNetworkPermissions317270, cls).setup_class(request)
 
         testflow.setup(
             "Adding network %s to datacenter %s.",

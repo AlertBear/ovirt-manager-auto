@@ -6,22 +6,20 @@ import logging
 import pytest
 
 from art.rhevm_api.tests_lib.low_level import users, mla
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
 
 from rhevmtests.system.aaa.ldap import config, common
-
-__test__ = True
 
 logger = logging.getLogger(__name__)
 
 
 @attr(tier=2)
+@bz({'1446525': {}})
 class IndirectMembership(TestCase):
     """
     Test indirect membership.
     """
-    __test__ = False
     # Override those variables in inherited class
     conf = None
     GROUP = None
@@ -74,11 +72,10 @@ class IndirectMembership(TestCase):
                     user, self.GROUP)
 
 
-class IndirectMembershipRecursive(IndirectMembership):
+class TestIndirectMembershipRecursive(IndirectMembership):
     """
     Test recursive indirect membership.
     """
-    __test__ = True
     conf = config.SIMPLE_AD
     GROUP = config.AD_GROUP41
     USER = config.AD_GROUP41_USER
@@ -92,11 +89,10 @@ class IndirectMembershipRecursive(IndirectMembership):
         self.indirect_group_membership()
 
 
-class IndirectMembershipNonRecursive(IndirectMembership):
+class TestIndirectMembershipNonRecursive(IndirectMembership):
     """
     Test non recursive indirect membership.
     """
-    __test__ = True
     conf = config.SIMPLE_IPA
     GROUP = config.IPA_GROUP32
     USER = config.IPA_GROUP_USER
@@ -110,12 +106,11 @@ class IndirectMembershipNonRecursive(IndirectMembership):
 
 
 @attr(tier=2)
-class GroupRecursion(TestCase):
+class TestGroupRecursion(TestCase):
     """
     Test group recursion handle.
     https://bugzilla.redhat.com/show_bug.cgi?id=1168631
     """
-    __test__ = True
     conf = config.SIMPLE_IPA
     USER = config.IPA_GROUP_USER
     PASSWORD = config.IPA_PASSWORD
@@ -168,11 +163,10 @@ class GroupRecursion(TestCase):
 
 
 @attr(tier=2)
-class ForeignGroup(IndirectMembership):
+class TestForeignGroup(IndirectMembership):
     """
     Test user authentication with group membership in different AD domains
     """
-    __test__ = True
     conf = config.SIMPLE_AD
     GROUP = config.AD_FOREIGN_GROUP
     USER = config.AD_FOREIGN_GROUP_USER

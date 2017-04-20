@@ -92,8 +92,6 @@ class TestNoAuthNoPriv(SNMPTestTemplate):
     """
     Test if events from engine traps without authentication.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -104,8 +102,6 @@ class TestAuthNoPriv(SNMPTestTemplate):
     """
     Test if events from engine traps with authentication.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -116,8 +112,6 @@ class TestAuthPriv(SNMPTestTemplate):
     """
     Test if events from engine traps with authentication and privacy.
     """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):

@@ -16,9 +16,9 @@ class ADAutoSetup(base.TestCase):
         pass
 
 
-class ADUserFromGroup(base.BaseUserFromGroup):
+@bz({'1446525': {}})
+class TestADUserFromGroup(base.BaseUserFromGroup):
     """ Login as user from group. """
-    __test__ = True
     domain = DOMAIN
     password = PASSWORD
     namespace = NAMESPACE
@@ -29,9 +29,8 @@ class ADUserFromGroup(base.BaseUserFromGroup):
         self.user_from_group()
 
 
-class ADExpiredAccount(base.BaseExpiredAccount):
+class TestADExpiredAccount(base.BaseExpiredAccount):
     """ Login as user with expired account """
-    __test__ = True
     domain = DOMAIN
     password = PASSWORD
     namespace = NAMESPACE
@@ -42,9 +41,8 @@ class ADExpiredAccount(base.BaseExpiredAccount):
         self.expired_account()
 
 
-class ADExpiredPassword(base.BaseExpiredPassword):
+class TestADExpiredPassword(base.BaseExpiredPassword):
     """ Login as user with expired password """
-    __test__ = True
     domain = DOMAIN
     password = PASSWORD
     namespace = NAMESPACE
@@ -55,9 +53,8 @@ class ADExpiredPassword(base.BaseExpiredPassword):
         self.expired_password()
 
 
-class ADDisabledAccount(base.BaseDisabledAccount):
+class TestADDisabledAccount(base.BaseDisabledAccount):
     """ Login as disabled user """
-    __test__ = True
     domain = DOMAIN
     password = PASSWORD
     namespace = NAMESPACE
@@ -68,9 +65,8 @@ class ADDisabledAccount(base.BaseDisabledAccount):
         self.disabled_account()
 
 
-class ADDifferentUPN(base.AuthBaseCase):
+class TestADDifferentUPN(base.AuthBaseCase):
     """ Login as user with different UPN """
-    __test__ = True
     domain = DOMAIN
     password = PASSWORD
     namespace = NAMESPACE
@@ -82,9 +78,8 @@ class ADDifferentUPN(base.AuthBaseCase):
         assert self.login(user='automation_upn@w2k12r2-t1.com')
 
 
-class ADSpecialCharsSearch(base.BaseSpecialCharsSearch):
+class TestADSpecialCharsSearch(base.BaseSpecialCharsSearch):
     """ Search special characters in AD """
-    __test__ = True
     domain = '%s-authz' % DOMAIN
     namespace = NAMESPACE
 

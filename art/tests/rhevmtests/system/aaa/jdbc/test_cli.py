@@ -127,9 +127,8 @@ def connectionTest():
 
 
 @attr(tier=1)
-class JDBCCLIUser(TestCase):
+class TestJDBCCLIUser(TestCase):
     """Test managing of users via aaa-jdbc CLI"""
-    __test__ = True
     user_password = '123456'
 
     @classmethod
@@ -313,9 +312,8 @@ class JDBCCLIUser(TestCase):
 
 
 @attr(tier=1)
-class JDBCCLIGroupUser(TestCase):
+class TestJDBCCLIGroupUser(TestCase):
     """Test managing of users via aaa-jdbc CLI"""
-    __test__ = True
     user_password = '1234567'
 
     @classmethod
@@ -480,10 +478,8 @@ class JDBCCLIGroupUser(TestCase):
 
 
 @attr(tier=1)
-class JDBCCLIQuery(TestCase):
+class TestJDBCCLIQuery(TestCase):
     """Test quering of users/groups via aaa-jdbc CLI"""
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -559,10 +555,8 @@ class JDBCCLIQuery(TestCase):
 
 
 @attr(tier=1)
-class JDBCCLISettings(TestCase):
+class TestJDBCCLISettings(TestCase):
     """Test customize of settings via aaa-jdbc CLI"""
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):

@@ -16,8 +16,6 @@ TARGET_FILE = "/etc/pki/w2k12r2.pem"
 INTERVAL = 5
 ATTEMPTS = 25
 
-__test__ = False
-
 
 # Extensions utils
 def enableExtensions(service, host):

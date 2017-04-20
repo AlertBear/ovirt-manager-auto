@@ -34,7 +34,7 @@ def setup_module(request):
 
 
 @attr(tier=3)
-class TestHystrixTemplate(CoreSystemTest):
+class HystrixTemplate(CoreSystemTest):
     need_restart = False
 
     @classmethod
@@ -71,12 +71,10 @@ class TestHystrixTemplate(CoreSystemTest):
         )
 
 
-class TestHystrixSanity(TestHystrixTemplate):
+class TestHystrixSanity(HystrixTemplate):
     """
     Defaults sanity check.
     """
-    __test__ = True
-
     @polarion("RHEVM-17609")
     def test_hystrix_default_property_value(self):
         testflow.step(
@@ -101,8 +99,7 @@ class TestHystrixSanity(TestHystrixTemplate):
         assert not check_hystrix_status(), "Hystrix must be off by default!"
 
 
-class TestHystrixIntegration(TestHystrixTemplate):
-    __test__ = True
+class TestHystrixIntegration(HystrixTemplate):
     need_restart = True
 
     pipes = [config.event_pipe, config.status_pipe]

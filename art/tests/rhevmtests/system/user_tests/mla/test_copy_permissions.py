@@ -207,14 +207,12 @@ def setup_module(request):
 
 
 @attr(tier=2)
-class CopyPermissions299326(common.BaseTestCase):
+class TestCopyPermissions299326(common.BaseTestCase):
     """ Check if permissions are copied to vm when enabled """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(CopyPermissions299326, cls).setup_class(request)
+        super(TestCopyPermissions299326, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Removing VM %s.", config.VM_NAMES[0])
@@ -244,14 +242,12 @@ class CopyPermissions299326(common.BaseTestCase):
 
 
 @attr(tier=2)
-class CopyPermissions299330(common.BaseTestCase):
+class TestCopyPermissions299330(common.BaseTestCase):
     """ Check if permissions are copied to vm when disabled """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(CopyPermissions299330, cls).setup_class(request)
+        super(TestCopyPermissions299330, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Removing VM %s.", config.VM_NAMES[0])
@@ -280,14 +276,12 @@ class CopyPermissions299330(common.BaseTestCase):
 
 
 @attr(tier=2)
-class CopyPermissions299328(common.BaseTestCase):
+class TestCopyPermissions299328(common.BaseTestCase):
     """ Check if permissions are copied to template when enabled """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(CopyPermissions299328, cls).setup_class(request)
+        super(TestCopyPermissions299328, cls).setup_class(request)
 
         def finalize():
             testflow.teardown(
@@ -318,14 +312,12 @@ class CopyPermissions299328(common.BaseTestCase):
 
 
 @attr(tier=2)
-class CopyPermissions299331(common.BaseTestCase):
+class TestCopyPermissions299331(common.BaseTestCase):
     """ Check if permissions are not copied to template when disabled """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(CopyPermissions299331, cls).setup_class(request)
+        super(TestCopyPermissions299331, cls).setup_class(request)
 
         def finalize():
             testflow.teardown(

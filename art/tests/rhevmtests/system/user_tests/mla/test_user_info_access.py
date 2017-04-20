@@ -101,14 +101,12 @@ def setup_module(request):
 
 # extra_reqs={'datacenters_count': 2}
 @attr(tier=config.DO_NOT_RUN)
-class VmUserInfoTests(common.BaseTestCase):
+class TestVmUserInfoTests(common.BaseTestCase):
     """ Test if user can see correct events """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup(cls, request):
-        super(VmUserInfoTests, cls).setup_class(request)
+        super(TestVmUserInfoTests, cls).setup_class(request)
 
         def finalize():
             common.login_as_admin()
@@ -193,10 +191,8 @@ class VmUserInfoTests(common.BaseTestCase):
 
 # extra_reqs={'datacenters_count': 2}
 @attr(tier=config.DO_NOT_RUN)
-class VmUserInfoTests2(common.BaseTestCase):
+class TestVmUserInfoTests2(common.BaseTestCase):
     """ Test if user can see correct objects """
-    __test__ = True
-
     # Accessing to specific id don't working in java/python sdk
     # Cli - RHEVM-1758
     apis = TestCase.apis - set(['java', 'sdk', 'cli'])
@@ -204,7 +200,7 @@ class VmUserInfoTests2(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(VmUserInfoTests2, cls).setup_class(request)
+        super(TestVmUserInfoTests2, cls).setup_class(request)
 
         def finalize():
             common.login_as_admin()
@@ -418,13 +414,11 @@ class VmUserInfoTests2(common.BaseTestCase):
 
 
 @attr(tier=2)
-class ViewChildrenInfoTests(common.BaseTestCase):
+class TestViewChildrenInfoTests(common.BaseTestCase):
     """
     Tests if roles that are not able to view children,
     really don't view it.
     """
-    __test__ = True
-
     # Could change in the future, probably no way how to get it from API.
     # So should be changed if behaviour will change.
     roles_cant = [
@@ -443,7 +437,7 @@ class ViewChildrenInfoTests(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(ViewChildrenInfoTests, cls).setup_class(request)
+        super(TestViewChildrenInfoTests, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -536,14 +530,12 @@ class ViewChildrenInfoTests(common.BaseTestCase):
 # extra_reqs={'clusters_count': 2}
 # as ge2 and ge3 have 2 clusters wi will run this test
 @attr(tier=config.DO_NOT_RUN)
-class VmCreatorClusterAdminInfoTests(common.BaseTestCase):
+class TestVmCreatorClusterAdminInfoTests(common.BaseTestCase):
     """ Test for VM Creator and cluster admin role """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(VmCreatorClusterAdminInfoTests, cls).setup_class(request)
+        super(TestVmCreatorClusterAdminInfoTests, cls).setup_class(request)
 
         def finalize():
             common.login_as_admin()
@@ -598,14 +590,12 @@ class VmCreatorClusterAdminInfoTests(common.BaseTestCase):
 
 
 @attr(tier=2)
-class VmCreatorInfoTests(common.BaseTestCase):
+class TestVmCreatorInfoTests(common.BaseTestCase):
     """ Test for VM Creator role """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(VmCreatorInfoTests, cls).setup_class(request)
+        super(TestVmCreatorInfoTests, cls).setup_class(request)
 
         def finalize():
             testflow.teardown("Log in as admin.")
@@ -671,14 +661,12 @@ class VmCreatorInfoTests(common.BaseTestCase):
 
 
 @attr(tier=config.DO_NOT_RUN)
-class TemplateCreatorInfoTests(common.BaseTestCase):
+class TestTemplateCreatorInfoTests(common.BaseTestCase):
     """ Test combination of roles with TemplateCreator role """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(TemplateCreatorInfoTests, cls).setup_class(request)
+        super(TestTemplateCreatorInfoTests, cls).setup_class(request)
 
         def finalize():
             common.login_as_admin()
@@ -785,13 +773,11 @@ class TemplateCreatorInfoTests(common.BaseTestCase):
 # Should see all templates in Datacenter1, but none in Datacenter2.
 # extra_reqs={'datacenters_count': 2}
 @attr(tier=config.DO_NOT_RUN)
-class TemplateCreatorAndDCAdminInfoTest(common.BaseTestCase):
-    __test__ = True
-
+class TestTemplateCreatorAndDCAdminInfoTest(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(TemplateCreatorAndDCAdminInfoTest, cls).setup_class(request)
+        super(TestTemplateCreatorAndDCAdminInfoTest, cls).setup_class(request)
 
         def finalize():
             common.login_as_admin()
@@ -855,14 +841,12 @@ class TemplateCreatorAndDCAdminInfoTest(common.BaseTestCase):
 
 # extra_reqs={'datacenters_count': 2}
 @attr(tier=config.DO_NOT_RUN)
-class ComplexCombinationTest(common.BaseTestCase):
+class TestComplexCombinationTest(common.BaseTestCase):
     """ Test that user can see correct object regarding its permissions """
-    __test__ = True
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
-        super(ComplexCombinationTest, cls).setup_class(request)
+        super(TestComplexCombinationTest, cls).setup_class(request)
 
         def finalize():
             common.login_as_admin()

@@ -11,8 +11,6 @@ from config import logger
 
 class VacuumTest(TestCase):
     """ Base class for tests of vacuum """
-    __test__ = False
-
     @staticmethod
     def run_engine_vacuum(
         full=False, verbose=False, analyze=False, analyze_only=False,

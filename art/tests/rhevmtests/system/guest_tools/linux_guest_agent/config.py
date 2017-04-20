@@ -1,10 +1,6 @@
 """
 Config module for Guest Agent
 """
-
-__test__ = False
-
-
 from rhevmtests.system.guest_tools.config import *  # flake8: noqa
 
 # images names have to be same as test classes, because we need to have them

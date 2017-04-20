@@ -9,7 +9,7 @@ from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import hosts, clusters, datacenters
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import IntegrationTest as TestCase
 
 from rhevm_upgrade import config
 from config import non_ge

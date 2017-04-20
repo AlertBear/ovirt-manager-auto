@@ -19,8 +19,6 @@ class TestCaseMixed(TestCase):
     """
     Scenario tests
     """
-    __test__ = True
-
     @attr(tier=1)
     def test_check_product_name(self):
         """

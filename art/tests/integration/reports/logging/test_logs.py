@@ -13,10 +13,8 @@ import config
 
 @bz({'1434326': {}})
 @attr(tier=3)
-class DebugLogs(LoggingTest):
+class TestDebugLogs(LoggingTest):
     """Log tests"""
-    __test__ = True
-
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
     def set_up(cls, request):

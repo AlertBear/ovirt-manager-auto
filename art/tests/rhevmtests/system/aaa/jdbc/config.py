@@ -1,5 +1,3 @@
-__test__ = False
-
 from rhevmtests.system.config import *  # flake8: noqa
 
 INTERNAL_PROFILE = 'internal'

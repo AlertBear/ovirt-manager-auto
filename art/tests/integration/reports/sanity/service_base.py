@@ -5,8 +5,6 @@ from reports.reports_base import ReportsTest
 
 class ServiceTest(ReportsTest):
     """ Base class for tests services """
-    __test__ = False
-
     @classmethod
     def assert_service_running_logs_exist(cls, machine, service, logs):
         """

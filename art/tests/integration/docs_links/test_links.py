@@ -8,8 +8,6 @@ class TestDocsLinks(CoreSystemTest):
     """
     Check for documentation links existence and functionality.
     """
-    __test__ = True
-
     @staticmethod
     @polarion("RHEVM3-8689")
     @attr(tier=1)

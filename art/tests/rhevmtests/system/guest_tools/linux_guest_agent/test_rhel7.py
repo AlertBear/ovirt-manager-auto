@@ -27,7 +27,6 @@ class RHEL7GATest(common.GABaseTestCase):
     """
     Cover basic testing of GA of rhel 7
     """
-    __test__ = False
     package = config.GA_NAME
     list_app = ['rpm -qa']
     application_list = ['kernel', config.GA_NAME]
@@ -87,11 +86,10 @@ class RHEL7GATest(common.GABaseTestCase):
 
 
 @attr(tier=2)
-class RHEL764bGATest(RHEL7GATest):
+class TestRHEL764bGATest(RHEL7GATest):
     """
     Cover basic testing of GA of rhel 7 64b
     """
-    __test__ = True
     vm_name = disk_name = DISK_NAME
     os_codename = disk_name[2:5]
 
@@ -111,11 +109,6 @@ class RHEL764bGATest(RHEL7GATest):
     def test_aa_install_guest_agent(self):
         """ RHEL7_1_64b install_guest_agent """
         self.install_guest_agent(config.GA_NAME)
-
-    @polarion('RHEVM3-7400')
-    def test_zz_uninstall_guest_agent(self):
-        """ RHEL7_1_64b uninstall_guest_agent """
-        self.uninstall('%s*' % config.GA_NAME)
 
     @polarion('RHEVM3-7380')
     def test_post_install(self):
@@ -186,13 +179,17 @@ class RHEL764bGATest(RHEL7GATest):
             True, "hibernation", config.MIGRATION_POLICY_LEGACY
         )
 
+    @polarion('RHEVM3-7400')
+    def test_zz_uninstall_guest_agent(self):
+        """ RHEL7_1_64b uninstall_guest_agent """
+        self.uninstall('%s*' % config.GA_NAME)
+
 
 @attr(tier=2)
-class UpgradeRHEL764bGATest(RHEL7GATest):
+class TestUpgradeRHEL764bGATest(RHEL7GATest):
     """
     Cover basic testing upgrade of GA of rhel 7 64b
     """
-    __test__ = True
     vm_name = disk_name = DISK_NAME
     os_codename = disk_name[2:5]
 

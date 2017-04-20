@@ -46,8 +46,6 @@ class TestCaseStorageDomain(TestCase):
     """
     Storage domain tests
     """
-    __test__ = True
-
     sd_name = storages_names[0]
     new_sd_name = sd_name + 'Updated'
 

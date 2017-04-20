@@ -7,8 +7,6 @@ from art.unittest_lib import CoreSystemTest as TestCase
 
 class ReportsTest(TestCase):
     """ Base class for reports tests """
-    __test__ = False
-
     @staticmethod
     def assert_service_is_running(machine, service):
         """
