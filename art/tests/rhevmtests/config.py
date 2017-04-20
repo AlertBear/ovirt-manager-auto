@@ -665,3 +665,8 @@ STORAGE_SERVER = {
     'xtremio-xms': 'xtremio',
     'vserver-san01-iscsi01.qa.lab.tlv.redhat.com': 'netapp'
 }
+
+DATA_CENTER_NAME = DC_NAME[0]
+WAIT_FOR_SPM_TIMEOUT = 120
+WAIT_FOR_SPM_INTERVAL = 10
+REBOOT_CMD = 'reboot'

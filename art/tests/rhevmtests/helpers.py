@@ -7,7 +7,7 @@ rhevmtests helper functions
 import functools
 import logging
 import os
-
+import shlex
 
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -17,7 +17,10 @@ from storageapi.storageErrors import GetLUNInfoError
 from storageapi.storageManagerWrapper import StorageManagerWrapper
 from art.core_api import apis_utils
 from art.rhevm_api.resources import User, Host, storage
-from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sd,
+    hosts as hl_hosts
+)
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms,
@@ -633,3 +636,71 @@ def get_test_parametrize_ids(item, params):
                 if params in x_args:
                     return param_ids[param_args_values.index(x)]
     return _id
+
+
+def maintenance_and_activate_hosts():
+    """
+    Put all data center's hosts in maintenance and activate them. Used mainly
+    in order to refresh the iSCSI sessions or issue SCSI bus rescan for FC
+    after LUNs list modification (i.e, new LUN creation or deletion (LUNs
+    deletion for FC require hosts reboot)).
+    """
+    logger.info("Deactivating hosts %s", config.HOSTS)
+
+    for host, resource in zip(config.HOSTS, config.VDS_HOSTS):
+        assert hl_hosts.deactivate_host_if_up(host, resource), (
+            "Failed to deactivate host %s" % host
+        )
+
+        logger.info("Activating hosts %s", host)
+        assert hl_hosts.activate_host_if_not_up(host, resource), (
+            "Failed to activate host %s" % host
+        )
+        assert ll_hosts.wait_for_hosts_states(True, host), (
+            "Host %s Failed to reach state up" % host
+        )
+
+    assert ll_hosts.wait_for_spm(
+        config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+        config.WAIT_FOR_SPM_INTERVAL
+    ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
+
+
+def reboot_hosts():
+    """
+    Reboot all data center's hosts.
+    Necessary for updating hosts that use FC for LUNs list update after LUNs
+    removal.
+    """
+    hosts_ip = [ll_hosts.get_host_ip(host) for host in config.HOSTS]
+    logger.info("Deactivating hosts %s", config.HOSTS)
+    assert hl_hosts.deactivate_hosts_if_up(config.HOSTS), (
+        "Failed to deactivate hosts %s" % config.HOSTS
+    )
+
+    for host_ip in hosts_ip:
+        logger.info("Rebooting Host %s", host_ip)
+        executor = get_host_executor(
+            host_ip, config.VDC_ROOT_PASSWORD
+        )
+        rc, out, error = executor.run_cmd(cmd=shlex.split(config.REBOOT_CMD))
+        assert rc, "Failed to reboot Host %s, error: %s, out: %s" % (
+            host_ip, error, out
+        )
+
+    for host_ip in hosts_ip:
+        executor = get_host_executor(
+            host_ip, config.VDC_ROOT_PASSWORD
+        )
+        executor.wait_for_connectivity_state(positive=True)
+
+    logger.info("Activating hosts %s", config.HOSTS)
+    for host in config.HOSTS:
+        assert hl_hosts.activate_host_if_not_up(host), (
+            "Failed to activate host %s" % host
+        )
+
+    assert ll_hosts.wait_for_spm(
+        config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+        config.WAIT_FOR_SPM_INTERVAL
+    ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME

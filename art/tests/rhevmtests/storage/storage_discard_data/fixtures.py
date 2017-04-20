@@ -1,5 +1,4 @@
 import pytest
-import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
 import config
 from art.unittest_lib.common import testflow
@@ -98,28 +97,3 @@ def attach_disks(request):
     for disk in self.disk_names:
         self.disk_name = disk
         attach_disk(request)
-
-
-@pytest.fixture(scope='class')
-def init_storage_manager(request):
-    """
-    Initialize storage manager instance
-    """
-
-    self = request.node.cls
-
-    manager = config.ISCSI_STORAGE_MANAGER[0] if self.storage == (
-        config.STORAGE_TYPE_ISCSI
-    ) else config.FCP_STORAGE_MANAGER[0]
-
-    # Initialize the storage manager with iscsi as the storage type since
-    # storage_api has only iscsi manager which is good also for fc
-    self.storage_manager = (
-        rhevm_helpers.get_storage_manager(
-            config.STORAGE_TYPE_ISCSI, manager, config.STORAGE_CONFIG
-        )
-    )
-    self.storage_server = config.STORAGE_SERVER[manager]
-    assert self.storage_manager, (
-        "Failed to retrieve storage server" % self.new_storage_domain
-    )

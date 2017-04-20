@@ -6,7 +6,6 @@ from rhevmtests.config import *  # flake8: noqa
 __test__ = False
 
 TESTNAME = "GlobalStorage"
-DATA_CENTER_NAME = DC_NAME[0]
 CLUSTER_NAME = CLUSTER_NAME[0]
 GLANCE_IMAGE_COW = 'cow_sparse_disk'
 GLANCE_IMAGE_RAW = 'raw_preallocated_disk'
@@ -22,8 +21,6 @@ DEFAULT_SPM_PRIORITY = 5
 LOW_SPM_PRIORITY = 1
 
 TIMEOUT_DEACTIVATE_DOMAIN = 90
-WAIT_FOR_SPM_INTERVAL = 10
-WAIT_FOR_SPM_TIMEOUT = 120
 
 VM_DISK_SIZE = 6 * GB
 DISK_SIZE = 1 * GB
@@ -162,7 +159,6 @@ OBJECT_TYPE_TEMPLATE = "templ"
 OBJECT_TYPE_VM = "vm"
 OBJECT_TYPE_MOUNT_POINT = "mount_point"
 OBJECT_TYPE_NIC = "nic"
-OBJECT_TYPE_LUN = "lun"
 
 # These lists of keywords are useful for low_level addStorageDomain:
 # addStorageDomain(True, name='my_name', **NFS_DOMAINS_KWARGS[0])
@@ -342,8 +338,6 @@ MOUNT_POINTS = dict()
 
 # HSM Verbs
 COPY_VOLUME_VERB = 'Copying Volume'
-
-REBOOT_CMD = 'reboot'
 
 CHECKSUM_FILES = dict()
 

@@ -14,18 +14,24 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms
 )
+from rhevmtests.fixtures import (
+    init_storage_manager, create_lun_on_storage_server
+)
 from rhevmtests.storage.fixtures import (
-    create_storage_domain, copy_template_disk, create_lun_on_storage_server
+    create_storage_domain, copy_template_disk
 )
 from rhevmtests.storage.fixtures import skip_invalid_storage_type  # noqa F401
 from fixtures import (
     add_disks, create_vm_for_test, attach_disks, get_second_storage_domain,
-    start_vm_for_test, init_storage_manager
+    start_vm_for_test,
 )
 
 
 @pytest.mark.usefixtures(
-    skip_invalid_storage_type.__name__
+    skip_invalid_storage_type.__name__,
+    init_storage_manager.__name__,
+    create_lun_on_storage_server.__name__,
+    create_storage_domain.__name__,
 )
 class BaseTestCase(TestCase):
     """
@@ -147,9 +153,6 @@ class BaseTestCase(TestCase):
 
 
 @pytest.mark.usefixtures(
-    init_storage_manager.__name__,
-    create_lun_on_storage_server.__name__,
-    create_storage_domain.__name__,
     copy_template_disk.__name__,
     create_vm_for_test.__name__,
     start_vm_for_test.__name__,
@@ -177,9 +180,6 @@ class BaseDelete(BaseTestCase):
         self.discard_basic_flow()
 
 
-@pytest.mark.usefixtures(
-    create_storage_domain.__name__
-)
 class TestCase19569(BaseTestCase):
     """
     RHEVM-19569 Update storage domain with discard to true

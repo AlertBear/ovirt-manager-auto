@@ -17,6 +17,7 @@ from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
     vms as hl_vms,
     hosts as hl_hosts,
+    datacenters as hl_dc
 )
 from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
@@ -1490,69 +1491,6 @@ def kill_vdsm_on_hsm_executor(
     """
     host = hsm_host or get_hsm_host(job_description, step_description)
     return ll_hosts.kill_vdsmd(host)
-
-
-def maintenance_and_activate_hosts():
-    """
-    Put all data center's hosts in maintenance and activate them. Used mainly
-    in order to refresh the iSCSI sessions or issue SCSI bus rescan for FC
-    after LUNs list modification (i.e, new LUN creation or deletion (LUNs
-    deletion for FC require hosts reboot)).
-    """
-    logger.info("Deactivating hosts %s", config.HOSTS)
-    assert hl_hosts.deactivate_hosts_if_up(config.HOSTS), (
-        "Failed to deactivate hosts %s" % config.HOSTS
-    )
-
-    logger.info("Activating hosts %s", config.HOSTS)
-    for host in config.HOSTS:
-        assert hl_hosts.activate_host_if_not_up(host), (
-            "Failed to activate host %s" % host
-        )
-    assert ll_hosts.wait_for_spm(
-        config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
-        config.WAIT_FOR_SPM_INTERVAL
-    ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
-
-
-def reboot_hosts():
-    """
-    Reboot all data center's hosts.
-    Necessary for updating hosts that use FC for LUNs list update after LUNs
-    removal.
-    """
-    hosts_ip = [ll_hosts.get_host_ip(host) for host in config.HOSTS]
-    logger.info("Deactivating hosts %s", config.HOSTS)
-    assert hl_hosts.deactivate_hosts_if_up(config.HOSTS), (
-        "Failed to deactivate hosts %s" % config.HOSTS
-    )
-
-    for host_ip in hosts_ip:
-        logger.info("Rebooting Host %s", host_ip)
-        executor = rhevm_helpers.get_host_executor(
-            host_ip, config.VDC_ROOT_PASSWORD
-        )
-        rc, out, error = executor.run_cmd(cmd=shlex.split(config.REBOOT_CMD))
-        assert rc, "Failed to reboot Host %s, error: %s, out: %s" % (
-            host_ip, error, out
-        )
-
-    for host_ip in hosts_ip:
-        executor = rhevm_helpers.get_host_executor(
-            host_ip, config.VDC_ROOT_PASSWORD
-        )
-        executor.wait_for_connectivity_state(positive=True)
-
-    logger.info("Activating hosts %s", config.HOSTS)
-    for host in config.HOSTS:
-        assert hl_hosts.activate_host_if_not_up(host), (
-            "Failed to activate host %s" % host
-        )
-
-    assert ll_hosts.wait_for_spm(
-        config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
-        config.WAIT_FOR_SPM_INTERVAL
-    ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
 
 
 def get_volume_info(hostname, disk_object, dc_obj):
