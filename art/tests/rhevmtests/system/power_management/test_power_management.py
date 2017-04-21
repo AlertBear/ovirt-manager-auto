@@ -56,7 +56,7 @@ def _fence_host(positive, fence_type):
     )
     assert (
         ll_hosts.fence_host(host=HOST_WITH_PM, fence_type=fence_type)
-        is positive
+        in [positive, None if not positive else positive]
     )
     testflow.step("Wait for host %s power management operation", HOST_WITH_PM)
     assert ll_hosts.wait_for_host_pm_operation(
