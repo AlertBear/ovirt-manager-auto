@@ -67,7 +67,9 @@ ACTIONS = ('enabled', 'running', 'is-faultless')
 # Python2 leaks the loop control variable
 BUGGED_SERVICES = {
     'ntpd': '1428419',
-    'momd': '1427066'
+    'momd': '1427066',
+    'vdsmd': '1444087',
+    'libvirtd': '1443965'
 }
 
 DISABLED_SERVICES = [
