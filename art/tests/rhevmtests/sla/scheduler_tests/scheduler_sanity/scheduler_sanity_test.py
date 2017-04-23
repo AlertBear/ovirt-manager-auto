@@ -15,7 +15,6 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 from fixtures import (
     create_network,
-    create_new_scheduling_policy,
     update_vms_nics
 )
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -35,6 +34,7 @@ from rhevmtests.sla.fixtures import (  # noqa: F401
     update_vms_to_default_parameters,
 )
 from rhevmtests.sla.scheduler_tests.fixtures import (
+    create_new_scheduling_policy,
     wait_for_scheduling_memory_update
 )
 

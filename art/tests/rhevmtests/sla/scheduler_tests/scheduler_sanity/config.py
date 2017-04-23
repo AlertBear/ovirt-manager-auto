@@ -8,4 +8,3 @@ FILTER_MEMORY = ENUMS["filter_memory"]
 FILTER_CPU = ENUMS["filter_cpu"]
 FILTER_NETWORK = ENUMS["filter_network"]
 NETWORK_FILTER_NAME = "network_filter"
-UNIT_TYPE = "unit_type"

@@ -128,6 +128,7 @@ POLICY_EVEN_VM_DISTRIBUTION = ENUMS["scheduling_policy_vm_evenly_distributed"]
 POLICY_IN_CLUSTER_UPGRADE = "InClusterUpgrade"
 
 # Scheduling policies constants
+UNIT_TYPE = "unit_type"
 SCH_UNIT_TYPE_FILTER = ENUMS["policy_unit_type_filter"]
 SCH_UNIT_TYPE_WEIGHT = ENUMS["policy_unit_type_weight"]
 SCH_UNIT_TYPE_BALANCE = ENUMS["policy_unit_type_balance"]

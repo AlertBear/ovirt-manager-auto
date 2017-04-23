@@ -6,6 +6,7 @@ from time import sleep
 
 import art.rhevm_api.tests_lib.low_level.affinitylabels as ll_afflabels
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch
 import art.unittest_lib as u_libs
 import pytest
 import rhevmtests.sla.config as sla_conf
@@ -175,3 +176,37 @@ def assign_affinity_label_to_element(request):
                     assert ll_afflabels.AffinityLabels.add_label_to_vm(
                         label_name=label_name, vm_name=element
                     )
+
+
+@pytest.fixture(scope="class")
+def create_new_scheduling_policy(request):
+    """
+    1) Create new scheduling policy
+    2) Populate scheduling policy by scheduling policy units
+    """
+    policy_name = request.node.cls.policy_name
+    policy_units = getattr(request.node.cls, "policy_units", None)
+
+    def fin():
+        """
+        1) Remove the scheduling policy
+        """
+        u_libs.testflow.teardown(
+            "Remove the scheduling policy %s", policy_name
+        )
+        ll_sch.remove_scheduling_policy(policy_name=policy_name)
+    request.addfinalizer(fin)
+
+    u_libs.testflow.setup("Create new scheduling policy %s", policy_name)
+    assert ll_sch.add_new_scheduling_policy(name=policy_name)
+    if policy_units:
+        for unit_name, unit_params in policy_units.iteritems():
+            u_libs.testflow.setup(
+                "Add the policy unit %s of the type %s to the policy %s",
+                unit_name, unit_params[sla_conf.UNIT_TYPE], policy_name
+            )
+            assert ll_sch.add_scheduling_policy_unit(
+                policy_name=policy_name,
+                unit_name=unit_name,
+                **unit_params
+            )

@@ -265,3 +265,29 @@ def get_scheduling_policy_id(scheduling_policy_name):
         if scheduling_policy.get_name() == scheduling_policy_name:
             return scheduling_policy.get_id()
     return ""
+
+
+def get_all_policy_units_names():
+    """
+    Get all policy units names
+
+    Returns:
+        list: Policy units names
+    """
+    policy_units = SCH_POL_UNITS_API.get(abs_link=False)
+    return [policy_unit.get_name() for policy_unit in policy_units]
+
+
+@ll_general.generate_logs(step=True)
+def remove_scheduling_policy_unit(unit_name):
+    """
+    Remove the scheduling policy unit from the engine
+
+    Args:
+        unit_name (str): Scheduling policy unit name
+
+    Returns:
+        bool: True, if the remove action succeeds, otherwise False
+    """
+    sch_pol_unit_obj = SCH_POL_UNITS_API.find(unit_name)
+    return SCH_POL_UNITS_API.delete(sch_pol_unit_obj, True)
