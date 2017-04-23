@@ -20,8 +20,10 @@ def enable_rng_on_vm(request):
         """
         Disable RNG device
         """
-        testflow.teardown("Remove rng device from VM %s", vm_name)
-        assert ll_vms.updateVm(positive=True, vm=vm_name, rng_device=None)
+        testflow.teardown("Set rng device from VM %s to urandom", vm_name)
+        assert ll_vms.updateVm(
+            positive=True, vm=vm_name, rng_device=config.URANDOM_RNG
+        )
     request.addfinalizer(fin)
 
     testflow.setup("Set rng device %s on VM %s ", rng_device, vm_name)
