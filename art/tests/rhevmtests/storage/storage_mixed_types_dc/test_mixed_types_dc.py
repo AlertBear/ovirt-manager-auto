@@ -22,7 +22,7 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 import rhevmtests.storage.helpers as storage_helpers
 from art.test_handler.settings import opts
 
@@ -462,6 +462,7 @@ class TestCase4557(IscsiNfsSD):
     __test__ = True
     polarion_test_case = '4557'
 
+    @bz({'1422508': {}})
     @polarion("RHEVM3-4557")
     @attr(tier=2)
     def test_basic_operations_reconstruct(self):

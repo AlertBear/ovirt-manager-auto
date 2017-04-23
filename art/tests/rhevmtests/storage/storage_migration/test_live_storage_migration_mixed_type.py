@@ -66,6 +66,7 @@ class TestCase10338_wait_for_lunch(TestCase5994_wait_for_lunch):
     polarion_test_case = '10338'
 
 
+@bz({'1420258': {}})
 class TestCase10337(TestCase5993):
     """
     live migration with thin provision copy
@@ -86,6 +87,7 @@ class TestCase10336(TestCase5992):
     polarion_test_case = '10336'
 
 
+@bz({'1312909': {}})
 class TestCase10335(TestCase5991):
     """
     live migration with shared disk

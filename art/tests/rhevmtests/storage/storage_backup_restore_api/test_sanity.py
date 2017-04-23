@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import config
@@ -547,6 +547,7 @@ class TestCase6169(BaseTestCase):
     # in string literals
     deep_copy = True
 
+    @bz({'1422508': {}})
     @polarion("RHEVM3-6169")
     @attr(tier=2)
     def test_full_flow_of_backup_restore(self):
