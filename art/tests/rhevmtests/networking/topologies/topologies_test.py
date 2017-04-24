@@ -9,20 +9,23 @@ Testing Topologies feature.
 import pytest
 
 import config as topologies_conf
-import helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+import helper as topologies_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import update_vnic_network
-from rhevmtests.fixtures import (
-    start_vms_fixture_function,
-    stop_vms_fixture_function  # flake8: noqa
+from rhevmtests import helpers
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
 )
-from rhevmtests.networking.fixtures import (
+from rhevmtests.fixtures import (  # noqa: F401
+    stop_vms_fixture_function,
+    start_vms_fixture_function,
+)
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces_fixture_function,
     NetworkFixtures,
     setup_networks_fixture_function,
-    clean_host_interfaces_fixture_function  # flake8: noqa
 )
 
 
@@ -219,17 +222,17 @@ class TestTopologiesVm(NetworkTest):
         ],
         ids=[
             # VM tests
-            "VLAN network over host NIC",
-            "VLAN network over BOND mode 1",
+            "Check connectivity: VLAN network over host NIC",
+            "Check connectivity: VLAN network over BOND mode 1",
             # TODO: Enable when we have switch BOND mode 2 support
-            # "Bridge network over BOND mode 2",
-            "Bridge network over BOND mode 4",
+            # "Check connectivity: bridge network over BOND mode 2",
+            "Check connectivity: bridge network over BOND mode 4",
 
             # Non-VM tests
-            "Non-VM network over BOND mode 0",
-            "Non-VM network over BOND mode 3",
-            "Non-VM network over BOND mode 5",
-            "Non-VM network over BOND mode 6",
+            "Check connectivity: Non-VM network over BOND mode 0",
+            "Check connectivity: Non-VM network over BOND mode 3",
+            "Check connectivity: Non-VM network over BOND mode 5",
+            "Check connectivity: Non-VM network over BOND mode 6",
         ]
     )
     def test_check_vm_connectivity(
@@ -242,11 +245,13 @@ class TestTopologiesVm(NetworkTest):
         """
         vm_net_list = [self.vm_vlan_net, self.vm_vlan_net_params]
         vlan = True if network in vm_net_list else False
-        testflow.step(
-            "Check connectivity: %s %s network",
-            "VLAN" if vlan else "", "over BOND mode %s" % mode if mode else ""
+
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_check_vm_connectivity.parametrize,
+            params=[start_vms_dict, network, hosts_nets_nic_dict, mode]
         )
-        assert helper.check_vm_connect_and_log(
+        testflow.step(_id)
+        assert topologies_helper.check_vm_connect_and_log(
             driver=conf.NIC_TYPE_VIRTIO, vlan=vlan, mode=mode,
             vm=False if not network else True, flags="-r" if not network
             else None

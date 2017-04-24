@@ -12,16 +12,19 @@ The following elements will be used for the testing:
 import pytest
 
 import config as multi_host_conf
-import helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+import helper as multi_host_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     add_vnics_to_vms, add_vnic_to_template, move_host_to_cluster,
     add_network_to_cluster
 )
+from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm, create_clusters
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, setup_networks_fixture, clean_host_interfaces
 )
@@ -617,30 +620,33 @@ class TestMultiHostNetworkProperties(NetworkTest):
             "Remove VLAN from network attached to host",
             "Update MTU 9000 property on network attached to host",
             "Update MTU 1500 property on network attached to host",
-            "Rename network attached to host",
+            "Try to rename network that attached to host",
 
             # Tests on networks attached to running VM
             "Update MTU 9000 property on network attached to running VM",
             "Update VLAN property on network attached to running VM",
-            "Update VM property on network used by running VM to be non-VM",
+            (
+                "Try to update VM property on network used by running VM "
+                "to be non-VM"
+            ),
 
             # Tests on networks attached to non-running VM
             "Update MTU property on network attached to non-running VM",
             "Update VLAN property on network attached to non-running VM",
             (
-                "Update VM property on network used by non-running VM "
+                "Try to update VM property on network used by non-running VM "
                 "to be non-VM"
             ),
-            "Rename network on non-running VM",
+            "Try to rename network on non-running VM",
 
             # Tests on networks attached to template
             (
-                "Update VM property on network used by template to be"
+                "Try to update VM property on network used by template to be"
                 " non-VM network"
             ),
             "Update MTU property on network used by template",
             "Update VLAN property on network used by template",
-            "Rename network used by template",
+            "Try to rename network used by template",
 
             # Tests on networks attached on multiple hosts
             "Update MTU and VLAN properties on network used by two hosts",
@@ -667,13 +673,11 @@ class TestMultiHostNetworkProperties(NetworkTest):
             "Failed to apply a valid network update" if positive else
             "Succeeded to apply an invalid network update"
         )
-        neg_prefix_msg = "NEGATIVE: " if not positive else ""
-
-        testflow.step(
-            "{neg}Update network: {net_name} with properties: {params}".format(
-                neg=neg_prefix_msg, net_name=net, params=params
-            )
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_update_network.parametrize,
+            params=[net, params, positive]
         )
-        assert helper.update_network_and_check_changes(
+        testflow.step(_id)
+        assert multi_host_helper.update_network_and_check_changes(
             net=net, positive=positive, **params
         ), assert_fail_msg

@@ -18,6 +18,7 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
+from rhevmtests import helpers
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -142,14 +143,14 @@ class TestIOTest01(NetworkTest):
             polarion("RHEVM3-11877")([test_8_valid_dash_name, True]),
         ],
         ids=[
-            "valid names",
-            "invalid names",
-            "valid MTU",
-            "invalid MTU",
-            "invalid usages",
-            "valid VLANs",
-            "invalid VLANs",
-            "valid dash names"
+            "Create valid names",
+            "Try to create invalid names",
+            "Create valid MTU",
+            "Try to create invalid MTU",
+            "Try to create invalid usages",
+            "Create valid VLANs",
+            "Try to invalid VLANs",
+            "Create valid dash names"
 
         ]
 
@@ -160,20 +161,16 @@ class TestIOTest01(NetworkTest):
         """
         type_ = test_params.keys()[0]
         network_params = test_params.get(type_)
-        log = (
-            "Create network %s with valid %s" if positive else
-            "Try to create network %s with invalid %s"
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_create_networks.parametrize,
+            params=[test_params, positive]
         )
+        testflow.step(_id)
         for network_param in network_params:
             param = {type_: network_param}
             if type_ != "name":
                 param["name"] = "io-%s" % str(network_param)
 
-            network_name = param.get("name")
-            testflow.step(
-                "%s %s to datacenter %s",
-                log % (network_name, type_), network_param, conf.DC_0
-            )
             assert ll_networks.add_network(
                 positive=positive, data_center=conf.DC_0, **param
             )
@@ -358,29 +355,25 @@ class TestIOTest03(NetworkTest):
             polarion("RHEVM3-4372")([test_5_edit_valid_usages, True]),
         ],
         ids=[
-            "valid name",
-            "invalid name",
-            "valid VLAN",
-            "invalid VLAN",
-            "valid usages"
+            "Edit valid name",
+            "Try to edit invalid name",
+            "Edit valid VLAN",
+            "Try to Edit invalid VLAN",
+            "Edit valid usages"
         ]
     )
     def test_update_network(self, test_params, positive):
         """
         Edit network with valid and invalid name, MTU, VLAN and usages
         """
-        log = (
-            "Edit network %s with valid %s" if positive else
-            "Try to create network %s with invalid %s"
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_update_network.parametrize,
+            params=[test_params, positive]
         )
+        testflow.step(_id)
         for type_, params in test_params.iteritems():
             for param in params:
                 param_dict = {type_: param}
-                network_name = param_dict.get("name")
-                testflow.step(
-                    "%s %s to datacenter %s",
-                    log % (network_name, type_), param, conf.DC_0
-                )
                 try:
                     ll_networks.find_network(network=self.valid_name)
                     network_to_update = self.valid_name
@@ -419,7 +412,7 @@ class TestIOTest04(NetworkTest):
 
     # Test 4 params - more then 1 label on network
     net_4 = io_conf.NETS[4][3]
-    net_4_labels = io_conf.LABEL_NAME[4][0]
+    net_4_labels = io_conf.LABEL_NAME[4][:5]
 
     @pytest.mark.usefixtures(attach_label_to_network.__name__)
     @pytest.mark.parametrize(
@@ -431,10 +424,10 @@ class TestIOTest04(NetworkTest):
             polarion("RHEVM-16953")([net_4, net_4_labels, None, False]),
         ],
         ids=[
-            "with length of 50 chars",
-            "many labels to interface (10)",
-            "invalid names",
-            "many labels on network"
+            "Create label with length of 50 chars",
+            "Assign many labels to interface (10)",
+            "Try to create invalid label names",
+            "Try to assign many labels on network"
         ]
     )
     def test_labels(self, network, labels, nic, positive):
@@ -445,13 +438,15 @@ class TestIOTest04(NetworkTest):
         Invalid names
         More then one label on network (negative)
         """
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_labels.parametrize,
+            params=[network, labels, nic, positive]
+        )
+        testflow.step(_id)
         for label in labels:
             label_dict = {
                 label: dict()
             }
-            testflow.step(
-                "Attach label %s characters to a network %s", label, network
-            )
             if nic:
                 label_dict[label]["host"] = conf.HOST_0_NAME
                 label_dict[label]["nic"] = conf.HOST_0_NICS[nic]
