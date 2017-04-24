@@ -120,8 +120,7 @@ def create_vm(request):
     )
     custom_params = fixture_helper.get_attr_helper(
         attribute='function.custom_vm_params.args',
-        obj=request,
-        default=None)
+        obj=request) or [request.getfixturevalue('custom_vm_params')]
     if custom_params:
         vm_parameters.update(custom_params[0])
     vm_name = vm_parameters['name']

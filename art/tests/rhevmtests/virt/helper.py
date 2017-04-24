@@ -4,13 +4,15 @@
 """
 Helper functions for virt and network migration job
 """
-import logging
 import os
 import shlex
 import time
 
+import re
+import logging
 import xmltodict
-
+from datetime import datetime
+from utilities.rhevm_tools import errors
 import art.core_api.validator as validator
 import art.rhevm_api.resources as resources
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -373,12 +375,7 @@ def create_file_in_vm(
     )
     full_path = os.path.join(path, config_virt.FILE_NAME)
     files_paths.append(full_path)
-    cmd = config_virt.DD_CREATE_FILE_CMD % (full_path, size_in_mb)
-
-    if vm_resource.run_command(shlex.split(cmd))[0]:
-        raise exceptions.VMException(
-            "Failed to create an empty file on vm: '%s'" % vm
-        )
+    write_file_with_dd_command(full_path, size_in_mb, vm, vm_resource)
     if all_disks:
         vm_disks = ll_vms.getVmDisks(vm)
         disks_aliases = [
@@ -396,13 +393,28 @@ def create_file_in_vm(
                 )
             full_path = os.path.join(target_path, config_virt.FILE_NAME)
             files_paths.append(full_path)
-            cmd = config_virt.DD_CREATE_FILE_CMD % (full_path, size_in_mb)
-            if vm_resource.run_command(shlex.split(cmd))[0]:
-                raise exceptions.VMException(
-                    "Failed to create an empty file on vm: '%s' fs: %s" %
-                    vm, target_path
-                )
+            write_file_with_dd_command(full_path, size_in_mb, vm, vm_resource)
     return files_paths
+
+
+def write_file_with_dd_command(full_path, size_in_mb, vm, vm_resource):
+    """
+    Write to given file with dd command
+
+    Args:
+    full_path (str): File path
+    size_in_mb (int): Amount of MB to write to file
+    vm (str): VM name
+    vm_resource (Host resource): VM resource
+
+    Raises:
+        VMException: If failed to create file
+    """
+    cmd = config_virt.DD_CREATE_FILE_CMD % (full_path, size_in_mb)
+    if vm_resource.run_command(shlex.split(cmd))[0]:
+        raise exceptions.VMException(
+            "Failed to create an empty file on vm: '%s'" % vm
+        )
 
 
 def check_if_file_exist(
@@ -698,7 +710,7 @@ def run_command_on_host(cmd, host_resource):
     return None.
 
     Args:
-        cmd (str): command to run
+        cmd (list): command to run
         host_resource (Host): host resource
 
     Returns:
@@ -1415,3 +1427,51 @@ def verify_number_of_disks_on_vm(vm_resource, number_of_disks=1):
     cmd = shlex.split(config_virt.LSBLK_CMS, posix=False)
     cmd_output = (vm_resource.run_command(cmd)[1]).strip().split('\n')
     return len(cmd_output) == number_of_disks
+
+
+def get_default_tz_from_db(engine):
+    """
+    Gets default values for DefaultGeneralTimeZone and DefaultWindowsTimeZone
+    from the DB
+
+    Args:
+        engine: Engine resource
+
+    Returns:
+        dict: dictionary in format {DefaultWindowsTimeZone: value}
+    """
+    sql = ("SELECT option_name, option_value FROM vdc_options WHERE "
+           "option_name like '%s';")
+    pattern = 'Default%TimeZone'
+    try:
+        res = engine.db.psql(sql, pattern)
+        return {r[0]: r[1] for r in res}
+    except errors.ExecuteDBQueryError:
+        return dict()
+
+
+def get_vm_qemu_process_args(vm_name):
+    """
+    Get args for qemu process of given vm
+    Args:
+        vm_name(str): virtual machine
+
+    Returns:
+        dict: dict with qemu process args, empty dict otherwise
+    """
+    result = {}
+    vds_host = helpers.get_host_resource_of_running_vm(vm_name)
+    cmd = [
+        'ps', '-eo', 'args', '|',
+        'grep', '-v', 'grep', '|',
+        'grep', vm_name
+    ]
+    rc, out, err = vds_host.run_command(cmd)
+    if rc == 0:
+        rtc_base = re.search('(?<=rtc base=)[a-zA-Z0-9\-:]+', out).group(0)
+        result['rtc_base'] = datetime.strptime(rtc_base, '%Y-%m-%dT%H:%M:%S')
+    else:
+        logger.error(
+            msg='Failed to get qemu process args with {err}'.format(err=err)
+        )
+    return result
