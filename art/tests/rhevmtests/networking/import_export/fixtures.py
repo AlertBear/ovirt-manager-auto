@@ -119,11 +119,7 @@ def import_export_prepare_setup(request):
             }
         }
     }
-    testflow.setup(
-        "Create and attach networks %s to datacenter %s and clusters %s",
-        import_export_conf.LOCAL_DICT, import_export.dc_0,
-        import_export.cluster_0
-    )
+
     assert hl_networks.create_and_attach_networks(
         data_center=import_export.dc_0, cluster=import_export.cluster_0,
         network_dict=import_export_conf.LOCAL_DICT

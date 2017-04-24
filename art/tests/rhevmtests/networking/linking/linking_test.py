@@ -69,7 +69,6 @@ def linking_prepare_setup(request):
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Creating networks on host: %s", linking.vds_0_host)
     network_helper.prepare_networks_on_setup(
         networks_dict=linking_conf.NET_DICT, dc=linking.dc_0,
         cluster=linking.cluster_0

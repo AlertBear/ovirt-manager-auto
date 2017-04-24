@@ -24,10 +24,6 @@ def create_and_attach_network(request):
     setup = request.cls.create_and_attach_network_params[1]
 
     for dc, cl in dcs_clusters:
-        testflow.setup(
-            "Create and attach network %s to datacenter %s and cluster %s",
-            setup, dc, cl
-        )
         assert hl_networks.create_and_attach_networks(
             data_center=dc, cluster=cl, network_dict=setup
         )

@@ -163,10 +163,6 @@ def create_network(request):
         )
     request.addfinalizer(fin)
 
-    test_libs.testflow.setup(
-        "Create new network %s and attach it to the cluster %s",
-        conf.TEST_NETWORK, conf.CLUSTER_NAME
-    )
     assert hl_networks.create_and_attach_networks(
         data_center=conf.DC_NAME,
         cluster=conf.CLUSTER_NAME,

@@ -10,8 +10,6 @@ import re
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
 import rhevmtests.networking.config as conf
-from art.unittest_lib import testflow
-from rhevmtests.networking import helper
 
 
 def setup_network_helper(hosts_nets_nic_dict, sriov_nics, persist):
@@ -80,10 +78,6 @@ def setup_network_helper(hosts_nets_nic_dict, sriov_nics, persist):
                     )
                 sn_dict["add"][net]["ip"] = ip_dict
 
-        log_dict = helper.remove_none_from_dict(sn_dict)
-        testflow.setup(
-            "Create %s via setup_network on host %s", log_dict, host
-        )
         assert hl_host_network.setup_networks(
             host_name=host, persist=persist, **sn_dict
         )

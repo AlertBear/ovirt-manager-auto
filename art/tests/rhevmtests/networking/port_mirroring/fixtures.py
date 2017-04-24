@@ -81,7 +81,6 @@ def port_mirroring_prepare_setup(request):
         assert network_helper.remove_ifcfg_files(vms_resources=vms_resources)
     request.addfinalizer(fin1)
 
-    testflow.setup("Create networks %s", pm_conf.NETS_DICT)
     network_helper.prepare_networks_on_setup(
         networks_dict=pm_conf.NETS_DICT, dc=port_mirroring.dc_0,
         cluster=port_mirroring.cluster_0

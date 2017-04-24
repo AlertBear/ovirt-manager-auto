@@ -58,18 +58,11 @@ def create_network_on_dc_and_cluster(request):
     datacenter = getattr(request.node.cls, "datacenter", labels.dc_0)
     networks_dict = getattr(request.node.cls, "networks_dict")
     cluster_list = getattr(request.node.cls, "cluster_list", list())
-    testflow.setup(
-        "Add networks: %s to datacenter %s", ",".join(networks_dict.keys()),
-        datacenter
-    )
+
     assert hl_networks.create_and_attach_networks(
         data_center=datacenter, network_dict=networks_dict
     )
     for cluster in cluster_list:
-        testflow.setup(
-            "Add networks: %s to cluster %s", ",".join(networks_dict.keys()),
-            cluster
-        )
         assert hl_networks.create_and_attach_networks(
             cluster=cluster, network_dict=networks_dict
         )

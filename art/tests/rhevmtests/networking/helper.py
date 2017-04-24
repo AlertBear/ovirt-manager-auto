@@ -155,8 +155,6 @@ def prepare_networks_on_setup(networks_dict, dc, cluster=None):
     :type cluster: str
     :raise: NetworkException
     """
-    log = "%s/%s" % (dc, cluster) if cluster else "%s" % dc
-    logger.info("Add %s to %s", networks_dict, log)
     assert hl_networks.create_and_attach_networks(
         data_center=dc, cluster=cluster, network_dict=networks_dict
     )

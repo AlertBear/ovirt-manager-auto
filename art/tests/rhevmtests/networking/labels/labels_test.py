@@ -449,12 +449,7 @@ class TestNetLabels03(NetworkTest):
                 }
             }
         }
-        testflow.step(
-            "Attach another network %s to the same interface %s "
-            "with setupNetworks and check that the network %s "
-            "is attached to host %s", self.net_2, conf.HOST_0_NICS[1],
-            self.net_2, conf.HOST_0_NAME
-        )
+
         assert hl_networks.create_and_attach_networks(
             data_center=conf.DC_0, cluster=conf.CL_0,
             network_dict=local_dict2
