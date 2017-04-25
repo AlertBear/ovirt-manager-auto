@@ -75,12 +75,19 @@ class BaseNumaAwareKsm(u_libs.SlaTest):
             ksm_merge_across_nodes (bool): NUMA aware KSM parameter
         """
         u_libs.testflow.step("Deactivate the host %s", sla_conf.HOSTS[0])
-        assert ll_hosts.deactivate_host(positive=True, host=sla_conf.HOSTS[0])
+        assert ll_hosts.deactivate_host(
+            positive=True,
+            host=sla_conf.HOSTS[0],
+            host_resource=sla_conf.VDS_HOSTS[0]
+        )
         cls.update_merge_across_nodes_parameter(
             ksm_merge_across_nodes=ksm_merge_across_nodes
         )
-        u_libs.testflow.step("Activate the host %s", sla_conf.HOSTS[0])
-        assert ll_hosts.activate_host(positive=True, host=sla_conf.HOSTS[0])
+        assert ll_hosts.activate_host(
+            positive=True,
+            host=sla_conf.HOSTS[0],
+            host_resource=sla_conf.VDS_HOSTS[0]
+        )
         u_libs.testflow.step(
             "%s: wait until KSM merge across nodes will be equal to %s",
             sla_conf.VDS_HOSTS[0], ksm_merge_across_nodes

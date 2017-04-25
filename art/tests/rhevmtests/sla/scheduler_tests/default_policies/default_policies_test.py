@@ -187,7 +187,9 @@ class TestPowerSavingWeightModule1(BasePowerSavingPolicy):
         )
         assert (
             sch_helpers.migrate_vm_by_maintenance_and_get_destination_host(
-                src_host=sla_conf.HOSTS[0], vm_name=sla_conf.VM_NAME[0]
+                src_host=sla_conf.HOSTS[0],
+                vm_name=sla_conf.VM_NAME[0],
+                host_resource=sla_conf.VDS_HOSTS[0]
             ) == sla_conf.HOSTS[1]
         )
 
@@ -276,7 +278,9 @@ class TestEvenDistributedWeightModule1(BasePowerEvenDistribution):
         )
         assert (
             sch_helpers.migrate_vm_by_maintenance_and_get_destination_host(
-                src_host=sla_conf.HOSTS[0], vm_name=sla_conf.VM_NAME[0]
+                src_host=sla_conf.HOSTS[0],
+                vm_name=sla_conf.VM_NAME[0],
+                host_resource=sla_conf.VDS_HOSTS[0]
             ) == sla_conf.HOSTS[1]
         )
 

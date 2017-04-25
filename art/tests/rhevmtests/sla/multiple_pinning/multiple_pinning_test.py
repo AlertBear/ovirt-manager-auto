@@ -61,7 +61,7 @@ class BaseMultiplePinning(u_libs.SlaTest):
         return ll_vms.get_vm_host(vm_name=conf.VM_NAME[0])
 
     @staticmethod
-    def _stop_vm_and_deactivate_vm_host(vm_host):
+    def _stop_vm_and_deactivate_vm_host(vm_host, host_resource):
         """
         1) Stop VM
         2) Deactivate host
@@ -71,8 +71,9 @@ class BaseMultiplePinning(u_libs.SlaTest):
         """
         u_libs.testflow.step("Stop the VM %s", conf.VM_NAME[0])
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
-        u_libs.testflow.step("Deactivate the host %s", vm_host)
-        assert ll_hosts.deactivate_host(positive=True, host=vm_host)
+        assert ll_hosts.deactivate_host(
+            positive=True, host=vm_host, host_resource=host_resource
+        )
 
 
 @u_libs.attr(tier=1)
@@ -113,7 +114,10 @@ class TestMultiplePinning01(BaseMultiplePinning):
                 conf.VM_NAME[0]
             )
             assert vm_host in conf.HOSTS[:2]
-            self._stop_vm_and_deactivate_vm_host(vm_host=vm_host)
+            self._stop_vm_and_deactivate_vm_host(
+                vm_host=vm_host,
+                host_resource=conf.VDS_HOSTS[conf.HOSTS.index(vm_host)]
+            )
         u_libs.testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert not ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
@@ -250,7 +254,10 @@ class TestMultiplePinning04(BaseMultiplePinning):
                 vm_name=conf.VM_NAME[0],
                 expected_pinning=expected_pinning
             )
-            self._stop_vm_and_deactivate_vm_host(vm_host=vm_host)
+            self._stop_vm_and_deactivate_vm_host(
+                vm_host=vm_host,
+                host_resource=conf.VDS_HOSTS[conf.HOSTS.index(vm_host)]
+            )
 
 
 @u_libs.attr(tier=2)
@@ -298,7 +305,10 @@ class TestMultiplePinning05(BaseMultiplePinning):
                 vm_cpu_info[conf.CPU_MODEL_NAME] ==
                 host_cpu_info[conf.CPU_MODEL_NAME]
             )
-            self._stop_vm_and_deactivate_vm_host(vm_host=vm_host)
+            self._stop_vm_and_deactivate_vm_host(
+                vm_host=vm_host,
+                host_resource=conf.VDS_HOSTS[conf.HOSTS.index(vm_host)]
+            )
 
 
 @u_libs.attr(tier=2)

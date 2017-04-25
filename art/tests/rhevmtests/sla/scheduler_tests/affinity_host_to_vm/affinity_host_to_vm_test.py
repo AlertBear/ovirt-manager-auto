@@ -643,7 +643,9 @@ class TestMaintenanceUnderHostAffinity02(BaseHostAffinityStartVm):
         """
         Check that the engine migrates the VM-0 on the host-2
         """
-        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.deactivate_host(
+            positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
+        )
         assert self.check_vm_host(
             vm_name=conf.VM_NAME[0], host_name=conf.HOSTS[2]
         )
@@ -666,7 +668,9 @@ class TestMaintenanceUnderHostAffinity03(BaseHostAffinityPutHostToMaintenance):
         """
         Check that the engine can deactivate the host-0
         """
-        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0])
+        assert ll_hosts.deactivate_host(
+            positive=True, host=conf.HOSTS[0], host_resource=conf.VDS_HOSTS[0]
+        )
 
 
 @u_libs.attr(tier=2)
@@ -694,7 +698,9 @@ class TestMaintenanceUnderHostAffinity04(BaseHostAffinityStartVm):
         """
         Check that the engine migrates the VM-0 on the host-2
         """
-        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.deactivate_host(
+            positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
+        )
         assert self.check_vm_host(
             vm_name=conf.VM_NAME[0], host_name=conf.HOSTS[2]
         )

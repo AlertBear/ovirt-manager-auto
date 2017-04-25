@@ -74,14 +74,19 @@ def init_scheduler_sanity_test(request):
             )
         if not conf.PPC_ARCH:
             results.append(
-                ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
+                ll_hosts.activate_host(
+                    positive=True,
+                    host=conf.HOSTS[2],
+                    host_resource=conf.VDS_HOSTS[2]
+                )
             )
         assert all(results)
     request.addfinalizer(fin)
 
     if not conf.PPC_ARCH:
-        u_libs.testflow.setup("Deactivate the host %s", conf.HOSTS[2])
-        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[2])
+        assert ll_hosts.deactivate_host(
+            positive=True, host=conf.HOSTS[2], host_resource=conf.VDS_HOSTS[2]
+        )
 
 
 @attr(tier=2)

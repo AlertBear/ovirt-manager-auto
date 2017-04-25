@@ -37,12 +37,14 @@ def deactivate_third_host(request):
         """
         1) Activate third host in the cluster
         """
-        u_libs.testflow.teardown("Activate the host %s", conf.HOSTS[2])
-        ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
+        ll_hosts.activate_host(
+            positive=True, host=conf.HOSTS[2], host_resource=conf.VDS_HOSTS[2]
+        )
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup("Deactivate the host %s", conf.HOSTS[2])
-    assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[2])
+    assert ll_hosts.deactivate_host(
+        positive=True, host=conf.HOSTS[2], host_resource=conf.VDS_HOSTS[2]
+    )
 
 
 @u_libs.attr(tier=2)

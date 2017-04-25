@@ -63,18 +63,23 @@ def is_balancing_happen(
     )
 
 
-def migrate_vm_by_maintenance_and_get_destination_host(src_host, vm_name):
+def migrate_vm_by_maintenance_and_get_destination_host(
+    src_host, vm_name, host_resource
+):
     """
     Put VM host to maintenance and get VM destination host
 
     Args:
         src_host (str): Source host name
         vm_name (str): VM name
+        host_resource (VDS): Host resource
 
     Returns:
         str: Destination host name
     """
-    if not ll_hosts.deactivate_host(positive=True, host=src_host):
+    if not ll_hosts.deactivate_host(
+        positive=True, host=src_host, host_resource=host_resource
+    ):
         return ""
     return ll_vms.get_vm_host(vm_name=vm_name)
 

@@ -67,8 +67,9 @@ def change_host_cluster(cluster_name):
     Returns:
         bool: True, if all actions succeed, otherwise False
     """
-    u_libs.testflow.setup("Deactivate the host %s", conf.HOSTS[0])
-    if not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0]):
+    if not ll_hosts.deactivate_host(
+        positive=True, host=conf.HOSTS[0], host_resource=conf.VDS_HOSTS[0]
+    ):
         return False
 
     u_libs.testflow.setup(
@@ -79,7 +80,8 @@ def change_host_cluster(cluster_name):
     ):
         return False
 
-    u_libs.testflow.setup("Activate the host %s", conf.HOSTS[0])
-    if not ll_hosts.activate_host(positive=True, host=conf.HOSTS[0]):
+    if not ll_hosts.activate_host(
+        positive=True, host=conf.HOSTS[0], host_resource=conf.VDS_HOSTS[0]
+    ):
         return False
     return True

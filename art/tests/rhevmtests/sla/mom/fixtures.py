@@ -71,7 +71,7 @@ def prepare_env_for_ballooning_test(request):
         u_libs.testflow.teardown(
             "Disable ballooning for the host %s", conf.HOSTS[0]
         )
-        results.append(helpers.enable_host_ballooning(host_name=conf.HOSTS[0]))
+        results.append(helpers.enable_host_ballooning())
         u_libs.testflow.teardown(
             "Change ballooning pressure threshold to %s",
             conf.DEFVAR_PRESSURE_THRESHOLD_020
@@ -111,4 +111,4 @@ def prepare_env_for_ballooning_test(request):
         path_dst=conf.HOST_ALLOC_PATH
     )
     u_libs.testflow.setup("Enable ballooning for the host %s", conf.HOSTS[0])
-    assert helpers.enable_host_ballooning(host_name=conf.HOSTS[0])
+    assert helpers.enable_host_ballooning()

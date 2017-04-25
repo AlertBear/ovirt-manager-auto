@@ -74,7 +74,11 @@ def init_ha_reservation(request):
             )
         )
         results.append(
-            ll_hosts.activate_host(positive=True, host=conf.HOSTS[2])
+            ll_hosts.activate_host(
+                positive=True,
+                host=conf.HOSTS[2],
+                host_resource=conf.VDS_HOSTS[2]
+            )
         )
         u_libs.testflow.teardown(
             "Change HA reservation interval to %s via the engine-config",
@@ -89,8 +93,7 @@ def init_ha_reservation(request):
     request.addfinalizer(fin)
 
     assert ll_hosts.deactivate_host(
-        positive=True,
-        host=conf.HOSTS[2]
+        positive=True, host=conf.HOSTS[2], host_resource=conf.VDS_HOSTS[2]
     )
     u_libs.testflow.setup(
         "Change HA reservation interval to %s via the engine-config",
@@ -147,7 +150,9 @@ class TestPutHostToMaintenance(BaseHAReservation):
         assert helpers.is_cluster_ha_safe()
 
         u_libs.testflow.step("Deactivate host %s", conf.HOSTS[1])
-        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.deactivate_host(
+            positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
+        )
 
         u_libs.testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]
@@ -160,8 +165,9 @@ class TestPutHostToMaintenance(BaseHAReservation):
         Activate host
         Check if cluster is Ha safe
         """
-        u_libs.testflow.step("Activate host %s", conf.HOSTS[1])
-        assert ll_hosts.activate_host(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.activate_host(
+            positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
+        )
 
         u_libs.testflow.step(
             "Check if cluster %s is HA safe", conf.CLUSTER_NAME[0]
@@ -254,7 +260,9 @@ class TestMultiVM(BaseHAReservation):
         assert helpers.is_cluster_ha_safe()
 
         u_libs.testflow.step("Deactivate host %s", conf.HOSTS[1])
-        assert ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1])
+        assert ll_hosts.deactivate_host(
+            positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
+        )
 
         u_libs.testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]

@@ -161,9 +161,15 @@ def activate_hosts(request):
         hosts_to_activate = [
             sla_config.HOSTS[i] for i in hosts_to_activate_indexes
         ]
-        for host_to_activate in hosts_to_activate:
-            u_libs.testflow.teardown("Activate the host %s", host_to_activate)
-            hl_hosts.activate_host_if_not_up(host=host_to_activate)
+        hosts_resources = [
+            sla_config.VDS_HOSTS[i] for i in hosts_to_activate_indexes
+        ]
+        for host_to_activate, host_resource in zip(
+            hosts_to_activate, hosts_resources
+        ):
+            hl_hosts.activate_host_if_not_up(
+                host=host_to_activate, host_resource=host_resource
+            )
     request.addfinalizer(fin)
 
 
@@ -194,18 +200,28 @@ def deactivate_hosts(request):
     hosts_to_deactivate = [
         sla_config.HOSTS[i] for i in hosts_to_maintenance
     ]
+    hosts_resources = [
+        sla_config.VDS_HOSTS[i] for i in hosts_to_maintenance
+    ]
 
     def fin():
         """
         1) Activate hosts
         """
-        for host_name in hosts_to_deactivate:
-            u_libs.testflow.teardown("Activate the host %s", host_name)
-            hl_hosts.activate_host_if_not_up(host=host_name)
+        for host_to_deactivate, host_resource in zip(
+            hosts_to_deactivate, hosts_resources
+        ):
+            hl_hosts.activate_host_if_not_up(
+                host=host_to_deactivate, host_resource=host_resource
+            )
     request.addfinalizer(fin)
 
-    for host_name in hosts_to_deactivate:
-        hl_hosts.deactivate_host_if_up(host=host_name)
+    for host_to_deactivate, host_resource in zip(
+        hosts_to_deactivate, hosts_resources
+    ):
+        assert hl_hosts.deactivate_host_if_up(
+            host=host_to_deactivate, host_resource=host_resource
+        )
 
 
 @pytest.fixture(scope="class")

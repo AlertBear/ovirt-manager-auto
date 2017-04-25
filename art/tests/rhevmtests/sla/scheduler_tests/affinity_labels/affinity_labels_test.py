@@ -360,8 +360,11 @@ class TestAffinityLabels5(u_libs.SlaTest):
         Check if VM with the affinity label, migrate on hosts with
         the same affinity label, when user put source host to maintenance
         """
-        u_libs.testflow.step("Deactivate host %s", sla_conf.HOSTS[0])
-        assert ll_hosts.deactivate_host(positive=True, host=sla_conf.HOSTS[0])
+        assert ll_hosts.deactivate_host(
+            positive=True,
+            host=sla_conf.HOSTS[0],
+            host_resource=sla_conf.VDS_HOSTS[0]
+        )
         u_libs.testflow.step(
             "Check that VM %s runs on the host %s",
             sla_conf.VM_NAME[0], sla_conf.HOSTS[1]
@@ -408,7 +411,6 @@ class TestAffinityLabels6(u_libs.SlaTest):
             sla_conf.VM_NAME[0], sla_conf.HOSTS[0]
         )
         assert sla_conf.HOSTS[0] == ll_vms.get_vm_host(sla_conf.VM_NAME[0])
-        u_libs.testflow.step("Deactivate host %s", sla_conf.HOSTS[0])
         assert not ll_hosts.deactivate_host(
             positive=True, host=sla_conf.HOSTS[0], timeout=120
         )

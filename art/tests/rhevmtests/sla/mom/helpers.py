@@ -252,14 +252,13 @@ def wait_for_vms_balloon_state(
         return False
 
 
-def enable_host_ballooning(host_name, enable=True):
+def enable_host_ballooning(enable=True):
     """
     1) Update cluster ballooning
     2) Deactivate the host
     3) Activate the host
 
     Args:
-        host_name (str): Host name
         enable (bool): Enable or disable ballooning on the cluster
 
     Returns:
@@ -271,6 +270,10 @@ def enable_host_ballooning(host_name, enable=True):
         ballooning_enabled=enable
     ):
         return False
-    if not ll_hosts.deactivate_host(positive=True, host=host_name):
+    if not ll_hosts.deactivate_host(
+        positive=True, host=conf.HOSTS[0], host_resource=conf.VDS_HOSTS[0]
+    ):
         return False
-    return ll_hosts.activate_host(positive=True, host=host_name)
+    return ll_hosts.activate_host(
+        positive=True, host=conf.HOSTS[0], host_resource=conf.VDS_HOSTS[0]
+    )
