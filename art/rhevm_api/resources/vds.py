@@ -86,6 +86,10 @@ class VDS(Host):
         )[1]
         return vdsm_client_content
 
+    @property
+    def hosted_engine_host(self):
+        return self.is_hosted_engined_deployed()
+
     def vds_client(self, cmd, args=None):
         """
         Run given command on host with vdsClient
@@ -151,3 +155,37 @@ class VDS(Host):
         cmd = ["cat", vm_pid_file]
         rc, out, _ = self.run_command(command=cmd)
         return "" if rc else out
+
+    def is_hosted_engined_deployed(self):
+        """
+        Is host configure as hosted-engine host
+
+        Returns:
+            bool: True, if the host configured as the hosted-engine host,
+                otherwise False
+        """
+        return self.vds_client(cmd="getCapabilities")["hostedEngineDeployed"]
+
+    def get_he_stats(self):
+        """
+        Get host hosted engine stats
+
+        Returns:
+            dict: Host hosted engine stats
+        """
+        he_stats = dict()
+
+        if not self.hosted_engine_host:
+            return he_stats
+
+        command = (
+            'python -c '
+            '"from ovirt_hosted_engine_ha.client.client import HAClient;'
+            'host_id = HAClient().get_local_host_id();'
+            'print HAClient().get_all_host_stats()[host_id]"'
+        )
+        rc, out, _ = self.run_command(shlex.split(command))
+        if rc:
+            return he_stats
+
+        return ast.literal_eval(out)

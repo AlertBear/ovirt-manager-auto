@@ -84,24 +84,24 @@ def move_host_to_another_cluster(host, cluster, activate=True):
 
 
 @ll_general.generate_logs(step=True)
-def deactivate_host_if_up(host):
+def deactivate_host_if_up(host, host_resource=None):
     """
     Deactivate host if it's not in maintenance
 
     __author__: 'ratamir'
 
     Args:
-        host (str): Name of the host to deactivate.
+        host (str): Name of the host to deactivate
+        host_resource (VDS): Host resource
 
     Returns:
         bool: True if host was deactivated properly and positive,
             False otherwise.
     """
-    logger.info("Deactivate Host %s", host)
-    if not ll_hosts.is_host_in_maintenance(True, host):
-        if not ll_hosts.deactivate_host(True, host):
-            logger.error("Failed to deactivate Host %s")
-            return False
+    if not ll_hosts.is_host_in_maintenance(positive=True, host=host):
+        return ll_hosts.deactivate_host(
+            positive=True, host=host, host_resource=host_resource
+        )
     return True
 
 
@@ -213,24 +213,22 @@ def remove_power_management(host_name):
 
 
 @ll_general.generate_logs(step=True)
-def activate_host_if_not_up(host):
+def activate_host_if_not_up(host, host_resource=None):
     """
-    Activate host if not up
+    Activate the host if the host is not up
 
     Args:
         host (str): IP/FQDN of the host
+        host_resource (VDS): Host resource
 
     Returns:
         bool: True if host was activated properly False otherwise
     """
     host_status = ll_hosts.get_host_status(host)
     if host_status != ENUMS["host_state_up"]:
-        logger.info(
-            "Host %s status is %s. activating", host, host_status
+        return ll_hosts.activate_host(
+            positive=True, host=host, host_resource=host_resource
         )
-        if not ll_hosts.activate_host(positive=True, host=host):
-            logger.error("Failed to activate host %s", host)
-            return False
     return True
 
 

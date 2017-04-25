@@ -399,7 +399,7 @@ def remove_host(positive, host, deactivate=False, force=False):
 
 
 @ll_general.generate_logs(step=True)
-def activate_host(positive, host, wait=True):
+def activate_host(positive, host, wait=True, host_resource=None):
     """
     Activate host (set status to UP)
 
@@ -407,23 +407,25 @@ def activate_host(positive, host, wait=True):
         positive (bool): Expected result
         host (str): Name of a host to be activated
         wait (bool): Wait for host to be up
+        host_resource (VDS): Host resource
 
     Returns:
         bool: True if host was activated properly, False otherwise
     """
     host_obj = get_host_object(host_name=host)
-    status = bool(HOST_API.syncAction(host_obj, "activate", positive))
+    if not HOST_API.syncAction(host_obj, "activate", positive):
+        return False
 
-    if status and wait and positive:
-        test_host_status = HOST_API.waitForElemStatus(
-            host_obj,
-            "up",
-            ACTIVATION_MAX_TIME
-        )
-    else:
-        test_host_status = True
+    if wait and positive:
+        if not HOST_API.waitForElemStatus(host_obj, "up", ACTIVATION_MAX_TIME):
+            return False
 
-    return status and test_host_status
+        if host_resource and is_hosted_engine_configured(host_name=host):
+            return wait_for_hosted_engine_maintenance_state(
+                host_resource=host_resource, enabled=False
+            )
+
+    return True
 
 
 def sort_hosts_by_priority(hosts, reverse=True):
@@ -473,8 +475,8 @@ def is_host_in_maintenance(positive, host):
 
 @ll_general.generate_logs(step=True)
 def deactivate_host(
-    positive, host, expected_status=ENUMS['host_state_maintenance'],
-    timeout=300
+    positive, host, expected_status=ENUMS["host_state_maintenance"],
+    timeout=180, host_resource=None
 ):
     """
     Deactivate the host.
@@ -486,6 +488,7 @@ def deactivate_host(
         host (str): The name of a host to be deactivated.
         expected_status (str): The state to expect the host to remain in.
         timeout (int): Time interval for checking if the state is changed
+        host_resource (VDS): Host resource
 
     Returns:
         bool: True if host was deactivated properly and positive,
@@ -496,25 +499,32 @@ def deactivate_host(
         timeout, 1, lambda x: x.get_spm().status, host_obj
     )
 
-    for sample in sampler:
-        if not sample == ENUMS['spm_state_contending']:
-            if not HOST_API.syncAction(host_obj, "deactivate", positive):
-                return False
+    try:
+        for sample in sampler:
+            if sample != ENUMS["spm_state_contending"]:
+                if not HOST_API.syncAction(host_obj, "deactivate", positive):
+                    return False
 
-            # If state got changed, it may be transitional
-            # state so we may want to wait
-            # for the final one. If it didn't, we certainly can
-            # return immediately.
-            host_state = host_obj.get_status()
-            get_host_state_again = get_host_object(host_name=host).get_status()
-            state_changed = host_state != get_host_state_again
-            if state_changed:
-                test_host_status = HOST_API.waitForElemStatus(
-                    host_obj, expected_status, 180
-                )
-                return test_host_status and positive
-            else:
-                return not positive
+                if not positive:
+                    return True
+
+                if not HOST_API.waitForElemStatus(
+                    host_obj, expected_status, timeout
+                ):
+                    return False
+
+                if host_resource and is_hosted_engine_configured(
+                    host_name=host
+                ):
+                    return wait_for_hosted_engine_maintenance_state(
+                        host_resource=host_resource
+                    )
+    except APITimeout:
+        logger.error(
+            "Timeout waiting for the host %s state different from the %s",
+            host, ENUMS["spm_state_contending"]
+        )
+        return not positive
 
 
 @ll_general.generate_logs()
@@ -2254,3 +2264,39 @@ def check_host_upgrade(host_name):
     """
     host = get_host_object(host_name=host_name)
     return bool(HOST_API.syncAction(host, 'upgradecheck', True))
+
+
+def wait_for_hosted_engine_maintenance_state(
+    host_resource, enabled=True, timeout=180, sleep=10
+):
+    """
+    Wait until the hosted-engine host will have expected maintenance state
+
+    Args:
+        host_resource (VDS): Host resource
+        enabled (bool): Wait for enabled or disable maintenance state
+        timeout (int): Sampler timeout in seconds
+        sleep (int): Sampler sleep time in seconds
+
+    Returns:
+        bool: True, if the hosted-engine has correct maintenance state,
+            otherwise False
+    """
+    sampler = TimeoutingSampler(
+        timeout=timeout, sleep=sleep, func=host_resource.get_he_stats
+    )
+
+    try:
+        for sample in sampler:
+            if sample and sample["maintenance"] == enabled:
+                logger.info(
+                    "%s: hosted-engine maintenance state equal to %s",
+                    host_resource, enabled
+                )
+                return True
+    except APITimeout:
+        logger.error(
+            "%s :Timeout waiting for hosted-engine maintenance state",
+            host_resource
+        )
+        return False
