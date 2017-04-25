@@ -844,3 +844,43 @@ def get_all_vm_pools_in_cluster(cluster_name):
         "Existing vm pools in cluster %s: %s", cluster_name, cluster_vm_pools
     )
     return cluster_vm_pools
+
+
+def get_cluster_cpu_level(cluster_name):
+    """
+    Get cluster CPU level
+
+    Args:
+        cluster_name (str): cluster name
+
+    Returns:
+        str: cluster CPU level
+    """
+    cluster_obj = get_cluster_object(cluster_name=cluster_name)
+    cpu_type = cluster_obj.get_cpu().get_type()
+    logger.info("Cluster CPU type is %s", cpu_type)
+    return cpu_type
+
+
+def set_cluster_cpu_level(cluster_name, cluster_cpu_level):
+    """
+    Set cluster CPU level
+
+    Args:
+        cluster_name (str): cluster name
+        cluster_cpu_level (str): cluster CPU level to set
+
+    Returns:
+        bool: True if it was successful, otherwise False
+    """
+    if cluster_cpu_level == get_cluster_cpu_level(cluster_name=cluster_name):
+        return True
+
+    if not updateCluster(
+        positive=True, cluster=cluster_name, cpu=cluster_cpu_level
+    ):
+        return False
+
+    return cluster_cpu_level == get_cluster_cpu_level(
+        cluster_name=cluster_name
+    )

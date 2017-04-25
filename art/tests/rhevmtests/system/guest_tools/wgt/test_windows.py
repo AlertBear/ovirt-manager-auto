@@ -13,7 +13,8 @@ from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     storagedomains as ll_sds,
-    disks as ll_disks
+    disks as ll_disks,
+    clusters as ll_clusters
 )
 from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
@@ -63,7 +64,27 @@ def module_setup(request):
         for disk in ll_disks.get_all_disks():
             if disk.get_alias().startswith("Win"):
                 ll_disks.deleteDisk(True, disk.get_alias())
+
+        testflow.teardown(
+            "Set %s cluster CPU level on cluster %s",
+            old_cpu_level, config.CLUSTER_NAME[0]
+        )
+        ll_clusters.set_cluster_cpu_level(
+            cluster_name=config.CLUSTER_NAME[0],
+            cluster_cpu_level=old_cpu_level
+        )
     request.addfinalizer(fin_vms)
+
+    testflow.setup(
+        "Set %s cluster CPU level on cluster %s",
+        config.WESTMERE_CL_CPU_LVL, config.CLUSTER_NAME[0]
+    )
+    old_cpu_level = ll_clusters.get_cluster_cpu_level(config.CLUSTER_NAME[0])
+    if not ll_clusters.set_cluster_cpu_level(
+        cluster_name=config.CLUSTER_NAME[0],
+        cluster_cpu_level=config.WESTMERE_CL_CPU_LVL
+    ):
+        pytest.skip("Unsupported cluster CPU level")
 
     get_latest_gt_iso_version_from_latest_repo_and_change_variable()
     if not ll_sds.is_storage_domain_active(

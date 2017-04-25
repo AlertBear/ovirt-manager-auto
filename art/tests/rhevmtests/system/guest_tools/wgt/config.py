@@ -13,3 +13,4 @@ RHEL_VERSION = re.search("^\d+", ENGINE_HOST.os.distribution.version).group(0)
 REPO = "http://bob.eng.lab.tlv.redhat.com/builds/latest_%s/el%s/noarch/" % (
     RHEVM_VERSION, RHEL_VERSION
 )
+WESTMERE_CL_CPU_LVL = "Intel Westmere Family"
