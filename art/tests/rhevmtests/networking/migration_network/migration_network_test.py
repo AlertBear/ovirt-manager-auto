@@ -75,6 +75,7 @@ class TestMigrationNetwork(NetworkTest):
     9. Test migration network with dedicated network as display network
     10. Test migration network with dedicated migration network and migration
         to host without migration network
+    11. Test Migration Network with: IPv6 address
     """
 
     # Test case parameters = [
@@ -267,11 +268,28 @@ class TestMigrationNetwork(NetworkTest):
         host_no_mig_net_host_networks, host_no_mig_net_migrate_vm_params,
         host_no_mig_net_update_network_usages_params, dict()
     ]
+    # Migration Network over IPv6 network test params
+    network_ipv6_host_networks = helper.init_host_sn_dict(
+        template_dict=mig_config.HOSTS_NETS_ONE_NIC_DICT,
+        networks=[mig_config.NETS[11][0]], hosts=2, ipv6=True
+    )
+    network_ipv6_migrate_vm_parms = {
+        "ipv6": True
+    }
+    network_update_network_usages_params = {
+        mig_config.NETS[11][0]: "migration"
+    }
+    network_ipv6_params = [
+        network_ipv6_host_networks, network_ipv6_migrate_vm_parms,
+        network_update_network_usages_params, dict()
+    ]
 
     @pytest.mark.parametrize(
         (
-         "hosts_nets_nic_dict", "test_migrate_param",
-         "update_network_usages_param", "add_vnic_to_vm_param"
+         "hosts_nets_nic_dict",
+         "test_migrate_param",
+         "update_network_usages_param",
+         "add_vnic_to_vm_param"
          ),
         [
             polarion("RHEVM3-3878")(non_op_params),
@@ -283,22 +301,23 @@ class TestMigrationNetwork(NetworkTest):
             polarion("RHEVM3-3850")(bond_non_vm_params),
             polarion("RHEVM3-3852")(bond_vlan_params),
             polarion("RHEVM3-3859")(dedicated_params),
-            polarion("RHEVM3-3872")(host_no_mig_net_params)
+            polarion("RHEVM3-3872")(host_no_mig_net_params),
+            polarion("RHEVM3-21572")(network_ipv6_params)
         ],
         ids=[
-            "Test Migration Network with non-operational host",
-            "Test Migration Network with dedicated VLAN network",
-            "Test Migration Network with non-VM network",
-            "Test Migration Network with display and migration network",
-            "Test Migration Network with network used by VM",
-            "Test Migration Network with network on bond",
-            "Test Migration Network with non-VM network on bond",
-            "Test Migration Network with VLAN network on bond",
-            "Test Migration Network with dedicated network as display network",
-            (
-                "Test Migration Network with migration network on host "
-                "without migration network"
-            )
+            "Test Migration Network with: non-operational host",
+            "Test Migration Network with: dedicated VLAN network",
+            "Test Migration Network with: non-VM network",
+            "Test Migration Network with: display and migration network",
+            "Test Migration Network with: network used by VM",
+            "Test Migration Network with: network on bond",
+            "Test Migration Network with: non-VM network on bond",
+            "Test Migration Network with: VLAN network on bond",
+            "Test Migration Network with: dedicated network as display "
+            "network",
+            "Test Migration Network with: migration network on host without "
+            "migration network",
+            "Test Migration Network with: IPv6 address"
         ]
     )
     def test_migration_network(

@@ -25,7 +25,7 @@ from utilities import jobs
 logger = logging.getLogger("Migration_Network_Helper")
 
 
-def init_host_sn_dict(template_dict, networks, hosts, bond=None):
+def init_host_sn_dict(template_dict, networks, hosts, bond=None, ipv6=False):
     """
     Initialize a dictionary for host setup network
 
@@ -35,6 +35,7 @@ def init_host_sn_dict(template_dict, networks, hosts, bond=None):
         networks (list): List of network names
         hosts (int): Number of hosts
         bond (str): Bond name
+        ipv6 (bool): True to set IPv6 on host NIC
 
     Returns:
         dict: Host setup network dict
@@ -55,13 +56,19 @@ def init_host_sn_dict(template_dict, networks, hosts, bond=None):
                     net_name == mig_conf.NETWORK_NAMES[0]
                 ):
                     net_dict[net_name][key] = bond
+                # Use IPv6
+                if ipv6:
+                    ip_dict = net_dict[net_name]["ip"]["1"]
+                    ip_dict["address"] = mig_conf.IPSV6[host_index]
+                    ip_dict["version"] = "v6"
+                    ip_dict["netmask"] = "24"
 
     return host_sn_dict
 
 
 def get_hosts_ips(
     vm, src_host_rsc, dst_host_rsc, src_host_name, dst_host_name,
-    nic_index, vlan=None, bond=None
+    nic_index, vlan=None, bond=None, ipv6=False
 ):
     """
     Get source and destination IP addresses from a given hosts
@@ -75,6 +82,7 @@ def get_hosts_ips(
         nic_index (int): NIC index to get IP from
         vlan (str): VLAN name to get IP from
         bond (str): BOND name to get IP from
+        ipv6 (bool): True to get IPv6 IP
 
     Returns:
         tuple: Source and destination IPs, or None if error has occurred
@@ -91,8 +99,12 @@ def get_hosts_ips(
         src_eth = src_host_rsc.nics[nic_index]
         dst_eth = dst_host_rsc.nics[nic_index]
 
-    src_ip = hl_networks.get_ip_on_host_nic(host=src_host_name, nic=src_eth)
-    dst_ip = hl_networks.get_ip_on_host_nic(host=dst_host_name, nic=dst_eth)
+    src_ip = hl_networks.get_ip_on_host_nic(
+        host=src_host_name, nic=src_eth, ipv6=ipv6
+    )
+    dst_ip = hl_networks.get_ip_on_host_nic(
+        host=dst_host_name, nic=dst_eth, ipv6=ipv6
+    )
     return src_ip, dst_ip if src_ip and dst_ip else None
 
 
@@ -182,7 +194,7 @@ def capture_traffic_while_migrating(
 
 def check_migration_network(
     vms, nic_index=1, vlan=None, bond=None, req_nic=None, maintenance=False,
-    non_vm=False
+    non_vm=False, ipv6=False
 ):
     """
     Check migration network by shutting down host NIC or set host in
@@ -197,6 +209,7 @@ def check_migration_network(
         req_nic (int): Index for NIC with required network
         maintenance (bool): Set host on maintenance
         non_vm (bool): Network is non-VM network
+        ipv6 (bool): True to get IPv6 IP
 
     Returns:
         bool: True if migration succeeded and traffic captured, False
@@ -228,7 +241,7 @@ def check_migration_network(
         res_get_hosts_ip = get_hosts_ips(
             vm=test_vm, src_host_rsc=src_host_rsc, dst_host_rsc=dst_host_rsc,
             src_host_name=src_host_name, dst_host_name=dst_host_name,
-            nic_index=nic_index, vlan=vlan, bond=bond
+            nic_index=nic_index, vlan=vlan, bond=bond, ipv6=ipv6
         )
         if not res_get_hosts_ip:
             logger.error("Failed to get source and destination IP's for hosts")
@@ -238,9 +251,10 @@ def check_migration_network(
 
         # Verify if migration destination IP is reachable from source host
         # through the management network
+        icmp_extra_args = "-6" if ipv6 else None
         if not network_helper.send_icmp_sampler(
             host_resource=src_host_rsc, dst=dst_ip,
-            count=str(mig_conf.ICMP_DST_IP_COUNT)
+            count=str(mig_conf.ICMP_DST_IP_COUNT), extra_args=icmp_extra_args
         ):
             return False
     logger.info(

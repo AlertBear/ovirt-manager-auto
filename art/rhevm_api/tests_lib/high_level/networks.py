@@ -281,7 +281,7 @@ def remove_all_networks(datacenter=None, cluster=None):
 
 
 @ll_general.generate_logs()
-def get_ip_on_host_nic(host, nic):
+def get_ip_on_host_nic(host, nic, ipv6=False):
     """
     Get IP on host NIC
 
@@ -292,12 +292,15 @@ def get_ip_on_host_nic(host, nic):
                    eth(x).(xxx) - VLAN NIC
                    bond(x) - BOND NIC
                    bond(x).(xxx) - VLAN BOND NIC
+        ipv6 (bool): True to get IPv6 IP.
 
     Returns:
-        Ip or None: IP if HosNic have IP else None
+        str: IP if HosNic have IP else empty str
     """
     host_nic = ll_hosts.get_host_nic(host=host, nic=nic)
-    return host_nic.get_ip().get_address()
+    if host_nic:
+        return host_nic.ip.address if not ipv6 else host_nic.ipv6.address
+    return ""
 
 
 def check_host_nic_params(host, nic, **kwargs):

@@ -52,9 +52,10 @@ NETWORK_NAMES = ["mig_net_%s" % (i + 1) for i in range(2)]
 
 # Two random IP addresses
 IPS = network_helper.create_random_ips(mask=24)
+IPSV6 = network_helper.create_random_ips(mask=24, ip_version=6)
 
 NETS = global_helper.generate_object_names(
-    num_of_cases=10, num_of_objects=2, prefix="mig"
+    num_of_cases=11, num_of_objects=2, prefix="mig"
 )
 
 # clean_host_interfaces_fixture_function cleanup dict
@@ -100,6 +101,9 @@ SETUP_NETWORKS_DICT = {
         "required": "true",
     },
     NETS[10][0]: {
+        "required": "true",
+    },
+    NETS[11][0]: {
         "required": "true",
     }
 }
