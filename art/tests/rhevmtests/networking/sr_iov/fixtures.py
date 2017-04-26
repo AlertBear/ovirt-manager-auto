@@ -684,3 +684,27 @@ def remove_network_manager_connection(request):
             host=vm_resource
         )
     request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def pin_vm_to_host(request):
+    """
+    Pin VM to host
+    """
+    sriov = SRIOV()
+    vm = getattr(request.node.cls, "vm")
+
+    def fin():
+        """
+        Remove pin VM to host
+        """
+        assert ll_vms.updateVm(
+            positive=True, vm=vm, placement_host=conf.VM_ANY_HOST,
+            placement_affinity=conf.VM_MIGRATABLE
+        )
+    request.addfinalizer(fin)
+
+    assert ll_vms.updateVm(
+        positive=True, vm=vm, placement_host=sriov.host_0_name,
+        placement_affinity=conf.VM_PINNED
+    )

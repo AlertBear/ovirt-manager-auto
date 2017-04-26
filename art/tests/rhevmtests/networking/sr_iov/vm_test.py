@@ -17,14 +17,14 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     reset_host_sriov_params, update_vnic_profiles, add_vnics_to_vm,
     init_fixture, prepare_setup_vm, set_num_of_vfs, create_qos, update_qos,
     add_labels, add_vnic_profile, set_all_networks_allowed, create_bond,
     set_ip_on_vm_interface, add_sriov_host_device_to_vm,
-    remove_network_manager_connection
+    remove_network_manager_connection, pin_vm_to_host
 )
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (
@@ -662,8 +662,9 @@ class TestSriovVm05(NetworkTest):
     set_num_of_vfs.__name__,
     update_vnic_profiles.__name__,
     add_vnics_to_vm.__name__,
-    start_vm.__name__,
-    add_sriov_host_device_to_vm.__name__
+    pin_vm_to_host.__name__,
+    add_sriov_host_device_to_vm.__name__,
+    start_vm.__name__
 )
 @pytest.mark.skipif(
     conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
@@ -705,7 +706,7 @@ class TestSriovVm06(NetworkTest):
     add_host_device_host_index = 0
     add_host_device_vm = conf.VM_0
 
-    @bz({"1427202": {}})
+    @bz({"1446058": {}})
     @polarion("RHEVM-19420")
     def test_vm_with_sriov_network_and_hostdev(self):
         """

@@ -52,7 +52,8 @@ def start_vm(request):
         assert ll_vms.stop_vms_safely(vms_list=vms_to_stop)
     request.addfinalizer(fin)
 
-    fixtures_helper.start_vm_helper(vms_dict=vms_dict)
+    if vms_dict:
+        fixtures_helper.start_vm_helper(vms_dict=vms_dict)
 
 
 @pytest.fixture()
