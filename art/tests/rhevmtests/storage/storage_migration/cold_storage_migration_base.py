@@ -167,6 +167,28 @@ class ColdMoveBase(StorageTest):
                     return False
         return True
 
+    def check_volumes_after_operation(self, disks_ids, initial_vol_count):
+        """
+        Verify that the number of volumes after preforming cold storage
+        migration is equal to the volume number before it (cleanup preformed)
+
+        Args:
+            disks_ids (list): List of disk ids to count the volumes for
+            initial_vol_count (int): Volume count before preforming cold
+                storage migration
+
+        Raises:
+            AssertionError: In case the current volume count not equal to
+                initial volume count
+        """
+        current_vol_count = storage_helpers.get_disks_volume_count(disks_ids)
+        assert current_vol_count == initial_vol_count, (
+            """Leftovers found, initial volume count: %s,
+             current volume count: %s""" % (
+                initial_vol_count, current_vol_count
+            )
+        )
+
 
 @pytest.mark.usefixtures(
     create_disks_with_fs.__name__,
@@ -175,13 +197,15 @@ class BaseKillSpmVdsm(basePlan.BaseTestCase, ColdMoveBase):
     """
     Base class for Kill SPM VDSM tests
     """
-
     def basic_flow(self, migration_succeed=True):
+        disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
+
+        initial_vol_count = storage_helpers.get_disks_volume_count(disk_ids)
         spm_host = ll_hosts.get_spm_host(config.HOSTS)
         spm_ip = ll_hosts.get_host_ip(spm_host)
         self.target_sd = ll_disks.get_other_storage_domain(
-            self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks'][0],
-            self.vm_name, force_type=config.MIGRATE_SAME_TYPE, key='id'
+            disk_ids[0], self.vm_name, force_type=config.MIGRATE_SAME_TYPE,
+            key='id'
         )
 
         t = Thread(
@@ -228,7 +252,7 @@ class BaseKillSpmVdsm(basePlan.BaseTestCase, ColdMoveBase):
                 assert (
                     ll_disks.get_disk_obj(disk).get_status() == config.DISK_OK
                 ), "Disk %s is not in state 'OK'" % disk
-
+        self.check_volumes_after_operation(disk_ids, initial_vol_count)
         assert ll_hosts.wait_for_spm(
             config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
             config.WAIT_FOR_SPM_INTERVAL
@@ -300,7 +324,8 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
     Base class for restart engine tests
     """
     def basic_flow(self):
-
+        disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
+        initial_vol_count = storage_helpers.get_disks_volume_count(disk_ids)
         self.target_sd = ll_disks.get_other_storage_domain(
             self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks'][0],
             self.vm_name, force_type=config.MIGRATE_SAME_TYPE, key='id'
@@ -343,6 +368,7 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
                 assert (
                     ll_disks.get_disk_obj(disk).get_status() == config.DISK_OK
                 ), "Disk %s is not in state 'OK'" % disk
+        self.check_volumes_after_operation(disk_ids, initial_vol_count)
 
 
 class TestCase19060_during_CopyImageGroupWithDataCmd(BaseRestartEngine):
@@ -434,6 +460,9 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
         - Un-block the connection
         - Cold migrate the VM disks again
         """
+        disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
+        initial_vol_count = storage_helpers.get_disks_volume_count(disk_ids)
+
         def f():
             """
             Function that searches for the first occurrence of the hsm host and
@@ -503,6 +532,7 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
                     ll_disks.get_disk_obj(disk).get_status() == config.DISK_OK
                 ), "Disk %s is not in state 'OK'" % disk
 
+        self.check_volumes_after_operation(disk_ids, initial_vol_count)
         assert self.check_files_after_operation()
         assert ll_vms.stop_vms_safely([self.vm_name])
         self.cold_migrate_vm_and_verify()
