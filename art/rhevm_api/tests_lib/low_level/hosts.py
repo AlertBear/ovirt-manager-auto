@@ -477,7 +477,7 @@ def is_host_in_maintenance(positive, host):
 @ll_general.generate_logs(step=True)
 def deactivate_host(
     positive, host, expected_status=ENUMS["host_state_maintenance"],
-    timeout=180, host_resource=None
+    timeout=None, host_resource=None
 ):
     """
     Deactivate the host.
@@ -496,6 +496,10 @@ def deactivate_host(
             False otherwise
     """
     host_obj = get_host_object(host_name=host)
+    he_host = is_hosted_engine_configured(host_name=host)
+    if not timeout:
+        timeout = 600 if he_host else 180
+
     sampler = TimeoutingSampler(
         timeout, 1, lambda x: x.get_spm().status, host_obj
     )
@@ -514,9 +518,7 @@ def deactivate_host(
                 ):
                     return False
 
-                if host_resource and is_hosted_engine_configured(
-                    host_name=host
-                ):
+                if host_resource and he_host:
                     return wait_for_hosted_engine_maintenance_state(
                         host_resource=host_resource
                     )
