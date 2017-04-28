@@ -519,6 +519,8 @@ def deactivate_host(
                     return wait_for_hosted_engine_maintenance_state(
                         host_resource=host_resource
                     )
+
+                return True
     except APITimeout:
         logger.error(
             "Timeout waiting for the host %s state different from the %s",
