@@ -8,6 +8,7 @@ import functools
 import logging
 import os
 
+
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import rhevmtests.networking.config as net_config
@@ -32,7 +33,7 @@ from rrmngmnt import ssh
 from utilities.foremanApi import ForemanActions
 
 NFS = config.STORAGE_TYPE_NFS
-GULSTERFS = config.STORAGE_TYPE_GLUSTER
+GLUSTERFS = config.STORAGE_TYPE_GLUSTER
 GLUSTER_MNT_OPTS = ['-t', 'glusterfs']
 NFS_MNT_OPTS = ['-t', 'nfs', '-v', '-o', 'vers=3']
 
@@ -266,7 +267,7 @@ def get_vm_resource(vm, start_vm=True):
     return get_host_resource(ip, config.VMS_LINUX_PW)
 
 
-def cleanup_file_resources(storage_types=(GULSTERFS, NFS)):
+def cleanup_file_resources(storage_types=(GLUSTERFS, NFS)):
     """
     Clean all unused file resources
     """
@@ -280,7 +281,7 @@ def cleanup_file_resources(storage_types=(GULSTERFS, NFS)):
                 storage.clean_mount_point(
                     config.HOSTS[0], address, path, opts=NFS_MNT_OPTS
                 )
-        elif storage_type == GULSTERFS:
+        elif storage_type == GLUSTERFS:
             for address, path in zip(
                     config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES,
                     config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
@@ -312,6 +313,7 @@ def storage_cleanup():
         [sd_obj.get_name() for sd_obj in engine_sds_objs]
     )
     logger.info("The GE storage domains names: %s", config.SD_LIST)
+    storage_types = set()
     for dc in config.dcs:
         dc_name = dc['name']
         spm = None
@@ -327,7 +329,11 @@ def storage_cleanup():
                 hl_sd.destroy_storage_domain(
                     sd_name, dc_name, host_name=spm, engine=config.ENGINE
                 )
-    cleanup_file_resources(config.opts['storages'])
+                sd_type = sd_obj.storage.get_type()
+                if sd_type in (NFS, GLUSTERFS):
+                    storage_types.add(sd_type)
+    if storage_types:
+        cleanup_file_resources(storage_types)
 
 
 def determine_best_cpu_model(hosts, comp_version=None):

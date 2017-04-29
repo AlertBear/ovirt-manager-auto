@@ -1506,3 +1506,13 @@ def create_vms(request):
         )
         create_vm(request, remove_vm)
         self.vm_names.append(self.vm_name)
+
+
+@pytest.fixture(scope="class")
+def storage_cleanup(request):
+    """
+    Clean up all storage domains which are not in GE yaml and direct LUNs
+    """
+    def finalizer():
+        rhevm_helpers.storage_cleanup()
+    request.addfinalizer(finalizer)

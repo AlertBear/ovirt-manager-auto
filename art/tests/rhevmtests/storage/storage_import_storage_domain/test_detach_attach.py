@@ -26,7 +26,7 @@ from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage.fixtures import (
     create_dc, clean_dc, create_template, remove_vm, add_disk, attach_disk,
-    create_vm, create_snapshot, remove_vms, clean_mount_point,
+    create_vm, create_snapshot, remove_vms, clean_mount_point, storage_cleanup
 )
 from rhevmtests.storage.storage_import_storage_domain.fixtures import (
     secure_deactivate_and_detach_storage_domain, remove_storage_domain_fin,
@@ -52,6 +52,7 @@ CEPH = config.STORAGE_TYPE_CEPH
 
 @pytest.mark.usefixtures(
     initialize_params.__name__,
+    storage_cleanup.__name__,
 )
 class BasicEnvironment(BaseTestCase):
     """
