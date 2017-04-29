@@ -12,7 +12,7 @@ shared_iso_domain_path = string(default='/iso_domain')
 shared_iso_domain_address = domain_format(default='vserver-production.qa.lab.tlv.redhat.com')
 vds_ovirt_port = integer(default='8443')
 mgmt_bridge = string(default='ovirtmgmt')
-compatibility_version = option('3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', default='4.1')
+compatibility_version = option('3.6', '4.0', '4.1', '4.2', default='4.2')
 local_domain_path = string(default='/home/rest_test_domain')
 product_name = option('Red Hat Virtualization Manager', 'oVirt Engine', default='Red Hat Virtualization Manager')
 vds_password = force_list(default=list('qum5net', 'qum5net'))
@@ -55,7 +55,7 @@ polarion_project = string(default='RHEVM3')
 polarion_response_myproduct = string(default='rhvm')
 
 # upgrade GE
-upgrade_version = string(default='4.2')
+upgrade_version = string(default='4.3')
 
 [STORAGE]
 storage_pool=force_list(default=list())

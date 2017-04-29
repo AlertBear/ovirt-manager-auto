@@ -403,7 +403,7 @@ HOSTS_USER = 'root'
 UNCOMP_DC_NAME = PARAMETERS.get("dc_name", "%s_DC30" % TEST_NAME)
 UNCOMP_CL_NAME = ["".join([CLUSTER_NAME[0], "CL3", str(i)]) for i in range(2)]
 
-COMP_VERSION_4_0 = ["3.6", "4.0", "4.1"]
+COMP_VERSION_4_0 = ["3.6", "4.0", "4.1", "4.2"]
 
 SAMPLER_SLEEP = 10
 SAMPLER_TIMEOUT = 210
