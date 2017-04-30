@@ -77,6 +77,7 @@ MEGABYTE = 1024 ** 2
 IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 TIMEOUT_NON_RESPONSIVE_HOST = 360
+SPM_TIMEOUT = 180
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 
 VIRSH_CMD = ["virsh", "-r"]
@@ -1057,7 +1058,7 @@ def get_host(positive, datacenter='Default', spm=True, host=None):
 
 
 @ll_general.generate_logs()
-def wait_for_spm(datacenter, timeout, sleep):
+def wait_for_spm(datacenter, timeout=SPM_TIMEOUT, sleep=10):
     """
     Waits until SPM gets elected in DataCenter
 

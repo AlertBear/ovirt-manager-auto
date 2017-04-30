@@ -591,6 +591,7 @@ def set_spm_priorities(request):
             raise exceptions.HostException(
                 'Unable to set host %s priority' % host
             )
+    ll_hosts.wait_for_spm(config.DATA_CENTER_NAME)
     self.spm_host = getattr(
         self, 'spm_host', ll_hosts.get_spm_host(config.HOSTS)
     )
