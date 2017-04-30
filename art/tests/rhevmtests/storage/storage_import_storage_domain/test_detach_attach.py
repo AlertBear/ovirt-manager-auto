@@ -692,7 +692,7 @@ class TestCase10951(BasicEnvironment):
 )
 class BaseTestCase5192(BasicEnvironment):
     """
-    Attach storage domain from older version into 3.5 data center
+    Attach storage domain from older version into 4.1 data center
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5192
     """
@@ -701,6 +701,7 @@ class BaseTestCase5192(BasicEnvironment):
     vm_args = {'clone_from_template': False}
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @bz({'1446878': {}})
     @attr(tier=3)
     def test_attach_from_older_version(self):
         """
