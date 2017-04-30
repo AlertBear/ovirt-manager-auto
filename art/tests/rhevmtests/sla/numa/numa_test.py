@@ -528,15 +528,11 @@ class TestTotalVmCpusEqualToNumaNodesCpus(u_libs.SlaTest):
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     update_vms.__name__,
-    remove_all_numa_nodes_from_vm.__name__,
-    create_custom_numa_nodes_on_vm.__name__,
-    update_vm_numa_mode.__name__,
-    start_vms.__name__
+    remove_all_numa_nodes_from_vm.__name__
 )
-class TestTotalVmCpusNotEqualToNumaNodesCpus(u_libs.SlaTest):
+class TestCreateVmNumaNodeWithIncorrectCpu(u_libs.SlaTest):
     """
-    Create two NUMA nodes on the VM, when nodes CPU's sum does not equal to
-    the total number of the VM CPU's(guest OS just skip redundant CPU)
+    Negative: create the NUMA node with incorrect CPU core
     """
     __test__ = True
     vms_to_params = {
@@ -546,33 +542,21 @@ class TestTotalVmCpusNotEqualToNumaNodesCpus(u_libs.SlaTest):
             conf.VM_PLACEMENT_HOSTS: [0]
         }
     }
-    vm_numa_nodes_params = [
-        {
-            conf.NUMA_NODE_PARAMS_INDEX: 0,
-            conf.NUMA_NODE_PARAMS_CORES: [0, 4],
-            conf.NUMA_NODE_PARAMS_MEMORY: 512
-        },
-        {
-            conf.NUMA_NODE_PARAMS_INDEX: 1,
-            conf.NUMA_NODE_PARAMS_CORES: [1, 2, 3],
-            conf.NUMA_NODE_PARAMS_MEMORY: 512
-        }
-    ]
-    vm_numa_mode = conf.INTERLEAVE_MODE
-    vms_to_start = [conf.VM_NAME[0]]
 
     @polarion("RHEVM3-9574")
     def test_vm_numa_nodes(self):
         """
-        Check if VM NUMA nodes parameters equal to expected parameters
+        Try to create NUMA nodes on the VM
         """
-        u_libs.testflow.step(
-            "Check if VM %s NUMA nodes have correct number of CPU's",
-            conf.VM_NAME[0]
-        )
-        assert not helpers.is_vm_numa_nodes_have_correct_values(
-            value_type=conf.NUMA_NODE_CPUS,
-            expected_numa_params=self.vm_numa_nodes_params
+        numa_node_params = {
+            conf.NUMA_NODE_PARAMS_INDEX: 0,
+            conf.NUMA_NODE_PARAMS_CORES: [0, 4],
+            conf.NUMA_NODE_PARAMS_MEMORY: 512
+        }
+        assert not ll_vms.add_numa_node_to_vm(
+            vm_name=conf.VM_NAME[0],
+            host_name=conf.HOSTS[0],
+            **numa_node_params
         )
 
 

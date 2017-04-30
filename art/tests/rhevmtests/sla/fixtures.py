@@ -763,6 +763,11 @@ def migrate_he_vm(request):
                     host=he_dst_host_name,
                     force=True
                 )
+                u_libs.testflow.setup(
+                    "Wait %s, until the engine will update all hosts stats",
+                    sla_config.UPDATE_SCHEDULER_MEMORY_TIMEOUT
+                )
+                time.sleep(sla_config.UPDATE_SCHEDULER_MEMORY_TIMEOUT)
                 break
 
 

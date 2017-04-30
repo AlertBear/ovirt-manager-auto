@@ -26,6 +26,7 @@ from fixtures import (
     update_vms_for_ksm_test
 )
 from rhevmtests.sla.fixtures import (  # noqa: F401
+    migrate_he_vm,
     start_vms,
     stop_guest_agent_service,
     stop_vms,
@@ -36,6 +37,7 @@ from rhevmtests.sla.fixtures import (  # noqa: F401
 )
 
 find_test_file.__test__ = False
+he_src_host = 0
 
 
 @pytest.fixture(scope="module", autouse=True)

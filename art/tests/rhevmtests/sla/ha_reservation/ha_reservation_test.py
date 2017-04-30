@@ -22,12 +22,14 @@ from rhevmtests.sla.fixtures import (
     activate_hosts,
     choose_specific_host_as_spm,
     create_vms,
+    migrate_he_vm,
     start_vms,
     update_vms,
     update_vms_memory_to_hosts_memory
 )
 
 host_as_spm = 0
+he_dst_host = 0
 
 
 def update_ha_reservation_interval(ha_reservation_interval):
@@ -113,6 +115,7 @@ def init_ha_reservation(request):
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
+    migrate_he_vm.__name__,
     init_ha_reservation.__name__
 )
 class BaseHAReservation(u_libs.SlaTest):

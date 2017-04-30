@@ -15,6 +15,7 @@ import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
+    migrate_he_vm,
     run_once_vms,
     activate_hosts,
     update_cluster,
@@ -23,6 +24,7 @@ from rhevmtests.sla.fixtures import (
 from rhevmtests.sla.scheduler_tests.fixtures import load_hosts_cpu
 
 host_as_spm = 2
+he_dst_host = 2
 
 
 @pytest.fixture(scope="module")
@@ -68,6 +70,7 @@ def init_default_policies_test(request):
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
+    migrate_he_vm.__name__,
     init_default_policies_test.__name__,
     run_once_vms.__name__,
     load_hosts_cpu.__name__,

@@ -3,14 +3,14 @@ Scheduler - Affinity Test
 Check different cases for migration and starting of VM's,
 when VM's in different or in the same affinities groups
 """
-import logging
+
+import pytest
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
-import pytest
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
@@ -27,7 +27,6 @@ from rhevmtests.sla.fixtures import (
 )
 from rhevmtests.sla.scheduler_tests.fixtures import create_affinity_groups
 
-logger = logging.getLogger(__name__)
 host_as_spm = 1
 
 

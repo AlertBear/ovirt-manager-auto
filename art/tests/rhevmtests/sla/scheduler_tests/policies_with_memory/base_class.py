@@ -161,17 +161,12 @@ def prepare_environment_for_tests(request):
             conf.VM_MEMORY, conf.VM_MEMORY_GUARANTEED, conf.VM_MAX_MEMORY
         ):
             update_params[vm_param] = vm_memory
-        u_libs.testflow.setup(
-            "Update the VM %s with parameters %s",
-            conf.VM_NAME[vm_index], update_params
-        )
         assert ll_vms.updateVm(
             positive=True, vm=conf.VM_NAME[vm_index], **update_params
         )
+        u_libs.testflow.setup("Start VM %s", conf.VM_NAME[vm_index])
+        assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[vm_index])
         vm_index += 1
-
-    u_libs.testflow.setup("Start VM's %s", conf.VM_NAME[4:6])
-    ll_vms.start_vms(vm_list=conf.VM_NAME[4:6])
 
     u_libs.testflow.setup("Update configuration constants")
     update_configuration_constants(min_memory=min_memory)

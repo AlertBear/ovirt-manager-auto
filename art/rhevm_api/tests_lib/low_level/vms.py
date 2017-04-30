@@ -5022,26 +5022,25 @@ def __prepare_numa_node_object(
     return v_numa_node_obj
 
 
+@ll_general.generate_logs(step=True)
 def add_numa_node_to_vm(
     vm_name, host_name, index, memory, **kwargs
 ):
     """
-    Add numa node to vm
+    Add NUMA node to VM
 
-    :param vm_name: vm, where to create new numa node
-    :type vm_name: str
-    :param host_name: host, where to pin virtual numa node
-    :type host_name: str
-    :param index: index of virtual numa node
-    :type index: int
-    :param memory: amount of memory to attach to numa node(MB)
-    :type memory: int
-    :param cores: list of cores to attach to numa node
-    :type cores: list
-    :param pin_list: list of host numa nodes to pin virtual numa node
-    :type pin_list: list
-    :returns: True, if action success, otherwise False
-    :rtype: bool
+    Args:
+        vm_name (str): VM name
+        host_name (str): Host name
+        index (int): NUMA node index
+        memory (int): NUMA node memory
+
+    Keyword Args:
+        cores (list): NUMA node cores
+        pin_list (list): Pinning between VM numa node to the host NUMA node
+
+    Returns:
+        bool: True, if the creation succeeds, otherwise False
     """
     try:
         numa_node_obj = __prepare_numa_node_object(
@@ -5054,20 +5053,9 @@ def add_numa_node_to_vm(
     numa_nodes_link = VM_API.getElemFromLink(
         elm=vm_obj, link_name=NUMA_NODE_LINK, get_href=True
     )
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Add",
-        obj_type="numa node",
-        obj_name=str(index),
-        extra_txt="to VM %s" % vm_name,
-        **kwargs
-    )
-    logger.info(log_info)
-    status = NUMA_NODE_API.create(
+    return NUMA_NODE_API.create(
         entity=numa_node_obj, positive=True, collection=numa_nodes_link
     )[1]
-    if not status:
-        logger.error(log_error)
-    return status
 
 
 def remove_numa_node_from_vm(vm_name, numa_node_index):
