@@ -44,7 +44,7 @@ def update_vm_host(request):
         testflow.teardown("Update VM %s to be unpin to host", vm_name)
         assert ll_vms.updateVm(
             True, vm_name,
-            placement_affinity=config.VM_USER_MIGRATABLE,
+            placement_affinity=config.VM_MIGRATABLE,
             placement_host=config.VM_ANY_HOST
         )
 
