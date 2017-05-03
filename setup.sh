@@ -102,6 +102,10 @@ source ./.art/bin/activate
 pip install pip -IU
 # install ART's requirements
 pip install -IU -rrequirements.txt
+# install RHEVM_QE_UTILS's requirements
+pip install -IU -r"$( eval echo $RHEVM_QE_UTILS_PATH )"/requirements.txt
+# install STORAGE_API's requirements
+pip install -IU -r"$( eval echo $STORAGE_API_PATH )"/requirements.txt
 # build pytest customization
 python setup_pytest.py install
 
