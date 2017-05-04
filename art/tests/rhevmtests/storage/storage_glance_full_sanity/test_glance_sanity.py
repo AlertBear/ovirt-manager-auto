@@ -114,6 +114,7 @@ class BasicEnvironment(BaseTestCase):
                 raise errors.TemplateException(
                     "Failed to import image from glance as template"
                 )
+            ll_templates.waitForTemplatesStates(template_name)
 
     def basic_flow_clone_vm_from_template(
         self, vm_name, template_name, storage_domain, wait=True, start_vm=True
