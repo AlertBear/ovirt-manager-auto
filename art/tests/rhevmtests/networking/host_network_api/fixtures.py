@@ -43,20 +43,12 @@ def update_host_to_another_cluster(request):
         """
         Move host to original cluster.
         """
-        testflow.teardown(
-            "Move host %s to original cluster %s", network_api.host_0_name,
-            network_api.cluster_0
-        )
         assert ll_hosts.update_host(
             positive=True, host=network_api.host_0_name,
             cluster=network_api.cluster_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Update host %s to cluster %s", network_api.host_0_name,
-        network_api_conf.SYNC_CL
-    )
     assert ll_hosts.update_host(
         positive=True, host=network_api.host_0_name,
         cluster=network_api_conf.SYNC_CL
@@ -93,9 +85,10 @@ def reboot_host(request):
     """
     Reboot host
     """
-    host = conf.HOST_0_NAME
+    host = conf.HOSTS[2]
+    vds = conf.VDS_HOSTS[2]
     testflow.setup("Reboot host %s", host)
-    assert hl_hosts.deactivate_host_if_up(host=host)
+    assert hl_hosts.deactivate_host_if_up(host=host, host_resource=vds)
     conf.VDS_0_HOST.add_power_manager(pm_type=conf.SSH_TYPE)
     conf.VDS_0_HOST.get_power_manager().restart()
     for is_connective in (False, True):
@@ -103,7 +96,7 @@ def reboot_host(request):
             positive=is_connective
         )
 
-    assert hl_hosts.activate_host_if_not_up(host=host)
+    assert hl_hosts.activate_host_if_not_up(host=host, host_resource=vds)
 
 
 @pytest.fixture(scope="class")
@@ -111,7 +104,7 @@ def create_networks(request):
     """
     Create networks on datacenter
     """
-    network_api = NetworkFixtures()
+    NetworkFixtures()
     networks = request.node.cls.networks
 
     def fin():
@@ -120,7 +113,7 @@ def create_networks(request):
         """
         testflow.teardown("Remove networks from setup")
         assert network_helper.remove_networks_from_setup(
-            hosts=network_api.host_0_name
+            hosts=conf.HOSTS[2]
         )
     request.addfinalizer(fin)
 

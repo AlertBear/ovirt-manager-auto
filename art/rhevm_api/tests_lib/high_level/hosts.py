@@ -51,34 +51,35 @@ def add_hosts(hosts_list, passwords, cluster):
         raise errors.HostException("Some of hosts didn't come to up status")
 
 
-def move_host_to_another_cluster(host, cluster, activate=True):
+@ll_general.generate_logs(step=True)
+def move_host_to_another_cluster(
+    host, cluster, activate=True, host_resource=None
+):
     """
     Switch host to different cluster
 
-    :param host: Host name that will be switched to different cluster
-    :type host: str
-    :param cluster:Cluster name where the host should be moved to
-    :type cluster: str
-    :param activate: Activate the host after move
-    :type activate: bool
-    :return: True if succeed to move it False otherwise
-    :rtype: bool
+    Args:
+        host (str): Host name that will be switched to different cluster
+        cluster (str):Cluster name where the host should be moved to
+        activate (bool): Activate the host after move
+        host_resource (VDS): Host resource
+
+    Returns:
+        bool: True if succeed to move it False otherwise
     """
     if not ll_hosts.is_host_in_maintenance(positive=True, host=host):
-        logger.info("Set %s to maintenance", host)
-        if not ll_hosts.deactivate_host(positive=True, host=host):
-            logger.error("Failed to set %s to maintenance", host)
+        if not ll_hosts.deactivate_host(
+            positive=True, host=host, host_resource=host_resource
+        ):
             return False
 
-    logger.info("Moving %s to %s", host, cluster)
     if not ll_hosts.update_host(positive=True, host=host, cluster=cluster):
-        logger.error("Failed to move %s to %s", host, cluster)
         return False
 
     if activate:
-        logger.info("Activate %s", host)
-        if not ll_hosts.activate_host(positive=True, host=host):
-            logger.error("Failed to activate %s", host)
+        if not ll_hosts.activate_host(
+            positive=True, host=host, host_resource=host_resource
+        ):
             return False
     return True
 

@@ -175,21 +175,15 @@ def move_host_to_another_cluster(request):
         """
         Move host back to original cluster
         """
-        testflow.teardown(
-            "Move host %s back to original cluster %s",
-            rx_tx_stats.host_0_name, rx_tx_stats.cluster_0
-        )
         assert hl_hosts.move_host_to_another_cluster(
-            host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_0
+            host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_0,
+            host_resource=rx_tx_stats.vds_0_host
         )
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Move host %s to another cluster %s", rx_tx_stats.host_0_name,
-        rx_tx_stats.cluster_1
-    )
     assert hl_hosts.move_host_to_another_cluster(
-        host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_1
+        host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_1,
+        host_resource=rx_tx_stats.vds_0_host
     )
 
 

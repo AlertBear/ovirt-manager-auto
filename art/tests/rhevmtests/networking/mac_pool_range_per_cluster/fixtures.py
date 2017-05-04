@@ -69,11 +69,9 @@ def mac_pool_per_cl_prepare_setup(request):
         """
         Move host to original cluster
         """
-        testflow.teardown(
-            "Moving host: %s to cluster: %s", mac_pool.host_1_name, conf.CL_0
-        )
         assert hl_hosts.move_host_to_another_cluster(
-            host=mac_pool.host_1_name, cluster=conf.CL_0
+            host=mac_pool.host_1_name, cluster=conf.CL_0,
+            host_resource=mac_pool.vds_1_host
         )
     request.addfinalizer(fin3)
 
@@ -101,11 +99,9 @@ def mac_pool_per_cl_prepare_setup(request):
         positive=True, data_center=mac_pool.dc_0, cpu=conf.CPU_NAME,
         name=cluster,
     )
-    testflow.setup(
-        "Moving host: %s to cluster: %s", mac_pool.host_1_name, cluster
-    )
     assert hl_hosts.move_host_to_another_cluster(
-        host=conf.HOST_1_NAME, cluster=cluster
+        host=conf.HOST_1_NAME, cluster=cluster,
+        host_resource=mac_pool.vds_1_host
     )
     testflow.setup("Create new VM: %s", vm)
     assert ll_vms.createVm(

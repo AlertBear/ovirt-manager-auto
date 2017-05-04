@@ -5,37 +5,43 @@
 Testing Sanity for the network features.
 """
 
-import pytest
-
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sanity_conf
+
+import pytest
+from fixtures import (
+    add_labels, add_network_to_dc, add_vnic_profile, create_cluster,
+    create_vnics_on_vm, nmcli_create_networks,
+    prepare_setup_for_register_domain, remove_qos, update_vnic_profile
+)
+from rhevmtests.networking.mac_pool_range_per_cluster import (
+    config as mac_pool_conf,
+    helper as mac_pool_helper
+)
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    mac_pool as hl_mac_pool,
+    networks as hl_networks
+)
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_clusters,
+    datacenters as ll_dc,
+    hosts as ll_hosts,
+    mac_pool as ll_mac_pool,
+    networks as ll_networks,
+    vms as ll_vms
+)
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.active_bond_slave.helper as active_bond_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-import rhevmtests.networking.mac_pool_range_per_dc.config as mac_pool_conf
-import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 import rhevmtests.networking.multi_host.helper as multi_host_helper
 import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
 import rhevmtests.networking.network_filter.config as nf_conf
 import rhevmtests.networking.register_domain.helper as register_helper
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from fixtures import (
-    add_labels, add_network_to_dc, add_vnic_profile, create_cluster,
-    create_vnics_on_vm, remove_qos, update_vnic_profile,
-    prepare_setup_for_register_domain, nmcli_create_networks
-)
 from rhevmtests.fixtures import create_clusters, create_datacenters, start_vm
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, clean_host_interfaces, setup_networks_fixture,
@@ -44,8 +50,8 @@ from rhevmtests.networking.register_domain.fixtures import (
     import_vm_from_data_domain
 )
 from rhevmtests.networking.sr_iov.fixtures import (
-    init_fixture, reset_host_sriov_params, set_num_of_vfs,
-    update_vnic_profiles, add_vnics_to_vm,
+    add_vnics_to_vm, init_fixture, reset_host_sriov_params, set_num_of_vfs,
+    update_vnic_profiles
 )
 
 

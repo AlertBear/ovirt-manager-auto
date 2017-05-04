@@ -454,7 +454,7 @@ def sort_hosts_by_priority(hosts, reverse=True):
     return sorted_list
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(error=False)
 def is_host_in_maintenance(positive, host):
     """
     Checks if host is in maintenance state

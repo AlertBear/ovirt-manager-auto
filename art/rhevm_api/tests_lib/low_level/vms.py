@@ -1655,7 +1655,8 @@ def addNic(positive, vm, **kwargs):
     return status
 
 
-def updateNic(positive, vm, nic, **kwargs):
+@ll_general.generate_logs()
+def updateNic(positive, vm, nic, **kwargs):  # noqa: N802
     """
     Update VM NIC
 
@@ -1677,20 +1678,12 @@ def updateNic(positive, vm, nic, **kwargs):
     Returns:
         bool: status (True if NIC was updated properly, False otherwise)
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="update", obj_type="vNIC", obj_name=nic,
-        positive=positive, extra_txt="on VM %s" % vm,  **kwargs
-    )
     nic_new = _prepareNicObj(vm=vm, **kwargs)
     nic_obj = get_vm_nic(vm, nic)
-    logger.info(log_info)
-    if not NIC_API.update(nic_obj, nic_new, positive)[1]:
-        logger.error(log_error)
-        return False
-    return True
+    return NIC_API.update(nic_obj, nic_new, positive)[1]
 
 
-def removeNic(positive, vm, nic):
+def removeNic(positive, vm, nic):  # noqa: N802
     """
     Remove nic from vm
 

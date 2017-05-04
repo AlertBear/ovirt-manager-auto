@@ -33,7 +33,7 @@ def sn_prepare_setup(request):
         """
         testflow.teardown("Remove all networks from engine")
         assert network_helper.remove_networks_from_setup(
-            hosts=network_api.host_0_name
+            hosts=conf.HOSTS[2]
         )
     request.addfinalizer(fin)
 
@@ -78,7 +78,7 @@ class TestPersistenceSetupNetworks01(NetworkTest):
     # setup_networks_fixture params
     persist = True
     hosts_nets_nic_dict = {
-        0: {
+        2: {
             nic_net: {
                 "nic": 1,
                 "network": nic_net,
@@ -109,25 +109,25 @@ class TestPersistenceSetupNetworks01(NetworkTest):
         Check the VLAN, MTU and QoS are persistence on NIC
         Check the VLAN, MTU and QoS are persistence on BOND
         """
-        host_nic = conf.HOST_0_NICS[nic] if isinstance(nic, int) else nic
+        host = conf.HOSTS[2]
+        vds = conf.VDS_HOSTS[2]
+        host_nic = vds.nics[nic] if isinstance(nic, int) else nic
         testflow.step(
             "Check that MTU on host NIC %s is %s", host_nic, self.mtu_9000
         )
         assert multi_host_helper.check_mtu(
-            net=network, mtu=self.mtu_9000, nic=host_nic,
-            host=conf.HOST_0_NAME, vds_host=conf.VDS_0_HOST
+            net=network, mtu=self.mtu_9000, nic=host_nic, host=host,
+            vds_host=vds
         )
         testflow.step(
             "Check that VLAN on host NIC %s is %s", host_nic, vlan
         )
         assert multi_host_helper.check_vlan(
-            net=network, vlan=vlan, nic=host_nic,
-            host=conf.HOST_0_NAME, vds_host=conf.VDS_0_HOST
+            net=network, vlan=vlan, nic=host_nic, host=host, vds_host=vds
         )
         testflow.step(
             "Check that QOS on host NIC %s is %s", host_nic, self.qos_dict
         )
         assert qos_helper.cmp_qos_with_vdscaps(
-            host_resource=conf.VDS_0_HOST, net=network,
-            qos_dict=self.qos_dict
+            host_resource=vds, net=network, qos_dict=self.qos_dict
         )

@@ -69,11 +69,9 @@ def remove_networks(positive, networks, data_center=None):
         bool: True if remove networks succeeded, otherwise False
     """
     for net in networks:
-        logger.info("Removing %s", net)
         if not ll_networks.remove_network(
             positive=positive, network=net, data_center=data_center
         ):
-            logger.error("Failed to remove %s", net)
             return False
     return True
 

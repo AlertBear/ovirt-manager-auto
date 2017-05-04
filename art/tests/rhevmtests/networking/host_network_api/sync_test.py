@@ -48,10 +48,12 @@ def sync_prepare_setup(request):
         """
         Activate host
         """
-        testflow.teardown("Activate host %s", host)
         result.append(
             (
-                ll_hosts.activate_host(positive=True, host=host),
+                ll_hosts.activate_host(
+                    positive=True, host=host,
+                    host_resource=network_api.vds_0_host
+                ),
                 "fin2: ll_hosts.activate_host"
             )
         )
@@ -78,8 +80,9 @@ def sync_prepare_setup(request):
         datacenter=datacentr, version=conf.COMP_VERSION,
         cluster=cluster, cpu=conf.CPU_NAME
     )
-    testflow.setup("Deactivate host %s", host)
-    assert ll_hosts.deactivate_host(positive=True, host=host)
+    assert ll_hosts.deactivate_host(
+        positive=True, host=host, host_resource=network_api.vds_0_host
+    )
 
 
 @attr(tier=2)
