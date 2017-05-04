@@ -32,6 +32,7 @@ DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
 DEFAULT_DISK_TIMEOUT = 180
+COPY_MOVE_DISK_TIMEOUT = 300
 DEFAULT_SLEEP = 5
 
 VM_API = get_api('vm', 'vms')
@@ -603,7 +604,7 @@ def move_disk(**kwargs):
 
 def do_disk_action(
         action, disk_name=None, target_domain=None, disk_id=None, wait=True,
-        timeout=DEFAULT_DISK_TIMEOUT, sleep=10, positive=True,
+        timeout=COPY_MOVE_DISK_TIMEOUT, sleep=10, positive=True,
         new_disk_alias=None
 ):
     """
