@@ -8,6 +8,7 @@ Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
 """
 import logging
 import config
+from rhevmtests.storage import helpers as storage_helpers
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
@@ -86,38 +87,9 @@ class DomainImportWithTemplate(BasicEnvironment):
         - verify template's existence
         - create VM from template
         """
-        testflow.step("Import storage domain %s", self.non_master)
-        status = False
-        if self.storage == ISCSI:
-            status = hl_sd.import_iscsi_storage_domain(
-                self.host, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
-                lun_target=config.UNUSED_LUNS["lun_targets"][0]
-            )
-
-        elif self.storage == FCP:
-            status = hl_sd.import_fcp_storage_domain(self.host)
-
-        elif self.storage == NFS:
-            status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, NFS,
-                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_DATA_DOMAIN_PATHS[0], self.host
-            )
-        elif self.storage == GLUSTER:
-            status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, GLUSTER,
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host,
-                vfs_type=GLUSTER
-            )
-        elif self.storage == CEPH:
-            status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, POSIX,
-                config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[0], self.host,
-                vfs_type=CEPH, mount_options=config.CEPH_MOUNT_OPTIONS
-            )
-        assert status, "Failed to import storage domain"
+        storage_helpers.import_storage_domain(
+            self.non_master, self.host, self.storage
+        )
         testflow.step(
             "Attach storage domain %s to date-center %s",
             self.non_master, config.DATA_CENTER_NAME

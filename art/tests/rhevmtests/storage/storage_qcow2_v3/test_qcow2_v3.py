@@ -28,6 +28,9 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     templates as ll_templates,
 )
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sd,
+)
 
 from fixtures import (
     init_hsm_host, create_one_or_more_storage_domains_same_type_for_upgrade,
@@ -291,6 +294,7 @@ class TestCase18303(TestCase):
         testflow.step("%s is indeed on v4" % storage_domain_name)
 
 
+@bz({'1450692': {}})
 class TestCase18307(BaseTestCase):
     """
     1. Create DC + cluster on v3
@@ -390,6 +394,7 @@ class TestCase18336(BaseTestCase2):
         # )
 
 
+@bz({'1450692': {}})
 class TestCase18337(BaseTestCase2):
     """
     1. Create DC + cluster on v3
@@ -912,4 +917,315 @@ class TestCase18346(BaseTestCase):
         storage_helpers.create_test_file_and_check_existance(
             self.vm_name, self.mount_path, file_name=config.FILE_NAME + '4',
             vm_executor=self.vm_executor
+        )
+
+
+@bz({'1446878': {}})
+class TestCase18339(BaseTestCase3):
+    """
+    1. Create DC + cluster on v3 + 2 storage domains SD1 & SD2
+    2. Create a VM with thin disk and create 5 snapshots on SD1
+    3. Detach & remove storage domain SD1
+    4. Upgrade cluster &DC to version 4.1
+    5. Migrate SD1 back to upgraded DC
+    6. Import unregistered VM to SD1
+    6. Verify disk & snapshot disk are also upgraded to qcow v1.1.
+    7. Start the VM & verify data can be written to the disks
+    8. Power off the VM and Preview snapshot with upgraded images
+    9. Undo the Preview
+    10. Create a new snapshot & verify new snapshot disks are version 1.1
+    """
+    __test__ = True
+    polarion_test_case = '18339'
+    snap_count = 5
+    new_storage_domains_count = 2
+
+    @polarion("RHEVM3-18339")
+    @attr(tier=3)
+    def test_storage_migration_old_version_to_new_version_dc(self):
+        self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        testflow.step(
+            "Deactivate,detach & remove storage domain %s", self.storage_domain
+        )
+
+        assert hl_sd.remove_storage_domain(
+            self.storage_domain, self.new_dc_name, self.spm_host, config.ENGINE
+        ), "Failed to remove storage domain %s" % self.storage_domain
+
+        testflow.step("Upgrade DC %s to 4.1", self.new_dc_name)
+        self.data_center_upgrade()
+        storage_helpers.import_storage_domain(
+            self.storage_domain, self.host_name, self.storage
+        )
+        testflow.step("Attaching storage domain %s", self.storage_domain)
+        assert hl_sd.attach_and_activate_domain(
+            self.new_dc_name, self.storage_domain
+        ), "Failed to attach & activate %s" % self.storage_domain
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
+        storage_helpers.register_vm_from_data_domain(
+            self.storage_domain, self.vm_name, self.cluster_name
+        )
+        testflow.step(
+            "Verify registered VM %s disk & snapshot disks qcow version is %s",
+            self.vm_name, config.QCOW_V3
+        )
+        helpers.verify_qcow_version_vm_disks(
+            self.vm_name, qcow_ver=config.DISK_QCOW_V3
+        )
+        helpers.verify_qcow_disks_snapshots_version_sd(
+            self.storage_domain, expected_qcow_version=config.QCOW_V3
+        )
+        testflow.step(
+            "Start the VM %s and verify that data can be written to the disk",
+            self.vm_name
+        )
+        assert ll_vms.startVm(
+            True, self.vm_name, config.VM_UP, wait_for_ip=True
+        ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
+        status, out = storage_helpers.perform_dd_to_disk(
+            self.vm_name, self.disk_name
+        )
+        assert status, "Error %s found writing data to disk %s from vm %s" % (
+            out, self.disk_name, self.vm_name
+        )
+        snapshot_description = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_SNAPSHOT
+        )
+        testflow.step(
+            "Creating snapshot %s of VM %s",
+            snapshot_description, self.new_vm_name
+        )
+        assert ll_vms.addSnapshot(
+            True, self.vm_name, snapshot_description
+        ), "Failed to create snapshot of VM %s" % self.new_vm_name
+        ll_vms.wait_for_vm_snapshots(
+            self.new_vm_name, [config.SNAPSHOT_OK], snapshot_description
+        )
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+
+        testflow.step("Verify all disks & snapshot disks are v1.1")
+        helpers.verify_qcow_version_vm_disks(self.vm_name)
+        helpers.verify_qcow_disks_snapshots_version_sd(
+            self.storage_domain, expected_qcow_version=config.QCOW_V3
+        )
+        assert ll_vms.preview_snapshot(
+            True, self.vm_name, snapshot_description
+        ), "Failed to preview snapshot %s" % snapshot_description
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
+        testflow.step(
+            "Undo snapshot %s", self.snapshots_description
+        )
+        assert ll_vms.undo_snapshot_preview(True, self.vm_name), (
+            "Snapshot %s preview undo failed " % snapshot_description
+        )
+
+
+@bz({'1450692': {}})
+class TestCase18335(BaseTestCase):
+    """
+    1. Create DC + cluster on v3 + 2 storage domains master & non master
+    2. Move non master storage domain to maintenance
+    3. Upgrade Cluster + DC & kill the VDSM on SPM after upgraded
+    5. Activate remaining non master domain -> verify all SD's are upgraded to
+     4.1 (V4)
+    """
+    __test__ = True
+    polarion_test_case = '18335'
+    new_storage_domains_count = 2
+
+    @polarion("RHEVM3-18335")
+    @attr(tier=3)
+    def test_spm_failure_after_upgrade_dc_and_activate_sd(self):
+        testflow.step("Deactivate non master domain %s", self.sd_names[1])
+        assert ll_sd.deactivateStorageDomain(
+            True, self.new_dc_name, self.sd_names[1]
+        )
+
+        testflow.step(
+            "Upgrade DC %s to v4 & kill vdsmd on SPM %s afterwards" % (
+                self.new_dc_name, self.spm_host
+            )
+        )
+        self.data_center_upgrade_without_verification()
+        storage_helpers.kill_vdsm_on_spm_host(self.new_dc_name)
+
+        testflow.step("Activate non master domain %s", self.sd_names[1])
+        assert ll_sd.activateStorageDomain(
+            True, self.new_dc_name, self.sd_names[1]
+        ), "Failed to activate non master domain %s" % self.sd_names[1]
+
+        testflow.step(
+            "Check master domain %s & non master domain %s are on v4.1",
+            self.sd_names[0], self.sd_names[1]
+        )
+        for sd in self.sd_names:
+            assert ll_sd.checkStorageFormatVersion(
+                True, sd, self.upgraded_storage_format
+            ), "Storage domain %s is not on expected version %s" % (
+                sd, self.upgraded_storage_format
+            )
+
+
+@bz({'1448905': {}})
+class TestCase18347(BaseTestCase2):
+    """
+    1. Create DC + cluster on v3
+    2. Create a VM with thin disk and one snapshot
+    3. Upgrade cluster & DC to version 4
+    3. Start the VM
+    5. Attempt to amend the disk & snapshot disks -> should fail
+
+    """
+    __test__ = True
+    snap_count = 1
+    installation = False
+
+    @polarion("RHEVM3-18347")
+    @attr(tier=3)
+    def test_amend_volume_while_vm_up(self):
+        self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        self.data_center_upgrade()
+        testflow.step("Start VM %s", self.vm_name)
+        assert ll_vms.startVm(True, self.vm_name), (
+            "VM %s did not start" % self.vm_name
+        )
+        testflow.step(
+            "Amend qcow disk %s on running VM %s , expected to fail",
+            self.disk_name, self.vm_name
+        )
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=self.disk_name,
+            qcow_version=config.QCOW_V3
+        ), "Update disk %s on VM %s to qcow version %s succeeded" % (
+            self.disk_name, self.vm_name, config.QCOW_V3
+        )
+
+
+@bz({'1449944': {}})
+class TestCase18348(BaseTestCase2):
+    """
+    1. Create DC + cluster on v3
+    2. Create a VM with thin disk and one snapshot
+    3. Attempt to amend the disk & snapshot disks on old DC-> should fail
+    """
+    __test__ = True
+    snap_count = 1
+    installation = False
+
+    @polarion("RHEVM3-18348")
+    @attr(tier=3)
+    def test_amend_old_dc(self):
+        self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        testflow.step(
+            "Amend qcow disk %s on old DC %s , expected to fail",
+            self.disk_name, self.new_dc_name
+        )
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=self.disk_name,
+            qcow_version=config.QCOW_V3
+        ), "Update disk %s on VM %s to qcow version %s succeeded" % (
+            self.disk_name, self.vm_name, config.QCOW_V3
+        )
+
+
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    init_test_template_name.__name__,
+    remove_template.__name__,
+)
+@bz({'1449289': {}})
+class TestCase18349(TestCase):
+    """
+    1. Create DC + cluster on v4
+    2. Create a Template of the VM with a RAW disk
+    3. Attempt to amend the template disks
+    """
+    __test__ = True
+    snap_count = 1
+    installation = False
+    volume_format = config.DISK_FORMAT_RAW
+
+    @polarion("RHEVM3-18349")
+    @attr(tier=3)
+    def test_amend_template_disk(self):
+        testflow.step(
+            "Create a template of VM %s" % self.vm_name
+        )
+        assert ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name,
+            cluster=config.CLUSTER_NAME, timeout=config.CREATE_TEMPLATE_TIMEOUT
+        ), "Failed to create template %s" % self.template_name
+        template_disk = ll_templates.getTemplateDisks(
+            self.template_name
+        )[0].get_alias()
+        testflow.step(
+            "Amend qcow template disk %s , expected to fail", template_disk
+        )
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=template_disk,
+            qcow_version=config.QCOW_V3
+        ), "Update disk %s on VM %s to qcow version %s succeeded" % (
+            template_disk, self.vm_name, config.QCOW_V3
+        )
+
+
+@bz({'1449944': {}})
+class TestCase18350(BaseTestCase2):
+    """
+    1. Create DC + cluster on v3 + storage domain
+    2. Create a VM with thin disk and one snapshot
+    3. Move storage domain to maintenance
+    4. Attempt to amend the disk & snapshot disks on old DC-> should fail
+    """
+    __test__ = True
+    snap_count = 1
+    installation = False
+
+    @polarion("RHEVM3-18350")
+    @attr(tier=3)
+    def test_amend_sd_in_maintenance(self):
+        self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        testflow.step("Deactivate storage domain %s", self.storage_domain)
+        assert ll_sd.deactivate_master_storage_domain(True, self.new_dc_name)
+        testflow.step(
+            "Amend disk %s on storage domain  %s in maintenance state"
+            ", expected to fail", self.disk_name, self.storage_domain
+        )
+        assert ll_vms.updateDisk(
+            False, vmName=self.vm_name, alias=self.disk_name,
+            qcow_version=config.QCOW_V3
+        ), "Update disk %s on VM %s to qcow version %s succeeded" % (
+            self.disk_name, self.vm_name, config.QCOW_V3
+        )
+        testflow.step("Activate storage domain %s", self.storage_domain)
+        assert ll_sd.activateStorageDomain(
+            True, self.new_dc_name, self.storage_domain
+        ), "Activating sd %s" % self.storage_domain
+
+
+@bz({'1449944': {}})
+class TestCase18351(BaseTestCase2):
+    """
+    1. Create DC + cluster on v3 + storage domain
+    2. Create a VM with thin disk and one snapshot
+    3. Attempt to amend a a non existing disk on a VM  -> should fail
+    """
+    __test__ = True
+    snap_count = 1
+    installation = False
+
+    @polarion("RHEVM3-18351")
+    @attr(tier=3)
+    def test_amend_non_existing_disk(self):
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_DISK
+        )
+        testflow.step(
+            "Try to amend non existing disk %s -> expected to fail",
+            self.disk_name
+        )
+        pytest.raises(
+            AttributeError, ll_vms.updateDisk, positive=False,
+            vmName=self.vm_name, alias=self.disk_name,
+            qcow_version=config.QCOW_V3
         )

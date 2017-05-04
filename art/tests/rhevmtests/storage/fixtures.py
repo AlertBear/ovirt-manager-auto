@@ -61,6 +61,7 @@ def create_vm(request, remove_vm):
     clone_from_template = getattr(self, 'clone_from_template', True)
     template_name = getattr(self, 'template_name', None)
     self.installation = getattr(self, 'installation', True)
+    volume_format = getattr(self, 'volume_format', config.DISK_FORMAT_COW)
     vm_args = config.create_vm_args.copy()
     vm_args['storageDomainName'] = self.storage_domain
     vm_args['cluster'] = cluster
@@ -69,6 +70,8 @@ def create_vm(request, remove_vm):
     vm_args['deep_copy'] = clone
     vm_args['clone_from_template'] = clone_from_template
     vm_args['template_name'] = template_name
+    vm_args['volumeFormat'] = volume_format
+
     if hasattr(self, 'vm_args'):
         vm_args.update(self.vm_args)
     testflow.setup("Creating VM %s", self.vm_name)

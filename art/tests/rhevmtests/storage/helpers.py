@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
     vms as hl_vms,
     hosts as hl_hosts,
-    datacenters as hl_dc
+    datacenters as hl_dc,
 )
 from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
@@ -86,6 +86,8 @@ NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
 GLUSTER = config.STORAGE_TYPE_GLUSTER
+CEPH = config.STORAGE_TYPE_CEPH
+POSIX = config.STORAGE_TYPE_POSIX
 
 
 def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
@@ -1711,3 +1713,104 @@ def create_test_file_and_check_existance(
     assert does_file_exist(
         vm_name, full_path, vm_executor=vm_executor
     ), "File %s does not exist" % full_path
+
+
+def import_storage_domain(storage_domain, host, storage, index=0):
+    """
+    Import data storage domain
+
+    Args:
+        storage_domain (str): Storage domain name
+        host (str): Host name to use for import
+        storage (str): Storage type
+        index (int): Index number of the unused resource
+
+    Raises:
+        AssertionError: In case of any failure
+    """
+    testflow.step("Import storage domain %s", storage_domain)
+    status = False
+    if storage == ISCSI:
+        status = hl_sd.import_iscsi_storage_domain(
+            host, lun_address=config.UNUSED_LUN_ADDRESSES[index],
+            lun_target=config.UNUSED_LUN_TARGETS[index]
+        )
+
+    elif storage == FCP:
+        status = hl_sd.import_fcp_storage_domain(host)
+
+    elif storage == NFS:
+        status = ll_sd.importStorageDomain(
+            True, config.TYPE_DATA, NFS,
+            config.UNUSED_DATA_DOMAIN_ADDRESSES[index],
+            config.UNUSED_DATA_DOMAIN_PATHS[index], host
+        )
+    elif storage == GLUSTER:
+        status = ll_sd.importStorageDomain(
+            True, config.TYPE_DATA, GLUSTER,
+            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[index],
+            config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[index], host,
+            vfs_type=GLUSTER
+        )
+    elif storage == CEPH:
+        status = ll_sd.importStorageDomain(
+            True, config.TYPE_DATA, POSIX,
+            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index],
+            config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index], host,
+            vfs_type=CEPH, mount_options=config.CEPH_MOUNT_OPTIONS
+        )
+
+    assert status, "Failed to import storage domain %s" % storage_domain
+
+
+def register_vm_from_data_domain(storage_domain, vm_name, cluster):
+    """
+    Register VM from data domain
+
+    Args:
+        storage_domain (str): Storage domain name for unregistered VM's
+        vm_name (str): VM name to use for import
+        cluster (str): Cluster name for registering to the VM object
+
+    Raises:
+        AssertionError: If any issue occurs
+    """
+    unregistered_vms = ll_sd.get_unregistered_vms(
+        storage_domain=storage_domain
+    )
+    vm_to_import = [vm for vm in unregistered_vms if vm.name == vm_name][0]
+    assert vm_to_import, "No unregistered VM matched VM %s" % vm_name
+
+    testflow.setup(
+        "Registering VM %s from data domain %s", vm_name, storage_domain
+    )
+    assert ll_sd.register_object(
+        obj=vm_to_import, cluster=cluster,
+    ), "VM %s was not registered to data domain %s" % (vm_name, storage_domain)
+
+
+def kill_vdsm_on_spm_host(dc_name):
+    """
+    Kill VDSM on spm host & wait for host & DC go back to up state
+
+    Args:
+        dc_name (str): Name of the data center
+
+    Raises:
+        AssertionError: If kill VDSM fails
+    """
+    spm_host_name = hl_dc.get_spm_host(
+        positive=True, datacenter=dc_name
+    ).get_name()
+    testflow.step("Kill vdsmd on host %s", spm_host_name)
+    host_resource = rhevm_helpers.get_host_resource_by_name(
+        host_name=spm_host_name
+    )
+    assert ll_hosts.kill_vdsmd(host_resource), (
+        "Failed to kill vdsmd on host %s" % spm_host_name
+    )
+    ll_hosts.wait_for_hosts_states(
+        True, spm_host_name, states='connecting'
+    )
+    ll_dc.waitForDataCenterState(dc_name)
+    ll_hosts.wait_for_hosts_states(True, spm_host_name)
