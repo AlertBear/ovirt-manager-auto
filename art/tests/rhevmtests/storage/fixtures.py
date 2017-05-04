@@ -47,11 +47,11 @@ def create_vm(request, remove_vm):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-    self.vm_name = getattr(
-        self, 'vm_name', storage_helpers.create_unique_object_name(
-            self.__name__, config.OBJECT_TYPE_VM
-        )
-    )
+    if hasattr(self, 'vm_name'):
+        if self.vm_name is None:
+            self.vm_name = storage_helpers.create_unique_object_name(
+                self.__name__, config.OBJECT_TYPE_VM
+            )
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
     clone_from_template = getattr(self, 'clone_from_template', True)
