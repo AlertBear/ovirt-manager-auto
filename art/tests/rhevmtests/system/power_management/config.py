@@ -13,4 +13,6 @@ FENCE_START = ENUMS['fence_type_start']
 FENCE_STOP = ENUMS['fence_type_stop']
 FENCE_STATUS = ENUMS['fence_type_status']
 
+FENCING_TIMEOUT = 500
+
 TEST_NAME = "power_management"

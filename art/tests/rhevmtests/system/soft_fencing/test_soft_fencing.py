@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
     add_host, is_host_up, activate_host, select_host_as_spm, wait_for_spm
 )
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
-from art.rhevm_api.tests_lib.low_level.vms import checkVmState
+from art.rhevm_api.tests_lib.low_level.vms import waitForVMState
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
@@ -201,7 +201,7 @@ class TestCheckVmAfterSoftFencing(SoftFencing):
             config.host_with_pm_num, config.service_vdsmd, config.job_finished
         )
         testflow.step("Check VM state")
-        assert checkVmState(True, self.vm_test, ENUMS['vm_state_up'])
+        assert waitForVMState(self.vm_test)
 
 
 class TestSoftFencingToHostNoProxies(SoftFencing):

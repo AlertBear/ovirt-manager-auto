@@ -44,7 +44,7 @@ def module_setup():
     host_restart_event = '"Host %s was restarted by"' % HOST_WITH_PM
 
 
-def _fence_host(positive, fence_type, timeout=500):
+def _fence_host(positive, fence_type, timeout=config.FENCING_TIMEOUT):
     testflow.step("Wait for host %s power management operation", HOST_WITH_PM)
     assert ll_hosts.wait_for_host_pm_operation(
         host=HOST_WITH_PM,
@@ -566,9 +566,11 @@ class Test13FallbackToSecondaryPMAgent(FenceHostWithTwoPMAgents):
 
     @polarion("RHEVM3-8929")
     def test_fallback_to_secondary_pm_agent(self):
-        # Timeout set to 20 minutes because timeouts on first (fake) PM
-        # fencing operations are too long
-        _fence_host(True, config.FENCE_RESTART, timeout=1200)
+        # Timeout set to 2 times fencing timeout in minutes because timeouts
+        # on first (fake) PM fencing operations are too long
+        _fence_host(
+            True, config.FENCE_RESTART, timeout=2*config.FENCING_TIMEOUT
+        )
 
 
 class Test14ProxyChosenFromCluster(FenceProxySelection):
