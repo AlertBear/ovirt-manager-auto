@@ -8,7 +8,9 @@ import logging
 import pytest
 
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.tests_lib.low_level import mla, networks, templates, vms
+from art.rhevm_api.tests_lib.low_level import (
+    mla, networks, templates, vms, users
+)
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow
 
@@ -28,7 +30,7 @@ def setup_module(request):
             testflow.teardown(
                 "Removing user %s@%s.", user_name, config.USER_DOMAIN
             )
-            assert common.remove_user(True, user_name)
+            assert users.removeUser(True, user_name)
 
     request.addfinalizer(finalize)
 

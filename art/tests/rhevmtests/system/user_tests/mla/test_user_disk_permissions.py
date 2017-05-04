@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     disks as ll_disks,
     storagedomains as ll_sd,
-    mla, vms
+    mla, vms, users
 )
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow
@@ -36,7 +36,7 @@ def setup(request):
         common.login_as_admin()
 
         testflow.teardown("Removing user %s.", USER_NAME)
-        assert common.remove_user(True, USER_NAME)
+        assert users.removeUser(True, USER_NAME)
 
     request.addfinalizer(finalize)
 

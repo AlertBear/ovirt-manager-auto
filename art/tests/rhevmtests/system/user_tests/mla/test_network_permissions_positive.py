@@ -35,7 +35,7 @@ def setup_module(request):
 
         for user in config.USER_NAMES:
             testflow.teardown("Removing user %s@%s.", user, config.USER_DOMAIN)
-            assert common.remove_user(True, user)
+            assert users.removeUser(True, user)
 
     request.addfinalizer(finalize)
 
@@ -859,7 +859,7 @@ class TestPositiveNetworkPermissions231830(NetworkingPositive):
         testflow.step(
             "Removing user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
         )
-        common.remove_user(True, config.USER_NAMES[0])
+        users.removeUser(True, config.USER_NAMES[0])
 
         testflow.step(
             "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN

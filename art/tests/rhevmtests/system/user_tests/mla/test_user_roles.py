@@ -35,7 +35,7 @@ def setup_module(request):
         testflow.teardown(
             "Removing user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
         )
-        common.remove_user(True, config.USER_NAMES[0])
+        users.removeUser(True, config.USER_NAMES[0])
 
         for vm_name in [config.VM_NAME, config.VM_NO_DISK]:
             testflow.teardown("Removing VM %s.", vm_name)
@@ -157,7 +157,7 @@ class TestRoleCase54413(common.BaseTestCase):
                 "Removing user %s@%s.",
                 config.USER_NAMES[0], config.USER_DOMAIN
             )
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
             testflow.teardown(
                 "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
@@ -258,7 +258,7 @@ class TestRoleCase54413(common.BaseTestCase):
                 "Removing user %s@%s.",
                 config.USER_NAMES[0], config.USER_DOMAIN
             )
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
 
 @attr(tier=2)
@@ -280,7 +280,7 @@ class TestRoleCase54401(common.BaseTestCase):
                 "Removing user %s@%s.",
                 config.USER_NAMES[0], config.USER_DOMAIN
             )
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
             testflow.teardown(
                 "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
@@ -295,13 +295,13 @@ class TestRoleCase54401(common.BaseTestCase):
                 "Removing user %s@%s.",
                 config.USER_NAMES[1], config.USER_DOMAIN
             )
-            common.remove_user(True, config.USER_NAMES[1])
+            users.removeUser(True, config.USER_NAMES[1])
 
             testflow.teardown(
                 "Removing user %s@%s.",
                 config.USER_NAMES[2], config.USER_DOMAIN
             )
-            common.remove_user(True, config.USER_NAMES[2])
+            users.removeUser(True, config.USER_NAMES[2])
 
             testflow.teardown("Removing role %s.", config.USER_ROLE)
             mla.removeRole(True, config.USER_ROLE)
@@ -516,7 +516,7 @@ class TestRoleCase54415(common.BaseTestCase):
                 "Removing user %s@%s.",
                 config.USER_NAMES[0], config.USER_DOMAIN
             )
-            assert common.remove_user(True, config.USER_NAMES[0])
+            assert users.removeUser(True, config.USER_NAMES[0])
 
 
 @attr(tier=2)
@@ -535,7 +535,7 @@ class TestRoleCase54402(common.BaseTestCase):
                 "Removing user %s@%s.",
                 config.USER_NAMES[0], config.USER_DOMAIN
             )
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
             testflow.teardown(
                 "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
@@ -667,7 +667,7 @@ class TestRolesCase54412(common.BaseTestCase):
                     "Removing user %s@%s.",
                     config.USER_NAMES[0], config.USER_DOMAIN
                 )
-                common.remove_user(True, config.USER_NAMES[0])
+                users.removeUser(True, config.USER_NAMES[0])
             except EntityNotFound as err:
                 logger.warning(err)
             testflow.teardown(

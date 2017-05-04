@@ -5,7 +5,7 @@ copied, when copy_permissions flag is/isn't provided.
 """
 import pytest
 
-from art.rhevm_api.tests_lib.low_level import mla, templates, vms
+from art.rhevm_api.tests_lib.low_level import mla, templates, vms, users
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow
 
@@ -20,7 +20,7 @@ def setup_module(request):
             testflow.teardown(
                 "Removing user %s@%s.", user_name, config.USER_DOMAIN
             )
-            common.remove_user(True, user_name)
+            users.removeUser(True, user_name)
 
         testflow.teardown("Removing VM %s.", config.VM_NAME)
         vms.removeVm(True, config.VM_NAME)

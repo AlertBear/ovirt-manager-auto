@@ -6,13 +6,14 @@ Tests if permissions are correctly inherited/viewed/assigned/removed.
 import logging
 import pytest
 
+from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
     vmpools as hl_vmpools
 )
 from art.rhevm_api.tests_lib.low_level import (
-    disks, hosts, mla, storagedomains, templates,
-    users, vms,
+    disks, hosts, mla, storagedomains,
+    templates, users, vms,
     vmpools as ll_vmpools,
     datacenters as ll_dc,
     clusters as ll_cluster
@@ -42,7 +43,7 @@ def setup_module(request):
 
         for user_name in config.USER_NAMES[:3]:
             testflow.teardown("Removing user %s.", user_name)
-            common.remove_user(True, user_name)
+            users.removeUser(True, user_name)
 
         testflow.teardown("Removing VM %s.", config.VM_NAME)
         vms.removeVm(True, config.VM_NAME, wait=True)
@@ -165,7 +166,7 @@ class TestPermissionsCase54409(common.BaseTestCase):
             common.login_as_admin()
 
             testflow.teardown("Removing user %s.", config.USER_NAMES[0])
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
             testflow.teardown("Adding user %s.", config.USER_NAMES[0])
             common.add_user(
@@ -207,7 +208,7 @@ class TestPermissionsCase54409(common.BaseTestCase):
         common.login_as_admin()
 
         testflow.step("Removing user %s.", config.USER_NAMES[0])
-        common.remove_user(True, config.USER_NAMES[0])
+        users.removeUser(True, config.USER_NAMES[0])
 
         testflow.step("Adding user %s.", config.USER_NAMES[0])
         common.add_user(
@@ -341,7 +342,7 @@ class TestPermissionsCase54425(common.BaseTestCase):
             vms.removeVm(True, config.VM_NAMES[0])
 
             testflow.teardown("Removing user %s.", config.USER_NAMES[0])
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
             testflow.teardown("Adding user %s.", config.USER_NAMES[0])
             common.add_user(
@@ -468,7 +469,7 @@ class TestPermissionsCase54425(common.BaseTestCase):
             common.login_as_admin()
 
             testflow.step("Removing user %s.", config.USER_NAMES[0])
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
             testflow.step("Adding user %s.", config.USER_NAMES[0])
             common.add_user(
@@ -505,7 +506,10 @@ class TestPermissionsCase54446(common.BaseTestCase):
             vms.removeVm(True, config.VM_NAMES[0])
 
             testflow.teardown("Removing user %s.", config.GROUP_USER)
-            common.remove_user(True, config.GROUP_USER)
+            try:
+                users.removeUser(True, config.GROUP_USER)
+            except EntityNotFound as err:
+                logger.warning(err)
 
             testflow.teardown("Removing group %s.", config.GROUP_NAME)
             users.deleteGroup(True, config.GROUP_NAME)
@@ -689,7 +693,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                 disks.waitForDisksGone(True, config.DISK_NAME1)
 
             testflow.step("Removing user %s.", config.USER_NAMES[0])
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
 
             testflow.step("Adding user %s.", config.USER_NAMES[0])
             common.add_user(
@@ -718,7 +722,7 @@ class TestPermissionsCase108233(common.BaseTestCase):
             common.login_as_admin()
 
             testflow.teardown("Removing user %s.", config.GROUP_USER_NAME)
-            common.remove_user(True, config.GROUP_USER_NAME)
+            users.removeUser(True, config.GROUP_USER_NAME)
 
             testflow.teardown("Removing group %s.", config.GROUP_NAME)
             users.deleteGroup(True, config.GROUP_NAME)
@@ -849,7 +853,7 @@ class TestPermissionsCase111082(common.BaseTestCase):
 
         def finalize():
             common.login_as_admin()
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
             common.add_user(
                 True,
                 user_name=config.USER_NAMES[0],

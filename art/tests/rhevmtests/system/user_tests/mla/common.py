@@ -29,10 +29,6 @@ def add_user(positive, user_name, domain):
     )
 
 
-def remove_user(positive, user_name):
-    return users.removeUser(positive, user_name, config.USER_DOMAIN)
-
-
 def login_as_admin():
     users.loginAsUser(
         config.VDC_ADMIN_USER,

@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.rhevm_api.tests_lib.low_level import (
     clusters, events, hosts, mla, networks,
-    templates, vms,
+    templates, vms, users,
     storagedomains as ll_sd,
     datacenters as ll_dc
 )
@@ -36,7 +36,7 @@ def setup_module(request):
         common.login_as_admin()
 
         testflow.teardown("Removing user %s.", config.USER_NAMES[0])
-        common.remove_user(True, config.USER_NAMES[0])
+        users.removeUser(True, config.USER_NAMES[0])
 
         if not config.GOLDEN_ENV:
             clusters.removeCluster(True, config.CLUSTER_NAME[1])
@@ -856,7 +856,7 @@ class TestComplexCombinationTest(common.BaseTestCase):
             for template in config.TEMPLATE_NAMES:
                 templates.remove_template(True, template)
 
-            common.remove_user(True, config.USER_NAMES[0])
+            users.removeUser(True, config.USER_NAMES[0])
             common.add_user(
                 True,
                 user_name=config.USER_NAMES[0],
