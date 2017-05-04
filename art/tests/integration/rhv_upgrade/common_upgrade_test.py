@@ -82,8 +82,12 @@ class TestUpgradeCommon(UpgradeTest):
         testflow.step("Running ansible for upgrade engine.")
         rc, out, err = run_ansible_playbook(
             "ansible-playbooks/playbooks/ovirt-upgrade",
-            "-e '{ovirt_upgrade_skip_hosts: True, "
-            "ovirt_upgrade_packages_repos_update_all: True}'"
+            "-e '{{ovirt_upgrade_skip_hosts: True, "
+            "ovirt_engine_answer_file_path: "
+            "answerfile_{version}_upgrade.txt.j2, "
+            "ovirt_upgrade_packages_repos_update_all: True}}'".format(
+                version=config.upgrade_version
+            )
         )
         logger.info("Output of ansible commands: %s", out)
         log_msg = "Failed to exec ansible! RC: %s, out: %s, ERR: %s" % (
