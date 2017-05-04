@@ -52,6 +52,10 @@ def create_vm(request, remove_vm):
             self.vm_name = storage_helpers.create_unique_object_name(
                 self.__name__, config.OBJECT_TYPE_VM
             )
+    else:
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_VM
+        )
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
     clone = getattr(self, 'deep_copy', False)
     clone_from_template = getattr(self, 'clone_from_template', True)
