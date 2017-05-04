@@ -4,6 +4,7 @@ import helpers
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
+    templates as ll_templates,
 )
 from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
@@ -114,6 +115,7 @@ def add_two_vms_from_template(request):
         (self.vm_thin, self.template_name)
     )
     self.vm_names.append(self.vm_thin)
+    ll_templates.waitForTemplatesStates(self.template_name)
     self.vm_clone = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_VM
     )
