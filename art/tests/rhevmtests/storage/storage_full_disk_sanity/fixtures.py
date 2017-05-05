@@ -1,5 +1,6 @@
 import pytest
 import logging
+
 import config
 from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level import (
@@ -93,13 +94,15 @@ def delete_direct_lun_disk(request):
     self = request.node.cls
 
     def finalizer():
-        if ll_disks.checkDiskExists(True, self.disk_alias):
-            testflow.teardown("Deleting disk %s", self.disk_alias)
-            assert ll_disks.deleteDisk(True, self.disk_alias), (
-                "Failed to delete disk %s" % self.disk_alias
-            )
-            ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
+        for direct_lun in self.disks_to_remove:
+            if ll_disks.checkDiskExists(True, direct_lun):
+                testflow.teardown("Deleting disk %s", direct_lun)
+                assert ll_disks.deleteDisk(True, direct_lun), (
+                    "Failed to delete disk %s" % direct_lun
+                )
+                ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
     request.addfinalizer(finalizer)
+    self.disks_to_remove = list()
 
 
 @pytest.fixture(scope='class')

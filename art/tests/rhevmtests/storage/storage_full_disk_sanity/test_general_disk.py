@@ -30,7 +30,10 @@ from rhevmtests.storage.storage_full_disk_sanity.fixtures import (
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.usefixtures(create_vm.__name__, delete_disks.__name__)
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    delete_disks.__name__,
+)
 class NegativeAttachDetach(TestCase):
     """
     * Attach a locked disk to VM
@@ -124,7 +127,6 @@ class NegativeAttachDetach(TestCase):
             "Succeeded to attach disk %s to VM %s as second bootable disk" %
             (self.disk_name, self.vm_name)
         )
-
         self.disks_to_remove.append(self.disk_name)
 
 
@@ -163,7 +165,8 @@ class TestCase16737(TestCase):
     create_snapshot.__name__,
     preview_snapshot.__name__,
     add_disk.__name__,
-    undo_snapshot.__name__
+    undo_snapshot.__name__,
+    delete_disk.__name__,
 )
 class TestCase16738(TestCase):
     """
@@ -215,6 +218,7 @@ class TestCase16741(TestCase):
 @pytest.mark.usefixtures(
     create_vm.__name__,
     add_disk.__name__,
+    delete_disk.__name__,
 )
 class TestCase16742(TestCase):
     """
@@ -233,8 +237,8 @@ class TestCase16742(TestCase):
             False, self.disk_name, self.vm_name, read_only=True,
             interface=config.IDE
         ), (
-            "Succeeded to attach disk %s to VM %s in preview" %
-            (self.disk_name, self.vm_name)
+            "Succeeded to attach disk %s to VM %s as read-only with IDE "
+            "interface" % (self.disk_name, self.vm_name)
         )
 
 

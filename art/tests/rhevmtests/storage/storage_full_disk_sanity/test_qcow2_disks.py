@@ -94,7 +94,7 @@ class BaseTestCase(TestCase):
                     "Unable to create snapshot on vm %s" % self.vm_name
                 )
 
-        sparse = None
+        sparse = True
         if (self.template_disks_format == config.DISK_FORMAT_RAW and
            self.storage in config.BLOCK_TYPES):
             # For block storage domains and RAW format the sparse has to be
@@ -144,7 +144,7 @@ class BaseTestCase(TestCase):
                 "volumeID": vol_id,
             }
             if self.storage in config.BLOCK_TYPES:
-                self.host_resource.vds_client(cmd="Volume.prepare", args=args)
+                self.host_resource.vds_client(cmd="Image.prepare", args=args)
             try:
                 # Verify the disk format
                 vol_format = self.host_resource.vds_client(
@@ -154,7 +154,7 @@ class BaseTestCase(TestCase):
                 if self.storage in config.BLOCK_TYPES:
                     if self.storage in config.BLOCK_TYPES:
                         self.host_resource.vds_client(
-                            cmd="Volume.teardown", args=args
+                            cmd="Image.teardown", args=args
                         )
             assert vol_format == _format, (
                 "Disk %s format is %s, expected format is %s"
@@ -174,7 +174,7 @@ class BaseTestCase(TestCase):
         TestCase.teardown_exception()
 
 
-@bz({'1435967': {}})
+@bz({'1448606': {}})
 class TestCase16405(BaseTestCase):
     """
     Create a template with QCOW2 format disks
@@ -201,7 +201,7 @@ class TestCase16405(BaseTestCase):
         )
 
 
-@bz({'1435967': {}})
+@bz({'1448606': {}})
 class TestCase16407(BaseTestCase):
     """
     Create a VM from a QCOW2 template as QCOW2
@@ -237,7 +237,7 @@ class TestCase16407(BaseTestCase):
         )
 
 
-@bz({'1435967': {}})
+@bz({'1448606': {}})
 class TestCase16408(BaseTestCase):
     """
     Create a VM from QCOW2 template as RAW
@@ -245,7 +245,6 @@ class TestCase16408(BaseTestCase):
     __test__ = True
     template_disks_format = config.DISK_FORMAT_COW
 
-    @bz({'1362464': {}})
     @polarion("RHEVM-16408")
     @attr(tier=3)
     @pytest.mark.usefixtures("initializer_BaseTestCase")
@@ -437,7 +436,6 @@ class TestCase16412(BaseTestCase):
     template_disks_format = config.DISK_FORMAT_COW
     create_snapshot = True
 
-    @bz({'1362464': {}})
     @polarion("RHEVM-16412")
     @attr(tier=3)
     @pytest.mark.usefixtures("initializer_BaseTestCase")

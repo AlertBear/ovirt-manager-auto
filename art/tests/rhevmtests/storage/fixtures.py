@@ -200,6 +200,8 @@ def delete_disk(request):
             assert ll_disks.deleteDisk(True, self.disk_name), (
                 "Failed to delete disk %s" % self.disk_name
             )
+        else:
+            logger.error("Disk does not exists")
     request.addfinalizer(finalizer)
 
 

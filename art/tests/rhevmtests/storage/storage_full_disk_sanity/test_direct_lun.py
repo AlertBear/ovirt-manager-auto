@@ -84,7 +84,6 @@ class DirectLunAttachTestCase(TestCase):
             "Attaching disk %s to VM %s", self.disk_alias, self.vm_name
         )
         assert ll_disks.attachDisk(
-
             True, alias=self.disk_alias, vm_name=self.vm_name, active=True,
             interface=config.VIRTIO_SCSI, bootable=bootable
         ), (
@@ -357,6 +356,7 @@ class TestCase5939(DirectLunAttachTestCase):
         assert ll_disks.addDisk(
             True, **self.lun_kwargs
         ), "Failed to add direct LUN with shareable attribute set to 'true'"
+        self.disks_to_remove.append(self.disk_alias)
 
 
 class TestCase5940(DirectLunAttachTestCase):
@@ -476,7 +476,9 @@ class TestCase5913(DirectLunAttachTestCase):
         self.lun_kwargs["wipe_after_delete"] = True
         assert ll_disks.addDisk(
             True, **self.lun_kwargs
-        ), "Failed to add direct LUN with shareable attribute set to 'true'"
+        ), ("Failed to add direct LUN with wipe after delete attribute "
+            "set to 'true'")
+        self.disks_to_remove.append(self.disk_alias)
 
 
 @pytest.mark.usefixtures(
@@ -487,7 +489,7 @@ class TestCase5918(DirectLunAttachTestCase):
     Update a direct LUN attached to VM
     """
     polarion_test_case = "5918"
-    new_alias = 'new_direct_lun'
+    new_alias = 'new_direct_lun_%s' % polarion_test_case
 
     @polarion("RHEVM3-5918")
     @attr(tier=2)
@@ -516,3 +518,4 @@ class TestCase5918(DirectLunAttachTestCase):
             update_kwars['interface'] == lun_attachment.get_interface()
         )
         assert status, "Direct LUN disk's parameters are not updated"
+        self.disks_to_remove.append(self.new_alias)

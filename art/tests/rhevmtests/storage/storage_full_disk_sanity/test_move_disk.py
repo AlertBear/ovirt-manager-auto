@@ -8,7 +8,6 @@ import pytest
 import logging
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
-    storagedomains as ll_sds,
     templates as ll_templates,
     vms as ll_vms,
 )
@@ -44,6 +43,7 @@ class TestCase16757(TestCase):
 
 
 @pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
     delete_disks.__name__,
 )
 class TestCase16758(TestCase):
@@ -51,7 +51,7 @@ class TestCase16758(TestCase):
     Move locked disk - should fail
     """
     __test__ = True
-    disk_size = 20 * config.GB
+    disk_size = 10 * config.GB
 
     @polarion("RHEVM3-16758")
     @attr(tier=3)
@@ -59,12 +59,9 @@ class TestCase16758(TestCase):
         """
         Move locked disk
         """
-        self.storage_domains = ll_sds.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
         assert ll_disks.addDisk(
             True, alias=self.disk_name, provisioned_size=self.disk_size,
-            format=config.RAW_DISK, storagedomain=self.storage_domains[0],
+            format=config.RAW_DISK, storagedomain=self.storage_domain,
             sparse=False
         ), "Failed to create shared disk %s" % self.disk_name
         self.disks_to_remove.append(self.disk_name)
@@ -72,7 +69,7 @@ class TestCase16758(TestCase):
             [self.disk_name], status=config.DISK_LOCKED
         )
         assert not ll_disks.move_disk(
-            disk_name=self.disk_name, target_domain=self.storage_domains[1]
+            disk_name=self.disk_name, target_domain=self.storage_domain_1
         ), "Succeeded to move locked disk %s" % self.disk_name
 
 
@@ -91,9 +88,6 @@ class TestCase16759(TestCase):
         """
         Move template disk
         """
-        self.storage_domains = ll_sds.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
         template_disk = ll_templates.getTemplateDisks(
             self.template_name)[0]
         target_sd = ll_disks.get_other_storage_domain(
