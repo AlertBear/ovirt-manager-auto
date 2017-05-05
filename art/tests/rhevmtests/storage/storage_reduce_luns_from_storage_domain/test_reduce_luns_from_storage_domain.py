@@ -141,7 +141,7 @@ class TestCase17508(ReduceLUNVerifyDataIntegrity):
     __test__ = True
 
     @polarion("RHEVM3-17508")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_reduce_single_lun_data_integrity(self):
         self.reduce_lun_with_data_integrity()
 

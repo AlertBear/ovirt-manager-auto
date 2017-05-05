@@ -274,7 +274,7 @@ class TestCase18303(TestCase):
     storage_format = 'v4'
 
     @polarion("RHEVM3-18303")
-    @attr(tier=1)
+    @attr(tier=2)
     def test_verify_new_domain_version(self):
         storage_domain_name = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
