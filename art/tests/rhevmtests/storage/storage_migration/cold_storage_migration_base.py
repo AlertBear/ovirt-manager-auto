@@ -37,7 +37,7 @@ from rhevmtests.storage.fixtures import (
 )
 from rhevmtests.storage.storage_migration.fixtures import (
     create_vm_on_different_sd, remove_storage_domain,
-    create_disks_with_fs_for_vms,
+    create_disks_with_fs_for_vms, unblock_connectivity_teardown,
 )
 from rhevmtests.storage.fixtures import remove_vm  # noqa F401
 
@@ -441,6 +441,7 @@ class TestCase19061(BaseRestartEngine):
 
 @pytest.mark.usefixtures(
     create_disks_with_fs.__name__,
+    unblock_connectivity_teardown.__name__,
 )
 class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
     """
@@ -481,6 +482,7 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
                 self.host_ip = self.hsm_host.ip
             else:
                 self.host_ip = source
+            config.SOURCE = self.host_ip
         t = Thread(target=f, args=())
         t.start()
         sleep(5)
@@ -564,7 +566,8 @@ class TestCase19095(BaseBlockConnection):
             self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks'][0],
             self.vm_name, force_type=config.MIGRATE_SAME_TYPE, key='id'
         )
-        self.basic_flow(target=config.ENGINE.host.ip, migration_succeed=True)
+        config.TARGET = config.ENGINE.host.ip
+        self.basic_flow(target=config.TARGET, migration_succeed=True)
 
 
 class TestCase19028(BaseBlockConnection):
@@ -599,8 +602,8 @@ class TestCase19028(BaseBlockConnection):
         assert found, "IP for storage domain %s not found" % (
             self.storage_domain
         )
-        storage_domain_ip = address['address']
-        self.basic_flow(target=storage_domain_ip)
+        config.TARGET = address['address']
+        self.basic_flow(target=config.TARGET)
 
 
 class TestCase19007(BaseBlockConnection):
@@ -635,10 +638,10 @@ class TestCase19007(BaseBlockConnection):
         assert found, "IP for storage domain %s not found" % (
             self.target_sd
         )
-        storage_domain_ip = address['address']
+        config.TARGET = address['address']
         spm_host = ll_hosts.get_spm_host(config.HOSTS)
-        spm_ip = ll_hosts.get_host_ip(spm_host)
-        self.basic_flow(source=spm_ip, target=storage_domain_ip)
+        config.SOURCE = ll_hosts.get_host_ip(spm_host)
+        self.basic_flow(target=config.TARGET, source=config.SOURCE)
 
 
 @pytest.mark.usefixtures(

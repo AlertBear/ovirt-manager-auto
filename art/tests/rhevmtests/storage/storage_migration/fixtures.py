@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
-from art.rhevm_api.utils import test_utils
+from art.rhevm_api.utils import test_utils, storage_api
 from rhevmtests.storage.fixtures import create_disks_with_fs
 import rhevmtests.storage.helpers as storage_helpers
 
@@ -441,3 +441,20 @@ def create_disks_with_fs_for_vms(request):
         self.vm_name = vm_name
         create_disks_with_fs(request)
     assert ll_vms.stop_vms_safely(vms_list=self.vm_names)
+
+
+@pytest.fixture()
+def unblock_connectivity_teardown(request):
+    """
+    Verify connection unblocked from host to target in case test failed
+    """
+
+    def finalizer():
+        testflow.teardown(
+            "Unblock connection from host %s to target %s",
+            config.SOURCE, config.TARGET
+        )
+        storage_api.unblockOutgoingConnection(
+            config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, config.TARGET
+        )
+    request.addfinalizer(finalizer)
