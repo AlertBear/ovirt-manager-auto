@@ -72,7 +72,6 @@ def get_vm_ip(vm_name, start_vm=True):
     return result.get('ip')
 
 
-@ll_general.generate_logs(step=True)
 def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
     """
     Run VM once on specific host

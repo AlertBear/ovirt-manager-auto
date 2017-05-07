@@ -297,7 +297,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
                 "nic": bond,
                 "network": net_1,
                 "slaves": [2, 3],
-                "mode": 1,
+                "mode": 4,
             },
             net_2: {
                 "nic": bond,
@@ -320,7 +320,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
                 "nic": bond,
                 "network": net_1,
                 "slaves": [2, 3],
-                "mode": 1,
+                "mode": 4,
             },
             net_2: {
                 "nic": bond,

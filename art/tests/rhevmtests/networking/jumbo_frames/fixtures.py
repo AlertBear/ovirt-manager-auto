@@ -38,7 +38,6 @@ def prepare_setup_jumbo_frame(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
         assert hl_networks.remove_net_from_setup(
             host=jumbo_frame.hosts_list, data_center=jumbo_frame.dc_0,
             mgmt_network=jumbo_frame.mgmt_bridge, all_net=True
@@ -49,18 +48,15 @@ def prepare_setup_jumbo_frame(request):
         """
         Stop VMs
         """
-        testflow.teardown("Stop VMs %s", jumbo_frame.vms_list)
         assert ll_vms.stop_vms(vms=jumbo_frame.vms_list)
     request.addfinalizer(fin1)
 
-    testflow.setup("Create networks %s", jumbo_conf.NETS_DICT)
     network_helper.prepare_networks_on_setup(
         networks_dict=jumbo_conf.NETS_DICT, dc=jumbo_frame.dc_0,
         cluster=jumbo_frame.cluster_0
     )
 
     for vm, host in zip(jumbo_frame.vms_list, jumbo_frame.hosts_list):
-        testflow.setup("Run vm %s once on specific host %s", vm, host)
         assert hl_vms.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )
@@ -104,9 +100,6 @@ def add_vnics_to_vms(request):
         for vm_name in conf.VM_NAME[:2]:
             for vnic_to_remove in vnics_to_add:
                 nic_name = vnic_to_remove.get("nic_name")
-                testflow.teardown(
-                    "Remove vNIC %s from VM %s", nic_name, vm_name
-                )
                 ll_vms.updateNic(
                     positive=True, vm=vm_name, nic=nic_name, plugged=False
                 )
@@ -115,7 +108,6 @@ def add_vnics_to_vms(request):
 
     for vnic_to_add in vnics_to_add:
         vnic_to_add["ips"] = vms_ips
-        testflow.setup("Add vNIC: %s to VMs", vnic_to_add)
         assert helper.add_vnics_to_vms(**vnic_to_add)
 
 
@@ -131,11 +123,6 @@ def update_cluster_network(request):
         """
         Update management cluster network to default
         """
-        testflow.teardown(
-            "Update cluster network %s as "
-            "display,vm,migration,management,default_route",
-            jumbo_frame.mgmt_bridge
-        )
         assert ll_networks.update_cluster_network(
             positive=True, cluster=jumbo_frame.cluster_0,
             network=jumbo_frame.mgmt_bridge,
@@ -143,7 +130,6 @@ def update_cluster_network(request):
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Update cluster network %s as display,vm", net)
     assert ll_networks.update_cluster_network(
         positive=True, cluster=jumbo_frame.cluster_0, network=net,
         usages='display,vm'

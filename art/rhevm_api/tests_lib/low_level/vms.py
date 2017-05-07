@@ -1182,6 +1182,7 @@ def stopVm(positive, vm, async='false'):
     return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
 
 
+@ll_general.generate_logs(step=True)
 def stop_vms(vms, async='true'):
     """
     Stop vms
@@ -1683,9 +1684,10 @@ def updateNic(positive, vm, nic, **kwargs):  # noqa: N802
     return NIC_API.update(nic_obj, nic_new, positive)[1]
 
 
+@ll_general.generate_logs(step=True)
 def removeNic(positive, vm, nic):  # noqa: N802
     """
-    Remove nic from vm
+    Remove nic from VM
 
     Args:
         positive (bool): Expected status
