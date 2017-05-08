@@ -25,7 +25,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.log_listener import watch_logs
 import art.rhevm_api.utils.storage_api as storage_api
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest, testflow
 from art.rhevm_api.utils import test_utils
@@ -381,6 +381,7 @@ class TestCase19060_during_CopyImageGroupWithDataCmd(BaseRestartEngine):
     regex = "CopyImageGroupWithDataCommand"
 
     @polarion("RHEVM3-19060")
+    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_engine_during_copy_image_group_with_data_cmd(self):
         self.basic_flow()
@@ -399,6 +400,7 @@ class TestCase19060_during_CloneImageGroupVolumesStructureCmd(
     regex = "CloneImageGroupVolumesStructureCommand"
 
     @polarion("RHEVM3-19060")
+    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_enigne_during_clone_image_group_vol_structure_cmd(self):
         self.basic_flow()
@@ -415,6 +417,7 @@ class TestCase19060_during_CreateVolumeContainerCommand(BaseRestartEngine):
     regex = "CreateVolumeContainerCommand"
 
     @polarion("RHEVM3-19060")
+    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_engine_during_create_vol_container_cmd(self):
         self.basic_flow()
@@ -431,6 +434,7 @@ class TestCase19061(BaseRestartEngine):
     regex = "CopyImageGroupVolumesDataCommand"
 
     @polarion("RHEVM3-19061")
+    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_engine_during_two_commands(self):
         self.basic_flow()
