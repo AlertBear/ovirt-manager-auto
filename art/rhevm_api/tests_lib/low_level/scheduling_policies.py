@@ -16,10 +16,12 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import logging
-from art.test_handler.settings import opts
+
+import art.core_api.apis_exceptions as exceptions
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api
-import art.rhevm_api.tests_lib.low_level.general as ll_general
+from art.test_handler.settings import opts
 
 SCH_POL_API = get_api('scheduling_policy', 'schedulingpolicies')
 SCH_POL_UNITS_API = get_api('scheduling_policy_unit', 'schedulingpolicyunits')
@@ -149,6 +151,23 @@ def update_scheduling_policy(policy_name, **kwargs):
     return status
 
 
+@ll_general.generate_logs()
+def get_scheduling_policy(policy_name):
+    """
+    Get scheduling policy object by policy_name
+
+    Args:
+        policy_name (str): Scheduling policy name
+
+    Returns:
+        SchedulingPolicy: Scheduling policy object
+    """
+    try:
+        return SCH_POL_API.find(policy_name)
+    except exceptions.EntityNotFound:
+        return None
+
+
 @ll_general.generate_logs(step=True)
 def remove_scheduling_policy(policy_name):
     """
@@ -160,8 +179,8 @@ def remove_scheduling_policy(policy_name):
     Returns:
         bool: True, if the policy deleted successfully, otherwise False
     """
-    sch_pol_obj = SCH_POL_API.find(policy_name)
-    return SCH_POL_API.delete(sch_pol_obj, True)
+    sch_pol_obj = get_scheduling_policy(policy_name=policy_name)
+    return SCH_POL_API.delete(sch_pol_obj, True) if sch_pol_obj else False
 
 
 def get_policy_unit(unit_name, unit_type):
