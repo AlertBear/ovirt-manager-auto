@@ -377,7 +377,7 @@ def create_vm_on_different_sd(request):
     vm_args['storageDomainName'] = self.new_storage_domain
     vm_args['name'] = self.vm_name
     vm_args['cluster'] = self.cluster_name
-    vm_args['template'] = self.glance_templte_name
+    vm_args['template'] = self.glance_template_name
     vm_args['clone'] = True
     testflow.setup("Creating VM %s", self.vm_name)
     assert ll_vms.cloneVmFromTemplate(**vm_args), (
