@@ -200,7 +200,9 @@ class BaseCpuQoSAndCpuProfile(u_libs.SlaTest):
                 host_name=host
             )
             vm_cpu = ll_vms.get_vm_processing_units_number(vm_name=vm_name)
-            expected_value = host_cpu / vm_cpu * load_value
+            expected_value = (
+                float(host_cpu) / float(vm_cpu) * float(load_value)
+            )
             expected_value = 100 if expected_value > 100 else expected_value
             expected_values[vm_name] = expected_value
         return expected_values
