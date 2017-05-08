@@ -19,7 +19,8 @@ from art.unittest_lib import VirtTest
 from art.unittest_lib import attr
 from rhevmtests.fixtures import (
     init_storage_manager,
-    create_lun_on_storage_server
+    create_lun_on_storage_server,
+    remove_lun_from_storage_server
 )
 from rhevmtests.virt.sparsify.fixtures import (
     file_storage_domain_setup,
@@ -55,6 +56,7 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
     @pytest.mark.usefixtures(
         init_storage_manager.__name__,
         create_lun_on_storage_server.__name__,
+        remove_lun_from_storage_server.__name__,
         block_storage_domain_setup.__name__,
         copy_template_to_new_storage_domain.__name__,
         add_vms_on_specific_sd.__name__,

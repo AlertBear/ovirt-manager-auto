@@ -221,9 +221,9 @@ class TestCase11679(BasicEnvironmentSetUp):
             if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
                 ll_vms.start_vms([vm_name], config.VM_UP, wait_for_ip=True)
         storage_helpers.create_file_on_vm(
-            vm_name, self.file_name, config.MOUNT_POINT
+            vm_name, self.file_name, self.mount_point
         )
-        self.full_path = os.path.join(config.MOUNT_POINT, self.file_name)
+        self.full_path = os.path.join(self.mount_point, self.file_name)
         self.check_file_existence_operation(True, 'writing')
         ll_vms.stop_vms_safely([vm_name])
 

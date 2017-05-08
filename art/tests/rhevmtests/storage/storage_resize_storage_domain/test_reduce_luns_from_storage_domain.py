@@ -5,17 +5,16 @@ Storage_4_0/4_1_Storage_Reduce_LUNs_from_SDs
 """
 import pytest
 import config
-import os
+import helpers
 import rhevmtests.storage.helpers as storage_helpers
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase, testflow
 from art.rhevm_api.tests_lib.low_level import (
-    vms as ll_vms,
     storagedomains as ll_sd,
 )
 from fixtures import (
-    set_disk_params
+    set_disk_params, init_domain_disk_param
 )
 from rhevmtests.storage.fixtures import (
     create_storage_domain, create_vm, start_vm, init_vm_executor, add_disk,
@@ -51,6 +50,7 @@ class BaseTestCase(TestCase):
 
 @pytest.mark.usefixtures(
     copy_template_disk.__name__,
+    init_domain_disk_param.__name__,
     create_vm.__name__,
     start_vm.__name__,
     init_vm_executor.__name__,
@@ -60,78 +60,21 @@ class ReduceLUNVerifyDataIntegrity(BaseTestCase):
     Reduce LUN with data integrity base class
     """
     template = config.TEMPLATE_NAME[0]
-
-    def checksum_before_reduce(self):
-        """
-        Create file, write content to it and get checksum for it
-        """
-        self.file_name = os.path.join(config.FILE_PATH, config.FILE_NAME)
-
-        testflow.step(
-            "Creating file %s on VM %s", self.file_name, self.vm_name
-        )
-        assert storage_helpers.create_file_on_vm(
-            vm_name=self.vm_name, file_name=config.FILE_NAME,
-            path=config.FILE_PATH, vm_executor=self.vm_executor
-        )
-
-        testflow.step("Writing to file %s", self.file_name)
-        assert storage_helpers.write_content_to_file(
-            vm_name=self.vm_name, file_name=self.file_name,
-            content=config.TEXT_CONTENT, vm_executor=self.vm_executor
-        )
-
-        testflow.step("Getting checksum for file %s", self.file_name)
-        self.checksum_before = storage_helpers.checksum_file(
-            vm_name=self.vm_name, file_name=self.file_name,
-            vm_executor=self.vm_executor
-        )
-
-        testflow.step("Syncing VM %s file system", self.vm_name)
-        command = 'sync'
-        storage_helpers._run_cmd_on_remote_machine(
-            machine_name=self.vm_name, command=command,
-            vm_executor=self.vm_executor
-        )
-
-        testflow.step("Power off VM %s", self.vm_name)
-        assert ll_vms.stop_vms_safely(vms_list=[self.vm_name]), (
-            "Failed to power off VM %s" % self.vm_name
-        )
-
-    def verify_data_integrity(self):
-        """
-        Get checksum to the file that a checksum was taken for before
-        storage domain reduction and compare the checksums
-        """
-        testflow.step("Starting VM %s", self.vm_name)
-        ll_vms.start_vms(
-            vm_list=[self.vm_name], max_workers=1,
-            wait_for_status=config.VM_UP, wait_for_ip=True
-        ), "Failed to start VM %s" % (self.vm_name)
-
-        testflow.step("Getting checksum for file %s", self.file_name)
-        checksum_after = storage_helpers.checksum_file(
-            vm_name=self.vm_name, file_name=self.file_name,
-            vm_executor=self.vm_executor
-        )
-
-        testflow.step(
-            "Checksum before LUNs reduction: %s."
-            "Checksum after LUNs reduction: %s",
-            self.checksum_before, checksum_after
-        )
-        assert self.checksum_before == checksum_after, (
-            "VM %s file %s got corrupted after LUN removal from storage "
-            "domain %s" % (
-                self.vm_name, self.file_name, self.new_storage_domain
-            )
-        )
+    file_name = None
+    checksum_before = None
 
     def reduce_lun_with_data_integrity(self):
-        self.checksum_before_reduce()
+        self.file_name, self.checksum_before = (
+            helpers.write_content_and_get_checksum(
+                vm_name=self.vm_name, vm_executor=self.vm_executor
+            )
+        )
+        helpers.power_off_vm(self.vm_name)
         self.reduce_lun()
-        self.verify_data_integrity()
+        helpers.verify_data_integrity(
+            vm_name=self.vm_name, file_name=self.file_name,
+            vm_executor=self.vm_executor, checksum_before=self.checksum_before
+        )
 
 
 class TestCase17508(ReduceLUNVerifyDataIntegrity):

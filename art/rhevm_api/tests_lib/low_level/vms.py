@@ -4389,9 +4389,10 @@ def migrate_vm_disk(
                 target_sd)
     move_vm_disk(vm_name, disk_name, target_sd, timeout=timeout, wait=wait)
     if wait:
-        sampler = TimeoutingSampler(timeout, sleep,
-                                    _wait_for_new_storage_domain,
-                                    vm_name, disk_name, target_sd)
+        sampler = TimeoutingSampler(
+            timeout, sleep, _wait_for_new_storage_domain, vm_name, disk_name,
+            target_sd
+        )
         for sample in sampler:
             if sample:
                 break

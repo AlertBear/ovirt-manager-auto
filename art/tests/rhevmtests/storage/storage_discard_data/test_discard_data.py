@@ -17,7 +17,8 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 from rhevmtests.fixtures import (
-    init_storage_manager, create_lun_on_storage_server
+    init_storage_manager, create_lun_on_storage_server,
+    remove_lun_from_storage_server
 )
 from rhevmtests.storage.fixtures import (
     create_storage_domain, copy_template_disk
@@ -32,6 +33,7 @@ from fixtures import (
     skip_invalid_storage_type.__name__,
     init_storage_manager.__name__,
     create_lun_on_storage_server.__name__,
+    remove_lun_from_storage_server.__name__,
     create_storage_domain.__name__,
 )
 class BaseTestCase(TestCase):
@@ -124,6 +126,7 @@ class BaseDelete(BaseTestCase):
     """
     __test__ = False
     create_domain_kwargs = {'discard_after_delete': True}
+    lun_params = {'space-allocation': 'enabled', 'space-reserve': 'enabled'}
     template = config.TEMPLATE_NAME[0]
     delete_verb = None
     disk_name = None

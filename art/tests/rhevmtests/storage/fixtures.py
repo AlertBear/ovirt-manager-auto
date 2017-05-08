@@ -405,8 +405,11 @@ def create_template(request):
     assert ll_templates.createTemplate(
         True, vm=base_vm_for_snapshot, name=self.template_name,
         cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain
-    ), ("Failed to create template %s from VM %s" %
-        (self.template_name, base_vm_for_snapshot))
+    ), (
+        "Failed to create template %s from VM %s" % (
+            self.template_name, base_vm_for_snapshot
+        )
+    )
 
 
 @pytest.fixture(scope='class')
@@ -843,15 +846,15 @@ def create_fs_on_disk(request):
     """
     Creates a filesystem on a disk and mounts it in the vm
     """
-
     self = request.node.cls
-    out, config.MOUNT_POINT = storage_helpers.create_fs_on_disk(
+
+    out, self.mount_point = storage_helpers.create_fs_on_disk(
         self.vm_name, self.disk_name
     )
-
     assert out, (
-        "Unable to create a filesystem on disk: %s of VM %s" %
-        (self.disk_name, self.vm_name)
+        "Unable to create a filesystem on disk: %s of VM %s" % (
+            self.disk_name, self.vm_name
+        )
     )
 
 
@@ -1470,12 +1473,10 @@ def extend_storage_domain(request):
     self = request.node.cls
 
     extend_indices = getattr(self, 'extend_indices', [1])
-
     self.domain_size = ll_sd.get_total_size(
         storagedomain=self.new_storage_domain,
         data_center=config.DATA_CENTER_NAME
     )
-
     testflow.setup(
         "Extending storage domain %s, current size is %s",
         self.new_storage_domain, self.domain_size

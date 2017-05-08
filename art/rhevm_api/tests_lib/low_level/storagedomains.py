@@ -2018,9 +2018,26 @@ def get_storage_domain_luns_serials(storage_domain, attribute='name'):
 
 
 @generate_logs()
+def get_logical_units_obj(logical_unit_ids):
+    """
+    Get logical units according to given logical units ids
+
+    Args:
+        logical_unit_ids (list): Logical units IDs
+
+    Returns:
+        LogicalUnits: Object of LogicalUnits
+    """
+    lu = LogicalUnits()
+    for lu_id in logical_unit_ids:
+        lu.add_logical_unit(LogicalUnit(id=lu_id))
+    return lu
+
+
+@generate_logs()
 def reduce_storage_domain_luns(storage_domain, logical_unit_ids):
     """
-    Reduce LUNs from block based storage domain
+    Reduce LUNs from given block based storage domain
 
     Args:
         storage_domain (str): Storage domain name
@@ -2032,8 +2049,7 @@ def reduce_storage_domain_luns(storage_domain, logical_unit_ids):
     """
     sd_obj = get_storage_domain_obj(storage_domain)
 
-    lu = LogicalUnits()
-    [lu.add_logical_unit(LogicalUnit(id=lu_id)) for lu_id in logical_unit_ids]
+    lu = get_logical_units_obj(logical_unit_ids)
     return bool(
         util.syncAction(
             sd_obj, "reduceluns", positive=True, logical_units=lu
@@ -2081,3 +2097,25 @@ def get_nfs_version(storage_domain):
         return ''
     return get_storage_domain_obj(
         storage_domain).get_storage().get_nfs_version()
+
+
+@generate_logs()
+def refresh_storage_domain_luns(storage_domain, logical_unit_ids):
+    """
+    Refresh LUNs list on a given block based storage domain
+
+    Args:
+        storage_domain (str): Storage domain name
+        logical_unit_ids (list): Logical units IDs to refresh their size on the
+            storage domain
+
+    Returns:
+        bool: True in case of success, False otherwise
+    """
+    sd_obj = get_storage_domain_obj(storage_domain)
+    lu = get_logical_units_obj(logical_unit_ids)
+    return bool(
+        util.syncAction(
+            sd_obj, "refreshluns", positive=True, logical_units=lu
+        )
+    )

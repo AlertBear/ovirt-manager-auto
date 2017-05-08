@@ -346,3 +346,5 @@ CHECKSUM_FILES = dict()
 # under the keys: 'disks', 'mount_points', 'executor'
 DISKS_MOUNTS_EXECUTOR = dict()
 FILE_NAME = 'test_file'
+JOBS_CMD = 'jobs'
+MOUNT_POINT_CREATE_CMD = 'mkdir ' + '-p ' + '%s'

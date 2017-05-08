@@ -195,8 +195,6 @@ class TestCase14713(BaseTestCase):
     """
     __test__ = True
     disk_size = 10 * config.GB
-    dd_path = os.path.join(config.MOUNT_POINT, '/', "dd_file")
-    file_path = os.path.join(config.MOUNT_POINT, '/', "test_file")
 
     @polarion("RHEVM3-14713")
     @attr(tier=3)
@@ -204,6 +202,8 @@ class TestCase14713(BaseTestCase):
         """
         Execute the basic flow on an attached disk
         """
+        self.dd_path = os.path.join(self.mount_point, '/', "dd_file")
+        self.file_path = os.path.join(self.mount_point, '/', "test_file")
         self.freeze_thaw_basic_flow()
 
 

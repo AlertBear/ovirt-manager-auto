@@ -55,6 +55,7 @@ DD_TIMEOUT = 60 * 6
 DD_EXEC = '/bin/dd'
 DD_COMMAND = '{0} bs=1M count=%d if=%s of=%s status=none'.format(DD_EXEC)
 DEFAULT_DD_SIZE = 20 * config.MB
+CP_CMD = 'cp %s %s'
 ERROR_MSG = "Error: Boot device is protected"
 TARGET_FILE = 'written_test_storage'
 FILESYSTEM = 'ext4'
@@ -222,7 +223,7 @@ def create_disks_from_requested_permutations(
 
 def perform_dd_to_disk(
     vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
-    write_to_file=False, vm_executor=None
+    write_to_file=False, vm_executor=None, file_name=None
 ):
     """
     Args:
@@ -236,6 +237,8 @@ def perform_dd_to_disk(
         size (int): Number of bytes to dd (Default size 20MB)
         write_to_file (bool): Determines whether a file should be written into
         the file system (True) or directly to the device (False)
+        vm_executor (Host executor): VM executor
+        file_name (str): The file name (including its full path) to write to
 
     Returns
         tuple: (bool, str) - Return code and output from 'dd' command execution
@@ -247,13 +250,7 @@ def perform_dd_to_disk(
     """
     if not vm_executor:
         vm_executor = get_vm_executor(vm_name)
-    vm_disks = ll_vms.getVmDisks(vm_name)
-    boot_disk = [
-        disk.get_id() for disk in vm_disks if ll_vms.is_bootable_disk(
-            vm_name, disk.get_id()
-        )
-    ][0]
-    boot_device = ll_vms.get_vm_disk_logical_name(vm_name, boot_disk, key='id')
+    boot_device = hl_vms.get_boot_device_logical_name(vm_name)
 
     disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
         vm_name, disk_alias
@@ -279,40 +276,49 @@ def perform_dd_to_disk(
     size_mb = size / config.MB
 
     if write_to_file:
-        logger.info(
-            "Creating label: %s",
-            CREATE_DISK_LABEL_CMD % disk_logical_volume_name
-        )
-        rc, out, error = vm_executor.run_cmd(
-            shlex.split(CREATE_DISK_LABEL_CMD % disk_logical_volume_name)
-        )
-        if rc:
-            logger.error("Failed to create disk label with error %s" % error)
-            return False, out
-        logger.info("Output after creating disk label: %s", out)
-
-        logger.info(
-            "Creating partition %s",
-            CREATE_DISK_PARTITION_CMD % disk_logical_volume_name
-        )
-        rc, out, error = vm_executor.run_cmd(
-            shlex.split(CREATE_DISK_PARTITION_CMD % disk_logical_volume_name)
-        )
-        if rc:
+        if file_name:
+            destination = file_name
+        else:
             logger.info(
-                "Failed to create disk partition with output %s and "
-                "error %s" % (out, error)
+                "Creating label: %s",
+                CREATE_DISK_LABEL_CMD % disk_logical_volume_name
             )
-            return False, out
-        logger.info("Output after creating partition: %s", out)
-        rc, mount_point = create_fs_on_disk(vm_name, disk_alias, vm_executor)
-        assert rc, "Failed to create file system on disk %s" % (
-            disk_logical_volume_name
-        )
-        destination = os.path.join(mount_point, TARGET_FILE)
-        # IMPORTANT: This is exactly the size used by the ex4 partition data,
-        # don't change
-        size_mb -= 90
+            rc, out, error = vm_executor.run_cmd(
+                shlex.split(CREATE_DISK_LABEL_CMD % disk_logical_volume_name)
+            )
+            if rc:
+                logger.error(
+                    "Failed to create disk label with error %s" % error
+                )
+                return False, out
+            logger.info("Output after creating disk label: %s", out)
+
+            logger.info(
+                "Creating partition %s",
+                CREATE_DISK_PARTITION_CMD % disk_logical_volume_name
+            )
+            rc, out, error = vm_executor.run_cmd(
+                shlex.split(
+                    CREATE_DISK_PARTITION_CMD % disk_logical_volume_name
+                )
+            )
+            if rc:
+                logger.info(
+                    "Failed to create disk partition with output %s and "
+                    "error %s" % (out, error)
+                )
+                return False, out
+            logger.info("Output after creating partition: %s", out)
+            rc, mount_point = create_fs_on_disk(
+                vm_name, disk_alias, vm_executor
+            )
+            assert rc, "Failed to create file system on disk %s" % (
+                disk_logical_volume_name
+            )
+            destination = os.path.join(mount_point, TARGET_FILE)
+            # IMPORTANT: This is exactly the size used by the ex4 partition
+            # data, don't change
+            size_mb -= 90
     else:
         destination = disk_logical_volume_name
 
@@ -882,15 +888,18 @@ def create_fs_on_disk(vm_name, disk_alias, executor=None):
     """
     Creates a filesystem on a disk and mounts it in the vm
 
-    __author__ = "cmestreg"
-    :param vm_name: Name of the vm to which disk will be attached
-    :type vm_name: str
-    :param disk_alias: The alias of the disk on which the file system will be
-    created
-    :type disk_alias: str
-    :returns: Operation status and the path to where the new created filesystem
-    is mounted if success, error code and error message in case of failure
-    :rtype: tuple
+    author = "cmestreg"
+
+    Args:
+        vm_name (str): Name of the vm to which disk will be attached
+        disk_alias (str): The alias of the disk on which the file system will
+            be created
+        executor (Host executor): VM executor
+
+    Returns:
+        tuple: Operation status and the path to where the new created
+            filesystem is mounted if success, error code and error message in
+            case of failure
     """
     if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
         ll_vms.startVm(
@@ -942,7 +951,8 @@ def create_fs_on_disk(vm_name, disk_alias, executor=None):
     # '?': createFileSystem will return a random mount point
     logger.info("Creating a File-system on first partition")
     mount_point = create_filesystem(
-        vm_name, disk_logical_volume_name, '1', FILESYSTEM, '?', executor
+        vm_name=vm_name, device=disk_logical_volume_name, partition='1',
+        fs=FILESYSTEM, executor=executor
     )
     return True, mount_point
 
@@ -1377,79 +1387,86 @@ def add_storage_domain(
 
 
 def create_filesystem(
-    vm_name, device, partition, fs='ext4', targetDir=None, executor=None
+    vm_name, device, partition, fs='ext4', target_dir=None, executor=None
 ):
     """
-    Creates a filesystem on given path
+    Create a filesystem on given path
 
     Args:
         vm_name (str): Name of the VM which the file system will be created on
-        its disk
+            its disk
         device (str): Disk device name as seen by the guest where the file
-        system will be created
+            system will be created
         partition (str): The disk partition where the file system will be
-        created
+            created
         fs (str): The file system type
-        targetDir (str): The mount point location in the guest where the file
-        system will be mounted on
+        target_dir (str): The mount point location in the guest where the file
+            system will be mounted on
+        executor (Host executor): VM executor
 
     Returns:
-        The target directory where the file system is mounted on
+        str: The target directory where the file system is mounted on
 
     Raises:
          AssertionError: In case of any failure
     """
+    if not executor:
+        executor = get_vm_executor(vm_name)
     device_name = device + partition
     create_fs_cmd = CREATE_FILESYSTEM_CMD % (fs, device_name)
     out = _run_cmd_on_remote_machine(vm_name, create_fs_cmd, executor)
-    assert out, (
-        errors.CreateFileSystemError(create_fs_cmd, out)
+    assert out, errors.CreateFileSystemError(create_fs_cmd, out)
+    if not target_dir:
+        current_date_time = (
+            datetime.datetime.now().strftime("%d%H%M%S%f")
+        )
+        target_dir = '/mount-point_%s' % current_date_time[:10]
+        out = _run_cmd_on_remote_machine(
+            vm_name, config.MOUNT_POINT_CREATE_CMD % target_dir, executor
+        )
+        assert out, (
+            errors.MountError("failed to create target directory %s" % out)
+        )
+    mount_fs_on_dir(
+        vm_name=vm_name, device_name=device_name, target_dir=target_dir,
+        fs_type=fs, executor=executor
     )
-    if targetDir is not None:
-        if targetDir == '?':
-            sha1 = hashlib.sha1("%f" % time.time()).hexdigest()
-            targetDir = '/mount-point%s' % sha1
-        mount_point_create_cmd = 'mkdir ' + '-p ' + targetDir
-        out = _run_cmd_on_remote_machine(
-            vm_name, mount_point_create_cmd, executor
-        )
-        assert out, (
-            errors.MountError(
-                "failed to create target directory" % out
-            )
-        )
-        rc, out, error = executor.run_cmd(
-            shlex.split("blkid {0}".format(device_name))
-        )
-        assert not rc, (
-            "Failed to get the UUID of device {0} {1}".format(
-                device_name, error
-            )
-        )
-        uuid_regex = re.search(REGEX_UUID, out)
-        assert uuid_regex, "Failed to find UUUID in output {0}".format(out)
-        fstab_line = 'UUID="%s" %s %s defaults 0 0' % (
-            uuid_regex.group('uuid'), targetDir, fs
-        )
-        insert_to_fstab = (
-            'echo "{0}" >> {1}'.format(fstab_line, '/etc/fstab')
-        )
-        out = _run_cmd_on_remote_machine(
-            vm_name, insert_to_fstab, executor
-        )
-        assert out, (
-            errors.MountError(
-                "failed to add mount point to fstab", out
-            )
-        )
-        mount_cmd = 'mount -a'
-        out = _run_cmd_on_remote_machine(vm_name, mount_cmd, executor)
-        assert out, (
-            errors.MountError(
-                "failed to mount FS", out
-            )
-        )
-    return targetDir
+    return target_dir
+
+
+def mount_fs_on_dir(vm_name, device_name, target_dir, fs_type, executor=None):
+    """
+    Mount a file system on a disk
+
+    Args:
+        vm_name (str): The name of the VM
+        device_name (str): The name of the disk
+        target_dir (str): The target directory to mount the file system to
+        fs_type (str): The file system type
+        executor (Host executor): VM executor
+
+    Raises:
+        AssertionError: In case of any failure
+        MountError: In case of mount failure
+    """
+    if not executor:
+        executor = get_vm_executor(vm_name)
+    blkid_cmd = 'blkid %s' % device_name
+    rc, out, error = executor.run_cmd(shlex.split(blkid_cmd))
+    assert not rc, (
+        "Failed to get the UUID of device {0} {1}".format(device_name, error)
+    )
+    uuid_regex = re.search(REGEX_UUID, out)
+    assert uuid_regex, "Failed to find UUUID in output {0}".format(out)
+    fstab_line = 'UUID="%s" %s %s defaults 0 0' % (
+        uuid_regex.group('uuid'), target_dir, fs_type
+    )
+    insert_to_fstab = 'echo "{0}" >> {1}'.format(fstab_line, '/etc/fstab')
+    out = _run_cmd_on_remote_machine(vm_name, insert_to_fstab, executor)
+    assert out, errors.MountError("Failed to add mount point to fstab", out)
+    mount_cmd = 'mount -a'
+    out = _run_cmd_on_remote_machine(vm_name, mount_cmd, executor)
+    assert out, errors.MountError("Failed to mount FS", out)
 
 
 def get_hsm_host(
@@ -1578,7 +1595,6 @@ def extend_storage_domain(storage_domain, extend_indices):
     extension_luns = list()
     spm = ll_hosts.get_spm_host(config.HOSTS)
     domain_size = ll_sd.get_total_size(storage_domain)
-
     if storage_type == config.STORAGE_TYPE_ISCSI:
         extension_lun_addresses = list()
         extension_lun_targets = list()
@@ -1938,3 +1954,53 @@ def wait_for_disks_and_snapshots(vms_to_wait_for, live_operation=True):
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
     else:
         ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+
+
+def copy_file(
+    vm_name, file_name, target_path, run_in_background=False, vm_executor=None
+):
+    """
+    Copy given file to given target path
+
+    Args:
+        vm_name (str): The VM name
+        file_name (str): The name of the file to copy
+        target_path (str): The path to copy the file to
+        run_in_background (bool): True for executing copy command in
+            background (with '&'), False otherwise
+        vm_executor (Host executor): VM executor
+
+    Returns:
+        bool: True for success, False otherwise
+    """
+    if not vm_executor:
+        vm_executor = get_vm_executor(vm_name)
+    background_flag = ' &' if run_in_background else None
+    command = CP_CMD % (file_name, target_path) + background_flag
+    return _run_cmd_on_remote_machine(vm_name, command, vm_executor)
+
+
+def wait_for_background_process_state(
+    vm_executor, process_state, timeout=config.SAMPLER_TIMEOUT,
+    interval=config.SAMPLER_SLEEP/2
+):
+    """
+    Wait for background process state
+
+    Args:
+        vm_executor (Host executor): VM executor
+        process_state (str): The process state to wait for
+        timeout (int): The maximum time to wait for the process to reach the
+            given state
+        interval (int): The time interval to poll the background processes
+
+    Returns:
+        bool: True in case the process had reached the desired state, False
+            otherwise
+    """
+    for rc, out, error in TimeoutingSampler(
+        timeout, interval, vm_executor.run_cmd, shlex.split(config.JOBS_CMD)
+    ):
+        if re.match(process_state, out):
+            return True
+    return False

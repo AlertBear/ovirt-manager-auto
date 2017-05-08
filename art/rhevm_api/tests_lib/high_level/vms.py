@@ -1032,3 +1032,17 @@ def clone_vm(positive, vm, clone_vm_name, wait=True):
             )
             return disks_status and positive
     return False
+
+
+def get_boot_device_logical_name(vm_name):
+    """
+    Get the boot device logical name of a given VM
+
+    Args:
+        vm_name (str): The name of the VM
+
+    Returns:
+        str: The boot device of the VM
+    """
+    boot_disk = ll_vms.get_vm_bootable_disk(vm_name)
+    return ll_vms.get_vm_disk_logical_name(vm_name, boot_disk)
