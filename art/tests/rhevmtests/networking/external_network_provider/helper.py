@@ -5,13 +5,14 @@
 External Network Provider helper functions
 """
 
-import config as ovn_conf
 import logging
 import re
 import shlex
 
+import config as ovn_conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as net_helper
+from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.unittest_lib import testflow
@@ -135,7 +136,7 @@ def create_ifcfg_on_vm(vm, action="create"):
 
 def check_for_ovn_objects():
     """
-    Check for existing OVN objects on the provider database, in case found
+    Check for existing OVN objects on the provider database and in case found,
     write error log
 
     Returns:
@@ -155,6 +156,36 @@ def check_for_ovn_objects():
         )
 
     return True if ret_net or ret_sub else False
+
+
+def check_ssh_file_copy(src_vm, dst_vm, dst_ip, mb):
+    """
+    Check SSH file copy of given MB size from source VM to destination VM
+
+    Args:
+        src_vm (Host): Source VM
+        dst_vm (Host): Destination VM
+        dst_ip (str): Destination VM IP
+        mb (int): File size in MB
+
+    Returns:
+        bool: True if copy was successful, false if error occurred
+
+    """
+    if not global_helper.set_passwordless_ssh(
+        src_host=src_vm, dst_host=dst_vm, dst_host_ips=[dst_ip]
+    ):
+        return False
+
+    logger.info(
+        "Checking SSH file copy of {count} MB file from VM: {src} "
+        "to VM: {dst}".format(count=mb, src=src_vm.fqdn, dst=dst_vm.fqdn)
+    )
+    return not src_vm.run_command(
+        ovn_conf.OVN_CMD_SSH_TRANSFER_FILE.format(
+            count=mb, dst=dst_ip
+        ).split(" ")
+    )[0]
 
 
 def check_ping(vm, dst_ip, max_loss=0, count=ovn_conf.OVN_PING_COUNT):
@@ -200,6 +231,34 @@ def check_ping(vm, dst_ip, max_loss=0, count=ovn_conf.OVN_PING_COUNT):
         return int(match[0]) >= max_loss
 
     return ret[0] == 0
+
+
+def wait_for_port(host, port):
+    """
+    Wait for listening TCP port on host
+
+    Args:
+        host (Host): Host object
+        port (int): TCP port number
+
+    Returns:
+        bool: True, if TCP port is open on host, False otherwise
+    """
+
+    def run_netstat():
+        """
+        Run netstat to check if remote host has a specific open open
+
+        Returns:
+            bool: True if open is open, False otherwise
+        """
+        cmd = "netstat -ltn | grep :{port}".format(port=port).split(" ")
+        rc = host.executor().run_cmd(cmd)[0]
+        logger.debug("netstat command: '%s' return code: %s", cmd, rc)
+        return rc == 0
+
+    sampler = TimeoutingSampler(timeout=2, sleep=3, func=run_netstat)
+    return sampler.waitForFuncStatus(result=True)
 
 
 def check_dns_resolver(vm, ip_address):
@@ -311,6 +370,43 @@ def check_ping_during_vm_migration(ping_kwargs, migration_kwargs):
     return migrate_job.result and ping_job.result
 
 
+def set_vm_non_mgmt_interface_mtu(vm, mtu):
+    """
+
+    Args:
+        vm (Host): VM Host object
+        mtu (int): MTU size
+
+    Returns:
+
+    """
+    eth = net_helper.get_non_mgmt_nic_name(vm_resource=vm)
+    if not eth:
+        return False
+    eth = eth[0]
+
+    return vm.network.set_mtu(nics=[eth], mtu=str(mtu))
+
+
+def restart_service_and_wait(host, service, port):
+    """
+    Restart a system service and wait for service port to be opened
+
+    Args:
+        host (Host): Host object
+        service (str): Service name
+        port (int): TCP Port number
+
+    Returns:
+        bool: True if service is restarted and service port is opened,
+            False otherwise
+    """
+    if not service_handler(host=host, service=service, action="restart"):
+        return False
+
+    return wait_for_port(host=host, port=port)
+
+
 def service_handler(host, service, action="stop"):
     """
     System service handler
@@ -318,8 +414,8 @@ def service_handler(host, service, action="stop"):
     Args:
         host (Host): Host object
         service (str): Service name
-        action (str): Action to take on service, can be "stop", "start" or
-            "state" to get service state
+        action (str): Action to take on service, can be "stop", "start",
+            "restart" or "state" to get service state
 
     Returns:
         bool: True if action was successful or if service state is running,
@@ -328,12 +424,14 @@ def service_handler(host, service, action="stop"):
     """
     if action == "start":
         return host.service(name=service).start()
-    if action == "stop":
+    elif action == "stop":
         try:
             return host.service(name=service).stop()
         except Exception:
             return True
-    if action == "state":
+    elif action == "restart":
+        return host.service(name=service).restart()
+    elif action == "state":
         return host.run_command(
             shlex.split(ovn_conf.OVN_CMD_SERVICE_STATUS.format(name=service))
         )[0] == 0

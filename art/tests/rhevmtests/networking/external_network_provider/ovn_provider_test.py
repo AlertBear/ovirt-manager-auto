@@ -5,7 +5,7 @@
 OVN provider feature tests
 
 The following elements will be used for the testing:
-OVN provider, 3 external OVN networks (one with OVN subnet),
+2 OVN providers, 3 external OVN networks (one with OVN subnet),
 2 VM's (VM-0, VM-1), 1 extra vNIC on VM's, 1 vNIC profile
 """
 
@@ -15,29 +15,130 @@ import pytest
 import config as ovn_conf
 import helper
 import rhevmtests.networking.config as net_conf
+from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
-    vms as ll_vms
+    vms as ll_vms,
+    external_providers
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import (
+    jira, polarion
+)
 from art.unittest_lib import (
-    tier2,
+    NetworkTest, testflow, tier2
 )
-from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
-    deploy_ovn, remove_ovn_provider, remove_ovn_networks_from_provider,
-    remove_ovn_networks_from_engine, remove_vnics_from_vms,
-    remove_vnic_profiles, remove_ifcfg_from_vms
+    check_running_on_rhevh, configure_ovn, configure_provider_plugin,
+    remove_ovn_networks_from_provider, remove_ovn_networks_from_engine,
+    remove_vnics_from_vms, remove_vnic_profiles, remove_ifcfg_from_vms,
+    add_ovn_provider
 )
+from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
 
-pytestmark = pytest.mark.skip('skipping all tests. BUG in OVN installation')
+
+@pytest.mark.usefixtures(
+    check_running_on_rhevh.__name__,
+    configure_ovn.__name__,
+    configure_provider_plugin.__name__,
+    add_ovn_provider.__name__
+)
+class TestOVNProviderAuthorization(NetworkTest):
+    """
+    1. Test OVN provider authorization with JDBC user
+    2. NEGATIVE: Test OVN provider authorization with wrong JDBC user
+    3. Test OVN provider authorization with LDAP user
+    4. NEGATIVE: Test OVN provider authorization with wrong LDAP user
+    """
+
+    # Test case parameters = [
+    #   Username to be used in authentication,
+    #   Password to be used in authentication,
+    #   Plugin to be used in authentication,
+    #   True for positive test, False for negative test
+    # ]
+
+    # Provider name to be used in authorization tests
+    provider_name = "%s-auth-test" % ovn_conf.OVN_PROVIDER_NAME
+
+    # JDBC username test case parameters
+    jdbc_group_with_user = [
+        ovn_conf.OVN_JDBC_GROUP_USERNAME, ovn_conf.OVN_JDBC_USERNAME_PASSWORD,
+        ovn_conf.OVN_JDBC_GROUP_NAME, "JDBC", True
+    ]
+
+    # NEGATIVE: JDBC username with wrong password test case parameters
+    jdbc_group_with_wrong_user = [
+        ovn_conf.OVN_JDBC_GROUP_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
+        ovn_conf.OVN_JDBC_GROUP_NAME, "JDBC", False
+    ]
+
+    # LDAP username test case parameters
+    ldap_group_with_user = [
+        ovn_conf.OVN_LDAP_GROUP_USERNAME, ovn_conf.OVN_LDAP_USERNAME_PASSWORD,
+        ovn_conf.OVN_LDAP_GROUP_NAME, "LDAP", True
+    ]
+
+    # NEGATIVE: LDAP username with wrong password test case parameters
+    ldap_group_with_wrong_user = [
+        ovn_conf.OVN_LDAP_GROUP_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
+        ovn_conf.OVN_LDAP_GROUP_NAME, "LDAP", False
+    ]
+
+    @tier2
+    @pytest.mark.parametrize(
+        ("username", "password", "group", "plugin", "positive"),
+        [
+            pytest.param(
+                *jdbc_group_with_user, marks=(polarion("RHEVM-21662"))
+            ),
+            pytest.param(
+                *jdbc_group_with_wrong_user, marks=(polarion("RHEVM-21800"))
+            ),
+            pytest.param(
+                *ldap_group_with_user, marks=(
+                    polarion("RHEVM-21683"), jira("RHEVM-3126", run=False)
+                )
+            ),
+            pytest.param(
+                *ldap_group_with_wrong_user, marks=(
+                    polarion("RHEVM-21801"), jira("RHEVM-3126", run=False)
+                )
+            )
+        ],
+        ids=[
+            "OVN_provider_JDBC_group_with_user_test",
+            "OVN_provider_JDBC_group_with_wrong_password_test",
+            "OVN_provider_LDAP_group_with_user_test",
+            "OVN_provider_LDAP_group_with_wrong_user_test",
+        ]
+    )
+    def test_ovn_authentication_plugin(
+        self, username, password, group, plugin, positive
+    ):
+        """
+        Test OVN provider authorization plugin
+        """
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_ovn_authentication_plugin.parametrize,
+            params=[username, password, group, plugin, positive]
+        )
+        testflow.step(_id)
+
+        testflow.step(
+            "Testing plugin: %s on network provider: %s", plugin,
+            self.provider_name
+        )
+        assert ovn_conf.OVN_PROVIDER.update(
+            username=username, password=password
+        )
+        assert ovn_conf.OVN_PROVIDER.test_connection(positive=positive)
 
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    deploy_ovn.__name__,
-    remove_ovn_provider.__name__,
+    check_running_on_rhevh.__name__,
+    configure_ovn.__name__,
     remove_ovn_networks_from_provider.__name__,
     remove_ovn_networks_from_engine.__name__,
     remove_vnic_profiles.__name__,
@@ -45,9 +146,9 @@ pytestmark = pytest.mark.skip('skipping all tests. BUG in OVN installation')
     start_vm.__name__,
     remove_ifcfg_from_vms.__name__
 )
-class TestOVNProvider01(NetworkTest):
+class TestOVNComponent(NetworkTest):
     """
-    1. Add OVN external network provider
+    1. Test the default OVN provider
     2. Create networks on OVN provider
     3. Import networks from OVN provider
     4. Start VM with OVN network
@@ -57,12 +158,15 @@ class TestOVNProvider01(NetworkTest):
     8. Hot-update (unplug and plug) vNIC profile with OVN network
     9. OVN networks separation ping tests
     10. Migrate a VM with OVN network
-    11. OVN network with subnet DHCP
-    12. OVN network with subnet configuration validation tests
-    13. OVN network with subnet ping test
-    14. Change MAC address of vNIC attached to OVN network
-    15. Migrate a VM with OVN network and subnet
+    11. Copy big file between two VM's with OVN network that hosted on
+        different hosts
+    12. OVN network with subnet DHCP
+    13. OVN network with subnet configuration validation tests
+    14. OVN network with subnet ping test
+    15. Change MAC address of vNIC attached to OVN network
+    16. Migrate a VM with OVN network and subnet
     """
+    provider_name = ovn_conf.OVN_PROVIDER_NAME
     dc = net_conf.DC_0
     cl = net_conf.CL_0
 
@@ -78,15 +182,22 @@ class TestOVNProvider01(NetworkTest):
     vms_ips = list()
 
     @tier2
-    @polarion("RHEVM3-16894")
-    def test_01_add_ovn_network_provider(self):
+    @polarion("RHEVM3-21661")
+    def test_01_ovn_provider(self):
         """
-        Add OVN external network provider
+        Test the default OVN provider
         """
         testflow.step(
-            "Adding OVN network provider: %s", ovn_conf.OVN_PROVIDER_NAME
+            "Testing default OVN network provider: %s", self.provider_name
         )
-        assert ovn_conf.OVN_PROVIDER.add()
+        ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["name"] = self.provider_name
+        ovn_conf.OVN_PROVIDER = external_providers.ExternalNetworkProvider(
+            **ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS
+        )
+        assert ovn_conf.OVN_PROVIDER.test_connection(positive=True)
+
+        # Check for objects in the OVS DB and report warning in case found
+        helper.check_for_ovn_objects()
 
     @tier2
     @polarion("RHEVM3-16925")
@@ -96,7 +207,7 @@ class TestOVNProvider01(NetworkTest):
         """
         for net_name, subnet in ovn_conf.OVN_NETS.iteritems():
             txt = " with subnet: %s" % subnet.get("name") if subnet else ""
-            testflow.setup(
+            testflow.step(
                 "Creating network: %s%s on OVN provider", net_name, txt
             )
             assert ovn_conf.OVN_PROVIDER.add_network(
@@ -110,7 +221,7 @@ class TestOVNProvider01(NetworkTest):
         Import networks from OVN provider
         """
         for net_name in ovn_conf.OVN_NET_NAMES:
-            testflow.setup(
+            testflow.step(
                 "Importing OVN provider network: %s to DC: %s Cluster: %s",
                 net_name, self.dc, self.cl
             )
@@ -125,7 +236,7 @@ class TestOVNProvider01(NetworkTest):
         1. Add vNIC attached to network: OVN_NET_1 to VM-0
         2. Start VM-0
         """
-        testflow.setup(
+        testflow.step(
             "Adding vNIC: %s to VM: %s", ovn_conf.OVN_VNIC, net_conf.VM_0
         )
         assert ll_vms.addNic(
@@ -226,7 +337,7 @@ class TestOVNProvider01(NetworkTest):
         5. Assign static IP on OVN vNIC
         6. Test ping from VM-0 to VM-1 IP
         """
-        testflow.setup(
+        testflow.step(
             "Creating vNIC profile: %s attached to network: %s",
             ovn_conf.OVN_VNIC_PROFILE, ovn_conf.OVN_NET_1
         )
@@ -360,8 +471,38 @@ class TestOVNProvider01(NetworkTest):
         )
 
     @tier2
+    @polarion("RHEVM3-21702")
+    def test_11_copy_test_file_between_vms_on_different_hosts(self):
+        """
+        Copy big file between two VM's with OVN network that hosted on
+        different hosts
+        """
+        vm_0_rsc = ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0]
+        vm_1_rsc = ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1]
+
+        # On OVN tunnel connections, MTU should be set to 1400 in order to get
+        # TCP transfer work successfully
+        for vm in [vm_0_rsc, vm_1_rsc]:
+            assert helper.set_vm_non_mgmt_interface_mtu(vm=vm, mtu=1400)
+
+        testflow.step(
+            "Copying file of size: %s MB from source VM: %s "
+            "to destination VM: %s on IP: %s", ovn_conf.OVN_COPY_FILE_SIZE_MB,
+            vm_0_rsc, vm_1_rsc, ovn_conf.OVN_VM_1_IP
+        )
+        assert helper.check_ssh_file_copy(
+            src_vm=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
+            dst_vm=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
+            dst_ip=ovn_conf.OVN_VM_1_IP,
+            mb=ovn_conf.OVN_COPY_FILE_SIZE_MB
+        )
+
+        for vm in [vm_0_rsc, vm_1_rsc]:
+            assert helper.set_vm_non_mgmt_interface_mtu(vm=vm, mtu=1500)
+
+    @tier2
     @polarion("RHEVM3-17236")
-    def test_11_ovn_network_with_subnet(self):
+    def test_12_ovn_network_with_subnet(self):
         """
         1. Create ifcfg file that prevents default route change
         2. Hot-unplug OVN vNIC on VM-0
@@ -405,7 +546,7 @@ class TestOVNProvider01(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17436")
-    def test_12_ovn_network_with_subnet_validation(self):
+    def test_13_ovn_network_with_subnet_validation(self):
         """
         1. Check that VM-0 has DNS configured
         2. Check that VM-1 has DNS configured
@@ -425,7 +566,7 @@ class TestOVNProvider01(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17437")
-    def test_13_ovn_network_with_subnet_ping(self):
+    def test_14_ovn_network_with_subnet_ping(self):
         """
         Test ping from VM-0 to VM-1 IP address
         """
@@ -438,7 +579,7 @@ class TestOVNProvider01(NetworkTest):
 
     @tier2
     @polarion("RHEVM-19599")
-    def test_14_static_mac_change_on_ovn_network(self):
+    def test_15_static_mac_change_on_ovn_network(self):
         """
         Change MAC address of vNIC attached to OVN network and check
         network connectivity
@@ -456,13 +597,17 @@ class TestOVNProvider01(NetworkTest):
         testflow.step(
             "Testing ping from VM: %s to VM: %s", net_conf.VM_0, net_conf.VM_1
         )
-        assert helper.check_ping(
-            vm=net_conf.VM_0, dst_ip=self.vms_ips[1]
+
+        # Sample ping requests due to MAC update problem with RHEL 7.4 beta
+        sampler = TimeoutingSampler(
+            timeout=60, sleep=1, func=helper.check_ping, vm=net_conf.VM_0,
+            dst_ip=self.vms_ips[1]
         )
+        assert sampler.waitForFuncStatus(result=True)
 
     @tier2
     @polarion("RHEVM3-17365")
-    def test_15_migrate_vm_with_subnet(self):
+    def test_16_migrate_vm_with_subnet(self):
         """
         1. Migrate VM-0 from host-1 to host-0
         2. Test ping from VM-1 to VM-0 IP during VM-0 migration

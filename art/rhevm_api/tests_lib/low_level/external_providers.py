@@ -6,21 +6,20 @@ External network providers
 """
 
 import logging
+
 import requests
 
+from art.core_api import apis_exceptions
 from art.core_api.apis_utils import getDS
-
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenters,
     general as ll_general,
     networks as ll_networks
 )
 from art.rhevm_api.utils.test_utils import get_api
-import art.core_api.apis_exceptions as api_exceptions
 
-
-CEPH = 'ceph'
-AUTH_KEY = 'authenticationkey'
+CEPH = "ceph"
+AUTH_KEY = "authenticationkey"
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +29,9 @@ class OpenStackProvider(object):
     Base class for Open Stack external providers
     """
     def __init__(
-        self, provider_api_element_name, name, url, requires_authentication,
-        username=None, password=None, authentication_url=None,
-        tenant_name=None
+        self, provider_api_element_name, name, url,
+        requires_authentication=False, username=None, password=None,
+        authentication_url=None, tenant_name=None
     ):
         """
         OpenStackProvider class
@@ -48,7 +47,6 @@ class OpenStackProvider(object):
             authentication_url (str): Provider URL address for
                 authentication (in case required_authentication is enabled)
             tenant_name (str): Provider tenant name
-
         """
         self._name = name
         self._url = url
@@ -63,167 +61,220 @@ class OpenStackProvider(object):
         self.provider_name = self.__class__.__name__
         self.open_stack_provider = getDS(self.provider_name)
         self._api = get_api(
-            provider_api_element_name, self.provider_name.lower() + 's'
+            provider_api_element_name, self.provider_name.lower() + "s"
         )
         self.osp_obj = None
-        self._is_connected = False
+
+        # Get existing provider object (if already exist on engine)
+        self.get(openstack_ep=name)
 
     def add(self):
+        """
+        Add External Provider to engine
+        """
         self._init()
+
         try:
-            self.osp_obj, self._is_connected = self._api.create(
-                self.osp_obj, positive=True
-            )
+            self.osp_obj = self._api.create(self.osp_obj, positive=True)[0]
         except TypeError:
-            self._api.logger.warning("Unable to add %s", self.name)
+            self._api.logger.warning("Unable to add provider: %s", self.name)
+            return False
+        return True
 
-        return self._is_connected
+    def update(self, **kwargs):
+        """
+        Update External Provider object with given properties
 
-    def set_osp_obj(self):
-        """
-        Set External Provider object
-        """
-        self.osp_obj = self.find(openstack_ep=self.name)
+        Keyword Args:
+            url (str): URL to update
+            requires_authentication (bool): Provider requires authentication
+            username (str): Provider authentication username
+            password (str): Provider authentication password
+            authentication_url (str): Provider authentication URL
+            tenant_name (str): Provider tenant name
 
-    def find(self, openstack_ep, key='name'):
+        Returns:
+            bool: True if update succeeded, False otherwise
         """
-        Get openstack ep object from engine by name or id
+        url = kwargs.get("url")
+        requires_authentication = kwargs.get("requires_authentication")
+        username = kwargs.get("username")
+        password = kwargs.get("password")
+        authentication_url = kwargs.get("authentication_url")
+        tenant_name = kwargs.get("tenant_name")
 
-        :param openstack_ep: the openstack ep name/id
-        :type openstack_ep: str
-        :param key: key to look for ep, it can be name or id
-        :type key: str
-        :return: openstack ep object
-        :raise: EntityNotFound
+        new_osp_obj = self.open_stack_provider()
+
+        if url:
+            new_osp_obj.set_url(url)
+            self._url = self.osp_obj.url
+        if requires_authentication:
+            new_osp_obj.set_requires_authentication(requires_authentication)
+            self._requires_authentication = (
+                self.osp_obj.requires_authentication
+            )
+        if username:
+            new_osp_obj.set_username(username)
+            self._username = self.osp_obj.username
+        if password:
+            new_osp_obj.set_password(password)
+            self._password = self.osp_obj.password
+        if authentication_url:
+            new_osp_obj.set_authentication_url(authentication_url)
+            self._authentication_url = self.osp_obj.authentication_url
+        if tenant_name:
+            new_osp_obj.set_tenant_name(tenant_name)
+            self._tenant_name = self.osp_obj.tenant_name
+
+        if not self._api.update(
+            origEntity=self.osp_obj, newEntity=new_osp_obj, positive=True
+        ):
+            return False
+        return True
+
+    def get(self, openstack_ep, key="name"):
         """
-        return self._api.find(openstack_ep, attribute=key)
+        Get OpenStack External Provider object from engine by name or ID
+
+        Args:
+            openstack_ep (str): OpenStack property name or ID
+            key (str): OpenStack property attribute, can be name or ID
+
+        Returns:
+            Openstack provider object: OpenStack provider object if exists, or
+                None if not exists
+        """
+        try:
+            self.osp_obj = self._api.find(openstack_ep, attribute=key)
+        except apis_exceptions.EntityNotFound:
+            return None
+        return self.osp_obj
 
     def get_openstack_ep_objects(self):
         """
-        Get openstack ep objects from engine.
+        Get OpenStack External Provider objects from engine
 
-        :return: list of openstack ep objects
+        Returns:
+            list: A list of OpenStack External Provider objects
         """
         return self._api.get(abs_link=False)
 
-    def remove(self, openstack_ep, key='name'):
+    @ll_general.generate_logs()
+    def remove(self, openstack_ep, key="name"):
         """
-        Remove openstack ep object from engine by name or id
+        Remove openstack_ep object from engine by key
 
-        :param openstack_ep: the openstack ep name/id
-        :type openstack_ep: str
-        :param key: key to look for ep, it can be name or id
-        :type key: str
-        :return: True if ep was removed properly, False otherwise
-        :rtype: bool
-        :raise: EntityNotFound
+        Args:
+            openstack_ep (str): OpenStack property name or ID
+            key (str): OpenStack property attribute, can be name or ID
+
+        Returns:
+            bool: True if removed successfully, False otherwise
         """
-        log_info, log_error = ll_general.get_log_msg(
-            log_action="Remove", obj_type=self.provider_name,
-            obj_name=openstack_ep
-        )
-        logger.info(log_info)
-        ep_obj = self.find(openstack_ep)
-        res = self._api.delete(ep_obj, True)
-        if not res:
-            logger.error(log_error)
-        return res
+        ep_obj = self.get(openstack_ep=openstack_ep)
+        if ep_obj:
+            return self._api.delete(ep_obj, True)
+        return False
 
     def _init(self):
+        """
+        Initialize Open Stack Provider object instance and populate it with
+        properties
+        """
         self.osp_obj = self.open_stack_provider()
         self.osp_obj.set_name(self.name)
         self.osp_obj.set_url(self.url)
-        self.osp_obj.set_requires_authentication(
-            self.requires_authentication
-        )
+        self.osp_obj.set_requires_authentication(self.requires_authentication)
         self.osp_obj.set_username(self.username)
         self.osp_obj.set_password(self.password)
-        self.osp_obj.set_authentication_url(
-            self.authentication_url
-        )
+        self.osp_obj.set_authentication_url(self.authentication_url)
         self.osp_obj.set_tenant_name(self.tenant_name)
 
     @property
     def name(self):
+        """
+        Get provider name property
+        """
         return self._name
-
-    @name.setter
-    def name(self, name):
-        self._name = name
 
     @property
     def url(self):
+        """
+        Get provider URL property
+        """
         return self._url
-
-    @url.setter
-    def url(self, url):
-        self._url = url
 
     @property
     def requires_authentication(self):
+        """
+        Get requires_authentication property
+        """
         return self._requires_authentication
-
-    @requires_authentication.setter
-    def requires_authentication(self, requires_authentication):
-        self._requires_authentication = requires_authentication
 
     @property
     def username(self):
+        """
+        Get provider username property
+        """
         return self._username
-
-    @username.setter
-    def username(self, username):
-        self._username = username
 
     @property
     def password(self):
+        """
+        Get provider password property
+        """
         return self._password
-
-    @password.setter
-    def password(self, password):
-        self._password = password
 
     @property
     def authentication_url(self):
+        """
+        Get provider authentication URL property
+        """
         return self._authentication_url
-
-    @authentication_url.setter
-    def authentication_url(self, authentication_url):
-        self._authentication_url = authentication_url
 
     @property
     def tenant_name(self):
+        """
+        Get provider tenant name property
+        """
         return self._tenant_name
 
-    @tenant_name.setter
-    def tenant_name(self, tenant_name):
-        self._tenant_name = tenant_name
+    @property
+    def is_exists(self):
+        """
+        Provider exists on engine property
+
+        Returns:
+            bool: True if provider exists, False otherwise
+        """
+        return self.get(openstack_ep=self.name) is not None
 
 
 class OpenStackImageProvider(OpenStackProvider):
-    provider_api_element_name = 'openstack_image_provider'
+    """
+    Base class for Open Stack Image Providers
+    """
+
+    provider_api_element_name = "openstack_image_provider"
 
     def __init__(
         self, name=None, url=None, requires_authentication=None, username=None,
         password=None, authentication_url=None, tenant_name=None
     ):
         """
-        :param name: name
-        :type name: str
-        :param url: url of ep
-        :type url: str
-        :param requires_authentication: True if requires auth, False otherwise
-        :type requires_authentication: bool
-        :param username: username for auth
-        :type username: str
-        :param password: password for auth
-        :type password: str
-        :param authentication_url: auth URL
-        :type authentication_url: str
-        :param tenant_name: tenant name
-        :type tenant_name: str
-        """
+        OpenStackImageProvider class
 
+        Args:
+            name (str): Provider name
+            url (str): Provider URL address
+            requires_authentication (bool): True to enable authentication
+                with given username and password
+            username (str): Provider authentication username
+            password (str): Provider authentication password
+            authentication_url (str): Provider URL address for
+                authentication (in case required_authentication is enabled)
+            tenant_name (str): Provider tenant name
+        """
         super(OpenStackImageProvider, self).__init__(
             self.provider_api_element_name, name, url, requires_authentication,
             username, password, authentication_url, tenant_name,
@@ -231,9 +282,12 @@ class OpenStackImageProvider(OpenStackProvider):
 
 
 class OpenStackVolumeProvider(OpenStackProvider):
-    provider_api_element_name = 'openstack_volume_provider'
-    cinder_key_ds = getDS('OpenstackVolumeAuthenticationKey')
-    cinder_key_coll_name = 'openstack_volume_authentication_key'
+    """
+    Base class for Open Stack Volume Providers
+    """
+    provider_api_element_name = "openstack_volume_provider"
+    cinder_key_ds = getDS("OpenstackVolumeAuthenticationKey")
+    cinder_key_coll_name = "openstack_volume_authentication_key"
 
     def __init__(
             self,
@@ -242,28 +296,22 @@ class OpenStackVolumeProvider(OpenStackProvider):
             data_center=None, key_uuid=None, key_value=None
     ):
         """
-        :param name: name
-        :type name: str
-        :param url: url of ep
-        :type url: str
-        :param requires_authentication: True if requires auth, False otherwise
-        :type requires_authentication: bool
-        :param username: username for auth
-        :type username: str
-        :param password: password for auth
-        :type password: str
-        :param authentication_url: auth URL
-        :type authentication_url: str
-        :param tenant_name: tenant name
-        :type tenant_name: str
-        :param data_center: data centrum
-        :type data_center: DC object
-        :param key_uuid: auth key uuid
-        :type key_uuid: str
-        :param key_value: auth key value
-        :type key_value: str
-        """
+        OpenStackVolumeProvider class
 
+        Args:
+            name (str): Provider name
+            url (str): Provider URL address
+            requires_authentication (bool): True to enable authentication
+                with given username and password
+            username (str): Provider authentication username
+            password (str): Provider authentication password
+            authentication_url (str): Provider URL address for
+                authentication (in case required_authentication is enabled)
+            tenant_name (str): Provider tenant name
+            data_center (DataCenter object): Data Center object
+            key_uuid (str): Auth key uuid
+            key_value (str): Auth key value
+        """
         super(OpenStackVolumeProvider, self).__init__(
             self.provider_api_element_name, name, url, requires_authentication,
             username, password, authentication_url, tenant_name,
@@ -275,137 +323,163 @@ class OpenStackVolumeProvider(OpenStackProvider):
 
     @property
     def data_center(self):
+        """
+        Get Data Center property
+        """
         return self._data_center
 
     @data_center.setter
     def data_center(self, data_center):
+        """
+        Set Data Center property
+
+        Args:
+            data_center (DataCenter object): Data Center object
+        """
         self._data_center = data_center
 
     def _init(self):
+        """
+        Initialize OpenstackVolumeProvider object instance and populate it
+            with properties
+        """
         super(OpenStackVolumeProvider, self)._init()
         self.osp_obj.set_data_center(self.data_center)
 
     def add_ceph_auth_key(self, uuid, value, usage_type=CEPH):
+        """
+        Add Ceph authorization key
+
+        Args:
+            uuid (str): Auth key uuid
+            value (str): Auth key value to set
+            usage_type (str): Auth key usage type
+
+        Returns (bool): True if added successfully, False otherwise
+        """
         key_obj = self.cinder_key_ds()
         key_obj.set_uuid(uuid)
         key_obj.set_value(value)
         key_obj.set_usage_type(usage_type)
 
         key_collection = self._api.getElemFromLink(
-            self.osp_obj, link_name=AUTH_KEY+'s', attr=AUTH_KEY, get_href=True
+            self.osp_obj, link_name=AUTH_KEY+"s", attr=AUTH_KEY, get_href=True
         )
         self.key_obj, created_success = self._api.create(
             key_obj, positive=True, collection=key_collection,
             coll_elm_name=self.cinder_key_coll_name, expected_entity=key_obj
         )
-
         return created_success
 
     def add(self):
+        """
+        Add OpenStackVolumeProvider object to engine
+        """
         if super(OpenStackVolumeProvider, self).add():
             if self.key_uuid and self.key_value:
                 self.add_ceph_auth_key(self.key_uuid, self.key_value)
-        return self._is_connected
+            return True
+        return False
 
 
-def get_glance_ep_obj(glance_ep, key='name'):
+def get_glance_ep_obj(glance_ep, key="name"):
     """
-    Get glance ep object from engine by name or id
+    Get Glance image external provider object from engine by name or ID
 
-    :param glance_ep: the openstack ep name/id
-    :type glance_ep: str
-    :param key: key to look for ep, it can be name or id
-    :type key: str
-    :return: glance ep object
-    :raise: EntityNotFound
+    Args:
+        glance_ep (str): OpenStack External Provider name or ID
+        key (str): Key to look for, can be "name" or "id"
+
+    Returns:
+        Glance object: Glance object or None if not found
     """
-    osip = OpenStackImageProvider()
-    return osip.find(glance_ep, key)
+    return OpenStackImageProvider().get(glance_ep, key)
 
 
 def get_glance_ep_objs():
     """
-    Get glance ep objects from engine.
+    Get Glance External provider objects from engine
 
-    :return: list of glance ep objects
+    Returns:
+        list: a list of Glance External provider objects
     """
-    osip = OpenStackImageProvider()
-    return osip.get_openstack_ep_objects()
+    return OpenStackImageProvider().get_openstack_ep_objects()
 
 
 def get_glance_ep_objs_names():
     """
-    Get glance ep objects names from engine.
+    Get glance ep objects names from engine
 
-    :return: list of glance ep objects names
+    Returns:
+        list: a list of Glance External provider object names
     """
     return [ep.name for ep in get_glance_ep_objs()]
 
 
-def remove_glance_ep(glance_ep, key='name'):
+def remove_glance_ep(glance_ep, key="name"):
     """
     Remove glance ep object from engine by name or id
 
-    :param glance_ep: the glance ep name/id
-    :type glance_ep: str
-    :param key: key to look for glance ep, it can be name or id
-    :type key: str
-    :return: True if glance ep was removed properly, False otherwise
-    :rtype: bool
-    :raise: EntityNotFound
+    Args:
+        glance_ep (str): Glance external provider name/id
+        key (str): Key to look for glance external provider, it can be name or
+            id
+
+    Returns:
+        bool: True if Glance external provider was removed properly,
+            False otherwise
     """
-    osip = OpenStackImageProvider()
-    return osip.remove(glance_ep, key)
+    return OpenStackImageProvider().remove(glance_ep, key)
 
 
-def get_cinder_ep_obj(cinder_ep, key='name'):
+def get_cinder_ep_obj(cinder_ep, key="name"):
     """
     Get cinder ep object from engine by name or id
 
-    :param cinder_ep: the openstack ep name/id
-    :type cinder_ep: str
-    :param key: key to look for ep, it can be name or id
-    :type key: str
-    :return: cinder ep object
-    :raise: EntityNotFound
+    Args:
+        cinder_ep (str): openstack ep name/id
+        key (str): key to look for ep, it can be name or id
+
+    Returns:
+        cinder ep object: Cinder External Provider object if found, None
+            otherwise
     """
-    osvp = OpenStackVolumeProvider()
-    return osvp.find(cinder_ep, key)
+    return OpenStackVolumeProvider().get(openstack_ep=cinder_ep, key=key)
 
 
 def get_cinder_ep_objs():
     """
-    Get cinder ep objects from engine.
+    Get cinder ep objects from engine
 
-    :return: list of cinder ep objects
+    Returns:
+        list: a list of cinder ep objects
     """
-    osvp = OpenStackVolumeProvider()
-    return osvp.get_openstack_ep_objects()
+    return OpenStackVolumeProvider().get_openstack_ep_objects()
 
 
 def get_cinder_ep_objs_names():
     """
-    Get cinder ep objects names from engine.
+    Get cinder ep objects names from engine
 
-    :return: list of cinder ep objects names
+    Returns:
+        list: a list of cinder ep objects names
     """
     return [ep.name for ep in get_cinder_ep_objs()]
 
 
-def remove_cinder_ep(cinder_ep, key='name'):
+def remove_cinder_ep(cinder_ep, key="name"):
     """
     Remove cinder ep object from engine by name or id
 
-    :param cinder_ep: the cinder ep name/id
-    :type cinder_ep: str
-    :param key: key to look for cinder ep, it can be name or id
-    :type key: str
-    :return: True if cinder ep was removed properly, False otherwise
-    :rtype: bool
-    :raise: EntityNotFound
+    Args:
+        cinder_ep (str): cinder ep name/id
+        key (str): key to look for cinder ep, it can be name or id
+
+    Returns:
+        bool: True if removed successfully, False otherwise
+
     """
-    osvp = OpenStackVolumeProvider()
-    return osvp.remove(cinder_ep, key)
+    return OpenStackVolumeProvider().remove(cinder_ep, key)
 
 
 class ExternalNetworkProvider(OpenStackProvider):
@@ -415,20 +489,21 @@ class ExternalNetworkProvider(OpenStackProvider):
     provider_api_element_name = "external_network_provider"
 
     def __init__(
-        self, provider_api_element_name, name, url, requires_authentication,
-        username=None, password=None, authentication_url=None,
-        tenant_name=None, read_only=True, api_url=None, keystone_url=None,
-        keystone_username=None, keystone_password=None
+        self, name, provider_api_element_name=None, url=None,
+        requires_authentication=True, username=None, password=None,
+        authentication_url=None, tenant_name=None, read_only=True,
+        api_url=None, keystone_url=None, keystone_username=None,
+        keystone_password=None, verify_ssl=True
     ):
         """
         ExternalNetworkProvider class
 
         Args:
-            provider_api_element_name (str): API element name
             name (str): Provider name
             url (str): Provider URL address
-            requires_authentication (bool): True if to enable authentication
-                with given username and password
+            provider_api_element_name (str): API element name
+            requires_authentication (bool): True to enable authentication
+                with given username and password, False otherwise
             username (str): Provider authentication username
             password (str): Provider authentication password
             authentication_url (str): Provider URL address for
@@ -440,6 +515,7 @@ class ExternalNetworkProvider(OpenStackProvider):
             keystone_url (str): Keystone URL address
             keystone_username (str): Keystone username
             keystone_password (str): Keystone password
+            verify_ssl (bool): Verify SSL certificate on provider connections
 
         """
         if provider_api_element_name:
@@ -464,11 +540,15 @@ class ExternalNetworkProvider(OpenStackProvider):
         self._keystone_token_invalid_ret_codes = (
             requests.codes.unauthorized, requests.codes.forbidden
         )
+        self._create_valid_return_codes = (
+            requests.codes.ok, requests.codes.created
+        )
 
         if api_url:
             self.api_url_networks = "%s/networks" % api_url
             self.api_url_subnets = "%s/subnets" % api_url
             self.api_requests = requests.session()
+            self.api_requests.verify = verify_ssl
 
         if keystone_url and keystone_username and keystone_password:
             self._keystone_tokens_url = "%s/tokens" % keystone_url
@@ -476,12 +556,20 @@ class ExternalNetworkProvider(OpenStackProvider):
 
     @property
     def read_only(self):
-        """Get external provider read_only property"""
+        """
+        Get external provider read_only property
+        """
         return self._read_only
 
     @read_only.setter
     def read_only(self, read_only):
-        """Set external provider read_only property"""
+        """
+        Set external provider read_only property
+
+        Args:
+            read_only (bool): True to set read-only property, False to set
+                read-write property
+        """
         self._read_only = read_only
 
     def _init(self):
@@ -582,7 +670,7 @@ class ExternalNetworkProvider(OpenStackProvider):
 
         return True
 
-    # All methods below provide support for interacting with the provider
+    # All methods below provide support for interacting with the OVN provider
     # server directly (not through the engine REST API)
 
     def __api_request(self, request, url, json=None, timeout=30):
@@ -649,7 +737,7 @@ class ExternalNetworkProvider(OpenStackProvider):
         """
         logger.info("Requesting token from Keystone service")
         payload = {
-            "access": {
+            "auth": {
                 "passwordCredentials": {
                     "username": self._keystone_username,
                     "password": self._keystone_password
@@ -663,19 +751,17 @@ class ExternalNetworkProvider(OpenStackProvider):
         logger.debug("Keystone service returned response: %s", response)
 
         if ret_code != requests.codes.ok:
-            logger.error(
-                "Keystone returned unexpected error: %s", ret_code
-            )
-            raise api_exceptions.APITokenError
+            logger.error("Keystone returned unexpected error: %s", ret_code)
+            raise apis_exceptions.APITokenError
 
         # Expected JSON response structure:
-        # { "access": { "token": { "id": <unicode encoded str - token> } } }
+        # { "access": { "token": { "id": <unicode encoded str token> } } }
         token = response.get("access", dict()).get("token", dict())
         self._api_keystone_token = token.get("id", str())
 
         if not self._api_keystone_token:
             logger.error("Keystone service did not return a token")
-            raise api_exceptions.APITokenError
+            raise apis_exceptions.APITokenError
 
         logger.info("Received a token from Keystone service")
 
@@ -766,7 +852,7 @@ class ExternalNetworkProvider(OpenStackProvider):
             request="post", url=self.api_url_networks, json=payload
         )
 
-        if ret_code != requests.codes.ok:
+        if ret_code not in self._create_valid_return_codes:
             logger.error("Provider returned unexpected error: %s", ret_code)
             return ""
 
@@ -858,7 +944,7 @@ class ExternalNetworkProvider(OpenStackProvider):
         prop = "network_id" if network_id else "name"
         val = network_id or subnet_name
 
-        subnet_id = [s.get('id') for s in subnets if s.get(prop) == val]
+        subnet_id = [s.get("id") for s in subnets if s.get(prop) == val]
 
         return subnet_id[0] if subnet_id else ""
 
@@ -897,7 +983,7 @@ class ExternalNetworkProvider(OpenStackProvider):
             request="post", url=self.api_url_subnets, json=payload
         )
 
-        if ret_code != requests.codes.ok:
+        if ret_code not in self._create_valid_return_codes:
             logger.error("Provider returned unexpected error: %s", ret_code)
             return ""
 
@@ -932,6 +1018,20 @@ class ExternalNetworkProvider(OpenStackProvider):
             return False
 
         return True
+
+    def test_connection(self, positive):
+        """
+        Test the state of the connection to the external provider
+
+        Args:
+            positive (bool): True for positive test, False for negative test
+
+        Returns:
+            bool: True provider connection is working, False otherwise
+        """
+        return self._api.syncAction(
+            entity=self.osp_obj, action="testconnectivity", positive=positive
+        )
 
 
 class OpenStackNetworkProvider(ExternalNetworkProvider):
@@ -990,6 +1090,9 @@ class OpenStackNetworkProvider(ExternalNetworkProvider):
         )
 
     def _prepare_agent_configuration(self):
+        """
+        Prepare External Provider agent configuration structure
+        """
         agent_configuration_dict = {
             "network_mappings": self.network_mapping,
             "broker_type": self.broker_type,
@@ -1003,6 +1106,10 @@ class OpenStackNetworkProvider(ExternalNetworkProvider):
         )
 
     def _init(self):
+        """
+        Initialize OpenStackNetworkProvider object instance and populate it
+            with properties
+        """
         super(OpenStackNetworkProvider, self)._init()
         self.osp_obj.set_type("neutron")
         self._prepare_agent_configuration()

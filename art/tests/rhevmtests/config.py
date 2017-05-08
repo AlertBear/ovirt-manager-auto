@@ -48,6 +48,9 @@ REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 PRODUCT_NAME = PARAMETERS['product_name']
 PRODUCT_BUILD = ART_CONFIG['DEFAULT'].get('RHEVM_BUILD', None)
 
+# RHVH constants
+RHVH = "Red Hat Enterprise Virtualization Hypervisor"
+
 # ENGINE SECTION
 VDC_HOST = GE['engine']['fqdn']
 
@@ -58,6 +61,7 @@ VDC_PASSWORD = GE['password']
 
 VDC_ADMIN_USER = REST_CONNECTION['user']
 VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
+VDC_ADMIN_JDBC_LOGIN = "{user}@internal".format(user=VDC_ADMIN_USER)
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 ENGINE_URL = GE['api_url']
 

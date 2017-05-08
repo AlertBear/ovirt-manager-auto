@@ -62,13 +62,14 @@ def get_golden_template_name(cluster=config.CLUSTER_NAME[0]):
 
 
 @ll_general.generate_logs()
-def set_passwordless_ssh(src_host, dst_host):
+def set_passwordless_ssh(src_host, dst_host, dst_host_ips=None):
     """
     Set passwordless SSH to remote host
 
     Args:
         src_host (Host): Source host resource object
         dst_host (Host): Destination host resource object
+        dst_host_ips (list): List of additional destination host IPs
 
     Returns:
         bool: True/False
@@ -81,12 +82,16 @@ def set_passwordless_ssh(src_host, dst_host):
         "~%s" % dst_host.root_user.name
     )
 
+    # Check for KNOWN_HOSTS and AUTHORIZED_KEYS files existence
+    known_exists = src_host.fs.exists(known_hosts)
+    auth_exists = src_host.fs.exists(authorized_keys)
+
     # Remove old keys from local KNOWN_HOSTS file
-    if not src_host.remove_remote_host_ssh_key(dst_host):
+    if known_exists and not src_host.remove_remote_host_ssh_key(dst_host):
         return False
 
     # Remove local key from remote host AUTHORIZED_KEYS file
-    if not dst_host.remove_remote_key_from_authorized_keys():
+    if auth_exists and not dst_host.remove_remote_key_from_authorized_keys():
         return False
 
     # Get local SSH key and add it to remote host AUTHORIZED_KEYS file
@@ -97,12 +102,17 @@ def set_passwordless_ssh(src_host, dst_host):
     if rc:
         return False
 
-    # Adding remote host SSH key to local KNOWN_HOSTS file
-    for i in [dst_host.ip, dst_host.fqdn]:
+    # Add remote host SSH key to source host KNOWN_HOSTS file using ssh-keyscan
+    # When adding destination host as FQDN, ignore the results from ssh-keyscan
+    # to avoid failing of DNS resolution issues, which could occur in the labs
+    hosts_to_add = [(dst_host.ip, True), (dst_host.fqdn, False)]
+    hosts_to_add = hosts_to_add + [(ip, True) for ip in dst_host_ips]
+
+    for i, check_error in hosts_to_add:
         rc1, remote_key = src_host.run_command(ssh_keyscan + [i])[:2]
         local_cmd = ["echo", remote_key, ">>", known_hosts]
         rc2 = src_host.run_command(local_cmd)[0]
-        if rc1 or rc2:
+        if check_error and (rc1 or rc2):
             return False
     return True
 
