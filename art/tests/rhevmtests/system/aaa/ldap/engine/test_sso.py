@@ -6,6 +6,7 @@ import os
 import logging
 import pytest
 
+from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
@@ -19,6 +20,11 @@ KEYTAB = '/etc/http.keytab'
 APACHE_FIXTURES = 'apache'
 APACHE_CONF = 'z-ovirt-sso.conf'
 
+OPENLDAP_HOST = resources.Host(config.OPENLDAP)
+OPENLDAP_HOST.users.append(
+    resources.RootUser(config.OPENLDAP_ROOT_PW)
+)
+
 
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
@@ -29,7 +35,7 @@ def setup_module(request):
         delete_principal = 'delete_principal -force HTTP/%s' % fqdn
 
         testflow.teardown("Deleting principal %s", fqdn)
-        config.OPENLDAP_HOST.executor().run_cmd(
+        OPENLDAP_HOST.executor().run_cmd(
             ['kadmin.local', '-q', delete_principal])
 
         testflow.teardown("Removing Kerberos")
@@ -72,7 +78,7 @@ def setup_module(request):
             config.SESSION_MODULE,
             config.MISC_PKG
         )
-        with config.OPENLDAP_HOST.executor().session() as openldap_session:
+        with OPENLDAP_HOST.executor().session() as openldap_session:
             openldap_session.run_cmd(['kadmin.local', '-q', add_principal])
             openldap_session.run_cmd(['kadmin.local', '-q', add_keytab])
             with openldap_session.open_file(KEYTAB, 'rb') as ldap_kt:

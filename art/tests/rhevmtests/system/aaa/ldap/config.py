@@ -1,6 +1,5 @@
 from rhevmtests.system.config import *  # flake8: noqa
 from art.test_handler.settings import opts
-from art.rhevm_api import resources
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -122,11 +121,6 @@ ADW2k12_GROUP_SPACE = 'Group with space'
 # Openldap
 OPENLDAP = 'brq-openldap.rhev.lab.eng.brq.redhat.com'
 OPENLDAP_ROOT_PW = 'qum5net'
-
-OPENLDAP_HOST = resources.Host(OPENLDAP)
-OPENLDAP_HOST.users.append(
-    resources.RootUser(OPENLDAP_ROOT_PW)
-)
 
 # Services
 APACHE_SERVICE = 'httpd'
