@@ -6,11 +6,8 @@ Config file for register domain test
 """
 
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
 
 EXTRA_SD_NAME = "Register_domain_network_SD"
-EXTRA_SD_PATH = conf.UNUSED_DATA_DOMAIN_PATHS[0]
-EXTRA_SD_ADDRESS = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
 
 NETS = global_helper.generate_object_names(
     num_of_cases=8, num_of_objects=2, prefix="reg_dom"

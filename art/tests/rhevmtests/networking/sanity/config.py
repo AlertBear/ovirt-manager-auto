@@ -30,8 +30,6 @@ VNICS = global_helper.generate_object_names(
 )
 # Register_domain
 EXTRA_SD_NAME = "sanity_register_domain_network_SD"
-EXTRA_SD_PATH = conf.UNUSED_DATA_DOMAIN_PATHS[0]
-EXTRA_SD_ADDRESS = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
 REGISTER_VM_NAME = "sanity_register_domain_network_vm"
 MAC_NOT_IN_POOL = "00:00:00:00:00:01"
 REGISTER_VM_NIC = "sanity_register_domain_vnic"

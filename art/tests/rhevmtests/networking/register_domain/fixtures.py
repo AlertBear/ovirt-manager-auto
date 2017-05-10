@@ -30,8 +30,8 @@ def prepare_setup(request):
     """
     register_domain = NetworkFixtures()
     storage_name = register_domain_conf.EXTRA_SD_NAME
-    storage_address = register_domain_conf.EXTRA_SD_ADDRESS
-    storage_path = register_domain_conf.EXTRA_SD_PATH
+    storage_address = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
+    storage_path = conf.UNUSED_DATA_DOMAIN_PATHS[0]
     dc = register_domain.dc_0
     host = register_domain.host_0_name
 

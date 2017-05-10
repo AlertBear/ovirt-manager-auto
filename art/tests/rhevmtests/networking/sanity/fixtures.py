@@ -214,8 +214,8 @@ def prepare_setup_for_register_domain(request):
     """
     sanity_register_domain = NetworkFixtures()
     storage_name = sanity_conf.EXTRA_SD_NAME
-    storage_address = sanity_conf.EXTRA_SD_ADDRESS
-    storage_path = sanity_conf.EXTRA_SD_PATH
+    storage_address = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
+    storage_path = conf.UNUSED_DATA_DOMAIN_PATHS[0]
     dc = sanity_register_domain.dc_0
     cluster = sanity_register_domain.cluster_0
     host = sanity_register_domain.host_0_name
