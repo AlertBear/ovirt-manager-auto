@@ -200,9 +200,13 @@ class TestCase5300(BasicEnvironment):
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
+        vms_to_register = [
+            vm for vm in unregistered_vms if vm.get_name() == self.vm_name
+        ]
+
         testflow.step("Unregistered vms: %s", vm_names)
         assert ll_sd.register_object(
-            unregistered_vms[0], cluster=config.CLUSTER_NAME
+            vms_to_register[0], cluster=config.CLUSTER_NAME
         )
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
@@ -336,9 +340,12 @@ class TestCase5193(BasicEnvironment):
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
+        vms_to_register = [
+            vm for vm in unregistered_vms if vm.get_name() == self.vm_name
+        ]
         testflow.step("Unregistered vms: %s", vm_names)
         assert ll_sd.register_object(
-            unregistered_vms[0], cluster=config.CLUSTER_NAME
+            vms_to_register[0], cluster=config.CLUSTER_NAME
         )
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
@@ -375,10 +382,13 @@ class TestCase5194(BasicEnvironment):
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
+        vms_to_register = [
+            vm for vm in unregistered_vms if vm.get_name() == self.vm_name
+        ]
         testflow.step("Unregistered vms: %s", vm_names)
         assert ll_sd.register_object(
-            unregistered_vms[0], cluster=config.CLUSTER_NAME
-        ), "Failed to register vm %s" % unregistered_vms[0]
+            vms_to_register[0], cluster=config.CLUSTER_NAME
+        ), "Failed to register vm %s" % vms_to_register[0]
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
         testflow.step("Start VM %s", self.vm_name)
         assert ll_vms.startVms(
@@ -591,12 +601,16 @@ class TestCase5201(BaseCaseInitializeDataCenter):
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
+        vms_to_register = [
+            vm for vm in unregistered_vms if vm.get_name() == self.vm_name
+        ]
         logger.info("Unregistered vms: %s", vm_names)
         testflow.step("Register VM: %s", vm_names[0])
+
         assert ll_sd.register_object(
-            unregistered_vms[0], cluster=self.cluster_name
+            vms_to_register[0], cluster=self.cluster_name
         ), "Unable to register vm %s in cluster %s" % (
-            (vm_names[0], self.cluster_name)
+            (vms_to_register[0], self.cluster_name)
         )
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
         testflow.step("Start VM %s", self.vm_name)
