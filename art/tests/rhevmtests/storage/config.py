@@ -81,7 +81,7 @@ TYPE_EXPORT = ENUMS['storage_dom_type_export']
 
 TMP_CLUSTER_NAME = 'tmp_cluster'
 
-SETUP_PASSWORD = VDC_ROOT_PASSWORD
+ROOT_PASSWORD = VDC_ROOT_PASSWORD
 
 DATA_ROOT_DIR = PARAMETERS.get('data_root_dir', "/tmp/snapshotTest")
 DATA_DIR_CNT = PARAMETERS.get('data_dir_cnt', 5)

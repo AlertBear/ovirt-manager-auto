@@ -13,6 +13,7 @@ import multiprocessing.dummy
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources.storage as storage_resources
+from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
     vms as hl_vms,
@@ -123,6 +124,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
             raise exceptions.DiskException("Failed to plug disk %s "
                                            "to vm %s"
                                            % (disk, vm_name))
+
     pool.map(attach_and_activate, disks_to_prepare)
     return True
 
@@ -801,12 +803,12 @@ def prepare_disks_with_fs_for_vm(
 
     Args:
         storage_domain (str): Name of the storage domain to be used for disk
-        creation
+            creation
         storage_type (str): Storage type to be used with the disk creation
         vm_name (str): Name of the VM under which a disk with a file system
-        will be created
+            will be created
         executor (Host resource): Host resource on which commands can
-        be executed
+            be executed
 
     Returns:
         Tuple of 2 lists: disk_ids - list of new disk IDs,
@@ -840,7 +842,7 @@ def prepare_disks_with_fs_for_vm(
     for disk_alias in disk_names:
         ecode, mount_point = create_fs_on_disk(vm_name, disk_alias, executor)
         if not ecode:
-            logger.error("Cannot create filesysem on disk %s:", mount_point)
+            logger.error("Cannot create filesystem on disk: %s", disk_alias)
             mount_point = ''
         mount_points.append(mount_point)
     logger.info(
@@ -892,15 +894,12 @@ def create_fs_on_disk(vm_name, disk_alias, executor=None):
         )
     if not executor:
         executor = get_vm_executor(vm_name)
-    # TODO: Workaround for bug:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-    executor.run_cmd(shlex.split("udevadm trigger"))
 
     logger.info(
         "Find disk logical name for disk with alias %s on vm %s",
         disk_alias, vm_name
     )
-    disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
+    disk_logical_volume_name = get_logical_name_by_vdsm_client(
         vm_name, disk_alias
     )
     if not disk_logical_volume_name:
@@ -1814,3 +1813,51 @@ def kill_vdsm_on_spm_host(dc_name):
     )
     ll_dc.waitForDataCenterState(dc_name)
     ll_hosts.wait_for_hosts_states(True, spm_host_name)
+
+
+def get_logical_name_by_vdsm_client(
+    vm_name, disk, parse_logical_name=False, key='name'
+):
+    """
+    Retrieves the logical name of a disk that is attached to a VM from
+    vdsm-client
+
+    Args:
+        vm_name (str): Name of the VM which which contains the disk
+        disk (str): The name/ID of the disk for which the logical volume
+            name should be retrieved
+        parse_logical_name (bool): Determines whether the logical name (e.g.
+            /dev/vdb) is returned in the full format when False is
+            set (this is the default), otherwise the logical name will be
+            parsed to remove the /dev/ (e.g. /dev/vdb -> vdb) when True is set
+        key (str): key to look for disks by, it can be 'name' or 'id'
+
+    Returns:
+        str: Disk logical name
+
+    """
+    logical_name = None
+    host_ip = ll_hosts.get_host_ip(ll_vms.get_vm_host(vm_name))
+    vm_id = ll_vms.get_vm_obj(vm_name).get_id()
+    vds_resource = resources.VDS(
+        ip=host_ip, root_password=config.ROOT_PASSWORD
+    )
+    if key == 'id':
+        disk_id = disk
+    else:
+        disk_id = ll_disks.get_disk_obj(disk).get_id()
+    vm_info = vds_resource.vds_client(
+        cmd="VM.getStats", args={"vmID": vm_id}
+    )
+    if not vm_info:
+        logger.error("VDS didn't return getStats for VM %s", vm_id)
+        return ""
+    vm_info = vm_info[0]
+    vm_disks = vm_info.get('disks')
+    for dev in vm_disks:
+        if vm_disks.get(dev).get("imageID") == disk_id:
+            logical_name = dev
+            break
+    if not parse_logical_name:
+        logical_name = "/dev/" + logical_name
+    return logical_name
