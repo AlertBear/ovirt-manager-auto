@@ -297,6 +297,7 @@ def _prepareDiskObject(**kwargs):
     return disk
 
 
+@generate_logs()
 def addDisk(positive, **kwargs):
     """
     Description: Adds disk to setup
@@ -1120,3 +1121,53 @@ def get_read_only(vm_name, disk_id):
         bool: True if the disk is Read Only, False otherwise
     """
     return get_disk_attachment(vm_name, disk_id).get_read_only()
+
+
+def wait_for_sparsify_event(disk_id, success=True):
+    """
+    Wait for an event of successful/failed sparsify event starting from the
+    last start sparsify event in the system.
+
+    Args:
+        disk_id (str): Disk id
+
+    Returns:
+         bool: True if an event of sparsify action completion was issued after
+            The event of the action's start was issued and within event
+            timeout, False otherwise.
+    """
+    import art.rhevm_api.tests_lib.low_level.events as ll_events
+    disk_name = get_disk_obj(disk_alias=disk_id, attribute='id').get_name()
+    start_sparsify_query = "\"Started to sparsify %s\"" % disk_name
+    finished_sparsify_query = (
+        "%s sparsified successfully" % disk_name if success else
+        "Failed to sparsify %s" % disk_name
+    )
+    last_event_id = ll_events.get_max_event_id(start_sparsify_query)
+    return ll_events.wait_for_event(
+        query=finished_sparsify_query, start_id=last_event_id
+    )
+
+
+@generate_logs()
+def sparsify_disk(disk_id, storage_domain_name, wait=True):
+    """
+    Invoke sparsify action on disk.
+
+    Args:
+        disk_id (str): Name of the disk we want to sparsify
+        storage_domain_name (str): Name of the storage domain where the disk
+            exist
+        wait (bool): Determines whether to wait for action to finish or not
+
+    Returns:
+        bool: True if an event of sparsify action completion was issued after
+            The event of the action's start was issued and within event
+            timeout, False otherwise.
+    """
+    if not do_disk_action(
+        'sparsify', disk_id=disk_id, target_domain=storage_domain_name,
+        wait=wait
+    ):
+        return False
+    return wait_for_sparsify_event(disk_id) if wait else True

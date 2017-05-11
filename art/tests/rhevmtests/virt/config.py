@@ -7,6 +7,7 @@ Virt - Test configuration module
 
 from rhevmtests.config import *  # flake8: noqa
 import rhevmtests.helpers as helper
+import os
 
 # #######################################################################
 # Following parameters should move to consolidated config, once possible
@@ -102,6 +103,7 @@ MIGRATING_STATUSES = [
 
 FILE_NAME = 'test_file'
 TEMP_PATH = '/var/tmp/'
+FULL_PATH = os.path.join(TEMP_PATH, FILE_NAME)
 ACTION_TIMEOUT = 30
 
 # memory hot plug
@@ -204,3 +206,7 @@ WIN_OS_TO_SYSPREP_FILE = {
     WIN_7_64B_OS: WINDOWS_7_SYSPREP_FILE
 }
 ENGINE_STAT_UPDATE_INTERVAL = 15
+DD_CREATE_FILE_CMD = 'dd if=/dev/urandom of=%s bs=1M count=%s'
+FILE_SIZE_IN_MB = 400
+# Sparsify test
+BAD_BLOCKS_CMD = 'badblocks -v %s1'

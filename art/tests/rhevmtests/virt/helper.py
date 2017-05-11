@@ -4,22 +4,23 @@
 """
 Helper functions for virt and network migration job
 """
+import logging
 import os
 import shlex
 import time
-import logging
+
 import xmltodict
-from utilities import jobs, utils
-from art import test_handler
+
 import art.core_api.validator as validator
-from rhevmtests import helpers
-from rhevmtests.networking import config
-from art.unittest_lib import testflow
-from art.test_handler import exceptions
-from art.core_api.apis_exceptions import APITimeout
-from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import config as config_virt
+import rhevmtests.storage.helpers as storage_helpers
+from art import test_handler
+from art.core_api.apis_exceptions import APITimeout
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sd
+)
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     storagedomains as ll_sd,
@@ -30,7 +31,12 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     events as ll_events,
 )
-import config as config_virt
+from art.rhevm_api.utils import test_utils
+from art.test_handler import exceptions
+from art.unittest_lib import testflow
+from rhevmtests import helpers
+from rhevmtests.networking import config
+from utilities import jobs, utils
 
 logger = logging.getLogger("Virt_Helper")
 
@@ -341,7 +347,9 @@ def check_display_parameters(vm_name, display_type):
     return True
 
 
-def create_file_in_vm(vm, vm_resource, path=config_virt.TEMP_PATH):
+def create_file_in_vm(
+    vm, vm_resource, path=config_virt.TEMP_PATH, size_in_mb=1, all_disks=False
+):
     """
     Create an empty file in vm using vm resource entity
 
@@ -349,23 +357,60 @@ def create_file_in_vm(vm, vm_resource, path=config_virt.TEMP_PATH):
         vm (str): Vm name
         vm_resource (Host resource): Resource for the vm
         path (str): path to locate the file
+        size_in_mb (int): size of create file in MB
+        all_disks (bool): True if files should be created on all vm's
+            disks, False if only on boot device
+
+    Returns:
+        list: list of paths to the file/s created on the vm
 
     Raises:
         VMException: If failed to create file
     """
-    logger.info("attempting to create an empty file in vm: %s", vm)
+    files_paths = list()
+    logger.info(
+        "attempting to create a file of size: %sMB in vm: %s", size_in_mb, vm
+    )
     full_path = os.path.join(path, config_virt.FILE_NAME)
-    if not vm_resource.fs.touch(full_path):
+    files_paths.append(full_path)
+    cmd = config_virt.DD_CREATE_FILE_CMD % (full_path, size_in_mb)
+
+    if vm_resource.run_command(shlex.split(cmd))[0]:
         raise exceptions.VMException(
             "Failed to create an empty file on vm: '%s'" % vm
         )
+    if all_disks:
+        vm_disks = ll_vms.getVmDisks(vm)
+        disks_aliases = [
+            disk.get_alias() for disk in vm_disks if not
+            ll_vms.is_bootable_disk(vm, disk.get_id())
+        ]
+        for disk_alias in disks_aliases:
+            result, target_path = storage_helpers.create_fs_on_disk(
+                vm, disk_alias, vm_resource.executor()
+            )
+            if not result:
+                raise exceptions.VMException(
+                    "Failed to create a file system for disk: %s on vm %s" %
+                    disk_alias, vm
+                )
+            full_path = os.path.join(target_path, config_virt.FILE_NAME)
+            files_paths.append(full_path)
+            cmd = config_virt.DD_CREATE_FILE_CMD % (full_path, size_in_mb)
+            if vm_resource.run_command(shlex.split(cmd))[0]:
+                raise exceptions.VMException(
+                    "Failed to create an empty file on vm: '%s' fs: %s" %
+                    vm, target_path
+                )
+    return files_paths
 
 
 def check_if_file_exist(
     positive,
     vm,
     vm_resource,
-    path=config_virt.TEMP_PATH
+    path=config_virt.TEMP_PATH,
+    full_path=False
 ):
     """
     Checks if file (name of file in config) exist or not in the vm using vm
@@ -376,18 +421,19 @@ def check_if_file_exist(
         vm (str): Vm name
         vm_resource (host resource): Command executor for the vm
         path (str): path where to find the file
+        full_path (bool): True if the given path is a full path, False if path
+            is only path to file's folder
 
     Raises:
         VMException: If file exist
     """
+    if not full_path:
+        path = os.path.join(path, config_virt.FILE_NAME)
     testflow.step(
         "checking if file: %s exists in vm: %s. expecting result: %s",
-        config_virt.FILE_NAME, vm, positive
+        path, vm, positive
     )
-    full_path_to_file = os.path.join(
-        path, config_virt.FILE_NAME
-    )
-    file_exists = vm_resource.fs.exists(full_path_to_file)
+    file_exists = vm_resource.fs.exists(path)
     if not (file_exists == positive):
         raise exceptions.VMException("Error: file exists on vm: '%s'" % vm)
 
@@ -980,3 +1026,225 @@ def compare_vm_parameters(param_name, param_value, expected_config):
                 mac_end=utils.MAC(expected_config[param_name]['end'])
             )
     return expected_config[param_name] == param_value
+
+
+def verify_vm_disk_not_corrupted(vm):
+    """
+    Connects to vm check if disk is corrupted
+
+    Args:
+        vm (str): Name of vm
+    """
+    logger.info("Start vm %s", vm)
+    ll_vms.start_vms([vm])
+    vm_resource = helpers.get_vm_resource(vm)
+    disk_logical_name = ll_vms.get_vm_disk_logical_name(
+        vm_name=vm, disk=ll_vms.get_vm_disks_ids(vm)[0], key='id'
+    )
+    cmd = shlex.split(config_virt.BAD_BLOCKS_CMD % disk_logical_name)
+    rc, out, err = vm_resource.run_command(cmd)
+    logger.info("Disk check output:\n%s\n%s", out, err)
+    assert not rc, "Failed to run disk check output"
+    assert "(0/0/0 errors)" in err, "Bad block check failed"
+
+
+def get_disk_size_from_file_storage(host_resource, disk_path):
+    """
+    Connects to spm host and checks the actual disk size of the given disk
+    by calling 'du -sh' on the path to the image folder in the domain's mount
+    point on the host
+
+    Args:
+        host_resource (Host resource): spm host resource
+        disk_path (str): the path to the disk's image folder under the host's
+            /rhev/data-center folder.
+
+
+    Returns:
+        float: The actual used space in the given lun, in GB
+    """
+    full_path = os.path.join('/rhev/data-center', disk_path)
+    cmd = "du -sh %s" % full_path
+    rc, out, _ = host_resource.run_command(shlex.split(cmd))
+    if rc:
+        logger.error("Failed to get disk actual size of %s", disk_path)
+    logger.info("actual used space of disk: %s is: %s", disk_path, out[0])
+    return float(out.split()[0].replace('G', ''))
+
+
+def fetch_actual_disk_size(storage_manager, lun_id=None, disk_path=None):
+    """
+    This method unifies the calls to methods that get the disk actual size on
+    the specific storage domain (different implementation for block storages
+    and file storage).
+
+    Args:
+        storage_manager (StorageManager or Host resource):
+            Instance of StorageManager from storage_api repository in case of
+            ISCSI/FC storage, spm host resource in case of NFS/GlusterFS
+        lun_id (str): lun id in the storage provider (in case of iscsi/fc)
+        disk_path (str): Path to disk in the host's mount point to the SD
+
+    Returns:
+        float: The actual used space in the given lun, in GB
+    """
+    if lun_id:
+        return helpers.get_lun_actual_size(storage_manager, lun_id)
+    if disk_path:
+        return get_disk_size_from_file_storage(storage_manager, disk_path)
+
+
+def verify_sparsify_success(
+    previous_used_space, storage_manager,  lun_id=None, disk_path=None
+):
+    """
+    Checks actual used space in the lun after running the sparsify action.
+    And compares between the used space before the action.
+
+    Args:
+        previous_used_space (float): used disk size before
+        file deleted and sparsify action
+        storage_manager (StorageManager or Host resource):
+            Instance of StorageManager from storage_api repository in case of
+            ISCSI/FC storage, spm host resource in case of NFS/GlusterFS
+        lun_id (str): The new lud id create in the test
+        disk_path (str): For NFS and gluster file path on disk
+
+    Returns:
+        bool: True if the actual size restored, else False
+    """
+    actual_used_space = fetch_actual_disk_size(
+        storage_manager, lun_id, disk_path
+    )
+    logger.info(
+        "Used space on (lun/disk path)after sparsification: %s",
+        actual_used_space
+    )
+    if actual_used_space < previous_used_space:
+        logger.info("Sparsification check pass")
+        return True
+    else:
+        logger.error("Sparsification did not restore disk size")
+        logger.error(
+            "actual_used_space: %s , previous_used_space: %s",
+            actual_used_space, previous_used_space
+        )
+        return False
+
+
+def get_disk_path(vm_name, storage_domain_name):
+    """
+    Return disk/s path and id/s according to vma name and storage domain
+
+    Args:
+    vm_name (str): VM name
+    storage_domain_name (str): Storage domain name
+
+    Returns:
+        tuple (str,str): disk path, disk id/s
+    """
+    disks_ids = ll_vms.get_vm_disks_ids(vm_name)
+    disk_path = hl_sd.get_file_storage_disks_paths(
+        disks_ids, storage_domain_name
+    ).values()[0]
+    return disk_path, disks_ids
+
+
+def delete_file_from_vm(vm, vm_resource, path=config_virt.FULL_PATH):
+    """
+    Removes file (name of file in config) from the vm
+
+    Args:
+        vm (str): Name of vm
+        vm_resource (host resource): Command executor for the vm
+        path (str): Path to the file
+
+    Returns:
+         bool: True if file was removed successfully, False otherwise
+    """
+    check_if_file_exist(True, vm, vm_resource, path, full_path=True)
+    logger.info("Removing file: %s from vm: %s", path, vm)
+    return vm_resource.fs.remove(path)
+
+
+def stop_and_remove_vm_(vm_name):
+    """
+    Stop and remove VM
+    Args:
+        vm_name (str): vm name
+    Returns:
+        bool: True is remove vm successfully
+    """
+
+    testflow.teardown("Remove vm %s", vm_name)
+    return ll_vms.safely_remove_vms([vm_name])
+
+
+def prepare_vm_for_sparsification(
+    vm_name,
+    storage_manager,
+    storage_domain_name,
+    file_size=config_virt.FILE_SIZE_IN_MB,
+    all_disks=False,
+    lun_id=None
+):
+    """
+    Prepares the vm for sparsify test.
+    This includes starting the vm, creating a file on it, deleting file
+    and stopping the vm.
+
+    Args:
+        vm_name (vm_name): VM name
+        storage_manager (StorageManager or Host resource):
+            Instance of StorageManager from storage_api repository in case of
+            ISCSI/FC storage, spm host resource in case of NFS/GlusterFS
+        storage_domain_name (str): Storage domain name
+        file_size (int): Size of the file that will be created on the VM
+            (in MB)
+        all_disks (bool): Should write to all VM disks
+        lun_id (str): Lun id
+
+    Returns:
+        tuple(new_used_space, disks_ids)
+   """
+
+    disk_path, disks_ids = get_disk_path(
+        vm_name=vm_name, storage_domain_name=storage_domain_name
+    )
+    testflow.step("Start vm %s", vm_name)
+    ll_vms.start_vms([vm_name])
+    vm_resource = helpers.get_vm_resource(vm_name)
+    lun_space = fetch_actual_disk_size(
+        storage_manager, lun_id, disk_path
+    )
+    logger.info("use space before create file: %s", lun_space)
+    testflow.step(
+        "Write a %sMB file on vm: %s", config_virt.FILE_SIZE_IN_MB, vm_name
+    )
+    new_files = create_file_in_vm(
+        vm=vm_name, vm_resource=vm_resource, size_in_mb=file_size,
+        all_disks=all_disks
+    )
+    lun_space = fetch_actual_disk_size(
+        storage_manager=storage_manager,
+        lun_id=lun_id,
+        disk_path=disk_path
+    )
+    assert bool(lun_space), (
+        "Failed to get lun used space for lun: %s" % lun_id
+    )
+    logger.info("Used space on lun after file creation: %s", lun_space)
+    testflow.step("removing the files: %s", new_files)
+    for file_path in new_files:
+        assert delete_file_from_vm(
+            vm=vm_name, vm_resource=vm_resource, path=file_path
+        )
+    new_used_space = fetch_actual_disk_size(
+        storage_manager=storage_manager,
+        lun_id=lun_id,
+        disk_path=disk_path
+    )
+    testflow.step("Used space on lun after file deletion: %2f", new_used_space)
+    testflow.step("Stopping vm: %s", vm_name)
+    assert ll_vms.stop_vms_safely([vm_name])
+    return new_used_space, disks_ids

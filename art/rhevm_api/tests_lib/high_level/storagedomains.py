@@ -22,8 +22,11 @@ from pprint import pformat
 import shlex
 from art.rhevm_api import resources
 from art.core_api import apis_utils
-from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
-from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api.tests_lib.low_level import (
+    storagedomains as ll_sd,
+    hosts as ll_hosts,
+    disks as ll_disks
+)
 from art.rhevm_api.tests_lib.high_level import datastructures
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
@@ -614,7 +617,7 @@ class StorageAdder(object):
             return []
         created_storages = []
         created_storages.append(self.add_storage(0))
-        hosts.wait_for_spm(self.datacenter, 600, 10)
+        ll_hosts.wait_for_spm(self.datacenter, 600, 10)
         for i in range(1, self.no_of_data_storages):
             created_storages.append(self.add_storage(i))
         self.add_export_domains()
@@ -1029,3 +1032,56 @@ def get_master_storage_domain_ip(datacenter):
     found, master_domain_ip = ll_sd.getDomainAddress(True, master_domain)
     assert found
     return master_domain_ip['address']
+
+
+def block_connection_to_iscsi_storage(host_resource, storage_domain):
+    """
+    Blocks connection between given host and given iscsi storage domain
+
+    Args:
+        host_resource (Host): host resource instance for the host which we run
+            the cmd from.
+        storage_domain (str): Name of the iscsi storage domain we want to block
+            the connection to from the host
+    """
+    storage_addresses = ll_sd.get_iscsi_storage_domin_addresses(storage_domain)
+    assert storage_addresses, (
+        "Couldn't get storage addresses for storage domain: %s" %
+        storage_domain
+    )
+    cmd = "iptables -A OUTPUT -d %s -j DROP" % ','.join(storage_addresses)
+    rc, _, _ = host_resource.run_command(shlex.split(cmd))
+    assert not rc, (
+        "Failed to block connection between host: %s to storage domain: %s" %
+        host_resource.fqdn, storage_domain
+    )
+
+
+def get_file_storage_disks_paths(disks_ids, storage_domain_name):
+    """
+    Gets the paths for all vm's disks on a given storage domain (expects all
+    vms disks to be in one file storage domain (nfs or glusterFS)
+
+    Args:
+        disks_ids (list): List of disk ids
+        storage_domain_name (str): Name of the storage domain where the vm's
+
+    Returns:
+        dict: Mapping between disk name and it's path under the specific
+            storage domain's folder.
+    """
+    disks_paths = {}
+    for disk_id in disks_ids:
+        disk_name = ll_disks.get_disk_obj(disk_id, 'id').get_name()
+        storage_domain_object = ll_sd.get_storage_domain_obj(
+            storage_domain_name
+        )
+        storage_domain_id = storage_domain_object.get_id()
+        data_center_id = (
+            storage_domain_object.get_data_centers().get_data_center()[0].
+            get_id()
+        )
+        disks_paths[disk_name] = '%s/%s/images/%s' % (
+            data_center_id, storage_domain_id, disk_id
+        )
+    return disks_paths

@@ -2039,3 +2039,45 @@ def reduce_storage_domain_luns(storage_domain, logical_unit_ids):
             sd_obj, "reduceluns", positive=True, logical_units=lu
         )
     )
+
+
+def get_iscsi_storage_domin_addresses(storage_domain):
+    """
+    Get all the addresses of all iscsi storage domain's logical units
+
+    Args:
+        storage_domain (Str): Storage domain name
+
+    Returns:
+         list: list of all storage domain's logical units addresses
+    """
+    try:
+        storage_domain_object = get_storage_domain_obj(storage_domain)
+        if storage_domain_object.get_storage().get_type() == 'iscsi':
+            return [
+                logical_unit.get_address() for logical_unit in
+                get_storage_domain_logical_units(storage_domain=storage_domain)
+            ]
+        else:
+            util.logger.error(
+                "Storage domain: %s is not an iscsi storage domain"
+            )
+    except EntityNotFound:
+        return []
+
+
+@generate_logs()
+def get_nfs_version(storage_domain):
+    """
+    Get nfs version for storage domain if storage domain is of type nfs
+
+    Args:
+        storage_domain (str): Name of storage domain
+
+    Returns:
+        str: nfs protocol version ('3.0', '4.0', '4.1', '4.2')
+    """
+    if not get_storage_domain_storage_type(storage_domain) == STORAGE_TYPE_NFS:
+        return ''
+    return get_storage_domain_obj(
+        storage_domain).get_storage().get_nfs_version()

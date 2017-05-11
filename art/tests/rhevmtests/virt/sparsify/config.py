@@ -1,0 +1,35 @@
+from rhevmtests.virt.config import *  # flake8: noqa
+
+THIN_PROVISIONED_VMS = []
+SPARSIFY_VM_NAME = 'sparsify_test'
+PREALLOCATED_VMS = []
+FILE_SIZE_IN_MB = 400
+THIN_VM_PARAMS = {
+    'clone': False,
+    'vol_sparse': True,
+    'vol_format': DISK_FORMAT_COW,
+}
+PREALLOCATED_VM_PARAMS = {
+    'clone': True,
+    'vol_sparse': False,
+    'vol_format': DISK_FORMAT_RAW,
+}
+DIRECT_LUN_ALIAS = 'virt_direct_lun_disk'
+DIRECT_LUN_KWARGS = {
+    "interface": INTERFACE_VIRTIO_SCSI,
+    "alias": DIRECT_LUN_ALIAS,
+    "type_": STORAGE_TYPE_ISCSI,
+    "lun_address": LUN_ADDRESS[0],
+    "lun_target": LUN_TARGET[0],
+    "lun_id": LUN[0],
+}
+NEW_LUN = 'sparsify_test_lun'
+NEW_LUN_SIZE = 50
+NEW_SD_NAME = "sparsify_test_%s_domain"
+NEW_SD = None
+NEW_DISKS_ALIAS = ["new_disk_sparsify_test_%s" % i for i in range(1, 3)]
+RUNNING_HOST = None
+RUNNING_HOST_RESOURCE = None
+COPY_DISK_TIMEOUT = 900
+NFS_VERSION_AUTO = 'auto'
+NFS_VERSION_4_2 = '4.2'
