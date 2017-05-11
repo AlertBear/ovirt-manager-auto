@@ -39,7 +39,7 @@ def prepare_setup_jumbo_frame(request):
         Remove networks from setup
         """
         assert hl_networks.remove_net_from_setup(
-            host=jumbo_frame.hosts_list, data_center=jumbo_frame.dc_0,
+            host=jumbo_frame.hosts_list[:2], data_center=jumbo_frame.dc_0,
             mgmt_network=jumbo_frame.mgmt_bridge, all_net=True
         )
     request.addfinalizer(fin2)
@@ -56,7 +56,7 @@ def prepare_setup_jumbo_frame(request):
         cluster=jumbo_frame.cluster_0
     )
 
-    for vm, host in zip(jumbo_frame.vms_list, jumbo_frame.hosts_list):
+    for vm, host in zip(jumbo_frame.vms_list, jumbo_frame.hosts_list[:2]):
         assert hl_vms.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )

@@ -111,7 +111,7 @@ def vm_prepare_setup(request):
     request.addfinalizer(fin1)
 
     for host, vm, temp_ip in zip(
-        rx_tx_state.hosts_list, vms_list, rx_tx_conf.VM_IPS
+        rx_tx_state.hosts_list[:2], vms_list, rx_tx_conf.VM_IPS
     ):
         testflow.setup("Add vNIC %s to VM %s", nic, vm)
         assert ll_vms.addNic(

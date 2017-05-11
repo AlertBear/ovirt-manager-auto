@@ -40,7 +40,9 @@ def migration_network_prepare_setup(request):
         Remove networks from setup
         """
         testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(hosts=mig.hosts_list)
+        assert network_helper.remove_networks_from_setup(
+            hosts=mig.hosts_list[:2]
+        )
     request.addfinalizer(fin)
 
     testflow.setup("Create networks on setup")

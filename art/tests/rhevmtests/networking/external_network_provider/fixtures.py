@@ -164,7 +164,7 @@ def deploy_ovn(request):
     ovn = NetworkFixtures()
 
     provider_server = conf.ENGINE_HOST
-    provider_driver_servers = ovn.vds_list
+    provider_driver_servers = ovn.vds_list[:2]
     all_servers = [provider_server] + provider_driver_servers
     results = list()
 

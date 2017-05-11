@@ -35,7 +35,8 @@ def port_mirroring_prepare_setup(request):
         """
         testflow.teardown("Remove networks from setup")
         hl_networks.remove_net_from_setup(
-            host=port_mirroring.hosts_list, data_center=port_mirroring.dc_0,
+            host=port_mirroring.hosts_list[:2],
+            data_center=port_mirroring.dc_0,
             all_net=True
         )
     request.addfinalizer(fin5)
@@ -99,7 +100,7 @@ def port_mirroring_prepare_setup(request):
 
         }
     }
-    for host_name in port_mirroring.hosts_list:
+    for host_name in port_mirroring.hosts_list[:2]:
         assert hl_host_network.setup_networks(host_name=host_name, **sn_dict)
 
     testflow.setup("Create vnic profiles with port mirroring")
