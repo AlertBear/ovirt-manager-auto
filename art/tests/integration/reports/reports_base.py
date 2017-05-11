@@ -27,6 +27,7 @@ class ReportsTest(TestCase):
         Args:
             machine (Host): host where service should be restarted
             service (str): service to restart
+            sleep_time (int): wait for number of seconds after restart
         """
         u_lib.testflow.step("Restarting %s service", service)
         assert machine.service(service).restart()

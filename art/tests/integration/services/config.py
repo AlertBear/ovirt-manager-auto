@@ -39,7 +39,7 @@ ENGINE_SERVICES = {
     'ovirt-imageio-proxy',
     'ovirt-vmconsole-proxy-sshd',
     'ovirt-websocket-proxy',
-    'ntpd'
+    'chronyd'
 }
 
 HOST_SERVICES = {
@@ -50,7 +50,7 @@ HOST_SERVICES = {
     'ovirt-imageio-daemon',
     'momd',
     'ovirt-vmconsole-host-sshd',
-    'ntpd'
+    'chronyd'
 }
 
 SERVICES = ENGINE_SERVICES.union(HOST_SERVICES)
@@ -66,7 +66,6 @@ ACTIONS = ('enabled', 'running', 'is-faultless')
 # Can't be in class scope
 # Python2 leaks the loop control variable
 BUGGED_SERVICES = {
-    'ntpd': '1428419',
     'momd': '1427066',
     'vdsmd': '1444087',
     'libvirtd': '1443965'

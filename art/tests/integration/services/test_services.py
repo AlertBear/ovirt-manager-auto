@@ -75,9 +75,9 @@ class TestServicesSanity(ServicesTest):
 
     polarion_map = {
         # engine tests ids
-        'test_engine_ntpd_running': 'RHEVM-19470',
-        'test_engine_ntpd_enabled': 'RHEVM-19471',
-        'test_engine_ntpd_is-faultless': 'RHEVM-19737',
+        'test_engine_chronyd_running': 'RHEVM-19470',
+        'test_engine_chronyd_enabled': 'RHEVM-19471',
+        'test_engine_chronyd_is-faultless': 'RHEVM-19737',
         'test_engine_ovirt-engine_running': 'RHEVM-19472',
         'test_engine_ovirt-engine_enabled': 'RHEVM-19473',
         'test_engine_ovirt-engine_is-faultless': 'RHEVM-19738',
@@ -97,9 +97,9 @@ class TestServicesSanity(ServicesTest):
         'test_engine_ovirt-websocket-proxy_enabled': 'RHEVM-19483',
         'test_engine_ovirt-websocket-proxy_is-faultless': 'RHEVM-19743',
         # rhel tests ids
-        'test_host_rhel_ntpd_running': 'RHEVM-19484',
-        'test_host_rhel_ntpd_enabled': 'RHEVM-19485',
-        'test_host_rhel_ntpd_is-faultless': 'RHEVM-19744',
+        'test_host_rhel_chronyd_running': 'RHEVM-19484',
+        'test_host_rhel_chronyd_enabled': 'RHEVM-19485',
+        'test_host_rhel_chronyd_is-faultless': 'RHEVM-19744',
         'test_host_rhel_vdsmd_running': 'RHEVM-19488',
         'test_host_rhel_vdsmd_enabled': 'RHEVM-19489',
         'test_host_rhel_vdsmd_is-faultless': 'RHEVM-19746',
@@ -122,9 +122,9 @@ class TestServicesSanity(ServicesTest):
         'test_host_rhel_ovirt-vmconsole-host-sshd_enabled': 'RHEVM-19513',
         'test_host_rhel_ovirt-vmconsole-host-sshd_is-faultless': 'RHEVM-19758',
         # rhevh tests ids
-        'test_host_rhvh_ntpd_running': 'RHEVM-19486',
-        'test_host_rhvh_ntpd_enabled': 'RHEVM-19487',
-        'test_host_rhvh_ntpd_is-faultless': 'RHEVM-19745',
+        'test_host_rhvh_chronyd_running': 'RHEVM-19486',
+        'test_host_rhvh_chronyd_enabled': 'RHEVM-19487',
+        'test_host_rhvh_chronyd_is-faultless': 'RHEVM-19745',
         'test_host_rhvh_vdsmd_running': 'RHEVM-19490',
         'test_host_rhvh_vdsmd_enabled': 'RHEVM-19491',
         'test_host_rhvh_vdsmd_is-faultless': 'RHEVM-19747',
