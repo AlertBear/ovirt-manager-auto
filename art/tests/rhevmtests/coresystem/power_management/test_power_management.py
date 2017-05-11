@@ -4,7 +4,6 @@ Power Management test
 import pytest
 import logging
 from copy import copy
-from rrmngmnt import Host, RootUser
 
 from art.rhevm_api.tests_lib.low_level import (
     vms, hosts as ll_hosts, events, disks
@@ -66,40 +65,35 @@ def _fence_host(positive, fence_type, timeout=config.FENCING_TIMEOUT):
     )
 
 
-def _move_host_to_up(host):
-    if not ll_hosts.is_host_up(True, host=host):
-        assert ll_hosts.activate_host(True, host=host)
-
-
-def _move_host_to_maintenance(host):
-    assert hosts.deactivate_host_if_up(host=host)
-
-
-def _block_outgoing_vdsm_port(host_num):
-    host_obj = Host(config.VDS_HOSTS[host_num].fqdn)
-    host_obj.users.append(RootUser(config.HOSTS_PW))
-    host_obj.executor().run_cmd(
-        ["iptables", "-A", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
-         "-j", "DROP"]
+def _block_outgoing_vdsm_port(host_num, testflow_func=testflow.setup):
+    cmd = [
+        "iptables", "-A", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
+        "-j", "DROP"
+    ]
+    testflow_func("Run cmd: %s", " ".join(cmd))
+    config.VDS_HOSTS[host_num].executor().run_cmd(cmd)
+    testflow_func(
+        "Wait for host %s to became non responsive", config.HOSTS[host_num]
     )
-    ll_hosts.wait_for_hosts_states(
+    assert ll_hosts.wait_for_hosts_states(
         True, config.HOSTS[host_num], config.HOST_NONRESPONSIVE
     )
 
 
-def _unblock_outgoing_vdsm_port(host_num):
-    host_obj = Host(config.VDS_HOSTS[host_num].fqdn)
-    host_obj.users.append(RootUser(config.HOSTS_PW))
-    host_obj.executor().run_cmd(
-        ["iptables", "-D", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
-         "-j", "DROP"]
-    )
-    ll_hosts.wait_for_hosts_states(True, config.HOSTS[host_num])
+def _unblock_outgoing_vdsm_port(host_num, testflow_func=testflow.teardown):
+    cmd = [
+        "iptables", "-D", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
+        "-j", "DROP"
+    ]
+    testflow_func("Run cmd: %s", " ".join(cmd))
+    config.VDS_HOSTS[host_num].executor().run_cmd(cmd)
+    testflow_func("Wait for host %s to be up", config.HOSTS[host_num])
+    assert ll_hosts.wait_for_hosts_states(True, config.HOSTS[host_num])
 
 
-def _add_power_management(host_num=0, **kwargs):
+def _add_power_management(host_num=0, testflow_func=testflow.setup, **kwargs):
     hostname = config.VDS_HOSTS[host_num].fqdn
-    testflow.setup("Get power management details of host %s", hostname)
+    testflow_func("Get power management details of host %s", hostname)
     host_pm = get_pm_details(hostname).get(hostname)
     if not host_pm:
         pytest.skip("The host %s does not have power management" % hostname)
@@ -111,13 +105,13 @@ def _add_power_management(host_num=0, **kwargs):
         "concurrent": False,
         "order": 1
     }
-    testflow.setup("Add power management to host %s", config.HOSTS[host_num])
+    testflow_func("Add power management to host %s", config.HOSTS[host_num])
     assert hosts.add_power_management(
         host_name=config.HOSTS[host_num], pm_agents=[agent], **kwargs
     )
 
 
-def _remove_power_management(host=None):
+def _remove_power_management(host=None, testflow_func=testflow.teardown):
     """
     Host variable can't be defined in parameters because with pytest
     it would be always None, since module setup goes after assignment
@@ -127,7 +121,7 @@ def _remove_power_management(host=None):
     """
     if not host:
         host = HOST_WITH_PM
-    testflow.teardown("Remove power management from host %s", host)
+    testflow_func("Remove power management from host %s", host)
     assert hosts.remove_power_management(host_name=host)
 
 
@@ -232,16 +226,14 @@ class FenceOnHost(TestCase):
     def setup_class(cls, request):
         def fin():
             _remove_power_management()
-            _move_host_to_up(HOST_WITH_PM)
+            hosts.activate_host_if_not_up(HOST_WITH_PM)
         request.addfinalizer(fin)
 
         _add_power_management()
         if cls.up:
-            testflow.setup("Move host %s up", HOST_WITH_PM)
-            _move_host_to_up(HOST_WITH_PM)
+            hosts.activate_host_if_not_up(HOST_WITH_PM)
         elif cls.maintenance:
-            testflow.setup("Move host %s to maintenance", HOST_WITH_PM)
-            _move_host_to_maintenance(HOST_WITH_PM)
+            hosts.deactivate_host_if_up(HOST_WITH_PM)
 
 
 @attr(tier=2, extra_reqs={'mgmt': True})
@@ -337,13 +329,10 @@ class FenceProxySelection(TestCase):
             hosts.move_host_to_another_cluster(HOST_2, config.CLUSTER_NAME[0])
             for host in cls.hosts_state:
                 if cls.hosts_state[host]["state"] == config.HOST_NONRESPONSIVE:
-                    testflow.teardown(
-                        "Unblock host %s connection to storage", host
-                    )
                     _unblock_outgoing_vdsm_port(
                         cls.hosts_state[host]["host_num"]
                     )
-                _move_host_to_up(host)
+                hosts.activate_host_if_not_up(host)
         request.addfinalizer(fin)
 
         if not cls.hosts_state:
@@ -364,15 +353,12 @@ class FenceProxySelection(TestCase):
         hosts.move_host_to_another_cluster(HOST_2, config.CLUSTER_NAME[1])
         for host in cls.hosts_state:
             if cls.hosts_state[host]["state"] == config.HOST_UP:
-                testflow.setup("Move host %s up", host)
-                _move_host_to_up(host)
+                hosts.activate_host_if_not_up(host)
             elif (
                 cls.hosts_state[host]["state"] == config.HOST_MAINTENANCE
             ):
-                testflow.setup("Move host %s to maintenance", host)
-                _move_host_to_maintenance(host)
+                hosts.deactivate_host_if_up(host)
             else:
-                testflow.setup("Move host %s to non operational", host)
                 _block_outgoing_vdsm_port(
                     cls.hosts_state[host]["host_num"]
                 )
