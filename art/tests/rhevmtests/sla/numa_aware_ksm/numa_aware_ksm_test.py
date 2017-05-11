@@ -8,7 +8,10 @@ import pytest
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion
-from rhevmtests.sla.fixtures import choose_specific_host_as_spm
+from rhevmtests.sla.fixtures import (
+    activate_hosts,
+    choose_specific_host_as_spm
+)
 
 host_as_spm = 2
 
@@ -40,12 +43,16 @@ def update_cluster_merge_across_nodes(request):
 
 
 @u_libs.attr(tier=2)
-@pytest.mark.usefixtures(choose_specific_host_as_spm.__name__)
+@pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
+    activate_hosts.__name__
+)
 class BaseNumaAwareKsm(u_libs.SlaTest):
     """
     Base class for all NUMA aware KSM tests
     """
     ksm_merge_across_nodes = None
+    hosts_to_activate_indexes = [0]
 
     @staticmethod
     def update_merge_across_nodes_parameter(ksm_merge_across_nodes):
