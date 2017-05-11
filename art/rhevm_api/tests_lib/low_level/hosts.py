@@ -2272,7 +2272,7 @@ def check_host_upgrade(host_name):
 
 
 def wait_for_hosted_engine_maintenance_state(
-    host_resource, enabled=True, timeout=180, sleep=10
+    host_resource, enabled=True, timeout=300, sleep=10
 ):
     """
     Wait until the hosted-engine host will have expected maintenance state
