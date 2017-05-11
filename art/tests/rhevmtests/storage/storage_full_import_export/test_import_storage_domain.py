@@ -65,6 +65,10 @@ class BaseTestCase(TestCase):
     """
     exclusive = 'true'
 
+    @pytest.mark.skipif(
+        not len(config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS),
+        reason="Not defined unused gluster domains"
+    )
     @polarion("RHEVM3-10951")
     @attr(tier=2)
     def test_import_export_storage_domain(self):
@@ -72,7 +76,6 @@ class BaseTestCase(TestCase):
         Import an export storage domain
         Import the vm
         """
-
         testflow.step("Import export domain %s", self.export_domain)
         assert ll_sd.addStorageDomain(
             True, host=self.spm, type=config.EXPORT_TYPE,
@@ -111,21 +114,27 @@ class BaseTestCase(TestCase):
 class TestCase10951_GLUSTER(BaseTestCase):
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
     storages = set([config.STORAGE_TYPE_GLUSTER])
+    gl_add = config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES
+    gl_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
+
     storage_domain_kwargs = {
             'storage_type': config.STORAGE_TYPE_GLUSTER,
             'vfs_type': config.ENUMS['vfs_type_glusterfs'],
-            'address': config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-            'path': config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
-        }
+            'address': gl_add[0] if len(gl_add) else None,
+            'path': gl_path[0] if len(gl_path) else None
+    }
 
 
 class TestCase10951_POSIX(BaseTestCase):
     # Since we don't run with POSIX make sure this test runs in NFS
     __test__ = config.STORAGE_TYPE_NFS in opts['storages']
     storages = set([config.STORAGE_TYPE_NFS])
+    gl_add = config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES
+    gl_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
+
     storage_domain_kwargs = {
             'storage_type': config.STORAGE_TYPE_POSIX,
             'vfs_type': config.STORAGE_TYPE_NFS,
-            'address': config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-            'path': config.UNUSED_DATA_DOMAIN_PATHS[0]
+            'address': gl_add[0] if len(gl_add) else None,
+            'path': gl_path[0] if len(gl_path) else None
         }
