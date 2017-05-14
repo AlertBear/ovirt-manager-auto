@@ -1010,12 +1010,15 @@ def destroy_storage_domain(sd_name, dc_name, host_name, engine):
     :return: True if successful, False otherwise
     :rtype: bool
     """
-    if deactivate_domain(dc_name, sd_name, engine=engine):
-        if ll_sd.removeStorageDomain(True, sd_name, host_name, destroy=True):
-            logger.info("Storage domain %s removed", sd_name)
-            return True
-        else:
-            logger.error("Failed to remove storage domain %s!", sd_name)
+    if ll_sd.is_storage_domain_active(
+        datacenter=dc_name, domain=sd_name
+    ):
+        deactivate_domain(dc_name, sd_name, engine=engine)
+    if ll_sd.removeStorageDomain(True, sd_name, host_name, destroy=True):
+        logger.info("Storage domain %s removed", sd_name)
+        return True
+    else:
+        logger.error("Failed to remove storage domain %s!", sd_name)
     return False
 
 

@@ -22,3 +22,8 @@ def setup_package():
         'lun_address': config.UNUSED_LUN_ADDRESSES[0],
         'lun_target':  config.UNUSED_LUN_TARGETS[0],
     })
+
+
+def teardown_package():
+    import rhevmtests.helpers as rhevm_helpers
+    rhevm_helpers.storage_cleanup()
