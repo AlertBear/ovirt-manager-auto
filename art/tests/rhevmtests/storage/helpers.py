@@ -70,6 +70,7 @@ LSBLK_CMD = 'lsblk -o NAME'
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
+PVS_SHOW_LUN_INFO = 'pvs 2>/dev/null | grep %s'
 FIND_CMD = 'test -e %s'
 ECHO_CMD = 'echo %s > %s'
 CREATE_FILE_CMD = 'touch %s/%s'
@@ -1861,3 +1862,53 @@ def get_logical_name_by_vdsm_client(
     if not parse_logical_name:
         logical_name = "/dev/" + logical_name
     return logical_name
+
+
+def get_lun_storage_info(lun_id):
+    """
+    Get the LUN size (in bytes) and LUN free space (in bytes) by using
+    the pvs command with an input LUN ID
+
+    Args:
+        lun_id (str): LUN ID to be queried
+
+    Returns:
+        tuple (int, int): The LUN size (in bytes), and the LUN free
+            space (in bytes)
+    """
+    host = ll_hosts.get_spm_host(config.HOSTS)
+    host_ip = ll_hosts.get_host_ip(host)
+    executor = rhevm_helpers.get_host_executor(
+        host_ip, config.VDC_ROOT_PASSWORD
+    )
+    # Execute 'pvscan' to display the latest volume info
+    storage_resources.pvscan(host)
+    logger.info("Executing command 'pvs | grep %s'", lun_id)
+    status, output, err = executor.run_cmd(
+        shlex.split(PVS_SHOW_LUN_INFO % lun_id)
+    )
+    if status:
+        logger.info(
+            "Status was False executing 'pvs | grep %s'. Err: %s",
+            lun_id, err
+        )
+        return 0, 0
+
+    # Format the output into the 6 expected display parameters (PV, VG,
+    # Format, LV Attributes, Physical size and Physical free size)
+    formatted_output = shlex.split(output)
+    logger.info(
+        "The output received when running pvs on LUN id %s is: %s"
+        % (lun_id, formatted_output)
+    )
+    # The 2nd last displayed data output is needed - Physical size
+    lun_size = formatted_output[-2]
+    lun_size = lun_size.replace("g", "")
+    lun_free_space = formatted_output[-1]
+    lun_free_space = lun_free_space.replace("g", "")
+    lun_size_bytes = float(lun_size) * config.GB
+    logger.info("The LUN size in bytes is '%s'", str(lun_size_bytes))
+    lun_free_bytes = float(lun_free_space) * config.GB
+    logger.info("The LUN free space in bytes is '%s'", str(lun_free_bytes))
+
+    return int(lun_size_bytes), int(lun_free_bytes)

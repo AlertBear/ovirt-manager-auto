@@ -159,14 +159,13 @@ def create_disks_fixture(request):
 @pytest.fixture(scope='class')
 def lun_size_calc(request):
     """
-    calculate lun size and free space
+    Calculate lun size and free space
     """
 
     self = request.node.cls
-    self.host_machine = storage_helpers.host_to_use()
 
     self.lun_size, self.lun_free_space = (
-        self.host_machine.get_lun_storage_info(config.EXTEND_LUN[0])
+        storage_helpers.get_lun_storage_info(config.EXTEND_LUN[0])
     )
     logger.info(
         "LUN size is '%s' and its free space is '%s'",

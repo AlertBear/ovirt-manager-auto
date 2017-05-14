@@ -21,6 +21,7 @@ from art.unittest_lib import attr, StorageTest as TestCase, testflow
 from rhevmtests.storage.fixtures import (
     delete_disks, create_storage_domain, remove_vms, remove_templates
 )
+from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage.storage_full_disk_sanity.fixtures import (
     check_initial_storage_domain_params, create_disks_fixture, lun_size_calc,
     create_2_vms_pre_disk_thin_disk,
@@ -130,7 +131,7 @@ class BaseCase(TestCase):
                 'Allocated size is: %s, expected is %s' %
                 (allocated_size, self.expected_allocated_size[domain])
             )
-            total_size = ll_sd.get_total_size(domain)
+            total_size = ll_sd.get_total_size(domain, config.DATA_CENTER_NAME)
             logger.info('total size for domain %s is %s', domain, total_size)
 
             size_difference = abs(
@@ -279,7 +280,7 @@ class TestCase11546(BaseCase):
                 ll_sd.get_allocated_size(domain)
             )
             self.current_total_size[domain] = (
-                ll_sd.get_total_size(domain)
+                ll_sd.get_total_size(domain, config.DATA_CENTER_NAME)
             )
             self.current_used_size[domain] = (
                 ll_sd.get_used_size(domain)
@@ -299,12 +300,14 @@ class TestCase11546(BaseCase):
             "There are less than %s unused Extend LUNs, aborting test" %
             MIN_UNUSED_LUNS
         )
-        current_sd_size = ll_sd.get_total_size(self.new_storage_domain)
+        current_sd_size = ll_sd.get_total_size(
+            self.new_storage_domain, config.DATA_CENTER_NAME
+        )
         logger.info("The current SD size is: '%s'", current_sd_size)
 
         extend_lun = config.EXTEND_LUNS.pop()
         lun_size_unused, lun_free_space_unused = (
-            self.host_machine.get_lun_storage_info(extend_lun["lun_list"][0])
+            storage_helpers.get_lun_storage_info(extend_lun["lun_list"][0])
         )
         logger.info("LUN size is '%s' and its free space is '%s'",
                     str(lun_size_unused), str(lun_free_space_unused))
@@ -323,12 +326,14 @@ class TestCase11546(BaseCase):
             self.current_total_size[self.new_storage_domain]
         )
 
-        extended_sd_size = ll_sd.get_total_size(self.new_storage_domain)
+        extended_sd_size = ll_sd.get_total_size(
+            self.new_storage_domain, config.DATA_CENTER_NAME
+        )
         logger.info("The updated SD size after the extend has completed is: "
                     "'%s'", extended_sd_size)
 
         lun_size_sd, lun_free_space_sd = (
-            self.host_machine.get_lun_storage_info(extend_lun["lun_list"][0])
+            storage_helpers.get_lun_storage_info(extend_lun["lun_list"][0])
         )
         logger.info("LUN size is '%s' and its free space is '%s'",
                     str(lun_size_sd), str(lun_free_space_sd))

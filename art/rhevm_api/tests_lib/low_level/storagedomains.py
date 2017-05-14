@@ -1081,14 +1081,22 @@ def get_allocated_size(storagedomain):
     return sdObj.get_committed()
 
 
-def get_total_size(storagedomain):
+def get_total_size(storagedomain, data_center=None):
     """
-    Description: Gets the total size of the storage domain (available + used)
-    Author: gickowic
-    Parameters:
-        * storagedomain - name of the storage domain
-    Returns: total size of the storage domain in bytes
+    Gets the total size of the storage domain (available + used)
+
+    Args:
+        storagedomain (str): Name of the storage domain
+        data_center (str): Name of the data center
+
+    Returns:
+        int: Total size of the storage domain in bytes, None in case of error
     """
+    if data_center is not None:
+        if not wait_for_storage_domain_available_size(
+            data_center, storagedomain
+        ):
+            return None
     sdObj = get_storage_domain_obj(storagedomain)
     return sdObj.get_available() + sdObj.get_used()
 
