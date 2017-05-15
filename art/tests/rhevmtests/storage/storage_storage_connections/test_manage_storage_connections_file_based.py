@@ -60,6 +60,7 @@ def initializer_module(request):
         )
 
 
+@attr(tier=config.DO_NOT_RUN)
 class TestCasePosix(TestCase):
     conn = None
     host = None

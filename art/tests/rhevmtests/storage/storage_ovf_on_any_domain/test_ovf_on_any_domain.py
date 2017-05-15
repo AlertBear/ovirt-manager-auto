@@ -140,6 +140,7 @@ def teardown_module():
                                            "teardown_module")
 
 
+@attr(tier=config.DO_NOT_RUN)
 class BasicEnvironment(BaseTestCase):
     """
     This class implements the common functions including the setUp and

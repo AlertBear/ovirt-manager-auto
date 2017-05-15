@@ -233,6 +233,7 @@ def _restore_empty_dc():
         )
 
 
+@attr(tier=config.DO_NOT_RUN)
 class TestCase(StorageTest):
     storages = set([config.STORAGE_TYPE_ISCSI])
     # Bugzilla history:

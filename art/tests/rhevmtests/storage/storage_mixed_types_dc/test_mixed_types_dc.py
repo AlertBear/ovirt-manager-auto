@@ -58,6 +58,7 @@ def setup_module():
     VM_ARGS['volumeFormat'] = config.DISK_FORMAT_COW
 
 
+@attr(tier=config.DO_NOT_RUN)
 class BaseCaseDCMixed(TestCase):
     """
     Base Case for building an environment with specific storage domains and

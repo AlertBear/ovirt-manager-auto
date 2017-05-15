@@ -183,6 +183,7 @@ def initializer_module(request):
             )
 
 
+@attr(tier=config.DO_NOT_RUN)
 class BaseTestCase(StorageTest):
     storages = set([ISCSI])
 

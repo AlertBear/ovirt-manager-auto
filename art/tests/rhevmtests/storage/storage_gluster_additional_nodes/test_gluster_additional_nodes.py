@@ -70,6 +70,7 @@ def teardown_module():
         )
 
 
+@attr(tier=config.DO_NOT_RUN)
 class BaseGlusterMount(BaseTestCase):
     """
     Base class for the implementation of all tests

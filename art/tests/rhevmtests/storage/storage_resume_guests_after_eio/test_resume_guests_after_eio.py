@@ -35,6 +35,7 @@ def _wait_for_vm_booted(
     )
 
 
+@attr(tier=config.DO_NOT_RUN)
 class TestResumeGuests(TestCase):
     __test__ = False
     remove_file = False
