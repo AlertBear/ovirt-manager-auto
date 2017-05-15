@@ -70,7 +70,7 @@ class SNMPTestTemplate(TestCase):
             else:
                 return letter
 
-        return "".join(map(helper, cls.__name__[4:-5])).lstrip("_")
+        return "".join(map(helper, cls.__name__[4:])).lstrip("_")
 
     @classmethod
     def init_config_file_name(cls):
