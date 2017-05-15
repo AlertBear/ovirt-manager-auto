@@ -2671,7 +2671,7 @@ def createVm(
     watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
     numa_mode=None, ballooning=None, memory_guaranteed=None,
     initialization=None, cpu_shares=None, serial_number=None,
-    max_memory=None
+    max_memory=None, **kwargs
 ):
     """
     Create new vm with nic, disk and OS
@@ -2780,6 +2780,8 @@ def createVm(
     :type max_memory: int
     :returns: True, if create vm success, otherwise False
     :rtype: bool
+    :param kwargs: additional params supported by addVm method.
+    :type kwargs: dict
     """
     if not vmDescription:
         vmDescription = vmName
@@ -2800,7 +2802,7 @@ def createVm(
         ballooning=ballooning, memory_guaranteed=memory_guaranteed,
         initialization=initialization, cpu_shares=cpu_shares,
         serial_number=serial_number, placement_hosts=placement_hosts,
-        max_memory=max_memory
+        max_memory=max_memory, **kwargs
     ):
         return False
 
