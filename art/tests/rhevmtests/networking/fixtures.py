@@ -21,10 +21,12 @@ class NetworkFixtures(object):
     def __init__(self):
         conf.VDS_0_HOST = conf.VDS_HOSTS[0]
         conf.VDS_1_HOST = conf.VDS_HOSTS[1]
-        conf.VDS_2_HOST = conf.VDS_HOSTS[2]
+        conf.VDS_2_HOST = (
+            conf.VDS_HOSTS[2] if len(conf.VDS_HOSTS) > 2 else None
+        )
         conf.HOST_0_NAME = conf.HOSTS[0]
         conf.HOST_1_NAME = conf.HOSTS[1]
-        conf.HOST_2_NAME = conf.HOSTS[2]
+        conf.HOST_2_NAME = conf.HOSTS[2] if len(conf.HOSTS) > 2 else None
         conf.HOST_0_IP = conf.VDS_0_HOST.ip
         conf.HOST_1_IP = conf.VDS_1_HOST.ip
         conf.HOST_0_NICS = conf.VDS_0_HOST.nics
@@ -32,12 +34,16 @@ class NetworkFixtures(object):
         self.vds_0_host = conf.VDS_0_HOST
         self.vds_1_host = conf.VDS_1_HOST
         self.vds_2_host = conf.VDS_2_HOST
-        self.vds_list = [self.vds_0_host, self.vds_1_host, self.vds_2_host]
+        self.vds_list = [
+            v for v in [self.vds_0_host, self.vds_1_host, self.vds_2_host]
+            if v
+        ]
         self.host_0_name = conf.HOST_0_NAME
         self.host_1_name = conf.HOST_1_NAME
         self.host_2_name = conf.HOST_2_NAME
         self.hosts_list = [
-            self.host_0_name, self.host_1_name, self.host_2_name
+            h for h in [self.host_0_name, self.host_1_name, self.host_2_name]
+            if h
         ]
         self.host_0_ip = conf.HOST_0_IP
         self.host_1_ip = conf.HOST_1_IP
