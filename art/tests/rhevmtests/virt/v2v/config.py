@@ -33,7 +33,7 @@ KVM_RHEL_7 = 'test_v2v_rhel_7_2_automation_kvm'
 KVM_USERNAME = VDC_ROOT_USER
 KVM_PASSWORD = VDC_ROOT_PASSWORD
 KVM_PROVIDER = 'kvm'
-KVM_URL = "qemu+tcp://root@alma01.qa.lab.tlv.redhat.com/system?no_verify=0"
+KVM_URL = "qemu+tcp://root@compute-kvm-env.scl.lab.tlv.redhat.com/system"
 VIRTIO_WIN_DRIVER = 'virtio-win-1.8.0.iso'
 
 # Configuration for VMs imported from the external provider
@@ -72,7 +72,7 @@ EXTERNAL_VM_CONFIGURATIONS = {
         "sockets": 2,
         "cores": 1,
         "threads": 1,
-        "disk_size": global_helper.get_gb(5),
+        "disk_size": global_helper.get_gb(8),
         'nic_mac_address': {
             'start': '',
             'end': ''
