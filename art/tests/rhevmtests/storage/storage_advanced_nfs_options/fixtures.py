@@ -29,35 +29,39 @@ def initializer_class(request):
     self = request.node.cls
 
     def finalizer():
-        logger.info("Cleanup - removing storage domains")
-        results = list()
-        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
-        with ThreadPoolExecutor(
-            max_workers=len(self.sds_for_cleanup)
-        ) as executor:
-            for storage_domain in self.sds_for_cleanup:
-                testflow.teardown("Removing storage domain %s", storage_domain)
-                if ll_sd.checkIfStorageDomainExist(True, storage_domain):
-                    results.append(
-                        executor.submit(
-                            hl_sd.remove_storage_domain,
-                            storage_domain, config.DATA_CENTER_NAME,
-                            self.host, engine=config.ENGINE, format_disk=True
-                        )
+        if self.sds_for_cleanup:
+            logger.info("Cleanup - removing storage domains")
+            results = list()
+            test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
+            with ThreadPoolExecutor(
+                max_workers=len(self.sds_for_cleanup)
+            ) as executor:
+                for storage_domain in self.sds_for_cleanup:
+                    testflow.teardown(
+                        "Removing storage domain %s", storage_domain
                     )
-        for index, result in enumerate(results):
-            if result.exception():
-                raise result.exception()
-            if not result.result:
-                raise exceptions.HostException(
-                    "Remove storage domain %s failed." %
+                    if ll_sd.checkIfStorageDomainExist(True, storage_domain):
+                        results.append(
+                            executor.submit(
+                                hl_sd.remove_storage_domain,
+                                storage_domain, config.DATA_CENTER_NAME,
+                                self.host, engine=config.ENGINE,
+                                format_disk=True
+                            )
+                        )
+            for index, result in enumerate(results):
+                if result.exception():
+                    raise result.exception()
+                if not result.result:
+                    raise exceptions.HostException(
+                        "Remove storage domain %s failed." %
+                        self.sds_for_cleanup[index]
+                    )
+                logger.info(
+                    "Remove storage domain %s succeeded",
                     self.sds_for_cleanup[index]
                 )
-            logger.info(
-                "Remove storage domain %s succeeded",
-                self.sds_for_cleanup[index]
-            )
-        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
+            ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
     request.addfinalizer(finalizer)
     self.sds_for_cleanup = []
     self.host = ll_hosts.get_spm_host(config.HOSTS)

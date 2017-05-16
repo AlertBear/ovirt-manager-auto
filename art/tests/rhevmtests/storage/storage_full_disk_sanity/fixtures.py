@@ -61,10 +61,10 @@ def poweroff_vm_and_wait_for_stateless_to_remove(request):
         assert ll_vms.stop_vms_safely([self.vm_name]), (
             "Failed to power off VM %s", self.vm_name
         )
-        ll_vms.wait_for_vm_snapshots(self.vm_name, [config.SNAPSHOT_OK])
         ll_vms.wait_for_snapshot_gone(
             self.vm_name, STATELESS_SNAPSHOT_DESCRIPTION,
         )
+        ll_vms.wait_for_vm_snapshots(self.vm_name, [config.SNAPSHOT_OK])
     request.addfinalizer(finalizer)
 
 

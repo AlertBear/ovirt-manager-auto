@@ -314,7 +314,6 @@ class TestCase5938(DirectLunAttachTestCase):
     """
     Direct LUN as bootable disk
     """
-    __test__ = True
     polarion_test_case = '5938'
     # parameters needed to create_VM fixture to create a VM without disks
     installation = False
@@ -328,9 +327,9 @@ class TestCase5938(DirectLunAttachTestCase):
         2) Start VM
         """
         self.lun_kwargs["bootable"] = True
-        self.attach_disk_to_vm(
-            bootable=True
-        ), "Failed to add direct LUN with bootable attribute set to 'true'"
+        self.attach_disk_to_vm(bootable=True), (
+            "Failed to add direct LUN with bootable attribute set to 'true'"
+        )
         assert ll_vms.startVm(True, self.vm_name, config.VM_UP), (
             "Failed to start VM %s" % self.vm_name
         )

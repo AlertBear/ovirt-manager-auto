@@ -217,33 +217,6 @@ class TestCase16741(TestCase):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    add_disk.__name__,
-    delete_disk.__name__,
-)
-class TestCase16742(TestCase):
-    """
-    Attach read only disk to VM with IDE interface - should fail
-    """
-    __test__ = True
-    installation = False
-
-    @polarion("RHEVM3-16742")
-    @attr(tier=3)
-    def test_attach_read_only_disk_with_ide(self):
-        """
-        Attach read only disk to VM with IDE interface
-        """
-        assert ll_disks.attachDisk(
-            False, self.disk_name, self.vm_name, read_only=True,
-            interface=config.IDE
-        ), (
-            "Succeeded to attach disk %s to VM %s as read-only with IDE "
-            "interface" % (self.disk_name, self.vm_name)
-        )
-
-
-@pytest.mark.usefixtures(
-    create_vm.__name__,
     create_snapshot.__name__,
     create_second_vm.__name__
 )

@@ -520,7 +520,7 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
             self.host_ip, target
         )
         storage_helpers.wait_for_disks_and_snapshots(
-              self.vm_name, live_operation=config.LIVE_MOVE
+            self.vm_name, live_operation=config.LIVE_MOVE
         )
         unsetisfied_disks = self.verify_cold_move(
             source_sd=self.storage_domain, moved=migration_succeed

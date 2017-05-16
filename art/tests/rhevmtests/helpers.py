@@ -649,6 +649,9 @@ def maintenance_and_activate_hosts():
     logger.info("Deactivating hosts %s", config.HOSTS)
 
     for host, resource in zip(config.HOSTS, config.VDS_HOSTS):
+        wait_for_tasks(
+            config.ENGINE, config.DATA_CENTER_NAME
+        )
         assert hl_hosts.deactivate_host_if_up(host, resource), (
             "Failed to deactivate host %s" % host
         )
