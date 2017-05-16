@@ -135,6 +135,7 @@ class TestCaseCluster(TestCase):
             max=1
         )
 
+    @bz({"1451390": {}})
     @attr(tier=1)
     def test_update_cluster_name(self):
         """

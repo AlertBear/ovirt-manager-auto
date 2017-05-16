@@ -6,6 +6,7 @@ test_data_centers
 
 import logging
 
+from art.test_handler.tools import bz
 from art.unittest_lib import (
     attr, testflow,
     CoreSystemTest as TestCase
@@ -73,6 +74,7 @@ class TestCaseDataCenter(TestCase):
             version=comp_version
         )
 
+    @bz({"1451390": {}})
     @attr(tier=1)
     def test_update_data_center_name_and_description(self):
         """
