@@ -115,7 +115,7 @@ def create_vm_for_load(request):
         assert hl_vms.run_vm_once_specific_host(
             vm=config.MIGRATION_VM,
             host=config.HOSTS[0],
-            wait_for_ip=True
+            wait_for_up_status=True
         )
     request.addfinalizer(fin)
 
