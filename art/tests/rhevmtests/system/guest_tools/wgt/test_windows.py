@@ -181,14 +181,14 @@ class Windows(TestCase):
 
     def check_guest_os(self):
         """ Check guest OS info is reported """
-        vm = ll_vms.get_vm(self.vm_name)
+        guest_os = None
         for sample in TimeoutingSampler(
             config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
-            lambda: vm.get_guest_operating_system() is not None
+            ll_vms.get_vm_obj, self.vm_name, all_content=True
         ):
-            if sample:
+            guest_os = sample.get_guest_operating_system()
+            if guest_os:
                 break
-        guest_os = vm.get_guest_operating_system()
         logger.info("Guest '%s' os info:", self.vm_name)
         logger.info("Architecture: '%s'", guest_os.get_architecture())
         logger.info("Codename: '%s'", guest_os.get_codename())
@@ -210,14 +210,14 @@ class Windows(TestCase):
 
     def check_guest_timezone(self):
         """ Check guest timezone is reported """
-        vm = ll_vms.get_vm(self.vm_name)
+        guest_timezone = None
         for sample in TimeoutingSampler(
             config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
-            lambda: vm.get_guest_time_zone() is not None
+            ll_vms.get_vm_obj, self.vm_name, all_content=True
         ):
-            if sample:
+            guest_timezone = sample.get_guest_time_zone()
+            if guest_timezone:
                 break
-        guest_timezone = vm.get_guest_time_zone()
         logger.info(
             "Guest timezone name is '%s', offset: '%s'",
             guest_timezone.get_name(),
