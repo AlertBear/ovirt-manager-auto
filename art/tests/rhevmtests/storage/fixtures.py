@@ -525,11 +525,12 @@ def remove_storage_domain(request):
     self = request.node.cls
 
     def finalizer():
+        self.spm = getattr(self, 'spm', ll_hosts.get_spm_host(config.HOSTS))
         if ll_sd.checkIfStorageDomainExist(True, self.storage_domain):
             testflow.teardown("Remove storage domain %s", self.storage_domain)
             assert hl_sd.remove_storage_domain(
                 self.storage_domain, config.DATA_CENTER_NAME,
-                config.HOSTS[0], engine=config.ENGINE, format_disk=True
+                host=self.spm, engine=config.ENGINE, format_disk=True
             ), ("Failed to remove storage domain %s", self.storage_domain)
     request.addfinalizer(finalizer)
     self.storage_domain = None
