@@ -10,7 +10,7 @@ import logging
 import pytest
 
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenters,
     disks as ll_disks,
@@ -174,7 +174,6 @@ class BaseTestCase(TestCase):
         TestCase.teardown_exception()
 
 
-@bz({'1448606': {}})
 class TestCase16405(BaseTestCase):
     """
     Create a template with QCOW2 format disks
@@ -201,7 +200,6 @@ class TestCase16405(BaseTestCase):
         )
 
 
-@bz({'1448606': {}})
 class TestCase16407(BaseTestCase):
     """
     Create a VM from a QCOW2 template as QCOW2
@@ -237,7 +235,6 @@ class TestCase16407(BaseTestCase):
         )
 
 
-@bz({'1448606': {}})
 class TestCase16408(BaseTestCase):
     """
     Create a VM from QCOW2 template as RAW
