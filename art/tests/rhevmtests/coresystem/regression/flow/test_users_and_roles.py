@@ -40,6 +40,8 @@ class TestCaseUserAndRoles(TestCase):
                 positive=True,
                 user=config.USER_NAME
             )
+        request.addfinalizer(finalize)
+
         testflow.setup("Adding user for perform tests.")
         ll_users.addExternalUser(
             positive=True,
