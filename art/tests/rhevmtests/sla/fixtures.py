@@ -648,7 +648,7 @@ def stop_host_network(request):
 
     u_libs.testflow.setup("Stop network service on the host %s", host_name)
     try:
-        host_resource.service("network").stop()
+        host_resource.network.if_down(nic=sla_config.MGMT_BRIDGE)
     except socket.timeout as ex:
         logger.warning("Host unreachable, %s", ex)
     u_libs.testflow.teardown(

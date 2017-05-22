@@ -3,9 +3,10 @@ Power saving with power management test fixtures
 """
 import time
 
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.unittest_lib as u_lib
-import pytest
 import rhevmtests.sla.config as conf
 
 
@@ -60,7 +61,7 @@ def disable_host_policy_control_flag(request):
         )
         assert ll_hosts.update_host(
             positive=True,
-            host=conf.HOSTS[1],
+            host=conf.HOSTS[2],
             pm=True,
             pm_automatic=True
         )
@@ -71,7 +72,7 @@ def disable_host_policy_control_flag(request):
     )
     assert ll_hosts.update_host(
         positive=True,
-        host=conf.HOSTS[1],
+        host=conf.HOSTS[2],
         pm=True,
         pm_automatic=False
     )

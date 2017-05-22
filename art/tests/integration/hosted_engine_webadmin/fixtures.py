@@ -33,6 +33,10 @@ def initialize_ge_constants():
         if not ll_hosts.is_hosted_engine_configured(conf.HOSTS[0]):
             pytest.skip("GE does not configured as HE environment")
     conf.VDS_HOSTS = [resources.VDS(h, conf.HOSTS_PW) for h in conf.HOSTS_IP]
+    conf.INIT_HE_VM_CPUS = ll_vms.get_vm_processing_units_number(
+        vm_name=conf.HE_VM_NAME
+    )
+    conf.EXPECTED_CPUS = 2 * conf.INIT_HE_VM_CPUS
 
 
 @pytest.fixture(scope="module")
@@ -129,12 +133,12 @@ def update_he_vm_cpus_back(request):
     """
     def fin():
         test_libs.testflow.teardown(
-            "Update the HE VM CPU's to %s", conf.DEFAULT_CPUS_VALUE
+            "Update the HE VM CPU's to %s", conf.INIT_HE_VM_CPUS
         )
         ll_vms.updateVm(
             positive=True,
             vm=conf.HE_VM_NAME,
-            cpu_socket=conf.DEFAULT_CPUS_VALUE,
+            cpu_socket=conf.INIT_HE_VM_CPUS,
             cpu_cores=1
         )
         test_libs.testflow.teardown("Apply new parameters on the HE VM")
@@ -217,3 +221,17 @@ def add_nic_to_he_vm(request):
         plugged=True,
         linked=True
     )
+
+
+@pytest.fixture(scope="class")
+def not_enough_cpus_skip_test():
+    """
+    Skip the test if the host where runs HE VM does not have enough CPU's
+    """
+    he_vm_host = ll_vms.get_vm_host(vm_name=conf.HE_VM_NAME)
+    he_vm_host_cpus = (
+        ll_hosts.get_host_sockets(host_name=he_vm_host) *
+        ll_hosts.get_host_cores(host_name=he_vm_host)
+    )
+    if he_vm_host_cpus < conf.EXPECTED_CPUS:
+        pytest.skip("Host %s does not have enough CPU's" % he_vm_host)

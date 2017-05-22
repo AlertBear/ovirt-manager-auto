@@ -137,3 +137,4 @@ HE_STORAGE_NAME = "hosted_storage"
 STORAGE_TYPE = PARAMETERS.get("storage_type")
 
 HA_VM_NAME = "golden_env_mixed_virtio_0"
+MGMT_BRIDGE = PARAMETERS.get('mgmt_bridge')

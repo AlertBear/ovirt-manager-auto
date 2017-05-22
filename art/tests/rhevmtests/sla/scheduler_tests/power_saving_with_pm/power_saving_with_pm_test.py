@@ -7,12 +7,14 @@ import copy
 import socket
 import time
 
+import pytest
+
+import helpers
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_lib
-import pytest
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
@@ -34,7 +36,7 @@ from rhevmtests.sla.fixtures import (  # noqa: F401
 from rhevmtests.sla.scheduler_tests.fixtures import load_hosts_cpu
 
 host_as_spm = 0
-he_dst_host = 0
+he_dst_host = 1
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -196,7 +198,6 @@ class TestSPMHostNotKilledByPolicy(PowerSavingWithPMFixtures):
     """
     Test that SPM host does not powered off by the engine
     """
-    __test__ = True
     vms_to_run = conf.VMS_TO_RUN_0
     hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
     host_down = 2
@@ -215,7 +216,6 @@ class TestHostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPMFixtures):
     """
     Test that the engine shutdown the host without CPU load
     """
-    __test__ = True
     vms_to_run = conf.VMS_TO_RUN_0
     hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
     host_down = 2
@@ -235,8 +235,7 @@ class TestHostStartedByPowerManagement(PowerSavingWithPMFixtures):
     Test that the engine start a host,
     when a user increases the HostsInReserve parameter
     """
-    __test__ = True
-    vms_to_run = conf.VMS_TO_RUN_1
+    vms_to_run = conf.VMS_TO_RUN_0
     hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
     host_down = 2
 
@@ -248,6 +247,11 @@ class TestHostStartedByPowerManagement(PowerSavingWithPMFixtures):
         """
         self._wait_for_host_shutdown_and_check_host_state(
             host_name=conf.HOSTS[2], host_state=conf.HOST_DOWN
+        )
+        assert helpers.wait_for_host_pm_state(
+            pm_command_executor=conf.VDS_HOSTS[1],
+            host_resource=conf.VDS_HOSTS[2],
+            expected_state=conf.POWER_MANAGEMENT_STATE_OFF
         )
         self._wait_for_all_hosts_state_up()
 
@@ -264,13 +268,12 @@ class TestCheckPolicyControlOfPowerManagementFlag(BasePowerSavingWithPM):
     Test that the engine does not power off host with
     the disabled 'policy_control_flag'
     """
-    __test__ = True
     vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0}}
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: conf.POLICY_POWER_SAVING,
         conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_WITH_PM_PARAMS
     }
-    host_down = 2
+    host_down = 1
 
     @polarion("RHEVM3-5579")
     def test_disable_policy_control_flag(self):
@@ -279,16 +282,15 @@ class TestCheckPolicyControlOfPowerManagementFlag(BasePowerSavingWithPM):
         the disabled 'policy_control_flag'
         """
         u_lib.testflow.step(
-            "Wait until one of hosts will have state %s", conf.HOST_DOWN
+            "Wait until host %s will have state %s",
+            conf.HOSTS[2], conf.HOST_DOWN
         )
-        assert self._wait_for_hosts_with_state(
-            num_of_hosts=1, hosts_state=conf.HOST_DOWN
+        assert not ll_hosts.wait_for_hosts_states(
+            positive=True,
+            names=conf.HOSTS[2],
+            states=conf.HOST_DOWN,
+            timeout=conf.SHORT_BALANCE_TIMEOUT
         )
-        u_lib.testflow.step(
-            "Check that the host %s has state %s",
-            conf.HOSTS[1], conf.HOST_UP
-        )
-        assert self._check_host_state(host=conf.HOSTS[1], state=conf.HOST_UP)
 
 
 @pytest.mark.usefixtures(stop_vms.__name__)
@@ -296,8 +298,7 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPMFixtures):
     """
     Test that the engine start a host, when no hosts left in reserve
     """
-    __test__ = True
-    vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0}}
+    vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 1}}
     vms_to_stop = [conf.VM_NAME[1]]
 
     @polarion("RHEVM3-5576")
@@ -311,13 +312,16 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPMFixtures):
         assert self._wait_for_hosts_with_state(
             num_of_hosts=1, hosts_state=conf.HOST_DOWN
         )
-        host_status = ll_hosts.get_host_status(conf.HOSTS[1]) == conf.HOST_UP
-        host_up = conf.HOSTS[1] if host_status else conf.HOSTS[2]
+        assert helpers.wait_for_host_pm_state(
+            pm_command_executor=conf.VDS_HOSTS[1],
+            host_resource=conf.VDS_HOSTS[2],
+            expected_state=conf.POWER_MANAGEMENT_STATE_OFF
+        )
         u_lib.testflow.step(
-            "Run once VM %s on the host %s", conf.VM_NAME[1], host_up
+            "Run once VM %s on the host %s", conf.VM_NAME[1], conf.HOSTS[0]
         )
         assert ll_vms.runVmOnce(
-            positive=True, vm=conf.VM_NAME[1], host=host_up
+            positive=True, vm=conf.VM_NAME[1], host=conf.HOSTS[0]
         )
         u_lib.testflow.step(
             "Wait until all hosts will have state %s", conf.HOST_UP
@@ -332,7 +336,6 @@ class TestNoExcessHosts(PowerSavingWithPMFixtures):
     Test that the engine does not shutdown a host,
     when it does not have hosts in reserve
     """
-    __test__ = True
     vms_to_run = dict(
         (conf.VM_NAME[i], {conf.VM_RUN_ONCE_HOST: i}) for i in xrange(3)
     )
@@ -365,7 +368,6 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
     """
     Test that the engine power on another host if reserved host died
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {conf.VM_HIGHLY_AVAILABLE: True}
     }
@@ -384,19 +386,24 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
         self._wait_for_host_shutdown_and_check_host_state(
             host_name=conf.HOSTS[2], host_state=conf.HOST_DOWN
         )
+        assert helpers.wait_for_host_pm_state(
+            pm_command_executor=conf.VDS_HOSTS[1],
+            host_resource=conf.VDS_HOSTS[2],
+            expected_state=conf.POWER_MANAGEMENT_STATE_OFF
+        )
         u_lib.testflow.step("Stop network on the host %s", conf.HOSTS[1])
         try:
-            conf.VDS_HOSTS[1].service("network").stop()
+            conf.VDS_HOSTS[0].network.if_down(nic=conf.MGMT_BRIDGE)
         except socket.timeout:
             pass
 
         u_lib.testflow.step(
             "Wait until the host %s will have %s state",
-            conf.HOSTS[1], conf.HOST_NONRESPONSIVE
+            conf.HOSTS[0], conf.HOST_NONRESPONSIVE
         )
         assert ll_hosts.wait_for_hosts_states(
             positive=True,
-            names=conf.HOSTS[1],
+            names=conf.HOSTS[0],
             states=conf.HOST_NONRESPONSIVE
         )
 
@@ -422,7 +429,6 @@ class TestHostStoppedByUser(BasePowerSavingWithPM):
     """
     Test that the engine does not start host that was shutdown by user
     """
-    __test__ = True
     vms_to_run = conf.VMS_TO_RUN_1
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: conf.POLICY_POWER_SAVING,

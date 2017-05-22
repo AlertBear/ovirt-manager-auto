@@ -15,6 +15,7 @@ from fixtures import (
     create_network,
     initialize_ge_constants,
     init_he_webadmin,
+    not_enough_cpus_skip_test,
     update_he_vm,
     update_he_vm_cpus_back,
     wait_for_ovf_and_restart_he_vm
@@ -35,6 +36,7 @@ class TestUpdateHeVmMemory(u_libs.SlaTest):
     """
     he_params = {
         "memory": conf.EXPECTED_MEMORY,
+        conf.VM_MEMORY_GUARANTEED: conf.EXPECTED_MEMORY,
         conf.MAX_MEMORY: conf.HE_VM_MAX_MEMORY
     }
 
@@ -56,6 +58,7 @@ class TestUpdateHeVmMemory(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_webadmin.__name__,
+    not_enough_cpus_skip_test.__name__,
     update_he_vm.__name__,
     update_he_vm_cpus_back.__name__
 )
@@ -97,7 +100,7 @@ class TestHotPlugAndUnplugCpus(u_libs.SlaTest):
         """
         1) Check CPU hot unplug
         """
-        self.update_and_check_cpus(sockets=conf.DEFAULT_CPUS_VALUE)
+        self.update_and_check_cpus(sockets=conf.INIT_HE_VM_CPUS)
 
 
 @u_libs.attr(tier=2)

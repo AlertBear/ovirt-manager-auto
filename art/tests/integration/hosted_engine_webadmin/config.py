@@ -83,9 +83,11 @@ MAINTENANCE_GLOBAL = "global"
 # Test constants
 ADDITIONAL_HE_VM_NIC_NAME = "eth1"
 EXPECTED_MEMORY = 8 * GB
-EXPECTED_CPUS = 4
-DEFAULT_CPUS_VALUE = 2
+EXPECTED_CPUS = None
 TEST_NETWORK = "test_network"
 
 MAX_MEMORY = "max_memory"
+VM_MEMORY_GUARANTEED = "memory_guaranteed"
 HE_VM_MAX_MEMORY = 16 * GB
+
+INIT_HE_VM_CPUS = None

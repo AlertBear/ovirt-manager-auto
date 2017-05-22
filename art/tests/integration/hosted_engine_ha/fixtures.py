@@ -218,7 +218,7 @@ def stop_network_on_host_with_he_vm(request):
 
     u_libs.testflow.setup("%s: stop network service", test_class.he_vm_host)
     try:
-        test_class.he_vm_host.service("network").stop()
+        test_class.he_vm_host.network.if_down(nic=conf.MGMT_BRIDGE)
     except socket.timeout as ex:
         logger.debug("Host unreachable, %s", ex)
 
