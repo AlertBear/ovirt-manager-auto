@@ -44,8 +44,8 @@ TEST_IMAGES = {
     },
 }
 
-INSTALL_TIMEOUT = PARAMETERS.get('install_timeout', 480)
-TIMEOUT = PARAMETERS.get('timeout', 320)
+GAINSTALLED_TIMEOUT = 60
+GAHOOKS_TIMEOUT = 60
 AGENT_SERVICE_NAME = 'ovirt-guest-agent'
 UPSTREAM = 'ovirt' in PRODUCT_NAME.lower()
 

@@ -1,7 +1,6 @@
 """
 Sanity test of guest agent of rhel 7 64b
 """
-import shlex
 import pytest
 
 from art.test_handler.tools import polarion
@@ -62,28 +61,6 @@ class RHEL7GATest(common.GABaseTestCase):
         assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
-    def _check_guestIP(self):
-        ip = [
-            'ifconfig', '|',
-            'grep', '-Eo', 'inet [0-9\.]+', '|',
-            'cut', '-d', ' ', '-f2',
-        ]
-        cmd = shlex.split(
-            "%s %s | egrep %s | grep -Po '(?<== ).*'" % (
-                self.stats, self.vm_id, 'guestIPs'
-            )
-        )
-        ip_list = self._run_cmd_on_hosts_vm(cmd, self.disk_name).split(' ')
-
-        testflow.step("Check that IP reported is correct")
-        for iface in self.get_ifaces():
-            ip.insert(1, iface['name'])
-            rc, ip_real, err = self.machine.executor().run_cmd(ip)
-            ip_real = ip_real.strip()
-            assert ip_real in ip_list, (
-                "Guest IP '%s' is not in IP list '%s'" % (ip_real, ip_list)
-            )
-
 
 @attr(tier=2)
 class TestRHEL764bGATest(RHEL7GATest):
@@ -114,13 +91,6 @@ class TestRHEL764bGATest(RHEL7GATest):
     def test_post_install(self):
         """ RHEL7_1_64b rhevm-guest-agent post-install """
         self.post_install([self.cmd_chkconf])
-        testflow.step("Check that there are open virtio ports")
-        rc, out, err = self.machine.executor().run_cmd([
-            'stat', '-L', '/dev/virtio-ports/*rhevm*',
-            '|', 'grep', 'Uid',
-            '|', 'grep', '660'
-        ])
-        assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
             testflow.step("Check tuned profile")
             rc, out, err = self.machine.executor().run_cmd([

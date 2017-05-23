@@ -1,20 +1,18 @@
-import ast
 import logging
-import shlex
-import re
 import pytest
+import re
 
+from art.core_api.apis_exceptions import APITimeout
 from art.core_api.apis_utils import TimeoutingSampler
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.rhevm_api.resources import Host, RootUser, VDS
 from art.rhevm_api.tests_lib.low_level import (
-    vms, storagedomains, hosts, disks, clusters
+    clusters, disks, hosts, storagedomains, vms
 )
 from art.rhevm_api.utils import test_utils
+from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import testflow
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
-
-from art.rhevm_api.resources import Host, RootUser
 
 VM_API = test_utils.get_api('vm', 'vms')
 HOST_API = test_utils.get_api('host', 'hosts')
@@ -97,8 +95,6 @@ def prepare_vms(vm_disks):
 
 class GABaseTestCase(TestCase):
     """ Base class handles preparation of glance image """
-    stats = 'vdsClient -s 0 getVmStats'
-
     @pytest.fixture(scope="function")
     def clean_after_hooks(self, request):
         def fin():
@@ -148,7 +144,7 @@ class GABaseTestCase(TestCase):
         ), "Failed to install '%s' on machine '%s'" % (package, self.machine)
         testflow.step("Starting %s service", config.AGENT_SERVICE_NAME)
         self.machine.service(config.AGENT_SERVICE_NAME).start()
-        vms.wait_for_vm_ip(self.vm_name)
+        vms.wait_for_vm_ip(self.vm_name, timeout=config.GAINSTALLED_TIMEOUT)
 
     def post_install(self, commands=None):
         """
@@ -169,21 +165,6 @@ class GABaseTestCase(TestCase):
             ['grep', 'ovirtagent', '/etc/{passwd,group}']
         )
         assert not rc, 'User/Group ovirtagent was no found: %s' % err
-        testflow.step(
-            "Check ownership of /dev/virtio-ports/com.redhat.rhevm.vdsm file"
-        )
-        rc, out, err = executor.run_cmd([
-            'stat',
-            '--format=%U:%G',
-            '-L',
-            '/dev/virtio-ports/com.redhat.rhevm.vdsm',
-        ])
-        assert not rc, (
-            "Failed to run check of ownership of virtio-ports: %s" % err
-        )
-        assert out.strip() == 'ovirtagent:ovirtagent', (
-            "Virtio port have invalid ownership '%s': %s" % (out, err)
-        )
         if commands:
             for command in commands:
                 testflow.step("Running command: %s", command)
@@ -211,14 +192,9 @@ class GABaseTestCase(TestCase):
         assert ga_service.restart()
 
     def _check_fqdn(self):
-        fqdn_agent = self._run_cmd_on_hosts_vm(
-            shlex.split(
-                "%s %s | egrep %s | grep -Po '(?<== )[A-Za-z0-9-.]*'" % (
-                    self.stats, self.vm_id, 'FQDN'
-                )
-            ),
-            self.vm_name,
-        )
+        fqdn_agent = self._get_vm_stats(
+            self.vm_name
+        ).get("guestFQDN")
         rc, fqdn_real, err = self.machine.executor().run_cmd([
             'hostname', '--fqdn'
         ])
@@ -232,17 +208,11 @@ class GABaseTestCase(TestCase):
             )
 
     def get_ifaces(self):
-        cmd = shlex.split(
-            "%s %s | egrep %s | grep -Po '(?<== ).*'" % (
-                self.stats,
-                self.vm_id,
-                'netIfaces',
-            )
-        )
-        iface_agent = self._run_cmd_on_hosts_vm(cmd, self.vm_name)
-        logger.info(iface_agent)
+        iface_agent = self._get_vm_stats(
+            self.vm_name
+        ).get("netIfaces")
         assert iface_agent is not None
-        return ast.literal_eval(iface_agent)
+        return iface_agent
 
     def _check_net_ifaces(self):
         rc, iface_real, err = self.machine.executor().run_cmd([
@@ -260,10 +230,9 @@ class GABaseTestCase(TestCase):
                 assert i in iface_real
 
     def _check_diskusage(self):
-        cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
-        cmd = shlex.split(cmd % (self.stats, self.vm_id, 'disksUsage'))
-        df_agent = self._run_cmd_on_hosts_vm(cmd, self.disk_name)
-        df_dict = ast.literal_eval(df_agent)
+        df_dict = self._get_vm_stats(
+            self.vm_name
+        ).get("disksUsage")
 
         testflow.step("Check that disk usage is correct")
         for fs in df_dict:
@@ -274,10 +243,9 @@ class GABaseTestCase(TestCase):
             assert fs['total'] in df_real
 
     def _check_applist(self, application_list, list_app_cmd):
-        cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
-        cmd = shlex.split(cmd % (self.stats, self.vm_id, 'appsList'))
-        app_agent = self._run_cmd_on_hosts_vm(cmd, self.vm_name)
-        app_list = ast.literal_eval(app_agent)
+        app_list = self._get_vm_stats(
+            self.vm_name
+        ).get("appsList")
         for app in app_list:
             testflow.step("Check if app %s is reporting version", app)
             try:
@@ -303,19 +271,13 @@ class GABaseTestCase(TestCase):
             assert len(filter(lambda x: app_real in x, app_list)) > 0
 
     def _check_guestIP(self):
-        ip = ['ifconfig', '|', 'grep', 'inet addr:', '|', 'cut', '-d:',
-              '-f2', '|', 'cut', '-d', ' ', '-f', '1']
-        cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
-        cmd = shlex.split(cmd % (self.stats, self.vm_id, 'guestIPs'))
-        ip_agent = self._run_cmd_on_hosts_vm(cmd, self.vm_name)
-        ip_list = ip_agent.split(' ')
+        ip_list = self._get_vm_stats(
+            self.vm_name
+        ).get("guestIPs").split(' ')
         ip_check_ran = False
 
         testflow.step("Check that IP reported is correct")
-        for iface in self.get_ifaces():
-            ip.insert(1, iface['name'])
-            rc, ip_real, err = self.machine.executor().run_cmd(ip)
-            ip_real = ip_real.strip()
+        for ip_real in self.machine.network.find_ips()[0]:
             logger.info("Get IP line returned: %s", ip_real)
             if ip_real:
                 ip_check_ran = True
@@ -354,6 +316,19 @@ class GABaseTestCase(TestCase):
             return None
 
         return out.strip()
+
+    def _get_vm_stats(self, vm_name):
+        """
+        Run VDSM client cmd VM.getStats on host vm runs on
+
+        Args:
+            vm_name (str): vm name
+
+        Returns:
+            dict: info about a VM from VDSM
+        """
+        host = VDS(hosts.get_host_vm_run_on(vm_name), config.VDC_ROOT_PASSWORD)
+        return host.vds_client("VM.getStats", {"vmID": self.vm_id})[0]
 
 
 class GAHooks:
@@ -403,7 +378,15 @@ class GAHooks:
         Returns:
             bool: True if file was found, False otherwise
         """
-        return self.machine.fs.exists("/tmp/%s" % filename)
+        try:
+            for sample in TimeoutingSampler(
+                config.GAHOOKS_TIMEOUT, 1, self.machine.fs.exists,
+                "/tmp/%s" % filename
+            ):
+                if sample:
+                    return True
+        except APITimeout:
+            return False
 
     def check_both_tmp_files(self, positive, action):
         """

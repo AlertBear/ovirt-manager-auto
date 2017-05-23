@@ -86,13 +86,6 @@ class TestRHEL664bGATest(RHEL6GATest):
     def test_post_install(self):
         """ RHEL6_64b rhevm-guest-agent post-install """
         self.post_install()
-        testflow.step("Check that there are open virtio ports")
-        rc, out, err = self.machine.executor().run_cmd([
-            'stat', '-L', '/dev/virtio-ports/*rhevm*',
-            '|', 'grep', 'Uid',
-            '|', 'grep', '660'
-        ])
-        assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
             testflow.step("Check tuned profile")
             rc, out, err = self.machine.executor().run_cmd([
@@ -184,13 +177,6 @@ class TestRHEL632bGATest(RHEL6GATest):
     def test_post_install(self):
         """ RHEL6_32b rhevm-guest-agent post-install """
         self.post_install([self.cmd_chkconf])
-        testflow.step("Check that there are open virtio ports")
-        rc, out, err = self.machine.executor().run_cmd([
-            'stat', '-L', '/dev/virtio-ports/*rhevm*',
-            '|', 'grep', 'Uid',
-            '|', 'grep', '660'
-        ])
-        assert not rc, "Failed to check virtio ports: %s" % err
         if not config.UPSTREAM:
             testflow.step("Check tuned profile")
             rc, out, err = self.machine.executor().run_cmd([
