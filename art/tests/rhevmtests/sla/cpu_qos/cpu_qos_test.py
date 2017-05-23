@@ -9,7 +9,7 @@ import art.unittest_lib as u_libs
 import config as conf
 import pytest
 import rhevmtests.sla.helpers as sla_helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from fixtures import (
     create_cpu_profile,
     create_cpu_qoss,
@@ -171,6 +171,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
             )
 
 
+@bz({'1454633': {}})
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     create_cpu_qoss.__name__,
@@ -208,6 +209,7 @@ class BaseCpuQoSAndCpuProfile(u_libs.SlaTest):
         return expected_values
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=1)
 @pytest.mark.usefixtures(start_vms.__name__)
 class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
@@ -239,6 +241,7 @@ class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
         )
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 class TestRemoveAttachedCpuProfile(BaseCpuQoSAndCpuProfile):
     """
@@ -263,6 +266,7 @@ class TestRemoveAttachedCpuProfile(BaseCpuQoSAndCpuProfile):
         )
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     create_vm_without_disk.__name__,
@@ -300,6 +304,7 @@ class TestCreateQoSVmFromTemplate(u_libs.SlaTest):
         assert vm_cpu_profile_id == conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_1
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=1)
 @pytest.mark.usefixtures(start_vms.__name__)
 class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
@@ -333,6 +338,7 @@ class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
         )
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(start_vms.__name__)
 class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
@@ -369,6 +375,7 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
         )
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     update_vms_cpus_to_hosts_cpus.__name__,
@@ -404,6 +411,7 @@ class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
         )
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     start_vms.__name__,
