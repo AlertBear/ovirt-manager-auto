@@ -6,6 +6,7 @@ Migration fixture for Virt and Network
 
 import logging
 import pytest
+import time
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.high_level import (
     hosts as hl_hosts,
@@ -66,27 +67,13 @@ def update_cluster_over_commit(request):
     ]
     err_message = "Failed to update cluster %s to over commit %s"
 
-    def fin():
-        """
-        Set the cluster over commit back to 200%
-        """
-        testflow.teardown(info_message[0] % '200')
-        for cluster_name in [config.CLUSTER_NAME[0], config.CLUSTER_NAME[1]]:
-            logger.info(info_message[1] % (cluster_name, '200'))
-            assert cluster_api.updateCluster(
-                positive=True,
-                cluster=cluster_name,
-                mem_ovrcmt_prc=200
-            ), err_message % (cluster_name, '200')
-    request.addfinalizer(fin)
-
     testflow.setup(info_message[0] % 'none')
     for cluster_name in [config.CLUSTER_NAME[0], config.CLUSTER_NAME[1]]:
         logger.info(info_message[1] % (cluster_name, 'none'))
         assert cluster_api.updateCluster(
             positive=True,
             cluster=cluster_name,
-            mem_ovrcmt_prc=0
+            mem_ovrcmt_prc=0,
         ), err_message % (cluster_name, 'none')
 
 
@@ -376,13 +363,11 @@ def over_load_test(request, update_cluster_over_commit):
             vms_list=test_vms, memory=int(vm_default_mem),
             max_memory=gen_helper.get_gb(4)
         )
-        assert hl_vms.run_vm_once_specific_host(
-            vm=config.MIGRATION_VM,
-            host=config.HOSTS[0],
-            wait_for_ip=True
+        assert ll_vms.startVm(
+            positive=True, vm=config.MIGRATION_VM, wait_for_ip=True
         )
-    request.addfinalizer(fin)
 
+    request.addfinalizer(fin)
     testflow.setup("Stop vm %s", config.MIGRATION_VM)
     assert ll_vms.stop_vms_safely(vms_list=[config.MIGRATION_VM])
     testflow.setup("Activate all hosts")
@@ -503,6 +488,7 @@ def start_vm_on_spm(request):
     Run VM on SPM host
     """
     ll_vms.stop_vms_safely([config.MIGRATION_VM])
+    time.sleep(config.ENGINE_STAT_UPDATE_INTERVAL)
     testflow.setup("Run VM %s on SPM host", config.MIGRATION_VM)
     spm_host = hl_data_center.get_spm_host(
         positive=True,

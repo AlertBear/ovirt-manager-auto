@@ -47,10 +47,11 @@ def cloud_init_setup(request):
         glance_image=config.RHEL_IMAGE_GLANCE_IMAGE,
         target_storage_domain=sd_name,
         target_cluster=config.CLUSTER_NAME[0],
-        new_disk_alias='cloud_init',
+        new_disk_alias=config.CLOUD_INIT_VM_DISK_NAME,
         new_template_name=config.CLOUD_INIT_TEMPLATE,
         import_as_template=True
     )
+    assert ll_disks.wait_for_disks_status([config.CLOUD_INIT_VM_DISK_NAME])
 
 
 @pytest.fixture()
@@ -96,7 +97,7 @@ def case_setup(request, cloud_init_setup):
         "parameters", config.CLOUD_INIT_VM_NAME, vars(initialization)
     )
 
-    ll_vms.createVm(
+    assert ll_vms.createVm(
         positive=True, vmName=config.CLOUD_INIT_VM_NAME,
         vmDescription=config.CLOUD_INIT_VM_NAME,
         cluster=config.CLUSTER_NAME[0],
@@ -109,9 +110,12 @@ def case_setup(request, cloud_init_setup):
         max_memory=gen_helper.get_gb(4)
     )
     logger.info("update disk to bootable")
+    disk_id = ll_disks.getObjDisks(
+        name=config.CLOUD_INIT_VM_NAME, get_href=False
+    )[0].id
     ll_disks.updateDisk(
         positive=True, vmName=config.CLOUD_INIT_VM_NAME,
-        alias=config.CLOUD_INIT_VM_DISK_NAME, bootable=True
+        id=disk_id, bootable=True
     )
 
 

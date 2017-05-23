@@ -41,9 +41,12 @@ class TestSuspendVM(VirtTest):
         testflow.step("Suspend vm %s", self.base_vm_name)
         assert ll_vms.suspendVm(True, self.base_vm_name)
         testflow.step("Resume vm %s", self.base_vm_name)
+        # We use double timeout since if the storage is slow the restore
+        # of the snapshot can take long time
         assert ll_vms.startVm(
             True, self.base_vm_name,
-            wait_for_status=config.VM_UP
+            wait_for_status=config.VM_UP,
+            timeout=2 * config.VM_ACTION_TIMEOUT
         )
 
     @attr(tier=2)

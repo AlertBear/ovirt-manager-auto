@@ -111,7 +111,7 @@ class TestMigrationMixCase3(VirtTest):
         ), "Found resource that are pended to hosts"
 
 
-@attr(tier=3)
+@attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     cancel_migration_test.__name__,

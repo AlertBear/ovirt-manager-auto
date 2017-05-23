@@ -11,7 +11,7 @@ INSTANCE_TYPE_OBJECT = None
 INSTANCE_TYPE_VM = 'instance_type_test_vm'
 TEMPLATE_VM = 'vm_for_template'
 NEW_TEMPLATE_NAME = 'instance_type_test_template'
-
+OBJ_CREATION_TIMEOUT = 5  # BZ:1450000
 INSTANCE_TYPE_PARAMS = {
     'description': 'I am a test',
     'memory': MB_SIZE_256,

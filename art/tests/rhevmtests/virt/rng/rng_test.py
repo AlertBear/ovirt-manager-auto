@@ -20,6 +20,7 @@ class TestUrandom(common.VirtTest):
     """
     vm_name = config.VM_NAME[0]
     rng_device = config.URANDOM_RNG
+    wait_for_vms_ip = False
 
     @attr(tier=2)
     @pytest.mark.usefixtures(enable_rng_on_vm.__name__, start_vms.__name__,)
@@ -41,6 +42,7 @@ class TestHwrng(common.VirtTest):
     """
     vm_name = config.VM_NAME[0]
     rng_device = config.HW_RNG
+    wait_for_vms_ip = False
 
     @attr(tier=2)
     @polarion("RHEVM3-6485")

@@ -4,6 +4,7 @@ Virt Instnace types test
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Compute/
 3_5_VIRT_Instance_Type
 """
+import time
 import config
 import pytest
 from art.rhevm_api.tests_lib.low_level import (
@@ -40,6 +41,7 @@ class TestInstanceType(VirtTest):
             instance_type_name=config.INSTANCE_TYPE_NAME,
             **config.INSTANCE_TYPE_PARAMS
         )
+        time.sleep(config.OBJ_CREATION_TIMEOUT)
         testflow.step(
             "Update instance type: %s", config.INSTANCE_TYPE_NAME
         )
