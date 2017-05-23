@@ -30,6 +30,7 @@ from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest, testflow
 from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
+from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
@@ -310,7 +311,7 @@ class TestCase5993(BaseTestCase):
             self.vm_names[1], LIVE_MIGRATION_TIMEOUT,
             ensure_on=config.LIVE_MOVE, target_domain=self.second_domain
         )
-        helpers.wait_for_disks_and_snapshots(self.vm_names[1])
+        helpers.wait_for_disks_and_snapshots([self.vm_names[1]])
 
         testflow.step("Migrate VM %s", self.vm_names[0])
         with pytest.raises(exceptions.DiskException):
@@ -493,7 +494,7 @@ class TestCase5988_before_snapshot(BaseTestCase5988):
             ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
         helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+            [self.vm_name], live_operation=config.LIVE_MOVE
         )
         self.verify_lsm(source_sd=self.storage_domain)
         assert self._prepare_snapshots(self.vm_name)
@@ -518,7 +519,7 @@ class TestCase5988_after_snapshot(BaseTestCase5988):
             ensure_on=config.LIVE_MOVE, same_type=config.MIGRATE_SAME_TYPE
         )
         helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+            [self.vm_name], live_operation=config.LIVE_MOVE
         )
         self.verify_lsm(source_sd=self.storage_domain)
 
@@ -551,7 +552,7 @@ class TestCase5988_while_snapshot(BaseTestCase5988):
             assert self._prepare_snapshots(self.vm_name, expected_status=False)
             ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
             helpers.wait_for_disks_and_snapshots(
-                self.vm_name, live_operation=config.LIVE_MOVE
+                [self.vm_name], live_operation=config.LIVE_MOVE
             )
             assert ll_vms.verify_vm_disk_moved(
                 vm_name=self.vm_name, disk_name=disk,
@@ -964,7 +965,7 @@ class TestCase5970(BaseTestCase):
         if config.LIVE_MOVE:
             p.join()
         helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+            [self.vm_name], live_operation=config.LIVE_MOVE
         )
         assert ll_vms.verify_vm_disk_moved(
             self.vm_name, self.new_disk_name, self.storage_domain, target_sd
@@ -1083,7 +1084,7 @@ class TestCase5967(AllPermutationsDisks):
                 assert ll_vms.stop_vms_safely([self.vm_name]), (
                     "Failed to stop VM %s" % self.vm_name
                 )
-            helpers.wait_for_disks_and_snapshots(self.vm_name)
+            helpers.wait_for_disks_and_snapshots([self.vm_name])
             disk_obj = ll_disks.getVmDisk(self.vm_name, disk)
             actual_size = disk_obj.get_actual_size()
             virtual_size = disk_obj.get_provisioned_size()
@@ -1232,7 +1233,7 @@ class BaseTestCase5977(BaseTestCase):
             self.vm_name, wait=wait, same_type=config.MIGRATE_SAME_TYPE
         )
         if wait:
-            helpers.wait_for_disks_and_snapshots(self.vm_name)
+            helpers.wait_for_disks_and_snapshots([self.vm_name])
         testflow.step("Try to migrate VM %s to another host", self.vm_name)
         status = ll_vms.migrateVm(True, self.vm_name, wait=False)
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
@@ -1394,6 +1395,7 @@ class TestCase5975_src_domain(BaseTestCase5975):
         """
         self.basic_flow()
         testflow.step("Extend storage domain %s", self.sd_src)
+        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
         assert ll_sd.extendStorageDomain(
             positive=True, storagedomain=self.sd_src,
             **self.generate_sd_dict(2)
@@ -1423,6 +1425,7 @@ class TestCase5975_dest_domain(BaseTestCase5975):
         """
         self.basic_flow()
         testflow.step("Extend storage domain %s", self.sd_target)
+        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
         assert ll_sd.extendStorageDomain(
             positive=True, storagedomain=self.sd_target,
             **self.generate_sd_dict(2)
@@ -1940,7 +1943,7 @@ class TestCase5966_during_second_lsm(BaseTestCase5966):
             - LSM should fail nicely
         """
         self.basic_flow(wait=True)
-        helpers.wait_for_disks_and_snapshots(self.vm_name)
+        helpers.wait_for_disks_and_snapshots([self.vm_name])
         self.source_sd = ll_disks.get_disk_storage_domain_name(
             self.vm_disk, self.vm_name
         )

@@ -82,7 +82,7 @@ class ColdMoveBase(StorageTest):
                     vm_name=vm, disk_name=disk_name, target_sd=target_sd
                 )
                 helpers.wait_for_disks_and_snapshots(
-                    self.vm_name, live_operation=config.LIVE_MOVE
+                    [self.vm_name], live_operation=config.LIVE_MOVE
                 )
                 testflow.step(
                     "Verify disk %s of VM %s moved to %s",
@@ -238,7 +238,7 @@ class BaseKillSpmVdsm(basePlan.BaseTestCase, ColdMoveBase):
         )
         t.join()
         helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+           [self.vm_name], live_operation=config.LIVE_MOVE
         )
         testflow.step(
             "Verify migration %s after kill SPM VDSM process",
@@ -357,7 +357,7 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
         ), 'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
 
         helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+            [self.vm_name], live_operation=config.LIVE_MOVE
         )
 
         unsatisfied_disks = self.verify_cold_move(
@@ -521,7 +521,7 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
             self.host_ip, target
         )
         helpers.wait_for_disks_and_snapshots(
-              self.vm_name, live_operation=config.LIVE_MOVE
+              [self.vm_name], live_operation=config.LIVE_MOVE
         )
         unsetisfied_disks = self.verify_cold_move(
             source_sd=self.storage_domain, moved=migration_succeed
@@ -845,13 +845,13 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
     checksum_res = dict()
 
     def create_file_after_snapshot(self, executor):
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name, wait_for_status=config.VM_UP,
+            wait_for_ip=True
+        )
         for mount_point in (
             self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['mount_points']
         ):
-            assert ll_vms.startVm(
-                positive=True, vm=self.vm_name, wait_for_status=config.VM_UP,
-                wait_for_ip=True
-            )
             assert storage_helpers.create_file_on_vm(
                 self.vm_name, self.second_file_name, mount_point, executor
             ), "Failed to create file %s on VM %s with path %s" % (
@@ -874,7 +874,7 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
                     "Failed to run command 'sync' on %s, error: %s",
                     self.vm_name, error
                 )
-            assert ll_vms.stop_vms_safely(vms_list=[self.vm_name])
+        assert ll_vms.stop_vms_safely(vms_list=[self.vm_name])
 
     @polarion("RHEVM3-19020")
     @attr(tier=2)
@@ -907,7 +907,7 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
             self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
             ensure_on=config.LIVE_MOVE, target_domain=target_sd
         )
-        helpers.wait_for_disks_and_snapshots(self.vm_name, config.LIVE_MOVE)
+        helpers.wait_for_disks_and_snapshots([self.vm_name], config.LIVE_MOVE)
 
         testflow.step(
             "Preview VM %s snapshot %s", self.vm_name,
@@ -917,8 +917,8 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
             positive=True, vm=self.vm_name,
             description=self.snapshot_description
         ), "Failed to preview snapshot %s" % self.snapshot_description
-
         assert not self.verify_cold_move(source_sd=self.storage_domain)
+
         assert self.check_files_after_operation()
 
         testflow.step("Stop VM %s", self.vm_name)
