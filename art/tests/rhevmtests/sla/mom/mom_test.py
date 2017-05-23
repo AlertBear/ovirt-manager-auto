@@ -19,7 +19,7 @@ import config as conf
 import helpers
 import pytest
 from art.test_handler import find_test_file
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from fixtures import (
     prepare_env_for_ballooning_test,
     stop_memory_allocation,
@@ -73,6 +73,7 @@ def prepare_env_for_mom_test(request):
     )
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
@@ -239,6 +240,7 @@ class Balloon(u_libs.SlaTest):
         )
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 class TestBalloonUsage(Balloon):
     """
@@ -263,6 +265,7 @@ class TestBalloonUsage(Balloon):
         self.check_balloon_usage(vm_list=self.vms_to_start)
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 class TestBalloonUsageDifferentMemory(Balloon):
     """
@@ -292,6 +295,7 @@ class TestBalloonUsageDifferentMemory(Balloon):
         self.check_balloon_usage(vm_list=self.vms_to_start)
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(stop_guest_agent_service.__name__)
 class TestBalloonWithoutAgent(Balloon):
@@ -318,6 +322,7 @@ class TestBalloonWithoutAgent(Balloon):
         self.check_balloon_deflation(vm_list=self.vms_to_start, negative=True)
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 class TestBalloonMax(Balloon):
     """
@@ -343,6 +348,7 @@ class TestBalloonMax(Balloon):
         self.check_balloon_deflation(vm_list=self.vms_to_start, negative=True)
 
 
+@bz({'1454633': {}})
 @u_libs.attr(tier=2)
 class TestBalloonMultipleVms(Balloon):
     """
