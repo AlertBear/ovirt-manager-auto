@@ -25,7 +25,6 @@ NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
 
 class TestMixCases(VirtTest):
 
-    __test__ = True
     storages = set([NFS])
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
@@ -146,14 +145,17 @@ class TestMixCases(VirtTest):
     @attr(tier=2)
     @polarion("RHEVM3-12571")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_different_interfaces_and_formats(self):
         """
         Add disks to vm with different interfaces and formats
         """
 
         testflow.step("Add new vm with different interfaces and formats")
-        for disk_interface in [config.INTERFACE_VIRTIO, config.INTERFACE_IDE]:
+        if config.PPC_ARCH:
+            disk_interfaces = [config.INTERFACE_VIRTIO]
+        else:
+            disk_interfaces = [config.INTERFACE_VIRTIO, config.INTERFACE_IDE]
+        for disk_interface in disk_interfaces:
             for disk_format in [
                 config.DISK_FORMAT_COW,
                 config.DISK_FORMAT_RAW
@@ -225,27 +227,32 @@ class TestMixCases(VirtTest):
 
 @attr(tier=1)
 @pytest.mark.usefixtures(vm_display_fixture.__name__)
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class VmDisplay(VirtTest):
+class TestVmDisplay(VirtTest):
     """
     Create vms with different display types, run it and check
     if address and port appear under display options
     """
-    __test__ = True
+    if config.PPC_ARCH:
+        display_types = [config.ENUMS['display_type_vnc']]
+    else:
+        display_types = [
+            config.ENUMS['display_type_spice'],
+            config.ENUMS['display_type_vnc']
+        ]
+    vm_names = {
+        display_type: '%s_vm' % display_type for display_type in display_types
+        }
 
-    display_types = [
-        config.ENUMS['display_type_spice'],
-        config.ENUMS['display_type_vnc']
-    ]
-    vm_names = ['%s_vm' % display_type for display_type in display_types]
-
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12574")
     def test_check_spice_parameters(self):
         """
         Check address and port parameters under display with type spice
         """
         testflow.step("Set spice and check address and port")
-        assert helper.check_display_parameters(self.vm_names[0], config.SPICE)
+        assert helper.check_display_parameters(
+            self.vm_names[config.SPICE], config.SPICE
+        )
 
     @polarion("RHEVM3-12575")
     def test_check_vnc_parameters(self):
@@ -253,7 +260,9 @@ class VmDisplay(VirtTest):
         Check address and port parameters under display with type vnc
         """
         testflow.step("Set vnc and check address and port")
-        assert helper.check_display_parameters(self.vm_names[1], config.VNC)
+        assert helper.check_display_parameters(
+            self.vm_names[config.VNC], config.VNC
+        )
 
 
 @pytest.mark.usefixtures(add_vm_from_template_fixture.__name__)

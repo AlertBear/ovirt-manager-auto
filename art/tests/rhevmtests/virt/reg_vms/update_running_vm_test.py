@@ -6,7 +6,7 @@
 import pytest
 import logging
 from art.unittest_lib import attr, VirtTest, testflow
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 import rhevmtests.helpers as helper
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
@@ -21,7 +21,7 @@ logger = logging.getLogger("update_vm_cases")
 
 
 @attr(tier=1)
-class UpdateRunningVm(VirtTest):
+class TestUpdateRunningVm(VirtTest):
     """
     Update parameters of a running VM.
     """
@@ -89,12 +89,10 @@ class UpdateRunningVm(VirtTest):
             parameters['comment'],
         )
 
-    @bz({"1408691": {}})
     @polarion("RHEVM3-6295")
     @pytest.mark.usefixtures(
         add_vm_fixture.__name__, start_stop_fixture.__name__
     )
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_update_field_applied_after_reboot_case_1(self):
         """
         Expect the fields be after next boot.
@@ -111,6 +109,9 @@ class UpdateRunningVm(VirtTest):
             'placement_affinity': self.affinity,
             'placement_host': config.HOSTS[0],
         }
+        if config.PPC_ARCH:
+            del parameters['monitors']
+
         testflow.step("Update vm fields and check them after reboot")
         host_id = ll_hosts.get_host_object(config.HOSTS[0]).get_id()
         assert ll_vms.updateVm(
@@ -142,9 +143,9 @@ class UpdateRunningVm(VirtTest):
             str(host_obj.get_id()),
             str(host_id)
         )
-
-        self._check_vm_parameter(
-            'monitors',
-            str(vm_obj.get_display().get_monitors()),
-            str(parameters['monitors'])
-        )
+        if not config.PPC_ARCH:
+            self._check_vm_parameter(
+                'monitors',
+                str(vm_obj.get_display().get_monitors()),
+                str(parameters['monitors'])
+            )

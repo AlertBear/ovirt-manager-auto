@@ -361,7 +361,6 @@ class TestTemplateSanity(VirtTest):
             False, conf.TEMPLATE_LIST[1], name=conf.TEMPLATE_LIST[0]
         )
 
-    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @pytest.mark.usefixtures(supply_dummy_dc_cluster.__name__)
     @polarion("RHEVM3-12278")
     def test_17_create_template_with_wrong_dc(self):

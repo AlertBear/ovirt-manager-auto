@@ -106,7 +106,7 @@ class TestPauseVM(VirtTest):
         ), "failed to migrate pause vm"
 
 
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+@attr(tier=1)
 class TestStatelessVM(VirtTest):
     """
     Stateless VM tests

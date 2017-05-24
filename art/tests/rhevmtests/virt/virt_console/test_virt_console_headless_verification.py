@@ -150,10 +150,6 @@ class TestVirtConsoleHeadlessClass(VirtTest):
 
     @attr(tier=2)
     @polarion("RHEVM-19530")
-    @pytest.mark.skipif(
-        vcons_conf.PPC_ARCH,
-        reason=vcons_conf.PPC_SKIP_MESSAGE
-    )
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
         fixtures.shutdown_vm.__name__
@@ -176,9 +172,11 @@ class TestVirtConsoleHeadlessClass(VirtTest):
             "VM booted up not headless."
         )
 
-        testflow.step("Add a spice graphics console to a VM.")
+        testflow.step(
+            "Add a %s graphics console to a VM" % vcons_conf.DISPLAY_TYPE
+        )
         helper.set_console_type(
-            'spice',
+            vcons_conf.DISPLAY_TYPE,
             vcons_conf.VIRT_CONSOLE_VM_SYSTEM,
             'vm'
         )

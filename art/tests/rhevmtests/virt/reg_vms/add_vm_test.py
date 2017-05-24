@@ -19,11 +19,10 @@ logger = logging.getLogger("add_vm_test")
 
 
 @attr(tier=1)
-class AddVm(VirtTest):
+class TestAddVm(VirtTest):
     """
     Add vms with different parameters test cases
     """
-    __test__ = True
     vm_name = config.ADD_VM_TEST
     vm_parameters = {
         'cluster': config.CLUSTER_NAME[0],
@@ -145,7 +144,6 @@ class AddVm(VirtTest):
 
     @polarion("RHEVM3-12518")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_rhel_os(self):
         """
         Add vm with Rhel OS type
@@ -153,7 +151,9 @@ class AddVm(VirtTest):
         testflow.step("Add vm with Rhel OS type")
         vm_parameters = self.vm_parameters.copy()
         vm_parameters['name'] = self.vm_name
-        vm_parameters['os_type'] = config.RHEL6_64
+        vm_parameters['os_type'] = (
+            config.RHEL7PPC64 if config.PPC_ARCH else config.RHEL6_64
+        )
         assert ll_vms.addVm(True, **vm_parameters)
 
     @polarion("RHEVM3-12520")

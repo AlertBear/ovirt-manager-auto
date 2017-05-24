@@ -132,7 +132,7 @@ def stateless_vm_test_fixture(request):
 
     def fin():
         testflow.teardown("Remove stateless vm %s", vm_name)
-        base.remove_stateless_vm()
+        base.remove_stateless_vm(vm_name)
 
     request.addfinalizer(fin)
 
@@ -261,17 +261,15 @@ def vm_display_fixture(request):
     second with spice type display
     """
     vm_names = request.cls.vm_names
-    display_types = request.cls.display_types
 
     def fin():
-        testflow.teardown("remove vms %s", vm_names)
-        assert ll_vms.safely_remove_vms(vm_names)
+        testflow.teardown("remove vms %s", vm_names.values)
+        assert ll_vms.safely_remove_vms(vm_names.values())
 
     request.addfinalizer(fin)
 
-    testflow.setup("Create vms with different display types %s", display_types)
-    for display_type in display_types:
-        vm_name = '%s_vm' % display_type
+    testflow.setup("Create vms with different display types %s", vm_names.keys)
+    for display_type, vm_name in vm_names.iteritems():
         assert helper.create_base_vm(
             vm_name=vm_name,
             display_type=display_type,

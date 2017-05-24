@@ -35,7 +35,6 @@ class TestCreateVmWithCdromPayload(VirtTest):
     Create new vm with cdrom payload via create and check if payload exist,
     also check if payload object exist under vm
     """
-    __test__ = True
     apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CreateVmWithCdromPayload'
@@ -77,7 +76,6 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
     """
     Create new vm with cdrom payload via update and check if payload exist
     """
-    __test__ = True
     apis = set(["rest", "java", "sdk"])
 
     vm_name = 'UpdateVmWithCdromPayload'
@@ -112,7 +110,6 @@ class TestCdromPayloadComplexContent(VirtTest):
     Create new vm with cdrom payload, that have complex content via update
     and check if payload exist
     """
-    __test__ = True
     apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CdromPayloadComplexContent'
@@ -146,7 +143,6 @@ class TestCreateVmWithFloppyPayload(VirtTest):
     """
     Create new vm with floppy payload via create and check if payload exist
     """
-    __test__ = True
     apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CreateVmWithFloppyPayload'
@@ -181,7 +177,6 @@ class TestUpdateVmWithFloppyPayload(VirtTest):
     """
     Create new vm with floppy payload via update and check if payload exist
     """
-    __test__ = True
     apis = set(["rest", "java", "sdk"])
 
     vm_name = 'UpdateVmWithFloppyPayload'
