@@ -295,7 +295,6 @@ class TestCase5993(BaseTestCase):
     vms_to_wait = list()
 
     @polarion("RHEVM3-5993")
-    @bz({'1420258': {}})
     @attr(tier=2)
     def test_thin_provision_copy_template_on_both_domains(self):
         """
