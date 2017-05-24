@@ -22,11 +22,14 @@ def get_second_storage_domain(request):
     self = request.node.cls
 
     testflow.setup("Getting second storage domain information")
-    self.second_storage_domain = (
+    all_sds = (
         ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
-        )[0]
+        )
     )
+    self.second_storage_domain = [
+        sd for sd in all_sds if sd != self.new_storage_domain
+    ][0]
     assert self.second_storage_domain, "Failed to get second storage domain"
 
 
@@ -35,7 +38,6 @@ def create_vm_for_test(request):
     """
     Create a VM
     """
-
     def finalizer():
         """
         Remove the VM
