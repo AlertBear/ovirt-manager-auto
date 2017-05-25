@@ -24,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage.helpers import (
     create_vm_or_clone, get_spuuid, get_sduuid, get_imguuid, get_voluuid,
@@ -1449,6 +1449,7 @@ class TestCase6262(EnvironmentWithNewVm):
 
     @polarion("RHEVM3-6262")
     @attr(tier=3)
+    @bz({'1454821': {}})
     def test_ovf_for_a_template(self):
         """ Polarion case 6262 """
         self.create_and_attach_disk(VM3_NAME, self.storage_domain_0,
