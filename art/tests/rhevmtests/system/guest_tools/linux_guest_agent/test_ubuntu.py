@@ -4,7 +4,7 @@ Ubuntu guest agent test
 import logging
 import pytest
 
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, testflow
 from art.rhevm_api.tests_lib.low_level import vms
 
@@ -13,7 +13,7 @@ from rhevmtests.system.guest_tools.linux_guest_agent import config
 
 logger = logging.getLogger(__name__)
 NAME = 'ovirt-guest-agent'
-DISK_NAME = 'ubuntu-12.04_Disk1'
+DISK_NAME = 'ubuntu-16.04_Disk1'
 KEY_ID = 'D5C7F7C373A1A299'
 APT_KEY = '73A1A299'
 
@@ -59,8 +59,9 @@ def setup_vms(request):
     assert machine.package_manager.update(), 'Failed to update system'
 
 
+@bz({'1455922': {}})
 @attr(tier=3)
-class TestUbuntu1204TestCase(common.GABaseTestCase):
+class TestUbuntu1604TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
     vm_name = disk_name = DISK_NAME
     list_app = ['dpkg --list']
@@ -75,7 +76,7 @@ class TestUbuntu1204TestCase(common.GABaseTestCase):
             testflow.teardown("Stop VM %s safely", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
         request.addfinalizer(fin)
-        super(TestUbuntu1204TestCase, cls).ga_base_setup()
+        super(TestUbuntu1604TestCase, cls).ga_base_setup()
 
     @polarion("RHEVM3-9331")
     def test_aa_install_guest_agent(self):

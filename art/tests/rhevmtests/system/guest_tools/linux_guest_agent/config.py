@@ -6,19 +6,7 @@ from rhevmtests.system.guest_tools.config import *  # flake8: noqa
 # images names have to be same as test classes, because we need to have them
 # sorted so we can import glance images in corect order
 TEST_IMAGES = {
-    'rhel5_x86_Disk1': {
-        'image': None,
-        'machine': None,
-        'id': None,
-        'ip': None,
-    },
     'rhel6_x86_Disk1': {
-        'image': None,
-        'machine': None,
-        'id': None,
-        'ip': None,
-    },
-    'rhel5_x64_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
@@ -36,7 +24,7 @@ TEST_IMAGES = {
         'id': None,
         'ip': None,
     },
-    'ubuntu-12.04_Disk1': {
+    'ubuntu-16.04_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
@@ -53,19 +41,19 @@ GA_NAME = 'ovirt-guest-agent'
 OLD_GA_NAME = 'rhevm-guest-agent'
 
 # GA repositories
-UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/14.04/xUbuntu_14.04/'
+UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/16.04/xUbuntu_16.04/'
 
 GA_REPO_NAME = 'rhevm_latest'
 if not UPSTREAM:
-    GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_4.1/%s'
+    GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_4.2/%s'
 else:
-    GA_REPO_URL = 'http://resources.ovirt.org/repos/ovirt/tested/4.1/rpm/%s'
+    GA_REPO_URL = 'http://resources.ovirt.org/repos/ovirt/experimental/master/latest/rpm/%s'
 
 GA_REPO_OLDER_NAME = 'rhevm_older'
 if not UPSTREAM:
-    GA_REPO_OLDER_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_4.0/%s'
+    GA_REPO_OLDER_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_4.1/%s'
 else:
-    GA_REPO_OLDER_URL = 'http://resources.ovirt.org/repos/ovirt/tested/4.0/rpm/%s'
+    GA_REPO_OLDER_URL = 'http://resources.ovirt.org/repos/ovirt/tested/4.1/rpm/%s'
 
 GUEST_ROOT_USER = 'root'
 GUEST_ROOT_PASSWORD = '123456'
