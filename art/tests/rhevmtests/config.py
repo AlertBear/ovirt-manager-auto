@@ -313,7 +313,6 @@ else:
     HOSTS = PARAMETERS.as_list('vds')
     HOSTS_IP = list(HOSTS)
     VDS_HOSTS = [resources.VDS(host_ip, HOSTS_PW) for host_ip in HOSTS_IP]
-
     HOST_NICS = PARAMETERS.as_list('host_nics')
 
     HOST_OS = PARAMETERS.get('host_os')

@@ -203,7 +203,7 @@ def create_lun_on_storage_server(request):
                 testflow.teardown(
                     "Rebooting hosts %s after LUN removal", config.HOSTS
                 )
-                helpers.reboot_hosts()
+                helpers.reboot_hosts(config.VDS_HOSTS)
     request.addfinalizer(finalizer)
     testflow.setup(
         "Creating a new LUN in storage server %s", self.storage_server

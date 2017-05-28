@@ -7,7 +7,6 @@ rhevmtests helper functions
 import functools
 import logging
 import os
-import shlex
 
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -16,6 +15,8 @@ import config
 from storageapi.storageErrors import GetLUNInfoError
 from storageapi.storageManagerWrapper import StorageManagerWrapper
 from art.core_api import apis_utils
+from rrmngmnt.power_manager import SSHPowerManager
+
 from art.rhevm_api.resources import User, Host, storage
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
@@ -670,36 +671,39 @@ def maintenance_and_activate_hosts():
     ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
 
 
-def reboot_hosts():
+def reboot_hosts(hosts_resources):
     """
-    Reboot all data center's hosts.
-    Necessary for updating hosts that use FC for LUNs list update after LUNs
-    removal.
+    Reboot given hosts.
+    Necessary for LUNs list update after LUNs removal while using FC.
+
+    Args:
+        hosts_resources (list): List of host resources
+
+    Raises:
+        AssertionError: In case of any failure
     """
-    hosts_ip = [ll_hosts.get_host_ip(host) for host in config.HOSTS]
-    logger.info("Deactivating hosts %s", config.HOSTS)
-    assert hl_hosts.deactivate_hosts_if_up(config.HOSTS), (
-        "Failed to deactivate hosts %s" % config.HOSTS
-    )
+    hosts_ips = [host.ip for host in hosts_resources]
+    hosts_pwr_mgmnt = [SSHPowerManager(host) for host in hosts_resources]
+    hosts_names = [
+        ll_hosts.get_host_name_from_engine(host) for host in hosts_resources
+    ]
 
-    for host_ip in hosts_ip:
-        logger.info("Rebooting Host %s", host_ip)
-        executor = get_host_executor(
-            host_ip, config.VDC_ROOT_PASSWORD
-        )
-        rc, out, error = executor.run_cmd(cmd=shlex.split(config.REBOOT_CMD))
-        assert rc, "Failed to reboot Host %s, error: %s, out: %s" % (
-            host_ip, error, out
+    for resource, host in zip(hosts_resources, hosts_names):
+        wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
+        assert hl_hosts.deactivate_host_if_up(host, resource), (
+            "Failed to deactivate host %s" % host
         )
 
-    for host_ip in hosts_ip:
-        executor = get_host_executor(
-            host_ip, config.VDC_ROOT_PASSWORD
-        )
+    for pwr_mgmt, host in zip(hosts_pwr_mgmnt, config.HOSTS):
+        logger.info("Rebooting Host %s", host)
+        pwr_mgmt.restart()
+
+    for host_ip in hosts_ips:
+        executor = get_host_executor(host_ip, config.VDC_ROOT_PASSWORD)
         executor.wait_for_connectivity_state(positive=True)
 
-    logger.info("Activating hosts %s", config.HOSTS)
-    for host in config.HOSTS:
+    logger.info("Activating hosts %s", hosts_names)
+    for host in hosts_names:
         assert hl_hosts.activate_host_if_not_up(host), (
             "Failed to activate host %s" % host
         )
