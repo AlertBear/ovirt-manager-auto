@@ -76,4 +76,6 @@ def get_fixture_val(request, attr_name, default_value=None):
     try:
         return request.getfixturevalue(attr_name)
     except FixtureLookupError:
-        return default_value
+        return get_attr_helper(
+            attribute=attr_name, obj=request.cls, default=default_value
+        )

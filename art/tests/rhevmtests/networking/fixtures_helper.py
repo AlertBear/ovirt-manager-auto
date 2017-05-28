@@ -72,10 +72,12 @@ def setup_network_helper(hosts_nets_nic_dict, sriov_nics, persist):
             sn_dict["add"][net]["qos"] = qos
             if ip_dict:
                 for k, v in ip_dict.iteritems():
-                    ip_dict[k]["netmask"] = v.get("netmask", "24")
-                    ip_dict[k]["boot_protocol"] = v.get(
-                        "boot_protocol", "static"
-                    )
+                    boot_protocol = v.get("boot_protocol", "static")
+                    if boot_protocol != "dhcp":
+                        ip_dict[k]["netmask"] = v.get("netmask", "24")
+                        ip_dict[k]["address"] = v.get("address")
+
+                    ip_dict[k]["boot_protocol"] = boot_protocol
                 sn_dict["add"][net]["ip"] = ip_dict
 
         assert hl_host_network.setup_networks(

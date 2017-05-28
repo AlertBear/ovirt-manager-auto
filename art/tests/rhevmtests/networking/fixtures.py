@@ -10,7 +10,11 @@ import pytest
 import fixtures_helper as network_fixture_helper
 import rhevmtests.networking.config as conf
 from rhevmtests import fixtures_helper
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+from art.rhevm_api.tests_lib.high_level import (
+    vms as hl_vms,
+    networks as hl_networks
+)
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import rhevmtests.helpers as global_helper
 
 
@@ -84,7 +88,9 @@ def clean_host_interfaces_fixture_function(request):
     """
     Clean host(s) interfaces networks (except the management network)
     """
-    hosts_nets_nic_dict = request.getfixturevalue("hosts_nets_nic_dict")
+    hosts_nets_nic_dict = fixtures_helper.get_fixture_val(
+        request=request, attr_name="hosts_nets_nic_dict"
+    )
 
     def fin():
         """
@@ -145,3 +151,68 @@ def store_vms_params(request):
         conf.VMS_TO_STORE[vm] = dict()
         conf.VMS_TO_STORE[vm]["ip"] = ip
         conf.VMS_TO_STORE[vm]["resource"] = resource
+
+
+@pytest.fixture(scope="class")
+def update_cluster_network_usages(request):
+    """
+    Update cluster network usages
+    """
+    cluster = request.cls.update_cluster
+    network = request.cls.update_cluster_network
+    usages = request.cls.update_cluster_network_usages
+
+    assert ll_networks.update_cluster_network(
+        positive=True, cluster=cluster, network=network, usages=usages
+    )
+
+
+@pytest.fixture(scope="class")
+def create_and_attach_network(request):
+    """
+    Create and attach network to Data-Centers and clusters
+    """
+    dcs_and_clusters = request.cls.dcs_and_clusters
+    network_dict = request.cls.network_dict
+
+    for dc, cl in dcs_and_clusters:
+        assert hl_networks.create_and_attach_networks(
+            data_center=dc, cluster=cl, network_dict=network_dict
+        )
+
+
+@pytest.fixture(scope="class")
+def remove_all_networks(request):
+    """
+    Remove all networks from Data-Centers
+    """
+    dcs = request.cls.remove_all_networks_params
+
+    def fin():
+        """
+        Remove all networks from Data-Centers
+        """
+        results = list()
+        for dc in dcs:
+            results.append(hl_networks.remove_all_networks(datacenter=dc))
+        assert all(results)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def restore_network_usage(request):
+    """
+    Set management network as default route
+    """
+    network = request.cls.network_usage
+    cluster = request.cls.cluster_usage
+
+    def fin():
+        """
+        Set management network as default route
+        """
+        assert ll_networks.update_cluster_network(
+            positive=True, cluster=cluster, network=network,
+            usages=conf.ALL_NETWORK_USAGES
+        )
+    request.addfinalizer(fin)

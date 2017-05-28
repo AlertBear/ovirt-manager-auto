@@ -285,7 +285,7 @@ def add_host(name, address, root_password, wait=True, **kwargs):
     return status
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def update_host(positive, host, **kwargs):
     """
     Update properties of host (provided in parameters)

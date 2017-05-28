@@ -19,10 +19,15 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    add_vnics_to_vms, update_cluster_network, restore_hosts_mtu,
-    configure_mtu_on_host, prepare_setup_jumbo_frame
+    add_vnics_to_vms,
+    restore_hosts_mtu,
+    configure_mtu_on_host,
+    prepare_setup_jumbo_frame
 )
-from rhevmtests.networking.fixtures import setup_networks_fixture
+from rhevmtests.networking.fixtures import (
+    setup_networks_fixture,
+    update_cluster_network_usages
+)
 from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
@@ -380,7 +385,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
 
 
 @pytest.mark.usefixtures(
-    update_cluster_network.__name__,
+    update_cluster_network_usages.__name__,
     setup_networks_fixture.__name__,
     add_vnics_to_vms.__name__
 )
@@ -429,6 +434,15 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
             }
         }
     }
+
+    # restore_network_usage params
+    network_usage = conf.MGMT_BRIDGE
+    cluster_usage = conf.CL_0
+
+    # update_cluster_network_usages params
+    update_cluster = conf.CL_0
+    update_cluster_network = net
+    update_cluster_network_usages = "display,vm"
 
     @polarion("RHEVM3-3724")
     def test_check_traffic_on_vm_when_network_is_display(self):

@@ -14,10 +14,8 @@ from art.rhevm_api.tests_lib.high_level import (
     networks as hl_networks,
     vms as hl_vms
 )
-from art.rhevm_api.tests_lib.low_level import (
-    networks as ll_networks,
-    vms as ll_vms
-)
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+
 from art.rhevm_api.utils import test_utils
 from art.unittest_lib import testflow
 from rhevmtests.networking import (
@@ -109,31 +107,6 @@ def add_vnics_to_vms(request):
     for vnic_to_add in vnics_to_add:
         vnic_to_add["ips"] = vms_ips
         assert helper.add_vnics_to_vms(**vnic_to_add)
-
-
-@pytest.fixture(scope="class")
-def update_cluster_network(request):
-    """
-    Update cluster network usages
-    """
-    jumbo_frame = NetworkFixtures()
-    net = request.node.cls.net
-
-    def fin():
-        """
-        Update management cluster network to default
-        """
-        assert ll_networks.update_cluster_network(
-            positive=True, cluster=jumbo_frame.cluster_0,
-            network=jumbo_frame.mgmt_bridge,
-            usages="display,vm,migration,management,default_route"
-        )
-    request.addfinalizer(fin)
-
-    assert ll_networks.update_cluster_network(
-        positive=True, cluster=jumbo_frame.cluster_0, network=net,
-        usages='display,vm'
-    )
 
 
 @pytest.fixture(scope="class")

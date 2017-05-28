@@ -7,55 +7,12 @@ Fixtures for Management Network As A Role test cases
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import helper
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
-
-
-@pytest.fixture(scope="class")
-def create_and_attach_network(request):
-    """
-    Create and attach network to Data-Centers and clusters
-    """
-    dcs_clusters = request.cls.create_and_attach_network_params[0]
-    setup = request.cls.create_and_attach_network_params[1]
-
-    for dc, cl in dcs_clusters:
-        assert hl_networks.create_and_attach_networks(
-            data_center=dc, cluster=cl, network_dict=setup
-        )
-
-
-@pytest.fixture(scope="class")
-def remove_all_networks(request):
-    """
-    Remove all networks from Data-Center
-    """
-    dcs = request.cls.remove_all_networks_params
-
-    def fin():
-        for dc in dcs:
-            testflow.teardown("Remove all networks from datacenter %s", dc)
-            assert hl_networks.remove_all_networks(datacenter=dc)
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def update_cluster_network_usages(request):
-    """
-    Update cluster network usages
-    """
-    cluster = request.cls.update_cluster_network_usages_params[0]
-    net = request.cls.update_cluster_network_usages_params[1]
-    usages = request.cls.update_cluster_network_usages_params[2]
-
-    testflow.setup("Update cluster network usages")
-    assert ll_networks.update_cluster_network(
-        positive=True, cluster=cluster, network=net, usages=usages
-    )
 
 
 @pytest.fixture(scope="class")
@@ -65,22 +22,28 @@ def move_host_to_cluster(request):
     """
     mgmt_as_role = NetworkFixtures()
     host = mgmt_as_role.hosts_list[request.cls.move_host_to_cluster_params[0]]
+    vds = mgmt_as_role.vds_list[request.cls.move_host_to_cluster_params[0]]
     cl = request.cls.move_host_to_cluster_params[1]
 
-    def fin2():
+    def fin3():
         """
         Activate host after updating its cluster
         """
-        testflow.teardown("Activate host %s", host)
         assert ll_hosts.activate_host(positive=True, host=host)
+    request.addfinalizer(fin3)
+
+    def fin2():
+        """
+        Move host to a specified cluster
+        """
+        assert ll_hosts.update_host(positive=True, host=host, cluster=cl)
     request.addfinalizer(fin2)
 
     def fin1():
         """
-        Move host to a specified cluster
+        Deactivate host if up
         """
-        testflow.teardown("Update host %s to specified cluster %s", host, cl)
-        assert ll_hosts.update_host(positive=True, host=host, cluster=cl)
+        assert hl_hosts.deactivate_host_if_up(host=host, host_resource=vds)
     request.addfinalizer(fin1)
 
 

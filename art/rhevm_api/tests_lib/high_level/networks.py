@@ -224,9 +224,10 @@ def delete_dummy_interfaces(host):
     )
 
 
+@ll_general.generate_logs(step=True)
 def remove_all_networks(datacenter=None, cluster=None):
     """
-    Remove all networks from DC/CL or from entire setup
+    Remove all networks from datacenter or cluster or from entire setup
 
     If cluster is specified - remove all network from specified cluster
     Elif datacenter is specified - remove all networks from specified DC
@@ -253,29 +254,18 @@ def remove_all_networks(datacenter=None, cluster=None):
         )
 
     else:
-        logger.info("Get all networks")
-        networks_list = ll_networks.NET_API.get(abs_link=False)
+        networks_list = ll_networks.get_all_networks()
 
     for net in networks_list:
         if net.id not in mgmt_networks_ids:
             networks_to_remove.append(net.name)
 
     if not networks_to_remove:
-        logger.info("There are no networks to remove")
         return True
 
-    log = (
-        "from %s, %s" % (datacenter, cluster) if datacenter or cluster
-        else "from engine"
+    return remove_networks(
+        positive=True, networks=networks_to_remove, data_center=datacenter
     )
-    logger.info("Removing all networks %s", log)
-
-    status = remove_networks(True, networks_to_remove, datacenter)
-
-    if not status:
-        logger.info("Failed to remove all networks %s", log)
-
-    return status
 
 
 @ll_general.generate_logs()
@@ -445,7 +435,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=list()):
     return True
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def is_management_network(cluster_name, network):
     """
     Check if network is management network

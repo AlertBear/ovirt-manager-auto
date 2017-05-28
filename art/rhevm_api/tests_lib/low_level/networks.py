@@ -337,7 +337,7 @@ def add_network_to_cluster(positive, network, cluster, **kwargs):
     return status
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(step=True)
 def update_cluster_network(positive, cluster, network, **kwargs):
     """
     Update network on cluster
@@ -1245,25 +1245,23 @@ def get_management_network(cluster_name):
     return net_obj
 
 
-def check_network_usage(cluster_name, network, *attrs):
+@ll.general.generate_logs(step=True)
+def check_network_usage(cluster_name, network, attrs):
     """
     Check if usages attributes exist for specific network
 
     Args:
         cluster_name (str): Name of the Cluster
         network (str): Name of the Network
-        attrs (list): list of attributes (display, migration, management)
+        attrs (list): list of attributes (display, migration, management,
+            default_route)
 
     Returns:
         bool: If all attributes exist in network params, False otherwise
     """
     net_obj = get_cluster_network(cluster=cluster_name, network=network)
-    logger.info("Check if %s are attributes of network %s", attrs, network)
     for attr in attrs:
         if attr not in net_obj.get_usages().get_usage():
-            logger.error(
-                "Attribute %s is not part of network %s", attr, network
-            )
             return False
     return True
 
@@ -1543,3 +1541,11 @@ def get_bond_active_slave_object(host, bond):
         return None
 
     return [i for i in host_nics if i.id == bond_slave_object.id][0]
+
+
+@ll.general.generate_logs()
+def get_all_networks():
+    """
+    Get all networks from engine
+    """
+    return NET_API.get(abs_link=False)

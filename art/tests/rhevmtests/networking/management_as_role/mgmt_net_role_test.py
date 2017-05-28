@@ -22,12 +22,15 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    remove_all_networks,
-    create_and_attach_network, add_networks_to_clusters,
-    update_cluster_network_usages, move_host_to_cluster,
+    add_networks_to_clusters, move_host_to_cluster,
     remove_network, install_host_with_new_management
 )
 from rhevmtests.fixtures import create_clusters, create_datacenters
+from rhevmtests.networking.fixtures import (
+    update_cluster_network_usages,
+    create_and_attach_network,
+    remove_all_networks
+)
 
 
 @attr(tier=2)
@@ -95,8 +98,8 @@ class TestMGMTNetRole02(NetworkTest):
     cluster = mgmt_conf.CLUSTERS[2][0]
     net_1 = mgmt_conf.NETS[2][0]
     net_2 = mgmt_conf.NETS[2][1]
-    net_dict = mgmt_conf.NET_DICT_CASE_02
-    create_and_attach_network_params = [[(dc, cluster)], net_dict]
+    dcs_and_clusters = [(dc, cluster)]
+    network_dict = mgmt_conf.NET_DICT_CASE_02
     clusters_dict = {
         cluster: {
             "name": cluster,
@@ -157,10 +160,9 @@ class TestMGMTNetRole03(NetworkTest):
     ext_cluster_1 = mgmt_conf.CLUSTERS[3][1]
     ext_dc = mgmt_conf.DATA_CENTERS[3][0]
     net_1 = mgmt_conf.NETS[3][0]
-    create_and_attach_network_params = [
-        [(ext_dc, ext_cluster), (None, ext_cluster_1)],
-        mgmt_conf.NET_DICT_CASE_03
-    ]
+    dcs_and_clusters = [(ext_dc, ext_cluster), (None, ext_cluster_1)]
+    network_dict = mgmt_conf.NET_DICT_CASE_03
+
     datacenters_dict = {
         ext_dc: {
             "name": ext_dc,
@@ -260,11 +262,14 @@ class TestMGMTNetRole04(NetworkTest):
     net_3 = mgmt_conf.NETS[4][2]
     dc = conf.DC_0
     ext_cls_0 = mgmt_conf.DATA_CENTERS[4][0]
-    net_dict = mgmt_conf.NET_DICT_CASE_04
-    update_cluster_network_usages_params = [
-        ext_cls_0, net_1, conf.MANAGEMENT_NET_USAGE
-    ]
-    create_and_attach_network_params = [[(dc, ext_cls_0)], net_dict]
+    # net_dict = mgmt_conf.NET_DICT_CASE_04
+
+    update_cluster = ext_cls_0
+    update_cluster_network = net_1
+    update_cluster_network_usages = conf.MANAGEMENT_NET_USAGE
+    dcs_and_clusters = [(dc, ext_cls_0)]
+    network_dict = mgmt_conf.NET_DICT_CASE_04
+    # create_and_attach_network_params = [[(dc, ext_cls_0)], net_dict]
     clusters_dict = {
         ext_cls_0: {
             "name": ext_cls_0,
@@ -292,7 +297,7 @@ class TestMGMTNetRole04(NetworkTest):
 
         testflow.step('Checking network usages')
         assert ll_networks.check_network_usage(
-            self.ext_cls_0, self.net_1, *self.usages_to_check
+            self.ext_cls_0, self.net_1, self.usages_to_check
         )
 
 
@@ -312,8 +317,8 @@ class TestMGMTNetRole05(NetworkTest):
 
     dc = conf.DC_0
     ext_cls_0 = mgmt_conf.CLUSTERS[5][0]
+    ext_cls_1 = mgmt_conf.CLUSTERS[5][1]
     net_1 = mgmt_conf.NETS[5][0]
-    net_dict = mgmt_conf.NET_DICT_CASE_05
     move_host_to_cluster_params = [2, conf.CL_0]
     clusters_dict = {
         ext_cls_0: {
@@ -322,10 +327,17 @@ class TestMGMTNetRole05(NetworkTest):
             "cpu": conf.CPU_NAME,
             "version": conf.COMP_VERSION,
             "management_network": net_1
+        },
+        ext_cls_1: {
+            "name": ext_cls_1,
+            "data_center": dc,
+            "cpu": conf.CPU_NAME,
+            "version": conf.COMP_VERSION,
         }
     }
     remove_all_networks_params = [dc]
-    create_and_attach_network_params = [[(dc, None)], net_dict]
+    dcs_and_clusters = [(dc, None)]
+    network_dict = mgmt_conf.NET_DICT_CASE_05
 
     @polarion("RHEVM3-6471")
     def test_01_moving_host(self):
@@ -340,7 +352,9 @@ class TestMGMTNetRole05(NetworkTest):
             ' network'
         )
         assert ll_hosts.deactivate_host(positive=True, host=conf.HOST_2_NAME)
-        assert helper.move_host_new_cl(host=conf.HOST_2_NAME, cl=conf.CL_1)
+        assert helper.move_host_new_cl(
+            host=conf.HOST_2_NAME, cl=self.ext_cls_1
+        )
         assert ll_hosts.activate_host(positive=True, host=conf.HOST_2_NAME)
         assert ll_hosts.deactivate_host(positive=True, host=conf.HOST_2_NAME)
 
@@ -380,7 +394,6 @@ class TestMGMTNetRole06(NetworkTest):
     ext_cls_3 = mgmt_conf.CLUSTERS[6][3]
     net_1 = mgmt_conf.NETS[6][0]
     net_2 = mgmt_conf.NETS[6][1]
-    net_dict = mgmt_conf.NET_DICT_CASE_06
     clusters_to_remove = [ext_cls_0, ext_cls_1, ext_cls_3]
     datacenters_dict = {
         ext_dc: {
@@ -411,7 +424,8 @@ class TestMGMTNetRole06(NetworkTest):
             "management_network": net_2
         },
     }
-    create_and_attach_network_params = [[(ext_dc, None)], net_dict]
+    dcs_and_clusters = [(ext_dc, None)]
+    network_dict = mgmt_conf.NET_DICT_CASE_06
 
     @polarion("RHEVM3-6477")
     def test_01_different_mgmt_net(self):
@@ -515,7 +529,6 @@ class TestMGMTNetRole07(NetworkTest):
     net_1 = mgmt_conf.NETS[7][0]
     net_2 = mgmt_conf.NETS[7][1]
     ext_cls_0 = mgmt_conf.CLUSTERS[7][0]
-    net_dict = mgmt_conf.NET_DICT_CASE_07
     datacenters_dict = {
         ext_dc: {
             "name": ext_dc,
@@ -523,7 +536,9 @@ class TestMGMTNetRole07(NetworkTest):
         }
     }
     remove_network_params = [ext_dc, conf.MGMT_BRIDGE]
-    create_and_attach_network_params = [[(ext_dc, None)], net_dict]
+    dcs_and_clusters = [(ext_dc, None)]
+    network_dict = mgmt_conf.NET_DICT_CASE_07
+    # create_and_attach_network_params = [[(ext_dc, None)], net_dict]
 
     @polarion("RHEVM3-6479")
     def test_01_different_mgmt_net(self):
@@ -600,7 +615,6 @@ class TestMGMTNetRole08(NetworkTest):
     ext_cls_2 = mgmt_conf.CLUSTERS[8][2]
     net_1 = mgmt_conf.NETS[8][0]
     net_2 = mgmt_conf.NETS[8][1]
-    net_dict = mgmt_conf.NET_DICT_CASE_08_2
     clusters_dict = {
         ext_cls_1: {
             "name": ext_cls_1,
@@ -618,7 +632,8 @@ class TestMGMTNetRole08(NetworkTest):
         },
     }
     add_networks_to_clusters_params = [(ext_cls_1, net_2), (ext_cls_2, net_1)]
-    create_and_attach_network_params = [[(dc, None)], net_dict]
+    dcs_and_clusters = [(dc, None)]
+    network_dict = mgmt_conf.NET_DICT_CASE_08_2
     install_host_with_new_management_params = [
         2, net_1, conf.CL_0, ext_cls_0, dc, mgmt_conf.NET_DICT_CASE_08_1, net_1
     ]

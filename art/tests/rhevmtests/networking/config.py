@@ -17,6 +17,7 @@ MANAGEMENT_NET_USAGE = "management"
 MIGRATION_NET_USAGE = "migration"
 DISPLAY_NET_USAGE = "display"
 DEFAULT_ROUTE_USAGE = "default_route"
+ALL_NETWORK_USAGES = "display,vm,migration,management,default_route"
 STORAGE_TYPE = "nfs"
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
