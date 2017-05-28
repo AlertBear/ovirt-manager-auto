@@ -61,8 +61,10 @@ def create_vm(request, remove_vm):
     template_name = getattr(self, 'template_name', None)
     self.installation = getattr(self, 'installation', True)
     volume_format = getattr(self, 'volume_format', config.DISK_FORMAT_COW)
+    diskless_vm = getattr(self, 'diskless_vm', False)
+
     vm_args = config.create_vm_args.copy()
-    vm_args['storageDomainName'] = self.storage_domain
+    vm_args['storageDomainName'] = None if diskless_vm else self.storage_domain
     vm_args['cluster'] = cluster
     vm_args['vmName'] = self.vm_name
     vm_args['installation'] = self.installation
@@ -221,10 +223,12 @@ def attach_disk(request):
     if hasattr(self, 'update_attach_params'):
         attach_kwargs.update(self.update_attach_params)
 
-    testflow.setup("Attach disk %s to VM %s", self.disk_name, self.vm_name)
+    attach_to_vm = getattr(self, 'vm_to_attach_disk', self.vm_name)
+
+    testflow.setup("Attach disk %s to VM %s", self.disk_name, attach_to_vm)
     assert ll_disks.attachDisk(
-        True, alias=self.disk_name, vm_name=self.vm_name, **attach_kwargs
-    ), ("Failed to attach disk %s to VM %s" % (self.disk_name, self.vm_name))
+        True, alias=self.disk_name, vm_name=attach_to_vm, **attach_kwargs
+    ), ("Failed to attach disk %s to VM %s" % (self.disk_name, attach_to_vm))
     ll_disks.wait_for_disks_status([self.disk_name])
 
 
@@ -387,7 +391,6 @@ def create_template(request):
             assert ll_templates.remove_template(True, self.template_name), (
                 "Failed to remove template %s" % self.template_name
             )
-
     request.addfinalizer(finalizer)
     if not hasattr(self, 'template_name'):
         self.template_name = storage_helpers.create_unique_object_name(

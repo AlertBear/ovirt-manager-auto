@@ -27,7 +27,8 @@ from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage.fixtures import (
     create_dc, clean_dc, create_template, remove_vm, add_disk, attach_disk,
-    create_vm, create_snapshot, remove_vms, clean_mount_point, storage_cleanup
+    create_vm, create_snapshot, remove_vms, clean_mount_point, storage_cleanup,
+    clone_vm_from_template,
 )
 from rhevmtests.storage.storage_import_storage_domain.fixtures import (
     secure_deactivate_and_detach_storage_domain, remove_storage_domain_fin,
@@ -35,7 +36,8 @@ from rhevmtests.storage.storage_import_storage_domain.fixtures import (
     add_master_storage_domain_to_new_dc, create_gluster_or_posix_export_domain,
     initialize_params, add_non_master_storage_domain_to_new_dc,
     add_non_master_storage_domain, remove_template_setup,
-    remove_storage_domain_setup
+    remove_storage_domain_setup, attach_and_activate_storage_domain,
+    attach_disk_to_cloned_vm,
 )
 from art.unittest_lib.common import testflow
 import pytest
@@ -71,7 +73,6 @@ class BasicEnvironment(BaseTestCase):
     deactivate_detach_and_remove_domain_fin.__name__,
     create_vm.__name__,
 )
-@bz({'1422508': {}})
 class DomainImportWithTemplate(BasicEnvironment):
     """
     Create vm from imported domain's Template
@@ -759,6 +760,7 @@ class TestCase5200(DomainImportWithTemplate):
     partial_import = True
 
     @polarion("RHEVM3-" + polarion_test_case)
+    @bz({'1422508': {}})
     @attr(tier=3)
     def test_import_template_cross_domain(self):
         """
@@ -787,6 +789,7 @@ class TestCase5297(DomainImportWithTemplate):
     polarion_test_case = '5297'
 
     @polarion("RHEVM3-5297")
+    @bz({'1422508': {}})
     @attr(tier=2)
     def test_new_vm_from_imported_domain_template(self):
         """
@@ -795,3 +798,45 @@ class TestCase5297(DomainImportWithTemplate):
         - create VM from template
         """
         self.new_vm_from_imported_domain_template()
+
+
+@pytest.mark.usefixtures(
+    create_template.__name__,
+    clone_vm_from_template.__name__,
+    add_disk.__name__,
+    attach_disk_to_cloned_vm.__name__,
+    secure_deactivate_and_detach_storage_domain.__name__,
+    attach_and_activate_storage_domain.__name__,
+    remove_vms.__name__,
+)
+class TestCase16771(DomainImportWithTemplate):
+    """
+    Create a VM out of a diskless template
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage_4_0/4_0_Storage_Templates
+    """
+    __test__ = True
+    polarion_test_case = '16771'
+
+    installation = False
+    diskless_vm = True
+
+    @polarion("RHEVM3-16771")
+    @attr(tier=2)
+    def test_register_vm_from_diskless_template(self):
+        """
+        - Create a VM without disks
+        - Create Template from the diskless VM
+        - Create VM from the template
+        - Attach disk to the VM that created from the template
+        - Deactivate and detach the storage domain of the VM with the disk
+        - Attach the domain back to the environment
+        - Import the VM from the storage domain
+
+        Expected result:
+            VM should import back the the environment
+        """
+        self.vm_names.append(self.vm_from_template)
+        storage_helpers.register_vm_from_data_domain(
+            self.non_master, self.vm_from_template, config.CLUSTER_NAME
+        )

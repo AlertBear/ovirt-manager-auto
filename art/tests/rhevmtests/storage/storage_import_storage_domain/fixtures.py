@@ -1,7 +1,6 @@
 import pytest
 import logging
 import config
-from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
@@ -15,6 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import test_utils
 from art.unittest_lib import testflow
 import rhevmtests.storage.helpers as storage_helpers
+from rhevmtests.storage.fixtures import attach_disk
 from rhevmtests.storage.fixtures import remove_vm  # flake8: noqa
 
 logger = logging.getLogger(__name__)
@@ -303,3 +303,30 @@ def remove_storage_domain_setup(request):
         True, domain_to_remove, spm_host, **remove_param
     ), "Failed to remove storage domain %s" % domain_to_remove
     ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
+
+
+@pytest.fixture()
+def attach_and_activate_storage_domain(request):
+    """
+    Deactivate storage-domain
+    """
+    self = request.node.cls
+
+    testflow.setup(
+        "Attach and activate domain %s" % self.non_master
+    )
+
+    assert hl_sd.attach_and_activate_domain(
+        config.DATA_CENTER_NAME, self.non_master
+    ), "Failed to attach and activate domain %s" % self.non_master
+
+
+@pytest.fixture(scope='class')
+def attach_disk_to_cloned_vm(request):
+    """
+    Attach a disk to a VM cloned from template
+    """
+    self = request.node.cls
+
+    self.vm_to_attach_disk = self.vm_from_template
+    attach_disk(request)
