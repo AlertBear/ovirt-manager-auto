@@ -23,7 +23,8 @@ NETMASK = '255.255.255.0'
 VLAN_ID = PARAMETERS.as_list('vlan_id')
 VLANS = [str(i) for i in xrange(2, 4096)]
 VLAN_IDS = filter(lambda vlan_id: vlan_id not in VLAN_ID, VLANS)
-BOND = PARAMETERS.as_list('bond')
+BOND = ["bond%s" % str(i) for i in xrange(10)]
+
 TIMEOUT = 60
 NET_EXCEPTION = exceptions.NetworkException
 VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
