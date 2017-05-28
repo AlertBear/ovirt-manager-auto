@@ -17,7 +17,6 @@ import config as register_domain_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-from rhevmtests import networking
 from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -61,7 +60,7 @@ def prepare_setup(request):
         Remove all created VMs from engine
         """
         testflow.teardown("Remove all VMs from engine")
-        networking.remove_unneeded_vms()
+        network_helper.remove_unneeded_vms()
     request.addfinalizer(fin1)
 
     testflow.setup("Create networks %s", register_domain_conf.NETS_DICT)

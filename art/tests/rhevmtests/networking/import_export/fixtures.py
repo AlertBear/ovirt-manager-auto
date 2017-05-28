@@ -14,10 +14,10 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as import_export_conf
 import helper
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as networking_helper
 from art.unittest_lib import testflow
-from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -43,49 +43,67 @@ def import_export_prepare_setup(request):
     Prepare setup
     """
     import_export = ImportExport()
+    results = list()
 
-    @networking.ignore_exception
+    def fin5():
+        """
+        Check if one of the finalizers failed.
+        """
+        global_helper.raise_if_false_in_list(results=results)
+    request.addfinalizer(fin5)
+
     def fin4():
         """
         Remove templates
         """
         testflow.teardown("Remove templates")
-        networking.remove_unneeded_templates()
+        networking_helper.remove_unneeded_templates()
     request.addfinalizer(fin4)
 
-    @networking.ignore_exception
     def fin3():
         """
         Finalizer for remove networks from setup
         """
         testflow.teardown("Remove networks from setup")
-        assert networking_helper.remove_networks_from_setup(
-            hosts=import_export.host_0_name
+        results.append(
+            (
+                networking_helper.remove_networks_from_setup(
+                    hosts=import_export.host_0_name
+                ), "fin3: remove_networks_from_setup"
+            )
         )
     request.addfinalizer(fin3)
 
-    @networking.ignore_exception
     def fin2():
         """
         Finalizer for remove template from export domain
         """
         testflow.teardown("Remove template from export domain")
-        ll_templates.removeTemplateFromExportDomain(
-            positive=True, template=import_export.ie_template,
-            export_storagedomain=import_export.export_domain
+        results.append(
+            (
+                ll_templates.removeTemplateFromExportDomain(
+                    positive=True, template=import_export.ie_template,
+                    export_storagedomain=import_export.export_domain
+                ),
+                "fin2: removeTemplateFromExportDomain"
+            )
         )
     request.addfinalizer(fin2)
 
-    @networking.ignore_exception
     def fin1():
         """
         Finalizer for remove VM from export domain
         """
         testflow.teardown("Remove VM from export domain")
-        ll_vms.remove_vm_from_export_domain(
-            positive=True, vm=import_export.ie_vm,
-            datacenter=import_export.dc_0,
-            export_storagedomain=import_export.export_domain
+        results.append(
+            (
+                ll_vms.remove_vm_from_export_domain(
+                    positive=True, vm=import_export.ie_vm,
+                    datacenter=import_export.dc_0,
+                    export_storagedomain=import_export.export_domain
+                ),
+                "fin1: remove_vm_from_export_domain"
+            )
         )
     request.addfinalizer(fin1)
 

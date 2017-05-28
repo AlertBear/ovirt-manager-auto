@@ -15,7 +15,6 @@ import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.unittest_lib import testflow
-from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -28,7 +27,7 @@ def port_mirroring_prepare_setup(request):
     bond_1 = "bond01"
     vm_list = conf.VM_NAME[:pm_conf.NUM_VMS]
 
-    @networking.ignore_exception
+    @network_helper.ignore_exception
     def fin5():
         """
         Remove networks
@@ -41,25 +40,25 @@ def port_mirroring_prepare_setup(request):
         )
     request.addfinalizer(fin5)
 
-    @networking.ignore_exception
+    @network_helper.ignore_exception
     def fin4():
         """
         Remove all vNIC profiles from setup
         """
         testflow.teardown("Remove unneeded vnic profiles")
-        networking.remove_unneeded_vnic_profiles()
+        network_helper.remove_unneeded_vnic_profiles()
     request.addfinalizer(fin4)
 
-    @networking.ignore_exception
+    @network_helper.ignore_exception
     def fin3():
         """
         Finalizer for remove vNICs from VMs
         """
         testflow.teardown("Remove unneeded VMs NICs")
-        networking.remove_unneeded_vms_nics()
+        network_helper.remove_unneeded_vms_nics()
     request.addfinalizer(fin3)
 
-    @networking.ignore_exception
+    @network_helper.ignore_exception
     def fin2():
         """
         Stop all VMs
@@ -68,7 +67,7 @@ def port_mirroring_prepare_setup(request):
         ll_vms.stop_vms_safely(vms_list=conf.VM_NAME)
     request.addfinalizer(fin2)
 
-    @networking.ignore_exception
+    @network_helper.ignore_exception
     def fin1():
         """
         Remove ifcfg files from VMs

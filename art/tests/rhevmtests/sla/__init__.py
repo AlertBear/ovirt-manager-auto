@@ -7,12 +7,12 @@ import config
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.utils.inventory import Inventory
-from rhevmtests import networking
+import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger(__name__)
 
 
-@networking.ignore_exception
+@network_helper.ignore_exception
 def sla_cleanup():
     """
     1. Stop all VMs
