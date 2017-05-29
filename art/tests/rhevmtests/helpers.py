@@ -681,8 +681,9 @@ def reboot_hosts(hosts_resources):
 
     Raises:
         AssertionError: In case of any failure
+        APITimeout: Timeout exceeded waiting for all data center's tasks to
+            complete
     """
-    hosts_ips = [host.ip for host in hosts_resources]
     hosts_pwr_mgmnt = [SSHPowerManager(host) for host in hosts_resources]
     hosts_names = [
         ll_hosts.get_host_name_from_engine(host) for host in hosts_resources
@@ -694,17 +695,13 @@ def reboot_hosts(hosts_resources):
             "Failed to deactivate host %s" % host
         )
 
-    for pwr_mgmt, host in zip(hosts_pwr_mgmnt, config.HOSTS):
+    for pwr_mgmt, host in zip(hosts_pwr_mgmnt, hosts_names):
         logger.info("Rebooting Host %s", host)
         pwr_mgmt.restart()
 
-    for host_ip in hosts_ips:
-        executor = get_host_executor(host_ip, config.VDC_ROOT_PASSWORD)
-        executor.wait_for_connectivity_state(positive=True)
-
     logger.info("Activating hosts %s", hosts_names)
     for host in hosts_names:
-        assert hl_hosts.activate_host_if_not_up(host), (
+        assert ll_hosts.activate_host(positive=True, host=host, wait=True), (
             "Failed to activate host %s" % host
         )
 
