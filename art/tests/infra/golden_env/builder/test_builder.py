@@ -70,7 +70,9 @@ class StorageConfiguration(object):
                 'gluster_data_domain_path'
             )
             self.gluster_vfs_types = (
-                [configuration['vfs_type']] * len(self.gluster_paths))
+                [configuration.get('vfs_type', 'glusterfs')] *
+                len(self.gluster_paths)
+            )
         else:
             self.gluster_addresses, self.gluster_paths = [], []
             self.gluster_vfs_types = []
