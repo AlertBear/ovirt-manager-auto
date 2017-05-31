@@ -481,11 +481,6 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
                 self.hsm_host = storage_helpers.get_hsm_host(
                     config.JOB_MOVE_COPY_DISK, config.COPY_VOLUME_VERB, True
                 )
-                assert self.hsm_host, "HSM host was not found"
-                self.host_ip = self.hsm_host.ip
-            else:
-                self.host_ip = source
-            config.SOURCE = self.host_ip
         t = Thread(target=f, args=())
         t.start()
         sleep(5)
@@ -498,6 +493,13 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
             "Wait for command %s to appear on the engine log", self.regex
         )
         t.join()
+
+        if source is None:
+            assert self.hsm_host, "HSM host was not found"
+            self.host_ip = self.hsm_host.ip
+        else:
+            self.host_ip = source
+        config.SOURCE = self.host_ip
 
         testflow.step(
             "Block connection between %s to %s", self.host_ip, target

@@ -1472,12 +1472,13 @@ def get_hsm_host(
         ll_jobs.wait_for_step_to_start(job_object, step_description)
     step_object = ll_jobs.step_by_description(job_object, step_description)
     if step_object:
-        host_obj = ll_hosts.get_host_object(
-            step_object.get_execution_host().get_id(), 'id'
-        )
-        return rhevm_helpers.get_host_resource(
-            host_obj.get_address(), config.HOSTS_PW
-        )
+        if step_object.get_execution_host():
+            host_obj = ll_hosts.get_host_object(
+                step_object.get_execution_host().get_id(), 'id'
+            )
+            return rhevm_helpers.get_host_resource(
+                host_obj.get_address(), config.HOSTS_PW
+            )
     return None
 
 

@@ -313,29 +313,30 @@ def delete_disks(request):
     self = request.node.cls
 
     def finalizer():
-        results = list()
-        with ThreadPoolExecutor(
-            max_workers=len(self.disks_to_remove)
-        ) as executor:
-            for disk in self.disks_to_remove:
-                if ll_disks.checkDiskExists(True, disk):
-                    ll_disks.wait_for_disks_status([disk])
-                    testflow.teardown("Deleting disk %s", disk)
-                    results.append(
-                        executor.submit(
-                            ll_disks.deleteDisk, True, disk
+        if self.disks_to_remove:
+            results = list()
+            with ThreadPoolExecutor(
+                max_workers=len(self.disks_to_remove)
+            ) as executor:
+                for disk in self.disks_to_remove:
+                    if ll_disks.checkDiskExists(True, disk):
+                        ll_disks.wait_for_disks_status([disk])
+                        testflow.teardown("Deleting disk %s", disk)
+                        results.append(
+                            executor.submit(
+                                ll_disks.deleteDisk, True, disk
+                            )
                         )
+            for index, result in enumerate(results):
+                if result.exception():
+                    raise result.exception()
+                if not result.result:
+                    raise exceptions.HostException(
+                        "Delete disk %s failed." % self.disks_to_remove[index]
                     )
-        for index, result in enumerate(results):
-            if result.exception():
-                raise result.exception()
-            if not result.result:
-                raise exceptions.HostException(
-                    "Delete disk %s failed." % self.disks_to_remove[index]
+                logger.info(
+                    "Delete disk %s succeeded", self.disks_to_remove[index]
                 )
-            logger.info(
-                "Delete disk %s succeeded", self.disks_to_remove[index]
-            )
     request.addfinalizer(finalizer)
     if not hasattr(self, 'disk_name'):
         self.disk_name = storage_helpers.create_unique_object_name(
@@ -1467,7 +1468,8 @@ def extend_storage_domain(request):
     extend_indices = getattr(self, 'extend_indices', [1])
 
     self.domain_size = ll_sd.get_total_size(
-        storagedomain=self.new_storage_domain
+        storagedomain=self.new_storage_domain,
+        data_center=config.DATA_CENTER_NAME
     )
 
     testflow.setup(
