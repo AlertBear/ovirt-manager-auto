@@ -59,10 +59,10 @@ DATA_FILES = [
     'art/tests/rhevmtests/infra/*/*.py',
     'art/tests/rhevmtests/infra/*/*/*.py',
     'art/tests/rhevmtests/infra/regression_infra/fixtures/*.properties',
-    'art/tests/rhevmtests/system/*.py',
-    'art/tests/rhevmtests/system/*/*.py',
-    'art/tests/rhevmtests/system/generic_ldap/fixtures/*/*.properties',
-    'art/tests/rhevmtests/system/generic_ldap/fixtures/*/*.conf',
+    'art/tests/rhevmtests/coresystem/*.py',
+    'art/tests/rhevmtests/coresystem/*/*.py',
+    'art/tests/rhevmtests/coresystem/generic_ldap/fixtures/*/*.properties',
+    'art/tests/rhevmtests/coresystem/generic_ldap/fixtures/*/*.conf',
 ]
 
 DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
