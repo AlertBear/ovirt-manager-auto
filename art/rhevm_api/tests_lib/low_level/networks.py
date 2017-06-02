@@ -22,7 +22,6 @@ import os
 import re
 
 import art.rhevm_api.tests_lib.low_level as ll
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 from art.core_api import apis_exceptions
 from art.core_api import apis_utils
 from art.core_api.apis_utils import getDS
@@ -36,11 +35,10 @@ LABEL_API = test_utils.get_api('network_label', 'network_labels')
 HOST_NICS_API = test_utils.get_api('host_nic', 'host_nics')
 NF_API = test_utils.get_api("networkfilter", "networkfilters")
 PROC_NET_DIR = "/proc/net"
-NETWORK_NAME = "NET"
 ETHTOOL_OFFLOAD = ("tcp-segmentation-offload", "udp-fragmentation-offload")
 ETHTOOL_CMD = "ethtool"
 
-logger = logging.getLogger('networks')
+logger = logging.getLogger("ll.networks")
 
 
 @ll.general.generate_logs()
@@ -53,58 +51,63 @@ def _prepare_network_object(**kwargs):
         description (str): Network description
         stp (str): Set STP on network
         data_center (str): Datacenter name for the network
-        address (str): IP address
-        netmask (str): IP netmask
-        gateway (str): IP gateway
         vlan_id (str): VLAN id for the network
         usages (str): VM or Non-VM network (send "" for Non-VM)
         mtu (str): Network MTU
         profile_required (str): Set if vNIC profile is required
         qos_dict (dict): QoS for the network
+        dns (list): List of DNS servers
 
     Returns:
         Network: Network object
     """
     net = apis_utils.data_st.Network()
+    name = kwargs.get("name")
+    description = kwargs.get("description")
+    stp = kwargs.get("stp")
+    data_center = kwargs.get("data_center")
+    vlan_id = kwargs.get("vlan_id")
+    usages = kwargs.get("usages")
+    mtu = kwargs.get("mtu")
+    profile_required = kwargs.get("profile_required")
+    qos_dict = kwargs.get("qos_dict")
+    dns = kwargs.get("dns")
 
-    if 'name' in kwargs:
-        net.set_name(kwargs.get('name'))
+    if name:
+        net.set_name(name)
 
-    if 'description' in kwargs:
-        net.set_description(kwargs.get('description'))
+    if description:
+        net.set_description(description)
 
-    if 'stp' in kwargs:
-        net.set_stp(kwargs.get('stp'))
+    if stp:
+        net.set_stp(stp)
 
-    if 'data_center' in kwargs:
-        dc = kwargs.get('data_center')
-        net.set_data_center(DC_API.find(dc))
+    if data_center:
+        net.set_data_center(DC_API.find(data_center))
 
-    ip = {}
-    for k in ['address', 'netmask', 'gateway']:
-        if k in kwargs:
-            ip[k] = kwargs.get(k)
-    ip and net.set_ip(apis_utils.data_st.Ip(**ip))
+    if vlan_id:
+        net.set_vlan(apis_utils.data_st.Vlan(id=vlan_id))
 
-    if 'vlan_id' in kwargs:
-        net.set_vlan(apis_utils.data_st.Vlan(id=kwargs.get('vlan_id')))
-
-    if 'usages' in kwargs:
-        usages = kwargs.get('usages')
+    if usages:
         if usages:
-            net.set_usages(apis_utils.data_st.Usages(usage=usages.split(',')))
+            net.set_usages(apis_utils.data_st.Usages(usage=usages.split(",")))
         else:
             net.set_usages(apis_utils.data_st.Usages())
 
-    if 'mtu' in kwargs:
-        net.set_mtu(kwargs.get('mtu'))
+    if mtu:
+        net.set_mtu(mtu)
 
-    if 'profile_required' in kwargs:
-        net.set_profile_required(kwargs.get('profile_required'))
+    if profile_required:
+        net.set_profile_required(profile_required)
 
-    if 'qos_dict' in kwargs:
-        qos_obj = prepare_qos_on_net(kwargs.get("qos_dict"))
+    if qos_dict:
+        qos_obj = prepare_qos_on_net(qos_dict)
         net.set_qos(qos_obj)
+
+    if dns is not None:
+        dns_obj = prepare_network_dns_object(dns_servers=dns)
+        net.set_dns_resolver_configuration(dns_obj)
+
     return net
 
 
@@ -118,25 +121,22 @@ def add_network(positive, **kwargs):
         kwargs (dict): Parameters for add network.
 
     Keyword Arguments:
-        name (str): Name of a new network.
-        description (str): New network description (if relevant).
-        data_center (str): Data center name where a new network should be added
-        address (str): Network ip address.
-        netmask (str): Network ip netmask.
-        gateway (str): Network ip gateway.
-        stp (str): Support stp true/false (note: true/false as a strings).
-        vlan_id (int): Network vlan_id.
-        usages (str): Comma separated usages for example 'VM,DISPLAY'.
-        mtu (int): Integer to overrule mtu on the related host nic.
-        profile_required (bool): Flag to create or not VNIC profile
-            for the network.
+        name (str): Network name
+        description (str): Network description
+        stp (str): Set STP on network
+        data_center (str): Datacenter name for the network
+        vlan_id (str): VLAN id for the network
+        usages (str): VM or Non-VM network (send "" for Non-VM)
+        mtu (str): Network MTU
+        profile_required (str): Set if vNIC profile is required
+        qos_dict (dict): QoS for the network
+        dns (list): List of DNS servers
 
     Returns:
         bool: True if create network succeeded, False otherwise.
     """
     net_obj = _prepare_network_object(**kwargs)
-    status = NET_API.create(entity=net_obj, positive=positive)[1]
-    return status
+    return NET_API.create(entity=net_obj, positive=positive)[1]
 
 
 @ll.general.generate_logs()
@@ -150,25 +150,23 @@ def update_network(positive, network, **kwargs):
         kwargs (dict): Parameters for update network
 
     Keyword arguments:
-        name: New network name. (str)
-        data_center: In case more than one network with the same name
-            exists.
-        address (str): Network ip address.
-        netmask (str): Network ip netmask.
-        gateway (str): Network ip gateway.
-        description (str): New network description.
-        stp (str): New network support stp.
-        vlan_id (str): New network vlan id.
-        usages (str): Comma separated usages for example 'VM,DISPLAY'.
-        mtu (int): Integer to overrule mtu on the related host nic.
+        name (str): Network name
+        description (str): Network description
+        stp (str): Set STP on network
+        data_center (str): Datacenter name for the network
+        vlan_id (str): VLAN id for the network
+        usages (str): VM or Non-VM network (send "" for Non-VM)
+        mtu (str): Network MTU
+        profile_required (str): Set if vNIC profile is required
+        qos_dict (dict): QoS for the network
+        dns (list): List of DNS servers
 
     Returns:
         bool: True if network was updated properly, False otherwise
     """
-    net = find_network(network, kwargs.get("data_center"))
+    net = find_network(network=network, data_center=kwargs.get("data_center"))
     net_update = _prepare_network_object(**kwargs)
-    status = NET_API.update(net, net_update, positive)[1]
-    return status
+    return NET_API.update(net, net_update, positive)[1]
 
 
 @ll.general.generate_logs()
@@ -675,25 +673,26 @@ def create_network_in_datacenter(positive, datacenter, **kwargs):
         kwargs (dict): Parameters for add network.
 
     Keyword Arguments:
-        name (str): Network name.
-        description (str): New network description (if relevant).
-        stp (str): Support stp true/false (note: true/false as a strings).
-        vlan_id (int): Network vlan_id.
-        usages (str): Comma separated usages 'vm' or "" for non-VM.
-        mtu (int): Integer to overrule mtu on the related host nic.
-        profile_required (bool): Flag to create or not VNIC profile
-            for the network.
+        name (str): Network name
+        description (str): Network description
+        stp (str): Set STP on network
+        data_center (str): Datacenter name for the network
+        vlan_id (str): VLAN id for the network
+        usages (str): VM or Non-VM network (send "" for Non-VM)
+        mtu (str): Network MTU
+        profile_required (str): Set if vNIC profile is required
+        qos_dict (dict): QoS for the network
+        dns (list): List of DNS servers
 
     Returns:
         bool: True if create network succeeded, False otherwise.
     """
     dc = DC_API.find(datacenter)
     net_obj = _prepare_network_object(**kwargs)
-    status = NET_API.create(
+    return NET_API.create(
         entity=net_obj, positive=positive, collection=NET_API.getElemFromLink
         (dc, get_href=True)
     )[1]
-    return status
 
 
 @ll.general.generate_logs()
@@ -730,23 +729,23 @@ def update_network_in_datacenter(positive, network, datacenter, **kwargs):
         kwargs (dict): Network oarams
 
     Keyword Args:
-        description (str): new network description (if relevant)
-        stp (str): new network support stp (if relevant). (true/false string)
-        vlan_id (int): new network vlan id (if relevant)
-        usages (str): a string contain list of comma-separated usages 'vm'
-            or "" for Non-VM. should contain all usages every update. a
-            missing usage will be deleted!
-        mtu (int): and integer to overrule mtu on the related host nic.
+        name (str): Network name
+        description (str): Network description
+        stp (str): Set STP on network
+        data_center (str): Datacenter name for the network
+        vlan_id (str): VLAN id for the network
+        usages (str): VM or Non-VM network (send "" for Non-VM)
+        mtu (str): Network MTU
+        profile_required (str): Set if vNIC profile is required
+        qos_dict (dict): QoS for the network
+        dns (list): List of DNS servers
 
     Returns:
         bool: True if result of action == positive, False otherwise
     """
-    net = get_network_in_datacenter(
-        network=network, datacenter=datacenter
-    )
+    net = get_network_in_datacenter(network=network, datacenter=datacenter)
     net_update = _prepare_network_object(**kwargs)
-    res = NET_API.update(net, net_update, positive)
-    return res
+    return NET_API.update(net, net_update, positive)
 
 
 @ll.general.generate_logs(error=False)
@@ -1203,7 +1202,7 @@ def update_qos_on_vnic_profile(
     Returns:
         bool: True/False
     """
-    qos = ll_datacenters.get_qos_from_datacenter(
+    qos = ll.datacenters.get_qos_from_datacenter(
         datacenter=datacenter, qos_name=qos_name
     )
     return update_vnic_profile(
@@ -1321,17 +1320,17 @@ def prepare_qos_on_net(qos_dict):
     else:
         qos_name = qos_dict.pop("qos_name")
         datacenter = qos_dict.pop("datacenter")
-        qos_obj = ll_datacenters.get_qos_from_datacenter(
+        qos_obj = ll.datacenters.get_qos_from_datacenter(
             datacenter, qos_name
         )
         # if qos_obj is not found on DC, need to create a new QoS object
         if not qos_obj:
             qos_type = qos_dict.pop("qos_type")
-            ll_datacenters.add_qos_to_datacenter(
+            ll.datacenters.add_qos_to_datacenter(
                 datacenter=datacenter, qos_name=qos_name,
                 qos_type=qos_type, **qos_dict
             )
-            qos_obj = ll_datacenters.get_qos_from_datacenter(
+            qos_obj = ll.datacenters.get_qos_from_datacenter(
                 datacenter, qos_name
             )
     return qos_obj
@@ -1549,3 +1548,21 @@ def get_all_networks():
     Get all networks from engine
     """
     return NET_API.get(abs_link=False)
+
+
+@ll.general.generate_logs()
+def prepare_network_dns_object(dns_servers):
+    """
+    Prepare DNS object with dns_servers for network or network attachment
+
+    Args:
+        dns_servers (list): DNS server list
+
+    Returns:
+        DnsResolverConfiguration: DnsResolverConfiguration object
+    """
+    resolver_configuration = apis_utils.data_st.DnsResolverConfiguration()
+    name_servers = apis_utils.data_st.name_serversType()
+    name_servers.set_name_server(dns_servers)
+    resolver_configuration.set_name_servers(name_servers)
+    return resolver_configuration

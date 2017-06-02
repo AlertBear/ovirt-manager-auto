@@ -41,10 +41,11 @@ def get_host_network_attachments(host_name):
     Get all host network attachments from:
     api/hosts/<host_id>/networkattachments
 
-    :param host_name: Host name
-    :type host_name: str
-    :return: Host network attachments
-    :rtype: list
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        list: Host network attachments
     """
     logger.info("Get host %s network attachments", host_name)
     host = ll_hosts.HOST_API.find(host_name)
@@ -61,12 +62,11 @@ def get_host_nic_network_attachments(host_name, nic):
     Get host NIC network attachments from:
     api/hosts/<host_id>/nics/<nic_id>/networkattachments
 
-    :param host_name: Host name
-    :type host_name: str
-    :param nic: NIC name
-    :type nic: str
-    :return: Host NIC network attachments
-    :rtype: list
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        list: Host NIC network attachments
     """
     logger.info("Get host %s NIC %s network attachments", host_name, nic)
     host_nic = ll_hosts.get_host_nic(host_name, nic)
@@ -84,14 +84,13 @@ def get_networks_attachments(host_name, networks, nic=None):
     """
     Get networks attachments by network names
 
-    :param host_name: Host name
-    :type host_name: str
-    :param networks: Network names list
-    :type networks: list
-    :param nic: NIC name
-    :type nic: str
-    :return: Network attachments
-    :rtype: list
+    Args:
+        host_name (str): Host name
+        networks (list): Network names list
+        nic (str): NIC name
+
+    Returns:
+        list: Network attachments
     """
     func = "get_host{0}network_attachments".format("_nic_" if nic else "_")
     args = (host_name, nic) if nic else (host_name,)
@@ -107,10 +106,11 @@ def get_host_unmanaged_objects(host_name):
     """
     Get host unmanaged objects
 
-    :param host_name: Host name
-    :type host_name: str
-    :return: Host unmanaged objects
-    :rtype: list
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        list: Host unmanaged objects
     """
     host = ll_hosts.HOST_API.find(host_name)
     return ll_hosts.HOST_API.getElemFromLink(
@@ -122,10 +122,11 @@ def get_attachment_sync_status(attachment):
     """
     Get attachment sync status
 
-    :param attachment: Network attachment
-    :type attachment: NetworkAttachment object
-    :return: True if network is synced else False
-    :rtype: bool
+    Args:
+        attachment (NetworkAttachment): Network attachment
+
+    Returns:
+        bool: True if network is synced else False
     """
     return attachment.in_sync
 
@@ -133,10 +134,12 @@ def get_attachment_sync_status(attachment):
 def get_attachment_reported_configurations(attachment):
     """
     Get attachment reported configurations
-    :param attachment: network attachment
-    :type attachment: NetworkAttachment object
-    :return: network attachment reported configurations
-    :rtype: list
+
+    Args:
+        attachment (NetworkAttachment): Network attachment
+
+    Returns:
+        list: Network attachment reported configurations
     """
     reported_ = attachment.get_reported_configurations()
     return reported_.get_reported_configuration()
@@ -146,12 +149,12 @@ def get_attachment_href(host_name, nic=None):
     """
     Get host/NIC attachment href
 
-    :param host_name: Host name
-    :type host_name: str
-    :param nic: NIC name
-    :type nic: str
-    :return: Host/NIC attachment href
-    :rtype: str
+    Args:
+        host_name (str): Host name
+        nic (str): NIC name
+
+    Returns:
+        str: Host/NIC attachment href
     """
     api = ll_hosts.HOST_NICS_API if nic else ll_hosts.HOST_API
     if nic:
@@ -168,12 +171,23 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     """
     Prepare network attachment object
 
-    :param host_name: Host name
-    :type host_name: str
-    :param kwargs: Network attachment kwargs
-    :type kwargs: dict
-    :return: Network attachment object
-    :rtype: NetworkAttachment object
+    Args:
+        host_name (str): Host name
+
+    Keyword Args:
+        update (bool): True to update network attachment
+        ip (dict): IP dict
+        network (str): Network name
+        nic (str): NIC name
+        override_configuration (bool): True to override configuration
+        properties (dict): Properties dict
+        datacenter (str): Data center name
+        cluster (str): Cluster name
+        qos (dict): QoS dict
+        dns (list): DNS servers list
+
+    Returns:
+        NetworkAttachment: Network attachment object
     """
     network = kwargs.get(NETWORK)
     ip_none = {
@@ -314,12 +328,12 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
     Prepare HostNics/NetworkAttachments objects of networks and BONDs
     for setup_networks function
 
-    :param host_name: Host name
-    :type host_name: str
-    :param dict_to_remove: Dict with networks/BONDs to remove
-    :type dict_to_remove: dict
-    :return: HostNics/NetworkAttachments/labels objects
-    :rtype: tuple
+    Args:
+        host_name (str): Host name
+        dict_to_remove (dict): Dict with networks/BONDs to remove
+
+    Returns:
+        tuple: HostNics/NetworkAttachments/labels objects
     """
     removed_bonds = data_st.HostNics()
     removed_network_attachments = data_st.NetworkAttachments()
@@ -355,18 +369,15 @@ def prepare_add_for_setupnetworks(
     """
     Prepare NetworkAttachment object for setup_networks function
 
-    :param network_attachments: NetworkAttachment object
-    :type network_attachments: NetworkAttachment
-    :param labels: labels object
-    :type labels: Labels
-    :param host_name: Host name
-    :type host_name: str
-    :param dict_to_add: Dict with networks to dict_to_add
-    :type dict_to_add: dict
-    :param update: True for update networks/BONDs/Labels
-    :type update: bool
-    :return: Network_attachments, bonds and labels objects
-    :rtype: tuple
+    Args:
+        network_attachments (NetworkAttachment): Network attachment
+        labels (Labels): labels object
+        host_name (str): Host name
+        dict_to_add (dict): Dict with networks to dict_to_add
+        update (bool): True for update networks/BONDs/Labels
+
+    Returns:
+        tuple: Network_attachments, bonds and labels objects
     """
     bonds = data_st.HostNics()
     for k, v in dict_to_add.iteritems():
@@ -428,12 +439,12 @@ def get_host_unmanaged_networks(host_name, networks=list()):
     """
     Get unmanaged network object from host
 
-    :param host_name: Host name
-    :type host_name: str
-    :param networks: Networks names
-    :type networks: list
-    :return: Unmanaged networks
-    :rtype: list
+    Args:
+        host_name (str): Host name
+        networks (list): Networks names
+
+    Returns:
+        list: Unmanaged networks
     """
     unmanaged_networks = get_host_unmanaged_objects(host_name)
     if not networks:
@@ -445,12 +456,12 @@ def remove_unmanaged_networks(host_name, networks=list()):
     """
     Remove unmanaged networks from host
 
-    :param host_name: Host name
-    :type host_name: str
-    :param networks: Networks to remove
-    :type networks: list
-    :return: True/False
-    :rtype: bool
+    Args:
+        host_name (str): Host name
+        networks (list): Networks to remove
+
+    Returns:
+        bool: True if network is removed else False
     """
     unmanged_networks = get_host_unmanaged_networks(host_name, networks)
     for unmanaged_network in unmanged_networks:
@@ -469,10 +480,11 @@ def get_network_name_from_attachment(attachment):
     """
     Get network name from network attachment
 
-    :param attachment: Network attachment object
-    :type attachment: NetworkAttachment
-    :return: Network name
-    :rtype: str
+    Args:
+        attachment (NetworkAttachment): Network attachment object
+
+    Returns:
+        str: Network name
     """
     return ll_general.get_object_name_by_id(
         ll_networks.NET_API, attachment.get_network().get_id()
@@ -483,14 +495,13 @@ def create_host_nic_label_object(host_name, nic, label):
     """
     Prepare label object with host NIC
 
-    :param host_name: Host name
-    :type host_name: str
-    :param nic: Host NIC name
-    :type nic: str
-    :param label: Label name
-    :type label: str
-    :return: label object
-    :rtype: Label
+    Args:
+        host_name (str): Host name
+        nic (str): Host NIC name
+        label (str): Label name
+
+    Returns:
+        Label: Label object
     """
     label_obj = ll_networks.create_label(label=label)
     host_nic_obj = ll_hosts.get_host_nic(host=host_name, nic=nic)

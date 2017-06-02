@@ -121,6 +121,8 @@ def setup_networks(host_name, **kwargs):
         then one IP per attachment but only one primary)
     add > add2: Create BOND with two slaves without network attached
     add > add3: Create nicless network (Network without host_nic attached)
+    add > add4: Create NIC with label
+    add > add5: Add network with DNS
     remove: Remove net2 network (Can remove more then one network)
         Remove bond20 (Can remove more then one BOND)
     update > update1: Update existing  bond30 to 3 slaves
@@ -130,6 +132,7 @@ def setup_networks(host_name, **kwargs):
     update > update4: Remove slave from existing bond30
     update > update5: Add new slave to existing bond30
     update > update6: Update existing bond30 mode to 1
+    update > update7: Update existing bond30 with DNS
     sync > sync net1 and net2
 
     Args:
@@ -172,6 +175,10 @@ def setup_networks(host_name, **kwargs):
                         "nic": dummy10,
                         "labels": ["lb1"]
                     },
+                    "add5": {
+                        "nic": dummy10,
+                        "dns": ["8.8.8.8"]
+                    },
                     "remove": {
                         "networks": ["net2"],
                         "bonds": ["bond20"],
@@ -201,7 +208,10 @@ def setup_networks(host_name, **kwargs):
                     "update6": {
                         "nic": "bond30",
                          "mode": 1
-                },
+                    },
+                    "update7": {
+                        "nic": "bond30",
+                         "dns": ["8.8.8.8"]
                 "sync": {
                     "networks": ["net1", "net2"]
                     },
