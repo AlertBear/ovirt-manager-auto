@@ -3,15 +3,11 @@
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage_3_6/3_6_Storage_allow%20gluster%20mount%20with%20additional%20nodes
 """
-from multiprocessing.pool import ThreadPool
 import logging
-import config
-import pytest
-import re
-import time
+from unittest2 import SkipTest
+from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.tests_lib.high_level import (
     hosts as hl_hosts,
-
 )
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -19,58 +15,90 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
 )
 from art.rhevm_api.utils import storage_api
+from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
+from art.unittest_lib import attr, StorageTest as BaseTestCase
 from art.rhevm_api.utils.log_listener import watch_logs
-from rhevmtests.storage.storage_gluster_additional_nodes.fixtures import (
-    block_connectivity_gluster_nodes, initialize_params,
-    create_gluster_storage_domain_with_or_without_additional_nodes,
-    unblock_connectivity_gluster_nodes,
-)
-from rhevmtests.storage.fixtures import (
-    remove_storage_domain,
-)
+from multiprocessing import Process, Queue
+from rhevmtests.storage import config
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
+NODES = [None] * 3
+SPM_HOST = None
+SPM_HOST_IP = None
+SD_INACTIVE_TIMEOUT = 7 * 60
+GLUSTER_CMD_TIMEOUT = 60
 
-@pytest.fixture(scope='module', autouse=True)
-def deactivate_all_non_spm_hosts_non_test_gluster_sds(request):
-    """
-    Deactivate/Activate all non spm hosts
-    """
-    def finalizer():
-        for host in config.HOSTS:
-            assert hl_hosts.activate_host_if_not_up(host), (
-                "Unable to activate host %s", host
-            )
-    request.addfinalizer(finalizer)
 
-    assert config.GLUSTER_REPLICA_PATH, (
-        "Cannot run tests, missing gluster resources"
-    )
-    spm_host = ll_hosts.get_spm_host(config.HOSTS)
+def setup_module():
+    """
+    Deactivate all hosts except for one
+    """
+    # TODO: Remove the use of the NODES list from the class attributes
+    # when moved to fixtures
+    global NODES
+    if not config.GLUSTER_REPLICA_PATH:
+        raise exceptions.CannotRunTests(
+            "Cannot run tests, missing gluster resources"
+        )
+    NODES = config.GLUSTER_REPLICA_SERVERS
+    global SPM_HOST, SPM_HOST_IP
+    SPM_HOST = ll_hosts.get_spm_host(config.HOSTS)
+    SPM_HOST_IP = ll_hosts.get_host_ip(SPM_HOST)
     for host in config.HOSTS:
-        if host != spm_host:
-            assert hl_hosts.deactivate_host_if_up(host), (
-                "Unable to deactivate host %s", host
-            )
+        if host != SPM_HOST:
+            if not hl_hosts.deactivate_host_if_up(host):
+                raise Exception("Unable to deactivate host %s", host)
 
 
-@pytest.mark.usefixtures(
-    unblock_connectivity_gluster_nodes.__name__,
-    remove_storage_domain.__name__,
-    initialize_params.__name__,
-    block_connectivity_gluster_nodes.__name__,
-)
+def teardown_module():
+    """
+    Activate the hosts deactivated in the setup_module
+    """
+    exception_flag = False
+    for host in config.HOSTS:
+        if not hl_hosts.activate_host_if_not_up(host):
+            logger.error("Unable to activate host %s", host)
+            exception_flag = True
+    if exception_flag:
+        raise exceptions.TearDownException(
+            "Test failed while executing teardown_module"
+        )
+
+
+@attr(tier=config.DO_NOT_RUN)
 class BaseGlusterMount(BaseTestCase):
     """
     Base class for the implementation of all tests
     """
     __test__ = False
     storages = set([config.STORAGE_TYPE_GLUSTER])
+
+    domain_name = "storage_additional_gluster_nodes"
+    domain_path = config.GLUSTER_REPLICA_PATH
+    disabled_nodes_ips = []
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Disable nodes for the test
+        """
+        cls.host = SPM_HOST
+        cls.host_ip = SPM_HOST_IP
+        cls.username = config.HOSTS_USER
+        cls.password = config.HOSTS_PW
+        cls.block_nodes(cls.disabled_nodes_ips)
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Enable the connection to each node after the test
+        """
+        cls.unblock_nodes(cls.disabled_nodes_ips)
 
     @classmethod
     def block_nodes(cls, nodes):
@@ -82,15 +110,13 @@ class BaseGlusterMount(BaseTestCase):
         :raises: Exception
         """
         for node_ip in nodes:
-            logger.info(
-                "Blocking source %s from target %s", cls.host_ip, node_ip
-            )
-            assert storage_api.blockOutgoingConnection(
-                cls.host_ip, config.HOSTS_USER, config.HOSTS_PW, node_ip
-             ), (
-                "Unable to block connection to gluster node %s from host %s" %
-                (node_ip, cls.host_ip)
-            )
+            if not storage_api.blockOutgoingConnection(
+                cls.host_ip, cls.username, cls.password, node_ip
+            ):
+                raise Exception(
+                    "Unable to block connection to gluster node %s "
+                    "from host %s" % (node_ip, cls.host_ip)
+                )
 
     @classmethod
     def unblock_nodes(cls, nodes):
@@ -101,17 +127,17 @@ class BaseGlusterMount(BaseTestCase):
         :type nodes: list
         """
         for node_ip in nodes:
-            logger.info(
-                "Unblocking source %s from target %s", cls.host_ip, node_ip
-            )
-            assert storage_api.unblockOutgoingConnection(
-                cls.host_ip, config.HOSTS_USER, config.HOSTS_PW, node_ip
-            ), "Unblock connection to gluster node %s from host %s failed" % (
-                node_ip, cls.host_ip
-            )
+            if not storage_api.unblockOutgoingConnection(
+                cls.host_ip, cls.username, cls.password, node_ip
+            ):
+                # Don't raise exception since this usually works as a clean up
+                # call to remove all the iptables rules
+                logger.warn(
+                    "Unable to unblock connection to gluster node %s "
+                    "from host %s", node_ip, cls.host_ip
+                )
 
-    @classmethod
-    def add_storage_domain(cls, address, backupvolfile_list=None):
+    def add_storage_domain(self, address, backupvolfile_list=None):
         """
         Add a gluster storage domain with optional backup volume files,
         return add domain status
@@ -131,13 +157,12 @@ class BaseGlusterMount(BaseTestCase):
 
         logger.info(
             "Adding gluster storage domain %s with mount point %s:%s and "
-            "mount options %s", cls.storage_domain, address, cls.domain_path,
+            "mount options %s", self.domain_name, address, self.domain_path,
             mount_options
         )
         return ll_sd.addStorageDomain(
-            True,  host=cls.host, path=cls.domain_path,
-            name=cls.storage_domain,
-            storage_type=config.STORAGE_TYPE_GLUSTER,
+            True,  host=self.host, path=self.domain_path,
+            name=self.domain_name, storage_type=config.STORAGE_TYPE_GLUSTER,
             type=config.TYPE_DATA, vfs_type=ENUMS['vfs_type_glusterfs'],
             address=address, mount_options=mount_options
         )
@@ -164,14 +189,48 @@ class BaseGlusterMount(BaseTestCase):
             (address, "succeeded" if positive else "failed")
         )
 
+    def tearDown(self):
+        """
+        In case the domain exists, remove it
+        """
+        wait_for_tasks(
+            config.ENGINE, config.DATA_CENTER_NAME
+        )
+        if not ll_sd.removeStorageDomains(
+            True, self.domain_name, self.host,
+        ):
+            logger.error(
+                "Error removing storage domain %s", self.domain_name
+            )
+            BaseTestCase.test_failed = True
+        BaseTestCase.teardown_exception()
 
-@pytest.mark.usefixtures(
-    create_gluster_storage_domain_with_or_without_additional_nodes.__name__,
-)
+
+@attr(tier=config.DO_NOT_RUN)
 class BaseTestBlockingNodes(BaseGlusterMount):
     """
     Test gluster domain is available after blocking different nodes
     """
+    # TODO: Add the BaseTestCase method to generate an unique name for the disk
+    disk_alias = "gluster_disk"
+
+    def setUp(self):
+        """
+        Create storage domain for test
+        """
+        if self.backup_vol_file_server:
+            self.add_storage_domain(
+                address=NODES[0], backupvolfile_list=NODES[1:3])
+        else:
+            self.add_storage_domain(
+                address=NODES[0], backupvolfile_list=[]
+            )
+        if not ll_sd.attachStorageDomain(
+            True, config.DATA_CENTER_NAME, self.domain_name
+        ):
+            raise exceptions.StorageDomainException(
+                "Unable to add storage domain %s" % self.domain_name
+            )
 
     def verify_storage_domain_status(self, writable=True, active=True):
         """
@@ -185,9 +244,6 @@ class BaseTestBlockingNodes(BaseGlusterMount):
         :type active: bool
         :raises: DiskException, AssertionError
         """
-        logger.info(
-            "storage domain is writable:%s active:%s", writable, active
-        )
         if not writable or not active:
             disk_operation_positive = False
         else:
@@ -196,26 +252,47 @@ class BaseTestBlockingNodes(BaseGlusterMount):
         status = ll_disks.addDisk(
             disk_operation_positive, alias=self.disk_alias,
             provisioned_size=config.DISK_SIZE, interface=config.VIRTIO,
-            sparse=True, format=config.COW_DISK,
-            storagedomain=self.storage_domain
+            sparse=True, format=config.COW_DISK, storagedomain=self.domain_name
         )
+        raise_exception = False
         if disk_operation_positive == status:
-            assert ll_disks.deleteDisk(True, self.disk_alias), (
-                "Failed to delete disk %s" % self.disk_alias
-            )
-
+            if not ll_disks.deleteDisk(True, self.disk_alias):
+                logger.error("Failed to delete disk %s", self.disk_alias)
+                raise_exception = True
         if not writable:
             assert status, "Storage domain %s is %s" % (
-                self.storage_domain,
+                self.domain_name,
                 "in read-only mode" if disk_operation_positive else
                 "writable"
             )
 
         if active:
             assert ll_sd.wait_storage_domain_status_is_unchanged(
-                config.DATA_CENTER_NAME, self.storage_domain,
+                config.DATA_CENTER_NAME, self.domain_name,
                 config.SD_ACTIVE
-            ), "Storage domain %s is not active" % self.storage_domain
+            ), "Storage domain %s is not active" % self.domain_name
+        else:
+            try:
+                ll_sd.wait_for_storage_domain_status(
+                    True, config.DATA_CENTER_NAME, self.domain_name,
+                    config.SD_INACTIVE, time_out=SD_INACTIVE_TIMEOUT
+                )
+            except APITimeout:
+                domain_obj = ll_sd.getDCStorage(
+                    config.DATA_CENTER_NAME, self.domain_name
+                )
+                assert False, (
+                    "Storage domain %s is in status %s, expected status is %s"
+                    % (
+                        self.domain_name, domain_obj.get_status(),
+                        config.SD_INACTIVE
+                    )
+                )
+
+        if raise_exception:
+            raise exceptions.DiskException(
+                "Unable to remove disk %s", self.disk_alias
+            )
 
     @polarion("RHEVM3-14683")
     def test_blocking_gluster(self):
@@ -236,52 +313,52 @@ class BaseTestBlockingNodes(BaseGlusterMount):
         block a, b and c   => inactive
         """
         # Block a
-        logger.info("Blocking node %s expecting active SD", config.NODES[0])
-        self.block_nodes([config.NODES[0]])
+        self.block_nodes([NODES[0]])
         self.verify_storage_domain_status()
 
         # Block a and b
-        logger.info(
-            "Blocking nodes %s and %s expecting read only SD", config.NODES[0],
-            config.NODES[1]
-        )
-        self.block_nodes([config.NODES[1]])
+        self.block_nodes([NODES[1]])
         self.verify_storage_domain_status(writable=False)
 
         # Block a and c
-        logger.info(
-            "Blocking nodes %s and %s expecting read only SD", config.NODES[0],
-            config.NODES[2]
-        )
-        self.unblock_nodes([config.NODES[1]])
-        self.block_nodes([config.NODES[2]])
+        self.unblock_nodes([NODES[1]])
+        self.block_nodes([NODES[2]])
         self.verify_storage_domain_status(writable=False)
 
         # Block b
-        logger.info("Blocking node %s expecting active SD", config.NODES[1])
-        self.unblock_nodes([config.NODES[0], config.NODES[2]])
-        self.block_nodes([config.NODES[1]])
+        self.unblock_nodes([NODES[0], NODES[2]])
+        self.block_nodes([NODES[1]])
         self.verify_storage_domain_status()
 
         # Block c
-        logger.info("Blocking node %s expecting active SD", config.NODES[2])
-        self.unblock_nodes([config.NODES[1]])
-        self.block_nodes([config.NODES[2]])
+        self.unblock_nodes([NODES[1]])
+        self.block_nodes([NODES[2]])
         self.verify_storage_domain_status()
 
         # block b and c
-        logger.info(
-            "Blocking nodes %s and %s expecting read only SD", config.NODES[1],
-            config.NODES[2]
-        )
-        self.block_nodes([config.NODES[1]])
+        self.block_nodes([NODES[1]])
         self.verify_storage_domain_status(writable=False)
 
         # block a, b and c
-        logger.info("Blocking all nodes expecting non-active SD")
-        self.block_nodes([config.NODES[0]])
+        self.block_nodes([NODES[0]])
         self.verify_storage_domain_status(active=False)
-        self.unblock_nodes(config.NODES)
+
+    def tearDown(self):
+        """
+        Enable the connection to each node after the test
+        """
+        self.unblock_nodes(NODES)
+        try:
+            ll_sd.wait_for_storage_domain_status(
+                True, config.DATA_CENTER_NAME, self.domain_name,
+                config.SD_ACTIVE,
+            )
+        except exceptions.APITimeout:
+            logger.error(
+                "Storage domain %s is not in status active", self.domain_name
+            )
+            BaseTestCase.test_failed = True
+        super(BaseTestBlockingNodes, self).tearDown()
 
 
 @attr(tier=2)
@@ -307,10 +384,12 @@ class TestBlockingNodesWithNoBackupVolFile(BaseTestBlockingNodes):
 @attr(tier=3)
 class Test12320(BaseGlusterMount):
     """
-    Test gluster setup with Unavailable Master and 2 Available secondary
+    Test Gulester setup with Unavailable Master and 2 Available secondary
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [config.NODES[0]]
+    # BZ1303977: KeyError when primary server used to mount gluster volume is
+    # down
+    bz = {'1303977': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-12320")
     def test_creation_backupvolfile(self):
@@ -319,15 +398,14 @@ class Test12320(BaseGlusterMount):
         * Try adding the gluster storage domain
         => PASS
         """
-        testflow.step(
-            "Adding gluster SD %s with backup gluster nodes %s",
-            config.NODES[0],
-            config.NODES[1:3]
+        # Bugzilla plugin doesn't support skip for bugs from non ovirt/rhevm
+        # products, 1303977
+        # TODO: When pytest is enabled, use the bz attribute instead of raise
+        # the SkipTest exception
+        raise SkipTest(
+            "Skip test due to bug 1303977"
         )
-        self.verify_add_storage_domain(
-            positive=True, address=config.NODES[0],
-            backupvolfile_list=config.NODES[1:3]
-        )
+        self.verify_add_storage_domain(positive=True)
 
 
 @attr(tier=3)
@@ -336,7 +414,6 @@ class Test12322(BaseGlusterMount):
     Test Gluster setup with Available Master and 1 Available Secondary
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [config.NODES[1]]
 
     @polarion("RHEVM3-12322")
     def test_creation_backupvolfile(self):
@@ -345,10 +422,7 @@ class Test12322(BaseGlusterMount):
         * Try adding the gluster storage domain
         => PASS
         """
-        self.verify_add_storage_domain(
-            positive=True, address=config.NODES[0],
-            backupvolfile_list=config.NODES[1:3]
-        )
+        self.verify_add_storage_domain(positive=True)
 
 
 @attr(tier=3)
@@ -357,7 +431,6 @@ class Test12323(BaseGlusterMount):
     Test Gluster setup with Unavailable Master and 1 Available Secondary
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = config.NODES[0:2]
 
     @polarion("RHEVM3-12323")
     def test_creation_backupvolfile(self):
@@ -368,10 +441,7 @@ class Test12323(BaseGlusterMount):
         => FAIL (When two of the gluster servers are blocked, the gluster
         volume mode is changed to read-only)
         """
-        self.verify_add_storage_domain(
-            positive=False, address=config.NODES[0],
-            backupvolfile_list=config.NODES[1:3]
-        )
+        self.verify_add_storage_domain(positive=False)
 
 
 @attr(tier=2)
@@ -380,6 +450,7 @@ class Test12324(BaseGlusterMount):
     Test Gluster setup with with All RHS servers available
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    disabled_nodes_ips = []
 
     @polarion("RHEVM3-12324")
     def test_creation_backupvolfile(self):
@@ -388,10 +459,7 @@ class Test12324(BaseGlusterMount):
         available
         => PASS
         """
-        self.verify_add_storage_domain(
-            positive=True, address=config.NODES[0],
-            backupvolfile_list=config.NODES[1:3]
-        )
+        self.verify_add_storage_domain(positive=True)
 
 
 @attr(tier=3)
@@ -401,7 +469,6 @@ class Test12325(BaseGlusterMount):
     secondary RHS servers
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = config.NODES[1:3]
 
     @polarion("RHEVM3-12325")
     def test_creation_backupvolfile(self):
@@ -411,10 +478,7 @@ class Test12325(BaseGlusterMount):
         => FAIL (When two of the gluster servers are blocked, the gluster
         volume mode is changed to read-only)
         """
-        self.verify_add_storage_domain(
-            positive=False, address=config.NODES[0],
-            backupvolfile_list=config.NODES[1:3]
-        )
+        self.verify_add_storage_domain(positive=False)
 
 
 @attr(tier=2)
@@ -442,6 +506,14 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
     """
     __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
 
+    def setUp(self):
+        """
+        Initialize attributes
+        """
+        super(VerifyGlusterMountParameteres, self).setUp()
+        self.address = NODES[0]
+        self.mount_point = "%s:%s" % (self.address, self.domain_path)
+
     def verify_gluster_mount_cmd(
         self, backupvolfile_list, backupvolfile_regex
     ):
@@ -449,30 +521,33 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
         Add the gluster storage domain with the backup-volfile-servers
         parameter, and verify the mount options are present in the vdsm log
         """
-
-        if backupvolfile_list:
-            self.regex = "backup-volfile-servers=%s" % (
-                ":".join(backupvolfile_regex)
-            )
-        else:
-            self.regex = re.escape("bricks: %s" % config.NODES)
-
-        pool = ThreadPool(processes=1)
-        async_result = pool.apply_async(
-            watch_logs, (
-                config.VDSM_LOG, self.regex, None, config.LOG_LISTENER_TIMEOUT,
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW
-            )
+        self.regex = "mount -t glusterfs -o backup-volfile-servers=%s %s" % (
+            ":".join(backupvolfile_regex), self.mount_point
         )
-        time.sleep(5)
 
-        assert self.add_storage_domain(self.address, backupvolfile_list), (
-                "Error adding gluster storage domain %s" % self.address
+        def f(q):
+            q.put(
+                watch_logs(
+                    files_to_watch=config.VDSM_LOG,
+                    regex=self.regex,
+                    time_out=GLUSTER_CMD_TIMEOUT,
+                    ip_for_files=self.host_ip,
+                    username=self.username, password=self.password,
+                )
             )
 
-        return_val = async_result.get()
-        assert return_val[0], "regex %s was not found" % (
-            self.regex
+        q = Queue()
+        p = Process(target=f, args=(q,))
+        p.start()
+        status = self.add_storage_domain(self.address, backupvolfile_list)
+        p.join()
+        exception_code, output = q.get()
+        if not status:
+            raise exceptions.StorageDomainException(
+                "Error adding gluster storage domain %s" % self.mount_point
+            )
+        assert exception_code, "Couldn't find regex %s, output %s" % (
+            self.regex, output
         )
 
     @polarion("RHEVM3-14682")
@@ -486,7 +561,7 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
         # Not passing backup-volfile-servers parameter will autodisvover
         # the nodes in the replica
         self.verify_gluster_mount_cmd(
-            backupvolfile_list=None, backupvolfile_regex=config.NODES[1:3]
+            backupvolfile_list=None, backupvolfile_regex=NODES[1:3]
         )
 
     @polarion("RHEVM3-14682")
@@ -498,8 +573,7 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
         that was passed in
         """
         self.verify_gluster_mount_cmd(
-            backupvolfile_list=[config.NODES[1]],
-            backupvolfile_regex=[config.NODES[1]]
+            backupvolfile_list=[NODES[1]], backupvolfile_regex=[NODES[1]]
         )
 
     @polarion("RHEVM3-14682")
@@ -511,8 +585,7 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
         that were passed in
         """
         self.verify_gluster_mount_cmd(
-            backupvolfile_list=config.NODES[1:3],
-            backupvolfile_regex=config.NODES[1:3]
+            backupvolfile_list=NODES[1:3], backupvolfile_regex=NODES[1:3]
         )
 
 

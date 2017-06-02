@@ -324,9 +324,8 @@ clone_vm_args = {
     'highly_available': None,
 }
 
-if STORAGE_TYPE_GLUSTER in STORAGE_SELECTOR:
-    GLUSTER_REPLICA_PATH = PARAMETERS.get('gluster_replica_path', None)
-    GLUSTER_REPLICA_SERVERS = get_list(PARAMETERS, 'gluster_replica_servers')
+GLUSTER_REPLICA_PATH = PARAMETERS.get('gluster_replica_path', None)
+GLUSTER_REPLICA_SERVERS = get_list(PARAMETERS, 'gluster_replica_servers')
 
 REGEX_DD_WIPE_AFTER_DELETE = 'dd.* if=/dev/zero.* of=.*/%s'
 
