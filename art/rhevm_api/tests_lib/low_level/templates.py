@@ -244,14 +244,16 @@ def _prepareTemplateObject(**kwargs):
             name=time_zone, utc_offset=time_zone_offset)
         )
 
-    # memory policy memory_guaranteed and ballooning
+    # memory policy memory_guaranteed, ballooning and max_memory
     guaranteed = kwargs.pop("memory_guaranteed", None)
     ballooning = kwargs.pop('ballooning', None)
-    if ballooning or guaranteed:
+    max_memory = kwargs.pop('max_memory', None)
+    if ballooning or guaranteed or max_memory:
         templ.set_memory_policy(
             data_st.MemoryPolicy(
                 guaranteed=guaranteed,
                 ballooning=ballooning,
+                max=max_memory,
             )
         )
 
@@ -373,6 +375,7 @@ def updateTemplate(positive, template, version_number=1, **kwargs):
         description (str): New template description
         cluster (str): New template cluster
         memory (int): New template memory size
+        max_memory (int): New template maximum memory size
         cpu_socket (int): New number of cpu sockets
         cpu_cores (int): New number of cpu cores
         boot (str): New template boot device

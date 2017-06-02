@@ -706,6 +706,7 @@ class CreateDC(TestCase):
         whitelisted_properties = (
             'cpu_cores',
             'memory',
+            'max_memory',
         )
         kwargs = dict(
             (key, value) for key, value in properties.items()
