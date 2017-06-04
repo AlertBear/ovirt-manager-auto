@@ -81,7 +81,7 @@ class ColdMoveBase(StorageTest):
                     vm_name=vm, disk_name=disk_name, target_sd=target_sd
                 )
                 storage_helpers.wait_for_disks_and_snapshots(
-                    self.vm_name, live_operation=config.LIVE_MOVE
+                    [self.vm_name], live_operation=config.LIVE_MOVE
                 )
                 testflow.step(
                     "Verify disk %s of VM %s moved to %s",
@@ -237,7 +237,7 @@ class BaseKillSpmVdsm(basePlan.BaseTestCase, ColdMoveBase):
         )
         t.join()
         storage_helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+            [self.vm_name], live_operation=config.LIVE_MOVE
         )
         testflow.step(
             "Verify migration %s after kill SPM VDSM process",
@@ -356,7 +356,7 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
         ), 'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
 
         storage_helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+            [self.vm_name], live_operation=config.LIVE_MOVE
         )
 
         unsatisfied_disks = self.verify_cold_move(
@@ -481,6 +481,10 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
                 self.hsm_host = storage_helpers.get_hsm_host(
                     config.JOB_MOVE_COPY_DISK, config.COPY_VOLUME_VERB, True
                 )
+            testflow.step(
+                "HSM host %s found for %s verb", config.SOURCE,
+                config.COPY_VOLUME_VERB
+            )
         t = Thread(target=f, args=())
         t.start()
         sleep(5)
@@ -501,11 +505,13 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
             self.host_ip = source
         config.SOURCE = self.host_ip
 
+        assert config.SOURCE, "HSM host was not found"
+
         testflow.step(
-            "Block connection between %s to %s", self.host_ip, target
+            "Block connection between %s to %s", config.SOURCE, target
         )
         assert storage_api.blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, target
+            config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
         ), "Failed to block connection"
 
         hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
@@ -515,14 +521,16 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
         ), (
             'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
         )
-        testflow.step("Unblock connection from %s to %s", self.host_ip, target)
+        testflow.step(
+            "Unblock connection from %s to %s", config.SOURCE, target
+        )
         assert storage_api.unblockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, target
+            config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
         ), "Failed to unblock connection from host %s to %s" % (
-            self.host_ip, target
+            config.SOURCE, target
         )
         storage_helpers.wait_for_disks_and_snapshots(
-            self.vm_name, live_operation=config.LIVE_MOVE
+            [self.vm_name], live_operation=config.LIVE_MOVE
         )
         unsetisfied_disks = self.verify_cold_move(
             source_sd=self.storage_domain, moved=migration_succeed
@@ -909,7 +917,7 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
             ensure_on=config.LIVE_MOVE, target_domain=target_sd
         )
         storage_helpers.wait_for_disks_and_snapshots(
-            self.vm_name, config.LIVE_MOVE
+            [self.vm_name], config.LIVE_MOVE
         )
 
         testflow.step(
