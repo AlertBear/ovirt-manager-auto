@@ -9,7 +9,7 @@ from art.unittest_lib import attr
 from rhevmtests.storage.fixtures import (
     create_vm, initialize_storage_domains, undo_snapshot, add_disk,
     create_template, start_vm, attach_disk, poweroff_vm, remove_vms,
-    remove_vm, create_fs_on_disk
+    remove_vm, create_fs_on_disk, create_several_snapshots
 )  # flake8: noqa
 from fixtures import (
     initialize_prepare_environment, add_disks_different_sd,
@@ -115,4 +115,19 @@ class TestCase18892(BasePlan.TestCase11684):
     """
     __test__ = True
     polarion_test_case = '18892'
+    live_snapshot = False
+
+
+class TestCase18886(BasePlan.TestCase18886):
+    """
+    - Create VM with disks
+    - Create snapshot A
+    - Create snapshot B
+    - Preview snapshot A and commit
+
+    Expected result:
+        Snapshot B should removed after commits to snapshot A
+    """
+    __test__ = True
+    polarion_test_case = '18886'
     live_snapshot = False

@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from rhevmtests.storage.fixtures import (
     create_vm, initialize_storage_domains, undo_snapshot, add_disk,
     create_template, attach_disk, poweroff_vm, remove_vms,
-    create_fs_on_disk,
+    create_fs_on_disk, create_several_snapshots,
 )
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 
@@ -488,4 +488,53 @@ class TestCase11684(TestCase):
         testflow.step("Create a snapshot on a cloned vm")
         assert ll_vms.addSnapshot(
             True, vm=self.vm_clone, description=LIVE_SNAPSHOT_DESC
+        )
+
+
+@pytest.mark.usefixtures(
+    create_vm.__name__,
+    create_several_snapshots.__name__,
+)
+class TestCase18886(TestCase):
+    """
+    - Create VM with disks
+    - Create snapshot A
+    - Create snapshot B
+    - Preview snapshot A and commit
+
+    Expected result:
+        Snapshot B should removed after commits to snapshot A
+    """
+    __test__ = False
+    live_snapshot = None
+    snap_count = 2
+    polarion_test_case = '18886'
+
+    @polarion("RHEVM3-" + polarion_test_case)
+    @attr(tier=3)
+    def test_commit_snapshot(self):
+
+        testflow.step(
+            "Preview snapshot %s of VM %s", self.snapshot_list[0],
+            self.vm_name
+        )
+
+        assert ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_list[0]), (
+            "Failed to preview snapshot %s" % self.snapshot_list[0]
+        )
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
+
+        testflow.step(
+            "Commit snapshot %s of VM %s", self.snapshot_list[0],
+            self.vm_name
+        )
+        assert ll_vms.commit_snapshot(True, self.vm_name), (
+            "Failed to commit snapshot %s" % self.snapshot_list[0]
+        )
+
+        assert not ll_vms._getVmSnapshot(
+            self.vm_name, self.snapshot_list[1]
+        ), "Snapshot %s exists after commit to an earlier snapshot %s" % (
+            self.snapshot_list[1], self.snapshot_list[0]
         )
