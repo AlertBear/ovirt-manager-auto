@@ -26,11 +26,11 @@ from art.rhevm_api.tests_lib.low_level import (
     vmpools as ll_vmpools,
     general as ll_general
 )
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler import exceptions
 import utilities.timeout as timeout_api
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 
 VM_POOL_ACTION_TIMEOUT = 300
 VM_POOL_ACTION_SLEEP = 5

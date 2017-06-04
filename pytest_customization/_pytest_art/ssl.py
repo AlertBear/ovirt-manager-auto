@@ -6,7 +6,7 @@ used to connect securely with RHEVM SDK and CLI.
 import os
 from OpenSSL import crypto
 from subprocess import Popen
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 import rrmngmnt
 
 DIR = '/var/tmp'
@@ -16,21 +16,18 @@ CERT_PATH = os.path.join(DIR, 'ART.crt')
 KEY_STORE_PATH = os.path.join(DIR, 'server.truststore')
 PARAMETERS = 'PARAMETERS'
 VDC_PASSWD = 'vdc_root_password'
-DEFAULT_ROOT_PASSWORD = 'qum5net'
 
 
-def configure(art_config):
-    opts[VDC_PASSWD] = art_config[PARAMETERS].get(
-        VDC_PASSWD, DEFAULT_ROOT_PASSWORD
-    )
+def configure():
+
     __download_ca_certificate()
     __generate_client_certificates()
     __generate_key_store_file()
 
-    opts['ssl_ca_file'] = CA_PATH
-    opts['ssl_cert_file'] = CERT_PATH
-    opts['ssl_key_file'] = KEY_PATH
-    opts['ssl_key_store_file'] = KEY_STORE_PATH
+    ART_CONFIG['RUN']['ssl_ca_file'] = CA_PATH
+    ART_CONFIG['RUN']['ssl_cert_file'] = CERT_PATH
+    ART_CONFIG['RUN']['ssl_key_file'] = KEY_PATH
+    ART_CONFIG['RUN']['ssl_key_store_file'] = KEY_STORE_PATH
 
 
 def __download_ca_certificate():
@@ -38,8 +35,11 @@ def __download_ca_certificate():
         'openssl', 's_client', '-showcerts', '-connect', 'localhost:443',
         '<', '/dev/null'
     ]
-    vdc = rrmngmnt.Host(opts['host'])
-    vdc.users.append(rrmngmnt.User('root', opts[VDC_PASSWD]))
+    host = ART_CONFIG.get('REST_CONNECTION').get('host')
+    vdc = rrmngmnt.Host(host)
+    vdc.users.append(
+        rrmngmnt.User('root', ART_CONFIG[PARAMETERS].get(VDC_PASSWD))
+    )
     cert_text = '-----{0} CERTIFICATE-----'
     start_cert = cert_text.format('BEGIN')
     end_cert = cert_text.format('END')
@@ -49,8 +49,9 @@ def __download_ca_certificate():
     if rc:
         raise Exception(
             "Failed to get certificate from host %s with ERR: %s, RC: %s" %
-            (opts['host'], err, rc)
+            (host, err, rc)
         )
+
     certificate = out.split(start_cert)[-1].split(end_cert)[0]
     with open(CA_PATH, 'w') as ca_file:
         ca_file.write(start_cert)
@@ -65,8 +66,8 @@ def __generate_key_store_file():
     cmd = [
         'keytool', '-noprompt', '-import', '-alias', '"server.crt truststore"',
         '-file', CA_PATH, '-keystore', KEY_STORE_PATH,
-        '-storepass', opts['ssl_key_store_password'], '-keypass',
-        opts['ssl_key_store_password'],
+        '-storepass', str(ART_CONFIG['RUN']['ssl_key_store_password']),
+        '-keypass', str(ART_CONFIG['RUN']['ssl_key_store_password']),
     ]
     p = Popen(cmd)
     p.communicate()

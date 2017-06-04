@@ -1,4 +1,4 @@
-from art.test_handler.settings import ART_CONFIG as art_config, opts as options
+from art.test_handler.settings import ART_CONFIG as art_config
 
 OVIRT_ENGINE = "ovirt-engine"
 
@@ -80,7 +80,7 @@ WEB_IDS = {
 
 parameters = art_config["PARAMETERS"]
 rest_connection = art_config["REST_CONNECTION"]
-enums = options["elements_conf"]["RHEVM Enums"]
+enums = art_config["elements_conf"]["RHEVM Enums"]
 
 vdc_host = rest_connection["host"]
 vdc_port = rest_connection["port"]

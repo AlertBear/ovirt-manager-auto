@@ -41,7 +41,7 @@ export_storage = PARAMETERS.get('export_storage', EXPORT_DOMAIN_NAME)
 VIRTIO = INTERFACE_VIRTIO
 
 # storage matrix
-STORAGE_SELECTOR = opts['storages']
+STORAGE_SELECTOR = ART_CONFIG['RUN']['storages']
 
 # #################################################
 # Following paramaters are virt specific paramaters
@@ -50,6 +50,7 @@ ADDITIONAL_DC_NAME = 'virt_additional_dc'
 ADDITIONAL_CL_NAME = 'virt_additional_cl'
 # Vm names
 VM_RUN_ONCE = "vm_run_once"
+TEST_NAME = "Global"
 VM_DESCRIPTION = PARAMETERS.get('vm_description', '%s_test' % TEST_NAME)
 
 USERNAME = VDC_ADMIN_USER

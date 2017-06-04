@@ -23,7 +23,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
     StorageTest as BaseTestCase,
@@ -998,7 +998,8 @@ class TestCase6253File(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-6253
     """
-    __test__ = NFS in opts['storages'] or GLUSTERFS in opts['storages']
+    __test__ = (NFS in ART_CONFIG['RUN']['storages'] or
+                GLUSTERFS in ART_CONFIG['RUN']['storages'])
     storages = set([NFS, GLUSTERFS])
     polarion_test_case = '6253'
 
@@ -1025,7 +1026,7 @@ class TestCase6253Block(BasicEnvironment):
     workitem?id=RHEVM3-6253
     """
     # Direct LUN is only possible on Block devices
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     polarion_test_case = '6253'
     # Bugzilla history

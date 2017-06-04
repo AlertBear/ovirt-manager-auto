@@ -6,7 +6,6 @@ import pytest
 
 import art.rhevm_api.tests_lib.low_level.jobs as job_api
 from art.test_handler.exceptions import JobException
-from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     CoreSystemTest as TestBase,
@@ -17,7 +16,7 @@ from art.unittest_lib import (
 import config
 
 
-enums = opts["elements_conf"]["RHEVM Enums"]
+enums = config.ENUMS
 logger = logging.getLogger(__name__)
 
 

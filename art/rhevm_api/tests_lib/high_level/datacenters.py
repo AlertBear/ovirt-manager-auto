@@ -18,12 +18,12 @@ import art.test_handler.exceptions as errors
 from art.rhevm_api.resources import Host  # This import is not good here
 from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
 from art.rhevm_api.utils import test_utils
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 
 logger = logging.getLogger("art.hl_lib.dcs")
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 SPM_TIMEOUT = 300
 SPM_SLEEP = 5
 FIND_SDS_TIMEOUT = 10

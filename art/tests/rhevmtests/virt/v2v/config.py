@@ -1,6 +1,7 @@
 """
 Virt - Reg vms
 """
+import copy
 import rhevmtests.helpers as global_helper
 from rhevmtests.virt.config import *  # flake8: noqa
 

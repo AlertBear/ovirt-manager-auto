@@ -84,12 +84,12 @@ def pytest_artconf_ready(config):
     """
     Register AutoDevices plugin.
     """
-    if settings.ART_CONFIG.get(CONF_SECTION).as_bool(ENABLED):
+    if settings.ART_CONFIG.get(CONF_SECTION).get(ENABLED):
         hosts = []
         user = RootUser(
-            settings.ART_CONFIG[PARAMETERS].as_list(VDS_PASSWORD)[0]
+            settings.ART_CONFIG[PARAMETERS].get(VDS_PASSWORD)[0]
         )
-        for ip in settings.ART_CONFIG[PARAMETERS].as_list(VDS):
+        for ip in settings.ART_CONFIG[PARAMETERS].get(VDS):
             h = Host(ip)
             h.users.append(user)
             hosts.append(h)

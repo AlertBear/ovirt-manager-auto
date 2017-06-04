@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
@@ -186,7 +186,7 @@ class TestCase4907(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     polarion_test_case = '4907'
     # Bugzilla history:
@@ -247,7 +247,8 @@ class TestCase4908(DefaultEnvironment):
     Storage/3_4_Storage_RO_Disks
     """
     # Gluster doesn't support shareable disks
-    __test__ = ISCSI in opts['storages'] or NFS in opts['storages']
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
+                NFS in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI, NFS])
     polarion_test_case = '4908'
     shared = True
@@ -288,7 +289,8 @@ class TestCase4909(DefaultEnvironment):
     Storage/3_4_Storage_RO_Disks
     """
     # Gluster doesn't support shareable disks
-    __test__ = ISCSI in opts['storages'] or NFS in opts['storages']
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
+                NFS in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI, NFS])
     polarion_test_case = '4909'
     snapshot_description = 'test_snap'

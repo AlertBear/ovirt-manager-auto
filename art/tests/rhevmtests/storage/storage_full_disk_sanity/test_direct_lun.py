@@ -30,7 +30,7 @@ from rhevmtests.storage.storage_full_disk_sanity.fixtures import (
 )
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from rhevmtests import helpers as rhevm_helpers
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
 from utilities.machine import Machine, LINUX
 import rhevmtests.storage.helpers as storage_helpers
@@ -68,7 +68,7 @@ class DirectLunAttachTestCase(TestCase):
     """
     # This tests are only designed to run on ISCSI
     # TODO: Enable for FC when our environment is stable
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     vm_name = None
     polarion_test_case = ""

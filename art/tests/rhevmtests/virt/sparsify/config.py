@@ -19,9 +19,9 @@ DIRECT_LUN_KWARGS = {
     "interface": INTERFACE_VIRTIO_SCSI,
     "alias": DIRECT_LUN_ALIAS,
     "type_": STORAGE_TYPE_ISCSI,
-    "lun_address": LUN_ADDRESS[0],
-    "lun_target": LUN_TARGET[0],
-    "lun_id": LUN[0],
+    "lun_address": LUN_ADDRESSES[0] if LUN_ADDRESSES else None,
+    "lun_target": LUN_TARGETS[0] if LUN_TARGETS else None,
+    "lun_id": LUNS[0] if LUNS else None,
 }
 NEW_LUN = 'sparsify_test_lun'
 NEW_LUN_SIZE = 50

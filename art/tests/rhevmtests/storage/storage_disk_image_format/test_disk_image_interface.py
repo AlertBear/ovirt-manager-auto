@@ -7,7 +7,7 @@ import re
 import config
 import logging
 import pytest
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -210,7 +210,7 @@ class TestCase14944(TestCaseMultipleDisks):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM-14944
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_ISCSI])
     lun_disks = True
 
@@ -296,9 +296,9 @@ class TestCase14945(BaseTestCase):
     workitem?id=RHEVM-6245
     """
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages'] or
-        config.STORAGE_TYPE_FCP in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_FCP in ART_CONFIG['RUN']['storages']
     )
     storages = set([
         config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS,
@@ -414,9 +414,9 @@ class TestCase14946(BaseTestCase):
     """
     # Gluster doesn't support IDE interface
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages'] or
-        config.STORAGE_TYPE_FCP in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_FCP in ART_CONFIG['RUN']['storages']
     )
     storages = set([
         config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS,
@@ -500,9 +500,9 @@ class TestCase14948(BaseTestCase):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages'] or
-        config.STORAGE_TYPE_FCP in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_FCP in ART_CONFIG['RUN']['storages']
     )
     storages = set([
         config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS,

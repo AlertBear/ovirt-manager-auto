@@ -1,7 +1,7 @@
 import logging
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from utilities.rhevm_tools.base import Setup
-import art.test_handler.settings as settings
+from art.test_handler.settings import ART_CONFIG
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
 )
@@ -14,7 +14,7 @@ SLEEP_TIME = 10
 DEFAULT_TIMEOUT = 180
 GB = 1024 ** 3
 DISK_SIZE = 6 * GB
-RHEVM_UTILS_ENUMS = settings.opts['elements_conf']['RHEVM Utilities']
+RHEVM_UTILS_ENUMS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 
 
 def delete_disks(disks_names, timeout=DEFAULT_TIMEOUT, sleep=SLEEP_TIME):

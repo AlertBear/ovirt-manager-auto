@@ -21,15 +21,15 @@ import logging
 from art.core_api.apis_utils import getDS
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.rhevm_api.tests_lib.low_level.networks import (
     find_network,
     get_vnic_profile_obj
 )
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
-CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
+CONF_PERMITS = ART_CONFIG['elements_conf']['RHEVM Permits']
 
 Role = getDS('Role')
 Permits = getDS('Permits')

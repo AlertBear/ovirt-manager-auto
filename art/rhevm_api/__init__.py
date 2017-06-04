@@ -1,8 +1,8 @@
 import os
 import logging
 from art.generateDS.setup_ds import GenerateDataStructures
-from art.test_handler.settings import opts
 import art
+from art.test_handler.settings import ART_CONFIG
 
 DATA_STRUCT_PATH = os.path.join('data_struct', 'data_structures.py')
 
@@ -14,7 +14,7 @@ class GenerateRhevmDataStructures(GenerateDataStructures):
 
     def __init__(self, conf):
         super(GenerateRhevmDataStructures, self).__init__(
-            opts, repo_path=os.path.dirname(art.__file__),
+            ART_CONFIG, repo_path=os.path.dirname(art.__file__),
         )
 
     def _set_xsd_path(self):
@@ -25,7 +25,7 @@ class GenerateRhevmDataStructures(GenerateDataStructures):
             os.path.dirname(__file__), DATA_STRUCT_PATH,
         )
         self._xsd_path = xsd_path
-        opts['api_xsd'] = xsd_path
+        ART_CONFIG['api_xsd'] = xsd_path
 
 
-generate_ds = GenerateRhevmDataStructures(opts)
+generate_ds = GenerateRhevmDataStructures(ART_CONFIG)

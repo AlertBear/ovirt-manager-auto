@@ -24,7 +24,7 @@ from art.unittest_lib import (
     tier3,
 )
 from rhevmtests.storage.storage_wipe_after_delete import config
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from fixtures import (
     update_storage_domain_wipe_after_delete, add_disk_start_vm
 )
@@ -119,7 +119,7 @@ class TestCase5116(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     polarion_test_case = '5116'
 
@@ -165,7 +165,7 @@ class TestCase10443(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     polarion_test_case = '10443'
 
@@ -194,7 +194,8 @@ class TestCase5113(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = (ISCSI in opts['storages'] or FCP in opts['storages'])
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
+                FCP in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI, FCP])
     polarion_test_case = '5113'
 
@@ -219,7 +220,7 @@ class TestCase5115(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     polarion_test_case = '5115'
 
@@ -245,7 +246,7 @@ class TestCase11864(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     polarion_test_case = '11864'
     disk_name = "disk_%s" % polarion_test_case
@@ -294,7 +295,7 @@ class TestCase10432(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
     polarion_test_case = '10432'
 

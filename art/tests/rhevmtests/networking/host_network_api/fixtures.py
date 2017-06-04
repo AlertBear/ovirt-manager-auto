@@ -83,7 +83,7 @@ def reboot_host(request):
     vds = conf.VDS_HOSTS[2]
     testflow.setup("Reboot host %s", host)
     assert hl_hosts.deactivate_host_if_up(host=host, host_resource=vds)
-    conf.VDS_0_HOST.add_power_manager(pm_type=conf.SSH_TYPE)
+    conf.VDS_0_HOST.add_power_manager(pm_type=conf.SSH_TY)
     conf.VDS_0_HOST.get_power_manager().restart()
     for is_connective in (False, True):
         conf.VDS_0_HOST.executor().wait_for_connectivity_state(

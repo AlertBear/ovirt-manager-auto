@@ -40,8 +40,8 @@ class HTTPProxy(object):
         self.opts = opts
         self.cookie = None
         self.last_active_user = None
-        self.type = opts['media_type']
-        self.headers = self.opts['headers']
+        self.type = opts['RUN']['media_type']
+        self.headers = self.opts.get('HTTP_HEADERS', {})
 
     @contextmanager
     def create_connection(self):
@@ -50,18 +50,21 @@ class HTTPProxy(object):
         """
         conn = None
         try:
-            if self.opts['scheme'] == 'https':  # Create HTTPS Connection
+            # Create HTTPS Connection
+            if self.opts['REST_CONNECTION']['scheme'] == 'https':
                 context = None
                 # https://www.python.org/dev/peps/pep-0476/
                 if hasattr(ssl, "_create_unverified_context"):
                     context = ssl._create_unverified_context()
                 conn = httplib.HTTPSConnection(
-                    self.opts['host'], self.opts['port'],
+                    self.opts['REST_CONNECTION']['host'],
+                    self.opts['REST_CONNECTION']['port'],
                     context=context
                 )
             else:  # Create HTTP Connection
                 conn = httplib.HTTPConnection(
-                    self.opts['host'], self.opts['port']
+                    self.opts['REST_CONNECTION']['host'],
+                    self.opts['REST_CONNECTION']['port']
                 )
 
             yield conn
@@ -75,7 +78,8 @@ class HTTPProxy(object):
         and set cookie if available
         """
         response = self.__do_request(
-            "HEAD", self.opts['uri'], get_header='Set-Cookie', repeat=False
+            "HEAD", self.opts['REST_CONNECTION']['uri'],
+            get_header='Set-Cookie', repeat=False
         )
         self.cookie = response['Set-Cookie']
         self.last_active_user = self.__get_user()
@@ -163,11 +167,11 @@ class HTTPProxy(object):
         '''
         Build authentication header
         '''
-        user = '%s' % self.opts['user']
-        if self.opts['user_domain']:
-            user += '@%s' % self.opts['user_domain']
+        user = '%s' % self.opts['REST_CONNECTION']['user']
+        if self.opts['REST_CONNECTION']['user_domain']:
+            user += '@%s' % self.opts['REST_CONNECTION']['user_domain']
         credentials = base64.encodestring(
-            '%s:%s' % (user, self.opts['password'])
+            '%s:%s' % (user, self.opts['REST_CONNECTION']['password'])
         )[:-1]
         return "Basic %s" % credentials.replace('\n', '')
 
@@ -175,15 +179,22 @@ class HTTPProxy(object):
         '''
         Build request headers
         '''
-        headers = copy.deepcopy(self.headers)
+        if self.headers:
+            headers = copy.deepcopy(self.headers)
+        else:
+            headers = {}
 
-        if self.opts['user'] and self.opts['password']:
+        if (
+                self.opts['REST_CONNECTION']['user'] and
+                self.opts['REST_CONNECTION']['password']
+        ):
             if self.cookie and self.last_active_user == self.__get_user():
                 headers['Cookie'] = self.cookie
             else:
                 headers['Authorization'] = self.basic_auth()
 
-            headers.update(self.opts['headers'])
+            if self.headers:
+                headers.update(self.opts['HTTP_HEADERS'])
 
         return headers
 
@@ -206,18 +217,20 @@ class HTTPProxy(object):
         '''
         Return user@domain who is currenlty specified in opts.
         '''
-        return '%s@%s' % (self.opts['user'], self.opts['user_domain'])
+        return '{0}@{1}'.format(
+            self.opts['REST_CONNECTION']['user'],
+            self.opts['REST_CONNECTION']['user_domain'],
+        )
 
     def HEAD_for_links(self):
         '''
         Build links matrix from HEAD request
         '''
-
-        if self.opts.get('standalone', True):
+        if self.opts['RUN'].get('standalone'):
             return {}
 
         response = self.__do_request(
-            "HEAD", self.opts['uri'], get_header='link',
+            "HEAD", self.opts['REST_CONNECTION']['uri'], get_header='link',
         )
         links = {}
         if response['status'] >= 300:
@@ -226,7 +239,9 @@ class HTTPProxy(object):
                                           response['reason']))
         for s in response['link'].split(','):
             self.__parse_link(s, links)
-        links['capabilities'] = '%scapabilities' % self.opts['uri']
+        links['capabilities'] = (
+            '%scapabilities' % self.opts['REST_CONNECTION']['uri']
+        )
         return links
 
 

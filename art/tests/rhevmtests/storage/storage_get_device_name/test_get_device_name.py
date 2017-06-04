@@ -9,7 +9,7 @@ import pytest
 import shlex
 
 from art.rhevm_api.tests_lib.low_level import disks, vms
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
@@ -263,8 +263,8 @@ class TestCase4573(BasicEnvironment):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     )
     polarion_test_case = '4573'
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
@@ -290,8 +290,8 @@ class TestCase4574(BasicEnvironment):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     )
     polarion_test_case = '4574'
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])

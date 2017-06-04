@@ -33,7 +33,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib.common import testflow
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from rhevmtests.storage.fixtures import (
     create_vm, remove_storage_domain, init_host_or_engine_executor
 )
@@ -215,8 +215,8 @@ class TestCase11576Shared(BaseCaseIsoDomains):
     # the Destroy option (which the code doesn't do)
     # Gluster doesn't support being used as an ISO domain
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages']
-        or config.STORAGE_TYPE_CEPH in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
+        or config.STORAGE_TYPE_CEPH in ART_CONFIG['RUN']['storages']
     )
     storages = set([config.STORAGE_TYPE_NFS, config.STORAGE_TYPE_CEPH])
     local = False

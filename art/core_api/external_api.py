@@ -20,14 +20,9 @@
 import os
 import logging
 from time import strftime
-from configobj import ConfigObj
 from art.test_handler.settings import opts
 from art.core_api.apis_exceptions import APICommandError
 from utilities.logger_utils import initialize_logger
-from art.test_handler import find_config_file
-
-ELEMENTS = "conf/elements.conf"
-LOGGER_ART_CONF = "conf/logger_art.yaml"
 
 
 class TestRunnerWrapper():
@@ -69,9 +64,6 @@ class TestRunnerWrapper():
         opts["debug"] = kwargs.get("debug", True)
         opts["media_type"] = kwargs.get("media_type", "application/xml")
         opts["headers"] = kwargs.get("headers", {})
-        opts["elements_conf"] = ConfigObj(
-            find_config_file(ELEMENTS), raise_errors=True
-        )
         opts["validate"] = kwargs.get("validate", True)
         opts["secure"] = kwargs.get("secure", False)
         opts["data_struct_mod"] = kwargs.get(
@@ -81,15 +73,13 @@ class TestRunnerWrapper():
             "log", "/var/tmp/%s_tests%s.log" % (
                 opts["engine"], strftime("%Y%m%d_%H%M%S"))
         )
-        opts["log_conf"] = kwargs.get('log_conf', LOGGER_ART_CONF)
+        opts["log_conf"] = kwargs.get('log_conf')
         opts.setdefault('logdir', os.path.dirname(opts['log']))
         opts["urisuffix"] = ""
         opts["uri"] = (
             "%(scheme)s://%(host)s:%(port)s/%(entry_point)s%(""urisuffix)s/"
             % opts
         )
-        opts["in_parallel"] = kwargs.get("in_parallel", [])
-        opts["parallel_run"] = True if opts["in_parallel"] else False
         opts["standalone"] = kwargs.get("standalone", False)
 
         logger_init = kwargs.pop("logger_init", True)
@@ -100,7 +90,7 @@ class TestRunnerWrapper():
 
         if logger_init:
             initialize_logger(
-                conf_file=find_config_file(opts['log_conf']),
+                conf_file=opts['log_conf'],
                 log_file=opts["log"]
             )
         self.logger = logging.getLogger(__name__)

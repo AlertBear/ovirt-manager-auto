@@ -3,7 +3,7 @@ SLA test config module
 """
 from rhevmtests.sla.config import *  # flake8: noqa
 
-WATCHDOG_MODEL = PARAMETERS.get("watchdog_model")
+WATCHDOG_MODEL = 'i6300esb'
 
 WATCHDOG_TIMER = 70
 QEMU_CONF = "/etc/libvirt/qemu.conf"

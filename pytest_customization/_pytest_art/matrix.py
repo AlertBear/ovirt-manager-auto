@@ -49,6 +49,7 @@ class MatrixCollector(Collector):
         :return: test class
         :rtype object
         '''
+
         new_dict = dict(obj.__dict__)
         new_dict.update({'api': api, 'storage': storage, '__gen': True})
         bases = [obj] + list(obj.__bases__)
@@ -105,7 +106,9 @@ class ARTMatrix(object):
     def storages_defined_in_conf(self):
         if self._storages_defined_in_conf is None:
             try:
-                self._storages_defined_in_conf = set(settings.opts['storages'])
+                self._storages_defined_in_conf = set(
+                    settings.ART_CONFIG['RUN']['storages']
+                )
             except KeyError:
                 pass
         return self._storages_defined_in_conf
@@ -114,7 +117,9 @@ class ARTMatrix(object):
     def apis_defined_in_conf(self):
         if self._apis_defined_in_conf is None:
             try:
-                self._apis_defined_in_conf = set(settings.opts['engines'])
+                self._apis_defined_in_conf = set(
+                    settings.ART_CONFIG['RUN']['engines']
+                )
             except KeyError:
                 pass
         return self._apis_defined_in_conf
@@ -147,7 +152,7 @@ class ARTMatrix(object):
             # No storages provided via conf so use whatever set in TestCase
             storages_to_use = storages
 
-        # intersection with apis in test class and opts['engines']
+        # intersection with apis in test class and ART_CONFIG['RUN']['engines']
         apis_to_use = set(apis) & self.apis_defined_in_conf
 
         # Return new collector
@@ -158,29 +163,29 @@ class ARTMatrix(object):
         if not isinstance(api, basestring):
             return
         if self._system_api is None:
-            self._system_api = settings.opts['engine']
-        if settings.opts['engine'] != api:
-            settings.opts['engine'] = api
+            self._system_api = settings.ART_CONFIG['RUN']['engine']
+        if settings.ART_CONFIG['RUN']['engine'] != api:
+            settings.ART_CONFIG['RUN']['engine'] = api
             logger.info("The API backend switched to %s", api)
 
         storage = getattr(item.parent.obj, 'storage', None)
         if not isinstance(storage, basestring):
             return
-        if settings.opts['storage_type'] != storage:
-            settings.opts['storage_type'] = storage
+        if settings.ART_CONFIG['RUN']['storage_type'] != storage:
+            settings.ART_CONFIG['RUN']['storage_type'] = storage
             logger.info("The storage type switched to %s", storage)
 
     def pytest_runtest_teardown(self, item, nextitem):
         if self._system_api is None:
-            self._system_api = settings.opts['engine']
-        elif settings.opts['engine'] != self._system_api:
-            settings.opts['engine'] = self._system_api
+            self._system_api = settings.ART_CONFIG['RUN']['engine']
+        elif settings.ART_CONFIG['RUN']['engine'] != self._system_api:
+            settings.ART_CONFIG['RUN']['engine'] = self._system_api
             logger.info(
                 "The API backend switched to %s", self._system_api,
             )
 
-        if settings.opts['storage_type']:
-            settings.opts['storage_type'] = None
+        if settings.ART_CONFIG['RUN']['storage_type']:
+            settings.ART_CONFIG['RUN']['storage_type'] = None
             logger.info("The storage type reset to None")
 
 
@@ -190,6 +195,6 @@ def pytest_artconf_ready(config):
     """
     enabled = settings.ART_CONFIG.get(
         'UNITTEST'
-    ).as_bool('nose_test_multiplier_enabled')
+    ).get('nose_test_multiplier_enabled')
     if enabled:
         config.pluginmanager.register(ARTMatrix())

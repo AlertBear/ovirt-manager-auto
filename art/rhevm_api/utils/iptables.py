@@ -1,10 +1,10 @@
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 import logging
 
 logger = logging.getLogger("art.utils.iptables")
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 
 BLOCK_FUNCTION = st_api.blockOutgoingConnection
 UNBLOCK_FUNCTION = st_api.unblockOutgoingConnection

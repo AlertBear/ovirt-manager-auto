@@ -33,7 +33,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     prepare_watchdog_obj,
     createCustomPropertiesFromArg,
 )
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from utilities.jobs import Job, JobsSet
 from art.rhevm_api.utils.test_utils import searchForObj
 import art.test_handler.exceptions as errors
@@ -62,7 +62,7 @@ SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
 BASE_TEMPLATE_VERSION = 1
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger("art.ll_lib.templates")
 
@@ -946,7 +946,7 @@ def import_template(
     )
 
     action_name = 'import'
-    if opts['engine'] in ('cli', 'sdk'):
+    if ART_CONFIG['RUN']['engine'] in ('cli', 'sdk'):
         action_name = 'import_template'
 
     if name is not None:

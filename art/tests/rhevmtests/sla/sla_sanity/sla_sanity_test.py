@@ -447,7 +447,7 @@ class TestCPUPinCase1(BasicSlaSanity):
         vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
             vcpu_pinning=[{"0": "0-3,^1"}]
         )
-        compare = conf.opts["engine"] != "cli"
+        compare = conf.ART_CONFIG['RUN']["engine"] != "cli"
         self._update_vm_vcpu_pinning(
             vcpu_pinning=vcpu_pinning, compare=compare
         )
@@ -460,7 +460,7 @@ class TestCPUPinCase1(BasicSlaSanity):
         vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
             vcpu_pinning=[{"0": "0-3,^1,^2"}]
         )
-        compare = conf.opts["engine"] != "cli"
+        compare = conf.ART_CONFIG['RUN']["engine"] != "cli"
         self._update_vm_vcpu_pinning(
             vcpu_pinning=vcpu_pinning, compare=compare
         )
@@ -473,7 +473,7 @@ class TestCPUPinCase1(BasicSlaSanity):
         vcpu_pinning = helpers.adapt_vcpu_pinning_to_cli(
             vcpu_pinning=[{"0": "1,2,3"}]
         )
-        compare = conf.opts["engine"] != "cli"
+        compare = conf.ART_CONFIG['RUN']["engine"] != "cli"
         self._update_vm_vcpu_pinning(
             vcpu_pinning=vcpu_pinning, compare=compare
         )

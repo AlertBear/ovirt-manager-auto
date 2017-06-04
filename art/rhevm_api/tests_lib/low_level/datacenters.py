@@ -28,7 +28,7 @@ from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
 from art.rhevm_api.utils.test_utils import get_api
 from art.rhevm_api.utils.test_utils import searchForObj
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
@@ -42,7 +42,7 @@ Version = getDS('Version')
 
 ELEMENTS = os.path.join(
     os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 
 DATA_CENTER_INIT_TIMEOUT = 180
 

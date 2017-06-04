@@ -47,10 +47,10 @@ from art.rhevm_api.utils.test_utils import (
 )
 from art.test_handler import exceptions
 from art.test_handler.exceptions import CanNotFindIP
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
-RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
+RHEVM_UTILS_ENUMS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 Migration_Options = getDS('MigrationOptions')
 Migration_Policy = getDS('MigrationPolicy')
 
@@ -2364,7 +2364,7 @@ def importVm(
     }
 
     action_name = 'import'
-    if opts['engine'] in ('cli', 'sdk'):
+    if ART_CONFIG['RUN']['engine'] in ('cli', 'sdk'):
         action_name = 'import_vm'
 
     new_vm = data_st.Vm()
@@ -3613,7 +3613,10 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
         return False
 
     m = Machine(vm_ip, 'root', root_passwd).util(LINUX)
-    log_dest = os.path.join(opts['logdir'], '{0}-messages.log'.format(vm_name))
+    log_dest = os.path.join(
+        ART_CONFIG['PARAMETERS']['logdir'],
+        '{0}-messages.log'.format(vm_name)
+    )
 
     # hack, to be fixed when moving to logging.config
     # logging the error in debug instead of error

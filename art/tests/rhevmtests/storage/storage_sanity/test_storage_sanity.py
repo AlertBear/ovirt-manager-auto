@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.tools import polarion
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.unittest_lib import (
     tier1,
     tier2,
@@ -47,7 +47,7 @@ class TestCase11591(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Sanity
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI])
     polarion_test_case = '11591'
 

@@ -21,14 +21,14 @@ import art.core_api.apis_exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 SCH_POL_API = get_api('scheduling_policy', 'schedulingpolicies')
 SCH_POL_UNITS_API = get_api('scheduling_policy_unit', 'schedulingpolicyunits')
 FILTER_API = get_api('filter', 'filters')
 WEIGHT_API = get_api('weight', 'weights')
 BALANCE_API = get_api('balance', 'balances')
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 FILTER_TYPE = ENUMS['policy_unit_type_filter']
 WEIGHT_TYPE = ENUMS['policy_unit_type_weight']
 BALANCE_TYPE = ENUMS['policy_unit_type_balance']

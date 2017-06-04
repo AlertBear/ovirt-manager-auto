@@ -2,9 +2,9 @@
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 
 from rhevmtests.coresystem.config import *  # flake8:  noqa
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 CREATE_VM = 'auto_create_vm'
 RUNNING_VM = 'auto_create_vm_running'
 DELETE_VM = 'auto_delete_vm'

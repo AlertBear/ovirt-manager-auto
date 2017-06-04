@@ -2,7 +2,7 @@ import logging
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import golden_env.config as config
+import config
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api import resources
 from art.unittest_lib import BaseTestCase as TestCase, testflow

@@ -25,12 +25,12 @@ from art.rhevm_api.tests_lib.low_level import (
     general as ll_general,
     vms as ll_vms,
 )
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 import art.core_api.apis_exceptions as exceptions
 
 ELEMENT = 'vm_pool'
 COLLECTION = 'vmpools'
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 UTIL = test_utils.get_api(ELEMENT, COLLECTION)
 VM_UTIL = test_utils.get_api('vm', 'vms')
 CLUSTER_UTIL = test_utils.get_api('cluster', 'clusters')

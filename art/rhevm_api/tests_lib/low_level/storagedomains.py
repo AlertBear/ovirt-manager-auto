@@ -35,12 +35,12 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
 from art.rhevm_api.utils.test_utils import (
     validateElementStatus, get_api, )
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.rhevm_api.tests_lib.low_level.networks import (
     prepare_vnic_profile_mappings_object
 )
 from art.rhevm_api.tests_lib.low_level.general import generate_logs
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 ACTIVE_DOMAIN = ENUMS['storage_domain_state_active']
 DATA_DOMAIN_TYPE = ENUMS['storage_dom_type_data']
 STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
@@ -48,7 +48,7 @@ STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
 STORAGE_TYPE_CEPH = ENUMS['storage_type_ceph']
 POSIX_BACKENDS = [STORAGE_TYPE_CEPH, STORAGE_TYPE_NFS]
 CINDER_DOMAIN_TYPE = ENUMS['storage_dom_type_cinder']
-RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
+RHEVM_UTILS_ENUMS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 
 StorageDomain = getDS('StorageDomain')
 IscsiDetails = getDS('IscsiDetails')
@@ -401,7 +401,6 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     Return: status (True if storage domain was activated properly,
                     False otherwise)
     '''
-
     storDomObj = getDCStorage(datacenter, storagedomain)
 
     if positive and validateElementStatus(positive, 'storagedomain',

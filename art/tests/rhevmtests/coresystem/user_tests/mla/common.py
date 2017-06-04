@@ -3,14 +3,13 @@ import logging
 import pytest
 
 from art.rhevm_api.tests_lib.low_level import mla, templates, users, vms
-from art.test_handler.settings import opts
 from art.unittest_lib import CoreSystemTest as TestCase
 from rhevmtests.coresystem.user_tests.mla import config
 
 
 logger = logging.getLogger(__name__)
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = config.ENUMS
 
 
 class BaseTestCase(TestCase):

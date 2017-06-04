@@ -1,11 +1,9 @@
 """
 power management config module
 """
-from art.test_handler.settings import opts
 
 from rhevmtests.coresystem.config import *  # flake8: noqa
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
 VM_TYPE = ENUMS['vm_type_server']
 FORMAT = ENUMS['format_raw']
 FENCE_RESTART = ENUMS['fence_type_restart']

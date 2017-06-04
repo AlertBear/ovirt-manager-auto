@@ -68,5 +68,5 @@ def pytest_artconf_ready(config):
     """
     Register AutoDevices plugin.
     """
-    if settings.ART_CONFIG.get(CONF_SECTION).as_bool(ENABLED):
+    if settings.ART_CONFIG.get(CONF_SECTION).get(ENABLED):
         config.pluginmanager.register(AutoDevices())

@@ -1,10 +1,10 @@
 import re
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 import logging
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 
 JOBS_API = get_api('job', 'jobs')
 STEPS_API = get_api('step', 'steps')

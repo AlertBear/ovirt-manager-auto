@@ -1,0 +1,735 @@
+# flake8: noqa
+HTTP_HEADERS: {}
+
+headers: {}
+
+UNITTEST:
+    nose_test_multiplier_enabled: True
+
+DEFAULT:
+    RHEVM_BUILD: 4.2-XYZ
+
+RUN:
+    auto_devices: False
+    data_struct_mod: art.rhevm_api.data_struct.data_structures
+    engines:
+      - sdk
+      - rest
+    debug: True
+    media_type: application/xml
+    secure: True
+    ssl_key_store_password: 123456
+    ssl_key_store_file:
+    ssl_key_cert_file:
+    ssl_ca_file:
+    validate: True
+    vdsm_transport_protocol:
+    storages:
+      - nfs
+      - iscsi
+      - glusterfs
+    storage_type:
+    engine: rest
+    golden_environment:
+    standalone: False
+    max_collection:
+    log: /var/tmp/art.log
+
+PARAMETERS:
+    arch: x86_64
+    ad_user_domain: qa.lab.tlv.redhat.com
+    ad_user: vdcadmin
+    cdrom_image: en_windows_7_enterprise_x64_dvd_x15-70749.iso
+    compatibility_version: 4.2
+    cpu_name: Intel Conroe Family
+    display_type: spice
+    export_domain_address:
+    export_domain_path:
+    floppy_image: win2k3.vfd
+    foreman_password: qum5net
+    foreman_url: http://jenkins-foreman.qa.lab.tlv.redhat.com
+    foreman_user: automation_user
+    host_nics: p1p1, p1p2
+    image_up_conf_file: /etc/ovirt-engine/imageuploader.conf
+    iso_export_domain_nas: nfs
+    iso_up_conf_file: /etc/ovirt-engine/isouploader.conf
+    local_domain_path: /home/rest_test_domain
+    log_col_conf_file: /etc/ovirt-engine/logcollector.conf
+    mgmt_bridge: ovirtmgmt
+    not_existing_user: not_existing_user
+    pm_password: calvin
+    pm_type_ipmilan: ipmilan
+    pm_user: root
+    polarion_project: RHEVM3
+    polarion_response_myproduct: rhvm
+    polarion_user: ci-user
+    product_name: Red Hat Virtualization Manager
+    shared_iso_domain_address: vserver-production.qa.lab.tlv.redhat.com
+    shared_iso_domain_path: /iso_domain
+    storage_type:
+    tests_iso_domain_address: vserver-production.qa.lab.tlv.redhat.com
+    tests_iso_domain_path: /iso_domain
+    upgrade_version: 4.3
+    vdc_root_password: qum5net
+    vds:
+    vds_ovirt_port: 8443
+    vds_password:
+    vlan_id: 446,447,448,449,450,451,452
+    vm_linux_password: qum5net
+    vm_linux_user: root
+    vm_os: Red Hat Enterprise Linux 6.x x64
+    vm_windows_password: 123456
+    vm_windows_user: Administrator
+    vnic_profile_name: profile
+    logdir: "/var/tmp"
+
+STORAGE: {}
+
+REST_CONNECTION:
+    host: localhost
+    scheme: https
+    port: 443
+    user: admin
+    user_domain: internal
+    password: 123456
+    entry_point: ovirt-engine/api
+    persistent_auth: True
+    session_timeout: 3600
+    filter: False
+    urisuffix:
+    uri: "%(scheme)s://%(host)s:%(port)s/%(entry_point)s%(urisuffix)s/"
+
+GENERATE_DS:
+    schema_url: /ovirt-engine/api?schema
+    enabled: True
+    encoding: utf-8
+
+### system authentication ####################################################
+ACTIVE_DIRECTORY:
+    ad1_domain: ad2.rhev.lab.eng.brq.redhat.com
+    ad1_user_from_group: portaluser3@ad2.rhev.lab.eng.brq.redhat.com
+    ad1_normal_user: normaluser@ad2.rhev.lab.eng.brq.redhat.com
+    ad1_user: testuser1@ad2.rhev.lab.eng.brq.redhat.com
+    ad1_disabled: vdcdisabled@ad2.rhev.lab.eng.brq.redhat.com
+    ad1_expired_acc_name: vdcexpadmin@ad2.rhev.lab.eng.brq.redhat.com
+    ad1_expired_psw_name: vdcexppwd@ad2.rhev.lab.eng.brq.redhat.com
+    ad1_group: Users/grupa2@ad2.rhev.lab.eng.brq.redhat.com
+
+    ad2_domain: qa.lab.tlv.redhat.com
+    ad2_user: testuser1@qa.lab.tlv.redhat.com
+    ad2_user_name: testuser1
+    ad2_disabled: user_disabled@qa.lab.tlv.redhat.com
+    ad2_expired_acc_name: accountexpired@qa.lab.tlv.redhat.com
+    ad2_expired_psw_name: expireduser@qa.lab.tlv.redhat.com
+    ad2_normal_user: userportal1@qa.lab.tlv.redhat.com
+    ad2_user_from_group: testuser2@qa.lab.tlv.redhat.com
+    ad2_group: testgrp@qa.lab.tlv.redhat.com
+
+    w2k12rw_domain: ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+    w2k12rw_password: Heslo123
+
+    w2k8r2_domain: ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+    w2k8r2_password: Heslo123
+    w2k8r2_user_from_group: portaluser3@ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+    w2k8r2_normal_user: normaluser@ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+    w2k8r2_user: testuser1@ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+    w2k8r2_disabled: vdcdisabled@ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+    w2k8r2_expired_acc_name: vdcexpadmin@ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+    w2k8r2_expired_psw_name: vdcexppwd@ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+    w2k8r2_group: Users/group0@ad-w2k8r2.rhev.lab.eng.brq.redhat.com
+
+    w2k12r2_user_from_group: portaluser3@ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+    w2k12r2_normal_user: normaluser@ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+    w2k12r2_user: testuser1@ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+    w2k12r2_disabled: vdcdisabled@ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+    w2k12r2_expired_acc_name: vdcexpadmin@ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+    w2k12r2_expired_psw_name: vdcexppwd@ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+    w2k12r2_group: Users/group0@ad-w2k12r2.rhev.lab.eng.brq.redhat.com
+################################################################################
+
+IPA:
+    ipa_domain: brq-ipa.rhev.lab.eng.brq.redhat.com
+    ipa_regular_name: bezskupiny
+    ipa_with_group_name: portaluser4
+    ipa_with_many_groups_name: vdcalladmin
+    ipa_expired_psw_name: vdcexppwd
+    ipa_disabled_name: vdcdisabled
+    ipa_nonascii_name: nonascii
+    ipa_testing_user_name: nonascii
+    ipa_regular: bezskupiny@BRQ-IPA.RHEV.LAB.ENG.BRQ.REDHAT.COM
+    ipa_with_group: portaluser4@BRQ-IPA.RHEV.LAB.ENG.BRQ.REDHAT.COM
+    ipa_with_many_groups: vdcalladmin@BRQ-IPA.RHEV.LAB.ENG.BRQ.REDHAT.COM
+    ipa_expired_psw: vdcexppwd@BRQ-IPA.RHEV.LAB.ENG.BRQ.REDHAT.COM
+    ipa_disabled: vdcdisabled@BRQ-IPA.RHEV.LAB.ENG.BRQ.REDHAT.COM
+    ipa_nonascii: nonascii@BRQ-IPA.RHEV.LAB.ENG.BRQ.REDHAT.COM
+    ipa_testing_user: nonascii@BRQ-IPA.RHEV.LAB.ENG.BRQ.REDHAT.COM
+    ipa_group: accounts/groups/ipausers@brq-ipa.rhev.lab.eng.brq.redhat.com
+    ipa_password: qum5net
+################################################################################
+
+OpenLDAP:
+    ldap_domain: brq-openldap.rhev.lab.eng.brq.redhat.com
+    ldap_regular_name: user0
+    ldap_regular_name2: user1
+    ldap_user_from_group: user2
+    ldap_group: Groups/groupOfUser2@brq-openldap.rhev.lab.eng.brq.redhat.com
+    ldap_group2: Groups/testingGroup@brq-openldap.rhev.lab.eng.brq.redhat.com
+    ldap_expired_psw_name: expiredPw
+    ldap_expired_acc_name: expiredAcc
+    ldap_with_many_groups_name: user1
+    ldap_testing_user_name: testing
+    ldap_password: qum5net
+################################################################################
+
+RHDS:
+    rhds_domain: brq-ldap.rhev.lab.eng.brq.redhat.com
+    rhds_regular_name: user1
+    rhds_user_from_group: user0
+    rhds_group: group0@brq-ldap.rhev.lab.eng.brq.redhat.com
+    rhds_expired_psw_name: expiredPw
+    rhds_expired_acc_name: expiredAcc
+    rhds_with_many_groups_name: userWithAllGroups
+    rhds_password: qum5net
+###############################################################################
+
+HOSTED_ENGINE:
+    additional_hosts:
+
+###############################################################################
+# elements.conf
+elements_conf:
+    elements:
+        data_center: datacenters
+        cluster: clusters
+        host: hosts
+        storagedomain: storagedomains
+        network: networks
+        vm: vms
+
+    RHEVM Enums:
+        storage_dom_type_data: data
+        storage_dom_type_cinder: volume
+        storage_dom_type_export: export
+        storage_dom_type_iso: iso
+        storage_dom_type_image: image
+        storage_type_nfs: nfs
+        storage_type_posixfs: posixfs
+        storage_type_iscsi: iscsi
+        storage_type_fcp: fcp
+        storage_type_local: localfs
+        storage_type_gluster: glusterfs
+        storage_type_glance: glance
+        storage_type_ceph: ceph
+        storage_type_cinder: cinder
+        storage_type_lun: lun
+        vfs_type_glusterfs: glusterfs
+        nfs_version_3: v3
+        nfs_version_4: v4
+        nfs_version_auto: auto
+        scheduling_policy_power_saving: power_saving
+        scheduling_policy_evenly_distributed: evenly_distributed
+        scheduling_policy_vm_evenly_distributed: vm_evenly_distributed
+        format_raw: raw
+        format_cow: cow
+        qcow2_version3: qcow2_v3
+        qcow2_version2: qcow2_v2
+        interface_ide: ide
+        interface_virtio: virtio
+        interface_virtio_scsi: virtio_scsi
+        interface_spapr_vscsi: spapr_vscsi
+        nic_type_e1000: e1000
+        nic_type_virtio: virtio
+        nic_type_rtl8139: rtl8139
+        nic_type_rtl8139_virtio: rtl8139_virtio
+        display_type_vnc: vnc
+        display_type_spice: spice
+        display_type_rdp: rdp
+        disk_type_system: system
+        disk_type_data: data
+        disk_type_lun: lun
+        ovf_disk_alias: OVF_STORE
+        vm_type_desktop: desktop
+        vm_type_server: server
+        role_name_user_role: UserRole
+        role_name_power_user_role: PowerUserRole
+        role_name_user_vm_manager: UserVmManager
+        role_name_template_admin: TemplateAdmin
+        role_name_user_template_based_vm: UserTemplateBasedVm
+        role_name_super_user: SuperUser
+        role_name_cluster_admin: ClusterAdmin
+        role_name_data_center_admin: DataCenterAdmin
+        role_name_storage_admin: StorageAdmin
+        role_name_host_admin: HostAdmin
+        role_name_network_admin: NetworkAdmin
+        role_name_vm_pool_admin: VmPoolAdmin
+        storage_format_version_v1: v1
+        storage_format_version_v2: v2
+        storage_format_version_v3: v3
+        windows7x64: windows_7x64
+        windows7: windows_7
+        windows8: windows_8
+        windows8x64: windows_8x64
+        windows2008r2x64: windows_2008R2x64
+        windows2003x64: windows_2003x64
+        windows2003: windows_2003
+        windows2008: windows_2008
+        windows2012x64: windows_2012x64
+        windows2012r2x64: windows_2012R2x64
+        windows10: windows_10
+        windows10x64: windows_10x64
+        windows2016x64: windows_2016x64
+        windowsxp: windows_xp
+        rhel6x64: rhel_6x64
+        rhel5x64: rhel_5x64
+        rhel7x64: rhel_7x64
+        rhel6ppc64: rhel_6_ppc64
+        rhel7ppc64: rhel_7_ppc64
+        rhel6: rhel_6
+        unassigned: unassigned
+        vm_affinity_migratable: migratable
+        vm_affinity_user_migratable: user_migratable
+        vm_affinity_pinned: pinned
+        creation_state_pending: pending
+        creation_state_in_progress: in_progress
+        creation_state_complete: complete
+        creation_state_failed: failed
+        power_management_state_on: on
+        power_management_state_off: off
+        host_state_down: down
+        host_state_error: error
+        host_state_initializing: initializing
+        host_state_installing: installing
+        host_state_install_failed: install_failed
+        host_state_maintenance: maintenance
+        host_state_non_operational: non_operational
+        host_state_non_responsive: non_responsive
+        host_state_pending_approval: pending_approval
+        host_state_preparing_for_maintenance: preparing_for_maintenance
+        host_state_problematic: problematic
+        host_state_unassigned: unassigned
+        host_state_reboot: reboot
+        host_state_up: up
+        host_state_connecting: connecting
+        spm_state_contending: contending
+        search_host_state_down: down
+        search_host_state_error: error
+        search_host_state_initializing: initializing
+        search_host_state_installing: installing
+        search_host_state_install_failed: installfailed
+        search_host_state_maintenance: maintenance
+        search_host_state_non_operational: non_operational
+        search_host_state_non_responsive: non_responsive
+        search_host_state_pending_approval: pendingapproval
+        search_host_state_preparing_for_maintenance: preparingformaintenance
+        search_host_state_problematic: problematic
+        search_host_state_unassigned: unassigned
+        search_host_state_reboot: reboot
+        search_host_state_up: up
+        search_host_state_connecting: connecting
+        network_state_operational: operational
+        network_state_non_operational: non_operational
+        storage_domain_state_active: active
+        storage_domain_state_inactive: inactive
+        storage_domain_state_locked: locked
+        storage_domain_state_mixed: mixed
+        storage_domain_state_unattached: unattached
+        storage_domain_state_unknown: unknown
+        storage_domain_state_maintenance: maintenance
+        storage_domain_state_preparing_for_maintenance: preparing_for_maintenance
+        storage_domain_unreachable: storage_domain_unreachable
+        template_state_illegal: illegal
+        template_state_locked: locked
+        template_state_ok: ok
+        vm_state_unassigned: unassigned
+        vm_state_down: down
+        vm_state_up: up
+        vm_state_powering_up: powering_up
+        vm_state_powered_down: powered_down
+        vm_state_powering_up_or_up: powering_up up
+        vm_state_paused: paused
+        vm_state_migrating: migrating
+        vm_state_migrating_from: migrating_from
+        vm_state_migrating_to: migrating_to
+        vm_state_unknown: unknown
+        vm_state_not_responding: not_responding
+        vm_state_wait_for_launch: wait_for_launch
+        vm_state_reboot_in_progress: reboot_in_progress
+        vm_state_saving_state: saving_state
+        vm_state_restoring_state: restoring_state
+        vm_state_suspended: suspended
+        vm_state_image_illegal: image_illegal
+        vm_state_image_locked: image_locked
+        vm_state_powering_down: powering_down
+        vm_status_detail_eio: eio
+        vm_status_locked_db: 15
+        disk_state_illegal: illegal
+        disk_state_invalid: invalid
+        disk_state_locked: locked
+        disk_state_ok: ok
+        snapshot_state_ok: ok
+        snapshot_state_locked: locked
+        snapshot_state_in_preview: in_preview
+        preview_snapshot: previewsnapshot
+        commit_snapshot: commitsnapshot
+        undo_snapshot: undosnapshot
+        live_snapshot_description: Auto-generated for Live Storage Migration
+        snapshot_active_vm_description: Active VM
+        snapshot_stateless_description: stateless snapshot
+        host_nic_state_down: down
+        host_nic_state_up: up
+        data_center_state_uninitialized: uninitialized
+        data_center_state_up: up
+        data_center_state_maintenance: maintenance
+        data_center_state_not_operational: not_operational
+        data_center_state_problematic: problematic
+        data_center_state_contend: contend
+        data_center_state_non_responsive: nonresponsive
+        placement_host_any_host_in_cluster: any_host_in_cluster
+        pm_alom: alom
+        pm_apc: apc
+        pm_bladecenter: bladecenter
+        pm_drac5: drac5
+        pm_eps: eps
+        pm_ilo: ilo
+        pm_ilo4: ilo4
+        pm_ipmilan: ipmilan
+        pm_rsa: rsa
+        pm_rsb: rsb
+        pm_wti: wti
+        pm_cisco_ucs: cisco_ucs
+        fence_type_start: start
+        fence_type_restart: restart
+        fence_type_stop: stop
+        fence_type_status: status
+        vm_ha_priority_low: 1
+        vm_ha_priority_medium: 50
+        vm_ha_priority_high: 100
+        job_started: started
+        job_finished: finished
+        job_failed: failed
+        job_aborted: aborted
+        job_unknown: unknown
+        step_validating: VALIDATING
+        step_executing: EXECUTING
+        step_finalizing: FINALIZING
+        boot_sequence_network: network
+        boot_sequence_cdrom: cdrom
+        boot_sequence_hd: hd
+        payload_type_cdrom: cdrom
+        payload_type_floppy: floppy
+        team_compute: compute
+        timezone_win_gmt_standard_time: GMT Standard Time
+        timezone_rhel_etc_gmt: Etc/GMT
+        policy_unit_type_filter: filter
+        policy_unit_type_weight: weight
+        policy_unit_type_balance: load_balancing
+        filter_pin_to_host: PinToHost
+        filter_cpu_level: CPU-Level
+        filter_memory: Memory
+        filter_cpu: CPU
+        filter_vm_affinity_groups: VmAffinityGroups
+        filter_ha: HA
+        filter_network: Network
+        start_vm: start
+        stop_vm: stop
+        detach_vm: detach
+
+        job_add_vm: Creating VM .* in Cluster .*
+        job_add_vm_from_template: Creating VM .* from Template.* in Cluster .*
+        job_add_vm_from_snapshot: Creating VM .* from Snapshot .* in Cluster .*
+        job_remove_vm: Removing VM .* from system
+        job_update_vm: Editing VM .* properties
+        job_stop_vm: Stopping VM .*
+        job_shutdown_vm: Shutting down VM .*
+        job_reboot_vm: Rebooting VM .*
+        job_hibernate_vm: Performing Hibernate action on VM .*
+        job_update_watchdog: Updating watchdog on VM .*
+        job_add_watchdog: Adding watchdog to VM .*
+        job_remove_watchdog: Remove watchdog from VM .*
+        job_run_vm: Launching VM .*
+        job_run_vm_once: Launching VM .* in run-once mode
+        job_migrate_vm: Migrating VM .*
+        job_migrate_vm_to_host: Migrating VM .* to Host .*
+        job_export_vm: Exporting VM .* To Export Domain .*
+        job_export_vm_template: Exporting VM Template .* To Export Domain .*
+        job_add_disk: Adding Disk
+        job_remove_disk: Removing Disk .*
+        job_import_vm: Importing VM .* to Cluster .*
+        job_force_select_spm: Force selecting .* as SPM for Data Center .*
+        job_import_vm_from_configuration: Importing VM .* from configuration to Cluster .*
+        job_import_vm_template_from_configuration: Importing Template .* from configuration to Cluster .*
+        job_remove_vm_from_export_domain: Removing VM .* image from Storage Domain .*
+        job_remove_vm_template_from_export_domain: Removing VM Template .* image from Storage Domain .*
+        job_import_vm_template: Importing VM Template .* to Data Center .*
+        job_add_host: Adding new Host .* to Cluster .*
+        job_maintenance_number_of_hosts: Moving Host(s) .* to Maintenance
+        job_activate_host: Activating Host .*
+        job_approve_host: Adding new Host .* (Approve process) to Cluster .*
+        job_start_host: Starting Host .* (Fencing) on Cluster .*
+        job_stop_host: Stopping Host .* (Fencing) on Cluster .*
+        job_restart_host: Restarting Host .* (Fencing) on Cluster .*
+        job_configure_network_to_host_interface: Configuring Network interface .* on Host .*
+        job_commit_network_changes: Applying saved network configuration to Host .*
+        job_setup_networks: Configuring networks on host .*
+        job_add_template: Creation of Template .* from .*
+        job_add_vm_template: Creating VM Template .* in Data Center .*
+        job_remove_vm_template: Removing VM Template .* from Data Center .*
+        job_move_or_copy_template: Moving VM Template .*
+        job_move_or_copy_disk: .* Disk .* from .* to .*
+        job_live_migrate_disk: Migrating Disk .* from .* to .*
+        job_create_snapshot: Creating VM Snapshot .* for VM .*
+        job_preview_snapshot: Preview VM Snapshot .* of VM .*
+        job_restore_vm_snapshot: Restoring VM Snapshot .* of VM .*
+        job_configure_vm_pool: Configuring VM Pool .* properties
+        job_add_local_storage_domain: Adding local Storage Domain .* on Host .* to Data Center .*
+        job_add_nfs_storage_domain: Adding NFS Storage Domain .* to Data Center .*
+        job_add_posixfs_storage_domain: Adding Posix FS Storage Domain .* to Data Center .*
+        job_add_glusterfs_storage_domain: Adding Gluster FS Storage Domain .* to Data Center .*
+        job_add_storage_domain: Adding .* Storage Domain .*
+        job_remove_storage_domain: Removing Storage Domain .*
+        job_force_remove_storage_domain: Removing Storage Domain .* (Force Remove) from Data Center .*
+        job_attach_storage_domain: Attaching Storage Domain .* to Data Center .*
+        job_detach_storage_domain: Detaching Storage Domain .* from Data Center .*
+        job_activate_storage_domain: Activating Storage Domain .* on Data Center .*
+        job_deactivate_storage_domain: Deactivating Storage Domain .* in Data Center .*
+        job_add_san_storage_domain: Adding SAN Storage Domain .*
+        job_extend_san_storage_domain: Extending SAN Storage Domain .*
+        job_reduce_storage_domain: Reducing Storage Domain .*
+        job_recover_data_center: Recovering Data Center .*
+        job_add_data_center: Adding Data Center .*
+        job_remove_data_center: Removing Data Center .*
+        job_update_data_center: Editing Data Center .* properties
+        job_add_file_storage_domain: Adding File Storage Domain .*
+        job_add_storage_server_connection: Connecting Host .* to Storage server
+        job_disconnect_storage_server_connection: Disconnecting from Storage server on .*
+        job_remove_storage_server_connection: Disconnecting from Storage server on .* and removing its connection from db
+        job_update_storage_server_connection: Updating storage connection details
+        job_connect_storage_to_host: Connecting Host .* to Storage server
+        job_add_vm_pool_from_template: Creating VM Pool .* from template .*
+        job_change_disk: Changing CD-ROM for VM .*
+        job_move_vm: Moving VM .* to Host .*
+        job_attach_user_to_vm_from_pool: Allocating VM .* from VM Pool .* to User .*
+        job_maintenance_host: Moving Host .* to Maintenance
+        job_handle_non_responsive_host: Handling non responsive Host .*
+        job_reconstruct_master_domain: Reconstructing master domain on Data Center .*
+        job_set_non_operational_host: Setting Host .* to Non-Operational mode.
+        job_remove_snapshot: Removing Snapshot .* of VM .*
+        job_start_gluster_volume_profile: Start Profiling on Gluster Volume .*
+        job_stop_gluster_volume_profile: Stop Profiling on Gluster Volume .*
+        job_create_gluster_volume: Creating Gluster Volume .* on Cluster .*
+        job_set_gluster_volumeOption: Setting Option on Gluster Volume .*
+        job_start_gluster_volume: Starting Gluster Volume .*
+        job_stop_gluster_volume: Stopping Gluster Volume .*
+        job_reset_gluster_volume_options: Resetting Options on Gluster Volume .*
+        job_delete_gluster_volume: Deleting Gluster Volume .*
+        job_gluster_volume_remove_bricks: Removing Bricks from Gluster Volume .*
+        job_start_rebalance_gluster_volume: Rebalancing Gluster Volume .* in Cluster .*
+        job_start_remove_gluster_volume_bricks: Removing Bricks from Gluster Volume .* in Cluster .*
+        job_replace_gluster_volume_brick: Replacing Brick in Gluster Volume .*
+        job_add_bricks_to_gluster_volume: Adding Bricks to Gluster Volume .*
+        job_remove_gluster_server: Removing Gluster Server .*
+        job_create_brick: Creating Brick .* on .*
+        job_register_disk: Registering Disk .*
+        job_enable_gluster_hook: Enabling Gluster Hook .*
+        job_disable_gluster_hook: Disabling Gluster Hook .*
+        job_update_gluster_hook: Updating Gluster Hook .* on conflicting servers in Cluster .*
+        job_add_gluster_hook: Adding Gluster Hook .* on conflicting servers in Cluster .*
+        job_remove_gluster_hook: Removing Gluster Hook .* from all servers in Cluster .*
+        job_get_disk_alignment: Scanning Alignment on Disk .*
+        job_import_repo_image: Importing Disk .* to domain .*
+        job_export_repo_image: Exporting Disk .* from domain .*
+        job_remove_snapshots_disk: Removing Disks from Snapshot.* of VM .*
+
+
+    RHEVM Permits:
+        create_vm_permit: create_vm
+        delete_vm_permit: delete_vm
+        edit_vm_properties_permit: edit_vm_properties
+        reboot_vm_permit: reboot_vm
+        stop_vm_permit: stop_vm
+        shut_down_vm_permit: shut_down_vm
+        hibernate_vm_permit: hibernate_vm
+        run_vm_permit: run_vm
+        change_vm_cd_permit: change_vm_cd
+        migrate_vm_permit: migrate_vm
+        connect_to_vm_permit: connect_to_vm
+        import_export_vm_permit: import_export_vm
+        configure_vm_network_permit: configure_vm_network
+        configure_vm_storage_permit: configure_vm_storage
+        move_vm_permit: move_vm
+        manipulate_vm_snapshots_permit: manipulate_vm_snapshots
+        create_host_permit: create_host
+        edit_host_configuration_permit: edit_host_configuration
+        delete_host_permit: delete_host
+        manipulate_host_permit: manipulate_host
+        configure_host_network_permit: configure_host_network
+        create_template_permit: create_template
+        edit_template_properties_permit: edit_template_properties
+        delete_template_permit: delete_template
+        copy_template_permit: copy_template
+        configure_template_network_permit: configure_template_network
+        create_vm_pool_permit: create_vm_pool
+        edit_vm_pool_configuration_permit: edit_vm_pool_configuration
+        delete_vm_pool_permit: delete_vm_pool
+        vm_pool_basic_operations_permit: vm_pool_basic_operations
+        create_cluster_permit: create_cluster
+        edit_cluster_configuration_permit: edit_cluster_configuration
+        delete_cluster_permit: delete_cluster
+        configure_cluster_network_permit: configure_cluster_network
+        manipulate_users_permit: manipulate_users
+        manipulate_roles_permit: manipulate_roles
+        manipulate_permissions_permit: manipulate_permissions
+        create_storage_domain_permit: create_storage_domain
+        edit_storage_domain_configuration_permit: edit_storage_domain_configuration
+        delete_storage_domain_permit: delete_storage_domain
+        manipulate_storage_domain_permit: manipulate_storage_domain
+        create_storage_pool_permit: create_storage_pool
+        delete_storage_pool_permit: delete_storage_pool
+        edit_storage_pool_configuration_permit: edit_storage_pool_configuration
+        configure_storage_pool_network_permit: configure_storage_pool_network
+        configure_engine_permit: configure_engine
+        configure_quota_permit: configure_quota
+        consume_quota_permit: consume_quota
+        create_gluster_volume_permit: create_gluster_volume
+        manipulate_gluster_volume_permit: manipulate_gluster_volume
+        delete_gluster_volume_permit: delete_gluster_volume
+        manipulate_gluster_service_permit: manipulate_gluster_service
+        manipulate_gluster_hook_permit: manipulate_gluster_hook
+        create_disk_permit: create_disk
+        attach_disk_permit: attach_disk
+        attach_disk_profile_permit: attach_disk_profile
+        edit_disk_properties_permit: edit_disk_properties
+        configure_disk_storage_permit: configure_disk_storage
+        delete_disk_permit: delete_disk
+        reconnect_to_vm_permit: reconnect_to_vm
+        change_vm_custom_properties_permit: change_vm_custom_properties
+        login_permit: login
+        inject_external_events_permit: inject_external_events
+        create_storage_pool_network_permit: create_storage_pool_network
+        delete_storage_pool_network_permit: delete_storage_pool_network
+        assign_cluster_network_permit: assign_cluster_network
+        edit_admin_vm_properties_permit: edit_admin_vm_properties
+        edit_admin_template_properties_permit: edit_admin_template_properties
+        configure_scsi_generic_io_permit: configure_scsi_generic_io
+        inject_external_tasks_permit: inject_external_tasks
+        configure_network_vnic_profile_permit: configure_network_vnic_profile
+        create_network_vnic_profile_permit: create_network_vnic_profile
+        delete_network_vnic_profile_permit: delete_network_vnic_profile
+        access_image_storage_permit: access_image_storage
+        create_instance_storage_permit: create_instance
+        tag_management_permit: tag_management
+        bookmark_management_permit: bookmark_management
+        event_notification_management_permit: event_notification_management
+        manipulate_affinity_groups_permit: manipulate_affinity_groups
+        add_users_and_groups_from_directory_permit: add_users_and_groups_from_directory
+        audit_log_management_permit: audit_log_management
+        configure_storage_disk_profile_permit: configure_storage_disk_profile
+        delete_storage_disk_profile_permit: delete_storage_disk_profile
+        create_storage_disk_profile_permit: create_storage_disk_profile
+        create_mac_pool_permit: create_mac_pool
+        edit_mac_pool_permit: edit_mac_pool
+        delete_mac_pool_permit: delete_mac_pool
+        configure_mac_pool_permit: configure_mac_pool
+        disk_live_storage_migration_permit: disk_live_storage_migration
+        edit_profile_permit: edit_profile
+        connect_to_serial_console_permit: connect_to_serial_console
+        create_cpu_profile_permit: create_cpu_profile
+        delete_cpu_profile_permit: delete_cpu_profile
+        update_cpu_profile_permit: update_cpu_profile
+        assign_cpu_profile_permit: assign_cpu_profile
+        sparsify_disk_permit: sparsify_disk
+
+    RHEVM Reports:
+        history_db_name: rhevm_history
+
+    RHEVM Utilities:
+        RHEVM_JBOSS_SERVICE: "ovirt-engine"
+        OVIRT_JBOSS_SERVICE: "ovirt-engine"
+
+        RHEVM_JBOSS_PROFILE_PATH: "/var/lib/jbossas/server/rhevm-slimmed"
+        OVIRT_JBOSS_PROFILE_PATH: "/usr/share/jboss-as/standalone"
+
+        RHEVM_CA_PATH: "/etc/pki/ovirt-engine"
+        OVIRT_CA_PATH: "/etc/pki/ovirt-engine"
+
+        RHEVM_CA_PATH_BACKUP: "/etc/pki/engine-backups"
+        OVIRT_CA_PATH_BACKUP: "/etc/pki/engine-backups"
+
+        RHEVM_NOTIFIERD_SERVICE: "engine-notifierd"
+        OVIRT_NOTIFIERD_SERVICE: "engine-notifierd"
+
+        RHEVM_DB_NAME: engine
+        RHEVM_DB_USER: engine
+        RHEVM_DB_PASSWORD: "123456"
+        OVIRT_DB_NAME: engine
+
+        RHEVM_PATH_TO_CONFIG_PROPERTIES: "/etc/rhevm/engine-config/engine-config.properties"
+        OVIRT_PATH_TO_CONFIG_PROPERTIES: "/etc/ovirt-engine/engine-config/engine-config.properties"
+
+        NWFILTER_DUMPXML: "/etc/libvirt/nwfilter/vdsm-no-mac-spoofing.xml"
+
+        CD_WITH_TOOLS: RHEV-toolsSetup_4.1_3.iso
+
+    # WGT
+    Win2008R2_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 2008 R2
+
+    Win2012R2_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 2012 R2
+
+    Win2012_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 2012
+
+    Win7_32b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86
+        codename: Win 7
+
+    Win7_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 7
+
+    Win8_1_32b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86
+        codename: Win 8.1
+
+    Win8_1_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 8.1
+
+    Win8_32b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86
+        codename: Win 8
+
+    Win8_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 8
+
+    Win10_32b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86
+        codename: Win 10
+
+    Win10_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 10
+
+    Win2016_64b:
+        serial_number: 0a223f48-855a-2s1o-1o5k-3c970e16e256
+        architecture: x86_64
+        codename: Win 2016
+
+MAC_TO_IP_CONV:
+    enabled: False

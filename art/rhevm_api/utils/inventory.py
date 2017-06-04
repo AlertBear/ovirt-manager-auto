@@ -6,14 +6,14 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 PRINT_1 = "*" * 41
 PRINT_2 = "-" * 20
 PRINT_3 = "=" * 30
 MB = 1024 ** 2
 DEFAULT_NAME = "Default"
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 STORAGE_DOMAIN_STATUS_INACTIVE = ENUMS["storage_domain_state_inactive"]
 STORAGE_DOMAIN_STATUS_UNATTACHED = ENUMS["storage_domain_state_unattached"]
 logger = logging.getLogger("art.inventory")

@@ -21,25 +21,22 @@
 A module containing the functions for loading the configuration
 and preparing the environment for the tests.
 """
-
-import argparse
 import os
-from shutil import copyfile
 import sys
 import threading
 import traceback
 import time
-from configobj import ConfigObj
 import gc
-
-from art.test_handler.handler_lib.configs import ARTConfigValidator, \
-    ConfigLoader
-from art.test_handler import find_config_file
 import logging
+import yaml
+import collections
+from jinja2 import Environment, FileSystemLoader
+
 
 ART_CONFIG = {}
 opts = {}
-ART_CONFIG = ConfigObj()
+GE = {}
+
 """ A options global for all REST tests. """
 RC_RANGE = [2, 9]
 
@@ -47,226 +44,110 @@ RC_RANGE = [2, 9]
 GC_INTERVAL = 600
 
 
-class ReturnCode:
-    General, IO, Connection, CommandLine, Validation, Plugin, API =\
-                                   range(RC_RANGE[0], RC_RANGE[1])
+def set_cmd_line_params_in_dict(cmd_line):
 
+    cmd_line_args = {}
 
-class CmdLineError(ValueError):
-    '''
-    Raised when there was something wrong with the command line arg.
-    '''
-    pass
+    vars_to_be_treated_as_list = ['engines', 'storages']
 
-
-def populateOptsFromArgv(argv):
-    '''
-    Populates the opts variable from the argv.
-
-    Author: edolinin, jhenner
-    Parameters:
-       argv - the list of arguments (as sys.argv) to populate from
-    '''
-
-    opts['art_base_path'] = os.path.dirname(argv[0])
-    parser = argparse.ArgumentParser(
-        prog=argv[0],
-        description='Execute the test specified by config file.'
-    )
-
-    parser.add_argument('--logdir', '-logdir',
-                        default='/var/tmp',
-                        help='path to the log directory (%(default)s)')
-    # log file will generated when utilities.logger_utils.initialize_logger()
-    # will be called in test suite runner
-    parser.add_argument('--log', '-log',
-                        default=None,
-                        help='path to the log files')
-    parser.add_argument('--log-conf',
-                        help='path to log config',
-                        default='conf/logger_art.yaml',
-                        dest='log_conf')
-    parser.add_argument('--configFile', '-conf', required=True,
-                        help='path to the config file',
-                        dest='conf')
-    parser.add_argument('--SpecFile', '-spec',
-                        default='conf/specs/main.spec',
-                        help='path to the main conf spec file',
-                        dest='confSpec')
-    parser.add_argument('--standalone', '-standalone', action='store_true',
-                        help='run without opts dependencies')
-    parser.add_argument('-D',   metavar='OPTION', action='append',
-                        default=[],
-                        help='modify the option in config',
-                        dest='redefs')
-
-    args = parser.parse_args(argv[1:])
-
-    opts.update((k, v) for k, v in vars(args).iteritems() if k != 'redefs')
-    return args
-
-
-def rewriteConfig(config, redefs):
-    '''
-    Rewrite values specified by redefs string.
-    Parameters:
-     * config - ConfigObject
-     * redefs - iterable of strings specifying the config-space path to rewrite
-                the value in. For example ["REST.type=rest"].
-    '''
-    for r in redefs:
+    for param in cmd_line:
         try:
-            sectionPath, value = r.split('=', 1)
+            key, value = param.split('=', 1)
         except ValueError:
-            raise CmdLineError("Expected '=' sign somewhere in '%s'." % r)
-        sectionPath = sectionPath.split('.')
-        redef(config, sectionPath[:-1], sectionPath[-1], value)
+            raise Exception("Expected '=' sign somewhere in '%s'." % param)
+        section, var = key.split('.')
+        if var in vars_to_be_treated_as_list:
+            value = value.split(',')
+        update_dict(cmd_line_args, {section: {var: value}})
+
+    return cmd_line_args
 
 
-def redef(section, confspacePath, key, value):
-    '''
-    Set `value` to field specified by `key` on the `confspacePath`
-    in the dict-like structure rooted in `section`.
-    '''
-    for sectionName in confspacePath:
-        section.setdefault(sectionName, {})
-        section = section.get(sectionName)
-    section[key] = value.split(",") if value.find(",") != -1 else value
+def update_dict(master, update):
+    for k, v in update.iteritems():
+        if isinstance(v, collections.Mapping):
+            r = update_dict(master.get(k, {}), v)
+            master[k] = r
+        else:
+            master[k] = update[k]
+
+    return master
 
 
-def readTestRunOpts(path, redefs):
-    '''
-    Description: Reads the config file on, updating opts
-    with some options from the RUN section.
+def get_ge_yaml(cmd_line_params):
+    ge_yaml = cmd_line_params.get('RUN').get('golden_environment')
 
-    Author: edolinin, jhenner
-    Parameters:
-       path - the path to the configuration file
-    Return: configObj - an instance of ConfigObj.
-    '''
+    assert os.path.exists(ge_yaml)
 
-    global opts
+    return ge_yaml
+
+
+def generate_ge_description(ge_yaml):
+    env = Environment(loader=FileSystemLoader('/'))
+
+    runtime_yaml = 'runtime.yaml'
+    template = env.get_template(ge_yaml)
+    with open(ge_yaml, 'r') as f:
+        context = yaml.load(f)
+
+    rendered_yaml = template.render(context)
+
+    with open(runtime_yaml, 'w') as f:
+        f.write(rendered_yaml)
+
+    with open(runtime_yaml, 'r') as f:
+        return yaml.load(f)
+
+    return None
+
+
+def get_vds_n_passwords():
+
+    vds_passwords = []
+    vds = []
+
+    for host in GE['hosts']:
+        vds_passwords.append(host.get('password'))
+        vds.append(host.get('address'))
+
+    return vds, vds_passwords
+
+
+def create_runtime_config(path_to_defaults, art_define_args):
+
+    # global opts
     global ART_CONFIG
+    global GE
 
-    if not os.path.exists(path):
-        raise IOError("Configuration file doesn't exist: %s" % path)
+    with open(path_to_defaults, 'r') as fh:
+        defaults = yaml.load(fh)
 
-    # preparing working copy of conf file
-    confFileCopyName = "%s.copy" % path
-    copyfile(path, confFileCopyName)
+    context = {}
+    update_dict(context, defaults)
 
-    config = ConfigObj(confFileCopyName)
-    rewriteConfig(config, redefs)
-    config.write()
+    cmd_line = set_cmd_line_params_in_dict(art_define_args)
+    ge_yaml = get_ge_yaml(cmd_line)
 
-    conf = ConfigLoader(find_config_file(confFileCopyName), raise_errors=True)
-    spec = ConfigLoader(find_config_file(opts['confSpec']), raise_errors=True,
-                        _inspec=True)
-    validator = ARTConfigValidator(conf.load(), spec.load())
+    update_dict(context, cmd_line)
 
-    ART_CONFIG.update(validator())
-    config = ART_CONFIG
+    ART_CONFIG.update(context)
+    GE.update(generate_ge_description(ge_yaml))
 
-    opts['headers'] = config.get('HTTP_HEADERS', {})
-
-    # Populate opts from the RUN section.
-    runSection = config['RUN']
-
-    opts['elements_conf'] = ConfigObj(runSection['elements_conf'],
-                                      raise_errors=True)
-
-    opts['test_file_name'] = []
-    opts['tests'] = runSection.as_list('tests_file')
-    for test in opts['tests']:
-        opts['test_file_name'].append(os.path.basename(test))
-
-    buildTestsFilesMatrix(config, opts['test_file_name'])
-
-    opts['in_parallel'] = runSection.get('in_parallel')
-    opts['parallel_run'] = True if opts['in_parallel'] else False
-    opts['parallel_timeout'] = runSection.get('parallel_timeout')
-    opts['parallel_configs'] = runSection.get('parallel_configs')
-    opts['parallel_sections'] = runSection.get('parallel_sections')
-
-    opts['engines'] = runSection['engines']
-    # this way we have engine that will be used by art before test runs
-    # and also it will provide backward compatibilty with xml tests
-    opts['engine'] = runSection['system_engine']
-    opts['data_struct_mod'] = runSection['data_struct_mod']
-    opts['media_type'] = runSection['media_type']
-    opts['secure'] = runSection.as_bool('secure')
-    opts['ssl_key_store_password'] = runSection["ssl_key_store_password"]
-    opts['validate'] = runSection.as_bool('validate')
-
-    reportSection = config['REPORT']
-    opts['has_sub_tests'] = reportSection['has_sub_tests']
-
-    opts['add_report_nodes'] = reportSection.get('add_report_nodes')
-
-    opts['iteration'] = 0
-
-    opts['debug'] = runSection['debug'] == "yes"
-    opts['max_collection'] = runSection.get('max_collection', None)
-
-    # VDSM transport protocol
-    opts['vdsm_transport_protocol'] = runSection.get(
-        'vdsm_transport_protocol',
-        None
+    ART_CONFIG['DEFAULT']['PRODUCT'] = GE['product']
+    ART_CONFIG['DEFAULT']['VERSION'] = GE['version']
+    ART_CONFIG['REST_CONNECTION']['host'] = GE['engine']['fqdn']
+    ART_CONFIG['REST_CONNECTION']['uri'] = (
+        ART_CONFIG['REST_CONNECTION']['uri'] % ART_CONFIG['REST_CONNECTION']
     )
+    if not ART_CONFIG['REST_CONNECTION']['urisuffix']:
+        ART_CONFIG['REST_CONNECTION']['uri'] = (
+            ART_CONFIG['REST_CONNECTION']['uri'].replace('None', '')
+        )
 
-    # Populate opts from the REST section.
-    restSection = config['REST_CONNECTION']
-    opts['scheme'] = restSection['scheme']
-    opts['host'] = restSection['host']
-    opts['port'] = restSection['port']
-    opts['entry_point'] = restSection['entry_point']
-    opts['user'] = restSection['user']
-    opts['user_domain'] = restSection['user_domain']
-    opts['password'] = restSection['password']
-    opts['urisuffix'] = ''
-    opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)'\
-                  's%(urisuffix)s/' % opts
-    opts['persistent_auth'] = restSection['persistent_auth']
-    opts['session_timeout'] = restSection['session_timeout']
-    opts['filter'] = restSection['filter']
+    vds, vds_paswords = get_vds_n_passwords()
 
-    # Populate opts from the CLI section.
-    cliSection = config['CLI_CONNECTION']
-    opts['cli_tool'] = cliSection['tool']
-    opts['cli_log_file'] = cliSection['cli_log_file']
-    opts['cli_optional_params'] = cliSection['optional_params']
-    opts['validate_cli_command'] = cliSection['validate_cli_command']
-    opts['cli_exit_timeout'] = cliSection['cli_exit_timeout']
-    opts['storages'] = runSection['storages']
-    opts['api'] = runSection['system_engine']
-    opts['storage_type'] = runSection['storage_type']
-
-    return config
-
-
-def buildTestsFilesMatrix(config, testsList):
-    '''
-    Creates dictionary for each test that should be run
-    and puts it at opts[test_name]
-
-    Author: edolinin
-    Parameters:
-       * config - instance of ConfigObj
-       * testsList - list of test files names
-    Return: None
-    '''
-
-    for test in testsList:
-        opts[test] = {}
-
-        testSection = config['RUN']
-        if test in config:
-            testSection = config[test]
-
-        opts[test]['in_parallel'] = testSection.get('in_parallel', [])
-
-        if 'groups' in testSection:
-            opts[test]['groups'] = testSection.as_list('groups')
+    ART_CONFIG['PARAMETERS']['vds'] = vds
+    ART_CONFIG['PARAMETERS']['vds_password'] = vds_paswords
 
 
 def dump_stacks(signal, frame):

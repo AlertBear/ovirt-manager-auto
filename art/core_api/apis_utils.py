@@ -21,13 +21,13 @@ import sys
 import abc
 import logging
 from collections import namedtuple
+
 from utilities.utils import generateShortGuid
 from utilities.timeout import TimeoutingSampler as _TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import art.test_handler.settings as settings
 
-# TODO: move default values to conf spec
-DS_PATH = settings.opts.get('data_struct_mod')
+DS_PATH = settings.ART_CONFIG.get('RUN').get('data_struct_mod')
 DS_VALIDATE = DS_PATH
 
 __import__(DS_PATH)
@@ -77,7 +77,7 @@ class APIUtil(object):
                      ApiOperation.delete, ApiOperation.syncAction]
 
     def __init__(self, element, collection, **kwargs):
-        self.opts = kwargs['opts'] if 'opts' in kwargs else settings.opts
+        self.opts = kwargs.get('opts') or settings.ART_CONFIG
         self.element_name = element
         self.collection_name = collection
 

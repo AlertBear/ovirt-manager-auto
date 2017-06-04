@@ -25,7 +25,7 @@ from art.rhevm_api.utils.test_utils import (
     restartVdsmd,
 )
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
     tier1,
@@ -371,8 +371,8 @@ class TestCase5991(BaseTestCase):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     polarion_test_case = '5991'
@@ -926,7 +926,7 @@ class TestCase5970(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_ISCSI])
     polarion_test_case = '5970'
     regex = config.REGEX_DD_WIPE_AFTER_DELETE
@@ -2176,7 +2176,7 @@ class TestCase5974(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_ISCSI])
     polarion_test_case = '5974'
     block_spm_host = False

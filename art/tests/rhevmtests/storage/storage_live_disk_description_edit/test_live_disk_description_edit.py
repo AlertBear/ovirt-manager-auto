@@ -20,7 +20,7 @@ from rhevmtests.storage.fixtures import remove_vm  # noqa
 from rhevmtests.storage.storage_live_disk_description_edit.fixtures import (
     add_disks_permutation, create_second_vm, poweroff_vms,
 )
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier3,
@@ -135,7 +135,8 @@ class TestCase11500(BaseClassEditDescription):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
-    __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
+                FCP in ART_CONFIG['RUN']['storages'])
     polarion_test_case = '11500'
     storages = set([ISCSI, FCP])
     # Bugzilla history
@@ -163,8 +164,9 @@ class TestCase11501(BaseClassEditDescription):
     Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
     __test__ = (
-        NFS in opts['storages'] or GLUSTERFS in opts['storages'] or
-        CEPH in opts['storages']
+        NFS in ART_CONFIG['RUN']['storages'] or
+        GLUSTERFS in ART_CONFIG['RUN']['storages'] or
+        CEPH in ART_CONFIG['RUN']['storages']
     )
     polarion_test_case = '11501'
     storages = set([NFS, GLUSTERFS, CEPH])

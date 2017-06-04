@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
 )
 from art.rhevm_api.utils.test_utils import restartVdsmd
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier1,
@@ -264,7 +264,7 @@ class TestCase11546(BaseCase):
     Storage/2_3_Storage_Data_Domains_General
     """
     # test case only relevant to iscsi domains
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([ISCSI])
 
     # When creating or extending a storage domain, each LUN loses about

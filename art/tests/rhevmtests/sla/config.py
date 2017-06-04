@@ -1,7 +1,7 @@
 """
 Configuration file for sla tests package
 """
-
+import copy
 from rhevmtests.config import *  # flake8: noqa
 
 # Power management constants

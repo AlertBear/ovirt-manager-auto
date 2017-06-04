@@ -37,7 +37,7 @@ from art.rhevm_api.utils.test_utils import (
     get_api, split, getStat, searchElement, searchForObj, stopVdsmd,
     startVdsmd
 )
-from art.test_handler import settings
+from art.test_handler.settings import ART_CONFIG
 from utilities import machine
 from utilities.rhevm_tools.errors import ExecuteDBQueryError
 
@@ -68,8 +68,8 @@ Tag = getDS("Tag")
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
-ENUMS = settings.opts['elements_conf']['RHEVM Enums']
-RHEVM_UTILS = settings.opts['elements_conf']['RHEVM Utilities']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
+RHEVM_UTILS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
 HOST_STATE_TIMEOUT = 1000
 KSMTUNED_CONF = '/etc/ksmtuned.conf'
@@ -809,7 +809,6 @@ def check_host_spm_status(positive, host):
             "Element host %s doesn't have attribute %s", host, attribute
         )
         return False
-
     spm_status = host_object.get_spm().get_status()
     logger.info(
         "check_host_spm_status - SPM Status of host %s is: %s", host,

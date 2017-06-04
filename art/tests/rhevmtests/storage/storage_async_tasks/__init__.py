@@ -47,7 +47,7 @@ def setup_package():
         os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
         password=config.VMS_LINUX_PW, type=config.VM_TYPE_DESKTOP,
         installation=True, slim=True, image=config.COBBLER_PROFILE,
-        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
+        network=config.MGMT_BRIDGE, useAgent=True)
 
     assert vms.stopVm(True, vm_name)
     disk_names = []

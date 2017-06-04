@@ -92,8 +92,8 @@ class TestCase5991(TestCase5991):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     )
 
 
@@ -229,7 +229,7 @@ class TestCase5970(TestCase5970):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
 
 class TestCase5968(TestCase5968):

@@ -21,7 +21,8 @@ ALL_NETWORK_USAGES = "display,vm,migration,management,default_route"
 STORAGE_TYPE = "nfs"
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
-VLAN_ID = PARAMETERS.as_list('vlan_id')
+VLAN_ID = PARAMETERS.get('vlan_id')
+VLAN_ID = [i.strip() for i in VLAN_ID.split(',')]
 VLANS = [str(i) for i in xrange(2, 4096)]
 VLAN_IDS = filter(lambda vlan_id: vlan_id not in VLAN_ID, VLANS)
 BOND = ["bond%s" % str(i) for i in xrange(10)]
@@ -105,3 +106,6 @@ BASIC_IPV6_DICT = {
         "version": "v6"
     }
 }
+
+# Misc
+SSH_TYPE = "ssh"

@@ -21,7 +21,7 @@ from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
 from art.rhevm_api.utils.test_utils import restart_engine, wait_for_tasks
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
     tier2,
@@ -214,7 +214,7 @@ class TestCase17618(BaseStorageVmLeaseTestWithFixtures):
     4. Block connection from storage to host
     5. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-17618")
@@ -235,7 +235,7 @@ class TestCase17619(BaseStorageVmLeaseTestWithFixtures):
     4. Manually power off the VM
     5. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-17619")
@@ -259,7 +259,7 @@ class TestCase17620(BaseStorageVmLeaseTestWithFixtures):
     3. Block connection engine to the host -> VM will become UNKNOWN and
        won't failover to another host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
 
     @polarion("RHEVM3-17620")
     @tier2
@@ -280,7 +280,7 @@ class TestCase17621(BaseStorageVmLeaseTestWithFixtures):
     4. Block connection from engine to the host -> VM will become UNKNOWN and
         won't failover to another host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-17621")
@@ -328,7 +328,7 @@ class TestCase17623(BaseStorageVmLeaseTestWithFixtures):
     5. Block connection from storage to host
     6. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_lease = False
 
@@ -357,7 +357,7 @@ class TestCase17624(BaseStorageVmLeaseTestWithFixtures):
     5. Block connection from storage to hos  -> VM has no lease so the VM
         stays in status UNKNOWN
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-17624")
@@ -382,7 +382,7 @@ class TestCase18184(BaseStorageVmLeaseTestWithFixtures):
     3. Edit the VM, create a new lease
     4. VM needs to be restarted for the lease to change
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_lease = False
 
@@ -411,7 +411,7 @@ class TestCase18185(BaseStorageVmLeaseTestWithFixtures):
     3. Edit the VM, remove the lease
     4. VM needs to be restarted for the lease to change
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-18185")
@@ -440,7 +440,7 @@ class TestCase18186(BaseStorageVmLeaseTestWithFixtures):
     7. Block connection from storage to host
     8. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_lease = False
 
@@ -488,7 +488,7 @@ class TestCase17625(BaseStorageVmLeaseTestWithFixtures):
     4. Block connection from storage to host
     5. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-17625")
@@ -539,7 +539,7 @@ class TestCase17629(BaseStorageVmLeaseTestWithFixtures):
     5. Restart the engine
     6. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-17629")
@@ -590,7 +590,7 @@ class TestCase17634(BaseStorageVmLeaseTestWithFixtures):
     4. Block connection from storage to host
     5. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_lease = False
 
@@ -683,7 +683,7 @@ class TestCase18333(BaseStorageVMLeaseTest):
     5. Block connection from storage to host
     6. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     domain_kwargs = {'storage_format': 'v3'}
     vm_args = {'clone_from_template': False}
@@ -745,7 +745,7 @@ class TestCase18187(BaseStorageVmLeaseTestWithFixtures):
     4. Edit the vm and remove the lease from it
     5. Preview the first snapshot and start the VM -> VM won't start
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-18187")
@@ -837,7 +837,7 @@ class TestCase18162(TestCaseBaseSnapshot):
     6. When the VM is active again, files should be there
     7. Preview the snapshot -> Files should be gone
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @polarion("RHEVM3-18162")
@@ -856,7 +856,7 @@ class TestCase17641(TestCaseBaseSnapshot):
     6. When the VM is active again, files should be there
     7. Preview the snapshot -> Files should be gone
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     live_snapshot = True
 
@@ -889,7 +889,7 @@ class TestCase17644(BaseStorageVMLeaseTest):
     6. Block connection from storage to host
     7. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_args = {'clone_from_template': False}
 
@@ -963,7 +963,7 @@ class TestCase18217(BaseStorageVMLeaseTest):
     7. Import the VM from the imported storage domain
     8. Start the VM
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_args = {'clone_from_template': False}
 
@@ -1016,7 +1016,7 @@ class TestCase17665(BaseStorageVmLeaseTestWithFixtures):
     5. VM cannot start on any host since the disk in the specific storage
         storage domain becomes innaccessible
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_lease = False
 
@@ -1054,7 +1054,7 @@ class TestCase18188(BaseStorageVmLeaseTestWithFixtures):
     4. Block connection from storage to host
     5. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     ssh_vm = False
 
@@ -1098,7 +1098,7 @@ class TestCase18216(BaseStorageVMLeaseTest):
     5. Block connection from storage to host
     6. Access the vm after it's active on the other host
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
     @bz({'1459072': {}})
@@ -1140,7 +1140,7 @@ class TestCase18218(BaseStorageVmLeaseTestWithFixtures):
         this storage domain to maintenance
     2. Try to detach the storage domain -> Can't detach the storage domain
     """
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     vm_leases = False
 

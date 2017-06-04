@@ -26,7 +26,6 @@ These are:
 import atexit
 import time
 import warnings
-import yaml
 import signal
 from art import rhevm_api
 from art.core_api.external_api import TestRunnerWrapper
@@ -54,17 +53,11 @@ def pytest_addoption(parser):
         help="Path to config file to initialize ART library.",
     )
     parser.addoption(
-        '--art-spec',
-        default='conf/specs/main.spec',
-        dest='art_spec',
-        help="Path to config file containing default values for ART library.",
-    )
-    parser.addoption(
         '--art-define',
         action="append",
         dest="art_define",
         default=[],
-        help="Overwite varibale inside of config file. RUN.system_engine=rest",
+        help="Overwite varibale inside of config file. RUN.engines=rest",
     )
     parser.addoption(
         '--art-log',
@@ -77,7 +70,6 @@ def pytest_addoption(parser):
         '--art-log-conf',
         action="store",
         dest="art_log_conf",
-        default="conf/logger_art.yaml",
         help="Specify path to ART logger config.",
     )
 
@@ -99,24 +91,17 @@ def pytest_configure(config):
         log_conf=config.getoption('art_log_conf'),
     )
     config.ART_CONFIG = settings.ART_CONFIG
-    settings.opts['confSpec'] = config.getoption('art_spec')
-    settings.readTestRunOpts(
+    settings.create_runtime_config(
         config.getoption('art_conf'),
         config.getoption('art_define'),
     )
+
     # Generate certificates
-    if settings.ART_CONFIG['RUN'].as_bool('secure'):
-        ssl.configure(settings.ART_CONFIG)
+    if settings.ART_CONFIG['RUN'].get('secure'):
+        ssl.configure()
 
     # Generate Data Structures
     rhevm_api.generate_ds(settings.ART_CONFIG)
-
-    # Load GE config if relevant
-    ge_path = settings.ART_CONFIG['RUN'].get('golden_environment', None)
-    if ge_path:
-        with open(ge_path, "r") as handle:
-            env_definition = yaml.load(handle)
-        settings.ART_CONFIG['prepared_env'] = env_definition
 
     # Let the other plugins know that ART is ready
     config.hook.pytest_artconf_ready(config=config)

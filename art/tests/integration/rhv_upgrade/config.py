@@ -7,10 +7,10 @@ If you want to add more specific configs for upgrade, here is the place you can
 use.
 """
 
-from art.test_handler.settings import opts, ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 # RHEVM related constants and variables
-enums = opts['elements_conf']['RHEVM Enums']
+enums = ART_CONFIG['elements_conf']['RHEVM Enums']
 parameters = ART_CONFIG['PARAMETERS']
 root_password = parameters.get('vdc_root_password')
 

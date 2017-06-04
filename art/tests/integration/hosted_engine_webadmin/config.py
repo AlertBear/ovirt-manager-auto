@@ -37,10 +37,10 @@ HOSTS = []
 VDS_HOSTS = []
 HOSTS_IP = []
 HE_HOSTS = []
-HOSTS_PW = PARAMETERS.as_list("vds_password")[0]
+HOSTS_PW = PARAMETERS["vds_password"][0]
 if not GE:
     HOSTS = ["hosted_engine_%s" % i for i in xrange(1, 3)]
-    HOSTS_IP = PARAMETERS.as_list("vds")
+    HOSTS_IP = PARAMETERS["vds"]
 
 ENGINE_HOST = resources.Host(VDC_HOST)
 ENGINE_HOST.users.append(

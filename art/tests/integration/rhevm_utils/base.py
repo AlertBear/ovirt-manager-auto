@@ -15,8 +15,7 @@ from rhevm_utils import unittest_conf
 from unittest_conf import non_ge
 
 from utilities.rhevm_tools.base import Setup
-from art.test_handler.settings import opts
-# from art.test_handler.settings import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 __test__ = False
 
@@ -24,11 +23,9 @@ config = unittest_conf.config
 VM_API = get_api('vm', 'vms')
 logger = logging.getLogger(__name__)
 
-CONFIG_ELEMENTS = 'elements_conf'
-CONFIG_SECTION = 'RHEVM Utilities'
 BASE_SNAPSHOT = 'working_snapshot'
 
-VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
+VARS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 
 
 def setup_module():

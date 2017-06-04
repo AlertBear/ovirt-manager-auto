@@ -27,10 +27,10 @@ from art.rhevm_api.tests_lib.low_level.general import (
     prepare_ds_object, generate_logs
 )
 from art.rhevm_api.utils.test_utils import get_api, waitUntilGone, split
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'

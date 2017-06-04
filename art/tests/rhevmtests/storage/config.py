@@ -2,6 +2,7 @@
 Storage related global config file
 """
 from rhevmtests.config import *  # flake8: noqa
+from urlparse import urlparse
 
 __test__ = False
 
@@ -11,6 +12,11 @@ GLANCE_IMAGE_COW = 'cow_sparse_disk'
 GLANCE_IMAGE_RAW = 'raw_preallocated_disk'
 # CLUSTER SECTION
 COMPATIBILITY_VERSION = COMP_VERSION
+
+COBBLER_PROFILE = PARAMETERS.get('cobbler_profile', None)
+COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
+COBBLER_USER = PARAMETERS.get('cobbler_user', None)
+COBBLER_PASSWD = PARAMETERS.get('cobbler_passwd', None)
 
 # VDC/ENGINE section
 VDC = VDC_HOST
@@ -33,7 +39,7 @@ VM_PASSWORD = VMS_LINUX_PW
 
 NUMBER_OF_DISKS = int(PARAMETERS.get('no_of_disks', 8))
 
-STORAGES_MATRIX = opts['storages']
+STORAGES_MATRIX = ART_CONFIG['RUN']['storages']
 
 # Storage domain names
 STORAGE_DEVICE_TYPE_MAP = {
@@ -160,6 +166,9 @@ OBJECT_TYPE_VM = "vm"
 OBJECT_TYPE_MOUNT_POINT = "mount_point"
 OBJECT_TYPE_NIC = "nic"
 
+LUN_PORT = 3260
+CPU_CORES = 1
+CPU_SOCKET = 1
 # These lists of keywords are useful for low_level addStorageDomain:
 # addStorageDomain(True, name='my_name', **NFS_DOMAINS_KWARGS[0])
 NFS_DOMAINS_KWARGS = [
@@ -303,7 +312,7 @@ create_vm_args = {
     'password': COBBLER_PASSWD,
     'image': COBBLER_PROFILE,
     'network': MGMT_BRIDGE,
-    'useAgent': USE_AGENT,
+    'useAgent': True,
 }
 clone_vm_args = {
     'positive': True,
@@ -323,9 +332,6 @@ clone_vm_args = {
     'placement_affinity': None,
     'highly_available': None,
 }
-
-GLUSTER_REPLICA_PATH = PARAMETERS.get('gluster_replica_path', None)
-GLUSTER_REPLICA_SERVERS = get_list(PARAMETERS, 'gluster_replica_servers')
 
 REGEX_DD_WIPE_AFTER_DELETE = 'Zeroing device /dev/.*/%s'
 
@@ -348,3 +354,8 @@ DISKS_MOUNTS_EXECUTOR = dict()
 FILE_NAME = 'test_file'
 JOBS_CMD = 'jobs'
 MOUNT_POINT_CREATE_CMD = 'mkdir ' + '-p ' + '%s'
+
+VDSM_LOG = '/var/log/vdsm/vdsm.log'
+
+GLANCE_HOSTNAME = urlparse(GLANCE_URL).hostname
+REBOOT_CMD = 'reboot'

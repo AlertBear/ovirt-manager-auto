@@ -6,9 +6,8 @@ import logging
 from art.rhevm_api.resources import Host, RootUser, Engine, ADUser, Domain
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
-from art.test_handler.settings import (
-    ART_CONFIG as art_config, opts as options
-)
+from art.test_handler.settings import ART_CONFIG as art_config
+from art.test_handler.settings import GE
 
 # Logs constants
 NOTIFIER_LOG = '/var/log/ovirt-engine/notifier/notifier.log'
@@ -38,8 +37,8 @@ logger = logging.getLogger(__file__)
 parameters = art_config["PARAMETERS"]
 rest_connection = art_config["REST_CONNECTION"]
 
-enums = options["elements_conf"]["RHEVM Enums"]
-configuration_variables = options["elements_conf"]["RHEVM Utilities"]
+enums = art_config["elements_conf"]["RHEVM Enums"]
+configuration_variables = art_config["elements_conf"]["RHEVM Utilities"]
 
 vdc_host = rest_connection["host"]
 vdc_root_user = "root"
@@ -86,23 +85,25 @@ local = parameters.get("local", None) if not storage_type else (
     storage_type == storage_type_local
 )
 
-golden_env = art_config["prepared_env"]
 
-dcs = golden_env["dcs"]
-dc = None
-for _dc in dcs:
-    if int(_dc["local"]) == local:
-        dc = _dc
+dcs = GE['datacenters']
+# for dc in :
+#     dcs.append(dc)
 
-compatibility_version = dc["compatibility_version"]
-dcs_names = [dc["name"]]
-clusters = dc["clusters"]
+# dc = None
+# for _dc in dcs:
+#     if _dc["local"] == local:
+#         dc = _dc
+
+compatibility_version = GE.get("version")
+dcs_names = [dc['name'] for dc in dcs]
+clusters = GE["clusters"]
 clusters_names = [cluster["name"] for cluster in clusters]
 
 hosts = []
 hosts_ips = []
 hosts_user = "root"
-hosts_password = parameters.as_list("vds_password")[0]
+hosts_password = parameters["vds_password"][0]
 
 hosts_objects = ll_hosts.HOST_API.get(abs_link=False)
 if not hosts_objects:
@@ -140,16 +141,13 @@ for host in hosts_objects:
 
 external_templates = []
 templates = []
-for cluster in clusters:
-    for template in cluster["templates"]:
-        templates.append(template)
-    for ets in cluster["external_templates"]:
-        for source_type in ("glance", "export_domain"):
-            if ets[source_type]:
-                for external_template in ets[source_type]:
-                    external_templates.append(external_template)
+external_templates = []
+templates = []
 
-templates_names = [t["name"] for t in (templates + external_templates)]
+for _template in GE["external_templates"]:
+    external_templates.append(_template)
+
+templates_names = [template["name"] for template in external_templates]
 
 # VM States
 vm_state_up = enums["vm_state_up"]

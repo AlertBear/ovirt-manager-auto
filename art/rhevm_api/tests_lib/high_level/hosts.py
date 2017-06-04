@@ -11,11 +11,11 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.test_handler.exceptions as errors
 from art.core_api import apis_exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger("art.hl_lib.hosts")
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 
 
 def add_hosts(hosts_list, passwords, cluster):

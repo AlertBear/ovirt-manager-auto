@@ -16,7 +16,6 @@ from art.rhevm_api.tests_lib.low_level.vms import waitForVMState
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
-from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
@@ -29,10 +28,9 @@ from rhevmtests.coresystem.soft_fencing import config
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 DISK_SIZE = 3 * 1024 * 1024 * 1024
-ENUMS = opts['elements_conf']['RHEVM Enums']
-PINNED = ENUMS['vm_affinity_pinned']
-HOST_CONNECTING = ENUMS['host_state_connecting']
-VM_DOWN = ENUMS['vm_state_down']
+PINNED = config.ENUMS['vm_affinity_pinned']
+HOST_CONNECTING = config.ENUMS['host_state_connecting']
+VM_DOWN = config.ENUMS['vm_state_down']
 JOB = 'VdsNotRespondingTreatment'
 sql = '%s FROM job WHERE action_type=\'VdsNotRespondingTreatment\''
 
@@ -188,7 +186,7 @@ class TestCheckVmAfterSoftFencing(SoftFencing):
             cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=DISK_SIZE, nic='nic1',
-            diskInterface=ENUMS['interface_virtio'],
+            diskInterface=config.ENUMS['interface_virtio'],
             placement_host=config.host_with_pm, placement_affinity=PINNED,
             network=config.MGMT_BRIDGE
         )

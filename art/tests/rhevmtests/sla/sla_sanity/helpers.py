@@ -20,7 +20,7 @@ def adapt_vcpu_pinning_to_cli(vcpu_pinning):
     Returns:
         list: Adapted to the CLI VCPU pinning
     """
-    if conf.opts["engine"] == "cli":
+    if conf.ART_CONFIG['RUN']["engine"] == "cli":
         cli_vcpu_pinning = []
         for pinning in vcpu_pinning:
             for key, value in pinning.iteritems():

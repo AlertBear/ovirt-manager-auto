@@ -2,14 +2,13 @@
 Consolidated config module
 """
 
-import copy
 import logging
-from urlparse import urlparse
 import os
 
 from art.rhevm_api import resources
 from art.rhevm_api.utils import test_utils
-from art.test_handler.settings import ART_CONFIG, opts
+from art.test_handler.settings import ART_CONFIG, GE
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,68 +26,48 @@ def get_list(params, key):
     :return: return element of configuration section as list
     :rtype: list
     """
-    return params.as_list(key) if key in params else []
+    l = params.get(key) if key in params else []
+    if isinstance(l, basestring):
+        return [i.strip() for i in l.split(',')]
 
+    return l
+
+
+GOLDEN_ENV = True
 
 # RHEVM related constants
-ENUMS = opts['elements_conf']['RHEVM Enums']
-PERMITS = opts['elements_conf']['RHEVM Permits']
-RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
+PERMITS = ART_CONFIG['elements_conf']['RHEVM Permits']
+RHEVM_UTILS_ENUMS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 NOT_APPLICABLE = 'N/A'
 
-TEST_NAME = "Global"
-PREFIX = "net"
-NUM_OF_OBJECT = 5
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
-STORAGE_CONF = ART_CONFIG['STORAGE']
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 
 PRODUCT_NAME = PARAMETERS['product_name']
 PRODUCT_BUILD = ART_CONFIG['DEFAULT'].get('RHEVM_BUILD', None)
 
 # ENGINE SECTION
-VDC_HOST = REST_CONNECTION['host']
-VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password')
+VDC_HOST = GE['engine']['fqdn']
+
+
+VDC_ROOT_PASSWORD = GE['root_passwd']
 VDC_ROOT_USER = "root"
-VDC_PASSWORD = REST_CONNECTION['password']
-VDC_PORT = REST_CONNECTION['port']
+VDC_PASSWORD = GE['password']
+
 VDC_ADMIN_USER = REST_CONNECTION['user']
 VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
-ENGINE_URL = '%s://%s:%s/%s' % (
-    REST_CONNECTION.get('scheme'),
-    VDC_HOST,
-    VDC_PORT,
-    ENGINE_ENTRY_POINT
-)
+ENGINE_URL = GE['api_url']
+
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 ENGINE_EXTENSIONS_DIR = '/etc/ovirt-engine/extensions.d'
-VDSM_LOG = '/var/log/vdsm/vdsm.log'
-VDSMD_SERVICE = "vdsmd"
-LIBVIRTD_SERVICE = "libvirtd"
 
 # FOREMAN DETAILS
 FOREMAN_URL = PARAMETERS.get('foreman_url')
 FOREMAN_USER = PARAMETERS.get('foreman_user')
 FOREMAN_PASSWD = PARAMETERS.get('foreman_password')
-
-
-# DATABASE SECTION - TODO: make it configurable
-DB_ENGINE_HOST = VDC_HOST
-DB_ENGINE_NAME = "engine"
-DB_ENGINE_USER = "engine"
-DB_ENGINE_PASSWORD = "123456"
-DB_DWH_HOST = VDC_HOST
-DB_DWH_NAME = "ovirt_engine_history"
-DB_DWH_USER = "ovirt_engine_history"
-DB_DWH_PASSWORD = "123456"
-DB_REPORTS_HOST = VDC_HOST
-DB_REPORTS_NAME = "ovirt_engine_reports"
-DB_REPORTS_USER = "ovirt_engine_reports"
-DB_REPORTS_PASSWORD = "123456"
-
-USE_AGENT = PARAMETERS['useAgent']
 
 # STORAGE SECTION
 STORAGE_TYPE = PARAMETERS.get('storage_type', None)
@@ -106,22 +85,12 @@ STORAGE_TYPE_GLUSTER = ENUMS['storage_type_gluster']
 STORAGE_SERVER_XTREMIO = 'xtremio'
 STORAGE_SERVER_NETAPP = 'netapp'
 
-if STORAGE_TYPE is None:
-    LOCAL = PARAMETERS.get('local', None)
-else:
-    LOCAL = (STORAGE_TYPE == STORAGE_TYPE_LOCAL)
-
-STORAGE_TYPE_PROVIDERS = [STORAGE_TYPE_GLANCE, STORAGE_TYPE_CINDER]
 # We provision for posix with the subtype, like: "posixfs_subfix"
 # For the moment just revert back
-if STORAGE_TYPE.startswith(STORAGE_TYPE_POSIX):
-    STORAGE_TYPE = STORAGE_TYPE_POSIX
+# if STORAGE_TYPE.startswith(STORAGE_TYPE_POSIX):
+#     STORAGE_TYPE = STORAGE_TYPE_POSIX
 
-NUM_OF_DEVICES = int(STORAGE_CONF.get("%s_devices" % STORAGE_TYPE.lower(), 0))
-STORAGE_NAME = ["_".join([STORAGE_TYPE.lower(), str(i)])
-                for i in xrange(NUM_OF_DEVICES)]
-
-CPU_NAME = PARAMETERS['cpu_name']
+CPU_NAME = GE['cpu_type']
 
 IBM_POWER_8 = 'IBM POWER8'
 IBM_POWER_8E = 'IBM POWER8E'
@@ -132,219 +101,207 @@ PPC_TWO_HOSTS = "Test requires three hosts, when PPC GE has only two"
 
 HOSTS = []
 HOSTS_IP = []
-HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
+HOSTS_PW = PARAMETERS.get('vds_password')[0]
 VDS_HOSTS = []
 
 # list of Host object. one only for rhel and the second only for rhev-h
 HOSTS_RHEL = []
 HOSTS_RHEVH = []
 
-CEPHFS_ADDRESS = get_list(PARAMETERS, 'cephfs_domain_address')
-CEPHFS_PATH = get_list(PARAMETERS, 'cephfs_domain_path')
 CEPH_SERVER_SECRET = PARAMETERS.get('ceph_server_secret', None)
 CEPH_MOUNT_OPTIONS = "name=admin,secret={0}".format(CEPH_SERVER_SECRET)
 
-
-ADDRESS = get_list(PARAMETERS, 'data_domain_address')
-PATH = get_list(PARAMETERS, 'data_domain_path')
-LUNS = get_list(PARAMETERS, 'lun')
-LUN = LUNS
-LUN_ADDRESS = get_list(PARAMETERS, 'lun_address')
-LUN_TARGET = get_list(PARAMETERS, 'lun_target')
-GLUSTER_ADDRESS = get_list(PARAMETERS, 'gluster_data_domain_address')
-GLUSTER_PATH = get_list(PARAMETERS, 'gluster_data_domain_path')
-VFS_TYPE = ENUMS['vfs_type_glusterfs']
 SD_LIST = []
-ISCSI_STORAGE_MANAGER = get_list(PARAMETERS, 'iscsi_storage_manager')
-FCP_STORAGE_MANAGER = get_list(PARAMETERS, 'fcp_storage_manager')
+ISCSI_STORAGE_MANAGER = ["vserver-san01-iscsi01.qa.lab.tlv.redhat.com"]
+FCP_STORAGE_MANAGER = ["vserver-san01-iscsi01.qa.lab.tlv.redhat.com"]
 
 # Hosted engine constants
 HE_VM = "HostedEngine"
 HE_STORAGE_DOMAIN = "hosted_storage"
 
-if 'prepared_env' in ART_CONFIG:
-    GOLDEN_ENV = ART_CONFIG['prepared_env']
+VMS_LINUX_USER = VDC_ROOT_USER
+VMS_LINUX_PW = VDC_ROOT_PASSWORD
+###############################################################################
+# GE entities
+# Datacenters and compatibility_version
+DC_NAME = []
+DC_COMP_VERSIONS = []
 
-    dcs = GOLDEN_ENV['dcs']
-    DC = None
+for dc in GE['datacenters']:
+    DC_NAME.append(dc['name'])
+    DC_COMP_VERSIONS.append(dc['compatibility_version'])
 
-    for dc in dcs:
-        if int(dc['local']) == LOCAL:
-            DC = dc
-    DC_NAME = [DC['name']]
-    COMP_VERSION = DC['compatibility_version']
+logger.info("DATACENTERS in golden environment: %s", DC_NAME)
 
-    CLUSTERS = DC['clusters']
-    CLUSTER_NAME = [x['name'] for x in CLUSTERS]
+COMP_VERSION = DC_COMP_VERSIONS[0]
 
-    VMS = []
-    NFS_VMS = []
-    ISCSI_VMS = []
-    GLUSTER_VMS = []
-    FCP_VMS = []
-    for cluster in CLUSTERS:
-        for vm in cluster['vms']:
-            if 'number_of_vms' in vm:
-                num_of_vms = repr(vm['number_of_vms'])
-                suffix_n = 0
-                vm_name = vm['name']
-                while suffix_n < int(num_of_vms):
-                    another_vm = copy.deepcopy(vm)
-                    another_vm['name'] = vm_name + str(suffix_n)
-                    if STORAGE_TYPE_NFS in vm['storage_domain']:
-                        NFS_VMS.append(another_vm['name'])
-                    if STORAGE_TYPE_ISCSI in vm['storage_domain']:
-                        ISCSI_VMS.append(another_vm['name'])
-                    # 'glusterfs'[:-2] -> 'gluster' which is a substring of
-                    # GE's gluster storage domain name 'test_gluster_X'
-                    if STORAGE_TYPE_GLUSTER[:-2] in vm['storage_domain']:
-                        GLUSTER_VMS.append(another_vm['name'])
-                    if STORAGE_TYPE_FCP in vm['storage_domain']:
-                        FCP_VMS.append(another_vm['name'])
-                    suffix_n += 1
-                    VMS.append(another_vm)
-            else:
-                VMS.append(vm)
-    VM_NAME = [x['name'] for x in VMS]
+###############################################################################
+# Clusters
+CLUSTER_NAME = []
 
-    logger.info(
-        "VMS in golden environment: %s", VM_NAME
-    )
-    VMS_LINUX_USER = VDC_ROOT_USER
-    VMS_LINUX_PW = VDC_ROOT_PASSWORD
+for cl in GE['clusters']:
+    CLUSTER_NAME.append(cl['name'])
 
-    EXTERNAL_TEMPLATES = []
-    TEMPLATES = []
-    for cluster in CLUSTERS:
-        for templ in cluster['templates']:
-            TEMPLATES.append(templ)
-        for external_sources in cluster['external_templates']:
-            for source_type in ('glance', 'export_domain'):
-                if external_sources[source_type]:
-                    for external_template in external_sources[source_type]:
-                        EXTERNAL_TEMPLATES.append(external_template)
+logger.info("CLUSTERS in golden environment: %s", CLUSTER_NAME)
 
-    TEMPLATE_NAME = [x['name'] for x in TEMPLATES]
-    TEMPLATE_NAME = TEMPLATE_NAME + [x['name'] for x in EXTERNAL_TEMPLATES]
 
-    logger.info(
-        "Templates in golden environment: %s", TEMPLATE_NAME
-    )
-    storage_domains = DC['storage_domains']
-    STORAGE_NAME = [x['name'] for x in storage_domains]
+###############################################################################
+# storage
+def get_storages_data(ge_storages, key):
 
-    export_sds = DC['export_domains']
-    EXPORT_DOMAIN_NAME = export_sds[0]['name']
+    storages = []
 
-    iso_sds = GOLDEN_ENV['iso_domains']
-    ISO_DOMAIN_NAME = iso_sds[0]['name']
-    ISO_DOMAIN_ADDRESS = get_list(PARAMETERS, "tests_iso_domain_address")[0]
-    ISO_DOMAIN_ADDRESS = get_list(PARAMETERS, "tests_iso_domain_address")[0]
-    ISO_DOMAIN_PATH = get_list(PARAMETERS, "tests_iso_domain_path")[0]
+    if ge_storages is None:
+        return storages
 
-    CPU_CORES = 1
-    CPU_SOCKET = 1
-    CPU_THREADS = 1
+    for storage in ge_storages:
+        storages.append(storage[key])
 
-    # External Provider types
-    GLANCE = 'OpenStackImageProvider'
-    CINDER = 'OpenStackVolumeProvider'
+    return storages
 
-    EXTERNAL_PROVIDERS = {}
 
-    EPS = ART_CONFIG.get('EPS')
+NFS_STORAGE = get_storages_data(GE.get('nfs_storage_domains'), 'name')
+ISCSI_STORAGE = get_storages_data(GE.get('iscsi_storage_domains'), 'name')
+GLUSTERFS_STORAGE = get_storages_data(
+    GE.get('glusterfs_storage_domains'), 'name'
+)
+FCP_STORAGE = get_storages_data(GE.get('fcp_storage_domains'), 'name')
+STORAGE_NAME = NFS_STORAGE + ISCSI_STORAGE + GLUSTERFS_STORAGE + FCP_STORAGE
 
-    eps_to_add = EPS.as_list('ep_to_add') if EPS else []
-    for ep_to_add in eps_to_add:
-        if EPS[ep_to_add]['type'] == GLANCE:
-            provider_type = GLANCE
-        elif EPS[ep_to_add]['type'] == CINDER:
-            provider_type = CINDER
-        if not EXTERNAL_PROVIDERS.get(provider_type):
-            EXTERNAL_PROVIDERS[provider_type] = list()
-        EXTERNAL_PROVIDERS[provider_type].append(EPS[ep_to_add]['name'])
-    GLANCE_EPS = EXTERNAL_PROVIDERS.get(GLANCE)
-    if GLANCE_EPS:
-        # we assume that our glance is the first one in the list
-        GLANCE_DOMAIN = GLANCE_EPS[0]
-        GLANCE_URL = EPS[GLANCE_DOMAIN].get('url')
-        if GLANCE_URL:
-            GLANCE_HOSTNAME = urlparse(GLANCE_URL).hostname
-        for glance_ep in GLANCE_EPS:
-            SD_LIST.append(glance_ep)
-    GOLDEN_GLANCE_IMAGE = (
-        EXTERNAL_TEMPLATES[0]['source'].split(':')[1]
-        if EXTERNAL_TEMPLATES else ''
-    )
+logger.info("STORAGES in golden environment: %s", STORAGE_NAME)
 
-    DATA_DOMAIN_ADDRESSES = get_list(PARAMETERS, 'data_domain_address')
-    DATA_DOMAIN_PATHS = get_list(PARAMETERS, 'data_domain_path')
-    logger.info(
-        "nfs storage for building GE: %s %s",
-        DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS
-    )
+DATA_DOMAIN_ADDRESSES = get_storages_data(
+    GE.get('nfs_storage_domains'), 'address'
+)
+DATA_DOMAIN_PATHS = get_storages_data(GE.get('nfs_storage_domains'), 'path')
+logger.info(
+    "nfs storage for building GE: %s %s",
+    DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS
+)
 
-    GLUSTER_DATA_DOMAIN_ADDRESSES = get_list(
-        PARAMETERS, 'gluster_data_domain_address'
-    )
-    GLUSTER_DATA_DOMAIN_PATHS = get_list(
-        PARAMETERS, 'gluster_data_domain_path'
-    )
-    logger.info(
-        "Gluster storage for building GE: %s %s",
-        GLUSTER_DATA_DOMAIN_ADDRESSES, GLUSTER_DATA_DOMAIN_PATHS
-    )
+GLUSTER_DATA_DOMAIN_ADDRESSES = get_storages_data(GE.get(
+    'glusterfs_storage_domains'), 'address'
+)
+GLUSTER_DATA_DOMAIN_PATHS = get_storages_data(GE.get(
+    'glusterfs_storage_domains'), 'path'
+)
+logger.info(
+    "Gluster storage for building GE: %s %s",
+    GLUSTER_DATA_DOMAIN_ADDRESSES, GLUSTER_DATA_DOMAIN_PATHS
+)
 
-    LUN_ADDRESSES = get_list(PARAMETERS, 'lun_address')
-    LUN_TARGETS = get_list(PARAMETERS, 'lun_target')
-    logger.info(
-        "iscsi luns for building GE: %s %s %s",
-        LUNS, LUN_ADDRESSES, LUN_TARGETS
-    )
+LUNS = get_storages_data(GE.get('iscsi_storage_domains'), 'lun_id')
+LUN_ADDRESSES = get_storages_data(GE.get('iscsi_storage_domains'), 'address')
+LUN_TARGETS = get_storages_data(GE.get('iscsi_storage_domains'), 'target')
+logger.info(
+    "iscsi luns for building GE: %s %s %s",
+    LUNS, LUN_ADDRESSES, LUN_TARGETS
+)
+FC_LUNS = get_storages_data(GE.get('fcp_storage_domains'), 'lun')
+logger.info("Fibre channel LUNs: %s", FC_LUNS)
+###############################################################################
+# extra storage
+#
+UNUSED_DATA_DOMAIN_ADDRESSES = get_storages_data(
+    GE.get('extra_nfs_storage_domains'), 'address'
+)
+UNUSED_DATA_DOMAIN_PATHS = get_storages_data(
+    GE.get('extra_nfs_storage_domains'), 'path'
+)
+logger.info(
+    "Free nfs shares: %s %s",
+    UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS
+)
 
-else:
-    GOLDEN_ENV = False
-    # DATA CENTER SECTION
-    DC_NAME = ["".join([TEST_NAME, "_DC", str(i)]) for i in range(5)]
-    PARAMETERS['dc_name'] = DC_NAME[0]
+UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = get_storages_data(
+    GE.get('extra_glusterfs_storage_domains'), 'address'
+)
+UNUSED_GLUSTER_DATA_DOMAIN_PATHS = get_storages_data(
+    GE.get('extra_glusterfs_storage_domains'), 'path'
+)
+logger.info(
+    "Free Gluster shares: %s %s",
+    UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES, UNUSED_GLUSTER_DATA_DOMAIN_PATHS
+)
 
-    # CLUSTER SECTION
-    CLUSTER_NAME = ["".join([TEST_NAME, "_Cluster", str(i)]) for i in range(5)]
-    PARAMETERS['cluster_name'] = CLUSTER_NAME[0]
+UNUSED_LUNS = get_storages_data(
+    GE.get('extra_iscsi_storage_domains'), 'lun_id'
+)
+UNUSED_LUN_ADDRESSES = get_storages_data(
+    GE.get('extra_iscsi_storage_domains'), 'address'
+)
+UNUSED_LUN_TARGETS = get_storages_data(
+    GE.get('extra_iscsi_storage_domains'), 'target'
+)
+logger.info(
+    "Free iscsi LUNs: %s %s %s",
+    UNUSED_LUNS, UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS
+)
+UNUSED_FC_LUNS = get_storages_data(GE.get('extra_fcp_storage_domains'), 'lun')
 
-    COMP_VERSION = PARAMETERS['compatibility_version']
-    HOSTS = PARAMETERS.as_list('vds')
-    HOSTS_IP = list(HOSTS)
-    VDS_HOSTS = [resources.VDS(host_ip, HOSTS_PW) for host_ip in HOSTS_IP]
-    HOST_NICS = PARAMETERS.as_list('host_nics')
+logger.info("Free fibre channel LUNs: %s", UNUSED_FC_LUNS)
+###############################################################################
+# export domain
+EXPORT_DOMAIN_NAME = GE.get('export_domain', {}).get('name')
 
-    HOST_OS = PARAMETERS.get('host_os')
+###############################################################################
+# iso domain
+ISO_DOMAIN_NAME = GE.get('iso_domain', {}).get('name')
+ISO_DOMAIN_ADDRESS = GE.get('iso_domain', {}).get('address')
+ISO_DOMAIN_PATH = GE.get('iso_domain', {}).get('path')
+###############################################################################
+# external providers
+EXTERNAL_PROVIDERS = {}
+provider_type = None
+GLANCE_URL = ''
 
-    VMS_LINUX_USER = PARAMETERS.as_list('vm_linux_user')[0]
-    VMS_LINUX_PW = PARAMETERS.as_list('vm_linux_password')[0]
-    VM_NAME = ["_".join([TEST_NAME, 'vm', str(num)]) for num in xrange(1, 6)]
-    TEMPLATE_NAME = [
-        "".join([TEST_NAME, "_Template", str(i)]) for i in range(2)]
+ge_external_providers = GE.get('external_providers', [])
 
-    EXPORT_STORAGE_ADDRESS = PARAMETERS.as_list('export_domain_address')[0]
-    EXPORT_STORAGE_PATH = PARAMETERS.as_list('export_domain_path')[0]
-    EXPORT_DOMAIN_NAME = "Export"
+for ep in ge_external_providers:
+    SD_LIST.append(ep['name'])
+    if ep['type'] == 'os_image':
+        provider_type = 'os_image'
+        GLANCE_DOMAIN = ep['name']
+        GLANCE_URL = ep['url']
+    if not EXTERNAL_PROVIDERS.get(provider_type):
+        EXTERNAL_PROVIDERS[provider_type] = list()
+    EXTERNAL_PROVIDERS[provider_type].append(ep['name'])
 
-    CPU_CORES = PARAMETERS.get('cpu_cores')
-    CPU_SOCKET = PARAMETERS.get('cpu_socket')
 
-    ISO_DOMAIN_NAME = PARAMETERS.get("shared_iso_domain_name", None)
-    ISO_DOMAIN_ADDRESS = PARAMETERS.as_list("tests_iso_domain_address")[0]
-    ISO_DOMAIN_PATH = PARAMETERS.as_list("tests_iso_domain_path")[0]
+###############################################################################
+# Vms
+def get_vms_list(ge_vms):
 
-    if STORAGE_TYPE == ENUMS['storage_type_posixfs']:
-        VFS_TYPE = (PARAMETERS['storage_type']).split("_")[1]
-        if VFS_TYPE == "pnfs":
-            VFS_TYPE = STORAGE_TYPE_NFS
-            PARAMETERS['data_domain_mount_options'] = "vers=4.1"
+    vms = []
 
-        PARAMETERS['vfs_type'] = VFS_TYPE
+    if ge_vms is None:
+        return vms
 
+    vms_count = ge_vms.get('count')
+
+    if vms_count:
+        for suffix in vms_count:
+            vms.append('{0}{1}'.format(ge_vms['name'], suffix))
+    else:
+        vms.append(ge_vms['name'])
+
+    return vms
+
+
+NFS_VMS = get_vms_list(GE.get('vms_on_nfs'))
+ISCSI_VMS = get_vms_list(GE.get('vms_on_iscsi'))
+GLUSTER_VMS = get_vms_list(GE.get('vms_on_gluster'))
+FCP_VMS = get_vms_list(GE.get('vms_on_fcp'))
+VM_NAME = NFS_VMS + ISCSI_VMS + GLUSTER_VMS + FCP_VMS
+
+logger.info("VMS in golden environment: %s", VM_NAME)
+
+###############################################################################
+# templates
+TEMPLATE_NAME = [temp.get('name') for temp in GE['external_templates']]
+logger.info("Templates in golden environment: %s", TEMPLATE_NAME)
+
+GOLDEN_GLANCE_IMAGE = GE['external_templates'][0]['image_disk']
 DEFAULT_ISO_DOMAIN = 'ISO_DOMAIN'
 ISO_DOMAIN_NAME_LIST = [ISO_DOMAIN_NAME] if ISO_DOMAIN_NAME else []
 
@@ -352,58 +309,15 @@ SD_LIST += (
     STORAGE_NAME +
     [EXPORT_DOMAIN_NAME] +
     ISO_DOMAIN_NAME_LIST +
-    [DEFAULT_ISO_DOMAIN]
+    [DEFAULT_ISO_DOMAIN] +
+    ['ovirt-image-repository']
 )
-
-UNUSED_DATA_DOMAIN_ADDRESSES = get_list(
-    PARAMETERS, 'extra_data_domain_address'
-)
-UNUSED_DATA_DOMAIN_PATHS = get_list(PARAMETERS, 'extra_data_domain_path')
-logger.info(
-    "Free nfs shares: %s %s",
-    UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS
-)
-
-UNUSED_CEPHFS_DATA_DOMAIN_PATHS = get_list(
-    PARAMETERS,  'extra_cephfs_data_domain_path'
-)
-UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES = get_list(
-    PARAMETERS,  'extra_ceph_data_domain_address'
-)
-
-
-UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = get_list(
-    PARAMETERS, 'gluster_extra_data_domain_address'
-)
-UNUSED_GLUSTER_DATA_DOMAIN_PATHS = get_list(
-    PARAMETERS,  'gluster_extra_data_domain_path'
-)
-logger.info(
-    "Free Gluster shares: %s %s",
-    UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES, UNUSED_GLUSTER_DATA_DOMAIN_PATHS
-)
-
-if PPC_ARCH:
-    # Currently we don't have gluster domains in our PPC envs
-    # TODO: Add this to the PPC jenkins patch
-    UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = [None, None, None]
-    UNUSED_GLUSTER_DATA_DOMAIN_PATHS = [None, None, None]
-UNUSED_LUNS = get_list(PARAMETERS, 'extra_lun')
-UNUSED_LUN_ADDRESSES = get_list(PARAMETERS, 'extra_lun_address')
-UNUSED_LUN_TARGETS = get_list(PARAMETERS, 'extra_lun_target')
-logger.info(
-    "Free iscsi LUNs: %s %s %s",
-    UNUSED_LUNS, UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS
-)
-UNUSED_FC_LUNS = get_list(PARAMETERS, 'extra_fc_lun')
-logger.info("Free fibre channel LUNs: %s", UNUSED_FC_LUNS)
-
-LUN_PORT = 3260
-
+###############################################################################
+# gluster replica
+GLUSTER_REPLICA_PATH = GE.get('gluster-replica', {}).get('servers')
+GLUSTER_REPLICA_SERVERS = GE.get('gluster-replica', {}).get('path')
+###############################################################################
 HOSTS_USER = 'root'
-
-UNCOMP_DC_NAME = PARAMETERS.get("dc_name", "%s_DC30" % TEST_NAME)
-UNCOMP_CL_NAME = ["".join([CLUSTER_NAME[0], "CL3", str(i)]) for i in range(2)]
 
 COMP_VERSION_4_0 = ["3.6", "4.0", "4.1", "4.2"]
 
@@ -416,30 +330,19 @@ VM_IP_TIMEOUT = 300
 
 MGMT_BRIDGE = PARAMETERS.get('mgmt_bridge')
 
-NIC_NAME = [
-    "nic1", "nic2", "nic3", "nic4", "nic5", "nic6", "nic7", "nic8", "nic9"
-]
-
 DISPLAY_TYPE = ENUMS['display_type_spice']
 if PPC_ARCH:
     DISPLAY_TYPE = ENUMS['display_type_vnc']
 NIC_TYPE_VIRTIO = ENUMS['nic_type_virtio']
 NIC_TYPE_RTL8139 = ENUMS['nic_type_rtl8139']
 NIC_TYPE_E1000 = ENUMS['nic_type_e1000']
-COBBLER_PROFILE = PARAMETERS.get('cobbler_profile', None)
-COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
-COBBLER_USER = PARAMETERS.get('cobbler_user', None)
-COBBLER_PASSWD = PARAMETERS.get('cobbler_passwd', None)
-INSTALLATION = PARAMETERS.get('installation', 'true')
-PGPASS = "123456"
-
 
 # Disk interfaces
 INTERFACE_VIRTIO = ENUMS['interface_virtio']
+DISK_INTERFACE = INTERFACE_VIRTIO
 INTERFACE_IDE = ENUMS['interface_ide']
 INTERFACE_VIRTIO_SCSI = ENUMS['interface_virtio_scsi']
 INTERFACE_SPAPR_VSCSI = ENUMS['interface_spapr_vscsi']
-DISK_INTERFACE = INTERFACE_VIRTIO
 
 # Disk formats
 DISK_FORMAT_COW = ENUMS['format_cow']
@@ -455,7 +358,6 @@ DISK_TYPE_DATA = ENUMS['disk_type_data']
 DISK_TYPE_LUN = ENUMS['disk_type_lun']
 DISK_LOCKED = ENUMS['disk_state_locked']
 DISK_OK = ENUMS['disk_state_ok']
-
 
 # Disk sizes
 MB = 1024 ** 2
@@ -556,7 +458,7 @@ ENGINE = resources.Engine(
         resources.Domain(VDC_ADMIN_DOMAIN),
     ),
     schema=REST_CONNECTION.get('scheme'),
-    port=VDC_PORT,
+    port=REST_CONNECTION.get('port'),
     entry_point=ENGINE_ENTRY_POINT,
 )
 
@@ -621,44 +523,36 @@ JOB_UPDATE_VM = ENUMS['job_update_vm']
 AGENT_URL = 'http://10.34.63.72/cirunner/ci.php?action={action}&hostID={vm_id}'
 
 SKIP_MSG_PREFIX = "Hosts in env doesn't have %s"
-NOT_4_NICS_HOSTS = PARAMETERS.as_bool('not_4_nics_hosts')
+NOT_4_NICS_HOSTS = GE['extra_configuration_options'].get('not_4_nics_hosts')
 NOT_4_NICS_HOST_SKIP_MSG = SKIP_MSG_PREFIX % "4 nics"
-NOT_6_NICS_HOSTS = PARAMETERS.as_bool('not_6_nics_hosts')
+NOT_6_NICS_HOSTS = GE['extra_configuration_options'].get('not_6_nics_hosts')
 NOT_6_NICS_HOST_SKIP_MSG = SKIP_MSG_PREFIX % "6 nics"
-NO_FULL_SRIOV_SUPPORT = PARAMETERS.as_bool('no_full_sriov_support')
+NO_FULL_SRIOV_SUPPORT = GE['extra_configuration_options'].get(
+    'no_full_sriov_support'
+)
 NO_FULL_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "full SRIOV support"
-NO_SEMI_SRIOV_SUPPORT = PARAMETERS.as_bool('no_semi_sriov_support')
+NO_SEMI_SRIOV_SUPPORT = GE['extra_configuration_options'].get(
+    'no_semi_sriov_support'
+)
 NO_SEMI_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "semi SRIOV support"
-NO_JUMBO_FRAME_SUPPORT = PARAMETERS.as_bool('no_jumbo_frame_support')
+NO_JUMBO_FRAME_SUPPORT = GE['extra_configuration_options'].get(
+    'no_jumbo_frame_support'
+)
 NO_JUMBO_FRAME_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "jumbo frame support"
-NO_EXTRA_BOND_MODE_SUPPORT = PARAMETERS.as_bool('no_extra_bond_mode_support')
+NO_EXTRA_BOND_MODE_SUPPORT = GE['extra_configuration_options'].get(
+    'no_extra_bond_mode_support'
+)
 NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % (
     "extra bond mode support"
 )
-
-# WGT
-WIN2008R2_64B = opts['elements_conf']['Win2008R2_64b']
-WIN2012R2_64B = opts['elements_conf']['Win2012R2_64b']
-WIN2012_64B = opts['elements_conf']['Win2012_64b']
-WIN7_32B = opts['elements_conf']['Win7_32b']
-WIN7_64B = opts['elements_conf']['Win7_64b']
-WIN8_1_32B = opts['elements_conf']['Win8_1_32b']
-WIN8_1_64B = opts['elements_conf']['Win8_1_64b']
-WIN8_32B = opts['elements_conf']['Win8_32b']
-WIN8_64B = opts['elements_conf']['Win8_64b']
-WIN10_32B = opts['elements_conf']['Win10_32b']
-WIN10_64B = opts['elements_conf']['Win10_64b']
-WIN2016_64B = opts['elements_conf']['Win2016_64b']
-
-# Misc
-SSH_TYPE = "ssh"
-
+# used for tests that are not adjusted to GE or tests that we don't want to run
+DO_NOT_RUN = 17
 
 # user info
 USER_DOMAIN = "%s-authz" % VDC_ADMIN_DOMAIN
 USER = 'user1'
 USER_NAME = '%s@%s' % (USER, USER_DOMAIN)
-ADMIN_USER_NAME = '%s@%s' % (VDC_ADMIN_USER, USER_DOMAIN)
+ADMIN_USER_NAME = GE['username']
 
 WORKSPACE_ENV = os.getenv('WORKSPACE', '')
 WORKSPACE_PATH = 'jenkins/qe/conf/infra/storageManagerWrapper.conf'
@@ -671,6 +565,9 @@ STORAGE_SERVER = {
 DATA_CENTER_NAME = DC_NAME[0]
 WAIT_FOR_SPM_TIMEOUT = 120
 WAIT_FOR_SPM_INTERVAL = 10
-REBOOT_CMD = 'reboot'
 
 BLANK_TEMPLATE = 'Blank'
+
+NIC_NAME = [
+    "nic1", "nic2", "nic3", "nic4", "nic5", "nic6", "nic7", "nic8", "nic9"
+]

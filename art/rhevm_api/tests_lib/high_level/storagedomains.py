@@ -28,11 +28,11 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
 )
 from art.rhevm_api.tests_lib.high_level import datastructures
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils import test_utils
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 SD_UNATTACHED = ENUMS['storage_domain_state_unattached']
 TIMEOUT_DEACTIVATE_DOMAIN = 90
 

@@ -10,7 +10,7 @@ import logging
 import pytest
 
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenters,
@@ -500,8 +500,8 @@ class TestCase16968(TestCase):
     Storage_4_0/4_0_Storage_Templates
     """
     __test__ = (
-        config.STORAGE_TYPE_ISCSI in opts['storages'] or
-        config.STORAGE_TYPE_FCP in opts['storages']
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_FCP in ART_CONFIG['RUN']['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_FCP])
     polarion_test_case = '16968'

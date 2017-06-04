@@ -23,11 +23,11 @@ from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api import resources
 from art.rhevm_api.utils.test_utils import getStat, get_api
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 
 logger = logging.getLogger("art.hl_lib.vms")
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 CLUSTER_API = get_api('cluster', 'clusters')
 
 VM_API = get_api('vm', 'vms')

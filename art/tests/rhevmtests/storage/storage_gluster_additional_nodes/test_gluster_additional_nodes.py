@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
 )
 from art.rhevm_api.utils import storage_api
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
@@ -294,7 +294,7 @@ class TestBlockingNodesBackupVolFile(BaseTestBlockingNodes):
     Test gluster domain is available after blocking different nodes
     with backupvolfile-server option
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
     backup_vol_file_server = True
 
 
@@ -304,7 +304,7 @@ class TestBlockingNodesWithNoBackupVolFile(BaseTestBlockingNodes):
     Test gluster domain is available after blocking different nodes
     with no backupvolfile-server option
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
     backup_vol_file_server = False
 
 
@@ -313,8 +313,8 @@ class Test12320(BaseGlusterMount):
     """
     Test gluster setup with Unavailable Master and 2 Available secondary
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [config.NODES[0]]
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
+    disabled_nodes_ips = [config.NODES[0]] if config.NODES else None
 
     @polarion("RHEVM3-12320")
     def test_creation_backupvolfile(self):
@@ -339,8 +339,8 @@ class Test12322(BaseGlusterMount):
     """
     Test Gluster setup with Available Master and 1 Available Secondary
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = [config.NODES[1]]
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
+    disabled_nodes_ips = [config.NODES[1]] if config.NODES else None
 
     @polarion("RHEVM3-12322")
     def test_creation_backupvolfile(self):
@@ -360,8 +360,8 @@ class Test12323(BaseGlusterMount):
     """
     Test Gluster setup with Unavailable Master and 1 Available Secondary
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = config.NODES[0:2]
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
+    disabled_nodes_ips = config.NODES[0:2] if config.NODES else None
 
     @polarion("RHEVM3-12323")
     def test_creation_backupvolfile(self):
@@ -383,7 +383,7 @@ class Test12324(BaseGlusterMount):
     """
     Test Gluster setup with with All RHS servers available
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
 
     @polarion("RHEVM3-12324")
     def test_creation_backupvolfile(self):
@@ -404,8 +404,8 @@ class Test12325(BaseGlusterMount):
     Test a Gluster setup with an Available master and 2 Unavailable
     secondary RHS servers
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
-    disabled_nodes_ips = config.NODES[1:3]
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
+    disabled_nodes_ips = config.NODES[1:3] if config.NODES else None
 
     @polarion("RHEVM3-12325")
     def test_creation_backupvolfile(self):
@@ -426,7 +426,7 @@ class Test12326(BaseGlusterMount):
     """
     Test Gluster setup with with All RHS servers unavailable
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
 
     @polarion("RHEVM3-12326")
     def test_creation_backupvolfile(self):
@@ -444,7 +444,7 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
     Test the backup-volfile-servers parameter works as expected.
     Verify the mount command on the spm host
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
 
     def verify_gluster_mount_cmd(
         self, backupvolfile_list, backupvolfile_regex

@@ -5,7 +5,7 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 
 from art.test_handler.exceptions import VMException
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier1,
@@ -216,7 +216,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
 class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
     """ Regression tests for the log-collector """
 
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI])
 
     def setUp(self):

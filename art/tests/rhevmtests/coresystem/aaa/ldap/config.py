@@ -1,7 +1,5 @@
 from rhevmtests.coresystem.config import *  # flake8: noqa
-from art.test_handler.settings import opts
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
 
 # Common properties
 FIXTURES = 'fixtures'

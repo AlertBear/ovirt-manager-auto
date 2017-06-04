@@ -4,7 +4,7 @@ import pytest
 from configobj import ConfigObj
 
 from art.rhevm_api import resources
-from art.test_handler.settings import ART_CONFIG, opts
+from art.test_handler.settings import ART_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +12,9 @@ global config
 config = ConfigObj(raise_errors=True)
 
 # RHEVM related constants
-ENUMS = opts['elements_conf']['RHEVM Enums']
-PERMITS = opts['elements_conf']['RHEVM Permits']
-RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
+PERMITS = ART_CONFIG['elements_conf']['RHEVM Permits']
+RHEVM_UTILS_ENUMS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 
 TEST_NAME = "Global"
 
@@ -37,15 +37,13 @@ LOCAL_ISO_DOMAIN_NAME = 'ISO_DOMAIN'
 EXPORT_DOMAIN_NAME = 'export_domain'
 
 LOGDIR = 'logdir'
-OUTPUT_DIR = opts.get(LOGDIR, None)
+OUTPUT_DIR = PARAMETERS.get(LOGDIR, None)
 
-CONFIG_ELEMENTS = 'elements_conf'
-CONFIG_SECTION = 'RHEVM Utilities'
-VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
+VARS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 
-HOSTS = PARAMETERS.as_list('vds')
+HOSTS = PARAMETERS.get('vds')
 HOSTS_IP = list(HOSTS)
-HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
+HOSTS_PW = PARAMETERS.get('vds_password')[0]
 VDS_HOSTS = [
     resources.VDS(
         h, HOSTS_PW,

@@ -11,17 +11,17 @@ from _pytest_art.marks import (
 )
 from _pytest_art.testlogger import TestFlowInterface
 from art.test_handler.exceptions import TearDownException
-from art.test_handler.settings import opts, ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 logger = logging.getLogger(__name__)
 testflow = TestFlowInterface
 
 # WA This will be removed after multiplier is merged
-ISCSI = opts['elements_conf']['RHEVM Enums']['storage_type_iscsi']
-NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
-GLUSTERFS = opts['elements_conf']['RHEVM Enums']['storage_type_gluster']
-FCP = opts['elements_conf']['RHEVM Enums']['storage_type_fcp']
-CEPH = opts['elements_conf']['RHEVM Enums']['storage_type_ceph']
+ISCSI = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_iscsi']
+NFS = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_nfs']
+GLUSTERFS = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_gluster']
+FCP = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_fcp']
+CEPH = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_ceph']
 STORAGE_TYPE = ART_CONFIG['PARAMETERS'].get('storage_type', None)
 NOT_APPLICABLE = 'N/A'
 
@@ -32,7 +32,7 @@ class BaseTestCase(TestCase):
     """
     __test__ = False
     # All APIs available that test can run with
-    apis = set(opts['engines'])
+    apis = set(ART_CONFIG['RUN']['engines'])
     test_failed = False
 
     @classmethod

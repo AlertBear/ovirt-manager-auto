@@ -1,41 +1,3 @@
-import sys
-import traceback
-
-
-class VitalTestFailed(Exception):
-    '''
-    Raised when some vital test fails.
-    '''
-    def __init__(self, test_name):
-        self.test_name = test_name
-
-    def __str__(self):
-        MSG = "Test '{0}' failed, can't run any further test."
-        return MSG.format(self.test_name)
-
-
-class Vital4GroupTestFailed(VitalTestFailed):
-    '''
-    Raised when some vital test on group level fails.
-    '''
-    pass
-
-
-class CannotRunTests(Exception):
-    ''' Raised when some problem occured during running the test scenario. '''
-
-
-class TestComposeError(CannotRunTests):
-    pass
-
-
-class CanNotResolveActionPath(CannotRunTests):
-    pass
-
-
-class WrongIterableParams(CannotRunTests):
-    pass
-
 
 class TestExceptionType(type):
     """
@@ -117,31 +79,8 @@ class JobException(RHEVMEntityException):
     pass
 
 
-class StepException(RHEVMEntityException):
-    pass
-
-
-class SchedulerException(RHEVMEntityException):
-    pass
-
-
 class VmPoolException(RHEVMEntityException):
     pass
-
-
-class UserException(RHEVMEntityException):
-    pass
-
-
-class IsoDomainException(RHEVMEntityException):
-    pass
-
-
-def formatExcInfo():
-    ei = sys.exc_info()
-    einfo = traceback.format_exception(*ei)
-    einfo.insert(0, einfo[-1])
-    return ''.join(einfo)
 
 
 class ResourceError(RHEVMEntityException):
@@ -163,13 +102,6 @@ class CanNotFindIP(ResourceError):
     pass
 
 
-class QueryNotFoundException(RHEVMEntityException):
-    """
-    Exception for query not found (get_obj_by_query)
-    """
-    pass
-
-
 class TearDownException(RHEVMEntityException):
     """
     Exception for failed teardown
@@ -185,8 +117,4 @@ class HostedEngineException(RHEVMEntityException):
 
 
 class SriovException(RHEVMEntityException):
-    pass
-
-
-class ExternalProviderException(RHEVMEntityException):
     pass

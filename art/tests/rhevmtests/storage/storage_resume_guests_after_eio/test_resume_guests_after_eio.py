@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils import storage_api
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     StorageTest as TestCase,
@@ -253,7 +253,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
 
 class TestCase5012(TestCaseBlockedConnection):
     # TODO: Why is this not running glusterfs?
-    __test__ = (NFS in opts['storages'])
+    __test__ = (NFS in ART_CONFIG['RUN']['storages'])
     storages = set([NFS])
     polarion_test_case = '5012'
 
@@ -270,7 +270,7 @@ class TestCase5012(TestCaseBlockedConnection):
 class TestCase5013(TestNoSpaceLeftOnDevice):
     # TODO: Why is this not running glusterfs?
     # TODO: this cases is disable due to ticket RHEVM-2524
-    # __test__ = (NFS in opts['storages'])
+    # __test__ = (NFS in ART_CONFIG['RUN']['storages'])
     __test__ = False
     storages = set([NFS])
     polarion_test_case = '5013'
@@ -288,7 +288,7 @@ class TestCase5013(TestNoSpaceLeftOnDevice):
 
 
 class TestCase5014(TestCaseBlockedConnection):
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI])
     polarion_test_case = '5014'
 
@@ -304,7 +304,7 @@ class TestCase5014(TestCaseBlockedConnection):
 
 class TestCase5015(TestNoSpaceLeftOnDevice):
     # TODO: this cases is disable due to ticket RHEVM-2524
-    # __test__ = (ISCSI in opts['storages'])
+    # __test__ = (ISCSI in ART_CONFIG['RUN']['storages'])
     __test__ = False
     storages = set([ISCSI])
     polarion_test_case = '5015'
@@ -364,7 +364,7 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
 
 
 class TestCase5016(TestCaseBlockedConnection):
-    __test__ = ('fcp' in opts['storages'])
+    __test__ = ('fcp' in ART_CONFIG['RUN']['storages'])
     storages = set(['fcp'])
     polarion_test_case = '5016'
 
@@ -380,7 +380,7 @@ class TestCase5016(TestCaseBlockedConnection):
 
 class TestCase5017(TestNoSpaceLeftOnDevice):
     # TODO: this cases is disable due to ticket RHEVM-2524
-    # __test__ = ('fcp' in opts['storages'])
+    # __test__ = ('fcp' in ART_CONFIG['RUN']['storages'])
     __test__ = False
     storages = set(['fcp'])
     polarion_test_case = '5017'

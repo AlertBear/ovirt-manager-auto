@@ -30,10 +30,10 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as test_exceptions
-import art.test_handler.settings as test_settings
+from art.test_handler.settings import ART_CONFIG
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 
-ENUMS = test_settings.opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger("art.hl_lib.networks")
 CONNECTIVITY_TIMEOUT = 60

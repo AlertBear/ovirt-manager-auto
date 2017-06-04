@@ -9,7 +9,7 @@ from rhevmtests.storage.config import * # flake8: noqa
 # Name of the test
 TESTNAME = "storage_vm_sanity"
 
-TEMPLATE_NAME = PARAMETERS['template_name']
+TEMPLATE_NAME = 'template_name'
 
 # TODO: remove
 VM_LINUX_USER = VMS_LINUX_USER

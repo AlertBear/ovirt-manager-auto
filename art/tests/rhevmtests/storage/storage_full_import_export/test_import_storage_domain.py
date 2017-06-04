@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.test_handler.tools import polarion
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.unittest_lib import (
     tier2,
 )
@@ -114,7 +114,7 @@ class BaseTestCase(TestCase):
 
 
 class TestCase10951_GLUSTER(BaseTestCase):
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_GLUSTER])
     gl_add = config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES
     gl_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
@@ -129,7 +129,7 @@ class TestCase10951_GLUSTER(BaseTestCase):
 
 class TestCase10951_POSIX(BaseTestCase):
     # Since we don't run with POSIX make sure this test runs in NFS
-    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
     nfs_add = config.UNUSED_DATA_DOMAIN_ADDRESSES
     nfs_path = config.UNUSED_DATA_DOMAIN_PATHS

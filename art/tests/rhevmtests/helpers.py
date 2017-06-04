@@ -146,7 +146,7 @@ def clean_unfinished_jobs_on_engine():
 
 
 def generate_object_names(
-    num_of_cases, num_of_objects=config.NUM_OF_OBJECT, prefix=config.PREFIX
+    num_of_cases, num_of_objects=5, prefix='net'
 ):
     """
     Generate object names per case
@@ -318,10 +318,9 @@ def storage_cleanup():
     )
     logger.info("The GE storage domains names: %s", config.SD_LIST)
     storage_types = set()
-    for dc in config.dcs:
-        dc_name = dc['name']
+    for dc in config.DC_NAME:
         spm = None
-        wait_for_tasks(config.ENGINE, dc_name)
+        wait_for_tasks(config.ENGINE, dc)
         for sd_obj in engine_sds_objs:
             sd_name = sd_obj.get_name()
             if sd_name not in config.SD_LIST:
@@ -331,7 +330,7 @@ def storage_cleanup():
                     sd_name, sd_obj.id, sd_obj.storage.get_type()
                 )
                 hl_sd.destroy_storage_domain(
-                    sd_name, dc_name, host_name=spm, engine=config.ENGINE
+                    sd_name, dc, host_name=spm, engine=config.ENGINE
                 )
                 sd_type = sd_obj.storage.get_type()
                 if sd_type in (NFS, GLUSTERFS):

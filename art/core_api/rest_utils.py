@@ -52,8 +52,10 @@ class RestUtil(api_utils.APIUtil):
     '''
     def __init__(self, element, collection, **kwargs):
         super(RestUtil, self).__init__(element, collection, **kwargs)
-        self.entry_point = settings.opts.get('entry_point', 'api')
-        self.standalone = self.opts.get('standalone', False)
+        self.entry_point = self.opts['REST_CONNECTION'].get(
+            'entry_point'
+        )
+        self.standalone = self.opts['RUN'].get('standalone')
         self.login()
 
     def login(self):
@@ -67,10 +69,14 @@ class RestUtil(api_utils.APIUtil):
             self.api = RestUtil._restInit
         else:
             self.api = http.HTTPProxy(self.opts)
-            if self.opts['persistent_auth']:
+            if self.opts['REST_CONNECTION']['persistent_auth']:
                 self.api.headers['Prefer'] = 'persistent-auth'
-            self.api.headers['Session-TTL'] = self.opts['session_timeout']
-            self.api.headers['Filter'] = str(self.opts['filter'])
+            self.api.headers['Session-TTL'] = self.opts['REST_CONNECTION'].get(
+                'session_timeout'
+            )
+            self.api.headers['Filter'] = str(
+                self.opts['REST_CONNECTION']['filter']
+            )
 
             if not self.standalone:
                 try:
@@ -91,10 +97,10 @@ class RestUtil(api_utils.APIUtil):
 
         # load xsd schema file
         if self.xsd is None:
-            xsd_schema = etree.parse(settings.opts.get('api_xsd'))
+            xsd_schema = etree.parse(settings.ART_CONFIG['RUN']['api_xsd'])
             self.xsd = etree.XMLSchema(xsd_schema)
 
-        self.max_collection = settings.opts.get('max_collection')
+        self.max_collection = settings.ART_CONFIG['RUN']['max_collection']
 
     @classmethod
     def logout(cls):
@@ -200,9 +206,9 @@ class RestUtil(api_utils.APIUtil):
 
         if not abs_link:
             if href:
-                href = self.links[href]
+                href = self.links.get(href)
             else:
-                href = self.opts['uri']
+                href = self.opts['REST_CONNECTION']['uri']
 
         if not elm:
             elm = self.element_name
@@ -358,7 +364,7 @@ class RestUtil(api_utils.APIUtil):
         ):
             return None, False
 
-        validate = kwargs.get("validate", self.opts["validate"])
+        validate = kwargs.get("validate", self.opts["RUN"]["validate"])
         if not validate:
             return None, True
 
@@ -440,7 +446,7 @@ class RestUtil(api_utils.APIUtil):
         ):
             return None, False
 
-        if not self.opts['validate']:
+        if not self.opts['RUN']['validate']:
             return None, True
 
         self.logger.debug("Response body for PUT request is: %s ",
@@ -494,7 +500,7 @@ class RestUtil(api_utils.APIUtil):
         ):
             return False
 
-        if not self.opts['validate']:
+        if not self.opts['RUN']['validate']:
             return True
 
         self.logger.debug("Response body for DELETE request is: %s ",
@@ -701,7 +707,7 @@ class RestUtil(api_utils.APIUtil):
         ):
             return None
 
-        if not self.opts["validate"]:
+        if not self.opts["RUN"]["validate"]:
             return ret[RespKey.body]
 
         self.logger.debug(

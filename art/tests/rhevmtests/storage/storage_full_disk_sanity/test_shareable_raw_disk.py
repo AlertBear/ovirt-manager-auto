@@ -12,13 +12,13 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.test_handler.tools import polarion
+from art.test_handler.settings import ART_CONFIG
 from art.unittest_lib import (
     tier1,
     tier2,
     tier3,
 )
 from art.unittest_lib import StorageTest as TestCase, testflow
-from art.test_handler.settings import opts
 from rhevmtests.storage.fixtures import (
     add_disk, attach_disk, create_snapshot, create_vm, delete_disks,
     delete_disk,
@@ -39,10 +39,10 @@ STORAGES = set([
     config.STORAGE_TYPE_FCP, config.STORAGE_TYPE_CEPH
 ])
 NOT_GLUSTER = (
-    config.STORAGE_TYPE_NFS in opts['storages'] or
-    config.STORAGE_TYPE_ISCSI in opts['storages'] or
-    config.STORAGE_TYPE_FCP in opts['storages'] or
-    config.STORAGE_TYPE_CEPH in opts['storages']
+    config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+    config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages'] or
+    config.STORAGE_TYPE_FCP in ART_CONFIG['RUN']['storages'] or
+    config.STORAGE_TYPE_CEPH in ART_CONFIG['RUN']['storages']
 )
 
 
@@ -214,7 +214,7 @@ class TestCase16687(TestCase):
     Move shared disk to GlusterFS storage domain
     """
     # Verify gluster storage available in yaml before running this test
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages'] and (
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages'] and (
         'gluster' in str(config.STORAGE_NAME)
     )
     storages = set([config.STORAGE_TYPE_ISCSI])
@@ -244,7 +244,7 @@ class TestCase16688(TestCase):
     """
     Create shared disk on GlusterFS storage domain
     """
-    __test__ = config.STORAGE_TYPE_GLUSTER in opts['storages']
+    __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
     polarion_test_case = '16688'
 
     @polarion("RHEVM3-16688")

@@ -32,7 +32,7 @@ from art.test_handler import settings
 
 logger = logging.getLogger("Global_Network_Helper")
 
-ENUMS = settings.opts['elements_conf']['RHEVM Enums']
+ENUMS = settings.ART_CONFIG['elements_conf']['RHEVM Enums']
 IFCFG_PATH = "/etc/sysconfig/network-scripts"
 EXCLUDE_NICS = ["ifcfg-eth0", "ifcfg-lo"]
 APPLY_NETWORK_CHANGES_EVENT_CODE = 1146

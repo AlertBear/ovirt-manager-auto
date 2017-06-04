@@ -21,7 +21,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 import art.test_handler.exceptions as errors
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import bz, polarion
 from art.test_handler import exceptions
 from art.unittest_lib import (
@@ -257,7 +257,7 @@ class TestCase5243(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5243'
     conn = None
     sd_name = None
@@ -324,7 +324,7 @@ class TestCase5247(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     # Other apis try convert the value type so this cases will not work, only
     # execute on rest
     apis = set(['rest'])
@@ -424,7 +424,7 @@ class TestCase5248(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5248'
     conn_1 = None
     conn_2 = None
@@ -512,7 +512,7 @@ class TestCase5246(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5246'
     sd_name_1 = "sd_%s_1" % polarion_test_case
     sd_name_2 = "sd_%s_2" % polarion_test_case
@@ -659,7 +659,7 @@ class TestCase5240(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5240'
     conns = []
     no_of_conn = 10
@@ -743,7 +743,7 @@ class TestCase5242(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5242'
 
     def setUp(self):
@@ -955,7 +955,7 @@ class TestCase5245(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5245'
     conn = None
     sd_name_1 = "sd_%s_1" % polarion_test_case
@@ -1084,7 +1084,7 @@ class TestCase5244(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5244'
     conn = None
     sd_name_1 = "sd_%s_1" % polarion_test_case
@@ -1212,7 +1212,7 @@ class TestCase5241(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5241'
     conn = None
     vm_name_1 = "vm_%s_1" % polarion_test_case
@@ -1381,7 +1381,7 @@ class TestCase5249(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Manage_Storage_Connections
     """
-    __test__ = config.STORAGE_TYPE_ISCSI in opts['storages']
+    __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5249'
     conn = None
 

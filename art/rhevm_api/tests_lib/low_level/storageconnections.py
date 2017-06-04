@@ -21,12 +21,12 @@ import logging
 from art.rhevm_api.utils import test_utils
 from art.core_api import apis_utils
 from utilities import utils
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 StorageConnection = apis_utils.getDS('StorageConnection')
 Host = apis_utils.getDS('Host')
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 api = test_utils.get_api('storage_connection', 'storageconnections')
 hostApi = test_utils.get_api('host', 'hosts')
 

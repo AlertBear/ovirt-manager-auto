@@ -20,7 +20,7 @@
 import logging
 from utilities.utils import MACRange
 import art.rhevm_api.utils.test_utils as utils
-from art.test_handler.settings import ART_CONFIG
+from art.test_handler.settings import GE
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 
@@ -130,7 +130,7 @@ def update_default_mac_pool(mac_range=None):
     :rtype: bool
     """
     if mac_range is None:
-        mac_range = ART_CONFIG['PARAMETERS'].get('mac_range')
+        mac_range = GE['engine'].get('mac_range')
     utils.logger.debug("MAC range is: %s", mac_range)
     if mac_range:
         mac_range_obj = MACRange.from_string(mac_range)

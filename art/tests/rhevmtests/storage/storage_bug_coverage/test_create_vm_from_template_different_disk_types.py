@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
 
 import art.test_handler.exceptions as errors
 from art.test_handler.tools import polarion
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.unittest_lib import (
     tier3,
 )
@@ -52,7 +52,7 @@ class TestCase11843(TestCase):
     Storage/2_3_Storage_Templates_General
     """
     # TODO: Why is this only for ISCSI?
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     polarion_test_case = '11843'
     storages = set([ISCSI])
     # Bugzilla history:

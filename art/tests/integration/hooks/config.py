@@ -4,7 +4,8 @@ Config module for hooks test
 import art.rhevm_api.resources as resources
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
-from art.test_handler.settings import ART_CONFIG as art_config, opts as options
+from art.test_handler.settings import ART_CONFIG as art_config
+from art.test_handler.settings import GE
 
 
 HOOKS_VM_NAME = 'test_vm_hooks'
@@ -26,8 +27,8 @@ custom_property_vnic_default = None
 parameters = art_config["PARAMETERS"]
 rest_connection = art_config["REST_CONNECTION"]
 
-enums = options["elements_conf"]["RHEVM Enums"]
-configuration_variables = options["elements_conf"]["RHEVM Utilities"]
+enums = art_config["elements_conf"]["RHEVM Enums"]
+configuration_variables = art_config["elements_conf"]["RHEVM Utilities"]
 
 vdc_host = rest_connection["host"]
 vdc_root_user = "root"
@@ -54,27 +55,28 @@ mgmt_bridge = parameters.get("mgmt_bridge")
 
 storage_type = parameters.get("storage_type", None)
 storage_type_local = enums["storage_type_local"]
-
-local = parameters.get("local", None) if not storage_type else (
+local = parameters.get("local", 'false') if not storage_type else (
     storage_type == storage_type_local
 )
 
-golden_env = art_config["prepared_env"]
-dcs = golden_env["dcs"]
-dc = None
-for _dc in dcs:
-    if int(_dc["local"]) == local:
-        dc = _dc
+dcs = []
+for dc in GE['datacenters']:
+    dcs.append(dc)
 
-compatibility_version = dc["compatibility_version"]
+# dc = None
+# for _dc in dcs:
+#     if _dc["local"] == local:
+#         dc = _dc
+
+compatibility_version = GE.get("version")
 dcs_names = [dc["name"]]
-clusters = dc["clusters"]
+clusters = GE["clusters"]
 clusters_names = [cluster["name"] for cluster in clusters]
 
 hosts = []
 hosts_ips = []
 hosts_user = "root"
-hosts_password = parameters.as_list("vds_password")[0]
+hosts_password = parameters["vds_password"][0]
 
 hosts_objects = ll_hosts.HOST_API.get(abs_link=False)
 if not hosts_objects:
@@ -116,20 +118,11 @@ hooks_host.users.append(resources.RootUser(vdc_root_password))
 
 external_templates = []
 templates = []
-for cluster in clusters:
-    for template in cluster["templates"]:
-        templates.append(template)
-    for ets in cluster["external_templates"]:
-        for source_type in ("glance", "export_domain"):
-            if ets[source_type]:
-                for external_template in ets[source_type]:
-                    external_templates.append(external_template)
 
-templates_names = [
-    template["name"] for template in templates
-] + [
-    template["name"] for template in external_templates
-]
+for _template in GE["external_templates"]:
+    external_templates.append(_template)
+
+templates_names = [template["name"] for template in external_templates]
 
 display_type_vnc = enums["display_type_vnc"]
 vm_state_up = enums["vm_state_up"]

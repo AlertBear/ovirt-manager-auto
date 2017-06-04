@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import storage_api as utils
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
     tier2,
@@ -298,7 +298,7 @@ class TestCase5193(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5193
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = '5193'
     storages = set([NFS, GLUSTER])
 
@@ -340,7 +340,8 @@ class TestCase5194(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5194
     """
-    __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
+                FCP in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI, FCP])
     polarion_test_case = '5194'
 
@@ -644,7 +645,8 @@ class TestCase10951(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-10951
     """
-    __test__ = POSIX in opts['storages'] or GLUSTER in opts['storages']
+    __test__ = (POSIX in ART_CONFIG['RUN']['storages'] or
+                GLUSTER in ART_CONFIG['RUN']['storages'])
     storages = set([GLUSTER, POSIX])
     polarion_test_case = '10951'
     nfs_version = None
@@ -753,7 +755,8 @@ class TestCase5200(DomainImportWithTemplate):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-5200
     """
-    __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
+                FCP in ART_CONFIG['RUN']['storages'])
     polarion_test_case = '5200'
     storages = set([ISCSI, NFS])
     add_disk_params = {

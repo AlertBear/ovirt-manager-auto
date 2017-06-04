@@ -2,15 +2,14 @@ import pytest
 
 from art.rhevm_api import resources
 from art.rhevm_api.utils import test_utils
-from art.test_handler.settings import opts
 from art.test_handler.settings import ART_CONFIG
 
 __test__ = False
 
 TEST_NAME = "UpgradeSanity"
 PARAMETERS = ART_CONFIG['PARAMETERS']
-ENUMS = opts['elements_conf']['RHEVM Enums']
-VARS = opts['elements_conf']['RHEVM Utilities']
+ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
+VARS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 STORAGE_TYPE = PARAMETERS['storage_type']
 
 OS_TYPE = test_utils.convertOsNameToOsTypeElement(

@@ -31,7 +31,7 @@ from art.rhevm_api.utils.storage_api import (
 )
 from art.test_handler.tools import polarion, bz
 import rhevmtests.storage.helpers as storage_helpers
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -608,7 +608,8 @@ class TestCase4554(BaseCaseDCMixed):
     * Move disk (offline movement) between domains (NFS to Gluster and
     Gluster to NFS)
     """
-    __test__ = NFS in opts['storages'] and GLUSTERFS in opts['storages']
+    __test__ = (NFS in ART_CONFIG['RUN']['storages'] and
+                GLUSTERFS in ART_CONFIG['RUN']['storages'])
     polarion_test_case = '4554'
     storages = set([NFS, GLUSTERFS])
     storagedomains = [config.NFS_DOMAIN, config.GLUSTER_DOMAIN]
@@ -777,7 +778,8 @@ class TestCase4564(IscsiNfsSD):
     * Create VM with 2 disks - on ISCSI domain and the other in NFS domain
     * Install OS and make file system on both disks
     """
-    __test__ = ISCSI in opts['storages'] or NFS in opts['storages']
+    __test__ = (ISCSI in ART_CONFIG['RUN']['storages'] or
+                NFS in ART_CONFIG['RUN']['storages'])
     storages = set([ISCSI, NFS])
 
     polarion_test_case = '4564'

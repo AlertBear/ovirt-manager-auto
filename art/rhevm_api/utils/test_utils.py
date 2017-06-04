@@ -58,7 +58,7 @@ TCDUMP_TIMEOUT = "60"
 RESTART_INTERVAL = 5
 RESTART_TIMEOUT = 70
 
-RHEVM_UTILS_ENUMS = settings.opts['elements_conf']['RHEVM Utilities']
+RHEVM_UTILS_ENUMS = settings.ART_CONFIG['elements_conf']['RHEVM Utilities']
 
 
 class PSQLException(Exception):
@@ -102,7 +102,7 @@ class GetApi(object):
 
     def __getattr__(self, opcode):
         with self.rlock:
-            engine = settings.opts.get('engine')
+            engine = settings.ART_CONFIG.get('RUN').get('engine')
             key = (self._element, self._collection, engine)
             # checking in cache
             if key in self.util_cache:
@@ -195,7 +195,9 @@ def validateElementStatus(positive, element, collection, elementName,
     util = get_api(element, collection)
 
     try:
-        supportedElements = settings.opts['elements_conf'][elementConfSection]
+        supportedElements = (
+            settings.ART_CONFIG['elements_conf'][elementConfSection]
+        )
     except Exception as err:
         util.logger.error(err)
         return False
@@ -411,7 +413,7 @@ def getImageByOsType(positive, osType, slim=False):
             if ((osType != 'RHEL5') and (osType != 'RHEL6')):
                 osType = osType + '_SLIM'
     try:
-        supportedOs = settings.opts['elements_conf'][osType]
+        supportedOs = settings.ART_CONFIG['elements_conf'][osType]
     except Exception as err:
         logger.error(err)
         return False, {'osBoot': None, 'floppy': None}
@@ -471,7 +473,9 @@ def searchElement(positive, element, collection, keyName, searchValue):
     '''
     util = get_api(element, collection)
     try:
-        supportedElements = settings.opts['elements_conf'][elementConfSection]
+        supportedElements = (
+            settings.ART_CONFIG['elements_conf'][elementConfSection]
+        )
     except Exception as err:
         util.logger.error(err)
         return False, None

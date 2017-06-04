@@ -2,8 +2,9 @@
 External tasks configuration module
 """
 from rhevmtests.coresystem.config import (
-    PARAMETERS as parameters
-)
+    ENUMS,
+    PARAMETERS as parameters,
+) # flake8: noqa
 
 SYSTEM_BASE_NAME = "SYSTEM"
 

@@ -1,7 +1,5 @@
 from rhevmtests.virt.config import *  # flake8: noqa
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
-
 
 MEMORY_SIZE_1 = GB
 MEMORY_SIZE_2 = GB/2

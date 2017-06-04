@@ -28,7 +28,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import (
     do_not_run,
@@ -373,7 +373,7 @@ class TestCase11196(BaseTestCaseNewDC):
     https://polarion.engineering.redhat.com/polarion/#/project/
     RHEVM3/workitem?id=RHEVM3-11196
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
     @pytest.fixture(scope='function')
     def initializer_TestCase11196(self, request, initializer_module):
@@ -454,7 +454,7 @@ class TestCase11200(BasicDeactivateStorageDomain):
     https://polarion.engineering.redhat.com/polarion/#/project/
     RHEVM3/workitem?id=RHEVM3-11200
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
     @polarion("RHEVM3-11200")
     def test_deactivate_storage_domain(self):
@@ -483,7 +483,7 @@ class TestCase11230(BasicDeactivateStorageDomain):
     https://polarion.engineering.redhat.com/polarion/#/project/
     RHEVM3/workitem?id=RHEVM3-11230
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
     @polarion("RHEVM3-11230")
     def test_deactivate_storage_domain_several_storage_servers(self):
@@ -511,7 +511,7 @@ class TestCase11201(BaseTestCaseNewDC):
     https://polarion.engineering.redhat.com/polarion/#/project/
     RHEVM3/workitem?id=RHEVM3-11201
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
     @pytest.fixture(scope='function')
     def initializer_TestCase11201(self, request, initializer_module):
@@ -574,7 +574,7 @@ class TestCase11257(BaseTestCaseNewDC):
     https://polarion.engineering.redhat.com/polarion/#/project/
     RHEVM3/workitem?id=RHEVM3-11257
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     add_nfs_domain = True
 
     @pytest.fixture(scope='function')
@@ -645,7 +645,7 @@ class TestCase11233(BaseTestCaseNewDC):
     https://polarion.engineering.redhat.com/polarion/#/project/
     RHEVM3/workitem?id=RHEVM3-11233
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     add_nfs_domain = True
 
     @polarion("RHEVM3-11233")
@@ -693,7 +693,7 @@ class TestCase11231(BaseTestCaseNewDC):
     https://polarion.engineering.redhat.com/polarion/#/project/
     RHEVM3/workitem?id=RHEVM3-11231
     """
-    __test__ = ISCSI in opts['storages']
+    __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     add_nfs_domain = True
     add_iscsi_domain = False
 

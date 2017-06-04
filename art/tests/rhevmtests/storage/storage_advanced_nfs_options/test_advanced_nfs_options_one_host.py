@@ -5,7 +5,7 @@ import helpers
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
@@ -67,7 +67,7 @@ class TestCase4816(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = "4816"
     export_domain = 'test_%s_export' % polarion_test_case
     iso_domain = 'test_%s_iso' % polarion_test_case
@@ -113,7 +113,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = "4829"
     nfs_address = config.NFS_ADDRESSES[0]
     nfs_path = config.NFS_PATHS[0]
@@ -183,7 +183,7 @@ class TestCase4826(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = '4826'
 
     @polarion("RHEVM3-4826")
@@ -219,7 +219,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = '4830'
     nfs_retrans = 7
     nfs_timeout = 600
@@ -269,7 +269,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = '4822'
 
     @polarion("RHEVM3-4822")
@@ -319,7 +319,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = '4821'
     nfs_retrans = 7
     nfs_timeout = 760
@@ -383,7 +383,7 @@ class TestCase4815(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     storages = set([NFS])
     sd_name = 'storage_domain_%s'
 
@@ -487,7 +487,7 @@ class TestCase4817(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     storages = set([NFS])
     polarion_test_case = '4817'
     nfs_retrans = 5
@@ -537,7 +537,7 @@ class TestCase4818(helpers.TestCaseNFSOptions):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_NFS_Options
     """
-    __test__ = NFS in opts['storages']
+    __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = '4818'
     nfs_retrans = 7
     nfs_timeout = 770

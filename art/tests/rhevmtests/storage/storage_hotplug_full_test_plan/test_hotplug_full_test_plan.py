@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils import test_utils as utils
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
 from rhevmtests.storage.storage_hotplug_full_test_plan.fixtures import (
     initializer_hotplug_hook, wait_for_dc_and_hosts,
@@ -583,8 +583,8 @@ class TestCase6243(TestCase):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     polarion_test_case = '6243'
@@ -619,8 +619,8 @@ class TestCase6230(TestCase):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages'] or
-        config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages'] or
+        config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 

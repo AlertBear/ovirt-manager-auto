@@ -3,7 +3,8 @@ from tempfile import mktemp
 from art.rhevm_api.resources import ADUser, Domain, Engine, Host, RootUser
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
-from art.test_handler.settings import ART_CONFIG as art_config, opts as options
+from art.test_handler.settings import ART_CONFIG as art_config
+from art.test_handler.settings import GE
 
 HYSTRIX_STREAM_ENTRY_POINT = "ovirt-engine/services/hystrix.stream"
 HYSTRIX_PROPERTY_KEY = "HystrixMonitoringEnabled"
@@ -15,7 +16,7 @@ status_pipe = mktemp()
 
 parameters = art_config["PARAMETERS"]
 rest_connection = art_config["REST_CONNECTION"]
-enums = options["elements_conf"]["RHEVM Enums"]
+enums = art_config["elements_conf"]["RHEVM Enums"]
 
 vdc_host = rest_connection["host"]
 vdc_root_password = parameters.get("vdc_root_password")
@@ -49,23 +50,22 @@ local = parameters.get("local", None) if not storage_type else (
     storage_type == storage_type_local
 )
 
-golden_env = art_config["prepared_env"]
+dcs = GE['datacenters']
 
-dcs = golden_env["dcs"]
-dc = None
-for _dc in dcs:
-    if int(_dc["local"]) == local:
-        dc = _dc
+# dc = None
+# for _dc in dcs:
+#     if _dc["local"] == local:
+#         dc = _dc
 
-compatibility_version = dc["compatibility_version"]
-dcs_names = [dc["name"]]
-clusters = dc["clusters"]
+compatibility_version = GE.get("version")
+compatibility_version = GE.get("version")
+clusters = GE["clusters"]
 clusters_names = [cluster["name"] for cluster in clusters]
 
 hosts = []
 hosts_ips = []
 hosts_user = "root"
-hosts_password = parameters.as_list("vds_password")[0]
+hosts_password = parameters["vds_password"][0]
 
 hosts_objects = ll_hosts.HOST_API.get(abs_link=False)
 if not hosts_objects:
@@ -103,16 +103,13 @@ for host in hosts_objects:
 
 external_templates = []
 templates = []
-for cluster in clusters:
-    for template in cluster["templates"]:
-        templates.append(template)
-    for ets in cluster["external_templates"]:
-        for source_type in ("glance", "export_domain"):
-            if ets[source_type]:
-                for external_template in ets[source_type]:
-                    external_templates.append(external_template)
+external_templates = []
+templates = []
 
-templates_names = [t["name"] for t in (templates + external_templates)]
+for _template in GE["external_templates"]:
+    external_templates.append(_template)
+
+templates_names = [template["name"] for template in external_templates]
 
 # Disk size for virtual machine constant size
 gb = 1024 ** 3

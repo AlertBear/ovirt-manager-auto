@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-import golden_env.config as config
+import config
 from art.rhevm_api import resources
 
 import logging

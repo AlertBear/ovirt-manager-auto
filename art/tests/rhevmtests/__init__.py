@@ -16,9 +16,6 @@ def setup_package():
     """ Set unfinished jobs to FINISHED status before run tests """
     helpers.clean_unfinished_jobs_on_engine()
 
-    if not config.GOLDEN_ENV:
-        return
-
     # in case of golden environment, reorder the rhel/rhevh hosts
     host_objs = ll_hosts.HOST_API.get(abs_link=False)
     if host_objs:
@@ -119,5 +116,4 @@ def teardown_package():
     helpers.get_unfinished_jobs_list()
 
     # Clean up all storage domains which are not in GE yaml
-    if config.GOLDEN_ENV:
-        helpers.storage_cleanup()
+    helpers.storage_cleanup()
