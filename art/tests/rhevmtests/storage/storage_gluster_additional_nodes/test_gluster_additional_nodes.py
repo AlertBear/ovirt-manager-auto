@@ -87,7 +87,7 @@ class BaseGlusterMount(BaseTestCase):
             )
             assert storage_api.blockOutgoingConnection(
                 cls.host_ip, config.HOSTS_USER, config.HOSTS_PW, node_ip
-             ), (
+            ), (
                 "Unable to block connection to gluster node %s from host %s" %
                 (node_ip, cls.host_ip)
             )
@@ -467,8 +467,8 @@ class VerifyGlusterMountParameteres(BaseGlusterMount):
         time.sleep(5)
 
         assert self.add_storage_domain(self.address, backupvolfile_list), (
-                "Error adding gluster storage domain %s" % self.address
-            )
+            "Error adding gluster storage domain %s" % self.address
+        )
 
         return_val = async_result.get()
         assert return_val[0], "regex %s was not found" % (
