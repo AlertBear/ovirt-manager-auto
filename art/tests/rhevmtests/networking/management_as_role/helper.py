@@ -6,7 +6,7 @@ Utilities used by the test cases of Management As A Role
 """
 
 import logging
-
+from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.high_level import (
     networks as hl_networks,
     hosts as hl_hosts
@@ -104,6 +104,7 @@ def prepare_host_for_installation(
         network=network, data_center=dc, usages=""
     )
 
+    test_utils.wait_for_tasks(engine=conf.ENGINE, datacenter=dc)
     if not ll_hosts.remove_host(positive=True, host=host_name):
         return False
 
