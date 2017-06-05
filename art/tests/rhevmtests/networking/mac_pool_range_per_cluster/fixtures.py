@@ -17,7 +17,7 @@ import helper
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-import rhevmtests.networking.helper as network_helper
+from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -42,7 +42,7 @@ def mac_pool_per_cl_prepare_setup(request):
         Remove non-default MAC pools
         """
         testflow.teardown("Removing unneeded MAC pools")
-        network_helper.remove_unneeded_mac_pools()
+        networking.remove_unneeded_mac_pools()
     request.addfinalizer(fin6)
 
     def fin5():
@@ -127,7 +127,7 @@ def create_mac_pools(request):
         Remove MAC pool(s)
         """
         testflow.teardown("Removing unneeded MAC pools")
-        network_helper.remove_unneeded_mac_pools()
+        networking.remove_unneeded_mac_pools()
     request.addfinalizer(fin)
 
     for pool_name, params in pools.iteritems():
@@ -233,7 +233,7 @@ def remove_non_default_mac_pool(request):
     """
     def fin():
         testflow.teardown("Removing unneeded MAC pools")
-        network_helper.remove_unneeded_mac_pools()
+        networking.remove_unneeded_mac_pools()
     request.addfinalizer(fin)
 
 

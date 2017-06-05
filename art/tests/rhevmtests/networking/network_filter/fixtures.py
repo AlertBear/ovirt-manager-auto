@@ -11,7 +11,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-import rhevmtests.networking.helper as network_helper
+from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -26,7 +26,7 @@ def remove_vnic_profiles(request):
         Remove NIC from VM
         """
         testflow.teardown("Remove unneeded vNIC profiles")
-        network_helper.remove_unneeded_vnic_profiles()
+        networking.remove_unneeded_vnic_profiles()
     request.addfinalizer(fin)
 
 

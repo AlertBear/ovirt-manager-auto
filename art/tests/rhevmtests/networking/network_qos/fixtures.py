@@ -10,7 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import config as qos_conf
 import helper
-import rhevmtests.networking.helper as network_helper
+from rhevmtests import networking
 from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
@@ -36,11 +36,11 @@ def add_qos_to_dc_and_qos_profile_to_nic(request):
         Delete QoS from datacenter
         """
         testflow.teardown("Remove unneeded vms NICs")
-        network_helper.remove_unneeded_vms_nics()
+        networking.remove_unneeded_vms_nics()
         testflow.teardown("Remove QoS from setup")
-        network_helper.remove_qos_from_setup()
+        networking.remove_qos_from_setup()
         testflow.teardown("Remove unneeded vNIC profiles")
-        network_helper.remove_unneeded_vnic_profiles()
+        networking.remove_unneeded_vnic_profiles()
     request.addfinalizer(fin)
 
     for qos_name, vnic_profile in zip(
