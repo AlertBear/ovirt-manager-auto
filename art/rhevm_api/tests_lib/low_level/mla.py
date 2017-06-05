@@ -467,24 +467,25 @@ def addPermissionsForDataCenter(positive, user, data_center,
     return addUserPermitsForObj(positive, user, role, dcObj)
 
 
-def removeAllPermissionsFromUser(positive, user):
-    '''
-    Description: remove all permissions from user
-    Author: edolinin
-    Parameters:
-       * user - name of user
-    Return: status (True if permissions were removed properly, False otherwise)
-    '''
+def remove_all_permissions_from_user(user):
+    """
+    Remove all permissions from a given user.
 
-    status = True
-    userObj = userUtil.find(user)
-    userPermits = permisUtil.getElemFromLink(userObj, get_href=False)
+    Args:
+        user (str): Name of a user.
 
-    for perm in userPermits:
-        if not permisUtil.delete(perm, positive):
-            status = False
+    Returns:
+        bool: True if permissions were removed properly, False otherwise.
+    """
 
-    return status
+    user_object = userUtil.find(user)
+    user_permissions = permisUtil.getElemFromLink(user_object, get_href=False)
+
+    for permission in user_permissions:
+        if not permisUtil.delete(permission, True):
+            return False
+
+    return True
 
 
 def addVmPoolPermissionToUser(positive, user, vmpool, role, domain=None):

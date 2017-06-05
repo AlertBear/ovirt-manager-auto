@@ -53,9 +53,8 @@ class TestCaseUserAndRoles(TestCase):
         Verify impossibility of removing inherited permissions
         """
         testflow.step("Removing inherited permissions.")
-        assert ll_mla.removeAllPermissionsFromUser(
-            positive=False,
-            user=config.USER_NAME
+        assert not ll_mla.remove_all_permissions_from_user(
+            config.USER_NAME
         ), "Something gone wrong"
 
     @attr(tier=2)
