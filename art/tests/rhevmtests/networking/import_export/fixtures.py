@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 from art.unittest_lib import testflow
-from rhevmtests import networking
+import rhevmtests.networking.helper as networking_helper
 
 
 @pytest.fixture(scope="module")
@@ -29,16 +29,14 @@ def import_export_prepare_setup(request):
     Prepare setup
     """
 
-    @networking.ignore_exception
     def fin4():
         """
         Remove templates
         """
         testflow.teardown("Remove templates")
-        networking.remove_unneeded_templates()
+        networking_helper.remove_unneeded_templates()
     request.addfinalizer(fin4)
 
-    @networking.ignore_exception
     def fin3():
         """
         Finalizer for remove networks from setup
@@ -49,7 +47,6 @@ def import_export_prepare_setup(request):
         )
     request.addfinalizer(fin3)
 
-    @networking.ignore_exception
     def fin2():
         """
         Finalizer for remove template from export domain
@@ -61,7 +58,6 @@ def import_export_prepare_setup(request):
         )
     request.addfinalizer(fin2)
 
-    @networking.ignore_exception
     def fin1():
         """
         Finalizer for remove VM from export domain

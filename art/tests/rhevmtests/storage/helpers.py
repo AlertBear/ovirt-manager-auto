@@ -103,7 +103,7 @@ def prepare_disks_for_vm(
     vm_name, disks_to_prepare, read_only=False, interfaces=list()
 ):
     """
-    Attach disks to vm
+    Attach disks to VM
 
     Args:
         vm_name (str): The name of the VM which the disks should be attached to
@@ -2109,3 +2109,10 @@ def unblock_and_wait(source, s_user, s_pass, destination,
     return _perform_iptables_action_and_wait(
         UNBLOCK, source, s_user, s_pass,
         destination, wait_for_entity, expected_state)
+
+
+def assign_storage_params(targets, keywords, *args):
+    if len(args[0]) > 0:
+        for i, target in enumerate(targets):
+            for j, key in enumerate(keywords):
+                target[key] = args[j][i]

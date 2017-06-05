@@ -22,6 +22,7 @@ import os
 import re
 
 import art.rhevm_api.tests_lib.low_level as ll
+from art.rhevm_api.tests_lib.low_level import general
 from art.core_api import apis_exceptions
 from art.core_api import apis_utils
 from art.core_api.apis_utils import getDS
@@ -41,7 +42,7 @@ ETHTOOL_CMD = "ethtool"
 logger = logging.getLogger("ll.networks")
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def _prepare_network_object(**kwargs):
     """
     Preparing logical network object
@@ -111,7 +112,7 @@ def _prepare_network_object(**kwargs):
     return net
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def add_network(positive, **kwargs):
     """
     Add network to a data center
@@ -139,7 +140,7 @@ def add_network(positive, **kwargs):
     return NET_API.create(entity=net_obj, positive=positive)[1]
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def update_network(positive, network, **kwargs):
     """
     Update network
@@ -169,7 +170,7 @@ def update_network(positive, network, **kwargs):
     return NET_API.update(net, net_update, positive)[1]
 
 
-@ll.general.generate_logs(step=True)
+@general.generate_logs(step=True)
 def remove_network(positive, network, data_center=None):
     """
     Remove network
@@ -188,7 +189,7 @@ def remove_network(positive, network, data_center=None):
     return res
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def find_network(network, data_center=None, cluster=None):
     """
     Find desired network using cluster or data center
@@ -211,7 +212,7 @@ def find_network(network, data_center=None, cluster=None):
         )
         cluster_object = get_cluster_object(cluster_name=cluster)
         data_center_id = cluster_object.data_center.id
-        data_center_name = ll.general.get_object_name_by_id(
+        data_center_name = general.get_object_name_by_id(
             object_api=DC_API, object_id=data_center_id
         )
         if data_center and data_center_name != data_center:
@@ -265,7 +266,7 @@ def _prepare_cluster_network_object(**kwargs):
     return net
 
 
-@ll.general.generate_logs(error=False)
+@general.generate_logs(error=False)
 def get_cluster_network(cluster, network):
     """
     Find a network by cluster (along with the network properties that are
@@ -290,7 +291,7 @@ def get_cluster_network(cluster, network):
         return None
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_cluster_networks(cluster, href=True):
     """
     Get href of the cluster networks or the networks objects
@@ -309,7 +310,7 @@ def get_cluster_networks(cluster, href=True):
     )
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def add_network_to_cluster(positive, network, cluster, **kwargs):
     """
     Attach network to cluster
@@ -338,7 +339,7 @@ def add_network_to_cluster(positive, network, cluster, **kwargs):
     return status
 
 
-@ll.general.generate_logs(step=True)
+@general.generate_logs(step=True)
 def update_cluster_network(positive, cluster, network, **kwargs):
     """
     Update network on cluster
@@ -361,7 +362,7 @@ def update_cluster_network(positive, cluster, network, **kwargs):
     return NET_API.update(net, net_update, positive)[1]
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def remove_network_from_cluster(positive, network, cluster):
     """
     Remove network from cluster
@@ -378,7 +379,7 @@ def remove_network_from_cluster(positive, network, cluster):
     return NET_API.delete(net_obj, positive)
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def is_network_required(network, cluster):
     """
     Check if Network is required
@@ -394,7 +395,7 @@ def is_network_required(network, cluster):
     return net_obj.get_required()
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def check_ip_rule(vds_resource, subnet, matches=2):
     """
     Check occurrence of specific ip in 'ip rule' command output
@@ -413,7 +414,7 @@ def check_ip_rule(vds_resource, subnet, matches=2):
     return len(re.findall(subnet.replace('.', '[.]'), out)) >= matches
 
 
-@ll.general.generate_logs(step=True)
+@general.generate_logs(step=True)
 def update_vnic_profile(name, network, **kwargs):
     """
     Update VNIC profile
@@ -455,7 +456,7 @@ def update_vnic_profile(name, network, **kwargs):
     )[1]
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_network_vnic_profiles(network, cluster=None, data_center=None):
     """
     Get all the VNIC profiles that belong to a certain network
@@ -478,7 +479,7 @@ def get_network_vnic_profiles(network, cluster=None, data_center=None):
     )
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
     """
     Get VNIC profile object.
@@ -507,7 +508,7 @@ def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
         raise apis_exceptions.EntityNotFound()
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_vnic_profile_attr(
     name, network=None, cluster=None, data_center=None, attr_list=list()
 ):
@@ -557,7 +558,7 @@ def get_vnic_profile_attr(
     return attr_dict
 
 
-@ll.general.generate_logs(step=True)
+@general.generate_logs(step=True)
 def add_vnic_profile(positive, name, **kwargs):
     """
     Add new vnic profile to network
@@ -587,7 +588,7 @@ def add_vnic_profile(positive, name, **kwargs):
     return VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]
 
 
-@ll.general.generate_logs(step=True)
+@general.generate_logs(step=True)
 def remove_vnic_profile(
     positive, vnic_profile_name, network=None, cluster=None, data_center=None
 ):
@@ -613,7 +614,7 @@ def remove_vnic_profile(
     return VNIC_PROFILE_API.delete(profile_obj, positive)
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def is_vnic_profile_exist(vnic_profile_name):
     """
     Find specific VNIC profile on the setup
@@ -631,7 +632,7 @@ def is_vnic_profile_exist(vnic_profile_name):
     return False
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_networks_in_datacenter(datacenter):
     """
     Get all networks in datacenter.
@@ -646,7 +647,7 @@ def get_networks_in_datacenter(datacenter):
     return NET_API.getElemFromLink(dc, get_href=False)
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_network_in_datacenter(network, datacenter):
     """
     Find network under datacenter.
@@ -665,7 +666,7 @@ def get_network_in_datacenter(network, datacenter):
     return None
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def create_network_in_datacenter(positive, datacenter, **kwargs):
     """
     Add network to datacenter
@@ -698,7 +699,7 @@ def create_network_in_datacenter(positive, datacenter, **kwargs):
     )[1]
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def delete_network_in_datacenter(positive, network, datacenter):
     """
     Delete existing network from datacenter
@@ -720,7 +721,7 @@ def delete_network_in_datacenter(positive, network, datacenter):
     return False
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     """
     Update existing network in datacenter
@@ -751,7 +752,7 @@ def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     return NET_API.update(net, net_update, positive)[1]
 
 
-@ll.general.generate_logs(error=False)
+@general.generate_logs(error=False)
 def is_host_network_is_vm(vds_resource, net_name):
     """
     Check if network that resides on Host is VM or non-VM
@@ -767,7 +768,7 @@ def is_host_network_is_vm(vds_resource, net_name):
     return vds_resource.fs.exists(path=vm_file)
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def is_vlan_on_host_network(vds_resource, interface, vlan):
     """
     Check for VLAN value on the network that resides on Host
@@ -822,7 +823,7 @@ def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
     return True
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_vnic_profile_from_network(
     network, vnic_profile, cluster=None, data_center=None
 ):
@@ -848,7 +849,7 @@ def get_vnic_profile_from_network(
     return None
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def create_label(label):
     """
     Create label object with provided id
@@ -946,7 +947,7 @@ def add_label(**kwargs):
     return True
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_label_objects(**kwargs):
     """
     Get network labels from given networks list and given list NICs of any
@@ -1144,7 +1145,7 @@ def check_bridge_file_exist(positive, vds_resource, bridge_name):
     return True
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def create_properties(**kwargs):
     """
     Creates Properties object that contains list of different property objects
@@ -1164,7 +1165,7 @@ def create_properties(**kwargs):
     return properties_obj
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def update_qos_on_vnic_profile(
     datacenter, qos_name, vnic_profile_name, network_name, cluster=None
 ):
@@ -1190,7 +1191,7 @@ def update_qos_on_vnic_profile(
     )
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_vnic_profile_objects():
     """
     Get all vnic profiles objects from engine
@@ -1201,7 +1202,7 @@ def get_vnic_profile_objects():
     return VNIC_PROFILE_API.get(abs_link=False)
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_management_network(cluster_name):
     """
     Find management network besides all networks of specific Cluster
@@ -1223,7 +1224,7 @@ def get_management_network(cluster_name):
     return net_obj
 
 
-@ll.general.generate_logs(error=False)
+@general.generate_logs(error=False)
 def check_network_usage(cluster_name, network, attrs):
     """
     Check if usages attributes exist for specific network
@@ -1247,7 +1248,7 @@ def check_network_usage(cluster_name, network, attrs):
     return True
 
 
-@ll.general.generate_logs(error=False)
+@general.generate_logs(error=False)
 def get_host_nic_labels(nic):
     """
     Get host NIC labels
@@ -1263,7 +1264,7 @@ def get_host_nic_labels(nic):
     )
 
 
-@ll.general.generate_logs(error=False)
+@general.generate_logs(error=False)
 def get_host_nic_label_objs_by_id(host_nics, labels_id):
     """
     Get host NIC label objects by label ID
@@ -1284,7 +1285,7 @@ def get_host_nic_label_objs_by_id(host_nics, labels_id):
     return label_objs_list
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def prepare_qos_on_net(qos_dict):
     """
     Prepare QoS on network
@@ -1318,7 +1319,7 @@ def prepare_qos_on_net(qos_dict):
     return qos_obj
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_network_on_host_nic(host, nic):
     """
     Get network name from host NIC
@@ -1330,11 +1331,11 @@ def get_network_on_host_nic(host, nic):
     Returns:
         str: Network name
     """
-    return ll.general.get_object_name_by_id(
+    return general.get_object_name_by_id(
         NET_API, ll.hosts.get_host_nic(host, nic).get_network().get_id())
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def _prepare_vnic_profile_object(**kwargs):
     """
     Prepare vnic profile object for create or update
@@ -1419,7 +1420,7 @@ def _prepare_vnic_profile_object(**kwargs):
     return vnic_profile_obj
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_supported_network_filters():
     """
     Get all supported network filters from engine
@@ -1432,7 +1433,7 @@ def get_supported_network_filters():
     return dict((i.name, i) for i in network_filters.get_network_filter())
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def prepare_vnic_profile_mappings_object(network_mappings):
     """
     Prepare VnicProfileMappings object for import VM from data domain
@@ -1478,7 +1479,7 @@ def prepare_vnic_profile_mappings_object(network_mappings):
     return vnic_profile_mappings
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_bond_bonding_property(host, bond, property_name):
     """
     Get bond bonding property_name Mac object for host
@@ -1501,7 +1502,7 @@ def get_bond_bonding_property(host, bond, property_name):
     return getattr(bond_object[0].bonding, property_name)
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_bond_active_slave_object(host, bond):
     """
     Get host bond active slave object.
@@ -1524,7 +1525,7 @@ def get_bond_active_slave_object(host, bond):
     return [i for i in host_nics if i.id == bond_slave_object.id][0]
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_all_networks():
     """
     Get all networks from engine
@@ -1532,7 +1533,7 @@ def get_all_networks():
     return NET_API.get(abs_link=False)
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def prepare_network_dns_object(dns_servers):
     """
     Prepare DNS object with dns_servers for network or network attachment
@@ -1550,7 +1551,7 @@ def prepare_network_dns_object(dns_servers):
     return resolver_configuration
 
 
-@ll.general.generate_logs(error=False)
+@general.generate_logs(error=False)
 def is_gluster_network(network, cluster=None):
     """
     Check if network has gluster role
@@ -1567,7 +1568,7 @@ def is_gluster_network(network, cluster=None):
     )
 
 
-@ll.general.generate_logs()
+@general.generate_logs()
 def get_network_cluster(network, datacenter=None):
     """
     Get the cluster object from network

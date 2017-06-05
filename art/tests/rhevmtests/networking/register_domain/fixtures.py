@@ -20,8 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
 import config as register_domain_conf
 import helper
 from art.unittest_lib import testflow
-from rhevmtests import networking
-from rhevmtests.networking import config as conf
+from rhevmtests.networking import helper as network_helper, config as conf
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -64,7 +63,7 @@ def prepare_setup(request):
         Remove all created VMs from engine
         """
         testflow.teardown("Remove all VMs from engine")
-        networking.remove_unneeded_vms()
+        network_helper.remove_unneeded_vms()
     request.addfinalizer(fin1)
 
     assert hl_networks.create_and_attach_networks(

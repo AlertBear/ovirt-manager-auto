@@ -12,10 +12,12 @@ import re
 import shlex
 
 from utilities import jobs
+from rhevmtests.networking import config
+from rhevmtests import helpers
 
 from art.rhevm_api.tests_lib.high_level import (
     host_network as hl_host_network,
-    networks as hl_networks
+    networks as hl_networks,
 )
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
@@ -23,11 +25,15 @@ from art.rhevm_api.tests_lib.low_level import (
     host_network as ll_host_network,
     hosts as ll_hosts,
     vms as ll_vms,
-    general as ll_general
+    general as ll_general,
+    datacenters as ll_datacenters,
+    mac_pool as ll_mac_pool,
+    networks as ll_networks,
+    templates as ll_templates,
+    events
 )
 import config as conf
 from art.core_api import apis_utils
-from art.rhevm_api.tests_lib.low_level import events
 from art.rhevm_api.utils import test_utils
 from art.test_handler import settings
 
@@ -46,6 +52,8 @@ IFCFG_NETWORK_SCRIPTS_DIR = '/etc/sysconfig/network-scripts'
 TCDUMP_TIMEOUT = "60"
 MTU_DEFAULT_VALUE = 1500
 SYS_CLASS_NET_DIR = '/sys/class/net'
+DEFAULT_DC_CL = "Default"
+BLANK_TEMPLATE = "Blank"
 
 
 def create_random_ips(num_of_ips=2, mask=16, ip_version=4, base_ip_prefix="5"):
@@ -474,7 +482,7 @@ def check_queues_from_qemu(vm, num_queues):
     running_vms = re.findall(r'\d+ .*qemu-kvm.*', out)
     for run_vm in running_vms:
         if re.findall(r'-name.*%s' % vm, run_vm):
-            qemu_queues = re.findall(r'fds=[\d\d:]+', out)
+            qemu_queues = re.findall(r'fds=[\d+:]+', out)
             if not qemu_queues:
                 if num_queues == 0:
                     return True
@@ -545,8 +553,118 @@ def network_manager_remove_all_connections(host):
     return not all(res)
 
 
-if __name__ == "__main__":
-    pass
+@helpers.ignore_exception
+def remove_unneeded_vms_nics():
+    """
+    Remove all NICs from VM besides nic1
+    """
+    logger.info("Removing all NICs from VMs besides %s", config.NIC_NAME[0])
+    mgmt_profiles_ids = []
+    logger.info("Getting all %s vNIC profiles ids", config.MGMT_BRIDGE)
+    for vnic_obj in ll_networks.get_vnic_profile_objects():
+        if vnic_obj.name == config.MGMT_BRIDGE:
+            mgmt_profiles_ids.append(vnic_obj.id)
+
+    for vm in config.VM_NAME:
+        vm_nics = ll_vms.get_vm_nics_obj(vm)
+        for nic in vm_nics:
+            if nic.name == config.NIC_NAME[0]:
+                if nic.vnic_profile.id in mgmt_profiles_ids:
+                    continue
+
+                logger.info(
+                    "Updating %s to %s profile on %s",
+                    nic.name, config.MGMT_BRIDGE, vm
+                )
+                if not ll_vms.updateNic(
+                    positive=True, vm=vm, nic=nic.name,
+                    network=config.MGMT_BRIDGE,
+                    vnic_profile=config.MGMT_BRIDGE, interface="virtio"
+                ):
+                    logger.error(
+                        "Failed to update %s to profile %s on %s",
+                        nic.name, config.MGMT_BRIDGE, vm
+                    )
+                logger.info("Found %s on %s. Not removing", nic.name, vm)
+
+            else:
+                logger.info("Removing %s from %s", nic.name, vm)
+                if not ll_vms.removeNic(True, vm, nic.name):
+                    logger.error("Failed to remove %s from %s", nic, vm)
+
+
+@helpers.ignore_exception
+def remove_unneeded_vnic_profiles():
+    """
+    Remove all vNIC profiles besides MGMT_PROFILE
+    """
+    logger.info(
+        "Removing all vNIC profiles besides %s profile", config.MGMT_BRIDGE
+    )
+    for vnic in ll_networks.get_vnic_profile_objects():
+        if vnic.name != config.MGMT_BRIDGE:
+            logger.info("Removing %s profile", vnic.name)
+            if not ll_networks.VNIC_PROFILE_API.delete(vnic, True):
+                logger.error("Failed to remove %s profile", vnic.name)
+
+
+@helpers.ignore_exception
+def remove_unneeded_vms():
+    """
+    Remove all unneeded VMs
+    """
+    logger.info("Get all VMs")
+    conf_vms = config.VM_NAME + [config.HE_VM]
+    vms_to_remove = [
+        vm for vm in ll_vms.get_all_vms_names() if vm not in conf_vms
+    ]
+    if vms_to_remove:
+        logger.warning("VMs to remove: %s", vms_to_remove)
+        ll_vms.safely_remove_vms(vms=vms_to_remove)
+
+
+@helpers.ignore_exception
+def remove_unneeded_templates():
+    """
+    Remove all templates besides [config.TEMPLATE_NAME]
+    """
+    logger.info("Get all templates")
+    all_templates = ll_templates.TEMPLATE_API.get(abs_link=False)
+    for template in all_templates:
+        if template.name == BLANK_TEMPLATE:
+            continue
+
+        if template.name not in config.TEMPLATE_NAME:
+            if not ll_templates.remove_template(
+                positive=True, template=template.name
+            ):
+                logger.info("Failed to remove %s", template.name)
+
+
+@helpers.ignore_exception
+def remove_qos_from_setup():
+    """
+    Remove all QoS from datacenters
+    """
+    for dc in config.DC_NAME:
+        all_qos = ll_datacenters.get_qoss_from_datacenter(datacenter=dc)
+        for qos in all_qos:
+            qos_name = qos.get_name()
+            if qos_name == config.DEFAULT_MGMT_QOS:
+                continue
+            ll_datacenters.delete_qos_from_datacenter(
+                datacenter=dc, qos_name=qos_name
+            )
+
+
+@helpers.ignore_exception
+def remove_unneeded_mac_pools():
+    """
+    Remove unneeded MAC pools from setup (non Default MAC pool)
+    """
+    all_macs = ll_mac_pool.get_all_mac_pools()
+    for mac in filter(lambda x: x.name != "Default", all_macs):
+        ll_mac_pool.remove_mac_pool(mac_pool_name=mac.name)
 
 
 def configure_temp_static_ip(

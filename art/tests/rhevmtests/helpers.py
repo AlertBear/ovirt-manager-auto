@@ -741,3 +741,27 @@ def config_iptables_connection(
     """
     # TODO: Add Firewall object and config_firewall function after Firewall
     # module is merged into rrmngmnt
+
+
+def ignore_exception(func):
+    """
+    Decorator to catch exception
+
+    Args:
+        func (Function): Function to process
+
+    Returns:
+        Function: The function
+    """
+    def inner(**kwargs):
+        """
+        The call for the function
+
+        Args:
+            kwargs (dict): Function kwargs
+        """
+        try:
+            return func(**kwargs)
+        except Exception as e:
+            logger.error("IGNORED EXCEPTION: %s", e)
+    return inner

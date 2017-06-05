@@ -6,7 +6,11 @@ import re
 from rhevmtests.coresystem.guest_tools.config import *  # flake8: noqa
 
 PRODUCT = 'rhevm'
-RHEVM_VERSION = re.search("^\d+.\d+", PRODUCT_BUILD).group(0)
+if PRODUCT_BUILD:
+    RHEVM_VERSION = re.search("^\d+.\d+", PRODUCT_BUILD).group(0)
+else:
+    PRODUCT_BUILD = None
+
 RHEL_VERSION = re.search("^\d+", ENGINE_HOST.os.distribution.version).group(0)
 REPO = "http://bob.eng.lab.tlv.redhat.com/builds/latest_%s/el%s/noarch/" % (
     "4.1", RHEL_VERSION  # TODO: fix this when there is WGT in 4.2
