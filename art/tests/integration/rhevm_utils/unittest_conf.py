@@ -6,24 +6,7 @@ from configobj import ConfigObj
 from art.rhevm_api import resources
 from art.test_handler.settings import ART_CONFIG, opts
 
-__test__ = False
-
 logger = logging.getLogger(__name__)
-
-
-def get_list(params, key):
-    """
-    Get element from configuration section as list
-
-    :param params: configuration section
-    :type params: ConfigObj section
-    :param key: element to get
-    :type key: str
-    :return: return element of configuration section as list
-    :rtype: list
-    """
-    return params.as_list(key) if key in params else []
-
 
 global config
 config = ConfigObj(raise_errors=True)
@@ -85,7 +68,7 @@ VDC_ADMIN_USER = REST_CONNECTION['user']
 VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 ENGINE_URL = '%s://%s:%s/%s' % (
-    REST_CONNECTION.get('schema'),
+    REST_CONNECTION.get('scheme'),
     VDC_HOST,
     VDC_PORT,
     ENGINE_ENTRY_POINT
@@ -96,7 +79,7 @@ VDSM_LOG = '/var/log/vdsm/vdsm.log'
 PGPASS = "123456"
 ENGINE_HOST = resources.Host(VDC_HOST)
 ENGINE_HOST.users.append(
-    resources.RootUser(VDC_PASSWORD)
+    resources.RootUser(VDC_ROOT_PASSWORD)
 )
 ENGINE = resources.Engine(
     ENGINE_HOST,
@@ -105,7 +88,7 @@ ENGINE = resources.Engine(
         VDC_PASSWORD,
         resources.Domain(VDC_ADMIN_DOMAIN),
     ),
-    schema=REST_CONNECTION.get('schema'),
+    schema=REST_CONNECTION.get('scheme'),
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
 )
