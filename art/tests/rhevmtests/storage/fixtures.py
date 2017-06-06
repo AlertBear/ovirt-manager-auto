@@ -1290,7 +1290,7 @@ def import_image_from_glance(request):
     self.templates_names.append(self.glance_template_name)
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def remove_hsm_host(request):
     """
     Remove an hsm from the base data center and add it back
