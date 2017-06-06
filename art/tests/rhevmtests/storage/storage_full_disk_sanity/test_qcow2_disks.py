@@ -10,7 +10,8 @@ import logging
 import pytest
 
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.settings import opts
+from art.test_handler.tools import polarion, bz
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenters,
     disks as ll_disks,
@@ -20,6 +21,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.unittest_lib import attr, StorageTest as TestCase
+from rhevmtests.storage.fixtures import (
+    create_vm,
+)
+from rhevmtests.storage.fixtures import remove_vm  # flake8: noqa
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 
@@ -479,3 +484,45 @@ class TestCase16412(BaseTestCase):
             " with COW disk format" % self.template_name
         )
         self.vms.append(self.vm_name_3)
+
+
+@pytest.mark.usefixtures(
+    create_vm.__name__
+)
+class TestCase16968(TestCase):
+    """
+    Creating VMs from templates as clones and verify actual and virtual size
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage_4_0/4_0_Storage_Templates
+    """
+    __test__ = (
+        config.STORAGE_TYPE_ISCSI in opts['storages'] or
+        config.STORAGE_TYPE_FCP in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_FCP])
+    polarion_test_case = '16968'
+
+    deep_copy = True
+    volume_format = config.DISK_FORMAT_COW
+
+    @polarion("RHEVM3-16968")
+    @bz({'1419240': {}})
+    @attr(tier=2)
+    def test_virtual_actual_disk_size_block(self):
+        """
+        - Create VM with disk format "QCOW2" from template as clone on block
+        based domain
+
+        Expected results:
+            - Disk virtual size should be larger than disk actual size
+        """
+        vm_disk = ll_vms.get_vm_bootable_disk(self.vm_name)
+        disk_virtual_size = ll_disks.get_disk_obj(
+            vm_disk
+        ).get_provisioned_size()
+        disk_actual_size = ll_disks.get_disk_obj(vm_disk).get_actual_size()
+        assert disk_actual_size < disk_virtual_size, (
+            "Disk %s actual size: %s, virtual size: %s" % (
+                vm_disk, disk_actual_size, disk_virtual_size
+            )
+        )
