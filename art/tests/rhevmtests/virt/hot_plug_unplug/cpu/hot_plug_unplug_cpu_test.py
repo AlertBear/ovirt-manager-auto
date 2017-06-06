@@ -11,7 +11,7 @@ Hot Plug and Unplug CPU - Testing
 """
 import pytest
 import helper
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import common
 from rhevmtests import helpers
 from rhevmtests.virt import config
@@ -91,6 +91,7 @@ class CPUHotPlugClass(common.VirtTest):
         )
 
     @polarion("RHEVM3-9638")
+    @bz({'1453167': {'ppc': config.PPC_ARCH}})
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_migrate_vm(self):
         """
