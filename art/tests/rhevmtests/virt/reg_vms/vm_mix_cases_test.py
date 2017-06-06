@@ -151,10 +151,9 @@ class TestMixCases(VirtTest):
         """
 
         testflow.step("Add new vm with different interfaces and formats")
-        if config.PPC_ARCH:
-            disk_interfaces = [config.INTERFACE_VIRTIO]
-        else:
-            disk_interfaces = [config.INTERFACE_VIRTIO, config.INTERFACE_IDE]
+        disk_interfaces = [config.INTERFACE_VIRTIO]
+        if not config.PPC_ARCH:
+            disk_interfaces.append(config.INTERFACE_IDE)
         for disk_interface in disk_interfaces:
             for disk_format in [
                 config.DISK_FORMAT_COW,
@@ -232,13 +231,9 @@ class TestVmDisplay(VirtTest):
     Create vms with different display types, run it and check
     if address and port appear under display options
     """
-    if config.PPC_ARCH:
-        display_types = [config.ENUMS['display_type_vnc']]
-    else:
-        display_types = [
-            config.ENUMS['display_type_spice'],
-            config.ENUMS['display_type_vnc']
-        ]
+    display_types = [config.ENUMS['display_type_vnc']]
+    if not config.PPC_ARCH:
+        display_types.append(config.ENUMS['display_type_spice'])
     vm_names = {
         display_type: '%s_vm' % display_type for display_type in display_types
         }

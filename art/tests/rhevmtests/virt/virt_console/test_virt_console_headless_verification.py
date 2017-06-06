@@ -173,7 +173,7 @@ class TestVirtConsoleHeadlessClass(VirtTest):
         )
 
         testflow.step(
-            "Add a %s graphics console to a VM" % vcons_conf.DISPLAY_TYPE
+            "Add a %s graphics console to a VM", vcons_conf.DISPLAY_TYPE
         )
         helper.set_console_type(
             vcons_conf.DISPLAY_TYPE,
