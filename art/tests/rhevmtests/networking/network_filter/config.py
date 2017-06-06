@@ -7,6 +7,11 @@ Config file for network filter
 
 import rhevmtests.helpers as global_helper
 
+VM_INFO = dict()
+FAKE_IP_1 = "1.2.3.4"
+FAKE_IP_2 = "6.7.8.9"
+IP_NAME = "IP"
+
 VNICS = global_helper.generate_object_names(
     num_of_cases=6, num_of_objects=5, prefix="network_filter_vnic"
 )

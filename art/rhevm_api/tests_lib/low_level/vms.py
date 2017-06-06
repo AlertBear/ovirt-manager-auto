@@ -116,6 +116,11 @@ SAMPLER_SLEEP = 5
 VM = "VM"
 MIGRATION_TIMEOUT = 300
 VM_PASSWORD = "qum5net"
+NETWORK_FILTER_PARAMETER = "network_filter_parameter"
+NETWORK_FILTER_PARAMETERS = "networkfilterparameters"
+NETWORK_FILTER_API = get_api(
+    NETWORK_FILTER_PARAMETER, NETWORK_FILTER_PARAMETERS
+)
 
 logger = logging.getLogger("art.ll_lib.vms")
 
@@ -5679,3 +5684,102 @@ def init_initialization_obj(params):
     """
     logger.info("Initialization params: %s", params)
     return data_st.Initialization(**params)
+
+
+@ll_general.generate_logs(step=True)
+def get_vnic_network_filter_parameters(vm, nic):
+    """
+    Get VM NIC network filter parameters
+
+    Args:
+        vm (str): VM name
+        nic (str): NIC name
+
+    Returns:
+        list: List of NetworkFilterParameter objects
+    """
+    vm_nic = get_vm_nic(vm=vm, nic=nic)
+    return NIC_API.getElemFromLink(
+        elm=vm_nic, link_name=NETWORK_FILTER_PARAMETERS,
+        attr=NETWORK_FILTER_PARAMETER
+    )
+
+
+@ll_general.generate_logs(step=True)
+def delete_vnic_network_filter_parameters(nf_object):
+    """
+    Delete VM NIC network filter parameters
+
+    Args:
+        nf_object (NetworkFilterParameter): Network filter parameter object
+
+    Returns:
+        bool: True if the action succeeded, otherwise False
+    """
+    return NETWORK_FILTER_API.delete(entity=nf_object, positive=True)
+
+
+@ll_general.generate_logs(step=True)
+def add_vnic_network_filter_parameters(vm, nic, param_name, param_value):
+    """
+    Add VM NIC network filter parameters
+
+    Args:
+        vm (str): VM name
+        nic (str): NIC name
+        param_name (str): Filter param name
+        param_value (str): Filter param value
+
+    Returns:
+        bool: True if the action succeeded, otherwise False
+    """
+    vm_nic = get_vm_nic(vm=vm, nic=nic)
+    filter_object = prepare_vnic_network_filter_parameters(
+        name=param_name, value=param_value
+    )
+
+    parameters_href = "{vnic_href}/{filter_parameters}".format(
+        vnic_href=vm_nic.href, filter_parameters=NETWORK_FILTER_PARAMETERS
+    )
+    return NETWORK_FILTER_API.create(
+        entity=filter_object, positive=True, collection=parameters_href,
+        coll_elm_name=NETWORK_FILTER_PARAMETER
+    )[0]
+
+
+@ll_general.generate_logs(step=True)
+def update_vnic_network_filter_parameters(nf_object, param_name, param_value):
+    """
+    Update VM NIC network filter parameters
+
+    Args:
+        nf_object (NetworkFilterParameter): Network filter parameter object
+        param_name (str): Filter param name
+        param_value (str): Filter param value
+
+    Returns:
+        bool: True if the action succeeded, otherwise False
+    """
+    new_filter_object = prepare_vnic_network_filter_parameters(
+        name=param_name, value=param_value
+    )
+    return NETWORK_FILTER_API.update(
+        origEntity=nf_object, newEntity=new_filter_object, positive=True
+    )[0]
+
+
+@ll_general.generate_logs()
+def prepare_vnic_network_filter_parameters(name, value):
+    """
+    Prepare VM NIC network filter parameters
+
+    Args:
+        name (str): Filter param name
+        value (str): Filter param value
+
+    Returns:
+        NetworkFilterParameter: NetworkFilterParameter object
+    """
+    return ll_general.prepare_ds_object(
+        object_name="NetworkFilterParameter", name=name, value=value
+    )

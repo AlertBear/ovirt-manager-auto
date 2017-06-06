@@ -10,9 +10,11 @@ import shlex
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    networks as ll_networks,
+    vms as ll_vms
+)
 import config as nf_conf
 import helper
 import rhevmtests.networking.config as conf
@@ -20,14 +22,14 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
     restore_vnic_profile_filter, add_vnic_to_vm, remove_vnic_from_vm,
-    remove_vnic_profiles
+    remove_vnic_profiles, update_network_filter_on_profile,
+    update_vnic_clean_traffic_param
 )
 from rhevmtests.fixtures import start_vm, create_datacenters, create_clusters
-from rhevmtests.networking import helper as network_helper
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, NetworkFixtures
+import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    setup_networks_fixture, NetworkFixtures, clean_host_interfaces
 )
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -318,11 +320,11 @@ class TestNetworkFilterCase05(NetworkTest):
 )
 class TestNetworkFilterCase06(NetworkTest):
     """
-    Create and update vNIC profile network filter on old datacenter
-    Create new vNIC profile with custom network_filter, no network
-    filter and default network filter
-    Update vNIC profile with custom network_filter, no network
-    filter and default network filter
+    1. Create and update vNIC profile network filter on old datacenter
+    2. Create new vNIC profile with custom network_filter, no network
+       filter and default network filter
+    3. Update vNIC profile with custom network_filter, no network
+       filter and default network filter
     """
     __test__ = True
     ext_dc = "NetworkFilter-DC-3-6"
@@ -347,6 +349,13 @@ class TestNetworkFilterCase06(NetworkTest):
 
     @polarion("RHEVM-15109")
     def test_create_update_network_filter_pre_cluster(self):
+        """
+        1. Create and update vNIC profile network filter on old datacenter
+        2. Create new vNIC profile with custom network_filter, no network
+           filter and default network filter
+        3. Update vNIC profile with custom network_filter, no network
+           filter and default network filter
+        """
         testflow.step("Create new vNIC profile with default network filter")
         assert helper.add_update_vnic_profile_and_check_filter(
             action="add", vnic_profile=self.vnic_pro_1, datacenter=self.ext_dc
@@ -379,3 +388,117 @@ class TestNetworkFilterCase06(NetworkTest):
             action="update", vnic_profile=self.vnic_pro_1,
             datacenter=self.ext_dc
         )
+
+
+@pytest.mark.usefixtures(
+    update_network_filter_on_profile.__name__,
+    restore_vnic_profile_filter.__name__,
+    start_vm.__name__,
+    update_vnic_clean_traffic_param.__name__
+)
+class TestNetworkFilterCase07(NetworkTest):
+    """
+    1. Add the VM IP to clean traffic and check connectivity to VM
+    2. Negative: Add the fake IP to clean traffic and check connectivity to VM
+    """
+    # update_network_filter_on_profile params
+    network_filter = "clean-traffic"
+
+    # restore_vnic_profile_filter params
+    net = conf.MGMT_BRIDGE
+
+    # update_vnic_clean_traffic_param params
+    vm = conf.VM_0
+
+    # start_vm params
+    start_vms_dict = {
+        vm: {}
+    }
+
+    @attr(tier=2)
+    @pytest.mark.parametrize(
+        ("vnic", "positive"),
+        [
+            polarion("RHEVM-21765")([conf.VM_NIC_0, True]),
+            polarion("RHEVM-21766")([conf.VM_NIC_0, False]),
+        ],
+        ids=(
+            "Positive test",
+            "Negative test",
+        )
+    )
+    def test_clean_traffic(self, vnic, positive):
+        """
+        Test clean traffic filter
+        """
+        ip = nf_conf.VM_INFO.get("ip")
+        vm_resource = nf_conf.VM_INFO.get("resource")
+        # Since we restart the VM and don't wait for IP we need to make sure
+        # that VM resource is ready
+        if positive:
+            vm_resource.executor().wait_for_connectivity_state(
+                positive=positive
+            )
+
+        assert positive == vm_resource.network.send_icmp(dst=ip, count="5")
+
+
+@pytest.mark.incremental
+@pytest.mark.usefixtures(
+    update_network_filter_on_profile.__name__,
+    restore_vnic_profile_filter.__name__,
+)
+class TestNetworkFilterCase08(NetworkTest):
+    """
+    1. Add clean traffic filter with parameters
+    2. Update clean traffic filter parameters
+    3. Delete clean traffic filter parameters
+    """
+    # General params
+    vm = conf.VM_0
+
+    # update_network_filter_on_profile params
+    network_filter = "clean-traffic"
+
+    # restore_vnic_profile_filter params
+    net = conf.MGMT_BRIDGE
+
+    @attr(tier=2)
+    @pytest.mark.parametrize(
+        ("vnic", "action"),
+        [
+            polarion("RHEVM-21767")([conf.VM_NIC_0, "add"]),
+            polarion("RHEVM-21768")([conf.VM_NIC_0, "update"]),
+            polarion("RHEVM-21769")([conf.VM_NIC_0, "delete"]),
+        ],
+        ids=(
+            "Add filter with parameters",
+            "Update filter with parameters",
+            "Delete filter with parameters",
+        )
+    )
+    def test_clean_traffic(self, vnic, action):
+        """
+        Test add/update/delete traffic filter parameters
+        """
+        filter_object = ll_vms.get_vnic_network_filter_parameters(
+            vm=self.vm, nic=vnic
+        )
+        if action == "add":
+            assert ll_vms.add_vnic_network_filter_parameters(
+                vm=self.vm, nic=vnic, param_name=nf_conf.IP_NAME,
+                param_value=nf_conf.FAKE_IP_1
+            )
+
+        if action == "update":
+            filter_object = filter_object[0]
+            assert ll_vms.update_vnic_network_filter_parameters(
+                nf_object=filter_object, param_name=nf_conf.IP_NAME,
+                param_value=nf_conf.FAKE_IP_2
+            )
+
+        if action == "delete":
+            filter_object = filter_object[0]
+            assert ll_vms.delete_vnic_network_filter_parameters(
+                nf_object=filter_object
+            )
