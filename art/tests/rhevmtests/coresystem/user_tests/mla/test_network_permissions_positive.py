@@ -365,7 +365,8 @@ class TestSwitching(NetworkingPositive):
 
     def _test_switching_display_and_required(self, **kwargs):
         testflow.step(
-            "Update network %s in cluster %s.", config.NETWORK_NAMES[0]
+            "Update network %s in cluster %s.",
+            config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
         )
         assert networks.update_cluster_network(
             True,
@@ -2038,10 +2039,10 @@ class TestPositiveNetworkPermissions317270(NetworkingPositive):
 
         testflow.step(
             "Checking if user %s hasn't permissions of role %s on vnic %s.",
-            config.USERS[0], vnic, config.role.UserRole
+            config.USERS[0], config.role.UserRole, vnic
         )
         assert not mla.has_user_permissions_on_object(
             config.USERS[0],
             vnic,
             role=config.role.UserRole
-        ), "Permission persists on vnicprofile after swtiched to nonvm."
+        ), "Permission persists on vnicprofile after switched to nonvm."

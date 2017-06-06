@@ -88,7 +88,7 @@ def _prepare_network_object(**kwargs):
     if vlan_id:
         net.set_vlan(apis_utils.data_st.Vlan(id=vlan_id))
 
-    if usages:
+    if usages is not None:
         if usages:
             net.set_usages(apis_utils.data_st.Usages(usage=usages.split(",")))
         else:

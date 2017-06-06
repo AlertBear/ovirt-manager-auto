@@ -228,7 +228,7 @@ class TestVmUserInfoTests2(common.BaseTestCase):
         mla.addPermissionsForTemplate(
             True,
             config.USER_NAMES[0],
-            'Blank',
+            config.BLANK_TEMPLATE,
             role=config.role.TemplateOwner
         )
 
@@ -601,21 +601,37 @@ class TestVmCreatorInfoTests(common.BaseTestCase):
             testflow.teardown("Log in as admin.")
             common.login_as_admin()
 
-            for vm in config.VM_NAMES[:2]:
-                testflow.teardown("Removing VM %s.", vm)
-                vms.removeVm(True, vm)
-
             testflow.teardown(
                 "Removing user %s permissions from cluster %s.",
                 config.USERS[0], config.CLUSTER_NAME[0]
             )
             mla.removeUserPermissionsFromCluster(
-                True,
-                config.CLUSTER_NAME[0],
-                config.USERS[0]
+                True, config.CLUSTER_NAME[0], config.USERS[0]
             )
 
+            testflow.teardown(
+                "Removing user %s permissions from template %s.",
+                config.USERS[0], config.BLANK_TEMPLATE
+            )
+            mla.removeUserPermissionsFromTemplate(
+                True, config.BLANK_TEMPLATE, config.USERS[0]
+            )
+
+            for vm in config.VM_NAMES[:2]:
+                testflow.teardown("Removing VM %s.", vm)
+                vms.removeVm(True, vm)
+
         request.addfinalizer(finalize)
+
+        testflow.setup(
+            "Adding template permissions for user %s.", config.USER_NAMES[0]
+        )
+        mla.addPermissionsForTemplate(
+            True,
+            config.USER_NAMES[0],
+            config.BLANK_TEMPLATE,
+            config.role.UserRole
+        )
 
         testflow.setup(
             "Adding cluster permissions for user %s.", config.USER_NAMES[0]

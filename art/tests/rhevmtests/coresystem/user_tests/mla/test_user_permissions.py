@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_cluster
 )
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, testflow
 
 import common
@@ -362,16 +362,16 @@ class TestPermissionsCase54425(common.BaseTestCase):
         )
 
     @polarion("RHEVM3-7191")
+    @bz({"1460953": {}})
     def test_delegate_permissions(self):
         """ delegate permissions """
         # Test SuperUser that he can add permissions
         for role_obj in mla.util.get(abs_link=False):
+            testflow.step("Log in as admin.")
+            common.login_as_admin()
+
             testflow.step("Getting role name.")
             role_name = role_obj.get_name()
-
-            # Get roles perms, to check for manipulate_permissions
-            testflow.step("Getting role %s object.", role_name)
-            role_obj = mla.util.find(role_name)  # multi user switching hack
 
             testflow.step("Getting role %s permits.", role_name)
             role_permits = mla.util.getElemFromLink(
@@ -382,16 +382,14 @@ class TestPermissionsCase54425(common.BaseTestCase):
             )
 
             testflow.step("Getting permits names.")
-            perms = [p.get_name() for p in role_permits]
-            if 'login' not in perms:
+            permits = [p.get_name() for p in role_permits]
+            if 'login' not in permits:
                 logger.info("User not tested, because don't have login perms.")
                 continue
 
-            users.addRoleToUser(True, config.USER_NAMES[0], role_name)
-            mla.addVMPermissionsToUser(
-                True,
-                config.USER_NAMES[0],
-                config.VM_NAMES[0], role_name
+            assert users.addRoleToUser(True, config.USER_NAMES[0], role_name)
+            assert mla.addVMPermissionsToUser(
+                True, config.USER_NAMES[0], config.VM_NAMES[0], role_name
             )
 
             # For know if login as User/Admin
@@ -403,20 +401,21 @@ class TestPermissionsCase54425(common.BaseTestCase):
             common.login_as_user(filter_=_filter)
 
             # Test if user with role can/can't manipulate perms
-            if 'manipulate_permissions' in perms:
+            if 'manipulate_permissions' in permits:
                 if _filter or config.role.SuperUser != role_name:
                     try:
                         testflow.step(
                             "Adding VM permissions to user %s.",
                             config.USER_NAMES[0]
                         )
-                        mla.addVMPermissionsToUser(
+                        assert mla.addVMPermissionsToUser(
                             False,
                             config.USER_NAMES[0],
                             config.VM_NAMES[0],
                             config.role.TemplateAdmin
                         )
-                    except:  # Ignore, user should not add perms
+                    except EntityNotFound as e:
+                        logger.warning(e)
                         pass
 
                     testflow.step(
@@ -424,9 +423,7 @@ class TestPermissionsCase54425(common.BaseTestCase):
                         config.USER_NAMES[0]
                     )
                     assert mla.addVMPermissionsToUser(
-                        True,
-                        config.USER_NAMES[0],
-                        config.VM_NAMES[0]
+                        True, config.USER_NAMES[0], config.VM_NAMES[0]
                     )
                 else:
                     testflow.step(
@@ -462,7 +459,8 @@ class TestPermissionsCase54425(common.BaseTestCase):
                         config.VM_NAMES[0],
                         config.role.UserRole
                     )
-                except:  # Ignore, user should not add perms
+                except EntityNotFound as e:
+                    logger.warning(e)
                     pass
 
             testflow.step("Log in as admin.")
@@ -533,6 +531,13 @@ class TestPermissionsCase54446(common.BaseTestCase):
             config.role.UserVmManager
         )
 
+        mla.addTemplatePermissionsToGroup(
+            True,
+            config.GROUP_NAME,
+            config.BLANK_TEMPLATE,
+            config.role.UserRole
+        )
+
     @polarion("RHEVM3-7193")
     def test_users_permissions(self):
         """ users permissions """
@@ -596,6 +601,16 @@ class TestPermissionsCase54420(common.BaseTestCase):
                 True,
                 config.USER_NAMES[0],
                 config.CLUSTER_NAME[0],
+                config.role.UserRole
+            )
+
+            testflow.step(
+                "Adding template permissions to user %s.", config.USER_NAMES[0]
+            )
+            mla.addPermissionsForTemplate(
+                True,
+                config.USER_NAMES[0],
+                config.BLANK_TEMPLATE,
                 config.role.UserRole
             )
 

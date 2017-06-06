@@ -284,6 +284,9 @@ class TestAttachDisk(TestDiskTemplate):
         """ Attach disk to vm """
         for disk_role, d in self.outcomes.items():
             for vm_role, outcome in d.items():
+                testflow.step("Log in as admin.")
+                common.login_as_admin()
+
                 testflow.step("Adding %s role permissions to user.", disk_role)
                 assert mla.addStoragePermissionsToUser(
                     positive=True,
