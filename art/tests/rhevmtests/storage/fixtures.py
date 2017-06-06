@@ -1597,3 +1597,30 @@ def deactivate_and_detach_export_domain(request):
     assert hl_sd.detach_and_deactivate_domain(
         config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME, config.ENGINE
     )
+
+
+@pytest.fixture()
+def copy_golden_template_disk(request):
+    """
+    Copy golden environment template disk to another storage domain
+    """
+
+    self = request.node.cls
+
+    golden_template_name = rhevm_helpers.get_golden_template_name(
+        config.CLUSTER_NAME
+    )
+    template_disk_name = ll_templates.getTemplateDisks(
+        golden_template_name
+    )[0].get_name()
+
+    sd_name = getattr(self, 'domain_to_copy_template', self.storage_domain)
+    testflow.setup(
+        "Copy template %s disk to storage domain %s",
+        template_disk_name, sd_name
+    )
+    ll_templates.copyTemplateDisk(
+        golden_template_name, template_disk_name, sd_name
+    )
+    ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+    test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)

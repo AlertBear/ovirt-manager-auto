@@ -6,8 +6,6 @@ import logging
 import os
 import re
 import shlex
-import hashlib
-import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from art.core_api.apis_utils import TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout
@@ -1764,12 +1762,11 @@ def create_test_file_and_check_existance(
     ), "File %s does not exist" % full_path
 
 
-def import_storage_domain(storage_domain, host, storage, index=0):
+def import_storage_domain(host, storage, index=0):
     """
     Import data storage domain
 
     Args:
-        storage_domain (str): Storage domain name
         host (str): Host name to use for import
         storage (str): Storage type
         index (int): Index number of the unused resource
@@ -1777,11 +1774,11 @@ def import_storage_domain(storage_domain, host, storage, index=0):
     Raises:
         AssertionError: In case of any failure
     """
-    testflow.step("Import storage domain %s", storage_domain)
     if storage == ISCSI:
         assert hl_sd.import_iscsi_storage_domain(
-            host, lun_address=config.UNUSED_LUNS[index],
-            lun_target=config.UNUSED_LUN_TARGETS[index]
+            host,
+            lun_address=config.ISCSI_DOMAINS_KWARGS[index]['lun_address'],
+            lun_target=config.ISCSI_DOMAINS_KWARGS[index]['lun_target']
         )
 
     elif storage == FCP:
@@ -1792,28 +1789,27 @@ def import_storage_domain(storage_domain, host, storage, index=0):
             True, config.TYPE_DATA, NFS,
             config.NFS_DOMAINS_KWARGS[index]['address'],
             config.NFS_DOMAINS_KWARGS[index]['path'], host
-        )
+        ), """Failed to import storage domain from type %s with index %s
+           using host %s""" % (storage, index, host)
     elif storage == GLUSTER:
         assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, GLUSTER,
             config.GLUSTER_DOMAINS_KWARGS[index]['address'],
             config.GLUSTER_DOMAINS_KWARGS[index]['path'], host,
             vfs_type=GLUSTER
-        )
+        ), """Failed to import storage domain from type %s with index %s
+           using host %s""" % (storage, index, host)
     elif storage == CEPH:
         assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, POSIX,
             config.CEPH_DOMAINS_KWARGS[index]['address'],
             config.CEPH_DOMAINS_KWARGS[index]['path'], host,
             vfs_type=CEPH, mount_options=config.CEPH_MOUNT_OPTIONS
-        )
+        ), """Failed to import storage domain from type %s with index %s
+           using host %s""" % (storage, index, host)
 
     else:
-        assert False, (
-            "Storage type %s not supported, can't import storage domain %s" % (
-                storage, storage_domain
-            )
-        )
+        assert False, "Storage type %s is not supported for import" % storage
 
 
 def register_vm_from_data_domain(storage_domain, vm_name, cluster):

@@ -992,7 +992,7 @@ class TestCase18217(BaseStorageVMLeaseTest):
         )
         testflow.step("Import data storage doamin %s", self.storage_domain)
         storage_helpers.import_storage_domain(
-            self.storage_domain, config.PLACEMENT_HOST, self.storage
+            config.PLACEMENT_HOST, self.storage
         )
         assert hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.storage_domain

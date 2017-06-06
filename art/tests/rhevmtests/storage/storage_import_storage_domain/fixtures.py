@@ -2,6 +2,7 @@ import pytest
 import logging
 import config
 from art.rhevm_api.tests_lib.high_level import (
+    datacenters as hl_dc,
     storagedomains as hl_sd,
 )
 from art.rhevm_api.tests_lib.low_level import (
@@ -12,9 +13,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils import test_utils
+from art.rhevm_api.utils import storage_api
 from art.unittest_lib import testflow
 import rhevmtests.storage.helpers as storage_helpers
-from rhevmtests.storage.fixtures import attach_disk
+from rhevmtests.storage.fixtures import attach_disk, create_vm
 from rhevmtests.storage.fixtures import remove_vm  # flake8: noqa
 
 logger = logging.getLogger(__name__)
@@ -91,6 +93,10 @@ def add_non_master_storage_domain(request):
 
     self.index = getattr(self, 'index', 0)
     self.dc_name = getattr(self, 'dc_name', config.DATA_CENTER_NAME)
+    testflow.setup(
+        "Add storage domain %s to data-center %s",
+        self.non_master, self.dc_name
+    )
     storage_helpers.add_storage_domain(
         self.non_master, self.dc_name, self.index, self.storage
     )
@@ -115,6 +121,7 @@ def remove_storage_domain_fin(request):
         """
         domain_to_remove = config.DOMAIN_TO_REMOVE
         destroy = getattr(self, 'destroy', False)
+        testflow.teardown("Remove storage domain %s", domain_to_remove)
         assert ll_sd.removeStorageDomain(
             True, domain_to_remove, config.HOSTS[0], format='true',
             destroy=destroy
@@ -134,6 +141,10 @@ def add_master_storage_domain_to_new_dc(request):
             self.__class__.__name__, config.OBJECT_TYPE_SD
         )
     )
+    testflow.setup(
+        "Add storage domain %s to data-center %s",
+        self.master_domain, self.new_dc_name
+    )
     storage_helpers.add_storage_domain(
         self.master_domain, self.new_dc_name, 0, self.storage
     )
@@ -148,6 +159,10 @@ def add_non_master_storage_domain_to_new_dc(request):
     """
     self = request.node.cls
     self.new_dc_name = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
+    testflow.setup(
+        "Add storage domain %s to data-center %s",
+        self.non_master, self.dc_name
+    )
     storage_helpers.add_storage_domain(
         self.non_master, self.new_dc_name, 1, self.storage
     )
@@ -298,11 +313,12 @@ def remove_storage_domain_setup(request):
     remove_param = getattr(self, 'remove_param', {'format', 'true'})
 
     spm_host = ll_hosts.get_spm_host(config.HOSTS)
-
+    testflow.setup("Remove storage domain %s", domain_to_remove)
     assert ll_sd.removeStorageDomain(
         True, domain_to_remove, spm_host, **remove_param
     ), "Failed to remove storage domain %s" % domain_to_remove
     ll_jobs.wait_for_jobs([config.JOB_REMOVE_DOMAIN])
+    test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
 
 
 @pytest.fixture()
@@ -345,3 +361,101 @@ def initialize_disk_params(request):
             config.DATA_CENTER_NAME, NFS
         )[0]
     }
+
+
+@pytest.fixture()
+def delete_snapshot_setup(request):
+    """
+    Delete the snapshot created in the test
+    """
+
+    self = request.node.cls
+
+    testflow.setup("Deleting snapshot %s", self.snapshot_description)
+    assert ll_vms.removeSnapshot(
+        True, self.vm_name, self.snapshot_description
+    ), "Failed to remove snapshot %s" % self.snapshot_description
+
+
+@pytest.fixture()
+def create_vm_func_lvl(request):
+    """
+    Create VM
+    """
+    create_vm(request, remove_vm)
+
+
+@pytest.fixture()
+def block_connection_to_sd(request):
+    """
+    Block connection from all hosts to storage domain address
+    """
+    # Block connection from all hosts to all available adresses of the
+    # storage domain in order to be able to destroy it without deactivate it,
+    # done to prevent from ovf update process to run
+
+    self = request.node.cls
+
+    def finalizer():
+        for host_ip in self.host_ips:
+            for address in self.non_master_address:
+                testflow.teardown(
+                    "Verify connection Unblocked between %s to %s",
+                    host_ip, address
+                )
+                storage_api.unblockOutgoingConnection(
+                    host_ip, config.HOSTS_USER, config.HOSTS_PW, address
+                ), "Failed to unblock connection between %s to %s" % (
+                    host_ip, address
+                )
+    request.addfinalizer(finalizer)
+
+    found, address = ll_sd.getDomainAddress(True, self.non_master)
+    assert found, "IP for storage domain %s not found" % (
+        self.storage_domain
+    )
+    self.non_master_address = address['address']
+    self.host_ips = list()
+
+    for host in config.HOSTS:
+        host_ip = ll_hosts.get_host_ip(host)
+        for address in self.non_master_address:
+            testflow.setup(
+                "Block connection between %s to %s", host_ip, address
+            )
+            assert storage_api.blockOutgoingConnection(
+                host_ip, config.HOSTS_USER, config.HOSTS_PW, address
+            ), "Failed to block connection between %s to %s" % (
+                host_ip, address
+            )
+        self.host_ips.append(host_ip)
+
+    testflow.setup(
+        "Wait for storage domain %s status %s",
+        self.non_master, config.SD_INACTIVE
+    )
+    assert ll_sd.wait_for_storage_domain_status(
+        True, config.DATA_CENTER_NAME, self.non_master, config.SD_INACTIVE
+    )
+
+
+@pytest.fixture()
+def unblock_connection_to_sd(request):
+    """
+    Unblock connection from all hosts to storage domain address
+    """
+    self = request.node.cls
+    for host_ip in self.host_ips:
+        for address in self.non_master_address:
+            testflow.setup(
+                "Unblock connection between %s to %s", host_ip, address
+            )
+            assert storage_api.unblockOutgoingConnection(
+                host_ip, config.HOSTS_USER, config.HOSTS_PW, address
+            ), "Failed to unblock connection between %s to %s" % (
+                host_ip, address
+            )
+    hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
+    test_utils.wait_for_tasks(
+        config.ENGINE, config.DATA_CENTER_NAME
+    )

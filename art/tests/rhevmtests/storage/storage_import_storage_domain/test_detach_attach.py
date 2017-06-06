@@ -33,16 +33,17 @@ from art.unittest_lib import StorageTest as BaseTestCase
 from rhevmtests.storage.fixtures import (
     create_dc, clean_dc, create_template, remove_vm, add_disk, attach_disk,
     create_vm, create_snapshot, remove_vms, clean_mount_point, storage_cleanup,
-    clone_vm_from_template,
+    clone_vm_from_template, copy_golden_template_disk,
 )
 from fixtures import (
     secure_deactivate_and_detach_storage_domain, remove_storage_domain_fin,
     secure_deactivate_storage_domain, deactivate_detach_and_remove_domain_fin,
     add_master_storage_domain_to_new_dc, create_gluster_or_posix_export_domain,
     initialize_params, add_non_master_storage_domain_to_new_dc,
-    add_non_master_storage_domain, remove_template_setup,
+    add_non_master_storage_domain, remove_template_setup, create_vm_func_lvl,
     remove_storage_domain_setup, attach_and_activate_storage_domain,
-    attach_disk_to_cloned_vm, initialize_disk_params,
+    attach_disk_to_cloned_vm, delete_snapshot_setup, initialize_disk_params,
+    block_connection_to_sd, unblock_connection_to_sd
 )
 from art.unittest_lib.common import testflow
 import pytest
@@ -93,9 +94,8 @@ class DomainImportWithTemplate(BasicEnvironment):
         - verify template's existence
         - create VM from template
         """
-        storage_helpers.import_storage_domain(
-            self.non_master, self.host, self.storage
-        )
+        testflow.step("Import storage domain %s", self.non_master)
+        storage_helpers.import_storage_domain(self.host, self.storage)
         testflow.step(
             "Attach storage domain %s to date-center %s",
             self.non_master, config.DATA_CENTER_NAME
@@ -844,3 +844,56 @@ class TestCase16771(DomainImportWithTemplate):
         storage_helpers.register_vm_from_data_domain(
             self.non_master, self.vm_from_template, config.CLUSTER_NAME
         )
+
+
+@pytest.mark.usefixtures(
+    add_non_master_storage_domain.__name__,
+    deactivate_detach_and_remove_domain_fin.__name__,
+    copy_golden_template_disk.__name__,
+    create_vm_func_lvl.__name__,
+    create_snapshot.__name__,
+    delete_snapshot_setup.__name__,
+    block_connection_to_sd.__name__,
+    remove_storage_domain_setup.__name__,
+    unblock_connection_to_sd.__name__,
+)
+class TestCase11861(BasicEnvironment):
+    """
+    Destroy storage domain after VM snapshot delete
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_DetachAttach?selection=RHEVM3-11861
+    """
+    __test__ = True
+    polarion_test_case = '11861'
+    remove_param = {'destroy': True, 'format': 'false'}
+
+    @tier3
+    @bz({'1455273': {}})
+    @polarion("RHEVM3-11861")
+    def test_destroy_domain_after_snapshot_delete(self):
+        """
+        - Create VM with disk
+        - Create Snapshot for the VM
+        - Delete the VM snapshot
+        - Force remove the disk storage domain without deactivate it (prevent
+          from OVF update to occur)
+        - Try to import the storage domain back
+
+        Expected result:
+            - Import the storage domain should succeed
+        """
+        testflow.step("Import storage domain %s", self.non_master)
+        spm_host = ll_hosts.get_spm_host(config.HOSTS)
+        storage_helpers.import_storage_domain(spm_host, self.storage)
+        ll_jobs.wait_for_jobs([config.JOB_ADD_DOMAIN])
+
+        testflow.step(
+            "Attach storage domain %s to data-center %s",
+            self.non_master, config.DATA_CENTER_NAME
+        )
+        assert hl_sd.attach_and_activate_domain(
+            config.DATA_CENTER_NAME, self.non_master
+        ), "Failed to attach storage domain %s to data center %s" % (
+            self.non_master, config.DATA_CENTER_NAME
+        )
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])

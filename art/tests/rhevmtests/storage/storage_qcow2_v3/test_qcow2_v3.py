@@ -958,9 +958,8 @@ class TestCase18339(BaseTestCase3):
 
         testflow.step("Upgrade DC %s to 4.1", self.new_dc_name)
         self.data_center_upgrade()
-        storage_helpers.import_storage_domain(
-            self.storage_domain, self.host_name, self.storage
-        )
+        testflow.step("Import storage domain %s", self.storage_domain)
+        storage_helpers.import_storage_domain(self.host_name, self.storage)
         testflow.step("Attaching storage domain %s", self.storage_domain)
         assert hl_sd.attach_and_activate_domain(
             self.new_dc_name, self.storage_domain
