@@ -272,7 +272,10 @@ if 'prepared_env' in ART_CONFIG:
             GLANCE_HOSTNAME = urlparse(GLANCE_URL).hostname
         for glance_ep in GLANCE_EPS:
             SD_LIST.append(glance_ep)
-    GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
+    GOLDEN_GLANCE_IMAGE = (
+        EXTERNAL_TEMPLATES[0]['source'].split(':')[1]
+        if EXTERNAL_TEMPLATES else ''
+    )
 
     DATA_DOMAIN_ADDRESSES = get_list(PARAMETERS, 'data_domain_address')
     DATA_DOMAIN_PATHS = get_list(PARAMETERS, 'data_domain_path')
