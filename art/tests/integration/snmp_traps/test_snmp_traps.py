@@ -21,6 +21,8 @@ from snmp_traps import (
     stop_ovirt_notifier_service,
 )
 
+from config import NOTIFIER_LOG, OVIRT_USER, OVIRT_GROUP, engine
+
 
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
@@ -30,6 +32,24 @@ def setup_module(request):
     request.addfinalizer(finalize)
 
     install_snmp_packages()
+
+
+@attr(tier=1)
+class TestNotifierLogOwnership(TestCase):
+    """
+    Class to test ovirt-notifier log ownership.
+    """
+    @classmethod
+    @pytest.fixture(autouse=True, scope="class")
+    def setup_class(cls, request):
+        if not engine.host.fs.exists(NOTIFIER_LOG):
+            pytest.skip("No log file exists.")
+
+    @polarion("RHEVM-21772")
+    def test_log_ownership(self):
+        assert engine.host.os.get_file_owner(
+            NOTIFIER_LOG
+        ) == [OVIRT_USER, OVIRT_GROUP], "Wrong log file ownership."
 
 
 @attr(tier=2)

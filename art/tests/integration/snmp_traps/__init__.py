@@ -206,6 +206,9 @@ def flush_logs():
         assert config.engine.host.fs.flush_file(
             log
         ), "There was an error while flushing a log file."
+    config.engine.host.fs.chown(
+        config.NOTIFIER_LOG, config.OVIRT_USER, config.OVIRT_GROUP
+    )
 
 
 def generate_events():
@@ -347,6 +350,10 @@ def setup_class_helper():
     run all services we need except of ovirt-engine-notifier
     as it will be managed within tests.
     """
+    # Flushing logs as they may have information which will may cause
+    # this tests failure.
+    flush_logs()
+
     # As by default ovirt-notifier-service is not enabled
     # on engine hosts it has to be enabled.
     assert config.engine.host.service(

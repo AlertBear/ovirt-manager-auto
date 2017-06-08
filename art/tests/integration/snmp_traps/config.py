@@ -15,6 +15,9 @@ NOTIFIER_LOG = '/var/log/ovirt-engine/notifier/notifier.log'
 SNMPTRAPD_LOG = "/var/log/snmptrapd.log"
 LOGS_LIST = [NOTIFIER_LOG, SNMPTRAPD_LOG]
 
+OVIRT_USER = "ovirt"
+OVIRT_GROUP = OVIRT_USER
+
 # SNMP related packages
 SNMP_PACKAGES = ["net-snmp-utils", "net-snmp"]
 
