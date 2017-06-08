@@ -5786,3 +5786,66 @@ def prepare_vnic_network_filter_parameters(name, value):
     return ll_general.prepare_ds_object(
         object_name="NetworkFilterParameter", name=name, value=value
     )
+
+
+@ll_general.generate_logs(step=True)
+def set_sso_ticket(vm_name, value='test', expiry=VM_ACTION_TIMEOUT):
+    """
+    Create SSO ticket for a VM
+
+    Args:
+        vm_name (str): name of a VM
+        value (str): value for SSO token
+        expiry (int): token expire time in seconds
+
+    Returns:
+        bool: True, if the action succeeded, otherwise False
+    """
+    vm_obj = get_vm(vm=vm_name)
+    return bool(
+        VM_API.syncAction(
+            entity=vm_obj,
+            action='ticket',
+            positive=True,
+            value=value,
+            expiry=expiry
+        )
+    )
+
+
+@ll_general.generate_logs(step=True)
+def logon_vm(vm_name):
+    """
+    Log on a VM
+
+    Args:
+        vm_name (str): name of a VM
+
+    Returns:
+        bool: True, if the action succeeded, otherwise False
+    """
+    vm_obj = get_vm(vm=vm_name)
+    return bool(
+        VM_API.syncAction(
+            entity=vm_obj,
+            action='logon',
+            positive=True
+        )
+    )
+
+
+@ll_general.generate_logs(step=True)
+def get_vm_sessions(vm_name):
+    """
+    Get all sessions on a VM
+
+    Args:
+        vm_name (str): name of a VM
+
+    Returns:
+        list: list of all sessions connected to a VM
+    """
+    vm_obj = get_vm(vm=vm_name)
+    return VM_API.getElemFromLink(
+        vm_obj, link_name='sessions', attr='session', get_href=False
+    ) or []

@@ -330,6 +330,22 @@ class GABaseTestCase(TestCase):
         host = VDS(hosts.get_host_vm_run_on(vm_name), config.VDC_ROOT_PASSWORD)
         return host.vds_client("VM.getStats", {"vmID": self.vm_id})[0]
 
+    def check_admin_session(self):
+        """
+        Check if there is running session for admin@internal
+
+        Returns:
+            bool: True, if the action succeeded, otherwise False
+        """
+        for session in vms.get_vm_sessions(vm_name=self.vm_name):
+            if (
+                session.get_console_user()
+                and
+                session.get_user().get_user_name().startswith("admin")
+            ):
+                return True
+        return False
+
 
 class GAHooks:
     """ Base class for guest agent hooks tests """

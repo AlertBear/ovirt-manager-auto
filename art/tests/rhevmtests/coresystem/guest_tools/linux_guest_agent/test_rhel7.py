@@ -149,6 +149,15 @@ class TestRHEL764bGATest(RHEL7GATest):
             True, "hibernation", config.MIGRATION_POLICY_LEGACY
         )
 
+    @polarion("RHEVM-21804")
+    def test_sso_logon_to_vm(self):
+        """
+        Test if you can log on to VM with SSO
+        """
+        assert vms.set_sso_ticket(vm_name=self.vm_name)
+        assert vms.logon_vm(vm_name=self.vm_name)
+        assert self.check_admin_session()
+
     @polarion('RHEVM3-7400')
     def test_zz_uninstall_guest_agent(self):
         """ RHEL7_1_64b uninstall_guest_agent """
