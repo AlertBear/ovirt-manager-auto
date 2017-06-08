@@ -80,7 +80,6 @@ class TestPauseVM(VirtTest):
 
     @attr(tier=1)
     @polarion("RHEVM3-9951")
-    @bz({'1454459': {}})
     def test_pause_vm(self):
         """
         Start vm in pause mode and check vm status
@@ -95,7 +94,7 @@ class TestPauseVM(VirtTest):
 
     @attr(tier=2)
     @polarion("RHEVM3-9964")
-    @bz({"1273720": {}})
+    @bz({'1454459': {}})
     def test_migrate_paused_vm(self):
         """
         Start vm in pause, migrate vm
