@@ -25,6 +25,7 @@ def set_route_to_engine_and_local_host(request):
     NetworkFixtures()
     add_cmd = "ip route add {subnet} via {gateway}"
     del_cmd = "ip route del {subnet}"
+    check_cmd = "ip route | grep -c {subnet}"
 
     # Get local host network info
     local_resource = resources.VDS('localhost', conf.VDC_ROOT_USER)
@@ -56,14 +57,18 @@ def set_route_to_engine_and_local_host(request):
         """
         testflow.teardown("Remove static route from host")
         for subnet in (local_subnet, engine_subnet):
-            vds.executor().run_cmd(
-                cmd=shlex.split(del_cmd.format(subnet=subnet))
+            vds.run_command(
+                command=shlex.split(del_cmd.format(subnet=subnet))
             )
     request.addfinalizer(fin)
 
     testflow.setup("Add static route to host")
     for subnet in (local_subnet, engine_subnet):
-        rc, out, err = vds.executor().run_cmd(
-            cmd=shlex.split(add_cmd.format(subnet=subnet, gateway=vds_dgw))
+        out = vds.run_command(shlex.split(check_cmd.format(subnet=subnet)))[1]
+        if out != 0:
+            continue
+
+        rc, out, err = vds.run_command(
+            command=shlex.split(add_cmd.format(subnet=subnet, gateway=vds_dgw))
         )
         assert not rc, (out, err)
