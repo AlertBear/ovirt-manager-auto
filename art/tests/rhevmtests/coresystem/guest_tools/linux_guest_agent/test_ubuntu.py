@@ -4,7 +4,7 @@ Ubuntu guest agent test
 import logging
 import pytest
 
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow
 from art.rhevm_api.tests_lib.low_level import vms
 
@@ -59,7 +59,10 @@ def setup_vms(request):
     assert machine.package_manager.update(), 'Failed to update system'
 
 
-@bz({'1455922': {}})
+@pytest.mark.skip(
+    "There is no GA for Ubuntu that would work with 4.2 "
+    "(https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=863806)"
+)
 @attr(tier=3)
 class TestUbuntu1604TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
