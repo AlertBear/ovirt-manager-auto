@@ -34,7 +34,8 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
     wait_for_disks_status, get_disk_storage_domain_name,
     prepare_disk_attachment_object, updateDisk, get_disk_attachments,
-    get_disk_attachment, get_disk_obj, get_disk_list_from_disk_attachments
+    get_disk_attachment, get_disk_obj, get_disk_list_from_disk_attachments,
+    get_snapshot_disks_by_snapshot_obj
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
@@ -87,6 +88,8 @@ PREVIEW = ENUMS['preview_snapshot']
 UNDO = ENUMS['undo_snapshot']
 COMMIT = ENUMS['commit_snapshot']
 LIVE_SNAPSHOT_DESCRIPTION = ENUMS['live_snapshot_description']
+
+SNAPSHOT_STATE_OK = ENUMS['snapshot_state_ok']
 
 VM_API = get_api('vm', 'vms')
 VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
@@ -3414,7 +3417,7 @@ def getVmPayloads(positive, vm, **kwargs):
 
 def move_vm_disk(
     vm_name, disk_name, target_sd, wait=True, timeout=VM_IMAGE_OPT_TIMEOUT,
-    sleep=DEF_SLEEP
+    sleep=DEF_SLEEP, verify_no_snapshot_operation_occur=False
 ):
     """
     Moves disk of vm to another storage domain
@@ -3434,16 +3437,27 @@ def move_vm_disk(
     :type timeout: int
     :param sleep: Polling interval while waiting
     :type sleep: int
+    :param verify_no_snapshot_operation_occur: True if wait for all the
+        VM snapshots to be in 'ok' state, False otherwise
+    :type verify_no_snapshot_operation_occur: bool
     :raises: DiskException if syncAction returns False (syncAction should raise
             exception itself instead of returning False)
     """
     source_domain = get_disk_storage_domain_name(disk_name, vm_name)
+
     logger.info(
         "Moving disk %s attached to vm %s from storage domain %s to storage "
         "domain %s",
-        disk_name, vm_name, source_domain, target_sd)
+        disk_name, vm_name, source_domain, target_sd
+    )
     sd = STORAGE_DOMAIN_API.find(target_sd)
     disk = getVmDisk(vm_name, disk_name)
+
+    # in case of live migrating multiple disks at the same time, a removal of
+    # auto-generated snapshot of previous disk can occur
+    if verify_no_snapshot_operation_occur:
+        wait_for_vm_snapshots(vm_name, SNAPSHOT_STATE_OK)
+
     if not DISKS_API.syncAction(
         disk, 'move', storage_domain=sd, positive=True
     ):
@@ -3453,10 +3467,9 @@ def move_vm_disk(
             (disk_name, vm_name, source_domain, target_sd)
         )
     if wait:
-        for disk in TimeoutingSampler(timeout, sleep, getVmDisk, vm_name,
-                                      disk_name):
-            if disk.get_status() == ENUMS['disk_state_ok']:
-                return
+        wait_for_vm_disk_active_status(
+            vm_name, True, disk_name, timeout=timeout, sleep=sleep
+        )
 
 
 def wait_for_vm_states(
@@ -3889,6 +3902,7 @@ def get_snapshot_disks(vm, snapshot):
 
     Return: list of disks, or raise EntityNotFound exception
     """
+
     snap_obj = _getVmSnapshot(vm, snapshot)
     disks = DISKS_API.getElemFromLink(snap_obj)
     return disks
@@ -3985,7 +3999,8 @@ def get_vm_snapshots(vm, all_content=False):
 
 def wait_for_snapshot_creation(
     vm_name, snapshot_description, timeout=VM_IMAGE_OPT_TIMEOUT,
-    sleep=SNAPSHOT_SAMPLING_PERIOD, wait_for_status=None
+    sleep=SNAPSHOT_SAMPLING_PERIOD, wait_for_status=None,
+    include_disk_alias=None
 ):
     """
     Wait until snapshot creation initiated
@@ -3996,14 +4011,35 @@ def wait_for_snapshot_creation(
         timeout(int): Timeout for waiting
         sleep(float): Polling interval while waiting
         wait_for_status(str): Desired snapshot state
+        include_disk_alias (str): Alias of the disk that should be include on
+            the snapshot disks
 
     Returns:
         bool: True if snapshot has been created, False otherwise
     """
+    logger.info(
+        "Waiting until snapshot: %s of VM %s creation will start",
+        snapshot_description, vm_name
+    )
     sampler = TimeoutingSampler(timeout, sleep, get_vm_snapshots, vm_name)
     for sample in sampler:
         for snapshot in sample:
             if snapshot.get_description() == snapshot_description:
+                #  check if snapshot contain the disk alias
+                if include_disk_alias:
+                    disks = get_snapshot_disks_by_snapshot_obj(
+                        snapshot=snapshot
+                    )
+                    for disk in disks:
+                        if include_disk_alias == disk.get_alias():
+                            if wait_for_status:
+                                wait_for_vm_snapshots(
+                                    vm_name=vm_name, states=wait_for_status,
+                                    snapshots_description=snapshot_description
+                                )
+                            return True
+                    continue
+
                 if wait_for_status:
                     wait_for_vm_snapshots(
                         vm_name=vm_name, states=wait_for_status,
@@ -4386,7 +4422,8 @@ def extend_vm_disk_size(positive, vm, disk, provisioned_size):
 
 def migrate_vm_disk(
     vm_name, disk_name, target_sd, timeout=VM_IMAGE_OPT_TIMEOUT*2,
-    sleep=SNAPSHOT_SAMPLING_PERIOD, wait=True
+    sleep=SNAPSHOT_SAMPLING_PERIOD, wait=True,
+    verify_no_snapshot_operation_occur=False
 ):
     """
     Moves vm's disk. Starts disk movement then waits until new
@@ -4408,6 +4445,9 @@ def migrate_vm_disk(
     :type sleep: int
     :param wait: If should wait for operation to finish
     :type wait: bool
+    :param verify_no_snapshot_operation_occur: True if wait for all the
+        VM snapshots to be in 'ok' state, False otherwise
+    :type verify_no_snapshot_operation_occur: bool
     :raises:
         * DiskException if something went wrong
         * APITimeout if waiting for snapshot was longer than 20 seconds
@@ -4422,7 +4462,10 @@ def migrate_vm_disk(
         return target_domain.name == new_sd
     logger.info("Migrating disk %s of vm %s to domain %s", disk_name, vm_name,
                 target_sd)
-    move_vm_disk(vm_name, disk_name, target_sd, timeout=timeout, wait=wait)
+    move_vm_disk(
+        vm_name, disk_name, target_sd, timeout=timeout, wait=wait,
+        verify_no_snapshot_operation_occur=verify_no_snapshot_operation_occur
+    )
     if wait:
         sampler = TimeoutingSampler(
             timeout, sleep, _wait_for_new_storage_domain, vm_name, disk_name,

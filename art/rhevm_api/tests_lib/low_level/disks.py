@@ -1084,6 +1084,19 @@ def get_qcow_version_disk(disk_name, attribute='name'):
     return get_disk_obj(disk_name, attribute).get_qcow_version()
 
 
+def get_snapshot_disks_by_snapshot_obj(snapshot):
+    """
+    Return the disks contained in a snapshot
+
+    Args:
+        snapshot (Snapshot Object): Object of the snapshot to extract the
+            disks from
+    Returns:
+        List: List of disks, or raise EntityNotFound exception
+    """
+    return DISKS_API.getElemFromLink(snapshot)
+
+
 def get_storage_domain_diskssnapshots_objects(storagedomain, get_href=False):
     """
     Returns all disksnapshots objects list in the given storage domain

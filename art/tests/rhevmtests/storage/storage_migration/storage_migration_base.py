@@ -43,7 +43,7 @@ from rhevmtests.storage.fixtures import (
     add_disk_permutations, remove_templates, remove_vms, restart_vdsmd,
     unblock_connectivity_storage_domain_teardown, wait_for_disks_and_snapshots,
     initialize_storage_domains, initialize_variables_block_domain, create_vm,
-    start_vm, create_second_vm, poweroff_vm,
+    start_vm, create_second_vm, poweroff_vm, init_vm_executor
 )
 from rhevmtests.storage.storage_migration.fixtures import (
     initialize_params, add_disk, attach_disk_to_vm,
@@ -162,6 +162,136 @@ class TestCase6004(AllPermutationsDisks):
             same_type=config.MIGRATE_SAME_TYPE
         )
         self.verify_lsm(source_sd=self.storage_domain)
+
+
+@pytest.mark.usefixtures(
+    delete_disks.__name__,
+    wait_for_disks_and_snapshots.__name__
+)
+class BaseConcurrentlyTests(AllPermutationsDisks):
+    """
+    Base class for migrating multiple disks concurrently
+    """
+    disk_count = 4
+    disks_size = 10 * config.GB
+
+    def basic_flow(self):
+        """
+        Migrate VM's disks to different storage-domain and verify that the
+        move succeeded
+        """
+        target_sd = ll_disks.get_other_storage_domain(
+            disk=self.disk_names[0], vm_name=self.vm_name,
+            force_type=config.MIGRATE_SAME_TYPE,
+            ignore_type=[config.STORAGE_TYPE_GLUSTER]
+        )
+
+        testflow.step(
+            "Migrate VM's %s disks to storage domain %s concurrently",
+            self.vm_name, target_sd
+        )
+
+        for disk in self.disk_names:
+            testflow.step(
+                "Migrating disk %s to storage domain %s", disk, target_sd
+            )
+            try:
+                ll_vms.migrate_vm_disk(
+                    vm_name=self.vm_name, disk_name=disk, target_sd=target_sd,
+                    wait=False, verify_no_snapshot_operation_occur=True
+                )
+
+            except exceptions.DiskException:
+                # in case VM was preforming snapshot operation, try migrate the
+                # disk again, could cause when previous disk finish to migrate
+                # and the live snapshot removal initiated
+                ll_vms.migrate_vm_disk(
+                    vm_name=self.vm_name, disk_name=disk, target_sd=target_sd,
+                    wait=False, verify_no_snapshot_operation_occur=True
+                )
+
+            testflow.step(
+                "Wait for %s to create", config.LIVE_SNAPSHOT_DESCRIPTION
+            )
+            ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
+
+            ll_vms.wait_for_snapshot_creation(
+                self.vm_name, config.LIVE_SNAPSHOT_DESCRIPTION,
+                include_disk_alias=disk
+            )
+
+            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+
+        storage_helpers.wait_for_disks_and_snapshots(
+            [self.vm_name], live_operation=config.LIVE_MOVE
+        )
+        self.verify_lsm(source_sd=self.storage_domain)
+
+
+@pytest.mark.usefixtures(
+    create_disks_for_vm.__name__,
+    start_vm.__name__
+)
+class BaseTestCase21798(BaseConcurrentlyTests):
+    """
+    Concurrent Live migration of multiple VM disks
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = False
+    polarion_test_case = '21798'
+    create_on_same_domain = True
+
+    @tier2
+    @polarion("RHEVM3-21798")
+    def test_vm_disks_concurrent_live_migration(self):
+        """
+        Actions:
+            - Create a VM with 9 disks from all the disks permutations
+            - Run the VM
+            - Move all the VM disks concurrently to different storage domain
+            - Verify all disks moved successfully
+        Expected Results:
+            - Move should succeed
+        """
+        self.basic_flow()
+
+
+@pytest.mark.usefixtures(
+    start_vm.__name__,
+    init_vm_executor.__name__,
+)
+class BaseTestCase21907(BaseConcurrentlyTests):
+    """
+    Concurrent Live migration of multiple VM disks during dd operation
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
+    """
+    __test__ = False
+    polarion_test_case = '21907'
+
+    @tier2
+    @polarion("RHEVM3-21907")
+    def test_vm_disks_concurrent_live_migration_during_dd(self):
+        """
+        Actions:
+            - Create a VM with 5 disks from all the disks permutations
+            - Run the VM
+            - Start dd operation to all the disks
+            - Move all the VM disks concurrently to different storage domain
+            - Verify all disks moved successfully
+        Expected Results:
+            - Move should succeed
+        """
+        for disk in self.disk_names:
+            testflow.step("Start writing data to disk %s", disk)
+            status, out = storage_helpers.perform_dd_to_disk(
+                self.vm_name, disk, vm_executor=self.vm_executor
+            )
+            assert status, (
+                "Error while trying to write data to disk %s: %s" % (disk, out)
+            )
+        self.basic_flow()
 
 
 @pytest.mark.usefixtures(

@@ -27,6 +27,26 @@ class TestCase10348(TestCase6004):
     polarion_test_case = '10348'
 
 
+class TestCase21798(BaseTestCase21798):
+    """
+    Concurrent Live migration of multiple VM disks
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+    polarion_test_case = '21798'
+
+
+class TestCase21907(BaseTestCase21907):
+    """
+    Concurrent Live migration of multiple VM disks during dd operation
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Live_Storage_Migration
+    """
+    __test__ = True
+    polarion_test_case = '21907'
+
+
 class TestCase5990(TestCase5990):
     """
     VM in paused mode

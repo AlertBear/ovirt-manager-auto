@@ -17,6 +17,7 @@ from rhevmtests.storage.fixtures import create_disks_with_fs
 import rhevmtests.storage.helpers as storage_helpers
 
 DEFAULT_DISK_TIMEOUT = 180
+STORAGE_DOMAIN_NUM_FOR_TYPE = 3
 
 
 @pytest.fixture()
@@ -126,13 +127,15 @@ def create_disks_for_vm(request):
     """
     self = request.node.cls
 
-    self.disk_names = list()
+    self.disk_names = getattr(self, 'disk_names', list())
+    create_on_same_domain = getattr(self, 'create_on_same_domain', False)
+    disks_size = getattr(self, 'disks_size', config.DISK_SIZE)
+    inactive_disk_index = getattr(self, 'inactive_disk_index', None)
 
     disk_params = config.disk_args.copy()
     disk_params['format'] = config.RAW_DISK
     disk_params['sparse'] = False
-
-    inactive_disk_index = getattr(self, 'inactive_disk_index', None)
+    disk_params['provisioned_size'] = disks_size
 
     for index in range(self.disk_count):
         disk_params['alias'] = (
@@ -140,7 +143,12 @@ def create_disks_for_vm(request):
                 self.__class__.__name__, config.OBJECT_TYPE_DISK
             )
         )
-        disk_params['storagedomain'] = self.storage_domains[index]
+
+        disk_params['storagedomain'] = (
+            self.storage_domain if create_on_same_domain else
+            self.storage_domains[index % STORAGE_DOMAIN_NUM_FOR_TYPE]
+        )
+
         if index == inactive_disk_index:
             disk_params['active'] = False
         assert ll_disks.addDisk(True, **disk_params), (

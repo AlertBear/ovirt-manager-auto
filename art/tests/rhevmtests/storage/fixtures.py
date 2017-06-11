@@ -91,14 +91,13 @@ def add_disk_permutations(request):
     self = request.node.cls
 
     self.shared = getattr(self, 'shared', None)
+    disks_size = getattr(self, 'disks_size', config.DISK_SIZE)
     self.polarion_test_case = getattr(self, 'polarion_test_case', 'Test')
     testflow.setup("Creating all disk permutations")
     self.disk_names = storage_helpers.create_disks_from_requested_permutations(
         domain_to_use=self.storage_domain,
-        interfaces=storage_helpers.INTERFACES,
-        shared=self.shared,
-        size=config.DISK_SIZE,
-        test_name=self.polarion_test_case
+        interfaces=storage_helpers.INTERFACES, shared=self.shared,
+        size=disks_size, test_name=self.polarion_test_case
     )
     assert ll_disks.wait_for_disks_status(self.disk_names), (
         "At least one of the disks %s was not in the expected state 'OK"
