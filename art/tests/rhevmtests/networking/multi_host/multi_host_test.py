@@ -13,7 +13,7 @@ import pytest
 
 import config as multi_host_conf
 import helper as multi_host_helper
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     add_vnics_to_vms, add_vnic_to_template, move_host_to_cluster,
@@ -578,7 +578,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
             polarion("RHEVM-19354")(net_vlan_3),
             polarion("RHEVM-19371")(remove_vlan_from_network),
             polarion("RHEVM3-4080")(net_mtu_9000),
-            polarion("RHEVM-19364")(net_mtu_1500),
+            polarion("RHEVM-19364")(bz({"1460687": {}})(net_mtu_1500)),
             polarion("RHEVM3-4079")(rename_net_used_by_host),
 
             # Tests on networks attached to running VM
@@ -608,7 +608,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
             polarion("RHEVM3-4069")(vlan_9_on_bond),
             polarion("RHEVM-19357")(vlan_10_on_bond),
             polarion("RHVEM3-4068")(mtu_9000_on_bond),
-            polarion("RHEVM-19356")(mtu_1500_on_bond),
+            polarion("RHEVM-19356")(bz({"1460687": {}})(mtu_1500_on_bond)),
             polarion("RHEVM-19358")(remove_vlan_from_bond)
         ],
         ids=[
