@@ -77,28 +77,36 @@ def create_third_sd(sd_name, host_name, storage_type):
     sd_args['name'] = sd_name
     if config.GOLDEN_ENV:
         if storage_type == config.STORAGE_TYPE_ISCSI:
-            sd_args['lun'] = config.UNUSED_LUNS[0]
-            sd_args['lun_address'] = config.UNUSED_LUN_ADDRESSES[0]
-            sd_args['lun_target'] = config.UNUSED_LUN_TARGETS[0]
+            sd_args['lun'] = config.ISCSI_DOMAINS_KWARGS[0]['lun']
+            sd_args['lun_address'] = (
+                config.ISCSI_DOMAINS_KWARGS[0]['lun_address']
+            )
+            sd_args['lun_target'] = (
+                config.ISCSI_DOMAINS_KWARGS[0]['lun_target']
+            )
             sd_args['lun_port'] = config.LUN_PORT
         elif storage_type == config.STORAGE_TYPE_NFS:
-            sd_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-            sd_args['path'] = config.UNUSED_DATA_DOMAIN_PATHS[0]
+            sd_args['address'] = config.NFS_DOMAINS_KWARGS[0]['address']
+            sd_args['path'] = config.NFS_DOMAINS_KWARGS[0]['path']
         elif storage_type == config.STORAGE_TYPE_GLUSTER:
-            sd_args['address'] = config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
-            sd_args['path'] = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
+            sd_args['address'] = config.GLUSTER_DOMAINS_KWARGS[0]['address']
+            sd_args['path'] = config.GLUSTER_DOMAINS_KWARGS[0]['path']
     else:
         if storage_type == config.STORAGE_TYPE_ISCSI:
-            sd_args['lun'] = config.LUNS[2]
-            sd_args['lun_address'] = config.LUN_ADDRESS[2]
-            sd_args['lun_target'] = config.LUN_TARGET[2]
+            sd_args['lun'] = config.ISCSI_DOMAINS_KWARGS[2]['lun']
+            sd_args['lun_address'] = (
+                config.ISCSI_DOMAINS_KWARGS[2]['lun_address']
+            )
+            sd_args['lun_target'] = (
+                config.ISCSI_DOMAINS_KWARGS[2]['lun_target']
+            )
             sd_args['lun_port'] = config.LUN_PORT
         elif storage_type == config.STORAGE_TYPE_NFS:
-            sd_args['address'] = config.ADDRESS[2]
-            sd_args['path'] = config.PATH[2]
+            sd_args['address'] = config.NFS_DOMAINS_KWARGS[2]['address']
+            sd_args['path'] = config.NFS_DOMAINS_KWARGS[2]['path']
         elif storage_type == config.STORAGE_TYPE_GLUSTER:
-            sd_args['address'] = config.GLUSTER_ADDRESS[2]
-            sd_args['path'] = config.GLUSTER_PATH[2]
+            sd_args['address'] = config.GLUSTER_DOMAINS_KWARGS[2]['address']
+            sd_args['path'] = config.GLUSTER_DOMAINS_KWARGS[2]['path']
 
     logger.info('Creating storage domain with parameters: %s', sd_args)
     status = ll_sd.addStorageDomain(True, **sd_args)

@@ -243,6 +243,31 @@ GLUSTER_DOMAINS_KWARGS = [
     },
 ]
 
+
+CEPH_DOMAINS_KWARGS = [
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': STORAGE_TYPE_CEPH,
+        'vfs_type': STORAGE_TYPE_CEPH,
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'vfs_type': STORAGE_TYPE_CEPH,
+        'storage_type': STORAGE_TYPE_CEPH,
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'vfs_type': STORAGE_TYPE_CEPH,
+        'storage_type': STORAGE_TYPE_CEPH,
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
+    },
+]
+
 FC_DOMAINS_KWARGS = [
     {
         'type': ENUMS['storage_dom_type_data'],

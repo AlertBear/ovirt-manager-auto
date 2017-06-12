@@ -740,21 +740,21 @@ def clean_mount_point(request):
 
         if self.storage == NFS or self.storage == POSIX:
             assert storage.clean_mount_point(
-                spm_host, config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_DATA_DOMAIN_PATHS[0],
+                spm_host, config.NFS_DOMAINS_KWARGS[0]['address'],
+                config.NFS_DOMAINS_KWARGS[0]['path'],
                 rhevm_helpers.NFS_MNT_OPTS
             ), "Failed to clean mount point address %s, path %s" % (
-                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_DATA_DOMAIN_PATHS[0],
+                config.NFS_DOMAINS_KWARGS[0]['address'],
+                config.NFS_DOMAINS_KWARGS[0]['path'],
             )
         elif self.storage == GLUSTER:
             assert storage.clean_mount_point(
-                spm_host, config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+                spm_host, config.GLUSTER_DOMAINS_KWARGS[0]['address'],
+                config.GLUSTER_DOMAINS_KWARGS[0]['path'],
                 rhevm_helpers.GLUSTER_MNT_OPTS
             ), "Failed to clean mount point address %s, path %s" % (
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+                config.GLUSTER_DOMAINS_KWARGS[0]['address'],
+                config.GLUSTER_DOMAINS_KWARGS[0]['path'],
             )
     request.addfinalizer(finalizer)
 

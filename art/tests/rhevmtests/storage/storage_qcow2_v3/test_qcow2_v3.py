@@ -37,7 +37,7 @@ from fixtures import (
     remove_unattached_domain, initialize_dc_parameters_for_upgrade,
     init_spm_host, init_test_vm_name, init_base_params,
     deactivate_and_remove_non_master_domains, init_test_template_name,
-    get_template_from_cluster,
+    get_template_from_cluster, initialize_strage_domain_params,
 )
 
 from rhevmtests.storage.fixtures import (
@@ -471,6 +471,7 @@ class TestCase18337(BaseTestCase2):
 
 
 @pytest.mark.usefixtures(
+    initialize_strage_domain_params.__name__,
     create_export_domain.__name__,
     export_vm.__name__,
     remove_export_domain.__name__,
@@ -490,11 +491,6 @@ class TestCase18338(BaseTestCase3):
     __test__ = True
     polarion_test_case = '18338'
     snap_count = 5
-    storage_domain_kwargs = {
-        'storage_type': config.STORAGE_TYPE_NFS,
-        'address': config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-        'path': config.UNUSED_DATA_DOMAIN_PATHS[0]
-    }
 
     @polarion("RHEVM3-18338")
     @tier2

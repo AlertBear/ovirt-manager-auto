@@ -74,8 +74,6 @@ class TestCase4816(helpers.TestCaseNFSOptions):
     nfs_version = 'v3'
     nfs_timeout = 60
     nfs_retrans = 1
-    export_address = config.NFS_ADDRESSES[0]
-    export_path = config.NFS_PATHS[0]
 
     @polarion("RHEVM3-4816")
     @tier2
@@ -115,8 +113,8 @@ class TestCase4829(helpers.TestCaseNFSOptions):
     """
     __test__ = NFS in ART_CONFIG['RUN']['storages']
     polarion_test_case = "4829"
-    nfs_address = config.NFS_ADDRESSES[0]
-    nfs_path = config.NFS_PATHS[0]
+    nfs_address = config.NFS_DOMAINS_KWARGS[0]['address']
+    nfs_path = config.NFS_DOMAINS_KWARGS[0]['path']
 
     @polarion("RHEVM3-4829")
     @tier3
@@ -196,9 +194,12 @@ class TestCase4826(helpers.TestCaseNFSOptions):
         version = 'v3'  # TODO: fix this, should depend on the host OS version
         self.storage_domain = 'test_%s' % self.polarion_test_case
         storage = helpers.NFSStorage(
-            name=self.storage_domain, address=config.NFS_ADDRESSES[0],
-            path=config.NFS_PATHS[0], timeout_to_set=None,
-            retrans_to_set=None, vers_to_set=None,
+            name=self.storage_domain,
+            address=config.NFS_DOMAINS_KWARGS[0]['address'],
+            path=config.NFS_DOMAINS_KWARGS[0]['path'],
+            timeout_to_set=None,
+            retrans_to_set=None,
+            vers_to_set=None,
             expected_timeout=helpers.DEFAULT_NFS_TIMEOUT,
             expected_retrans=helpers.DEFAULT_NFS_RETRANS,
             expected_vers=version
@@ -233,7 +234,8 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         self.storage_domain = 'test_%s_%s' % (self.polarion_test_case, suffix)
         storage = helpers.NFSStorage(
             name=self.storage_domain, sd_type=sd_type,
-            address=config.NFS_ADDRESSES[idx], path=config.NFS_PATHS[idx],
+            address=config.NFS_DOMAINS_KWARGS[idx]['address'],
+            path=config.NFS_DOMAINS_KWARGS[idx]['path'],
             timeout_to_set=self.nfs_timeout, retrans_to_set=self.nfs_retrans,
             vers_to_set=self.nfs_version, expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version
@@ -281,7 +283,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
         """
         self.name_prefix = 'test_%s_' % self.polarion_test_case
         nfs_resources = []
-        for i in range(len(config.NFS_ADDRESSES)):
+        for i in range(3):
             if i:
                 timeout, retrans = 100 * i + 650, 6 + i
                 exp_timeout, exp_retrans = 100 * i + 650, 6 + i
@@ -292,8 +294,9 @@ class TestCase4822(helpers.TestCaseNFSOptions):
             name = self.name_prefix + str(i)
             self.sds_for_cleanup.append(name)
             kwargs = {"name": name,
-                      "address": config.NFS_ADDRESSES[i],
-                      "path": config.NFS_PATHS[i], "timeout_to_set": timeout,
+                      "address": config.NFS_DOMAINS_KWARGS[i]['address'],
+                      "path": config.NFS_DOMAINS_KWARGS[i]['path'],
+                      "timeout_to_set": timeout,
                       "retrans_to_set": retrans, "vers_to_set": 'v3',
                       "expected_timeout": exp_timeout,
                       "expected_retrans": exp_retrans, "expected_vers": 'v3'}
@@ -334,8 +337,8 @@ class TestCase4821(helpers.TestCaseNFSOptions):
         defined when creating the storage domain.
         """
         self.name = 'test_%s_create' % self.polarion_test_case
-        address = config.NFS_ADDRESSES[0]
-        path = config.NFS_PATHS[0]
+        address = config.NFS_DOMAINS_KWARGS[0]['address']
+        path = config.NFS_DOMAINS_KWARGS[0]['path']
 
         storage = helpers.NFSStorage(
             name=self.name, address=address, path=path,
@@ -451,8 +454,8 @@ class TestCase4815(helpers.TestCaseNFSOptions):
 
             storage = ll_sd.NFSStorage(
                 name=storage_domain_name,
-                address=config.NFS_ADDRESSES[0],
-                path=config.NFS_PATHS[0],
+                address=config.NFS_DOMAINS_KWARGS[0]['address'],
+                path=config.NFS_DOMAINS_KWARGS[0]['path'],
                 timeout_to_set=sd_params['nfs_timeout'],
                 retrans_to_set=sd_params['nfs_retrans'],
                 mount_options_to_set=sd_params['mount_options'],
@@ -501,8 +504,8 @@ class TestCase4817(helpers.TestCaseNFSOptions):
         """
         Check if creating an NFS storage domain with predefined values works
         """
-        address = config.NFS_ADDRESSES[0]
-        path = config.NFS_PATHS[0]
+        address = config.NFS_DOMAINS_KWARGS[0]['address']
+        path = config.NFS_DOMAINS_KWARGS[0]['path']
         self.name = 'test_%s_custom' % self.polarion_test_case
 
         logger.info("Creating NFS domain with custom options")
@@ -553,8 +556,8 @@ class TestCase4818(helpers.TestCaseNFSOptions):
         * destroys it
         * creates once again with default advanced options
         """
-        address = config.NFS_ADDRESSES[0]
-        path = config.NFS_PATHS[0]
+        address = config.NFS_DOMAINS_KWARGS[0]['address']
+        path = config.NFS_DOMAINS_KWARGS[0]['path']
         self.name = 'test_%s_custom' % self.polarion_test_case
         self.sds_for_cleanup.append(self.name)
 

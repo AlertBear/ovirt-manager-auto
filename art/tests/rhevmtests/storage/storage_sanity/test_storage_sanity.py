@@ -59,9 +59,9 @@ class TestCase11591(TestCase):
         """
         self.spm = ll_hosts.get_spm_host(config.HOSTS)
         extend_lun = {
-            "lun_list": [config.UNUSED_LUNS["lun_list"][1]],
-            "lun_addresses": [config.UNUSED_LUNS["lun_addresses"][1]],
-            "lun_targets": [config.UNUSED_LUNS["lun_targets"][1]],
+            "lun_list": [config.ISCSI_DOMAINS_KWARGS[1]['lun']],
+            "lun_addresses": [config.ISCSI_DOMAINS_KWARGS[1]['lun_address']],
+            "lun_targets": [config.ISCSI_DOMAINS_KWARGS[1]['lun_target']],
             "override_luns": True
         }
         testflow.step(

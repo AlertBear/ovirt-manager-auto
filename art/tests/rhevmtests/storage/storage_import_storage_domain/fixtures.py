@@ -221,8 +221,8 @@ def create_gluster_or_posix_export_domain(request, attach_export_domain):
     )
     self.host = ll_hosts.get_spm_host(config.HOSTS)
     if self.storage == POSIX:
-        self.export_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[1]
-        self.export_path = config.UNUSED_DATA_DOMAIN_PATHS[1]
+        self.export_address = config.NFS_DOMAINS_KWARGS[1]['address']
+        self.export_path = config.NFS_DOMAINS_KWARGS[1]['path']
         self.vfs_type = NFS
         self.nfs_version = 'v4.1'
         self.storage_type = POSIX
@@ -235,9 +235,9 @@ def create_gluster_or_posix_export_domain(request, attach_export_domain):
 
     elif self.storage == GLUSTER:
         self.export_address = (
-            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[1]
+            config.GLUSTER_DOMAINS_KWARGS[1]['address']
         )
-        self.export_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[1]
+        self.export_path = config.GLUSTER_DOMAINS_KWARGS[1]['path']
         self.vfs_type = config.ENUMS['vfs_type_glusterfs']
         self.storage_type = GLUSTER
 
@@ -330,3 +330,18 @@ def attach_disk_to_cloned_vm(request):
 
     self.vm_to_attach_disk = self.vm_from_template
     attach_disk(request)
+
+
+@pytest.fixture()
+def initialize_disk_params(request):
+    """
+    Initialize disk parameters for add operation
+    """
+    self = request.node.cls
+
+    self.add_disk_params = {
+        'format': config.RAW_DISK, 'sparse': False, 'active': True,
+        'storagedomain': ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, NFS
+        )[0]
+    }

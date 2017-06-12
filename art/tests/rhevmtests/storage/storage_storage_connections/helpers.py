@@ -47,7 +47,7 @@ def logout_from_all_iscsi_targets():
         password=config.HOSTS_PW
     ).util('linux')
     addresses, targets = hl_sd.discover_addresses_and_targets(
-        config.HOST_FOR_MOUNT, config.UNUSED_LUN_ADDRESSES[0]
+        config.HOST_FOR_MOUNT, config.ISCSI_DOMAINS_KWARGS[0]['lun_address']
     )
     for address, target in zip(addresses, targets):
         machine.logoutTargets(

@@ -67,6 +67,8 @@ def initializer_class(request):
     self.host = ll_hosts.get_spm_host(config.HOSTS)
     self.host_ip = ll_hosts.get_host_ip(self.host)
     self.password = config.HOSTS_PW
+    self.export_address = config.NFS_DOMAINS_KWARGS[0]['address']
+    self.export_path = config.NFS_DOMAINS_KWARGS[0]['path']
 
 
 @pytest.fixture()

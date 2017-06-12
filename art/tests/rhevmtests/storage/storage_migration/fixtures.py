@@ -348,9 +348,10 @@ def add_two_storage_domains(request):
         testflow.setup("Add ISCSI storage domain %s", sd_name)
         assert hl_sd.add_iscsi_data_domain(
             host=self.spm, storage=sd_name,
-            data_center=config.DATA_CENTER_NAME, lun=config.UNUSED_LUNS[index],
-            lun_address=config.UNUSED_LUN_ADDRESSES[index],
-            lun_target=config.UNUSED_LUN_TARGETS[index],
+            data_center=config.DATA_CENTER_NAME,
+            lun=config.ISCSI_DOMAINS_KWARGS[index]['lun'],
+            lun_address=config.ISCSI_DOMAINS_KWARGS[index]['lun_address'],
+            lun_target=config.ISCSI_DOMAINS_KWARGS[index]['lun_target'],
             override_luns=True
         ), "Failed to add storage domain %s" % sd_name
 

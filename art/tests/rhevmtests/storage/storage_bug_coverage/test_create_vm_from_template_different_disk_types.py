@@ -141,9 +141,9 @@ class TestCase11843(TestCase):
             "bootable": True,
             "shareable": False,
             "active": True,
-            "lun_address": config.UNUSED_LUN_ADDRESSES[0],
-            "lun_target": config.UNUSED_LUN_TARGETS[0],
-            "lun_id": config.UNUSED_LUNS[0],
+            "lun_address": config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+            "lun_target": config.ISCSI_DOMAINS_KWARGS[0]['lun_target'],
+            "lun_id": config.ISCSI_DOMAINS_KWARGS[0]['lun'],
             "type_": self.storage,
         }
 

@@ -258,7 +258,6 @@ def get_template_from_cluster(request):
     """
     Get existing first template from cluster
     """
-
     self = request.node.cls
 
     templates_names_list = ll_templates.get_template_from_cluster(
@@ -270,3 +269,17 @@ def get_template_from_cluster(request):
         self.template_disk_name = ll_templates.getTemplateDisks(
             self.template_name
         )[0].get_name()
+
+
+@pytest.fixture()
+def initialize_strage_domain_params(request):
+    """
+    Initialize storage domain parameters for add operation
+    """
+    self = request.node.cls
+
+    self.storage_domain_kwargs = {
+        'storage_type': config.STORAGE_TYPE_NFS,
+        'address': config.NFS_DOMAINS_KWARGS[0]['address'],
+        'path': config.NFS_DOMAINS_KWARGS[0]['path']
+    }

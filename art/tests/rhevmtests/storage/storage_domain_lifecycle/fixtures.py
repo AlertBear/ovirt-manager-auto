@@ -76,17 +76,17 @@ def init_storage_domains_params(request):
     """
     self = request.node.cls
 
-    self.nfs_sd_path = config.UNUSED_DATA_DOMAIN_PATHS[0]
-    self.nfs_sd_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
+    self.nfs_sd_path = config.NFS_DOMAINS_KWARGS[0]['path']
+    self.nfs_sd_address = config.NFS_DOMAINS_KWARGS[0]['address']
 
-    self.gluster_sd_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
-    self.gluster_sd_address = config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
+    self.gluster_sd_path = config.GLUSTER_DOMAINS_KWARGS[0]['path']
+    self.gluster_sd_address = config.GLUSTER_DOMAINS_KWARGS[0]['address']
 
-    self.sd_lun = config.UNUSED_LUNS[0]
-    self.sd_lun_address = config.UNUSED_LUN_ADDRESSES[0]
-    self.sd_lun_target = config.UNUSED_LUN_TARGETS[0]
+    self.sd_lun = config.ISCSI_DOMAINS_KWARGS[0]['lun']
+    self.sd_lun_address = config.ISCSI_DOMAINS_KWARGS[0]['lun_address']
+    self.sd_lun_target = config.ISCSI_DOMAINS_KWARGS[0]['lun_target']
     if config.UNUSED_FC_LUNS:
-        self.sd_fc_lun = config.UNUSED_FC_LUNS[0]
+        self.sd_fc_lun = config.FC_DOMAINS_KWARGS[0]['fc_lun']
 
 
 @pytest.fixture(scope='class')

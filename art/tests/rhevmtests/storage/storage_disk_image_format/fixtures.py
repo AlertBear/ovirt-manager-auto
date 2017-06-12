@@ -204,9 +204,13 @@ def create_disks_to_vm_by_interface(request):
         if lun_disks:
             del disk_args['storagedomain']
             disk_args['type_'] = config.STORAGE_TYPE_ISCSI
-            disk_args['lun_address'] = config.UNUSED_LUN_ADDRESSES[index]
-            disk_args['lun_target'] = config.UNUSED_LUN_TARGETS[index]
-            disk_args['lun_id'] = config.UNUSED_LUNS[index]
+            disk_args['lun_address'] = (
+                config.ISCSI_DOMAINS_KWARGS[index]['lun_address']
+            )
+            disk_args['lun_target'] = (
+                config.ISCSI_DOMAINS_KWARGS[index]['lun_target']
+            )
+            disk_args['lun_id'] = config.ISCSI_DOMAINS_KWARGS[index]['lun']
             assert ll_disks.addDisk(True, **disk_args), (
                 "Unable to create disk %s" % disk_args['alias']
             )

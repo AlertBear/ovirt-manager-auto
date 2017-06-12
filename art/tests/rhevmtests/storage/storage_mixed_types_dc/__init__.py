@@ -6,23 +6,23 @@ def setup_package():
     rhevm_helpers.storage_cleanup()
 
     config.NFS_DOMAIN.update({
-        'address': config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-        'path': config.UNUSED_DATA_DOMAIN_PATHS[0],
+        'address': config.NFS_DOMAINS_KWARGS[0]['address'],
+        'path': config.NFS_DOMAINS_KWARGS[0]['path'],
     })
     config.ISCSI_DOMAIN_0.update({
-        'lun': config.UNUSED_LUNS[0],
-        'lun_address': config.UNUSED_LUN_ADDRESSES[0],
-        'lun_target': config.UNUSED_LUN_TARGETS[0],
+        'lun': config.ISCSI_DOMAINS_KWARGS[0]['lun'],
+        'lun_address': config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+        'lun_target': config.ISCSI_DOMAINS_KWARGS[0]['lun_target'],
     })
     config.ISCSI_DOMAIN_1.update({
-        'lun': config.UNUSED_LUNS[1],
-        'lun_address': config.UNUSED_LUN_ADDRESSES[1],
-        'lun_target': config.UNUSED_LUN_TARGETS[1],
+        'lun': config.ISCSI_DOMAINS_KWARGS[1]['lun'],
+        'lun_address': config.ISCSI_DOMAINS_KWARGS[1]['lun_address'],
+        'lun_target': config.ISCSI_DOMAINS_KWARGS[1]['lun_target'],
     })
     config.GLUSTER_DOMAIN.update({
-        'address': config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-        'path': config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+        'address': config.GLUSTER_DOMAINS_KWARGS[0]['address'],
+        'path': config.GLUSTER_DOMAINS_KWARGS[0]['path'],
     })
 
-    config.POSIX_DOMAIN['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-    config.POSIX_DOMAIN['path'] = config.UNUSED_DATA_DOMAIN_PATHS[0]
+    config.POSIX_DOMAIN['address'] = config.NFS_DOMAINS_KWARGS[0]['address']
+    config.POSIX_DOMAIN['path'] = config.NFS_DOMAINS_KWARGS[0]['path']

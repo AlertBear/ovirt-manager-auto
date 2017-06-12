@@ -1329,9 +1329,9 @@ def add_storage_domain(
             spm,
             storage_domain,
             data_center,
-            config.UNUSED_LUNS[index],
-            config.UNUSED_LUN_ADDRESSES[index],
-            config.UNUSED_LUN_TARGETS[index],
+            config.ISCSI_DOMAINS_KWARGS[index]['lun'],
+            config.ISCSI_DOMAINS_KWARGS[index]['lun_address'],
+            config.ISCSI_DOMAINS_KWARGS[index]['lun_target'],
             override_luns=True,
             **domain_kwargs
         )
@@ -1341,13 +1341,13 @@ def add_storage_domain(
             spm,
             storage_domain,
             data_center,
-            config.UNUSED_FC_LUNS[index],
+            config.FC_DOMAINS_KWARGS[index]['fc_lun'],
             override_luns=True,
             **domain_kwargs
         )
     elif storage_type == config.STORAGE_TYPE_NFS:
-        nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[index]
-        nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[index]
+        nfs_address = config.NFS_DOMAINS_KWARGS[index]['address']
+        nfs_path = config.NFS_DOMAINS_KWARGS[index]['path']
         status = hl_sd.addNFSDomain(
             host=spm,
             storage=storage_domain,
@@ -1358,10 +1358,8 @@ def add_storage_domain(
             **domain_kwargs
         )
     elif storage_type == config.STORAGE_TYPE_GLUSTER:
-        gluster_address = (
-            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[index]
-        )
-        gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[index]
+        gluster_address = config.GLUSTER_DOMAINS_KWARGS[index]['address']
+        gluster_path = config.GLUSTER_DOMAINS_KWARGS[index]['path']
         status = hl_sd.addGlusterDomain(
             host=spm,
             name=storage_domain,
@@ -1372,10 +1370,8 @@ def add_storage_domain(
             **domain_kwargs
         )
     elif storage_type == config.STORAGE_TYPE_CEPH:
-        posix_address = (
-            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index]
-        )
-        posix_path = config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index]
+        posix_address = config.CEPH_DOMAINS_KWARGS[index]['address']
+        posix_path = config.CEPH_DOMAINS_KWARGS[index]['path']
         status = hl_sd.addPosixfsDataDomain(
             host=spm,
             storage=storage_domain,
@@ -1612,9 +1608,19 @@ def extend_storage_domain(storage_domain, extend_indices):
         extension_lun_addresses = list()
         extension_lun_targets = list()
         for index in range(len(extend_indices)):
-            extension_luns.append(config.UNUSED_LUNS[extend_indices[index]])
-            extension_lun_addresses.append(config.UNUSED_LUN_ADDRESSES[index])
-            extension_lun_targets.append(config.UNUSED_LUN_TARGETS[index])
+            extension_luns.append(
+                config.ISCSI_DOMAINS_KWARGS[extend_indices[index]]['lun']
+            )
+            extension_lun_addresses.append(
+                config.ISCSI_DOMAINS_KWARGS[extend_indices[index]][
+                    'lun_address'
+                ]
+            )
+            extension_lun_targets.append(
+                config.ISCSI_DOMAINS_KWARGS[extend_indices[index]][
+                    'lun_target'
+                ]
+            )
         extend_kwargs = {
             'lun_list': extension_luns,
             'lun_addresses': extension_lun_addresses,
@@ -1624,8 +1630,10 @@ def extend_storage_domain(storage_domain, extend_indices):
 
     elif storage_type == config.STORAGE_TYPE_FCP:
         for index in range(len(extend_indices)):
-            extension_luns.append(config.UNUSED_FC_LUNS[extend_indices[index]])
-        extend_kwargs = {'lun_list': extension_luns, 'override_luns': True}
+            extension_luns.append(
+                config.FC_DOMAINS_KWARGS[extend_indices[index]]['fc_lun']
+            )
+            extend_kwargs = {'lun_list': extension_luns, 'override_luns': True}
 
     hl_sd.extend_storage_domain(
         storage_domain=storage_domain, type_=storage_type, host=spm,
@@ -1782,21 +1790,21 @@ def import_storage_domain(storage_domain, host, storage, index=0):
     elif storage == NFS:
         assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, NFS,
-            config.UNUSED_DATA_DOMAIN_ADDRESSES[index],
-            config.UNUSED_DATA_DOMAIN_PATHS[index], host
+            config.NFS_DOMAINS_KWARGS[index]['address'],
+            config.NFS_DOMAINS_KWARGS[index]['path'], host
         )
     elif storage == GLUSTER:
         assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, GLUSTER,
-            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[index],
-            config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[index], host,
+            config.GLUSTER_DOMAINS_KWARGS[index]['address'],
+            config.GLUSTER_DOMAINS_KWARGS[index]['path'], host,
             vfs_type=GLUSTER
         )
     elif storage == CEPH:
         assert ll_sd.importStorageDomain(
             True, config.TYPE_DATA, POSIX,
-            config.UNUSED_CEPHFS_DATA_DOMAIN_ADDRESSES[index],
-            config.UNUSED_CEPHFS_DATA_DOMAIN_PATHS[index], host,
+            config.CEPH_DOMAINS_KWARGS[index]['address'],
+            config.CEPH_DOMAINS_KWARGS[index]['path'], host,
             vfs_type=CEPH, mount_options=config.CEPH_MOUNT_OPTIONS
         )
 

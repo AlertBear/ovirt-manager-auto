@@ -55,7 +55,7 @@ def setup_module():
         config.DATA_CENTER_NAME, config.STORAGE_TYPE_ISCSI
     )
     addresses, targets = hl_sd.discover_addresses_and_targets(
-        config.HOSTS[0], config.UNUSED_LUN_ADDRESSES[0]
+        config.HOSTS[0], config.ISCSI_DOMAINS_KWARGS[0]['lun_address']
     )
     config.CONNECTIONS[0]['lun_address'] = addresses[0]
     logger.info("1st storage connection address to use is: %s", addresses[0])
@@ -526,8 +526,8 @@ class TestCase5246(TestCase):
         if not ll_sd.addStorageDomain(
             True, host=config.HOST_FOR_MOUNT, name=self.master_sd,
             type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_NFS,
-            address=config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-            path=config.UNUSED_DATA_DOMAIN_PATHS[0]
+            address=config.NFS_DOMAINS_KWARGS[0]['address'],
+            path=config.NFS_DOMAINS_KWARGS[0]['path']
         ):
             raise exceptions.StorageDomainException(
                 "Failed to create storage domain '%s'" % self.master_sd
@@ -1225,8 +1225,8 @@ class TestCase5241(TestCase):
         if not ll_sd.addStorageDomain(
             True, host=config.HOST_FOR_MOUNT, name=self.sd_name,
             type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_NFS,
-            address=config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-            path=config.UNUSED_DATA_DOMAIN_PATHS[0]
+            address=config.NFS_DOMAINS_KWARGS[0]['address'],
+            path=config.NFS_DOMAINS_KWARGS[0]['path']
         ):
             raise exceptions.StorageDomainException(
                 "Failed to create storage domain '%s'" % self.sd_name

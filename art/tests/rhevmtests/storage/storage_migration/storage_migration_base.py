@@ -63,10 +63,6 @@ DISK_TIMEOUT = 900
 LIVE_MIGRATE_LARGE_SIZE = 3600
 DD_TIMEOUT = 40
 
-LOCAL_LUN = config.UNUSED_LUNS[:]
-LOCAL_LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES[:]
-LOCAL_LUN_TARGET = config.UNUSED_LUN_TARGETS[:]
-
 # After the deletion of a snapshot, vdsm allocates around 128MB of data for
 # the extent metadata
 EXTENT_METADATA_SIZE = 128 * config.MB
@@ -1502,9 +1498,9 @@ class BaseTestCase5975(StorageTest):
         return {
             'storage_type': BaseTestCase.storage,
             'host': config.HOSTS[0],
-            'lun': LOCAL_LUN[index],
-            'lun_address': LOCAL_LUN_ADDRESS[index],
-            'lun_target': LOCAL_LUN_TARGET[index],
+            'lun': config.ISCSI_DOMAINS_KWARGS[index]['lun'],
+            'lun_address': config.ISCSI_DOMAINS_KWARGS[index]['lun_address'],
+            'lun_target': config.ISCSI_DOMAINS_KWARGS[index]['lun_target'],
             'lun_port': config.LUN_PORT,
             'override_luns': True
         }

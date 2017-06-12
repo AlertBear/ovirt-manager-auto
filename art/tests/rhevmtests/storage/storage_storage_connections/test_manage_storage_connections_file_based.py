@@ -79,8 +79,8 @@ class TestCasePosix(TestCase):
         """
         Add new storage domain
         """
-        self.address = config.UNUSED_RESOURCE_ADDRESS[self.storage][0]
-        self.path = config.UNUSED_RESOURCE_PATH[self.storage][0]
+        self.address = config.UNUSED_RESOURCE[self.storage][0]['address']
+        self.path = config.UNUSED_RESOURCE[self.storage][0]['path']
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
         self.host = ll_hosts.get_spm_host(config.HOSTS_FOR_TEST)
         if not ll_sd.addStorageDomain(
@@ -153,8 +153,8 @@ class TestCasePosix(TestCase):
                 "Failed to deactivate storage domain %s" % self.sd_name
             )
 
-        new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][1]
-        new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
+        new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
+        new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
         helpers.copy_posix_sd(
             self.address, self.path, new_address, new_path,
             config.HOST_FOR_MOUNT_IP, config.HOSTS_USER, config.HOSTS_PW,
@@ -215,8 +215,8 @@ class TestCaseNFSAndGlusterFS(TestCasePosix):
             "The parameters to be used in the connection update are: %s",
             config.PARAMETERS
         )
-        new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][1]
-        new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
+        new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
+        new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
         return ll_sd_conn.update_connection(
             self.conn, address=new_address, path=new_path, type=self.storage,
             nfs_version='V3', host=self.host,
@@ -244,8 +244,8 @@ class TestCasePosixFS(TestCasePosix):
             "The parameters to be used in the connection update are: %s",
             config.PARAMETERS
         )
-        new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][1]
-        new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
+        new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
+        new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
 
         return ll_sd_conn.update_connection(
             self.conn, address=new_address, path=new_path, host=self.host,
@@ -292,8 +292,8 @@ class TestCaseExport(TestCasePosix):
             "The parameters to be used in the connection update are: %s",
             config.PARAMETERS
         )
-        new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][1]
-        new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
+        new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
+        new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
         return ll_sd_conn.update_connection(
             self.conn, address=new_address, path=new_path, type=NFS,
             nfs_version='V3', host=self.host
@@ -323,8 +323,8 @@ class TestCaseISO(TestCasePosix):
             "The parameters to be used in the connection update are: %s",
             config.PARAMETERS
         )
-        new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][1]
-        new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
+        new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
+        new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
         return ll_sd_conn.update_connection(
             self.conn, address=new_address, path=new_path, type=NFS,
             nfs_version='V3', host=self.host
@@ -487,8 +487,8 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             True, config.DATA_CENTER_NAME, self.sd_name
         ), "Failed to deactivate storage domain %s" % self.sd_name
 
-        new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][1]
-        new_path = config.UNUSED_RESOURCE_PATH[self.storage][1]
+        new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
+        new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
 
         helpers.copy_posix_sd(
             self.address, self.path, new_address, new_path,
@@ -517,8 +517,8 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             True, config.DATA_CENTER_NAME, self.sd_name
         ), "Failed to deactivate storage domain %s" % self.sd_name
 
-        new_address = config.UNUSED_RESOURCE_ADDRESS[self.storage][2]
-        new_path = config.UNUSED_RESOURCE_PATH[self.storage][2]
+        new_address = config.UNUSED_RESOURCE[self.storage][2]['address']
+        new_path = config.UNUSED_RESOURCE[self.storage][2]['path']
 
         helpers.copy_posix_sd(
             self.address, self.path, new_address, new_path,

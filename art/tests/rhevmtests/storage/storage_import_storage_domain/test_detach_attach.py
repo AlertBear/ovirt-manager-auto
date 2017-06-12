@@ -35,14 +35,14 @@ from rhevmtests.storage.fixtures import (
     create_vm, create_snapshot, remove_vms, clean_mount_point, storage_cleanup,
     clone_vm_from_template,
 )
-from rhevmtests.storage.storage_import_storage_domain.fixtures import (
+from fixtures import (
     secure_deactivate_and_detach_storage_domain, remove_storage_domain_fin,
     secure_deactivate_storage_domain, deactivate_detach_and_remove_domain_fin,
     add_master_storage_domain_to_new_dc, create_gluster_or_posix_export_domain,
     initialize_params, add_non_master_storage_domain_to_new_dc,
     add_non_master_storage_domain, remove_template_setup,
     remove_storage_domain_setup, attach_and_activate_storage_domain,
-    attach_disk_to_cloned_vm,
+    attach_disk_to_cloned_vm, initialize_disk_params,
 )
 from art.unittest_lib.common import testflow
 import pytest
@@ -522,8 +522,9 @@ class BaseCaseInitializeDataCenter(BasicEnvironment):
         status = False
         if self.storage == ISCSI:
             status = hl_sd.import_iscsi_storage_domain(
-                self.host, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
-                lun_target=config.UNUSED_LUNS["lun_targets"][0]
+                self.host,
+                lun_address=config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+                lun_target=config.ISCSI_DOMAINS_KWARGS[0]['lun_target']
             )
 
         elif self.storage == FCP:
@@ -532,14 +533,14 @@ class BaseCaseInitializeDataCenter(BasicEnvironment):
         elif self.storage == NFS:
             status = ll_sd.importStorageDomain(
                 True, config.TYPE_DATA, NFS,
-                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_DATA_DOMAIN_PATHS[0], self.host
+                config.NFS_DOMAINS_KWARGS[0]['address'],
+                config.NFS_DOMAINS_KWARGS[0]['path'], self.host
             )
         elif self.storage == GLUSTER:
             status = ll_sd.importStorageDomain(
                 True, config.TYPE_DATA, GLUSTER,
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host,
+                config.GLUSTER_DOMAINS_KWARGS[0]['address'],
+                config.GLUSTER_DOMAINS_KWARGS[0]['path'], self.host,
                 vfs_type=config.ENUMS['vfs_type_glusterfs']
             )
         assert status, "Failed to import storage domain"
@@ -741,6 +742,7 @@ class TestCase5192_4_0(BaseTestCase5192):
 
 
 @pytest.mark.usefixtures(
+    initialize_disk_params.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     create_template.__name__,
@@ -759,12 +761,6 @@ class TestCase5200(DomainImportWithTemplate):
                 FCP in ART_CONFIG['RUN']['storages'])
     polarion_test_case = '5200'
     storages = set([ISCSI, NFS])
-    add_disk_params = {
-        'format': config.RAW_DISK, 'sparse': False, 'active': True,
-        'storagedomain': ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, NFS
-        )[0]
-    }
     partial_import = True
 
     @polarion("RHEVM3-" + polarion_test_case)

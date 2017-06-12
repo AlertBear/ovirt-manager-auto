@@ -19,8 +19,8 @@ def setup_package():
     # CONNECTIONS. Add the default target/ip so the host will also logout
     # from it
     config.CONNECTIONS.append({
-        'lun_address': config.UNUSED_LUN_ADDRESSES[0],
-        'lun_target':  config.UNUSED_LUN_TARGETS[0],
+        'lun_address': config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+        'lun_target':  config.ISCSI_DOMAINS_KWARGS[0]['lun_target'],
     })
 
 

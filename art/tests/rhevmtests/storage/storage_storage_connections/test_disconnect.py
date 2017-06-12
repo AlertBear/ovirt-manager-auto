@@ -335,15 +335,17 @@ class BaseTestCaseNewDC(BaseTestCase):
         if self.add_iscsi_domain:
             if not hl_sd.add_iscsi_data_domain(
                 self.host, self.iscsi_domain, self.dc,
-                config.UNUSED_LUNS[0], config.UNUSED_LUN_ADDRESSES[0],
-                config.UNUSED_LUN_TARGETS[0],
+                config.ISCSI_DOMAINS_KWARGS[0]['lun'],
+                config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+                config.ISCSI_DOMAINS_KWARGS[0]['lun_target'],
                 override_luns=True, login_all=self.login_all
             ):
                 raise exceptions.StorageDomainException(
                     "Unable to add iscsi domain %s, %s, %s to data center %s"
                     % (
-                        config.UNUSED_LUNS[0], config.UNUSED_LUN_ADDRESSES[0],
-                        config.UNUSED_LUN_TARGETS[0], self.dc
+                        config.ISCSI_DOMAINS_KWARGS[0]['lun'],
+                        config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+                        config.ISCSI_DOMAINS_KWARGS[0]['lun_target'], self.dc
                     )
                 )
         self.nfs_domain = storage_helpers.create_unique_object_name(
@@ -352,15 +354,15 @@ class BaseTestCaseNewDC(BaseTestCase):
         if self.add_nfs_domain:
             if not hl_sd.addNFSDomain(
                 self.host, self.nfs_domain, self.dc,
-                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_DATA_DOMAIN_PATHS[0],
+                config.NFS_DOMAINS_KWARGS[0]['address'],
+                config.NFS_DOMAINS_KWARGS[0]['path'],
                 format=True, activate=True
             ):
                 raise exceptions.StorageDomainException(
                     "Unable to add nfs domain %s, %s, to data center %s"
                     % (
-                        config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                        config.UNUSED_DATA_DOMAIN_PATHS[0], self.dc
+                        config.NFS_DOMAINS_KWARGS[0]['address'],
+                        config.NFS_DOMAINS_KWARGS[0]['path'], self.dc
                     )
                 )
 
@@ -525,15 +527,17 @@ class TestCase11201(BaseTestCaseNewDC):
         )
         if not hl_sd.add_iscsi_data_domain(
             self.host, self.iscsi_domain2, self.dc,
-            config.UNUSED_LUNS[1], config.UNUSED_LUN_ADDRESSES[1],
-            config.UNUSED_LUN_TARGETS[1],
+            config.ISCSI_DOMAINS_KWARGS[1]['lun'],
+            config.ISCSI_DOMAINS_KWARGS[1]['lun_address'],
+            config.ISCSI_DOMAINS_KWARGS[1]['lun_target'],
             override_luns=True, login_all=False,
         ):
             raise exceptions.StorageDomainException(
                 "Unable to add iscsi domain %s, %s, %s to data center %s"
                 % (
-                    config.UNUSED_LUNS[1], config.UNUSED_LUN_ADDRESSES[1],
-                    config.UNUSED_LUN_TARGETS[1], self.dc
+                    config.ISCSI_DOMAINS_KWARGS[1]['lun'],
+                    config.ISCSI_DOMAINS_KWARGS[1]['lun_address'],
+                    config.ISCSI_DOMAINS_KWARGS[1]['lun_target'], self.dc
                 )
             )
 
@@ -716,18 +720,19 @@ class TestCase11231(BaseTestCaseNewDC):
             self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         self.lun_kwargs = {
-            "lun_address": config.UNUSED_LUN_ADDRESSES[0],
-            "lun_target": config.UNUSED_LUN_TARGETS[0],
-            "lun_id": config.UNUSED_LUNS[0],
+            "lun_address": config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+            "lun_target": config.ISCSI_DOMAINS_KWARGS[0]['lun_target'],
+            "lun_id": config.ISCSI_DOMAINS_KWARGS[0]['lun'],
             "interface": config.VIRTIO_SCSI,
             "alias":  self.lun_alias,
             "type_": ISCSI,
         }
         assert hl_sd._ISCSIdiscoverAndLogin(
-            self.host, config.UNUSED_LUN_ADDRESSES[0],
-            config.UNUSED_LUN_TARGETS[0]
+            self.host, config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+            config.ISCSI_DOMAINS_KWARGS[0]['lun_target']
         ), "Unable to discover and login targets for %s, %s on host %s" % (
-            config.UNUSED_LUN_ADDRESSES[0], config.UNUSED_LUN_TARGETS[0],
+            config.ISCSI_DOMAINS_KWARGS[0]['lun_address'],
+            config.ISCSI_DOMAINS_KWARGS[0]['lun_target'],
             self.host
         )
         assert ll_disks.addDisk(True, **self.lun_kwargs), (
