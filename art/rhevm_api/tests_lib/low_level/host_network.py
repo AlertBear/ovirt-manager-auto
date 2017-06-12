@@ -28,6 +28,7 @@ MODE = "mode"
 MIIMON = "miimon"
 NETWORKS = "networks"
 BONDS = "bonds"
+DNS = "dns"
 NETWORKATTACHMENTS = "networkattachments"
 NETWORK_ATTACHMENT = "network_attachment"
 UNMANAGEDNETWORKS = "unmanagednetworks"
@@ -190,20 +191,21 @@ def prepare_network_attachment_obj(host_name, **kwargs):
         NetworkAttachment: Network attachment object
     """
     network = kwargs.get(NETWORK)
+    _ip = kwargs.get("ip")
     ip_none = {
         "ip": {
             "boot_protocol": "none"
         }
     }
-    ip = kwargs.get("ip") or ip_none
     update = kwargs.get(UPDATE)
+    ip = _ip or ip_none if not update else _ip
     nic = kwargs.get(NIC)
     override_configuration = kwargs.get("override_configuration")
     properties = kwargs.get("properties")
     datacenter = kwargs.get("datacenter")
     cluster = kwargs.get("cluster")
     qos = kwargs.get("qos")
-
+    dns = kwargs.get(DNS)
     if update:
         network_attachment_obj = get_networks_attachments(
             host_name, [network]
@@ -237,6 +239,15 @@ def prepare_network_attachment_obj(host_name, **kwargs):
             host_nic = ll_hosts.get_host_nic(host_name, nic)
 
         network_attachment_obj.set_host_nic(host_nic)
+
+    if ip:
+        network_attachment_obj = prepare_ip_object(
+            network_attachment_obj, ip
+        )
+
+    if dns:
+        dns_obj = ll_networks.prepare_network_dns_object(dns_servers=dns)
+        network_attachment_obj.set_dns_resolver_configuration(dns_obj)
 
     network_attachment_obj = prepare_ip_object(
         network_attachment_obj, ip
