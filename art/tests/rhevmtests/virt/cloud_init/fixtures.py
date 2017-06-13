@@ -57,6 +57,7 @@ def cloud_init_setup(request):
         import_as_template=True
     )
     assert ll_disks.wait_for_disks_status([config.CLOUD_INIT_VM_DISK_NAME])
+    assert ll_templates.waitForTemplatesStates([config.CLOUD_INIT_TEMPLATE])
 
 
 @pytest.fixture()
