@@ -24,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.log_listener import watch_logs
 import art.rhevm_api.utils.storage_api as storage_api
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest, testflow
 from art.rhevm_api.utils import test_utils
@@ -97,6 +97,25 @@ class ColdMoveBase(StorageTest):
             "Files doesn't found or match on VM %s disks" % self.vm_name
         )
 
+    def check_if_disk_moved(self, disk_name, vm, source_sd, moved):
+        """
+        Check whether disk moved or not and return status according to 'moved'
+        parameter
+
+        Args:
+            disk_name (str): Name of the disk
+            vm (str): Name of the VM disk
+            source_sd (str): Name of the source storage domain
+            moved (bool): specified if migration should succeed
+
+        Returns:
+            bool: True if disk status is according to 'moved', False otherwise
+        """
+        testflow.step(
+            "Verify disk %s of VM %s moved from %s", disk_name, vm, source_sd
+        )
+        return moved != ll_vms.verify_vm_disk_moved(vm, disk_name, source_sd)
+
     def verify_cold_move(self, source_sd, moved=True):
         """
         Verifies if the disks have been moved
@@ -106,30 +125,52 @@ class ColdMoveBase(StorageTest):
             moved (bool): specified if migration should succeed
 
         Returns:
-            unsetisfied_disks (List): List of disks_names that failed/succeeded
-            to move occurding to 'moved' parameter,
-            None if verification succeeded
+            unsatisfied_disks (List): List of disks_names that failed/succeeded
+                to move according to 'moved' parameter, None if verification
+                succeeded
         """
-        unsetisfied_disks = list()
+        unsatisfied_disks = list()
 
         for vm, disk_and_mounts in self.DISKS_MOUNTS_EXECUTOR.iteritems():
             for disk in disk_and_mounts['disks']:
                 disk_name = (
                     ll_disks.get_disk_obj(disk, attribute='id').get_alias()
                 )
-                testflow.step(
-                    "Verify disk %s of VM %s moved from %s",
-                    disk_name, vm, source_sd
-                )
-                if moved != ll_vms.verify_vm_disk_moved(
-                    vm, disk_name, source_sd
-                ):
+                if self.check_if_disk_moved(disk_name, vm, source_sd, moved):
                     logging.info(
                         "%s to move disk %s",
                         "Failed" if moved else "Succeed", disk_name
                     )
-                    unsetisfied_disks.append(disk_name)
-        return None if len(unsetisfied_disks) == 0 else unsetisfied_disks
+                    unsatisfied_disks.append(disk_name)
+        return None if not unsatisfied_disks else unsatisfied_disks
+
+    def verify_cold_move_different_sources(self, source_sds, moved=True):
+        """
+        Verifies if disks from different storage domains have been moved
+
+        Args:
+            source_sds (str): Name of the source storage domains
+            moved (bool): Specified if migration should succeed
+
+        Returns:
+            unsatisfied_disks (List): List of disks_names that failed/succeeded
+                to move according to 'moved' parameter, None if verification
+                succeeded
+        """
+        unsatisfied_disks = list()
+
+        for vm, disk_and_mounts in self.DISKS_MOUNTS_EXECUTOR.iteritems():
+            for disk, source_sd in zip(disk_and_mounts['disks'], source_sds):
+                disk_name = (
+                    ll_disks.get_disk_obj(disk, attribute='id').get_alias()
+                )
+                if self.check_if_disk_moved(disk_name, vm, source_sd, moved):
+                    logging.info(
+                        "%s to move disk %s",
+                        "Failed" if moved else "Succeed", disk_name
+                    )
+                    unsatisfied_disks.append(disk_name)
+        return None if not unsatisfied_disks else unsatisfied_disks
 
     def check_files_after_operation(self):
         """
@@ -323,12 +364,33 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
     Base class for restart engine tests
     """
     def basic_flow(self):
+        """
+        - Check initial volume count before migrating the disks
+        - Move each disk to different storage domain
+        - When the regex appears on the log -> restart the engine
+        - Verify move ended successfully for the disks who manage to complete
+          the move before the restart of the engine
+        - Verify volume count remains the same
+        """
         disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
+        target_domains = list()
+        src_domains = list()
         initial_vol_count = storage_helpers.get_disks_volume_count(disk_ids)
-        self.target_sd = ll_disks.get_other_storage_domain(
-            self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks'][0],
-            self.vm_name, force_type=config.MIGRATE_SAME_TYPE, key='id'
-        )
+
+        for disk_id in disk_ids:
+            disk_name = ll_disks.get_disk_obj(
+                disk_id, attribute='id'
+            ).get_alias()
+            ll_disks.get_disk_storage_domain_name(disk_name)
+            src_domains.append(
+                ll_disks.get_disk_storage_domain_name(disk_name)
+            )
+            disk_sd = ll_disks.get_other_storage_domain(
+                disk_id, self.vm_name,
+                force_type=config.MIGRATE_SAME_TYPE, key='id'
+            )
+            target_domains.append(disk_sd)
+
         t = Thread(
             target=watch_logs, args=(
                 config.ENGINE_LOG, self.regex, None, LIVE_MIGRATION_TIMEOUT,
@@ -338,11 +400,16 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
         t.start()
         sleep(5)
 
-        testflow.step("Migrate VM %s", self.vm_name)
-        ll_vms.migrate_vm_disks(
-            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
-            ensure_on=config.LIVE_MOVE, target_domain=self.target_sd
-        )
+        testflow.step("Migrate VM %s disks", self.vm_name)
+        for disk_id, target_sd in zip(disk_ids, target_domains):
+            disk_name = ll_disks.get_disk_obj(
+                disk_id, attribute='id'
+            ).get_alias()
+            ll_vms.migrate_vm_disk(
+                vm_name=self.vm_name, disk_name=disk_name, target_sd=target_sd,
+                wait=False
+            )
+
         testflow.step(
             "Wait for command %s to appear on the engine log", self.regex
         )
@@ -359,8 +426,8 @@ class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
             [self.vm_name], live_operation=config.LIVE_MOVE
         )
 
-        unsatisfied_disks = self.verify_cold_move(
-            source_sd=self.storage_domain, moved=False
+        unsatisfied_disks = self.verify_cold_move_different_sources(
+            source_sds=src_domains, moved=False
         )
         if unsatisfied_disks is not None:
             for disk in unsatisfied_disks:
@@ -380,7 +447,6 @@ class TestCase19060_during_CopyImageGroupWithDataCmd(BaseRestartEngine):
     regex = "CopyImageGroupWithDataCommand"
 
     @polarion("RHEVM3-19060")
-    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_engine_during_copy_image_group_with_data_cmd(self):
         self.basic_flow()
@@ -399,7 +465,6 @@ class TestCase19060_during_CloneImageGroupVolumesStructureCmd(
     regex = "CloneImageGroupVolumesStructureCommand"
 
     @polarion("RHEVM3-19060")
-    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_enigne_during_clone_image_group_vol_structure_cmd(self):
         self.basic_flow()
@@ -416,7 +481,6 @@ class TestCase19060_during_CreateVolumeContainerCommand(BaseRestartEngine):
     regex = "CreateVolumeContainerCommand"
 
     @polarion("RHEVM3-19060")
-    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_engine_during_create_vol_container_cmd(self):
         self.basic_flow()
@@ -433,7 +497,6 @@ class TestCase19061(BaseRestartEngine):
     regex = "CopyImageGroupVolumesDataCommand"
 
     @polarion("RHEVM3-19061")
-    @bz({'1415691': {}})
     @attr(tier=3)
     def test_restart_engine_during_two_commands(self):
         self.basic_flow()
