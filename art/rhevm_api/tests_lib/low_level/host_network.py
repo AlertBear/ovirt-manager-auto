@@ -249,10 +249,6 @@ def prepare_network_attachment_obj(host_name, **kwargs):
         dns_obj = ll_networks.prepare_network_dns_object(dns_servers=dns)
         network_attachment_obj.set_dns_resolver_configuration(dns_obj)
 
-    network_attachment_obj = prepare_ip_object(
-        network_attachment_obj, ip
-    )
-
     if network and not update:
         add_network = ll_networks.find_network(
             network=network, data_center=datacenter, cluster=cluster
