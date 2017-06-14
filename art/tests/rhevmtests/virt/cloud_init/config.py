@@ -1,8 +1,5 @@
 from rhevmtests.virt.config import *  # flake8: noqa
 
-DC_NAME = DC_NAME[0]
-STORAGE_TYPE = STORAGE_TYPE_NFS
-
 USER_PKEY = False
 VM_IP = None
 # cloud init parameters

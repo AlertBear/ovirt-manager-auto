@@ -5,6 +5,7 @@
 import copy
 import logging
 import pytest
+from art.unittest_lib.common import testflow
 import art.rhevm_api.data_struct.data_structures as data_struct
 import rhevmtests.helpers as gen_helper
 from art.rhevm_api.tests_lib.low_level import (
@@ -29,17 +30,21 @@ def cloud_init_setup(request):
     """
 
     def fin():
+        """
+        Remove template
+        """
+        testflow.teardown("Remove template")
         ll_templates.remove_template(
             positive=True, template=config.CLOUD_INIT_TEMPLATE
         )
 
     request.addfinalizer(fin)
 
-    logger.info("Find NFS storage domain to import template")
-    sd_name = ll_sd.getStorageDomainNamesForType(
-        datacenter_name=config.DC_NAME,
-        storage_type=config.STORAGE_TYPE
-    )[0]
+    testflow.setup("Import image from glance")
+    logger.info("Import image to master storage domain")
+    sd_name = ll_sd.get_master_storage_domain_name(
+        datacenter_name=config.DC_NAME[0],
+    )
     logger.info("Storage domain name: %s", sd_name)
     logger.info("Create template from rhel-guest-image in glance")
     ll_sd.import_glance_image(
@@ -71,7 +76,7 @@ def case_setup(request, cloud_init_setup):
         3. Restore user to default(cloud_user)
         4. Remove vm
         """
-
+        testflow.teardown("Reset parameters and remove VM")
         config.USER_PKEY = False
         request.node.cls.initialization = None
         config.VM_USER_CLOUD_INIT = config.VM_USER_CLOUD_INIT_1
@@ -79,6 +84,7 @@ def case_setup(request, cloud_init_setup):
 
     request.addfinalizer(fin)
 
+    testflow.setup("Init parameters and create VM")
     init_dict = init_parameters(
         args_per_condition_params, initialization_params
     )
@@ -152,6 +158,7 @@ def start_vm_with_cloud_init(request):
     """
     vm_name = request.node.cls.vm_name
 
+    testflow.setup("Start cloud init VM")
     assert ll_vms.startVm(
         positive=True, vm=vm_name, wait_for_ip=True,
         use_cloud_init=True, wait_for_status=config.VM_UP
