@@ -440,7 +440,7 @@ class TestPositiveNetworkPermissions231826(NetworkingPositive):
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -1274,7 +1274,7 @@ class TestPositiveNetworkPermissions236408(NetworkingPositive):
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -1453,7 +1453,7 @@ class TestPositiveNetworkPermissions236409(NetworkingPositive):
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -1935,7 +1935,7 @@ class TestPositiveNetworkPermissions320610(NetworkingPositive):
             positive=True,
             vmName=config.VM_NAME,
             cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )

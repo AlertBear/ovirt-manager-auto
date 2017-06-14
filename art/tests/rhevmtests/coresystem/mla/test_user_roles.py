@@ -79,7 +79,7 @@ def setup_module(request):
         positive=True,
         vmName=config.VM_NAME,
         cluster=config.CLUSTER_NAME[0],
-        storageDomainName=config.MASTER_STORAGE,
+        storageDomainName=config.STORAGE_NAME[0],
         provisioned_size=config.GB,
         network=config.MGMT_BRIDGE
     )
@@ -120,7 +120,7 @@ def setup_module(request):
         interface='virtio',
         format='cow',
         provisioned_size=config.GB,
-        storagedomain=config.MASTER_STORAGE
+        storagedomain=config.STORAGE_NAME[0]
     )
     disks.wait_for_disks_status(config.DISK_NAME)
 
@@ -690,7 +690,7 @@ class TestRolesCase54412(common.BaseTestCase):
         low_level = {
             config.CLUSTER_NAME[0]: vms.CLUSTER_API,
             config.DC_NAME[0]: vms.DC_API,
-            config.MASTER_STORAGE: vms.STORAGE_DOMAIN_API,
+            config.STORAGE_NAME[0]: vms.STORAGE_DOMAIN_API,
         }
         high_level = {
             config.CLUSTER_NAME[0]:
@@ -700,7 +700,7 @@ class TestRolesCase54412(common.BaseTestCase):
                     config.VMPOOL_NAME: ll_vmpools.UTIL,
                     config.VM_NO_DISK: vms.VM_API
                 },
-            config.MASTER_STORAGE:
+            config.STORAGE_NAME[0]:
                 {
                     config.DISK_NAME: vms.DISKS_API
                 },

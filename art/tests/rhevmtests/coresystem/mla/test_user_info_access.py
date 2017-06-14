@@ -125,7 +125,7 @@ class TestVmUserInfoTests(common.BaseTestCase):
             positive=True,
             vmName=config.VM_NAMES[0],
             cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -219,7 +219,7 @@ class TestVmUserInfoTests2(common.BaseTestCase):
                 positive=True,
                 vmName=vm,
                 cluster=config.CLUSTER_NAME[0],
-                storageDomainName=config.MASTER_STORAGE,
+                storageDomainName=config.STORAGE_NAME[0],
                 provisioned_size=config.GB,
                 network=config.MGMT_BRIDGE
             )
@@ -890,7 +890,7 @@ class TestComplexCombinationTest(common.BaseTestCase):
             positive=True,
             vmName=config.VM_NAMES[0],
             cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -898,7 +898,7 @@ class TestComplexCombinationTest(common.BaseTestCase):
             positive=True,
             vmName=config.VM_NAMES[1],
             cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -927,7 +927,7 @@ class TestComplexCombinationTest(common.BaseTestCase):
             positive=True,
             vmName=config.VM_NAMES[3],
             cluster=config.CLUSTER_NAME[1],
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )

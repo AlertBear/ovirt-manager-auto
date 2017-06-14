@@ -44,7 +44,7 @@ def setup_module(request):
         positive=True,
         vmName=config.VM_NAME,
         cluster=config.CLUSTER_NAME[0],
-        storageDomainName=config.MASTER_STORAGE,
+        storageDomainName=config.STORAGE_NAME[0],
         provisioned_size=config.GB,
         network=config.MGMT_BRIDGE
     )

@@ -79,7 +79,7 @@ def setup_module(request):
         positive=True,
         vmName=config.VM_NAME,
         cluster=config.CLUSTER_NAME[0],
-        storageDomainName=config.MASTER_STORAGE,
+        storageDomainName=config.STORAGE_NAME[0],
         provisioned_size=config.GB,
         network=config.MGMT_BRIDGE
     )
@@ -114,7 +114,7 @@ def setup_module(request):
         interface='virtio',
         format='cow',
         provisioned_size=config.GB,
-        storagedomain=config.MASTER_STORAGE
+        storagedomain=config.STORAGE_NAME[0]
     )
     disks.wait_for_disks_status(config.DISK_NAME)
 
@@ -136,7 +136,7 @@ class TestPermissionsCase54408(common.BaseTestCase):
             config.CLUSTER_NAME[0]: ll_cluster.util,
             config.DC_NAME[0]: ll_dc.util,
             config.HOSTS[0]: hosts.HOST_API,
-            config.MASTER_STORAGE: storagedomains.util
+            config.STORAGE_NAME[0]: storagedomains.util
         }
 
     # Check that there are two types of Permissions sub-tabs in the system:
@@ -418,13 +418,6 @@ class TestPermissionsCase54425(common.BaseTestCase):
                         logger.warning(e)
                         pass
 
-                    testflow.step(
-                        "Adding VM permissions to user %s.",
-                        config.USER_NAMES[0]
-                    )
-                    assert mla.addVMPermissionsToUser(
-                        True, config.USER_NAMES[0], config.VM_NAMES[0]
-                    )
                 else:
                     testflow.step(
                         "Adding VM permissions to user %s.",
@@ -569,16 +562,16 @@ class TestPermissionsCase54420(common.BaseTestCase):
     @polarion("RHEVM3-7190")
     def test_object_admin_user(self):
         """ Object creating from User portal """
-        b = False
+        result = True
 
-        for rr in [config.role.VmCreator, config.role.TemplateCreator]:
+        for role_name in [config.role.VmCreator, config.role.TemplateCreator]:
             testflow.step("Log in as admin.")
             common.login_as_admin()
 
-            testflow.step("Getting role %s object.", rr)
-            role_obj = users.rlUtil.find(rr)
+            testflow.step("Getting role %s object.", role_name)
+            role_obj = users.rlUtil.find(role_name)
 
-            testflow.step("Getting role %s permits.", rr)
+            testflow.step("Getting role %s permits.", role_name)
             role_permits = mla.util.getElemFromLink(
                 role_obj,
                 link_name='permits',
@@ -586,13 +579,13 @@ class TestPermissionsCase54420(common.BaseTestCase):
                 get_href=False
             )
 
-            testflow.step("Getting role %s permits names.", rr)
-            r_permits = [p.get_name() for p in role_permits]
+            testflow.step("Getting role %s permits names.", role_name)
+            role_permits_names = [p.get_name() for p in role_permits]
 
             testflow.step(
-                "Adding role %s to user %s.", rr, config.USER_NAMES[0]
+                "Adding role %s to user %s.", role_name, config.USER_NAMES[0]
             )
-            users.addRoleToUser(True, config.USER_NAMES[0], rr)
+            users.addRoleToUser(True, config.USER_NAMES[0], role_name)
 
             testflow.step(
                 "Adding cluster permissions to user %s.", config.USER_NAMES[0]
@@ -617,10 +610,10 @@ class TestPermissionsCase54420(common.BaseTestCase):
             testflow.step("Log in as user.")
             common.login_as_user(filter_=not role_obj.administrative)
 
-            testflow.step("Testing role - %s", rr)
+            testflow.step("Testing role - %s", role_name)
 
             # Create vm,template, disk and check permissions of it
-            if 'create_vm' in r_permits:
+            if 'create_vm' in role_permits_names:
                 testflow.step("Creating VM %s.", config.VM_NAMES[0])
                 vms.createVm(
                     positive=True,
@@ -633,7 +626,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                     "Checking if VM %s has role %s.",
                     config.VM_NAMES[0], VM_PREDEFINED
                 )
-                b = b or common.check_if_object_has_role(
+                result = result and common.check_if_object_has_role(
                     vms.VM_API.find(config.VM_NAMES[0]),
                     VM_PREDEFINED,
                     role_obj.administrative
@@ -645,7 +638,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                 testflow.step("Removing VM %s.", config.VM_NAMES[0])
                 vms.removeVm(True, config.VM_NAMES[0])
 
-            if 'create_template' in r_permits:
+            if 'create_template' in role_permits_names:
                 testflow.step(
                     "Creating template %s.", config.TEMPLATE_NAMES[1]
                 )
@@ -660,7 +653,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                     "Checking if template %s has role %s.",
                     config.TEMPLATE_NAMES[1], TEMPLATE_PREDEFINED
                 )
-                b = b or common.check_if_object_has_role(
+                result = result and common.check_if_object_has_role(
                     templates.TEMPLATE_API.find(config.TEMPLATE_NAMES[1]),
                     TEMPLATE_PREDEFINED,
                     role_obj.administrative
@@ -674,7 +667,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                 )
                 templates.remove_template(True, config.TEMPLATE_NAMES[1])
 
-            if 'create_disk' in r_permits:
+            if 'create_disk' in role_permits_names:
                 testflow.step("Adding disk %s.", config.DISK_NAME1)
                 disks.addDisk(
                     True,
@@ -682,7 +675,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                     interface='virtio',
                     format='cow',
                     provisioned_size=config.GB,
-                    storagedomain=config.MASTER_STORAGE
+                    storagedomain=config.STORAGE_NAME[0]
                 )
 
                 testflow.step("Waiting for disk %s.", config.DISK_NAME1)
@@ -692,7 +685,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                     "Checking if disk %s has role %s.",
                     config.DISK_NAME1, DISK_PREDEFINED
                 )
-                b = b or common.check_if_object_has_role(
+                result = result and common.check_if_object_has_role(
                     disks.DISKS_API.find(config.DISK_NAME1),
                     DISK_PREDEFINED,
                     role_obj.administrative
@@ -717,7 +710,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
                 domain=config.USER_DOMAIN
             )
         testflow.step("Checking if all tests above were ok.")
-        assert b
+        assert result
 
 
 # add a group of users from AD to the system (give it some admin permission)

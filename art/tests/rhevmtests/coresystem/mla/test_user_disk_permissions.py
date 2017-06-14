@@ -23,7 +23,7 @@ from art.unittest_lib import (
 )
 from art.unittest_lib import testflow
 
-from rhevmtests.coresystem.user_tests.mla import common, config
+from rhevmtests.coresystem.mla import common, config
 
 USER_NAME = config.USER_NAMES[0]
 CLUSTER = config.CLUSTER_NAME[0]
@@ -82,7 +82,7 @@ class TestDiskTemplate(common.BaseTestCase):
             )
             assert mla.removeUserPermissionsFromSD(
                 positive=True,
-                storage_domain=config.MASTER_STORAGE,
+                storage_domain=config.STORAGE_NAME[0],
                 user_name=USER_NAME
             )
 
@@ -107,7 +107,7 @@ class TestDiskInheritedPermissions(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE
+            storagedomain=config.STORAGE_NAME[0]
         )
 
         testflow.setup("Waiting for disk status ok.")
@@ -117,7 +117,7 @@ class TestDiskInheritedPermissions(TestDiskTemplate):
         assert mla.addStoragePermissionsToUser(
             positive=True,
             user=USER_NAME,
-            storage=config.MASTER_STORAGE,
+            storage=config.STORAGE_NAME[0],
             role=config.role.DiskOperator
         )
 
@@ -151,7 +151,7 @@ class TestDiskInheritedPermissions(TestDiskTemplate):
             positive=True,
             vm=config.VM_NO_DISK,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE,
+            storagedomain=config.STORAGE_NAME[0],
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW,
             alias=self.disk_name
@@ -178,7 +178,7 @@ class TestCreateDiskNegative(TestDiskTemplate):
         assert mla.addStoragePermissionsToUser(
             positive=True,
             user=USER_NAME,
-            storage=config.MASTER_STORAGE,
+            storage=config.STORAGE_NAME[0],
             role=config.role.UserRole
         )
 
@@ -195,7 +195,7 @@ class TestCreateDiskNegative(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE
+            storagedomain=config.STORAGE_NAME[0]
         ), "User without StorageAdmin permissions can create disk."
 
 
@@ -213,7 +213,7 @@ class TestCreateDisk(TestDiskTemplate):
         assert mla.addStoragePermissionsToUser(
             positive=True,
             user=USER_NAME,
-            storage=config.MASTER_STORAGE,
+            storage=config.STORAGE_NAME[0],
             role=config.role.StorageAdmin
         )
 
@@ -230,7 +230,7 @@ class TestCreateDisk(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE
+            storagedomain=config.STORAGE_NAME[0]
         ), "User with StorageAdmin permissions can't create disk."
 
         testflow.step("Waiting for disk status 'ok'.")
@@ -268,7 +268,7 @@ class TestAttachDisk(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE
+            storagedomain=config.STORAGE_NAME[0]
         )
 
         testflow.setup("Waiting for disk status ok.")
@@ -294,7 +294,7 @@ class TestAttachDisk(TestDiskTemplate):
                 assert mla.addStoragePermissionsToUser(
                     positive=True,
                     user=USER_NAME,
-                    storage=config.MASTER_STORAGE,
+                    storage=config.STORAGE_NAME[0],
                     role=disk_role
                 )
 
@@ -332,7 +332,7 @@ class TestDetachDisk(TestDiskTemplate):
             positive=True,
             vmName=config.VM_NAME,
             cluster=CLUSTER,
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -381,7 +381,7 @@ class TestActivateDeactivateDisk(TestDiskTemplate):
             positive=True,
             vmName=config.VM_NAME,
             cluster=CLUSTER,
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -430,7 +430,7 @@ class TestRemoveDisk(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE
+            storagedomain=config.STORAGE_NAME[0]
         )
 
         testflow.setup("Waiting for disk status 'ok'.")
@@ -442,7 +442,7 @@ class TestRemoveDisk(TestDiskTemplate):
         assert mla.addStoragePermissionsToUser(
             positive=True,
             user=USER_NAME,
-            storage=config.MASTER_STORAGE,
+            storage=config.STORAGE_NAME[0],
             role=config.role.UserRole
         )
 
@@ -465,7 +465,7 @@ class TestRemoveDisk(TestDiskTemplate):
         assert mla.addStoragePermissionsToUser(
             positive=True,
             user=USER_NAME,
-            storage=config.MASTER_STORAGE,
+            storage=config.STORAGE_NAME[0],
             role=config.role.DiskOperator
         )
 
@@ -493,7 +493,7 @@ class TestUpdateDisk(TestDiskTemplate):
             positive=True,
             vmName=config.VM_NAME,
             cluster=CLUSTER,
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -664,7 +664,7 @@ class TestAddDiskToVM(TestDiskTemplate):
             positive=False,
             vm=config.VM_NO_DISK,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE,
+            storagedomain=config.STORAGE_NAME[0],
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW
         ), "UserRole can add disk to VM."
@@ -688,7 +688,7 @@ class TestAddDiskToVM(TestDiskTemplate):
             positive=False,
             vm=config.VM_NO_DISK,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE,
+            storagedomain=config.STORAGE_NAME[0],
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW
         ), "User without permissions on SD can add disk to VM."
@@ -700,7 +700,7 @@ class TestAddDiskToVM(TestDiskTemplate):
         assert mla.addStoragePermissionsToUser(
             positive=True,
             user=USER_NAME,
-            storage=config.MASTER_STORAGE,
+            storage=config.STORAGE_NAME[0],
             role=config.role.DiskCreator
         )
 
@@ -712,7 +712,7 @@ class TestAddDiskToVM(TestDiskTemplate):
             positive=True,
             vm=config.VM_NO_DISK,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE,
+            storagedomain=config.STORAGE_NAME[0],
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW
         ), "User with permissions on SD and VM can't add disk to VM."
@@ -733,7 +733,7 @@ class TestRemoveVM(TestDiskTemplate):
             positive=True,
             vmName=config.VM_NAME,
             cluster=CLUSTER,
-            storageDomainName=config.MASTER_STORAGE,
+            storageDomainName=config.STORAGE_NAME[0],
             provisioned_size=config.GB,
             network=config.MGMT_BRIDGE
         )
@@ -745,7 +745,7 @@ class TestRemoveVM(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_RAW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE
+            storagedomain=config.STORAGE_NAME[0]
         )
 
         testflow.setup("Waiting for disk status 'ok'.")
@@ -837,7 +837,7 @@ class TestDisk(TestDiskTemplate):
         assert mla.addStoragePermissionsToUser(
             positive=True,
             user=USER_NAME,
-            storage=config.MASTER_STORAGE,
+            storage=config.STORAGE_NAME[0],
             role=config.role.DiskOperator
         )
 
@@ -869,7 +869,7 @@ class TestDisk(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_RAW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE
+            storagedomain=config.STORAGE_NAME[0]
         )
 
         testflow.step("Waiting for disk status 'ok'.")
@@ -900,7 +900,7 @@ class TestDisk(TestDiskTemplate):
     def test_shared_disk(self):
         """ Basic operations with shared disk """
         if ll_sd.get_storage_domain_storage_type(
-                config.MASTER_STORAGE
+                config.STORAGE_NAME[0]
         ) == config.STORAGE_TYPE_GLUSTER:
             pytest.skip(
                 "Shareable disks are not supported on Gluster domains."
@@ -916,7 +916,7 @@ class TestDisk(TestDiskTemplate):
             interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_RAW,
             provisioned_size=config.GB,
-            storagedomain=config.MASTER_STORAGE,
+            storagedomain=config.STORAGE_NAME[0],
             shareable=True
         )
 

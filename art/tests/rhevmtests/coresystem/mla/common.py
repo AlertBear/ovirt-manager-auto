@@ -2,9 +2,11 @@ import logging
 
 import pytest
 
-from art.rhevm_api.tests_lib.low_level import mla, templates, users, vms
+from art.rhevm_api.tests_lib.low_level import (
+    mla, templates, users, vms
+)
 from art.unittest_lib import CoreSystemTest as TestCase
-from rhevmtests.coresystem.user_tests.mla import config
+from rhevmtests.coresystem.mla import config
 
 
 logger = logging.getLogger(__name__)
@@ -48,12 +50,13 @@ def login_as_user(user_name=config.USER_NAMES[0], filter_=True):
 
 def check_if_object_has_role(obj, role, admin=None):
     """
-    Description:
-        Check if given object has given role
+    Check if given object has given role
+
     Args:
         obj (object): object you want to check for role existance
         role (str): role you want to check if object has
         admin (role): administrative role object
+
     Returns:
         bool: if object has role return True, if not - False
     """
@@ -68,14 +71,15 @@ def check_if_object_has_role(obj, role, admin=None):
 
 def compare_permissions(exists, user_name, roles_list, predefined):
     """
-    Description:
-         Checks if given list of user roles is equal to predefined
+    Checks if given list of user roles is equal to predefined
     list of roles.
+
     Args:
         exists (bool): expected result
         user_name (str): user name
         roles_list (dict): dictionary of roles (user -> list(roles))
         predefined (list[str]): dictionary of expected roles
+
     Returns:
          None
     """
@@ -96,12 +100,13 @@ def compare_permissions(exists, user_name, roles_list, predefined):
 
 def check_for_vm_permissions(exists, user_one_roles, user_two_roles):
     """
-    Description:
-        Check if users have vm permissions
+    Check if users have vm permissions
+
     Args:
         exists (bool): something
         user_one_roles (list[str]): First user roles to test
         user_two_roles (list[str]): Second user roles to test
+
     Returns:
         None: this function invokes compare_permissions function
     """
@@ -114,8 +119,8 @@ def check_for_vm_permissions(exists, user_one_roles, user_two_roles):
 
         for perm in obj_permits:
             if perm.get_vm() and perm.get_vm().get_id() == vm_id:
-                rl = users.rlUtil.find(perm.get_role().get_id(), "id")
-                vm_perms[user_name].append(rl.get_name())
+                role = users.rlUtil.find(perm.get_role().get_id(), "id")
+                vm_perms[user_name].append(role.get_name())
 
     compare_permissions(
         exists,
@@ -133,12 +138,13 @@ def check_for_vm_permissions(exists, user_one_roles, user_two_roles):
 
 def check_for_template_permissions(exists, user_one_roles, user_two_roles):
     """
-    Description:
-        Check if users have template permissions
+    Check if users have template permissions
+
     Args:
         exists (bool): something
         user_one_roles (list[str]): First user roles to test
         user_two_roles (list[str]): Second user roles to test
+
     Returns:
         None: this function invokes compare_permissions function
     """
@@ -151,8 +157,8 @@ def check_for_template_permissions(exists, user_one_roles, user_two_roles):
 
         for perm in obj_permits:
             if perm.get_template() and perm.get_template().get_id() == tmp_id:
-                rl = users.rlUtil.find(perm.get_role().get_id(), "id")
-                template_perms[user_name].append(rl.get_name())
+                role = users.rlUtil.find(perm.get_role().get_id(), "id")
+                template_perms[user_name].append(role.get_name())
 
     compare_permissions(
         exists,

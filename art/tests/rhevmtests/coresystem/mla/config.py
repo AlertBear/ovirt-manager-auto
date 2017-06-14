@@ -1,7 +1,6 @@
 """ Test configuration - login data to the servers and test setup options.  """
-
 from rhevmtests.coresystem.config import *  # flake8:  noqa
-from rhevmtests.coresystem.user_tests.mla.roles import role
+from rhevmtests.coresystem.mla.roles import role
 
 
 # Networks
@@ -55,5 +54,3 @@ VMPOOL_NAME = 'users__vmpool'
 SNAPSHOT_DEF = 'Active VM'
 USER_ROLE = 'users__role_user'
 ADMIN_ROLE = 'users__role_admin'
-
-MASTER_STORAGE = None
