@@ -452,21 +452,6 @@ def create_unique_object_name(object_description, object_type):
         )
 
 
-def host_to_use():
-    """
-    Extract the SPM host information.  This is then used to execute commands
-    directly on the host
-
-    __author__ = "glazarov"
-    :returns: Machine object on which commands can be executed
-    :rtype: Machine
-    """
-    host = ll_hosts.get_spm_host(config.HOSTS)
-    host = ll_hosts.get_host_ip(host)
-    return Machine(host=host, user=config.HOSTS_USER,
-                   password=config.HOSTS_PW).util(LINUX)
-
-
 def wait_for_dd_to_start(vm_name, timeout=20, interval=1):
     """
     Waits until dd starts execution in the machine

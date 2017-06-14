@@ -9,9 +9,6 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms
 )
-from art.rhevm_api.tests_lib.high_level import (
-    vmpools as hl_vmpools
-)
 from rhevmtests.fixtures import (
     create_lun_on_storage_server, remove_lun_from_storage_server
 )
@@ -130,18 +127,3 @@ def append_to_luns_to_resize(request):
     request.addfinalizer(finalizer)
     config.LUNS_TO_RESIZE.append(self.new_lun_id)
     config.LUNS_IDENTIFIERS.append(self.new_lun_identifier)
-
-
-@pytest.fixture(scope='class')
-def remove_vms_pool(request):
-    """
-    Detach and remove VMs pool
-    """
-    self = request.node.cls
-
-    def finalizer():
-        testflow.teardown("Removing VMs pool: %s", self.pool_name)
-        assert hl_vmpools.remove_whole_vm_pool(vmpool=self.pool_name), (
-            "Failed to remove VMs pool %s" % self.vm_pool
-        )
-    request.addfinalizer(finalizer)

@@ -4,57 +4,34 @@ from threading import Thread
 from time import sleep
 
 import config
-from art.rhevm_api.resources import storage as storage_resources
 from art.rhevm_api.tests_lib.low_level import (
-    disks, storagedomains,
+    disks as ll_disks,
 )
 from art.rhevm_api.utils import log_listener
-from utilities.machine import LINUX, Machine
-from rhevmtests.helpers import get_host_resource_by_name
 
 logger = logging.getLogger(__name__)
-
-OVF_STORE_DISK_NAME = "OVF_STORE"
-FILE_OVF_STORE_PATH = 'ls /rhev/data-center/%s/%s/images/%s'
-ACTIVATE_BLOCK_VOLUME = 'lvchange -ay /dev/%s/%s'
-DEACTIVATE_BLOCK_VOLUME = 'lvchange -an /dev/%s/%s'
-CREATE_DIRECTORY_FOR_OVF_STORE = 'mkdir -p /tmp/ovf/%s'
-REMOVE_DIRECTORY_FOR_OVF_STORE = 'rm -rf /tmp/ovf/%s'
-BLOCK_COPY_OVF_STORE = 'cp /dev/%s/%s /tmp/ovf/%s'
-FILE_COPY_OVF_STORE = 'cp /rhev/data-center/%s/%s/images/%s/%s /tmp/ovf/%s'
-BLOCK_AND_FILE_EXTRACT_OVF_STORE = 'cd /tmp/ovf/%s && tar -xvf %s'
-EXTRACTED_OVF_FILE_LOCATION = "/tmp/ovf/%s/%s.ovf"
-COUNT_NUMBER_OF_OVF_FILES = "ls /tmp/ovf/%s/*.ovf | wc -l"
 
 
 def get_first_ovf_store_id_and_obj(storage_domain):
     """
     Return the first encountered OVF store in the requested storage domain
     """
-    all_disks = disks.getStorageDomainDisks(storage_domain, False)
+    all_disks = ll_disks.getStorageDomainDisks(storage_domain, False)
     for disk in all_disks:
-        if disk.get_name() == OVF_STORE_DISK_NAME:
+        if disk.get_name() == config.OVF_STORE_DISK_NAME:
             # For block storage, the OVF store's LVM uses the Image
             # ID, in File the Disk ID is used as the folder and then the
             # Image ID is used for the 3 files (store, .meta, .lease)
-            return {'id': disk.get_id(), 'img_id': disk.get_image_id(),
-                    'disk': disk}
+            return {
+                'id': disk.get_id(), 'img_id': disk.get_image_id(),
+                'disk': disk
+            }
     return None
 
 
-def get_master_storage_domain_name():
-    """
-    Return the master storage domain name
-    """
-    found, master_domain = storagedomains.findMasterStorageDomain(
-        True, config.DATA_CENTER_NAME
-    )
-    if not found:
-        return None
-    return master_domain['masterDomain']
-
-
-def watch_engine_log_for_ovf_store(regex, vdsm_host, **function_name_and_args):
+def watch_engine_log_for_ovf_store(
+    regex, vdsm_host, **function_name_and_args
+):
     """
     Start a thread to watch the engine log for the regex requested, run the
     function with the parameters provided
@@ -88,35 +65,26 @@ def get_ovf_file_path_and_num_ovf_files(
     input parameters as well as the total number of OVF files contained in
     the OVF store
 
-    __author__ = "glazarov"
-    :param host: Name of the host with which to extract and return the OVF
-    file path
-    :type host: str
-    :param is_block: Specifies whether storage type is block (True) or
-    non-block (False)
-    :type is_block: bool
-    :param disk_or_template_or_vm_name: The disk alias which will be checked
-    for within the OVF store of the specified VM
-    :type disk_or_template_or_vm_name: str
-    :param vm_or_template_id: The VM or Template ID of the VM which
-    contains the disk which will be queried
-    :type vm_or_template_id: str
-    :param sd_id: The Storage domain ID containing the disk being
-    verified
-    :type sd_id: str
-    :param ovf_id: The OVF ID of the storage domain containing the disk
-    being verified
-    :type ovf_id: str
-    :param sp_id: Storage pool id (only needed for File)
-    :type sp_id: str
-    :param ovf_filename: The OVF store file name which will be copied
-    and extracted to verify the VM OVF (only needed for File)
-    :type ovf_filename: str
-    :returns: The full path of the extracted OVF file name
-    :rtype: str
-    """
-    host_to_use = get_host_resource_by_name(host)
+    Args:
+        host (host): Host resource object to use to extract and return the OVF
+            file path
+        is_block (bool): Specifies whether storage type is block (True) or
+            non-block (False)
+        disk_or_template_or_vm_name (str): The disk alias which will be checked
+            for within the OVF store of the specified VM or template
+        vm_or_template_id (str): The VM or Template ID of the VM which
+            contains the disk which will be queried
+        sd_id (str): The Storage domain ID containing the disk being verified
+        ovf_id (str): The OVF ID of the storage domain containing the disk
+            being verified
+        sp_id (str): Storage pool id (only needed for File)
+        ovf_filename (str): The OVF store file name which will be copied
+            and extracted to verify the VM OVF (only needed for File)
 
+    Returns:
+        str: The full path of the extracted OVF file name
+
+    """
     # Add the default results
     error_result = None
     result = {'ovf_file_path': None, 'number_of_ovf_files': None}
@@ -128,27 +96,26 @@ def get_ovf_file_path_and_num_ovf_files(
     remove_ovf_store_extracted(host, disk_or_template_or_vm_name)
 
     logger.info("Creating a directory to extract the OVF store")
-    rc, output, error = host_to_use.run_command(
+    rc, output, error = host.run_command(
         shlex.split(
-            CREATE_DIRECTORY_FOR_OVF_STORE % disk_or_template_or_vm_name
+            config.CREATE_DIRECTORY_FOR_OVF_STORE % disk_or_template_or_vm_name
         )
     )
     if rc:
         return error_result
 
     if is_block:
-        logger.info("Activating the OVF store image before copying and "
-                    "extracting it")
-        refresh_volumes = storage_resources.pvscan(host)
+        logger.info(
+            "Activating the OVF store image before copying and extracting it"
+        )
+        refresh_volumes = host.lvm.pvscan()
         if not refresh_volumes:
             logger.error(
                 "Unable to refresh the physical volumes on host '%s'", host
             )
             return error_result
 
-        activate_lv_status = storage_resources.lvchange(
-            host, sd_id, ovf_id, activate=True
-        )
+        activate_lv_status = host.lvm.lvchange(sd_id, ovf_id, activate=True)
         if not activate_lv_status:
             logger.error(
                 "Unable to activate the OVF Store LV in order to allow for "
@@ -156,9 +123,9 @@ def get_ovf_file_path_and_num_ovf_files(
             )
             return error_result
 
-        rc, output, error = host_to_use.run_command(
+        rc, output, error = host.run_command(
             shlex.split(
-                BLOCK_COPY_OVF_STORE % (
+                config.BLOCK_COPY_OVF_STORE % (
                     sd_id, ovf_id, disk_or_template_or_vm_name
                 )
             )
@@ -170,9 +137,9 @@ def get_ovf_file_path_and_num_ovf_files(
         ovf_id_to_extract = ovf_id
 
     else:
-        rc, output, error = host_to_use.run_command(
+        rc, output, error = host.run_command(
             shlex.split(
-                FILE_COPY_OVF_STORE % (
+                config.FILE_COPY_OVF_STORE % (
                     sp_id, sd_id, ovf_id, ovf_filename,
                     disk_or_template_or_vm_name
                 )
@@ -185,9 +152,9 @@ def get_ovf_file_path_and_num_ovf_files(
         ovf_id_to_extract = ovf_filename
 
     logger.info("Extracting the OVF store")
-    rc, output, error = host_to_use.run_command(
+    rc, output, error = host.run_command(
         shlex.split(
-            BLOCK_AND_FILE_EXTRACT_OVF_STORE % (
+            config.BLOCK_AND_FILE_EXTRACT_OVF_STORE % (
                 disk_or_template_or_vm_name, ovf_id_to_extract
             )
         )
@@ -199,7 +166,7 @@ def get_ovf_file_path_and_num_ovf_files(
         "Retrieving the VM or Template's OVF file path on the host's file "
         "system"
     )
-    ovf_file_path = EXTRACTED_OVF_FILE_LOCATION % (
+    ovf_file_path = config.EXTRACTED_OVF_FILE_LOCATION % (
         disk_or_template_or_vm_name, vm_or_template_id
     )
     result['ovf_file_path'] = ovf_file_path
@@ -207,9 +174,9 @@ def get_ovf_file_path_and_num_ovf_files(
     logger.info(
         "Retrieving the total number of OVF files extracted from the OVF store"
     )
-    rc, number_of_ovf_files, error = host_to_use.run_command(
+    rc, number_of_ovf_files, error = host.run_command(
         shlex.split(
-            COUNT_NUMBER_OF_OVF_FILES % disk_or_template_or_vm_name
+            config.COUNT_NUMBER_OF_OVF_FILES % disk_or_template_or_vm_name
         )
     )
     if rc:
@@ -231,18 +198,16 @@ def remove_ovf_store_extracted(host, disk_or_template_or_vm_name):
     get_ovf_file_path_and_num_ovf_files in order to extract the
     OVF store
 
-    :param host: Name of the host with which to remove the extracted OVF store
-    :type host: str
-    :param disk_or_template_or_vm_name: The directory name of the extracted
-    OVF store (either disk or template)
-    :type disk_or_template_or_vm_name: str
+    Args:
+        host (host): Host resource object to use to remove the extracted OVF
+            store
+        disk_or_template_or_vm_name (str): The directory name of the extracted
+            OVF store (either disk or template)
     """
-    host_to_use = get_host_resource_by_name(host)
-
     logger.info("Removing directory created to extract the OVF store")
-    rc, output, error = host_to_use.run_command(
+    rc, output, error = host.run_command(
         shlex.split(
-            REMOVE_DIRECTORY_FOR_OVF_STORE % disk_or_template_or_vm_name
+            config.REMOVE_DIRECTORY_FOR_OVF_STORE % disk_or_template_or_vm_name
         )
     )
     if rc:
@@ -252,16 +217,50 @@ def remove_ovf_store_extracted(host, disk_or_template_or_vm_name):
         )
 
 
-def machine_to_use(host_ip):
+def move_ovf_store(vm_name, disk_name, disk_id):
     """
-    Return a Machine object allowing to execute commands directly on the host
+    Move OVF file to a different storage domain
 
-    __author__ = "glazarov"
-    :param host_ip: The IP of the host which will be used to execute commands
-    :type host_ip: str
-    :returns: Machine object on which commands can be executed
-    :rtype: Machine
+    Args:
+        vm_name (str): Name of the VM the disk is attached to
+        disk_name (str): The name of the disk to move
+        disk_id (str): The ID of the disk to move
+
+    Raises:
+        AssertionError: If moving the OVF file succeeded
     """
-    return Machine(
-        host=host_ip, user=config.HOSTS_USER, password=config.HOSTS_PW
-    ).util(LINUX)
+    dest_sd = ll_disks.get_other_storage_domain(disk_name, vm_name)
+    assert ll_disks.move_disk(
+        target_domain=dest_sd, disk_id=disk_id, positive=False
+    ), "Move OVF store disk succeeded"
+
+
+def delete_ovf_store_disk(disk_id):
+    """
+    Delete OVF disk
+
+    Args:
+        disk_id (str): OVF disk id to delete
+
+    Raises:
+        AssertionError: If OVF store disk deletion succeeds
+    """
+    assert ll_disks.deleteDisk(
+        positive=False, alias=config.OVF_STORE_DISK_NAME,
+        disk_id=disk_id
+    ), "Delete OVF store disk succeeded"
+
+
+def export_ovf_store_to_glance(disk_name):
+    """
+    Export OVF store disk to Glance domain
+
+    Args:
+        disk_name (str): The name of the disk to export
+
+    Raises:
+        AssertionError: If the export of the disk succeeded
+    """
+    assert ll_disks.export_disk_to_glance(
+        True, disk_name, config.GLANCE_DOMAIN
+    )

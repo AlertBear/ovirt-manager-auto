@@ -9,7 +9,8 @@ from art.unittest_lib.common import testflow
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
     storagedomains as hl_sd,
-    hosts as hl_hosts
+    hosts as hl_hosts,
+    vmpools as hl_vmpools,
 )
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
@@ -1654,3 +1655,20 @@ def put_all_hsm_hosts_to_maintenance(request):
                 "Failed to deactivate host %s" % host
             )
             non_spm.append(host)
+
+
+@pytest.fixture(scope='class')
+def remove_vms_pool(request):
+    """
+    Detach and remove VMs pool
+    """
+    self = request.node.cls
+
+    def finalizer():
+        testflow.teardown("Remove VMs pool: %s", self.pool_name)
+
+        assert hl_vmpools.remove_whole_vm_pool(vmpool=self.pool_name), (
+            "Failed to remove VMs pool %s" % self.vm_pool
+        )
+
+    request.addfinalizer(finalizer)

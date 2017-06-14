@@ -2132,3 +2132,20 @@ def refresh_storage_domain_luns(storage_domain, logical_unit_ids):
             sd_obj, "refreshluns", positive=True, logical_units=lu
         )
     )
+
+
+@generate_logs()
+def update_ovf_store(storage_domain):
+    """
+    Initiate force update for the storage domain's OVF_STORE disks
+
+    Args:
+        storage_domain (str): Storage domain name
+
+    Returns:
+        bool: True if update succeded, False otherwise
+    """
+    sd_obj = get_storage_domain_obj(storage_domain)
+    return bool(
+        util.syncAction(sd_obj, "updateovfstore", positive=True)
+    )

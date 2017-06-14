@@ -36,11 +36,12 @@ from rhevmtests.storage.fixtures import (
     create_storage_domain, skip_invalid_storage_type,
     create_vm, add_disk, init_vm_executor, start_vm, create_fs_on_disk,
     attach_disk, copy_template_disk, create_second_vm, extend_storage_domain,
+    remove_vms_pool,
 )
 from fixtures import (
     set_disk_params, init_domain_disk_param, attach_disk_to_second_vm,
     set_shared_disk_params, poweroff_vms, append_to_luns_to_resize,
-    create_second_lun, remove_vms_pool, remove_second_lun
+    create_second_lun, remove_second_lun
 )
 
 from rhevmtests.storage.fixtures import remove_vm  # noqa
