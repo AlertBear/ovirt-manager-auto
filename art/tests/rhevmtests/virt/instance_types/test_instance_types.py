@@ -26,6 +26,10 @@ class TestInstanceType(VirtTest):
 
     __test__ = True
 
+    @pytest.mark.usefixtures(remove_custom_instance_type.__name__)
+    @pytest.mark.instance_types_created(
+        instance_types=[config.INSTANCE_TYPE_NAME, config.NAME_AFTER_UPDATE]
+    )
     @polarion("RHEVM3-6487")
     def test_instance_type_sanity(self):
         """
@@ -353,6 +357,9 @@ class TestInstanceType(VirtTest):
     @pytest.mark.usefixtures(
         remove_test_templates.__name__, remove_test_vms.__name__,
         remove_custom_instance_type.__name__,
+    )
+    @pytest.mark.instance_types_created(
+        instance_types=[config.INSTANCE_TYPE_NAME]
     )
     @polarion("RHEVM3-15089")
     def test_create_vm_with_instance_type_and_template(self):

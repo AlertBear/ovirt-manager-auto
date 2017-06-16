@@ -45,11 +45,19 @@ def remove_custom_instance_type(request):
     """
     Removes the instance type that was created in the test
     """
+
+    marker = request.node.get_marker("instance_types_created")
+    instance_types = marker.kwargs.get("instance_types")
+
     def fin():
-        testflow.teardown(
-            "Removing instance type: %s", config.INSTANCE_TYPE_NAME
-        )
-        ll_instance_types.remove_instance_type(config.INSTANCE_TYPE_NAME)
+        for instance_type in instance_types:
+            if ll_instance_types.get_instance_type_object(instance_type):
+                testflow.teardown(
+                    "Removing instance type: %s", instance_type
+                )
+                ll_instance_types.remove_instance_type(
+                    instance_type)
+
     request.addfinalizer(fin)
 
 
