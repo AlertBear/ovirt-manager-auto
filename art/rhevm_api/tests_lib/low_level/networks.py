@@ -265,7 +265,7 @@ def _prepare_cluster_network_object(**kwargs):
     return net
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(error=False)
 def get_cluster_network(cluster, network):
     """
     Find a network by cluster (along with the network properties that are
@@ -282,9 +282,12 @@ def get_cluster_network(cluster, network):
         EntityNotFound: If network was not found
     """
     cluster_obj = CL_API.find(cluster)
-    return CL_API.getElemFromElemColl(
-        cluster_obj, network, "networks", "network"
-    )
+    try:
+        return CL_API.getElemFromElemColl(
+            cluster_obj, network, "networks", "network"
+        )
+    except apis_exceptions.EntityNotFound:
+        return None
 
 
 @ll.general.generate_logs()
@@ -355,8 +358,7 @@ def update_cluster_network(positive, cluster, network, **kwargs):
     """
     net = get_cluster_network(cluster, network)
     net_update = _prepare_cluster_network_object(**kwargs)
-    status = NET_API.update(net, net_update, positive)[1]
-    return status
+    return NET_API.update(net, net_update, positive)[1]
 
 
 @ll.general.generate_logs()
@@ -373,8 +375,7 @@ def remove_network_from_cluster(positive, network, cluster):
         bool: True if remove network succeeded, False otherwise.
     """
     net_obj = get_cluster_network(cluster=cluster, network=network)
-    status = NET_API.delete(net_obj, positive)
-    return status
+    return NET_API.delete(net_obj, positive)
 
 
 @ll.general.generate_logs()
@@ -390,8 +391,7 @@ def is_network_required(network, cluster):
         bool: True if network is required, False otherwise.
     """
     net_obj = get_cluster_network(cluster, network)
-    res = net_obj.get_required()
-    return res
+    return net_obj.get_required()
 
 
 @ll.general.generate_logs()
@@ -1244,7 +1244,7 @@ def get_management_network(cluster_name):
     return net_obj
 
 
-@ll.general.generate_logs(step=True)
+@ll.general.generate_logs(error=False)
 def check_network_usage(cluster_name, network, attrs):
     """
     Check if usages attributes exist for specific network
@@ -1259,6 +1259,9 @@ def check_network_usage(cluster_name, network, attrs):
         bool: If all attributes exist in network params, False otherwise
     """
     net_obj = get_cluster_network(cluster=cluster_name, network=network)
+    if not net_obj:
+        return False
+
     for attr in attrs:
         if attr not in net_obj.get_usages().get_usage():
             return False
@@ -1566,3 +1569,48 @@ def prepare_network_dns_object(dns_servers):
     name_servers.set_name_server(dns_servers)
     resolver_configuration.set_name_servers(name_servers)
     return resolver_configuration
+
+
+@ll.general.generate_logs(error=False)
+def is_gluster_network(network, cluster=None):
+    """
+    Check if network has gluster role
+
+    Args:
+        network (str): Network name
+        cluster (str): Cluster name
+
+    Returns:
+        bool: True if network has gluster role, False otherwise
+    """
+    return check_network_usage(
+        cluster_name=cluster, network=network, attrs=["gluster"]
+    )
+
+
+@ll.general.generate_logs()
+def get_network_cluster(network, datacenter=None):
+    """
+    Get the cluster object from network
+
+    Args:
+        network (str): Network name
+        datacenter (str): Datacenter name
+
+    Returns:
+        Cluster: Cluster object or None
+    """
+    net_obj = find_network(network=network, data_center=datacenter)
+    network_dc = ll.datacenters.get_data_center(
+        datacenter=datacenter or net_obj.data_center.id, key=(
+            "id" if not datacenter else "name"
+        )
+    )
+    clusters_and_datacenter_ids_from_clusters = [
+        (i, i.data_center.id) for i in ll.clusters.get_cluster_list()
+    ]
+    cluster = [
+        x[0] for x in clusters_and_datacenter_ids_from_clusters if
+        x[1] == network_dc.id
+    ]
+    return cluster[0] if cluster else None

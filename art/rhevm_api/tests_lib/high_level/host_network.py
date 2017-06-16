@@ -286,12 +286,13 @@ def setup_networks(host_name, **kwargs):
 
 
 @ll_general.generate_logs(step=True)
-def clean_host_interfaces(host_name):
+def clean_host_interfaces(host_name, remove_gluster=False):
     """
     Remove all networks beside management network from host_name
 
     Args:
         host_name (str): Host name
+        remove_gluster (bool): True to remove gluster network
 
     Returns:
         bool: True if success, otherwise False
@@ -312,6 +313,13 @@ def clean_host_interfaces(host_name):
         att_network_name = ll_general.get_object_name_by_id(
             ll_networks.NET_API, att.get_network().get_id()
         )
+
+        if not remove_gluster:
+            if ll_networks.is_gluster_network(
+                network=att_network_name, cluster=host_cl
+            ):
+                continue
+
         if att_network_name != mgmt_net_name:
             networks.append(att_network_name)
 

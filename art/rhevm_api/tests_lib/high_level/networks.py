@@ -225,7 +225,7 @@ def delete_dummy_interfaces(host):
 
 
 @ll_general.generate_logs(step=True)
-def remove_all_networks(datacenter=None, cluster=None):
+def remove_all_networks(datacenter=None, cluster=None, remove_gluster=False):
     """
     Remove all networks from datacenter or cluster or from entire setup
 
@@ -236,7 +236,8 @@ def remove_all_networks(datacenter=None, cluster=None):
 
     Args:
         datacenter (str): name of the datacenter.
-        cluster (str): name of the cluster.
+        cluster (str): name of the cluster
+        remove_gluster (bool): True to remove gluster network
 
     Returns:
         bool: True if removing networks succeeded, otherwise False
@@ -257,6 +258,15 @@ def remove_all_networks(datacenter=None, cluster=None):
         networks_list = ll_networks.get_all_networks()
 
     for net in networks_list:
+        if not remove_gluster:
+            if ll_networks.is_gluster_network(
+                network=net.name,
+                cluster=cluster or ll_networks.get_network_cluster(
+                    network=net.name, datacenter=datacenter
+                ).name
+            ):
+                continue
+
         if net.id not in mgmt_networks_ids:
             networks_to_remove.append(net.name)
 

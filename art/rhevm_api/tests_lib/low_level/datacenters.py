@@ -269,6 +269,7 @@ def checkSupportedVersions(name):
     return True
 
 
+@ll_general.generate_logs()
 def get_data_center(datacenter, key='name'):
     """
     Get data center object by key
@@ -281,8 +282,7 @@ def get_data_center(datacenter, key='name'):
         DataCenter: Datacenter object
     """
     logger.info("Get datacenter %s by %s", datacenter, key)
-    dc_obj = util.find(datacenter, attribute=key)
-    return dc_obj
+    return util.find(datacenter, attribute=key)
 
 
 def get_sd_datacenter(storage_domain_name):
