@@ -222,17 +222,17 @@ class TestTopologiesVm(NetworkTest):
         ],
         ids=[
             # VM tests
-            "Check connectivity: VLAN network over host NIC",
-            "Check connectivity: VLAN network over BOND mode 1",
+            "Check_connectivity:_VLAN_network_over_host_NIC",
+            "Check_connectivity:_VLAN_network_over_BOND_mode_1",
             # TODO: Enable when we have switch BOND mode 2 support
-            # "Check connectivity: bridge network over BOND mode 2",
-            "Check connectivity: bridge network over BOND mode 4",
+            # "Check_connectivity:_bridge_network_over_BOND_mode_2",
+            "Check_connectivity:_bridge_network_over_BOND_mode_4",
 
             # Non-VM tests
-            "Check connectivity: Non-VM network over BOND mode 0",
-            "Check connectivity: Non-VM network over BOND mode 3",
-            "Check connectivity: Non-VM network over BOND mode 5",
-            "Check connectivity: Non-VM network over BOND mode 6",
+            "Check_connectivity:_Non-VM_network_over_BOND_mode_0",
+            "Check_connectivity:_Non-VM_network_over_BOND_mode_3",
+            "Check_connectivity:_Non-VM_network_over_BOND_mode_5",
+            "Check_connectivity:_Non-VM_network_over_BOND_mode_6",
         ]
     )
     def test_check_vm_connectivity(

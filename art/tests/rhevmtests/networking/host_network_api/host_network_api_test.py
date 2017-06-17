@@ -91,18 +91,18 @@ class TestHostNetworkApi01(NetworkTest):
             polarion("RHEVM3-10473")([net_12, 12, non_vm_vlan_type, "sn"]),
         ],
         ids=[
-            "Attach VM network via host NIC",
-            "Attach VLAN network via host NIC",
-            "Attach Non-VM network via host NIC",
-            "Attach Non-VM VLAN network via host NIC",
-            "Attach VM network via host",
-            "Attach VLAN network via host",
-            "Attach Non-VM network via host ",
-            "Attach Non-VM VLAN network via host",
-            "Attach VM network via sn",
-            "Attach VLAN network via sn",
-            "Attach Non-VM network via sn",
-            "Attach Non-VM VLAN network via sn",
+            "Attach_VM_network_via_host_NIC",
+            "Attach_VLAN_network_via_host_NIC",
+            "Attach_Non-VM_network_via_host_NIC",
+            "Attach_Non-VM_VLAN_network_via_host_NIC",
+            "Attach_VM_network_via_host",
+            "Attach_VLAN_network_via_host",
+            "Attach_Non-VM_network_via_host_",
+            "Attach_Non-VM_VLAN_network_via_host",
+            "Attach_VM_network_via_sn",
+            "Attach_VLAN_network_via_sn",
+            "Attach_Non-VM_network_via_sn",
+            "Attach_Non-VM_VLAN_network_via_sn",
         ]
     )
     def test_attach_network_to_nic(self, network, nic, type_, via):
@@ -286,32 +286,32 @@ class TestHostNetworkApi02(NetworkTest):
             polarion("RHEVM3-19114")(sn_pre_non_vm_vlan),
         ],
         ids=[
-            "Attach VM network with IP (netmask) via host NIC",
-            "Attach VM network with IP (prefix) via host NIC",
-            "Attach VLAN network with IP (netmask) via host NIC",
-            "Attach VLAN network with IP (prefix) via host NIC",
-            "Attach Non-VM network with IP (netmask) via host NIC",
-            "Attach Non-VM network with IP (prefix) via host NIC",
-            "Attach Non-VM VLAN network with IP (netmask) via host NIC",
-            "Attach Non-VM VLAN network with IP (prefix) via host NIC",
+            "Attach_VM_network_with_IP_(netmask)_via_host_NIC",
+            "Attach_VM_network_with_IP_(prefix)_via_host_NIC",
+            "Attach_VLAN_network_with_IP_(netmask)_via_host_NIC",
+            "Attach_VLAN_network_with_IP_(prefix)_via_host_NIC",
+            "Attach_Non-VM_network_with_IP_(netmask)_via_host_NIC",
+            "Attach_Non-VM_network_with_IP_(prefix)_via_host_NIC",
+            "Attach_Non-VM_VLAN_network_with_IP_(netmask)_via_host_NIC",
+            "Attach_Non-VM_VLAN_network_with_IP_(prefix)_via_host_NIC",
 
-            "Attach VM network with IP (netmask) via host",
-            "Attach VM network with IP (prefix) via host",
-            "Attach VLAN network with IP (netmask) via host",
-            "Attach VLAN network with IP (prefix) via host",
-            "Attach Non-VM network with IP (netmask) via host",
-            "Attach Non-VM network with IP (prefix) via host",
-            "Attach Non-VM VLAN network with IP (netmask) via host",
-            "Attach Non-VM VLAN network with IP (prefix) via host",
+            "Attach_VM_network_with_IP_(netmask)_via_host",
+            "Attach_VM_network_with_IP_(prefix)_via_host",
+            "Attach_VLAN_network_with_IP_(netmask)_via_host",
+            "Attach_VLAN_network_with_IP_(prefix)_via_host",
+            "Attach_Non-VM_network_with_IP_(netmask)_via_host",
+            "Attach_Non-VM_network_with_IP_(prefix)_via_host",
+            "Attach_Non-VM_VLAN_network_with_IP_(netmask)_via_host",
+            "Attach_Non-VM_VLAN_network_with_IP_(prefix)_via_host",
 
-            "Attach VM network with IP (netmask) via sn",
-            "Attach VM network with IP (prefix) via sn",
-            "Attach VLAN network with IP (netmask) via sn",
-            "Attach VLAN network with IP (prefix) via sn",
-            "Attach Non-VM network with IP (netmask) via sn",
-            "Attach Non-VM network with IP (prefix) via sn",
-            "Attach Non-VM VLAN network with IP (netmask) via sn",
-            "Attach Non-VM VLAN network with IP (prefix) via sn",
+            "Attach_VM_network_with_IP_(netmask)_via_sn",
+            "Attach_VM_network_with_IP_(prefix)_via_sn",
+            "Attach_VLAN_network_with_IP_(netmask)_via_sn",
+            "Attach_VLAN_network_with_IP_(prefix)_via_sn",
+            "Attach_Non-VM_network_with_IP_(netmask)_via_sn",
+            "Attach_Non-VM_network_with_IP_(prefix)_via_sn",
+            "Attach_Non-VM_VLAN_network_with_IP_(netmask)_via_sn",
+            "Attach_Non-VM_VLAN_network_with_IP_(prefix)_via_sn",
         ]
     )
     def test_attach_network_with_ip_to_nic(
@@ -391,9 +391,9 @@ class TestHostNetworkApi03(NetworkTest):
             polarion("RHEVM3-11880")([net_3, bond_1, "sn"]),
         ],
         ids=[
-            "Attach VM network with custom properties via host NIC",
-            "Attach VM network with custom properties via host",
-            "Attach VM network with custom properties via sn",
+            "Attach_VM_network_with_custom_properties_via_host_NIC",
+            "Attach_VM_network_with_custom_properties_via_host",
+            "Attach_VM_network_with_custom_properties_via_sn",
         ]
     )
     def test_network_custom_properties_on_nic(self, network, nic, via):
@@ -471,9 +471,9 @@ class TestHostNetworkApi04(NetworkTest):
             polarion("RHEVM3-10513")([3, "sn"]),
         ],
         ids=[
-            "Attach VM network with via host NIC",
-            "Attach VM network with via host",
-            "Attach VM network with via sn",
+            "Attach_VM_network_with_via_host_NIC",
+            "Attach_VM_network_with_via_host",
+            "Attach_VM_network_with_via_sn",
         ]
     )
     def test_01_mtu_negative(self, nic, via):
@@ -500,9 +500,9 @@ class TestHostNetworkApi04(NetworkTest):
             polarion("RHEVM3-10514")([net_3, 3, "sn"]),
         ],
         ids=[
-            "Remove network from host via host NIC",
-            "Remove network from host via host",
-            "Remove network from host via sn",
+            "Remove_network_from_host_via_host_NIC",
+            "Remove_network_from_host_via_host",
+            "Remove_network_from_host_via_sn",
         ]
     )
     def test_02_remove_network_from_host(self, network, nic, via):
@@ -618,12 +618,12 @@ class TestHostNetworkApi05(NetworkTest):
             polarion("RHEVM3-19110")([sn_ip_pre, "sn"]),
         ],
         ids=[
-            "Update network to have IP (netmask) via host NIC",
-            "Update network to have IP (prefix) via host NIC",
-            "Update network to have IP (netmask) via host",
-            "Update network to have IP (prefix) via host",
-            "Update network to have IP (netmask) via sn",
-            "Update network to have IP (prefix) via sn",
+            "Update_network_to_have_IP_(netmask)_via_host_NIC",
+            "Update_network_to_have_IP_(prefix)_via_host_NIC",
+            "Update_network_to_have_IP_(netmask)_via_host",
+            "Update_network_to_have_IP_(prefix)_via_host",
+            "Update_network_to_have_IP_(netmask)_via_sn",
+            "Update_network_to_have_IP_(prefix)_via_sn",
         ]
     )
     def test_update_network_with_ip_nic(self, ip, via):
@@ -660,9 +660,9 @@ class TestHostNetworkApi05(NetworkTest):
             polarion("RHEVM3-10516")([net_7, bond_1, "sn"]),
         ],
         ids=[
-            "Attach network to BOND via host NIC",
-            "Attach network to BOND via host",
-            "Attach network to BOND via sn",
+            "Attach_network_to_BOND_via_host_NIC",
+            "Attach_network_to_BOND_via_host",
+            "Attach_network_to_BOND_via_sn",
         ]
     )
     def test_attach_network_on_bond_nic(self, network, nic, via):
@@ -684,9 +684,9 @@ class TestHostNetworkApi05(NetworkTest):
             polarion("RHEVM3-10517")([net_4, "sn"]),
         ],
         ids=[
-            "Remove VLAN network and Non-VM network via host NIC",
-            "Remove VLAN network and Non-VM network via host",
-            "Remove VLAN network and Non-VM network via host NIC"
+            "Remove_VLAN_network_and_Non-VM_network_via_host_NIC",
+            "Remove_VLAN_network_and_Non-VM_network_via_host",
+            "Remove_VLAN_network_and_Non-VM_network_via_host_NIC"
         ]
     )
     def test_remove_networks_from_bond(self, network, via):
@@ -899,14 +899,14 @@ class TestHostNetworkApi07(NetworkTest):
             polarion("RHEVM3-14018")([net_vm_sn_bond, bond_4, "sn"]),
         ],
         ids=[
-            "Attach VLAN network to host NIC via host",
-            "Attach VM network to host NIC via host",
-            "Attach VLAN network to host NIC via sn",
-            "Attach VM network to host NIC via sn",
-            "Attach VLAN network to bond via host",
-            "Attach VM network to bond via host",
-            "Attach VLAN network to bond via sn",
-            "Attach VM network to bond via host",
+            "Attach_VLAN_network_to_host_NIC_via_host",
+            "Attach_VM_network_to_host_NIC_via_host",
+            "Attach_VLAN_network_to_host_NIC_via_sn",
+            "Attach_VM_network_to_host_NIC_via_sn",
+            "Attach_VLAN_network_to_bond_via_host",
+            "Attach_VM_network_to_bond_via_host",
+            "Attach_VLAN_network_to_bond_via_sn",
+            "Attach_VM_network_to_bond_via_host",
         ]
     )
     def test_attach_network_to_nic_mixed(self, network, nic, via):

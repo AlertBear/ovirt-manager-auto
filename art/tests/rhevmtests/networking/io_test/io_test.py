@@ -143,14 +143,14 @@ class TestIOTest01(NetworkTest):
             polarion("RHEVM3-11877")([test_8_valid_dash_name, True]),
         ],
         ids=[
-            "Create valid names",
-            "Try to create invalid names",
-            "Create valid MTU",
-            "Try to create invalid MTU",
-            "Try to create invalid usages",
-            "Create valid VLANs",
-            "Try to invalid VLANs",
-            "Create valid dash names"
+            "Create_valid_names",
+            "Try_to_create_invalid_names",
+            "Create_valid_MTU",
+            "Try_to_create_invalid_MTU",
+            "Try_to_create_invalid_usages",
+            "Create_valid_VLANs",
+            "Try_to_invalid_VLANs",
+            "Create_valid_dash_names"
 
         ]
 
@@ -248,12 +248,12 @@ class TestIOTest02(NetworkTest):
             polarion("RHEVM3-3958")([net_6, test_6_invalid_gateway]),
         ],
         ids=[
-            "invalid IPs",
-            "invalid netmask",
-            "netmask without IP",
-            "IP without netmask",
-            "valid netmask",
-            "invalid gateway"
+            "invalid_IPs",
+            "invalid_netmask",
+            "netmask_without_IP",
+            "IP_without_netmask",
+            "valid_netmask",
+            "invalid_gateway"
         ]
     )
     def test_check_ip(self, network, test_params):
@@ -355,11 +355,11 @@ class TestIOTest03(NetworkTest):
             polarion("RHEVM3-4372")([test_5_edit_valid_usages, True]),
         ],
         ids=[
-            "Edit valid name",
-            "Try to edit invalid name",
-            "Edit valid VLAN",
-            "Try to Edit invalid VLAN",
-            "Edit valid usages"
+            "Edit_valid_name",
+            "Try_to_edit_invalid_name",
+            "Edit_valid_VLAN",
+            "Try_to_Edit_invalid_VLAN",
+            "Edit_valid_usages"
         ]
     )
     def test_update_network(self, test_params, positive):
@@ -424,10 +424,10 @@ class TestIOTest04(NetworkTest):
             polarion("RHEVM-16953")([net_4, net_4_labels, None, False]),
         ],
         ids=[
-            "Create label with length of 50 chars",
-            "Assign many labels to interface (10)",
-            "Try to create invalid label names",
-            "Try to assign many labels on network"
+            "Create_label_with_length_of_50_chars",
+            "Assign_many_labels_to_interface_(10)",
+            "Try_to_create_invalid_label_names",
+            "Try_to_assign_many_labels_on_network"
         ]
     )
     def test_labels(self, network, labels, nic, positive):

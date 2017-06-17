@@ -100,8 +100,8 @@ class TestPersistenceSetupNetworks01(NetworkTest):
             polarion("RHEVM3-19134")([bond_net, bond, bond_vlan])
         ],
         ids=[
-            "Check persistence network on host NIC",
-            "Check persistence network on host BOND"
+            "Check_persistence_network_on_host_NIC",
+            "Check_persistence_network_on_host_BOND"
         ]
     )
     def test_host_persistence_networks(self, network, nic, vlan):

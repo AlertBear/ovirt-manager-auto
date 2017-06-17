@@ -186,8 +186,8 @@ class TestDefaultRoute03(NetworkTest):
             polarion("RHEVM-21378")([net_2, "static"]),
         ],
         ids=[
-            "With DHCP",
-            "With static IP",
+            "With_DHCP",
+            "With_static_IP",
         ]
     )
     @bz({"1443292": {}})

@@ -77,8 +77,8 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
             polarion("RHEVM3-9824")([on_bond, bond_1]),
         ],
         ids=[
-            "Attach multiple VLANs to host NIC",
-            "Attach multiple VLANs to BOND"
+            "Attach_multiple_VLANs_to_host_NIC",
+            "Attach_multiple_VLANs_to_BOND"
         ]
     )
     def test_multiple_vlans_networks_on_nic(self, networks, nic):
@@ -396,8 +396,8 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
             polarion("RHEVM3-14020")([on_bond, bond_1]),
         ],
         ids=[
-            "Attach VLAN network and VM network to same host NIC",
-            "Attach VLAN network and VM network to same BOND"
+            "Attach_VLAN_network_and_VM_network_to_same_host_NIC",
+            "Attach_VLAN_network_and_VM_network_to_same_BOND"
         ]
     )
     @polarion("RHEVM3-14017")
@@ -467,10 +467,10 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
             polarion("RHEVM3-17562")([net_4, bond_1, ip_v4_4, ip_v6_4]),
         ],
         ids=[
-            "Attach VM network with static ipv4 and static ipv6 to host NIC",
-            "Attach Non-VM network with static ipv4 and static ipv6 to NIC",
-            "Attach VLAN network with static ipv4 and static ipv6 to host NIC",
-            "Attach network with static ipv4 and static ipv6 to bond"
+            "Attach_VM_network_with_static_ipv4_and_static_ipv6_to_host_NIC",
+            "Attach_Non-VM_network_with_static_ipv4_and_static_ipv6_to_NIC",
+            "Attach_VLAN_network_with_static_ipv4_and_static_ipv6_to_host_NIC",
+            "Attach_network_with_static_ipv4_and_static_ipv6_to_bond"
         ]
     )
     def test_attach_network_with_ipv4_and_ipv6_to_nic(

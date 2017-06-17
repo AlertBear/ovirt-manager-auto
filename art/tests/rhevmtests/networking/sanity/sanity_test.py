@@ -389,16 +389,16 @@ class TestSanity04(TestSanityCaseBase):
         ],
         ids=[
             # MTU cases
-            "MTU VM network",
-            "MTU Non-VM network",
-            "MTU VLAN",
-            "MTU BOND",
+            "MTU_VM_network",
+            "MTU_Non-VM_network",
+            "MTU_VLAN",
+            "MTU_BOND",
 
             # Non-VM cases
-            "Non-VM network",
-            "Non-VM VLAN",
-            "Non-VM BOND",
-            "Non-VM VLAN BOND"
+            "Non-VM_network",
+            "Non-VM_VLAN",
+            "Non-VM_BOND",
+            "Non-VM_VLAN_BOND"
         ]
     )
     def test_attach_network(self, network, nic):
@@ -463,8 +463,8 @@ class TestSanity05(TestSanityCaseBase):
             polarion("RHEVM3-13894")(host_bond_label_params)
         ],
         ids=[
-            "On host NIC",
-            "On BOND"
+            "On_host_NIC",
+            "On_BOND"
         ]
     )
     def test_attach_label(self, networks, label, nic):
@@ -659,8 +659,8 @@ class TestSanity08(TestSanityCaseBase):
             polarion("RHEVM3-14513")(default_mgmt_net_params)
         ],
         ids=[
-            "With custom management network",
-            "With default management network"
+            "With_custom_management_network",
+            "With_default_management_network"
         ]
     )
     def test_create_dc_cluster(self, cluster, network):
@@ -730,9 +730,9 @@ class TestSanity09(TestSanityCaseBase):
             polarion("RHEVM3-14517")(bridge_params),
         ],
         ids=[
-            "Update network MTU",
-            "Update network VLAN ID",
-            "Update network to Non-VM"
+            "Update_network_MTU",
+            "Update_network_VLAN_ID",
+            "Update_network_to_Non-VM"
         ]
     )
     def test_update_networks(self, network, update_params, nic):

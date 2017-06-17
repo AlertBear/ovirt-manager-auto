@@ -307,19 +307,19 @@ class TestMigrationNetwork(NetworkTest):
             polarion("RHEVM3-21572")(network_ipv6_params)
         ],
         ids=[
-            "Test Migration Network with: non-operational host",
-            "Test Migration Network with: dedicated VLAN network",
-            "Test Migration Network with: non-VM network",
-            "Test Migration Network with: display and migration network",
-            "Test Migration Network with: network used by VM",
-            "Test Migration Network with: network on bond",
-            "Test Migration Network with: non-VM network on bond",
-            "Test Migration Network with: VLAN network on bond",
-            "Test Migration Network with: dedicated network as display "
+            "Test_Migration_Network_with:_non-operational_host",
+            "Test_Migration_Network_with:_dedicated_VLAN_network",
+            "Test_Migration_Network_with:_non-VM_network",
+            "Test_Migration_Network_with:_display_and_migration_network",
+            "Test_Migration_Network_with:_network_used_by_VM",
+            "Test_Migration_Network_with:_network_on_bond",
+            "Test_Migration_Network_with:_non-VM_network_on_bond",
+            "Test_Migration_Network_with:_VLAN_network_on_bond",
+            "Test_Migration_Network_with:_dedicated_network_as_display_"
             "network",
-            "Test Migration Network with: migration network on host without "
-            "migration network",
-            "Test Migration Network with: IPv6 address"
+            "Test_Migration_Network_with:_migration_network_on_host_without_"
+            "migration_network",
+            "Test_Migration_Network_with:_IPv6_address"
         ]
     )
     def test_migration_network(

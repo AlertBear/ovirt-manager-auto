@@ -363,26 +363,26 @@ class TestHostNetworkApiSync01(NetworkTest):
         ],
         ids=[
             # Sync over NIC
-            "Change VLAN on NIC",
-            "Remove VLAN from NIC",
-            "Add VLAN to NIC",
-            "Change MTU on NIC",
-            "Remove MTU from NIC",
-            "Set MTU on NIC",
-            "Change VM to non-VM on NIC",
-            "Change Non-VM to VM on NIC",
-            "Mixed: Change VLAN, MTU and VM on NIC",
+            "Change_VLAN_on_NIC",
+            "Remove_VLAN_from_NIC",
+            "Add_VLAN_to_NIC",
+            "Change_MTU_on_NIC",
+            "Remove_MTU_from_NIC",
+            "Set_MTU_on_NIC",
+            "Change_VM_to_non-VM_on_NIC",
+            "Change_Non-VM_to_VM_on_NIC",
+            "Mixed:_Change_VLAN_MTU_and_VM_on_NIC",
 
             # Sync over BOND
-            "Change VLAN on BOND",
-            "Remove VLAN from BOND",
-            "Add VLAN to BOND",
-            "Change MTU on BOND",
-            "Remove MTU from BOND",
-            "Set MTU on BOND",
-            "Change VM to non-VM on BOND",
-            "Change Non-VM to VM on BOND",
-            "Mixed: Change VLAN, MTU and VM on BOND",
+            "Change_VLAN_on_BOND",
+            "Remove_VLAN_from_BOND",
+            "Add_VLAN_to_BOND",
+            "Change_MTU_on_BOND",
+            "Remove_MTU_from_BOND",
+            "Set_MTU_on_BOND",
+            "Change_VM_to_non-VM_on_BOND",
+            "Change_Non-VM_to_VM_on_BOND",
+            "Mixed:_Change_VLAN_MTU_and_VM_on_BOND",
         ]
     )
     def test_vlan_mtu_bridge_unsync_networks(self, compare_dicts):
@@ -679,18 +679,18 @@ class TestHostNetworkApiSync02(NetworkTest):
         ],
         ids=[
             # Sync over NIC
-            "Change IP on NIC",
-            "Change netmask on NIC",
-            "Change prefix on NIC",
-            "Add IP to NIC",
-            "Remove IP from NIC",
+            "Change_IP_on_NIC",
+            "Change_netmask_on_NIC",
+            "Change_prefix_on_NIC",
+            "Add_IP_to_NIC",
+            "Remove_IP_from_NIC",
 
             # Sync over BOND
-            "Change IP on BOND",
-            "Change netmask on BOND",
-            "Change prefix on BOND",
-            "Add IP to BOND",
-            "Remove IP from BOND",
+            "Change_IP_on_BOND",
+            "Change_netmask_on_BOND",
+            "Change_prefix_on_BOND",
+            "Add_IP_to_BOND",
+            "Remove_IP_from_BOND",
         ]
     )
     def test_unsync_network_ip_mask_prefix_proto(self, compare_dict):
@@ -849,14 +849,14 @@ class TestHostNetworkApiSync03(NetworkTest):
         ],
         ids=[
             # Sync over NIC
-            "Change QoS on NIC",
-            "Add QoS to NIC",
-            "Remove QoS from NIC",
+            "Change_QoS_on_NIC",
+            "Add_QoS_to_NIC",
+            "Remove_QoS_from_NIC",
 
             # Sync over BOND
-            "Change QoS on BOND",
-            "Add QoS to BOND",
-            "Remove QoS from BOND",
+            "Change_QoS_on_BOND",
+            "Add_QoS_to_BOND",
+            "Remove_QoS_from_BOND",
         ]
     )
     def test_unsync_network_qos(self, compare_dicts):

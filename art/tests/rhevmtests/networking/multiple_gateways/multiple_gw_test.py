@@ -89,10 +89,10 @@ class TestGatewaysCase01(NetworkTest):
             polarion("RHEVM3-3966")(zero_net_params),
         ],
         ids=[
-            "VLAN network with gateway",
-            "Bridgeless network with gateway",
-            "Display network with gateway",
-            "VM network with gateway 0.0.0.0",
+            "VLAN_network_with_gateway",
+            "Bridgeless_network_with_gateway",
+            "Display_network_with_gateway",
+            "VM_network_with_gateway_0.0.0.0",
         ]
     )
     def test_check_ip_rule(self, network, nic, ip, gateway):
@@ -183,8 +183,8 @@ class TestGatewaysCase02(NetworkTest):
             polarion("RHEVM3-3964")(remove_slave_params),
         ],
         ids=[
-            "Add slave to BOND",
-            "Remove slave from BOND"
+            "Add_slave_to_BOND",
+            "Remove_slave_from_BOND"
         ]
     )
     def test_update_bond_slaves(self, bond, slave):

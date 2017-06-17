@@ -73,10 +73,10 @@ class TestCumulativeNetworkUsageVmStatisticsCase01(NetworkTest):
             polarion("RHEVM3-13512")(rx_tx_conf.UPDATE_NIC.get("case_vm_4")),
         ],
         ids=[
-            "change vNIC network",
-            "change vNIC to empty network",
-            "hot unplug vNIC",
-            "hot plug vNIC"
+            "change_vNIC_network",
+            "change_vNIC_to_empty_network",
+            "hot_unplug_vNIC",
+            "hot_plug_vNIC"
         ]
     )
     def test_update_nic(self, update_nic_dict):

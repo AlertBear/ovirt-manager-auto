@@ -89,9 +89,9 @@ class TestLACPBond(NetworkTest):
             polarion("RHEVM-19182")(bz({"1418209": {}})(invalid_mixed))
         ],
         ids=[
-            "valid LACP bond",
-            "invalid LACP bond",
-            "invalid mixed LACP bond"
+            "valid_LACP_bond",
+            "invalid_LACP_bond",
+            "invalid_mixed_LACP_bond"
         ]
     )
     def test_bond_mode_4(self, host_index, bond_name, check_valid):

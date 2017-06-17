@@ -613,56 +613,56 @@ class TestMultiHostNetworkProperties(NetworkTest):
         ],
         ids=[
             # Tests on networks attached to host
-            "Update non-VM property on network attached to host",
-            "Update VM property on network attached to host",
-            "Update VLAN 2 property on network attached to host",
-            "Update VLAN 3 property on network attached to host",
-            "Remove VLAN from network attached to host",
-            "Update MTU 9000 property on network attached to host",
-            "Update MTU 1500 property on network attached to host",
-            "Try to rename network that attached to host",
+            "Update_non-VM_property_on_network_attached_to_host",
+            "Update_VM_property_on_network_attached_to_host",
+            "Update_VLAN_2_property_on_network_attached_to_host",
+            "Update_VLAN_3_property_on_network_attached_to_host",
+            "Remove_VLAN_from_network_attached_to_host",
+            "Update_MTU_9000_property_on_network_attached_to_host",
+            "Update_MTU_1500_property_on_network_attached_to_host",
+            "Try_to_rename_network_that_attached_to_host",
 
             # Tests on networks attached to running VM
-            "Update MTU 9000 property on network attached to running VM",
-            "Update VLAN property on network attached to running VM",
+            "Update_MTU_9000_property_on_network_attached_to_running_VM",
+            "Update_VLAN_property_on_network_attached_to_running_VM",
             (
-                "Try to update VM property on network used by running VM "
-                "to be non-VM"
+                "Try_to_update_VM_property_on_network_used_by_running_VM_"
+                "to_be_non-VM"
             ),
 
             # Tests on networks attached to non-running VM
-            "Update MTU property on network attached to non-running VM",
-            "Update VLAN property on network attached to non-running VM",
+            "Update_MTU_property_on_network_attached_to_non-running_VM",
+            "Update_VLAN_property_on_network_attached_to_non-running_VM",
             (
-                "Try to update VM property on network used by non-running VM "
-                "to be non-VM"
+                "Try_to_update_VM_property_on_network_used_by_non-running_VM_"
+                "to_be_non-VM"
             ),
-            "Try to rename network on non-running VM",
+            "Try_to_rename_network_on_non-running_VM",
 
             # Tests on networks attached to template
             (
-                "Try to update VM property on network used by template to be"
-                " non-VM network"
+                "Try_to_update_VM_property_on_network_used_by_template_to_be"
+                "_non-VM_network"
             ),
-            "Update MTU property on network used by template",
-            "Update VLAN property on network used by template",
-            "Try to rename network used by template",
+            "Update_MTU_property_on_network_used_by_template",
+            "Update_VLAN_property_on_network_used_by_template",
+            "Try_to_rename_network_used_by_template",
 
             # Tests on networks attached on multiple hosts
-            "Update MTU and VLAN properties on network used by two hosts",
+            "Update_MTU_and_VLAN_properties_on_network_used_by_two_hosts",
             (
-               "Update MTU and VLAN properties on network used by two hosts, "
-               "but on different clusters"
+               "Update_MTU_and_VLAN_properties_on_network_used_by_two_hosts_"
+               "but_on_different_clusters"
             ),
 
             # Tests on networks attached to bond
-            "Update non-VM property on network used by bond",
-            "Update VM property on network used by bond",
-            "Update VLAN 9 property on network used by bond",
-            "Update VLAN 10 property on network used by bond",
-            "Update MTU 9000 property on network used by bond",
-            "Update MTU 1500 property on network used by bond",
-            "Remove VLAN property from network attached to bond"
+            "Update_non-VM_property_on_network_used_by_bond",
+            "Update_VM_property_on_network_used_by_bond",
+            "Update_VLAN_9_property_on_network_used_by_bond",
+            "Update_VLAN_10_property_on_network_used_by_bond",
+            "Update_MTU_9000_property_on_network_used_by_bond",
+            "Update_MTU_1500_property_on_network_used_by_bond",
+            "Remove_VLAN_property_from_network_attached_to_bond"
         ]
     )
     def test_update_network(self, net, params, positive):

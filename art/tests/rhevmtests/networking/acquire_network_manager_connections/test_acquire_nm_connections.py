@@ -96,9 +96,9 @@ class TestAcquireNmConnections(NetworkTest):
             polarion("RHEVM-19394")(vlan_param),
         ],
         ids=[
-            "Acquire flat connection from NetworkManager",
-            "Acquire BOND connection from NetworkManager",
-            "Acquire VLAN connection from NetworkManager",
+            "Acquire_flat_connection_from_NetworkManager",
+            "Acquire_BOND_connection_from_NetworkManager",
+            "Acquire_VLAN_connection_from_NetworkManager",
         ]
     )
     @bz({"1426225": {}})
