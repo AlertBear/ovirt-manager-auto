@@ -85,7 +85,7 @@ def _prepare_network_object(**kwargs):
     if data_center:
         net.set_data_center(DC_API.find(data_center))
 
-    if vlan_id:
+    if "vlan_id" in kwargs:
         net.set_vlan(apis_utils.data_st.Vlan(id=vlan_id))
 
     if usages is not None:
