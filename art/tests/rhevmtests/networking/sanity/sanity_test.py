@@ -725,7 +725,7 @@ class TestSanity09(TestSanityCaseBase):
     @pytest.mark.parametrize(
         ("network", "update_params", "nic"),
         [
-            polarion("RHEVM3-14515")(mtu_params),
+            polarion("RHEVM3-14515")(bz({"1460687": {}})(mtu_params)),
             polarion("RHEVM3-14516")(vlan_params),
             polarion("RHEVM3-14517")(bridge_params),
         ],
