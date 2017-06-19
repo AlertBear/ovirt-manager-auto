@@ -171,20 +171,21 @@ class APIUtil(object):
             add_params['current'] = current
         return add_params
 
-    def makeAction(self, async, expiry, **params):
+    def makeAction(self, async, action_expiry, **params):
+        # FIXME: This async parametr will not be friend with py3.5
         '''
         Description: build action (post body for actions urls)
         Author: edolinin
         Parameters:
            * async - type of action (synchronic or not)
-           * expiry - action axpiration time
+           * action_expiry - action axpiration timeout
         Return: action
         '''
 
         action = data_st.Action()
         action.async = str(async).lower()
         action.grace_period = data_st.GracePeriod()
-        action.grace_period.expiry = expiry
+        action.grace_period.expiry = action_expiry
         action.grace_period.absolute = 'false'
         for p in params:
             setattr(action, p, params[p])
