@@ -9,7 +9,11 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.virt.helper as helper
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.reg_vms.fixtures import (
     test_snapshot_and_import_export_fixture
 )
@@ -29,7 +33,7 @@ class VmSnapshots(VirtTest):
         helper.get_storage_domains()
     )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-10089")
     @pytest.mark.usefixtures(test_snapshot_and_import_export_fixture.__name__)
     def test_basic_vm_snapshots(self):
@@ -80,7 +84,7 @@ class VmSnapshots(VirtTest):
                 timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
             )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12581")
     @pytest.mark.usefixtures(test_snapshot_and_import_export_fixture.__name__)
     def test_basic_vm_snapshots_with_memory(self):

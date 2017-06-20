@@ -8,7 +8,11 @@ Compute/4_1_VIRT_virtio-scsi_default_interface
 """
 import pytest
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    VirtTest,
+    testflow,
+    tier2,
+)
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     templates as ll_templates,
@@ -20,7 +24,7 @@ from fixtures import (
 from rhevmtests.virt import config  # flake8:  noqa
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(create_vm_for_virtio_scsi.__name__)
 class TestVirtioScsiDefaultInterface(VirtTest):
     """

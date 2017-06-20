@@ -12,7 +12,10 @@ from art.rhevm_api.tests_lib.low_level import (
     mla, networks, templates, vms, users
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow
 
 import common
 import config
@@ -51,7 +54,7 @@ def ignore_all_exceptions(method, **kwargs):
         logger.warning(err)
 
 
-@attr(tier=2)
+@tier2
 class NetworkingNegative(common.BaseTestCase):
     # Network is not supported in CLI
     apis = set(['rest', 'sdk', 'java'])

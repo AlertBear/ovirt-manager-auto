@@ -9,14 +9,18 @@ import pytest
 
 import helper
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import (
+    NetworkTest,
+    testflow,
+    tier2,
+)
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture,
     clean_host_interfaces  # flake8: noqa
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestActiveBondSlaveNic(NetworkTest):
     """

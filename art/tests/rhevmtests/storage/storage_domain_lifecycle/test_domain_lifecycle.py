@@ -26,7 +26,12 @@ from rhevmtests.storage.fixtures import (
 from art.rhevm_api.utils import iptables
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest as TestCase
 
 from rhevmtests.storage import helpers as storage_helpers
 
@@ -67,7 +72,7 @@ class TestCase11598(BaseTestCase):
     polarion_test_case = '11598'
 
     @polarion("RHEVM3-11598")
-    @attr(tier=4)
+    @tier4
     def test_disconnect_engine_from_host(self):
         """
         Block connection from one engine to host.
@@ -100,7 +105,7 @@ class TestCase11784(TestCase):
     polarion_test_case = '11784'
 
     @polarion("RHEVM3-11784")
-    @attr(tier=3)
+    @tier3
     def test_add_another_storage_domain_test(self):
         """
         Sets up storage parameters, creates storage domain and check that both
@@ -146,7 +151,7 @@ class TestUpgrade(TestCase):
     polarion_test_case = '11743'
 
     @polarion("RHEVM3-11743")
-    @attr(tier=2)
+    @tier2
     def test_data_center_upgrade(self):
         """
         Upgarde a DC with mixed types storage domains and a VM with disk on

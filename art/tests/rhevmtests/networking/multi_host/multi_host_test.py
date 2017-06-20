@@ -15,7 +15,10 @@ import config as multi_host_conf
 import helper as multi_host_helper
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
     add_vnics_to_vms, add_vnic_to_template, move_host_to_cluster,
     add_network_to_cluster
@@ -54,7 +57,7 @@ def multi_host_prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     create_clusters.__name__,

@@ -27,7 +27,12 @@ from art.rhevm_api.utils.test_utils import (
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier3,
+    tier4,
+)
 from art.unittest_lib.common import StorageTest, testflow
 from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 from art.rhevm_api.utils import test_utils
@@ -140,7 +145,7 @@ class TestCase6004(AllPermutationsDisks):
     __test__ = False
     polarion_test_case = '6004'
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-6004")
     def test_vms_live_migration(self):
         """
@@ -171,7 +176,7 @@ class TestCase5990(BaseTestCase):
     __test__ = False
     polarion_test_case = '5990'
 
-    @attr(tier=3)
+    @tier3
     @polarion("RHEVM3-5990")
     def test_vms_live_migration(self):
         """
@@ -212,7 +217,7 @@ class BaseTestCase5994(BaseTestCase):
 class TestCase5994_wait_for_lunch(BaseTestCase5994):
 
     @polarion("RHEVM3-5994")
-    @attr(tier=2)
+    @tier2
     def test_lsm_during_waiting_for_launch_state(self):
         """
         Actions:
@@ -233,7 +238,7 @@ class TestCase5994_wait_for_lunch(BaseTestCase5994):
 class TestCase5994_powering_up(BaseTestCase5994):
 
     @polarion("RHEVM3-5994")
-    @attr(tier=2)
+    @tier2
     def test_lsm_during_powering_up_state(self):
         """
         Actions:
@@ -254,7 +259,7 @@ class TestCase5994_powering_up(BaseTestCase5994):
 class TestCase5994_powering_off(BaseTestCase5994):
 
     @polarion("RHEVM3-5994")
-    @attr(tier=2)
+    @tier2
     def test_lsm_during_powering_off_state(self):
         """
         Actions:
@@ -295,7 +300,7 @@ class TestCase5993(BaseTestCase):
     vms_to_wait = list()
 
     @polarion("RHEVM3-5993")
-    @attr(tier=2)
+    @tier2
     def test_thin_provision_copy_template_on_both_domains(self):
         """
         Template is copied to both domains:
@@ -336,7 +341,7 @@ class TestCase5992(BaseTestCase):
     polarion_test_case = '5992'
 
     @polarion("RHEVM3-5992")
-    @attr(tier=3)
+    @tier3
     def test_snapshot(self):
         """
         Tests live migrating VM containing snapshot
@@ -374,7 +379,7 @@ class TestCase5991(BaseTestCase):
     shareable = True
 
     @polarion("RHEVM3-5991")
-    @attr(tier=2)
+    @tier2
     def test_lsm_with_shared_disk(self):
         """
         Create and run several VM's with the same shared disk
@@ -432,7 +437,7 @@ class TestCase5989(BaseTestCase):
         )
 
     @polarion("RHEVM3-5989")
-    @attr(tier=3)
+    @tier3
     def test_lsm_while_suspended_state(self):
         """
         2) Suspended state
@@ -480,7 +485,7 @@ class BaseTestCase5988(AllPermutationsDisks):
 class TestCase5988_before_snapshot(BaseTestCase5988):
 
     @polarion("RHEVM3-5988")
-    @attr(tier=3)
+    @tier3
     def test_lsm_before_snapshot(self):
         """
         1) Move -> create snapshot
@@ -509,7 +514,7 @@ class TestCase5988_before_snapshot(BaseTestCase5988):
 class TestCase5988_after_snapshot(BaseTestCase5988):
 
     @polarion("RHEVM3-5988")
-    @attr(tier=3)
+    @tier3
     def test_lsm_after_snapshot(self):
         """
         2) Create snapshot -> move
@@ -538,7 +543,7 @@ class TestCase5988_after_snapshot(BaseTestCase5988):
 class TestCase5988_while_snapshot(BaseTestCase5988):
 
     @polarion("RHEVM3-5988")
-    @attr(tier=3)
+    @tier3
     def test_lsm_while_snapshot(self):
         """
         3) Move + create snapshots
@@ -590,7 +595,7 @@ class TestCase5986(BaseTestCase):
     wipe_after_delete = True
 
     @polarion("RHEVM3-5986")
-    @attr(tier=2)
+    @tier2
     def test_vms_live_migration(self):
         """
         Actions:
@@ -660,7 +665,7 @@ class TestCase5995(AllPermutationsDisks):
             ll_vms.stop_vms_safely([self.vm_name])
 
     @polarion("RHEVM3-5995")
-    @attr(tier=2)
+    @tier2
     def test_lsm_with_image_on_target(self):
         """
         Move disk images to a domain that already has one of the images on it
@@ -737,7 +742,7 @@ class BaseTestCase5996(BaseTestCase):
 class TestCase5996_inactive_disk(BaseTestCase5996):
 
     @polarion("RHEVM3-5996")
-    @attr(tier=3)
+    @tier3
     def test_inactive_disk(self):
         """
         Tests storage live migration with one disk in inactive status
@@ -748,7 +753,7 @@ class TestCase5996_inactive_disk(BaseTestCase5996):
 class TestCase5996_active_disk(BaseTestCase5996):
 
     @polarion("RHEVM3-5996")
-    @attr(tier=3)
+    @tier3
     def test_active_disk(self):
         """
         Tests storage live migration with floating disk in active status
@@ -813,7 +818,7 @@ class BaseTestCase6003(BaseTestCase):
 class TestCase6003_active_disk(BaseTestCase6003):
 
     @polarion("RHEVM3-6003")
-    @attr(tier=3)
+    @tier3
     def test_attach_active_disk_during_lsm(self):
         """
         Migrate VM's images -> try to attach a disk during migration
@@ -825,7 +830,7 @@ class TestCase6003_active_disk(BaseTestCase6003):
 class TestCase6003_inactive_disk(BaseTestCase6003):
 
     @polarion("RHEVM3-5980")
-    @attr(tier=3)
+    @tier3
     def test_attach_inactive_disk_during_lsm(self):
         """
         Actions:
@@ -855,7 +860,7 @@ class TestCase6001(BaseTestCase):
     polarion_test_case = '6001'
 
     @polarion("RHEVM3-6001")
-    @attr(tier=2)
+    @tier2
     def test_lsm_to_maintenance_domain(self):
         """
         Try to migrate to a domain in maintenance
@@ -889,7 +894,7 @@ class TestCase5972(BaseTestCase):
     disk_count = 3
 
     @polarion("RHEVM3-5972")
-    @attr(tier=2)
+    @tier2
     def test_live_migration_with_multiple_disks(self):
         """
         Actions:
@@ -928,7 +933,7 @@ class TestCase5970(BaseTestCase):
     wipe_after_delete = True
 
     @polarion("RHEVM3-5970")
-    @attr(tier=3)
+    @tier3
     def test_live_migration_wipe_after_delete(self):
         """
         Actions:
@@ -1001,7 +1006,7 @@ class TestCase5968(AllPermutationsDisks):
     polarion_test_case = '5968'
 
     @polarion("RHEVM3-5968")
-    @attr(tier=2)
+    @tier2
     def test_live_migration_auto_shrink(self):
         """
         Actions:
@@ -1062,7 +1067,7 @@ class TestCase5967(AllPermutationsDisks):
     polarion_test_case = '5967'
 
     @polarion("RHEVM3-5967")
-    @attr(tier=3)
+    @tier3
     def test_live_migration_auto_shrink(self):
         """
         Actions:
@@ -1139,7 +1144,7 @@ class TestCase5979(BaseTestCase):
     active = False
 
     @polarion("RHEVM3-5979")
-    @attr(tier=3)
+    @tier3
     def test_offline_migration(self):
         """
         Actions:
@@ -1191,7 +1196,7 @@ class TestCase5976(BaseTestCase):
     polarion_test_case = '5976'
 
     @polarion("RHEVM3-5976")
-    @attr(tier=3)
+    @tier3
     def test_deactivate_disk_during_lsm(self):
         """
         Actions:
@@ -1261,7 +1266,7 @@ class TestCase5977_vm_migration(BaseTestCase5977):
     LSM during VM migration
     """
     @polarion("RHEVM3-5977")
-    @attr(tier=3)
+    @tier3
     def test_LSM_during_vm_migration(self):
         """
         Actions:
@@ -1303,7 +1308,7 @@ class TestCase5977_snapshot_creation(BaseTestCase5977):
     """
 
     @polarion("RHEVM3-5977")
-    @attr(tier=3)
+    @tier3
     def test_migrate_vm_during_snap_creation_of_LSM(self):
         """
         Actions:
@@ -1327,7 +1332,7 @@ class TestCase5977_after_lsm(BaseTestCase5977):
     """
 
     @polarion("RHEVM3-5977")
-    @attr(tier=3)
+    @tier3
     def test_migrate_vm_after_LSM(self):
         """
         Actions:
@@ -1396,7 +1401,7 @@ class TestCase5975_src_domain(BaseTestCase5975):
     """
 
     @polarion("RHEVM3-5975")
-    @attr(tier=2)
+    @tier2
     def test_extend_src_domain_during_LSM(self):
         """
         Actions:
@@ -1426,7 +1431,7 @@ class TestCase5975_dest_domain(BaseTestCase5975):
     """
 
     @polarion("RHEVM3-5975")
-    @attr(tier=2)
+    @tier2
     def test_extend_dest_domain_during_LSM(self):
         """
         Actions:
@@ -1485,7 +1490,7 @@ class TestCase6000(BaseTestCase):
         assert status, "Failed to block connection"
 
     @polarion("RHEVM3-6000")
-    @attr(tier=4)
+    @tier4
     def test_LSM_block_from_host_to_target(self):
         """
         Actions:
@@ -1532,7 +1537,7 @@ class TestCase6002(BaseTestCase):
     # stuck in STARTED (even if the host is back up)
 
     @polarion("RHEVM3-6002")
-    @attr(tier=4)
+    @tier4
     def test_restart_spm_during_lsm(self):
         """
         Actions:
@@ -1652,7 +1657,7 @@ class TestCase5999_spm(BaseTestCase5999):
     """
 
     @polarion("RHEVM3-5999")
-    @attr(tier=4)
+    @tier4
     def test_reboot_spm_during_lsm(self):
         """
         Actions:
@@ -1671,7 +1676,7 @@ class TestCase5999_hsm(BaseTestCase5999):
     """
 
     @polarion("RHEVM3-5999")
-    @attr(tier=4)
+    @tier4
     def test_reboot_hsm_during_lsm(self):
         """
         Actions:
@@ -1730,7 +1735,7 @@ class TestCase5997_ha_vm(BaseTestCase5997):
     """
 
     @polarion("RHEVM3-5997")
-    @attr(tier=4)
+    @tier4
     def test_kill_ha_vm_pid_during_lsm(self):
         """
         Actions:
@@ -1751,7 +1756,7 @@ class TestCase5997_regular_vm(BaseTestCase5997):
     """
 
     @polarion("RHEVM3-5997")
-    @attr(tier=4)
+    @tier4
     def test_kill_regular_vm_pid_during_lsm(self):
         """
         Actions:
@@ -1782,7 +1787,7 @@ class TestCase5985(BaseTestCase):
 
     @polarion("RHEVM3-5985")
     @bz({'1288862': {}})
-    @attr(tier=2)
+    @tier2
     def test_no_space_disk_during_lsm(self):
         """
         Actions:
@@ -1844,7 +1849,7 @@ class TestCase5971(BaseTestCase):
     sd_to_deactivate_index = 2
 
     @polarion("RHEVM3-5971")
-    @attr(tier=2)
+    @tier2
     def test_lsm_with_multiple_disks_one_sd_in_maintenance(self):
         """
         Actions:
@@ -1921,7 +1926,7 @@ class BaseTestCase5966(BaseTestCase):
 class TestCase5966_during_lsm(BaseTestCase5966):
 
     @polarion("RHEVM3-5966")
-    @attr(tier=4)
+    @tier4
     def test_kill_vdsm_during_lsm(self):
         """
         Actions:
@@ -1944,7 +1949,7 @@ class TestCase5966_during_lsm(BaseTestCase5966):
 class TestCase5966_during_second_lsm(BaseTestCase5966):
 
     @polarion("RHEVM3-5966")
-    @attr(tier=4)
+    @tier4
     def test_kill_vdsm_during_second_lsm(self):
         """
         Actions:
@@ -1990,7 +1995,7 @@ class TestCase5981(AllPermutationsDisks):
     polarion_test_case = '5981'
 
     @polarion("RHEVM3-5981")
-    @attr(tier=4)
+    @tier4
     def test_merge_snapshot_live_migration_failure(self):
         """
         Actions:
@@ -2131,7 +2136,7 @@ class BaseTestCase5983(BaseTestCase):
 class TestCase5983_spm(BaseTestCase5983):
 
     @polarion("RHEVM3-5983")
-    @attr(tier=2)
+    @tier2
     def test_migrate_multiple_vms_on_spm(self):
         """
         Actions:
@@ -2147,7 +2152,7 @@ class TestCase5983_spm(BaseTestCase5983):
 class TestCase5983_hsm(BaseTestCase5983):
 
     @polarion("RHEVM3-5983")
-    @attr(tier=2)
+    @tier2
     def test_migrate_multiple_vms_on_hsm(self):
         """
         Actions:
@@ -2178,7 +2183,7 @@ class TestCase5974(BaseTestCase):
 
     @classmethod
     @polarion("RHEVM3-5974")
-    @attr(tier=4)
+    @tier4
     def test_LSM_block_from_host_to_target(cls):
         """
         Actions:

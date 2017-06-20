@@ -6,7 +6,11 @@ Virt test - RNG device
 import config
 import helper
 import pytest
-from art.unittest_lib import testflow, common, attr
+from art.unittest_lib import (
+    tier2,
+    testflow,
+    common,
+)
 from art.test_handler.tools import polarion
 from rhevmtests.virt.fixtures import start_vms
 from rhevmtests.virt.rng.fixtures import (
@@ -22,7 +26,7 @@ class TestUrandom(common.VirtTest):
     rng_device = config.URANDOM_RNG
     wait_for_vms_ip = False
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.usefixtures(enable_rng_on_vm.__name__, start_vms.__name__,)
     @polarion("RHEVM-19286")
     def test_urandom(self):
@@ -44,7 +48,7 @@ class TestHwrng(common.VirtTest):
     rng_device = config.HW_RNG
     wait_for_vms_ip = False
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-6485")
     @pytest.mark.usefixtures(
         update_vm_host.__name__,

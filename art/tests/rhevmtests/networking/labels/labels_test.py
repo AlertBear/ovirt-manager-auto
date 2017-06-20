@@ -23,7 +23,11 @@ import config as label_conf
 from rhevmtests.networking import config as conf, helper as network_helper
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
+)
 from fixtures import (
     add_label_nic_and_network, create_network_on_dc_and_cluster,
     move_host_to_another_cluster, create_datacenter
@@ -57,7 +61,7 @@ def labels_prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     setup_networks_fixture.__name__,
@@ -249,7 +253,7 @@ class TestNetLabels01(NetworkTest):
                 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     setup_networks_fixture.__name__,
@@ -376,7 +380,7 @@ class TestNetLabels02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
@@ -466,7 +470,7 @@ class TestNetLabels03(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     create_network_on_dc_and_cluster.__name__
@@ -518,7 +522,7 @@ class TestNetLabels04(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
@@ -816,7 +820,7 @@ class TestNetLabels05(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
@@ -904,7 +908,7 @@ class TestNetLabels06(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_datacenter.__name__,
     create_clusters.__name__,
@@ -1005,7 +1009,7 @@ class TestNetLabels07(NetworkTest):
                 assert ll_networks.remove_label(labels=[lb], networks=[net])
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(add_label_nic_and_network.__name__)
 class TestNetLabels08(NetworkTest):
     """
@@ -1080,7 +1084,7 @@ class TestNetLabels08(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(add_label_nic_and_network.__name__)
 class TestNetLabels09(NetworkTest):
     """

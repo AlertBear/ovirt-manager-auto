@@ -15,7 +15,8 @@ unittest2
 pywinrm
 PyYAML
 winremote
-pytest == 3.0.6
+# pytest >= 3.2 before they release it, we have to use our fork.
+git+https://github.com/rhevm-qe-automation/pytest@features
 pytest-xdist
 pytest-ordering
 git+git://github.com/rhevm-qe-automation/pytest-catchlog.git@rhevm_customization

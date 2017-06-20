@@ -47,7 +47,11 @@ from rhevmtests.storage.fixtures import (
     add_nic, create_file_than_snapshot_several_times,
 )
 
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
+from art.unittest_lib import StorageTest as TestCase
 logger = logging.getLogger(__name__)
 
 
@@ -265,7 +269,7 @@ class TestCase18215(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-18215")
-    @attr(tier=2)
+    @tier2
     def test_upgrade_dc(self):
         self.data_center_upgrade()
 
@@ -279,7 +283,7 @@ class TestCase18303(TestCase):
     storage_format = 'v4'
 
     @polarion("RHEVM3-18303")
-    @attr(tier=2)
+    @tier2
     def test_verify_new_domain_version(self):
         storage_domain_name = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
@@ -306,7 +310,7 @@ class TestCase18307(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-18307")
-    @attr(tier=3)
+    @tier3
     def test_verify_new_domain_version(self):
         testflow.step(
             "Upgrade DC %s to v4 & kill vdsmd on SPM %s" % (
@@ -346,7 +350,7 @@ class TestCase18336(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18336")
-    @attr(tier=3)
+    @tier3
     def test_failure_engine_during_amend(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
@@ -410,7 +414,7 @@ class TestCase18337(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18337")
-    @attr(tier=3)
+    @tier3
     def test_failure_of_SPM_during_amend(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
@@ -493,7 +497,7 @@ class TestCase18338(BaseTestCase3):
     }
 
     @polarion("RHEVM3-18338")
-    @attr(tier=2)
+    @tier2
     def test_import_vm_with_snapshot_from_export_domain(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
@@ -585,7 +589,7 @@ class TestCase18340(TestCase):
     new_disks_names = []
 
     @polarion("RHEVM3-18340")
-    @attr(tier=2)
+    @tier2
     def test_create_new_thin_vm_from_template(self):
         testflow.step(
             "Create a template of VM %s" % self.vm_name
@@ -663,7 +667,7 @@ class TestCase18305(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-18305")
-    @attr(tier=3)
+    @tier3
     def test_restart_engine_during_upgrade_cluster(self):
         testflow.step(
             "Upgrading cluster %s from version %s to version %s ",
@@ -702,7 +706,7 @@ class TestCase18334(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-18334")
-    @attr(tier=3)
+    @tier3
     def test_restart_engine_during_upgrade_dc(self):
         self.data_center_upgrade_without_verification()
         testflow.step("Restarting ovirt-engine")
@@ -742,7 +746,7 @@ class TestCase18343(BaseTestCase3):
     new_storage_domains_count = 2
 
     @polarion("RHEVM3-18343")
-    @attr(tier=2)
+    @tier2
     def test_live_migration_old_image(self):
         self.migration_test(live=config.LIVE_MIGRATION)
 
@@ -767,7 +771,7 @@ class TestCase18344(BaseTestCase3):
     new_storage_domains_count = 2
 
     @polarion("RHEVM3-18344")
-    @attr(tier=2)
+    @tier2
     def test_cold_migration_old_image(self):
         self.migration_test(live=config.COLD_MIGRATION)
 
@@ -806,7 +810,7 @@ class TestCase18346(BaseTestCase):
     full_path_list = []
 
     @polarion("RHEVM3-18346")
-    @attr(tier=2)
+    @tier2
     def test_live_merge_old_version_image_with_new_version_image(self):
         testflow.step(
             "Upgrade DC %s to v4", self.new_dc_name
@@ -944,7 +948,7 @@ class TestCase18339(BaseTestCase3):
     new_storage_domains_count = 2
 
     @polarion("RHEVM3-18339")
-    @attr(tier=3)
+    @tier3
     def test_storage_migration_old_version_to_new_version_dc(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
@@ -1037,7 +1041,7 @@ class TestCase18335(BaseTestCase):
     new_storage_domains_count = 2
 
     @polarion("RHEVM3-18335")
-    @attr(tier=3)
+    @tier3
     def test_spm_failure_after_upgrade_dc_and_activate_sd(self):
         testflow.step("Deactivate non master domain %s", self.sd_names[1])
         assert ll_sd.deactivateStorageDomain(
@@ -1084,7 +1088,7 @@ class TestCase18347(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18347")
-    @attr(tier=3)
+    @tier3
     def test_amend_volume_while_vm_up(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         self.data_center_upgrade()
@@ -1116,7 +1120,7 @@ class TestCase18348(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18348")
-    @attr(tier=3)
+    @tier3
     def test_amend_old_dc(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
@@ -1150,7 +1154,7 @@ class TestCase18349(TestCase):
     volume_format = config.DISK_FORMAT_RAW
 
     @polarion("RHEVM3-18349")
-    @attr(tier=3)
+    @tier3
     def test_amend_template_disk(self):
         testflow.step(
             "Create a template of VM %s" % self.vm_name
@@ -1186,7 +1190,7 @@ class TestCase18350(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18350")
-    @attr(tier=3)
+    @tier3
     def test_amend_sd_in_maintenance(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step("Deactivate storage domain %s", self.storage_domain)
@@ -1219,7 +1223,7 @@ class TestCase18351(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18351")
-    @attr(tier=3)
+    @tier3
     def test_amend_non_existing_disk(self):
         self.disk_name = storage_helpers.create_unique_object_name(
             self.__name__, config.OBJECT_TYPE_DISK

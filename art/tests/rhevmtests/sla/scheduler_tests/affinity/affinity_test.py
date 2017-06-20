@@ -99,7 +99,7 @@ class BaseStartVms(BaseAffinity):
     wait_for_vms_ip = False
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestStartVmsUnderHardPositiveAffinity(BaseStartVms):
     """
@@ -127,7 +127,7 @@ class TestStartVmsUnderHardPositiveAffinity(BaseStartVms):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestStartVmsUnderSoftPositiveAffinity(BaseStartVms):
     """
     Start VM's that placed into the same soft positive affinity group,
@@ -155,7 +155,7 @@ class TestStartVmsUnderSoftPositiveAffinity(BaseStartVms):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestStartVmsUnderHardNegativeAffinity(BaseStartVms):
     """
@@ -183,7 +183,7 @@ class TestStartVmsUnderHardNegativeAffinity(BaseStartVms):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestStartVmsUnderSoftNegativeAffinity(BaseStartVms):
     """
     Start VM's that placed into the same soft negative affinity group,
@@ -254,7 +254,7 @@ class BaseMigrateVm(BaseAffinity):
         ) == positive
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
     """
@@ -278,7 +278,7 @@ class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=True)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmUnderSoftPositiveAffinity(BaseMigrateVm):
     """
     Migrate VM under soft positive affinity,
@@ -301,7 +301,7 @@ class TestMigrateVmUnderSoftPositiveAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=True)
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_TWO_HOSTS)
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
@@ -326,7 +326,7 @@ class TestMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=False)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmUnderSoftNegativeAffinity(BaseMigrateVm):
     """
     Migrate VM under soft negative affinity,
@@ -349,7 +349,7 @@ class TestMigrateVmUnderSoftNegativeAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=False)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestNegativeMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
     """
     Negative: Migrate VM under hard positive affinity to the opposite host
@@ -376,7 +376,7 @@ class TestNegativeMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmOppositeUnderSoftPositiveAffinity(BaseMigrateVm):
     """
     Migrate VM under soft positive affinity to the opposite host
@@ -403,7 +403,7 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestNegativeMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
     """
     Negative: Migrate vm under hard negative affinity
@@ -431,7 +431,7 @@ class TestNegativeMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmSameUnderSoftNegativeAffinity(BaseMigrateVm):
     """
     Migrate VM under soft negative affinity to the host where second VM placed
@@ -458,7 +458,7 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_groups.__name__,
     create_additional_cluster.__name__,
@@ -499,7 +499,7 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(BaseAffinity):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseMigrateVm):
     """
     Put host with VM's placed under hard positive affinity group to maintenance
@@ -522,7 +522,7 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseMigrateVm):
         assert not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     deactivate_hosts.__name__
 )
@@ -556,7 +556,7 @@ class TestPutHostToMaintenanceUnderHardNegativeAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
 class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
     """
@@ -597,7 +597,7 @@ class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
 class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
     """
@@ -638,7 +638,7 @@ class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
 class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
     """
@@ -679,7 +679,7 @@ class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     deactivate_hosts.__name__,
     create_affinity_groups.__name__,
@@ -749,7 +749,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     create_affinity_groups.__name__,
@@ -811,7 +811,7 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms_memory_to_hosts_memory.__name__,
     update_vms_to_default_parameters.__name__,

@@ -7,7 +7,10 @@ import art.rhevm_api.tests_lib.low_level.vms as llvms
 from art.test_handler.exceptions import VMException
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
 from rhevm_utils import base, unittest_conf
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
 import logging
@@ -55,7 +58,7 @@ class LogCollectorTestCaseBase(base.RHEVMUtilsTestCase):
         self.cluster = unittest_conf.CLUSTER_NAME
 
 
-@attr(tier=1)
+@tier1
 class LogCollectorSingleDC(LogCollectorTestCaseBase):
     """ Tests with single DC and single cluster setup """
 
@@ -149,7 +152,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut.autoTest()
 
 
-@attr(tier=2)
+@tier2
 class LogCollectorMoreDCs(LogCollectorTestCaseBase):
     """ Tests with additional DC and cluster """
 
@@ -209,7 +212,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
         assert 'No hypervisors were found' in self.ut.out
 
 
-@attr(tier=2)
+@tier2
 class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
     """ Regression tests for the log-collector """
 

@@ -2,7 +2,11 @@ import pytest
 import logging
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest, attr, testflow
+from art.unittest_lib import (
+    CoreSystemTest,
+    testflow,
+    tier1,
+)
 import unittest_conf as conf
 
 logger = logging.getLogger(__name__)
@@ -17,7 +21,7 @@ def enable_ssl(request):
     request.addfinalizer(fin)
 
 
-@attr(tier=1)
+@tier1
 class TestConfigTestCase(CoreSystemTest):
     ssl_enabled = "SSLEnabled"
     wrong_property = "SomeWeirdProperty"

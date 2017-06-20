@@ -15,8 +15,10 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
 )
 from art.test_handler.tools import polarion
+from art.unittest_lib import (
+    tier2,
+)
 from art.unittest_lib import VirtTest
-from art.unittest_lib import attr
 from rhevmtests.fixtures import (
     init_storage_manager,
     create_lun_on_storage_server,
@@ -51,7 +53,7 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
     new_lun_id = None
     new_lun_identifier = None
 
-    @attr(tier=2)
+    @tier2
     @polarion('RHEVM-18289')
     @pytest.mark.usefixtures(
         init_storage_manager.__name__,
@@ -87,7 +89,7 @@ class TestSparsifySanityFileDevice(SparsifySanityBase):
     disk_path = None
     number_of_thin_vms = 1
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.usefixtures(
         file_storage_domain_setup.__name__,
         add_vms_on_specific_sd.__name__,

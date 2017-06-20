@@ -67,7 +67,7 @@ def init_default_policies_test(request):
     )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     migrate_he_vm.__name__,
@@ -288,7 +288,7 @@ class TestEvenDistributedWeightModule1(BasePowerEvenDistribution):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(update_cluster_to_default_parameters.__name__)
 class TestCheckClusterPoliciesParameters(u_libs.SlaTest):
     """

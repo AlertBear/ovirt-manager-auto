@@ -206,7 +206,7 @@ def prepare_environment_for_tests(request):
             )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,
@@ -224,7 +224,7 @@ class BaseStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
     cluster_to_update_params = None
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,
@@ -244,7 +244,7 @@ class BaseUpdateAndStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
     cluster_to_update_params = None
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,

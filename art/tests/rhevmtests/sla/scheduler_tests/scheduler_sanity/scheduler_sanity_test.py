@@ -12,7 +12,10 @@ import art.unittest_lib as u_libs
 import config as conf
 import pytest
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
 from fixtures import (
     create_network,
     update_vms_nics
@@ -89,7 +92,7 @@ def init_scheduler_sanity_test(request):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     init_scheduler_sanity_test.__name__,
@@ -103,7 +106,7 @@ class BaseSchedulerSanity(u_libs.SlaTest):
     pass
 
 
-@attr(tier=1)
+@tier1
 class TestCRUD(u_libs.SlaTest):
     """
     Test class to create, update and remove the scheduling policy
@@ -157,7 +160,7 @@ class TestDeletePolicyInUse(BaseSchedulerSanity):
         assert not ll_sch.remove_scheduling_policy(self.policy_name)
 
 
-@attr(tier=1)
+@tier1
 class TestRemoveBuildInPolicy(u_libs.SlaTest):
     """
     Delete build-in scheduling policy

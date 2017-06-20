@@ -2,14 +2,14 @@
 Sanity testing of report and dwh installation
 """
 
-from art.unittest_lib import attr
+from art.unittest_lib import tier1
 from art.test_handler.tools import polarion
 
 from service_base import ServiceTest
 import config
 
 
-@attr(tier=1)
+@tier1
 class TestSanityServicesLogs(ServiceTest):
     """Service and logs tests"""
     @polarion("RHEVM-17077")

@@ -2,7 +2,7 @@ import config
 import common
 import logging
 import time
-from art.unittest_lib import StorageTest as TestCase, attr
+from art.unittest_lib import StorageTest as TestCase, do_not_run
 from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level.vms import (
@@ -22,7 +22,7 @@ TIMEOUT = 300
 OPERATION_FINISHED = False
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class RestartOvirt(TestCase):
     __test__ = False
 

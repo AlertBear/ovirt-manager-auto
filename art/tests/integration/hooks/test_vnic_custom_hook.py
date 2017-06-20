@@ -12,7 +12,11 @@ from time import sleep
 
 from art.rhevm_api.tests_lib.low_level import hooks, vms, networks
 from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest as TestCase, testflow, attr
+from art.unittest_lib import (
+    tier3,
+    CoreSystemTest as TestCase,
+    testflow,
+)
 
 from . import config, get_property_value, set_property_value
 
@@ -196,7 +200,7 @@ def setup_module(request):
     )
 
 
-@attr(tier=3)
+@tier3
 class CaseVnic(TestCase):
     CUSTOM_HOOK = "speed"
     hooks_names = None

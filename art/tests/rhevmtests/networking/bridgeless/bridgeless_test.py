@@ -14,7 +14,10 @@ import config as bridgeless_conf
 import rhevmtests.networking.config as conf
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+)
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
     setup_networks_fixture,
@@ -60,7 +63,7 @@ class TestBridgelessCase(NetworkTest):
         }
     }
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.parametrize(
         ("net", "nic"),
         [

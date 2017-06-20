@@ -7,7 +7,10 @@ import logging
 import art.core_api.apis_exceptions as core_errors
 import art.core_api.apis_utils as utils
 import art.test_handler.exceptions as errors
-import art.unittest_lib as test_libs
+from art.unittest_lib import (
+    IntegrationTest,
+    tier4,
+)
 import config as conf
 import otopi_parser_helper
 import storageapi.he_storage_api as storage_helper
@@ -19,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 @non_ge
-@test_libs.attr(tier=4)
-class BaseDeploy(test_libs.IntegrationTest):
+@tier4
+class BaseDeploy(IntegrationTest):
     """
     Base HE deployment class
     """

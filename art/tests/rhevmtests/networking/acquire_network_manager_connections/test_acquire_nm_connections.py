@@ -10,7 +10,10 @@ import pytest
 import config as nm_conf
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import NetworkTest, attr
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+)
 from fixtures import nmcli_create_networks
 import rhevmtests.networking.config as conf
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -20,7 +23,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces_fixture_function.__name__,

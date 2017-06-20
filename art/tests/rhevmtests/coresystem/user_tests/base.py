@@ -5,7 +5,7 @@ import pytest
 
 from functools import partial, wraps
 
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import tier2, testflow, CoreSystemTest
 from art.core_api.apis_exceptions import EntityNotFound
 
 from art.rhevm_api.tests_lib.high_level import vmpools as hl_vmpools
@@ -291,8 +291,8 @@ def user_case(func=None, login_as=None, cleanup_func=None, **kwargs_glob):
     return wrapper
 
 
-@attr(tier=2, team="coresystem")
-class CaseRoleActions(object):
+@tier2
+class CaseRoleActions(CoreSystemTest):
     """
     This class includes all test actions role can have.
     Every test action is the one test case method.

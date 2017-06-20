@@ -4,13 +4,16 @@ import config as vcons_conf
 import fixtures
 
 from art.test_handler.tools import polarion
-from art.unittest_lib.common import VirtTest, attr
-from art.unittest_lib import testflow
+from art.unittest_lib import (
+    tier2,
+    VirtTest,
+    testflow,
+)
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 
 
-@attr(tier=2)
+@tier2
 class TestVirtConsoleSanityClass(VirtTest):
 
     vm_name = vcons_conf.VIRT_CONSOLE_VM_SANITY

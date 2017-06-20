@@ -9,7 +9,10 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.virt.windows_helper as handler
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier3,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.windows import (
     config as config,
     helper as helper
@@ -25,7 +28,7 @@ from rhevmtests.virt.windows.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(create_windows_vms.__name__)
 class TestSysprepCase1(VirtTest):
@@ -68,7 +71,7 @@ class TestSysprepCase1(VirtTest):
         assert ll_vms.safely_remove_vms([vm_name])
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     create_windows_vms_from_sealed_template.__name__,
@@ -108,7 +111,7 @@ class TestSysprepCase2(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     create_windows_vms_from_sealed_template.__name__,

@@ -7,7 +7,11 @@ from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage import config
 from art.test_handler.tools import polarion
-from art.unittest_lib import StorageTest as TestCase, attr, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
+from art.unittest_lib import StorageTest as TestCase, testflow
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     vms as ll_vms,
@@ -164,7 +168,7 @@ class TestCase18863(BasicEnvironmentSetUp):
         )
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=2)
+    @tier2
     def test_live_snapshot(self):
         """
         Create a snapshot while VM is running
@@ -261,7 +265,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         self.check_file_existence_operation(False)
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=2)
+    @tier2
     def test_snapshot_operation(self):
         """
         Create a snapshot while VM is running
@@ -287,7 +291,7 @@ class TestCase11676(TestCase):
     polarion_test_case = '11676'
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_snapshot_description_length_positive(self):
         """
         Try to create a snapshot with max chars length
@@ -306,7 +310,7 @@ class TestCase11676(TestCase):
         )
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_special_characters(self):
         """
         Try to create snapshots containing special characters
@@ -346,7 +350,7 @@ class TestCase11665(TestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_CREATE_SNAPSHOT])
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_snapshot_on_multiple_domains(self):
         """
         Tests whether snapshot can be created on VM that has disks on multiple
@@ -383,7 +387,7 @@ class TestCase11680(TestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MIGRATE_VM])
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_migration(self):
         """
         Tests live snapshot during migration
@@ -422,7 +426,7 @@ class TestCase11674(TestCase):
     polarion_test_case = '11674'
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=2)
+    @tier2
     def test_snapshot_with_multiple_disks(self):
         """
         Checks that created snapshot appears only once although VM has more
@@ -469,7 +473,7 @@ class TestCase11684(TestCase):
     polarion_test_case = '11684'
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_snapshot_on_thin_vm(self):
         """
         Try to make a live snapshot from thinly provisioned VM
@@ -480,7 +484,7 @@ class TestCase11684(TestCase):
         )
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_snapshot_on_cloned_vm(self):
         """
         Try to make a live snapshot from cloned VM
@@ -511,7 +515,7 @@ class TestCase18886(TestCase):
     polarion_test_case = '18886'
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_commit_snapshot(self):
 
         testflow.step(

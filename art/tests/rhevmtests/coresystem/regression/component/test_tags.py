@@ -16,8 +16,10 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.test_handler.tools import bz
 from art.unittest_lib import (
-    attr, testflow,
+    testflow,
     CoreSystemTest as TestCase,
+    tier1,
+    tier2,
 )
 
 from rhevmtests.config import (
@@ -65,7 +67,7 @@ class TestCaseTags(TestCase):
                     logger.info('tag %s not found', tag)
         request.addfinalizer(finalize)
 
-    @attr(tier=1)
+    @tier1
     def test_create_sub_tag(self):
         """
         verify tags functionality
@@ -89,7 +91,7 @@ class TestCaseTags(TestCase):
             parent=parent_tag
         )
 
-    @attr(tier=2)
+    @tier2
     def test_add_existing_tag(self):
         """
         verify tags functionality
@@ -111,7 +113,7 @@ class TestCaseTags(TestCase):
             description=TAG_DESCRIPTION
         )
 
-    @attr(tier=1)
+    @tier1
     def test_update_tag(self):
         """
         verify tags functionality
@@ -140,7 +142,7 @@ class TestCaseTags(TestCase):
         testflow.step("Adding tag with new name to tag set.")
         self.tag_set.add(new_name)
 
-    @attr(tier=2)
+    @tier2
     def test_tag_itself_as_parent(self):
         """
         verify tags functionality
@@ -162,7 +164,7 @@ class TestCaseTags(TestCase):
             parent=tag_name
         )
 
-    @attr(tier=1)
+    @tier1
     def test_update_tag_parent_and_remove_parent(self):
         """
         verify tags functionality
@@ -196,7 +198,7 @@ class TestCaseTags(TestCase):
         testflow.step("Removing parent tag.")
         assert ll_tags.removeTag(positive=True, tag=parent_tag)
 
-    @attr(tier=2)
+    @tier2
     def test_create_tag_loop(self):
         """
         verify tags functionality
@@ -234,7 +236,7 @@ class TestCaseTags(TestCase):
             parent=sub_tag
         )
 
-    @attr(tier=1)
+    @tier1
     @bz({'1446525': {}})
     def test_associate_tag_with_vm_and_search_by_tag(self):
         """
@@ -274,7 +276,7 @@ class TestCaseTags(TestCase):
             tag=tag_name
         )
 
-    @attr(tier=2)
+    @tier2
     def test_associate_non_existing_tag_with_vm(self):
         """
         verify tags functionality
@@ -287,7 +289,7 @@ class TestCaseTags(TestCase):
             vm=vms_names[0]
         )
 
-    @attr(tier=1)
+    @tier1
     @bz({'1446525': {}})
     def test_associate_tag_with_host_and_search_host_by_tag(self):
         """
@@ -327,7 +329,7 @@ class TestCaseTags(TestCase):
             tag=tag_name
         )
 
-    @attr(tier=2)
+    @tier2
     def test_update_tag_name_to_existing_tag(self):
         """
         verify tags functionality
@@ -357,7 +359,7 @@ class TestCaseTags(TestCase):
             name=first_tag
         )
 
-    @attr(tier=1)
+    @tier1
     def test_check_tag_is_unique(self):
         """
         verify tags functionality

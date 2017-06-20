@@ -5,8 +5,10 @@ test_mixed
 """
 from art.test_handler.tools import bz
 from art.unittest_lib import (
-    attr, testflow,
     CoreSystemTest as TestCase,
+    testflow,
+    tier1,
+    tier2,
 )
 from art.rhevm_api.tests_lib.low_level import (
     general as ll_general,
@@ -19,7 +21,7 @@ class TestCaseMixed(TestCase):
     """
     Scenario tests
     """
-    @attr(tier=1)
+    @tier1
     def test_check_product_name(self):
         """
         verify product name
@@ -29,7 +31,7 @@ class TestCaseMixed(TestCase):
             product_name
         ), 'Failed to check product name'
 
-    @attr(tier=1)
+    @tier1
     def test_check_existing_permissions(self):
         """
         verify users functionality
@@ -40,7 +42,7 @@ class TestCaseMixed(TestCase):
             positive=True
         ), 'Failed to check existing permissions'
 
-    @attr(tier=2)
+    @tier2
     @bz({'1303346': {}})
     def test_check_xsd_schema_validations(self):
         """

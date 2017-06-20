@@ -5,7 +5,10 @@
 
 import pytest
 import logging
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import VirtTest, testflow
 from art.test_handler.tools import polarion
 import rhevmtests.helpers as helper
 from art.rhevm_api.tests_lib.low_level import (
@@ -20,7 +23,7 @@ import config
 logger = logging.getLogger("update_vm_cases")
 
 
-@attr(tier=1)
+@tier1
 class TestUpdateRunningVm(VirtTest):
     """
     Update parameters of a running VM.

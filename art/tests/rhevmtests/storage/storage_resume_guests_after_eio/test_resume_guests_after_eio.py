@@ -12,7 +12,12 @@ from art.rhevm_api.utils import storage_api
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    tier2,
+    tier4,
+    do_not_run,
+)
 from rhevmtests.storage import helpers as storage_helpers
 
 import config
@@ -35,7 +40,7 @@ def _wait_for_vm_booted(
     )
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestResumeGuests(TestCase):
     __test__ = False
     remove_file = False
@@ -253,7 +258,7 @@ class TestCase5012(TestCaseBlockedConnection):
     polarion_test_case = '5012'
 
     @polarion("RHEVM3-5012")
-    @attr(tier=4)
+    @tier4
     def test_nfs_blocked_connection(self):
         """
         Checks if VM is paused after connection to sd is lost,
@@ -272,7 +277,7 @@ class TestCase5013(TestNoSpaceLeftOnDevice):
     left_space = 10 * config.GB
 
     @polarion("RHEVM3-5013")
-    @attr(tier=2)
+    @tier2
     @bz({'1024353': {'engine': ['rest', 'sdk']}})
     def test_nfs_no_space_left_on_device(self):
         """
@@ -288,7 +293,7 @@ class TestCase5014(TestCaseBlockedConnection):
     polarion_test_case = '5014'
 
     @polarion("RHEVM3-5014")
-    @attr(tier=4)
+    @tier4
     def test_iscsi_blocked_connection(self):
         """
         Checks if VM is paused after connection to sd is lost,
@@ -330,7 +335,7 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
         time.sleep(5)
 
     @polarion("RHEVM3-5015")
-    @attr(tier=2)
+    @tier2
     def test_iscsi_no_space_left_on_device(self):
         """
         Checks if VM is paused after no-space-left error on sd,
@@ -364,7 +369,7 @@ class TestCase5016(TestCaseBlockedConnection):
     polarion_test_case = '5016'
 
     @polarion("RHEVM3-5016")
-    @attr(tier=4)
+    @tier4
     def test_fc_blocked_connection(self):
         """
         Checks if VM is paused after connection to sd is lost,
@@ -381,7 +386,7 @@ class TestCase5017(TestNoSpaceLeftOnDevice):
     polarion_test_case = '5017'
 
     @polarion("RHEVM3-5017")
-    @attr(tier=2)
+    @tier2
     def test_fc_no_space_left_on_device(self):
         """
         Checks if VM is paused after no-space-left error on sd,

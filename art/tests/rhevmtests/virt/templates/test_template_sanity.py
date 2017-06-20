@@ -19,13 +19,16 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates
 )
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, testflow, VirtTest
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import testflow, VirtTest
 import rhevmtests.virt.config as virt_conf
 
 logger = logging.getLogger('virt.templates.test_template_sanity')
 
 
-@attr(tier=1)
+@tier1
 class TestTemplateSanity(VirtTest):
 
     __test__ = True

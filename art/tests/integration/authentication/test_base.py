@@ -3,7 +3,11 @@
 
 from authentication import config
 import logging
-from art.unittest_lib import attr, IntegrationTest as TestCase
+from art.unittest_lib import (
+    IntegrationTest as TestCase,
+    tier1,
+    tier2,
+)
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.core_api.apis_exceptions import APIException
 from art.test_handler.tools import bz
@@ -39,7 +43,7 @@ def addUser(user_name, domain):
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class BaseNormalUserAndGroupUser(TestCase):
     """ Login as normal user and user from group. """
     __test__ = False
@@ -80,7 +84,7 @@ class BaseNormalUserAndGroupUser(TestCase):
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class BaseExpiredAccount(TestCase):
     """ Login as user with expired account """
     __test__ = False
@@ -108,7 +112,7 @@ class BaseExpiredAccount(TestCase):
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class BaseExpiredPassword(TestCase):
     """ Login as user with expired password """
     __test__ = False
@@ -136,7 +140,7 @@ class BaseExpiredPassword(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class BaseGroupsPersistency(TestCase):
     """ Persistency of group rights """
     __test__ = False
@@ -169,7 +173,7 @@ class BaseGroupsPersistency(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class BaseUserWithManyGroups(TestCase):
     """ Login as user with many groups """
     __test__ = False
@@ -195,7 +199,7 @@ class BaseUserWithManyGroups(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class BaseSearchForUsersAndGroups(TestCase):
     """ Search within domain for users and groups """
     __test__ = False

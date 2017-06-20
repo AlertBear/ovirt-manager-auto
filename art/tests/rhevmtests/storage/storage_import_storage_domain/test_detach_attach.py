@@ -24,7 +24,12 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest as BaseTestCase
 from rhevmtests.storage.fixtures import (
     create_dc, clean_dc, create_template, remove_vm, add_disk, attach_disk,
     create_vm, create_snapshot, remove_vms, clean_mount_point, storage_cleanup,
@@ -154,7 +159,7 @@ class TestCase5300(BasicEnvironment):
     vm_names = list()
 
     @polarion("RHEVM3-5300")
-    @attr(tier=2)
+    @tier2
     def test_detach_attach_new_domain(self):
         """
         - create vm + disk
@@ -233,7 +238,7 @@ class TestCase5302(BasicEnvironment):
         self.host_ip = ll_hosts.get_host_ip(config.HOSTS[0])
 
     @polarion("RHEVM3-5302")
-    @attr(tier=4)
+    @tier4
     def test_block_connection_during_import(self):
         """
         - verify that there are no IP blocks from vdsm->engine
@@ -298,7 +303,7 @@ class TestCase5193(BasicEnvironment):
     storages = set([NFS, GLUSTER])
 
     @polarion("RHEVM3-5193")
-    @attr(tier=3)
+    @tier3
     def test_attach_file_domain(self):
         """
         - detach an nfs domain
@@ -340,7 +345,7 @@ class TestCase5194(BasicEnvironment):
     polarion_test_case = '5194'
 
     @polarion("RHEVM3-5194")
-    @attr(tier=3)
+    @tier3
     def test_lv_exists_after_import_block_domain(self):
         """
         - detach block domain
@@ -418,7 +423,7 @@ class TestCase5205(BasicEnvironment):
         ]
 
     @polarion("RHEVM3-5205")
-    @attr(tier=4)
+    @tier4
     def test_restart_vdsm_during_import_domain(self):
         """
         - import data domain on different dc
@@ -429,7 +434,7 @@ class TestCase5205(BasicEnvironment):
         )
 
     @polarion("RHEVM3-5205")
-    @attr(tier=4)
+    @tier4
     def test_restart_engine_during_import_domain(self):
         """
         - import data domain on different dc
@@ -455,7 +460,7 @@ class TestCase5304(BasicEnvironment):
     polarion_test_case = '5304'
 
     @polarion("RHEVM3-5304")
-    @attr(tier=4)
+    @tier4
     def test_reboot_host_during_import_domain(self):
         """
         - Import data domain to different dc
@@ -555,7 +560,7 @@ class TestCase5201(BaseCaseInitializeDataCenter):
     remove_param = {'format': 'false'}
 
     @polarion("RHEVM3-5201")
-    @attr(tier=2)
+    @tier2
     def test_initialize_dc_with_imported_domain(self):
         """
         - Configure 2 DCs: DC1 with 2 storage domains
@@ -609,7 +614,7 @@ class TestCase12207(BaseCaseInitializeDataCenter):
     destroy = True
 
     @polarion("RHEVM3-12207")
-    @attr(tier=2)
+    @tier2
     def test_initialize_dc_with_destroyed_domain(self):
         """
         - Configure 2 DCs: DC1 with 2 storage domains
@@ -649,7 +654,7 @@ class TestCase10951(BasicEnvironment):
     domain_to_detach = config.EXPORT_DOMAIN_NAME
 
     @polarion("RHEVM3-10951")
-    @attr(tier=2)
+    @tier2
     def test_import_existing_export_domain(self):
         """
         - Import existing export storage domain
@@ -690,7 +695,7 @@ class BaseTestCase5192(BasicEnvironment):
 
     @polarion("RHEVM3-" + polarion_test_case)
     @bz({'1446878': {}})
-    @attr(tier=3)
+    @tier3
     def test_attach_from_older_version(self):
         """
         Configure two data centers, one dc_verion and other > 3.6
@@ -761,7 +766,7 @@ class TestCase5200(DomainImportWithTemplate):
 
     @polarion("RHEVM3-" + polarion_test_case)
     @bz({'1422508': {}})
-    @attr(tier=3)
+    @tier3
     def test_import_template_cross_domain(self):
         """
         - One data center with one block storage domain and one file domain
@@ -790,7 +795,7 @@ class TestCase5297(DomainImportWithTemplate):
 
     @polarion("RHEVM3-5297")
     @bz({'1422508': {}})
-    @attr(tier=2)
+    @tier2
     def test_new_vm_from_imported_domain_template(self):
         """
         - import data domain
@@ -822,7 +827,7 @@ class TestCase16771(DomainImportWithTemplate):
     diskless_vm = True
 
     @polarion("RHEVM3-16771")
-    @attr(tier=2)
+    @tier2
     def test_register_vm_from_diskless_template(self):
         """
         - Create a VM without disks

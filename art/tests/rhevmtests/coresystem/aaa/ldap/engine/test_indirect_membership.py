@@ -7,14 +7,17 @@ import pytest
 
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 
 from rhevmtests.coresystem.aaa.ldap import config, common
 
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=2)
+@tier2
 @bz({'1446525': {}})
 class IndirectMembership(TestCase):
     """
@@ -105,7 +108,7 @@ class TestIndirectMembershipNonRecursive(IndirectMembership):
         self.indirect_group_membership()
 
 
-@attr(tier=2)
+@tier2
 class TestGroupRecursion(TestCase):
     """
     Test group recursion handle.
@@ -162,7 +165,7 @@ class TestGroupRecursion(TestCase):
         assert common.connectionTest(), "%s can't login" % self.USER
 
 
-@attr(tier=2)
+@tier2
 class TestForeignGroup(IndirectMembership):
     """
     Test user authentication with group membership in different AD domains

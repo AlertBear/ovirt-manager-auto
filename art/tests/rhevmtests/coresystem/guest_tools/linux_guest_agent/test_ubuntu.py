@@ -5,7 +5,10 @@ import logging
 import pytest
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier3,
+)
+from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import vms
 
 from rhevmtests.coresystem.guest_tools.linux_guest_agent import common
@@ -63,7 +66,7 @@ def setup_vms(request):
     "There is no GA for Ubuntu that would work with 4.2 "
     "(https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=863806)"
 )
-@attr(tier=3)
+@tier3
 class TestUbuntu1604TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
     vm_name = disk_name = DISK_NAME

@@ -6,12 +6,15 @@ import pytest
 
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 
 from rhevmtests.coresystem.aaa.ldap import config, common
 
 
-@attr(tier=2)
+@tier2
 @bz({'1446525': {}})
 class TestADTLS(TestCase):
     """
@@ -78,7 +81,7 @@ class TestADTLS(TestCase):
             assert common.connectionTest(), "User %s can't login." % principal
 
 
-@attr(tier=2)
+@tier2
 class ADGroupWithSpacesInName(TestCase):
     """
     test login as user which is part of group with spaces in name

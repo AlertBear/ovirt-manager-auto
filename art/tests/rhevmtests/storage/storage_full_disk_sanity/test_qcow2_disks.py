@@ -20,7 +20,11 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    tier2,
+    tier3,
+)
 from rhevmtests.storage.fixtures import (
     create_vm,
 )
@@ -187,7 +191,7 @@ class TestCase16405(BaseTestCase):
     template_disks_format = config.DISK_FORMAT_COW
 
     @pytest.mark.usefixtures("initializer_BaseTestCase")
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-16405")
     def test_create_template_qcow2(self):
         """
@@ -214,7 +218,7 @@ class TestCase16407(BaseTestCase):
 
     @pytest.mark.usefixtures("initializer_BaseTestCase")
     @polarion("RHEVM-16407")
-    @attr(tier=3)
+    @tier3
     def test_create_vm_from_a_qcow2_template_as_qcow2(self):
         """
         Test setup:
@@ -248,7 +252,7 @@ class TestCase16408(BaseTestCase):
     template_disks_format = config.DISK_FORMAT_COW
 
     @polarion("RHEVM-16408")
-    @attr(tier=3)
+    @tier3
     @pytest.mark.usefixtures("initializer_BaseTestCase")
     def test_create_vm_from_a_qcow2_template_as_raw(self):
         """
@@ -282,7 +286,7 @@ class TestCase16406(BaseTestCase):
 
     @pytest.mark.usefixtures("initializer_BaseTestCase")
     @polarion("RHEVM-16406")
-    @attr(tier=3)
+    @tier3
     def test_create_template_raw(self):
         """
         Test setup:
@@ -308,7 +312,7 @@ class TestCase16410(BaseTestCase):
 
     @pytest.mark.usefixtures("initializer_BaseTestCase")
     @polarion("RHEVM-16410")
-    @attr(tier=3)
+    @tier3
     def test_create_vm_from_raw_template_as_raw(self):
         """
         Test setup:
@@ -343,7 +347,7 @@ class TestCase16411(BaseTestCase):
 
     @pytest.mark.usefixtures("initializer_BaseTestCase")
     @polarion("RHEVM-16411")
-    @attr(tier=3)
+    @tier3
     def test_create_vm_from_a_raw_template_as_qcow2(self):
         """
         Test setup:
@@ -379,7 +383,7 @@ class TestCase16409(BaseTestCase):
     create_snapshot = True
 
     @polarion("RHEVM-16409")
-    @attr(tier=3)
+    @tier3
     @pytest.mark.usefixtures("initializer_BaseTestCase")
     def test_create_template_raw_from_vm_with_snapshots(self):
         """
@@ -439,7 +443,7 @@ class TestCase16412(BaseTestCase):
     create_snapshot = True
 
     @polarion("RHEVM-16412")
-    @attr(tier=3)
+    @tier3
     @pytest.mark.usefixtures("initializer_BaseTestCase")
     def test_create_template_qcow2_from_vm_with_snapshot(self):
         """
@@ -507,7 +511,7 @@ class TestCase16968(TestCase):
 
     @polarion("RHEVM3-16968")
     @bz({'1419240': {}})
-    @attr(tier=2)
+    @tier2
     def test_virtual_actual_disk_size_block(self):
         """
         - Create VM with disk format "QCOW2" from template as clone on block

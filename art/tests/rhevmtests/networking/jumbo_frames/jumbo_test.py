@@ -17,7 +17,10 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
     add_vnics_to_vms,
     restore_hosts_mtu,
@@ -31,7 +34,7 @@ from rhevmtests.networking.fixtures import (
 from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )

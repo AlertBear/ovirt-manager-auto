@@ -74,7 +74,7 @@ def prepare_env_for_mom_test(request):
 
 
 @bz({'1454633': {}})
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     update_vms_for_ksm_test.__name__,
@@ -241,7 +241,7 @@ class Balloon(u_libs.SlaTest):
 
 
 @bz({'1454633': {}})
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestBalloonUsage(Balloon):
     """
     Test Balloon usage on one VM
@@ -266,7 +266,7 @@ class TestBalloonUsage(Balloon):
 
 
 @bz({'1454633': {}})
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestBalloonUsageDifferentMemory(Balloon):
     """
     Test balloon inflation and deflation on 2 VM's with different memories
@@ -296,7 +296,7 @@ class TestBalloonUsageDifferentMemory(Balloon):
 
 
 @bz({'1454633': {}})
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(stop_guest_agent_service.__name__)
 class TestBalloonWithoutAgent(Balloon):
     """
@@ -323,7 +323,7 @@ class TestBalloonWithoutAgent(Balloon):
 
 
 @bz({'1454633': {}})
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestBalloonMax(Balloon):
     """
     Negative: Test ballooning on the VM
@@ -349,7 +349,7 @@ class TestBalloonMax(Balloon):
 
 
 @bz({'1454633': {}})
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestBalloonMultipleVms(Balloon):
     """
     Test ballooning with multiple VM's

@@ -18,7 +18,11 @@ from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    NetworkTest,
+    testflow,
+    tier2,
+)
 from fixtures import (
     create_host_net_qos, remove_qos_from_dc,
     set_default_engine_properties, update_network_in_datacenter
@@ -35,7 +39,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -157,7 +161,7 @@ class TestHostNetQOSCase01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_host_net_qos.__name__,
@@ -229,7 +233,7 @@ class TestHostNetQOSCase02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -320,7 +324,7 @@ class TestHostNetQOSCase03(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -413,7 +417,7 @@ class TestHostNetQOSCase04(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -565,7 +569,7 @@ class TestHostNetQOSCase05(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_host_net_qos.__name__,

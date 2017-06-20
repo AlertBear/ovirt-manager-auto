@@ -17,7 +17,6 @@ import config as sriov_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (  # noqa: F401
     reset_host_sriov_params,
     add_vnic_profile,
@@ -25,6 +24,11 @@ from fixtures import (  # noqa: F401
     set_num_of_vfs,
     create_qos,
     sr_iov_init
+)
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
 )
 from rhevmtests.networking.fixtures import (  # noqa: F401
     create_and_attach_networks,
@@ -39,7 +43,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     setup_networks_fixture.__name__
@@ -89,7 +93,7 @@ class TestSriov01(NetworkTest):
         ]
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
@@ -218,7 +222,7 @@ class TestSriov02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     reset_host_sriov_params.__name__,
@@ -288,8 +292,8 @@ class TestSriov03(NetworkTest):
         assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(max_vf + 1)
 
 
-@attr(tier=2)
 @pytest.mark.incremental
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     reset_host_sriov_params.__name__,
@@ -345,7 +349,7 @@ class TestSriov04(NetworkTest):
         assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(3)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,

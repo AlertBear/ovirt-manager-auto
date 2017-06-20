@@ -8,8 +8,10 @@ from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from art.rhevm_api.tests_lib.low_level.vms import removeVm, checkVMConnectivity
 from art.test_handler.exceptions import VMException
 from art.test_handler.tools import polarion
-from art.unittest_lib import IntegrationTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    IntegrationTest as TestCase,
+    tier2,
+)
 from art.rhevm_api.utils.test_utils import get_api
 from reports.sanity.test_local_installation_sanity import SanityServicesLogs
 
@@ -30,7 +32,7 @@ def teardown_module():
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class UpgradeSanityVerification(TestCase):
     """ Basic test """
     __test__ = True
@@ -85,6 +87,6 @@ class UpgradeSanityVerification(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class UpgradeSanityDWHReports(SanityServicesLogs):
     pass

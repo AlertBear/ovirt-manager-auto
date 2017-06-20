@@ -21,12 +21,18 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import VirtTest, attr, testflow
+from art.unittest_lib import (
+    VirtTest,
+    testflow,
+    tier1,
+    tier2,
+    tier3,
+)
 
 logger = logging.getLogger("virt.vm_pools.prestarted_vms")
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__
 )
@@ -66,7 +72,7 @@ class TestAdminStartVmAndPrestartedVms(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -122,7 +128,7 @@ class TestPoolSizeMoreThanPrestartedUserTakeVms(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -191,7 +197,7 @@ class TestPoolSizeMoreThanPrestartedUserAndAdminTakeVms(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -250,7 +256,7 @@ class TestUserTakeAllPrestartedVmsFromPool(VirtTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__
 )
@@ -281,7 +287,7 @@ class TestUpdatePoolWithPrestartedVms(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestUpdatePoolWithTooManyPrestartedVms(VirtTest):
     """

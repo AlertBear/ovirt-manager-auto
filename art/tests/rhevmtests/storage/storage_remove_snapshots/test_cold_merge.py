@@ -22,7 +22,12 @@ from rhevmtests.storage.fixtures import (
     create_storage_domain, start_vm, init_vm_executor,
 )
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import testflow
 
 TEST_FILE_TEMPLATE = 'test_file_%s'
 REGEX_COLD_MERGE_CMD = r"ColdMergeVDSCommand\(HostName\ =\ (?P<host_name>\w+)"
@@ -268,7 +273,7 @@ class TestCase18975(ColdMergeBaseClass):
     test_case = '18975'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=2)
+    @tier2
     def test_basic_snapshot_cold_merge_sdm_merge_by_hsm(self):
         self.basic_flow()
         self.remove_snapshot_with_verify_cold_merge(1)
@@ -298,7 +303,7 @@ class TestCase18976(ColdMergeBaseClass):
     test_case = '18976'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=2)
+    @tier2
     def test_basic_snapshot_merge_after_adding_hsm(self):
         self.basic_flow(4)
         self.remove_snapshot_with_verify_cold_merge(1)
@@ -356,7 +361,7 @@ class TestCase18932(basePlan.BaseTestCase):
     dc_verison = "4.0"
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=3)
+    @tier3
     def test_basic_flow_with_previous_compatibility_version(self):
         self.basic_flow()
         assert ll_vms.removeSnapshot(
@@ -378,7 +383,7 @@ class TestCase18972(ColdMergeBaseClass):
     test_case = '18972'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=4)
+    @tier4
     def test_basic_flow_restart_vdsm_during_prepare_merge(self):
         self.basic_flow()
         _, spm_dict = ll_hosts.get_host(
@@ -455,7 +460,7 @@ class TestCase18974(ColdMergeBaseClass):
             )
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=4)
+    @tier4
     def test_basic_flow_restart_vdsm_after_sdm_merge_starts(self):
         self.basic_flow()
         self.remove_snapshot_with_verify_cold_merge(1)

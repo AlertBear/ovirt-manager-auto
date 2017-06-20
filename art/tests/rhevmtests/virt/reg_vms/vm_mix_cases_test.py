@@ -6,7 +6,11 @@
 import logging
 import pytest
 from art.test_handler.settings import opts
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -36,7 +40,7 @@ class TestMixCases(VirtTest):
         helper.get_storage_domains()
     )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-12522")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_set_ticket(self):
@@ -52,7 +56,7 @@ class TestMixCases(VirtTest):
             True, self.vm_name, config.ticket_expire_time
         ), "Failed to set ticket to VM"
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-14773")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_template_from_running_vm(self):
@@ -66,7 +70,7 @@ class TestMixCases(VirtTest):
             name=config.template_name
         )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-12523")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_check_vm_cdrom(self):
@@ -79,7 +83,7 @@ class TestMixCases(VirtTest):
             vmName=self.vm_name
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12524")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_vm_statistics(self):
@@ -89,7 +93,7 @@ class TestMixCases(VirtTest):
         testflow.step("Check vm %s statistics", self.vm_name)
         assert ll_vms.checkVmStatistics(True, self.vm_name)
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12577")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_network_vm(self):
@@ -126,7 +130,7 @@ class TestMixCases(VirtTest):
             nic=config.NIC_NAME[2]
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12572")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_add_raw_virtio_disk_without_sparse(self):
@@ -145,7 +149,7 @@ class TestMixCases(VirtTest):
             sparse=False
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12571")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_different_interfaces_and_formats(self):
@@ -177,7 +181,7 @@ class TestMixCases(VirtTest):
                 )
                 assert result
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-12583")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
     def test_vm_template(self):
@@ -193,7 +197,7 @@ class TestMixCases(VirtTest):
             template=config.TEMPLATE_NAME[0]
         )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-12584")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
     def test_template_with_specific_sd(self):
@@ -210,7 +214,7 @@ class TestMixCases(VirtTest):
             storagedomain=self.master_domain
         )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-12585")
     @pytest.mark.usefixtures(create_vm_and_template_with_small_disk.__name__)
     def test_template_with_wrong_sd(self):
@@ -227,7 +231,7 @@ class TestMixCases(VirtTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(vm_display_fixture.__name__)
 class TestVmDisplay(VirtTest):
     """
@@ -271,7 +275,7 @@ class TestLockVM(VirtTest):
     template_name = config.TEMPLATE_NAME[0]
     add_disk = True
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12587")
     def test_locked_vm(self):
         """
@@ -300,7 +304,7 @@ class TestAddQcowDisk(VirtTest):
     add_disk = False
     master_domain, _, _ = helper.get_storage_domains()
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12573")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_sparse_cow_virtio_data_disk(self):
@@ -323,7 +327,7 @@ class TestAddQcowDisk(VirtTest):
             sparse=True
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12568")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)

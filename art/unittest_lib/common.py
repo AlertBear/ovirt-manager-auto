@@ -2,7 +2,6 @@ import logging
 from unittest2 import TestCase
 
 from _pytest_art.marks import (
-    attr,
     network,
     sla,
     storage,
@@ -52,7 +51,6 @@ class BaseTestCase(TestCase):
 
 
 @storage
-@attr(team="storage")
 class StorageTest(BaseTestCase):
     """
     Basic class for storage tests
@@ -67,7 +65,6 @@ class StorageTest(BaseTestCase):
 
 
 @network
-@attr(team="network")
 class NetworkTest(object):
     """
     Basic class for network tests
@@ -76,7 +73,6 @@ class NetworkTest(object):
 
 
 @virt
-@attr(team="virt")
 class VirtTest(object):
     """
     Basic class for compute/virt tests
@@ -85,7 +81,6 @@ class VirtTest(object):
 
 
 @sla
-@attr(team="sla")
 class SlaTest(object):
     """
     Basic class for compute/sla tests
@@ -93,7 +88,6 @@ class SlaTest(object):
 
 
 @coresystem
-@attr(team="coresystem")
 class CoreSystemTest(object):
     """
     Basic class for core system tests
@@ -102,7 +96,6 @@ class CoreSystemTest(object):
 
 
 @coresystem
-@attr(team="coresystem")
 class IntegrationTest(BaseTestCase):
     """
     Basic class for integration test
@@ -111,7 +104,6 @@ class IntegrationTest(BaseTestCase):
 
 
 @upgrade
-@attr(team="upgrade", tier="upgrade")
 class UpgradeTest(BaseTestCase):
     """
     Basic class for upgrade test

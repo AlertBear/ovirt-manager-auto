@@ -6,7 +6,11 @@ Test setting cpu type on vm level overriding cluster level
 import config
 import copy
 import pytest
-from art.unittest_lib import VirtTest, testflow, attr
+from art.unittest_lib import (
+    VirtTest,
+    testflow,
+    tier2,
+)
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     storagedomains as ll_sd,
@@ -33,7 +37,7 @@ from rhevmtests.virt import helper as virt_helper
 from rhevmtests import helpers
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     basic_teardown_fixture.__name__
 )
@@ -229,7 +233,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
     """
     Tests basic configuration and inheritance of custom cpu model
@@ -419,7 +423,7 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
         assert ll_vms.startVm(True, config.VM_NAME[0])
 
 
-@attr(tier=2)
+@tier2
 class TestClusterParamsOverrideLowerThanCluster(VirtTest):
     """
     Tests basic configuration and inheritance of custom cpu model

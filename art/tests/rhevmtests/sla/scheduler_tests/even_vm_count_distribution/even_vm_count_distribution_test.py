@@ -26,7 +26,7 @@ host_as_spm = 0
 he_dst_host = 0
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     choose_specific_host_as_spm.__name__,
@@ -122,7 +122,7 @@ class TestStartVm(BaseEvenVmCountDistributionTwoHosts):
         )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     choose_specific_host_as_spm.__name__,

@@ -76,7 +76,7 @@ class BaseMultiplePinning(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     update_vms.__name__,
@@ -122,7 +122,7 @@ class TestMultiplePinning01(BaseMultiplePinning):
         assert not ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -152,7 +152,7 @@ class TestMultiplePinning02(BaseMultiplePinning):
         assert not ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -209,7 +209,7 @@ class TestMultiplePinning03(BaseMultiplePinning):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_class_cpu_pinning.__name__,
     update_vms.__name__,
@@ -260,7 +260,7 @@ class TestMultiplePinning04(BaseMultiplePinning):
             )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
@@ -311,7 +311,7 @@ class TestMultiplePinning05(BaseMultiplePinning):
             )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -337,7 +337,7 @@ class TestMultiplePinning06(BaseMultiplePinning):
         pinning_helpers.add_one_numa_node_to_vm(negative=True)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
@@ -372,7 +372,7 @@ class TestMultiplePinning07(BaseMultiplePinning):
         )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(change_host_cluster.__name__)
 class TestMultiplePinning08(BaseMultiplePinning):
     """
@@ -397,7 +397,7 @@ class TestMultiplePinning08(BaseMultiplePinning):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -434,7 +434,7 @@ class TestMultiplePinning09(BaseMultiplePinning):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
@@ -472,7 +472,7 @@ class TestMultiplePinning10(BaseMultiplePinning):
         assert not ll_vms.get_vm_host_devices(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_vm_without_disk.__name__,
     update_vms.__name__,
@@ -504,7 +504,7 @@ class TestImportExport(BaseMultiplePinning):
         assert vm_placement_hosts == conf.HOSTS[:2]
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @bz({"1333409": {}})
 @pytest.mark.usefixtures(
     create_vm_without_disk.__name__,

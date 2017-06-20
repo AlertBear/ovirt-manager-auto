@@ -10,7 +10,12 @@ import pytest
 import time
 from threading import Thread
 from utilities.machine import Machine
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier3,
+    tier4,
+)
 from art.unittest_lib.common import StorageTest as BaseTestCase, testflow
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dcs,
@@ -226,7 +231,7 @@ class TestCase5061(BaseTestCase):
     new_size = (config.DISK_SIZE + config.GB)
 
     @polarion("RHEVM3-5061")
-    @attr(tier=3)
+    @tier3
     def test_virtual_disk_resize_after_snapshot_creation(self):
         """
         - VM with disk and OS
@@ -273,7 +278,7 @@ class TestCase5060(BaseTestCase):
     new_size = config.DISK_SIZE + config.GB
 
     @polarion("RHEVM3-5060")
-    @attr(tier=3)
+    @tier3
     def test_Commit_snapshot_after_disk_resize(self):
         """
         - VM with disk and OS
@@ -356,7 +361,7 @@ class TestCase5062(BasicResize):
     }
 
     @polarion("RHEVM3-5062")
-    @attr(tier=1)
+    @tier1
     @bz({'1408594': {}})
     def test_preallocated_block_resize(self):
         """
@@ -389,7 +394,7 @@ class TestCase5063(BasicResize):
     }
 
     @polarion("RHEVM3-5063")
-    @attr(tier=1)
+    @tier1
     @bz({'1408594': {}})
     def test_thin_block_resize(self):
         """
@@ -425,7 +430,7 @@ class TestCase5065(BasicResize):
     }
 
     @polarion("RHEVM3-5065")
-    @attr(tier=1)
+    @tier1
     def test_thin_file_resize(self):
         """
         - VM with preallocated disk and OS
@@ -457,7 +462,7 @@ class TestCase5066(BasicResize):
     }
 
     @polarion("RHEVM3-5066")
-    @attr(tier=4)
+    @tier4
     def test_block_connection_preallocated_resize(self):
         """
         - VM with preallocated disk and OS
@@ -490,7 +495,7 @@ class TestCase5067(BasicResize):
     }
 
     @polarion("RHEVM3-5067")
-    @attr(tier=4)
+    @tier4
     def test_block_connection_sparse_resize(self):
         """
         - VM with thin disk and OS
@@ -530,7 +535,7 @@ class TestCase5069(BasicResize):
     }
 
     @polarion("RHEVM3-5069")
-    @attr(tier=2)
+    @tier2
     def test_shared_block_disk_resize(self):
         """
         - 2 VM with RAW disk and OS
@@ -577,7 +582,7 @@ class TestCase5070(BasicResize):
     }
 
     @polarion("RHEVM3-5070")
-    @attr(tier=2)
+    @tier2
     def test_thin_block_resize(self):
         """
         - VM with thin disk and OS
@@ -617,7 +622,7 @@ class TestCase5071(BasicResize):
     }
 
     @polarion("RHEVM3-5071")
-    @attr(tier=4)
+    @tier4
     def test_stop_libvirt_during_resize(self):
         """
         - VM with thin disk and OS
@@ -698,7 +703,7 @@ class TestCase5073(BasicResize):
     new_size = 20 * config.GB
 
     @polarion("RHEVM3-5073")
-    @attr(tier=2)
+    @tier2
     def test_multiple_disks_resize_same_SD(self):
         """
         - 5 vms with OS, disks on same SD
@@ -727,7 +732,7 @@ class TestCase11862(BasicResize):
     new_size = 20 * config.GB
 
     @polarion("RHEVM3-11862")
-    @attr(tier=2)
+    @tier2
     def test_multiple_disks_resize_different_SD(self):
         """
         - 5 vms with OS, disks on different SD

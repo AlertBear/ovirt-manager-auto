@@ -14,12 +14,16 @@ import config as required_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import activate_host
 from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
     create_and_attach_networks,
     remove_all_networks
+)
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
 )
 from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
@@ -43,7 +47,7 @@ def required_network_prepare_setup(request):
     assert helper.deactivate_hosts()
 
 
-@attr(tier=2)
+@tier2
 class TestRequiredNetwork01(NetworkTest):
     """
     Check that management network is required by default
@@ -71,7 +75,7 @@ class TestRequiredNetwork01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -125,7 +129,7 @@ class TestRequiredNetwork02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,

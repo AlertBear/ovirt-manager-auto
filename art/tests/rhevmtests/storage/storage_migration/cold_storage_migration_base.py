@@ -25,7 +25,10 @@ from art.rhevm_api.utils.log_listener import watch_logs
 import art.rhevm_api.utils.storage_api as storage_api
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
 from art.unittest_lib.common import StorageTest, testflow
 from art.rhevm_api.utils import test_utils
 import rhevmtests.storage.helpers as storage_helpers
@@ -313,7 +316,7 @@ class TestCase18995(BaseKillSpmVdsm):
     regex = "CreateVolumeContainerCommand"
 
     @polarion("RHEVM3-118995")
-    @attr(tier=3)
+    @tier3
     def test_kill_spm_vdsm_before_copy_image_cmd(self):
         """
         Actions:
@@ -341,7 +344,7 @@ class TestCase19059(BaseKillSpmVdsm):
     regex = "CopyDataCommand"
 
     @polarion("RHEVM3-19059")
-    @attr(tier=3)
+    @tier3
     def test_kill_spm_vdsm_during_copy_data_cmd(self):
         """
         Actions:
@@ -447,7 +450,7 @@ class TestCase19060_during_CopyImageGroupWithDataCmd(BaseRestartEngine):
     regex = "CopyImageGroupWithDataCommand"
 
     @polarion("RHEVM3-19060")
-    @attr(tier=3)
+    @tier3
     def test_restart_engine_during_copy_image_group_with_data_cmd(self):
         self.basic_flow()
         self.cold_migrate_vm_and_verify()
@@ -465,7 +468,7 @@ class TestCase19060_during_CloneImageGroupVolumesStructureCmd(
     regex = "CloneImageGroupVolumesStructureCommand"
 
     @polarion("RHEVM3-19060")
-    @attr(tier=3)
+    @tier3
     def test_restart_enigne_during_clone_image_group_vol_structure_cmd(self):
         self.basic_flow()
         self.cold_migrate_vm_and_verify()
@@ -481,7 +484,7 @@ class TestCase19060_during_CreateVolumeContainerCommand(BaseRestartEngine):
     regex = "CreateVolumeContainerCommand"
 
     @polarion("RHEVM3-19060")
-    @attr(tier=3)
+    @tier3
     def test_restart_engine_during_create_vol_container_cmd(self):
         self.basic_flow()
         self.cold_migrate_vm_and_verify()
@@ -497,7 +500,7 @@ class TestCase19061(BaseRestartEngine):
     regex = "CopyImageGroupVolumesDataCommand"
 
     @polarion("RHEVM3-19061")
-    @attr(tier=3)
+    @tier3
     def test_restart_engine_during_two_commands(self):
         self.basic_flow()
         self.regex = "CopyDataCommand"
@@ -626,7 +629,7 @@ class TestCase19095(BaseBlockConnection):
     __test__ = False
 
     @polarion("RHEVM3-19095")
-    @attr(tier=3)
+    @tier3
     def test_disconnect_engine_and_hsm_during_CopyVolumeDataVDSCommand(self):
         """
         Actions:
@@ -656,7 +659,7 @@ class TestCase19028(BaseBlockConnection):
     __test__ = False
 
     @polarion("RHEVM3-19028")
-    @attr(tier=3)
+    @tier3
     def test_disconnect_source_domain_and_hsm_during_CopyVolumeDataVDSCommand(
         self
     ):
@@ -694,7 +697,7 @@ class TestCase19007(BaseBlockConnection):
     regex = 'CloneImageGroupVolumesStructureCommand'
 
     @polarion("RHEVM3-19007")
-    @attr(tier=3)
+    @tier3
     def test_disconnect_spm_host_and_hsm_during_CopyVolumeDataVDSCommand(self):
         """
         Actions:
@@ -739,7 +742,7 @@ class TestCase19012(ColdMoveBase):
     CHECKSUM_FILES_RESULTS = config.CHECKSUM_FILES.copy()
 
     @polarion("RHEVM3-19012")
-    @attr(tier=3)
+    @tier3
     def test_move_multiple_vms_with_multiple_disks(self):
         """
         Actions:
@@ -803,7 +806,7 @@ class TestCase19016(ColdMoveBase):
             return config.STORAGE_TYPE_NFS
 
     @polarion("RHEVM3-19016")
-    @attr(tier=3)
+    @tier3
     def test_move_to_upgraded_domain(self):
         """
         Actions:
@@ -865,7 +868,7 @@ class TestCase19035(basePlan.BaseTestCase, ColdMoveBase):
     """
 
     @polarion("RHEVM3-19035")
-    @attr(tier=2)
+    @tier2
     def test_move_vm_with_extended_snapshot(self):
         """
         Actions:
@@ -949,7 +952,7 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
         assert ll_vms.stop_vms_safely(vms_list=[self.vm_name])
 
     @polarion("RHEVM3-19020")
-    @attr(tier=2)
+    @tier2
     def test_move_vm_with_multiple_snapshots(self):
         """
         Actions:

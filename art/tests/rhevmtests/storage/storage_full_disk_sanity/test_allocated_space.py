@@ -17,7 +17,13 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest as TestCase, testflow
 from rhevmtests.storage.fixtures import (
     delete_disks, create_storage_domain, remove_vms, remove_templates
 )
@@ -166,7 +172,7 @@ class TestCase11536(BaseCase):
         self.create_disks()
 
     @polarion("RHEVM3-11536")
-    @attr(tier=1)
+    @tier1
     def test_create_disks_and_check_size(self):
         """
         Create preallocated and thin provision disk then check if storage
@@ -187,7 +193,7 @@ class TestCase11537(BaseCase):
     polarion_test_case = '11537'
 
     @polarion("RHEVM3-11537")
-    @attr(tier=2)
+    @tier2
     def test_delete_disks(self):
         """
         Delete disk and check storage details are updated
@@ -239,7 +245,7 @@ class TestCase11547(BaseCase):
             self.expected_allocated_size[self.domains[1]] += provisioned_size
 
     @polarion("RHEVM3-11547")
-    @attr(tier=2)
+    @tier2
     def test_move_disks(self):
         """
         Move disks and check domain details
@@ -350,7 +356,7 @@ class TestCase11546(BaseCase):
         )
 
     @polarion("RHEVM3-11546")
-    @attr(tier=2)
+    @tier2
     def test_extend_domain_and_check_details(self):
         """
         Extend storage domain and check if total size is updated
@@ -412,7 +418,7 @@ class TestCase11541(BaseCase):
                     )
 
     @polarion("RHEVM3-11541")
-    @attr(tier=3)
+    @tier3
     def test_create_templates(self):
         """
         Create templates and check storage domain details
@@ -468,7 +474,7 @@ class TestCase11545(BaseCase):
         assert ll_disks.wait_for_disks_status([self.disk_name])
 
     @polarion("RHEVM3-11545")
-    @attr(tier=4)
+    @tier4
     def test_rollback_disk_move(self):
         """
         Start disk move and fail it, then check details after rollback

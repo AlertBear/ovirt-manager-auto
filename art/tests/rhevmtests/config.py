@@ -636,9 +636,6 @@ NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % (
     "extra bond mode support"
 )
 
-# used for tests that are not adjusted to GE or tests that we don't want to run
-DO_NOT_RUN = 17
-
 # WGT
 WIN2008R2_64B = opts['elements_conf']['Win2008R2_64b']
 WIN2012R2_64B = opts['elements_conf']['Win2012R2_64b']

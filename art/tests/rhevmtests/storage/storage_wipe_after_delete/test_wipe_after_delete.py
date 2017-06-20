@@ -19,7 +19,10 @@ from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as BaseTestCase, testflow
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
 from rhevmtests.storage.storage_wipe_after_delete import config
 from art.test_handler.settings import opts
 from fixtures import (
@@ -121,7 +124,7 @@ class TestCase5116(CommonUsage):
     polarion_test_case = '5116'
 
     @polarion("RHEVM3-5116")
-    @attr(tier=2)
+    @tier2
     def test_behavior_on_hotplugged_disks(self):
         """
         Actions:
@@ -167,7 +170,7 @@ class TestCase10443(CommonUsage):
     polarion_test_case = '10443'
 
     @polarion("RHEVM3-10443")
-    @attr(tier=2)
+    @tier2
     def test_wipe_after_delete_on_attached_disk(self):
         """
         Actions:
@@ -196,7 +199,7 @@ class TestCase5113(CommonUsage):
     polarion_test_case = '5113'
 
     @polarion("RHEVM3-5113")
-    @attr(tier=2)
+    @tier2
     def test_live_edit_wipe_after_delete(self):
         """
         Actions:
@@ -221,7 +224,7 @@ class TestCase5115(CommonUsage):
     polarion_test_case = '5115'
 
     @polarion("RHEVM3-5115")
-    @attr(tier=2)
+    @tier2
     def test_uncheck_wipe_after_delete(self):
         """
         Actions:
@@ -248,7 +251,7 @@ class TestCase11864(CommonUsage):
     disk_name = "disk_%s" % polarion_test_case
 
     @polarion("RHEVM3-11864")
-    @attr(tier=3)
+    @tier3
     def test_live_migration_wipe_after_delete(self):
         """
         Actions:
@@ -296,7 +299,7 @@ class TestCase10432(CommonUsage):
     polarion_test_case = '10432'
 
     @polarion("RHEVM3-10432")
-    @attr(tier=2)
+    @tier2
     def test_domain_configured_with_wipe_after_delete(self):
         """
         Actions:

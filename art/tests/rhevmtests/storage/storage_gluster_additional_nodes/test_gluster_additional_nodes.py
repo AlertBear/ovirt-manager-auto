@@ -21,7 +21,11 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import storage_api
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
+from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from art.rhevm_api.utils.log_listener import watch_logs
 from rhevmtests.storage.storage_gluster_additional_nodes.fixtures import (
     block_connectivity_gluster_nodes, initialize_params,
@@ -284,7 +288,7 @@ class BaseTestBlockingNodes(BaseGlusterMount):
         self.unblock_nodes(config.NODES)
 
 
-@attr(tier=2)
+@tier2
 class TestBlockingNodesBackupVolFile(BaseTestBlockingNodes):
     """
     Test gluster domain is available after blocking different nodes
@@ -294,7 +298,7 @@ class TestBlockingNodesBackupVolFile(BaseTestBlockingNodes):
     backup_vol_file_server = True
 
 
-@attr(tier=2)
+@tier2
 class TestBlockingNodesWithNoBackupVolFile(BaseTestBlockingNodes):
     """
     Test gluster domain is available after blocking different nodes
@@ -304,7 +308,7 @@ class TestBlockingNodesWithNoBackupVolFile(BaseTestBlockingNodes):
     backup_vol_file_server = False
 
 
-@attr(tier=3)
+@tier3
 class Test12320(BaseGlusterMount):
     """
     Test gluster setup with Unavailable Master and 2 Available secondary
@@ -330,7 +334,7 @@ class Test12320(BaseGlusterMount):
         )
 
 
-@attr(tier=3)
+@tier3
 class Test12322(BaseGlusterMount):
     """
     Test Gluster setup with Available Master and 1 Available Secondary
@@ -351,7 +355,7 @@ class Test12322(BaseGlusterMount):
         )
 
 
-@attr(tier=3)
+@tier3
 class Test12323(BaseGlusterMount):
     """
     Test Gluster setup with Unavailable Master and 1 Available Secondary
@@ -374,7 +378,7 @@ class Test12323(BaseGlusterMount):
         )
 
 
-@attr(tier=2)
+@tier2
 class Test12324(BaseGlusterMount):
     """
     Test Gluster setup with with All RHS servers available
@@ -394,7 +398,7 @@ class Test12324(BaseGlusterMount):
         )
 
 
-@attr(tier=3)
+@tier3
 class Test12325(BaseGlusterMount):
     """
     Test a Gluster setup with an Available master and 2 Unavailable
@@ -417,7 +421,7 @@ class Test12325(BaseGlusterMount):
         )
 
 
-@attr(tier=2)
+@tier2
 class Test12326(BaseGlusterMount):
     """
     Test Gluster setup with with All RHS servers unavailable
@@ -434,7 +438,7 @@ class Test12326(BaseGlusterMount):
         self.verify_add_storage_domain(positive=False)
 
 
-@attr(tier=3)
+@tier3
 class VerifyGlusterMountParameteres(BaseGlusterMount):
     """
     Test the backup-volfile-servers parameter works as expected.

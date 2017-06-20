@@ -18,7 +18,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (  # noqa: F401
     remove_network_manager_connection,
     add_sriov_host_device_to_vm,
@@ -34,6 +33,11 @@ from fixtures import (  # noqa: F401
     update_qos,
     add_labels,
     sr_iov_init
+)
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
 )
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -52,7 +56,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
@@ -263,7 +267,7 @@ class TestSriovVm01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -333,7 +337,7 @@ class TestSriovVm02(NetworkTest):
         assert vlan_from_xml == self.vlan_id, err_log
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -461,7 +465,7 @@ class TestSriovVm03(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
@@ -611,7 +615,7 @@ class TestSriovVm04(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -720,7 +724,7 @@ class TestSriovVm05(NetworkTest):
         assert vm_resource.network.send_icmp(dst=self.vm_2_ip)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,

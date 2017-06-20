@@ -11,7 +11,13 @@ from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import VirtTest, testflow
 import rhevmtests.virt.helper as virt_helper
 from rhevmtests.virt.reg_vms.fixtures import (
     add_vm_fixture,
@@ -29,7 +35,7 @@ import config
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_vm_and_template_with_small_disk.__name__,
     basic_teardown_fixture.__name__,
@@ -56,7 +62,7 @@ class CloneVMSanityTestCase1(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     create_file_on_vm.__name__,
@@ -89,7 +95,7 @@ class CloneVMSanityTestCase2(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     add_vm_fixture.__name__,
     basic_teardown_fixture.__name__,
@@ -112,7 +118,7 @@ class CloneVMSanityTestCase3(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     basic_teardown_fixture.__name__,
     add_vm_with_disks.__name__,
@@ -138,7 +144,7 @@ class CloneVmDisksCase(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     start_stop_fixture.__name__
@@ -162,7 +168,7 @@ class CloneVmNegativeCase1(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
 )
@@ -194,7 +200,7 @@ class CloneVmNegativeCase2(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     remove_locked_vm.__name__
@@ -227,7 +233,7 @@ class CloneVmNegativeCase3(VirtTest):
         )
 
 
-@attr(tier=4)
+@tier4
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     unlock_disks.__name__,

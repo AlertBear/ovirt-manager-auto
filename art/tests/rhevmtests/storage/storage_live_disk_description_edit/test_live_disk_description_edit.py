@@ -22,7 +22,10 @@ from rhevmtests.storage.storage_live_disk_description_edit.fixtures import (
 )
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import (
+    tier3,
+)
+from art.unittest_lib import StorageTest as BaseTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +142,7 @@ class TestCase11500(BaseClassEditDescription):
     # 1211314: CLI auto complete option description is missing for add disk
 
     @polarion("RHEVM3-11500")
-    @attr(tier=3)
+    @tier3
     def test_edit_description_on_block_or_file_domain(self):
         """
         1. Add VM with a block based disk, add a description and run the VM,
@@ -169,7 +172,7 @@ class TestCase11501(BaseClassEditDescription):
     # 1211314: CLI auto complete option description is missing for add disk
 
     @polarion("RHEVM3-11501")
-    @attr(tier=3)
+    @tier3
     def test_edit_description_on_block_or_file_domain(self):
         """
         1. Add VM with a file based disk, add a description and run the VM,
@@ -199,7 +202,7 @@ class TestCase11503(BasicEnvironment):
     original_descriptions = dict()
 
     @polarion("RHEVM3-11503")
-    @attr(tier=3)
+    @tier3
     def test_verify_disk_description_edit_works_across_hot_plug(self):
         """
         1. Add VM with a disk, run the VM and add a description while the VM
@@ -293,7 +296,7 @@ class TestCase11504(BasicEnvironment):
     polarion_test_case = '11504'
 
     @polarion("RHEVM3-11504")
-    @attr(tier=3)
+    @tier3
     def test_ensure_disk_description_is_locked_during_lsm(self):
         """
         1. Add VM with a disk, run the VM and add a description while the VM

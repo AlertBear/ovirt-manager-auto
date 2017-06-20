@@ -13,7 +13,10 @@ import config as conf
 import helpers
 import pytest
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
 from fixtures import (
     create_quota_limits,
     create_vm_snapshot,
@@ -81,7 +84,7 @@ def init_quota_test(request):
     )
 
 
-@u_libs.attr(tier=1)
+@tier1
 class QuotaTestCRUD(u_libs.SlaTest):
     """
     Quota CRUD test
@@ -156,7 +159,7 @@ class QuotaTestCRUD(u_libs.SlaTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     update_datacenter.__name__,
     update_quota_cluster_hard_limit.__name__,
@@ -353,7 +356,7 @@ class QuotaTestMode(u_libs.SlaTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(update_datacenter.__name__)
 class TestDeleteQuotaInUseAudit(u_libs.SlaTest):
     """
@@ -378,7 +381,7 @@ class TestDeleteQuotaInUseAudit(u_libs.SlaTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(update_datacenter.__name__)
 class TestDeleteQuotaInUseEnforced(u_libs.SlaTest):
     """

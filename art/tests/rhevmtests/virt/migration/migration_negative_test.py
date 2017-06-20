@@ -6,7 +6,9 @@ Negative Migration Test - Tests to check vm migration
 """
 
 import pytest
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier3,
+)
 from art.unittest_lib import VirtTest, testflow
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -18,7 +20,7 @@ from rhevmtests.virt.migration.fixtures import (
 import config
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migrate_to_diff_dc.__name__
@@ -53,7 +55,7 @@ class TestMigrateNegativeCase1(VirtTest):
         'migration between data centers is not supported'
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__
 )
@@ -74,7 +76,7 @@ class TestMigrateNegativeCase2(VirtTest):
         'migration to the same host is NOT supported'
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     migration_init.__name__,
@@ -108,7 +110,7 @@ class TestMigrateNegativeCase3(VirtTest):
         ), "not all VMs are up"
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migration_options_test.__name__

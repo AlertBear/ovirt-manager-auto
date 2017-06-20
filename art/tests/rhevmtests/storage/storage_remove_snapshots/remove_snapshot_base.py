@@ -25,7 +25,13 @@ from rhevmtests.storage.storage_remove_snapshots.fixtures import (
     initialize_params,
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest, testflow
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 
@@ -303,7 +309,7 @@ class TestCase6038(BasicEnvironment):
     test_case = '6038'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=1)
+    @tier1
     def test_basic_snapshot_deletion(self):
         self.basic_flow()
         self.delete_snapshot_with_verification(
@@ -325,7 +331,7 @@ class TestCase6052(BasicEnvironment):
     test_case = '6052'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=2)
+    @tier2
     def test_basic_snapshot_deletion_with_io(self):
         self.basic_flow()
         self.delete_snapshot_with_verification(
@@ -344,7 +350,7 @@ class TestCase16287(BasicEnvironment):
     test_case = '16287'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=2)
+    @tier2
     def test_basic_snapshot_deletion_of_snapshots_disk(self):
         self.perform_snapshot_operation(self.snapshot_description)
         snapshot_disks_before = ll_vms.get_snapshot_disks(
@@ -381,7 +387,7 @@ class TestCase12215(BasicEnvironment):
     test_case = '12215'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=3)
+    @tier3
     def test_snapshot_deletion_of_all_snapshots(self):
         self.basic_flow()
 
@@ -409,7 +415,7 @@ class TestCase6044(BasicEnvironment):
     __test__ = False
     test_case = '6044'
 
-    @attr(tier=3)
+    @tier3
     @polarion("RHEVM3-%s" % test_case)
     def test_snapshot_deletion_base_snapshot(self):
         self.basic_flow()
@@ -436,7 +442,7 @@ class TestCase6045(BasicEnvironment):
     test_case = '6045'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=4)
+    @tier4
     def test_snapshot_deletion_during_vdsm_restart(self):
         host = ll_hosts.get_spm_host(config.HOSTS)
         host_resource = rhevm_helpers.get_host_resource_by_name(
@@ -477,7 +483,7 @@ class TestCase6043(BasicEnvironment):
     test_case = '6043'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=3)
+    @tier3
     def test_basic_snapshot_deletion(self):
         self.basic_flow()
 
@@ -503,7 +509,7 @@ class TestCase6046(BasicEnvironment):
     test_case = '6046'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=4)
+    @tier4
     def test_live_deletion_during_engine_restart(self):
         self.basic_flow()
 
@@ -537,7 +543,7 @@ class TestCase6048(BasicEnvironment):
     test_case = '6048'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=3)
+    @tier3
     def test_consecutive_snapshot_deletion_of_snapshots(self):
         self.basic_flow(5)
 
@@ -573,7 +579,7 @@ class TestCase6050(BasicEnvironment):
     test_case = '6050'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=3)
+    @tier3
     def test_snapshot_merge_during_snapshot_merge(self):
         self.basic_flow()
 
@@ -603,7 +609,7 @@ class TestCase6057(BasicEnvironment):
     test_case = '6057'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=2)
+    @tier2
     def test_live_deletion_after_disk_migration(self):
         self.basic_flow()
         ll_vms.migrate_vm_disks(self.vm_name)
@@ -627,7 +633,7 @@ class TestCase6058(BasicEnvironment):
     test_case = '6058'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=2)
+    @tier2
     def test_live_merge_with_stop_vm(self):
         self.basic_flow()
         # Creation of 4th disk
@@ -666,7 +672,7 @@ class TestCase6062(BasicEnvironment):
     disk_to_migrate = None
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=3)
+    @tier3
     def test_live_merge_during_lsm(self):
         self.basic_flow()
         vm_disks = ll_vms.getVmDisks(self.vm_name)
@@ -703,7 +709,7 @@ class TestCase12216(BasicEnvironment):
     test_case = '12216'
 
     @polarion("RHEVM3-%s" % test_case)
-    @attr(tier=2)
+    @tier2
     def test_basic_snapshot_merge_after_disk_resize(self):
         self.basic_flow(1)
         vm_disks = ll_vms.getVmDisks(self.vm_name)

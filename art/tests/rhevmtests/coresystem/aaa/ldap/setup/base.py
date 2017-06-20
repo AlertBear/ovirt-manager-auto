@@ -1,7 +1,10 @@
 import logging
 import pytest
 
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 from art.rhevm_api.tests_lib.low_level import mla, users
 
 from rhevmtests.coresystem.aaa.ldap import config, common
@@ -10,7 +13,7 @@ from rhevmtests.coresystem.aaa.ldap import config, common
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=2)
+@tier2
 class AuthBaseCase(TestCase):
     """ test login with user """
     password = '123456'
@@ -136,7 +139,7 @@ class BaseDisabledAccount(AuthBaseCase):
         assert not self.login()
 
 
-@attr(tier=2)
+@tier2
 class BaseSpecialCharsSearch(TestCase):
     """ Test search of special characters """
     def search(self, special_characters=('#', '%', '$',)):

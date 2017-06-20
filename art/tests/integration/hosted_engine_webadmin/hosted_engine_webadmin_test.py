@@ -22,7 +22,7 @@ from fixtures import (
 )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_webadmin.__name__,
@@ -54,7 +54,7 @@ class TestUpdateHeVmMemory(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_webadmin.__name__,
@@ -103,7 +103,7 @@ class TestHotPlugAndUnplugCpus(u_libs.SlaTest):
         self.update_and_check_cpus(sockets=conf.INIT_HE_VM_CPUS)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_webadmin.__name__,
@@ -135,7 +135,7 @@ class TestUpdateHeVmCpus(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_webadmin.__name__
@@ -161,7 +161,7 @@ class TestAddNicToHeVmWithManagementNetwork(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_webadmin.__name__,
@@ -196,7 +196,7 @@ class TestAddNicToHeVmWithoutManagementNetwork(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_webadmin.__name__
@@ -274,7 +274,7 @@ class TestAddHostAndDeployHostedEngine(u_libs.SlaTest):
 
 
 @bz({"1409509": {}})
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(initialize_ge_constants.__name__)
 class TestPutHostWithHAVmToMaintenance(u_libs.SlaTest):
     """
@@ -306,7 +306,7 @@ class TestPutHostWithHAVmToMaintenance(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(initialize_ge_constants.__name__)
 class TestPutEnvironmentToGlobalMaintenance(u_libs.SlaTest):
     """
@@ -332,7 +332,7 @@ class TestPutEnvironmentToGlobalMaintenance(u_libs.SlaTest):
             )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(initialize_ge_constants.__name__)
 class TestNegativeHeVm(u_libs.SlaTest):
     """
@@ -410,7 +410,7 @@ class TestNegativeHeVm(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(initialize_ge_constants.__name__)
 class TestNegativeHeStorageDomain(u_libs.SlaTest):
     """

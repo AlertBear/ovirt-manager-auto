@@ -27,7 +27,12 @@ from rhevmtests.storage.storage_hotplug_full_test_plan.fixtures import (
     attach_floating_disks_to_vm, set_disks_in_the_correct_state, install_hooks,
     create_results_files,
 )
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest as TestCase, testflow
 from rhevmtests.storage.fixtures import (
     create_vm, add_disk, delete_disks, start_vm,
 )
@@ -160,7 +165,7 @@ class TestCase5033(HotplugHookTest):
     hooks = {'before_disk_hotplug': [config.HOOKFILENAME]}
 
     @polarion("RHEVM3-5033")
-    @attr(tier=2)
+    @tier2
     def test_before_disk_hotplug(self):
         """
         Check if before_disk_hotplug is called
@@ -183,7 +188,7 @@ class TestCase5034(HotplugHookTest):
     hooks = {'after_disk_hotplug': [config.HOOKFILENAME]}
 
     @polarion("RHEVM3-5034")
-    @attr(tier=2)
+    @tier2
     def test_after_disk_hotplug(self):
         """
         Check if after_disk_hotplug is called
@@ -206,7 +211,7 @@ class TestCase5035(HotplugHookTest):
     hooks = {'before_disk_hotunplug': [config.HOOKFILENAME]}
 
     @polarion("RHEVM3-5035")
-    @attr(tier=2)
+    @tier2
     def test_before_disk_hotunplug(self):
         """
         Check if before_disk_hotunplug is called
@@ -229,7 +234,7 @@ class TestCase5036(HotplugHookTest):
     hooks = {'after_disk_hotunplug': [config.HOOKFILENAME]}
 
     @polarion("RHEVM3-5036")
-    @attr(tier=2)
+    @tier2
     def test_after_disk_hotunplug(self):
         """
         Check if after_disk_hotunplug is called
@@ -252,7 +257,7 @@ class TestCase5037(HotplugHookTest):
     hooks = {'after_disk_hotplug': [config.HOOKWITHSLEEPFILENAME]}
 
     @polarion("RHEVM3-5037")
-    @attr(tier=3)
+    @tier3
     def test_after_disk_hotplug_5_disks_concurrently(self):
         """
         Try to hotplug 7 tests concurrently and check that all hooks were
@@ -285,7 +290,7 @@ class TestCase5038(HotplugHookTest):
     hooks = {'after_disk_hotunplug': [config.HOOKWITHSLEEPFILENAME]}
 
     @polarion("RHEVM3-5038")
-    @attr(tier=3)
+    @tier3
     def test_after_disk_hotunplug_5_disks_concurrently(self):
         """
         Concurrently unplug 7 disks and check if after_unplug hook were
@@ -335,7 +340,7 @@ class TestCase5039(HotplugHookTest):
             )
 
     @polarion("RHEVM3-5039")
-    @attr(tier=3)
+    @tier3
     def test_before_disk_hotplug_attaching_new_disk(self):
         """
         Check if after_disk_hotunplug is called
@@ -395,7 +400,7 @@ class TestCase5044(HotplugHookTest):
         assert not self.get_hooks_result_file()
 
     @polarion("RHEVM3-5044")
-    @attr(tier=3)
+    @tier3
     def test_after_disk_hotplug_binary_executable_hook_file(self):
         """
         Check that activate succeed and hook fails if hook is binary
@@ -433,7 +438,7 @@ class TestCase5041(HotplugHookTest):
         assert not self.get_hooks_result_file()
 
     @polarion("RHEVM3-5041")
-    @attr(tier=2)
+    @tier2
     def test_non_executable_hooks(self):
         """
         Check that vdsm skips a hook file if it is non-executable
@@ -475,7 +480,7 @@ class TestCase5040(HotplugHookTest):
         ) == 2, "'%s' should have appeared twice" % config.TEXT
 
     @polarion("RHEVM3-5040")
-    @attr(tier=3)
+    @tier3
     def test_multiple_hooks(self):
         """
         Multiple hooks for one action, checks that all will be called
@@ -519,7 +524,7 @@ class TestCase5042(HotplugHookTest):
         assert not self.get_hooks_result_file()
 
     @polarion("RHEVM3-5042")
-    @attr(tier=4)
+    @tier4
     @pytest.mark.usefixtures("initializer_TestCase5042")
     def test_multiple_hooks(self):
         """
@@ -546,7 +551,7 @@ class TestCase6231(TestCase):
     interfaces = [config.VIRTIO, config.VIRTIO_SCSI]
 
     @polarion("RHEVM3-6231")
-    @attr(tier=2)
+    @tier2
     def test_activate_deactivate_disk(self):
         """
         Activate an already attached disk on a running VM
@@ -596,7 +601,7 @@ class TestCase6243(TestCase):
     interfaces = DISK_INTERFACES
 
     @polarion("RHEVM3-6243")
-    @attr(tier=3)
+    @tier3
     def test_plug_floating_disk(self):
         """
         Hotplug floating disk (shareable/non-shareable) to a VM
@@ -634,7 +639,7 @@ class TestCase6230(TestCase):
     interfaces = [config.VIRTIO, config.VIRTIO_SCSI]
 
     @polarion("RHEVM3-6230")
-    @attr(tier=3)
+    @tier3
     def test_deactivate_and_activate_disk(self):
         """
         Deactivate an already attached disks on a running VM and then
@@ -689,7 +694,7 @@ class TestCase6234(TestCase):
     polarion_test_case = '6234'
 
     @polarion("RHEVM3-6234")
-    @attr(tier=2)
+    @tier2
     def test_hot_unplug_bootable_disk(self):
         """
         Hot unplug a bootable disk from a VM
@@ -723,7 +728,7 @@ class TestCase16753(TestCase):
     polarion_test_case = '16753'
 
     @polarion("RHEVM3-16753")
-    @attr(tier=3)
+    @tier3
     def test_hot_plug_disk_unsupported_interface(self):
         """
         Hot plug disk with unsupported interface IDE

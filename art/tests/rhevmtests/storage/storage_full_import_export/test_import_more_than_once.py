@@ -9,7 +9,10 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import StorageTest as TestCase, attr
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    tier2,
+)
 from art.unittest_lib.common import testflow
 from rhevmtests.storage.storage_full_import_export.fixtures import (
     initialize_export_domain_param, initialize_vm_and_template_names,
@@ -57,7 +60,7 @@ class TestCase11588(TestCase):
     # 1254230: Operation of exporting template to Export domain gets stuck
 
     @polarion("RHEVM3-11588")
-    @attr(tier=2)
+    @tier2
     def test_import_more_than_once(self):
         """
         Import a vm and a template more than once and make sure it works

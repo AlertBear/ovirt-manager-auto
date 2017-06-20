@@ -17,7 +17,12 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.rhevm_api.utils import storage_api
 from art.rhevm_api.utils import test_utils
-from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from art.test_handler.tools import polarion
 
 from rhevmtests.storage import config
@@ -183,7 +188,7 @@ class TestCase6022(BasicEnvironment):
     polarion_test_case = '6022'
 
     @polarion("RHEVM3-6022")
-    @attr(tier=2)
+    @tier2
     def test_create_snapshot_of_first_disk(self):
         """
         - Create VM with 4 disks
@@ -215,7 +220,7 @@ class TestCase6023(BasicEnvironment):
     cmd_del = 'rm -f %s' % file_name
 
     @polarion("RHEVM3-6023")
-    @attr(tier=2)
+    @tier2
     def test_preview_snapshot(self):
         """
         - Write file on the first disk
@@ -280,7 +285,7 @@ class TestCase6024(BasicEnvironment):
     polarion_test_case = '6024'
 
     @polarion("RHEVM3-6024")
-    @attr(tier=3)
+    @tier3
     def test_create_snapshot_of_first_disk(self):
         """
         - Write some files on first and fourth disks
@@ -342,7 +347,7 @@ class TestCase6026(BasicEnvironment):
     polarion_test_case = '6026'
 
     @polarion("RHEVM3-6026")
-    @attr(tier=3)
+    @tier3
     def test_flow_create_preview_and_undo_snapshot_of_all_disks(self):
         """
         - Create VM with 4 disks
@@ -405,7 +410,7 @@ class TestCase6007(BasicEnvironment):
     cmd_del = 'rm -f %s' % file_name
 
     @polarion("RHEVM3-6007")
-    @attr(tier=3)
+    @tier3
     def test_preview_snapshot(self):
         """
         - Create VM with 4 disks
@@ -474,7 +479,7 @@ class TestCase6013(BasicEnvironment):
     disk_count = 2
 
     @polarion("RHEVM3-6013")
-    @attr(tier=2)
+    @tier2
     def test_clone_vm_from_snapshot(self):
         """
         - Create a VM with 3 disks attached
@@ -515,7 +520,7 @@ class TestCase6010(BasicEnvironment):
     disks_for_custom_preview = 2
 
     @polarion("RHEVM3-6010")
-    @attr(tier=2)
+    @tier2
     def test_custom_preview_with_configuration_and_two_disks(self):
         """
         - Create a Vm with 4 disks (file system on all of them)
@@ -573,7 +578,7 @@ class TestCase6014(BasicEnvironment):
     polarion_test_case = '6014'
 
     @polarion("RHEVM3-6014")
-    @attr(tier=4)
+    @tier4
     def test_restart_VDSM_during_snapshot_creation(self):
         """
         - Create a VM with 4 disks and OS installed
@@ -609,7 +614,7 @@ class TestCase6006(BasicEnvironment):
     polarion_test_case = '6006'
 
     @polarion("RHEVM3-6006")
-    @attr(tier=4)
+    @tier4
     def test_restart_engine_during_snapshot_creation(self):
         """
         - Create a VM with 4 disks and OS installed
@@ -642,7 +647,7 @@ class TestCase16779(BasicEnvironment):
     commit = False
 
     @polarion("RHEVM3-16779")
-    @attr(tier=2)
+    @tier2
     def test_create_snapshot_from_vm_configuration(self):
         """
         - Create VM with a disk and 2 NICs
@@ -702,7 +707,7 @@ class TestCase14399(BasicEnvironment):
     snaps = [snap_1, snap_2, snap_3]
 
     @polarion("RHEVM3-14399")
-    @attr(tier=3)
+    @tier3
     def test_delete_second_snapshot_out_of_three(self):
         """
         - Create VM with 4 disks
@@ -786,7 +791,7 @@ class TestCase6015(BasicEnvironment):
     polarion_test_case = '6015'
 
     @polarion("RHEVM3-6015")
-    @attr(tier=4)
+    @tier4
     def test_block_connectivity_to_storage(self):
         """
         - Create a VM with 4 disks and OS installed

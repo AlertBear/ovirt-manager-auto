@@ -11,7 +11,10 @@ from os import path, listdir
 
 from art.rhevm_api.utils.enginecli import EngineCLI
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 
 from rhevmtests.coresystem.aaa.ldap import config, common
 
@@ -44,7 +47,7 @@ def setup_module(request):
         )
 
 
-@attr(tier=1)
+@tier1
 class ExttoolAAALogin(TestCase):
     """ Test login action with generic provider """
     profile = None

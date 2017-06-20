@@ -24,7 +24,11 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import VirtTest, attr, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.vm_pools import helpers
 import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as helper
@@ -33,7 +37,7 @@ import rhevmtests.virt.helper as helper
 logger = logging.getLogger("virt.vm_pools.sanity")
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(vm_pool_teardown.__name__)
 class TestFullCreateRemovePoolCycle(VirtTest):
     """
@@ -68,7 +72,7 @@ class TestFullCreateRemovePoolCycle(VirtTest):
             raise exceptions.VmPoolException()
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestAddVmsToPool(VirtTest):
     """
@@ -109,7 +113,7 @@ class TestAddVmsToPool(VirtTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestAdminStartedVmNotStateless(VirtTest):
     """
@@ -142,7 +146,7 @@ class TestAdminStartedVmNotStateless(VirtTest):
         helper.check_if_file_exist(True, vm, vm_resource)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -194,7 +198,7 @@ class TestUserStartedVmIsStateless(VirtTest):
         helper.check_if_file_exist(False, vm, vm_resource)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     set_cluster_mac_pool.__name__, create_vm_pool.__name__
 )

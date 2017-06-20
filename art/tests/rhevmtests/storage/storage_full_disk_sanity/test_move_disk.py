@@ -12,7 +12,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import StorageTest as TestCase, attr
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    tier3,
+)
 from rhevmtests.storage.fixtures import (
     add_disk, create_vm, create_template, create_storage_domain,
     deactivate_domain, delete_disks, initialize_storage_domains, delete_disk
@@ -32,7 +35,7 @@ class TestCase16757(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16757")
-    @attr(tier=3)
+    @tier3
     def test_move_disk_to_source_domain(self):
         """
         Move disk from source domain to source domain
@@ -54,7 +57,7 @@ class TestCase16758(TestCase):
     disk_size = 10 * config.GB
 
     @polarion("RHEVM3-16758")
-    @attr(tier=3)
+    @tier3
     def test_move_locked_disk(self):
         """
         Move locked disk
@@ -83,7 +86,7 @@ class TestCase16759(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16759")
-    @attr(tier=3)
+    @tier3
     def test_move_template_disk(self):
         """
         Move template disk
@@ -112,7 +115,7 @@ class TestCase16760(TestCase):
     sd_to_deactivate_index = 1
 
     @polarion("RHEVM3-16760")
-    @attr(tier=3)
+    @tier3
     def test_move_disk_to_deactivated_sd(self):
         """
         Move disk to storage domain in maintenance
@@ -137,7 +140,7 @@ class TestCase16762(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16762")
-    @attr(tier=3)
+    @tier3
     def test_move_disk_based_on_template_to_sd_without_a_copy(self):
         """
         Move disk based on template to storage domain without a copy of it

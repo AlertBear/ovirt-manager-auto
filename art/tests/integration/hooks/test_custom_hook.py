@@ -11,7 +11,11 @@ from shlex import split
 from art.rhevm_api.tests_lib.low_level import hooks, vms, hosts
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest as TestCase, attr, testflow
+from art.unittest_lib import (
+    CoreSystemTest as TestCase,
+    testflow,
+    tier3,
+)
 
 from . import config, get_property_value, set_property_value
 
@@ -233,7 +237,7 @@ class TestCaseVdsm(TestCase):
         return "{0}.{1}".format(cls.name, ext)
 
 
-@attr(tier=3)
+@tier3
 class TestCaseAfterVdsmStop(TestCaseVdsm):
     """ after_vdsm_stop hook """
     name = 'after_vdsm_stop'
@@ -252,7 +256,7 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
         assert self.check_for_file(positive=True)
 
 
-@attr(tier=3)
+@tier3
 class TestCaseBeforeVdsmStart(TestCaseVdsm):
     """ before_vdsm_start hook """
     name = "before_vdsm_start"
@@ -285,7 +289,7 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
         assert self.check_for_file(positive=True)
 
 
-@attr(tier=3)
+@tier3
 class TestCaseBeforeVmStart(TestCaseVm):
     """ before_vm_start hook """
     name = "before_vm_start"
@@ -320,7 +324,7 @@ class TestCaseBeforeVmStart(TestCaseVm):
         assert self.check_for_file(positive=True)
 
 
-@attr(tier=3)
+@tier3
 class TestCaseAfterVmPause(TestCaseVm):
     """ after_vm_pause hook """
     name = "after_vm_pause"

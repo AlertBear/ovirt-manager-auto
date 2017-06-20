@@ -3,8 +3,10 @@ from os import path
 
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
-    attr, testflow,
-    CoreSystemTest as TestCase
+    CoreSystemTest as TestCase,
+    testflow,
+    tier1,
+    tier2,
 )
 
 from snmp_traps import (
@@ -34,7 +36,7 @@ def setup_module(request):
     install_snmp_packages()
 
 
-@attr(tier=1)
+@tier1
 class TestNotifierLogOwnership(TestCase):
     """
     Class to test ovirt-notifier log ownership.
@@ -52,7 +54,7 @@ class TestNotifierLogOwnership(TestCase):
         ) == [OVIRT_USER, OVIRT_GROUP], "Wrong log file ownership."
 
 
-@attr(tier=2)
+@tier2
 class SNMPTestTemplate(TestCase):
     """
     Template class for SNMP traps tests.

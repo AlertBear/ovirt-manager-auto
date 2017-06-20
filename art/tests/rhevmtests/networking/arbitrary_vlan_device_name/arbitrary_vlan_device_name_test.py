@@ -20,7 +20,10 @@ from rhevmtests import helpers
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.networking.config as network_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from rhevmtests.networking.fixtures import (  # noqa: F401
      clean_host_interfaces,
      setup_networks_fixture,
@@ -97,7 +100,7 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
         }
     }
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.parametrize(
         "vlan_names",
         [

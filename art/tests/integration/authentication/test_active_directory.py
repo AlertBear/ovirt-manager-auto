@@ -9,8 +9,11 @@ Testing authentication user from groups and users from 2 AD.
 import time
 import logging
 from authentication import config
-from art.unittest_lib import IntegrationTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    IntegrationTest as TestCase,
+    tier1,
+    tier2,
+)
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion
@@ -58,7 +61,7 @@ def addUserWithClusterPermissions(user_name):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class ActiveDirectory(TestCase):
     __test__ = False
 
@@ -109,7 +112,7 @@ class ActiveDirectory(TestCase):
                           config.USER_PASSWORD, False)
 
     @polarion("RHEVM3-7354")
-    @attr(tier=1)
+    @tier1
     def disabledAccount(self):
         """ Disabled account """
         self._loginAsUser(config.DISABLED_ACC(self.domain))
@@ -117,7 +120,7 @@ class ActiveDirectory(TestCase):
         logger.info("User with disabled acc can't login.")
 
     @polarion("RHEVM3-7353")
-    @attr(tier=1)
+    @tier1
     def expiredPassword(self):
         """ Expired password """
         self._loginAsUser(config.EXPIRED_PSW_NAME(self.domain))
@@ -125,7 +128,7 @@ class ActiveDirectory(TestCase):
         logger.info("User with expired password can't login.")
 
     @polarion("RHEVM3-7355")
-    @attr(tier=1)
+    @tier1
     def expiredUser(self):
         """ Expired user """
         self._loginAsUser(config.EXPIRED_ACC_NAME(self.domain))
@@ -133,7 +136,7 @@ class ActiveDirectory(TestCase):
         logger.info("Expired user can't login.")
 
     @polarion("RHEVM3-7349")
-    @attr(tier=1)
+    @tier1
     def userFromGroup(self):
         """ Test if user from group can login """
         user_name = config.USER_FROM_GROUP(self.domain)

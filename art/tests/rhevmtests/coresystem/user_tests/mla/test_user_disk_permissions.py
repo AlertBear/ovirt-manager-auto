@@ -18,7 +18,10 @@ from art.rhevm_api.tests_lib.low_level import (
     mla, vms, users
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow
 
 from rhevmtests.coresystem.user_tests.mla import common, config
 
@@ -48,7 +51,7 @@ def setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 class TestDiskTemplate(common.BaseTestCase):
     disk_name = "{0}{1}".format(config.VM_NAME, "_Disk1")
 

@@ -30,7 +30,7 @@ from rhevmtests.sla.fixtures import (
 )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(stop_vms.__name__)
 class TestWatchdogCRUDVm(u_libs.SlaTest):
     """
@@ -99,7 +99,7 @@ class TestWatchdogCRUDVm(u_libs.SlaTest):
         self.start_vm_and_check_watchdog_device(positive=False)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(start_vms.__name__)
 class TestWatchdogInstall(u_libs.SlaTest):
     """
@@ -119,7 +119,7 @@ class TestWatchdogInstall(u_libs.SlaTest):
         assert helpers.install_watchdog_on_vm(vm_name=conf.VM_NAME[1])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     add_watchdog_device_to_vm.__name__,
     start_vms.__name__,
@@ -332,7 +332,7 @@ class TestWatchdogMigration(BaseWatchdogAction):
         self.wait_for_watchdog_action_and_check_vm_state()
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     add_watchdog_device_to_vm.__name__,
     update_vms.__name__,
@@ -403,7 +403,7 @@ class TestWatchdogEvents(BaseWatchdogAction):
         assert not conf.ENGINE_HOST.run_command(command=cmd)[0]
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(
     add_watchdog_device_to_template.__name__,
     make_vm_from_template.__name__,

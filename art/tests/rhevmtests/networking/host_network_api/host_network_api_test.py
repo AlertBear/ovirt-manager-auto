@@ -17,8 +17,11 @@ import helper as host_net_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.network_custom_properties.config as cust_prop_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import remove_network
+from art.unittest_lib import (
+    tier2,
+    NetworkTest, testflow
+)
 
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
@@ -28,7 +31,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -126,7 +129,7 @@ class TestHostNetworkApi01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -353,7 +356,7 @@ class TestHostNetworkApi02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -431,7 +434,7 @@ class TestHostNetworkApi03(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -538,7 +541,7 @@ class TestHostNetworkApi04(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -725,7 +728,7 @@ class TestHostNetworkApi05(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -828,7 +831,7 @@ class TestHostNetworkApiHost06(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__

@@ -3,7 +3,10 @@ Tests for engine-vacuum utility
 """
 import itertools
 
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow
 from art.test_handler.tools import polarion, bz
 
 from vacuum_base import VacuumTest
@@ -11,7 +14,7 @@ import config
 from config import logger
 
 
-@attr(tier=2)
+@tier2
 class TestNegative(VacuumTest):
     """
     Check negative test-cases on un-existing table
@@ -38,7 +41,7 @@ class TestNegative(VacuumTest):
         assert rc and err
 
 
-@attr(tier=2)
+@tier2
 class TestSanityOptions(VacuumTest):
     """
     Check basic options of utility
@@ -114,7 +117,7 @@ class TestSanityOptions(VacuumTest):
         logger.info("Standard output - %s", out)
 
 
-@attr(tier=2)
+@tier2
 class TestSpecificTable(VacuumTest):
     """
     Check vacuum utility on specific table
@@ -178,7 +181,7 @@ class TestSpecificTable(VacuumTest):
         assert vacuum_check and analyze_check
 
 
-@attr(tier=2)
+@tier2
 class TestVerboseMode(VacuumTest):
     """
     Check verbose mode and logging

@@ -10,7 +10,10 @@ import config as host_network_api_conf
 import rhevmtests.networking.host_network_qos.helper as qos_helper
 import rhevmtests.networking.multi_host.helper as multi_host_helper
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier3,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import reboot_host
 import rhevmtests.networking.config as conf
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -21,7 +24,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,

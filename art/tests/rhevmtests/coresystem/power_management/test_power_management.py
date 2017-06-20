@@ -10,7 +10,10 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.tests_lib.high_level import hosts
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 from rhevmtests.helpers import get_pm_details
 
 from rhevmtests.coresystem.power_management import config
@@ -125,7 +128,7 @@ def _remove_power_management(host=None, testflow_func=testflow.teardown):
     assert hosts.remove_power_management(host_name=host)
 
 
-@attr(tier=2, extra_reqs={'mgmt': True})
+@tier2
 class WithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
@@ -183,7 +186,7 @@ class WithHighAvailableVm(TestCase):
         assert vms.runVmOnce(True, cls.vm2_name, host=HOST_WITH_PM)
 
 
-@attr(tier=2, extra_reqs={'mgmt': True})
+@tier2
 class PMWithBadParameters(TestCase):
     """
     Base class for tests with wrong parameters
@@ -212,7 +215,7 @@ class PMWithBadParameters(TestCase):
             cls.t_agent[key] = value
 
 
-@attr(tier=2, extra_reqs={'fence': True})
+@tier2
 class FenceOnHost(TestCase):
     """
     Base class for fence tests
@@ -236,7 +239,7 @@ class FenceOnHost(TestCase):
             hosts.deactivate_host_if_up(HOST_WITH_PM)
 
 
-@attr(tier=2, extra_reqs={'mgmt': True})
+@tier2
 class FenceHostWithTwoPMAgents(TestCase):
     """
     Base class for fence tests with two power management agents
@@ -310,7 +313,7 @@ class FenceHostWithTwoPMAgents(TestCase):
             )
 
 
-@attr(tier=2, extra_reqs={'mgmt': True})
+@tier2
 class FenceProxySelection(TestCase):
     """
     Base class for fencing proxy selection tests

@@ -1,7 +1,7 @@
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sds
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sds
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import tier2
 from rhevm_utils import base, unittest_conf
 from utilities.rhevm_tools.image_uploader import ImageUploadUtility
 
@@ -35,7 +35,7 @@ def teardown_module():
         base.teardown_module()
 
 
-@attr(tier=2)
+@tier2
 class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm image uploder test cases

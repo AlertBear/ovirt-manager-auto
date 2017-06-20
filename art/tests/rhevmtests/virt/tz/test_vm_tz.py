@@ -10,12 +10,16 @@ from fixtures import change_default_tz
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.fixtures import create_vm
 import rhevmtests.virt.helper as virt_helper
 
 
-@attr(tier=1)
+@tier1
 class TestVmTz(VirtTest):
     """
     Check VM timezone tests
@@ -111,7 +115,7 @@ class TestVmTz(VirtTest):
         assert default_tz[tz] == expected_tz
 
 
-@attr(tier=2)
+@tier2
 class TestTzCli(VirtTest):
     """
     Tests for CLI part of timezones

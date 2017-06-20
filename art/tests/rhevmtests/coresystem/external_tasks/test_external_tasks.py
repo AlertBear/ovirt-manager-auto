@@ -9,8 +9,9 @@ from art.test_handler.exceptions import JobException
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
-    attr, testflow,
-    CoreSystemTest as TestBase
+    CoreSystemTest as TestBase,
+    testflow,
+    tier2,
 )
 
 import config
@@ -20,7 +21,7 @@ enums = opts["elements_conf"]["RHEVM Enums"]
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=2)
+@tier2
 class JobTestTemplate(TestBase):
     """
     Template class for jobs related tests.

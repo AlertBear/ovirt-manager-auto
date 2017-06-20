@@ -9,8 +9,11 @@ User with many groups and if updating of user is propagated.
 from authentication import config
 import logging
 
-from art.unittest_lib import IntegrationTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    IntegrationTest as TestCase,
+    tier1,
+    tier2,
+)
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion, bz
@@ -40,7 +43,7 @@ def loginAsAdmin():
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class LDAPCase289010(TestCase):
     """
     Login as normal user and user from group.
@@ -81,7 +84,7 @@ class LDAPCase289010(TestCase):
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class LDAPCase289066(TestCase):
     """
     Login as user with disabled account.
@@ -110,7 +113,7 @@ class LDAPCase289066(TestCase):
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class LDAPCase289068(TestCase):
     """ Test if user with expired password can't login """
     __test__ = True
@@ -137,7 +140,7 @@ class LDAPCase289068(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class LDAPCase289069(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
@@ -168,7 +171,7 @@ class LDAPCase289069(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class LDAPCase289071(TestCase):
     """ If the information is updated on LDAP side it's propageted to rhevm """
     __test__ = True
@@ -218,7 +221,7 @@ class LDAPCase289071(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class LDAPCase289072(TestCase):
     """ If user which is part of group is removed, the group still persists """
     __test__ = True
@@ -251,7 +254,7 @@ class LDAPCase289072(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class LDAPCase289076(TestCase):
     """ Test if user which has lot of groups assigned can be added & login """
     __test__ = True
@@ -277,7 +280,7 @@ class LDAPCase289076(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class LDAPCase289078(TestCase):
     """ Test if user can't login after group removal from user """
     __test__ = True

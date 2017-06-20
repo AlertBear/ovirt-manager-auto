@@ -8,8 +8,10 @@ from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import hosts, clusters, datacenters
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
-from art.unittest_lib import IntegrationTest as TestCase
+from art.unittest_lib import (
+    IntegrationTest as TestCase,
+    tier2,
+)
 
 from rhevm_upgrade import config
 from config import non_ge
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class UpgradeHosts(TestCase):
     """ Perform the upgrade of hosts """
     __test__ = True

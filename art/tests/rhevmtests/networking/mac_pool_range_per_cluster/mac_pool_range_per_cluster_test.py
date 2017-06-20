@@ -18,7 +18,10 @@ import config as mac_pool_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, testflow, NetworkTest
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow, NetworkTest
 from fixtures import (
     mac_pool_per_cl_prepare_setup, create_mac_pools,
     create_cluster_with_mac_pools, update_clusters_mac_pool,
@@ -27,7 +30,7 @@ from fixtures import (
 )
 
 
-@attr(tier=2)
+@tier2
 class TestMacPoolRange01(NetworkTest):
     """
     1.  Try to use old configuration with engine-config
@@ -53,7 +56,7 @@ class TestMacPoolRange01(NetworkTest):
             ).get('results')
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -143,7 +146,7 @@ class TestMacPoolRange02(NetworkTest):
         assert ll_mac_pool.get_default_mac_pool().get_id() == mac_pool_id
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -324,7 +327,7 @@ class TestMacPoolRange03(NetworkTest):
         assert ll_mac_pool.get_mac_pool(self.pool_0)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -398,7 +401,7 @@ class TestMacPoolRange04(NetworkTest):
         assert ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_5)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -477,7 +480,7 @@ class TestMacPoolRange05(NetworkTest):
         assert nic_mac == self.mac_pool_ranges[-1][0]
 
 
-@attr(tier=2)
+@tier2
 @bz({"1219383": {}})
 class TestMacPoolRange06(NetworkTest):
     """
@@ -501,7 +504,7 @@ class TestMacPoolRange06(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
     remove_non_default_mac_pool.__name__,
@@ -565,7 +568,7 @@ class TestMacPoolRange07(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
     create_mac_pools.__name__,

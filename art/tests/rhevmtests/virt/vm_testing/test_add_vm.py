@@ -3,10 +3,13 @@ import helper
 import fixtures
 import add_vm_scenarios
 
-from art.unittest_lib.common import VirtTest, attr
+from art.unittest_lib import (
+    VirtTest,
+    tier1,
+)
 
 
-@attr(tier=1)
+@tier1
 class TestAddVm(VirtTest):
     """
     Add VM test suite.

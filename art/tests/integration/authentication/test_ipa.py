@@ -9,8 +9,11 @@ Login formats, user with many groups and if updating of user is propagated.
 from authentication import config
 import logging
 
-from art.unittest_lib import IntegrationTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    IntegrationTest as TestCase,
+    tier1,
+    tier2,
+)
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import get_api
@@ -48,7 +51,7 @@ def loginAsAdmin():
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class IPACase93880(TestCase):
     """
     Login as:
@@ -91,7 +94,7 @@ class IPACase93880(TestCase):
 
 
 @non_ge
-@attr(tier=1)
+@tier1
 class IPACase93879(TestCase):
     """
     Login as:
@@ -137,7 +140,7 @@ class IPACase93879(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class IPACase93881(TestCase):
     """ Try to login with different login formats """
     __test__ = True
@@ -170,7 +173,7 @@ class IPACase93881(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class IPACase109871(TestCase):
     """ Test if user which has lot of groups assigned can be added & login """
     __test__ = True
@@ -196,7 +199,7 @@ class IPACase109871(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class IPACase109146(TestCase):
     """ If user which is part of group is removed, the group still persists """
     __test__ = True
@@ -229,7 +232,7 @@ class IPACase109146(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class IPACase93882(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
@@ -264,7 +267,7 @@ class IPACase93882(TestCase):
 
 
 @non_ge
-@attr(tier=2)
+@tier2
 class IPACase93883(TestCase):
     """ If the information is updated on IPA side it's propageted to rhevm """
     __test__ = True

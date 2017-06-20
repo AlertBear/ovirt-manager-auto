@@ -12,7 +12,11 @@ from art.rhevm_api.tests_lib.low_level import (
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import rhevmtests.virt.helper as helper
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.fixtures import (
     create_vm, create_vm_pool, remove_created_vms
 )
@@ -31,7 +35,7 @@ class TestMaxMemory(VirtTest):
     vm_name = vm_parameters['name']
 
     @polarion("RHEVM-19329")
-    @attr(tier=1)
+    @tier1
     def test_new_vm_update_max_memory(self):
         """
         Positive: Add default vm and check its maximum memory
@@ -54,7 +58,7 @@ class TestMaxMemory(VirtTest):
             "hotplug_up_to_maximum"
         ]
     )
-    @attr(tier=2)
+    @tier2
     def test_hotplug_max_memory(self, memory_to_expand):
         """
         Positive: Add default vm, hotplug memory, check max memory
@@ -77,7 +81,7 @@ class TestMaxMemory(VirtTest):
         # TODO(vshyp) Enable this check once behaviour is clear
         # assert vm.memory_policy.max == vm.memory * config.MEMORY_TO_MAX_RATIO
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19330")
     def test_hotplug_max_memory_negative(self):
         """
@@ -92,7 +96,7 @@ class TestMaxMemory(VirtTest):
             memory_to_expand=vm.memory_policy.max
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19326")
     def test_update_max_memory(self):
         """
@@ -119,7 +123,7 @@ class TestMaxMemory(VirtTest):
         testflow.step('Positive: Check vm memory')
         assert vm.memory_policy.max == config.MEM_FOR_UPDATE
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19337")
     def test_clone_vm_check_max_memory(self):
         """
@@ -147,7 +151,7 @@ class TestMaxMemory(VirtTest):
         vm = ll_vms.get_vm(config.MAX_MEMORY_VM_TEST_CLONED)
         assert vm.memory_policy.max == vm.memory * config.MEMORY_TO_MAX_RATIO
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19338")
     def test_clone_vm_from_snapshot_check_max_memory(self):
         """
@@ -181,7 +185,7 @@ class TestMaxMemory(VirtTest):
         vm = ll_vms.get_vm(config.MAX_MEMORY_VM_TEST_FROM_SNAPSHOT)
         assert vm.memory_policy.max == vm.memory * config.MEMORY_TO_MAX_RATIO
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19339")
     @pytest.mark.custom_vm_params({
         'memory': global_helper.get_gb(4),
@@ -209,7 +213,7 @@ class TestMaxMemory(VirtTest):
         assert vm.memory_policy.max == vm.memory
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(remove_created_vms.__name__)
 class TestMaxMemVmPool(VirtTest):
     """

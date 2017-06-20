@@ -12,7 +12,10 @@ from art.rhevm_api.tests_lib.low_level import (
     users as ll_users
 )
 import rhevmtests.helpers as helpers
-from art.unittest_lib import attr, testflow, VirtTest
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow, VirtTest
 import rhevmtests.virt.helper as virt_helper
 from fixtures import (
     add_user, create_vm_for_search
@@ -20,7 +23,7 @@ from fixtures import (
 import config
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_for_search.__name__,
 )

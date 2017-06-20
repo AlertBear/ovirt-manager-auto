@@ -17,7 +17,11 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler import exceptions as errors
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
+from art.unittest_lib import StorageTest as BaseTestCase
 from rhevmtests.storage import config, helpers as storage_helpers
 
 from fixtures import (initializer_class, extract_template_disks)
@@ -146,7 +150,7 @@ class TestCase5734(BasicEnvironment):
     test_case = '5734'
 
     @polarion("RHEVM3-5734")
-    @attr(tier=3)
+    @tier3
     def test_basic_import_glance_image(self):
         """
         - Import an image from the glance domain as a template
@@ -171,7 +175,7 @@ class TestCase10689(BasicEnvironment):
     test_case = '10689'
 
     @polarion("RHEVM3-10689")
-    @attr(tier=3)
+    @tier3
     def test_override_template_name(self):
         """
         Test flow:
@@ -201,7 +205,7 @@ class TestCase5735(BasicEnvironment):
     test_case = '5735'
 
     @polarion("RHEVM3-5735")
-    @attr(tier=3)
+    @tier3
     def test_import_multiple_images_as_template(self):
         """
         - Select multiple glance images from the glance domain
@@ -229,7 +233,7 @@ class TestCase5736(BasicEnvironment):
     test_case = '5736'
 
     @polarion("RHEVM3-5736")
-    @attr(tier=3)
+    @tier3
     def test_import_glance_image_more_than_once(self):
         """
         - Import an image from glance domain as a template
@@ -254,7 +258,7 @@ class TestCase5738(BasicEnvironment):
     test_case = '5738'
 
     @polarion("RHEVM3-5738")
-    @attr(tier=3)
+    @tier3
     def test_import_image_as_template_and_disk(self):
         """
         - Import an image from glance domain as a template
@@ -306,7 +310,7 @@ class TestCase5739(BasicEnvironment):
     templates_names = ["template_sparse", "template_pre_allocated"]
 
     @polarion("RHEVM3-5739")
-    @attr(tier=3)
+    @tier3
     def test_import_multiple_images_to_different_storages(self):
         """
         - Import multiple images from glance domain to different
@@ -329,7 +333,7 @@ class TestCase5741(BasicEnvironment):
     test_case = '5741'
 
     @polarion("RHEVM3-5741")
-    @attr(tier=3)
+    @tier3
     def test_create_multiple_vms_from_imported_template(self):
         """
         - Import an image from glance domain as template
@@ -362,7 +366,7 @@ class TestCase5743(BasicEnvironment):
     test_case = '5743'
 
     @polarion("RHEVM3-5743")
-    @attr(tier=2)
+    @tier2
     def test_copy_imported_image(self):
         """
         - Import an image from glance domain as template
@@ -405,7 +409,7 @@ class TestCase5746(BasicEnvironment):
     test_case = '5746'
 
     @polarion("RHEVM3-5746")
-    @attr(tier=3)
+    @tier3
     def test_Change_disk_interface(self):
         """
         - Import an image from glance domain as template
@@ -446,7 +450,7 @@ class TestCase5683(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-5683")
-    @attr(tier=2)
+    @tier2
     def test_export_template_disk(self):
         """
         Export template disk to glance domain
@@ -469,7 +473,7 @@ class TestCase10696(BasicEnvironment):
     disk_alias = 'glance_image_10696'
 
     @polarion("RHEVM3-10696")
-    @attr(tier=3)
+    @tier3
     def test_import_glance_image_as_template(self):
         """
         - Import an image from glance domain as a template
@@ -502,7 +506,7 @@ class TestCase10697(BasicEnvironment):
     disk_id = None
 
     @polarion("RHEVM3-10697")
-    @attr(tier=2)
+    @tier2
     def test_import_glance_image_as_disk(self):
         """
         - Import an image from glance domain as a disk

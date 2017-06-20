@@ -24,7 +24,11 @@ import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 from art.test_handler.tools import bz, polarion
 from art.test_handler import exceptions
-from art.unittest_lib import attr, StorageTest
+from art.unittest_lib import (
+    do_not_run,
+    tier3,
+    StorageTest,
+)
 import rhevmtests.storage.helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -233,7 +237,7 @@ def _restore_empty_dc():
         )
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestCase(StorageTest):
     storages = set([config.STORAGE_TYPE_ISCSI])
     # Bugzilla history:
@@ -247,7 +251,7 @@ class TestCase(StorageTest):
         )
 
 
-@attr(tier=3)
+@tier3
 class TestCase5243(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -314,7 +318,7 @@ class TestCase5243(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=3)
+@tier3
 class TestCase5247(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -412,7 +416,7 @@ class TestCase5247(TestCase):
             ll_storageconnections.remove_storage_connection(self.conn.id)
 
 
-@attr(tier=3)
+@tier3
 class TestCase5248(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -500,7 +504,7 @@ class TestCase5248(TestCase):
         ll_storageconnections.remove_storage_connection(cls.conn_2.id)
 
 
-@attr(tier=3)
+@tier3
 class TestCase5246(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -647,7 +651,7 @@ class TestCase5246(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=3)
+@tier3
 class TestCase5240(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -729,7 +733,7 @@ class TestCase5240(TestCase):
             ll_storageconnections.remove_storage_connection(conn.id)
 
 
-@attr(tier=3)
+@tier3
 class TestCase5242(TestCase):
     """
     Verify the GET call works for various storage connection/storage domains
@@ -943,7 +947,7 @@ class TestCase5242(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=3)
+@tier3
 class TestCase5245(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1074,7 +1078,7 @@ class TestCase5245(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=3)
+@tier3
 class TestCase5244(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1202,7 +1206,7 @@ class TestCase5244(TestCase):
         helpers.logout_from_all_iscsi_targets()
 
 
-@attr(tier=3)
+@tier3
 class TestCase5241(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1371,7 +1375,7 @@ class TestCase5241(TestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=3)
+@tier3
 class TestCase5249(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/

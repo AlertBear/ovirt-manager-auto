@@ -20,7 +20,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
     deploy_ovn, remove_ovn_provider, remove_ovn_networks_from_provider,
     remove_ovn_networks_from_engine, remove_vnics_from_vms,
@@ -31,7 +34,7 @@ from rhevmtests.fixtures import start_vm
 pytestmark = pytest.mark.skip('skipping all tests. BUG in OVN installation')
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     deploy_ovn.__name__,

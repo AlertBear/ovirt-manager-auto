@@ -15,16 +15,19 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as dc_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import create_networks_in_dc, create_network_in_datacenter
 from rhevmtests.fixtures import create_datacenters
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_networks_in_dc.__name__
 )
+@tier2
 class TestDataCenterNetworksCase1(NetworkTest):
     """
     List all networks under datacenter.
@@ -68,11 +71,11 @@ class TestDataCenterNetworksCase1(NetworkTest):
             )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_network_in_datacenter.__name__
 )
+@tier2
 class TestDataCenterNetworksCase2(NetworkTest):
     """
     Create network under datacenter.
@@ -139,11 +142,11 @@ class TestDataCenterNetworksCase2(NetworkTest):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_networks_in_dc.__name__
 )
+@tier2
 class TestDataCenterNetworksCase3(NetworkTest):
     """
     Update network under datacenter.

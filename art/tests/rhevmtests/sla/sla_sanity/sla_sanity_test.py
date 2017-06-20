@@ -24,7 +24,7 @@ from rhevmtests.sla.fixtures import (  # noqa: F401
 )
 
 
-@u_lib.attr(tier=1)
+@u_lib.tier1
 class BasicSlaSanity(u_lib.SlaTest):
     """
     Base class for all sla sanity tests
@@ -51,7 +51,7 @@ class BasicSlaSanity(u_lib.SlaTest):
         ) == positive
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(
     create_vms.__name__,
     update_vms_to_default_parameters.__name__
@@ -97,7 +97,7 @@ class TestProtectedVm(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
 class TestCPUHostCase1(BasicSlaSanity):
     """
@@ -122,7 +122,7 @@ class TestCPUHostCase1(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
 class TestCPUHostCase2(BasicSlaSanity):
     """
@@ -148,7 +148,7 @@ class TestCPUHostCase2(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
 class TestCPUHostCase3(BasicSlaSanity):
     """
@@ -321,7 +321,7 @@ class TestThreadsOff(BasicThreadSla):
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 class TestNegativeThreadsOff(BasicThreadSla):
     """
     Check that VM with the number of CPU's greater than
@@ -366,7 +366,7 @@ class TestThreadsOn(BasicThreadSla):
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 class TestThreadsOnNegative(BasicThreadSla):
     """
     Check that VM with the number of CPU's greater than
@@ -416,7 +416,7 @@ class TestCPUPinCase1(BasicSlaSanity):
         """
         self._update_vm_vcpu_pinning(vcpu_pinning=[{"0": "0-16"}])
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12222")
     def test_cpupin_format3(self):
         """
@@ -426,7 +426,7 @@ class TestCPUPinCase1(BasicSlaSanity):
             vcpu_pinning=[{"0": "^1"}], positive=False
         )
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12223")
     def test_cpupin_format4(self):
         """
@@ -478,7 +478,7 @@ class TestCPUPinCase1(BasicSlaSanity):
             vcpu_pinning=vcpu_pinning, compare=compare
         )
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12227")
     def test_cpupin_format8(self):
         """
@@ -491,7 +491,7 @@ class TestCPUPinCase1(BasicSlaSanity):
             vcpu_pinning=vcpu_pinning, positive=False
         )
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12228")
     def test_cpupin_format9(self):
         """
@@ -501,7 +501,7 @@ class TestCPUPinCase1(BasicSlaSanity):
             vcpu_pinning=[{"0": "A"}], positive=False
         )
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12229")
     def test_cpupin_format10(self):
         """
@@ -514,7 +514,7 @@ class TestCPUPinCase1(BasicSlaSanity):
         except (TypeError, ValueError):
             pass
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12230")
     def test_cpupin_format15(self):
         """
@@ -527,7 +527,7 @@ class TestCPUPinCase1(BasicSlaSanity):
             vcpu_pinning=vcpu_pinning, positive=False
         )
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12231")
     def test_cpupin_format16(self):
         """
@@ -539,7 +539,7 @@ class TestCPUPinCase1(BasicSlaSanity):
             positive=True, vm=conf.VM_NAME[0], timeout=conf.CONNECT_TIMEOUT
         )
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12232")
     def test_cpupin_format17(self):
         """
@@ -549,7 +549,7 @@ class TestCPUPinCase1(BasicSlaSanity):
             vcpu_pinning=[{"0": ""}], positive=False
         )
 
-    @u_lib.attr(tier=2)
+    @u_lib.tier2
     @polarion("RHEVM3-12233")
     def test_cpupin_format18(self):
         """
@@ -560,7 +560,7 @@ class TestCPUPinCase1(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
 class TestCPUPinCase2(BasicSlaSanity):
     """
@@ -579,7 +579,7 @@ class TestCPUPinCase2(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
 class TestCPUPinCase3(BasicSlaSanity):
     """
@@ -608,7 +608,7 @@ class TestCPUPinCase3(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
 class TestCPUPinCase4(BasicSlaSanity):
     """
@@ -631,7 +631,7 @@ class TestCPUPinCase4(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
 class TestCPUPinCase5(BasicSlaSanity):
     """
@@ -660,7 +660,7 @@ class TestCPUPinCase5(BasicSlaSanity):
         )
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -777,7 +777,7 @@ class TestCPUPinCase7(BasicSlaSanity):
             assert vcpu_pinning_info[0] == host_online_cpu
 
 
-@u_lib.attr(tier=2)
+@u_lib.tier2
 @pytest.mark.usefixtures(update_vms_to_default_parameters.__name__)
 class TestCPUPinCase8(BasicSlaSanity):
     """

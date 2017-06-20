@@ -19,7 +19,6 @@ import helper
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (  # noqa: F401
     modify_ifcfg_nm_controlled,
     reset_host_sriov_params,
@@ -27,6 +26,11 @@ from fixtures import (  # noqa: F401
     add_vnics_to_vm,
     set_num_of_vfs,
     sr_iov_init
+)
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
 )
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -113,7 +117,7 @@ def prepare_setup_migration(request):
     assert sriov_conf.MIGRATION_NIC_1_MAC
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,

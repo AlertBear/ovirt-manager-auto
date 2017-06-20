@@ -129,7 +129,7 @@ class BaseHostAffinityStartVm(BaseHostAffinity):
     affinity_groups = None
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 @pytest.mark.usefixtures(stop_vms.__name__)
 class TestStartVmUnderHostAffinity01(BaseHostAffinityStartVm):
@@ -154,7 +154,7 @@ class TestStartVmUnderHostAffinity01(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 @pytest.mark.usefixtures(stop_vms.__name__)
 class TestStartVmUnderHostAffinity02(BaseHostAffinityStartVm):
@@ -179,7 +179,7 @@ class TestStartVmUnderHostAffinity02(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(run_once_vms.__name__)
 class TestStartVmUnderHostAffinity03(BaseHostAffinityStartVm):
     """
@@ -204,7 +204,7 @@ class TestStartVmUnderHostAffinity03(BaseHostAffinityStartVm):
         assert not self.start_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(run_once_vms.__name__)
 class TestStartVmUnderHostAffinity04(BaseHostAffinityStartVm):
     """
@@ -229,7 +229,7 @@ class TestStartVmUnderHostAffinity04(BaseHostAffinityStartVm):
         assert not self.start_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     stop_vms.__name__
@@ -261,7 +261,7 @@ class TestStartVmUnderHostAffinity05(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     stop_vms.__name__
@@ -293,7 +293,7 @@ class TestStartVmUnderHostAffinity06(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     stop_vms.__name__
@@ -331,7 +331,7 @@ class TestStartVmUnderHostAffinity07(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 @pytest.mark.usefixtures(stop_vms.__name__)
 class TestStartVmUnderHostAffinity08(BaseHostAffinityStartVm):
@@ -365,7 +365,7 @@ class BaseHostAffinityMigrateVm(BaseHostAffinityStartVm):
     vms_to_run = {conf.VM_NAME[0]: {}}
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHostAffinity01(BaseHostAffinityMigrateVm):
     """
@@ -385,7 +385,7 @@ class TestMigrateVmUnderHostAffinity01(BaseHostAffinityMigrateVm):
         assert not self.migrate_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHostAffinity02(BaseHostAffinityMigrateVm):
     """
@@ -408,7 +408,7 @@ class TestMigrateVmUnderHostAffinity02(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmUnderHostAffinity03(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into soft positive affinity group with the host
@@ -437,7 +437,7 @@ class TestMigrateVmUnderHostAffinity03(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmUnderHostAffinity04(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into soft negative affinity group with the host
@@ -459,7 +459,7 @@ class TestMigrateVmUnderHostAffinity04(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     run_once_vms.__name__,
@@ -500,7 +500,7 @@ class TestMigrateVmUnderHostAffinity05(BaseHostAffinity):
         assert not self.migrate_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmUnderHostAffinity06(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into hard negative affinity group with the host
@@ -531,7 +531,7 @@ class TestMigrateVmUnderHostAffinity06(BaseHostAffinityMigrateVm):
         assert not self.migrate_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMigrateVmUnderHostAffinity07(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into hard negative affinity group with the host
@@ -564,7 +564,7 @@ class TestMigrateVmUnderHostAffinity07(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHostAffinity08(BaseHostAffinityMigrateVm):
     """
@@ -598,7 +598,7 @@ class BaseHostAffinityPutHostToMaintenance(BaseHostAffinityMigrateVm):
     hosts_to_activate_indexes = [0]
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMaintenanceUnderHostAffinity01(BaseHostAffinityPutHostToMaintenance):
     """
     Put the host with the VM to the maintenance, when both host and VM placed
@@ -618,7 +618,7 @@ class TestMaintenanceUnderHostAffinity01(BaseHostAffinityPutHostToMaintenance):
         assert not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     activate_hosts.__name__
@@ -651,7 +651,7 @@ class TestMaintenanceUnderHostAffinity02(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMaintenanceUnderHostAffinity03(BaseHostAffinityPutHostToMaintenance):
     """
     Put the host with the VM to the maintenance, when both host and VM placed
@@ -673,7 +673,7 @@ class TestMaintenanceUnderHostAffinity03(BaseHostAffinityPutHostToMaintenance):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     activate_hosts.__name__
@@ -718,7 +718,7 @@ class BaseHostAffinityEnforcement(BaseHostAffinity):
     affinity_groups = None
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestEnforcementUnderHostAffinity01(BaseHostAffinityEnforcement):
     """
@@ -742,7 +742,7 @@ class TestEnforcementUnderHostAffinity01(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestEnforcementUnderHostAffinity02(BaseHostAffinityEnforcement):
     """
@@ -766,7 +766,7 @@ class TestEnforcementUnderHostAffinity02(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestEnforcementUnderHostAffinity03(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM
@@ -789,7 +789,7 @@ class TestEnforcementUnderHostAffinity03(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestEnforcementUnderHostAffinity04(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM
@@ -812,7 +812,7 @@ class TestEnforcementUnderHostAffinity04(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestEnforcementUnderHostAffinity05(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement does not migrate the VM,
@@ -849,7 +849,7 @@ class TestEnforcementUnderHostAffinity05(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestEnforcementUnderHostAffinity06(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement does not migrate the VM,
@@ -886,7 +886,7 @@ class TestEnforcementUnderHostAffinity06(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestEnforcementUnderHostAffinity07(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM,
@@ -926,7 +926,7 @@ class TestEnforcementUnderHostAffinity07(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestEnforcementUnderHostAffinity08(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM,
@@ -964,7 +964,7 @@ class TestEnforcementUnderHostAffinity08(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestEnforcementUnderHostAffinity09(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM,
@@ -1000,7 +1000,7 @@ class TestEnforcementUnderHostAffinity09(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
 class TestNegativeAddAffinityGroup(u_libs.SlaTest):
     """
@@ -1041,7 +1041,7 @@ class TestNegativeAddAffinityGroup(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 class TestAffinityModuleExistenceUnderPolicies(u_libs.SlaTest):
     """
     Test that affinity filter and weight modules exist under each
@@ -1082,7 +1082,7 @@ class TestAffinityModuleExistenceUnderPolicies(u_libs.SlaTest):
                 assert affinity_module_id in policy_modules_ids
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     configure_hosts_power_management.__name__,
     update_vms.__name__,
@@ -1111,7 +1111,7 @@ class TestHaVmUnderHostAffinity(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     skip_if_not_he_environment.__name__,
     create_affinity_groups.__name__,
@@ -1164,7 +1164,7 @@ class TestEnforcementUnderHostAffinityWithHeVm(BaseHostAffinity):
         assert self.check_vm_host(vm_name=conf.HE_VM, host_name=he_vm_host)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(load_hosts_cpu.__name__)
 class TestEnforcementAndPowerSavingBalancingLoop(BaseHostAffinityMigrateVm):
     """
@@ -1192,7 +1192,7 @@ class TestEnforcementAndPowerSavingBalancingLoop(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(load_hosts_cpu.__name__)
 class TestEnforcementAndEvenDistributionBalancingLoop(
     BaseHostAffinityMigrateVm

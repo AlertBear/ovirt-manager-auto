@@ -18,7 +18,10 @@ from art.rhevm_api.tests_lib.high_level import (
     networks as hl_networks
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from rhevmtests.networking import config as conf, helper as network_helper
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, setup_networks_fixture
@@ -49,7 +52,7 @@ def multiple_gw_prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 class TestGatewaysCase01(NetworkTest):
     """
     1. Verify you can configure additional VLAN network with static IP and
@@ -132,7 +135,7 @@ class TestGatewaysCase01(NetworkTest):
         assert hl_host_network.clean_host_interfaces(host_name=host)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestGatewaysCase02(NetworkTest):
     """

@@ -8,7 +8,10 @@ Virt sanity testing for migration feature.
 import pytest
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import VirtTest, testflow
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from rhevmtests.virt.migration.fixtures import (
@@ -17,7 +20,7 @@ from rhevmtests.virt.migration.fixtures import (
 import config
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     migration_init.__name__,
 )
@@ -38,7 +41,7 @@ class TestMigrationVirtSanityCase1(VirtTest):
         ), "Failed to migrate VM: %s " % config.MIGRATION_VM
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     migration_init.__name__,
     start_vm_on_spm.__name__

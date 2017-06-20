@@ -8,8 +8,10 @@ import logging
 
 from art.test_handler.tools import bz
 from art.unittest_lib import (
-    attr, testflow,
-    CoreSystemTest as TestCase
+    CoreSystemTest as TestCase,
+    testflow,
+    tier1,
+    tier2,
 )
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from rhevmtests.config import (
@@ -27,7 +29,7 @@ class TestCaseDataCenter(TestCase):
     dc_name = dcs_names[0]
     tmp_dc_name = "temp_data_center"
 
-    @attr(tier=1)
+    @tier1
     def test_create_remove_temporary_local_data_center(self):
         """
         Positive - check Create temporary Local data center functionality
@@ -47,7 +49,7 @@ class TestCaseDataCenter(TestCase):
             datacenter=self.tmp_dc_name
         )
 
-    @attr(tier=2)
+    @tier2
     def test_create_data_center_with_spaces_in_name(self):
         """
         Negative - check if Create data center with spaces in name fails
@@ -61,7 +63,7 @@ class TestCaseDataCenter(TestCase):
             version=comp_version
         )
 
-    @attr(tier=2)
+    @tier2
     def test_create_data_center_with_existing_name(self):
         """
         Negative - check if Create data center with existing name fails
@@ -75,7 +77,7 @@ class TestCaseDataCenter(TestCase):
         )
 
     @bz({"1451390": {}})
-    @attr(tier=1)
+    @tier1
     def test_update_data_center_name_and_description(self):
         """
         check if Update data center name and description works properly
@@ -97,7 +99,7 @@ class TestCaseDataCenter(TestCase):
             description=''
         )
 
-    @attr(tier=1)
+    @tier1
     def test_search_for_data_center(self):
         """
         Positive - Search for data center

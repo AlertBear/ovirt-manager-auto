@@ -9,7 +9,11 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib.common import testflow
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.storage_full_import_export.fixtures import (
@@ -55,7 +59,7 @@ class TestCase11976(BaseExportImportTestCase):
 
     @bz({'1365384': {}})
     @polarion("RHEVM3-11976")
-    @attr(tier=2)
+    @tier2
     def test_import_force_override(self):
         """
         Export VM with force override enabled/disabled
@@ -138,7 +142,7 @@ class TestCase11995(BaseExportImportTestCase):
     snap_desc = 'snap_%s' % polarion_test_case
 
     @polarion("RHEVM3-11995")
-    @attr(tier=2)
+    @tier2
     def test_collapse_snapshots(self):
         """
         Test export/import with collapse snapshots option works
@@ -215,7 +219,7 @@ class TestCase11987(BaseExportImportTestCase):
     # 1269948: Failed to import VM / VM Template
 
     @polarion("RHEVM3-11987")
-    @attr(tier=1)
+    @tier1
     def test_export_vm(self):
         """
         Sanity export from Blank
@@ -274,7 +278,7 @@ class TestCase11986(BaseExportImportTestCase):
     # 1254230: Operation of exporting template to Export domain stucks
 
     @polarion("RHEVM3-11986")
-    @attr(tier=2)
+    @tier2
     def test_export_template(self):
         """
         Export template to an export domain

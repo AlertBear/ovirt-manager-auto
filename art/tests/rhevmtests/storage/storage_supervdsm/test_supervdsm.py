@@ -8,8 +8,11 @@ Storage/3_3_Storage_SuperVdsm
 import logging
 import time
 import pytest
+from art.unittest_lib import (
+    tier2,
+    tier4,
+)
 from art.unittest_lib import StorageTest as TestCase
-from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.low_level import hosts
 
@@ -136,7 +139,7 @@ class TestCase6269(TestCase):
     storages = config.NOT_APPLICABLE
 
     @polarion("RHEVM3-6269")
-    @attr(tier=2)
+    @tier2
     def test_supervdsm_sanity(self):
         """
         Test basic functionality is running after host is installed
@@ -170,7 +173,7 @@ class TestCase6270(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6270")
-    @attr(tier=4)
+    @tier4
     def test_command_options_test(self):
         """
         Test command options
@@ -222,7 +225,7 @@ class TestCase6271(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6271")
-    @attr(tier=4)
+    @tier4
     def test_communication(self):
         """
         Test that both services work when one is stopped
@@ -275,7 +278,7 @@ class TestCase6272(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6272")
-    @attr(tier=4)
+    @tier4
     def test_supervdsm_stress_test(self):
         """
         supervdsm stress tests
@@ -313,7 +316,7 @@ class TestCase6273(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-6273")
-    @attr(tier=4)
+    @tier4
     def test_change_supervdsm_log(self):
         """
         change permissions and delete supervdsm log

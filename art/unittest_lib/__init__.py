@@ -10,13 +10,25 @@ from art.unittest_lib.common import (
     CoreSystemTest,
     IntegrationTest,
     UpgradeTest,
-    attr,
     testflow,
 )
 from _pytest_art.marks import (
-    timeout, order_before_upgrade, order_upgrade, order_before_upgrade_hosts,
-    order_upgrade_hosts, order_after_upgrade_hosts, order_upgrade_cluster,
-    order_after_upgrade_cluster, order_upgrade_dc, order_after_upgrade
+    timeout,
+    order_before_upgrade,
+    order_upgrade,
+    order_before_upgrade_hosts,
+    order_upgrade_hosts,
+    order_after_upgrade_hosts,
+    order_upgrade_cluster,
+    order_after_upgrade_cluster,
+    order_upgrade_dc,
+    order_after_upgrade,
+    tier1,
+    tier2,
+    tier3,
+    tier4,
+    upgrade,
+    do_not_run,
 )
 
 __all__ = [
@@ -28,7 +40,6 @@ __all__ = [
     'CoreSystemTest',
     'IntegrationTest',
     'UpgradeTest',
-    'attr',
     'testflow',
     'timeout',
     'order_before_upgrade',
@@ -40,4 +51,10 @@ __all__ = [
     'order_after_upgrade_cluster',
     'order_upgrade_dc',
     'order_after_upgrade',
+    'tier1',
+    'tier2',
+    'tier3',
+    'tier4',
+    'upgrade',
+    'do_not_run',
 ]

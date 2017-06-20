@@ -16,8 +16,10 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.test_handler.tools import bz
 from art.unittest_lib import (
-    attr, testflow,
     CoreSystemTest as TestCase,
+    testflow,
+    tier1,
+    tier2,
 )
 
 from rhevmtests.config import ENGINE_ENTRY_POINT as engine_entry_point
@@ -49,7 +51,7 @@ class TestCaseUserAndRoles(TestCase):
             domain=config.USER_DOMAIN,
         )
 
-    @attr(tier=1)
+    @tier1
     def test_remove_inherited_permissions_for_user(self):
         """
         Verify impossibility of removing inherited permissions
@@ -59,7 +61,7 @@ class TestCaseUserAndRoles(TestCase):
             config.USER_NAME
         ), "Something gone wrong"
 
-    @attr(tier=2)
+    @tier2
     def test_delete_everyone_group(self):
         """
         verify group functionality
@@ -68,7 +70,7 @@ class TestCaseUserAndRoles(TestCase):
         testflow.step("Deleting 'Everyone' group.")
         assert ll_users.deleteGroup(positive=False, group_name="Everyone")
 
-    @attr(tier=2)
+    @tier2
     def test_create_user_with_wrong_domain(self):
         """
         verify users functionality
@@ -81,7 +83,7 @@ class TestCaseUserAndRoles(TestCase):
             user_name=config.USER_NAME,
         )
 
-    @attr(tier=2)
+    @tier2
     def test_create_user_not_in_domain(self):
         """
         verify users functionality
@@ -94,7 +96,7 @@ class TestCaseUserAndRoles(TestCase):
             user_name=config.USER_NON_EXISTING,
         )
 
-    @attr(tier=1)
+    @tier1
     def test_add_tag_to_user(self):
         """
         verify users functionality
@@ -115,7 +117,7 @@ class TestCaseUserAndRoles(TestCase):
         testflow.step("Removing tag from user.")
         assert ll_tags.removeTag(positive=True, tag=TAG_NAME)
 
-    @attr(tier=1)
+    @tier1
     def test_check_system_summary(self):
         """
         verify users functionality
@@ -127,7 +129,7 @@ class TestCaseUserAndRoles(TestCase):
             domain=config.USER_DOMAIN
         )
 
-    @attr(tier=1)
+    @tier1
     def test_check_system_version_tag(self):
         """
         verify system version tag
@@ -135,7 +137,7 @@ class TestCaseUserAndRoles(TestCase):
         testflow.step("Checking system version tag.")
         assert ll_general.check_system_version_tag(positive=True)
 
-    @attr(tier=1)
+    @tier1
     def test_check_definition_of_blank_template(self):
         """
         verify definition of blank template
@@ -153,7 +155,7 @@ class TestCaseUserAndRoles(TestCase):
         except EngineTypeError:
             logger.info("xPath is only supported for rest")
 
-    @attr(tier=1)
+    @tier1
     def test_check_definition_of_tag_root_object(self):
         """
         verify definition of tag root object
@@ -171,7 +173,7 @@ class TestCaseUserAndRoles(TestCase):
         except EngineTypeError:
             logger.info("xPath is only supported for rest.")
 
-    @attr(tier=1)
+    @tier1
     @bz({"1446525": {}})
     def test_check_userp_properties_in_active_directory(self):
         """

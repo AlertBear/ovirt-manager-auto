@@ -10,7 +10,12 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    testflow,
+    tier2,
+    tier3,
+)
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
     create_vm, delete_disks, poweroff_vm, remove_vm  # flake8: noqa
@@ -108,7 +113,7 @@ class TestCase4936(VmWithOs):
     polarion_test_case = "4936"
 
     @polarion("RHEVM3-4936")
-    @attr(tier=2)
+    @tier2
     def test_attach_new_disk_while_running(self):
         """
         Attach different types of disks while the vm is running
@@ -139,7 +144,7 @@ class TestCase4937(VmWithOs):
     polarion_test_case = "4937"
 
     @polarion("RHEVM3-4937")
-    @attr(tier=3)
+    @tier3
     def test_attach_new_disk_powering_up(self):
         """
         Attach different types of disks while the vm is powering up
@@ -162,7 +167,7 @@ class TestCase4937(VmWithOs):
             assert ll_vms.waitForVMState(self.vm_name)
 
     @polarion("RHEVM3-4937")
-    @attr(tier=3)
+    @tier3
     def test_attach_new_disk_powering_down(self):
         """
         Attach different types of disks while the vm is powering down
@@ -184,7 +189,7 @@ class TestCase4937(VmWithOs):
             assert ll_vms.startVm(True, self.vm_name, config.VM_UP)
 
     @polarion("RHEVM3-4937")
-    @attr(tier=3)
+    @tier3
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_attach_new_disk_suspend(self):
         """

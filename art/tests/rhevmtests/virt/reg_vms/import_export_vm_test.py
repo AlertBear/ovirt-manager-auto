@@ -14,7 +14,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 
-from art.unittest_lib import testflow, attr, VirtTest
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import testflow, VirtTest
 import art.test_handler.exceptions as errors
 from art.test_handler.tools import polarion, bz
 from rhevmtests.virt.reg_vms.fixtures import (
@@ -37,7 +40,7 @@ class ImportExportVm(VirtTest):
         helper.get_storage_domains()
     )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-12525")
     @pytest.mark.usefixtures(test_snapshot_and_import_export_fixture.__name__)
     def test_basic_import_export_vm(self):

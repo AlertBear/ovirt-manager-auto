@@ -8,7 +8,10 @@ import logging
 import time
 import pytest
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.migration.fixtures import (
     teardown_migration,
     restore_default_policy_on_cluster,
@@ -22,7 +25,7 @@ import migration_helper
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     teardown_migration.__name__,
     setting_migration_vm.__name__,
@@ -108,7 +111,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
             time.sleep(25)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     teardown_migration.__name__,
     setting_migration_vm.__name__,
@@ -141,7 +144,7 @@ class TestVMLevelMigrationPoliciesCase1(VirtTest):
             time.sleep(25)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     teardown_migration.__name__,
     setting_migration_vm.__name__,

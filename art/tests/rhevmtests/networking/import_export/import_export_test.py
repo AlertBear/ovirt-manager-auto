@@ -14,11 +14,14 @@ import config as import_export_conf
 import helper
 import rhevmtests.networking.config as net_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import import_vms, import_templates, remove_networks
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(import_vms.__name__)
 class TestImportExportCase01(NetworkTest):
@@ -57,7 +60,7 @@ class TestImportExportCase01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(import_templates.__name__)
 class TestImportExportCase02(NetworkTest):
@@ -101,7 +104,7 @@ class TestImportExportCase02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     remove_networks.__name__,

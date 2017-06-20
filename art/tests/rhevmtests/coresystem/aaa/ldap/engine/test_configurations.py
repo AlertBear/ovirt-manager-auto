@@ -7,7 +7,10 @@ import pytest
 
 from art.rhevm_api.tests_lib.low_level import mla
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 
 from rhevmtests.coresystem.aaa.ldap import common, config
 
@@ -31,7 +34,7 @@ class Configuration(TestCase):
         return extName in DOMAIN_NAMES
 
 
-@attr(tier=2)
+@tier2
 class TestWrongConfiguration(Configuration):
     """
     Test if wrong configuration is ignored.
@@ -48,7 +51,7 @@ class TestWrongConfiguration(Configuration):
         assert not self._isExtensionAvailable(self.conf['authz_name'])
 
 
-@attr(tier=2)
+@tier2
 class TestDisabledConfiguration(Configuration):
     """
     Test if disabled configuration is ignored.

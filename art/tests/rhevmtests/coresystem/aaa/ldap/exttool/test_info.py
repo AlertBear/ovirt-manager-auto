@@ -13,14 +13,17 @@ import pytest
 
 from art.rhevm_api.utils.enginecli import EngineCLI
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 
 from rhevmtests.coresystem.aaa.ldap import config
 
 logger = logging.getLogger('test_info')
 
 
-@attr(tier=1)
+@tier1
 class TestExttoolInfo(TestCase):
     """ Test info module of ovirt-engine-extensions-tool """
     @classmethod

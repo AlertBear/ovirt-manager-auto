@@ -30,7 +30,12 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr, StorageTest
+from art.unittest_lib import (
+    do_not_run,
+    tier2,
+    tier3,
+    StorageTest,
+)
 import rhevmtests.storage.helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -183,7 +188,7 @@ def initializer_module(request):
             )
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class BaseTestCase(StorageTest):
     storages = set([ISCSI])
 
@@ -360,7 +365,7 @@ class BaseTestCaseNewDC(BaseTestCase):
                 )
 
 
-@attr(tier=2)
+@tier2
 class TestCase11196(BaseTestCaseNewDC):
     """
     RHEVM3-11196 - Place host in maintenance mode
@@ -440,7 +445,7 @@ class BasicDeactivateStorageDomain(BaseTestCaseNewDC):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
 class TestCase11200(BasicDeactivateStorageDomain):
     """
@@ -468,7 +473,7 @@ class TestCase11200(BasicDeactivateStorageDomain):
         self.deactivate_last_iscsi_domain()
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
 class TestCase11230(BasicDeactivateStorageDomain):
     """
@@ -498,7 +503,7 @@ class TestCase11230(BasicDeactivateStorageDomain):
         self.deactivate_last_iscsi_domain()
 
 
-@attr(tier=3)
+@tier3
 class TestCase11201(BaseTestCaseNewDC):
     """
     RHEVM3-11201 - Deactivate one of multiple domain
@@ -561,7 +566,7 @@ class TestCase11201(BaseTestCaseNewDC):
         )
 
 
-@attr(tier=2)
+@tier2
 class TestCase11257(BaseTestCaseNewDC):
     """
     RHEVM3-11257 -  iSCSI logout after storage domain detachment
@@ -630,7 +635,7 @@ class TestCase11257(BaseTestCaseNewDC):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
 class TestCase11233(BaseTestCaseNewDC):
     """
@@ -679,7 +684,7 @@ class TestCase11233(BaseTestCaseNewDC):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
 class TestCase11231(BaseTestCaseNewDC):
     """

@@ -13,7 +13,11 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms,
 )
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
+from art.unittest_lib import StorageTest as TestCase, testflow
 from rhevmtests.storage.storage_disk_image_format.fixtures import (
     create_second_vm, create_disks_to_vm, create_disks_to_vm_by_interface,
 )
@@ -184,7 +188,7 @@ class TestCase14943(TestCaseMultipleDisks):
     __test__ = True
 
     @polarion("RHEVM-14943")
-    @attr(tier=2)
+    @tier2
     def test_change_disk_interface(self):
         """
         Test setup:
@@ -211,7 +215,7 @@ class TestCase14944(TestCaseMultipleDisks):
     lun_disks = True
 
     @polarion("RHEVM-14944")
-    @attr(tier=2)
+    @tier2
     def test_change_disk_interface_direct_lun(self):
         """
         Test setup:
@@ -308,7 +312,7 @@ class TestCase14945(BaseTestCase):
     }
 
     @polarion("RHEVM-14945")
-    @attr(tier=2)
+    @tier2
     def test_shared_disk_different_interfaces(self):
         """
         Test setup:
@@ -420,7 +424,7 @@ class TestCase14946(BaseTestCase):
     ])
 
     @polarion("RHEVM-14946")
-    @attr(tier=3)
+    @tier3
     def test_change_disk_ide_large_number_devices(self):
         """
         Test setup:
@@ -464,7 +468,7 @@ class TestCase14947(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14947")
-    @attr(tier=3)
+    @tier3
     def test_change_disk_running_vm(self):
         """
         Test setup:
@@ -512,7 +516,7 @@ class TestCase14948(BaseTestCase):
     }
 
     @polarion("RHEVM-14948")
-    @attr(tier=3)
+    @tier3
     def test_attach_disk_without_interface(self):
         """
         Test setup:
@@ -548,7 +552,7 @@ class TestCase14949(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14949")
-    @attr(tier=3)
+    @tier3
     def test_change_disk_and_restore_snapshot(self):
         """
         Test setup:
@@ -588,7 +592,7 @@ class TestCase14955(BaseOneDiskAttachedTestCase):
     __test__ = True
 
     @polarion("RHEVM-14955")
-    @attr(tier=3)
+    @tier3
     def test_change_disk_suspended_vm(self):
         """
         Test setup:
@@ -626,7 +630,7 @@ class TestCase16716(TestCase):
     }
 
     @polarion("RHEVM3-16716")
-    @attr(tier=3)
+    @tier3
     def test_attach_virtio_scsi_disk_to_unsupported_vm(self):
         """
         Attach a disk to a VM when the interface is virtio-scsi and the VM does

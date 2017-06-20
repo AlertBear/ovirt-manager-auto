@@ -11,7 +11,11 @@ import pytest
 import config as topologies_conf
 import helper as topologies_helper
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import (
+    NetworkTest,
+    testflow,
+    tier2,
+)
 from fixtures import update_vnic_network
 from rhevmtests import helpers
 import rhevmtests.networking.config as conf
@@ -28,7 +32,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG

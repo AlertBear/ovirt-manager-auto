@@ -16,7 +16,10 @@ import helper
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
     update_network_usages, deactivate_hosts, add_vnic_to_vm, remove_networks
 )
@@ -52,7 +55,7 @@ def migration_network_prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     setup_networks_fixture_function.__name__,

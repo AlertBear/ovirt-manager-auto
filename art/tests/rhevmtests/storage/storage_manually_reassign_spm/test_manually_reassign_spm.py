@@ -16,7 +16,12 @@ import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
     delete_disks, set_spm_priorities, init_master_domain_params, create_vm
@@ -106,7 +111,7 @@ class TestCase5815(BasicEnvironment):
     polarion_test_case = '5815'
 
     @polarion("RHEVM3-5815")
-    @attr(tier=2)
+    @tier2
     def test_reassign_spm(self):
         """
         * Select HSM to be SPM
@@ -132,7 +137,7 @@ class TestCase5823(BasicEnvironment):
     polarion_test_case = '5823'
 
     @polarion("RHEVM3-5823")
-    @attr(tier=2)
+    @tier2
     def test_reassign_spm_when_deactivate_spm_host(self):
         """
         * Put SPM host in maintenance
@@ -163,7 +168,7 @@ class TestCase5818(BasicEnvironment):
     disks_to_remove = list()
 
     @polarion("RHEVM3-5818")
-    @attr(tier=2)
+    @tier2
     def test_select_new_host_as_spm_during_async_task(self):
         """
         *  Run an async task (such as adding a disk)
@@ -203,7 +208,7 @@ class TestCase5819(BasicEnvironment):
     polarion_test_case = '5819'
 
     @polarion("RHEVM3-5819")
-    @attr(tier=2)
+    @tier2
     def test_reassign_spm_during_deactivate_domain(self):
         """
         * Deactivate storage domain
@@ -240,7 +245,7 @@ class TestCase14812(BasicEnvironment):
     disks_to_remove = list()
 
     @polarion("RHEVM3-14812")
-    @attr(tier=3)
+    @tier3
     def test_reassign_spm_to_host_with_vm_and_perform_storage_operation(self):
         """
         * Create VM and run it on HSM host
@@ -289,7 +294,7 @@ class TestCase5820(ReassignSPMWithStorageBlocked):
     polarion_test_case = '5820'
 
     @polarion("RHEVM3-5820")
-    @attr(tier=4)
+    @tier4
     def test_set_spm_with_blocked_non_master_domain(self):
         """
         * Block connection between SPM and non-master domain
@@ -313,7 +318,7 @@ class TestCase5821(ReassignSPMWithStorageBlocked):
     polarion_test_case = '5821'
 
     @polarion("RHEVM3-5821")
-    @attr(tier=4)
+    @tier4
     def test_set_spm_with_blocked_master_domain(self):
         """
         * Block connection between SPM and master domain

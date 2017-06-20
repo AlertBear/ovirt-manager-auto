@@ -12,7 +12,9 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+)
 from art.unittest_lib.common import StorageTest as TestCase, testflow
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.storage_full_import_export.fixtures import (
@@ -70,7 +72,7 @@ class BaseTestCase(TestCase):
         reason="Not defined unused gluster domains"
     )
     @polarion("RHEVM3-10951")
-    @attr(tier=2)
+    @tier2
     def test_import_export_storage_domain(self):
         """
         Import an export storage domain

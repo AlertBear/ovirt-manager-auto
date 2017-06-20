@@ -4,8 +4,10 @@ test_vms
 -----------------
 """
 from art.unittest_lib import (
-    attr, testflow,
     CoreSystemTest as TestCase,
+    testflow,
+    tier1,
+    tier2,
 )
 from art.rhevm_api.tests_lib.low_level import vms as ll_vm
 
@@ -30,7 +32,7 @@ class TestCaseVM(TestCase):
     storage_name = storages_names[0]
     provisioned_size = 2147483648
 
-    @attr(tier=2)
+    @tier2
     def test_add_disk_to_vm_wrong_format(self):
         """
         Negative - verify vm functionality
@@ -47,7 +49,7 @@ class TestCaseVM(TestCase):
             interface=self.interface
         )
 
-    @attr(tier=2)
+    @tier2
     def test_add_disk_to_vm_wrong_interface(self):
         """
         Negative - verify vm functionality
@@ -64,7 +66,7 @@ class TestCaseVM(TestCase):
             format=self.disk_format
         )
 
-    @attr(tier=1)
+    @tier1
     def test_add_remove_disk(self):
         """
         Positive - verify vm functionality

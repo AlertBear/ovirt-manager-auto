@@ -20,7 +20,10 @@ import config as mgmt_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
     add_networks_to_clusters, move_host_to_cluster,
     remove_network, install_host_with_new_management
@@ -33,7 +36,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_clusters.__name__
@@ -82,7 +85,7 @@ class TestMGMTNetRole01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_clusters.__name__,
     create_and_attach_networks.__name__
@@ -153,7 +156,7 @@ class TestMGMTNetRole02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_clusters.__name__,
@@ -265,7 +268,7 @@ class TestMGMTNetRole03(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_clusters.__name__,
     create_and_attach_networks.__name__,
@@ -335,7 +338,7 @@ class TestMGMTNetRole04(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_clusters.__name__,
@@ -411,7 +414,7 @@ class TestMGMTNetRole05(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
@@ -564,7 +567,7 @@ class TestMGMTNetRole06(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_and_attach_networks.__name__,
@@ -645,7 +648,7 @@ class TestMGMTNetRole07(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     install_host_with_new_management.__name__,

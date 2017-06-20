@@ -10,14 +10,18 @@ from art.test_handler.tools import polarion, bz
 import rhevmtests.helpers as helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.reg_vms.fixtures import add_vm_fixture
 import config
 
 logger = logging.getLogger("update_vm_cases")
 
 
-@attr(tier=1)
+@tier1
 class UpdateVm(VirtTest):
     """
     Update vms with different parameters test cases
@@ -123,7 +127,7 @@ class UpdateVm(VirtTest):
             vm=new_name,
             name=self.vm_name)
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12528")
     @bz({'1260732': {}})
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
@@ -141,7 +145,7 @@ class UpdateVm(VirtTest):
             placement_host=config.HOSTS[0]
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12531")
     @bz({'1260732': {}})
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
@@ -158,7 +162,7 @@ class UpdateVm(VirtTest):
             placement_host=config.HOSTS[0]
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12529")
     @bz({'1260732': {}})
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
@@ -174,7 +178,7 @@ class UpdateVm(VirtTest):
             placement_affinity=affinity,
             placement_host=config.HOSTS[0])
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12527")
     @bz({'1260732': {}})
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
@@ -191,7 +195,7 @@ class UpdateVm(VirtTest):
             placement_affinity=affinity
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-12530")
     @bz({'1260732': {}})
     @pytest.mark.usefixtures(add_vm_fixture.__name__)

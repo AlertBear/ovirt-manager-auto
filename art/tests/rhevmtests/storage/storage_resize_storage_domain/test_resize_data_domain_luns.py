@@ -23,7 +23,10 @@ from art.rhevm_api.tests_lib.high_level import (
     vmpools as hl_vmpools
 )
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
 from art.unittest_lib.common import StorageTest as TestCase, testflow
 from rhevmtests.fixtures import (
     init_storage_manager, create_lun_on_storage_server,
@@ -184,7 +187,7 @@ class TestCase9854(ResizeSingleLun):
     __test__ = True
 
     @polarion("RHEVM3-9854")
-    @attr(tier=2)
+    @tier2
     def test_basic_lun_extend(self):
         self.full_resize()
 
@@ -196,7 +199,7 @@ class TestCase10139(ResizeVmOperations):
     __test__ = True
 
     @polarion("RHEVM3-10139")
-    @attr(tier=2)
+    @tier2
     def test_create_snapshot_after_lun_extend(self):
         self.file_name, self.checksum_before = (
             helpers.write_content_and_get_checksum(
@@ -227,7 +230,7 @@ class TestCase10140(ResizeVmDiskOperations):
     size_diff = 6
 
     @polarion("RHEVM3-10140")
-    @attr(tier=3)
+    @tier3
     def test_live_merge_after_lun_extend(self):
         description = storage_helpers.create_unique_object_name(
             self.__name__, config.OBJECT_TYPE_SNAPSHOT
@@ -249,7 +252,7 @@ class TestCase10141(ResizeSingleLun):
     __test__ = True
 
     @polarion("RHEVM3-10141")
-    @attr(tier=3)
+    @tier3
     def test_add_disk_after_lun_extend(self):
         self.resize_luns()
         helpers.create_second_disk(self.new_storage_domain)
@@ -272,7 +275,7 @@ class TestCase10142(ResizeVmOperations):
     vm_executor_2 = None
 
     @polarion("RHEVM3-10142")
-    @attr(tier=3)
+    @tier3
     def test_extend_lun_shared_disk(self):
         helpers.start_vm(self.vm_name_2)
         self.vm_executor_2 = storage_helpers.get_vm_executor(self.vm_name_2)
@@ -314,7 +317,7 @@ class TestCase10143(ResizeVmOperations):
     __test__ = True
 
     @polarion("RHEVM3-10143")
-    @attr(tier=3)
+    @tier3
     def test_attach_lun_after_extend_lun(self):
         self.full_resize()
         dev_count_before = storage_helpers.get_storage_devices(
@@ -363,7 +366,7 @@ class TestCase10144(ResizeVmDiskOperations):
 
     @bz({'1458548': {}})
     @polarion("RHEVM3-10144")
-    @attr(tier=3)
+    @tier3
     def test_live_storage_migration_after_extending_lun(self):
         testflow.step(
             "Live migrating VM %s disk %s to storage domain %s. Operation "
@@ -427,7 +430,7 @@ class TestCase10145(ResizeCreateTemplate):
     __test__ = True
 
     @polarion("RHEVM3-10145")
-    @attr(tier=3)
+    @tier3
     def test_create_template_after_extending_lun(self):
         self.create_template_after_extending_lun()
 
@@ -457,7 +460,7 @@ class TestCase10146(ResizeCreateTemplate):
 
     @bz({'1454821': {}})
     @polarion("RHEVM3-10146")
-    @attr(tier=3)
+    @tier3
     def test_create_vms_pool_after_extending_lun(self):
         self.create_template_after_extending_lun()
 
@@ -516,7 +519,7 @@ class TestCase10147(ResizeVmDiskOperations):
         )
 
     @polarion("RHEVM3-10147")
-    @attr(tier=3)
+    @tier3
     def test_extend_lun_while_writing_to_disk(self):
         self.file_name, checksum_before = (
             helpers.write_content_and_get_checksum(
@@ -567,6 +570,6 @@ class TestCase10148(BaseTestCase):
     extend_indices = [4]
 
     @polarion("RHEVM3-10148")
-    @attr(tier=3)
+    @tier3
     def test_extend_several_luns(self):
         self.full_resize()

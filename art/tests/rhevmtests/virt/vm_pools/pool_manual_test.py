@@ -21,7 +21,11 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import polarion
-from art.unittest_lib import VirtTest, attr, testflow
+from art.unittest_lib import (
+    VirtTest,
+    testflow,
+    tier2,
+)
 import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as virt_helper
 
@@ -29,7 +33,7 @@ import rhevmtests.virt.helper as virt_helper
 logger = logging.getLogger("virt.vm_pools.manual_test")
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestManualPoolCannotRecycleVm(VirtTest):
     """
@@ -70,7 +74,7 @@ class TestManualPoolCannotRecycleVm(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -139,7 +143,7 @@ class TestManualPoolRememberUser(VirtTest):
             virt_helper.check_if_file_exist(True, vms[user], vm_resource)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,

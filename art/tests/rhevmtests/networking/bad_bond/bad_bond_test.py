@@ -13,7 +13,11 @@ import pytest
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import (
+    NetworkTest,
+    testflow,
+    tier2,
+)
 from fixtures import get_linux_ad_partner_mac_value, refresh_hosts_capabilities
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture,
@@ -21,7 +25,7 @@ from rhevmtests.networking.fixtures import (
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     setup_networks_fixture.__name__,
     get_linux_ad_partner_mac_value.__name__,
@@ -80,7 +84,7 @@ class TestLACPBond(NetworkTest):
     # refresh_hosts_capabilities fixture parameters
     hosts_to_refresh = [0, 1]
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.parametrize(
         ("host_index", "bond_name", "check_valid"),
         [

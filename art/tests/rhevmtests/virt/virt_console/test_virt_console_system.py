@@ -4,7 +4,10 @@ import config as vcons_conf
 import fixtures
 
 from art.test_handler.tools import polarion
-from art.unittest_lib.common import VirtTest, attr
+from art.unittest_lib import (
+    VirtTest,
+    tier2,
+)
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
@@ -12,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import graphics_console as ll_gc
 import helper
 
 
-@attr(tier=2)
+@tier2
 class TestVirtConsoleClass(VirtTest):
 
     @polarion('RHEVM3-12357')

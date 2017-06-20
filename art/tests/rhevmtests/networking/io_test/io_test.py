@@ -16,7 +16,11 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as io_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    NetworkTest,
+    testflow,
+    tier2,
+)
 from rhevmtests import helpers
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
@@ -41,7 +45,7 @@ def attach_label_to_network(request):
     assert ll_networks.add_label(**label_dict)
 
 
-@attr(tier=2)
+@tier2
 class TestIOTest01(NetworkTest):
     """
     1. Positive: Creating & adding networks with valid names to the cluster.
@@ -152,7 +156,7 @@ class TestIOTest01(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -303,7 +307,7 @@ class TestIOTest02(NetworkTest):
                     assert not res
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -403,7 +407,7 @@ class TestIOTest03(NetworkTest):
                 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,

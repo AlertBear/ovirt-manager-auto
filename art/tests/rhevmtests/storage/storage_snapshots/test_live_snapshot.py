@@ -4,7 +4,6 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_1_Storage_Live_Snapshot
 """
 import base_snapshot_operation as BasePlan
-from art.unittest_lib import attr
 
 from rhevmtests.storage.fixtures import (
     create_vm, initialize_storage_domains, undo_snapshot, add_disk,

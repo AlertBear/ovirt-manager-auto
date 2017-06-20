@@ -5,13 +5,16 @@ import pytest
 from time import sleep
 
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier3,
+    testflow,
+)
 
 from logging_base import LoggingTest
 import config
 
 
-@attr(tier=3)
+@tier3
 class TestDebugLogs(LoggingTest):
     """Log tests"""
     @classmethod

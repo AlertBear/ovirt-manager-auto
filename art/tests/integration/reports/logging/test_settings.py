@@ -4,15 +4,17 @@ Sanity testing of report and dwh installation
 
 import pytest
 
-from art.unittest_lib import attr
 from art.test_handler.tools import polarion
-from art.unittest_lib import testflow
+from art.unittest_lib import (
+    testflow,
+    tier2,
+)
 
 from logging_base import LoggingTest
 import config
 
 
-@attr(tier=2)
+@tier2
 class TestApplicationSettings(LoggingTest):
     """
     Test application setting of dwh

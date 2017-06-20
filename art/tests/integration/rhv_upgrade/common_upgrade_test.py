@@ -29,7 +29,7 @@ Ordering markers:
 
 Tiers and Teams:
     All the tests should be marked with proper team and tier.
-    For tier use marker @attr(tier="upgrade"). For team use same as you used to
+    For tier use marker @upgrade. For team use same as you used to
     use in rhevmtests.
 
 Skipping tests after or before upgrade:

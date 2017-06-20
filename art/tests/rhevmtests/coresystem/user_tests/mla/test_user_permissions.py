@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import do_not_run, tier1, tier2, testflow
 
 import common
 import config
@@ -119,7 +119,7 @@ def setup_module(request):
     disks.wait_for_disks_status(config.DISK_NAME)
 
 
-@attr(tier=1)
+@tier1
 class TestPermissionsCase54408(common.BaseTestCase):
     """ objects and user permissions """
     @classmethod
@@ -153,7 +153,7 @@ class TestPermissionsCase54408(common.BaseTestCase):
             assert self.objects[k].get(href=href) is not None
 
 
-@attr(tier=1)
+@tier1
 class TestPermissionsCase54409(common.BaseTestCase):
     """" permissions inheritance """
     @classmethod
@@ -242,7 +242,7 @@ class TestPermissionsCase54409(common.BaseTestCase):
 # Check that in the object Permissions sub tab you will see all permissions
 # that were associated with the selected object in the main grid or one of
 # its ancestors.
-@attr(tier=1)
+@tier1
 class TestPermissionsCase5441054414(common.BaseTestCase):
     """" permissions subtab """
     @polarion("RHEVM3-7186")  # Also RHEVM3-7187, can not have multiple IDs
@@ -287,7 +287,7 @@ class TestPermissionsCase5441054414(common.BaseTestCase):
 # system object.
 # Try to remove last super-admin user with permission on system object.
 # Try to remove super-admin + system permission from the user.
-@attr(tier=2)
+@tier2
 class TestPermissionsCase5441854419(common.BaseTestCase):
     """ last permission on object and test removal of SuperUser """
     @polarion("RHEVM3-7188")
@@ -326,7 +326,7 @@ class TestPermissionsCase5441854419(common.BaseTestCase):
 # you don't have "Super-Admin" permission on the "System" object". - FAILED
 # When you're user/super user ,try to delegate permission to another
 # user/super user. - SUCCESS
-@attr(tier=2)
+@tier2
 class TestPermissionsCase54425(common.BaseTestCase):
     """ test delegate perms """
     @classmethod
@@ -488,7 +488,7 @@ class TestPermissionsCase54425(common.BaseTestCase):
 
 
 # Check if user is under some Group if it has permissions of its group
-@attr(tier=2)
+@tier2
 class TestPermissionsCase54446(common.BaseTestCase):
     """ Check if user is under some Group if has permissions of its group """
     @classmethod
@@ -563,7 +563,7 @@ class TestPermissionsCase54446(common.BaseTestCase):
 
 # user API - createVm - should add perms UserVmManager on VM
 # https://bugzilla.redhat.com/show_bug.cgi?id=881145
-@attr(tier=2)
+@tier2
 class TestPermissionsCase54420(common.BaseTestCase):
     """ Object creating from User and Admin portal """
     @polarion("RHEVM3-7190")
@@ -724,7 +724,7 @@ class TestPermissionsCase54420(common.BaseTestCase):
 # login as user from group, remove the user
 # Check that group still exist in the Configure-->System.
 # Check that group's permissions still exist
-@attr(tier=2)
+@tier2
 class TestPermissionsCase108233(common.BaseTestCase):
     """ Removing user that part of the group. """
     @classmethod
@@ -790,7 +790,7 @@ class TestPermissionsCase108233(common.BaseTestCase):
 # Create new desktop pool
 # Check that permission was inherited from data-center
 # Ensure that user can take a machine from created pool
-@attr(tier=2)
+@tier2
 class TestPermissionsCase109086(common.BaseTestCase):
     """ Permission inheritance for desktop pool """
     @classmethod
@@ -856,7 +856,7 @@ class TestPermissionsCase109086(common.BaseTestCase):
 # grant permissions for user X to some VMs & templates on that SD
 # destroy the SD take a look in the user under permission tab
 # extra_reqs={'datacenters_count': 2}
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestPermissionsCase111082(common.BaseTestCase):
     """ Test if perms removed after object is removed """
     apis = set(['rest'])
@@ -964,7 +964,7 @@ class TestPermissionsCase111082(common.BaseTestCase):
         assert disk_operator_id not in permits_id
 
 
-@attr(tier=1)
+@tier1
 class TestAdminPropertiesOfTemplate(common.BaseTestCase):
     """
     Test create of vm as PowerUserRole from template which has set

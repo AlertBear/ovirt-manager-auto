@@ -7,7 +7,10 @@ import pytest
 
 from art.rhevm_api.tests_lib.low_level import mla, templates, vms, users
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow
 
 import common
 import config
@@ -206,7 +209,7 @@ def setup_module(request):
     )
 
 
-@attr(tier=2)
+@tier2
 class TestCopyPermissions299326(common.BaseTestCase):
     """ Check if permissions are copied to vm when enabled """
     @classmethod
@@ -241,7 +244,7 @@ class TestCopyPermissions299326(common.BaseTestCase):
         )
 
 
-@attr(tier=2)
+@tier2
 class TestCopyPermissions299330(common.BaseTestCase):
     """ Check if permissions are copied to vm when disabled """
     @classmethod
@@ -275,7 +278,7 @@ class TestCopyPermissions299330(common.BaseTestCase):
         )
 
 
-@attr(tier=2)
+@tier2
 class TestCopyPermissions299328(common.BaseTestCase):
     """ Check if permissions are copied to template when enabled """
     @classmethod
@@ -311,7 +314,7 @@ class TestCopyPermissions299328(common.BaseTestCase):
         )
 
 
-@attr(tier=2)
+@tier2
 class TestCopyPermissions299331(common.BaseTestCase):
     """ Check if permissions are not copied to template when disabled """
     @classmethod

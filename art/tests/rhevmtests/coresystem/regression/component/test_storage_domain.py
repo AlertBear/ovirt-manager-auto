@@ -9,8 +9,10 @@ from art.test_handler.tools import bz
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.unittest_lib import (
-    attr, testflow,
     CoreSystemTest as TestCase,
+    testflow,
+    tier1,
+    tier2,
 )
 
 from rhevmtests.config import (
@@ -50,7 +52,7 @@ class TestCaseStorageDomain(TestCase):
     sd_name = storages_names[0]
     new_sd_name = sd_name + 'Updated'
 
-    @attr(tier=2)
+    @tier2
     def test_create_storage_domain_wrong_type(self):
         """
         Negative - verify storage domain functionality
@@ -68,7 +70,7 @@ class TestCaseStorageDomain(TestCase):
         )
 
     @bz({"1451390": {}})
-    @attr(tier=1)
+    @tier1
     def test_update_storage_domain(self):
         """
         Positive - verify storage domain functionality

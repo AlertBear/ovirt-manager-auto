@@ -24,10 +24,15 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
-from art.unittest_lib import VirtTest, attr, testflow
+from art.unittest_lib import (
+    VirtTest,
+    testflow,
+    tier2,
+    tier3,
+)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -90,7 +95,7 @@ class TestUserVmContinuity(VirtTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestTwoUsersTakeVmFromPool(VirtTest):
     """
@@ -138,7 +143,7 @@ class TestTwoUsersTakeVmFromPool(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestNoAvailableVmsForUser(VirtTest):
     """
@@ -162,7 +167,7 @@ class TestNoAvailableVmsForUser(VirtTest):
         helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -195,7 +200,7 @@ class TestCannotStealVmFromOtherUser(VirtTest):
         helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,

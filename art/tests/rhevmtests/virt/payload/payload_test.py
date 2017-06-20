@@ -9,7 +9,10 @@ NOTE: Not support CLI API, BZ: 1198677
 """
 
 import pytest
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
 from art.unittest_lib import VirtTest, testflow
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -23,7 +26,7 @@ import helper
 import config
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -65,7 +68,7 @@ class TestCreateVmWithCdromPayload(VirtTest):
         assert ll_vms.getVmPayloads(True, self.vm_name)[0]
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -98,7 +101,7 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -132,7 +135,7 @@ class TestCdromPayloadComplexContent(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -166,7 +169,7 @@ class TestCreateVmWithFloppyPayload(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,

@@ -13,7 +13,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vmpools as ll_vmpools
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow
 
 import common
 import config
@@ -138,7 +141,7 @@ def get_role_permits(curr_role):
     )
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54413(common.BaseTestCase):
     """
     Check that only users which are permitted to create role, can create role.
@@ -261,7 +264,7 @@ class TestRoleCase54413(common.BaseTestCase):
             users.removeUser(True, config.USER_NAMES[0])
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54401(common.BaseTestCase):
     """
     Assign new role to users, check that role behave correctly after update.
@@ -416,7 +419,7 @@ class TestRoleCase54401(common.BaseTestCase):
         assert vms.stopVm(True, config.VM_NAME)
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54415(common.BaseTestCase):
     """ Try to get list of roles as user and non-admin user """
     @classmethod
@@ -519,7 +522,7 @@ class TestRoleCase54415(common.BaseTestCase):
             assert users.removeUser(True, config.USER_NAMES[0])
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54402(common.BaseTestCase):
     """
     Try to remove role which is assigned to user and that is not assigned
@@ -595,7 +598,7 @@ class TestRoleCase54402(common.BaseTestCase):
         assert mla.removeRole(True, config.USER_ROLE)
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54366(common.BaseTestCase):
     """ Try to create role with illegal characters. """
     @polarion("RHEVM3-7138")
@@ -606,7 +609,7 @@ class TestRoleCase54366(common.BaseTestCase):
             assert mla.addRole(False, name=char, permits='login')
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54540(common.BaseTestCase):
     """ Try to remove predefined roles """
     @polarion("RHEVM3-7147")
@@ -617,7 +620,7 @@ class TestRoleCase54540(common.BaseTestCase):
             assert mla.util.delete(role, False)
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54411(common.BaseTestCase):
     """
     Check there are some predefined roles. Names could change in future, so
@@ -633,7 +636,7 @@ class TestRoleCase54411(common.BaseTestCase):
         assert len(mla.util.get(abs_link=False)) == predefined_length
 
 
-@attr(tier=2)
+@tier2
 class TestRoleCase54403(common.BaseTestCase):
     """
     There is no support to copy role in REST.
@@ -649,7 +652,7 @@ class TestRoleCase54403(common.BaseTestCase):
         assert mla.removeRole(True, config.USER_ROLE)
 
 
-@attr(tier=2)
+@tier2
 class TestRolesCase54412(common.BaseTestCase):
     """
     Assigning a Role to a object, means that the role apply to all the

@@ -24,7 +24,7 @@ from rhevmtests.sla.scheduler_tests.fixtures import (
 host_as_spm = 2
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 class TestCRUD1(u_libs.SlaTest):
     """
     Basic CRUD tests for affinity labels
@@ -62,7 +62,7 @@ class TestCRUD1(u_libs.SlaTest):
         assert ll_afflabels.AffinityLabels.delete(name=self.affinity_labels[1])
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(create_affinity_labels.__name__)
 class TestCRUD2(u_libs.SlaTest):
     """
@@ -118,7 +118,7 @@ class TestCRUD2(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(create_affinity_labels.__name__)
 class TestCRUD3(u_libs.SlaTest):
     """
@@ -174,7 +174,7 @@ class TestCRUD3(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -212,7 +212,7 @@ class TestAffinityLabels1(u_libs.SlaTest):
         assert ll_vms.get_vm_host(sla_conf.VM_NAME[0]) == sla_conf.HOSTS[0]
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -243,7 +243,7 @@ class TestAffinityLabels2(u_libs.SlaTest):
         assert not ll_vms.startVm(positive=True, vm=sla_conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -287,7 +287,7 @@ class TestAffinityLabels3(u_libs.SlaTest):
         assert sla_conf.HOSTS[1] == ll_vms.get_vm_host(sla_conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -327,7 +327,7 @@ class TestAffinityLabels4(u_libs.SlaTest):
         assert not ll_vms.migrateVm(positive=True, vm=sla_conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     create_affinity_labels.__name__,
@@ -372,7 +372,7 @@ class TestAffinityLabels5(u_libs.SlaTest):
         assert sla_conf.HOSTS[1] == ll_vms.get_vm_host(sla_conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -416,7 +416,7 @@ class TestAffinityLabels6(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -464,7 +464,7 @@ class TestAffinityLabels7(u_libs.SlaTest):
         assert not ll_vms.startVm(positive=True, vm=sla_conf.VM_NAME[1])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -508,7 +508,7 @@ class TestAffinityLabels8(u_libs.SlaTest):
         assert not ll_vms.startVm(positive=True, vm=sla_conf.VM_NAME[1])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -558,7 +558,7 @@ class TestAffinityLabels9(u_libs.SlaTest):
         assert ll_vms.stopVm(positive=True, vm=sla_conf.VM_NAME[1])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -604,7 +604,7 @@ class TestAffinityLabels10(u_libs.SlaTest):
         assert ll_vms.stopVm(positive=True, vm=sla_conf.VM_NAME[1])
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -652,7 +652,7 @@ class TestAffinityLabels11(u_libs.SlaTest):
         assert ll_vms.get_vm_host(sla_conf.VM_NAME[1]) == sla_conf.HOSTS[0]
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_labels.__name__,
     assign_affinity_label_to_element.__name__,
@@ -694,7 +694,7 @@ class TestAffinityLabels12(u_libs.SlaTest):
         assert ll_vms.get_vm_host(sla_conf.VM_NAME[0]) == sla_conf.HOSTS[0]
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 class TestSanityAffinityLabelName(u_libs.SlaTest):
     """
     Sanity tests on affinity label name

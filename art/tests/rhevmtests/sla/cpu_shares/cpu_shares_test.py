@@ -65,7 +65,7 @@ class BaseCpuShare(u_libs.SlaTest):
     expected_dict = dict((vm, 50) for vm in vms_to_start)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestLowShare(BaseCpuShare):
     """
     Check that two VM's that have the same low CPU share
@@ -88,7 +88,7 @@ class TestLowShare(BaseCpuShare):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestMediumShare(BaseCpuShare):
     """
     Check that two vms that have the same medium CPU share
@@ -113,7 +113,7 @@ class TestMediumShare(BaseCpuShare):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestHighShare(BaseCpuShare):
     """
     Check that two vms that have the same high CPU share
@@ -138,7 +138,7 @@ class TestHighShare(BaseCpuShare):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestCustomShare(BaseCpuShare):
     """
     Check that two vms that have the same custom CPU share
@@ -161,7 +161,7 @@ class TestCustomShare(BaseCpuShare):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestPredefinedValues(BaseCpuShare):
     """
@@ -190,7 +190,7 @@ class TestPredefinedValues(BaseCpuShare):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestCustomValuesOfShare(BaseCpuShare):
     """
     Check that 4 vms that have the different custom CPU share values

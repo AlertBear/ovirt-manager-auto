@@ -12,7 +12,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     templates as ll_templates
 )
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import VirtTest, testflow
 from art.test_handler.tools import polarion, bz
 from fixtures import (
     default_instance_type_teardown, remove_test_vms,
@@ -21,7 +24,7 @@ from fixtures import (
 from rhevmtests.virt.helper import compare_dictionaries
 
 
-@attr(tier=1)
+@tier1
 class TestInstanceType(VirtTest):
 
     __test__ = True

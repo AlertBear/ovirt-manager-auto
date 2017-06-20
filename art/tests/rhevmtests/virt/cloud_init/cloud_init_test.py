@@ -12,7 +12,11 @@ import config
 import helper
 import rhevmtests.virt.helper as virt_helper
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib.common import VirtTest, attr, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib.common import VirtTest, testflow
 from fixtures import case_setup, start_vm_with_cloud_init
 
 logger = logging.getLogger("Cloud init VM")
@@ -28,7 +32,7 @@ class TestCloudInit(VirtTest):
     vm_name = config.CLOUD_INIT_VM_NAME
     initialization = None
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-14364")
     @pytest.mark.usefixtures(case_setup.__name__)
     @bz({"1464043": {}})
@@ -54,7 +58,7 @@ class TestCloudInit(VirtTest):
             % self.vm_name
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-4795")
     @pytest.mark.usefixtures(case_setup.__name__)
     @pytest.mark.initialization_param(user_name=config.VDC_ROOT_USER)
@@ -81,7 +85,7 @@ class TestCloudInit(VirtTest):
             % self.vm_name
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-14369")
     @pytest.mark.usefixtures(
         case_setup.__name__,
@@ -107,7 +111,7 @@ class TestCloudInit(VirtTest):
             self.vm_name
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-4796")
     @pytest.mark.usefixtures(case_setup.__name__)
     @pytest.mark.per_condition(set_authorized_ssh_keys=True)

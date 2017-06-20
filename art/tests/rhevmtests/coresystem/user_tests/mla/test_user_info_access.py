@@ -19,7 +19,12 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest as TestCase, attr, testflow
+from art.unittest_lib import (
+    CoreSystemTest as TestCase,
+    tier2,
+    testflow,
+    do_not_run
+)
 
 import common
 import config
@@ -100,7 +105,7 @@ def setup_module(request):
 
 
 # extra_reqs={'datacenters_count': 2}
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestVmUserInfoTests(common.BaseTestCase):
     """ Test if user can see correct events """
     @classmethod
@@ -190,7 +195,7 @@ class TestVmUserInfoTests(common.BaseTestCase):
 
 
 # extra_reqs={'datacenters_count': 2}
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestVmUserInfoTests2(common.BaseTestCase):
     """ Test if user can see correct objects """
     # Accessing to specific id don't working in java/python sdk
@@ -413,7 +418,7 @@ class TestVmUserInfoTests2(common.BaseTestCase):
         vms.stopVm(True, config.VM_NAMES[0])
 
 
-@attr(tier=2)
+@tier2
 class TestViewChildrenInfoTests(common.BaseTestCase):
     """
     Tests if roles that are not able to view children,
@@ -529,7 +534,7 @@ class TestViewChildrenInfoTests(common.BaseTestCase):
 
 # extra_reqs={'clusters_count': 2}
 # as ge2 and ge3 have 2 clusters wi will run this test
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestVmCreatorClusterAdminInfoTests(common.BaseTestCase):
     """ Test for VM Creator and cluster admin role """
     @classmethod
@@ -589,7 +594,7 @@ class TestVmCreatorClusterAdminInfoTests(common.BaseTestCase):
                 )
 
 
-@attr(tier=2)
+@tier2
 class TestVmCreatorInfoTests(common.BaseTestCase):
     """ Test for VM Creator role """
     @classmethod
@@ -676,7 +681,7 @@ class TestVmCreatorInfoTests(common.BaseTestCase):
         assert len(my_vms) == 1, msg.format(my_vms)
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestTemplateCreatorInfoTests(common.BaseTestCase):
     """ Test combination of roles with TemplateCreator role """
     @classmethod
@@ -788,7 +793,7 @@ class TestTemplateCreatorInfoTests(common.BaseTestCase):
 # - Check /api/templates
 # Should see all templates in Datacenter1, but none in Datacenter2.
 # extra_reqs={'datacenters_count': 2}
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestTemplateCreatorAndDCAdminInfoTest(common.BaseTestCase):
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
@@ -856,7 +861,7 @@ class TestTemplateCreatorAndDCAdminInfoTest(common.BaseTestCase):
 
 
 # extra_reqs={'datacenters_count': 2}
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestComplexCombinationTest(common.BaseTestCase):
     """ Test that user can see correct object regarding its permissions """
     @classmethod

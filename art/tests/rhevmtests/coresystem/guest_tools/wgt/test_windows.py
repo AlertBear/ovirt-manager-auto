@@ -20,7 +20,11 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
     storagedomains as hl_sds
 )
-from art.unittest_lib import attr, CoreSystemTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
+from art.unittest_lib import CoreSystemTest as TestCase, testflow
 from rhevmtests.coresystem.guest_tools.wgt import config
 
 logger = logging.getLogger(__name__)
@@ -234,7 +238,7 @@ class Windows(TestCase):
 # If in doubt run $grep '^class ' test_windows.py | sort
 
 
-@attr(tier=3)
+@tier3
 class TestWin2008R2_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -267,7 +271,7 @@ class TestWin2008R2_CI_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin2008R2_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -300,7 +304,7 @@ class TestWin2008R2_CI_core_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=2)
+@tier2
 class TestWin2012R2_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -333,7 +337,7 @@ class TestWin2012R2_CI_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin2012R2_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -366,7 +370,7 @@ class TestWin2012R2_CI_core_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin2012_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -399,7 +403,7 @@ class TestWin2012_CI_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin2012_CI_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -432,7 +436,7 @@ class TestWin2012_CI_core_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin7_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -465,7 +469,7 @@ class TestWin7_CI_32b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=2)
+@tier2
 class TestWin7_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -498,7 +502,7 @@ class TestWin7_CI_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin8_1_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -531,7 +535,7 @@ class TestWin8_1_CI_32b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=2)
+@tier2
 class TestWin8_1_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -564,7 +568,7 @@ class TestWin8_1_CI_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin8_CI_32b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -597,7 +601,7 @@ class TestWin8_CI_32b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWin8_CI_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -630,7 +634,7 @@ class TestWin8_CI_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWindows10_32b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -664,7 +668,7 @@ class TestWindows10_32b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=2)
+@tier2
 class TestWindows10_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -698,7 +702,7 @@ class TestWindows10_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=3)
+@tier3
 class TestWindows2016_core_64b(Windows):
     """
     Test that all product and services exist on windows machine after
@@ -732,7 +736,7 @@ class TestWindows2016_core_64b(Windows):
         self.check_guest_timezone()
 
 
-@attr(tier=2)
+@tier2
 class TestWindows2016_64b(Windows):
     """
     Test that all product and services exist on windows machine after

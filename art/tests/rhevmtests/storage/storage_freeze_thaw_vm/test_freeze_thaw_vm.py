@@ -15,7 +15,10 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from rhevmtests.storage import config
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
 from art.unittest_lib.common import StorageTest as TestCase, testflow
 
 from rhevmtests.storage.fixtures import (
@@ -159,7 +162,7 @@ class TestCase14677(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-14677")
-    @attr(tier=2)
+    @tier2
     def test_basic_freeze_thaw_flow(self):
         """
         Test the basic flow
@@ -175,7 +178,7 @@ class TestCase14717(BaseTestCase):
     NUMBER_OF_TIMES = 5
 
     @polarion("RHEVM3-14717")
-    @attr(tier=3)
+    @tier3
     def test_multiple_freeze_thaw_flow(self):
         """
         Execute the basic flow multiple times
@@ -197,7 +200,7 @@ class TestCase14713(BaseTestCase):
     disk_size = 10 * config.GB
 
     @polarion("RHEVM3-14713")
-    @attr(tier=3)
+    @tier3
     def test_freeze_thaw_multiple_disks(self):
         """
         Execute the basic flow on an attached disk
@@ -215,7 +218,7 @@ class TestCase14716(BaseTestCase):
     snapshot_description = "before_freeze_call"
 
     @polarion("RHEVM3-14716")
-    @attr(tier=3)
+    @tier3
     def test_preview_snapshot(self):
         """
         * Test basic flow
@@ -241,7 +244,7 @@ class TestCase14715(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-14715")
-    @attr(tier=3)
+    @tier3
     def test_negative_cases(self):
         """
         * Suspend a VM

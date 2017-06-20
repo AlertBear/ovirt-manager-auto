@@ -12,8 +12,9 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.exceptions import HostException
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
-    attr, testflow,
     CoreSystemTest as TestCase,
+    tier1,
+    testflow,
 )
 
 from rhevmtests.coresystem.config import (
@@ -135,7 +136,7 @@ class HostInMaintenance(TestCase):
                 )
 
 
-@attr(tier=1)
+@tier1
 class TestActivateActiveHost(ActiveHost):
     """
     Negative - Try to activate an active host - should fail
@@ -146,7 +147,7 @@ class TestActivateActiveHost(ActiveHost):
         assert ll_hosts.activate_host(False, host=hosts[0])
 
 
-@attr(tier=1)
+@tier1
 class TestUpdateHostName(TestCase):
     """
     Positive  - Update host's name
@@ -181,7 +182,7 @@ class TestUpdateHostName(TestCase):
         )
 
 
-@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
+@tier1
 class TestAddRemovePowerManagement(TestCase):
     """
     Positive - add power management to host then remove it
@@ -214,7 +215,7 @@ class TestAddRemovePowerManagement(TestCase):
         hl_hosts.remove_power_management(host_name=hosts[0])
 
 
-@attr(tier=1, extra_reqs={"pm": PM1_TYPE})
+@tier1
 class TestUpdatePowerManagementType(PowerManagement):
     """
     Positive - update power management type on host
@@ -243,7 +244,7 @@ class TestUpdatePowerManagementType(PowerManagement):
             )
 
 
-@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
+@tier1
 class TestUpdatePowerManagementInvalidType(PowerManagement):
     """
     Negative - update power management type on host
@@ -272,7 +273,7 @@ class TestUpdatePowerManagementInvalidType(PowerManagement):
         )
 
 
-@attr(tier=1)
+@tier1
 class TestSetSPMToLow(TestCase):
     """
     Positive - Set SPM priority on host to low
@@ -339,7 +340,7 @@ class TestSetSPMToLow(TestCase):
             )
 
 
-@attr(tier=1)
+@tier1
 class TestUpdateIPOfActiveHost(ActiveHost):
     """
     Negative - update ip address on the active host expecting failure
@@ -383,7 +384,7 @@ class TestUpdateIPOfActiveHost(ActiveHost):
             )
 
 
-@attr(tier=1)
+@tier1
 class TestSetActiveHostToMaintenanceForReinstallation(ActiveHost):
     """
     Positive = set host to maintenance
@@ -402,7 +403,7 @@ class TestSetActiveHostToMaintenanceForReinstallation(ActiveHost):
             )
 
 
-@attr(tier=1)
+@tier1
 class TestReinstallHost(HostInMaintenance):
     """
     Positive - Reinstall host using password authentication
@@ -425,7 +426,7 @@ class TestReinstallHost(HostInMaintenance):
             )
 
 
-@attr(tier=1)
+@tier1
 class TestManualFenceForHost(HostInMaintenance):
     """
     Positive - Manual fence host
@@ -439,7 +440,7 @@ class TestManualFenceForHost(HostInMaintenance):
             )
 
 
-@attr(tier=1)
+@tier1
 class TestActivateInactiveHost(HostInMaintenance):
     """
     Positive - activate host
@@ -451,7 +452,7 @@ class TestActivateInactiveHost(HostInMaintenance):
             raise HostException("Host activation failed.")
 
 
-@attr(tier=1)
+@tier1
 class TestReinstallActiveHost(ActiveHost):
     """
     Negative - re install host when active should fail
@@ -471,7 +472,7 @@ class TestReinstallActiveHost(ActiveHost):
             )
 
 
-@attr(tier=1)
+@tier1
 class TestCreateHostWithWrongIPAddress(TestCase):
     """
     Negative - add host with wrong ip
@@ -503,7 +504,7 @@ class TestCreateHostWithWrongIPAddress(TestCase):
             raise HostException("Added a host with an invalid ip address.")
 
 
-@attr(tier=1)
+@tier1
 class TestCreateHostWithEmptyRootPassword(TestCase):
     """
     Negative - add host without filling out the root password field
@@ -535,7 +536,7 @@ class TestCreateHostWithEmptyRootPassword(TestCase):
             raise HostException("Added host without root password.")
 
 
-@attr(tier=1)
+@tier1
 class TestRemoveActiveHost(ActiveHost):
     """
     Negative - attempt to remove host while active
@@ -562,7 +563,7 @@ class TestRemoveActiveHost(ActiveHost):
             )
 
 
-@attr(tier=1)
+@tier1
 class TestSearchForHost(TestCase):
     """
     Positive - send a query to search for host
@@ -590,7 +591,7 @@ class TestSearchForHost(TestCase):
             )
 
 
-@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
+@tier1
 class TestAddSecondaryPowerManagement(PowerManagement):
     """
     Positive - add secondary power management

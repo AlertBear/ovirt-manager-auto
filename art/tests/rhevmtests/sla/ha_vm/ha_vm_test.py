@@ -81,7 +81,7 @@ class BaseHaVm(u_libs.SlaTest):
             return False
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 class TestHaVm01(BaseHaVm):
     """
     Verify that the engine restart the HA VM
@@ -105,7 +105,7 @@ class TestHaVm01(BaseHaVm):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 class TestHaVm02(BaseHaVm):
     """
     Verify that the engine does not restart the HA VM in case when it
@@ -126,7 +126,7 @@ class TestHaVm02(BaseHaVm):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 class TestHaVm03(BaseHaVm):
     """
     Verify that the engine does not restart the HA VM in case when it
@@ -152,7 +152,7 @@ class TestHaVm03(BaseHaVm):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 class TestHaVm04(BaseHaVm):
     """
     Verify that the engine does not restart the HA VM in case when it
@@ -173,7 +173,7 @@ class TestHaVm04(BaseHaVm):
         )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     configure_hosts_power_management.__name__,
     wait_for_hosts_status_up.__name__
@@ -200,7 +200,7 @@ class TestHaVm05(BaseHaVm):
         )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     configure_hosts_power_management.__name__,
     wait_for_hosts_status_up.__name__

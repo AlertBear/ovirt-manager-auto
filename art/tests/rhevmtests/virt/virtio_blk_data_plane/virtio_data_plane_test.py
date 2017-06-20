@@ -9,9 +9,12 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
 import helpers
 import pytest
+from art.unittest_lib import (
+    VirtTest,
+    testflow,
+    tier2,
+)
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, VirtTest
-from art.unittest_lib import testflow
 from fixtures import (
     reactivate_vm_disks,
     remove_disk_from_vm,
@@ -21,7 +24,7 @@ from fixtures import (
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     virtio_data_plane_setup.__name__,
     update_vm_io_threads.__name__,
@@ -65,7 +68,7 @@ class TestBasicVirtioDataPlane(VirtTest):
         helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     virtio_data_plane_setup.__name__,
     update_vm_io_threads.__name__,
@@ -106,7 +109,7 @@ class TestHotplugVirtioDataPlane(VirtTest):
         helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     virtio_data_plane_setup.__name__,
     update_vm_io_threads.__name__,

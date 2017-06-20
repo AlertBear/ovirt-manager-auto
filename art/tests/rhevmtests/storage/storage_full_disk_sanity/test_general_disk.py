@@ -6,7 +6,11 @@ RHEVM3/wiki/Storage_3_6/3_6_Storage_Disk_General
 import logging
 import pytest
 import config
-from art.unittest_lib import StorageTest as TestCase, attr
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    tier2,
+    tier3,
+)
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms,
@@ -44,7 +48,7 @@ class NegativeAttachDetach(TestCase):
     installation = False
 
     @polarion("RHEVM3-16776")
-    @attr(tier=2)
+    @tier2
     def test_attach_locked_disk_to_vm(self):
         """
         Attach disk to VM when the disk is in locked state
@@ -68,7 +72,7 @@ class NegativeAttachDetach(TestCase):
         self.disks_to_remove.append(self.disk_name)
 
     @polarion("RHEVM3-16775")
-    @attr(tier=2)
+    @tier2
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_detach_disk_from_powering_up_vm(self):
         """
@@ -83,7 +87,7 @@ class NegativeAttachDetach(TestCase):
         ll_vms.wait_for_vm_states(self.vm_name)
 
     @polarion("RHEVM3-16736")
-    @attr(tier=2)
+    @tier2
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_attach_disk_to_vm_in_powering_up_state(self):
         """
@@ -108,7 +112,7 @@ class NegativeAttachDetach(TestCase):
         self.disks_to_remove.append(self.disk_name)
 
     @polarion("RHEVM3-16739")
-    @attr(tier=2)
+    @tier2
     def test_attach_disk_to_vm_as_bootable(self):
         """
         Attach disk to VM as second bootable disk - should fail
@@ -140,7 +144,7 @@ class TestCase16737(TestCase):
     storage_domain = None
 
     @polarion("RHEVM3-16737")
-    @attr(tier=3)
+    @tier3
     def test_attach_ovf_disk_to_vm(self):
         """
         Attach OVF disk to VM
@@ -176,7 +180,7 @@ class TestCase16738(TestCase):
     installation = False
 
     @polarion("RHEVM3-16738")
-    @attr(tier=3)
+    @tier3
     def test_attach_disk_to_vm_in_preview(self):
         """
         Attach disk to VM in preview of snapshot
@@ -199,7 +203,7 @@ class TestCase16741(TestCase):
     installation = False
 
     @polarion("RHEVM3-16741")
-    @attr(tier=3)
+    @tier3
     def test_attach_disk_of_stateless_snapshot_to_vm(self):
         """
         Attach stateless snapshot's disk to VM
@@ -228,7 +232,7 @@ class TestCase16743(TestCase):
     installation = False
 
     @polarion("RHEVM3-16743")
-    @attr(tier=3)
+    @tier3
     def test_detach_snapshot_disk_to_vm(self):
         """
         Detach snapshot's disk from VM
@@ -257,7 +261,7 @@ class TestCase16774(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16774")
-    @attr(tier=3)
+    @tier3
     def test_remove_ovf_disk(self):
         """
         Remove OVF disk - should fail
@@ -285,7 +289,7 @@ class TestCase16777(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16777")
-    @attr(tier=3)
+    @tier3
     @helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     def test_remove_locked_disk(self):
         """
@@ -315,7 +319,7 @@ class TestCase16780(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16780")
-    @attr(tier=3)
+    @tier3
     def test_delete_disk_of_locked_template(self):
         """
         Try Remove template's disk of locked template - should fail
@@ -350,7 +354,7 @@ class TestCase16782(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-16782")
-    @attr(tier=2)
+    @tier2
     def test_delete_disk_of_template(self):
         """
         Remove template's disk
@@ -383,7 +387,7 @@ class TestCase16784(TestCase):
     }
 
     @polarion("RHEVM3-16784")
-    @attr(tier=3)
+    @tier3
     def test_update_disk_size_of_RO_disk(self):
         """
         Update disk size of read only disk
@@ -406,7 +410,7 @@ class TestCase16785(TestCase):
     installation = False
 
     @polarion("RHEVM3-16785")
-    @attr(tier=3)
+    @tier3
     def test_resize_snapshot_disk(self):
         """
         Resize a snapshot's disk
@@ -432,7 +436,7 @@ class TestCase16786(TestCase):
     installation = False
 
     @polarion("RHEVM3-16786")
-    @attr(tier=2)
+    @tier2
     def test_update_disk_size_to_smaller_size(self):
         """
         Update disk size to smaller size - should fail
@@ -458,7 +462,7 @@ class TestCase16787(TestCase):
     sd_to_deactivate_index = 0
 
     @polarion("RHEVM3-16787")
-    @attr(tier=3)
+    @tier3
     def test_update_disk_size_to_smaller_size(self):
         """
         Update disk size of disk on inactive storage domain - should fail

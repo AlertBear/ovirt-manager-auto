@@ -21,7 +21,10 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
     remove_vnic_profiles,
     remove_nic_from_template,
@@ -35,7 +38,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(create_datacenters.__name__)
 class TestVNICProfileCase01(NetworkTest):
@@ -69,7 +72,7 @@ class TestVNICProfileCase01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -587,7 +590,7 @@ class TestVNICProfileCase02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,

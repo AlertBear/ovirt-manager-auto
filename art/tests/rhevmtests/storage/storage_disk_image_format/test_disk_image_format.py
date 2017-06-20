@@ -14,7 +14,12 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    testflow,
+    tier2,
+    tier3,
+)
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage.fixtures import (
     initialize_storage_domains, create_vm, create_template, remove_vm,
@@ -167,7 +172,7 @@ class TestCase11604(BaseTestDiskImageVms):
     polarion_test_id = '11604'
 
     @polarion("RHEVM3-11604")
-    @attr(tier=2)
+    @tier2
     def test_format_and_snapshots(self):
         """
         Create a snapshot
@@ -195,7 +200,7 @@ class TestCase11621(BaseTestDiskImageVms):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     @polarion("RHEVM3-11621")
-    @attr(tier=2)
+    @tier2
     def test_move_disk_offline(self):
         """
         Move the disk
@@ -226,7 +231,7 @@ class TestCase11620(BaseTestDiskImageVms):
     polarion_test_id = '11620'
 
     @polarion("RHEVM3-11620")
-    @attr(tier=3)
+    @tier3
     def test_add_snapshot_and_move_disk(self):
         """
         Create a snapshot and move the disk
@@ -259,7 +264,7 @@ class TestCase11619(BaseTestDiskImageVms):
     polarion_test_id = '11619'
 
     @polarion("RHEVM3-11619")
-    @attr(tier=2)
+    @tier2
     def test_live_move_disk(self):
         """
         Start a live disk migration
@@ -316,7 +321,7 @@ class TestCase11618(ExportVms):
     polarion_test_id = '11618'
 
     @polarion("RHEVM3-11618")
-    @attr(tier=2)
+    @tier2
     def test_export_vm(self):
         """
         Export a vm
@@ -340,7 +345,7 @@ class TestCase11617(ExportVms):
     polarion_test_id = '11617'
 
     @polarion("RHEVM3-11617")
-    @attr(tier=2)
+    @tier2
     def test_add_snapshot_and_export_vm(self):
         """
         Create a snapshot and export the vm
@@ -366,7 +371,7 @@ class TestCase11616(ExportVms):
     polarion_test_id = '11616'
 
     @polarion("RHEVM3-11616")
-    @attr(tier=2)
+    @tier2
     def test_add_snapshot_export_vm_with_discard_snapshots(self):
         """
         Create a snapshot and export the vm choosing to discard the existing
@@ -391,7 +396,7 @@ class TestCase11615(ExportVms):
     polarion_test_id = '11615'
 
     @polarion("RHEVM3-11615")
-    @attr(tier=2)
+    @tier2
     def test_import_vm(self):
         """
         Export a vm and import it back
@@ -413,7 +418,7 @@ class TestCase11614(ExportVms):
     polarion_test_id = '11614'
 
     @polarion("RHEVM3-11614")
-    @attr(tier=3)
+    @tier3
     def test_export_vm_after_snapshot_and_import(self):
         """
         Create snapshot on vm, export the vm and import it back
@@ -436,7 +441,7 @@ class TestCase11613(ExportVms):
     polarion_test_id = '11613'
 
     @polarion("RHEVM3-11613")
-    @attr(tier=2)
+    @tier2
     def test_export_vm_with_collapse(self):
         """
         Polarion case id: 11613
@@ -476,7 +481,7 @@ class TestCase11612(TestCasesImportVmLinked):
     polarion_test_id = '11612'
 
     @polarion("RHEVM3-11612")
-    @attr(tier=3)
+    @tier3
     def test_import_link_to_template(self):
         """
         Create a vm from a thin provisioned template, export the vm and
@@ -506,7 +511,7 @@ class TestCase11611(TestCasesImportVmLinked):
     polarion_test_id = '11611'
 
     @polarion("RHEVM3-11611")
-    @attr(tier=3)
+    @tier3
     def test_import_link_to_template_collapse(self):
         """
         Create a vm from a thin provisioned template, export the vm and the
@@ -574,7 +579,7 @@ class TestCase11610(TestCasesImportVmWithNewName):
     polarion_test_id = '11610'
 
     @polarion("RHEVM3-11610")
-    @attr(tier=2)
+    @tier2
     def test_import_vm_without_removing_old_vm(self):
         """
         Import a vm without removing the original vm used in the export
@@ -593,7 +598,7 @@ class TestCase11609(TestCasesImportVmWithNewName):
     polarion_test_id = '11609'
 
     @polarion("RHEVM3-11609")
-    @attr(tier=3)
+    @tier3
     def test_import_vm_without_removing_old_vm_with_snapshot(self):
         """
         Create a snapshot to a vm, export the vm and import without removing
@@ -649,7 +654,7 @@ class TestCase11608(TestCasesCreateTemplate):
     polarion_test_id = '11608'
 
     @polarion("RHEVM3-11608")
-    @attr(tier=2)
+    @tier2
     def test_create_template_from_vm(self):
         """
         Create a template from a vm
@@ -667,7 +672,7 @@ class TestCase11607(TestCasesCreateTemplate):
     polarion_test_id = '11607'
 
     @polarion("RHEVM3-11607")
-    @attr(tier=3)
+    @tier3
     def test_create_template_from_vm_with_snapshots(self):
         """
         Create a snapshot to the vm and create a template
@@ -746,7 +751,7 @@ class TestCase11606A(TestCase11606):
     polarion_test_id = '11606'
 
     @polarion("RHEVM3-11606")
-    @attr(tier=3)
+    @tier3
     def test_different_format_same_vm(self):
         """
         Polarion case id: 11606 - no snapshot
@@ -766,7 +771,7 @@ class TestCase11606B(TestCase11606):
     deep_copy = True
 
     @polarion("RHEVM3-11606")
-    @attr(tier=3)
+    @tier3
     def test_different_format_same_vm_with_snapshot(self):
         """
         Polarion case id: 11606 - with snapshot

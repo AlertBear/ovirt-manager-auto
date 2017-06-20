@@ -12,8 +12,12 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier4,
+)
 from art.unittest_lib import StorageTest as TestCase, testflow
-from art.unittest_lib import attr
 from rhevmtests.storage import helpers as storage_helpers
 from helpers import is_pid_running_on_vm, start_cat_process_on_vm
 
@@ -96,7 +100,7 @@ class TestCase5129(CreateSnapshotWithMemoryState):
     vm_run_on_spm = True
 
     @polarion("RHEVM3-5129")
-    @attr(tier=2)
+    @tier2
     def test_create_snapshot_spm(self):
         """
         Create ram snapshot on spm
@@ -117,7 +121,7 @@ class TestCase5140(CreateSnapshotWithMemoryState):
     vm_run_on_spm = False
 
     @polarion("RHEVM3-5140")
-    @attr(tier=2)
+    @tier2
     def test_create_snapshot_hsm(self):
         """
         Create ram snapshot on hsm
@@ -198,7 +202,7 @@ class TestCase5138(ReturnToSnapshot):
     action_to_call = staticmethod(ll_vms.restore_snapshot)
 
     @polarion("RHEVM3-5138")
-    @attr(tier=1)
+    @tier1
     def test_restore_snasphot(self):
         """
         restore snapshot
@@ -220,7 +224,7 @@ class TestCase5137(VMWithMemoryStateSnapshot):
     vm_wait_for_ip = True
 
     @polarion("RHEVM3-5137")
-    @attr(tier=2)
+    @tier2
     def test_vm_with_multiple_ram_snapshots(self):
         """
         * Start another process on the VM and create a new memory snapshot.
@@ -330,7 +334,7 @@ class TestCase5136(VMWithMemoryStateSnapshot):
     persist_network = True
 
     @polarion("RHEVM3-5136")
-    @attr(tier=2)
+    @tier2
     def test_create_vm_from_memory_state_snapshot(self):
         """
         Create VM from memory snapshot and check process is **not** running
@@ -383,7 +387,7 @@ class TestCase5134(VMWithMemoryStateSnapshot):
     persist_network = True
 
     @polarion("RHEVM3-5134")
-    @attr(tier=2)
+    @tier2
     def test_import_vm_with_memory_state_snapshot(self):
         """
         Import a VM that has memory state snapshot and ensure it resumes memory
@@ -454,7 +458,7 @@ class TestCase5133(VMWithMemoryStateSnapshot):
     __test__ = True
 
     @polarion("RHEVM3-5133")
-    @attr(tier=2)
+    @tier2
     def test_remove_memory_state_snapshot(self):
         """
         Remove snapshot with memory state and check that VM starts
@@ -495,7 +499,7 @@ class TestCase5131(VMWithMemoryStateSnapshot):
     __test__ = True
 
     @polarion("RHEVM3-5131")
-    @attr(tier=4)
+    @tier4
     def test_stateless_vm_with_memory_snapshot(self):
         """
         * Restore memory snapshot

@@ -16,14 +16,18 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
+)
 from rhevmtests.fixtures import start_vm
 from fixtures import (
     update_vnic_profile, create_vm, attach_vnic_profile_to_vm
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
@@ -109,7 +113,7 @@ class TestMultipleQueueNics01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,

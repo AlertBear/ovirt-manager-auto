@@ -21,7 +21,10 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest
+from art.unittest_lib import (
+    do_not_run,
+    StorageTest
+)
 
 from multiprocessing import Process, Queue
 
@@ -31,7 +34,7 @@ TIMEOUT_SD_OPERATION = 300
 
 
 # TODO: Enable once this test plan is stabilized
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class ActivateDeactivate(StorageTest):
     """
     Test for race condition while activating and deactivating storage domains
@@ -127,7 +130,7 @@ class ActivateDeactivateMixedStorageTypes(ActivateDeactivate):
 
 
 # TODO: Enable once this test plan is stabilized
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class UpgradeBaseClass(StorageTest):
     """
     Test behaviour of an upgraded data center

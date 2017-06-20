@@ -3,16 +3,20 @@ import config as vcons_conf
 import fixtures
 
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib.common import VirtTest, attr
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 
-from art.unittest_lib import testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    VirtTest,
+    testflow,
+)
 
 import helper
 
 
-@attr(tier=3)
+@tier3
 class TestVirtConsoleHeadlessInheritanceClass(VirtTest):
 
     @pytest.mark.usefixtures(
@@ -49,7 +53,7 @@ class TestVirtConsoleHeadlessInheritanceClass(VirtTest):
 
 class TestVirtConsoleHeadlessClass(VirtTest):
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__
     )
@@ -113,7 +117,7 @@ class TestVirtConsoleHeadlessClass(VirtTest):
             "after consoles were added.".format(obj_type=obj_type)
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19428")
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
@@ -148,7 +152,7 @@ class TestVirtConsoleHeadlessClass(VirtTest):
             "did not take effect after reboot."
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19530")
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
@@ -194,7 +198,7 @@ class TestVirtConsoleHeadlessClass(VirtTest):
             "changes did not take effect after reboot."
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM-19426")
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
@@ -227,7 +231,7 @@ class TestVirtConsoleHeadlessClass(VirtTest):
             "VM did not save its headless state during Migration."
         )
 
-    @attr(tier=3)
+    @tier3
     @polarion("RHEVM-19606")
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
@@ -257,7 +261,7 @@ class TestVirtConsoleHeadlessClass(VirtTest):
             "Cloned VM was did not boot headless as it should."
         )
 
-    @attr(tier=3)
+    @tier3
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
         fixtures.shutdown_vm.__name__

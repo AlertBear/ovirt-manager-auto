@@ -46,7 +46,11 @@ import rhevmtests.networking.network_custom_properties.config as custom_pr_conf
 import rhevmtests.networking.network_filter.config as nf_conf
 import rhevmtests.networking.register_domain.helper as register_helper
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    NetworkTest,
+    tier1,
+    testflow,
+)
 from rhevmtests.fixtures import create_clusters, create_datacenters, start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
@@ -66,7 +70,7 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     add_vnic_profile.__name__
@@ -112,7 +116,7 @@ class TestSanity01(NetworkTest):
         assert attr_dict.get("name") == self.vnic_profile
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -284,7 +288,7 @@ class TestSanity02(NetworkTest):
         assert hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict)
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
@@ -354,7 +358,7 @@ class TestSanity03(NetworkTest):
         hl_host_network.setup_networks(host_name=conf.HOST_0_NAME, **sn_dict)
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -472,7 +476,7 @@ class TestSanity04(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -558,7 +562,7 @@ class TestSanity05(NetworkTest):
             )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -645,7 +649,7 @@ class TestSanity06(NetworkTest):
             assert not ll_vms.get_vm_nic_plugged(vm=self.vm_name, nic=nic_name)
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(create_cluster.__name__)
 class TestSanity07(NetworkTest):
     """
@@ -705,7 +709,7 @@ class TestSanity07(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_datacenters.__name__,
@@ -788,7 +792,7 @@ class TestSanity08(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -874,7 +878,7 @@ class TestSanity09(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -949,7 +953,7 @@ class TestSanity10(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
     start_vm.__name__
@@ -983,7 +987,7 @@ class TestSanity11(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -1038,7 +1042,7 @@ class TestSanity12(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.incremental
 @pytest.mark.usefixtures(start_vm.__name__)
 class TestSanity13(NetworkTest):
@@ -1102,7 +1106,7 @@ class TestSanity13(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -1150,7 +1154,7 @@ class TestSanity14(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestSanity15(NetworkTest):
     """
@@ -1186,7 +1190,7 @@ class TestSanity15(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     prepare_setup_for_register_domain.__name__,
@@ -1255,7 +1259,7 @@ class TestSanity16(NetworkTest):
         )
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -1325,7 +1329,7 @@ class TestSanity17(NetworkTest):
         assert ll_vms.startVm(positive=True, vm=self.vm)
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,

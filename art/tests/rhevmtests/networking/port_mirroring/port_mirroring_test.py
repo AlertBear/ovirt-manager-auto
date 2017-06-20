@@ -19,7 +19,11 @@ import rhevmtests.helpers as global_helper
 from rhevmtests.networking import config as conf, helper as network_helper
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
+)
 from fixtures import (
     port_mirroring_prepare_setup,
     return_vms_to_original_host,
@@ -28,7 +32,7 @@ from fixtures import (
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(port_mirroring_prepare_setup.__name__)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS,

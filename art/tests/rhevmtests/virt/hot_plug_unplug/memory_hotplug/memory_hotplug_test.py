@@ -11,7 +11,11 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import rhevmtests.helpers as global_helper
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib.common import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib.common import VirtTest, testflow
 from fixtures import reboot_vm
 from rhevmtests.virt import config
 import helper
@@ -28,7 +32,7 @@ class TestMemoryHotplug(VirtTest):
     vm_ip = None
     vm_name = config.MEMORY_HOTPLUG_VM
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-14601")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_a_expand_memory_in_GB(self):
@@ -44,7 +48,7 @@ class TestMemoryHotplug(VirtTest):
             vm_name=self.vm_name, memory_to_expand=config.GB
         )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-14602")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_b_expand_memory_in_MB(self):
@@ -61,7 +65,7 @@ class TestMemoryHotplug(VirtTest):
             vm_name=self.vm_name, memory_to_expand=config.MB_SIZE_256
         )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-14603")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_c_expand_memory_in_4GB(self):
@@ -79,7 +83,7 @@ class TestMemoryHotplug(VirtTest):
             vm_name=self.vm_name, memory_to_expand=config.GB, multiplier=4
         )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-14605")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_d_expand_memory_in_multiple_of_256MB(self):
@@ -98,7 +102,7 @@ class TestMemoryHotplug(VirtTest):
             multiplier=5
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-14606")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_e_suspend_resume_vm(self):
@@ -127,7 +131,7 @@ class TestMemoryHotplug(VirtTest):
             vm_name=self.vm_name, expected_memory=new_memory
         ), "Memory check on VM failed"
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-14607")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_f_reboot_vm(self):
@@ -153,7 +157,7 @@ class TestMemoryHotplug(VirtTest):
             threshold=0.85
         ), "Memory check on VM failed"
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-14608")
     @pytest.mark.usefixtures(reboot_vm.__name__)
     def test_vm_migration_after_memory_hotplug(self):
@@ -180,7 +184,7 @@ class TestMemoryHotplug(VirtTest):
             vm_name=self.vm_name, expected_memory=new_memory
         ), "Memory check on VM failed"
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.usefixtures(reboot_vm.__name__)
     @polarion("RHEVM3-14614")
     def test_neg_a_check_max_memory_device(self):
@@ -200,7 +204,7 @@ class TestMemoryHotplug(VirtTest):
             memory=memory_size
         ), "succeed to add memory device over the limit of 16"
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.usefixtures(reboot_vm.__name__)
     @polarion("RHEVM3-14615")
     @bz({"1459765": {}})

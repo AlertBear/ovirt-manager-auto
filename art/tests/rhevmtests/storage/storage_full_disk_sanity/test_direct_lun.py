@@ -8,7 +8,12 @@ import config
 import logging
 from art.rhevm_api.tests_lib.low_level.hosts import get_host_ip
 from art.unittest_lib.common import StorageTest as TestCase, testflow
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier3,
+    tier4,
+)
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -111,7 +116,7 @@ class TestCase5927(DirectLunAttachTestCase):
     polarion_test_case = "5927"
 
     @polarion("RHEVM3-5927")
-    @attr(tier=2)
+    @tier2
     def test_attach_lun_vm_running(self):
         """
         1) Attach a LUN to running VM
@@ -126,7 +131,7 @@ class TestCase5920(DirectLunAttachTestCase):
     polarion_test_case = "5920"
 
     @polarion("RHEVM3-5920")
-    @attr(tier=3)
+    @tier3
     def test_suspend_vm(self):
         """
         1) attach direct LUN
@@ -148,7 +153,7 @@ class TestCase5930(DirectLunAttachTestCase):
     polarion_test_case = "5930"
 
     @polarion("RHEVM3-5930")
-    @attr(tier=2)
+    @tier2
     def test_more_then_one_direct_lun(self):
         """
         1) Add and attach first LUN to VM
@@ -179,7 +184,7 @@ class TestCase5931(DirectLunAttachTestCase):
     polarion_test_case = "5931"
 
     @polarion("RHEVM3-5931")
-    @attr(tier=3)
+    @tier3
     def test_create_template_from_vm_with_lun(self):
         """
         1) Attach direct LUN to VM
@@ -221,7 +226,7 @@ class TestCase5932(DirectLunAttachTestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_REMOVE_SNAPSHOT])
     @polarion("RHEVM3-5932")
-    @attr(tier=3)
+    @tier3
     def test_create_snapshot_from_stateless_vm(self):
         """
         1) Attach direct LUN to VM
@@ -250,7 +255,7 @@ class TestCase5933(DirectLunAttachTestCase):
     snap_desc = "snapshot_name_%s" % polarion_test_case
 
     @polarion("RHEVM3-5933")
-    @attr(tier=3)
+    @tier3
     def test_create_snapshot_from_vm_with_lun(self):
         """
         1) Attach direct LUN to VM
@@ -285,7 +290,7 @@ class TestCase5934(DirectLunAttachTestCase):
     polarion_test_case = "5934"
 
     @polarion("RHEVM3-5934")
-    @attr(tier=4)
+    @tier4
     def test_ha_vm_with_direct_lun(self):
         """
         1) Run VM with direct LUN in HA mode
@@ -320,7 +325,7 @@ class TestCase5938(DirectLunAttachTestCase):
     storage_domain = None
 
     @polarion("RHEVM3-5938")
-    @attr(tier=2)
+    @tier2
     def test_bootable_disk(self):
         """
         1) Add direct LUN as bootable to a VM without prior bootable disk
@@ -346,7 +351,7 @@ class TestCase5939(DirectLunAttachTestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_ADD_DISK])
     @polarion("RHEVM3-5939")
-    @attr(tier=2)
+    @tier2
     def test_shared_direct_lun(self):
         """
         1) Add direct LUN as shareable
@@ -366,7 +371,7 @@ class TestCase5940(DirectLunAttachTestCase):
     target_domain = None
 
     @polarion("RHEVM3-5940")
-    @attr(tier=3)
+    @tier3
     def test_migrate_vm_direct_lun(self):
         """
         1) Attach a direct LUN to VM
@@ -420,7 +425,7 @@ class TestCase5924(DirectLunAttachTestCase):
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
 
     @polarion("RHEVM3-5924")
-    @attr(tier=1)
+    @tier1
     def test_full_flow_direct_lun(self):
         """
         Execute full flow
@@ -428,7 +433,7 @@ class TestCase5924(DirectLunAttachTestCase):
         self.full_flow_direct_lun()
 
     @polarion("RHEVM3-5924")
-    @attr(tier=1)
+    @tier1
     def test_full_flow_direct_lun_passthrough(self):
         """
         Execute full flow
@@ -445,7 +450,7 @@ class TestCase5911(DirectLunAttachTestCase):
     polarion_test_case = "5911"
 
     @polarion("RHEVM3-5911")
-    @attr(tier=2)
+    @tier2
     def test_remove_vm_with_direct_lun(self):
         """
         Remove VM with direct LUN attached
@@ -470,7 +475,7 @@ class TestCase5913(DirectLunAttachTestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_ADD_DISK])
     @polarion("RHEVM3-5913")
-    @attr(tier=3)
+    @tier3
     def test_wipe_after_delete_with_direct_lun(self):
         self.lun_kwargs["wipe_after_delete"] = True
         assert ll_disks.addDisk(
@@ -491,7 +496,7 @@ class TestCase5918(DirectLunAttachTestCase):
     new_alias = 'new_direct_lun_%s' % polarion_test_case
 
     @polarion("RHEVM3-5918")
-    @attr(tier=2)
+    @tier2
     def test_update_direct_lun(self):
         """
         Update direct LUN attached to VM

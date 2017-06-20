@@ -3,7 +3,11 @@ import pytest
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.test_handler.tools import polarion
-from art.unittest_lib import CoreSystemTest, attr, testflow
+from art.unittest_lib import (
+    CoreSystemTest,
+    testflow,
+    tier3,
+)
 
 from . import (
     check_hystrix_status, config,
@@ -33,7 +37,7 @@ def setup_module(request):
     request.addfinalizer(finalize)
 
 
-@attr(tier=3)
+@tier3
 class HystrixTemplate(CoreSystemTest):
     need_restart = False
 

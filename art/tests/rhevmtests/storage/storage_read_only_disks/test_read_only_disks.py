@@ -18,7 +18,11 @@ from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
 from art.unittest_lib.common import StorageTest as TestCase
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.networking.helper import seal_vm
@@ -161,7 +165,7 @@ class TestCase4906(DefaultEnvironment):
     polarion_test_case = '4906'
 
     @polarion("RHEVM3-4906")
-    @attr(tier=2)
+    @tier2
     @bz({'1390498': {}})
     def test_attach_RO_disk(self):
         """
@@ -190,7 +194,7 @@ class TestCase4907(BaseTestCase):
     # not disk.storage_domains is provided
 
     @polarion("RHEVM3-4907")
-    @attr(tier=2)
+    @tier2
     @bz({'957788': {}})
     def test_attach_RO_direct_LUN_disk(self):
         """
@@ -250,7 +254,7 @@ class TestCase4908(DefaultEnvironment):
     disks_to_remove = []
 
     @polarion("RHEVM3-4908")
-    @attr(tier=2)
+    @tier2
     def test_shared_RO_disk(self):
         """
         - 2 VMs with OS
@@ -292,7 +296,7 @@ class TestCase4909(DefaultEnvironment):
     disks_to_remove = []
 
     @polarion("RHEVM3-4909")
-    @attr(tier=2)
+    @tier2
     @bz({'1390498': {}})
     def test_RO_persistent_after_snapshot_creation_to_a_shared_disk(self):
         """
@@ -352,7 +356,7 @@ class TestCase4910(BaseTestCase):
     polarion_test_case = '4910'
 
     @polarion("RHEVM3-4910")
-    @attr(tier=2)
+    @tier2
     def test_change_disk_from_RW_to_RO(self):
         """
         - VM with OS
@@ -402,7 +406,7 @@ class TestCase4912(BaseTestCase):
     polarion_test_case = '4912'
 
     @polarion("RHEVM3-4912")
-    @attr(tier=2)
+    @tier2
     def test_boot_from_RO_disk(self):
         """
         - VM with OS
@@ -435,7 +439,7 @@ class TestCase4913(DefaultEnvironment):
     # with host
 
     @polarion("RHEVM3-4913")
-    @attr(tier=4)
+    @tier4
     @bz({'1431432': {}})
     def test_RO_persistent_after_block_connectivity_to_storage(self):
         """
@@ -539,7 +543,7 @@ class TestCase4914(DefaultEnvironment):
     is_migrated = False
 
     @polarion("RHEVM3-4914")
-    @attr(tier=3)
+    @tier3
     @bz({'1390498': {}})
     def test_migrate_vm_with_RO_disk(self):
         """
@@ -590,7 +594,7 @@ class TestCase4915(DefaultEnvironment):
     polarion_test_case = '4915'
 
     @polarion("RHEVM3-4915")
-    @attr(tier=3)
+    @tier3
     @bz({'1390498': {}})
     def test_RO_disk_persistent_after_suspend_the_vm(self):
         """
@@ -636,7 +640,7 @@ class TestCase4917(DefaultEnvironment):
     deep_copy = True
 
     @polarion("RHEVM3-4917")
-    @attr(tier=3)
+    @tier3
     @bz({'1309788': {}, '1390498': {}})
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
@@ -701,7 +705,7 @@ class TestCase4918(DefaultSnapshotEnvironment):
         [config.JOB_CREATE_SNAPSHOT, config.JOB_PREVIEW_SNAPSHOT]
     )
     @polarion("RHEVM3-4918")
-    @attr(tier=2)
+    @tier2
     @bz({'1390498': {}})
     def test_preview_snapshot_with_RO_disk(self):
         """
@@ -744,7 +748,7 @@ class TestCase4919(DefaultSnapshotEnvironment):
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-4919")
-    @attr(tier=3)
+    @tier3
     @bz({'1390498': {}})
     def test_preview_and_undo_snapshot_with_RO_disk(self):
         """
@@ -800,7 +804,7 @@ class TestCase4920(DefaultSnapshotEnvironment):
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-4920")
-    @attr(tier=2)
+    @tier2
     @bz({'1390498': {}})
     def test_preview_and_commit_snapshot_with_RO_disk(self):
         """
@@ -851,7 +855,7 @@ class TestCase4921(DefaultSnapshotEnvironment):
     snapshot_removed = False
 
     @polarion("RHEVM3-4921")
-    @attr(tier=3)
+    @tier3
     @bz({'1390498': {}, '1450866': {}})
     def test_delete_snapshot_with_RO_disk(self):
         """
@@ -897,7 +901,7 @@ class TestCase4922(DefaultEnvironment):
     vm_names = [cloned_vm_name]
 
     @polarion("RHEVM3-4922")
-    @attr(tier=2)
+    @tier2
     @bz({'1201268': {}, '1435967': {}})
     def test_clone_vm_from_snapshot_with_RO_disk(self):
         """
@@ -963,7 +967,7 @@ class TestCase4923(DefaultEnvironment):
 
     @polarion("RHEVM3-4923")
     @bz({'1390498': {}})
-    @attr(tier=2)
+    @tier2
     def test_create_vms_from_template_with_RO_disk(self):
         """
         - VM with OS
@@ -1043,7 +1047,7 @@ class TestCase4924(DefaultEnvironment):
     # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4924")
-    @attr(tier=3)
+    @tier3
     @bz({'1390498': {}})
     def test_moving_RO_disk(self):
         """
@@ -1112,7 +1116,7 @@ class TestCase4925(DefaultEnvironment):
     # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4925")
-    @attr(tier=3)
+    @tier3
     @bz({'1246114': {}, '1390498': {}})
     def test_live_migrate_RO_disk(self):
         """
@@ -1159,7 +1163,7 @@ class TestCase4927(BaseTestCase):
     polarion_test_case = '4927'
 
     @polarion("RHEVM3-4927")
-    @attr(tier=2)
+    @tier2
     def test_copy_template_RO_disk_to_second_SD(self):
         """
         - 2 storage domains
@@ -1189,7 +1193,7 @@ class TestCase4926(DefaultEnvironment):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_REMOVE_SNAPSHOT])
     @polarion("RHEVM3-4926")
-    @attr(tier=3)
+    @tier3
     def test_live_migrate_RW_disk(self):
         """
         - 2 storage domains
@@ -1227,7 +1231,7 @@ class TestCase4930(DefaultEnvironment):
     polarion_test_case = '4930'
 
     @polarion("RHEVM3-4930")
-    @attr(tier=4)
+    @tier4
     def test_kill_qemu_of_vm_with_RO_disk_attached(self):
         """
         - VM with OS
@@ -1283,7 +1287,7 @@ class TestCase4931(BaseTestCase):
     polarion_test_case = '4931'
 
     @polarion("RHEVM3-4931")
-    @attr(tier=4)
+    @tier4
     def test_restart_vdsm_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1308,7 +1312,7 @@ class TestCase4932(BaseTestCase):
     polarion_test_case = '4932'
 
     @polarion("RHEVM3-4932")
-    @attr(tier=4)
+    @tier4
     def test_restart_ovirt_engine_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1333,7 +1337,7 @@ class TestCase4933(BaseTestCase):
     polarion_test_case = '4933'
 
     @polarion("RHEVM3-4933")
-    @attr(tier=4)
+    @tier4
     def test_restart_libvirt_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1360,7 +1364,7 @@ class TestCase4934(BaseTestCase):
     polarion_test_case = '4934'
 
     @polarion("RHEVM3-4934")
-    @attr(tier=2)
+    @tier2
     def test_change_RW_disk_to_RO_while_disk_is_plugged_to_running_vm(self):
         """
         - VM with OS

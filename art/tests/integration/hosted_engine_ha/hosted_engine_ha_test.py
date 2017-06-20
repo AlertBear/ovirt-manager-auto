@@ -29,7 +29,7 @@ from fixtures import (
 )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     init_he_ha_test.__name__,

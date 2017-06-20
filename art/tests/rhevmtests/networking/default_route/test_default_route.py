@@ -12,7 +12,10 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as dr_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import NetworkTest, attr
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+)
 from fixtures import set_route_to_engine_and_local_host  # noqa: F401
 from rhevmtests.fixtures import create_clusters
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -26,7 +29,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_clusters.__name__,
     create_and_attach_networks.__name__,
@@ -79,7 +82,7 @@ class TestDefaultRoute01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -153,7 +156,7 @@ class TestDefaultRoute02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
@@ -241,7 +244,7 @@ class TestDefaultRoute03(NetworkTest):
         assert dr_helper.is_dgw_from_ip_subnet(vds=conf.VDS_0_HOST, ip=self.ip)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
     create_and_attach_networks.__name__,

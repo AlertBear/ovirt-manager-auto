@@ -46,7 +46,7 @@ def setup_numa_test():
     helpers.install_numa_package(resource=conf.VDS_HOSTS[0])
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 class TestGetNumaStatisticFromHost(u_libs.SlaTest):
     """
     Check that engine receives correct information from host about numa nodes
@@ -86,7 +86,7 @@ class TestGetNumaStatisticFromHost(u_libs.SlaTest):
             )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
 class TestUpdateVmWithNumaAndAutomaticMigration(u_libs.SlaTest):
     """
@@ -116,7 +116,7 @@ class TestUpdateVmWithNumaAndAutomaticMigration(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
 class TestUpdateVmWithNumaAndManualMigration(u_libs.SlaTest):
     """
@@ -147,7 +147,7 @@ class TestUpdateVmWithNumaAndManualMigration(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
 class TestUpdateVmWithNumaAndAnyHostPlacement(u_libs.SlaTest):
     """
@@ -177,7 +177,7 @@ class TestUpdateVmWithNumaAndAnyHostPlacement(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -230,7 +230,7 @@ class TestStrictNumaModeOnVM(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -297,7 +297,7 @@ class TestPreferModeOnVm(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=1)
+@u_libs.tier1
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -364,7 +364,7 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_cpu_pinning.__name__,
@@ -411,7 +411,7 @@ class TestCpuPinningOverrideNumaPinning(u_libs.SlaTest):
         assert with_pinning == 1
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -468,7 +468,7 @@ class TestTotalVmMemoryEqualToNumaNodesMemory(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -525,7 +525,7 @@ class TestTotalVmCpusEqualToNumaNodesCpus(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__
@@ -560,7 +560,7 @@ class TestCreateVmNumaNodeWithIncorrectCpu(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -611,7 +611,7 @@ class TestPinningOneVNUMAToTwoPNUMA(u_libs.SlaTest):
             assert cpu_pinning.sort() == cores_list.sort()
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -658,7 +658,7 @@ class TestPinningTwoVNUMAToOnePNUMA(u_libs.SlaTest):
             assert cpu_pinning.sort() == cores_list.sort()
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_memory_for_numa_test.__name__,
@@ -702,7 +702,7 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAStrict(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_memory_for_numa_test.__name__,
@@ -747,7 +747,7 @@ class TestPinVNUMAWithMoreMemoryThanOnPNUMAStrict(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_memory_for_numa_test.__name__,
@@ -792,7 +792,7 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -865,7 +865,7 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
         self._check_hotplug_unplug_cpu(2)
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     get_pci_device_name.__name__,
     get_pci_device_numa_node.__name__,
@@ -917,7 +917,7 @@ class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=2)
+@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     attach_host_device.__name__,

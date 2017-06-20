@@ -15,14 +15,17 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     disks as ll_disks,
 )
-from art.unittest_lib import testflow, attr, VirtTest
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow, VirtTest
 from art.test_handler.tools import polarion, bz
 from fixtures import v2v_import_fixture
 from rhevmtests.virt import helper
 import config
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(v2v_import_fixture.__name__)
 class TestV2V_RHEL(VirtTest):
     """

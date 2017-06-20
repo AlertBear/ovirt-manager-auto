@@ -4,7 +4,11 @@ Virt test - run once
 import helper
 import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.unittest_lib import common, attr
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    common,
+)
 from art.test_handler.tools import polarion
 from fixtures import (
     base_setup_fixture, image_provider_fixture, remove_vm_disk_fixture,
@@ -21,7 +25,7 @@ testflow = TestFlowInterface
 ########################################################################
 
 
-@attr(tier=2)
+@tier2
 class TestRunVmOnce(common.VirtTest):
     """
     Run once
@@ -42,7 +46,7 @@ class TestRunVmOnce(common.VirtTest):
             config.ENUMS['boot_sequence_cdrom'], config.CDROM_IMAGE_1
         )
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-9808")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_boot_from_network(self):

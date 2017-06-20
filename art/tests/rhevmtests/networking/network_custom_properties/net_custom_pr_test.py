@@ -14,7 +14,10 @@ from art.rhevm_api.tests_lib.high_level import (
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as custom_prop_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow, NetworkTest
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow, NetworkTest
 from rhevmtests.networking import helper as network_helper, config as conf
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, NetworkFixtures
@@ -45,7 +48,7 @@ def prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase01(NetworkTest):
     """
@@ -127,7 +130,7 @@ class TestNetworkCustomPropertiesCase01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase02(NetworkTest):
     """
@@ -199,7 +202,7 @@ class TestNetworkCustomPropertiesCase02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase03(NetworkTest):
     """
@@ -369,7 +372,7 @@ class TestNetworkCustomPropertiesCase03(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase04(NetworkTest):
     """
@@ -460,7 +463,7 @@ class TestNetworkCustomPropertiesCase04(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase05(NetworkTest):
@@ -739,7 +742,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase06(NetworkTest):
     """
@@ -830,7 +833,7 @@ class TestNetworkCustomPropertiesCase06(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase07(NetworkTest):
     """
@@ -935,7 +938,7 @@ class TestNetworkCustomPropertiesCase07(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase08(NetworkTest):
     """
@@ -1056,7 +1059,7 @@ class TestNetworkCustomPropertiesCase08(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase09(NetworkTest):
     """
@@ -1216,7 +1219,7 @@ class TestNetworkCustomPropertiesCase09(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase10(NetworkTest):
     """
@@ -1311,7 +1314,7 @@ class TestNetworkCustomPropertiesCase10(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase11(NetworkTest):
     """
@@ -1448,7 +1451,7 @@ class TestNetworkCustomPropertiesCase11(NetworkTest):
                 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase12(NetworkTest):
     """

@@ -12,7 +12,12 @@ Hot Plug and Unplug CPU - Testing
 import pytest
 import helper
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import common
+from art.unittest_lib import (
+    VirtTest,
+    tier1,
+    tier2,
+    tier3,
+)
 from rhevmtests import helpers
 from rhevmtests.virt import config
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -27,8 +32,8 @@ from _pytest_art.testlogger import TestFlowInterface
 testflow = TestFlowInterface
 
 
-@common.attr(tier=1)
-class CPUHotPlugClass(common.VirtTest):
+@tier1
+class CPUHotPlugClass(VirtTest):
     """
     Base Class for hot plug cpu
     """
@@ -160,7 +165,7 @@ class CPUHotPlugClass(common.VirtTest):
         cpu_cores=2, cpu_socket=2, vcpu_pinning=config.VCPU_PINNING_3,
         placement_affinity=config.VM_PINNED, placement_host=0
     )
-    @common.attr(tier=2)
+    @tier2
     def test_negative_cpu_pinning(self):
         """
         Negative test - unplug vm CPUs (4 to 2) while
@@ -176,7 +181,7 @@ class CPUHotPlugClass(common.VirtTest):
     @polarion("RHEVM3-9637")
     @pytest.mark.args_marker(hot_plug_cpu_before=False)
     @pytest.mark.usefixtures(migrate_vm_for_test.__name__)
-    @common.attr(tier=2)
+    @tier2
     def test_negative_hotplug_during_migration(self):
         """
         Test hot plug while migrating VM
@@ -191,7 +196,7 @@ class CPUHotPlugClass(common.VirtTest):
     @polarion("RHEVM-18361")
     @pytest.mark.usefixtures(migrate_vm_for_test.__name__)
     @pytest.mark.args_marker(hot_plug_cpu_before=True)
-    @common.attr(tier=2)
+    @tier2
     def test_negative_hotunplug_during_migration(self):
         """
         Test hot unplug while migrating VM
@@ -209,7 +214,7 @@ class CPUHotPlugClass(common.VirtTest):
         enable_cluster_cpu_threading.__name__,
     )
     @pytest.mark.args_marker(placement_host=0)
-    @common.attr(tier=2)
+    @tier2
     def test_negative_thread_cpu(self):
         """
         Test CPU hot plug while threads is enabled on the cluster
@@ -225,7 +230,7 @@ class CPUHotPlugClass(common.VirtTest):
         )
 
     @polarion("RHEVM3-9630")
-    @common.attr(tier=3)
+    @tier3
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_suspend_vm(self):
         """
@@ -246,7 +251,7 @@ class CPUHotPlugClass(common.VirtTest):
         )
 
     @polarion("RHEVM-19126")
-    @common.attr(tier=3)
+    @tier3
     @pytest.mark.usefixtures(update_vm_to_ha.__name__)
     def test_ha_vm(self):
         """

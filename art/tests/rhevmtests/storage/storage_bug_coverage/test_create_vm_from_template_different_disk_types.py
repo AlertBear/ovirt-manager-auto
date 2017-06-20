@@ -16,7 +16,10 @@ from art.rhevm_api.tests_lib.low_level import (
 import art.test_handler.exceptions as errors
 from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import (
+    tier3,
+)
+from art.unittest_lib import StorageTest as TestCase
 import rhevmtests.helpers as rhevm_helpers
 
 logger = logging.getLogger(__name__)
@@ -38,7 +41,7 @@ def setup_module():
     rhevm_helpers.storage_cleanup()
 
 
-@attr(tier=3)
+@tier3
 class TestCase11843(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1000789

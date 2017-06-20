@@ -3,7 +3,10 @@ Sanity test of guest agent of rhel 6 32/64b
 """
 import pytest
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import vms
 
 from rhevmtests.coresystem.guest_tools.linux_guest_agent import config
@@ -59,7 +62,7 @@ class RHEL6GATest(common.GABaseTestCase):
         common.wait_for_connective(cls.machine)
 
 
-@attr(tier=2)
+@tier2
 class TestRHEL664bGATest(RHEL6GATest):
     """ test installation of guest agent on rhel 6 64b """
     vm_name = disk_name = DISKx64_NAME
@@ -150,7 +153,7 @@ class TestRHEL664bGATest(RHEL6GATest):
         self.uninstall('%s*' % config.GA_NAME)
 
 
-@attr(tier=2)
+@tier2
 class TestRHEL632bGATest(RHEL6GATest):
     """ test installation of guest agent on rhel 6 32b """
     vm_name = disk_name = DISKx86_NAME
@@ -241,7 +244,7 @@ class TestRHEL632bGATest(RHEL6GATest):
         self.uninstall('%s*' % config.GA_NAME)
 
 
-@attr(tier=2)
+@tier2
 class TestUpgradeRHEL664bGATest(RHEL6GATest):
     """ test of upgrade guest agent on rhel 6 64b """
     vm_name = disk_name = DISKx64_NAME
@@ -270,7 +273,7 @@ class TestUpgradeRHEL664bGATest(RHEL6GATest):
         self.agent_data(self.application_list, self.list_app)
 
 
-@attr(tier=2)
+@tier2
 class TestUpgradeRHEL632bGATest(RHEL6GATest):
     """ test of upgrade guest agent on rhel 6 32b """
     vm_name = disk_name = DISKx86_NAME

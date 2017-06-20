@@ -11,13 +11,16 @@ from art.rhevm_api.tests_lib.low_level import (
     instance_types as ll_instance_types
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.fixtures import (
     create_vm, create_instance_type, edit_instance_types, remove_created_vms
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     edit_instance_types.__name__,
     remove_created_vms.__name__

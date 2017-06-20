@@ -5,7 +5,12 @@ Virt Windows testing
 """
 
 import pytest
-from art.unittest_lib import attr, VirtTest, testflow
+
+from art.unittest_lib import (
+    VirtTest,
+    testflow,
+    tier3,
+)
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
@@ -22,7 +27,7 @@ from rhevmtests.virt.windows.fixtures import (
 )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     create_windows_vms.__name__, remove_vm_from_storage_domain.__name__
@@ -62,7 +67,7 @@ class TestWindowsSanity01(VirtTest):
         )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(create_windows_vms.__name__)
 class TestWindowsSanity02(VirtTest):

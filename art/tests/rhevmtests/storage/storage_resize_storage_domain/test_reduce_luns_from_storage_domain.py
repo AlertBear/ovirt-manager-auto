@@ -8,7 +8,10 @@ import config
 import helpers
 import rhevmtests.storage.helpers as storage_helpers
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
 from art.unittest_lib.common import StorageTest as TestCase, testflow
 from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
@@ -84,7 +87,7 @@ class TestCase17508(ReduceLUNVerifyDataIntegrity):
     __test__ = True
 
     @polarion("RHEVM3-17508")
-    @attr(tier=2)
+    @tier2
     def test_reduce_single_lun_data_integrity(self):
         self.reduce_lun_with_data_integrity()
 
@@ -98,7 +101,7 @@ class TestCase17423(ReduceLUNVerifyDataIntegrity):
     extend_indices = [1, 2]
 
     @polarion("RHEVM3-17423")
-    @attr(tier=3)
+    @tier3
     def test_reduce_multiple_luns_data_integrity(self):
         self.reduce_lun_with_data_integrity()
 
@@ -110,7 +113,7 @@ class TestCase18164(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-17510")
-    @attr(tier=2)
+    @tier2
     def test_reduce_single_lun(self):
         self.reduce_lun()
 
@@ -122,7 +125,7 @@ class TestCase17510(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-17510")
-    @attr(tier=3)
+    @tier3
     def test_reduce_and_extend_single_lun(self):
         self.reduce_lun()
 
@@ -145,7 +148,7 @@ class TestCase17427(BaseTestCase):
     wait = False
 
     @polarion("RHEVM3-17427")
-    @attr(tier=3)
+    @tier3
     def test_reduce_and_extend_single_lun(self):
         self.reduce_lun()
 
@@ -177,7 +180,7 @@ class TestCase17549(BaseTestCase):
     positive = False
 
     @polarion("RHEVM3-17427")
-    @attr(tier=3)
+    @tier3
     def test_treshold_on_remaining_lun(self):
         testflow.step(
             "Reducing LUNs %s from storage domain %s. The operation is "

@@ -19,7 +19,10 @@ from art.rhevm_api.tests_lib.high_level import (
     networks as hl_networks
 )
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import add_vnics_to_vms, add_vnic_profile
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking import (
@@ -84,7 +87,7 @@ def linking_prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(add_vnics_to_vms.__name__)
 class TestLinkedCase01(NetworkTest):
@@ -115,7 +118,7 @@ class TestLinkedCase01(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=self.vnic)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(add_vnics_to_vms.__name__)
@@ -197,7 +200,7 @@ class TestLinkedCase02(NetworkTest):
             assert ll_vms.get_vm_nic_plugged(vm=vm, nic=vnic, positive=False)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(add_vnics_to_vms.__name__)
 class TestLinkedCase03(NetworkTest):
@@ -229,7 +232,7 @@ class TestLinkedCase03(NetworkTest):
         assert ll_vms.startVm(positive=False, vm=self.vm)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     add_vnic_profile.__name__,
@@ -360,7 +363,7 @@ class TestLinkedCase04(NetworkTest):
             )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(

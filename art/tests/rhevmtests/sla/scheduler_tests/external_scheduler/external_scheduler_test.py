@@ -139,7 +139,7 @@ def stop_ovirt_scheduler_proxy(request):
     assert ovirt_scheduler_proxy_service.stop()
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 class TestCorruptedPlugin(u_libs.SlaTest):
     """
     Verify that the engine does not have the corrupted policy unit
@@ -158,7 +158,7 @@ class TestCorruptedPlugin(u_libs.SlaTest):
         assert conf.POLICY_UNIT_CORRUPTED not in policy_units_names
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
@@ -190,7 +190,7 @@ class TestExternalSchedulerTimeout(u_libs.SlaTest):
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
@@ -226,7 +226,7 @@ class TestExternalSchedulerFilter(u_libs.SlaTest):
         assert ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) == conf.HOSTS[0]
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
@@ -262,7 +262,7 @@ class TestExternalSchedulerWeight(u_libs.SlaTest):
         assert ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) == conf.HOSTS[0]
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
@@ -303,7 +303,7 @@ class TestExternalSchedulerBalance(u_libs.SlaTest):
         )
 
 
-@u_libs.attr(tier=3)
+@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,

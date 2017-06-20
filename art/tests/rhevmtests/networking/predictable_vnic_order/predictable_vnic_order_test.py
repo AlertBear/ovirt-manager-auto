@@ -9,12 +9,16 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as vnic_order_conf
 import helper
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, attr, testflow
+from art.unittest_lib import (
+    NetworkTest,
+    testflow,
+    tier2,
+)
 import rhevmtests.networking.config as conf
 from fixtures import prepare_setup_predictable_vnic_order  # noqa: F401
 
 
-@attr(tier=2)
+@tier2
 class TestPredictableVnicOrder01(NetworkTest):
     """
     Check vNICs order for new VM

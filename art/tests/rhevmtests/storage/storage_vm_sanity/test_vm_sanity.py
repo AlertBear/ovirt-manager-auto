@@ -8,7 +8,12 @@ from threading import Thread
 import time
 import pytest
 import config
-from art.unittest_lib import StorageTest as TestCase, testflow, attr
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    testflow,
+    tier2,
+    tier3,
+)
 from art.rhevm_api.utils import test_utils, resource_utils, log_listener
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
@@ -227,7 +232,7 @@ class TestCase11834(TestCase):
         self._verify_data_on_vm(expected_data)
 
     @polarion("RHEVM3-11834")
-    @attr(tier=2)
+    @tier2
     def test_delete_snapshots_advanced(self):
         """
         Deleting snapshots
@@ -318,7 +323,7 @@ class TestCase11586(TestCase):
             ), "Removing snapshot %s failed!" % snapshot
 
     @polarion("RHEVM3-11586")
-    @attr(tier=2)
+    @tier2
     @bz({'1185782': {}})
     def test_delete_snapshot(self):
         """
@@ -374,7 +379,7 @@ class TestCase11830(TestCase):
     polarion_test_case = '11830'
 
     @polarion("RHEVM3-11830")
-    @attr(tier=3)
+    @tier3
     def test_create_vm_from_template_basic_flow(self):
         """
         Start creating a VM from template
@@ -500,7 +505,7 @@ class TestCase18979(BaseClassKillProc):
     regex = 'CreateVolumeContainerCommand'
 
     @polarion("RHEVM3-%s" % polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_kill_vdsm_on_spm_after_regex_copy_image(self):
         self.kill_vdsm_on_spm_after_regex_copy_image()
 
@@ -514,7 +519,7 @@ class TestCase18980(BaseClassKillProc):
     regex = 'CopyVolumeDataVDSCommand'
 
     @polarion("RHEVM3-%s" % polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_kill_vdsm_on_spm_after_regex_copy_image(self):
         self.kill_vdsm_on_spm_after_regex_copy_image()
 
@@ -528,7 +533,7 @@ class TestCase16794(BaseClassKillProc):
     regex = 'CopyVolumeDataVDSCommand'
 
     @polarion("RHEVM3-%s" % polarion_test_case)
-    @attr(tier=3)
+    @tier3
     def test_restart_ovirt_engine_copy_image(self):
         self.get_lv_count_before()
 
@@ -563,7 +568,7 @@ class TestCase18981(BaseClassKillProc):
     hsm_host = None
 
     @polarion("RHEVM3-18981")
-    @attr(tier=3)
+    @tier3
     def test_restart_hsm_after_regex_copy_data(self):
         self.get_lv_count_before()
 
@@ -615,7 +620,7 @@ class TestCase18982(BaseClassKillProc):
     polarion_test_case = '18982'
 
     @polarion("RHEVM3-18982")
-    @attr(tier=3)
+    @tier3
     def test_create_vm_from_template_with_spm_only(self):
         self.get_lv_count_before()
 

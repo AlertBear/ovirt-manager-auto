@@ -4,7 +4,11 @@
 import pytest
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.reg_vms.fixtures import (
     change_cpu_limitations, default_cpu_settings,
     create_vm_for_vcpu, make_sure_vm_is_down
@@ -17,7 +21,7 @@ import config
     default_cpu_settings.__name__,
     make_sure_vm_is_down.__name__
 )
-@attr(tier=2)
+@tier2
 class TestVcpu(VirtTest):
     """
     VCPU cases
@@ -26,7 +30,7 @@ class TestVcpu(VirtTest):
     comp_version = config.COMP_VERSION
     vm_name = config.VM_NAME[0]
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-17327")
     def test_update_vm_cpu_to_max(self):
         """
@@ -88,7 +92,7 @@ class TestVcpu(VirtTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(default_cpu_settings.__name__)
 class TestVcpuVersion40(VirtTest):
     """

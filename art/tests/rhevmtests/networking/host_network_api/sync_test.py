@@ -13,7 +13,10 @@ import config as net_api_conf
 import helper
 import rhevmtests.helpers as global_helper
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import (
     update_host_to_another_cluster, manage_ip_and_refresh_capabilities
 )
@@ -87,7 +90,7 @@ def sync_prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -414,7 +417,7 @@ class TestHostNetworkApiSync01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -724,7 +727,7 @@ class TestHostNetworkApiSync02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,

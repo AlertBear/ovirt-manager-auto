@@ -17,7 +17,7 @@ import shlex
 import config
 from art.unittest_lib import (
     StorageTest as TestCase,
-    attr
+    tier2,
 )
 import helpers
 import pytest
@@ -225,7 +225,7 @@ class TestCase11576Shared(BaseCaseIsoDomains):
     # option is not provided
     # 1254936: Deactivate storage domain sometimes fails without any warning
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-11576")
     def test_detaching_iso_vm_and_vm_runonce(self):
         """
@@ -272,7 +272,7 @@ class PlanIsoDomainLocal(BaseCaseIsoDomains):
     local = True
     storagedomains = [config.LOCAL_DOMAIN]
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-11859")
     def test_detaching_local_iso_vm(self):
         """
@@ -280,7 +280,7 @@ class PlanIsoDomainLocal(BaseCaseIsoDomains):
         """
         self.attach_iso_and_maintenance(iso_domain=config.ISO_LOCAL_DOMAIN)
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-11860")
     def test_detaching_local_iso_vm_runonce(self):
         """

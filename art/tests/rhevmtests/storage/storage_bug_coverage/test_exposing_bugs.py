@@ -8,7 +8,10 @@ import logging
 import os
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier3,
+    tier4,
+)
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
@@ -100,7 +103,7 @@ class EnvironmentWithTwoHosts(TestCase):
                 ll_hosts.activate_host(True, host)
 
 
-@attr(tier=4)
+@tier4
 class TestCase11630(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=969343
@@ -266,7 +269,7 @@ class TestCase11630(EnvironmentWithTwoHosts):
         TestCase.teardown_exception()
 
 
-@attr(tier=4)
+@tier4
 class TestCase11907(TestCase):
     """
     bug coverage test, restart engine during template creation
@@ -388,7 +391,7 @@ class TestCase11907(TestCase):
             raise exceptions.TestException("Test failed during tearDown")
 
 
-@attr(tier=3)
+@tier3
 class TestCase11625(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=962549
 
@@ -470,7 +473,7 @@ class TestCase11625(TestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=4)
+@tier4
 class TestCase11624(TestCase):
     """
     Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1119664

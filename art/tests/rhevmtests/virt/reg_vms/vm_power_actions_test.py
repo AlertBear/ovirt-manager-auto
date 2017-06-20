@@ -7,7 +7,11 @@
 import logging
 import pytest
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import VirtTest, testflow
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.helpers as helper
 import rhevmtests.virt.helper as virt_helper
@@ -27,7 +31,7 @@ class TestSuspendVM(VirtTest):
     template_name = config.TEMPLATE_NAME[0]
     add_disk = True
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-9962")
     def test_suspend_resume(self):
         """
@@ -49,7 +53,7 @@ class TestSuspendVM(VirtTest):
             timeout=2 * config.VM_ACTION_TIMEOUT
         )
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-9980")
     def test_migrate_suspend_vm(self):
         """
@@ -78,7 +82,7 @@ class TestPauseVM(VirtTest):
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
 
-    @attr(tier=1)
+    @tier1
     @polarion("RHEVM3-9951")
     def test_pause_vm(self):
         """
@@ -92,7 +96,7 @@ class TestPauseVM(VirtTest):
             wait_for_status=config.ENUMS['vm_state_paused']
         ), "Failed to start vm in pause mode"
 
-    @attr(tier=2)
+    @tier2
     @polarion("RHEVM3-9964")
     @bz({'1454459': {}})
     def test_migrate_paused_vm(self):
@@ -109,7 +113,7 @@ class TestPauseVM(VirtTest):
         ), "failed to migrate pause vm"
 
 
-@attr(tier=1)
+@tier1
 class TestStatelessVM(VirtTest):
     """
     Stateless VM tests

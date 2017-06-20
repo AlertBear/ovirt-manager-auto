@@ -4,7 +4,10 @@ Sanity testing of services on hosts
 import pytest
 
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, testflow
+from art.unittest_lib import (
+    tier1,
+)
+from art.unittest_lib import testflow
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.rhevm_api import resources
 
@@ -148,7 +151,7 @@ class TestServicesSanity(ServicesTest):
         'test_host_rhvh_ovirt-vmconsole-host-sshd_is-faultless': 'RHEVM-19759',
     }
 
-    @attr(tier=1)
+    @tier1
     @pytest.mark.parametrize(
         ("machine", "service", "action"),
         [

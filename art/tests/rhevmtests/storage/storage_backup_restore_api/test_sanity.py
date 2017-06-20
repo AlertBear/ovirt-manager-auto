@@ -20,7 +20,12 @@ import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+    tier4,
+)
+from art.unittest_lib import StorageTest as TestCase, testflow
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers
@@ -87,7 +92,7 @@ class TestCase6178(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-6178")
-    @attr(tier=3)
+    @tier3
     def test_shutdown_backup_vm_with_attached_snapshot(self):
         """
         Shutdown backup VM with attached snapshot
@@ -125,7 +130,7 @@ class TestCase6182(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-6182")
-    @attr(tier=4)
+    @tier4
     def test_restart_VDSM_and_engine_while_disk_attached_to_backup_vm(self):
         """
         Restart vdsm and engine
@@ -207,7 +212,7 @@ class TestCase6183(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-6183")
-    @attr(tier=2)
+    @tier2
     def test_temporary_snapshot_is_created_after_backup_vm_starts(self):
         """
         Make sure that before starting backup vm, /var/lib/vdsm/transient/
@@ -258,7 +263,7 @@ class TestCase6176(BaseTestCase):
     attach_backup_disk = False
 
     @polarion("RHEVM3-6176")
-    @attr(tier=3)
+    @tier3
     def test_attach_and_hotplug_snapshot_disk_of_source_vm_to_backup_vm(self):
         """
         Make sure that before hotplugging the backup disk,
@@ -307,7 +312,7 @@ class TestCase6174(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-6174")
-    @attr(tier=3)
+    @tier3
     def test_delete_original_snapshot_while_attached_to_another_vm(self):
         """
         Try to delete original snapshot of source VM that is attached to
@@ -335,7 +340,7 @@ class TestCase6165(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-6165")
-    @attr(tier=3)
+    @tier3
     def test_operations_with_attached_snapshot(self):
         """
         Shut down the source VM
@@ -404,7 +409,7 @@ class TestCase6166(CreateTemplateFromVM):
     __test__ = True
 
     @polarion("RHEVM3-6166")
-    @attr(tier=2)
+    @tier2
     def test_create_template_of_backup_vm(self):
         """
         Create a template of a backup VM after attaching snapshot disk of
@@ -423,7 +428,7 @@ class TestCase6167(CreateTemplateFromVM):
     __test__ = True
 
     @polarion("RHEVM3-6167")
-    @attr(tier=2)
+    @tier2
     def test_create_template_of_source_vm(self):
         """
         Create a template of source VM after attaching snapshot disk of
@@ -479,7 +484,7 @@ class TestCase6168(BaseTestCase):
         )
 
     @polarion("RHEVM3-6168")
-    @attr(tier=4)
+    @tier4
     def test_storage_failure_of_snapshot(self):
         """
         Test checks that blocking connection from host to storage domain that
@@ -549,7 +554,7 @@ class TestCase6169(BaseTestCase):
 
     @bz({'1422508': {}})
     @polarion("RHEVM3-6169")
-    @attr(tier=2)
+    @tier2
     def test_full_flow_of_backup_restore(self):
         """
         Full backup API flow:
@@ -684,7 +689,7 @@ class TestCase6170(BaseTestCase):
     attach_backup_disk = False
 
     @polarion("RHEVM3-6170")
-    @attr(tier=2)
+    @tier2
     def test_attach_multiple_disks(self):
         """
         Create a snapshot to source VM and try to attach all source VM's
@@ -729,7 +734,7 @@ class TestCase6171(BaseTestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     @polarion("RHEVM3-6171")
-    @attr(tier=3)
+    @tier3
     def test_attach_snapshot_disk_while_the_disk_is_locked(self):
         """
         - Move source vm disk to the second storage domain
@@ -768,7 +773,7 @@ class TestCase6172(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-6172")
-    @attr(tier=3)
+    @tier3
     def test_attach_the_same_disk_twice_to_a_VM(self):
         """
         Attach the snapshot disk of source VM to backup VM and do it again
@@ -800,7 +805,7 @@ class TestCase6173(BaseTestCase):
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     @polarion("RHEVM3-6173")
-    @attr(tier=3)
+    @tier3
     def test_Attach_disk_while_performing_LSM(self):
         """
         Live migrate a disk from the source VM.

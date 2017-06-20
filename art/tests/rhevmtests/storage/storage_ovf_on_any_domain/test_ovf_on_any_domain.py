@@ -25,7 +25,12 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import (
+    StorageTest as BaseTestCase,
+    do_not_run,
+    tier2,
+    tier3,
+)
 from rhevmtests.storage.helpers import (
     create_vm_or_clone, get_spuuid, get_sduuid, get_imguuid, get_voluuid,
     host_to_use
@@ -140,7 +145,7 @@ def teardown_module():
                                            "teardown_module")
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class BasicEnvironment(BaseTestCase):
     """
     This class implements the common functions including the setUp and
@@ -833,7 +838,7 @@ class TestCase6247(BasicEnvironment):
     domain_to_use = MASTER_DOMAIN
 
     @polarion("RHEVM3-6247")
-    @attr(tier=2)
+    @tier2
     def test_disk_on_master_domain(self):
         """ Polarion case 6247 """
         self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
@@ -856,7 +861,7 @@ class TestCase6248(BasicEnvironment):
     domain_to_use = ANY_NON_MASTER_DOMAIN
 
     @polarion("RHEVM3-6248")
-    @attr(tier=2)
+    @tier2
     def test_disk_on_non_master_domain(self):
         """ Polarion case 6248 """
         self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
@@ -878,7 +883,7 @@ class TestCase6250(BasicEnvironment):
     polarion_test_case = '6250'
 
     @polarion("RHEVM3-6250")
-    @attr(tier=3)
+    @tier3
     def test_multiple_disks_on_single_domain(self):
         """ Polarion case 6250 """
         self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
@@ -903,7 +908,7 @@ class TestCase6251(BasicEnvironment):
     polarion_test_case = '6251'
 
     @polarion("RHEVM3-6251")
-    @attr(tier=3)
+    @tier3
     def test_one_vm_with_disks_on_multiple_domains(self):
         """ Polarion case 6251 """
         self.find_second_storage_domain()
@@ -967,7 +972,7 @@ class TestCase6252(BasicEnvironment):
         self.find_second_storage_domain()
 
     @polarion("RHEVM3-6252")
-    @attr(tier=3)
+    @tier3
     def test_actions_on_ovf_store(self):
         """ Polarion case 6252 """
         self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
@@ -998,7 +1003,7 @@ class TestCase6253File(BasicEnvironment):
     polarion_test_case = '6253'
 
     @polarion("RHEVM3-6253")
-    @attr(tier=3)
+    @tier3
     def test_one_vm_with_shared_disk(self):
         """ Polarion case 6253 """
         self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
@@ -1028,7 +1033,7 @@ class TestCase6253Block(BasicEnvironment):
     # LUN disk is attached to it
 
     @polarion("RHEVM3-6253")
-    @attr(tier=3)
+    @tier3
     def test_one_vm_with_shared_disk_and_direct_LUN(self):
         """ Polarion case 6253 """
         self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
@@ -1055,7 +1060,7 @@ class TestCase6254(BasicEnvironment):
     polarion_test_case = '6254'
 
     @polarion("RHEVM3-6254")
-    @attr(tier=2)
+    @tier2
     def test_delete_disk_from_vm(self):
         """ Polarion case 6254 """
         self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
@@ -1107,7 +1112,7 @@ class TestCase6255(EnvironmentWithNewVm):
         logger.info("VM '%s' removed as part of the test case", VM3_NAME)
 
     @polarion("RHEVM3-6255")
-    @attr(tier=2)
+    @tier2
     def test_remove_vm(self):
         """ Polarion case 6255 """
         self.create_and_attach_disk(VM3_NAME, self.storage_domain_0,
@@ -1160,7 +1165,7 @@ class TestCase6256(EnvironmentWithNewVm):
     polarion_test_case = '6256'
 
     @polarion("RHEVM3-6256")
-    @attr(tier=2)
+    @tier2
     def test_diskless_vm(self):
         """ Polarion case 6256 """
         vm = self.vm_with_no_disks_dict
@@ -1203,7 +1208,7 @@ class TestCase6257(EnvironmentWithNewVm):
             super(TestCase6257, self).tearDown()
 
     @polarion("RHEVM3-6257")
-    @attr(tier=3)
+    @tier3
     def test_tar_file_on_vdsm_for_vm_name_change(self):
         """ Polarion case 6257 """
         vm = self.vm_with_no_disks_dict
@@ -1288,7 +1293,7 @@ class TestCase6259(BasicEnvironment):
     polarion_test_case = '6259'
 
     @polarion("RHEVM3-6259")
-    @attr(tier=2)
+    @tier2
     def test_restore_vm_from_ovf_store(self):
         """ Polarion case 6259 """
         # TODO: Add code once support for mounting OVF store exists
@@ -1311,7 +1316,7 @@ class TestCase6260(EnvironmentWithNewVm):
     template_created = False
 
     @polarion("RHEVM3-6260")
-    @attr(tier=2)
+    @tier2
     def test_ovf_for_a_template(self):
         """ Polarion case 6260 """
         self.create_and_attach_disk(VM3_NAME, self.storage_domain_0,
@@ -1383,7 +1388,7 @@ class TestCase6261(BasicEnvironment):
         hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     @polarion("RHEVM3-6261")
-    @attr(tier=2)
+    @tier2
     def test_change_ovf_store_count(self):
         """ Polarion case 6261 """
         logger.info(
@@ -1448,7 +1453,7 @@ class TestCase6262(EnvironmentWithNewVm):
         super(TestCase6262, self).tearDown()
 
     @polarion("RHEVM3-6262")
-    @attr(tier=3)
+    @tier3
     @bz({'1454821': {}})
     def test_ovf_for_a_template(self):
         """ Polarion case 6262 """

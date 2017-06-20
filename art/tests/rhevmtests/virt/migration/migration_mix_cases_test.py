@@ -9,7 +9,11 @@ import pytest
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.unittest_lib import attr, VirtTest, testflow
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
+from art.unittest_lib import VirtTest, testflow
 import rhevmtests.virt.helper as virt_helper
 from rhevmtests.virt.migration.fixtures import (
     migration_init,
@@ -25,7 +29,7 @@ import config
 logger = logging.getLogger("virt_migration_mix_cases")
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     start_vms_on_specific_host.__name__
@@ -46,7 +50,7 @@ class TestMigrationMixCase1(VirtTest):
         ), "Failed to migration all VMs"
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migration_with_two_disks.__name__
@@ -69,7 +73,7 @@ class TestMigrationMixCase2(VirtTest):
         ), "Failed to migrate VM with more then 1 disk"
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(migration_init.__name__)
 class TestMigrationMixCase3(VirtTest):
     """
@@ -111,7 +115,7 @@ class TestMigrationMixCase3(VirtTest):
         ), "Found resource that are pended to hosts"
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     cancel_migration_test.__name__,

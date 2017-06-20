@@ -6,7 +6,9 @@ test clusters
 from art.test_handler.tools import bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,
-    attr, testflow
+    testflow,
+    tier1,
+    tier2,
 )
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
@@ -58,7 +60,7 @@ class TestCaseCluster(TestCase):
             scheduling_policy='none'
         )
 
-    @attr(tier=2)
+    @tier2
     def test_add_existing_cluster(self):
         """
         Negative - add a cluster with already existing name & verify it fails
@@ -73,7 +75,7 @@ class TestCaseCluster(TestCase):
             on_error='migrate'
         )
 
-    @attr(tier=2)
+    @tier2
     def test_add_cluster_wrong_cpu(self):
         """
         Negative - adds a cluster with wrong cpu name & verify it fails
@@ -88,7 +90,7 @@ class TestCaseCluster(TestCase):
             on_error='migrate'
         )
 
-    @attr(tier=1)
+    @tier1
     def test_search_cluster(self):
         """
         Positive - send a query to search for cluster
@@ -103,7 +105,7 @@ class TestCaseCluster(TestCase):
             key_name='name'
         )
 
-    @attr(tier=1)
+    @tier1
     def test_search_cluster_case_insensitive(self):
         """
         Positive - send a query to search for cluster case insensitive
@@ -119,7 +121,7 @@ class TestCaseCluster(TestCase):
             case_sensitive=False
         )
 
-    @attr(tier=1)
+    @tier1
     def test_search_cluster_max_matches(self):
         """
         Positive - send query to search for cluster with max matches parameter
@@ -136,7 +138,7 @@ class TestCaseCluster(TestCase):
         )
 
     @bz({"1451390": {}})
-    @attr(tier=1)
+    @tier1
     def test_update_cluster_name(self):
         """
         Positive - verify update cluster name functionality
@@ -159,7 +161,7 @@ class TestCaseCluster(TestCase):
             cluster=new_name
         )
 
-    @attr(tier=1)
+    @tier1
     def test_update_cluster_description(self):
         """
         Positive - verify update cluster description functionality
@@ -179,7 +181,7 @@ class TestCaseCluster(TestCase):
             description=''
         )
 
-    @attr(tier=1)
+    @tier1
     def test_update_cluster_on_error(self):
         """
         Positive - verify update cluster on_error functionality
@@ -201,7 +203,7 @@ class TestCaseCluster(TestCase):
             on_error=old_on_error
         )
 
-    @attr(tier=2)
+    @tier2
     def test_update_cluster_data_center(self):
         """
         Negative - verify update cluster functionality
@@ -227,7 +229,7 @@ class TestCaseCluster(TestCase):
             datacenter='test_data_center'
         )
 
-    @attr(tier=1)
+    @tier1
     def test_update_cluster_memory_overcommit(self):
         """
         verify update cluster functionality
@@ -268,7 +270,7 @@ class TestCaseCluster(TestCase):
             over_commit=old_over_commit_val
         )
 
-    @attr(tier=2)
+    @tier2
     @bz({'1316456': {}})
     def test_update_cluster_high_threshold_out_of_range(self):
         """
@@ -299,7 +301,7 @@ class TestCaseCluster(TestCase):
             'Revert cluster - high threshold out of range'
         )
 
-    @attr(tier=2)
+    @tier2
     @bz({'1316456': {}})
     def test_update_cluster_low_threshold_out_of_range(self):
         """
@@ -331,7 +333,7 @@ class TestCaseCluster(TestCase):
         )
 
     @bz({'1316456': {}})
-    @attr(tier=1)
+    @tier1
     def test_update_cluster_thresholds_power_saving(self):
         """
         Positive - verify update cluster functionality
@@ -365,7 +367,7 @@ class TestCaseCluster(TestCase):
         )
 
     @bz({'1316456': {}})
-    @attr(tier=1)
+    @tier1
     def test_update_cluster_threshold_evenly_distributed(self):
         """
         Positive - verify update cluster functionality
@@ -397,7 +399,7 @@ class TestCaseCluster(TestCase):
         )
 
     @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
-    @attr(tier=1)
+    @tier1
     def test_update_cluster_scheduling_policy(self):
         """
         Positive - verify update cluster functionality
@@ -429,7 +431,7 @@ class TestCaseCluster(TestCase):
         assert self.set_thresholds_to_default(), 'Restore - scheduling policy'
 
     @bz({'1316456': {}})
-    @attr(tier=2)
+    @tier2
     def test_update_cluster_bad_threshold_range(self):
         """
         Negative - try to set thrhld_low > thrhld_high

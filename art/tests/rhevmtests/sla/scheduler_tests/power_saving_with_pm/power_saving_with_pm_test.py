@@ -82,7 +82,7 @@ def init_test(request):
         pytest.skip("Not all hosts have power management")
 
 
-@u_lib.attr(tier=3)
+@u_lib.tier3
 @pytest.mark.usefixtures(migrate_he_vm.__name__)
 class BasePowerSavingWithPM(u_lib.SlaTest):
     """
@@ -417,7 +417,7 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
         self._wait_for_all_hosts_state_up()
 
 
-@u_lib.attr(tier=3)
+@u_lib.tier3
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     run_once_vms.__name__,

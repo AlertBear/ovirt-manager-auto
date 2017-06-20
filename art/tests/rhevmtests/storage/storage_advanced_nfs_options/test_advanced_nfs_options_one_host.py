@@ -7,7 +7,10 @@ from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr
+from art.unittest_lib import (
+    tier2,
+    tier3,
+)
 from art.unittest_lib.common import testflow
 from fixtures import (
     initializer_class, create_and_remove_sd
@@ -75,7 +78,7 @@ class TestCase4816(helpers.TestCaseNFSOptions):
     export_path = config.NFS_PATHS[0]
 
     @polarion("RHEVM3-4816")
-    @attr(tier=2)
+    @tier2
     def test_import_existing_export_domain(self):
         """
         Imports existing export storage domain with custom NFS options
@@ -116,7 +119,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
     nfs_path = config.NFS_PATHS[0]
 
     @polarion("RHEVM3-4829")
-    @attr(tier=3)
+    @tier3
     def test_create_nfs_storage_with_out_of_range_retransmissions(self):
         """
         Tries to create an NFS storage domain with an out of range
@@ -134,7 +137,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         )
 
     @polarion("RHEVM3-4829")
-    @attr(tier=3)
+    @tier3
     def test_create_nfs_storage_with_out_of_range_timeout(self):
         """
         Tries to create an NFS storage domain with an out of range
@@ -152,7 +155,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         )
 
     @polarion("RHEVM3-4829")
-    @attr(tier=3)
+    @tier3
     def test_create_nfs_storage_with_incorrect_nfs_version(self):
         """
         Tries to create an NFS storage domain with a random string
@@ -184,7 +187,7 @@ class TestCase4826(helpers.TestCaseNFSOptions):
     polarion_test_case = '4826'
 
     @polarion("RHEVM3-4826")
-    @attr(tier=2)
+    @tier2
     def test_create_nfs_storage_with_default_options(self):
         """
         Creates storage domains with default options and checks if they are
@@ -239,7 +242,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options([storage])
 
     @polarion("RHEVM3-4830")
-    @attr(tier=2)
+    @tier2
     def test_create_change_nfs_options_export(self):
         """
         Creates export storage domain with advanced NFS options and checks
@@ -248,7 +251,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         self._create_and_check(EXPORT, 'export', 0)
 
     @polarion("RHEVM3-4830")
-    @attr(tier=2)
+    @tier2
     def test_create_change_nfs_options_iso(self):
         """
         Creates ISO storage domain with advanced NFS options and checks
@@ -270,7 +273,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
     polarion_test_case = '4822'
 
     @polarion("RHEVM3-4822")
-    @attr(tier=3)
+    @tier3
     def test_multiple_storage_domains(self):
         """
         creates multiple storage domains with different advanced NFS options
@@ -323,7 +326,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
     nfs_version = 'v3'
 
     @polarion("RHEVM3-4821")
-    @attr(tier=3)
+    @tier3
     def test_import_storage_domain_created_with_nfs_options(self):
         """
         Checks that importing storage domain which was created with custom
@@ -431,7 +434,7 @@ class TestCase4815(helpers.TestCaseNFSOptions):
     })
 
     @polarion("RHEVM3-4815")
-    @attr(tier=3)
+    @tier3
     def test_create_sd_with_defined_values(self):
         """
         test check if bad and conflict parameters for creating storage
@@ -493,7 +496,7 @@ class TestCase4817(helpers.TestCaseNFSOptions):
     mount_option = 'sync'
 
     @polarion("RHEVM3-4817")
-    @attr(tier=2)
+    @tier2
     def test_create_sd_with_defined_values(self):
         """
         Check if creating an NFS storage domain with predefined values works
@@ -541,7 +544,7 @@ class TestCase4818(helpers.TestCaseNFSOptions):
     nfs_version = 'v3'
 
     @polarion("RHEVM3-4818")
-    @attr(tier=3)
+    @tier3
     def test_remove_and_add_again_storage_domain_with_nfs_options(self):
         """ Test steps:
         * creates storage domain with custom advanced options

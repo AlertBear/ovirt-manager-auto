@@ -16,7 +16,11 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+)
+from art.unittest_lib import StorageTest as TestCase, testflow
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 from rhevmtests.storage.fixtures import (
     create_storage_domain, create_vm,
@@ -48,7 +52,7 @@ class TestCase11591(TestCase):
     polarion_test_case = '11591'
 
     @polarion("RHEVM3-11591")
-    @attr(tier=1)
+    @tier1
     def test_create_and_extend_storage_domain(self):
         """
         Creates and extends a storage domain
@@ -94,7 +98,7 @@ class TestCase11592(TestCase):
     polarion_test_case = '11592'
 
     @polarion("RHEVM3-11592")
-    @attr(tier=2)
+    @tier2
     def test_change_domain_status_test(self):
         """
         Test checks if attaching/detaching storage domains works properly,
@@ -167,7 +171,7 @@ class TestCase11593(TestCase):
     polarion_test_case = '11593'
 
     @polarion("RHEVM3-11593")
-    @attr(tier=2)
+    @tier2
     def test_change_master_domain_test(self):
         """
         Test checks if changing master domain works correctly
@@ -216,7 +220,7 @@ class TestCase11581(TestCase):
     polarion_test_case = '11581'
 
     @polarion("RHEVM3-11581")
-    @attr(tier=2)
+    @tier2
     def test_multiple_disks_on_different_sd(self):
         """
         * Create a vm

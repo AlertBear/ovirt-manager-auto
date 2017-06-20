@@ -18,12 +18,17 @@ import art.rhevm_api.tests_lib.high_level.vmpools as hl_vmpools
 import art.rhevm_api.tests_lib.low_level.vmpools as ll_vmpools
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import VirtTest, attr, testflow
+from art.unittest_lib import (
+    tier1,
+    tier2,
+    tier3,
+)
+from art.unittest_lib import VirtTest, testflow
 
 logger = logging.getLogger("virt.vm_pools.max_vms_per_user")
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(vm_pool_teardown.__name__)
 class TestCreatePoolSetNumberOfVmsPerUser(VirtTest):
     """
@@ -59,7 +64,7 @@ class TestCreatePoolSetNumberOfVmsPerUser(VirtTest):
             )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(vm_pool_teardown.__name__)
 class TestCreatePoolSetInvalidNumberOfVmsPerUser(VirtTest):
     """
@@ -86,7 +91,7 @@ class TestCreatePoolSetInvalidNumberOfVmsPerUser(VirtTest):
         hl_vmpools.create_vm_pool(False, self.pool_name, self.pool_params)
 
 
-@attr(tier=1)
+@tier1
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestUpdatePoolNumberOfVmsPerUser(VirtTest):
     """
@@ -126,7 +131,7 @@ class TestUpdatePoolNumberOfVmsPerUser(VirtTest):
             )
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestUpdatePoolWithInvalidNumberOfVmsPerUser(VirtTest):
     """
@@ -158,7 +163,7 @@ class TestUpdatePoolWithInvalidNumberOfVmsPerUser(VirtTest):
             raise exceptions.VmPoolException()
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, add_user.__name__
 )

@@ -13,7 +13,12 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, StorageTest as TestCase
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    do_not_run,
+    tier3,
+
+)
 from rhevmtests import helpers as rhevm_helpers
 
 logger = logging.getLogger(__name__)
@@ -60,7 +65,7 @@ def initializer_module(request):
         )
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class TestCasePosix(TestCase):
     conn = None
     host = None
@@ -326,7 +331,7 @@ class TestCaseISO(TestCasePosix):
         )[1]
 
 
-@attr(tier=3)
+@tier3
 class TestCase5250(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -346,7 +351,7 @@ class TestCase5250(TestCaseNFSAndGlusterFS):
         self.positive_flow(self.storage)
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures("initializer_TestCasePosixFS")
 class TestCase5251(TestCasePosixFS):
     """
@@ -366,7 +371,7 @@ class TestCase5251(TestCasePosixFS):
         self.positive_flow(self.storage)
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures("initializer_TestCaseISO")
 class TestCase10650(TestCaseISO):
     """
@@ -386,7 +391,7 @@ class TestCase10650(TestCaseISO):
         self.positive_flow(NFS)
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures("initializer_TestCaseExport")
 class TestCase10651(TestCaseExport):
     """
@@ -406,7 +411,7 @@ class TestCase10651(TestCaseExport):
         self.positive_flow(NFS)
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures("initializer_TestCasePosixFS")
 class TestCase5255(TestCasePosixFS):
     """
@@ -428,7 +433,7 @@ class TestCase5255(TestCasePosixFS):
         self.change_connection_in_active_sd()
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
 class TestCase5254(TestCaseNFSAndGlusterFS):
     """
@@ -450,7 +455,7 @@ class TestCase5254(TestCaseNFSAndGlusterFS):
         self.change_connection_in_active_sd()
 
 
-@attr(tier=3)
+@tier3
 @pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
 class TestCase5253(TestCaseNFSAndGlusterFS):
     """

@@ -10,7 +10,6 @@ import pytest
 import config as net_api_conf
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from art.test_handler.tools import bz, polarion
-from art.unittest_lib import NetworkTest, attr, testflow
 from rhevmtests.networking import config as conf
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
@@ -18,14 +17,19 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
     remove_all_networks,
     create_and_attach_networks,
 )
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
+)
 
 
-@attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
 )
+@tier2
 class TestHostNetworkApiSetupNetworks01(NetworkTest):
     """
     1) Attach multiple VLANs to host NIC.
@@ -98,7 +102,7 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -374,11 +378,11 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
 )
+@tier2
 class TestHostNetworkApiSetupNetworks03(NetworkTest):
     """
     1) Attach VLAN network and VM network to same host NIC
@@ -451,11 +455,11 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
 )
+@tier2
 class TestHostNetworkApiSetupNetworks04(NetworkTest):
     """
     1) Attach network with static ipv4 and static ipv6 to host NIC.
@@ -543,11 +547,11 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
         )
 
 
-@attr(tier=2)
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
 )
+@tier2
 class TestHostNetworkApiSetupNetworks05(NetworkTest):
     """
     1) Detach the non-vm network and verify that the static ip was removed

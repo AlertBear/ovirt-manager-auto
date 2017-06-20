@@ -13,17 +13,21 @@ import config as register_domain_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (  # noqa: F401
     prepare_setup,
     import_vm_from_data_domain,
     set_allow_duplicate_mac_pool,
     manage_mac_pool_range,
-    make_sure_no_mac_in_pool
+    make_sure_no_mac_in_pool,
+)
+from art.unittest_lib import (
+    NetworkTest,
+    testflow,
+    tier2,
 )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -61,7 +65,7 @@ class TestRegisterDomain01(NetworkTest):
         assert ll_vms.check_vnic_on_vm_nic(vm=self.vm, nic=nic, vnic=network)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -109,7 +113,7 @@ class TestRegisterDomain02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -154,7 +158,7 @@ class TestRegisterDomain03(NetworkTest):
         assert ll_vms.check_vnic_on_vm_nic(vm=self.vm, nic=nic, vnic=None)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -182,7 +186,7 @@ class TestRegisterDomain04(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
 
 
-@attr(tier=2)
+@tier2
 class TestRegisterDomain05(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
@@ -211,7 +215,7 @@ class TestRegisterDomain05(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @bz({"1390556": {}})
 @pytest.mark.usefixtures(
     set_allow_duplicate_mac_pool.__name__,
@@ -243,7 +247,7 @@ class TestRegisterDomain06(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     manage_mac_pool_range.__name__,
     make_sure_no_mac_in_pool.__name__
@@ -276,7 +280,7 @@ class TestRegisterDomain07(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )

@@ -9,7 +9,14 @@ import helpers
 import logging
 
 from utilities.machine import Machine
-from art.unittest_lib import attr, StorageTest as TestCase, testflow
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    tier2,
+    tier3,
+    tier4,
+    do_not_run,
+    testflow
+)
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
@@ -58,7 +65,7 @@ def setup_module():
     VM_ARGS['volumeFormat'] = config.DISK_FORMAT_COW
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class BaseCaseDCMixed(TestCase):
     """
     Base Case for building an environment with specific storage domains and
@@ -147,7 +154,7 @@ class TestCase4558(BaseCaseDCMixed):
         helpers.add_disk_to_sd(self.fc, self.fc_disk)
 
     @polarion("RHEVM3-4558")
-    @attr(tier=2)
+    @tier2
     def test_move_disks(self):
         """
         Move disk (offline movement) between domains
@@ -179,7 +186,7 @@ class TestCase4561(IscsiNfsSD):
     vm_name = "vm_%s" % polarion_test_case
 
     @polarion("RHEVM3-4561")
-    @attr(tier=2)
+    @tier2
     def test_export_import_vm(self):
         """
         Export-import VMs
@@ -274,7 +281,7 @@ class TestCase4562(IscsiNfsSD):
         )
 
     @polarion("RHEVM3-4562")
-    @attr(tier=3)
+    @tier3
     def test_clone_from_snapshot(self):
         """
         Creates a new snapshots and clones vm from it for both vms
@@ -337,7 +344,7 @@ class TestCase4563(IscsiNfsSD):
         self.vms_to_remove.append(self.vm_name)
 
     @polarion("RHEVM3-4563")
-    @attr(tier=3)
+    @tier3
     def test_copy_template(self):
         """
         Make template and copy it
@@ -415,7 +422,7 @@ class TestCase4565(IscsiNfsSD):
         self.vms_to_remove.append(self.vm_name)
 
     @polarion("RHEVM3-4565")
-    @attr(tier=2)
+    @tier2
     def test_snapshot_operations(self):
         """
         Perform basic snapshot sanity (create, preview, commit, undo, delete)
@@ -465,7 +472,7 @@ class TestCase4557(IscsiNfsSD):
 
     @bz({'1422508': {}})
     @polarion("RHEVM3-4557")
-    @attr(tier=2)
+    @tier2
     def test_basic_operations_reconstruct(self):
         """
         Perform basic disk sanity after reconstruct
@@ -537,7 +544,7 @@ class TestCase4556(BaseCaseDCMixed):
     storagedomains = [config.ISCSI_DOMAIN_0]
 
     @polarion("RHEVM3-4556")
-    @attr(tier=2)
+    @tier2
     def test_reinitialize(self):
         """
         Reinitialize from unattached storage domain
@@ -583,7 +590,7 @@ class TestCase4555(IscsiNfsSD):
         # create disks
 
     @polarion("RHEVM3-4555")
-    @attr(tier=2)
+    @tier2
     def test_move_between_types(self):
         """
         Move disk (offline movement) between domains (file to block and
@@ -607,7 +614,7 @@ class TestCase4554(BaseCaseDCMixed):
     storagedomains = [config.NFS_DOMAIN, config.GLUSTER_DOMAIN]
 
     @polarion("RHEVM3-4554")
-    @attr(tier=3)
+    @tier3
     def test_move_nfs_to_nfs(self):
         """
         Move disks from one nfs storage to another
@@ -672,7 +679,7 @@ class TestCase4566(IscsiNfsSD):
         self.disk_alias = "disk_{0}".format(self.polarion_test_case)
 
     @polarion("RHEVM3-4566")
-    @attr(tier=4)
+    @tier4
     def test_reconstruct_master(self):
         """
         Block connectivity from the host to the storage.
@@ -781,7 +788,7 @@ class TestCase4564(IscsiNfsSD):
     # 1265672: [SCALE] Disk performance is really slow
 
     @polarion("RHEVM3-4564")
-    @attr(tier=2)
+    @tier2
     def test_vm_disk_two_domain_types(self):
         """
         Test having two disks in two different storage domain types
@@ -860,7 +867,7 @@ class TestCase4551(IscsiNfsSD):
         self.templates_to_remove.append(self.template_name)
 
     @polarion("RHEVM3-4551")
-    @attr(tier=3)
+    @tier3
     def test_thin_provision_on_block(self):
         """
         Thin provision disk on block form template that resides on NFS
@@ -903,7 +910,7 @@ class TestCase4553(IscsiNfsSD):
     vm_imported = "vm_imported_%s" % polarion_test_case
 
     @polarion("RHEVM3-4553")
-    @attr(tier=2)
+    @tier2
     def test_export_import(self):
         """
         Import VM and choose disk location on different SD

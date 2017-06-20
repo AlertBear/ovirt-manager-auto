@@ -18,14 +18,17 @@ import config as qos_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest, testflow
+from art.unittest_lib import (
+    tier2,
+)
+from art.unittest_lib import NetworkTest, testflow
 from fixtures import add_qos_to_dc_and_qos_profile_to_nic
 from rhevmtests.fixtures import start_vm
 
 logger = logging.getLogger("Network_VNIC_QoS_Tests")
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     add_qos_to_dc_and_qos_profile_to_nic.__name__,

@@ -22,7 +22,11 @@ import config as nf_conf
 import helper
 from rhevmtests.networking import config as conf, helper as network_helper
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import (
+    tier2,
+    NetworkTest,
+    testflow,
+)
 from fixtures import (
     restore_vnic_profile_filter, add_vnic_to_vm, remove_vnic_from_vm,
     remove_vnic_profiles, update_network_filter_on_profile,
@@ -57,7 +61,7 @@ def network_filter_prepare_setup(request):
     )
 
 
-@attr(tier=2)
+@tier2
 class TestNetworkFilterCase01(NetworkTest):
     """
     Check that network filter (vdsm-no-mac-spoofing) is enabled by default for
@@ -84,7 +88,7 @@ class TestNetworkFilterCase01(NetworkTest):
         assert nf_res == conf.VDSM_NO_MAC_SPOOFING
 
 
-@attr(tier=2)
+@tier2
 class TestNetworkFilterCase02(NetworkTest):
     """
     Check the vdsm-no-mac-spoofing in on virsh nwfilter-list
@@ -122,7 +126,7 @@ class TestNetworkFilterCase02(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     restore_vnic_profile_filter.__name__,
     remove_vnic_from_vm.__name__,
@@ -224,7 +228,7 @@ class TestNetworkFilterCase03(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     remove_vnic_from_vm.__name__,
     add_vnic_to_vm.__name__
@@ -253,7 +257,7 @@ class TestNetworkFilterCase04(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(remove_vnic_profiles.__name__)
 class TestNetworkFilterCase05(NetworkTest):
     """
@@ -314,7 +318,7 @@ class TestNetworkFilterCase05(NetworkTest):
         )
 
 
-@attr(tier=2)
+@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_clusters.__name__
@@ -416,7 +420,7 @@ class TestNetworkFilterCase07(NetworkTest):
         vm: {}
     }
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.parametrize(
         ("vnic", "positive"),
         [
@@ -464,7 +468,7 @@ class TestNetworkFilterCase08(NetworkTest):
     # restore_vnic_profile_filter params
     net = conf.MGMT_BRIDGE
 
-    @attr(tier=2)
+    @tier2
     @pytest.mark.parametrize(
         ("vnic", "action"),
         [

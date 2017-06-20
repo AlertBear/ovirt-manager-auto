@@ -1,7 +1,10 @@
 import config
 import common
 import logging
-from art.unittest_lib import StorageTest as TestCase, attr
+from art.unittest_lib import (
+    StorageTest as TestCase,
+    do_not_run,
+)
 import time
 from threading import Thread
 from art.rhevm_api.utils import log_listener
@@ -25,7 +28,7 @@ TIMEOUT = 300
 DATA_CENTER_INIT_TIMEOUT = 1200
 
 
-@attr(tier=config.DO_NOT_RUN)
+@do_not_run
 class RestartVDSM(TestCase):
     __test__ = False
 
