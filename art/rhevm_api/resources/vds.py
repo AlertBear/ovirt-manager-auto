@@ -102,7 +102,7 @@ class VDS(Host):
 
         Args:
             cmd (str): command to execute
-            args (list): command parameters optional
+            args (dict): command parameters optional
 
         Returns:
             Any: vdsm-client output

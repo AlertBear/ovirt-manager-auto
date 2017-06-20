@@ -639,121 +639,67 @@ def addVm(positive, wait=True, **kwargs):
     """
     Description: add new vm (without starting it)
 
-    :param positive: True if action is positive, Flase if negative
-    :type positive: bool
-    :param name: vm name
-    :type name: str
-    :param description: new vm description
-    :type description: str
-    :param cluster: new vm cluster
-    :type cluster: str
-    :param memory: vm memory size in bytes
-    :type memory: int
-    :param cpu_socket: number of cpu sockets
-    :type cpu_socket: int
-    :param cpu_cores: number of cpu cores
-    :type cpu_cores: int
-    :param cpu_threads: number of cpu threads
-    :type cpu_threads: int
-    :param cpu_mode: mode of cpu
-    :type cpu_mode: str
-    :param os_type: OS type of new vm
-    :type os_type: str
-    :param boot: type of boot
-    :type boot: str
-    :param template: name of template that should be used
-    :type template: str
-    :param type: vm type (SERVER or DESKTOP)
-    :type type: str
-    :param monitors: number of display monitors
-    :type monitors: int
-    :param display_type: type of vm display (VNC or SPICE)
-    :type display_type: str
-    :param kernel: kernel path
-    :type kernel: str
-    :param initrd: initrd path
-    :type initrd: str
-    :param cmdline: kernel parameters
-    :type cmdline: str
-    :param vcpu_pinning: vcpu pinning affinity
-    :type vcpu_pinning: dict
-    :param highly_available: set high-availability for vm ('true' or 'false')
-    :type highly_available: str
-    :param placement_affinity: vm to host affinity
-    :type placement_affinity: str
-    :param placement_host: host that the affinity holds for
-    :type placement_host: str
-    :param placement_hosts: multiple hosts for vm placement
-    :type placement_hosts: list
-    :param availablity_priority: priority for high-availability
-    (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
-    :type availablity_priority: int
-    :param custom_properties: custom properties set to the vm
-    :type custom_properties: str
-    :param stateless: if vm stateless or not
-    :type stateless: bool
-    :param memory_guaranteed: size of guaranteed memory in bytes
-    :type memory_guaranteed: int
-    :param ballooning: memory ballooning device enable or disable
-    :type balloning: bool
-    :param quota: vm quota id
-    :type quota: str
-    :param protected: true if vm is delete protected
-    :type protected: bool
-    :param templateUuid: id of template to be used
-    :type templateUuid: str
-    :param wait: if True wait until end of action, False return without waiting
-    :type wait: bool
-    :param clusterUuid: uuid of cluster
-    :type clusterUuid: str
-    :param storagedomain: name of storagedomain
-    :type storagedomain: str
-    :param disk_clone: defines whether disk should be cloned from template
-    :type disk_clone: str
-    :param disk_parameters: disk parameters
-    :type disk_parameters: dict
-    :param domainName: sys.prep domain name
-    :type domainName: str
-    :param snapshot: description of snapshot to use. Causes error if not unique
-    :type snapshot: str
-    :param copy_permissions: True if perms should be copied from template
-    :type : bool
-    :param timeout: waiting timeout
-    :type timeout: int
-    :param cpu_profile_id: cpu profile id
-    :type cpu_profile_id: str
-    :param numa_mode: numa mode for vm(strict, preferred, interleave)
-    :type numa_mode: str
-    :param initialization: should be created as an Initialization object with
-                           relevant parameters
-                           (sysprep, ovf, username, root_password etc)
-    :type initialization: Initialization
-    :param cpu_shares: cpu shares
-    :type cpu_shares:int
-    :param serial_number: serial number to use
-    :type serial_number: str
-    :param start_in_pause: start vm in pause mode
-    :type start_in_pause: bool
-    :param template_version: template version of the specified template
-    :type template_version: int
-    :param migration_policy: Migration policy name
-    :type migration_policy: str
-    :param auto_converge: Enable auto converge (only with Legacy policy)
-    :type auto_converge: bool
-    :param compressed: Enable compressed (only with Legacy policy)
-    :type compressed: bool
-    :param instance_type: name of instance_type to be used for the vm
-    :type instance_type: str
-    :param max_memory: Upper bound for the memory hotplug
-    :type max_memory: int
-    :param rng_device: Enable rng device
-    :type rng_device: bool
-    :param rng_bytes: Bytes per period
-    :type rng_bytes: int
-    :param rng_period: Period duration (ms)
-    :type  rng_period: int
-    :returns: True, if add vm success, otherwise False
-    :rtype: bool
+    Args:
+        availablity_priority(int): priority for high-availability
+          eger in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
+        auto_converge(bool): Enable auto converge (only with Legacy policy)
+        ballooning(bool): memory ballooning device enable or disable
+        boot(str): type of boot
+        cluster(str): new vm cluster
+        clusterUuid(str): uuid of cluster
+        cmdline(str): kernel parameters
+        compressed(bool): Enable compressed (only with Legacy policy)
+        copy_permissions(bool): True if perms should be copied from template
+        cpu_cores(int): number of cpu cores
+        cpu_mode(str): mode of cpu
+        cpu_profile_id(str): cpu profile id
+        cpu_shares(int): cpu shares
+        cpu_socket(int): number of cpu sockets
+        cpu_threads(int): number of cpu threads
+        custom_properties(str): custom properties set to the vm
+        description(str): new vm description
+        disk_clone(str): defines whether disk should be cloned from template
+        disk_parameters(dict): disk parameters
+        display_type(str): type of vm display (VNC or SPICE)
+        domainName(str): sys.prep domain name
+        highly_available(str): set high-availability for vm ('true' or 'false')
+        initialization(Initialization): should be created as an
+                         Initialization object with relevant parameters
+                        (sysprep, ovf, username, root_password etc)
+        initrd(str): initrd path
+        instance_type(str): name of instance_type to be used for the vm
+        kernel(str): kernel path
+        max_memory(int): Upper bound for the memory hotplug
+        memory(int): vm memory size in bytes
+        memory_guaranteed(int): size of guaranteed memory in bytes
+        migration_policy(str): Migration policy name
+        monitors(int): number of display monitors
+        name(str): vm name
+        numa_mode(str): numa mode for vm(strict, preferred, interleave)
+        os_type(str): OS type of new vm
+        placement_affinity(str): vm to host affinity
+        placement_host(str): host that the affinity holds for
+        placement_hosts(list): multiple hosts for vm placement
+        positive(bool): True if action is positive, False if negative
+        protected(bool): true if vm is delete protected
+        quota(str): vm quota id
+        rng_bytes(int): Bytes per period
+        rng_device(bool): Enable rng device
+        rng_period(int): Period duration (ms)
+        serial_number(str): serial number to use
+        snapshot(str): description of snapshot to use. Error if not unique
+        start_in_pause(bool): start vm in pause mode
+        stateless(bool): if vm stateless or not
+        storagedomain(str): name of storagedomain
+        template(str): name of template that should be used
+        template_version(int): template version of the specified template
+        templateUuid(str): id of template to be used
+        timeout(int): waiting timeout
+        type(str): vm type (SERVER or DESKTOP)
+        vcpu_pinning(dict): vcpu pinning affinity
+        wait(bool): Wait until end of action
+    Returns:
+        bool: True, if add vm success, otherwise False
     """
     kwargs.update(add=True)
     vm_obj = _prepare_vm_object(**kwargs)

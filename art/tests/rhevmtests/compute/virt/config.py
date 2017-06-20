@@ -5,6 +5,7 @@
 Virt - Test configuration module
 """
 from rhevmtests.config import *  # flake8: noqa
+from art.rhevm_api.data_struct import data_structures as data_struct
 import rhevmtests.helpers as helper
 import os
 from art.rhevm_api.utils import cpumodel
@@ -260,7 +261,7 @@ USER_PKEY = False
 VM_USER_CLOUD_INIT_1 = 'cloud_user'
 VM_USER_CLOUD_INIT_2 = 'cloud_user_2'
 VM_USER_CLOUD_INIT = VM_USER_CLOUD_INIT_1
-CLOUD_INIT_TEMPLATE = 'cloud_init_template'
+CLOUD_INIT_TEMPLATE = 'automation-cloud_init'
 CLOUD_INIT_NIC_NAME = 'eth4'
 CLOUD_INIT_HOST_NAME = 'cloud_init.testing.com'
 CLOUD_INIT_VM_DISK_NAME = 'cloud_init_disk'
@@ -284,3 +285,30 @@ PRE_CASE_CONDITIONS = {
 }
 
 IMPORT_V2V_TIMEOUT = 5600
+
+# cloud-init IPv6 section
+IPV6_ADDRESSES = [
+        '2620:52:0:2342:21A:4AFF:FE16:8890',
+        '2620:52::4aff:fe16:8890',
+        '2620:0052:0000:2342:021a:4aff:fe16:8890']
+IPV6_IPS = [data_struct.Ip(
+    address=address,
+    gateway='2620:52:0:2342::1',
+    netmask='64',
+    version='v6'
+) for address in IPV6_ADDRESSES]
+IPV4_IPS = [
+    data_struct.Ip(
+        address='10.0.0.1',
+        gateway='10.0.0.254',
+        netmask='255.255.255.0',
+        version='v4'
+    )
+]
+NETWORKING_OPTIONS = {
+    'name': ['eth1'],
+    'boot_protocol': ['static', 'dhcp', 'none'],
+    'ipv6_boot_protocol': ['static', 'dhcp', 'none'],
+    'ip': IPV4_IPS,
+    'ipv6': IPV6_IPS,
+}

@@ -8,9 +8,8 @@ import logging
 import pytest
 
 import art.rhevm_api.data_struct.data_structures as data_struct
-import rhevmtests.compute.virt.config as config
-import rhevmtests.compute.virt.helper as helper
 import rhevmtests.helpers as gen_helper
+from rhevmtests.compute.virt import config, helper
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     storagedomains as ll_sd,
@@ -47,7 +46,7 @@ def cloud_init_setup(request):
         datacenter_name=config.DC_NAME[0],
     )
     logger.info("Storage domain name: %s", sd_name)
-    logger.info("Create template from rhel-guest-image in glance")
+    logger.info("Create template from cloud_init in glance")
     ll_sd.import_glance_image(
         glance_repository=config.GLANCE_DOMAIN,
         glance_image=config.CLOUD_INIT_IMAGE,
@@ -69,6 +68,7 @@ def case_setup(request, cloud_init_setup):
     args_per_condition_params = (
         args_per_condition.kwargs if args_per_condition else {}
     )
+    test_name = ''.join([c for c in request.node.name if c.isalnum()])
 
     def fin():
         """
@@ -107,15 +107,17 @@ def case_setup(request, cloud_init_setup):
 
     assert ll_vms.createVm(
         positive=True, vmName=config.CLOUD_INIT_VM_NAME,
-        vmDescription=config.CLOUD_INIT_VM_NAME,
+        vmDescription=test_name,
         cluster=config.CLUSTER_NAME[0],
-        template=config.CLOUD_INIT_TEMPLATE, os_type=config.VM_OS_TYPE,
+        template=config.CLOUD_INIT_TEMPLATE,
+        os_type=config.VM_OS_TYPE,
         display_type=config.VM_DISPLAY_TYPE,
         initialization=initialization,
         nic=config.NIC_NAME[0],
         network=config.MGMT_BRIDGE,
         memory=2 * config.GB,
-        max_memory=gen_helper.get_gb(4)
+        max_memory=gen_helper.get_gb(4),
+        boot=config.ENUMS['boot_sequence_hd']
     )
     logger.info("update disk to bootable")
     disk_id = ll_disks.getObjDisks(
@@ -151,3 +153,21 @@ def init_parameters(args_per_condition, initialization_params):
         args_per_condition_params[key] = val
     res["per_condition"] = args_per_condition_params
     return res
+
+
+@pytest.fixture()
+def add_nic_to_vm(request, case_setup):
+    """
+    Creates customized vm for cloud_init networking tests by adding one
+    more NIC to it and start it
+    """
+    vm_name = request.node.cls.vm_name
+
+    nic_args = {
+        'name': 'nic2',
+        'network': config.MGMT_BRIDGE,
+        'interface': 'virtio',
+        'plugged': True,
+        'linked': True
+    }
+    assert ll_vms.addNic(True, vm_name, **nic_args)

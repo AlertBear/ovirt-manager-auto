@@ -4,6 +4,7 @@
 """
 Helper functions for virt and network migration job
 """
+import itertools
 import os
 import shlex
 import time
@@ -65,10 +66,14 @@ NIC_CONFIGURATION = data_struct.NicConfiguration(
 )
 SCRIPT_CONTENT = "test_cloud_init"
 CUSTOM_SCRIPT = (
-    "write_files:\n"
-    "-  content: %s\n"
-    "   path: /tmp/test.txt\n"
-    "   permissions: '0644'"
+    """#custom cloud_init_script
+write_files:
+- content: %s
+  path: /tmp/test.txt
+  permissions: '0644'
+runcmd:
+ - [ systemctl, restart, network]
+"""
 ) % SCRIPT_CONTENT
 
 # base initialization parameters
@@ -1535,50 +1540,6 @@ def clone_vm(base_vm_name, clone_vm_name):
     )
 
 
-def check_data_on_vm(command_to_run, expected_output):
-    """
-    Check configure data on VM. Runs command on VM and compare it with
-    expected output
-
-    Args:
-        command_to_run (str): command to run on vm
-        expected_output (str): the expected value
-
-    Returns:
-        bool: True if output as expected else False
-    """
-    if config_virt.VM_USER_CLOUD_INIT == config.VDC_ROOT_USER:
-        logger.info("connect with root user")
-        executor = helpers.get_host_executor(
-            ip=config_virt.VM_IP, password=config.VDC_ROOT_PASSWORD
-        )
-    elif config_virt.USER_PKEY:
-        logger.info(
-            "connect without password, user: %s",
-            config_virt.VM_USER_CLOUD_INIT
-        )
-        host = helpers.Host(ip=config_virt.VM_IP)
-        host.users.append(config_virt.VM_USER_CLOUD_INIT)
-        user_root = helpers.User(
-            name=config.VDC_ROOT_USER,
-            password=config.VDC_ROOT_PASSWORD
-        )
-        executor = host.executor(
-            user=user_root, pkey=True
-        )
-    else:
-        logger.info("connect with user %s", config_virt.VM_USER_CLOUD_INIT)
-        executor = helpers.get_host_executor(
-            ip=config_virt.VM_IP,
-            username=config_virt.VM_USER_CLOUD_INIT,
-            password=config.VDC_ROOT_PASSWORD
-        )
-    logger.info("Run command: %s", command_to_run)
-    out = executor.run_cmd(shlex.split(command_to_run))[1]
-    logger.info("output: %s", out)
-    return expected_output in out
-
-
 @ll_general.generate_logs(step=True)
 def check_cloud_init_parameters(
     vm_name=config_virt.CLOUD_INIT_VM_NAME,
@@ -1607,11 +1568,16 @@ def check_cloud_init_parameters(
     )
     logger.info('VM: %s , IP:%s', vm_name, config_virt.VM_IP)
     network_status = check_networks_configuration(
-        check_nic=check_nic, dns_search=dns_search, dns_servers=dns_servers
+        vm_name=vm_name,
+        check_nic=check_nic,
+        dns_search=dns_search,
+        dns_servers=dns_servers
     )
-    authentication_status = check_authentication_configuration()
-    script_status = check_custom_script(script_content=script_content)
-    general_status = check_general(time_zone=time_zone, hostname=hostname)
+    authentication_status = check_authentication_configuration(vm_name)
+    script_status = check_custom_script(vm_name, script_content=script_content)
+    general_status = check_general(
+        vm_name, time_zone=time_zone, hostname=hostname
+    )
     if (
         network_status and
         authentication_status and
@@ -1624,7 +1590,7 @@ def check_cloud_init_parameters(
         return False
 
 
-def check_general(time_zone=None, hostname=None):
+def check_general(vm_name, time_zone=None, hostname=None):
     """
     Check general data on VM
 
@@ -1640,7 +1606,9 @@ def check_general(time_zone=None, hostname=None):
     if time_zone:
         for tz in time_zone:
             logger.info("Check time zone, expected: %s", tz)
-            if check_data_on_vm(config_virt.CHECK_TIME_ZONE_IN_GUEST, tz):
+            if check_data_on_vm(
+                    vm_name, config_virt.CHECK_TIME_ZONE_IN_GUEST, tz
+            ):
                 logger.info("time zone check pass")
                 status = True
                 break
@@ -1649,7 +1617,7 @@ def check_general(time_zone=None, hostname=None):
                 status = False
     if hostname:
         logger.info("Check hostname, expected: %s", hostname)
-        if check_data_on_vm(config_virt.CHECK_HOST_NAME, hostname):
+        if check_data_on_vm(vm_name, config_virt.CHECK_HOST_NAME, hostname):
             logger.info("hostname check pass")
         else:
             logger.error("hostname check failed")
@@ -1657,7 +1625,7 @@ def check_general(time_zone=None, hostname=None):
     return status
 
 
-def check_custom_script(script_content):
+def check_custom_script(vm_name, script_content):
     """
     Check custom script content
 
@@ -1670,7 +1638,9 @@ def check_custom_script(script_content):
 
     if script_content:
         logger.info("Check script content, expected: %s", script_content)
-        if check_data_on_vm(config_virt.CHECK_FILE_CONTENT, script_content):
+        if check_data_on_vm(
+                vm_name, config_virt.CHECK_FILE_CONTENT, script_content
+        ):
             logger.info("script content check pass")
             return True
         else:
@@ -1680,7 +1650,7 @@ def check_custom_script(script_content):
         return True
 
 
-def check_authentication_configuration():
+def check_authentication_configuration(vm_name):
     """
     Check user authentication
 
@@ -1691,7 +1661,7 @@ def check_authentication_configuration():
         "Check user name, expected: %s", config_virt.VM_USER_CLOUD_INIT
     )
     cmd = config_virt.CHECK_USER_IN_GUEST % config_virt.VM_USER_CLOUD_INIT
-    if check_data_on_vm(cmd, config_virt.VM_USER_CLOUD_INIT):
+    if check_data_on_vm(vm_name, cmd, config_virt.VM_USER_CLOUD_INIT):
         logger.info("user name check pass")
         return True
     else:
@@ -1700,7 +1670,7 @@ def check_authentication_configuration():
 
 
 def check_networks_configuration(
-    check_nic=False, dns_search=None, dns_servers=None
+    vm_name, check_nic=False, dns_search=None, dns_servers=None
 ):
     """
     Check networks configuration, first check that NIC exists
@@ -1720,7 +1690,7 @@ def check_networks_configuration(
     if check_nic:
         logger.info("Check the NIC file name exists")
         cmd = config_virt.CHECK_NIC_EXIST
-        if check_data_on_vm(cmd, config_virt.CLOUD_INIT_NIC_NAME):
+        if check_data_on_vm(vm_name, cmd, config_virt.CLOUD_INIT_NIC_NAME):
             logger.info("NIC file name exist")
         else:
             logger.error("NIC file name doesn't exist")
@@ -1728,7 +1698,7 @@ def check_networks_configuration(
     if dns_search:
         logger.info("Check DNS search, expected: %s", dns_search)
         cmd = config_virt.CHECK_DNS_IN_GUEST % dns_search
-        if check_data_on_vm(cmd, dns_search):
+        if check_data_on_vm(vm_name, cmd, dns_search):
             logger.info("DNS search check pass")
         else:
             logger.error("DNS search check failed")
@@ -1736,7 +1706,7 @@ def check_networks_configuration(
     if dns_servers:
         logger.info("Check DNS servers, expected: %s", dns_servers)
         cmd = config_virt.CHECK_DNS_IN_GUEST % dns_servers
-        if check_data_on_vm(cmd, dns_servers):
+        if check_data_on_vm(vm_name, cmd, dns_servers):
             logger.info("DNS servers check pass")
         else:
             logger.error("DNS servers check failed")
@@ -1789,3 +1759,254 @@ def detach_iso_domains(dc_name):
             datacenter=dc_name,
             storagedomain=domain
         )
+
+
+def get_vm_nic_config(vm_name, iface_name):
+    """
+    Gets VM NIC configuration for given interface name
+
+    Args:
+        vm_name(str): name of the VM
+        iface_name(str): interface name to get configuration
+
+    Returns:
+        dict: dictionary with parsed configuration, e.g.
+            {ip:data_structure, boot_protocol: boot_protocol, etc}
+
+    """
+    cmd = 'cat /etc/sysconfig/network-scripts/ifcfg-{}'.format(iface_name)
+    result = {}
+    status, ips = ll_vms.wait_for_vm_ip(
+        vm=vm_name,
+        get_all_ips=True
+    )
+    logger.info('VM IPs are: {}'.format(ips))
+    if status:
+        config_virt.VM_IP = ips['ip'][0]
+    rc, out, err = get_vm_data(vm_name, cmd)
+    if rc == 0:
+        aliases = {
+            'name': 'DEVICE',
+            'ip': 'IPADDR',
+            'ipv6': 'IPV6ADDR',
+            'gateway_v4': 'GATEWAY',
+            'gateway_v6': 'IPV6_DEFAULTGW',
+            'netmask_v4': 'NETMASK',
+            'boot_protocol': 'BOOTPROTO',
+            'dhcp_v6': 'DHCPV6C',
+            'on_boot': 'ONBOOT',
+        }
+        parsed = {}
+        for k, v in aliases.iteritems():
+            try:
+                actual_value = re.search(
+                    '(?<=\n{}=)[a-zA-Z0-9.:/]+'.format(v),
+                    out
+                ).group(0)
+                if k == 'ipv6':
+                    parsed[k], parsed['netmask_v6'] = actual_value.split('/')
+                else:
+                    parsed[k] = actual_value
+            except (AttributeError, ValueError):
+                parsed[k] = None
+        ipv4_boot_proto = parsed.pop('boot_protocol', None)
+        if parsed.get('ip', False):
+            result['boot_protocol'] = 'static'
+        elif ipv4_boot_proto:
+            result['boot_protocol'] = ipv4_boot_proto
+        else:
+            result['boot_protocol'] = 'none'
+        ipv6_dhcp = parsed.pop('dhcp_v6', False)
+        if ipv6_dhcp:
+            result['ipv6_boot_protocol'] = 'dhcp'
+        elif parsed.get('ipv6', False):
+            result['ipv6_boot_protocol'] = 'static'
+        else:
+            result['ipv6_boot_protocol'] = 'none'
+
+        result['ip'] = data_struct.Ip(
+                address=parsed.pop('ip', None),
+                gateway=parsed.pop('gateway_v4', None),
+                netmask=parsed.pop('netmask_v4', None),
+                version='v4'
+            )
+        result['ipv6'] = data_struct.Ip(
+            address=parsed.pop('ipv6', None),
+            gateway=parsed.pop('gateway_v6', None),
+            netmask=parsed.pop('netmask_v6', None),
+            version='v6'
+        )
+        result['name'] = parsed.pop('name', False)
+
+        return result
+    else:
+        return {
+            'boot_protocol': 'none',
+            'ipv6_boot_protocol': 'none',
+            'name': iface_name
+        }
+
+
+def compare_nic_configs(vm_name, expected):
+    """
+    Compares VM NIC configuration with expected
+
+    Args:
+        vm_name(str): name of the VM
+        expected(dict): dictionary with expected NIC configuration
+
+    Returns:
+        tuple: check_status(bool), separate checks status(dict)
+    """
+    actual = get_vm_nic_config(vm_name, expected['name'])
+    res = {}
+
+    for key in expected:
+        logger.info(
+            'Comparing {key} : {actual} with  expected: {expected}'.format(
+                key=key, actual=actual, expected=expected
+            )
+        )
+        res[key] = {}
+        res[key]['actual'], res[key]['expected'] = actual[key], expected[key]
+        if key in ['ip', 'ipv6']:
+            res[key]['status'] = validator.compareElements(
+                expElm=expected[key],
+                actElm=actual[key],
+                logger=logger,
+                root='Comparator')
+        else:
+            res[key]['status'] = expected[key] == actual[key]
+    return all([val['status'] for _, val in res.iteritems()]), res
+
+
+def generate_network_configs(networking_options):
+    """
+    Helper function to generate network configs for the test parametrization
+
+    Returns:
+        tuple: all possible network configs(list), ids for pytest(list)
+
+    """
+    opts = networking_options
+    res = list(
+        (dict(zip(opts, x)) for x in itertools.product(*opts.values()))
+    )
+    for variant in res:
+        if variant['ipv6_boot_protocol'] != 'static':
+            del variant['ipv6']
+        if variant['boot_protocol'] != 'static':
+            del variant['ip']
+    unique, ids = [], []
+    for variant in res:
+        if variant not in unique:
+            unique.append(variant)
+            ipv4_boot_proto = variant.get('boot_protocol', 'None')
+            ipv6_boot_proto = variant.get('ipv6_boot_protocol', 'None')
+            variant_name = 'ipv4_{boot_proto}_ipv6_{v6_boot_proto}'.format(
+                boot_proto=ipv4_boot_proto,
+                v6_boot_proto=ipv6_boot_proto
+            )
+            ids.append(variant_name)
+    return unique, ids
+
+
+def to_bool(value):
+    """
+    Converts value to boolean. 'true', 'yes', 'y', '1', True are converted
+    to True, anything other to False
+
+    Args:
+        value (any): Value to convert
+
+    Returns:
+        bool: converted value
+    """
+    val_true = ['true', 'yes', 'y', '1', True]
+    if value.isalnum():
+        return value.lower() in val_true
+    else:
+        return value in val_true
+
+
+def get_nic_config(config_dict):
+    """
+    Convert dict with network config into data_structure.NicConfigurations
+
+    Args:
+        config_dict(dict): dictionary with config, for example
+            {'ip': art.rhevm_api.data_struct.data_structures.Ip,
+             'boot_protocol': 'static',
+             'ipv6_boot_protocol': 'static',
+             'name': 'eth1',
+             'ipv6': art.rhevm_api.data_struct.data_structures.Ip
+             }
+
+    Returns:
+        dict: dictionary with NIC configurations
+
+    """
+    return {
+        'nic_configurations': data_struct.NicConfigurations(
+            nic_configuration=[
+                data_struct.NicConfiguration(on_boot=True, **config_dict)
+            ]
+        )
+    }
+
+
+def get_vm_data(vm_name, command_to_run):
+    """
+    Check configure data on VM. Runs command on VM and compare it with
+    expected output
+
+    Args:
+        vm_name (str): Vm name to get data from
+        command_to_run (str): command to run on vm
+    Returns:
+        bool: True if output as expected else False
+    """
+    vm_ip = hl_vms.get_vm_ip(vm_name, start_vm=False) or config_virt.VM_IP
+    logger.info('Connecting to the VM: {} with IP: {}'.format(vm_name, vm_ip))
+    if config_virt.VM_USER_CLOUD_INIT:
+        logger.info("connect with {}".format(config_virt.VM_USER_CLOUD_INIT))
+        executor = helpers.get_host_executor(
+            ip=vm_ip,
+            username=config_virt.VM_USER_CLOUD_INIT,
+            password=config_virt.VDC_ROOT_PASSWORD
+        )
+    elif config_virt.USER_PKEY:
+        logger.info(
+            "connect without password as %s", config_virt.VM_USER_CLOUD_INIT
+        )
+        host = helpers.Host(ip=vm_ip)
+        host.users.append(config_virt.VM_USER_CLOUD_INIT)
+        user_root = helpers.User(
+            name=config_virt.VDC_ROOT_USER,
+            password=config_virt.VDC_ROOT_PASSWORD
+        )
+        executor = host.executor(
+            user=user_root, pkey=True
+        )
+    logger.info("Run command: %s", command_to_run)
+    rc, out, err = executor.run_cmd(shlex.split(command_to_run))
+    logger.info("output: %s", out)
+    return rc, out, err
+
+
+def check_data_on_vm(vm_name, command_to_run, expected_output):
+    """
+    Wrapper to generalize checks since all get_vm_data logic was moved to
+    separate function
+
+    Args:
+        vm_name (str): VM name
+        command_to_run (list): command to run on the VM
+        expected_output (str): expected output to check for
+
+    Returns:
+        bool: True is expected output in command out, False otherwise
+
+    """
+    _, out, _ = get_vm_data(vm_name, command_to_run)
+    return expected_output in out
