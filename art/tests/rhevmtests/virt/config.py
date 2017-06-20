@@ -60,9 +60,6 @@ VM_DISPLAY_TYPE = ENUMS[
 ] if PPC_ARCH else ENUMS['display_type_spice']
 RHEL_OS_TYPE_FOR_MIGRATION = "rhel"
 
-# glance
-RHEL_IMAGE_GLANCE_IMAGE = 'latest-rhel-guest-image-7.2'
-
 # migration
 CANCEL_VM_MIGRATE = False
 MIGRATION_VM = VM_NAME[0]

@@ -11,7 +11,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
 import helper
 import rhevmtests.virt.helper as virt_helper
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib.common import VirtTest, attr, testflow
 from fixtures import case_setup, start_vm_with_cloud_init
 
@@ -31,6 +31,7 @@ class TestCloudInit(VirtTest):
     @attr(tier=1)
     @polarion("RHEVM3-14364")
     @pytest.mark.usefixtures(case_setup.__name__)
+    @bz({"1464043": {}})
     def test_case_1_new_vm_with_cloud_init(self):
         """
         Cloud init case 1: Create new VM with cloud init parameters

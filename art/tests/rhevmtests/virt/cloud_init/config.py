@@ -3,6 +3,7 @@ from rhevmtests.virt.config import *  # flake8: noqa
 USER_PKEY = False
 VM_IP = None
 # cloud init parameters
+CLOUD_INIT_IMAGE = 'cloud_init_GE_disk'
 VM_USER_CLOUD_INIT_1 = 'cloud_user'
 VM_USER_CLOUD_INIT_2 = 'cloud_user_2'
 VM_USER_CLOUD_INIT = VM_USER_CLOUD_INIT_1

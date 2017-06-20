@@ -49,7 +49,7 @@ def cloud_init_setup(request):
     logger.info("Create template from rhel-guest-image in glance")
     ll_sd.import_glance_image(
         glance_repository=config.GLANCE_DOMAIN,
-        glance_image=config.RHEL_IMAGE_GLANCE_IMAGE,
+        glance_image=config.CLOUD_INIT_IMAGE,
         target_storage_domain=sd_name,
         target_cluster=config.CLUSTER_NAME[0],
         new_disk_alias=config.CLOUD_INIT_VM_DISK_NAME,
