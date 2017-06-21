@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.resources import storage
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
-from rhevm_api.utils.storage_api import unblockOutgoingConnection
+from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 import rhevmtests.storage.helpers as storage_helpers
 import rhevmtests.helpers as rhevm_helpers
 from rhevmtests.networking import helper as network_helper
