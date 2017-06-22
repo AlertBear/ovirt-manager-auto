@@ -23,7 +23,7 @@ import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.test_handler.settings import opts
 
 from rhevmtests.storage.fixtures import (
@@ -389,6 +389,7 @@ class TestCase5063(BasicResize):
 
     @polarion("RHEVM3-5063")
     @attr(tier=1)
+    @bz({'1461536': {}})
     def test_thin_block_resize(self):
         """
         - VM with thin disk and OS
