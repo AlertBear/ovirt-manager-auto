@@ -7,15 +7,21 @@ Fixtures for host_network_api
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.events as ll_events
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import config as network_api_conf
 import helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from art.rhevm_api.tests_lib.high_level import (
+    hosts as hl_hosts,
+    networks as hl_networks
+)
+from art.rhevm_api.tests_lib.low_level import (
+    events as ll_events,
+    hosts as ll_hosts
+)
 from art.unittest_lib import testflow
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -26,7 +32,6 @@ def remove_network(request):
     """
     network_api = NetworkFixtures()
     nets_to_remove = request.node.cls.nets_to_remove
-    testflow.setup("Remove networks %s", nets_to_remove)
     assert hl_networks.remove_networks(
         positive=True, networks=nets_to_remove, data_center=network_api.dc_0
     )
@@ -74,7 +79,6 @@ def manage_ip_and_refresh_capabilities(request):
             interface=net, ip=actual_ip, netmask=actual_netmask
         )
     last_event = ll_events.get_max_event_id()
-    testflow.setup("Refresh host %s capabilities", host)
     assert ll_hosts.refresh_host_capabilities(
         host=host, start_event_id=last_event
     )
@@ -111,9 +115,9 @@ def create_networks(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=conf.HOSTS[2]
+        assert hl_networks.remove_net_from_setup(
+            host=conf.HOSTS[2], all_net=True,
+            data_center=conf.DC_0
         )
     request.addfinalizer(fin)
 
@@ -121,7 +125,6 @@ def create_networks(request):
         networks = v.get("networks")
         datacenter = v.get("datacenter")
         cluster = v.get("cluster")
-        testflow.setup("Create networks: %s", networks.keys())
         network_helper.prepare_networks_on_setup(
             networks_dict=networks, dc=datacenter, cluster=cluster
         )

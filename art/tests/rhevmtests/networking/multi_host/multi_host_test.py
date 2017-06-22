@@ -13,6 +13,7 @@ import pytest
 
 import config as multi_host_conf
 import helper as multi_host_helper
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -41,11 +42,12 @@ def multi_host_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        network_helper.remove_networks_from_setup(hosts=multi_host.host_0_name)
+        assert hl_networks.remove_net_from_setup(
+            host=[multi_host.host_0_name], all_net=True,
+            data_center=multi_host.dc_0
+        )
     request.addfinalizer(fin)
 
-    testflow.setup("Create networks on setup")
     network_helper.prepare_networks_on_setup(
         networks_dict=multi_host_conf.SETUP_NETWORKS_DICT, dc=multi_host.dc_0,
         cluster=multi_host.cluster_0

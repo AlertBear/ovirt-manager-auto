@@ -38,7 +38,7 @@ def prepare_setup_jumbo_frame(request):
         """
         assert hl_networks.remove_net_from_setup(
             host=jumbo_frame.hosts_list[:2], data_center=jumbo_frame.dc_0,
-            mgmt_network=jumbo_frame.mgmt_bridge, all_net=True
+            all_net=True
         )
     request.addfinalizer(fin2)
 

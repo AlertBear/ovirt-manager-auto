@@ -7,15 +7,18 @@ Fixtures for vNIC profile feature tests
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_networks,
+    networks as hl_networks
+)
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_datacenters,
+    templates as ll_templates,
+    vms as ll_vms
+)
 import config as vnic_conf
-import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-from rhevmtests.networking import helper as network_helper
+from rhevmtests.networking import helper as network_helper, config as conf
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -30,9 +33,9 @@ def vnic_profile_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=vnic_profile.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[vnic_profile.host_0_name], all_net=True,
+            data_center=vnic_profile.dc_0
         )
     request.addfinalizer(fin1)
 
@@ -40,7 +43,6 @@ def vnic_profile_prepare_setup(request):
         """
         Remove unneeded vnic profiles
         """
-        testflow.teardown("Remove unneeded vnic profiles")
         assert hl_networks.remove_unneeded_vnic_profiles(
             dc_name=vnic_profile.dc_0
         )

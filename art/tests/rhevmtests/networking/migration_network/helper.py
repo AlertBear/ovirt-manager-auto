@@ -252,8 +252,9 @@ def check_migration_network(
         # Verify if migration destination IP is reachable from source host
         # through the management network
         icmp_extra_args = "-6" if ipv6 else None
+        size = "1500" if ipv6 else "1470"
         if not network_helper.send_icmp_sampler(
-            host_resource=src_host_rsc, dst=dst_ip,
+            host_resource=src_host_rsc, dst=dst_ip, size=size,
             count=str(mig_conf.ICMP_DST_IP_COUNT), extra_args=icmp_extra_args
         ):
             return False

@@ -7,12 +7,14 @@ Job for new host network API via SetupNetworks
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as net_api_conf
-import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion, bz
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from rhevmtests.networking import helper as network_helper
+from rhevmtests.networking import config as conf, helper as network_helper
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, clean_host_interfaces, setup_networks_fixture
 )
@@ -29,13 +31,12 @@ def sn_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks")
-        assert network_helper.remove_networks_from_setup(
-            hosts=network_api.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[network_api.host_0_name], all_net=True,
+            data_center=network_api.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Create networks: %s", net_api_conf.SN_DICT.keys())
     network_helper.prepare_networks_on_setup(
         networks_dict=net_api_conf.SN_DICT, dc=network_api.dc_0,
         cluster=network_api.cluster_0

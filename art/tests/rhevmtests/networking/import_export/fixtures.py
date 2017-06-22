@@ -7,15 +7,18 @@ Fixtures for import/export
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
+from art.rhevm_api.tests_lib.low_level import (
+    storagedomains as ll_storagedomains,
+    templates as ll_templates,
+    vms as ll_vms
+)
 import config as import_export_conf
 import helper
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as networking_helper
 from art.unittest_lib import testflow
 from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
@@ -58,9 +61,9 @@ def import_export_prepare_setup(request):
         """
         Finalizer for remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert networking_helper.remove_networks_from_setup(
-            hosts=import_export.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[import_export.host_0_name], all_net=True,
+            data_center=import_export.dc_0
         )
     request.addfinalizer(fin3)
 

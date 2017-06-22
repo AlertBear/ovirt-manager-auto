@@ -8,6 +8,7 @@ import shlex
 
 import pytest
 
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import config as vlan_name_conf
 import helper
 import rhevmtests.networking.helper as net_helper
@@ -26,15 +27,12 @@ def create_networks_on_engine(request):
         """
         Remove the VLAN from the setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert net_helper.remove_networks_from_setup(
-            hosts=arbitrary_vlan_device_name.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[arbitrary_vlan_device_name.host_0_name], all_net=True,
+            data_center=arbitrary_vlan_device_name.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Create networks %s on setup", vlan_name_conf.ARBITRARY_NET_DICT
-    )
     net_helper.prepare_networks_on_setup(
         networks_dict=vlan_name_conf.ARBITRARY_NET_DICT,
         dc=arbitrary_vlan_device_name.dc_0,

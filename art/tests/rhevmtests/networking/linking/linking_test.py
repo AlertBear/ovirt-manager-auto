@@ -15,7 +15,8 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.tests_lib.high_level import (
     host_network as hl_host_network,
-    vms as hl_vms
+    vms as hl_vms,
+    networks as hl_networks
 )
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
@@ -67,11 +68,9 @@ def linking_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown(
-            "Removing networks from host: %s", linking.host_0_name
-        )
-        assert network_helper.remove_networks_from_setup(
-            hosts=linking.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[linking.host_0_name], all_net=True,
+            data_center=linking.dc_0
         )
     request.addfinalizer(fin)
 

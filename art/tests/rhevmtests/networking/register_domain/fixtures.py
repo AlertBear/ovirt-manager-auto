@@ -7,18 +7,21 @@ Fixtures for register domain test
 import pytest
 from utilities import utils
 
-import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.storagedomains as hl_storage
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storage
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.high_level import (
+    mac_pool as hl_mac_pool,
+    networks as hl_networks,
+    storagedomains as hl_storage
+)
+from art.rhevm_api.tests_lib.low_level import (
+    mac_pool as ll_mac_pool,
+    storagedomains as ll_storage,
+    vms as ll_vms
+)
 import config as register_domain_conf
 import helper
-import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
 from rhevmtests import networking
-from rhevmtests.networking import helper as network_helper
+from rhevmtests.networking import helper as network_helper, config as conf
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
@@ -39,8 +42,10 @@ def prepare_setup(request):
         """
         Remove networks from engine
         """
-        testflow.teardown("Remove networks %s", register_domain_conf.NETS_DICT)
-        assert network_helper.remove_networks_from_setup(hosts=host)
+        assert hl_networks.remove_net_from_setup(
+            host=[host], all_net=True,
+            data_center=register_domain.dc_0
+        )
     request.addfinalizer(fin3)
 
     def fin2():
@@ -64,7 +69,6 @@ def prepare_setup(request):
         networking.remove_unneeded_vms()
     request.addfinalizer(fin1)
 
-    testflow.setup("Create networks %s", register_domain_conf.NETS_DICT)
     network_helper.prepare_networks_on_setup(
         networks_dict=register_domain_conf.NETS_DICT, dc=register_domain.dc_0,
         cluster=register_domain.cluster_0

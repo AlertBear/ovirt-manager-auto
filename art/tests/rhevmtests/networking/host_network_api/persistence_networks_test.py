@@ -6,18 +6,20 @@ Check persistence networks after host reboot
 """
 import pytest
 
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import config as host_network_api_conf
-import rhevmtests.networking.config as conf
 import rhevmtests.networking.host_network_qos.helper as qos_helper
 import rhevmtests.networking.multi_host.helper as multi_host_helper
-from art.unittest_lib import attr, NetworkTest, testflow
 from art.test_handler.tools import polarion
+from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import reboot_host
-from rhevmtests.networking import helper as network_helper
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, NetworkFixtures
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
 )
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
+from rhevmtests.networking.fixtures import (
+    NetworkFixtures, setup_networks_fixture
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -31,13 +33,12 @@ def sn_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove all networks from engine")
-        assert network_helper.remove_networks_from_setup(
-            hosts=conf.HOSTS[2]
+        assert hl_networks.remove_net_from_setup(
+            host=conf.HOSTS[2], all_net=True,
+            data_center=conf.DC_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Add networks to engine")
     network_helper.prepare_networks_on_setup(
         networks_dict=host_network_api_conf.PERSIST_NETS_DICT,
         dc=network_api.dc_0, cluster=network_api.cluster_0

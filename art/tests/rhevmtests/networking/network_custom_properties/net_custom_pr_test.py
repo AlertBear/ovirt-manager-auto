@@ -7,13 +7,15 @@ It will cover scenarios for VM/non-VM networks.
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as custom_prop_conf
-import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow, NetworkTest
-from rhevmtests.networking import helper as network_helper
+from rhevmtests.networking import helper as network_helper, config as conf
 from rhevmtests.networking.fixtures import (
     setup_networks_fixture, NetworkFixtures
 )
@@ -31,8 +33,9 @@ def prepare_setup(request):
         """
         Remove networks from engine
         """
-        assert network_helper.remove_networks_from_setup(
-            hosts=custom_properties.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[custom_properties.host_0_name], all_net=True,
+            data_center=custom_properties.dc_0
         )
     request.addfinalizer(fin)
 

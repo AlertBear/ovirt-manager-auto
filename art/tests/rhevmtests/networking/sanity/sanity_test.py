@@ -66,13 +66,12 @@ def create_networks(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove all networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=sanity.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[sanity.host_0_name], all_net=True,
+            data_center=sanity.dc_0
         )
     request.addfinalizer(fin1)
 
-    testflow.setup("Create networks on setup")
     network_helper.prepare_networks_on_setup(
         networks_dict=sanity_conf.SN_DICT, dc=sanity.dc_0,
         cluster=sanity.cluster_0

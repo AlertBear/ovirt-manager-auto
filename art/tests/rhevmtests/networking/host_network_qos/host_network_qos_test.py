@@ -10,17 +10,20 @@ Host NICs, networks, network QoS, engine QoS values
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as qos_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_helper
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest, testflow, attr
+from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    NetworkFixtures, remove_qos_from_dc, create_host_net_qos,
+    NetworkFixtures, create_host_net_qos, remove_qos_from_dc,
     set_default_engine_properties, update_network_in_datacenter
 )
 from rhevmtests.networking.fixtures import setup_networks_fixture
@@ -38,15 +41,12 @@ def host_network_qos_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown(
-            "Removing networks from host: %s", host_network_qos.host_0_name
-        )
-        net_helper.remove_networks_from_setup(
-            hosts=host_network_qos.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[host_network_qos.host_0_name], all_net=True,
+            data_center=host_network_qos.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Preparing networks on DC: %s", host_network_qos.dc_0)
     net_helper.prepare_networks_on_setup(
         networks_dict=qos_conf.NETS_DICT, dc=host_network_qos.dc_0,
         cluster=host_network_qos.cluster_0

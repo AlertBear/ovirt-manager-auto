@@ -15,6 +15,7 @@ import pytest
 import helper
 import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     update_network_usages, deactivate_hosts, add_vnic_to_vm, remove_networks
@@ -39,13 +40,12 @@ def migration_network_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=mig.hosts_list[:2]
+        assert hl_networks.remove_net_from_setup(
+            host=mig.hosts_list[:2], all_net=True,
+            data_center=mig.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Create networks on setup")
     network_helper.prepare_networks_on_setup(
         networks_dict=mig_config.SETUP_NETWORKS_DICT, dc=mig.dc_0,
         cluster=mig.cluster_0
@@ -307,19 +307,19 @@ class TestMigrationNetwork(NetworkTest):
             polarion("RHEVM3-21572")(network_ipv6_params)
         ],
         ids=[
-            "Test_Migration_Network_with:_non-operational_host",
-            "Test_Migration_Network_with:_dedicated_VLAN_network",
-            "Test_Migration_Network_with:_non-VM_network",
-            "Test_Migration_Network_with:_display_and_migration_network",
-            "Test_Migration_Network_with:_network_used_by_VM",
-            "Test_Migration_Network_with:_network_on_bond",
-            "Test_Migration_Network_with:_non-VM_network_on_bond",
-            "Test_Migration_Network_with:_VLAN_network_on_bond",
-            "Test_Migration_Network_with:_dedicated_network_as_display_"
+            "Test_Migration_Network_with_non-operational_host",
+            "Test_Migration_Network_with_dedicated_VLAN_network",
+            "Test_Migration_Network_with_non-VM_network",
+            "Test_Migration_Network_with_display_and_migration_network",
+            "Test_Migration_Network_with_network_used_by_VM",
+            "Test_Migration_Network_with_network_on_bond",
+            "Test_Migration_Network_with_non-VM_network_on_bond",
+            "Test_Migration_Network_with_VLAN_network_on_bond",
+            "Test_Migration_Network_with_dedicated_network_as_display_"
             "network",
-            "Test_Migration_Network_with:_migration_network_on_host_without_"
+            "Test_Migration_Network_with_migration_network_on_host_without_"
             "migration_network",
-            "Test_Migration_Network_with:_IPv6_address"
+            "Test_Migration_Network_with_IPv6_address"
         ]
     )
     def test_migration_network(

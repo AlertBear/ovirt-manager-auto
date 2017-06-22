@@ -11,13 +11,16 @@ bond scenarios and for VM and non-VM networks
 import pytest
 import time
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    networks as ll_networks
+)
 import config as label_conf
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import config as conf, helper as network_helper
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
@@ -42,8 +45,9 @@ def labels_prepare_setup(request):
         """
         Remove networks from setup
         """
-        network_helper.remove_networks_from_setup(
-            hosts=[labels.host_0_name, labels.host_1_name]
+        assert hl_networks.remove_net_from_setup(
+            host=[labels.host_0_name, labels.host_1_name], all_net=True,
+            data_center=labels.dc_0
         )
     request.addfinalizer(fin)
 

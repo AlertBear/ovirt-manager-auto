@@ -11,6 +11,7 @@ import pytest
 import config as topologies_conf
 import helper as topologies_helper
 from art.test_handler.tools import polarion
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import update_vnic_network
 from rhevmtests import helpers
@@ -40,13 +41,12 @@ def topologies_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from engine")
-        assert network_helper.remove_networks_from_setup(
-            hosts=topologies.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[topologies.host_0_name], all_net=True,
+            data_center=topologies.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Create networks on engine")
     network_helper.prepare_networks_on_setup(
         networks_dict=topologies_conf.NETS_DICT, dc=topologies.dc_0,
         cluster=topologies.cluster_0

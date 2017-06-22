@@ -343,23 +343,6 @@ def check_traffic_during_func_operation(
     return tcpdump_job.result and func_job.result
 
 
-def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
-    """
-    Remove all networks from Data-Center and hosts
-
-    Args:
-        hosts (list): List of hosts
-        dc (str): Data-Center name
-
-    Returns:
-        True if remove succeeded, False if remove failed
-    """
-    hosts = hosts if hosts else [conf.HOSTS[0]]
-    return hl_networks.remove_net_from_setup(
-        host=hosts, all_net=True, data_center=dc
-    )
-
-
 def remove_ifcfg_files(vms_resources, exclude_nics=list()):
     """
     Remove all ifcfg files beside exclude_nics from vms

@@ -11,7 +11,10 @@ with valid/invalid names, IPs, netmask, VLAN, usages.
 import pytest
 
 import art.core_api.apis_exceptions as exceptions
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as io_conf
 import rhevmtests.networking.config as conf
@@ -49,16 +52,12 @@ def io_fixture_prepare_setup(request):
         """
         Finalizer for remove networks
         """
-        testflow.teardown("Remove network from setup")
-        assert network_helper.remove_networks_from_setup(
-            io_fixture.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[io_fixture.host_0_name], all_net=True,
+            data_center=io_fixture.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Prepare Networks %s on datacenter %s and cluster %s",
-        io_conf.NET_DICT, io_fixture.dc_0, io_fixture.cluster_0
-    )
     network_helper.prepare_networks_on_setup(
         networks_dict=io_conf.NET_DICT, dc=io_fixture.dc_0,
         cluster=io_fixture.cluster_0

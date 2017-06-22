@@ -11,14 +11,15 @@ Only static IP configuration is tested.
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as multiple_gw_conf
-import rhevmtests.networking.config as conf
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
 from art.test_handler.tools import polarion
-from art.unittest_lib import NetworkTest
-from art.unittest_lib import attr, testflow
-from rhevmtests.networking import helper as network_helper
+from art.unittest_lib import NetworkTest, attr, testflow
+from rhevmtests.networking import config as conf, helper as network_helper
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, setup_networks_fixture
 )
@@ -36,8 +37,9 @@ def multiple_gw_prepare_setup(request):
         """
         Remove networks from setup
         """
-        assert network_helper.remove_networks_from_setup(
-            hosts=multiple_gw.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[multiple_gw.host_0_name], all_net=True,
+            data_center=multiple_gw.dc_0
         )
     request.addfinalizer(fin)
 

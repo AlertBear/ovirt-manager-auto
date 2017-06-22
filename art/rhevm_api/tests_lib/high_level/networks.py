@@ -56,6 +56,7 @@ IP_CMD = "/sbin/ip"
 MODPROBE_CMD = "/sbin/modprobe"
 
 
+@ll_general.generate_logs(step=True)
 def remove_networks(positive, networks, data_center=None):
     """
     Remove networks
@@ -132,7 +133,7 @@ def create_and_attach_networks(
 
 @ll_general.generate_logs(step=True)
 def remove_net_from_setup(
-    host, network=list(), data_center=None, all_net=False, mgmt_network=None
+    host=None, network=None, data_center=None, all_net=False
 ):
     """
     Removes networks from the host, cluster and data_center
@@ -143,21 +144,22 @@ def remove_net_from_setup(
         data_center (str): DC where the network is
         all_net (bool): True to remove all networks from setup
             (except MGMT net)
-        mgmt_network (str): Management network
 
     Returns:
         bool: True value if succeeded in deleting networks from Hosts,
             Cluster, DC
     """
-    hosts_list = [host] if not isinstance(host, list) else host
-    try:
-        for host_name in hosts_list:
-            if not hl_host_network.clean_host_interfaces(host_name=host_name):
-                return False
+    if host:
+        hosts_list = [host] if not isinstance(host, list) else host
+        try:
+            for host_name in hosts_list:
+                if not hl_host_network.clean_host_interfaces(
+                    host_name=host_name
+                ):
+                    return False
 
-    except Exception as ex:
-        logger.error("Clean hosts interfaces failed %s", ex, exc_info=True)
-        return False
+        except Exception:
+            return False
 
     if all_net:
         if not remove_all_networks(datacenter=data_center):

@@ -9,7 +9,10 @@ import shlex
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+from art.rhevm_api.tests_lib.high_level import (
+    vms as hl_vms,
+    networks as hl_networks
+)
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     networks as ll_networks,
@@ -17,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import config as nf_conf
 import helper
-import rhevmtests.networking.config as conf
+from rhevmtests.networking import config as conf, helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
@@ -26,7 +29,6 @@ from fixtures import (
     update_vnic_clean_traffic_param
 )
 from rhevmtests.fixtures import start_vm, create_datacenters, create_clusters
-import rhevmtests.networking.helper as network_helper
 from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture, NetworkFixtures, clean_host_interfaces
 )
@@ -43,13 +45,12 @@ def network_filter_prepare_setup(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=network_filter.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[network_filter.host_0_name], all_net=True,
+            data_center=network_filter.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Add network to setup")
     network_helper.prepare_networks_on_setup(
         networks_dict=nf_conf.NETS_DICT, dc=network_filter.dc_0,
         cluster=network_filter.cluster_0

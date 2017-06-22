@@ -10,12 +10,15 @@ bond scenarios.
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-from rhevmtests.networking import helper as network_helper
-import rhevmtests.networking.config as conf
 import config as bridgeless_conf
+import rhevmtests.networking.config as conf
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest
+from art.unittest_lib import NetworkTest, attr
+from rhevmtests.networking import helper as network_helper
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, setup_networks_fixture
 )
@@ -33,8 +36,9 @@ def prepare_setup(request):
         """
         Finalizer for remove networks
         """
-        assert network_helper.remove_networks_from_setup(
-            hosts=bridgeless.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[bridgeless.host_0_name], all_net=True,
+            data_center=bridgeless.dc_0
         )
     request.addfinalizer(fin)
 

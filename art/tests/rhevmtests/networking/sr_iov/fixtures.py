@@ -123,16 +123,12 @@ def prepare_setup_general(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=sriov_general.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[sriov_general.host_0_name], all_net=True,
+            data_center=sriov_general.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Create networks %s on datacenter %s and cluster %s",
-        sriov_conf.GENERAL_DICT, sriov_general.dc_0, sriov_general.cluster_0
-    )
     network_helper.prepare_networks_on_setup(
         networks_dict=sriov_conf.GENERAL_DICT, dc=sriov_general.dc_0,
         cluster=sriov_general.cluster_0
@@ -168,11 +164,11 @@ def prepare_setup_import_export(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
         result.append(
             (
-                network_helper.remove_networks_from_setup(
-                    hosts=sriov_import_export.host_0_name
+                hl_networks.remove_net_from_setup(
+                    host=[sriov_import_export.host_0_name], all_net=True,
+                    data_center=sriov_import_export.dc_0
                 ), "fin5: network_helper.remove_networks_from_setup"
             )
         )
@@ -283,16 +279,12 @@ def prepare_setup_vm(request):
         """
         Remove networks from setup
         """
-        testflow.teardown("Remove networks from setup")
-        assert network_helper.remove_networks_from_setup(
-            hosts=sriov_vm.host_0_name
+        assert hl_networks.remove_net_from_setup(
+            host=[sriov_vm.host_0_name], all_net=True,
+            data_center=sriov_vm.dc_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup(
-        "Create networks %s on datacenter %s and cluster %s",
-        sriov_conf.VM_DICT, sriov_vm.dc_0, sriov_vm.cluster_0
-    )
     network_helper.prepare_networks_on_setup(
         networks_dict=sriov_conf.VM_DICT, dc=sriov_vm.dc_0,
         cluster=sriov_vm.cluster_0

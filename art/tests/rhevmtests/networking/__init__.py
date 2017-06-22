@@ -184,8 +184,7 @@ def remove_unneeded_networks():
     """
     logger.info("Removing all networks besides %s", config.MGMT_BRIDGE)
     hl_networks.remove_net_from_setup(
-        host=config.HOSTS, data_center=config.DC_NAME[0], all_net=True,
-        mgmt_network=config.MGMT_BRIDGE
+        host=config.HOSTS, data_center=config.DC_NAME[0], all_net=True
     )
 
 
