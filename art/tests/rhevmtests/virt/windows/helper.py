@@ -326,9 +326,9 @@ def get_windows_templates(vms=config.WINDOWS_VM_NAMES):
     """
     template_names = []
     vm_to_templates_names = {
-        config.WINDOWS_10: config.TEMPLATE_NAME[1],
-        config.WINDOWS_7: config.TEMPLATE_NAME[2],
-        config.WINDOWS_2012: config.TEMPLATE_NAME[3]
+        config.WINDOWS_10: config.WINDOWS_10_TEMPLATE,
+        config.WINDOWS_7: config.WINDOWS_7_TEMPLATE,
+        config.WINDOWS_2012: config.WINDOWS_2012_TEMPLATE
     }
     for vm_name in vms:
         template_names.append(vm_to_templates_names[vm_name])

@@ -22,6 +22,12 @@ BANDWIDTH = 'auto'
 WINDOWS_2012 = 'windows_2012'
 WINDOWS_10 = 'windows_10'
 WINDOWS_7 = 'windows_7'
+
+# templates
+WINDOWS_2012_TEMPLATE = 'Windows_2012_x64_GA_template'
+WINDOWS_10_TEMPLATE = 'Windows_2010_x64_GA_template'
+WINDOWS_7_TEMPLATE = 'Windows_2007_x64_GA_template'
+
 SKIP_MESSAGE_CPU = (
     "Skip windows test: \n"
     "Cluster not support minimum CPU: 'Intel SandyBridge Family'"

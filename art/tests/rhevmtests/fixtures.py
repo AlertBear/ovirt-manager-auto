@@ -18,6 +18,8 @@ from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd
 )
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
+from rhevmtests.storage import config as stconfig
 
 
 @pytest.fixture()
@@ -248,3 +250,54 @@ def remove_lun_from_storage_server(request):
                 helpers.reboot_hosts(config.VDS_HOSTS)
             self.index -= 1
     request.addfinalizer(finalizer)
+
+
+@pytest.fixture(scope='module')
+def register_windows_templates(request):
+    """
+    Import preconfigured nfs-windows data nfs storage that contains
+    windows templates and register the templates that reside in it
+    """
+    def fin():
+        testflow.teardown(
+            "Detach and deactivate %s storage domain" %
+            config.WINDOWS_DATASD_NAME
+        )
+        hl_sd.detach_and_deactivate_domain(
+            datacenter=config.WINDOWS_DATASD_DC,
+            domain=config.WINDOWS_DATASD_NAME,
+            engine=config.ENGINE
+        )
+    request.addfinalizer(fin)
+
+    testflow.setup(
+        "Add storage domain %s, attach to date-center %s and activate",
+        config.WINDOWS_DATASD_NAME, config.WINDOWS_DATASD_DC
+    )
+    assert ll_sd.importStorageDomain(
+        True, stconfig.TYPE_DATA,
+        config.STORAGE_TYPE_NFS,
+        config.WINDOWS_DATASD_ADDR,
+        config.WINDOWS_DATASD_PATH,
+        config.WINDOWS_DATASD_HOST,
+    ), "Storage domain %s can not be imported" % config.WINDOWS_DATASD_NAME
+
+    assert ll_sd.attachStorageDomain(
+        True, config.WINDOWS_DATASD_DC, config.WINDOWS_DATASD_NAME
+    ), 'Unable to attach domain %s to dc %s' % (
+        config.WINDOWS_DATASD_DC, config.WINDOWS_DATASD_NAME
+    )
+
+    unregistered_templates = ll_sd.get_unregistered_templates(
+        config.WINDOWS_DATASD_NAME
+    )
+    template_names = [
+        template.get_name() for template in unregistered_templates
+    ]
+    testflow.setup(
+        "Registering templates: %s", ", ".join(template_names)
+    )
+    for template in unregistered_templates:
+        assert ll_sd.register_object(
+            template, cluster=config.CLUSTER_NAME[0],
+        ), "Template %s registration failed" % (template.name)

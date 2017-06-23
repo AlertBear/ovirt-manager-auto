@@ -225,6 +225,23 @@ EXTERNAL_PROVIDERS = {}
 provider_type = None
 GLANCE_URL = ''
 
+###############################################################################
+# windows data sd
+WINDOWS_DATASD = GE.get('immutable_windows_nfs_storage_domains', {})
+if WINDOWS_DATASD:
+    WINDOWS_DATASD_NAME = WINDOWS_DATASD.get("name")
+    WINDOWS_DATASD_ADDR = WINDOWS_DATASD.get("address")
+    WINDOWS_DATASD_PATH = WINDOWS_DATASD.get("path")
+    WINDOWS_DATASD_HOST = WINDOWS_DATASD.get("host")
+    WINDOWS_DATASD_DC = WINDOWS_DATASD.get("data_center")
+    logger.info(
+        "Windows data SD info: NAME: %s, HOST: %s, DC: %s, ADDR: %s, PATH: %s",
+        WINDOWS_DATASD_NAME, WINDOWS_DATASD_HOST, WINDOWS_DATASD_DC,
+        WINDOWS_DATASD_ADDR, WINDOWS_DATASD_PATH
+    )
+
+###############################################################################
+
 ge_external_providers = GE.get('external_providers', [])
 
 for ep in ge_external_providers:

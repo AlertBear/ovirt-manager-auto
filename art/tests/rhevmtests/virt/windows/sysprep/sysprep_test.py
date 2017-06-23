@@ -26,6 +26,20 @@ from rhevmtests.virt.windows.fixtures import (  # noqa: F401
     set_product_keys,
     remove_seal_templates
 )
+from rhevmtests.fixtures import (  # noqa: F401
+    register_windows_templates,
+)
+
+
+@pytest.fixture(scope='module', autouse=True)  # noqa: F811
+def module_setup(request,
+                 register_windows_templates):
+    """
+    This module setup fixture imports a preconfigured
+    windows SD with windows templates, attaches it and
+    activates it and registers the templates.
+    """
+    pass
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)

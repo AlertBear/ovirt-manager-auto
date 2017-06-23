@@ -23,6 +23,9 @@ from art.unittest_lib import (
 )
 from art.unittest_lib import CoreSystemTest as TestCase, testflow
 from rhevmtests.coresystem.guest_tools.wgt import config
+from rhevmtests.fixtures import (  # noqa: F401
+    register_windows_templates,
+)
 
 logger = logging.getLogger(__name__)
 GUEST_FAMILY = 'Windows'
@@ -39,8 +42,9 @@ def get_latest_gt_iso_version_from_latest_repo_and_change_variable():
     )
 
 
-@pytest.fixture(scope='module', autouse=True)
-def module_setup(request):
+@pytest.fixture(scope='module', autouse=True)  # noqa: F811
+def module_setup(request,
+                 register_windows_templates):
     def fin_cluster():
         testflow.teardown(
             "Set %s cluster CPU level on cluster %s",
