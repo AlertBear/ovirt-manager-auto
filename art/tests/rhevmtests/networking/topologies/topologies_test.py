@@ -11,46 +11,21 @@ import pytest
 import config as topologies_conf
 import helper as topologies_helper
 from art.test_handler.tools import polarion
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import update_vnic_network
 from rhevmtests import helpers
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
-)
+import rhevmtests.networking.config as conf
+
 from rhevmtests.fixtures import (  # noqa: F401
     stop_vms_fixture_function,
     start_vms_fixture_function,
 )
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces_fixture_function,
-    NetworkFixtures,
     setup_networks_fixture_function,
+    create_and_attach_networks,
+    remove_all_networks
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def topologies_prepare_setup(request):
-    """
-    prepare setup
-    """
-    topologies = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[topologies.host_0_name], all_net=True,
-            data_center=topologies.dc_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=topologies_conf.NETS_DICT, dc=topologies.dc_0,
-        cluster=topologies.cluster_0
-    )
 
 
 @attr(tier=2)
@@ -63,6 +38,7 @@ def topologies_prepare_setup(request):
     reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
 )
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture_function.__name__,
     update_vnic_network.__name__,
     start_vms_fixture_function.__name__,
@@ -78,6 +54,7 @@ class TestTopologiesVm(NetworkTest):
     """
     # General params
     vm_name = conf.VM_0
+    dc = conf.DC_0
 
     # start_vm_function params
     vms = {
@@ -85,6 +62,18 @@ class TestTopologiesVm(NetworkTest):
             "host": 0
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": topologies_conf.NETS_DICT
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # test params [start VMs dict, network, sn dict, BOND mode]
     # VM tests
@@ -222,17 +211,17 @@ class TestTopologiesVm(NetworkTest):
         ],
         ids=[
             # VM tests
-            "Check_connectivity:_VLAN_network_over_host_NIC",
-            "Check_connectivity:_VLAN_network_over_BOND_mode_1",
+            "Check_connectivity_VLAN_network_over_host_NIC",
+            "Check_connectivity_VLAN_network_over_BOND_mode_1",
             # TODO: Enable when we have switch BOND mode 2 support
-            # "Check_connectivity:_bridge_network_over_BOND_mode_2",
-            "Check_connectivity:_bridge_network_over_BOND_mode_4",
+            # "Check_connectivity_bridge_network_over_BOND_mode_2",
+            "Check_connectivity_bridge_network_over_BOND_mode_4",
 
             # Non-VM tests
-            "Check_connectivity:_Non-VM_network_over_BOND_mode_0",
-            "Check_connectivity:_Non-VM_network_over_BOND_mode_3",
-            "Check_connectivity:_Non-VM_network_over_BOND_mode_5",
-            "Check_connectivity:_Non-VM_network_over_BOND_mode_6",
+            "Check_connectivity_Non-VM_network_over_BOND_mode_0",
+            "Check_connectivity_Non-VM_network_over_BOND_mode_3",
+            "Check_connectivity_Non-VM_network_over_BOND_mode_5",
+            "Check_connectivity_Non-VM_network_over_BOND_mode_6",
         ]
     )
     def test_check_vm_connectivity(

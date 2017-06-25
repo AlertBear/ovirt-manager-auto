@@ -20,7 +20,7 @@ VNICS = global_helper.generate_object_names(
 HOST_NICS = None  # Filled in test
 HOST_NAME = None  # Filled in test
 
-NETS_DICT = {
+CASE_2_NETS = {
     NETS[2][0]: {
         "required": "false",
     },
@@ -80,8 +80,11 @@ NETS_DICT = {
     NETS[2][17]: {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0)
-    },
+    }
+}
+
+CASE_3_NETS = {
     NETS[3][0]: {
         "required": "false",
-    },
+    }
 }

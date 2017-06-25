@@ -8,7 +8,7 @@ Networking fixtures
 import pytest
 
 import fixtures_helper as network_fixture_helper
-import rhevmtests.networking.config as conf
+import config as conf
 from rhevmtests import fixtures_helper
 from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
@@ -168,11 +168,11 @@ def update_cluster_network_usages(request):
 
 
 @pytest.fixture(scope="class")
-def create_and_attach_network(request, remove_all_networks):
+def create_and_attach_networks(request, remove_all_networks):
     """
     Create and attach network to Data-Centers and clusters
     """
-    create_network_dict = request.cls.create_network
+    create_network_dict = request.cls.create_networks
 
     for val in create_network_dict.values():
         dc = val.get("datacenter")

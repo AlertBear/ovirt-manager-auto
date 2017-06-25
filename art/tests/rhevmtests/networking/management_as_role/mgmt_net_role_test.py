@@ -29,7 +29,7 @@ from rhevmtests.fixtures import create_clusters, create_datacenters
 from rhevmtests.networking.fixtures import (  # noqa: F401
     remove_all_networks,
     update_cluster_network_usages,
-    create_and_attach_network,
+    create_and_attach_networks,
 )
 
 
@@ -85,7 +85,7 @@ class TestMGMTNetRole01(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_clusters.__name__,
-    create_and_attach_network.__name__
+    create_and_attach_networks.__name__
 )
 class TestMGMTNetRole02(NetworkTest):
     """
@@ -108,8 +108,8 @@ class TestMGMTNetRole02(NetworkTest):
         }
     }
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "cluster": cluster,
@@ -157,7 +157,7 @@ class TestMGMTNetRole02(NetworkTest):
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_clusters.__name__,
-    create_and_attach_network.__name__
+    create_and_attach_networks.__name__
 )
 class TestMGMTNetRole03(NetworkTest):
     """
@@ -195,8 +195,8 @@ class TestMGMTNetRole03(NetworkTest):
         }
     }
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": ext_dc,
             "cluster": ext_cluster,
@@ -268,7 +268,7 @@ class TestMGMTNetRole03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_clusters.__name__,
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     update_cluster_network_usages.__name__
 )
 class TestMGMTNetRole04(NetworkTest):
@@ -301,8 +301,8 @@ class TestMGMTNetRole04(NetworkTest):
         }
     }
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "cluster": ext_cls_0,
@@ -337,7 +337,7 @@ class TestMGMTNetRole04(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     create_clusters.__name__,
     move_host_to_cluster.__name__
 )
@@ -372,8 +372,8 @@ class TestMGMTNetRole05(NetworkTest):
             "version": conf.COMP_VERSION,
         }
     }
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "networks": mgmt_conf.NET_DICT_CASE_05
@@ -415,7 +415,7 @@ class TestMGMTNetRole05(NetworkTest):
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     create_clusters.__name__,
 )
 class TestMGMTNetRole06(NetworkTest):
@@ -472,8 +472,8 @@ class TestMGMTNetRole06(NetworkTest):
         },
     }
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": ext_dc,
             "networks": mgmt_conf.NET_DICT_CASE_06
@@ -567,7 +567,7 @@ class TestMGMTNetRole06(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     remove_network.__name__
 )
 class TestMGMTNetRole07(NetworkTest):
@@ -590,8 +590,8 @@ class TestMGMTNetRole07(NetworkTest):
             "version": conf.COMP_VERSION,
         }
     }
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": ext_dc,
             "networks": mgmt_conf.NET_DICT_CASE_07
@@ -649,7 +649,7 @@ class TestMGMTNetRole07(NetworkTest):
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     install_host_with_new_management.__name__,
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     create_clusters.__name__,
     add_networks_to_clusters.__name__,
 )
@@ -698,8 +698,8 @@ class TestMGMTNetRole08(NetworkTest):
     # add_networks_to_clusters params
     add_networks_to_clusters_params = [(ext_cls_1, net_2), (ext_cls_2, net_1)]
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "networks": mgmt_conf.NET_DICT_CASE_08_2

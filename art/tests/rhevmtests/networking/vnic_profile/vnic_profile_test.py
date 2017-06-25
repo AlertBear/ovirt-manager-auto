@@ -11,9 +11,11 @@ The following elements will be used for the tests:
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_networks
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    templates as ll_templates,
+    vms as ll_vms
+)
 import config as vnic_conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
@@ -21,26 +23,37 @@ from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    vnic_profile_prepare_setup, create_dc, remove_nic_from_template,
-    clean_host_interfaces, remove_nic_from_vm
+    remove_vnic_profiles,
+    remove_nic_from_template,
+    clean_host_interfaces,
+    remove_nic_from_vm
 )
-from rhevmtests.fixtures import start_vm
+from rhevmtests.fixtures import start_vm, create_datacenters
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    create_and_attach_networks,
+    remove_all_networks
+)
 
 
 @attr(tier=2)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(create_dc.__name__)
+@pytest.mark.usefixtures(create_datacenters.__name__)
 class TestVNICProfileCase01(NetworkTest):
     """
     Verify that when creating a specially crafted DC (with specific version and
     management bridge) the new vNIC profile is created with management network
     name
     """
-    __test__ = True
-
+    # create_datacenters params
     dc_name2 = "vnic_profile_DC_35_case01"
+    datacenters_dict = {
+        dc_name2: {
+            "name": dc_name2,
+            "version": conf.COMP_VERSION,
+        }
+    }
+
     mgmt_br = conf.MGMT_BRIDGE
-    dc_ver = conf.COMP_VERSION
 
     @polarion("RHEVM3-3991")
     def test01_check_management_profile(self):
@@ -59,7 +72,7 @@ class TestVNICProfileCase01(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    vnic_profile_prepare_setup.__name__,
+    create_and_attach_networks.__name__,
     start_vm.__name__
 )
 class TestVNICProfileCase02(NetworkTest):
@@ -68,50 +81,74 @@ class TestVNICProfileCase02(NetworkTest):
     2.  Update VM network to non-VM
     3.  Remove network
     """
-    __test__ = True
-
+    # General params
     dc = conf.DC_0
-    vm_name = conf.VM_0
     cluster = conf.CL_0
+    vm_name = conf.VM_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": cluster,
+            "networks": vnic_conf.CASE_2_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # start_vm params
     start_vms_dict = {
         vm_name: {}
     }
     # Test-01
     net_1 = vnic_conf.NETS[2][0]
     net_2 = vnic_conf.NETS[2][1]
+
     # Test-02
     net_3 = vnic_conf.NETS[2][2]
+
     # Test-03
     net_4 = vnic_conf.NETS[2][3]
     vnic_profile_4 = vnic_conf.VNIC_PROFILES[2][2]
+
     # Test-04
     net_5 = vnic_conf.NETS[2][4]
     vnic_profile_5 = vnic_conf.VNIC_PROFILES[2][3]
+
     # Test-05
     net_6 = vnic_conf.NETS[2][5]
     net_7 = vnic_conf.NETS[2][6]
     net_8 = vnic_conf.NETS[2][7]
+
     # Test-06
     net_9 = vnic_conf.NETS[2][8]
+
     # Test-07
     net_10 = vnic_conf.NETS[2][9]
     net_11 = vnic_conf.NETS[2][10]
     vnic_profile_10 = vnic_conf.VNIC_PROFILES[2][6]
     vnic_profile_10_2 = vnic_conf.VNIC_PROFILES[2][7]
+
     # Test-08
     net_12 = vnic_conf.NETS[2][11]
     net_13 = vnic_conf.NETS[2][12]
     vnic_2 = vnic_conf.VNICS[2][2]
     vnic_3 = vnic_conf.VNICS[2][3]
+
     # Test-09
     net_14 = vnic_conf.NETS[2][13]
+
     # Test-09, Test-10, Test-11
     net_15 = vnic_conf.NETS[2][14]
+
     # Test-11
     net_17 = vnic_conf.NETS[2][16]
     net_18 = vnic_conf.NETS[2][17]
     vnic_profile_17 = vnic_conf.VNIC_PROFILES[2][10]
     vnic_profile_17_2 = vnic_conf.VNIC_PROFILES[2][11]
+
     # Test-06, Test-07, Test-10, Test-11, Test-12
     vnic = vnic_conf.VNICS[2][0]
 
@@ -553,24 +590,37 @@ class TestVNICProfileCase02(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    vnic_profile_prepare_setup.__name__,
+    create_and_attach_networks.__name__,
+    remove_vnic_profiles.__name__,
     remove_nic_from_template.__name__
 )
 class TestVNICProfileCase03(NetworkTest):
     """
     vNIC Profile on template
     """
-    __test__ = True
-
+    # General params
     dc = conf.DC_NAME[0]
     mgmt = conf.MGMT_BRIDGE
     vm_name2 = "new_VM_case03"
     cluster = conf.CLUSTER_NAME[0]
 
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": cluster,
+            "networks": vnic_conf.CASE_3_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     # Test-01, Test-02
     net_1 = vnic_conf.NETS[3][0]
     vnic_1 = vnic_conf.VNIC_PROFILES[3][1]
     template = conf.TEMPLATE_NAME[0]
+
     # Test-01
     vnic_2 = vnic_conf.VNIC_PROFILES[3][2]
 

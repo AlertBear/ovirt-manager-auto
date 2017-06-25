@@ -9,7 +9,7 @@ from _pytest.fixtures import FixtureLookupError
 from concurrent.futures import ThreadPoolExecutor
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.networking.config as conf
+import rhevmtests.config as conf
 from art.unittest_lib import testflow
 
 

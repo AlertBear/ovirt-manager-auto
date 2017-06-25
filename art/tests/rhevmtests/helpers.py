@@ -10,7 +10,6 @@ import os
 
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import rhevmtests.networking.config as net_config
 import config
 from storageapi.storageErrors import GetLUNInfoError
 from storageapi.storageManagerWrapper import StorageManagerWrapper
@@ -400,8 +399,8 @@ def get_host_resource_by_name(host_name):
         VDS: host resource, or None if not found
     """
     return (
-        net_config.VDS_HOSTS[net_config.HOSTS.index(host_name)]
-        if host_name in net_config.HOSTS else None
+        config.VDS_HOSTS[config.HOSTS.index(host_name)]
+        if host_name in config.HOSTS else None
     )
 
 
@@ -417,8 +416,8 @@ def get_host_name_by_resource(host_resource):
         str: Host name
     """
     return (
-        net_config.HOSTS[net_config.VDS_HOSTS.index(host_resource)]
-        if host_resource in net_config.VDS_HOSTS else None
+        config.HOSTS[config.VDS_HOSTS.index(host_resource)]
+        if host_resource in config.VDS_HOSTS else None
     )
 
 

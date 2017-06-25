@@ -9,7 +9,7 @@ import re
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
-import rhevmtests.networking.config as conf
+import config as conf
 
 
 def setup_network_helper(hosts_nets_nic_dict, sriov_nics, persist):

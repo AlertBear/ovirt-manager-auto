@@ -18,7 +18,7 @@ from rhevmtests.fixtures import create_clusters
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
     remove_all_networks,
-    create_and_attach_network,
+    create_and_attach_networks,
     setup_networks_fixture,
     clean_host_interfaces_fixture_function,
     restore_network_usage,
@@ -29,7 +29,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 @attr(tier=2)
 @pytest.mark.usefixtures(
     create_clusters.__name__,
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
 )
 class TestDefaultRoute01(NetworkTest):
     """
@@ -51,8 +51,8 @@ class TestDefaultRoute01(NetworkTest):
         },
     }
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "cluster": ext_cluster,
@@ -81,7 +81,7 @@ class TestDefaultRoute01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
 )
 class TestDefaultRoute02(NetworkTest):
@@ -97,8 +97,8 @@ class TestDefaultRoute02(NetworkTest):
     net_2 = dr_conf.NETS[2][1]
     default_route_usage = conf.DEFAULT_ROUTE_USAGE
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "cluster": cluster,
@@ -157,7 +157,7 @@ class TestDefaultRoute02(NetworkTest):
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     clean_host_interfaces_fixture_function.__name__
 )
 class TestDefaultRoute03(NetworkTest):
@@ -172,8 +172,8 @@ class TestDefaultRoute03(NetworkTest):
     default_route_usage = conf.DEFAULT_ROUTE_USAGE
     ip = None
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "cluster": cluster,
@@ -244,7 +244,7 @@ class TestDefaultRoute03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
-    create_and_attach_network.__name__,
+    create_and_attach_networks.__name__,
     update_cluster_network_usages.__name__,
     setup_networks_fixture.__name__,
 )
@@ -257,8 +257,8 @@ class TestDefaultRoute04(NetworkTest):
     net_1 = dr_conf.NETS[4][0]
     default_route_usage = conf.DEFAULT_ROUTE_USAGE
 
-    # create_and_attach_network params
-    create_network = {
+    # create_and_attach_networks params
+    create_networks = {
         "1": {
             "datacenter": dc,
             "cluster": cluster,

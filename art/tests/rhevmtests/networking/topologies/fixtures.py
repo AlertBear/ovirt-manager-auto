@@ -10,7 +10,6 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture()
@@ -18,12 +17,11 @@ def update_vnic_network(request):
     """
     Update vNIC network on VM
     """
-    topologies = NetworkFixtures()
     net = request.getfixturevalue("network")
     if not net:
         return
 
-    vm = topologies.vm_0
+    vm = conf.VM_0
     nic = conf.VM_NIC_0
     mgmt = conf.MGMT_BRIDGE
 

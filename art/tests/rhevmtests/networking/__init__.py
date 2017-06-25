@@ -17,8 +17,9 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.utils.inventory import Inventory
-from rhevmtests.networking import config
-from rhevmtests.networking.helper import prepare_dummies
+import config
+import helper
+import fixtures
 
 logger = logging.getLogger("GE_Network_cleanup")
 
@@ -378,5 +379,6 @@ def setup_package():
     network_cleanup()
     for vds_host in config.VDS_HOSTS[:2]:
         num_dummy = 30 if vds_host.fqdn == config.VDS_HOSTS[0].fqdn else 8
-        prepare_dummies(host_resource=vds_host, num_dummy=num_dummy)
+        helper.prepare_dummies(host_resource=vds_host, num_dummy=num_dummy)
         logger.info("Host %s. NICs: %s", vds_host.fqdn, vds_host.nics)
+    fixtures.NetworkFixtures()
