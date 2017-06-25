@@ -1484,7 +1484,6 @@ class TestCase6000(BaseTestCase):
         status = blockOutgoingConnection(source, username, password, target_ip)
         assert status, "Failed to block connection"
 
-    @bz({'1421417': {}})
     @polarion("RHEVM3-6000")
     @attr(tier=4)
     def test_LSM_block_from_host_to_target(self):
@@ -1652,7 +1651,6 @@ class TestCase5999_spm(BaseTestCase5999):
     Reboot SPM duting LSM
     """
 
-    @bz({'1421417': {}})
     @polarion("RHEVM3-5999")
     @attr(tier=4)
     def test_reboot_spm_during_lsm(self):
@@ -1922,7 +1920,6 @@ class BaseTestCase5966(BaseTestCase):
 
 class TestCase5966_during_lsm(BaseTestCase5966):
 
-    @bz({'1421417': {}})
     @polarion("RHEVM3-5966")
     @attr(tier=4)
     def test_kill_vdsm_during_lsm(self):
@@ -1946,7 +1943,6 @@ class TestCase5966_during_lsm(BaseTestCase5966):
 
 class TestCase5966_during_second_lsm(BaseTestCase5966):
 
-    @bz({'1421417': {}})
     @polarion("RHEVM3-5966")
     @attr(tier=4)
     def test_kill_vdsm_during_second_lsm(self):
@@ -1993,7 +1989,6 @@ class TestCase5981(AllPermutationsDisks):
     __test__ = False
     polarion_test_case = '5981'
 
-    @bz({'1421417': {}})
     @polarion("RHEVM3-5981")
     @attr(tier=4)
     def test_merge_snapshot_live_migration_failure(self):
