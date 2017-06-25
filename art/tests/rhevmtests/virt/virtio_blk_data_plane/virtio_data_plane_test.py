@@ -5,122 +5,134 @@ Virt test - virtio data plan
 Test plan:
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Compute/Virtio-blk%20Data%20Plane
 """
-
-import pytest
-from art.unittest_lib import attr, VirtTest, testflow
-from art.test_handler.tools import polarion
-import rhevmtests.virt.helper as helper
-from fixtures import (
-    virtio_data_plane_setup,
-    update_io_threads,
-    hotplug_disk_to_vm
-)
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
+import helpers
+import pytest
+from art.test_handler.tools import polarion
+from art.unittest_lib import attr, VirtTest
+from art.unittest_lib import testflow
+from fixtures import (
+    reactivate_vm_disks,
+    remove_disk_from_vm,
+    start_vm,
+    virtio_data_plane_setup,
+    update_vm_io_threads
+)
 
 
 @attr(tier=2)
-class TestVirtioDataPlane(VirtTest):
+@pytest.mark.usefixtures(
+    virtio_data_plane_setup.__name__,
+    update_vm_io_threads.__name__,
+    reactivate_vm_disks.__name__,
+    start_vm.__name__
+)
+class TestBasicVirtioDataPlane(VirtTest):
     """
     Virtio data plane test
     """
-    __test__ = True
 
-    @polarion("RHEVM-17132")
-    @pytest.mark.usefixtures(
-        virtio_data_plane_setup.__name__,
-        update_io_threads.__name__
+    @pytest.mark.parametrize(
+        ("iothreads", "vm_name"),
+        [
+            polarion("RHEVM-17132")([4, config.VM_IOTHREAD_VIRTIO]),
+            polarion("RHEVM-17133")([2, config.VM_IOTHREAD_VIRTIO]),
+            polarion("RHEVM-17134")([6, config.VM_IOTHREAD_VIRTIO]),
+            polarion("RHEVM-21892")([4, config.VM_IOTHREAD_SCSI_VIRTIO]),
+            polarion("RHEVM-21893")([2, config.VM_IOTHREAD_SCSI_VIRTIO]),
+            polarion("RHEVM-21894")([6, config.VM_IOTHREAD_SCSI_VIRTIO]),
+            polarion("RHEVM-21895")([4, config.VM_IOTHREAD_MIXED]),
+            polarion("RHEVM-21896")([2, config.VM_IOTHREAD_MIXED]),
+            polarion("RHEVM-21897")([6, config.VM_IOTHREAD_MIXED])
+        ],
+        ids=[
+            "Number_of_iothreads_equals_to_number_of_disks_Virtio",
+            "Number_of_iothreads_less_than_number_of_disks_Virtio",
+            "Number_of_iothreads_greater_than_number_of_disks_Virtio",
+            "Number_of_iothreads_equals_to_number_of_disks_SCSI_Virtio",
+            "Number_of_iothreads_less_than_number_of_disks_SCSI_Virtio",
+            "Number_of_iothreads_greater_than_number_of_disks_SCSI_Virtio",
+            "Number_of_iothreads_equals_to_number_of_disks_Mixed",
+            "Number_of_iothreads_less_than_number_of_disks_Mixed",
+            "Number_of_iothreads_greater_than_number_of_disks_Mixed"
+        ]
     )
-    @pytest.mark.per_condition(number_of_threads=4)
-    def test_threads_number_same_as_disks_number(self):
+    def test_iothreads(self, iothreads, vm_name):
         """
-        Check that threads are allocated to all disks
+        Check iothreads allocation to disks
         """
-        testflow.step("Check that threads are allocate to all disks")
-        assert helper.check_iothreads_of_vm(
-            vm_name=config.VM_VIRTIO_DATA_PLANE_NAME,
-            number_of_disks=4,
-            number_of_threads=4
-        )
+        helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
-    @polarion("RHEVM-17133")
-    @pytest.mark.usefixtures(
-        virtio_data_plane_setup.__name__,
-        update_io_threads.__name__
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    virtio_data_plane_setup.__name__,
+    update_vm_io_threads.__name__,
+    remove_disk_from_vm.__name__,
+    start_vm.__name__,
+)
+class TestHotplugVirtioDataPlane(VirtTest):
+    """
+    Verify IO threads for test cases with disk hotplug
+    """
+
+    @pytest.mark.parametrize(
+        ("iothreads", "vm_name"),
+        [
+            polarion("RHEVM-17135")([5, config.VM_IOTHREAD_VIRTIO]),
+            polarion("RHEVM-17136")([4, config.VM_IOTHREAD_VIRTIO])
+        ],
+        ids=[
+            "Hotplug_new_disk_when_number_of_iothreads_greater_Virtio",
+            "Hotplug_new_disk_when_number_of_iothreads_lesser_Virtio"
+        ]
     )
-    @pytest.mark.per_condition(number_of_threads=2)
-    def test_number_of_threads_smaller_than_disks_number(self):
+    def test_iothreads_with_disk_hotplug(self, iothreads, vm_name):
         """
-        Check that threads are allocated to all disks, reuse of threads
+        Hot plug new disk and check IO thread allocation
         """
-
-        self.number_of_threads = 2
-        testflow.step(
-            "Check that threads are allocate to all disks, reuse of threads"
+        testflow.step("Hotplug disk %s to VM %s", config.HOTPLUG_DISK, vm_name)
+        assert ll_vms.addDisk(
+            positive=True,
+            wait=False,
+            vm=vm_name,
+            provisioned_size=config.GB,
+            storagedomain=config.STORAGE_NAME[0],
+            interface=config.VMS_IOTHREADS_NAMES[vm_name].keys()[0],
+            format=config.DISK_FORMAT_COW,
+            alias=config.HOTPLUG_DISK,
         )
-        assert helper.check_iothreads_of_vm(
-            vm_name=config.VM_VIRTIO_DATA_PLANE_NAME,
-            number_of_disks=4,
-            number_of_threads=2
-        )
+        helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
-    @polarion("RHEVM-17134")
-    @pytest.mark.usefixtures(
-        virtio_data_plane_setup.__name__,
-        update_io_threads.__name__
+
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    virtio_data_plane_setup.__name__,
+    update_vm_io_threads.__name__,
+    reactivate_vm_disks.__name__,
+    start_vm.__name__
+)
+class TestMigrationVirtioDataPlane(VirtTest):
+    """
+    Verify that migration preserve on VM IO threads
+    """
+
+    @pytest.mark.parametrize(
+        ("iothreads", "vm_name"),
+        [
+            polarion("RHEVM-21898")([4, config.VM_IOTHREAD_VIRTIO]),
+            polarion("RHEVM-21899")([4, config.VM_IOTHREAD_SCSI_VIRTIO])
+        ],
+        ids=[
+            "Migrate_VM_with_iothreads_Virtio",
+            "Migrate_VM_with_iothreads_SCSI_Virtio"
+        ]
     )
-    @pytest.mark.per_condition(number_of_threads=6)
-    def test_number_of_threads_larger_than_disks_number(self):
+    def test_iothreads_with_migration(self, iothreads, vm_name):
         """
-        Check that threads are allocated to all disks
+        Migrate the VM and check VM IO threads
         """
-        testflow.step(
-            "Check that threads are allocate to all disks"
-        )
-        assert helper.check_iothreads_of_vm(
-            vm_name=config.VM_VIRTIO_DATA_PLANE_NAME,
-            number_of_disks=4,
-            number_of_threads=6
-        )
-
-    @polarion("RHEVM-17135")
-    @pytest.mark.usefixtures(
-        virtio_data_plane_setup.__name__,
-        update_io_threads.__name__,
-        hotplug_disk_to_vm.__name__
-    )
-    @pytest.mark.per_condition(number_of_threads=5)
-    def test_hotplug_disk_allocate_new_thread(self):
-        """
-        Hot plug new disk and check that new thread is allocated to new disk
-        """
-
-        testflow.step(
-            "Hot plug new disk and check that new thread is allocate "
-            "to new disk"
-        )
-
-        assert helper.check_iothreads_of_vm(
-            vm_name=config.VM_VIRTIO_DATA_PLANE_NAME,
-            number_of_disks=5,
-            number_of_threads=5
-        )
-
-    @polarion("RHEVM-17135")
-    @pytest.mark.usefixtures(
-        virtio_data_plane_setup.__name__,
-        update_io_threads.__name__,
-        hotplug_disk_to_vm.__name__
-    )
-    @pytest.mark.per_condition(number_of_threads=4)
-    def test_hotplug_disk_reuse_thread(self):
-        """
-        Hot plug new disk and check that reuse of thread of new disk
-        """
-        testflow.step(
-            "Hot plug new disk and check that reuse of thread of new disk"
-        )
-        assert helper.check_iothreads_of_vm(
-            vm_name=config.VM_VIRTIO_DATA_PLANE_NAME,
-            number_of_disks=5,
-            number_of_threads=4
-        )
+        testflow.step("Migrate VM %s", vm_name)
+        ll_vms.migrateVm(positive=True, vm=vm_name)
+        helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)

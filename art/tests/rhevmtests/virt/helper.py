@@ -4,15 +4,13 @@
 """
 Helper functions for virt and network migration job
 """
+import logging
 import os
+import re
 import shlex
 import time
-
-import re
-import logging
-import xmltodict
 from datetime import datetime
-from utilities.rhevm_tools import errors
+
 import art.core_api.validator as validator
 import art.rhevm_api.resources as resources
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -39,6 +37,7 @@ from art.unittest_lib import testflow
 from rhevmtests import helpers
 from rhevmtests.networking import config
 from utilities import jobs, utils
+from utilities.rhevm_tools import errors
 
 logger = logging.getLogger("Virt_Helper")
 
@@ -57,11 +56,6 @@ LOAD_VM_COMMAND = (
     '/home/pig -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
 )
 VIRSH_VM_LIST_CMD = "virsh -r list | grep "
-VIRSH_VM_DUMP_XML_CMD = "virsh -r dumpxml "
-VIRSH_VM_IOTHREADS_NUMBER_CMD = (
-    "virsh -r dumpxml %s | grep -oP '(?<=<iothreads>).*?(?=</iothreads>)'"
-)
-VIRSH_VM_IOTHREADS_DRIVERS_CMD = "virsh -r dumpxml %s | grep 'iothread='"
 V2V_IMPORT_TIMEOUT = 1500
 
 test_handler.find_test_file.__test__ = False
@@ -567,32 +561,6 @@ def get_vm_id(vm_name):
     return vm_id
 
 
-def get_dump_xml_as_dict(vm_name):
-    """
-    Return VM dump xml as dict
-
-    Args:
-        vm_name (str): VM name
-
-    Returns:
-        dict: VM dump xml info as dict
-
-    Raise:
-         HostException: If failed to run command
-    """
-
-    host_resource = helpers.get_host_resource_of_running_vm(vm_name)
-    vm_id = get_vm_id(vm_name)
-    cmd = shlex.split(" ".join((config_virt.VIRSH_VM_DUMP_XML_CMD, vm_id)))
-    rc, out, err = host_resource.executor().run_cmd(cmd)
-    if rc:
-        raise exceptions.HostException(
-            "Failed to run virsh cmd: %s on: %s, err: %s"
-            % (host_resource, config_virt.VIRSH_VM_LIST_CMD, err)
-        )
-    return xmltodict.parse(out)
-
-
 def compare_dictionaries(expected, actual):
     """
     Gets two dictionaries with similar keys and compares the values.
@@ -662,46 +630,6 @@ def wait_for_vm_fqdn(
                 return True
     except APITimeout:
         return False
-
-
-def check_iothreads_of_vm(vm_name, number_of_disks, number_of_threads):
-    """
-    Check io threads on VM with 'virsh' command.
-    1. Check total io threads
-    2. Check each disk driver
-
-    Args:
-        vm_name (str): VM name
-        number_of_disks (int): Number of disks on VM
-        number_of_threads (int): expected number of io threads
-
-    Returns:
-        bool: True if check succeeded, False otherwise
-    """
-    logger.info(
-        "Expected number of disks: %s, Expected number of threads: %s",
-        number_of_disks, number_of_threads
-    )
-    host_resource = helpers.get_host_resource_of_running_vm(vm_name)
-    vm_id = get_vm_id(vm_name)
-    cmd = shlex.split(
-        config_virt.VIRSH_VM_IOTHREADS_NUMBER_CMD % vm_id, posix=False
-    )
-    total_threads_output = run_command_on_host(cmd, host_resource)
-    total_threads = int(total_threads_output) if total_threads_output else -1
-    cmd = shlex.split(
-        config_virt.VIRSH_VM_IOTHREADS_DRIVERS_CMD % vm_id, posix=False
-    )
-    logger.info(
-        "Expected disk:%d, Expected threads:%d, Actual threads:%d" %
-        (number_of_disks, number_of_threads, total_threads)
-    )
-    drivers_check = check_drivers(
-        run_command_on_host(cmd, host_resource),
-        number_of_disks,
-        number_of_threads
-    )
-    return total_threads == number_of_threads and drivers_check
 
 
 def run_command_on_host(cmd, host_resource):
