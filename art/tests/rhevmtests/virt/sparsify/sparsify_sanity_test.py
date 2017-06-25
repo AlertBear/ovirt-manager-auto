@@ -101,9 +101,6 @@ class TestSparsifySanityFileDevice(SparsifySanityBase):
                 config.STORAGE_TYPE_NFS, config.NFS_VERSION_AUTO
             ]),
             polarion("RHEVM-21589")([
-                config.STORAGE_TYPE_NFS, config.NFS_VERSION_4_2
-            ]),
-            polarion("RHEVM-21589")([
                 config.STORAGE_TYPE_GLUSTER, config.NFS_VERSION_AUTO
             ])
         ]

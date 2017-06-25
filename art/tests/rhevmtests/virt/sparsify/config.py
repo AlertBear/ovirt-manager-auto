@@ -1,5 +1,6 @@
 from rhevmtests.virt.config import *  # flake8: noqa
 
+COPY_MOVE_DISK_TIMEOUT = 600
 THIN_PROVISIONED_VMS = []
 SPARSIFY_VM_NAME = 'sparsify_test'
 PREALLOCATED_VMS = []
@@ -7,7 +8,7 @@ FILE_SIZE_IN_MB = 400
 THIN_VM_PARAMS = {
     'clone': False,
     'vol_sparse': True,
-    'vol_format': DISK_FORMAT_COW,
+    'format': DISK_FORMAT_COW,
 }
 PREALLOCATED_VM_PARAMS = {
     'clone': True,

@@ -4,11 +4,13 @@
 """
 Helper functions for virt and network migration job
 """
-import logging
 import os
-import re
 import shlex
 import time
+
+import re
+import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 import art.core_api.validator as validator
@@ -1403,3 +1405,26 @@ def get_vm_qemu_process_args(vm_name):
             msg='Failed to get qemu process args with {err}'.format(err=err)
         )
     return result
+
+
+def execute_multi_sparsify(disks_ids, storage_domain_name):
+    """
+    Execute sparsify disk action on given disks id list.
+    And checks that all actions succeeded
+
+    Args:
+        disks_ids (list): disks id list
+        storage_domain_name (str): storage domain name
+
+    """
+    results = []
+    with ThreadPoolExecutor(max_workers=len(disks_ids)) as executor:
+        for disk in disks_ids:
+            results.append(
+                executor.submit(
+                    ll_disks.sparsify_disk, disk_id=disk,
+                    storage_domain_name=storage_domain_name
+                )
+            )
+    for result in results:
+        assert result.result()
