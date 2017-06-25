@@ -17,8 +17,8 @@ from fixtures import set_route_to_engine_and_local_host  # noqa: F401
 from rhevmtests.fixtures import create_clusters
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
-    create_and_attach_network,
     remove_all_networks,
+    create_and_attach_network,
     setup_networks_fixture,
     clean_host_interfaces_fixture_function,
     restore_network_usage,
@@ -28,7 +28,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    remove_all_networks.__name__,
     create_clusters.__name__,
     create_and_attach_network.__name__,
 )
@@ -53,11 +52,16 @@ class TestDefaultRoute01(NetworkTest):
     }
 
     # create_and_attach_network params
-    dcs_and_clusters = [(dc, ext_cluster)]
-    network_dict = dr_conf.NET_DICT_CASE_01
+    create_network = {
+        "1": {
+            "datacenter": dc,
+            "cluster": ext_cluster,
+            "networks": dr_conf.NET_DICT_CASE_01
+        }
+    }
 
     # remove_all_networks params
-    remove_all_networks_params = [dc]
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM-21370")
     def test_custom_mgmt_default_route_role(self):
@@ -77,7 +81,6 @@ class TestDefaultRoute01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    remove_all_networks.__name__,
     create_and_attach_network.__name__,
     setup_networks_fixture.__name__,
 )
@@ -95,11 +98,16 @@ class TestDefaultRoute02(NetworkTest):
     default_route_usage = conf.DEFAULT_ROUTE_USAGE
 
     # create_and_attach_network params
-    dcs_and_clusters = [(dc, cluster)]
-    network_dict = dr_conf.NET_DICT_CASE_02
+    create_network = {
+        "1": {
+            "datacenter": dc,
+            "cluster": cluster,
+            "networks": dr_conf.NET_DICT_CASE_02
+        }
+    }
 
     # remove_all_networks params
-    remove_all_networks_params = [dc]
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {
@@ -149,7 +157,6 @@ class TestDefaultRoute02(NetworkTest):
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
-    remove_all_networks.__name__,
     create_and_attach_network.__name__,
     clean_host_interfaces_fixture_function.__name__
 )
@@ -166,11 +173,16 @@ class TestDefaultRoute03(NetworkTest):
     ip = None
 
     # create_and_attach_network params
-    dcs_and_clusters = [(dc, cluster)]
-    network_dict = dr_conf.NET_DICT_CASE_03
+    create_network = {
+        "1": {
+            "datacenter": dc,
+            "cluster": cluster,
+            "networks": dr_conf.NET_DICT_CASE_03
+        }
+    }
 
     # remove_all_networks params
-    remove_all_networks_params = [dc]
+    remove_dcs_networks = [dc]
 
     # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
@@ -232,7 +244,6 @@ class TestDefaultRoute03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
-    remove_all_networks.__name__,
     create_and_attach_network.__name__,
     update_cluster_network_usages.__name__,
     setup_networks_fixture.__name__,
@@ -247,11 +258,16 @@ class TestDefaultRoute04(NetworkTest):
     default_route_usage = conf.DEFAULT_ROUTE_USAGE
 
     # create_and_attach_network params
-    dcs_and_clusters = [(dc, cluster)]
-    network_dict = dr_conf.NET_DICT_CASE_04
+    create_network = {
+        "1": {
+            "datacenter": dc,
+            "cluster": cluster,
+            "networks": dr_conf.NET_DICT_CASE_03
+        }
+    }
 
     # remove_all_networks params
-    remove_all_networks_params = [dc]
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {

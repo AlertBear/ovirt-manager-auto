@@ -168,16 +168,18 @@ def update_cluster_network_usages(request):
 
 
 @pytest.fixture(scope="class")
-def create_and_attach_network(request):
+def create_and_attach_network(request, remove_all_networks):
     """
     Create and attach network to Data-Centers and clusters
     """
-    dcs_and_clusters = request.cls.dcs_and_clusters
-    network_dict = request.cls.network_dict
+    create_network_dict = request.cls.create_network
 
-    for dc, cl in dcs_and_clusters:
+    for val in create_network_dict.values():
+        dc = val.get("datacenter")
+        cluster = val.get("cluster")
+        network_dict = val.get("networks")
         assert hl_networks.create_and_attach_networks(
-            data_center=dc, cluster=cl, network_dict=network_dict
+            data_center=dc, cluster=cluster, network_dict=network_dict
         )
 
 
@@ -186,15 +188,15 @@ def remove_all_networks(request):
     """
     Remove all networks from Data-Centers
     """
-    dcs = request.cls.remove_all_networks_params
+    dcs = getattr(request.node.cls, "remove_dcs_networks", list())
 
     def fin():
         """
         Remove all networks from Data-Centers
         """
-        results = list()
-        for dc in dcs:
-            results.append(hl_networks.remove_all_networks(datacenter=dc))
+        results = [
+            hl_networks.remove_all_networks(datacenter=dc) for dc in dcs
+        ]
         assert all(results)
     request.addfinalizer(fin)
 
