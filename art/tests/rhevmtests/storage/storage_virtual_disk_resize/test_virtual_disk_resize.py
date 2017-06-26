@@ -357,6 +357,7 @@ class TestCase5062(BasicResize):
 
     @polarion("RHEVM3-5062")
     @attr(tier=1)
+    @bz({'1461536': {}})
     def test_preallocated_block_resize(self):
         """
         - VM with preallocated disk and OS
