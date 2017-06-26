@@ -8,7 +8,6 @@ from art.unittest_lib.common import (
     VirtTest,
     SlaTest,
     CoreSystemTest,
-    IntegrationTest,
     UpgradeTest,
     testflow,
 )
@@ -38,7 +37,6 @@ __all__ = [
     'VirtTest',
     'SlaTest',
     'CoreSystemTest',
-    'IntegrationTest',
     'UpgradeTest',
     'testflow',
     'timeout',

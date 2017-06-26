@@ -87,13 +87,6 @@ class CoreSystemTest(BaseTestCase):
     """
 
 
-@coresystem
-class IntegrationTest(BaseTestCase):
-    """
-    Basic class for integration test
-    """
-
-
 @upgrade
 class UpgradeTest(BaseTestCase):
     """
