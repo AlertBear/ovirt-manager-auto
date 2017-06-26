@@ -19,32 +19,47 @@ from art.rhevm_api.tests_lib.low_level import (
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, NetworkTest, testflow
-from fixtures import (
-    reset_host_sriov_params, update_vnic_profiles, add_vnics_to_vm,
-    init_fixture, prepare_setup_vm, set_num_of_vfs, create_qos, update_qos,
-    add_labels, add_vnic_profile, set_all_networks_allowed, create_bond,
-    set_ip_on_vm_interface, add_sriov_host_device_to_vm,
-    remove_network_manager_connection, pin_vm_to_host
+from fixtures import (  # noqa: F401
+    remove_network_manager_connection,
+    add_sriov_host_device_to_vm,
+    set_all_networks_allowed,
+    reset_host_sriov_params,
+    set_ip_on_vm_interface,
+    update_vnic_profiles,
+    add_vnic_profile,
+    add_vnics_to_vm,
+    set_num_of_vfs,
+    pin_vm_to_host,
+    create_qos,
+    update_qos,
+    add_labels,
+    init
 )
 from rhevmtests.fixtures import start_vm
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, store_vms_params
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    setup_networks_fixture,
+    clean_host_interfaces,
+    store_vms_params
 )
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    create_and_attach_networks,
+    remove_all_networks
+)
+
+pytestmark = pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT,
+    reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 
 
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
-    prepare_setup_vm.__name__,
     update_vnic_profiles.__name__,
     add_vnics_to_vm.__name__,
     start_vm.__name__,
-)
-@pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriovVm01(NetworkTest):
     """
@@ -52,6 +67,7 @@ class TestSriovVm01(NetworkTest):
     """
 
     # General
+    dc = conf.DC_0
     vm = conf.VM_0
     extra_vm = conf.VM_1
     vm_nic = sriov_conf.VM_TEST_VNICS[1][0]
@@ -77,6 +93,18 @@ class TestSriovVm01(NetworkTest):
     profiles = [net_1]
     nets = profiles
     nics = [vm_nic, extra_vm_nic]
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_01_VM_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-6614")
     def test_01_run_vm_zero_vfs(self):
@@ -236,16 +264,12 @@ class TestSriovVm01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
-    prepare_setup_vm.__name__,
     set_num_of_vfs.__name__,
     update_vnic_profiles.__name__,
     add_vnics_to_vm.__name__,
     start_vm.__name__,
-)
-@pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriovVm02(NetworkTest):
     """
@@ -256,7 +280,7 @@ class TestSriovVm02(NetworkTest):
     vm = conf.VM_0
     vm_nic = sriov_conf.VM_TEST_VNICS[2][0]
     net_1 = sriov_conf.VM_NETS[2][0]
-    vlan_id = sriov_conf.VM_DICT.get(net_1).get("vlan_id")
+    vlan_id = sriov_conf.CASE_02_VM_NETS.get(net_1).get("vlan_id")
     dc = conf.DC_0
 
     # remove_vnics_from_vm
@@ -282,6 +306,18 @@ class TestSriovVm02(NetworkTest):
         vm: {}
     }
 
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_02_VM_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     @polarion("RHEVM3-6314")
     def test_01_vm_with_vlan(self):
         """
@@ -297,19 +333,15 @@ class TestSriovVm02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
-    prepare_setup_vm.__name__,
     create_qos.__name__,
     update_qos.__name__,
     update_vnic_profiles.__name__,
     setup_networks_fixture.__name__,
     add_vnics_to_vm.__name__,
     start_vm.__name__
-)
-@pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriovVm03(NetworkTest):
     """
@@ -376,6 +408,18 @@ class TestSriovVm03(NetworkTest):
         }
     }
 
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_03_VM_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     @polarion("RHEVM3-10632")
     def test_01_edit_interface_passthrough(self):
         """
@@ -417,18 +461,14 @@ class TestSriovVm03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_all_networks_allowed.__name__,
     add_vnics_to_vm.__name__,
     set_num_of_vfs.__name__,
-    prepare_setup_vm.__name__,
     update_vnic_profiles.__name__,
     add_labels.__name__,
     start_vm.__name__,
-)
-@pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriovVm04(NetworkTest):
     """
@@ -436,6 +476,7 @@ class TestSriovVm04(NetworkTest):
     """
 
     # General
+    dc = conf.DC_0
     vm = conf.VM_0
     net_1 = sriov_conf.VM_NETS[4][0]
     net_2 = sriov_conf.VM_NETS[4][1]
@@ -473,6 +514,18 @@ class TestSriovVm04(NetworkTest):
 
     # stop VM
     vms_to_stop = [vm]
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_04_VM_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-14640")
     def test_01_all_networks_allowed_specific_net_negative(self):
@@ -556,21 +609,16 @@ class TestSriovVm04(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
-    prepare_setup_vm.__name__,
     setup_networks_fixture.__name__,
     add_vnic_profile.__name__,
     add_vnics_to_vm.__name__,
     start_vm.__name__,
     store_vms_params.__name__,
-    create_bond.__name__,
     set_ip_on_vm_interface.__name__,
     remove_network_manager_connection.__name__,
-)
-@pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriovVm05(NetworkTest):
     """
@@ -578,6 +626,7 @@ class TestSriovVm05(NetworkTest):
     """
 
     # General
+    dc = conf.DC_0
     vm_1 = conf.VM_0
     vm_2 = conf.VM_1
 
@@ -619,7 +668,7 @@ class TestSriovVm05(NetworkTest):
     vm_ips = {
         vm_1: {
             "ip": vm_1_ip,
-            "inter": "bond1"
+            "inter": None
         },
         vm_2: {
             "ip": vm_2_ip,
@@ -641,6 +690,18 @@ class TestSriovVm05(NetworkTest):
         }
     }
 
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_05_VM_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     @polarion("RHEVM3-6728")
     def test_check_connectivity(self):
         """
@@ -656,18 +717,14 @@ class TestSriovVm05(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
-    prepare_setup_vm.__name__,
     set_num_of_vfs.__name__,
     update_vnic_profiles.__name__,
     add_vnics_to_vm.__name__,
     pin_vm_to_host.__name__,
     add_sriov_host_device_to_vm.__name__,
     start_vm.__name__
-)
-@pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriovVm06(NetworkTest):
     """
@@ -705,6 +762,18 @@ class TestSriovVm06(NetworkTest):
     # add_sriov_host_device_to_vm
     add_host_device_host_index = 0
     add_host_device_vm = conf.VM_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_06_VM_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @bz({"1446058": {}})
     @polarion("RHEVM-19420")

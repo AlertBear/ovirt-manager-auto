@@ -18,22 +18,30 @@ import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
-from fixtures import (
-    create_qos, set_num_of_vfs, prepare_setup_general,
-    add_vnics_to_vm, init_fixture, reset_host_sriov_params, add_vnic_profile
+from fixtures import (  # noqa: F401
+    reset_host_sriov_params,
+    add_vnic_profile,
+    add_vnics_to_vm,
+    set_num_of_vfs,
+    create_qos,
+    init
 )
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    create_and_attach_networks,
+    setup_networks_fixture,
+    clean_host_interfaces,
+    remove_all_networks
+)
+
+pytestmark = pytest.mark.skipif(
+    conf.NO_SEMI_SRIOV_SUPPORT,
+    reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
 )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
     setup_networks_fixture.__name__
-)
-@pytest.mark.skipif(
-    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriov01(NetworkTest):
     """
@@ -41,7 +49,6 @@ class TestSriov01(NetworkTest):
     2. Check that bond doesn't have sr_iov related configuration
     3. Check that bond NICs have SR_IOV related configuration
     """
-    __test__ = True
 
     # General
     bond_1 = "bond1"
@@ -84,18 +91,13 @@ class TestSriov01(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
     create_qos.__name__,
     add_vnic_profile.__name__
-)
-@pytest.mark.skipif(
-    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriov02(NetworkTest):
     """
     Edit vNIC profile with passthrough property
     """
-    __test__ = True
 
     # General
     dc = conf.DC_0
@@ -216,13 +218,9 @@ class TestSriov02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
     reset_host_sriov_params.__name__,
     clean_host_interfaces.__name__,
     set_num_of_vfs.__name__
-)
-@pytest.mark.skipif(
-    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriov03(NetworkTest):
     """
@@ -230,7 +228,6 @@ class TestSriov03(NetworkTest):
     a. The same number is configured on engine and on host relevant file
     b. Putting link up and down doesn't change the number of VFs
     """
-    __test__ = True
 
     # set_num_of_vfs
     num_of_vfs = 2
@@ -289,39 +286,43 @@ class TestSriov03(NetworkTest):
 
 
 @attr(tier=2)
+@pytest.mark.incremental
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
     reset_host_sriov_params.__name__,
     clean_host_interfaces.__name__,
-    prepare_setup_general.__name__,
-    set_num_of_vfs.__name__
-)
-@pytest.mark.skipif(
-    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriov04(NetworkTest):
     """
     Changing the number of VFs for a PF when PF contains non-free VFs
     """
-    __test__ = True
 
     # General
     net1 = sriov_conf.GENERAL_NETS[4][0]
-
-    # set_num_of_vfs
-    num_of_vfs = 3
+    dc = conf.DC_0
 
     # clean_host_interfaces
     hosts_nets_nic_dict = {
         0: {}
     }
 
+    @polarion("RHEVM-19156")
+    def test_01_change_vf_num_for_non_occupied_vf_network(self):
+        """
+        1. Remove network from VF
+        2. Change the number of VFs on PF and succeed
+        """
+        testflow.step(
+            "Change the VF number when non of the VFs are occupied"
+        )
+        assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(2)
+
     @polarion("RHEVM3-14637")
-    def test_01_change_vf_num_for_occupied_vf_network(self):
+    def test_02_change_vf_num_for_occupied_vf_network(self):
         """
         1. Add network to VF
         2. Try to change the number of VFs and fail as one VF is occupied
         """
+        slaves = sriov_conf.HOST_0_PF_OBJECT_1.get_all_vf_names()[:2]
         testflow.step(
             "Negative: Try to change the number of VFs when one of the VFs is "
             "occupied by network %s attached to it", self.net1
@@ -329,49 +330,28 @@ class TestSriov04(NetworkTest):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": self.net1,
-                    "nic": sriov_conf.HOST_0_PF_OBJECT_1.get_all_vf_names()[0]
+                    "slaves": slaves,
+                    "nic": "bond4"
                 }
             }
         }
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-        assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(2)
-
-    @polarion("RHEVM-19156")
-    def test_change_vf_num_for_non_occupied_vf_network(self):
-        """
-        1. Remove network from VF
-        2. Change the number of VFs on PF and succeed
-        """
-        testflow.step(
-            "Remove network %s and check you can change the VF number",
-            self.net1
-        )
-        assert hl_host_network.clean_host_interfaces(
-            host_name=conf.HOST_0_NAME
-        )
-        assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(2)
+        assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(3)
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
-    prepare_setup_general.__name__,
-    setup_networks_fixture.__name__,
+    create_and_attach_networks.__name__,
     add_vnic_profile.__name__,
     add_vnics_to_vm.__name__,
-)
-@pytest.mark.skipif(
-    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
 )
 class TestSriov05(NetworkTest):
     """
     Try to edit regular vNIC profile on VM to have passthrough property
     Try to edit vNIC profile with passthrough property to become regular vNIC
     """
-    __test__ = True
 
     # General
     vnic_profile = sriov_conf.GENERAL_TEST_VNICS[5][0]
@@ -397,6 +377,18 @@ class TestSriov05(NetworkTest):
             }
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_05_GENERAL_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-10630")
     def test_01_update_vnic_with_passthrough(self):

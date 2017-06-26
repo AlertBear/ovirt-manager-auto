@@ -11,14 +11,14 @@ import socket
 from xml.etree import ElementTree
 
 from art.rhevm_api.tests_lib.high_level import (
-    vms as hl_vms,
-    networks as hl_networks
+    networks as hl_networks,
+    vms as hl_vms
 )
 import config as sriov_conf
 import rhevmtests.networking.config as conf
 from art.rhevm_api.tests_lib.low_level import (
-    hosts as ll_hosts,
-    events as ll_events
+    events as ll_events,
+    hosts as ll_hosts
 )
 from utilities import jobs
 

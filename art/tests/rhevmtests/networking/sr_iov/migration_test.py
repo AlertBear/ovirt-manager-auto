@@ -9,10 +9,7 @@ from time import sleep
 
 import pytest
 
-from art.rhevm_api.tests_lib.high_level import (
-    networks as hl_networks,
-    vms as hl_vms
-)
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
     vms as ll_vms
@@ -20,18 +17,28 @@ from art.rhevm_api.tests_lib.low_level import (
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
-)
+import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from fixtures import (
-    SRIOV, init_fixture, reset_host_sriov_params, set_num_of_vfs,
-    modify_ifcfg_nm_controlled
+from fixtures import (  # noqa: F401
+    modify_ifcfg_nm_controlled,
+    reset_host_sriov_params,
+    update_vnic_profiles,
+    add_vnics_to_vm,
+    set_num_of_vfs,
+    init
 )
 from rhevmtests.fixtures import start_vm
-from rhevmtests.networking.fixtures import store_vms_params
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    create_and_attach_networks,
+    store_vms_params,
+    remove_all_networks
+)
+
+pytestmark = pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT,
+    reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -39,22 +46,19 @@ def prepare_setup_migration(request):
     """
     Prepare networks for migration cases
     """
-    sriov_migration = SRIOV()
     vm = sriov_conf.SRIOV_MIGRATION_VM
     mgmt_net = conf.MGMT_BRIDGE
     vnic = conf.VM_NIC_0
-    sriov_net_1 = sriov_conf.MIGRATION_NETS[1][0]
-    sriov_vnic_1 = sriov_conf.MIGRATION_TEST_VNICS[1][0]
     results = list()
 
-    def fin4():
+    def fin3():
         """
         Check if one of the finalizers failed.
         """
         global_helper.raise_if_false_in_list(results=results)
-    request.addfinalizer(fin4)
+    request.addfinalizer(fin3)
 
-    def fin3():
+    def fin2():
         """
         Enable network filter on ovirtmgmt vNIC profile
         """
@@ -67,23 +71,8 @@ def prepare_setup_migration(request):
                 ll_networks.update_vnic_profile(
                     name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE,
                     network_filter=conf.VDSM_NO_MAC_SPOOFING,
-                    data_center=sriov_migration.dc_0
+                    data_center=conf.DC_0
                 ), "fin3: ll_networks.update_vnic_profile"
-            )
-        )
-    request.addfinalizer(fin3)
-
-    def fin2():
-        """
-        Remove networks from setup
-        """
-        testflow.teardown("Remove networks from setup")
-        results.append(
-            (
-                hl_networks.remove_net_from_setup(
-                    host=sriov_migration.host_0_name, all_net=True,
-                    data_center=sriov_migration.dc_0
-                ), "fin2: hl_networks.remove_net_from_setup"
             )
         )
     request.addfinalizer(fin2)
@@ -101,57 +90,35 @@ def prepare_setup_migration(request):
 
     assert ll_networks.update_vnic_profile(
         name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE, network_filter="None",
-        data_center=sriov_migration.dc_0
+        data_center=conf.DC_0
     )
 
-    testflow.setup(
-        "Create networks %s on datacenter %s and cluster %s",
-        sriov_conf.MIGRATION_DICT, sriov_migration.dc_0,
-        sriov_migration.cluster_0
-    )
-    network_helper.prepare_networks_on_setup(
-        networks_dict=sriov_conf.MIGRATION_DICT, dc=sriov_migration.dc_0,
-        cluster=sriov_migration.cluster_0
-    )
     testflow.step(
         "Disable network filter on vNIC profile %s", conf.MGMT_BRIDGE
     )
     assert ll_networks.update_vnic_profile(
         name=mgmt_net, network=mgmt_net, network_filter="None",
-        data_center=sriov_migration.dc_0
+        data_center=conf.DC_0
 
     )
     testflow.setup("create VM %s", vm)
     ll_vms.createVm(
         positive=True, vmName=vm, template=conf.TEMPLATE_NAME[0],
-        cluster=sriov_migration.cluster_0,
+        cluster=conf.CL_0,
     )
     testflow.setup("Get vNIC %s MAC address", vnic)
     sriov_conf.MIGRATION_NIC_1_MAC = ll_vms.get_vm_nic_mac_address(
         vm=vm, nic=vnic
     )
     assert sriov_conf.MIGRATION_NIC_1_MAC
-    testflow.setup(
-        "Add vNIC %s on VM %s with SR-IOV network", sriov_vnic_1, sriov_net_1
-    )
-    testflow.setup("Update vNIC profile %s to have passthrough", sriov_net_1)
-    assert ll_networks.update_vnic_profile(
-        name=sriov_net_1, network=sriov_net_1, pass_through=True,
-        data_center=sriov_migration.dc_0
-    )
-    assert ll_vms.addNic(
-        positive=True, vm=vm, name=sriov_vnic_1, network=sriov_net_1,
-        interface=conf.PASSTHROUGH_INTERFACE, vnic_profile=sriov_net_1,
-    )
 
 
 @attr(tier=2)
-@pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
-)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
+    update_vnic_profiles.__name__,
+    add_vnics_to_vm.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
     start_vm.__name__,
@@ -169,6 +136,7 @@ class TestSriovMigration01(NetworkTest):
     """
 
     # General
+    dc = conf.DC_0
     vm_name = sriov_conf.SRIOV_MIGRATION_VM
     sriov_net_1 = sriov_conf.MIGRATION_NETS[1][0]
     sriov_net_2 = sriov_conf.MIGRATION_NETS[1][1]
@@ -187,6 +155,32 @@ class TestSriovMigration01(NetworkTest):
 
     # store_vms_params
     vms_to_store = [vm_name]
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sriov_conf.CASE_01_MIGRATION_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # update_vnic_profiles
+    vnics_profiles = {
+        sriov_net_1: {
+            "pass_through": True
+        }
+    }
+
+    # add_vnics_to_vm
+    pass_through_vnic = [True]
+    profiles = [sriov_net_1]
+    nets = profiles
+    nics = [sriov_vnic_1]
+    vms = [vm_name]
 
     @polarion("RHEVM-17060")
     def test_01_migrate_without_migratable_enables(self):

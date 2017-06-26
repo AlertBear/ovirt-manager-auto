@@ -5,8 +5,10 @@
 SR_IOV feature config
 """
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.helper as network_helper
-import rhevmtests.networking.config as conf
+from rhevmtests.networking import (
+    helper as network_helper,
+    config as conf
+)
 
 GENERAL_TEST_VNICS = global_helper.generate_object_names(
     num_of_cases=5, num_of_objects=5, prefix="general_sriov_vnic"
@@ -68,28 +70,31 @@ MIGRATION_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="sriov_mig"
 )
 
-IPS = network_helper.create_random_ips(num_of_ips=2, mask=24)
+IPS = network_helper.create_random_ips(mask=24)
 
-GENERAL_DICT = {
-    GENERAL_NETS[4][0]: {
-        "required": "false"
-    },
+CASE_05_GENERAL_NETS = {
     GENERAL_NETS[5][0]: {
         "required": "false"
     }
 }
 
-VM_DICT = {
+CASE_01_VM_NETS = {
     VM_NETS[1][0]: {
         "required": "false"
     },
     VM_NETS[1][1]: {
         "required": "false"
-    },
+    }
+}
+
+CASE_02_VM_NETS = {
     VM_NETS[2][0]: {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0)
-    },
+    }
+}
+
+CASE_03_VM_NETS = {
     VM_NETS[3][0]: {
         "required": "false"
     },
@@ -102,7 +107,10 @@ VM_DICT = {
     },
     VM_NETS[3][3]: {
         "required": "false"
-    },
+    }
+}
+
+CASE_04_VM_NETS = {
     VM_NETS[4][0]: {
         "required": "false",
     },
@@ -114,16 +122,22 @@ VM_DICT = {
     },
     VM_NETS[4][3]: {
         "required": "false",
-    },
-    VM_NETS[5][0]: {
-        "required": "false",
-    },
-    VM_NETS[6][0]: {
-        "required": "false"
-    },
+    }
 }
 
-IMPORT_EXPORT_DICT = {
+CASE_05_VM_NETS = {
+    VM_NETS[5][0]: {
+        "required": "false",
+    }
+}
+
+CASE_06_VM_NETS = {
+    VM_NETS[6][0]: {
+        "required": "false"
+    }
+}
+
+CASE_01_IMPORT_EXPORT_NETS = {
     IMPORT_EXPORT_NETS[1][0]: {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0),
@@ -133,7 +147,7 @@ IMPORT_EXPORT_DICT = {
     },
 }
 
-MIGRATION_DICT = {
+CASE_01_MIGRATION_NETS = {
     MIGRATION_NETS[1][0]: {
         "required": "false"
     },

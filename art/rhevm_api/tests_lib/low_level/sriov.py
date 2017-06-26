@@ -79,7 +79,7 @@ class SriovHostNics(object):
         )
         for nic in self.host_nics:
             nic_name = nic.get_name()
-            if DUMMY_NIC in nic_name:
+            if DUMMY_NIC in nic_name or "dpdk" in nic_name:
                 continue
             try:
                 SriovNicVF(host=self.host, nic=nic_name)
@@ -507,7 +507,7 @@ class SriovNicPF(SriovNic):
             list: Allowed labels IDs
         """
         logger.info("Get all allowed labels for %s", self.nic_name)
-        return [lb.id for lb in self.get_allowed_labels_obj]
+        return [lb.id for lb in self.get_allowed_labels_obj()]
 
     def get_allowed_labels_obj(self):
         """
