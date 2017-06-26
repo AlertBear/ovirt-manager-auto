@@ -8,44 +8,24 @@ Job for new host network API via SetupNetworks
 import pytest
 
 import config as net_api_conf
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    networks as hl_networks
-)
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from rhevmtests.networking import config as conf, helper as network_helper
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, clean_host_interfaces, setup_networks_fixture
+from rhevmtests.networking import config as conf
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def sn_prepare_setup(request):
-    """
-    Prepare setup for setup networks tests
-    """
-    network_api = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[network_api.host_0_name], all_net=True,
-            data_center=network_api.dc_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=net_api_conf.SN_DICT, dc=network_api.dc_0,
-        cluster=network_api.cluster_0
-    )
 
 
 @attr(tier=2)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetworkApiSetupNetworks01(NetworkTest):
     """
     1) Attach multiple VLANs to host NIC.
@@ -60,6 +40,19 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
     on_nic = [net_1, net_2, net_3]
     on_bond = [net_4, net_5, net_6]
     bond_1 = "bond01"
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": net_api_conf.SN_NET_CASE_1
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {
@@ -107,7 +100,10 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(clean_host_interfaces.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    clean_host_interfaces.__name__
+)
 class TestHostNetworkApiSetupNetworks02(NetworkTest):
     """
     1. Create BOND
@@ -130,6 +126,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
     # test_07_update_bond_with_ip params
     bond_1 = "bond021"
     dummy_1 = [net_api_conf.DUMMYS[2]]
+    dc = conf.DC_0
 
     # test_07_update_bond_with_ip params
     ip_netmask_net_1 = net_api_conf.IPS.pop(0)
@@ -159,6 +156,18 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
 
     # test_12_update_bond_custom_mode params
     update_custom_mode = "active-backup arp_ip_target=192.168.0.2"
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": net_api_conf.SN_NET_CASE_2
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
@@ -366,7 +375,10 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetworkApiSetupNetworks03(NetworkTest):
     """
     1) Attach VLAN network and VM network to same host NIC
@@ -379,6 +391,19 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
     on_nic = [net_1, net_2]
     on_bond = [net_3, net_4]
     bond_1 = "bond03"
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": net_api_conf.SN_NET_CASE_3
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {
@@ -427,7 +452,10 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetworkApiSetupNetworks04(NetworkTest):
     """
     1) Attach network with static ipv4 and static ipv6 to host NIC.
@@ -448,6 +476,19 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
     ip_v6_4 = net_api_conf.IPV6_IPS.pop(0)
     ip_v4_4 = net_api_conf.IPS.pop(0)
     bond_1 = "bond041"
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": net_api_conf.SN_NET_CASE_4
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {
@@ -503,7 +544,10 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetworkApiSetupNetworks05(NetworkTest):
     """
     1) Detach the non-vm network and verify that the static ip was removed
@@ -512,6 +556,19 @@ class TestHostNetworkApiSetupNetworks05(NetworkTest):
     non_vm_net = net_api_conf.SN_NETS[5][0]
     non_vm_ip = net_api_conf.IPS.pop(0)
     vlan_net = net_api_conf.SN_NETS[5][1]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": net_api_conf.SN_NET_CASE_5
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture params
     net_api_conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = non_vm_ip

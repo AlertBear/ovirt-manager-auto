@@ -18,16 +18,19 @@ import rhevmtests.networking.config as conf
 import rhevmtests.networking.network_custom_properties.config as cust_prop_conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from fixtures import create_networks, remove_network
+from fixtures import remove_network
 
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
 )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
 )
 class TestHostNetworkApi01(NetworkTest):
@@ -45,15 +48,19 @@ class TestHostNetworkApi01(NetworkTest):
     vlan_type = "VLAN network"
     non_vm_type = "Non-VM network"
     non_vm_vlan_type = "Non-VM VLAN network"
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_01_DICT,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # HostNic
     net_1 = net_api_conf.NETS[1][0]
@@ -121,7 +128,7 @@ class TestHostNetworkApi01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
 )
 class TestHostNetworkApi02(NetworkTest):
@@ -143,15 +150,19 @@ class TestHostNetworkApi02(NetworkTest):
     vlan_type = "VLAN network"
     non_vm_type = "Non-VM network"
     non_vm_vlan_type = "Non-VM VLAN network"
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_02_DICT,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # HostNic
     net_1 = net_api_conf.NETS[2][0]
@@ -344,7 +355,7 @@ class TestHostNetworkApi02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     clean_host_interfaces.__name__
 )
@@ -356,15 +367,19 @@ class TestHostNetworkApi03(NetworkTest):
     """
     # General
     bond_1 = "bond01"
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_03_DICT,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # HostNic
     net_1 = net_api_conf.NETS[3][0]
@@ -419,7 +434,7 @@ class TestHostNetworkApi03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     clean_host_interfaces.__name__
 )
@@ -432,15 +447,19 @@ class TestHostNetworkApi04(NetworkTest):
     """
     # General
     net_4 = net_api_conf.NETS[4][3]
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_04_DICT,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture fixture
     net_1 = net_api_conf.NETS[4][0]
@@ -521,7 +540,7 @@ class TestHostNetworkApi04(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     clean_host_interfaces.__name__
 )
@@ -535,15 +554,19 @@ class TestHostNetworkApi05(NetworkTest):
     4) Delete 2 networks from the BOND.
     5) Attach network with custom properties to BOND.
     """
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_05_DICT,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # test_attach_network_on_bond_nic params
     # HostNic
@@ -704,7 +727,7 @@ class TestHostNetworkApi05(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     remove_network.__name__,
     clean_host_interfaces.__name__
@@ -716,15 +739,19 @@ class TestHostNetworkApiHost06(NetworkTest):
     1) Remove the un-managed network from NIC
     2) Remove the un-managed network from BOND
     """
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_06_DICT,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # test_remove_un_managed_network params
     net_1 = net_api_conf.NETS[6][0]
@@ -803,7 +830,7 @@ class TestHostNetworkApiHost06(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
 )
 class TestHostNetworkApi07(NetworkTest):
@@ -813,14 +840,19 @@ class TestHostNetworkApi07(NetworkTest):
     1) Attach VM network to host NIC that has VLAN network on it
     2) Attach VLAN network to host NIC that has VM network on it
     """
-    # create_networks params
-    networks = {
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_07_DICT,
             "datacenter": conf.DC_0,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # test_attach_network_to_nic_mixed params
     net_vlan_host = net_api_conf.NETS[7][8]

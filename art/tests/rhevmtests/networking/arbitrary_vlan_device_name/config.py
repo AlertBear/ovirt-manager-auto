@@ -17,7 +17,7 @@ VLAN_NAMES = global_helper.generate_object_names(
 
 VLAN_IDS_LIST = [conf.VLAN_IDS.pop(i) for i in range(15)]
 
-ARBITRARY_NET_DICT = {
+CASE_1_NETS = {
     ARBITRARY_NETS[1][0]: {
         "vlan_id": VLAN_IDS_LIST[11],
         "required": "false",

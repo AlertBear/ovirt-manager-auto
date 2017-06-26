@@ -12,18 +12,21 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import config as net_api_conf
 import helper
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    update_host_to_another_cluster, manage_ip_and_refresh_capabilities,
-    create_networks
+    update_host_to_another_cluster, manage_ip_and_refresh_capabilities
 )
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, NetworkFixtures,
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
 )
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -31,8 +34,7 @@ def sync_prepare_setup(request):
     """
     Prepare setup for sync tests
     """
-    network_api = NetworkFixtures()
-    host = network_api.host_0_name
+    host = conf.HOST_0_NAME
     datacentr = net_api_conf.SYNC_DC
     cluster = net_api_conf.SYNC_CL
     result = list()
@@ -52,7 +54,7 @@ def sync_prepare_setup(request):
             (
                 ll_hosts.activate_host(
                     positive=True, host=host,
-                    host_resource=network_api.vds_0_host
+                    host_resource=conf.VDS_0_HOST
                 ),
                 "fin2: ll_hosts.activate_host"
             )
@@ -81,13 +83,13 @@ def sync_prepare_setup(request):
         cluster=cluster, cpu=conf.CPU_NAME
     )
     assert ll_hosts.deactivate_host(
-        positive=True, host=host, host_resource=network_api.vds_0_host
+        positive=True, host=host, host_resource=conf.VDS_0_HOST
     )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     update_host_to_another_cluster.__name__
 )
@@ -109,20 +111,24 @@ class TestHostNetworkApiSync01(NetworkTest):
     share = net_api_conf.AVERAGE_SHARE_STR
     limit = net_api_conf.AVERAGE_LIMIT_STR
     real = net_api_conf.AVERAGE_REAL_STR
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
-            "networks": net_api_conf.SYNC_DICT_1_CASE_1,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
+            "networks": net_api_conf.SYNC_DICT_1_CASE_1,
         },
         "2": {
-            "networks": net_api_conf.SYNC_DICT_2_CASE_1,
             "datacenter": net_api_conf.SYNC_DC,
-            "cluster": net_api_conf.SYNC_CL
-            }
+            "cluster": net_api_conf.SYNC_CL,
+            "networks": net_api_conf.SYNC_DICT_2_CASE_1,
         }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc, net_api_conf.SYNC_DC]
 
     # NIC
     # Sync change VLAN on NIC
@@ -410,7 +416,7 @@ class TestHostNetworkApiSync01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     manage_ip_and_refresh_capabilities.__name__,
 )
@@ -430,15 +436,19 @@ class TestHostNetworkApiSync02(NetworkTest):
     proto = net_api_conf.BOOTPROTO_STR
     mask = net_api_conf.NETMASK_STR
     ip = net_api_conf.IPADDR_STR
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
-            "networks": net_api_conf.IP_DICT_CASE_2,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
+            "networks": net_api_conf.IP_DICT_CASE_2,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # NIC
     # Sync IP to IP NIC
@@ -716,7 +726,7 @@ class TestHostNetworkApiSync02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     update_host_to_another_cluster.__name__
 )
@@ -733,20 +743,24 @@ class TestHostNetworkApiSync03(NetworkTest):
     share = net_api_conf.AVERAGE_SHARE_STR
     limit = net_api_conf.AVERAGE_LIMIT_STR
     real = net_api_conf.AVERAGE_REAL_STR
+    dc = conf.DC_0
 
-    # create_networks params
-    networks = {
+    # create_and_attach_network params
+    create_networks = {
         "1": {
-            "networks": net_api_conf.SYNC_DICT_1_CASE_3,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
+            "networks": net_api_conf.SYNC_DICT_1_CASE_3,
         },
         "2": {
-            "networks": net_api_conf.SYNC_DICT_2_CASE_3,
             "datacenter": net_api_conf.SYNC_DC,
-            "cluster": net_api_conf.SYNC_CL
+            "cluster": net_api_conf.SYNC_CL,
+            "networks": net_api_conf.SYNC_DICT_2_CASE_3,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc, net_api_conf.SYNC_DC]
 
     # NIC
     # Sync QoS to QoS NIC

@@ -5,11 +5,11 @@
 Fixtures for acquire connections created by NetworkManager
 """
 
-from art.unittest_lib import testflow
 import pytest
 
 import helper as nm_helper
-from rhevmtests.networking import fixtures, helper
+from rhevmtests.networking import config as conf, helper
+from art.unittest_lib import testflow
 
 
 @pytest.fixture()
@@ -17,14 +17,11 @@ def nmcli_create_networks(request):
     """
     Create networks on host via nmcli (NetworkManager)
     """
-    nm_networks = fixtures.NetworkFixtures()
     nic_type = request.getfixturevalue("type_")
     network = request.getfixturevalue("connection")
     vlan_id = request.getfixturevalue("vlan_id")
     host_nics = (
-        [nm_networks.host_0_nics[1]] if
-        nic_type == "nic" else
-        nm_networks.host_0_nics[1:3]
+        [conf.HOST_0_NICS[1]] if nic_type == "nic" else conf.HOST_0_NICS[1:3]
     )
 
     def fin():
@@ -32,7 +29,7 @@ def nmcli_create_networks(request):
         Clean all NetworkManager networks from the host
         """
         assert helper.network_manager_remove_all_connections(
-            host=nm_networks.vds_0_host
+            host=conf.VDS_0_HOST
         )
     request.addfinalizer(fin)
 

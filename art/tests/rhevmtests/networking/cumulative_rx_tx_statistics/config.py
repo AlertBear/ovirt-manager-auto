@@ -37,16 +37,18 @@ BASIC_IP_DICT_NETMASK = {
     }
 }
 
-NET_DICT = {
+CASE_1_NETS = {
     NETWORK_0: {
         "required": "false",
     },
+}
+CASE_2_NETS = {
     NETWORK_1: {
         "required": "false"
     },
     NETWORK_2: {
         "required": "false",
-        "vlan_id": 2
+        "vlan_id": conf.VLANS.pop(0)
     }
 }
 

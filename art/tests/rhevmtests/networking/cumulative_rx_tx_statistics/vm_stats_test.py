@@ -14,16 +14,20 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
-    update_vms_nics_stats, vm_prepare_setup, host_vm_prepare_setup
+    update_vms_nics_stats, vm_prepare_setup
 )
-from rhevmtests.networking.fixtures import setup_networks_fixture
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
+)
 
 
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    host_vm_prepare_setup.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     vm_prepare_setup.__name__,
     update_vms_nics_stats.__name__
@@ -39,6 +43,19 @@ class TestCumulativeNetworkUsageVmStatisticsCase01(NetworkTest):
     nic_name = rx_tx_conf.VM_NIC_NAME
     net_1 = rx_tx_conf.NETWORK_1
     net_2 = rx_tx_conf.NETWORK_2
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": rx_tx_conf.CASE_2_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture
     hosts_nets_nic_dict = {

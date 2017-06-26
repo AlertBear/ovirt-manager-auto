@@ -8,48 +8,21 @@ Acquire connections created by NetworkManager
 import pytest
 
 import config as nm_conf
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    networks as hl_networks
-)
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, attr
 from fixtures import nmcli_create_networks
-from rhevmtests.networking import (
-    config as conf,
-    fixtures,
-    helper as network_helper
+import rhevmtests.networking.config as conf
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces_fixture_function,
+    remove_all_networks,
+    create_and_attach_networks,
 )
-from rhevmtests.networking.fixtures import (
-    clean_host_interfaces_fixture_function
-)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def nm_networks_prepare_setup(request):
-    """
-    Prepare networks setup for tests
-    """
-    nm_networks = fixtures.NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[nm_networks.host_0_name], all_net=True,
-            data_center=nm_networks.dc_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=nm_conf.NETS_DICT, dc=nm_networks.dc_0,
-        cluster=nm_networks.cluster_0
-    )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces_fixture_function.__name__,
     nmcli_create_networks.__name__,
 )
@@ -59,12 +32,27 @@ class TestAcquireNmConnections(NetworkTest):
     2. Create BOND connection via NetworkManager and use it via VDSM
     3. Create VLAN connection via NetworkManager and use it via VDSM
     """
-    # params = [
-    #   NM network, host NIC, RHV network, VLAN id, clean host interface
-    # ]
+
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": nm_conf.CASE_1_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # clean_host_interfaces_fixture_function params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
+    # params = [
+    #   NM network, host NIC, RHV network, VLAN id, clean host interface
+    # ]
 
     # NetworkManager flat network params
     flat_connection = "flat_nm_net"

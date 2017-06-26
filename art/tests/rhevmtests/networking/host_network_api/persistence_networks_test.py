@@ -6,47 +6,24 @@ Check persistence networks after host reboot
 """
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import config as host_network_api_conf
 import rhevmtests.networking.host_network_qos.helper as qos_helper
 import rhevmtests.networking.multi_host.helper as multi_host_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import reboot_host
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
+import rhevmtests.networking.config as conf
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
 )
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, setup_networks_fixture
-)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def sn_prepare_setup(request):
-    """
-    Prepare setup for setup networks tests
-    """
-    network_api = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=conf.HOSTS[2], all_net=True,
-            data_center=conf.DC_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=host_network_api_conf.PERSIST_NETS_DICT,
-        dc=network_api.dc_0, cluster=network_api.cluster_0
-    )
 
 
 @attr(tier=3)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     reboot_host.__name__
 )
@@ -55,16 +32,30 @@ class TestPersistenceSetupNetworks01(NetworkTest):
     Check the VLAN, MTU and QoS are persistence on host NIC
     Check the VLAN, MTU and QoS are persistence on host BOND
     """
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": host_network_api_conf.PERSIST_NETS_CASE_1
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     # test_01_persistence_network_on_host_nic params
     nic_net = host_network_api_conf.PERSIST_NETS[1][0]
     nic_vlan = (
-        host_network_api_conf.PERSIST_NETS_DICT.get(nic_net).get("vlan_id")
+        host_network_api_conf.PERSIST_NETS_CASE_1.get(nic_net).get("vlan_id")
     )
 
     # test_02_persistence_network_on_host_bond params
     bond_net = host_network_api_conf.PERSIST_NETS[1][1]
     bond_vlan = (
-        host_network_api_conf.PERSIST_NETS_DICT.get(bond_net).get("vlan_id")
+        host_network_api_conf.PERSIST_NETS_CASE_1.get(bond_net).get("vlan_id")
     )
     bond = "bond10"
 

@@ -7,48 +7,17 @@ Fixtures for datacenter networks
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as dc_conf
-from art.unittest_lib import testflow
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import NetworkFixtures
-
-
-@pytest.fixture(scope="module")
-def datacenter_networks_prepare_setup(request):
-    """
-    Prepare setup
-    """
-    NetworkFixtures()
-    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
-    result_list = list()
-
-    def fin():
-        """
-        Remove basic setup
-        """
-        for dc_name in dc_list:
-            testflow.teardown("Remove datacenter %s", dc_name)
-            result_list.append(
-                hl_networks.remove_basic_setup(datacenter=dc_name)
-            )
-        assert all(result_list)
-    request.addfinalizer(fin)
-
-    for dc in dc_list:
-        testflow.teardown("Add datacenter %s", dc)
-        assert hl_networks.create_basic_setup(
-            datacenter=dc, version=conf.COMP_VERSION
-        )
+from art.unittest_lib import testflow
 
 
 @pytest.fixture(scope="class")
-def create_network_in_datacenter(request, datacenter_networks_prepare_setup):
+def create_network_in_datacenter(request):
     """
     create network in datacenter
     """
-    NetworkFixtures()
     net_name = request.node.cls.net_name
     dc_1 = dc_conf.DATACENTER_NETWORKS_DC_NAMES[1]
 
@@ -68,11 +37,10 @@ def create_network_in_datacenter(request, datacenter_networks_prepare_setup):
 
 
 @pytest.fixture(scope="class")
-def create_networks_in_dc(request, datacenter_networks_prepare_setup):
+def create_networks_in_dc(request):
     """
     Create networks in datacenter.
     """
-    datacenter_networks = NetworkFixtures()
     nets_num_list = request.node.cls.nets_num_list
     dc_list = request.node.cls.dc_list
     prefix_list = request.node.cls.prefix_list
@@ -84,7 +52,7 @@ def create_networks_in_dc(request, datacenter_networks_prepare_setup):
         for dc_name in dc_list:
             testflow.teardown("Remove network from setup")
             assert ll_networks.delete_networks_in_datacenter(
-                datacenter=dc_name, mgmt_net=datacenter_networks.mgmt_bridge
+                datacenter=dc_name, mgmt_net=conf.MGMT_BRIDGE
             )
     request.addfinalizer(fin)
 

@@ -389,7 +389,8 @@ IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip"]
 IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip"]
 IPV6_IP_DICT = conf.BASIC_IPV6_DICT["ip"]
 
-SN_DICT = {
+# test_multiple_vlans_networks_on_nic params
+SN_NET_CASE_1 = {
     # test_multiple_vlans_networks_on_nic params
     SN_NETS[1][0]: {
         "vlan_id": conf.VLAN_IDS.pop(0),
@@ -415,9 +416,13 @@ SN_DICT = {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0),
     },
+}
+SN_NET_CASE_2 = {
     SN_NETS[2][0]: {
         "required": "false"
     },
+}
+SN_NET_CASE_3 = {
     SN_NETS[3][0]: {
         "required": "false"
     },
@@ -443,6 +448,9 @@ SN_DICT = {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0),
     },
+}
+
+SN_NET_CASE_4 = {
     SN_NETS[4][0]: {
         "required": "false"
     },
@@ -457,6 +465,9 @@ SN_DICT = {
     SN_NETS[4][3]: {
         "required": "false"
     },
+}
+
+SN_NET_CASE_5 = {
     SN_NETS[5][0]: {
         "required": "false",
         "usages": ""
@@ -466,7 +477,6 @@ SN_DICT = {
         "vlan_id": conf.VLAN_IDS.pop(0)
     },
 }
-
 
 SYNC_DICT_1_CASE_1 = {
     # On NIC
@@ -851,7 +861,7 @@ IPV6_NETS_CLASS_2 = {
     },
 }
 
-PERSIST_NETS_DICT = {
+PERSIST_NETS_CASE_1 = {
     PERSIST_NETS[1][0]: {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0),

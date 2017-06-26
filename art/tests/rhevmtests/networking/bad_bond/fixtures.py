@@ -7,12 +7,10 @@ Fixtures for Bad Bond feature
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts, events
 import helper
 import rhevmtests.networking.config as conf
 from art.core_api import apis_utils
-from art.rhevm_api.tests_lib.low_level import events
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture()
@@ -21,7 +19,6 @@ def get_linux_ad_partner_mac_value(request):
     Get Linux ad_partner_mac MAC value of bond until get succeed, or timeout
         exceeded
     """
-    NetworkFixtures()
 
     bond_name = request.getfixturevalue("bond_name")
     host_index = request.getfixturevalue("host_index")
@@ -38,7 +35,6 @@ def refresh_hosts_capabilities(request):
     """
     Refresh host(s) VDS capabilities
     """
-    NetworkFixtures()
 
     hosts_indexes = getattr(request.cls, "hosts_to_refresh", list())
 

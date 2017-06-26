@@ -14,7 +14,7 @@ Host (VDS_HOST0), networks (vm & non-vm), BONDS, VLANS, Bridge
 import config as vlan_name_conf
 
 import pytest
-from fixtures import create_networks_on_engine, create_vlans_on_host
+from fixtures import create_vlans_on_host
 from rhevmtests import helpers
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -22,12 +22,15 @@ import rhevmtests.networking.config as network_conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from rhevmtests.networking.fixtures import (  # noqa: F401
-    setup_networks_fixture, clean_host_interfaces
+     clean_host_interfaces,
+     setup_networks_fixture,
+     remove_all_networks,
+     create_and_attach_networks,
 )
 
 
 @pytest.mark.usefixtures(
-    create_networks_on_engine.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     create_vlans_on_host.__name__
 )
@@ -37,6 +40,21 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
     2) Create VLAN(s) entity with name on the host.
     3) Check that the VLAN(s) networks exists on host via engine.
     """
+
+    dc = network_conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": network_conf.CL_0,
+            "networks": vlan_name_conf.CASE_1_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     # create_networks_on_engine
     net_1 = vlan_name_conf.ARBITRARY_NETS[1][0]
     net_2 = vlan_name_conf.ARBITRARY_NETS[1][1]

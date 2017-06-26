@@ -22,29 +22,6 @@ from art.unittest_lib import testflow
 from rhevmtests.networking.fixtures import NetworkFixtures
 
 
-@pytest.fixture(scope="module")
-def host_vm_prepare_setup(request):
-    """
-    Create networks on setup
-    """
-    rx_tx_stats = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[rx_tx_stats.host_0_name], all_net=True,
-            data_center=rx_tx_stats.dc_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=rx_tx_conf.NET_DICT, dc=rx_tx_stats.dc_0,
-        cluster=rx_tx_stats.cluster_0
-    )
-
-
 @pytest.fixture(scope="class")
 def send_icmp(request):
     """

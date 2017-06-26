@@ -9,8 +9,6 @@ In version 3.4 there is new network collection under /api/datacenter.
 This test will create/delete/update and list networks under /api/datacenter.
 """
 
-import logging
-
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
@@ -19,20 +17,35 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import create_networks_in_dc, create_network_in_datacenter
-
-logger = logging.getLogger("DC_Networks_Cases")
+from rhevmtests.fixtures import create_datacenters
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(create_networks_in_dc.__name__)
+@pytest.mark.usefixtures(
+    create_datacenters.__name__,
+    create_networks_in_dc.__name__
+)
 class TestDataCenterNetworksCase1(NetworkTest):
     """
     List all networks under datacenter.
     """
-    __test__ = True
+
+    # create_networks_in_dc params
     nets_num_list = [10, 5]
     dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
     prefix_list = ["C1_dcNetwork", "C1_dcNetwork"]
+
+    # create_datacenters params
+    datacenters_dict = {
+        dc_list[0]: {
+            "name": dc_list[0],
+            "version": conf.COMP_VERSION,
+        },
+        dc_list[1]: {
+            "name": dc_list[1],
+            "version": conf.COMP_VERSION,
+        },
+    }
 
     @polarion("RHEVM3-4132")
     def test_get_networks_list(self):
@@ -56,14 +69,30 @@ class TestDataCenterNetworksCase1(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(create_network_in_datacenter.__name__)
+@pytest.mark.usefixtures(
+    create_datacenters.__name__,
+    create_network_in_datacenter.__name__
+)
 class TestDataCenterNetworksCase2(NetworkTest):
     """
     Create network under datacenter.
     """
-    __test__ = True
-    dc_1 = dc_conf.DATACENTER_NETWORKS_DC_NAMES[1]
+    # create_network_in_datacenter params
+    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
+    dc_1 = dc_list[1]
     net_name = dc_conf.NETS[2]
+
+    # create_datacenters params
+    datacenters_dict = {
+        dc_list[0]: {
+            "name": dc_list[0],
+            "version": conf.COMP_VERSION,
+        },
+        dc_list[1]: {
+            "name": dc_list[1],
+            "version": conf.COMP_VERSION,
+        },
+    }
 
     @polarion("RHEVM3-4135")
     def test_01_verify_network_parameters(self):
@@ -111,15 +140,31 @@ class TestDataCenterNetworksCase2(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(create_networks_in_dc.__name__)
+@pytest.mark.usefixtures(
+    create_datacenters.__name__,
+    create_networks_in_dc.__name__
+)
 class TestDataCenterNetworksCase3(NetworkTest):
     """
     Update network under datacenter.
     """
-    __test__ = True
+    # create_networks_in_dc
     nets_num_list = [5]
-    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES[:1]
+    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
+    dc_1 = dc_list[1]
     prefix_list = ["C3_dcNetwork"]
+
+    # create_datacenters params
+    datacenters_dict = {
+        dc_list[0]: {
+            "name": dc_list[0],
+            "version": conf.COMP_VERSION,
+        },
+        dc_list[1]: {
+            "name": dc_list[1],
+            "version": conf.COMP_VERSION,
+        },
+    }
 
     @polarion("RHEVM3-4133")
     def test_update_networks_parameters(self):

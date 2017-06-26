@@ -34,7 +34,8 @@ SLAVE_CMD = (
 NETS = global_helper.generate_object_names(
     num_of_cases=1, num_of_objects=5, prefix="nm_network"
 )
-NETS_DICT = {
+
+CASE_1_NETS = {
     NETS[1][0]: {
         "required": "false"
     },

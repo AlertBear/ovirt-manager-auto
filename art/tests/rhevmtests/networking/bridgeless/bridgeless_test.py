@@ -12,49 +12,40 @@ import pytest
 
 import config as bridgeless_conf
 import rhevmtests.networking.config as conf
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    networks as hl_networks
-)
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr
-from rhevmtests.networking import helper as network_helper
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, setup_networks_fixture
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
 )
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
-@pytest.fixture(scope="module", autouse=True)
-def prepare_setup(request):
-    """
-    Prepare setup
-    """
-    bridgeless = NetworkFixtures()
-
-    def fin():
-        """
-        Finalizer for remove networks
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[bridgeless.host_0_name], all_net=True,
-            data_center=bridgeless.dc_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=bridgeless_conf.BRIDGELESS_NET_DICT, dc=bridgeless.dc_0,
-        cluster=bridgeless.cluster_0
-    )
-
-
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestBridgelessCase(NetworkTest):
     """
     Bridgeless test on host NIC and bond.
     """
     bond_1 = bridgeless_conf.BOND_1
     bond_2 = bridgeless_conf.BOND_2
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": bridgeless_conf.CASE_1_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     hosts_nets_nic_dict = {
         0: {

@@ -12,15 +12,18 @@ import config as net_api_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from fixtures import create_networks
 from art.unittest_lib import attr, NetworkTest
-from rhevmtests.networking.fixtures import setup_networks_fixture
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
+)
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
 )
 class TestHostNetworkApiIpV601(NetworkTest):
@@ -33,14 +36,19 @@ class TestHostNetworkApiIpV601(NetworkTest):
     5. Non-VM
     6. Non-VM VLAN
     """
-    # create_networks params
-    networks = {
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.IPV6_NETS_CLASS_1,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # STATIC
     # Bridge static
@@ -233,7 +241,7 @@ class TestHostNetworkApiIpV601(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_networks.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
 )
 class TestHostNetworkApiIpV602(NetworkTest):
@@ -246,14 +254,19 @@ class TestHostNetworkApiIpV602(NetworkTest):
     4. Update from static IPv6 to autoconf
     5. Update from dhcpv6 to static IPv6
     """
-    # create_networks params
-    networks = {
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
         "1": {
             "networks": net_api_conf.IPV6_NETS_CLASS_2,
-            "datacenter": conf.DC_0,
+            "datacenter": dc,
             "cluster": conf.CL_0,
         }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     # net_1 IP dict
     net_1 = net_api_conf.IPV6_NETS[2][0]
