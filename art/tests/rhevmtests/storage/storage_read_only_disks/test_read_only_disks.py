@@ -195,7 +195,7 @@ class TestCase4907(BaseTestCase):
 
     @polarion("RHEVM3-4907")
     @tier2
-    @bz({'957788': {}})
+    @bz({'957788': {}, '1465488': {}})
     def test_attach_RO_direct_LUN_disk(self):
         """
         - VM with OS
@@ -217,17 +217,19 @@ class TestCase4907(BaseTestCase):
                 'lun_address': config.DIRECT_LUN_ADDRESSES[i],
                 'lun_target': config.DIRECT_LUN_TARGETS[i],
                 'lun_id': config.DIRECT_LUNS[i],
-                "type_": self.storage}
+                'type_': self.storage,
+            }
 
             logger.info("Creating disk %s", disk_alias)
             assert ll_disks.addDisk(True, **direct_lun_args)
-            self.disk_names[self.storage].append(disk_alias)
 
-            logger.info("Attaching disk %s as read-only disk to VM %s",
-                        disk_alias, self.vm_name)
+            logger.info(
+                "Attaching disk %s as read-only disk to VM %s",
+                disk_alias, self.vm_name
+            )
             status = ll_disks.attachDisk(
                 True, disk_alias, self.vm_name, active=True,
-                read_only=True
+                read_only=True, interface=interface
             )
             assert status, "Failed to attach direct lun as read-only"
             ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
