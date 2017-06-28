@@ -9,9 +9,15 @@ import config as sanity_conf
 
 import pytest
 from fixtures import (
-    add_labels, add_network_to_dc, add_vnic_profile, create_cluster,
-    create_vnics_on_vm, nmcli_create_networks,
-    prepare_setup_for_register_domain, remove_qos, update_vnic_profile
+    add_labels,
+    add_network_to_dc,
+    add_vnic_profile,
+    create_cluster,
+    create_vnics_on_vm,
+    nmcli_create_networks,
+    prepare_setup_for_register_domain,
+    remove_qos,
+    update_vnic_profile
 )
 from rhevmtests.networking.mac_pool_range_per_cluster import (
     config as mac_pool_conf,
@@ -32,8 +38,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.active_bond_slave.helper as active_bond_helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import config as conf, helper as network_helper
 import rhevmtests.networking.multi_host.helper as multi_host_helper
 import rhevmtests.networking.multiple_gateways.config as multiple_gw_conf
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
@@ -43,58 +48,50 @@ import rhevmtests.networking.register_domain.helper as register_helper
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from rhevmtests.fixtures import create_clusters, create_datacenters, start_vm
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, clean_host_interfaces, setup_networks_fixture,
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    create_and_attach_networks,
+    remove_all_networks
 )
 from rhevmtests.networking.register_domain.fixtures import (
     import_vm_from_data_domain
 )
-from rhevmtests.networking.sr_iov.fixtures import (
-    add_vnics_to_vm, init_fixture, reset_host_sriov_params, set_num_of_vfs,
-    update_vnic_profiles
+from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
+    add_vnics_to_vm,
+    reset_host_sriov_params,
+    set_num_of_vfs,
+    update_vnic_profiles,
+    init
 )
 
 
-@pytest.fixture(scope="module", autouse=True)
-def create_networks(request):
-    """
-    Create networks
-    """
-    sanity = NetworkFixtures()
-
-    def fin1():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[sanity.host_0_name], all_net=True,
-            data_center=sanity.dc_0
-        )
-    request.addfinalizer(fin1)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=sanity_conf.SN_DICT, dc=sanity.dc_0,
-        cluster=sanity.cluster_0
-    )
-
-
 @attr(tier=1)
-class TestSanityCaseBase(NetworkTest):
-    """
-    Base class for sanity cases
-    """
-    pass
-
-
-@pytest.mark.usefixtures(add_vnic_profile.__name__)
-class TestSanity01(TestSanityCaseBase):
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    add_vnic_profile.__name__
+)
+class TestSanity01(NetworkTest):
     """
     Create new vNIC profile and make sure all its parameters exist in API
     """
+    # update_vnic_profiles params
     net = sanity_conf.NETS[1][0]
     dc = conf.DC_0
     vnic_profile = sanity_conf.VNIC_PROFILES[1][0]
     description = "sanity_vnic_profile_test"
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_1_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-3970")
     def test_check_attr_vnic_profile(self):
@@ -115,9 +112,13 @@ class TestSanity01(TestSanityCaseBase):
         assert attr_dict.get("name") == self.vnic_profile
 
 
+@attr(tier=1)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(clean_host_interfaces.__name__)
-class TestSanity02(TestSanityCaseBase):
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    clean_host_interfaces.__name__
+)
+class TestSanity02(NetworkTest):
     """
     Create:
     Attach Non-VM + 2 VLAN networks (IP and custom properties) to NIC1
@@ -133,12 +134,28 @@ class TestSanity02(TestSanityCaseBase):
     Remove network from BOND
     Remove BOND
     """
+    # General params
+    dc = conf.DC_0
     net = sanity_conf.NETS[2]
     bond_1 = "bond21"
     bond_2 = "bond22"
     bond_3 = "bond23"
     bond_4 = "bond24"
+
+    # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_2_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-9850")
     def test_01_multiple_actions(self):
@@ -267,18 +284,38 @@ class TestSanity02(TestSanityCaseBase):
         assert hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict)
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
     remove_qos.__name__,
 )
-class TestSanity03(TestSanityCaseBase):
+class TestSanity03(NetworkTest):
     """
     Add new network QOS (named)
     Attach network with QoS to host NIC
     """
-    qos_name = sanity_conf.QOS_NAME[3][0]
+    # General params
+    dc = conf.DC_0
     net = sanity_conf.NETS[3][0]
+
+    # remove_qos params
+    qos_name = sanity_conf.QOS_NAME[3][0]
+
+    # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_3_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-6525")
     def test_add_network_qos(self):
@@ -317,8 +354,12 @@ class TestSanity03(TestSanityCaseBase):
         hl_host_network.setup_networks(host_name=conf.HOST_0_NAME, **sn_dict)
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestSanity04(TestSanityCaseBase):
+@attr(tier=1)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
+class TestSanity04(NetworkTest):
     """
     Test MTU over VM/Non-VM/VLAN and BOND
     """
@@ -326,6 +367,7 @@ class TestSanity04(TestSanityCaseBase):
     mtu_bond = "bond40"
     non_vm_bond_1 = "bond41"
     non_vm_bond_2 = "bond42"
+    dc = conf.DC_0
 
     # MTU cases
     # MTU over VM network params
@@ -370,6 +412,18 @@ class TestSanity04(TestSanityCaseBase):
             },
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_4_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @pytest.mark.parametrize(
         ("network", "nic"),
@@ -418,16 +472,19 @@ class TestSanity04(TestSanityCaseBase):
         )
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     add_labels.__name__
 )
-class TestSanity05(TestSanityCaseBase):
+class TestSanity05(NetworkTest):
     """
     Attach VLAN and VM networks to NIC and BOND via labels
     """
     # General params
     bond = "bond5"
+    dc = conf.DC_0
 
     # Label on host NIC params
     host_nic_nets = sanity_conf.NETS[5][:2]
@@ -454,6 +511,18 @@ class TestSanity05(TestSanityCaseBase):
             },
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_5_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @pytest.mark.parametrize(
         ("networks", "label", "nic"),
@@ -489,15 +558,21 @@ class TestSanity05(TestSanityCaseBase):
             )
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     create_vnics_on_vm.__name__,
     start_vm.__name__
 )
-class TestSanity06(TestSanityCaseBase):
+class TestSanity06(NetworkTest):
     """
     Create permutation for the Plugged/Linked option on VNIC
     """
+    # General params
+    dc = conf.DC_0
+
+    # create_vnics_on_vm params
     vnics = sanity_conf.VNICS[6]
     nets = sanity_conf.NETS[6][:4]
     vm_name = conf.VM_0
@@ -505,9 +580,13 @@ class TestSanity06(TestSanityCaseBase):
     net_2 = nets[1]
     net_3 = nets[2]
     net_4 = nets[3]
+
+    # start_vm params
     start_vms_dict = {
         vm_name: {}
     }
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -528,6 +607,18 @@ class TestSanity06(TestSanityCaseBase):
             },
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_6_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-3829")
     def test_check_combination_plugged_linked_values(self):
@@ -554,8 +645,9 @@ class TestSanity06(TestSanityCaseBase):
             assert not ll_vms.get_vm_nic_plugged(vm=self.vm_name, nic=nic_name)
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(create_cluster.__name__)
-class TestSanity07(TestSanityCaseBase):
+class TestSanity07(NetworkTest):
     """
     1. Create a new cluster and check it was created with updated Default
     MAC pool values
@@ -563,6 +655,7 @@ class TestSanity07(TestSanityCaseBase):
     3. Add new ranges to the Default MAC pool
     4. Remove added ranges from the Default MAC pool
     """
+    # create_cluster params
     ext_cl = mac_pool_conf.EXT_CL_1
 
     @polarion("RHEVM3-14507")
@@ -612,13 +705,15 @@ class TestSanity07(TestSanityCaseBase):
         )
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     create_datacenters.__name__,
     create_clusters.__name__,
     add_network_to_dc.__name__
 )
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
-class TestSanity08(TestSanityCaseBase):
+class TestSanity08(NetworkTest):
     """
     Create new DC and cluster with non default management network
     Prepare networks on new DC
@@ -626,6 +721,7 @@ class TestSanity08(TestSanityCaseBase):
     """
     # General params
     dc = "sanity_extra_dc_0"
+    dc_for_nets = conf.DC_0
 
     # Datacenter with custom management network params
     custom_mgmt_net = "sanity_mgmt_net"
@@ -650,6 +746,18 @@ class TestSanity08(TestSanityCaseBase):
             "version": conf.COMP_VERSION,
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc_for_nets,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_8_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc_for_nets]
 
     @pytest.mark.parametrize(
         ("cluster", "network"),
@@ -680,14 +788,21 @@ class TestSanity08(TestSanityCaseBase):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestSanity09(TestSanityCaseBase):
+@attr(tier=1)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
+class TestSanity09(NetworkTest):
     """
     Attach VM non-VLAN network with MTU 9000 to host NIC
     Change the network MTU
     Change the network to be tagged
     Change the network to be non-VM network
     """
+    # General params
+    dc = conf.DC_0
+
     # test params = [Network, update dict to check, host NIC, update type]
     # Update MTU params
     mtu_net = sanity_conf.NETS[9][0]
@@ -704,6 +819,7 @@ class TestSanity09(TestSanityCaseBase):
     bridge_dict = {"bridge": False}
     bridge_params = [vm_net, bridge_dict, 3]
 
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             mtu_net: {
@@ -720,6 +836,18 @@ class TestSanity09(TestSanityCaseBase):
             },
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_9_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @pytest.mark.parametrize(
         ("network", "update_params", "nic"),
@@ -746,12 +874,18 @@ class TestSanity09(TestSanityCaseBase):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestSanity10(TestSanityCaseBase):
+@attr(tier=1)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
+class TestSanity10(NetworkTest):
     """
     Verify you can configure additional network beside management with gateway
     Verify you can remove network configured with gateway
     """
+    # General params
+    dc = conf.DC_0
     gateway = multiple_gw_conf.GATEWAY
     netmask = conf.NETMASK
     subnet = multiple_gw_conf.SUBNET
@@ -765,6 +899,8 @@ class TestSanity10(TestSanityCaseBase):
             "gateway": gateway
         }
     }
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net: {
@@ -774,6 +910,18 @@ class TestSanity10(TestSanityCaseBase):
             },
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_10_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-3949")
     def test_check_ip_rule(self):
@@ -801,19 +949,25 @@ class TestSanity10(TestSanityCaseBase):
         )
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
     start_vm.__name__
 )
-class TestSanity11(TestSanityCaseBase):
+class TestSanity11(NetworkTest):
     """
     Configure queue on existing network
     """
+    # General params
     vm_name = conf.VM_0
     num_queues = multiple_queue_conf.NUM_QUEUES[0]
+
+    # update_vnic_profile params
     prop_queue = multiple_queue_conf.PROP_QUEUES[0]
     dc = conf.DC_0
     mgmt_bridge = conf.MGMT_BRIDGE
+
+    # start_vm params
     start_vms_dict = {
         vm_name: {}
     }
@@ -829,13 +983,32 @@ class TestSanity11(TestSanityCaseBase):
         )
 
 
-@pytest.mark.usefixtures(clean_host_interfaces.__name__)
-class TestSanity12(TestSanityCaseBase):
+@attr(tier=1)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    clean_host_interfaces.__name__
+)
+class TestSanity12(NetworkTest):
     """
     Attach network with bridge_opts and ethtool_opts to host NIC
     """
+    dc = conf.DC_0
     net = sanity_conf.NETS[12][0]
+
+    # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_12_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-10478")
     def test_network_custom_properties_on_host(self):
@@ -865,14 +1038,18 @@ class TestSanity12(TestSanityCaseBase):
         )
 
 
+@attr(tier=1)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(start_vm.__name__)
-class TestSanity13(TestSanityCaseBase):
+class TestSanity13(NetworkTest):
     """
     Check that Network Filter is enabled by default
     """
+    # General params
     vm_name = conf.VM_0
     mgmt_profile = conf.MGMT_BRIDGE
+
+    # start_vm param
     start_vms_dict = {
         vm_name: {}
     }
@@ -925,14 +1102,34 @@ class TestSanity13(TestSanityCaseBase):
         )
 
 
-@pytest.mark.usefixtures(clean_host_interfaces.__name__)
-class TestSanity14(TestSanityCaseBase):
+@attr(tier=1)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    clean_host_interfaces.__name__
+)
+class TestSanity14(NetworkTest):
     """
     Attach VM network with static IPv6 over bridge:
     """
+    # General params
+    dc = conf.DC_0
     net_1 = sanity_conf.NETS[14][0]
     ip_v6_1 = sanity_conf.IPV6_IPS.pop(0)
+
+    # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_14_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     def test_static_ipv6_network_on_host(self):
         """
@@ -953,8 +1150,9 @@ class TestSanity14(TestSanityCaseBase):
         )
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
-class TestSanity15(TestSanityCaseBase):
+class TestSanity15(NetworkTest):
     """
     1. Create bond with mode 1 - active-backup.
     2. Check that the engine report the correct active slave of the BOND.
@@ -988,28 +1186,48 @@ class TestSanity15(TestSanityCaseBase):
         )
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     prepare_setup_for_register_domain.__name__,
     import_vm_from_data_domain.__name__
 )
-class TestSanity16(TestSanityCaseBase):
+class TestSanity16(NetworkTest):
     """
     Import VM from storage data domain when MAC is not from pool and network
     not is datacenter and reassessing MAC is checked and mapping the network
     in the import process
     """
-    data_domain_name = sanity_conf.EXTRA_SD_NAME
+    # General params
+    dc = conf.DC_0
+    dst_net = sanity_conf.NETS[16][1]
+
+    # prepare_setup_for_register_domain params
     vm = sanity_conf.REGISTER_VM_NAME
     vm_nic = sanity_conf.REGISTER_VM_NIC
     net = sanity_conf.NETS[16][0]
     src_net = net
-    dst_net = sanity_conf.NETS[16][1]
+
+    # import_vm_from_data_domain params
+    data_domain_name = sanity_conf.EXTRA_SD_NAME
     network_mappings = [{
         "source_network_profile_name": src_net,
         "source_network_name": src_net,
         "target_network": dst_net,
         "target_vnic_profile": dst_net
     }]
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_16_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM-16998")
     def test_mac_pool_not_in_mac_range_with_reassign(self):
@@ -1037,8 +1255,9 @@ class TestSanity16(TestSanityCaseBase):
         )
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
-    init_fixture.__name__,
+    create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
     update_vnic_profiles.__name__,
@@ -1046,9 +1265,10 @@ class TestSanity16(TestSanityCaseBase):
     start_vm.__name__,
 )
 @pytest.mark.skipif(
-    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+    conf.NO_FULL_SRIOV_SUPPORT,
+    reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
 )
-class TestSanity17(TestSanityCaseBase):
+class TestSanity17(NetworkTest):
     """
     Test start VM with passthrough vNIC profile.
     """
@@ -1081,6 +1301,18 @@ class TestSanity17(TestSanityCaseBase):
     # start_vm
     vms_to_stop = vms
 
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_17_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     @polarion("RHEVM-19654")
     def test_01_run_vm_with_passthrough_vnic_profile_and_one_vf(self):
         """
@@ -1092,19 +1324,38 @@ class TestSanity17(TestSanityCaseBase):
         assert ll_vms.startVm(positive=True, vm=self.vm)
 
 
+@attr(tier=1)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
     nmcli_create_networks.__name__
 )
-class TestSanity18(TestSanityCaseBase):
+class TestSanity18(NetworkTest):
     """
     Create flat connection via NetworkManager and use it via VDSM
     """
+    # General params
+    dc = conf.DC_0
+
+    # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
     # NetworkManager flat network params
     flat_connection = "flat_nm_net"
     flat_type = "nic"
     flat_rhv_network = sanity_conf.NETS[18][0]
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": sanity_conf.CASE_18_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @bz({"1426225": {}})
     def test_acquire_nm_connetion(self):

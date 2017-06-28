@@ -27,7 +27,6 @@ from rhevmtests.networking.mac_pool_range_per_cluster import (
     helper as mac_pool_helper
 )
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
@@ -35,7 +34,6 @@ def add_vnic_profile(request):
     """
     Add vNIC profile
     """
-    NetworkFixtures()
     vnic_profile = request.node.cls.vnic_profile
     dc = request.node.cls.dc
     net = request.node.cls.net
@@ -63,7 +61,6 @@ def remove_qos(request):
     """
     Remove QoS from setup
     """
-    sanity = NetworkFixtures()
     qos_name = request.node.cls.qos_name
 
     def fin():
@@ -72,7 +69,7 @@ def remove_qos(request):
         """
         testflow.teardown("Remove QoS %s", qos_name)
         assert ll_dc.delete_qos_from_datacenter(
-            datacenter=sanity.dc_0, qos_name=qos_name
+            datacenter=conf.DC_0, qos_name=qos_name
         )
     request.addfinalizer(fin)
 
@@ -82,10 +79,9 @@ def create_vnics_on_vm(request):
     """
     Create 5 VNICs on VM with different params for plugged/linked
     """
-    NetworkFixtures()
     nets = request.node.cls.nets
     vm = request.node.cls.vm_name
-    vnics = sanity_conf.VNICS[6]
+    vnics = request.node.cls.vnics
 
     def fin():
         """
@@ -93,7 +89,6 @@ def create_vnics_on_vm(request):
         """
         results = list()
         for nic in vnics[:5]:
-            testflow.teardown("Remove vNIC %s from VM %s", nic, vm)
             results.append(ll_vms.removeNic(positive=True, vm=vm, nic=nic))
         assert all(results)
     request.addfinalizer(fin)
@@ -107,7 +102,6 @@ def create_vnics_on_vm(request):
     ]
     for i in range(len(plug_link_param_list)):
         nic_name = vnics[i]
-        testflow.setup("Add vNIC %s to VM %s", nic_name, vm)
         network = nets[i] if i != 4 else None
         assert ll_vms.addNic(
             positive=True, vm=vm, name=nic_name,
@@ -121,7 +115,6 @@ def create_cluster(request):
     """
     Create new cluster
     """
-    NetworkFixtures()
     ext_cl = request.node.cls.ext_cl
 
     def fin():
@@ -141,7 +134,6 @@ def add_network_to_dc(request):
     """
     Add network to datacenter
     """
-    NetworkFixtures()
     dc = request.node.cls.dc
     net = request.node.cls.net
 
@@ -161,7 +153,6 @@ def update_vnic_profile(request):
     """
     Update vNIC profile with queue
     """
-    NetworkFixtures()
     dc = request.node.cls.dc
     prop_queue = request.node.cls.prop_queue
     mgmt_bridge = request.node.cls.mgmt_bridge
@@ -193,7 +184,6 @@ def add_labels(request):
     """
     Add labels
     """
-    NetworkFixtures()
     labels = request.node.cls.labels
 
     for lb, nets in labels.iteritems():
@@ -212,13 +202,12 @@ def prepare_setup_for_register_domain(request):
     Add storage domain to setup.
     Create VM.
     """
-    sanity_register_domain = NetworkFixtures()
     storage_name = sanity_conf.EXTRA_SD_NAME
     storage_address = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
     storage_path = conf.UNUSED_DATA_DOMAIN_PATHS[0]
-    dc = sanity_register_domain.dc_0
-    cluster = sanity_register_domain.cluster_0
-    host = sanity_register_domain.host_0_name
+    dc = conf.DC_0
+    cluster = conf.CL_0
+    host = conf.HOST_0_NAME
     vm = request.node.cls.vm
     mac = sanity_conf.MAC_NOT_IN_POOL
     network = request.node.cls.net
@@ -278,11 +267,10 @@ def nmcli_create_networks(request):
     """
     Create networks on host via nmcli (NetworkManager)
     """
-    nm_networks = NetworkFixtures()
     nic_type = request.node.cls.flat_type
     network = request.node.cls.flat_connection
     vlan_id = None
-    host_nics = [nm_networks.host_0_nics[1]]
+    host_nics = [conf.HOST_0_NICS[1]]
 
     def fin():
         """
@@ -290,7 +278,7 @@ def nmcli_create_networks(request):
         """
         all_connections = "nmcli connection show"
         delete_cmd = "nmcli connection delete {uuid}"
-        rc, out, _ = nm_networks.vds_0_host.run_command(
+        rc, out, _ = conf.VDS_0_HOST.run_command(
             command=shlex.split(all_connections)
         )
         assert not rc
@@ -299,7 +287,7 @@ def nmcli_create_networks(request):
             testflow.teardown(
                 "Remove connection %s from NetworkManager", match
             )
-            nm_networks.vds_0_host.run_command(
+            conf.VDS_0_HOST.run_command(
                 command=shlex.split(delete_cmd.format(uuid=match))
             )
     request.addfinalizer(fin)

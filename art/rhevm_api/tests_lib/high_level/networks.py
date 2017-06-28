@@ -190,12 +190,12 @@ def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
         ifcfg_params = {}
 
     for i in range(num_dummy):
-        cmd = ["ip", "link", "add", dummy_int % i, "type", "dummy"]
+        nic_name = dummy_int % i
+        cmd = ["ip", "link", "add", nic_name, "type", "dummy"]
         rc = host.run_command(cmd)[0]
         if rc:
-            return False
+            logger.warning("Dummy %s already exists", nic_name)
 
-        nic_name = dummy_int % i
         host.network.create_ifcfg_file(nic=nic_name, params=ifcfg_params)
 
     return True

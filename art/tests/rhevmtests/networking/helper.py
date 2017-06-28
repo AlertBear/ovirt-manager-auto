@@ -9,7 +9,6 @@ import logging
 import random
 import re
 import shlex
-import uuid
 
 from utilities import jobs
 
@@ -390,19 +389,6 @@ def get_vm_interfaces_list(vm_resource, exclude_nics=list()):
     return res
 
 
-def remove_networks_from_host(hosts=None):
-    """
-    Remove all networks from hosts
-
-    :param hosts: Host name
-    :type hosts: list
-    """
-    hosts = [conf.HOSTS[0]] if not hosts else hosts
-    logger.info("Removing all networks from %s", hosts)
-    for host_name in hosts:
-        hl_host_network.clean_host_interfaces(host_name=host_name)
-
-
 def send_icmp_sampler(
     host_resource, dst, count="5", size="1470", extra_args=None,
     timeout=conf.SAMPLER_TIMEOUT, sleep=1
@@ -520,152 +506,6 @@ def check_queues_from_qemu(vm, num_queues):
             return True
     logger.error("%s not found on host", vm)
     return False
-
-
-def set_virsh_sasl_password(vds_resource):
-    """
-    Set Virsh sasl password
-
-    Args:
-        vds_resource (VDS): VDS resource
-
-    Returns:
-        bool: True if action succeed False otherwise
-    """
-    cmd = "echo %s | saslpasswd2 -p -a libvirt %s" % (VIRSH_PASS, VIRSH_USER)
-    return not bool(vds_resource.run_command(shlex.split(cmd))[0])
-
-
-def virsh_delete_network(vds_resource, network):
-    """
-    Delete network using Virsh
-
-    Args:
-        vds_resource (VDS): VDS resource
-        network (str): Network name
-
-    Returns:
-        bool: True if action succeed False otherwise
-    """
-    file_name = "/tmp/virsh_delete_network_%s.py" % network
-    with vds_resource.executor().session() as resource_session:
-        with resource_session.open_file(file_name, 'w') as resource_file:
-            resource_file.write("import pexpect\n")
-            resource_file.write("output = ''\n")
-            resource_file.write(
-                "cmd_destroy = 'virsh net-destroy vdsm-%s'\n" % network
-            )
-            resource_file.write(
-                "cmd_undefine = 'virsh net-undefine vdsm-%s'\n" % network
-            )
-            resource_file.write("for cmd in [cmd_undefine, cmd_destroy]:\n")
-            resource_file.write("    pe = pexpect.spawn(cmd)\n")
-            resource_file.write("    %s('.*name:')\n" % PE_EXPECT)
-            resource_file.write("    %s('%s')\n" % (PE_SENDLINE, VIRSH_USER))
-            resource_file.write("    %s('.*password:')\n" % PE_EXPECT)
-            resource_file.write("    %s('%s')\n" % (PE_SENDLINE, VIRSH_PASS))
-            resource_file.write("    output += pe.read()\n")
-            resource_file.write("print output\n")
-    rc = vds_resource.run_command(["python", file_name])[0]
-    vds_resource.fs.remove(file_name)
-    return not bool(rc)
-
-
-def virsh_add_network(vds_resource, network):
-    """
-    Add network using Virsh
-
-    Args:
-        vds_resource (VDS): VDS resource
-        network (str): Network name
-
-    Returns:
-        bool: True if action succeed False otherwise
-    """
-    xml_file_name = virsh_create_xml_network_file(
-        vds_resource=vds_resource, network=network
-    )
-
-    file_name = "/tmp/virsh_add_network_%s.py" % network
-    with vds_resource.executor().session() as resource_session:
-        with resource_session.open_file(file_name, 'w') as resource_file:
-            resource_file.write("import pexpect\n")
-            resource_file.write("from time import sleep\n")
-            resource_file.write(
-                "cmd = 'virsh net-create %s'\n" % xml_file_name
-            )
-            resource_file.write("pe = pexpect.spawn(cmd)\n")
-            resource_file.write("%s('.*name:')\n" % PE_EXPECT)
-            resource_file.write("%s('%s')\n" % (PE_SENDLINE, VIRSH_USER))
-            resource_file.write("%s('.*password:')\n" % PE_EXPECT)
-            resource_file.write("%s('%s')\n" % (PE_SENDLINE, VIRSH_PASS))
-            resource_file.write("print pe.read()\n")
-    rc = vds_resource.run_command(["python", file_name])[0]
-    vds_resource.fs.remove(file_name)
-    vds_resource.fs.remove(xml_file_name)
-    return not bool(rc)
-
-
-def virsh_create_xml_network_file(vds_resource, network):
-    """
-    Create network XML file for virsh
-
-    Args:
-        vds_resource (VDS): VDS resource
-        network (str): Network name
-
-    Returns:
-        str: File path of created file
-    """
-    xml_file_name = "/tmp/virsh_create_xml_network_%s.xml" % network
-    vdsm_bridge_name = "vdsm-{0}".format(network)
-    vdsm_bridge_line = "<name>{0}</name>".format(vdsm_bridge_name)
-    bridge_name_line = "<bridge name='{0}'/>".format(network)
-    uuid_line = "<uuid>{0}</uuid>".format(str(uuid.uuid4()))
-    xml_str = ("<network>{0}{1}<forward mode='bridge'/>{2}</network>".format(
-        vdsm_bridge_line, uuid_line, bridge_name_line))
-
-    with vds_resource.executor().session() as resource_session:
-        with resource_session.open_file(xml_file_name, 'w') as resource_file:
-            resource_file.write(xml_str)
-    return xml_file_name
-
-
-def virsh_is_network_exists(vds_resource, network):
-    """
-    Get network name from virsh
-
-    Args:
-        vds_resource (VDS): VDS resource
-        network (str): Network name
-
-    Returns:
-        str: Network name
-    """
-    cmd = "virsh -r net-list"
-    rc, out, _ = vds_resource.run_command(shlex.split(cmd))
-    if rc:
-        return False
-    return network in out
-
-
-def remove_none_from_dict(dict_):
-    """
-    Remove all None values from nested dict()
-
-    Args:
-        dict_: Dict to process
-
-    Returns:
-        dict: Dict without None values
-    """
-    if isinstance(dict_, dict):
-        return dict(
-            (remove_none_from_dict(k), remove_none_from_dict(v))
-            for k, v in dict_.items() if k is not None and v is not None
-        )
-    else:
-        return dict_
 
 
 def get_non_mgmt_nic_name(vm_resource):

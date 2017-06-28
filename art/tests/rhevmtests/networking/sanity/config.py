@@ -6,8 +6,7 @@ Config file for sanity test
 """
 
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import config as conf, helper as network_helper
 
 
 # Host network QoS
@@ -55,10 +54,13 @@ BASIC_IP_DICT_PREFIX = {
     }
 }
 
-SN_DICT = {
+CASE_1_NETS = {
     NETS[1][0]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_2_NETS = {
     NETS[2][0]: {
         "required": "false",
         "usages": ""
@@ -82,10 +84,16 @@ SN_DICT = {
     NETS[2][5]: {
         "required": "false",
         "usages": ""
-    },
+    }
+}
+
+CASE_3_NETS = {
     NETS[3][0]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_4_NETS = {
     NETS[4][0]: {
         "required": "false",
         "mtu": conf.MTU[1]
@@ -121,7 +129,10 @@ SN_DICT = {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0),
         "usages": ""
-    },
+    }
+}
+
+CASE_5_NETS = {
     NETS[5][0]: {
         "required": "false",
     },
@@ -135,7 +146,10 @@ SN_DICT = {
     NETS[5][3]: {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0),
-    },
+    }
+}
+
+CASE_6_NETS = {
     NETS[6][0]: {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0)
@@ -151,10 +165,16 @@ SN_DICT = {
     NETS[6][3]: {
         "required": "false",
         "vlan_id": conf.VLAN_IDS.pop(0),
-    },
+    }
+}
+
+CASE_8_NETS = {
     NETS[8][0]: {
         "required": "true",
-    },
+    }
+}
+
+CASE_9_NETS = {
     NETS[9][0]: {
         "required": "false",
         "mtu": conf.MTU[0]
@@ -164,26 +184,44 @@ SN_DICT = {
     },
     NETS[9][2]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_10_NETS = {
     NETS[10][0]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_12_NETS = {
     NETS[12][0]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_14_NETS = {
     NETS[14][0]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_16_NETS = {
     NETS[16][0]: {
         "required": "false",
     },
     NETS[16][1]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_17_NETS = {
     NETS[17][0]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_18_NETS = {
     NETS[18][0]: {
         "required": "false"
-    },
+    }
 }

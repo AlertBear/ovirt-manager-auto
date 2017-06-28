@@ -22,7 +22,6 @@ import helper
 from art.unittest_lib import testflow
 from rhevmtests import networking
 from rhevmtests.networking import helper as network_helper, config as conf
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -31,12 +30,11 @@ def prepare_setup(request):
     Add storage domain to setup
     Create 8 VMS
     """
-    register_domain = NetworkFixtures()
     storage_name = register_domain_conf.EXTRA_SD_NAME
     storage_address = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
     storage_path = conf.UNUSED_DATA_DOMAIN_PATHS[0]
-    dc = register_domain.dc_0
-    host = register_domain.host_0_name
+    dc = conf.DC_0
+    host = conf.HOST_0_NAME
 
     def fin3():
         """
@@ -44,7 +42,7 @@ def prepare_setup(request):
         """
         assert hl_networks.remove_net_from_setup(
             host=[host], all_net=True,
-            data_center=register_domain.dc_0
+            data_center=dc
         )
     request.addfinalizer(fin3)
 
@@ -70,8 +68,7 @@ def prepare_setup(request):
     request.addfinalizer(fin1)
 
     network_helper.prepare_networks_on_setup(
-        networks_dict=register_domain_conf.NETS_DICT, dc=register_domain.dc_0,
-        cluster=register_domain.cluster_0
+        networks_dict=register_domain_conf.NETS_DICT, dc=dc, cluster=conf.CL_0
     )
     testflow.setup("Add NFS storage domain %s to DC %s", storage_name, dc)
     assert hl_storage.addNFSDomain(
@@ -122,7 +119,6 @@ def import_vm_from_data_domain(request):
     """
     Import VM from data domain
     """
-    register_domain = NetworkFixtures()
     data_domain_name = request.node.cls.data_domain_name
     vm = request.node.cls.vm
     reassessing_mac = getattr(request.node.cls, "reassessing_mac", True)
@@ -148,7 +144,7 @@ def import_vm_from_data_domain(request):
         vm, data_domain_name, reassessing_mac, network_mappings
     )
     assert ll_storage.register_object(
-        obj=vm_to_import, cluster=register_domain.cluster_0,
+        obj=vm_to_import, cluster=conf.CL_0,
         network_mappings=network_mappings, reassign_bad_macs=reassessing_mac
     )
 
@@ -158,8 +154,6 @@ def set_allow_duplicate_mac_pool(request):
     """
     Set allow duplicate flag into the MAC pool
     """
-    NetworkFixtures()
-
     def fin():
         """
         Disable allow duplicate flag into the MAC pool
@@ -179,7 +173,6 @@ def manage_mac_pool_range(request):
     """
     Resize MAC pool range
     """
-    NetworkFixtures()
     mac_pool_name = "Default"
 
     def fin():
@@ -212,8 +205,7 @@ def make_sure_no_mac_in_pool(request):
     """
     Create vNICs until all MACs in pool are used
     """
-    register_domain = NetworkFixtures()
-    vm = register_domain.vm_0
+    vm = conf.VM_0
     vnics = ["register_domain_network_vnic_%d" % i for i in range(11)]
     vnics_to_remove = list()
 
