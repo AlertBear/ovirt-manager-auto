@@ -1006,7 +1006,7 @@ class TestCase18217(BaseStorageVMLeaseTest):
             config.DATA_CENTER_NAME, self.storage_domain
         )
         testflow.step("Register VM %s", self.vm_name)
-        storage_helpers.register_vm_from_data_domain(
+        hl_sd.register_vm_from_data_domain(
             self.storage_domain, self.vm_name, config.CLUSTER_NAME
         )
         testflow.step("Start VM %s", self.vm_name)

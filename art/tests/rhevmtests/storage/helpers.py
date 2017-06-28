@@ -160,7 +160,7 @@ def remove_all_vm_snapshots(vm_name, description):
 
 def perform_dd_to_disk(
     vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
-    write_to_file=False, vm_executor=None, file_name=None
+    write_to_file=False, vm_executor=None, file_name=None, key='name'
 ):
     """
     Args:
@@ -176,6 +176,7 @@ def perform_dd_to_disk(
         the file system (True) or directly to the device (False)
         vm_executor (Host executor): VM executor
         file_name (str): The file name (including its full path) to write to
+        key (str): key to look for disks by, it can be 'name' or 'id'
 
     Returns
         tuple: (bool, str) - Return code and output from 'dd' command execution
@@ -187,11 +188,15 @@ def perform_dd_to_disk(
     """
     if not vm_executor:
         vm_executor = get_vm_executor(vm_name)
-    boot_disk = ll_vms.get_vm_bootable_disk(vm_name)
-    boot_device = get_logical_name_by_vdsm_client(vm_name, boot_disk)
+    if key == 'name':
+        boot_disk = ll_vms.get_vm_bootable_disk(vm_name)
+    else:
+        boot_disk = ll_vms.get_vm_bootable_disk_id(vm_name)
+
+    boot_device = get_logical_name_by_vdsm_client(vm_name, boot_disk, key=key)
 
     disk_logical_volume_name = get_logical_name_by_vdsm_client(
-        vm_name, disk_alias
+        vm_name, disk_alias, key=key
     )
     assert disk_logical_volume_name, (
         "Failed to get VM's %s virtual disk %s logical name" % (
@@ -1754,32 +1759,6 @@ def import_storage_domain(host, storage, index=0):
 
     else:
         assert False, "Storage type %s is not supported for import" % storage
-
-
-def register_vm_from_data_domain(storage_domain, vm_name, cluster):
-    """
-    Register VM from data domain
-
-    Args:
-        storage_domain (str): Storage domain name for unregistered VM's
-        vm_name (str): VM name to use for import
-        cluster (str): Cluster name for registering to the VM object
-
-    Raises:
-        AssertionError: If any issue occurs
-    """
-    unregistered_vms = ll_sd.get_unregistered_vms(
-        storage_domain=storage_domain
-    )
-    vm_to_import = [vm for vm in unregistered_vms if vm.name == vm_name][0]
-    assert vm_to_import, "No unregistered VM matched VM %s" % vm_name
-
-    testflow.setup(
-        "Registering VM %s from data domain %s", vm_name, storage_domain
-    )
-    assert ll_sd.register_object(
-        obj=vm_to_import, cluster=cluster,
-    ), "VM %s was not registered to data domain %s" % (vm_name, storage_domain)
 
 
 def kill_vdsm_on_spm_host(dc_name):

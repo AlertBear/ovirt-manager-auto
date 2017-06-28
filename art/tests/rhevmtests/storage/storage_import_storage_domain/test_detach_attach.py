@@ -841,7 +841,7 @@ class TestCase16771(DomainImportWithTemplate):
             VM should import back the the environment
         """
         self.vm_names.append(self.vm_from_template)
-        storage_helpers.register_vm_from_data_domain(
+        hl_sd.register_vm_from_data_domain(
             self.non_master, self.vm_from_template, config.CLUSTER_NAME
         )
 

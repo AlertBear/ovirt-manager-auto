@@ -4581,6 +4581,23 @@ def verify_vm_disk_moved(vm_name, disk_name, source_sd, target_sd=None):
     return False
 
 
+def get_vm_bootable_disk_object(vm):
+    """
+    Get bootable disk object of the VM
+
+    Args:
+        vm (str): VM name
+
+    Returns:
+        obj: bootable disk object of selected VM
+    """
+
+    vm_disks = getVmDisks(vm)
+    boot_disk = [d for d in vm_disks if is_bootable_disk(vm, d.get_id())][0]
+
+    return boot_disk
+
+
 def get_vm_bootable_disk(vm):
     """
     Description: get bootable disk
@@ -4590,10 +4607,25 @@ def get_vm_bootable_disk(vm):
     Author: ratamir
     Return: name of the bootable disk or None if no boot disk exist
     """
-    vm_disks = getVmDisks(vm)
-    boot_disk = [d for d in vm_disks if is_bootable_disk(vm, d.get_id())]
-    if boot_disk:
-        return boot_disk[0].get_alias()
+    boot_disk_obj = get_vm_bootable_disk_object(vm)
+    if boot_disk_obj:
+        return boot_disk_obj.get_alias()
+    return None
+
+
+def get_vm_bootable_disk_id(vm):
+    """
+    Get bootable disk id
+
+    Args:
+        vm (str): vm name
+
+    Returns:
+        str: id of the bootable disk or None if no boot disk exist
+    """
+    boot_disk_obj = get_vm_bootable_disk_object(vm)
+    if boot_disk_obj:
+        return boot_disk_obj.get_id()
     return None
 
 

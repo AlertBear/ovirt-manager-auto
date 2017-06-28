@@ -1106,3 +1106,69 @@ def get_storage_domain_addresses(sd_name):
         units = ll_sd.get_storage_domain_logical_units(sd_name)
         return [lun.get_address() for lun in units]
     return [sd_object.get_storage().get_address()]
+
+
+def register_vm_from_data_domain(storage_domain, vm_name, cluster):
+    """
+    Register VM from data domain
+
+    Args:
+        storage_domain (str): Storage domain name for unregistered VMs
+        vm_name (str): VM name for import
+        cluster (str): Cluster name for registering to the VM object
+
+    Raises:
+        AssertionError: If any issue occurs
+    """
+    unregistered_vms = ll_sd.get_unregistered_vms(
+        storage_domain=storage_domain
+    )
+    vm_to_import = [vm for vm in unregistered_vms if vm.name == vm_name][0]
+    assert vm_to_import, "No unregistered VM's %s matched VM %s" % (
+        unregistered_vms, vm_name
+    )
+
+    logger.info(
+        "Registering VM %s from data domain %s", vm_name, storage_domain
+    )
+    assert ll_sd.register_object(
+        obj=vm_to_import, cluster=cluster
+    ), "VM %s was not registered to data domain %s" % (vm_name, storage_domain)
+
+
+def register_templates_from_data_domain(
+    storage_domain, template_name, cluster
+):
+    """
+    Register template from data domain
+
+    Args:
+        storage_domain (str): Storage domain name for unregistered VMs
+        template_name (str): Template name to use for import
+        cluster (str): Cluster name for registering to the VM object
+
+    Raises:
+        AssertionError: If any issue occurs
+    """
+    unregistered_templates = ll_sd.get_unregistered_templates(
+        storage_domain=storage_domain
+    )
+    template_to_import = [
+        template for template in unregistered_templates
+        if template.get_name() == template_name
+    ][0]
+    assert template_to_import, (
+        "No unregistered template %s matched template %s" % (
+            unregistered_templates, template_name
+        )
+    )
+
+    logger.info(
+        "Registering template %s from data domain %s", template_name,
+        storage_domain
+    )
+    assert ll_sd.register_object(
+        obj=template_to_import, cluster=cluster
+    ), "Template %s was not registered to data domain %s" % (
+        template_name, storage_domain
+    )

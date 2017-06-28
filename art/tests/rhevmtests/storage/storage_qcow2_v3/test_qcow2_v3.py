@@ -6,6 +6,7 @@ Storage_4_0/4_1_Storage_qcow2_v3
 
 import logging
 import helpers
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from rhevmtests.storage import helpers as storage_helpers
 from art.unittest_lib.common import testflow
 import pytest
@@ -30,6 +31,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
+    disks as hl_disks,
 )
 
 from fixtures import (
@@ -37,7 +39,7 @@ from fixtures import (
     remove_unattached_domain, initialize_dc_parameters_for_upgrade,
     init_spm_host, init_test_vm_name, init_base_params,
     deactivate_and_remove_non_master_domains, init_test_template_name,
-    get_template_from_cluster, initialize_strage_domain_params,
+    get_template_from_cluster, initialize_storage_domain_params,
 )
 
 from rhevmtests.storage.fixtures import (
@@ -55,7 +57,6 @@ from art.unittest_lib import StorageTest as TestCase
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 @pytest.mark.usefixtures(
     init_base_params.__name__,
     init_spm_host.__name__,
@@ -134,8 +135,6 @@ class BaseTestCase(TestCase):
         Args:
             live (bool): True if live migration , False if cold migration
         """
-        disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
-        assert disk_name, "No disks were found on VM %s" % self.vm_name
         testflow.step(
             "Upgrade DC %s to v4 & restart engine ", self.new_dc_name
         )
@@ -168,7 +167,7 @@ class BaseTestCase(TestCase):
             self.vm_name, self.sd_names[0], self.sd_names[1]
         )
         ll_vms.migrate_vm_disks(
-            self.vm_name, target_domain=self.sd_names[1]
+            self.vm_name, ensure_on=live, target_domain=self.sd_names[1]
         ), "Migration of vm %s to SD %s failed" % (
             self.vm_name, self.sd_names[1]
         )
@@ -187,7 +186,7 @@ class BaseTestCase(TestCase):
         helpers.verify_qcow_disks_snapshots_version_sd(
             self.sd_names[1], expected_qcow_version=config.QCOW_V3
         )
-        if live is True:
+        if live:
             testflow.step(
                 "Power off VM %s and preview snapshot %s", self.vm_name,
                 self.snapshot_list[0]
@@ -195,8 +194,6 @@ class BaseTestCase(TestCase):
             assert ll_vms.stop_vms_safely([self.vm_name]), (
                 "Shutdown to vm % failed" % self.vm_name
             )
-            ll_vms.waitForVMState(self.vm_name, config.VM_POWER_DOWN)
-
         assert ll_vms.preview_snapshot(
             True, self.vm_name, self.snapshot_list[0]
         ), "Failed to preview snapshot %s" % self.snapshot_list[0]
@@ -213,9 +210,15 @@ class BaseTestCase(TestCase):
         assert ll_vms.startVm(
             True, self.vm_name, config.VM_UP, wait_for_ip=True
         ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
-        logger.info("Trying to write to disk %s" % disk_name)
+        self.disk_name = hl_disks.add_new_disk(
+            sd_name=self.sd_names[1], size=config.DISK_SIZE, block=True
+        )
+        testflow.step("Create test disk %s for write IO ", self.disk_name)
+        ll_disks.wait_for_disks_status([self.disk_name])
+        storage_helpers.prepare_disks_for_vm(self.vm_name, [self.disk_name])
+        logger.info("Trying to write to disk %s" % self.disk_name)
         status, out = storage_helpers.perform_dd_to_disk(
-            self.vm_name, disk_name
+            self.vm_name, self.disk_name
         )
         assert status, "Error found %s" % out
         snapshot_description = storage_helpers.create_unique_object_name(
@@ -223,13 +226,13 @@ class BaseTestCase(TestCase):
         )
         testflow.step(
             "Creating snapshot %s of VM %s",
-            snapshot_description, self.new_vm_name
+            snapshot_description, self.vm_name
         )
         assert ll_vms.addSnapshot(
             True, self.vm_name, snapshot_description
-        ), "Failed to create snapshot of VM %s" % self.new_vm_name
+        ), "Failed to create snapshot of VM %s" % self.vm_name
         ll_vms.wait_for_vm_snapshots(
-            self.new_vm_name, [config.SNAPSHOT_OK], snapshot_description
+            self.vm_name, [config.SNAPSHOT_OK], snapshot_description
         )
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
@@ -274,7 +277,6 @@ class TestCase18215(BaseTestCase):
         self.data_center_upgrade()
 
 
-@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 class TestCase18303(TestCase):
     """
     * Verify existing storage Domain is in version 4
@@ -300,7 +302,6 @@ class TestCase18303(TestCase):
         testflow.step("%s is indeed on v4" % storage_domain_name)
 
 
-@bz({'1450692': {}})
 class TestCase18307(BaseTestCase):
     """
     1. Create DC + cluster on v3
@@ -311,6 +312,7 @@ class TestCase18307(BaseTestCase):
 
     @polarion("RHEVM3-18307")
     @tier3
+    @bz({'1450692': {}})
     def test_verify_new_domain_version(self):
         testflow.step(
             "Upgrade DC %s to v4 & kill vdsmd on SPM %s" % (
@@ -336,7 +338,6 @@ class TestCase18307(BaseTestCase):
         self.data_center_upgrade()
 
 
-@bz({'1444120': {}})
 class TestCase18336(BaseTestCase2):
     """
     1. Create DC + cluster on v3
@@ -351,6 +352,7 @@ class TestCase18336(BaseTestCase2):
 
     @polarion("RHEVM3-18336")
     @tier3
+    @bz({'1482454': {}})
     def test_failure_engine_during_amend(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
@@ -367,6 +369,7 @@ class TestCase18336(BaseTestCase2):
 
         testflow.step("Restarting ovirt-engine")
         config.ENGINE.restart()
+        wait_for_tasks(config.ENGINE, self.new_dc_name)
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
         testflow.step(
             "Check disk and snapshot status, see all OK"
@@ -400,7 +403,6 @@ class TestCase18336(BaseTestCase2):
         # )
 
 
-@bz({'1450692': {}})
 class TestCase18337(BaseTestCase2):
     """
     1. Create DC + cluster on v3
@@ -415,6 +417,7 @@ class TestCase18337(BaseTestCase2):
 
     @polarion("RHEVM3-18337")
     @tier3
+    @bz({'1450692': {}})
     def test_failure_of_SPM_during_amend(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
@@ -471,12 +474,13 @@ class TestCase18337(BaseTestCase2):
 
 
 @pytest.mark.usefixtures(
-    initialize_strage_domain_params.__name__,
+    initialize_storage_domain_params.__name__,
+    add_disk.__name__,
+    attach_disk.__name__,
     create_export_domain.__name__,
     export_vm.__name__,
     remove_export_domain.__name__,
 )
-@bz({'1446640': {}})
 class TestCase18338(BaseTestCase3):
     """
     1. Create DC + cluster on v3
@@ -495,7 +499,6 @@ class TestCase18338(BaseTestCase3):
     @polarion("RHEVM3-18338")
     @tier2
     def test_import_vm_with_snapshot_from_export_domain(self):
-        self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         testflow.step(
             "Upgrade DC %s to v4.1" % self.new_dc_name
         )
@@ -533,10 +536,10 @@ class TestCase18338(BaseTestCase3):
             self.__name__, config.OBJECT_TYPE_SNAPSHOT
         )
         assert ll_vms.addSnapshot(
-            True, self.new_vm_name, snapshot_description, wait=True
-        ), "Failed to create snapshot of VM %s" % self.new_vm_name
+            True, self.vm_name, snapshot_description, wait=True
+        ), "Failed to create snapshot of VM %s" % self.vm_name
         ll_vms.wait_for_vm_snapshots(
-            self.new_vm_name, [config.SNAPSHOT_OK], snapshot_description
+            self.vm_name, [config.SNAPSHOT_OK], snapshot_description
         )
         testflow.step(
             "Check qcow version was upgraded to %s" % config.QCOW_V3
@@ -561,7 +564,6 @@ class TestCase18338(BaseTestCase3):
         )
 
 
-@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 @pytest.mark.usefixtures(
     init_test_vm_name.__name__,
     create_vm.__name__,
@@ -586,6 +588,7 @@ class TestCase18340(TestCase):
 
     @polarion("RHEVM3-18340")
     @tier2
+    @bz({'1490119': {}})
     def test_create_new_thin_vm_from_template(self):
         testflow.step(
             "Create a template of VM %s" % self.vm_name
@@ -604,15 +607,14 @@ class TestCase18340(TestCase):
             cluster=config.CLUSTER_NAME
         )
 
-        self.new_disks_names = [
-            disk_object.get_alias() for disk_object in ll_vms.getVmDisks(
+        self.new_disks_ids = [
+            disk_object.get_id() for disk_object in ll_vms.getVmDisks(
                 self.new_vm_name
             )
-        ]
-
+            ]
         testflow.step(
-            "Verify newly created VM %s disks %s is on qcow %s" % (
-                self.new_vm_name, self.new_disks_names, config.QCOW_V3
+            "Verify newly created VM %s disks id's %s is on qcow %s" % (
+                self.new_vm_name, self.new_disks_ids, config.QCOW_V3
             )
         )
         helpers.verify_qcow_version_vm_disks(self.new_vm_name)
@@ -624,9 +626,9 @@ class TestCase18340(TestCase):
             True, self.new_vm_name, config.VM_UP, wait_for_ip=True
         ), "VM %s did not reach %s state" % (self.new_vm_name, config.VM_UP)
 
-        logger.info("Trying to write to disk %s" % self.new_disks_names[0])
+        logger.info("Trying to write to disk id %s" % self.new_disks_ids[0])
         status, out = storage_helpers.perform_dd_to_disk(
-            self.new_vm_name, self.new_disks_names[0]
+            self.new_vm_name, self.new_disks_ids[0], key='id'
         )
         assert status != 0, "error found %s" % out
 
@@ -652,7 +654,6 @@ class TestCase18340(TestCase):
         )
 
 
-@bz({'1444120': {}})
 class TestCase18305(BaseTestCase):
     """
     1. Create DC + cluster on v3
@@ -664,6 +665,7 @@ class TestCase18305(BaseTestCase):
 
     @polarion("RHEVM3-18305")
     @tier3
+    @bz({'1482454': {}})
     def test_restart_engine_during_upgrade_cluster(self):
         testflow.step(
             "Upgrading cluster %s from version %s to version %s ",
@@ -676,6 +678,7 @@ class TestCase18305(BaseTestCase):
         ), "Failed to upgrade compatibility version of cluster"
         testflow.step("Restarting ovirt-engine")
         config.ENGINE.restart()
+        wait_for_tasks(config.ENGINE, self.new_dc_name)
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
 
         testflow.step(
@@ -690,7 +693,6 @@ class TestCase18305(BaseTestCase):
         )
 
 
-@bz({'1444120': {}})
 class TestCase18334(BaseTestCase):
     """
     1. Create DC + cluster on v3
@@ -703,10 +705,12 @@ class TestCase18334(BaseTestCase):
 
     @polarion("RHEVM3-18334")
     @tier3
+    @bz({'1482454': {}})
     def test_restart_engine_during_upgrade_dc(self):
         self.data_center_upgrade_without_verification()
         testflow.step("Restarting ovirt-engine")
         config.ENGINE.restart()
+        wait_for_tasks(config.ENGINE, self.new_dc_name)
         hl_dc.ensure_data_center_and_sd_are_active(self.new_dc_name)
         storage_domain_name = ll_sd.getStorageDomainNamesForType(
             self.new_dc_name, self.storage
@@ -721,7 +725,6 @@ class TestCase18334(BaseTestCase):
         ), "SD %s is not on v4" % storage_domain_name
 
 
-@bz({'1446640': {}})
 class TestCase18343(BaseTestCase3):
     """
     1. Create DC + cluster on v3 + 2 new storage domains
@@ -743,11 +746,11 @@ class TestCase18343(BaseTestCase3):
 
     @polarion("RHEVM3-18343")
     @tier2
+    @bz({'1489005': {}})
     def test_live_migration_old_image(self):
         self.migration_test(live=config.LIVE_MIGRATION)
 
 
-@bz({'1446640': {}})
 class TestCase18344(BaseTestCase3):
     """
     1. Create DC + cluster on v3 + 2 new storage domains
@@ -781,7 +784,6 @@ class TestCase18344(BaseTestCase3):
     attach_disk.__name__,
     create_file_than_snapshot_several_times.__name__,
 )
-@bz({'1446640': {}})
 class TestCase18346(BaseTestCase):
     """
     1. Create DC + cluster on v3
@@ -797,7 +799,6 @@ class TestCase18346(BaseTestCase):
     and that the merged image (s3->s4) is now version 0.10
     9. Power off the VM and Preview the Merged snapshot
     10. Commit the Previewed snapshot
-    11. Start the VM, verify existing data and write new data to the disks
     """
     __test__ = True
     write_to_file_than_snapshot_number_of_times = 2
@@ -909,22 +910,13 @@ class TestCase18346(BaseTestCase):
         assert ll_vms.commit_snapshot(True, self.vm_name), (
             "Failure to commit VM's %s snapshot" % self.vm_name
         )
-        testflow.step("Start the VM %s", self.vm_name)
-        assert ll_vms.startVm(
-            True, self.vm_name, config.VM_UP, wait_for_ip=True
-        ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
-        testflow.step("Verify existing data and write new data to the disks")
-        helpers.verify_test_files_checksum(
-            self.vm_name, self.checksum_file_list, self.full_path_list,
-            vm_executor=self.vm_executor
-        )
-        storage_helpers.create_test_file_and_check_existance(
-            self.vm_name, self.mount_path, file_name=config.FILE_NAME + '4',
-            vm_executor=self.vm_executor
-        )
+        ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
 
 
-@bz({'1446878': {}})
+@pytest.mark.usefixtures(
+    add_disk.__name__,
+    attach_disk.__name__,
+)
 class TestCase18339(BaseTestCase3):
     """
     1. Create DC + cluster on v3 + 2 storage domains SD1 & SD2
@@ -933,11 +925,12 @@ class TestCase18339(BaseTestCase3):
     4. Upgrade cluster &DC to version 4.1
     5. Migrate SD1 back to upgraded DC
     6. Import unregistered VM to SD1
-    6. Verify disk & snapshot disk are also upgraded to qcow v1.1.
-    7. Start the VM & verify data can be written to the disks
-    8. Power off the VM and Preview snapshot with upgraded images
-    9. Undo the Preview
-    10. Create a new snapshot & verify new snapshot disks are version 1.1
+    7. Amend disk & snapshot on upgraded domains to version v1.1
+    8. Verify disk & snapshot disk are also upgraded to qcow v1.1
+    9. Start the VM & verify data can be written to the disks
+    10. Power off the VM and Preview snapshot with upgraded images
+    11. Undo the Preview
+    12. Create a new snapshot & verify new snapshot disks are version 1.1
     """
     __test__ = True
     polarion_test_case = '18339'
@@ -947,7 +940,8 @@ class TestCase18339(BaseTestCase3):
     @polarion("RHEVM3-18339")
     @tier3
     def test_storage_migration_old_version_to_new_version_dc(self):
-        self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        self.disk_name0 = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        self.disk_name1 = ll_vms.getVmDisks(self.vm_name)[1].get_alias()
         testflow.step(
             "Deactivate,detach & remove storage domain %s", self.storage_domain
         )
@@ -965,9 +959,24 @@ class TestCase18339(BaseTestCase3):
             self.new_dc_name, self.storage_domain
         ), "Failed to attach & activate %s" % self.storage_domain
         ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
-        storage_helpers.register_vm_from_data_domain(
+        hl_sd.register_templates_from_data_domain(
+            self.storage_domain, self.glance_template_name, self.cluster_name
+        )
+        hl_sd.register_vm_from_data_domain(
             self.storage_domain, self.vm_name, self.cluster_name
         )
+        testflow.step(
+            "Amend qcow disks %s and %s to v3",
+            self.disk_name0, self.disk_name1
+        )
+        for disk in [self.disk_name0, self.disk_name1]:
+            helpers.amend_disk_attachment_api(
+                self.vm_name, disk, qcow_ver=config.QCOW_V3
+            )
+            assert ll_disks.wait_for_disks_status(disk), (
+                "Disk %s did not reach OK state" % disk
+            )
+
         testflow.step(
             "Verify registered VM %s disk & snapshot disks qcow version is %s",
             self.vm_name, config.QCOW_V3
@@ -986,23 +995,23 @@ class TestCase18339(BaseTestCase3):
             True, self.vm_name, config.VM_UP, wait_for_ip=True
         ), "VM %s did not reach %s state" % (self.vm_name, config.VM_UP)
         status, out = storage_helpers.perform_dd_to_disk(
-            self.vm_name, self.disk_name
+            self.vm_name, self.disk_name0
         )
         assert status, "Error %s found writing data to disk %s from vm %s" % (
-            out, self.disk_name, self.vm_name
+            out, self.disk_name0, self.vm_name
         )
         snapshot_description = storage_helpers.create_unique_object_name(
             self.__name__, config.OBJECT_TYPE_SNAPSHOT
         )
         testflow.step(
             "Creating snapshot %s of VM %s",
-            snapshot_description, self.new_vm_name
+            snapshot_description, self.vm_name
         )
         assert ll_vms.addSnapshot(
             True, self.vm_name, snapshot_description
-        ), "Failed to create snapshot of VM %s" % self.new_vm_name
+        ), "Failed to create snapshot of VM %s" % self.vm_name
         ll_vms.wait_for_vm_snapshots(
-            self.new_vm_name, [config.SNAPSHOT_OK], snapshot_description
+            self.vm_name, [config.SNAPSHOT_OK], snapshot_description
         )
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
@@ -1011,19 +1020,25 @@ class TestCase18339(BaseTestCase3):
         helpers.verify_qcow_disks_snapshots_version_sd(
             self.storage_domain, expected_qcow_version=config.QCOW_V3
         )
+        testflow.step("Power off vm %s, self.vm_name")
+        assert ll_vms.stop_vms_safely([self.vm_name]), (
+            "Failed to power off VM %s" % self.vm_name
+        )
+        testflow.step("Preview snapshot %s, snapshot_description")
         assert ll_vms.preview_snapshot(
             True, self.vm_name, snapshot_description
         ), "Failed to preview snapshot %s" % snapshot_description
         ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
         testflow.step(
-            "Undo snapshot %s", self.snapshots_description
+            "Undo snapshot %s", snapshot_description
         )
         assert ll_vms.undo_snapshot_preview(True, self.vm_name), (
             "Snapshot %s preview undo failed " % snapshot_description
         )
+        ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
+        ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
 
 
-@bz({'1450692': {}})
 class TestCase18335(BaseTestCase):
     """
     1. Create DC + cluster on v3 + 2 storage domains master & non master
@@ -1069,7 +1084,6 @@ class TestCase18335(BaseTestCase):
             )
 
 
-@bz({'1448905': {}})
 class TestCase18347(BaseTestCase2):
     """
     1. Create DC + cluster on v3
@@ -1104,7 +1118,6 @@ class TestCase18347(BaseTestCase2):
         )
 
 
-@bz({'1449944': {}})
 class TestCase18348(BaseTestCase2):
     """
     1. Create DC + cluster on v3
@@ -1131,13 +1144,11 @@ class TestCase18348(BaseTestCase2):
         )
 
 
-@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 @pytest.mark.usefixtures(
     create_vm.__name__,
     init_test_template_name.__name__,
     remove_template.__name__,
 )
-@bz({'1449289': {}})
 class TestCase18349(TestCase):
     """
     1. Create DC + cluster on v4
@@ -1148,6 +1159,7 @@ class TestCase18349(TestCase):
     snap_count = 1
     installation = False
     volume_format = config.DISK_FORMAT_RAW
+    volume_type = False
 
     @polarion("RHEVM3-18349")
     @tier3
@@ -1173,7 +1185,6 @@ class TestCase18349(TestCase):
         )
 
 
-@bz({'1449944': {}})
 class TestCase18350(BaseTestCase2):
     """
     1. Create DC + cluster on v3 + storage domain
@@ -1207,7 +1218,6 @@ class TestCase18350(BaseTestCase2):
         ), "Activating sd %s" % self.storage_domain
 
 
-@bz({'1449944': {}})
 class TestCase18351(BaseTestCase2):
     """
     1. Create DC + cluster on v3 + storage domain

@@ -88,7 +88,7 @@ def create_one_or_more_storage_domains_same_type_for_upgrade(request):
     self.sd_names = []
     for sd in range(self.new_storage_domains_count):
         self.storage_domain = (
-            'upgrade_%s_to_%s' % self.name_pattern + self.storage + str(sd)
+            'upgrade_%s_to_%s_%s' % self.name_pattern + str(sd)
         )
 
         storage_helpers.add_storage_domain(
@@ -126,8 +126,8 @@ def deactivate_and_remove_non_master_domains(request):
                     testflow.teardown(
                         "deactivating storage domain %s", sd_name
                     )
-                    assert ll_sd.deactivateStorageDomain(
-                        True, self.new_dc_name, sd_name
+                    assert hl_sd.deactivate_domain(
+                        self.new_dc_name, sd_name, config.ENGINE
                     ), "Failed to deactivate storage domain %s" % sd_name
                     testflow.teardown("Removing storage domain %s ", sd_name)
                     assert hl_sd.remove_storage_domain(
@@ -163,13 +163,17 @@ def initialize_dc_parameters_for_upgrade(request):
 
     self = request.node.cls
 
-    self.name_pattern = '4_0', '4_1'
-    self.new_dc_name = 'dc_upgrade_%s_to_%s' % self.name_pattern
-    self.cluster_name = 'cluster_upgrade_%s_to_%s' % self.name_pattern
-    self.nfs_sd_name = "sd_upgrade_%s_to_%s_nfs" % self.name_pattern
-    self.iscsi_sd_name = "sd_upgrade_%s_to_%s_iscsi" % self.name_pattern
-    self.gluster_sd_name = "sd_upgrade_%s_to_%s_gluster" % self.name_pattern
-    self.fcp_sd_name = "sd_upgrade_%s_to_%s_fcp" % self.name_pattern
+    self.name_pattern = '4_0', '4_1', self.__name__
+    self.new_dc_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_DC
+        )
+    self.cluster_name = storage_helpers.create_unique_object_name(
+            self.__name__, config.OBJECT_TYPE_CLUSTER
+        )
+    self.nfs_sd_name = "sd_upgrade_%s_to_%s_nfs_%s" % self.name_pattern
+    self.iscsi_sd_name = "sd_upgrade_%s_to_%s_iscsi_%s" % self.name_pattern
+    self.gluster_sd_name = "sd_upgrade_%s_to_%s_gluster_%s" % self.name_pattern
+    self.fcp_sd_name = "sd_upgrade_%s_to_%s_fcp_%s" % self.name_pattern
     self.cluster_version = '4.0'
     self.cluster_upgraded_version = '4.1'
     self.dc_version = '4.0'
@@ -272,7 +276,7 @@ def get_template_from_cluster(request):
 
 
 @pytest.fixture()
-def initialize_strage_domain_params(request):
+def initialize_storage_domain_params(request):
     """
     Initialize storage domain parameters for add operation
     """
@@ -280,6 +284,6 @@ def initialize_strage_domain_params(request):
 
     self.storage_domain_kwargs = {
         'storage_type': config.STORAGE_TYPE_NFS,
-        'address': config.NFS_DOMAINS_KWARGS[0]['address'],
-        'path': config.NFS_DOMAINS_KWARGS[0]['path']
+        'address': config.NFS_DOMAINS_KWARGS[1]['address'],
+        'path': config.NFS_DOMAINS_KWARGS[1]['path']
     }

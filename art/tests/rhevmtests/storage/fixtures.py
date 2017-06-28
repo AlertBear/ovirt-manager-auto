@@ -63,6 +63,8 @@ def create_vm(request, remove_vm):
     template_name = getattr(self, 'template_name', None)
     self.installation = getattr(self, 'installation', True)
     volume_format = getattr(self, 'volume_format', config.DISK_FORMAT_COW)
+    volume_type = getattr(self, 'volume_type', True)
+
     diskless_vm = getattr(self, 'diskless_vm', False)
 
     vm_args = config.create_vm_args.copy()
@@ -74,6 +76,7 @@ def create_vm(request, remove_vm):
     vm_args['clone_from_template'] = clone_from_template
     vm_args['template_name'] = template_name
     vm_args['volumeFormat'] = volume_format
+    vm_args['volumeType'] = volume_type
 
     if hasattr(self, 'vm_args'):
         vm_args.update(self.vm_args)
@@ -1489,12 +1492,15 @@ def extend_storage_domain(request):
     )
 
 
+@pytest.fixture()
 def create_file_than_snapshot_several_times(request):
     """
     Create file ,take checksum & than snapshot several times
     """
 
     self = request.node.cls
+
+    self.snapshots_descriptions_list = list()
 
     out, self.mount_path = storage_helpers.create_fs_on_disk(
         self.vm_name, self.disk_name

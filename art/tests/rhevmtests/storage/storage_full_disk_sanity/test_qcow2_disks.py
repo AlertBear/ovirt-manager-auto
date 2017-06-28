@@ -520,7 +520,7 @@ class TestCase16968(TestCase):
         Expected results:
             - Disk virtual size should be larger than disk actual size
         """
-        vm_disk = ll_vms.get_vm_bootable_disk(self.vm_name)
+        vm_disk = ll_vms.get_vm_bootable_disk_id(self.vm_name)
         disk_virtual_size = ll_disks.get_disk_obj(
             vm_disk
         ).get_provisioned_size()
