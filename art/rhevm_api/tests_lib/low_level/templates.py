@@ -1083,7 +1083,7 @@ def wait_for_template_disks_state(template, state=ENUMS['disk_state_ok'],
     for disk in disks:
         if not DISKS_API.waitForElemStatus(disk, state, timeout):
             raise exceptions.DiskException(
-                "Timeout, disk %s is still in status %s insted of desired %s"
+                "Timeout, disk %s is still in status %s instead of desired %s"
                 % (disk.alias, disk.get_status(), state))
 
 
