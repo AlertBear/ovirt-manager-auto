@@ -357,7 +357,7 @@ class TestCase5062(BasicResize):
 
     @polarion("RHEVM3-5062")
     @attr(tier=1)
-    @bz({'1461536': {}})
+    @bz({'1408594': {}})
     def test_preallocated_block_resize(self):
         """
         - VM with preallocated disk and OS
@@ -390,7 +390,7 @@ class TestCase5063(BasicResize):
 
     @polarion("RHEVM3-5063")
     @attr(tier=1)
-    @bz({'1461536': {}})
+    @bz({'1408594': {}})
     def test_thin_block_resize(self):
         """
         - VM with thin disk and OS
