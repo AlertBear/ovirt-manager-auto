@@ -16,6 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as storagedomains,
     vms as vms
 )
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.core_api.apis_exceptions import APITimeout
@@ -23,10 +24,7 @@ from art.rhevm_api import resources
 from art.rhevm_api.utils.test_utils import getStat, get_api
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.rhevm_api.tests_lib.low_level import (
-    vms as ll_vms,
-    hosts as ll_hosts
-)
+
 
 logger = logging.getLogger("art.hl_lib.vms")
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -85,19 +83,19 @@ def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
         bool: True if action succeeded, False otherwise
     """
     logger.info("Check if %s is up", host)
-    host_status = ll_hosts.get_host_status(host)
+    host_status = hosts.get_host_status(host)
     if not host_status == ENUMS["host_state_up"]:
         logger.error("%s status is %s, cannot run VM", host, host_status)
         return False
 
-    if not ll_vms.runVmOnce(positive=True, vm=vm, host=host):
+    if not vms.runVmOnce(positive=True, vm=vm, host=host):
         return False
 
     if wait_for_up_status:
-        ll_vms.wait_for_vm_states(vm_name=vm)
+        vms.wait_for_vm_states(vm_name=vm)
 
     logger.info("Check that %s was started on host %s", vm, host)
-    vm_host = ll_vms.get_vm_host(vm_name=vm)
+    vm_host = vms.get_vm_host(vm_name=vm)
     if not vm_host:
         return False
     if not host == vm_host:
@@ -136,26 +134,21 @@ def migrate_by_maintenance(
     """
     Migrate VMs by setting host to maintenance
 
-    :param vms_list: VMs to migrate
-    :type vms_list: list
-    :param src_host: Host to set to maintenance
-    :type src_host: str
-    :param vm_user: User for the VM machine
-    :type vm_user: str
-    :param vm_password: Password for the vm machine
-    :type vm_password: str
-    :param vm_os_type: Type of the OS of VM
-    :type vm_os_type: str
-    :param connectivity_check: check VM connectivity after maintenance
-    :type connectivity_check: bool
-    :return: True/False
-    :rtype: bool
+    Args:
+        vms_list (list): VMs to migrate
+        src_host (str): Host to set to maintenance
+        vm_user (str): User for the VM machine
+        vm_password (str): Password for the vm machine
+        vm_os_type (str): Type of the OS of VM
+        connectivity_check (bool): check VM connectivity after maintenance
+
+    Returns:
+        bool: True if migration succeeded, False otherwise.
     """
     status = True
-    logger.info("Setting %s into maintenance", src_host)
     if not hosts.deactivate_host(positive=True, host=src_host):
-        logger.error("Failed to set %s into maintenance", src_host)
         return False
+
     logger.info("Checking VMs after migration")
     if connectivity_check:
         if not check_vms_after_migration(
@@ -163,9 +156,9 @@ def migrate_by_maintenance(
             vm_user=vm_user, vm_password=vm_password
         ):
             status = False
-    logger.info("Activating %s", src_host)
-    if not hosts.activate_host(True, host=src_host):
-        logger.error("Couldn't activate host %s", src_host)
+    if not hl_hosts.activate_host_if_not_up(
+        host=src_host, host_resource=src_host
+    ):
         return False
     return status
 
@@ -1044,5 +1037,5 @@ def get_boot_device_logical_name(vm_name):
     Returns:
         str: The boot device of the VM
     """
-    boot_disk = ll_vms.get_vm_bootable_disk(vm_name)
-    return ll_vms.get_vm_disk_logical_name(vm_name, boot_disk)
+    boot_disk = vms.get_vm_bootable_disk(vm_name)
+    return vms.get_vm_disk_logical_name(vm_name, boot_disk)
