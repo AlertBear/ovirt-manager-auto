@@ -2,7 +2,11 @@ import logging
 import pytest
 import config
 import helpers
-from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
+import rhevmtests.helpers as rhevm_helpers
+
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sd,
+)
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     hosts as ll_hosts,
@@ -15,11 +19,13 @@ from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     StorageTest as TestCase,
-    do_not_run,
     tier3,
-
 )
-from rhevmtests import helpers as rhevm_helpers
+
+from fixtures import add_storage_domain
+from rhevmtests.storage.fixtures import deactivate_and_detach_export_domain
+from fixtures import a0_initialize_variables_clean_storages  # noqa
+from fixtures import a1_initializer_module_nfs  # noqa
 
 logger = logging.getLogger(__name__)
 NFS = config.STORAGE_TYPE_NFS
@@ -33,45 +39,12 @@ HOST_CLUSTER = None
 # glusterfs domains
 
 
-@pytest.fixture(scope='module')
-def initializer_module(request):
-    """
-    Removes one host
-    """
-    def finalizer_module():
-        """
-        Add back host to the environment
-        """
-        if not ll_hosts.add_host(
-            name=config.HOST_FOR_MOUNT, cluster=HOST_CLUSTER,
-            root_password=config.HOSTS_PW, address=config.HOST_FOR_MOUNT_IP
-        ):
-            raise exceptions.HostException(
-                "Failed to add host %s back to GE environment"
-                % config.HOST_FOR_MOUNT
-            )
-    request.addfinalizer(finalizer_module)
-    # Remove the host, this is needed to copy the data between
-    # storage domains
-    global HOST_CLUSTER
-    HOST_CLUSTER = ll_hosts.get_host_cluster(config.HOST_FOR_MOUNT)
-    if not ll_hosts.deactivate_host(True, config.HOST_FOR_MOUNT):
-        raise exceptions.HostException(
-            "Failed to deactivate host %s" % config.HOST_FOR_MOUNT
-        )
-    if not ll_hosts.remove_host(True, config.HOST_FOR_MOUNT):
-        raise exceptions.HostException(
-            "Failed to remove host %s" % config.HOST_FOR_MOUNT
-        )
-
-
-@do_not_run
 class TestCasePosix(TestCase):
     conn = None
     host = None
     storage_type = None
     storage_domain_type = config.TYPE_DATA
-    additional_params = None
+    additional_params = {}
     vfs_type = None
     unused_domains = []
 
@@ -144,7 +117,7 @@ class TestCasePosix(TestCase):
     def positive_flow(self, vfs_type):
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(
-            config.ENGINE, config.DATA_CENTER_NAME
+            engine=config.ENGINE, datacenter=config.DATA_CENTER_NAME
         )
         if not ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
@@ -191,24 +164,14 @@ class TestCasePosix(TestCase):
         )
 
 
+@pytest.mark.usefixtures(
+    add_storage_domain.__name__,
+)
 class TestCaseNFSAndGlusterFS(TestCasePosix):
     """
     Base class for NFS storage connections
     """
-    @pytest.fixture(scope='function')
-    def initializer_TestCaseNFSAndGlusterFS(
-        self, request, initializer_module
-    ):
-        """
-        Initialize parameters and executes setup
-        """
-        def finalizer_TestCaseNFSAndGlusterFS():
-            self.finalizer_TestCasePosix()
-
-        request.addfinalizer(finalizer_TestCaseNFSAndGlusterFS)
-        self.storage_type = self.storage
-        self.additional_params = {'vfs_type': self.storage}
-        self.initializer_TestCasePosix()
+    additional_params = {'vfs_type': ''}
 
     def default_update(self):
         logger.debug(
@@ -218,26 +181,19 @@ class TestCaseNFSAndGlusterFS(TestCasePosix):
         new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
         new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
         return ll_sd_conn.update_connection(
-            self.conn, address=new_address, path=new_path, type=self.storage,
-            nfs_version='V3', host=self.host,
+            True, self.conn, address=new_address, path=new_path,
+            type=self.storage, nfs_version='V3', host=self.host,
             vfs_type=self.additional_params['vfs_type']
         )[1]
 
 
+@pytest.mark.usefixtures(
+    add_storage_domain.__name__,
+)
 class TestCasePosixFS(TestCasePosix):
 
-    @pytest.fixture(scope='function')
-    def initializer_TestCasePosixFS(self, request, initializer_module):
-        """
-        Initialize parameters and executes setup
-        """
-        def finalizer_TestCasePosixFS():
-            self.finalizer_TestCasePosix()
-
-        request.addfinalizer(finalizer_TestCasePosixFS)
-        self.storage_type = POSIXFS
-        self.additional_params = {'vfs_type': self.storage}
-        self.initializer_TestCasePosix()
+    storage_type = POSIXFS
+    additional_params = {'vfs_type': ''}
 
     def default_update(self):
         logger.debug(
@@ -248,44 +204,21 @@ class TestCasePosixFS(TestCasePosix):
         new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
 
         return ll_sd_conn.update_connection(
-            self.conn, address=new_address, path=new_path, host=self.host,
-            type=POSIXFS
+            True, self.conn, address=new_address, path=new_path,
+            host=self.host, type=POSIXFS
         )[1]
 
 
+@pytest.mark.usefixtures(
+    deactivate_and_detach_export_domain.__name__,
+    add_storage_domain.__name__,
+)
 class TestCaseExport(TestCasePosix):
     """
     Base class for NFS storage connections
     """
-    @pytest.fixture(scope='function')
-    def initializer_TestCaseExport(self, request, initializer_module):
-        """
-        Initialize parameters and detach export domain
-        """
-        def finalizer_TestCaseExport():
-            """
-            Attach the export domain back to the environment
-            """
-            self.finalizer_TestCasePosix()
-            if not hl_sd.attach_and_activate_domain(
-                config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
-            ):
-                logger.error("Failed to attach export domain back")
-                TestCase.test_failed = True
-            TestCase.teardown_exception()
-
-        request.addfinalizer(finalizer_TestCaseExport)
-        self.storage_type = NFS
-        self.additional_params = {}
-        self.storage_domain_type = config.TYPE_EXPORT
-        if not hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME,
-            engine=config.ENGINE
-        ):
-            raise exceptions.StorageDomainException(
-                "Failed to deactivate and detach export domain"
-            )
-        self.initializer_TestCasePosix()
+    storage_type = NFS
+    storage_domain_type = config.TYPE_EXPORT
 
     def default_update(self):
         logger.debug(
@@ -295,28 +228,20 @@ class TestCaseExport(TestCasePosix):
         new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
         new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
         return ll_sd_conn.update_connection(
-            self.conn, address=new_address, path=new_path, type=NFS,
+            True, self.conn, address=new_address, path=new_path, type=NFS,
             nfs_version='V3', host=self.host
         )[1]
 
 
+@pytest.mark.usefixtures(
+    add_storage_domain.__name__,
+)
 class TestCaseISO(TestCasePosix):
     """
     Base class for ISO storage connections
     """
-    @pytest.fixture(scope='function')
-    def initializer_TestCaseISO(self, request, initializer_module):
-        """
-        Initialize parameters and executes setup
-        """
-        def finalizer_TestCaseISO():
-            self.finalizer_TestCasePosix()
-
-        request.addfinalizer(finalizer_TestCaseISO)
-        self.storage_type = NFS
-        self.additional_params = {}
-        self.storage_domain_type = config.TYPE_ISO
-        self.initializer_TestCasePosix()
+    storage_type = NFS
+    storage_domain_type = config.TYPE_ISO
 
     def default_update(self):
         logger.debug(
@@ -326,12 +251,11 @@ class TestCaseISO(TestCasePosix):
         new_address = config.UNUSED_RESOURCE[self.storage][1]['address']
         new_path = config.UNUSED_RESOURCE[self.storage][1]['path']
         return ll_sd_conn.update_connection(
-            self.conn, address=new_address, path=new_path, type=NFS,
+            True, self.conn, address=new_address, path=new_path, type=NFS,
             nfs_version='V3', host=self.host
         )[1]
 
 
-@tier3
 class TestCase5250(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -340,11 +264,9 @@ class TestCase5250(TestCaseNFSAndGlusterFS):
     __test__ = (NFS in ART_CONFIG['RUN']['storages'] or
                 GLUSTER in ART_CONFIG['RUN']['storages'])
     storages = set([NFS, GLUSTER])
-    polarion_test_case = '5250'
-    sd_name = "sd_%s" % polarion_test_case
 
+    @tier3
     @polarion("RHEVM3-5250")
-    @pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
     def test_change_nfs_and_gluster_connection(self):
         """
         Tries to change an nfs and glusterfs connection
@@ -352,8 +274,6 @@ class TestCase5250(TestCaseNFSAndGlusterFS):
         self.positive_flow(self.storage)
 
 
-@tier3
-@pytest.mark.usefixtures("initializer_TestCasePosixFS")
 class TestCase5251(TestCasePosixFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -362,9 +282,8 @@ class TestCase5251(TestCasePosixFS):
     __test__ = (NFS in ART_CONFIG['RUN']['storages'] or
                 GLUSTER in ART_CONFIG['RUN']['storages'])
     storages = set([NFS, GLUSTER])
-    polarion_test_case = '5251'
-    sd_name = "sd_%s" % polarion_test_case
 
+    @tier3
     @polarion("RHEVM3-5251")
     def test_change_posixfs_connection(self):
         """
@@ -373,8 +292,6 @@ class TestCase5251(TestCasePosixFS):
         self.positive_flow(self.storage)
 
 
-@tier3
-@pytest.mark.usefixtures("initializer_TestCaseISO")
 class TestCase10650(TestCaseISO):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -382,9 +299,8 @@ class TestCase10650(TestCaseISO):
     """
     __test__ = NFS in ART_CONFIG['RUN']['storages']
     storages = set([NFS])
-    polarion_test_case = '10650'
-    sd_name = "sd_%s" % polarion_test_case
 
+    @tier3
     @polarion("RHEVM3-10650")
     def test_change_iso_connection(self):
         """
@@ -393,8 +309,6 @@ class TestCase10650(TestCaseISO):
         self.positive_flow(NFS)
 
 
-@tier3
-@pytest.mark.usefixtures("initializer_TestCaseExport")
 class TestCase10651(TestCaseExport):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -402,9 +316,8 @@ class TestCase10651(TestCaseExport):
     """
     __test__ = NFS in ART_CONFIG['RUN']['storages']
     storages = set([NFS])
-    polarion_test_case = '10651'
-    sd_name = "sd_%s" % polarion_test_case
 
+    @tier3
     @polarion("RHEVM3-10651")
     def test_change_export_connection(self):
         """
@@ -413,8 +326,6 @@ class TestCase10651(TestCaseExport):
         self.positive_flow(NFS)
 
 
-@tier3
-@pytest.mark.usefixtures("initializer_TestCasePosixFS")
 class TestCase5255(TestCasePosixFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -423,10 +334,9 @@ class TestCase5255(TestCasePosixFS):
     __test__ = (NFS in ART_CONFIG['RUN']['storages'] or
                 GLUSTER in ART_CONFIG['RUN']['storages'])
     storages = set([NFS, GLUSTER])
-    polarion_test_case = '5255'
-    sd_name = "sd_%s" % polarion_test_case
     conn = None
 
+    @tier3
     @polarion("RHEVM3-5255")
     def test_change_posixfs_connection_in_active_sd(self):
         """
@@ -436,8 +346,6 @@ class TestCase5255(TestCasePosixFS):
         self.change_connection_in_active_sd()
 
 
-@tier3
-@pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
 class TestCase5254(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -446,10 +354,9 @@ class TestCase5254(TestCaseNFSAndGlusterFS):
     __test__ = (NFS in ART_CONFIG['RUN']['storages'] or
                 GLUSTER in ART_CONFIG['RUN']['storages'])
     storages = set([NFS, GLUSTER])
-    polarion_test_case = '5254'
-    sd_name = "sd_%s" % polarion_test_case
     conn = None
 
+    @tier3
     @polarion("RHEVM3-5254")
     def test_change_nfs_and_gluster_connection_in_active_sd(self):
         """
@@ -459,8 +366,6 @@ class TestCase5254(TestCaseNFSAndGlusterFS):
         self.change_connection_in_active_sd()
 
 
-@tier3
-@pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
 class TestCase5253(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -469,9 +374,8 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
     __test__ = (NFS in ART_CONFIG['RUN']['storages'] or
                 GLUSTER in ART_CONFIG['RUN']['storages'])
     storages = set([NFS, GLUSTER])
-    polarion_test_case = '5253'
-    sd_name = "sd_%s" % polarion_test_case
 
+    @tier3
     @polarion("RHEVM3-5253")
     def test_change_conn_more_than_once(self):
         """
@@ -481,7 +385,7 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             "Waiting for tasks before deactivating the storage domain"
         )
         test_utils.wait_for_tasks(
-            config.ENGINE, config.DATA_CENTER_NAME
+            engine=config.ENGINE, datacenter=config.DATA_CENTER_NAME
         )
         assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
@@ -497,7 +401,7 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
         )
 
         result = ll_sd_conn.update_connection(
-            conn_id=self.conn, address=new_address, path=new_path,
+            True, conn_id=self.conn, address=new_address, path=new_path,
             type=self.storage, host=self.host,
             vfs_type=self.additional_params['vfs_type']
         )[1]
@@ -511,7 +415,7 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
             "Waiting for tasks before deactivating the storage domain"
         )
         test_utils.wait_for_tasks(
-            config.ENGINE, config.DATA_CENTER_NAME
+            engine=config.ENGINE, datacenter=config.DATA_CENTER_NAME
         )
         assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name
@@ -530,7 +434,7 @@ class TestCase5253(TestCaseNFSAndGlusterFS):
         ll_hosts.wait_for_hosts_states(True, self.host)
 
         result = ll_sd_conn.update_connection(
-            conn_id=self.conn, address=new_address, path=new_path,
+            True, conn_id=self.conn, address=new_address, path=new_path,
             type=self.storage, host=self.host,
             vfs_type=self.additional_params['vfs_type']
         )[1]

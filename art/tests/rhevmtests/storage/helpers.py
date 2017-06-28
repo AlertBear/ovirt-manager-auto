@@ -1975,3 +1975,24 @@ def wait_for_background_process_state(
         if re.match(process_state, out):
             return True
     return False
+
+
+def logout_iscsi_session(host_executor, host, iscsi_sessions_output):
+    """
+    Log out all iscsi sessions on the host
+
+    Args:
+        host_executor (Host executor): Host executor
+        host (str): Host name
+        iscsi_sessions_output (str): Iscsi sessions output
+
+    Raises:
+        AssertionError: If there still are active iscsi sessions on the host
+    """
+    cmd = ["iscsiadm", "-m", "session", "-u"]
+    host_executor.run_command(cmd)
+    assert not iscsi_sessions_output, (
+        "Host %s has active iscsi connections %s before starting the test" % (
+            host, iscsi_sessions_output
+        )
+    )

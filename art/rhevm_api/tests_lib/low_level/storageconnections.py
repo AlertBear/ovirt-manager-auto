@@ -105,11 +105,12 @@ def add_connection(wait=True, **kwargs):
     return api.create(conn, True, async=(not wait))
 
 
-def update_connection(conn_id, **kwargs):
+def update_connection(positive, conn_id, **kwargs):
     """
     Description: update a storage connection
     Author: kjachim
     Parameters:
+       * positive - if positive or negative verification should be done
        * conn_id - id of the changed connection
        * type - storage type (ENUMS['storage_type_nfs'],
           ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp'],
@@ -133,7 +134,7 @@ def update_connection(conn_id, **kwargs):
     logger.debug("Changing connection %s", conn_id)
     old_conn = api.find(conn_id, attribute='id')
     new_conn = _prepare_connection_object(**kwargs)
-    result = api.update(old_conn, new_conn, True)
+    result = api.update(old_conn, new_conn, positive)
     return result
 
 

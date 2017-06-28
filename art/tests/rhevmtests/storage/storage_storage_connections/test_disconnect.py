@@ -8,22 +8,20 @@ import logging
 import pytest
 
 from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sd,
     datacenters as hl_dc,
     hosts as hl_hosts,
-    storagedomains as hl_sd,
 )
 from art.rhevm_api.tests_lib.low_level import (
-    clusters as ll_clusters,
-    datacenters as ll_dc,
     disks as ll_disks,
     hosts as ll_hosts,
     jobs as ll_jobs,
     storagedomains as ll_sd,
-    templates as ll_templates,
+    datacenters as ll_dc,
+    clusters as ll_clusters,
 )
 from rrmngmnt.host import Host
 from rrmngmnt.user import User
-
 from art.core_api.apis_utils import TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils.test_utils import wait_for_tasks
@@ -31,12 +29,18 @@ from art.test_handler import exceptions
 from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import (
-    do_not_run,
     tier2,
     tier3,
     StorageTest,
+    testflow,
 )
 import rhevmtests.storage.helpers as storage_helpers
+
+from fixtures import (
+    create_environment_logout_session, activate_host,
+    add_additional_iscsi_domain, remove_storage_domains,
+)
+from fixtures import a0_initialize_variables_clean_storages  # noqa
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -48,149 +52,11 @@ ISCSIADM_LOGOUT = ["iscsiadm", "-m", "session", "-u"]
 TIME_UNTIL_ISCSI_SESSION_DISAPPEARS = 30
 
 
-@pytest.fixture(scope='module')
-def initializer_module(request):
-    """
-    Remove all the iscsi domains as a workaround for bugzilla
-    https://bugzilla.redhat.com/show_bug.cgi?id=1146115
-    """
-    # TODO: Remove all setup_module and teardown_module when
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1146115 is fixed
-
-    def finalizer_module():
-        """
-        Add the iscsi storage domains back
-        """
-        test_failed = False
-        # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
-        # Add iSCSI domains back
-        # 1) Remove block1 when bug is fixed
-        # 2) Uncomment block2 when bug is fixed
-
-        # TODO: block1
-        logger.info("Adding iscsi storage domains back")
-        iscsi_sds = [sd['name'] for sd in config.DC['storage_domains']
-                     if sd['storage_type'] == config.STORAGE_TYPE_ISCSI]
-        for name, lun, target, address in zip(
-                iscsi_sds, config.LUNS, config.LUN_TARGETS,
-                config.LUN_ADDRESSES
-        ):
-            hl_sd.add_iscsi_data_domain(
-                config.HOST_FOR_MOUNT, name, config.DATA_CENTER_NAME,
-                lun, address, target, override_luns=True, login_all=True
-            )
-        # TODO: block1 END
-
-        # TODO: block2
-        # logger.info("Importing iscsi storage domains back")
-        # # Importing all iscsi domains using the address and target of one of
-        # them imported = hl_sd.importBlockStorageDomain(
-        #     config.HOST_FOR_MOUNT, config.LUN_ADDRESSES[0],
-        #     config.LUN_TARGETS[0]
-        # )
-        # if not imported:
-        #     logger.error("Failed to import iSCSI domains back")
-        #     test_failed = True
-        # if imported:
-        #     register_failed = False
-        #     for sd in ISCSI_SDS:
-        #         hl_sd.attach_and_activate_domain(config.DATA_CENTER_NAME, sd)
-        #         unregistered_vms = ll_sd.get_unregistered_vms(sd)
-        #         if unregistered_vms:
-        #             for vm in unregistered_vms:
-        #                 if not ll_sd.register_object(
-        #                     vm, cluster=config.CLUSTER_NAME
-        #                 ):
-        #                     logger.error(
-        #                         "Failed to register vm %s from imported "
-        #                         "domain %s", vm, sd
-        #                     )
-        #                     register_failed = True
-        #     if register_failed:
-        #         raise exceptions.TearDownException(
-        #             "TearDown failed to register all vms from imported "
-        #             "domain"
-        #         )
-        # TODO: block2 END
-
-        # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
-        # Copying template disk to the new iSCSI domains and create 2 vms
-        # Delete this block when fix
-
-        template_name = config.TEMPLATE_NAME[0]
-        disk = ll_templates.getTemplateDisks(template_name)[0].get_alias()
-        for sd in iscsi_sds:
-            logger.info(
-                "Copying disk %s for template %s to sd %s", disk,
-                template_name, sd
-            )
-            try:
-                ll_templates.copyTemplateDisk(template_name, disk, sd)
-            except exceptions.DiskException:
-                test_failed = True
-                logger.error(
-                    "Failed to copy template disk to imported iSCSI domain %s",
-                    sd
-                )
-            ll_templates.wait_for_template_disks_state(template_name)
-
-        for vm in config.ISCSI_VMS:
-            vm_args = config.create_vm_args.copy()
-            vm_args['storageDomainName'] = iscsi_sds[0]
-            vm_args['vmName'] = vm
-            if not storage_helpers.create_vm_or_clone(**vm_args):
-                test_failed = True
-                logger.error("Unable to create vm %s", vm)
-        # TODO END - Delete this block when fixed
-
-        if test_failed:
-            raise exceptions.TearDownException("TearDown failed")
-
-    request.addfinalizer(finalizer_module)
-    global ISCSI_SDS
-    ISCSI_SDS = ll_sd.getStorageDomainNamesForType(
-        config.DATA_CENTER_NAME, config.STORAGE_TYPE_ISCSI
-    )
-    wait_for_tasks(
-        config.ENGINE, config.DATA_CENTER_NAME
-    )
-    for sd in ISCSI_SDS:
-        hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, sd, engine=config.ENGINE
-        )
-        # We want to destroy the domains so we will be able to restore the
-        # data on them
-        # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
-        # 1) We are formatting the domain (format='false' => format='true')
-        #    Change back to 'false' when bug is fixed
-        if not ll_sd.removeStorageDomain(
-            positive=True, storagedomain=sd, host=config.HOST_FOR_MOUNT,
-            format='true'
-        ):
-            raise exceptions.StorageDomainException(
-                "Failed to remove and format storage domain '%s'" % sd
-            )
-        # TODO END
-
-    # Due to https://bugzilla.redhat.com/show_bug.cgi?id=1146115
-    # iscsi connections sessions are not closed when there are multiple
-    # consumers on the target, logout from all session in all hosts
-    for host in config.HOSTS:
-        host_ip = ll_hosts.get_host_ip(host)
-        host = Host(host_ip)
-        user = User(config.HOSTS_USER, config.HOSTS_PW)
-        host.users.append(user)
-        host_executor = host.executor(user)
-        rc, out, error = host_executor.run_cmd(ISCSIADM_LOGOUT)
-        if error and "No matching sessions found" not in error:
-            raise Exception(
-                "Error executing %s command: %s" % (ISCSIADM_LOGOUT, error)
-            )
-
-
-@do_not_run
 class BaseTestCase(StorageTest):
     storages = set([ISCSI])
+    add_iscsi_domain = True
+    add_nfs_domain = False
+    login_all = False
 
     def initializer_BaseTestCase(self):
         """
@@ -213,18 +79,19 @@ class BaseTestCase(StorageTest):
                 "Error executing %s command: %s" % (ISCSIADM_LOGOUT, error)
             )
 
-    def host_iscsi_sessions(self):
+    @classmethod
+    def host_iscsi_sessions(cls):
         """
         Return the output from executing "iscsiadm -m session" command
         """
-        rc, out, error = self.host_executor.run_cmd(ISCSIADM_SESSION)
+        rc, out, error = cls.host_executor.run_command(ISCSIADM_SESSION)
         if rc:
             if "No active sessions" in error:
                 return []
             else:
                 logger.error(
                     "Unable execute %s command on host %s", ISCSIADM_SESSION,
-                    self.host
+                    cls.host
                 )
                 raise Exception(
                     "Error executing %s command: %s"
@@ -259,7 +126,7 @@ class BaseTestCaseNewDC(BaseTestCase):
         """
         wait_for_tasks(config.ENGINE, self.dc)
         if not hl_dc.clean_datacenter(
-            True, datacenter=self.dc, format_exp_storage='true',
+            True, datacenter=self.dc, format_exp_storage=True,
             engine=config.ENGINE
         ):
             self.test_failed = True
@@ -278,9 +145,9 @@ class BaseTestCaseNewDC(BaseTestCase):
             )
         BaseTestCase.teardown_exception()
 
-    @pytest.fixture(scope='function')
+    @pytest.fixture(scope='function')  # noqa: F811
     def initializer_BaseTestCaseNewDC_fixture(
-        self, request, initializer_module
+        self, request, a0_initialize_variables_clean_storages
     ):
         """
         Fixture for initializer_BaseTestCaseNewDC
@@ -367,8 +234,11 @@ class BaseTestCaseNewDC(BaseTestCase):
                 )
 
 
-@tier2
-class TestCase11196(BaseTestCaseNewDC):
+@pytest.mark.usefixtures(
+    create_environment_logout_session.__name__,
+    activate_host.__name__,
+)
+class TestCase11196(BaseTestCase):
     """
     RHEVM3-11196 - Place host in maintenance mode
 
@@ -377,34 +247,8 @@ class TestCase11196(BaseTestCaseNewDC):
     """
     __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
-    @pytest.fixture(scope='function')
-    def initializer_TestCase11196(self, request, initializer_module):
-        """
-        Add finalizer
-        """
-        def finalizer_TestCase11196():
-            """
-            Reactivate host
-            """
-            if ll_hosts.is_host_in_maintenance(True, self.host):
-                if not ll_hosts.activate_host(True, self.host):
-                    self.test_failed = True
-                    logger.error(
-                        "Error activating host %s", self.host
-                    )
-            if not ll_sd.wait_for_storage_domain_status(
-                True, self.dc, self.iscsi_domain, config.SD_ACTIVE
-            ):
-                self.test_failed = True
-                logger.error(
-                    "Error activating storage domain %s", self.iscsi_domain
-                )
-            self.finalizer_BaseTestCaseNewDC()
-        self.initializer_BaseTestCaseNewDC()
-        request.addfinalizer(finalizer_TestCase11196)
-
+    @tier2
     @polarion("RHEVM3-11196")
-    @pytest.mark.usefixtures("initializer_TestCase11196")
     def test_place_host_maintenance_mode(self):
         """
         Test setup:
@@ -421,6 +265,8 @@ class TestCase11196(BaseTestCaseNewDC):
         assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
+        wait_for_tasks(engine=config.ENGINE, datacenter=self.dc)
+        testflow.step("Deactivate host %s", self.host)
         assert ll_hosts.deactivate_host(True, self.host), (
             "Unable to place host %s in maintenance mode" % self.host
         )
@@ -429,13 +275,14 @@ class TestCase11196(BaseTestCaseNewDC):
         )
 
 
-class BasicDeactivateStorageDomain(BaseTestCaseNewDC):
+class BasicDeactivateStorageDomain(BaseTestCase):
     add_nfs_domain = True
 
     def deactivate_last_iscsi_domain(self):
         assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
+        testflow.step("Deactivate storage domain %s", self.iscsi_domain)
         assert ll_sd.deactivateStorageDomain(
             True, self.dc, self.iscsi_domain
         ), (
@@ -447,8 +294,9 @@ class BasicDeactivateStorageDomain(BaseTestCaseNewDC):
         )
 
 
-@tier2
-@pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
+@pytest.mark.usefixtures(
+    create_environment_logout_session.__name__,
+)
 class TestCase11200(BasicDeactivateStorageDomain):
     """
     RHEVM3-11200 - Deactivate last iSCSI domain
@@ -458,6 +306,7 @@ class TestCase11200(BasicDeactivateStorageDomain):
     """
     __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
+    @tier2
     @polarion("RHEVM3-11200")
     def test_deactivate_storage_domain(self):
         """
@@ -475,8 +324,9 @@ class TestCase11200(BasicDeactivateStorageDomain):
         self.deactivate_last_iscsi_domain()
 
 
-@tier2
-@pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
+@pytest.mark.usefixtures(
+    create_environment_logout_session.__name__,
+)
 class TestCase11230(BasicDeactivateStorageDomain):
     """
     RHEVM3-11230 -  Deactivate storage domain consisting of LUNs from several
@@ -487,6 +337,7 @@ class TestCase11230(BasicDeactivateStorageDomain):
     """
     __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
+    @tier2
     @polarion("RHEVM3-11230")
     def test_deactivate_storage_domain_several_storage_servers(self):
         """
@@ -505,7 +356,10 @@ class TestCase11230(BasicDeactivateStorageDomain):
         self.deactivate_last_iscsi_domain()
 
 
-@tier3
+@pytest.mark.usefixtures(
+    create_environment_logout_session.__name__,
+    add_additional_iscsi_domain.__name__,
+)
 class TestCase11201(BaseTestCaseNewDC):
     """
     RHEVM3-11201 - Deactivate one of multiple domain
@@ -515,33 +369,7 @@ class TestCase11201(BaseTestCaseNewDC):
     """
     __test__ = ISCSI in ART_CONFIG['RUN']['storages']
 
-    @pytest.fixture(scope='function')
-    def initializer_TestCase11201(self, request, initializer_module):
-        """
-        Add an aditional iscsi domain
-        """
-        request.addfinalizer(self.finalizer_BaseTestCaseNewDC)
-        self.initializer_BaseTestCaseNewDC()
-        self.iscsi_domain2 = storage_helpers.create_unique_object_name(
-            self.__class__.__name__, config.OBJECT_TYPE_SD
-        )
-        if not hl_sd.add_iscsi_data_domain(
-            self.host, self.iscsi_domain2, self.dc,
-            config.ISCSI_DOMAINS_KWARGS[1]['lun'],
-            config.ISCSI_DOMAINS_KWARGS[1]['lun_address'],
-            config.ISCSI_DOMAINS_KWARGS[1]['lun_target'],
-            override_luns=True, login_all=False,
-        ):
-            raise exceptions.StorageDomainException(
-                "Unable to add iscsi domain %s, %s, %s to data center %s"
-                % (
-                    config.ISCSI_DOMAINS_KWARGS[1]['lun'],
-                    config.ISCSI_DOMAINS_KWARGS[1]['lun_address'],
-                    config.ISCSI_DOMAINS_KWARGS[1]['lun_target'], self.dc
-                )
-            )
-
-    @pytest.mark.usefixtures("initializer_TestCase11201")
+    @tier3
     @polarion("RHEVM3-11201")
     def test_deactivate_one_storage_domain(self):
         """
@@ -559,6 +387,7 @@ class TestCase11201(BaseTestCaseNewDC):
         assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
+        testflow.step("Deactivate storage domain %s", self.iscsi_domain2)
         assert ll_sd.deactivateStorageDomain(
             True, self.dc, self.iscsi_domain2
         ), (
@@ -570,8 +399,11 @@ class TestCase11201(BaseTestCaseNewDC):
         )
 
 
-@tier2
-class TestCase11257(BaseTestCaseNewDC):
+@pytest.mark.usefixtures(
+    create_environment_logout_session.__name__,
+    remove_storage_domains.__name__,
+)
+class TestCase11257(BaseTestCase):
     """
     RHEVM3-11257 -  iSCSI logout after storage domain detachment
 
@@ -581,29 +413,8 @@ class TestCase11257(BaseTestCaseNewDC):
     __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     add_nfs_domain = True
 
-    @pytest.fixture(scope='function')
-    def initializer_TestCase11257(self, request, initializer_module):
-        """
-        Add finalizer
-        """
-        def finalizer_TestCase11257():
-            """
-            Remove iscsi domain
-            """
-            if not ll_sd.removeStorageDomain(
-                True, self.iscsi_domain, self.host, format='true'
-            ):
-                self.test_failed = True
-                logger.error(
-                    "Unable to remove iscsi domain %s", self.iscsi_domain
-                )
-            self.finalizer_BaseTestCaseNewDC()
-
-        self.initializer_BaseTestCaseNewDC()
-        request.addfinalizer(finalizer_TestCase11257)
-
+    @tier2
     @polarion("RHEVM3-11257")
-    @pytest.mark.usefixtures("initializer_TestCase11257")
     def test_storage_domain_detachment(self):
         """
         Test setup:
@@ -622,6 +433,8 @@ class TestCase11257(BaseTestCaseNewDC):
         assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
+        wait_for_tasks(engine=config.ENGINE, datacenter=self.dc)
+        testflow.step("Deactivate storage domain %s", self.iscsi_domain)
         assert ll_sd.deactivateStorageDomain(
             True, self.dc, self.iscsi_domain
         ), "Unable to place iscsi domain %s in maintenance mode" % (
@@ -630,18 +443,20 @@ class TestCase11257(BaseTestCaseNewDC):
         assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
+        testflow.step("Detaching storage domain %s", self.iscsi_domain)
         assert ll_sd.detachStorageDomain(True, self.dc, self.iscsi_domain), (
             "Unable to detach iscsi domain %s" % self.iscsi_domain
         )
-        wait_for_tasks(config.ENGINE, self.dc)
+        wait_for_tasks(engine=config.ENGINE, datacenter=self.dc)
         assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
 
 
-@tier2
-@pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
-class TestCase11233(BaseTestCaseNewDC):
+@pytest.mark.usefixtures(
+    create_environment_logout_session.__name__,
+)
+class TestCase11233(BaseTestCase):
     """
     RHEVM3-11233 - iSCSI logout after storage domain is removed (using
                    the format option)
@@ -652,6 +467,7 @@ class TestCase11233(BaseTestCaseNewDC):
     __test__ = ISCSI in ART_CONFIG['RUN']['storages']
     add_nfs_domain = True
 
+    @tier2
     @polarion("RHEVM3-11233")
     def test_storage_domain_detachment(self):
         """
@@ -670,27 +486,31 @@ class TestCase11233(BaseTestCaseNewDC):
         assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
+        testflow.step("Deactivate host %s", self.host)
         assert ll_sd.deactivateStorageDomain(
             True, self.dc, self.iscsi_domain
         ), (
             "Unable to place iscsi domain %s in maintenance mode" %
             self.iscsi_domain
         )
+        testflow.step("Detaching storage domain %s", self.iscsi_domain)
         assert ll_sd.detachStorageDomain(True, self.dc, self.iscsi_domain), (
             "Unable to detach iscsi domain %s" % self.iscsi_domain
         )
+        testflow.step("Removing storage domain %s", self.iscsi_domain)
         assert ll_sd.removeStorageDomain(
             True, self.iscsi_domain, self.host, format='true'
         ), "Unable to remove iscsi domain %s" % self.iscsi_domain
-        wait_for_tasks(config.ENGINE, self.dc)
+        wait_for_tasks(engine=config.ENGINE, datacenter=self.dc)
         assert self.timeout_sampling_iscsi_session(), (
             "Host %s has active iscsi connections" % self.host
         )
 
 
-@tier2
-@pytest.mark.usefixtures("initializer_BaseTestCaseNewDC_fixture")
-class TestCase11231(BaseTestCaseNewDC):
+@pytest.mark.usefixtures(
+    create_environment_logout_session.__name__,
+)
+class TestCase11231(BaseTestCase):
     """
     RHEVM3-11231 -  iSCSI logout after removal of the last direct LUN
 
@@ -701,6 +521,7 @@ class TestCase11231(BaseTestCaseNewDC):
     add_nfs_domain = True
     add_iscsi_domain = False
 
+    @tier2
     @polarion("RHEVM3-11231")
     def test_remove_lun(self):
         """
@@ -735,6 +556,7 @@ class TestCase11231(BaseTestCaseNewDC):
             config.ISCSI_DOMAINS_KWARGS[0]['lun_target'],
             self.host
         )
+        testflow.step("Adding LUN disk %s", self.lun_alias)
         assert ll_disks.addDisk(True, **self.lun_kwargs), (
             "Failed to add direct LUN %s" % self.lun_alias
         )
@@ -742,6 +564,7 @@ class TestCase11231(BaseTestCaseNewDC):
         assert self.host_iscsi_sessions(), (
             "Host %s does not have iscsi connections" % self.host
         )
+        testflow.step("Removing LUN disk %s", self.lun_alias)
         assert ll_disks.deleteDisk(True, self.lun_alias), (
             "Failed to remove LUN %s" % self.lun_alias
         )
