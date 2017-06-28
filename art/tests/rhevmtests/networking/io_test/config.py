@@ -12,7 +12,8 @@ NETS = global_helper.generate_object_names(
 LABEL_NAME = global_helper.generate_object_names(
     num_of_cases=10, num_of_objects=12, prefix="label"
 )
-NET_DICT = {
+
+CASE_2_NETS = {
     NETS[2][0]: {
         "required": "false",
     },
@@ -30,10 +31,16 @@ NET_DICT = {
     },
     NETS[2][5]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_3_NETS = {
     NETS[3][0]: {
         "required": "false",
-    },
+    }
+}
+
+CASE_4_NETS = {
     NETS[4][0]: {
         "required": "false"
     },
@@ -45,5 +52,5 @@ NET_DICT = {
     },
     NETS[4][3]: {
         "required": "false"
-    },
+    }
 }

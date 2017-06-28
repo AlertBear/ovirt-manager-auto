@@ -26,7 +26,6 @@ class TestImportExportCase01(NetworkTest):
     Check that VM could be imported with all the networks
     Check that VM imported more than once keeps all it's network configuration
     """
-    __test__ = True
     import_vm = import_export_conf.IE_VM_NAME
     more_then_once_vm = import_export_conf.IMP_MORE_THAN_ONCE_VM_NAME
     vms_list = [import_vm, more_then_once_vm]
@@ -67,7 +66,6 @@ class TestImportExportCase02(NetworkTest):
     Check that Template imported more than once keeps all it's network
     configuration
     """
-    __test__ = True
     import_template = import_export_conf.IE_TEMPLATE_NAME
     more_then_once_template = import_export_conf.IMP_MORE_THAN_ONCE_TEMP_NAME
     template_list = [more_then_once_template, import_template]
@@ -125,7 +123,6 @@ class TestImportExportCase03(NetworkTest):
        Start VM should fail if nic4 with net3 exist on VM,
        Start VM should succeed after remove of nic 4 from VM.
     """
-    __test__ = True
     vm_1 = import_export_conf.IE_VM_NAME
     vm_2 = import_export_conf.IE_VM_2_NAME
     vms_list = [vm_1, vm_2]

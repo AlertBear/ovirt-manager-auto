@@ -42,7 +42,7 @@ QOS_2 = {
     "outbound_average_upperlimit": TEST_VALUE + 1
 }
 
-NETS_DICT = {
+CASE_1_NETS = {
     NETS[1][0]: {
         "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
@@ -53,24 +53,36 @@ NETS_DICT = {
     },
     NETS[1][2]: {
         "required": "false"
-    },
+    }
+}
+
+CASE_2_NETS = {
     NETS[2][0]: {
         "usages": "",
         "required": "false"
-    },
+    }
+}
+
+CASE_3_NETS = {
     NETS[3][0]: {
         "usages": "",
         "required": "false"
-    },
+    }
+}
+CASE_4_NETS = {
     NETS[4][0]: {
         "required": "false"
-    },
+    }
+}
+CASE_5_NETS = {
     NETS[5][1]: {
         "required": "false"
     },
     NETS[5][2]: {
         "required": "false"
-    },
+    }
+}
+CASE_6_NETS = {
     NETS[6][0]: {
         "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
@@ -78,13 +90,5 @@ NETS_DICT = {
     NETS[6][1]: {
         "vlan_id": conf.VLAN_IDS.pop(0),
         "required": "false"
-    },
-    NETS[7][0]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
-        "required": "false"
-    },
-    NETS[7][1]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
-        "required": "false"
-    },
+    }
 }

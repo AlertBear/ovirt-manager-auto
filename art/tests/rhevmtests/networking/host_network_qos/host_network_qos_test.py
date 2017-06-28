@@ -10,51 +10,36 @@ Host NICs, networks, network QoS, engine QoS values
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as qos_conf
 import helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as net_helper
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    networks as hl_networks
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
+    networks as ll_networks
 )
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
-    NetworkFixtures, create_host_net_qos, remove_qos_from_dc,
+    create_host_net_qos, remove_qos_from_dc,
     set_default_engine_properties, update_network_in_datacenter
 )
-from rhevmtests.networking.fixtures import setup_networks_fixture
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
-
-
-@pytest.fixture(scope="module", autouse=True)
-def host_network_qos_prepare_setup(request):
-    """
-    Prepare networks setup for tests
-    """
-    host_network_qos = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[host_network_qos.host_0_name], all_net=True,
-            data_center=host_network_qos.dc_0
-        )
-    request.addfinalizer(fin)
-
-    net_helper.prepare_networks_on_setup(
-        networks_dict=qos_conf.NETS_DICT, dc=host_network_qos.dc_0,
-        cluster=host_network_qos.cluster_0
-    )
+from rhevmtests.networking import (
+    config as conf,
+    helper as net_helper
+)
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    setup_networks_fixture,
+    remove_all_networks,
+    create_and_attach_networks,
+)
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetQOSCase01(NetworkTest):
     """
     1.  Negative: try to remove anonymous host network QoS when several
@@ -62,10 +47,23 @@ class TestHostNetQOSCase01(NetworkTest):
     2.  Remove QoS from both networks
     3.  Attach network to host NIC with QoS parameters (anonymous QoS)
     """
-    __test__ = True
     net_1 = qos_conf.NETS[1][0]
     net_2 = qos_conf.NETS[1][1]
     net_3 = qos_conf.NETS[1][2]
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": qos_conf.CASE_1_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -161,6 +159,7 @@ class TestHostNetQOSCase01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     create_host_net_qos.__name__,
     setup_networks_fixture.__name__
 )
@@ -170,8 +169,22 @@ class TestHostNetQOSCase02(NetworkTest):
     2) Update network with QoS under DC
     3) Check that vdsCaps shows network with updated QoS values
     """
-    __test__ = True
     net_1 = qos_conf.NETS[2][0]
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": qos_conf.CASE_2_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -181,6 +194,8 @@ class TestHostNetQOSCase02(NetworkTest):
         }
     }
     qos_name_1 = qos_conf.QOS_NAME[2][0]
+
+    # create_host_net_qos params
     qos_names = [qos_name_1]
     upper_limit = qos_conf.TEST_VALUE
     realtime = qos_conf.TEST_VALUE
@@ -216,6 +231,7 @@ class TestHostNetQOSCase02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     set_default_engine_properties.__name__,
 )
@@ -224,8 +240,22 @@ class TestHostNetQOSCase03(NetworkTest):
     Increase default engine limitation for QoS, and test that weighted share
     and rate configuration works with the new engine configuration
     """
-    __test__ = True
     net_1 = qos_conf.NETS[3][0]
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": qos_conf.CASE_3_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -291,13 +321,30 @@ class TestHostNetQOSCase03(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestHostNetQOSCase04(NetworkTest):
     """
     Test weighted share and rate limitation
     """
-    __test__ = True
     net_1 = qos_conf.NETS[4][0]
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": qos_conf.CASE_4_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -368,7 +415,10 @@ class TestHostNetQOSCase04(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(remove_qos_from_dc.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    remove_qos_from_dc.__name__
+)
 class TestHostNetQOSCase05(NetworkTest):
     """
     1) Add new network QOS (named) with:
@@ -380,10 +430,24 @@ class TestHostNetQOSCase05(NetworkTest):
     5) Create another QoS when editing the same network.
     6) Update the network with unlimited QoS.
    """
-    __test__ = True
     net_1 = qos_conf.NETS[5][0]
     net_2 = qos_conf.NETS[5][1]
     net_3 = qos_conf.NETS[5][2]
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": qos_conf.CASE_5_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # remove_qos_from_dc params
     qos_name_1 = qos_conf.QOS_NAME[5][0]
     qos_name_2 = qos_conf.QOS_NAME[5][1]
     qos_name_3 = qos_conf.QOS_NAME[5][2]
@@ -503,6 +567,7 @@ class TestHostNetQOSCase05(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     create_host_net_qos.__name__,
     update_network_in_datacenter.__name__
 )
@@ -510,9 +575,23 @@ class TestHostNetQOSCase06(NetworkTest):
     """
     Try to have network with and without QoS configured on the same NIC
     """
-    __test__ = True
     net_1 = qos_conf.NETS[6][0]
     net_2 = qos_conf.NETS[6][1]
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": qos_conf.CASE_6_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # update_network_in_datacenter params
     nets = [net_1]
     qos_names = [qos_conf.QOS_NAME[6][0]]
 

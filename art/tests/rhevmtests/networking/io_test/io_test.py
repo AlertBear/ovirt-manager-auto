@@ -11,18 +11,18 @@ with valid/invalid names, IPs, netmask, VLAN, usages.
 import pytest
 
 import art.core_api.apis_exceptions as exceptions
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    networks as hl_networks
-)
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as io_conf
 import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
 from rhevmtests import helpers
-from rhevmtests.networking.fixtures import NetworkFixtures
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    clean_host_interfaces,
+    remove_all_networks,
+    create_and_attach_networks,
+)
 
 
 @pytest.fixture(scope="class")
@@ -31,7 +31,7 @@ def attach_label_to_network(request):
     Attach label to network
     """
     network = request.node.cls.net_4
-    label = io_conf.LABEL_NAME[4][0]
+    label = request.node.cls.label_1
     label_dict = {
         label: {
             "networks": [network]
@@ -39,29 +39,6 @@ def attach_label_to_network(request):
     }
     testflow.setup("Attach label %s to network %s", label, network)
     assert ll_networks.add_label(**label_dict)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def io_fixture_prepare_setup(request):
-    """
-    Prepare setup
-    """
-    io_fixture = NetworkFixtures()
-
-    def fin():
-        """
-        Finalizer for remove networks
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[io_fixture.host_0_name], all_net=True,
-            data_center=io_fixture.dc_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=io_conf.NET_DICT, dc=io_fixture.dc_0,
-        cluster=io_fixture.cluster_0
-    )
 
 
 @attr(tier=2)
@@ -176,6 +153,10 @@ class TestIOTest01(NetworkTest):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    clean_host_interfaces.__name__
+)
 class TestIOTest02(NetworkTest):
     """
     1. Negative: Trying to create networks with invalid IPs.
@@ -185,6 +166,23 @@ class TestIOTest02(NetworkTest):
     4. Negative: Trying to create a network with static ip but without netmask.
     5. Create networks with valid netmask.
     """
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": io_conf.CASE_2_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
     # Test 1 params - invalid network IP
     net_1 = io_conf.NETS[2][0]
     test_1_invalid_ips = {
@@ -306,6 +304,10 @@ class TestIOTest02(NetworkTest):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    clean_host_interfaces.__name__
+)
 class TestIOTest03(NetworkTest):
     """
     Positive: Create network and edit its name to valid name.
@@ -318,6 +320,22 @@ class TestIOTest03(NetworkTest):
     # General params
     initial_name = io_conf.NETS[3][0]
     valid_name = "C3_NET_changed"
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": io_conf.CASE_3_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
     # Test 1 params - edit network name to valid name
     test_1_edit_name_valid = {
@@ -387,6 +405,11 @@ class TestIOTest03(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.incremental
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    attach_label_to_network.__name__,
+    clean_host_interfaces.__name__
+)
 class TestIOTest04(NetworkTest):
     """
     Check network label limitation:
@@ -395,10 +418,27 @@ class TestIOTest04(NetworkTest):
     3. Negative case: Try to create a label which does not comply with the
         pattern: numbers, digits, dash or underscore [0-9a-zA-Z_-].
     4. Negative case: Try to assign more than one label to network
-
     """
+    dc = conf.DC_0
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": io_conf.CASE_4_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
     # Test 1 params - label characters on network
     net_1 = io_conf.NETS[4][0]
+    label_1 = io_conf.LABEL_NAME[4][0]
     net_1_labels = ["a" * 50]
 
     # Test 2 params - label non_restriction on host NIC
@@ -413,7 +453,6 @@ class TestIOTest04(NetworkTest):
     net_4 = io_conf.NETS[4][3]
     net_4_labels = io_conf.LABEL_NAME[4][:5]
 
-    @pytest.mark.usefixtures(attach_label_to_network.__name__)
     @pytest.mark.parametrize(
         ("network", "labels", "nic", "positive"),
         [

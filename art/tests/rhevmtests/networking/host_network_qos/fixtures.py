@@ -7,12 +7,13 @@ Fixtures for Host Network QoS
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
+    networks as ll_networks
+)
 import config as host_qos_conf
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
@@ -20,7 +21,6 @@ def remove_qos_from_dc(request):
     """
     Remove QoS objects from Data-Center
     """
-    host_network_qos = NetworkFixtures()
     qos_names = request.node.cls.qos_names
     qos_remove = getattr(request.cls, "qos_names_fin_remove", True)
 
@@ -30,12 +30,12 @@ def remove_qos_from_dc(request):
         """
         if qos_remove:
             testflow.teardown(
-                "Remove QoS from datacenter %s", host_network_qos.dc_0
+                "Remove QoS from datacenter %s", conf.DC_0
             )
             assert all(
                 [
                     ll_dc.delete_qos_from_datacenter(
-                        datacenter=host_network_qos.dc_0, qos_name=qos
+                        datacenter=conf.DC_0, qos_name=qos
                     ) for qos in qos_names
                     ]
             )
@@ -67,20 +67,19 @@ def update_network_in_datacenter(request):
     """
     Update network on Data-Center
     """
-    host_network_qos = NetworkFixtures()
     qos_names = request.node.cls.qos_names
     nets = request.node.cls.nets
 
     for net, qos_name in zip(nets, qos_names):
         testflow.setup(
             "Update network: %s QoS: %s on DC: %s", net, qos_name,
-            host_network_qos.dc_0
+            conf.DC_0
         )
         assert ll_networks.update_network_in_datacenter(
-            positive=True, network=net, datacenter=host_network_qos.dc_0,
+            positive=True, network=net, datacenter=conf.DC_0,
             qos_dict={
                 "qos_name": qos_name,
-                "datacenter": host_network_qos.dc_0
+                "datacenter": conf.DC_0
             }
         )
 
