@@ -51,6 +51,7 @@ from art.unittest_lib import attr, StorageTest as TestCase
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 @pytest.mark.usefixtures(
     init_base_params.__name__,
     init_spm_host.__name__,
@@ -269,6 +270,7 @@ class TestCase18215(BaseTestCase):
         self.data_center_upgrade()
 
 
+@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 class TestCase18303(TestCase):
     """
     * Verify existing storage Domain is in version 4
@@ -559,6 +561,7 @@ class TestCase18338(BaseTestCase3):
         )
 
 
+@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 @pytest.mark.usefixtures(
     init_test_vm_name.__name__,
     create_vm.__name__,
@@ -1128,6 +1131,7 @@ class TestCase18348(BaseTestCase2):
         )
 
 
+@pytest.mark.skipif(True, reason="Due to sporadic bz 1449944 & 1456268")
 @pytest.mark.usefixtures(
     create_vm.__name__,
     init_test_template_name.__name__,
