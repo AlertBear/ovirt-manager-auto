@@ -118,11 +118,18 @@ def create_vm(request):
     vm_parameters = copy.copy(
         getattr(request.node.cls, "vm_parameters", dict())
     )
-    custom_params = fixture_helper.get_attr_helper(
-        attribute='function.custom_vm_params.args',
-        obj=request) or [request.getfixturevalue('custom_vm_params')]
+
+    custom_vm_marker = request.node.get_marker('custom_vm_params')
+    custom_params = custom_vm_marker.kwargs if custom_vm_marker else (
+        fixture_helper.get_fixture_val(
+            request=request,
+            attr_name='custom_vm_params',
+            default_value=None
+        )
+    )
+
     if custom_params:
-        vm_parameters.update(custom_params[0])
+        vm_parameters.update(custom_params)
     vm_name = vm_parameters['name']
     assert ll_vms.addVm(True, **vm_parameters)
 

@@ -187,10 +187,10 @@ class TestMaxMemory(VirtTest):
 
     @tier2
     @polarion("RHEVM-19339")
-    @pytest.mark.custom_vm_params({
-        'memory': global_helper.get_gb(4),
-        'max_memory': global_helper.get_gb(4),
-    })
+    @pytest.mark.custom_vm_params(
+        memory=global_helper.get_gb(4),
+        max_memory=global_helper.get_gb(4),
+    )
     def test_hotplug_max_memory_equal_negative(self):
         """
         Negative: Add vm with memory and max memory equal, hotplug memory

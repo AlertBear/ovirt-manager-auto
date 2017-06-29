@@ -71,7 +71,7 @@ class TestMaxMemoryUpdateInstanceTypes(VirtTest):
         testflow.step('Check that VM is up')
         assert ll_vms.get_vm_state(self.vm_name) == 'up'
 
-    @pytest.mark.custom_vm_params({'instance_type': 'Max_Mem_Custom'})
+    @pytest.mark.custom_vm_params(instance_type='Max_Mem_Custom')
     @pytest.mark.usefixtures(create_instance_type.__name__, create_vm.__name__)
     @pytest.mark.custom_instance_type_params({
         'instance_type_name': config.CUSTOM_INSTANCE_TYPE_NAME,
