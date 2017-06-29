@@ -317,8 +317,10 @@ class JunitExtension(object):
         # but it is not expected in production jobs
         tag_exp = config.getoption('-A')
         if tag_exp:
-            pattern = re.compile("tier==\S")
-            tag_exp = "_".join(re.findall(pattern, tag_exp)).replace("=", "")
+            pattern = re.compile("tier==\S*")
+            tag_exp = "_".join(
+                re.findall(pattern, tag_exp)
+            ).replace("=", "").replace("'", "")
         else:
             tag_exp = ''
 
