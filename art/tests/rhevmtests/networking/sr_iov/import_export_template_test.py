@@ -25,7 +25,7 @@ from fixtures import (  # noqa: F401
     create_vm_fixture,
     add_vnics_to_vm,
     set_num_of_vfs,
-    init
+    sr_iov_init
 )
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -94,6 +94,7 @@ def prepare_setup_import_export(request):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     update_vnic_profiles.__name__,
     create_vm_fixture.__name__,

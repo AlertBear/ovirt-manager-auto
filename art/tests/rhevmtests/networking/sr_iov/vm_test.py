@@ -33,7 +33,7 @@ from fixtures import (  # noqa: F401
     create_qos,
     update_qos,
     add_labels,
-    init
+    sr_iov_init
 )
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
@@ -55,6 +55,7 @@ pytestmark = pytest.mark.skipif(
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     update_vnic_profiles.__name__,
@@ -264,6 +265,7 @@ class TestSriovVm01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
@@ -333,6 +335,7 @@ class TestSriovVm02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
@@ -461,6 +464,7 @@ class TestSriovVm03(NetworkTest):
 @attr(tier=2)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_all_networks_allowed.__name__,
@@ -609,6 +613,7 @@ class TestSriovVm04(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
@@ -717,6 +722,7 @@ class TestSriovVm05(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,

@@ -62,7 +62,7 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
     reset_host_sriov_params,
     set_num_of_vfs,
     update_vnic_profiles,
-    init
+    sr_iov_init
 )
 
 
@@ -1257,6 +1257,7 @@ class TestSanity16(NetworkTest):
 
 @attr(tier=1)
 @pytest.mark.usefixtures(
+    sr_iov_init.__name__,
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,

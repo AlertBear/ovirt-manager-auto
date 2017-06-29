@@ -29,8 +29,8 @@ from rhevmtests.networking import (
 from art.unittest_lib import testflow
 
 
-@pytest.fixture(scope="module", autouse=True)
-def init(request):
+@pytest.fixture(scope="module")
+def sr_iov_init(request):
     """
     Prepare SR-IOV params
     """
