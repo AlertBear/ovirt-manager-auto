@@ -1187,7 +1187,7 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
     return status
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def stopVm(positive, vm, async='false'):
     """
     Stop vm

@@ -7,11 +7,13 @@ Fixtures for required_network
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import rhevmtests.networking.config as conf
+from art.rhevm_api.tests_lib.high_level import (
+    hosts as hl_hosts,
+    networks as hl_networks
+)
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import rhevmtests.networking.helper as network_helper
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class", autouse=True)
@@ -19,16 +21,12 @@ def activate_host(request):
     """
     Activate host if the host is not up
     """
-    required_network = NetworkFixtures()
 
     def fin():
         """
         Activate host if not up
         """
-        testflow.teardown("Activate host %s", required_network.host_0_name)
-        assert hl_hosts.activate_host_if_not_up(
-            host=required_network.host_0_name
-        )
+        assert hl_hosts.activate_host_if_not_up(host=conf.HOST_0_NAME)
     request.addfinalizer(fin)
 
 
@@ -37,7 +35,6 @@ def create_network_on_setup(request):
     """
     Create network on setup
     """
-    required_network = NetworkFixtures()
     net_dict = getattr(request.node.cls, "net_dict", dict())
 
     def fin():
@@ -51,7 +48,6 @@ def create_network_on_setup(request):
     request.addfinalizer(fin)
 
     if net_dict:
-        network_helper.prepare_networks_on_setup(
-            networks_dict=net_dict, dc=required_network.dc_0,
-            cluster=required_network.cluster_0
+        assert hl_networks.create_and_attach_networks(
+            data_center=conf.DC_0, cluster=conf.CL_0, network_dict=net_dict
         )

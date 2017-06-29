@@ -5,28 +5,21 @@
 Predictable vNIC order feature test cases
 """
 
-import logging
-
-import pytest
-
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as vnic_order_conf
 import helper
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr, testflow
-from fixtures import prepare_setup_predictable_vnic_order
 import rhevmtests.networking.config as conf
-
-logger = logging.getLogger("Predictable_vNIC_Order_Cases")
+from fixtures import prepare_setup_predictable_vnic_order  # noqa: F401
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(prepare_setup_predictable_vnic_order.__name__)
 class TestPredictableVnicOrder01(NetworkTest):
     """
     Check vNICs order for new VM
     """
-    __test__ = True
+    # General params
     vm = vnic_order_conf.VM_NAME
 
     @polarion("RHEVM3-4095")

@@ -22,7 +22,6 @@ def add_vnics_to_vm():
     :rtype: bool
     """
     for vnic in vnic_order_conf.VNIC_NAMES:
-        logger.info("Add %s to %s", vnic, vnic_order_conf.VM_NAME)
         if not ll_vms.addNic(
             positive=True, vm=vnic_order_conf.VM_NAME, name=vnic,
             network=conf.MGMT_BRIDGE

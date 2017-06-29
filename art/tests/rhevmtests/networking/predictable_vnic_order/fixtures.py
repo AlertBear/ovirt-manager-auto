@@ -12,10 +12,9 @@ import config as vnic_order_conf
 import helper
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="module", autouse=True)
 def prepare_setup_predictable_vnic_order(request):
     """
     Create VM from template
@@ -23,7 +22,6 @@ def prepare_setup_predictable_vnic_order(request):
     Add 4 vNICs to VM
     Reorder vNICs mac addresses
     """
-    NetworkFixtures()
     vm = vnic_order_conf.VM_NAME
     template = conf.TEMPLATE_NAME[0]
     nic_1 = conf.NIC_NAME[0]
@@ -32,7 +30,6 @@ def prepare_setup_predictable_vnic_order(request):
         """
         remove VM
         """
-        testflow.teardown("Remove VM %s", vm)
         assert ll_vms.removeVm(positive=True, vm=vm)
     request.addfinalizer(fin2)
 
@@ -40,15 +37,12 @@ def prepare_setup_predictable_vnic_order(request):
         """
         Stop VM
         """
-        testflow.teardown("Stop Vm %s", vm)
         assert ll_vms.stopVm(positive=True, vm=vm)
     request.addfinalizer(fin1)
 
-    testflow.setup("Create VM %s from template %s", vm, template)
     assert ll_vms.addVm(
         positive=True, name=vm, cluster=conf.CL_0, template=template,
     )
-    testflow.setup("Remove vNIC %s from VM %s", nic_1, vm)
     assert ll_vms.removeNic(positive=True, vm=vm, nic=nic_1)
     testflow.setup("Add 4 vNICs to VM %s", vm)
     assert helper.add_vnics_to_vm()

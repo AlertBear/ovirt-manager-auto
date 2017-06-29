@@ -5,8 +5,7 @@
 Config file for port mirroring
 """
 
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import config as conf, helper as network_helper
 
 VMS_NETWORKS_PARAMS = dict()
 NUM_VMS = 5

@@ -14,15 +14,17 @@ import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, testflow, attr
-from fixtures import (
-    prepare_setup, import_vm_from_data_domain, set_allow_duplicate_mac_pool,
-    manage_mac_pool_range, make_sure_no_mac_in_pool
+from fixtures import (  # noqa: F401
+    prepare_setup,
+    import_vm_from_data_domain,
+    set_allow_duplicate_mac_pool,
+    manage_mac_pool_range,
+    make_sure_no_mac_in_pool
 )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    prepare_setup.__name__,
     import_vm_from_data_domain.__name__
 )
 class TestRegisterDomain01(NetworkTest):
@@ -30,7 +32,7 @@ class TestRegisterDomain01(NetworkTest):
     Import VM from storage data domain with same MAC pool range and network
     exists on datacenter
     """
-    __test__ = True
+    # import_vm_from_data_domain params
     data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[1][0]
     reassessing_mac = False
@@ -61,7 +63,6 @@ class TestRegisterDomain01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    prepare_setup.__name__,
     import_vm_from_data_domain.__name__
 )
 class TestRegisterDomain02(NetworkTest):
@@ -70,7 +71,7 @@ class TestRegisterDomain02(NetworkTest):
     not is datacenter and reassessing MAC is checked and mapping the network
     in the import process
     """
-    __test__ = True
+    # import_vm_from_data_domain params
     data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[2][0]
     src_net = register_domain_conf.NETS[2][0]
@@ -110,7 +111,6 @@ class TestRegisterDomain02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    prepare_setup.__name__,
     import_vm_from_data_domain.__name__
 )
 class TestRegisterDomain03(NetworkTest):
@@ -119,7 +119,7 @@ class TestRegisterDomain03(NetworkTest):
     not is datacenter and reassessing MAC is not checked and without mapping
     the network in the import process
     """
-    __test__ = True
+    # import_vm_from_data_domain params
     data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[3][0]
     net = register_domain_conf.NETS[3][0]
@@ -156,7 +156,6 @@ class TestRegisterDomain03(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    prepare_setup.__name__,
     import_vm_from_data_domain.__name__
 )
 class TestRegisterDomain04(NetworkTest):
@@ -164,7 +163,7 @@ class TestRegisterDomain04(NetworkTest):
     Import VM from storage data domain when MAC is already exists on another VM
     with reassessing MAC flag
     """
-    __test__ = True
+    # import_vm_from_data_domain params
     data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[4][0]
 
@@ -184,13 +183,12 @@ class TestRegisterDomain04(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(prepare_setup.__name__)
 class TestRegisterDomain05(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
     without reassessing MAC flag
     """
-    __test__ = True
+    # General params
     vm = register_domain_conf.VM_NAMES[5][0]
 
     @polarion("RHEVM-16896")
@@ -216,7 +214,6 @@ class TestRegisterDomain05(NetworkTest):
 @attr(tier=2)
 @bz({"1390556": {}})
 @pytest.mark.usefixtures(
-    prepare_setup.__name__,
     set_allow_duplicate_mac_pool.__name__,
     import_vm_from_data_domain.__name__
 )
@@ -225,7 +222,7 @@ class TestRegisterDomain06(NetworkTest):
     Import VM from storage data domain when MAC is already exists on another VM
     without reassessing MAC flag and allow duplicate flag in MAC pool
     """
-    __test__ = True
+    # import_vm_from_data_domain params
     data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[6][0]
     reassessing_mac = False
@@ -248,7 +245,6 @@ class TestRegisterDomain06(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    prepare_setup.__name__,
     manage_mac_pool_range.__name__,
     make_sure_no_mac_in_pool.__name__
 )
@@ -257,7 +253,7 @@ class TestRegisterDomain07(NetworkTest):
     Import VM from storage data domain when not MACs left in the pool
     with reassessing MAC flag
     """
-    __test__ = True
+    # make_sure_no_mac_in_pool params
     vm = register_domain_conf.VM_NAMES[7][0]
 
     @polarion("RHEVM-17144")
@@ -282,7 +278,6 @@ class TestRegisterDomain07(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    prepare_setup.__name__,
     import_vm_from_data_domain.__name__
 )
 class TestRegisterDomain08(NetworkTest):
@@ -290,7 +285,7 @@ class TestRegisterDomain08(NetworkTest):
     Import VM from storage data domain while the network exists on
     datacenter but force to import with empty vNIC
     """
-    __test__ = True
+    # import_vm_from_data_domain params
     data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[8][0]
     reassessing_mac = False

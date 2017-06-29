@@ -21,7 +21,7 @@ import config as register_domain_conf
 import helper
 from art.unittest_lib import testflow
 from rhevmtests import networking
-from rhevmtests.networking import helper as network_helper, config as conf
+from rhevmtests.networking import config as conf
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -67,9 +67,11 @@ def prepare_setup(request):
         networking.remove_unneeded_vms()
     request.addfinalizer(fin1)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=register_domain_conf.NETS_DICT, dc=dc, cluster=conf.CL_0
+    assert hl_networks.create_and_attach_networks(
+        data_center=dc, cluster=conf.CL_0,
+        network_dict=register_domain_conf.NETS_DICT
     )
+
     testflow.setup("Add NFS storage domain %s to DC %s", storage_name, dc)
     assert hl_storage.addNFSDomain(
         host=host, storage=storage_name, data_center=dc,
@@ -100,7 +102,6 @@ def prepare_setup(request):
     nets_to_remove = [
         register_domain_conf.NETS[2][0], register_domain_conf.NETS[3][0]
     ]
-    testflow.setup("Remove networks %s from setup", nets_to_remove)
     assert hl_networks.remove_networks(positive=True, networks=nets_to_remove)
 
     testflow.setup("Import storage domain %s into DC %s", storage_name, dc)

@@ -9,38 +9,42 @@ using 2 hosts and 5 VMs
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    vms as ll_vms
+)
 import config as pm_conf
 import helper
 import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import config as conf, helper as network_helper
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
-    port_mirroring_prepare_setup, return_vms_to_original_host,
-    disable_port_mirroring, set_port_mirroring
+    port_mirroring_prepare_setup,
+    return_vms_to_original_host,
+    disable_port_mirroring,
+    set_port_mirroring
 )
 
 
 @attr(tier=2)
 @pytest.mark.usefixtures(port_mirroring_prepare_setup.__name__)
 @pytest.mark.skipif(
-    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS,
+    reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 class Base(NetworkTest):
     pass
 
 
-@pytest.mark.usefixtures(return_vms_to_original_host.__name__)
 @pytest.mark.incremental
+@pytest.mark.usefixtures(return_vms_to_original_host.__name__)
 class TestPortMirroringCase01(Base):
     """
     Check that mirroring still works after migration
     """
-    __test__ = True
+    # General params
     net1_ips = pm_conf.NET1_IPS
     mgmt_ips = pm_conf.MGMT_IPS
     vm_names = conf.VM_NAME[:4]
@@ -120,8 +124,7 @@ class TestPortMirroringCase02(Base):
     """
     Replace network on the mirrored VM to a non-mirrored network
     """
-
-    __test__ = True
+    # General params
     nic_name_2 = pm_conf.PM_NIC_NAME[0]
     net_1 = pm_conf.PM_NETWORK[1]
     net1_ip2 = pm_conf.NET1_IPS[2]
@@ -166,7 +169,7 @@ class TestPortMirroringCase03(Base):
     """
     Check mirroring when listening on multiple networks on the same machine
     """
-    __test__ = True
+    # General params
     net1_ip1 = pm_conf.NET1_IPS[1]
     net1_ip2 = pm_conf.NET1_IPS[2]
     nic_name_1 = conf.NIC_NAME[0]
@@ -197,7 +200,7 @@ class TestPortMirroringCase04(Base):
     """
     Check port mirroring when it's enabled on multiple machines.
     """
-    __test__ = True
+    # General params
     nic_name_1 = conf.NIC_NAME[0]
     nic_name_2 = pm_conf.PM_NIC_NAME[0]
     net_1 = pm_conf.PM_NETWORK[0]
@@ -282,7 +285,7 @@ class TestPortMirroringCase05(Base):
     """
     Restart VDSM on host while mirroring is on
     """
-    __test__ = True
+    # General params
     net1_ip1 = pm_conf.NET1_IPS[1]
     net1_ip2 = pm_conf.NET1_IPS[2]
     mgmt_ips = pm_conf.MGMT_IPS
@@ -319,7 +322,7 @@ class TestPortMirroringCase06(Base):
     Check that mirroring still occurs after down/UP listening bridge on the
     host
     """
-    __test__ = True
+    # General params
     net1_ip1 = pm_conf.NET1_IPS[1]
     net1_ip2 = pm_conf.NET1_IPS[2]
     net_1 = pm_conf.PM_NETWORK[0]

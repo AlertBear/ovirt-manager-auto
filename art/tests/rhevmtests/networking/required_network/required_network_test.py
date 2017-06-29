@@ -15,9 +15,11 @@ import helper
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
-from fixtures import activate_host, create_network_on_setup
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, NetworkFixtures
+from fixtures import activate_host
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    setup_networks_fixture,
+    create_and_attach_networks,
+    remove_all_networks
 )
 from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
@@ -27,7 +29,6 @@ def required_network_prepare_setup(request):
     """
     Deactivate hosts
     """
-    NetworkFixtures()
 
     def fin1():
         """
@@ -48,7 +49,6 @@ class TestRequiredNetwork01(NetworkTest):
     Check that management network is required by default
     Try to set it to non required.
     """
-    __test__ = True
     cluster = conf.CL_0
     mgmt = conf.MGMT_BRIDGE
 
@@ -73,7 +73,7 @@ class TestRequiredNetwork01(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_network_on_setup.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     activate_host.__name__
 )
@@ -83,14 +83,11 @@ class TestRequiredNetwork02(NetworkTest):
     Set host NIC down
     Check that host is non-operational
     """
-    __test__ = True
+    # General params
+    dc = conf.DC_0
     net = required_conf.NETS[2][0]
-    net_dict = {
-        net: {
-            "required": "true",
-            "usages": ""
-        }
-    }
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net: {
@@ -99,6 +96,18 @@ class TestRequiredNetwork02(NetworkTest):
             }
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": required_conf.CASE_2_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-3744")
     def test_nonoperational(self):
@@ -118,7 +127,7 @@ class TestRequiredNetwork02(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures(
-    create_network_on_setup.__name__,
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     activate_host.__name__
 )
@@ -130,15 +139,12 @@ class TestRequiredNetwork03(NetworkTest):
     Set BOND slaves up
     Check that host is operational
     """
-    __test__ = True
+    # General params
+    dc = conf.DC_0
     net = required_conf.NETS[3][0]
-    net_dict = {
-        net: {
-            "required": "true",
-            "vlan_id": required_conf.VLAN_ID
-        }
-    }
     bond = "bond4"
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net: {
@@ -148,6 +154,18 @@ class TestRequiredNetwork03(NetworkTest):
             }
         }
     }
+
+    # create_and_attach_networks params
+    create_networks = {
+        "1": {
+            "datacenter": dc,
+            "cluster": conf.CL_0,
+            "networks": required_conf.CASE_3_NETS
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @polarion("RHEVM3-3752")
     def test_1_nonoperational_bond_down(self):

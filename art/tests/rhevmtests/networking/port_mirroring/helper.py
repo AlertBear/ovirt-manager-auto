@@ -8,11 +8,12 @@ Utilities used by port_mirroring_test
 import logging
 
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    vms as ll_vms
+)
 import config as pm_conf
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as net_help
+from rhevmtests.networking import config as conf, helper as net_help
 from rhevmtests import helpers
 
 logger = logging.getLogger("Port_Mirroring_Helper")
@@ -84,7 +85,6 @@ def migrate_vms_to_origin_host():
     Returns:
         bool: True if succeeded to migrate all VM's, False otherwise
     """
-    vms = list()
     src_host = conf.HOST_1_NAME
     dst_host = conf.HOST_0_NAME
 

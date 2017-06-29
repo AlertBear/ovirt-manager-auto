@@ -7,8 +7,10 @@ Helper for register domain tests
 
 from utilities import utils
 
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    mac_pool as ll_mac_pool,
+    vms as ll_vms
+)
 import config as register_domain_conf
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
