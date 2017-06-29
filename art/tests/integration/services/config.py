@@ -68,7 +68,8 @@ ACTIONS = ('enabled', 'running', 'is-faultless')
 BUGGED_SERVICES = {
     'momd': '1427066',
     'vdsmd': '1444087',
-    'libvirtd': '1443965'
+    'libvirtd': '1443965',
+    'chronyd': '1466422'
 }
 
 DISABLED_SERVICES = [
