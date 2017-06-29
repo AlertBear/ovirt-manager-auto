@@ -185,16 +185,21 @@ def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     Returns:
         bool: True/False
     """
+    host_nics = host.network.all_interfaces()
     dummy_int = "dummy_%s"
-    if ifcfg_params is None:
-        ifcfg_params = {}
+    ifcfg_params = ifcfg_params if ifcfg_params else {}
 
     for i in range(num_dummy):
         nic_name = dummy_int % i
+        if nic_name in host_nics:
+            logger.warning("Dummy %s already exists on host", nic_name, host)
+            continue
+
         cmd = ["ip", "link", "add", nic_name, "type", "dummy"]
         rc = host.run_command(cmd)[0]
         if rc:
-            logger.warning("Dummy %s already exists", nic_name)
+            logger.error("Failed to create %s on host %s", nic_name, host)
+            return False
 
         host.network.create_ifcfg_file(nic=nic_name, params=ifcfg_params)
 
