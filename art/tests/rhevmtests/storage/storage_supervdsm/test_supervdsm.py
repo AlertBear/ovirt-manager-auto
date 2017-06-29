@@ -28,9 +28,10 @@ VDSM_LOG = "/var/log/vdsm/vdsm.log"
 SVDSM_LOCK = "/var/run/vdsm/svdsm.sock"
 SUPERVDSMD = "supervdsmd"
 VDSMD = "vdsmd"
-SERVICE_CMD = "/sbin/service"
+SERVICE_CMD = "/bin/systemctl"
 
-HW_INFO_COMMAND = ["vdsClient", "-s", "0", "getVdsHardwareInfo"]
+HW_INFO_COMMAND = ["vdsm-client", "Host", "getHardwareInfo"]
+
 SLEEP_SERVICE = 10
 
 # Error messages
@@ -42,11 +43,11 @@ FILE_DOES_NOT_EXIST = "File %s does not exist"
 
 
 def getSupervdsmPid(machine):
-    return machine.getPidByName("supervdsmServer")[1][0]["ProcessId"]
+    return machine.getPidByName("supervdsmd")[1][0]["ProcessId"]
 
 
 def getVdsmPid(machine):
-    return machine.getPidByName("vdsm")[1][0]["ProcessId"]
+    return machine.getPidByName("vdsmd")[1][0]["ProcessId"]
 
 
 def isVdsmRunning(machine):
@@ -210,7 +211,7 @@ class TestCase6270(TestCase):
             logger.info("Restarting supervdsm")
             assert runSystemInitSupervdsmd(
                 command
-            ), ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm")
+            ), ERROR_EXEC_SERVICE_ACTION % (command, "supervdsmd")
 
 
 @pytest.mark.usefixtures(
@@ -283,17 +284,17 @@ class TestCase6272(TestCase):
         """
         supervdsm stress tests
         """
-        N = 1000
+        N = 100
         # is much faster run it with one ssh session
         cmd = (
-            "for i in `seq 0 %(iter)d`; do vdsClient -s 0 getVdsHardwareInfo"
+            "for i in `seq 0 %(iter)d`; do vdsm-client Host getHardwareInfo"
             " >& /dev/null; if [ $? -ne 0 ]; then exit -1; fi; done;" %
             {'iter': N}
         )
 
         logger.info("Executing vdsClient get HW Info for %d times" % N)
-        # ~ 0.3 sec per execution
-        success, output = self.machine.runCmd(cmd.split(' '), timeout=N * 0.3)
+        # ~ 2 sec per execution for vdsm-client , vds-client was 0.3 sec
+        success, output = self.machine.runCmd(cmd.split(' '), timeout=N * 10)
         assert success, (
             "Couldn't execute %(iter)d times the command. %(output)s:" %
             {
@@ -327,7 +328,7 @@ class TestCase6273(TestCase):
         ), "Error removing %s file" % SUPERVDSM_LOG
         assert isSupervdsmRunning(
             self.machine
-        ), ERROR_SERVICE_NOT_UP % "supervdsm"
+        ), ERROR_SERVICE_NOT_UP % "supervdsmd"
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
         assert success, (
             "Supervdsm didn't recover from removing log file, out=%s" % output
