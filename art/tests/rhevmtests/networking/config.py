@@ -53,6 +53,7 @@ HOST_1_IP = None  # Filled in test
 HOSTS_LIST = None  # Filled in setup_package
 VDS_2_HOST = None  # Filled in test
 HOST_2_NAME = None  # Filled in test
+HOST_2_NICS = None  # Filled in test
 VDS_HOSTS_LIST = None  # Filled in setup_package
 VM_DISK_SIZE = 1024
 DEFAULT_MGMT_QOS = "Default-Mgmt-Net-QoS"

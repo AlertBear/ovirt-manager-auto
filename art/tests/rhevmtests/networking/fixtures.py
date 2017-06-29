@@ -5,6 +5,7 @@
 Networking fixtures
 """
 
+import logging
 import pytest
 
 import fixtures_helper as network_fixture_helper
@@ -14,8 +15,15 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
     networks as hl_networks
 )
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    hosts as ll_hosts,
+    general as ll_general,
+    clusters as ll_clusters
+)
 import rhevmtests.helpers as global_helper
+
+logger = logging.getLogger(__name__)
 
 
 class NetworkFixtures(object):
@@ -35,6 +43,7 @@ class NetworkFixtures(object):
         conf.HOST_1_IP = conf.VDS_1_HOST.ip
         conf.HOST_0_NICS = conf.VDS_0_HOST.nics
         conf.HOST_1_NICS = conf.VDS_1_HOST.nics
+        conf.HOST_2_NICS = conf.VDS_2_HOST.nics
         self.vds_0_host = conf.VDS_0_HOST
         self.vds_1_host = conf.VDS_1_HOST
         self.vds_2_host = conf.VDS_2_HOST
@@ -53,6 +62,7 @@ class NetworkFixtures(object):
         self.host_1_ip = conf.HOST_1_IP
         self.host_0_nics = conf.HOST_0_NICS
         self.host_1_nics = conf.HOST_1_NICS
+        self.host_2_nics = conf.HOST_2_NICS
         self.dc_0 = conf.DC_0
         self.cluster_0 = conf.CL_0
         self.cluster_1 = conf.CL_1
@@ -64,6 +74,43 @@ class NetworkFixtures(object):
         self.mgmt_bridge = conf.MGMT_BRIDGE
         conf.HOSTS_LIST = self.hosts_list
         conf.VDS_HOSTS_LIST = self.vds_list
+        self.exclude_gluster_network_from_nics()
+
+    def exclude_gluster_network_from_nics(self):
+        """
+        Exclude gluster network from host NICs list
+        """
+        for host, vds, nics in zip(
+            self.hosts_list, self.vds_list, [
+                conf.HOST_0_NICS, conf.HOST_1_NICS, conf.HOST_2_NICS]
+        ):
+            host_obj = ll_hosts.get_host_object(host_name=host)
+            host_cl = ll_general.get_object_name_by_id(
+                ll_clusters.CLUSTER_API, host_obj.get_cluster().get_id()
+            )
+            host_nics = ll_hosts.get_host_nics_list(host=host)
+            for nic in host_nics:
+                nic_name = nic.name
+                if "dummy" in nic_name:
+                    continue
+
+                try:
+                    network = ll_networks.get_network_on_host_nic(
+                        host=host, nic=nic_name
+                    )
+                    if ll_networks.is_gluster_network(
+                        network=network, cluster=host_cl
+                    ):
+                        logger.debug(
+                            "Found Gluster network (%s) on host %s NIC %s. "
+                            "Excluding the network from the host NICs list",
+                            network, host, nic_name
+                        )
+                        nics.pop(nics.index(nic_name))
+                        break
+                except AttributeError:
+                    # In case no network on NIC
+                    continue
 
 
 @pytest.fixture(scope="class")
