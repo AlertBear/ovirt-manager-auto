@@ -21,7 +21,6 @@ from art.unittest_lib import NetworkTest, testflow
 from fixtures import import_vms, import_templates, remove_networks
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(import_vms.__name__)
 class TestImportExportCase01(NetworkTest):
@@ -36,6 +35,7 @@ class TestImportExportCase01(NetworkTest):
     net1 = import_export_conf.NETS[0]
     net2 = import_export_conf.NETS[1]
 
+    @tier2
     @polarion("RHEVM3-3760")
     def test_01_imported_vm_vnics(self):
         """
@@ -46,6 +46,7 @@ class TestImportExportCase01(NetworkTest):
             net1=self.net1, net2=self.net2, vm=self.import_vm
         )
 
+    @tier2
     @polarion("RHEVM3-3769")
     def test_02_import_vm_more_than_once(self):
         """
@@ -60,7 +61,6 @@ class TestImportExportCase01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(import_templates.__name__)
 class TestImportExportCase02(NetworkTest):
@@ -76,6 +76,7 @@ class TestImportExportCase02(NetworkTest):
     net1 = import_export_conf.NETS[0]
     net2 = import_export_conf.NETS[1]
 
+    @tier2
     @polarion("RHEVM3-3766")
     def test_01_imported_temp_vnics(self):
         """
@@ -88,6 +89,7 @@ class TestImportExportCase02(NetworkTest):
             net1=self.net1, net2=self.net2, template=self.import_template
         )
 
+    @tier2
     @polarion("RHEVM3-3764")
     def test_02_import_more_than_once(self):
         """
@@ -104,7 +106,6 @@ class TestImportExportCase02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     remove_networks.__name__,
@@ -135,6 +136,7 @@ class TestImportExportCase03(NetworkTest):
     nic_name = import_export_conf.VNICS[3]
     net_list = import_export_conf.NETS
 
+    @tier2
     @polarion("RHEVM3-3771")
     def test_01_import_vm_vnic_profiles(self):
         """
@@ -151,6 +153,7 @@ class TestImportExportCase03(NetworkTest):
             net1=None, net2=None, vm=self.vm_1
         )
 
+    @tier2
     @polarion("RHEVM3-3765")
     def test_02_import_temp_vnic_profiles(self):
         """
@@ -167,6 +170,7 @@ class TestImportExportCase03(NetworkTest):
             net1=None, net2=None, template=self.templates_to_import[0]
         )
 
+    @tier2
     @polarion("RHEVM3-3761")
     def test_03_start_vm(self):
         """
@@ -191,6 +195,7 @@ class TestImportExportCase03(NetworkTest):
             positive=True, vm=self.vm_1, wait_for_status="up"
         )
 
+    @tier2
     @polarion("RHEVM3-3772")
     def test_04_start_vm_from_template(self):
         """

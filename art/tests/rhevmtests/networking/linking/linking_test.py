@@ -87,7 +87,6 @@ def linking_prepare_setup(request):
     )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(add_vnics_to_vms.__name__)
 class TestLinkedCase01(NetworkTest):
@@ -108,6 +107,7 @@ class TestLinkedCase01(NetworkTest):
         }
     ]
 
+    @tier2
     @polarion("RHEVM3-3817")
     def test_check_default_values(self):
         """
@@ -118,7 +118,6 @@ class TestLinkedCase01(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=self.vnic)
 
 
-@tier2
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(add_vnics_to_vms.__name__)
@@ -148,6 +147,7 @@ class TestLinkedCase02(NetworkTest):
         }
     ]
 
+    @tier2
     @polarion("RHEVM3-3834")
     def test_check_combination_plugged_linked_values(self):
         """
@@ -200,7 +200,6 @@ class TestLinkedCase02(NetworkTest):
             assert ll_vms.get_vm_nic_plugged(vm=vm, nic=vnic, positive=False)
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(add_vnics_to_vms.__name__)
 class TestLinkedCase03(NetworkTest):
@@ -221,6 +220,7 @@ class TestLinkedCase03(NetworkTest):
         }
     ]
 
+    @tier2
     @polarion("RHEVM3-3833")
     def test_check_start_vm(self):
         """
@@ -232,7 +232,6 @@ class TestLinkedCase03(NetworkTest):
         assert ll_vms.startVm(positive=False, vm=self.vm)
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     add_vnic_profile.__name__,
@@ -286,6 +285,7 @@ class TestLinkedCase04(NetworkTest):
         "network": net_1
     }
 
+    @tier2
     @polarion("RHEVM3-3825")
     def test_change_net_param_values(self):
         """
@@ -340,6 +340,7 @@ class TestLinkedCase04(NetworkTest):
                 positive=True, vm=self.vm_name, nic=nic_name, name=orig_nic
             )
 
+    @tier2
     @polarion("RHEVM3-3823")
     def test_check_port_mirroring_network(self):
         """
@@ -363,7 +364,6 @@ class TestLinkedCase04(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
@@ -399,6 +399,7 @@ class TestLinkedCase05(NetworkTest):
         "network": net_2
     }
 
+    @tier2
     @polarion("RHEVM3-3826")
     def test_change_net_param_values(self):
         """

@@ -39,7 +39,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -88,6 +87,7 @@ class TestHostNetQOSCase01(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-14300")
     def test_01_remove_anonymous_qos_for_network_on_host_nic(self):
         """
@@ -113,6 +113,7 @@ class TestHostNetQOSCase01(NetworkTest):
             host_name=conf.HOST_0_NAME, **net_dict
         )
 
+    @tier2
     @polarion("RHEVM3-14354")
     def test_02_remove_anonymous_qos_from_all_networks_on_host_nic(self):
         """
@@ -142,6 +143,7 @@ class TestHostNetQOSCase01(NetworkTest):
             host_name=conf.HOST_0_NAME, **net_dict
         )
 
+    @tier2
     @polarion("RHEVM3-6534")
     def test_03_anonymous_qos_for_network_on_host_nic(self):
         """
@@ -161,7 +163,6 @@ class TestHostNetQOSCase01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_host_net_qos.__name__,
@@ -209,6 +210,7 @@ class TestHostNetQOSCase02(NetworkTest):
         "ls": qos_conf.TEST_VALUE
     }
 
+    @tier2
     @polarion("RHEVM3-6540")
     def test_vds_caps_values(self):
         """
@@ -233,7 +235,6 @@ class TestHostNetQOSCase02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -270,6 +271,7 @@ class TestHostNetQOSCase03(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-6527")
     def test_weight_share_rate_new_limit(self):
         """
@@ -324,7 +326,6 @@ class TestHostNetQOSCase03(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -358,6 +359,7 @@ class TestHostNetQOSCase04(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-6528")
     def test_rate_share_limit(self):
         """
@@ -417,7 +419,6 @@ class TestHostNetQOSCase04(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -458,6 +459,7 @@ class TestHostNetQOSCase05(NetworkTest):
     qos_name_4 = qos_conf.QOS_NAME[5][3]
     qos_names = [qos_name_1, qos_name_2, qos_name_3, qos_name_4]
 
+    @tier2
     @polarion("RHEVM3-6532")
     def test_01_add_network_qos(self):
         """
@@ -489,6 +491,7 @@ class TestHostNetQOSCase05(NetworkTest):
             outbound_average_realtime=qos_conf.TEST_VALUE - 2
         )
 
+    @tier2
     @polarion("RHEVM3-6535")
     def test_02_create_qos_when_add_network(self):
         """
@@ -505,6 +508,7 @@ class TestHostNetQOSCase05(NetworkTest):
             }
         )
 
+    @tier2
     @polarion("RHEVM3-14276")
     def test_03_update_network_with_qos(self):
         """
@@ -519,6 +523,7 @@ class TestHostNetQOSCase05(NetworkTest):
             }
         )
 
+    @tier2
     @polarion("RHEVM3-6536")
     def test_04_create_qos_when_update_network(self):
         """
@@ -539,6 +544,7 @@ class TestHostNetQOSCase05(NetworkTest):
             }
         )
 
+    @tier2
     @polarion("RHEVM3-14272")
     def test_05_create_qos_when_update_network_with_qos(self):
         """
@@ -557,6 +563,7 @@ class TestHostNetQOSCase05(NetworkTest):
             }
         )
 
+    @tier2
     @polarion("RHEVM3-14273")
     def test_06_unlimited_qos_when_update_network(self):
         """
@@ -569,7 +576,6 @@ class TestHostNetQOSCase05(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_host_net_qos.__name__,
@@ -599,6 +605,7 @@ class TestHostNetQOSCase06(NetworkTest):
     nets = [net_1]
     qos_names = [qos_conf.QOS_NAME[6][0]]
 
+    @tier2
     @polarion("RHEVM3-6533")
     def test_add_networks_qos_mixed_same_nic(self):
         """

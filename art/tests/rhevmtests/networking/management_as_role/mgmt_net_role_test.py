@@ -36,7 +36,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_clusters.__name__
@@ -65,6 +64,7 @@ class TestMGMTNetRole01(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-6466")
     def test_01_default_mgmt_net(self):
         """
@@ -85,7 +85,6 @@ class TestMGMTNetRole01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_clusters.__name__,
     create_and_attach_networks.__name__
@@ -123,6 +122,7 @@ class TestMGMTNetRole02(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-6474")
     def test_01_req_non_req_mgmt_net(self):
         """
@@ -156,7 +156,6 @@ class TestMGMTNetRole02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_clusters.__name__,
@@ -211,6 +210,7 @@ class TestMGMTNetRole03(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-6476")
     def test_01_remove_mgmt_net(self):
         """
@@ -268,7 +268,6 @@ class TestMGMTNetRole03(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_clusters.__name__,
     create_and_attach_networks.__name__,
@@ -318,6 +317,7 @@ class TestMGMTNetRole04(NetworkTest):
 
     usages_to_check = [conf.DISPLAY_NET_USAGE, conf.MIGRATION_NET_USAGE]
 
+    @tier2
     @polarion("RHEVM3-6469")
     def test_01_display_migration_fallback(self):
         """
@@ -338,7 +338,6 @@ class TestMGMTNetRole04(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_clusters.__name__,
@@ -386,6 +385,7 @@ class TestMGMTNetRole05(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-6471")
     def test_01_moving_host(self):
         """
@@ -414,7 +414,6 @@ class TestMGMTNetRole05(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
@@ -483,6 +482,7 @@ class TestMGMTNetRole06(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-6477")
     def test_01_different_mgmt_net(self):
         """
@@ -537,6 +537,7 @@ class TestMGMTNetRole06(NetworkTest):
             management_network=self.net_1
         )
 
+    @tier2
     @polarion("RHEVM3-6478")
     def test_02_same_mgmt_net(self):
         """
@@ -567,7 +568,6 @@ class TestMGMTNetRole06(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_and_attach_networks.__name__,
@@ -604,6 +604,7 @@ class TestMGMTNetRole07(NetworkTest):
     # remove_network params
     remove_network_params = [ext_dc, conf.MGMT_BRIDGE]
 
+    @tier2
     @polarion("RHEVM3-6479")
     def test_01_different_mgmt_net(self):
         """
@@ -648,7 +649,6 @@ class TestMGMTNetRole07(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     install_host_with_new_management.__name__,
@@ -714,6 +714,7 @@ class TestMGMTNetRole08(NetworkTest):
         2, net_1, conf.CL_0, ext_cls_0, dc, mgmt_conf.NET_DICT_CASE_08_1, net_1
     ]
 
+    @tier2
     @polarion("RHEVM3-6470")
     def test_01_default_mgmt_net(self):
         """
@@ -724,6 +725,7 @@ class TestMGMTNetRole08(NetworkTest):
         )
         assert conf.VDS_2_HOST.network.find_mgmt_interface() == self.net_1
 
+    @tier2
     @polarion("RHEVM3-6467")
     def test_02_moving_host(self):
         """
@@ -751,6 +753,7 @@ class TestMGMTNetRole08(NetworkTest):
             host=host_2, cl=self.ext_cls_2, positive=False
         )
 
+    @tier2
     @polarion("RHEVM3-6472")
     def test_03_change_mgmt_net(self):
         """

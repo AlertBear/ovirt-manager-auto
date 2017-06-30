@@ -70,7 +70,6 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
 )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     add_vnic_profile.__name__
@@ -97,6 +96,7 @@ class TestSanity01(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM3-3970")
     def test_check_attr_vnic_profile(self):
         """
@@ -116,7 +116,6 @@ class TestSanity01(NetworkTest):
         assert attr_dict.get("name") == self.vnic_profile
 
 
-@tier1
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -161,6 +160,7 @@ class TestSanity02(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM3-9850")
     def test_01_multiple_actions(self):
         """
@@ -226,6 +226,7 @@ class TestSanity02(NetworkTest):
         )
         assert hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict)
 
+    @tier1
     @polarion("RHEVM3-9851")
     def test_02_multiple_actions(self):
         """
@@ -288,7 +289,6 @@ class TestSanity02(NetworkTest):
         assert hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict)
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
@@ -321,6 +321,7 @@ class TestSanity03(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM3-6525")
     def test_add_network_qos(self):
         """
@@ -333,6 +334,7 @@ class TestSanity03(NetworkTest):
             outbound_average_linkshare=conf.QOS_TEST_VALUE
         )
 
+    @tier1
     @polarion("RHEVM3-6526")
     def test_qos_for_network_on_host_nic(self):
         """
@@ -358,7 +360,6 @@ class TestSanity03(NetworkTest):
         hl_host_network.setup_networks(host_name=conf.HOST_0_NAME, **sn_dict)
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -429,20 +430,33 @@ class TestSanity04(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @pytest.mark.parametrize(
         ("network", "nic"),
         [
             # MTU cases
-            polarion("RHEVM3-14499")(mtu_vm_net_params),
-            polarion("RHEVM3-14500")(mtu_non_vm_net_params),
-            polarion("RHEVM3-14501")(mtu_vlan_vm_net_params),
-            polarion("RHEVM3-14502")(mtu_bond_vm_net_params),
+            pytest.param(*mtu_vm_net_params, marks=(polarion("RHEVM3-14499"))),
+            pytest.param(
+                *mtu_non_vm_net_params, marks=(polarion("RHEVM3-14500"))
+            ),
+            pytest.param(
+                *mtu_vlan_vm_net_params, marks=(polarion("RHEVM3-14501"))
+            ),
+            pytest.param(
+                *mtu_bond_vm_net_params, marks=(polarion("RHEVM3-14502"))
+            ),
 
             # Non-VM cases
-            polarion("RHEVM3-14503")(non_vm_net_params),
-            polarion("RHEVM3-14504")(non_vm_vlan_net_params),
-            polarion("RHEVM3-14505")(non_vm_bond_net_params),
-            polarion("RHEVM3-14506")(non_vm_vlan_bond_net_params),
+            pytest.param(*non_vm_net_params, marks=(polarion("RHEVM3-14503"))),
+            pytest.param(
+                *non_vm_vlan_net_params, marks=(polarion("RHEVM3-14504"))
+            ),
+            pytest.param(
+                *non_vm_bond_net_params, marks=(polarion("RHEVM3-14505"))
+            ),
+            pytest.param(
+                *non_vm_vlan_bond_net_params, marks=(polarion("RHEVM3-14506"))
+            ),
         ],
         ids=[
             # MTU cases
@@ -476,7 +490,6 @@ class TestSanity04(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -528,11 +541,16 @@ class TestSanity05(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @pytest.mark.parametrize(
         ("networks", "label", "nic"),
         [
-            polarion("RHEVM3-13511")(host_nic_label_params),
-            polarion("RHEVM3-13894")(host_bond_label_params)
+            pytest.param(
+                *host_nic_label_params, marks=(polarion("RHEVM3-13511"))
+            ),
+            pytest.param(
+                *host_bond_label_params, marks=(polarion("RHEVM3-13894"))
+            ),
         ],
         ids=[
             "On_host_NIC",
@@ -562,7 +580,6 @@ class TestSanity05(NetworkTest):
             )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -624,6 +641,7 @@ class TestSanity06(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM3-3829")
     def test_check_combination_plugged_linked_values(self):
         """
@@ -649,7 +667,6 @@ class TestSanity06(NetworkTest):
             assert not ll_vms.get_vm_nic_plugged(vm=self.vm_name, nic=nic_name)
 
 
-@tier1
 @pytest.mark.usefixtures(create_cluster.__name__)
 class TestSanity07(NetworkTest):
     """
@@ -662,6 +679,7 @@ class TestSanity07(NetworkTest):
     # create_cluster params
     ext_cl = mac_pool_conf.EXT_CL_1
 
+    @tier1
     @polarion("RHEVM3-14507")
     def test_check_default_mac_new_dc(self):
         """
@@ -676,6 +694,7 @@ class TestSanity07(NetworkTest):
         ).get_id()
         assert default_mac_id == ext_cl_mac_id
 
+    @tier1
     @polarion("RHEVM3-14509")
     def test_extend_default_mac_range(self):
         """
@@ -686,6 +705,7 @@ class TestSanity07(NetworkTest):
             mac_pool_name=mac_pool_conf.DEFAULT_MAC_POOL, size=(2, 2)
         )
 
+    @tier1
     @polarion("RHEVM3-14510")
     def test_01_add_new_range(self):
         """
@@ -697,6 +717,7 @@ class TestSanity07(NetworkTest):
             range_list=mac_pool_conf.MAC_POOL_RANGE_LIST
         )
 
+    @tier1
     @polarion("RHEVM3-14511")
     def test_02_remove_new_added_range(self):
         """
@@ -709,7 +730,6 @@ class TestSanity07(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     create_datacenters.__name__,
@@ -763,11 +783,16 @@ class TestSanity08(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc_for_nets]
 
+    @tier1
     @pytest.mark.parametrize(
         ("cluster", "network"),
         [
-            polarion("RHEVM3-14512")(custom_mgmt_net_params),
-            polarion("RHEVM3-14513")(default_mgmt_net_params)
+            pytest.param(
+                *custom_mgmt_net_params, marks=(polarion("RHEVM3-14512"))
+            ),
+            pytest.param(
+                *default_mgmt_net_params, marks=(polarion("RHEVM3-14513"))
+            ),
         ],
         ids=[
             "With_custom_management_network",
@@ -792,7 +817,6 @@ class TestSanity08(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -853,12 +877,16 @@ class TestSanity09(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @pytest.mark.parametrize(
         ("network", "update_params", "nic"),
         [
-            polarion("RHEVM3-14515")(bz({"1460687": {}})(mtu_params)),
-            polarion("RHEVM3-14516")(vlan_params),
-            polarion("RHEVM3-14517")(bridge_params),
+            pytest.param(
+                *mtu_params, marks=(
+                    (polarion("RHEVM3-14515")), bz({"1460687": {}}))
+            ),
+            pytest.param(*vlan_params, marks=(polarion("RHEVM3-14516"))),
+            pytest.param(*bridge_params, marks=(polarion("RHEVM3-14517"))),
         ],
         ids=[
             "Update_network_MTU",
@@ -878,7 +906,6 @@ class TestSanity09(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -927,6 +954,7 @@ class TestSanity10(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM3-3949")
     def test_check_ip_rule(self):
         """
@@ -937,6 +965,7 @@ class TestSanity10(NetworkTest):
             vds_resource=conf.VDS_0_HOST, subnet=self.subnet
         ), "Incorrect gateway configuration for %s" % self.net
 
+    @tier1
     @polarion("RHEVM3-3965")
     def test_detach_gw_net(self):
         """
@@ -953,7 +982,6 @@ class TestSanity10(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
     start_vm.__name__
@@ -976,6 +1004,7 @@ class TestSanity11(NetworkTest):
         vm_name: {}
     }
 
+    @tier1
     @polarion("RHEVM3-4309")
     def test_multiple_queue_nics(self):
         """
@@ -987,7 +1016,6 @@ class TestSanity11(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -1014,6 +1042,7 @@ class TestSanity12(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM3-10478")
     def test_network_custom_properties_on_host(self):
         """
@@ -1042,7 +1071,6 @@ class TestSanity12(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.incremental
 @pytest.mark.usefixtures(start_vm.__name__)
 class TestSanity13(NetworkTest):
@@ -1058,6 +1086,7 @@ class TestSanity13(NetworkTest):
         vm_name: {}
     }
 
+    @tier1
     @polarion("RHEVM3-3775")
     def test_check_filter_status_engine(self):
         """
@@ -1074,6 +1103,7 @@ class TestSanity13(NetworkTest):
         nf_res = nf_attr_dict.get(nf_conf.NETWORK_FILTER_STR)
         assert nf_res == conf.VDSM_NO_MAC_SPOOFING
 
+    @tier1
     @polarion("RHEVM3-3777")
     def test_check_filter_status_vdsm(self):
         """
@@ -1092,6 +1122,7 @@ class TestSanity13(NetworkTest):
             positive=True, vds_resource=sanity_conf.HOST_VDS
         )
 
+    @tier1
     @polarion("RHEVM3-3779")
     def test_check_filter_status_dump_xml(self):
         """
@@ -1106,7 +1137,6 @@ class TestSanity13(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -1135,6 +1165,7 @@ class TestSanity14(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     def test_static_ipv6_network_on_host(self):
         """
         Attach network with static IPv6 over bridge.
@@ -1154,7 +1185,6 @@ class TestSanity14(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestSanity15(NetworkTest):
     """
@@ -1173,6 +1203,7 @@ class TestSanity15(NetworkTest):
         }
     }
 
+    @tier1
     def test_report_active_slave(self,):
         """
         Verify that RHV is report primary/active interface of the bond mode 1.
@@ -1190,7 +1221,6 @@ class TestSanity15(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     prepare_setup_for_register_domain.__name__,
@@ -1233,6 +1263,7 @@ class TestSanity16(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM-16998")
     def test_mac_pool_not_in_mac_range_with_reassign(self):
         """
@@ -1245,6 +1276,7 @@ class TestSanity16(NetworkTest):
             vm=self.vm, nic=self.vm_nic
         )
 
+    @tier1
     @polarion("RHEVM-17163")
     def test_network_not_in_dc_with_mapping(self):
         """
@@ -1259,7 +1291,6 @@ class TestSanity16(NetworkTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -1318,6 +1349,7 @@ class TestSanity17(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @polarion("RHEVM-19654")
     def test_01_run_vm_with_passthrough_vnic_profile_and_one_vf(self):
         """
@@ -1329,7 +1361,6 @@ class TestSanity17(NetworkTest):
         assert ll_vms.startVm(positive=True, vm=self.vm)
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
@@ -1362,6 +1393,7 @@ class TestSanity18(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier1
     @bz({"1426225": {}})
     def test_acquire_nm_connetion(self):
         """

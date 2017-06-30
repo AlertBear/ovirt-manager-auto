@@ -32,7 +32,6 @@ from fixtures import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(port_mirroring_prepare_setup.__name__)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS,
@@ -53,6 +52,7 @@ class TestPortMirroringCase01(Base):
     mgmt_ips = pm_conf.MGMT_IPS
     vm_names = conf.VM_NAME[:4]
 
+    @tier2
     @polarion("RHEVM3-4020")
     def test_a1_migrate_mirroring_vm(self):
         """
@@ -90,6 +90,7 @@ class TestPortMirroringCase01(Base):
                 src_ip=self.net1_ips[1], dst_ip=dst_vm, src_vm=self.mgmt_ips[1]
             )
 
+    @tier2
     @polarion("RHEVM3-4017")
     def test_a2_migrate_all_vms(self):
         """
@@ -135,6 +136,7 @@ class TestPortMirroringCase02(Base):
     net1_ip3 = pm_conf.NET1_IPS[3]
     mgmt_ips = pm_conf.MGMT_IPS
 
+    @tier2
     @polarion("RHEVM3-4010")
     def test_check_mirroring_after_replacing_network(self):
         """
@@ -179,6 +181,7 @@ class TestPortMirroringCase03(Base):
     nic_name_1 = conf.NIC_NAME[0]
     mgmt_ips = pm_conf.MGMT_IPS
 
+    @tier2
     @polarion("RHEVM3-4014")
     def test_check_pm_one_machine_multiple_networks(self):
         """
@@ -213,6 +216,7 @@ class TestPortMirroringCase04(Base):
     net1_ip2 = pm_conf.NET1_IPS[2]
     net1_ip3 = pm_conf.NET1_IPS[3]
 
+    @tier2
     @polarion("RHEVM3-4015")
     def test_a1_check_pm_two_machines_diff_networks(self):
         """
@@ -250,6 +254,7 @@ class TestPortMirroringCase04(Base):
             nic=self.nic_name_1, positive=False
         )
 
+    @tier2
     @polarion("RHEVM3-4006")
     def test_a2_check_pm_two_machines_same_network(self):
         """
@@ -294,6 +299,7 @@ class TestPortMirroringCase05(Base):
     net1_ip2 = pm_conf.NET1_IPS[2]
     mgmt_ips = pm_conf.MGMT_IPS
 
+    @tier2
     @polarion("RHEVM3-4009")
     def test_restart_vdsmd_on_host(self):
         """
@@ -332,6 +338,7 @@ class TestPortMirroringCase06(Base):
     net_1 = pm_conf.PM_NETWORK[0]
     mgmt_ips = pm_conf.MGMT_IPS
 
+    @tier2
     @polarion("RHEVM-19154")
     def test_if_up_down_bridge(self):
         """

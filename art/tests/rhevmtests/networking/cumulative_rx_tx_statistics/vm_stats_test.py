@@ -27,7 +27,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -84,13 +83,30 @@ class TestCumulativeNetworkUsageVmStatisticsCase01(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         "update_nic_dict",
         [
-            polarion("RHEVM3-13580")(rx_tx_conf.UPDATE_NIC.get("case_vm_1")),
-            polarion("RHEVM3-13581")(rx_tx_conf.UPDATE_NIC.get("case_vm_2")),
-            polarion("RHEVM3-6639")(rx_tx_conf.UPDATE_NIC.get("case_vm_3")),
-            polarion("RHEVM3-13512")(rx_tx_conf.UPDATE_NIC.get("case_vm_4")),
+            pytest.param(
+                rx_tx_conf.UPDATE_NIC.get("case_vm_1"), marks=(
+                    polarion("RHEVM3-13580")
+                )
+            ),
+            pytest.param(
+                rx_tx_conf.UPDATE_NIC.get("case_vm_2"), marks=(
+                    polarion("RHEVM3-13581")
+                )
+            ),
+            pytest.param(
+                rx_tx_conf.UPDATE_NIC.get("case_vm_3"), marks=(
+                    polarion("RHEVM3-6639")
+                )
+            ),
+            pytest.param(
+                rx_tx_conf.UPDATE_NIC.get("case_vm_4"), marks=(
+                    polarion("RHEVM3-13512")
+                )
+            ),
         ],
         ids=[
             "change_vNIC_network",

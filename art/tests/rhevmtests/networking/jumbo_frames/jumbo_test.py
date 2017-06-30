@@ -34,7 +34,6 @@ from rhevmtests.networking.fixtures import (
 from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
-@tier2
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
@@ -66,6 +65,7 @@ class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-3718")
     def test_check_mtu(self):
         """
@@ -106,6 +106,7 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-3721")
     def test_check_mtu_after_network_removal(self):
         """
@@ -186,6 +187,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-3732")
     def test_01_check_configurations_and_traffic(self):
         """
@@ -197,6 +199,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
             size=self.mtu_4500
         )
 
+    @tier2
     @polarion("RHEVM3-3713")
     def test_02_bond_mode_change(self):
         """
@@ -223,6 +226,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
             bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3]
         )
 
+    @tier2
     @polarion("RHEVM3-3716")
     def test_03_increasing_bond_nics(self):
         """
@@ -249,6 +253,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
             bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3]
         )
 
+    @tier2
     @polarion("RHEVM3-3722")
     def test_04_check_traffic_on_vm_over_bond(self):
         """
@@ -348,6 +353,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-3736")
     def test_check_traffic_on_hosts_when_there_are_many_networks(self):
         """
@@ -374,6 +380,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
             size=self.mtu_8500
         )
 
+    @tier2
     @polarion("RHEVM3-3731")
     def test_check_traffic_on_vms_when_host_has_many_networks(self):
         """
@@ -447,6 +454,7 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     update_cluster_network = net
     update_cluster_network_usages = "display,vm"
 
+    @tier2
     @polarion("RHEVM3-3724")
     def test_check_traffic_on_vm_when_network_is_display(self):
         """
@@ -471,6 +479,7 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
     net_2 = jumbo_conf.NETS[6][1]
     bond = "bond6"
 
+    @tier2
     @polarion("RHEVM3-3719")
     def test_neg_add_networks_with_different_mtu(self):
         """
@@ -546,6 +555,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-3717")
     def test_check_mtu_values_in_files(self):
         """
@@ -563,6 +573,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
             vlan=self.vlan_2
         )
 
+    @tier2
     @polarion("RHEVM3-3720")
     def test_check_traffic_on_vms(self):
         """
@@ -610,6 +621,7 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-3716")
     def test_check_mtu_with_two_different_mtu_networks(self):
         """
@@ -665,6 +677,7 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-3734")
     def test_check_mtu_pre_configured(self):
         """

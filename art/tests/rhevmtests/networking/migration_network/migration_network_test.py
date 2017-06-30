@@ -55,7 +55,6 @@ def migration_network_prepare_setup(request):
     )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     setup_networks_fixture_function.__name__,
@@ -289,6 +288,7 @@ class TestMigrationNetwork(NetworkTest):
         network_update_network_usages_params, dict()
     ]
 
+    @tier2
     @pytest.mark.parametrize(
         (
          "hosts_nets_nic_dict",
@@ -297,17 +297,25 @@ class TestMigrationNetwork(NetworkTest):
          "add_vnic_to_vm_param"
          ),
         [
-            polarion("RHEVM3-3878")(non_op_params),
-            polarion("RHEVM3-3851")(network_vlan_params),
-            polarion("RHEVM3-3849")(network_non_vm_params),
-            polarion("RHEVM3-3885")(migration_params),
-            polarion("RHEVM3-3886")(vm_used_params),
-            polarion("RHEVM3-3848")(bond_params),
-            polarion("RHEVM3-3850")(bond_non_vm_params),
-            polarion("RHEVM3-3852")(bond_vlan_params),
-            polarion("RHEVM3-3859")(dedicated_params),
-            polarion("RHEVM3-3872")(host_no_mig_net_params),
-            polarion("RHEVM3-21572")(network_ipv6_params)
+            pytest.param(*non_op_params, marks=(polarion("RHEVM3-3878"))),
+            pytest.param(
+                *network_vlan_params, marks=(polarion("RHEVM3-3851"))
+            ),
+            pytest.param(
+                *network_non_vm_params, marks=(polarion("RHEVM3-3849"))
+            ),
+            pytest.param(*migration_params, marks=(polarion("RHEVM3-3885"))),
+            pytest.param(*vm_used_params, marks=(polarion("RHEVM3-3886"))),
+            pytest.param(*bond_params, marks=(polarion("RHEVM3-3848"))),
+            pytest.param(*bond_non_vm_params, marks=(polarion("RHEVM3-3850"))),
+            pytest.param(*bond_vlan_params, marks=(polarion("RHEVM3-3852"))),
+            pytest.param(*dedicated_params, marks=(polarion("RHEVM3-3859"))),
+            pytest.param(
+                *host_no_mig_net_params, marks=(polarion("RHEVM3-3872"))
+            ),
+            pytest.param(
+                *network_ipv6_params, marks=(polarion("RHEVM3-21572"))
+            ),
         ],
         ids=[
             "Test_Migration_Network_with_non-operational_host",

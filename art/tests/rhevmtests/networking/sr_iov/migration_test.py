@@ -117,7 +117,6 @@ def prepare_setup_migration(request):
     assert sriov_conf.MIGRATION_NIC_1_MAC
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
@@ -187,6 +186,7 @@ class TestSriovMigration01(NetworkTest):
     nics = [sriov_vnic_1]
     vms = [vm_name]
 
+    @tier2
     @polarion("RHEVM-17060")
     def test_01_migrate_without_migratable_enables(self):
         """
@@ -198,6 +198,7 @@ class TestSriovMigration01(NetworkTest):
         )
         assert ll_vms.migrateVm(positive=False, vm=self.vm_name)
 
+    @tier2
     @polarion("RHEVM-17061")
     def test_02_migrate_without_available_pf_on_dest_host(self):
         """
@@ -232,6 +233,7 @@ class TestSriovMigration01(NetworkTest):
         )
         assert sriov_conf.PF_OBJECT.set_number_of_vf(2)
 
+    @tier2
     @polarion("RHEVM-17177")
     def test_03_migrate_when_not_all_vnics_have_migratable_enabled(self):
         """
@@ -269,6 +271,7 @@ class TestSriovMigration01(NetworkTest):
             positive=True, vm=self.vm_name, nic=self.sriov_vnic_2
         )
 
+    @tier2
     @polarion("RHEVM-17056")
     def test_04_migrate_only_with_vf_vnic(self):
         """
@@ -286,6 +289,7 @@ class TestSriovMigration01(NetworkTest):
         )
         assert conf.ENGINE_HOST.network.send_icmp(dst=vm_ip)
 
+    @tier2
     @polarion("RHEVM-19183")
     def test_05_check_vnic_plugged_after_migration(self):
         """
@@ -296,6 +300,7 @@ class TestSriovMigration01(NetworkTest):
             vm=self.vm_name, nic=self.sriov_vnic_1
         )
 
+    @tier2
     @polarion("RHEVM-17059")
     def test_06_migrate_with_bond_in_guest(self):
         """

@@ -56,7 +56,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
@@ -111,6 +110,7 @@ class TestSriovVm01(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-6614")
     def test_01_run_vm_zero_vfs(self):
         """
@@ -121,6 +121,7 @@ class TestSriovVm01(NetworkTest):
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
+    @tier2
     @polarion("RHEVM3-10628")
     def test_02_change_vf_num_for_occupied_vf_on_vm(self):
         """
@@ -137,6 +138,7 @@ class TestSriovVm01(NetworkTest):
         )
         assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(2)
 
+    @tier2
     @polarion("RHEVM3-10653")
     def test_03_check_mac_of_vf_on_vm(self):
         """
@@ -156,6 +158,7 @@ class TestSriovVm01(NetworkTest):
             )[1].strip() for i in vm_interfaces
             ]
 
+    @tier2
     @polarion("RHEVM3-10663")
     def test_04_run_vm_occupied_vfs(self):
         """
@@ -179,6 +182,7 @@ class TestSriovVm01(NetworkTest):
             positive=True, vm=self.extra_vm, nic=self.vm_nic
         )
 
+    @tier2
     @polarion("RHEVM3-14596")
     def test_05_check_no_vf_on_host_while_run_vm(self):
         """
@@ -191,6 +195,7 @@ class TestSriovVm01(NetworkTest):
         )
         assert not sriov_conf.HOST_0_PF_OBJECT_1.get_all_vf_names()
 
+    @tier2
     @polarion("RHEVM3-14638")
     def test_06_check_vf_exists_when_vm_is_down(self):
         """
@@ -207,6 +212,7 @@ class TestSriovVm01(NetworkTest):
         )
         assert sample.waitForFuncStatus(result=True)
 
+    @tier2
     @polarion("RHEVM3-14638")
     def test_07_change_vf_num_non_occupied_vfs(self):
         """
@@ -215,6 +221,7 @@ class TestSriovVm01(NetworkTest):
         testflow.step("Change the number of VFs and succeed")
         assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(3)
 
+    @tier2
     @polarion("RHEVM3-14595")
     def test_08_check_vf_while_passthrough_attached_to_non_running_vm(self):
         """
@@ -227,6 +234,7 @@ class TestSriovVm01(NetworkTest):
         )
         assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(4)
 
+    @tier2
     @polarion("RHEVM3-6316")
     def test_09_hotplug_hotunplug(self):
         """
@@ -267,7 +275,6 @@ class TestSriovVm01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -324,6 +331,7 @@ class TestSriovVm02(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-6314")
     def test_01_vm_with_vlan(self):
         """
@@ -337,7 +345,6 @@ class TestSriovVm02(NetworkTest):
         assert vlan_from_xml == self.vlan_id, err_log
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -427,6 +434,7 @@ class TestSriovVm03(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-10632")
     def test_01_edit_interface_passthrough(self):
         """
@@ -441,6 +449,7 @@ class TestSriovVm03(NetworkTest):
             interface=conf.PASSTHROUGH_INTERFACE
         )
 
+    @tier2
     @polarion("RHEVM3-6552")
     def test_02_add_passthroug_vnic_incomp_interface(self):
         """
@@ -454,6 +463,7 @@ class TestSriovVm03(NetworkTest):
             network=self.net_4, vnic_profile=self.net_4
         )
 
+    @tier2
     @polarion("RHEVM3-10631")
     def test_03_run_multiple_vnics(self):
         """
@@ -465,7 +475,6 @@ class TestSriovVm03(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
@@ -535,6 +544,7 @@ class TestSriovVm04(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-14640")
     def test_01_all_networks_allowed_specific_net_negative(self):
         """
@@ -553,6 +563,7 @@ class TestSriovVm04(NetworkTest):
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
+    @tier2
     @polarion("RHEVM3-14639")
     def test_02_all_networks_allowed_specific_label_negative(self):
         """
@@ -570,6 +581,7 @@ class TestSriovVm04(NetworkTest):
             vm=self.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
         )
 
+    @tier2
     @polarion("RHEVM3-9373")
     def test_03_all_networks_allowed_specific_net(self):
         """
@@ -593,6 +605,7 @@ class TestSriovVm04(NetworkTest):
         testflow.step("Stop VM %s", self.vm)
         assert ll_vms.stop_vms_safely(vms_list=[self.vm])
 
+    @tier2
     @polarion("RHEVM3-10627")
     def test_04_all_networks_allowed_specific_label(self):
         """
@@ -615,7 +628,6 @@ class TestSriovVm04(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -711,6 +723,7 @@ class TestSriovVm05(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-6728")
     def test_check_connectivity(self):
         """
@@ -724,7 +737,6 @@ class TestSriovVm05(NetworkTest):
         assert vm_resource.network.send_icmp(dst=self.vm_2_ip)
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -785,6 +797,7 @@ class TestSriovVm06(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @bz({"1446058": {}})
     @polarion("RHEVM-19420")
     def test_vm_with_sriov_network_and_hostdev(self):

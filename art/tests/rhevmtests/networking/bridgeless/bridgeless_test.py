@@ -67,10 +67,18 @@ class TestBridgelessCase(NetworkTest):
     @pytest.mark.parametrize(
         ("net", "nic"),
         [
-            polarion("RHEVM3-14837")(bridgeless_conf.CASE_1),
-            polarion("RHEVM3-14838")(bridgeless_conf.CASE_2),
-            polarion("RHEVM3-14840")(bridgeless_conf.CASE_3),
-            polarion("RHEVM3-14839")(bridgeless_conf.CASE_4),
+            pytest.param(
+                *bridgeless_conf.CASE_1, marks=(polarion("RHEVM3-14837"))
+            ),
+            pytest.param(
+                *bridgeless_conf.CASE_2, marks=(polarion("RHEVM3-14838"))
+            ),
+            pytest.param(
+                *bridgeless_conf.CASE_3, marks=(polarion("RHEVM3-14840"))
+            ),
+            pytest.param(
+                *bridgeless_conf.CASE_4, marks=(polarion("RHEVM3-14839"))
+            ),
         ]
     )
     def test_bridgeless_network(self, net, nic):

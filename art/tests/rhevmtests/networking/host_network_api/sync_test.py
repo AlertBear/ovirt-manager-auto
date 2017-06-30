@@ -90,7 +90,6 @@ def sync_prepare_setup(request):
     )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -345,30 +344,31 @@ class TestHostNetworkApiSync01(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         "compare_dicts",
         [
             # Sync over NIC
-            polarion("RHEVM3-13977")(vlan_to_vlan_nic),
-            polarion("RHEVM3-13979")(vlan_to_none_nic),
-            polarion("RHEVM3-13980")(none_to_vlan_nic),
-            polarion("RHEVM3-13987")(mtu_to_mtu_nic),
-            polarion("RHEVM3-13988")(mtu_to_none_nic),
-            polarion("RHEVM3-13989")(none_to_mtu_nic),
-            polarion("RHEVM3-13993")(vm_to_non_vm_nic),
-            polarion("RHEVM3-13994")(non_vm_to_vm_nic),
-            polarion("RHEVM3-13997")(vlan_mtu_vm_nic),
+            pytest.param(vlan_to_vlan_nic, marks=(polarion("RHEVM3-13977"))),
+            pytest.param(vlan_to_none_nic, marks=(polarion("RHEVM3-13979"))),
+            pytest.param(none_to_vlan_nic, marks=(polarion("RHEVM3-13980"))),
+            pytest.param(mtu_to_mtu_nic, marks=(polarion("RHEVM3-13987"))),
+            pytest.param(mtu_to_none_nic, marks=(polarion("RHEVM3-13988"))),
+            pytest.param(none_to_mtu_nic, marks=(polarion("RHEVM3-13989"))),
+            pytest.param(vm_to_non_vm_nic, marks=(polarion("RHEVM3-13993"))),
+            pytest.param(non_vm_to_vm_nic, marks=(polarion("RHEVM3-13994"))),
+            pytest.param(vlan_mtu_vm_nic, marks=(polarion("RHEVM3-13997"))),
 
             # Sync over BOND
-            polarion("RHEVM3-13981")(vlan_to_vlan_bond),
-            polarion("RHEVM3-13982")(vlan_to_none_bond),
-            polarion("RHEVM3-13985")(none_to_vlan_bond),
-            polarion("RHEVM3-13990")(mtu_to_mtu_bond),
-            polarion("RHEVM3-13991")(mtu_to_none_bond),
-            polarion("RHEVM3-13992")(none_to_mtu_bond),
-            polarion("RHEVM3-13995")(vm_to_non_vm_bond),
-            polarion("RHEVM3-13996")(non_vm_to_vm_bond),
-            polarion("RHEVM3-13998")(vlan_mtu_vm_bond),
+            pytest.param(vlan_to_vlan_bond, marks=(polarion("RHEVM3-13981"))),
+            pytest.param(vlan_to_none_bond, marks=(polarion("RHEVM3-13982"))),
+            pytest.param(none_to_vlan_bond, marks=(polarion("RHEVM3-13985"))),
+            pytest.param(mtu_to_mtu_bond, marks=(polarion("RHEVM3-13990"))),
+            pytest.param(mtu_to_none_bond, marks=(polarion("RHEVM3-13991"))),
+            pytest.param(none_to_mtu_bond, marks=(polarion("RHEVM3-13992"))),
+            pytest.param(vm_to_non_vm_bond, marks=(polarion("RHEVM3-13995"))),
+            pytest.param(non_vm_to_vm_bond, marks=(polarion("RHEVM3-13996"))),
+            pytest.param(vlan_mtu_vm_bond, marks=(polarion("RHEVM3-13998"))),
         ],
         ids=[
             # Sync over NIC
@@ -417,7 +417,6 @@ class TestHostNetworkApiSync01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -673,22 +672,27 @@ class TestHostNetworkApiSync02(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         "compare_dict",
         [
             # Sync over NIC
-            polarion("RHEVM3-13999")(ip_to_ip_nic),
-            polarion("RHEVM3-14000")(mask_to_mask_nic),
-            polarion("RHEVM3-14001")(prefix_to_prefix_nic),
-            polarion("RHEVM3-14009")(no_ip_to_ip_nic),
-            polarion("RHEVM3-14011")(ip_to_no_ip_nic),
+            pytest.param(ip_to_ip_nic, marks=(polarion("RHEVM3-13999"))),
+            pytest.param(mask_to_mask_nic, marks=(polarion("RHEVM3-14000"))),
+            pytest.param(
+                prefix_to_prefix_nic, marks=(polarion("RHEVM3-14001"))
+            ),
+            pytest.param(no_ip_to_ip_nic, marks=(polarion("RHEVM3-14009"))),
+            pytest.param(ip_to_no_ip_nic, marks=(polarion("RHEVM3-14011"))),
 
             # Sync over BOND
-            polarion("RHEVM3-14002")(ip_to_ip_bond),
-            polarion("RHEVM3-14003")(mask_to_mask_bond),
-            polarion("RHEVM3-14004")(prefix_to_prefix_bond),
-            polarion("RHEVM3-14010")(no_ip_to_ip_bond),
-            polarion("RHEVM3-14012")(ip_to_no_ip_bond),
+            pytest.param(ip_to_ip_bond, marks=(polarion("RHEVM3-14002"))),
+            pytest.param(mask_to_mask_bond, marks=(polarion("RHEVM3-14003"))),
+            pytest.param(
+                prefix_to_prefix_bond, marks=(polarion("RHEVM3-14004"))
+            ),
+            pytest.param(no_ip_to_ip_bond, marks=(polarion("RHEVM3-14010"))),
+            pytest.param(ip_to_no_ip_bond, marks=(polarion("RHEVM3-14012"))),
         ],
         ids=[
             # Sync over NIC
@@ -727,7 +731,6 @@ class TestHostNetworkApiSync02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -851,18 +854,23 @@ class TestHostNetworkApiSync03(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         "compare_dicts",
         [
             # Sync over NIC
-            polarion("RHEVM3-14026")(qos_to_qos_nic),
-            polarion("RHEVM3-14027")(no_qos_to_qos_nic),
-            polarion("RHEVM3-14028")(qos_to_no_qos_nic),
+            pytest.param(qos_to_qos_nic, marks=(polarion("RHEVM3-14026"))),
+            pytest.param(no_qos_to_qos_nic, marks=(polarion("RHEVM3-14027"))),
+            pytest.param(qos_to_no_qos_nic, marks=(polarion("RHEVM3-14028"))),
 
             # Sync over BOND
-            polarion("RHEVM3-14029")(qos_to_qos_bond),
-            polarion("RHEVM3-14030")(no_qos_to_qos_bond),
-            polarion("RHEVM3-14031")(qos_to_no_qos_bond),
+            pytest.param(qos_to_qos_bond, marks=(polarion("RHEVM3-14029"))),
+            pytest.param(
+                no_qos_to_qos_bond, marks=(polarion("RHEVM3-14030"))
+            ),
+            pytest.param(
+                qos_to_no_qos_bond, marks=(polarion("RHEVM3-14031"))
+            ),
         ],
         ids=[
             # Sync over NIC

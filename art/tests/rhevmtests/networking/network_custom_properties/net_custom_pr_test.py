@@ -48,7 +48,6 @@ def prepare_setup(request):
     )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase01(NetworkTest):
     """
@@ -85,6 +84,7 @@ class TestNetworkCustomPropertiesCase01(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4178")
     def test_check_bridge_opts_exist(self):
         """
@@ -106,6 +106,7 @@ class TestNetworkCustomPropertiesCase01(NetworkTest):
             bridge_name=self.net_2
         )
 
+    @tier2
     @polarion("RHEVM3-4179")
     def test_check_bridge_opts_exist_bond(self):
         """
@@ -130,7 +131,6 @@ class TestNetworkCustomPropertiesCase01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase02(NetworkTest):
     """
@@ -160,6 +160,7 @@ class TestNetworkCustomPropertiesCase02(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4180")
     def test_update_bridge_opts(self):
         """
@@ -202,7 +203,6 @@ class TestNetworkCustomPropertiesCase02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase03(NetworkTest):
     """
@@ -247,6 +247,7 @@ class TestNetworkCustomPropertiesCase03(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4181")
     def test_check_several_bridge_opts_exist_nic(self):
         """
@@ -309,6 +310,7 @@ class TestNetworkCustomPropertiesCase03(NetworkTest):
                 opts=key, value=value[0]
             )
 
+    @tier2
     @polarion("RHEVM3-4182")
     def test_check_several_bridge_opts_exist_bond(self):
         """
@@ -372,7 +374,6 @@ class TestNetworkCustomPropertiesCase03(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase04(NetworkTest):
     """
@@ -411,6 +412,7 @@ class TestNetworkCustomPropertiesCase04(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4183")
     def test_check_reattach_network(self):
         """
@@ -463,7 +465,6 @@ class TestNetworkCustomPropertiesCase04(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase05(NetworkTest):
@@ -502,6 +503,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4187")
     def test_01_update_ethtool_opts(self):
         """
@@ -544,6 +546,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
             opts="tx-checksumming", value="on"
         )
 
+    @tier2
     @polarion("RHEVM3-4188")
     def test_02_check_several_ethtool_opts_exist_nic_vlan(self):
         """
@@ -617,6 +620,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
                 opts=prop, value="on"
             )
 
+    @tier2
     @polarion("RHEVM3-4188")
     def test_03_check_several_ethtool_opts_exist_nic_non_vm(self):
         """
@@ -693,6 +697,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
                 opts=prop, value="on"
             )
 
+    @tier2
     @polarion("RHEVM3-4191")
     def test_04_reattach_network(self):
         """
@@ -742,7 +747,6 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase06(NetworkTest):
     """
@@ -770,6 +774,7 @@ class TestNetworkCustomPropertiesCase06(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4192")
     def test_update_ethtool_bridge_opts(self):
         """
@@ -833,7 +838,6 @@ class TestNetworkCustomPropertiesCase06(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase07(NetworkTest):
     """
@@ -854,6 +858,7 @@ class TestNetworkCustomPropertiesCase07(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4193")
     def test_update_bridge_ethtool_opts(self):
         """
@@ -938,7 +943,6 @@ class TestNetworkCustomPropertiesCase07(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase08(NetworkTest):
     """
@@ -960,6 +964,7 @@ class TestNetworkCustomPropertiesCase08(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4194")
     def test_check_several_bridge_ethtool_opts_exist(self):
         """
@@ -1059,7 +1064,6 @@ class TestNetworkCustomPropertiesCase08(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase09(NetworkTest):
     """
@@ -1107,6 +1111,7 @@ class TestNetworkCustomPropertiesCase09(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4195")
     def test_check_several_bridge_ethtool_opts_exist(self):
         """
@@ -1219,7 +1224,6 @@ class TestNetworkCustomPropertiesCase09(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase10(NetworkTest):
     """
@@ -1242,6 +1246,7 @@ class TestNetworkCustomPropertiesCase10(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4190")
     def test_update_ethtool_opts_bond(self):
         """
@@ -1314,7 +1319,6 @@ class TestNetworkCustomPropertiesCase10(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase11(NetworkTest):
     """
@@ -1338,6 +1342,7 @@ class TestNetworkCustomPropertiesCase11(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4189")
     def test_check_several_ethtool_opts_exist_bond(self):
         """
@@ -1451,7 +1456,6 @@ class TestNetworkCustomPropertiesCase11(NetworkTest):
                 )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestNetworkCustomPropertiesCase12(NetworkTest):
     """
@@ -1483,6 +1487,7 @@ class TestNetworkCustomPropertiesCase12(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-4196")
     def test_update_ethtool_bridge_opts_bond(self):
         """

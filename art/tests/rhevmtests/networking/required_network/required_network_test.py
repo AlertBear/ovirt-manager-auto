@@ -47,7 +47,6 @@ def required_network_prepare_setup(request):
     assert helper.deactivate_hosts()
 
 
-@tier2
 class TestRequiredNetwork01(NetworkTest):
     """
     Check that management network is required by default
@@ -56,6 +55,7 @@ class TestRequiredNetwork01(NetworkTest):
     cluster = conf.CL_0
     mgmt = conf.MGMT_BRIDGE
 
+    @tier2
     @polarion("RHEVM3-3753")
     def test_mgmt(self):
         """
@@ -75,7 +75,6 @@ class TestRequiredNetwork01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -113,6 +112,7 @@ class TestRequiredNetwork02(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-3744")
     def test_nonoperational(self):
         """
@@ -129,7 +129,6 @@ class TestRequiredNetwork02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -171,6 +170,7 @@ class TestRequiredNetwork03(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-3752")
     def test_1_nonoperational_bond_down(self):
         """
@@ -186,6 +186,7 @@ class TestRequiredNetwork03(NetworkTest):
             host_status=conf.HOST_NONOPERATIONAL
         )
 
+    @tier2
     @polarion("RHEVM3-3745")
     def test_2_nonoperational_bond_down(self):
         """

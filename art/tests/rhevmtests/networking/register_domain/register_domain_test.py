@@ -27,7 +27,6 @@ from art.unittest_lib import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -41,6 +40,7 @@ class TestRegisterDomain01(NetworkTest):
     vm = register_domain_conf.VM_NAMES[1][0]
     reassessing_mac = False
 
+    @tier2
     @polarion("RHEVM-17152")
     def test_mac_pool_in_mac_range(self):
         """
@@ -52,6 +52,7 @@ class TestRegisterDomain01(NetworkTest):
         )
         assert helper.check_mac_in_mac_range(vm=self.vm, nic=nic)
 
+    @tier2
     @polarion("RHEVM-17161")
     def test_network_in_dc(self):
         """
@@ -65,7 +66,6 @@ class TestRegisterDomain01(NetworkTest):
         assert ll_vms.check_vnic_on_vm_nic(vm=self.vm, nic=nic, vnic=network)
 
 
-@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -87,6 +87,7 @@ class TestRegisterDomain02(NetworkTest):
         "target_vnic_profile": dst_net
     }]
 
+    @tier2
     @polarion("RHEVM-16998")
     def test_mac_pool_not_in_mac_range_with_reassign(self):
         """
@@ -98,6 +99,7 @@ class TestRegisterDomain02(NetworkTest):
         )
         assert helper.check_mac_in_mac_range(vm=self.vm, nic=nic)
 
+    @tier2
     @polarion("RHEVM-17163")
     def test_network_not_in_dc_with_mapping(self):
         """
@@ -113,7 +115,6 @@ class TestRegisterDomain02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -129,6 +130,7 @@ class TestRegisterDomain03(NetworkTest):
     net = register_domain_conf.NETS[3][0]
     reassessing_mac = False
 
+    @tier2
     @bz({"1414856": {}})
     @polarion("RHEVM-16997")
     def test_mac_pool_not_in_mac_range_without_reassign(self):
@@ -146,6 +148,7 @@ class TestRegisterDomain03(NetworkTest):
         )
         assert vm_mac == mac
 
+    @tier2
     @polarion("RHEVM-17162")
     def test_network_not_in_dc_without_mapping(self):
         """
@@ -158,7 +161,6 @@ class TestRegisterDomain03(NetworkTest):
         assert ll_vms.check_vnic_on_vm_nic(vm=self.vm, nic=nic, vnic=None)
 
 
-@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -171,6 +173,7 @@ class TestRegisterDomain04(NetworkTest):
     data_domain_name = register_domain_conf.EXTRA_SD_NAME
     vm = register_domain_conf.VM_NAMES[4][0]
 
+    @tier2
     @polarion("RHEVM-17153")
     def test_mac_pool_not_in_mac_range_already_exists_with_reassign(self):
         """
@@ -186,7 +189,6 @@ class TestRegisterDomain04(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
 
 
-@tier2
 class TestRegisterDomain05(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
@@ -195,6 +197,7 @@ class TestRegisterDomain05(NetworkTest):
     # General params
     vm = register_domain_conf.VM_NAMES[5][0]
 
+    @tier2
     @polarion("RHEVM-16896")
     def test_mac_pool_not_in_mac_range_already_exists_without_reassign(self):
         """
@@ -215,7 +218,6 @@ class TestRegisterDomain05(NetworkTest):
         )
 
 
-@tier2
 @bz({"1390556": {}})
 @pytest.mark.usefixtures(
     set_allow_duplicate_mac_pool.__name__,
@@ -231,6 +233,7 @@ class TestRegisterDomain06(NetworkTest):
     vm = register_domain_conf.VM_NAMES[6][0]
     reassessing_mac = False
 
+    @tier2
     @bz({"1414856": {}})
     @polarion("RHEVM-17143")
     def test_mac_pool_not_in_mac_range_already_exists_without_reassign(self):
@@ -247,7 +250,6 @@ class TestRegisterDomain06(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
 
 
-@tier2
 @pytest.mark.usefixtures(
     manage_mac_pool_range.__name__,
     make_sure_no_mac_in_pool.__name__
@@ -260,6 +262,7 @@ class TestRegisterDomain07(NetworkTest):
     # make_sure_no_mac_in_pool params
     vm = register_domain_conf.VM_NAMES[7][0]
 
+    @tier2
     @polarion("RHEVM-17144")
     def test_no_mac_left_in_pool_with_reassign(self):
         """
@@ -280,7 +283,6 @@ class TestRegisterDomain07(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
@@ -299,6 +301,7 @@ class TestRegisterDomain08(NetworkTest):
         "source_network_name": net
     }]
 
+    @tier2
     @polarion("RHEVM-17164")
     def test_network_in_dc_force_empty_vnic(self):
         """

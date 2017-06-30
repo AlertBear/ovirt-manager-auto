@@ -43,7 +43,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     setup_networks_fixture.__name__
@@ -69,6 +68,7 @@ class TestSriov01(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-6550")
     def test_bond_sriov_config(self):
         """
@@ -93,7 +93,6 @@ class TestSriov01(NetworkTest):
         ]
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
@@ -117,6 +116,7 @@ class TestSriov02(NetworkTest):
     port_mirroring = [False, False, True]
     net_1 = conf.MGMT_BRIDGE
 
+    @tier2
     @polarion("RHEVM3-6305")
     def test_01_port_mirroring_update(self):
         """
@@ -128,6 +128,7 @@ class TestSriov02(NetworkTest):
             data_center=self.dc, port_mirroring=True
         )
 
+    @tier2
     @polarion("RHEVM3-14628")
     def test_02_network_qos_update(self):
         """
@@ -140,6 +141,7 @@ class TestSriov02(NetworkTest):
             network_name=self.net_1
         )
 
+    @tier2
     @polarion("RHEVM3-14630")
     def test_03_pm_qos_update(self):
         """
@@ -164,6 +166,7 @@ class TestSriov02(NetworkTest):
             network_name=self.net_1
         )
 
+    @tier2
     @polarion("RHEVM3-6310")
     def test_04_passthrough_enabled_vnic(self):
         """
@@ -176,6 +179,7 @@ class TestSriov02(NetworkTest):
         )
         assert vnic_profile_obj.get_pass_through().get_mode() != "disable"
 
+    @tier2
     @polarion("RHEVM3-14581")
     def test_05_port_mirroring_update_created_vnic(self):
         """
@@ -191,6 +195,7 @@ class TestSriov02(NetworkTest):
             data_center=self.dc, port_mirroring=True
         )
 
+    @tier2
     @polarion("RHEVM3-14631")
     def test_06_network_qos_update_created_vnic(self):
         """
@@ -207,6 +212,7 @@ class TestSriov02(NetworkTest):
             network_name=self.net_1
         )
 
+    @tier2
     @polarion("RHEVM3-14632")
     def test_07_pm_update_enable(self):
         """
@@ -222,7 +228,6 @@ class TestSriov02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     reset_host_sriov_params.__name__,
@@ -244,6 +249,7 @@ class TestSriov03(NetworkTest):
         0: {}
     }
 
+    @tier2
     @polarion("RHEVM3-6318")
     def test_same_vf_number_engine_host(self):
         """
@@ -258,6 +264,7 @@ class TestSriov03(NetworkTest):
         )
         assert num_vf == int(out)
 
+    @tier2
     @polarion("RHEVM3-14633")
     def test_vf_number_after_ifup_ifdown(self):
         """
@@ -273,6 +280,7 @@ class TestSriov03(NetworkTest):
         assert conf.VDS_0_HOST.network.if_up(nic=nic_name)
         assert num_vf == num_vf
 
+    @tier2
     @polarion("RHEVM3-14594")
     def test_negative_vf_number(self):
         """
@@ -281,6 +289,7 @@ class TestSriov03(NetworkTest):
         testflow.step("Try to configure negative VF value for PF")
         assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(-2)
 
+    @tier2
     @polarion("RHEVM3-14635")
     def test_over_max_vf_number(self):
         """
@@ -313,6 +322,7 @@ class TestSriov04(NetworkTest):
         0: {}
     }
 
+    @tier2
     @polarion("RHEVM-19156")
     def test_01_change_vf_num_for_non_occupied_vf_network(self):
         """
@@ -324,6 +334,7 @@ class TestSriov04(NetworkTest):
         )
         assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(2)
 
+    @tier2
     @polarion("RHEVM3-14637")
     def test_02_change_vf_num_for_occupied_vf_network(self):
         """
@@ -349,7 +360,6 @@ class TestSriov04(NetworkTest):
         assert not sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(3)
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -399,6 +409,7 @@ class TestSriov05(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM3-10630")
     def test_01_update_vnic_with_passthrough(self):
         """
@@ -414,6 +425,7 @@ class TestSriov05(NetworkTest):
             pass_through=True
         )
 
+    @tier2
     @polarion("RHEVM3-14641")
     def test_02_update_vnic_with_non_passthrough(self):
         """

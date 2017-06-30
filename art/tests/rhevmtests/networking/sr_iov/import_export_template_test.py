@@ -96,7 +96,6 @@ def prepare_setup_import_export(request):
     request.addfinalizer(fin1)
 
 
-@tier2
 @pytest.mark.usefixtures(
     sr_iov_init.__name__,
     create_and_attach_networks.__name__,
@@ -177,6 +176,7 @@ class TestSriovImportExport01(NetworkTest):
     # set_num_of_vfs
     num_of_vfs = 4
 
+    @tier2
     @polarion("RHEVM3-10676")
     def test_01_export_vm_with_vf(self):
         """
@@ -187,6 +187,7 @@ class TestSriovImportExport01(NetworkTest):
             positive=True, vm=self.vm, storagedomain=self.export_domain
         )
 
+    @tier2
     @polarion("RHEVM3-14733")
     def test_02_import_vm_with_vf(self):
         """
@@ -205,6 +206,7 @@ class TestSriovImportExport01(NetworkTest):
             wait_for_up_status=True
         )
 
+    @tier2
     @polarion("RHEVM3-14734")
     def test_03_export_template_with_vf(self):
         """
@@ -216,6 +218,7 @@ class TestSriovImportExport01(NetworkTest):
             storagedomain=self.export_domain
         )
 
+    @tier2
     @polarion("RHEVM3-10409")
     def test_04_import_template_with_vf(self):
         """

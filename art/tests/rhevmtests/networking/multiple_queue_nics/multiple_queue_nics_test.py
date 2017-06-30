@@ -27,7 +27,6 @@ from fixtures import (
 )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
@@ -50,6 +49,7 @@ class TestMultipleQueueNics01(NetworkTest):
         vm_name: {}
     }
 
+    @tier2
     @polarion("RHEVM3-4310")
     def test_01_multiple_queue_nics_update(self):
         """
@@ -81,6 +81,7 @@ class TestMultipleQueueNics01(NetworkTest):
             vm=self.vm_name, num_queues=self.num_queues_1
         )
 
+    @tier2
     @polarion("RHEVM3-4312")
     @bz({"1389996": {}})
     def test_02_multiple_queue_nics(self):
@@ -97,6 +98,7 @@ class TestMultipleQueueNics01(NetworkTest):
             vm=self.vm_name, num_queues=self.num_queues_1
         )
 
+    @tier2
     @polarion("RHEVM3-4311")
     def test_03_multiple_queue_nics_vm_migration(self):
         """
@@ -113,7 +115,6 @@ class TestMultipleQueueNics01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     update_vnic_profile.__name__,
@@ -135,6 +136,7 @@ class TestMultipleQueueNics02(NetworkTest):
         vm_name: {}
     }
 
+    @tier2
     @polarion("RHEVM-16866")
     def test_hot_unplug_with_custom_queues(self):
         """
@@ -145,6 +147,7 @@ class TestMultipleQueueNics02(NetworkTest):
             positive=True, vm=self.vm_name, nic=self.vm_nic, plugged="false"
         )
 
+    @tier2
     @polarion("RHEVM3-4313")
     def test_multiple_queue_nics(self):
         """

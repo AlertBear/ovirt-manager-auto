@@ -25,7 +25,6 @@ from rhevmtests.networking.fixtures import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     setup_networks_fixture.__name__,
     get_linux_ad_partner_mac_value.__name__,
@@ -88,9 +87,12 @@ class TestLACPBond(NetworkTest):
     @pytest.mark.parametrize(
         ("host_index", "bond_name", "check_valid"),
         [
-            polarion("RHEVM-19180")(valid),
-            polarion("RHEVM-19181")(invalid),
-            polarion("RHEVM-19182")(bz({"1418209": {}})(invalid_mixed))
+            pytest.param(*valid, marks=(polarion("RHEVM3-19180"))),
+            pytest.param(*invalid, marks=(polarion("RHEVM3-19181"))),
+            pytest.param(
+                *invalid_mixed, marks=(
+                    (polarion("RHEVM3-19182"), bz({"1418209": {}})))
+            ),
         ],
         ids=[
             "valid_LACP_bond",

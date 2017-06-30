@@ -50,6 +50,7 @@ class TestDataCenterNetworksCase1(NetworkTest):
         },
     }
 
+    @tier2
     @polarion("RHEVM3-4132")
     def test_get_networks_list(self):
         """
@@ -97,6 +98,7 @@ class TestDataCenterNetworksCase2(NetworkTest):
         },
     }
 
+    @tier2
     @polarion("RHEVM3-4135")
     def test_01_verify_network_parameters(self):
         """
@@ -128,6 +130,7 @@ class TestDataCenterNetworksCase2(NetworkTest):
                 )
             )
 
+    @tier2
     @polarion("RHEVM3-4134")
     def test_02_delete_networks(self):
         """
@@ -169,6 +172,7 @@ class TestDataCenterNetworksCase3(NetworkTest):
         },
     }
 
+    @tier2
     @polarion("RHEVM3-4133")
     def test_update_networks_parameters(self):
         """

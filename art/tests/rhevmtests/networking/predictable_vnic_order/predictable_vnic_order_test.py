@@ -18,7 +18,6 @@ import rhevmtests.networking.config as conf
 from fixtures import prepare_setup_predictable_vnic_order  # noqa: F401
 
 
-@tier2
 class TestPredictableVnicOrder01(NetworkTest):
     """
     Check vNICs order for new VM
@@ -26,6 +25,7 @@ class TestPredictableVnicOrder01(NetworkTest):
     # General params
     vm = vnic_order_conf.VM_NAME
 
+    @tier2
     @polarion("RHEVM3-4095")
     def test_check_vnics_order_vm(self):
         """

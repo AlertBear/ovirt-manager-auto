@@ -61,7 +61,6 @@ def network_filter_prepare_setup(request):
     )
 
 
-@tier2
 class TestNetworkFilterCase01(NetworkTest):
     """
     Check that network filter (vdsm-no-mac-spoofing) is enabled by default for
@@ -70,6 +69,7 @@ class TestNetworkFilterCase01(NetworkTest):
     __test__ = True
     net = nf_conf.NETS[1][0]
 
+    @tier2
     @polarion("RHEVM-15078")
     def test_check_default_network_filter_new_net(self):
         """
@@ -88,7 +88,6 @@ class TestNetworkFilterCase01(NetworkTest):
         assert nf_res == conf.VDSM_NO_MAC_SPOOFING
 
 
-@tier2
 class TestNetworkFilterCase02(NetworkTest):
     """
     Check the vdsm-no-mac-spoofing in on virsh nwfilter-list
@@ -96,6 +95,7 @@ class TestNetworkFilterCase02(NetworkTest):
     __test__ = True
     vdsm_spoofing_file = "/etc/libvirt/nwfilter/vdsm-no-mac-spoofing.xml"
 
+    @tier2
     @polarion("RHEVM-15096")
     def test_check_network_filter_on_host(self):
         """
@@ -126,7 +126,6 @@ class TestNetworkFilterCase02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     restore_vnic_profile_filter.__name__,
     remove_vnic_from_vm.__name__,
@@ -156,6 +155,7 @@ class TestNetworkFilterCase03(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM-15098")
     def test_01_check_vm_xml_with_network_filter(self):
         """
@@ -169,6 +169,7 @@ class TestNetworkFilterCase03(NetworkTest):
             nics="1"
         )
 
+    @tier2
     @polarion("RHEVM-15104")
     def test_02_check_network_filter_via_ebtables(self):
         """
@@ -180,6 +181,7 @@ class TestNetworkFilterCase03(NetworkTest):
             host_obj=conf.VDS_0_HOST, vm_macs=vm_macs
         )
 
+    @tier2
     @polarion("RHEVM-15099")
     def test_03_hot_plug_nic_check_xml(self):
         """
@@ -197,6 +199,7 @@ class TestNetworkFilterCase03(NetworkTest):
             nics="2"
         )
 
+    @tier2
     @polarion("RHEVM-15106")
     def test_04_check_network_filter_via_ebtables_hotplug_nic(self):
         """
@@ -208,6 +211,7 @@ class TestNetworkFilterCase03(NetworkTest):
             host_obj=conf.VDS_0_HOST, vm_macs=vm_macs
         )
 
+    @tier2
     @polarion("RHEVM-15103")
     def test_05_disable_filter_running_vm(self):
         """
@@ -228,7 +232,6 @@ class TestNetworkFilterCase03(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     remove_vnic_from_vm.__name__,
     add_vnic_to_vm.__name__
@@ -242,6 +245,7 @@ class TestNetworkFilterCase04(NetworkTest):
     vm_name = conf.VM_0
     net = nf_conf.NETS[4][0]
 
+    @tier2
     @polarion("RHEVM-15102")
     def test_remove_filter_from_profile_vm_down(self):
         """
@@ -257,7 +261,6 @@ class TestNetworkFilterCase04(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(remove_vnic_profiles.__name__)
 class TestNetworkFilterCase05(NetworkTest):
     """
@@ -272,6 +275,7 @@ class TestNetworkFilterCase05(NetworkTest):
     vnic_pro_2 = nf_conf.VNIC_PROFILES[5][1]
     vnic_pro_3 = nf_conf.VNIC_PROFILES[5][2]
 
+    @tier2
     @polarion("RHEVM-15476")
     def test_01_create_new_vnic_profile(self):
         """
@@ -293,6 +297,7 @@ class TestNetworkFilterCase05(NetworkTest):
             network_filter=nf_conf.ARP_FILTER
         )
 
+    @tier2
     @polarion("RHEVM-15477")
     def test_02_update_vnic_profile(self):
         """
@@ -318,7 +323,6 @@ class TestNetworkFilterCase05(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
     create_clusters.__name__
@@ -352,6 +356,7 @@ class TestNetworkFilterCase06(NetworkTest):
     vnic_pro_2 = nf_conf.VNIC_PROFILES[6][1]
     vnic_pro_3 = nf_conf.VNIC_PROFILES[6][2]
 
+    @tier2
     @polarion("RHEVM-15109")
     def test_create_update_network_filter_pre_cluster(self):
         """
@@ -424,8 +429,12 @@ class TestNetworkFilterCase07(NetworkTest):
     @pytest.mark.parametrize(
         ("vnic", "positive"),
         [
-            polarion("RHEVM-21765")([conf.VM_NIC_0, True]),
-            polarion("RHEVM-21766")([conf.VM_NIC_0, False]),
+            pytest.param(
+                *[conf.VM_NIC_0, True], marks=(polarion("RHEVM3-21765"))
+            ),
+            pytest.param(
+                *[conf.VM_NIC_0, False], marks=(polarion("RHEVM3-21766"))
+            ),
         ],
         ids=(
             "Positive test",
@@ -472,9 +481,15 @@ class TestNetworkFilterCase08(NetworkTest):
     @pytest.mark.parametrize(
         ("vnic", "action"),
         [
-            polarion("RHEVM-21767")([conf.VM_NIC_0, "add"]),
-            polarion("RHEVM-21768")([conf.VM_NIC_0, "update"]),
-            polarion("RHEVM-21769")([conf.VM_NIC_0, "delete"]),
+            pytest.param(
+                *[conf.VM_NIC_0, "add"], marks=(polarion("RHEVM3-21767"))
+            ),
+            pytest.param(
+                *[conf.VM_NIC_0, "update"], marks=(polarion("RHEVM3-21768"))
+            ),
+            pytest.param(
+                *[conf.VM_NIC_0, "delete"], marks=(polarion("RHEVM3-21769"))
+            ),
         ],
         ids=(
             "Add filter with parameters",

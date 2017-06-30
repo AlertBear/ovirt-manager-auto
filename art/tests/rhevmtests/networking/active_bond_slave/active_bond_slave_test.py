@@ -20,7 +20,6 @@ from rhevmtests.networking.fixtures import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestActiveBondSlaveNic(NetworkTest):
     """
@@ -58,17 +57,18 @@ class TestActiveBondSlaveNic(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         "bond",
         [
-            polarion("RHEVM-17189")(bond_1),
-            polarion("RHEVM-17190")(bond_2),
-            polarion("RHEVM-17192")(bond_3),
+            pytest.param(bond_1, marks=(polarion("RHEVM3-17189"))),
+            pytest.param(bond_2, marks=(polarion("RHEVM3-17190"))),
+            pytest.param(bond_3, marks=(polarion("RHEVM3-17192"))),
         ],
         ids=[
-            id_ % (bond_1, hosts_nets_nic_dict.get(0).get(bond_1).get("mode")),
-            id_ % (bond_2, hosts_nets_nic_dict.get(0).get(bond_2).get("mode")),
-            id_ % (bond_3, hosts_nets_nic_dict.get(0).get(bond_3).get("mode")),
+            "Create_bond_with_mode_1_active-backup",
+            "Create_bond_with_mode_5_balance-tlb",
+            "Create_bond_with_mode_6_balance-alb",
         ]
     )
     def test_report_active_slave(self, bond):

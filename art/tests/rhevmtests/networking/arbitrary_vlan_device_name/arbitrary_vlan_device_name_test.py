@@ -104,20 +104,20 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
     @pytest.mark.parametrize(
         "vlan_names",
         [
-            polarion("RHEVM3-4170")([vlan_names[0]]),
-            polarion("RHEVM3-4171")([vlan_names[1]]),
-            polarion("RHEVM3-4172")(vlan_names[2:5]),
-            polarion("RHEVM3-4173")(vlan_names[5:8]),
-            polarion("RHEVM3-4174")([vlan_names[9]]),
-            polarion("RHEVM3-4175")([vlan_names[10]])
+            pytest.param([vlan_names[0]], marks=(polarion("RHEVM3-4170"))),
+            pytest.param([vlan_names[1]], marks=(polarion("RHEVM3-4171"))),
+            pytest.param(vlan_names[2:5], marks=(polarion("RHEVM3-4172"))),
+            pytest.param(vlan_names[5:8], marks=(polarion("RHEVM3-4173"))),
+            pytest.param([vlan_names[9]], marks=(polarion("RHEVM3-4174"))),
+            pytest.param([vlan_names[10]], marks=(polarion("RHEVM3-4175"))),
         ],
         ids=(
-            "Check VLAN on host NIC",
-            "Check VLAN on host BOND",
-            "Check multiple VLANs on host NIC",
-            "Check multiple VLANs on host BOND",
-            "Check mixed VLANs types",
-            "Check VLAN on non-VM network"
+            "Check_VLAN_on_host_NIC",
+            "Check_VLAN_on_host_BOND",
+            "Check_multiple_VLANs_on_host_NIC",
+            "Check_multiple_VLANs_on_host_BOND",
+            "Check_mixed_VLANs_types",
+            "Check_VLAN_on_non-VM_network"
         )
     )
     def test_vlan_on_nic_and_on_bond(self, vlan_names):

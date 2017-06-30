@@ -29,7 +29,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_clusters.__name__,
     create_and_attach_networks.__name__,
@@ -66,6 +65,7 @@ class TestDefaultRoute01(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
+    @tier2
     @polarion("RHEVM-21370")
     def test_custom_mgmt_default_route_role(self):
         """
@@ -82,7 +82,6 @@ class TestDefaultRoute01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -122,6 +121,7 @@ class TestDefaultRoute02(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM-21375")
     def test_default_route_require_ip_network_attached(self):
         """
@@ -133,6 +133,7 @@ class TestDefaultRoute02(NetworkTest):
             usages=self.default_route_usage
         )
 
+    @tier2
     @polarion("RHEVM-21371")
     def test_default_route_require_ip_attach_network(self):
         """
@@ -156,7 +157,6 @@ class TestDefaultRoute02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
@@ -194,11 +194,12 @@ class TestDefaultRoute03(NetworkTest):
     network_usage = conf.MGMT_BRIDGE
     cluster_usage = conf.CL_0
 
+    @tier2
     @pytest.mark.parametrize(
         ("network", "boot_protocol"),
         [
-            polarion("RHEVM-21387")([net_1, "dhcp"]),
-            polarion("RHEVM-21378")([net_2, "static"]),
+            pytest.param(*[net_1, "dhcp"], marks=(polarion("RHEVM3-21387"))),
+            pytest.param(*[net_2, "static"], marks=(polarion("RHEVM3-21378"))),
         ],
         ids=[
             "With_DHCP",
@@ -244,7 +245,6 @@ class TestDefaultRoute03(NetworkTest):
         assert dr_helper.is_dgw_from_ip_subnet(vds=conf.VDS_0_HOST, ip=self.ip)
 
 
-@tier2
 @pytest.mark.usefixtures(
     restore_network_usage.__name__,
     create_and_attach_networks.__name__,
@@ -296,6 +296,7 @@ class TestDefaultRoute04(NetworkTest):
     network_usage = net_1
     cluster_usage = cluster
 
+    @tier2
     @polarion("RHEVM-21377")
     @bz({"1443292": {}})
     def test_remove_ip_from_default_route_network(self):

@@ -52,7 +52,6 @@ def multiple_gw_prepare_setup(request):
     )
 
 
-@tier2
 class TestGatewaysCase01(NetworkTest):
     """
     1. Verify you can configure additional VLAN network with static IP and
@@ -85,13 +84,14 @@ class TestGatewaysCase01(NetworkTest):
     zero_net_gw = "0.0.0.0"
     zero_net_params = [zero_net, 1, zero_net_ip, zero_net_gw]
 
+    @tier2
     @pytest.mark.parametrize(
         ("network", "nic", "ip", "gateway"),
         [
-            polarion("RHEVM3-3953")(vlan_net_params),
-            polarion("RHEVM3-3954")(brless_net_params),
-            polarion("RHEVM3-3956")(display_net_params),
-            polarion("RHEVM3-3966")(zero_net_params),
+            pytest.param(*vlan_net_params, marks=(polarion("RHEVM3-3953"))),
+            pytest.param(*brless_net_params, marks=(polarion("RHEVM3-3954"))),
+            pytest.param(*display_net_params, marks=(polarion("RHEVM3-3956"))),
+            pytest.param(*zero_net_params, marks=(polarion("RHEVM3-3966"))),
         ],
         ids=[
             "VLAN_network_with_gateway",
@@ -135,7 +135,6 @@ class TestGatewaysCase01(NetworkTest):
         assert hl_host_network.clean_host_interfaces(host_name=host)
 
 
-@tier2
 @pytest.mark.usefixtures(setup_networks_fixture.__name__)
 class TestGatewaysCase02(NetworkTest):
     """
@@ -181,11 +180,14 @@ class TestGatewaysCase02(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         ("bond", "slave"),
         [
-            polarion("RHEVM3-3963")(add_slave_params),
-            polarion("RHEVM3-3964")(remove_slave_params),
+            pytest.param(*add_slave_params, marks=(polarion("RHEVM3-3963"))),
+            pytest.param(
+                *remove_slave_params, marks=(polarion("RHEVM3-3964"))
+            ),
         ],
         ids=[
             "Add_slave_to_BOND",

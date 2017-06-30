@@ -23,7 +23,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces_fixture_function.__name__,
@@ -83,12 +82,13 @@ class TestAcquireNmConnections(NetworkTest):
         hosts_nets_nic_dict
     ]
 
+    @tier2
     @pytest.mark.parametrize(
         ("connection", "type_", "network", "vlan_id", "hosts_nets_nic_dict"),
         [
-            polarion("RHEVM-19392")(flat_param),
-            polarion("RHEVM-19393")(bond_param),
-            polarion("RHEVM-19394")(vlan_param),
+            pytest.param(*flat_param, marks=(polarion("RHEVM3-19392"))),
+            pytest.param(*bond_param, marks=(polarion("RHEVM3-19393"))),
+            pytest.param(*vlan_param, marks=(polarion("RHEVM3-19394"))),
         ],
         ids=[
             "Acquire_flat_connection_from_NetworkManager",

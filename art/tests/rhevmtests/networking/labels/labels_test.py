@@ -61,7 +61,6 @@ def labels_prepare_setup(request):
     )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     setup_networks_fixture.__name__,
@@ -104,6 +103,7 @@ class TestNetLabels01(NetworkTest):
         }
     ]
 
+    @tier2
     @polarion("RHEVM3-4104")
     def test_01_same_label_on_host(self):
         """
@@ -155,6 +155,7 @@ class TestNetLabels01(NetworkTest):
             host_name=conf.HOST_0_NAME, **sn_label_dict
         )
 
+    @tier2
     @polarion("RHEVM3-4106")
     def test_02_label_several_interfaces(self):
         """
@@ -212,6 +213,7 @@ class TestNetLabels01(NetworkTest):
                 host_name=host, **sn_label_dict
             )
 
+    @tier2
     @polarion("RHEVM3-4107")
     def test_03_label_several_networks(self):
         """
@@ -253,7 +255,6 @@ class TestNetLabels01(NetworkTest):
                 )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     setup_networks_fixture.__name__,
@@ -320,6 +321,7 @@ class TestNetLabels02(NetworkTest):
         label_dict_6
     ]
 
+    @tier2
     @polarion("RHEVM3-4127")
     def test_01_un_label_network(self):
         """
@@ -344,6 +346,7 @@ class TestNetLabels02(NetworkTest):
             )
             assert sample.waitForFuncStatus(result=False)
 
+    @tier2
     @polarion("RHEVM3-4122")
     def test_02_break_labeled_bond(self):
         """
@@ -380,7 +383,6 @@ class TestNetLabels02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
@@ -411,6 +413,7 @@ class TestNetLabels03(NetworkTest):
         0: {}
     }
 
+    @tier2
     @polarion("RHEVM3-4130")
     def test_remove_label_host_NIC(self):
         """
@@ -470,7 +473,6 @@ class TestNetLabels03(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     create_network_on_dc_and_cluster.__name__
@@ -494,6 +496,7 @@ class TestNetLabels04(NetworkTest):
         0: {}
     }
 
+    @tier2
     @polarion("RHEVM3-4113")
     def test_network_on_host(self):
         """
@@ -522,7 +525,6 @@ class TestNetLabels04(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
@@ -643,6 +645,7 @@ class TestNetLabels05(NetworkTest):
         0: {}
     }
 
+    @tier2
     @polarion("RHEVM3-4116")
     def test_01_create_bond(self):
         """
@@ -692,6 +695,7 @@ class TestNetLabels05(NetworkTest):
                 network=network, host=conf.HOST_0_NAME, nic=self.bond_1
             )
 
+    @tier2
     @polarion("RHEVM3-4100")
     def test_02_create_bond_with_non_vm_and_vlan_network(self):
         """
@@ -743,6 +747,7 @@ class TestNetLabels05(NetworkTest):
                 network=network, host=conf.HOST_0_NAME, nic=self.bond_2
             )
 
+    @tier2
     @polarion("RHEVM3-4102")
     def test_03_create_bond_with_vm_and_non_vm(self):
         """
@@ -796,6 +801,7 @@ class TestNetLabels05(NetworkTest):
             network=self.net_6, host=conf.HOST_0_NAME, nic=self.bond_3
         )
 
+    @tier2
     @polarion("RHEVM3-4101")
     def test_04_create_bond_with_two_vm_non_vlan(self):
         """
@@ -820,7 +826,6 @@ class TestNetLabels05(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
@@ -849,6 +854,7 @@ class TestNetLabels06(NetworkTest):
         }
     ]
 
+    @tier2
     @polarion("RHEVM3-4129")
     def test_remove_net_from_cluster_dc(self):
         """
@@ -908,7 +914,6 @@ class TestNetLabels06(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_datacenter.__name__,
     create_clusters.__name__,
@@ -946,6 +951,7 @@ class TestNetLabels07(NetworkTest):
     nets = label_conf.NETS[7][:4]
     sleep_timeout = 30
 
+    @tier2
     @polarion("RHEVM3-4124")
     def test_move_host_supported_cl(self):
         """
@@ -1009,7 +1015,6 @@ class TestNetLabels07(NetworkTest):
                 assert ll_networks.remove_label(labels=[lb], networks=[net])
 
 
-@tier2
 @pytest.mark.usefixtures(add_label_nic_and_network.__name__)
 class TestNetLabels08(NetworkTest):
     """
@@ -1045,6 +1050,7 @@ class TestNetLabels08(NetworkTest):
     }
     labels_list = [label_dict_1, label_dict_2, label_dict_3]
 
+    @tier2
     @polarion("RHEVM3-4121")
     def test_label_restrictioin(self):
         """
@@ -1084,7 +1090,6 @@ class TestNetLabels08(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(add_label_nic_and_network.__name__)
 class TestNetLabels09(NetworkTest):
     """
@@ -1117,6 +1122,7 @@ class TestNetLabels09(NetworkTest):
     }
     labels_list = [label_dict_1, label_dict_2]
 
+    @tier2
     @polarion("RHEVM3-4117")
     def test_01_label_restriction_vm(self):
         """
@@ -1139,6 +1145,7 @@ class TestNetLabels09(NetworkTest):
         }
         assert not ll_networks.add_label(**label_dict)
 
+    @tier2
     @polarion("RHEVM3-4118")
     def test_02_label_restriction_non_vm(self):
         """

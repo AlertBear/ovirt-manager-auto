@@ -26,7 +26,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -75,6 +74,7 @@ class TestCumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-6654")
     def test_increase_traffic(self):
         """
@@ -88,6 +88,7 @@ class TestCumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
             oper=">"
         )
 
+    @tier2
     @polarion("RHEVM3-6654")
     @pytest.mark.usefixtures(
         move_host_to_another_cluster.__name__

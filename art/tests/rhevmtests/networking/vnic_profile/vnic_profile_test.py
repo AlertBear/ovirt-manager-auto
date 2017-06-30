@@ -38,7 +38,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(create_datacenters.__name__)
 class TestVNICProfileCase01(NetworkTest):
@@ -58,6 +57,7 @@ class TestVNICProfileCase01(NetworkTest):
 
     mgmt_br = conf.MGMT_BRIDGE
 
+    @tier2
     @polarion("RHEVM3-3991")
     def test01_check_management_profile(self):
         """
@@ -72,7 +72,6 @@ class TestVNICProfileCase01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -155,6 +154,7 @@ class TestVNICProfileCase02(NetworkTest):
     # Test-06, Test-07, Test-10, Test-11, Test-12
     vnic = vnic_conf.VNICS[2][0]
 
+    @tier2
     @polarion("RHEVM3-3973")
     def test_01_create_new_profiles(self):
         """
@@ -174,6 +174,7 @@ class TestVNICProfileCase02(NetworkTest):
             network=self.net_2
         )
 
+    @tier2
     @polarion("RHEVM3-3989")
     def test_02_update_to_non_vm(self):
         """
@@ -193,6 +194,7 @@ class TestVNICProfileCase02(NetworkTest):
             network=self.net_3, data_center=self.dc
         )
 
+    @tier2
     @polarion("RHEVM3-3990")
     def test_03_remove_network(self):
         """
@@ -226,6 +228,7 @@ class TestVNICProfileCase02(NetworkTest):
                 vnic_profile_name=profile
             )
 
+    @tier2
     @polarion("RHEVM3-3972")
     def test_04_check_non_vm(self):
         """
@@ -247,6 +250,7 @@ class TestVNICProfileCase02(NetworkTest):
             network=self.net_5
         )
 
+    @tier2
     @polarion("RHEVM3-3978")
     def test_05_check_profile(self):
         """"
@@ -273,6 +277,7 @@ class TestVNICProfileCase02(NetworkTest):
             network=self.net_8, data_center=self.dc
         )
 
+    @tier2
     @polarion("RHEVM3-3995")
     def test_06_check_profile(self):
         """"
@@ -293,6 +298,7 @@ class TestVNICProfileCase02(NetworkTest):
             network=self.net_9, vnic_profile=self.net_9
         )
 
+    @tier2
     @polarion("RHEVM3-3981")
     def test_07_update_network_unplugged_nic(self):
         """
@@ -374,6 +380,7 @@ class TestVNICProfileCase02(NetworkTest):
             host_name=vnic_conf.HOST_NAME
         )
 
+    @tier2
     @polarion("RHEVM3-3976")
     def test_08_update_vnic_profile(self):
         """
@@ -427,6 +434,7 @@ class TestVNICProfileCase02(NetworkTest):
             host_name=vnic_conf.HOST_NAME
         )
 
+    @tier2
     @polarion("RHEVM3-3975")
     def test_09_update_profiles(self):
         """
@@ -438,6 +446,7 @@ class TestVNICProfileCase02(NetworkTest):
             new_network=self.net_15
         )
 
+    @tier2
     @polarion("RHEVM3-3987")
     def test_10_hotplug_link_unlink(self):
         """
@@ -472,6 +481,7 @@ class TestVNICProfileCase02(NetworkTest):
             positive=True, vm=self.vm_name, nic=self.vnic, linked="true"
         )
 
+    @tier2
     @polarion("RHEVM3-3985")
     @pytest.mark.usefixtures(clean_host_interfaces.__name__)
     def test_11_remove_used_profile(self):
@@ -493,6 +503,7 @@ class TestVNICProfileCase02(NetworkTest):
         testflow.step('3. Remove vNIC from the VM')
         assert ll_vms.removeNic(positive=True, vm=self.vm_name, nic=self.vnic)
 
+    @tier2
     @polarion("RHEVM3-3986")
     @pytest.mark.usefixtures(
         remove_nic_from_vm.__name__,
@@ -590,7 +601,6 @@ class TestVNICProfileCase02(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -627,6 +637,7 @@ class TestVNICProfileCase03(NetworkTest):
     # Test-01
     vnic_2 = vnic_conf.VNIC_PROFILES[3][2]
 
+    @tier2
     @polarion("RHEVM3-3993")
     def test01_create_new_profiles_template(self):
         """
@@ -665,6 +676,7 @@ class TestVNICProfileCase03(NetworkTest):
                 vm=self.vm_name2, vnic_profile_name=vpro, nic=nic
             )
 
+    @tier2
     @polarion("RHEVM3-3977")
     def test02_remove_new_profiles_template(self):
         """

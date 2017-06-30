@@ -634,8 +634,13 @@ def get_test_parametrize_ids(item, params):
                     x_args = x.args
                 except AttributeError:
                     continue
-                if params in x_args:
-                    return param_ids[param_args_values.index(x)]
+
+                try:
+                    if params in x_args:
+                        return param_ids[param_args_values.index(x)]
+                except AttributeError:
+                    if params in x_args[-1].args:
+                        return param_ids[param_args_values.index(x)]
     return _id
 
 

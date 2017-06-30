@@ -24,7 +24,6 @@ from art.unittest_lib import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -170,32 +169,33 @@ class TestHostNetworkApiIpV601(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         ("network", "nic", "ip", "proto"),
         [
             # Static IPv6
-            polarion("RHEVM3-16627")(param_1),
-            polarion("RHEVM3-16639")(param_2),
-            polarion("RHEVM3-16640")(param_3),
-            polarion("RHEVM3-16641")(param_4),
-            polarion("RHEVM3-16642")(param_5),
-            polarion("RHEVM3-16643")(param_6),
+            pytest.param(*param_1, marks=(polarion("RHEVM3-16627"))),
+            pytest.param(*param_2, marks=(polarion("RHEVM3-16639"))),
+            pytest.param(*param_3, marks=(polarion("RHEVM3-16640"))),
+            pytest.param(*param_4, marks=(polarion("RHEVM3-16641"))),
+            pytest.param(*param_5, marks=(polarion("RHEVM3-16642"))),
+            pytest.param(*param_6, marks=(polarion("RHEVM3-16643"))),
 
             # Autoconf IPv6
-            polarion("RHEVM3-19184")(param_7),
-            polarion("RHEVM3-19185")(param_8),
-            polarion("RHEVM3-19186")(param_9),
-            polarion("RHEVM3-19188")(param_10),
-            polarion("RHEVM3-19189")(param_11),
-            polarion("RHEVM3-19190")(param_12),
+            pytest.param(*param_7, marks=(polarion("RHEVM3-19184"))),
+            pytest.param(*param_8, marks=(polarion("RHEVM3-19185"))),
+            pytest.param(*param_9, marks=(polarion("RHEVM3-19186"))),
+            pytest.param(*param_10, marks=(polarion("RHEVM3-19188"))),
+            pytest.param(*param_11, marks=(polarion("RHEVM3-19189"))),
+            pytest.param(*param_12, marks=(polarion("RHEVM3-19190"))),
 
             # DHCP IPv6
-            polarion("RHEVM3-19191")(param_13),
-            polarion("RHEVM3-19192")(param_14),
-            polarion("RHEVM3-19193")(param_15),
-            polarion("RHEVM3-19194")(param_16),
-            polarion("RHEVM3-19195")(param_17),
-            polarion("RHEVM3-19196")(param_18),
+            pytest.param(*param_13, marks=(polarion("RHEVM3-19191"))),
+            pytest.param(*param_14, marks=(polarion("RHEVM3-19192"))),
+            pytest.param(*param_15, marks=(polarion("RHEVM3-19193"))),
+            pytest.param(*param_16, marks=(polarion("RHEVM3-19194"))),
+            pytest.param(*param_17, marks=(polarion("RHEVM3-19195"))),
+            pytest.param(*param_18, marks=(polarion("RHEVM3-19196"))),
         ],
         ids=[
             "Bridge_static",
@@ -242,7 +242,6 @@ class TestHostNetworkApiIpV601(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
@@ -276,38 +275,38 @@ class TestHostNetworkApiIpV602(NetworkTest):
     net_1_dict = net_api_conf.BASIC_IPV4_AND_IPV6_DICT.copy()
     net_1_dict["ipv6"]["address"] = net_api_conf.IPV6_IPS.pop(0)
     net_1_dict["ipv4"]["address"] = net_api_conf.IPV4_IPS.pop(0)
-
     net_1_new_dict = net_api_conf.BASIC_IPV4_AND_IPV6_DICT.copy()
     net_1_new_dict["ipv6"]["address"] = net_api_conf.IPV6_IPS.pop(0)
     net_1_new_dict["ipv4"]["address"] = net_api_conf.IPV4_IPS.pop(0)
+    net_1_params = [net_1, 1, net_1_new_dict]
 
     # net_2 IP dict
     net_2 = net_api_conf.IPV6_NETS[2][1]
     net_2_dict = net_api_conf.IPV6_IP_DICT.copy()
     net_2_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
-
     net_2_new_dict = net_api_conf.IPV6_IP_DICT.copy()
     net_2_new_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
+    net_2_params = [net_2, 2, net_2_new_dict]
 
     # net_3 IP dict
     net_3 = net_api_conf.IPV6_NETS[2][2]
     net_3_dict = net_api_conf.IPV6_IP_DICT.copy()
     net_3_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
-
     net_3_new_dict = net_api_conf.IPV6_IP_DICT.copy()
     net_3_new_dict["boot_protocol"] = "dhcp"
     net_3_new_dict["address"] = None
     net_3_new_dict["netmask"] = None
+    net_3_params = [net_3, 3, net_3_new_dict]
 
     # net_4 IP dict
     net_4 = net_api_conf.IPV6_NETS[2][3]
     net_4_dict = net_api_conf.IPV6_IP_DICT.copy()
     net_4_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
-
     net_4_new_dict = net_api_conf.IPV6_IP_DICT.copy()
     net_4_new_dict["boot_protocol"] = "autoconf"
     net_4_new_dict["address"] = None
     net_4_new_dict["netmask"] = None
+    net_4_params = [net_4, 4, net_4_new_dict]
 
     # net_5 IP dict
     net_5 = net_api_conf.IPV6_NETS[2][4]
@@ -315,9 +314,9 @@ class TestHostNetworkApiIpV602(NetworkTest):
     net_5_dict["boot_protocol"] = "dhcp"
     net_5_dict["address"] = None
     net_5_dict["netmask"] = None
-
     net_5_new_dict = net_api_conf.IPV6_IP_DICT.copy()
     net_5_new_dict["address"] = net_api_conf.IPV6_IPS.pop(0)
+    net_5_params = [net_5, 5, net_5_new_dict]
 
     # setup_networks_fixture fixture
     hosts_nets_nic_dict = {
@@ -358,14 +357,15 @@ class TestHostNetworkApiIpV602(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         ("network", "nic", "ip_dict"),
         [
-            polarion("RHEVM-16884")([net_1, 1, net_1_new_dict]),
-            polarion("RHEVM-16899")([net_2, 2, net_2_new_dict]),
-            polarion("RHEVM-16900")([net_3, 3, net_3_new_dict]),
-            polarion("RHEVM-16901")([net_4, 4, net_4_new_dict]),
-            polarion("RHEVM-16902")([net_5, 5, net_5_new_dict]),
+            pytest.param(*net_1_params, marks=(polarion("RHEVM3-16884"))),
+            pytest.param(*net_2_params, marks=(polarion("RHEVM3-16899"))),
+            pytest.param(*net_3_params, marks=(polarion("RHEVM3-16900"))),
+            pytest.param(*net_4_params, marks=(polarion("RHEVM3-16901"))),
+            pytest.param(*net_5_params, marks=(polarion("RHEVM3-16902"))),
         ],
         ids=[
             "Update_IPv4_and_IPv6_from_static_to_another_static_IPs",

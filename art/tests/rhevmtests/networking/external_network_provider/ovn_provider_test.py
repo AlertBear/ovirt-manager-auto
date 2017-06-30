@@ -34,7 +34,6 @@ from rhevmtests.fixtures import start_vm
 pytestmark = pytest.mark.skip('skipping all tests. BUG in OVN installation')
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     deploy_ovn.__name__,
@@ -78,6 +77,7 @@ class TestOVNProvider01(NetworkTest):
     remove_ifcfg_from_vms_parms = [net_conf.VM_0, net_conf.VM_1]
     vms_ips = list()
 
+    @tier2
     @polarion("RHEVM3-16894")
     def test_01_add_ovn_network_provider(self):
         """
@@ -88,6 +88,7 @@ class TestOVNProvider01(NetworkTest):
         )
         assert ovn_conf.OVN_PROVIDER.add()
 
+    @tier2
     @polarion("RHEVM3-16925")
     def test_02_create_networks_on_ovn_provider(self):
         """
@@ -102,6 +103,7 @@ class TestOVNProvider01(NetworkTest):
                 network_name=net_name, subnet_dict=subnet
             )
 
+    @tier2
     @polarion("RHEVM3-17046")
     def test_03_import_networks_from_ovn_provider(self):
         """
@@ -116,6 +118,7 @@ class TestOVNProvider01(NetworkTest):
                 network=net_name, datacenter=self.dc, cluster=self.cl
             )
 
+    @tier2
     @polarion("RHEVM3-17439")
     def test_04_start_vm_with_ovn_network(self):
         """
@@ -135,6 +138,7 @@ class TestOVNProvider01(NetworkTest):
         )
         helper.run_vm_on_host(vm=net_conf.VM_0, host=net_conf.HOST_0_NAME)
 
+    @tier2
     @polarion("RHEVM3-17296")
     def test_05_hot_add_vnic_with_ovn_network_on_live_vm(self):
         """
@@ -155,6 +159,7 @@ class TestOVNProvider01(NetworkTest):
             network=ovn_conf.OVN_NET_1, plugged=True
         )
 
+    @tier2
     @polarion("RHEVM3-16927")
     def test_06_ping_same_ovn_network_and_host(self):
         """
@@ -177,6 +182,7 @@ class TestOVNProvider01(NetworkTest):
             vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
+    @tier2
     @polarion("RHEVM3-16928")
     def test_07_hot_unplug_and_hot_plug_vnic_with_ovn_network(self):
         """
@@ -209,6 +215,7 @@ class TestOVNProvider01(NetworkTest):
             vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
+    @tier2
     @polarion("RHEVM3-16930")
     def test_08_hot_update_vnic_profile_with_ovn_network(self):
         """
@@ -254,6 +261,7 @@ class TestOVNProvider01(NetworkTest):
             vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
+    @tier2
     @polarion("RHEVM3-17064")
     def test_09_ovn_networks_separation(self):
         """
@@ -320,6 +328,7 @@ class TestOVNProvider01(NetworkTest):
             vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
         )
 
+    @tier2
     @polarion("RHEVM3-17062")
     def test_10_migrate_vm_different_host(self):
         """
@@ -350,6 +359,7 @@ class TestOVNProvider01(NetworkTest):
             ping_kwargs=ping_kwargs, migration_kwargs=migrate_kwargs
         )
 
+    @tier2
     @polarion("RHEVM3-17236")
     def test_11_ovn_network_with_subnet(self):
         """
@@ -393,6 +403,7 @@ class TestOVNProvider01(NetworkTest):
             )
             self.vms_ips.append(ip)
 
+    @tier2
     @polarion("RHEVM3-17436")
     def test_12_ovn_network_with_subnet_validation(self):
         """
@@ -412,6 +423,7 @@ class TestOVNProvider01(NetworkTest):
         testflow.step("Verifying that IP: %s is unique", self.vms_ips[0])
         assert self.vms_ips[0] != self.vms_ips[1]
 
+    @tier2
     @polarion("RHEVM3-17437")
     def test_13_ovn_network_with_subnet_ping(self):
         """
@@ -424,6 +436,7 @@ class TestOVNProvider01(NetworkTest):
             vm=net_conf.VM_0, dst_ip=self.vms_ips[1]
         )
 
+    @tier2
     @polarion("RHEVM-19599")
     def test_14_static_mac_change_on_ovn_network(self):
         """
@@ -447,6 +460,7 @@ class TestOVNProvider01(NetworkTest):
             vm=net_conf.VM_0, dst_ip=self.vms_ips[1]
         )
 
+    @tier2
     @polarion("RHEVM3-17365")
     def test_15_migrate_vm_with_subnet(self):
         """

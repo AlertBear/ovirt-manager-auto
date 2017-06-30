@@ -30,7 +30,6 @@ from fixtures import (
 )
 
 
-@tier2
 class TestMacPoolRange01(NetworkTest):
     """
     1.  Try to use old configuration with engine-config
@@ -39,6 +38,7 @@ class TestMacPoolRange01(NetworkTest):
     """
     __test__ = True
 
+    @tier2
     @polarion("RHEVM3-6442")
     def test_invalid_engine_commands(self):
         """
@@ -56,7 +56,6 @@ class TestMacPoolRange01(NetworkTest):
             ).get('results')
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -84,6 +83,7 @@ class TestMacPoolRange02(NetworkTest):
         ext_cl: [mac_pool, True]
     }
 
+    @tier2
     @polarion("RHEVM3-6462")
     def test_01_recreate_cluster(self):
         """
@@ -103,6 +103,7 @@ class TestMacPoolRange02(NetworkTest):
         testflow.step("Make sure default MAC pool still exists")
         assert ll_mac_pool.get_mac_pool(pool_name=self.def_mac_pool)
 
+    @tier2
     @polarion("RHEVM3-6457")
     def test_02_remove_default_mac_pool(self):
         """
@@ -111,6 +112,7 @@ class TestMacPoolRange02(NetworkTest):
         testflow.step("Negative: try to remove default MAC pool range.")
         assert not ll_mac_pool.remove_mac_pool(mac_pool_name=self.def_mac_pool)
 
+    @tier2
     @polarion("RHEVM3-6443")
     def test_03_default_mac_pool(self):
         """`
@@ -146,7 +148,6 @@ class TestMacPoolRange02(NetworkTest):
         assert ll_mac_pool.get_default_mac_pool().get_id() == mac_pool_id
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -185,6 +186,7 @@ class TestMacPoolRange03(NetworkTest):
         ext_cl: pool_0
     }
 
+    @tier2
     @polarion("RHEVM3-6451")
     def test_01_auto_assigned_vs_manual(self):
         """
@@ -205,6 +207,7 @@ class TestMacPoolRange03(NetworkTest):
             positive=True, vm=self.vm, name=self.vnic_3, mac_address=manual_mac
         )
 
+    @tier2
     @polarion("RHEVM3-6449")
     def test_02_add_remove_ranges(self):
         """
@@ -232,6 +235,7 @@ class TestMacPoolRange03(NetworkTest):
             mac_pool_name=self.pool_0, range_list=[self.range_list[2]]
         )
 
+    @tier2
     @polarion("RHEVM3-6444")
     def test_03_update_mac_pool_vm(self):
         """
@@ -263,6 +267,7 @@ class TestMacPoolRange03(NetworkTest):
             mac_pool_name=self.pool_0, range_list=[self.range_list[1]]
         )
 
+    @tier2
     @polarion("RHEVM3-6445")
     def test_04_creation_pool_same_name(self):
         """
@@ -273,6 +278,7 @@ class TestMacPoolRange03(NetworkTest):
             name=self.pool_0, ranges=[self.range_list[0]], positive=False
         )
 
+    @tier2
     @polarion("RHEVM3-6446")
     def test_05_creation_pool_same_range(self):
         """
@@ -283,6 +289,7 @@ class TestMacPoolRange03(NetworkTest):
             name=self.pool_1, ranges=[self.range_list[0]]
         )
 
+    @tier2
     @polarion("RHEVM3-6458")
     def test_06_remove_used_mac_pool(self):
         """
@@ -294,6 +301,7 @@ class TestMacPoolRange03(NetworkTest):
         )
         assert not ll_mac_pool.remove_mac_pool(self.pool_0)
 
+    @tier2
     @polarion("RHEVM3-6459")
     def test_07_remove_unused_mac_pool(self):
         """
@@ -311,6 +319,7 @@ class TestMacPoolRange03(NetworkTest):
         testflow.step("Remove the MAC pool previously attached to cluster")
         assert ll_mac_pool.remove_mac_pool(mac_pool_name=self.pool_0)
 
+    @tier2
     @polarion("RHEVM3-6460")
     def test_08_remove_cluster(self):
         """
@@ -327,7 +336,6 @@ class TestMacPoolRange03(NetworkTest):
         assert ll_mac_pool.get_mac_pool(self.pool_0)
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -367,6 +375,7 @@ class TestMacPoolRange04(NetworkTest):
         vm: [mac_pool_conf.NICS_NAME[i] for i in range(1, 5)]
     }
 
+    @tier2
     @polarion("RHEVM3-6448")
     def test_01_range_limit_shrink(self):
         """
@@ -383,6 +392,7 @@ class TestMacPoolRange04(NetworkTest):
         testflow.step("Try to add additional VNIC to VM and fail")
         assert ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_3)
 
+    @tier2
     @polarion("RHEVM3-6447")
     def test_02_range_limit_extend(self):
         """
@@ -401,7 +411,6 @@ class TestMacPoolRange04(NetworkTest):
         assert ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_5)
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -442,6 +451,7 @@ class TestMacPoolRange05(NetworkTest):
         vm: [mac_pool_conf.NICS_NAME[i] for i in range(1, 4)]
     }
 
+    @tier2
     @polarion("RHEVM3-6450")
     def test_non_continuous_ranges(self):
         """
@@ -480,7 +490,6 @@ class TestMacPoolRange05(NetworkTest):
         assert nic_mac == self.mac_pool_ranges[-1][0]
 
 
-@tier2
 @bz({"1219383": {}})
 class TestMacPoolRange06(NetworkTest):
     """
@@ -493,6 +502,7 @@ class TestMacPoolRange06(NetworkTest):
     mac_pool_ranges = [("00:ff:ff:ff:ff:ff", "02:00:00:00:00:01")]
     pool_0 = mac_pool_conf.MAC_POOL_NAME_0
 
+    @tier2
     @polarion("RHEVM3-6454")
     def test_big_range(self):
         """
@@ -504,7 +514,6 @@ class TestMacPoolRange06(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
     remove_non_default_mac_pool.__name__,
@@ -544,6 +553,7 @@ class TestMacPoolRange07(NetworkTest):
         mp_vm: template
     }
 
+    @tier2
     @polarion("RHEVM3-6455")
     def test_vm_from_template(self):
         """
@@ -568,7 +578,6 @@ class TestMacPoolRange07(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
     create_mac_pools.__name__,
@@ -593,6 +602,7 @@ class TestMacPoolRange08(NetworkTest):
         ext_cl_2: [pool_0, False]
     }
 
+    @tier2
     @polarion("RHEVM3-6461")
     def test_remove_two_clusters(self):
         """

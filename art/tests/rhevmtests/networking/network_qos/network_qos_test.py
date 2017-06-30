@@ -28,7 +28,6 @@ from rhevmtests.fixtures import start_vm
 logger = logging.getLogger("Network_VNIC_QoS_Tests")
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     add_qos_to_dc_and_qos_profile_to_nic.__name__,
@@ -51,6 +50,7 @@ class TestNetQOSCase01(NetworkTest):
     }
     vms_to_stop = vms
 
+    @tier2
     @polarion("RHEVM3-3998")
     def test_01_add_network_qos(self):
         """
@@ -72,6 +72,7 @@ class TestNetQOSCase01(NetworkTest):
         )
         assert helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
 
+    @tier2
     @polarion("RHEVM3-19152")
     def test_02_several_network_qos(self):
         """
@@ -119,6 +120,7 @@ class TestNetQOSCase01(NetworkTest):
         )
         assert helper.compare_qos(vm_name=conf.VM_0, **dict_compare)
 
+    @tier2
     @polarion("RHEVM3-3999")
     def test_03_update_network_qos(self):
         """
@@ -178,6 +180,7 @@ class TestNetQOSCase01(NetworkTest):
         for vm in self.vms:
             assert helper.compare_qos(vm_name=vm, **dict_compare)
 
+    @tier2
     @polarion("RHEVM-19153")
     def test_04_migrate_network_qos(self):
         """
@@ -200,6 +203,7 @@ class TestNetQOSCase01(NetworkTest):
         )
         assert helper.compare_qos(vm_name=conf.VM_1, **dict_compare)
 
+    @tier2
     @polarion("RHEVM3-4000")
     def test_05_remove_network_qos(self):
         """

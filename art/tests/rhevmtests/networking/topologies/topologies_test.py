@@ -32,7 +32,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@tier2
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
@@ -197,21 +196,38 @@ class TestTopologiesVm(NetworkTest):
     }
     bond_mode_6_params = [None, None, test_8_sn_dict, 6]
 
+    @tier2
     @pytest.mark.parametrize(
         ("start_vms_dict", "network", "hosts_nets_nic_dict", "mode"),
         [
             # VM tests
-            polarion("RHEVM3-12286")(vm_vlan_net_params),
-            polarion("RHEVM3-12290")(vm_vlan_bond_mode_1_params),
+            pytest.param(
+                *vm_vlan_net_params, marks=(polarion("RHEVM3-12286"))
+            ),
+            pytest.param(
+                *vm_vlan_bond_mode_1_params, marks=(polarion("RHEVM3-12290"))
+            ),
             # TODO: Enable when we have switch BOND mode 2 support
-            # polarion("RHEVM3-12293")(vm_bond_mode_2_params),
-            polarion("RHEVM3-12299")(vm_bond_mode_4_params),
+            # pytest.param(
+            #     *vm_bond_mode_2_params, marks=(polarion("RHEVM3-12293"))
+            # ),
+            pytest.param(
+                *vm_bond_mode_4_params, marks=(polarion("RHEVM3-12299"))
+            ),
 
             # Non-VM tests
-            polarion("RHEVM3-12289")(bond_mode_0_params),
-            polarion("RHEVM3-12297")(bond_mode_3_params),
-            polarion("RHEVM3-12302")(bond_mode_5_params),
-            polarion("RHEVM3-12303")(bond_mode_6_params),
+            pytest.param(
+                *bond_mode_0_params, marks=(polarion("RHEVM3-12289"))
+            ),
+            pytest.param(
+                *bond_mode_3_params, marks=(polarion("RHEVM3-12297"))
+            ),
+            pytest.param(
+                *bond_mode_5_params, marks=(polarion("RHEVM3-12302"))
+            ),
+            pytest.param(
+                *bond_mode_6_params, marks=(polarion("RHEVM3-12303"))
+            ),
         ],
         ids=[
             # VM tests

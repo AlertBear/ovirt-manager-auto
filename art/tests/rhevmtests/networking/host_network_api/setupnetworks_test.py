@@ -68,11 +68,12 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         ("networks", "nic"),
         [
-            polarion("RHEVM3-9823")([on_nic, 1]),
-            polarion("RHEVM3-9824")([on_bond, bond_1]),
+            pytest.param(*[on_nic, 1], marks=(polarion("RHEVM3-9823"))),
+            pytest.param(*[on_bond, bond_1], marks=(polarion("RHEVM3-9824"))),
         ],
         ids=[
             "Attach_multiple_VLANs_to_host_NIC",
@@ -102,7 +103,6 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
         )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -176,6 +176,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
     # clean_host_interfaces params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
+    @tier2
     @polarion("RHEVM3-9621")
     def test_01_create_bond(self):
         """
@@ -194,6 +195,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-9622")
     def test_02_update_bond_add_slave(self):
         """
@@ -212,6 +214,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-10520")
     def test_03_update_bond_remove_slave(self):
         """
@@ -232,6 +235,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-9642")
     def test_06_update_bond_mode(self):
         """
@@ -250,6 +254,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-10521")
     def test_07_update_bond_with_ip(self):
         """
@@ -275,6 +280,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-10518")
     def test_08_create_bonds(self):
         """
@@ -301,6 +307,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-12412")
     def test_09_label_on_bond(self):
         """
@@ -319,6 +326,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-10519")
     def test_10_create_bond_with_5_slaves(self):
         """
@@ -339,6 +347,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @polarion("RHEVM3-19345")
     def test_11_create_bond_custom_mode(self):
         """
@@ -358,6 +367,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
+    @tier2
     @bz({"1424810": {}})
     @polarion("RHEVM3-19346")
     def test_12_update_bond_custom_mode(self):
@@ -419,11 +429,12 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         ("networks", "nic"),
         [
-            polarion("RHEVM3-14017")([on_nic, 1]),
-            polarion("RHEVM3-14020")([on_bond, bond_1]),
+            pytest.param(*[on_nic, 1], marks=(polarion("RHEVM3-14017"))),
+            pytest.param(*[on_bond, bond_1], marks=(polarion("RHEVM3-14020"))),
         ],
         ids=[
             "Attach_VLAN_network_and_VM_network_to_same_host_NIC",
@@ -470,16 +481,24 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
     net_1 = net_api_conf.SN_NETS[4][0]
     ip_v6_1 = net_api_conf.IPV6_IPS.pop(0)
     ip_v4_1 = net_api_conf.IPS.pop(0)
+    net_1_params = [net_1, 1, ip_v4_1, ip_v6_1]
+
     net_2 = net_api_conf.SN_NETS[4][1]
     ip_v6_2 = net_api_conf.IPV6_IPS.pop(0)
     ip_v4_2 = net_api_conf.IPS.pop(0)
+    net_2_params = [net_2, 2, ip_v4_2, ip_v6_2]
+
     net_3 = net_api_conf.SN_NETS[4][2]
     ip_v6_3 = net_api_conf.IPV6_IPS.pop(0)
     ip_v4_3 = net_api_conf.IPS.pop(0)
+    net_3_params = [net_3, 3, ip_v4_3, ip_v6_3]
+
     net_4 = net_api_conf.SN_NETS[4][3]
     ip_v6_4 = net_api_conf.IPV6_IPS.pop(0)
     ip_v4_4 = net_api_conf.IPS.pop(0)
     bond_1 = "bond041"
+    net_4_params = [net_4, bond_1, ip_v4_4, ip_v6_4]
+
     dc = conf.DC_0
 
     # create_and_attach_network params
@@ -504,13 +523,14 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
         }
     }
 
+    @tier2
     @pytest.mark.parametrize(
         ("network", "nic", "ipv4", "ipv6"),
         [
-            polarion("RHEVM3-17559")([net_1, 1, ip_v4_1, ip_v6_1]),
-            polarion("RHEVM3-17560")([net_2, 2, ip_v4_2, ip_v6_2]),
-            polarion("RHEVM3-17561")([net_3, 3, ip_v4_3, ip_v6_3]),
-            polarion("RHEVM3-17562")([net_4, bond_1, ip_v4_4, ip_v6_4]),
+            pytest.param(*net_1_params, marks=(polarion("RHEVM3-17559"))),
+            pytest.param(*net_2_params, marks=(polarion("RHEVM3-17560"))),
+            pytest.param(*net_3_params, marks=(polarion("RHEVM3-17561"))),
+            pytest.param(*net_4_params, marks=(polarion("RHEVM3-17562"))),
         ],
         ids=[
             "Attach_VM_network_with_static_ipv4_and_static_ipv6_to_host_NIC",
@@ -590,6 +610,7 @@ class TestHostNetworkApiSetupNetworks05(NetworkTest):
         }
     }
 
+    @tier2
     @bz({"1432386": {}})
     @polarion("RHEVM-19629")
     def test_ip_wiped_after_non_vm_delete(self):

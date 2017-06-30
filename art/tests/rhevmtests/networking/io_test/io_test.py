@@ -45,7 +45,6 @@ def attach_label_to_network(request):
     assert ll_networks.add_label(**label_dict)
 
 
-@tier2
 class TestIOTest01(NetworkTest):
     """
     1. Positive: Creating & adding networks with valid names to the cluster.
@@ -58,69 +57,96 @@ class TestIOTest01(NetworkTest):
     7. Negative: Trying to create networks with invalid VLAN IDs.
     """
     # Test 1 params - valid network names
-    test_1_valid_names = {
-        "name": [
-            "endsWithNumber1",
-            "nameMaxLengthhh",
-            "1startsWithNumb",
-            "1a2s3d4f5g6h",
-            "01234567891011",
-            "______",
-        ]
-    }
+    test_1_valid_names = [
+        {
+            "name": [
+                "endsWithNumber1",
+                "nameMaxLengthhh",
+                "1startsWithNumb",
+                "1a2s3d4f5g6h",
+                "01234567891011",
+                "______",
+            ]
+        }, True
+    ]
 
     # Test 2 params - invalid network names
-    test_2_invalid_names = {
-        "name": [
-            "networkWithMoreThanFifteenChars",
-            "inv@lidName",
-            "________________",
-            "bond",
-            "",
-        ]
-    }
+    test_2_invalid_names = [
+        {
+            "name": [
+                "networkWithMoreThanFifteenChars",
+                "inv@lidName",
+                "________________",
+                "bond",
+                "",
+            ]
+        }, False
+    ]
 
     # Test 3 params - valid network MTU
-    test_3_valid_mtu = {
-        "mtu": [68, 69, 9000, 65520, 2147483647]
-    }
+    test_3_valid_mtu = [
+        {
+            "mtu": [68, 69, 9000, 65520, 2147483647]
+        }, True
+    ]
 
     # Test 4 params - invalid network MTU
-    test_4_invalid_mtu = {
-        "mtu": [-5, 67, 2147483648]
-    }
+    test_4_invalid_mtu = [
+        {
+            "mtu": [-5, 67, 2147483648]
+        }, False
+    ]
 
     # Test 5 params - invalid network usages
-    test_5_invalid_usages = {
-        "usages": ["Unknown"]
-    }
+    test_5_invalid_usages = [
+        {
+            "usages": ["Unknown"]
+        }, False
+    ]
 
     # Test 6 params - valid network VLAN
-    test_6_valid_vlan = {
-        "vlan_id": [4094, 1111, 111, 11, 1, 0]
-    }
+    test_6_valid_vlan = [
+        {
+            "vlan_id": [4094, 1111, 111, 11, 1, 0]
+        }, True
+    ]
 
     # Test 7 params - invalid network VLAN
-    test_7_invalid_vlan = {
-        "vlan_id": [-10, 4095, 4096]
-    }
+    test_7_invalid_vlan = [
+        {
+            "vlan_id": [-10, 4095, 4096]
+        }, False
+    ]
 
     # Test 8 params - valid network names with dash (-)
-    test_8_valid_dash_name = {
-        "name": ["net-155", "net-1-5-5-b----", "m-b_1-2_3_4-3_5"]
-    }
+    test_8_valid_dash_name = [
+        {
+            "name": ["net-155", "net-1-5-5-b----", "m-b_1-2_3_4-3_5"]
+        }, True
+    ]
 
+    @tier2
     @pytest.mark.parametrize(
         ("test_params", "positive"),
         [
-            polarion("RHEVM3-4381")([test_1_valid_names, True]),
-            polarion("RHEVM3-14742")([test_2_invalid_names, False]),
-            polarion("RHEVM3-4377")([test_3_valid_mtu, True]),
-            polarion("RHEVM3-14743")([test_4_invalid_mtu, False]),
-            polarion("RHEVM3-4376")([test_5_invalid_usages, False]),
-            polarion("RHEVM3-4375")([test_6_valid_vlan, True]),
-            polarion("RHEVM3-14744")([test_7_invalid_vlan, False]),
-            polarion("RHEVM3-11877")([test_8_valid_dash_name, True]),
+            pytest.param(*test_1_valid_names, marks=(polarion("RHEVM3-4381"))),
+            pytest.param(
+                *test_2_invalid_names, marks=(polarion("RHEVM3-14742"))
+            ),
+            pytest.param(*test_3_valid_mtu, marks=(polarion("RHEVM3-4377"))),
+            pytest.param(
+                *test_4_invalid_mtu, marks=(polarion("RHEVM3-14743"))
+            ),
+            pytest.param(
+                *test_5_invalid_usages, marks=(polarion("RHEVM3-4376"))
+            ),
+            pytest.param(*test_6_valid_vlan, marks=(polarion("RHEVM3-4375"))),
+            pytest.param(
+                *test_7_invalid_vlan, marks=(polarion("RHEVM3-14744"))
+            ),
+            pytest.param(
+                *test_8_valid_dash_name, marks=(polarion("RHEVM3-11877"))
+            ),
         ],
         ids=[
             "Create_valid_names",
@@ -156,7 +182,6 @@ class TestIOTest01(NetworkTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -199,6 +224,7 @@ class TestIOTest02(NetworkTest):
             "1.1.1.X",
         ]
     }
+    test_01 = [net_1, test_1_invalid_ips]
 
     # Test 2 params - invalid network netmask
     net_2 = io_conf.NETS[2][1]
@@ -213,40 +239,46 @@ class TestIOTest02(NetworkTest):
             "40",
         ]
     }
+    test_02 = [net_2, test_2_invalid_mask]
 
     # Test 3 params - netmask without network IP
     net_3 = io_conf.NETS[2][2]
     test_3_no_ip = {
         "netmask": ["255.255.255.0"]
     }
+    test_03 = [net_3, test_3_no_ip]
 
     # Test 4 params - IP without network netmask
     net_4 = io_conf.NETS[2][3]
     test_4_no_mask = {
         "address": ["1.2.3.1"]
     }
+    test_04 = [net_4, test_4_no_mask]
 
     # Test 5 params - valid network netmask
     net_5 = io_conf.NETS[2][4]
     test_5_valid_mask = {
         "netmask": ["255.255.255.0"]
     }
+    test_05 = [net_5, test_5_valid_mask]
 
     # Test 6 params - invalid network gateway
     net_6 = io_conf.NETS[2][5]
     test_6_invalid_gateway = {
         "gateway": ["5.5.5.298"]
     }
+    test_06 = [net_6, test_6_invalid_gateway]
 
+    @tier2
     @pytest.mark.parametrize(
         ("network", "test_params"),
         [
-            polarion("RHEVM3-4380")([net_1, test_1_invalid_ips]),
-            polarion("RHEVM3-19162")([net_2, test_2_invalid_mask]),
-            polarion("RHEVM3-4378")([net_3, test_3_no_ip]),
-            polarion("RHEVM3-4371")([net_4, test_4_no_mask]),
-            polarion("RHEVM3-19164")([net_5, test_5_valid_mask]),
-            polarion("RHEVM3-3958")([net_6, test_6_invalid_gateway]),
+            pytest.param(*test_01, marks=(polarion("RHEVM3-4380"))),
+            pytest.param(*test_02, marks=(polarion("RHEVM3-19162"))),
+            pytest.param(*test_03, marks=(polarion("RHEVM3-4378"))),
+            pytest.param(*test_04, marks=(polarion("RHEVM3-4371"))),
+            pytest.param(*test_05, marks=(polarion("RHEVM3-19164"))),
+            pytest.param(*test_06, marks=(polarion("RHEVM3-3958"))),
         ],
         ids=[
             "invalid_IPs",
@@ -307,7 +339,6 @@ class TestIOTest02(NetworkTest):
                     assert not res
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__
@@ -342,38 +373,59 @@ class TestIOTest03(NetworkTest):
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
     # Test 1 params - edit network name to valid name
-    test_1_edit_name_valid = {
-        "name": [valid_name]
-        }
+    test_1_edit_name_valid = [
+        {
+            "name": [valid_name]
+        }, True
+    ]
 
     # Test 2 params - edit network name to invalid name
-    test_2_edit_name_invalid = {
-        "name": ["inv@lidName"]
-    }
+    test_2_edit_name_invalid = [
+        {
+            "name": ["inv@lidName"]
+        }, False
+    ]
 
     # Test 3 params - edit network with valid VLAN
-    test_3_edit_valid_vlan = {
-        "vlan_id": [2, 3, 15, 444, 4093]
-    }
+    test_3_edit_valid_vlan = [
+        {
+            "vlan_id": [2, 3, 15, 444, 4093]
+        }, True
+    ]
 
     # Test 4 params - edit network with invalid VLAN
-    test_4_edit_invalid_vlan = {
-        "vlan_id": [-10, 4095, 4096]
-    }
+    test_4_edit_invalid_vlan = [
+        {
+            "vlan_id": [-10, 4095, 4096]
+        }, False
+    ]
 
     # Test 5 params - edit network usages
-    test_5_edit_valid_usages = {
-        "usages": [""]
-    }
+    test_5_edit_valid_usages = [
+        {
+            "usages": [""]
+        }, True
+    ]
 
+    @tier2
     @pytest.mark.parametrize(
         ("test_params", "positive"),
         [
-            polarion("RHEVM3-4374")([test_1_edit_name_valid, True]),
-            polarion("RHEVM3-14745")([test_2_edit_name_invalid, False]),
-            polarion("RHEVM3-4373")([test_3_edit_valid_vlan, True]),
-            polarion("RHEVM3-14746")([test_4_edit_invalid_vlan, False]),
-            polarion("RHEVM3-4372")([test_5_edit_valid_usages, True]),
+            pytest.param(
+                *test_1_edit_name_valid, marks=(polarion("RHEVM3-4374"))
+            ),
+            pytest.param(
+                *test_2_edit_name_invalid, marks=(polarion("RHEVM3-14745"))
+            ),
+            pytest.param(
+                *test_3_edit_valid_vlan, marks=(polarion("RHEVM3-4373"))
+            ),
+            pytest.param(
+                *test_4_edit_invalid_vlan, marks=(polarion("RHEVM3-14746"))
+            ),
+            pytest.param(
+                *test_5_edit_valid_usages, marks=(polarion("RHEVM3-4372"))
+            ),
         ],
         ids=[
             "Edit_valid_name",
@@ -407,7 +459,6 @@ class TestIOTest03(NetworkTest):
                 )
 
 
-@tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
@@ -444,26 +495,31 @@ class TestIOTest04(NetworkTest):
     net_1 = io_conf.NETS[4][0]
     label_1 = io_conf.LABEL_NAME[4][0]
     net_1_labels = ["a" * 50]
+    test_01 = [net_1, net_1_labels, None, True]
 
     # Test 2 params - label non_restriction on host NIC
     net_2 = io_conf.NETS[4][1]
     net_2_labels = io_conf.LABEL_NAME[4][1:]
+    test_02 = [net_2, net_2_labels, 1, True]
 
     # Test 3 params - label restriction on network
     net_3 = io_conf.NETS[4][2]
     net_3_labels = ["asd?f", "dfg/gd"]
+    test_03 = [net_3, net_3_labels, None, False]
 
     # Test 4 params - more then 1 label on network
     net_4 = io_conf.NETS[4][3]
     net_4_labels = io_conf.LABEL_NAME[4][:5]
+    test_04 = [net_4, net_4_labels, None, False]
 
+    @tier2
     @pytest.mark.parametrize(
         ("network", "labels", "nic", "positive"),
         [
-            polarion("RHEVM3-16952")([net_1, net_1_labels, None, True]),
-            polarion("RHEVM-14807")([net_2, net_2_labels, 1, True]),
-            polarion("RHEVM3-14806")([net_3, net_3_labels, None, False]),
-            polarion("RHEVM-16953")([net_4, net_4_labels, None, False]),
+            pytest.param(*test_01, marks=(polarion("RHEVM3-16952"))),
+            pytest.param(*test_02, marks=(polarion("RHEVM3-14807"))),
+            pytest.param(*test_03, marks=(polarion("RHEVM3-14806"))),
+            pytest.param(*test_04, marks=(polarion("RHEVM3-16953"))),
         ],
         ids=[
             "Create_label_with_length_of_50_chars",

@@ -57,7 +57,6 @@ def multi_host_prepare_setup(request):
     )
 
 
-@tier2
 @pytest.mark.usefixtures(
     clean_host_interfaces.__name__,
     create_clusters.__name__,
@@ -573,48 +572,100 @@ class TestMultiHostNetworkProperties(NetworkTest):
         False
     ]
 
+    @tier2
     @pytest.mark.parametrize(
-        ("net", "params", "positive"),
+        "net, test_params, positive",
         [
             # Tests on networks attached to host
-            polarion("RHEVM3-4072")(non_vm_net),
-            polarion("RHEVM-19355")(vm_net),
-            polarion("RHEVM3-4067")(net_vlan_2),
-            polarion("RHEVM-19354")(net_vlan_3),
-            polarion("RHEVM-19371")(remove_vlan_from_network),
-            polarion("RHEVM3-4080")(net_mtu_9000),
-            polarion("RHEVM-19364")(bz({"1460687": {}})(net_mtu_1500)),
-            polarion("RHEVM3-4079")(rename_net_used_by_host),
+            pytest.param(*non_vm_net, marks=(polarion("RHEVM3-4072"))),
+            pytest.param(*vm_net, marks=(polarion("RHEVM3-19355"))),
+            pytest.param(*net_vlan_2, marks=(polarion("RHEVM3-4067"))),
+            pytest.param(*net_vlan_3, marks=(polarion("RHEVM3-19354"))),
+            pytest.param(
+                *remove_vlan_from_network, marks=(polarion("RHEVM3-19371"))
+            ),
+            pytest.param(*net_mtu_9000, marks=(polarion("RHEVM3-4080"))),
+            pytest.param(
+                *net_mtu_1500, marks=(
+                    (polarion("RHEVM3-19364"), bz({"1460687": {}}))
+                )
+            ),
+            pytest.param(
+                *rename_net_used_by_host, marks=(polarion("RHEVM3-4079"))
+            ),
 
-            # Tests on networks attached to running VM
-            polarion("RHEVM3-4074")(net_mtu_on_running_vm),
-            polarion("RHEVM-19369")(net_vlan_on_running_vm),
-            polarion("RHEVM-19401")(net_used_by_running_vm_to_be_non_vm),
+            # # Tests on networks attached to running VM
+            pytest.param(
+                *net_mtu_on_running_vm, marks=(polarion("RHEVM3-4074"))
+            ),
+            pytest.param(
+                *net_vlan_on_running_vm, marks=(polarion("RHEVM3-19369"))
+            ),
+            pytest.param(
+                *net_used_by_running_vm_to_be_non_vm, marks=(
+                    polarion("RHEVM3-19401")
+                )
+            ),
 
-            # Tests on networks attached to non-running VM
-            polarion("RHEVM-19361")(net_mtu_on_non_running_vm),
-            polarion("RHEVM-19370")(net_vlan_on_non_running_vm),
-            polarion("RHEVM-19362")(net_used_by_non_running_vm_to_be_non_vm),
-            polarion("RHEVM-19365")(rename_net_used_by_non_running_vm),
+            # # Tests on networks attached to non-running VM
+            pytest.param(
+                *net_mtu_on_non_running_vm, marks=(polarion("RHEVM3-19361"))
+            ),
+            pytest.param(
+                *net_vlan_on_non_running_vm, marks=(polarion("RHEVM3-19370"))
+            ),
+            pytest.param(
+                *net_used_by_non_running_vm_to_be_non_vm, marks=(
+                    polarion("RHEVM3-19362")
+                )
+            ),
+            pytest.param(
+                *rename_net_used_by_non_running_vm, marks=(
+                    polarion("RHEVM3-19365")
+                )
+            ),
 
-            # Tests on networks attached to template
-            polarion("RHEVM3-4073")(net_used_by_template_to_be_non_vm),
-            polarion("RHEVM-19359")(net_used_by_template_mtu),
-            polarion("RHEVM-19360")(net_used_by_template_vlan),
-            polarion("RHEVM-19366")(rename_net_used_by_template),
+            # # Tests on networks attached to template
+            pytest.param(
+                *net_used_by_template_to_be_non_vm, marks=(
+                    polarion("RHEVM3-4073")
+                )
+            ),
+            pytest.param(
+                *net_used_by_template_mtu, marks=(polarion("RHEVM3-19359"))
+            ),
+            pytest.param(
+                *net_used_by_template_vlan, marks=(polarion("RHEVM3-19360"))
+            ),
+            pytest.param(
+                *rename_net_used_by_template, marks=(polarion("RHEVM3-19366"))
+            ),
 
-            # Tests on networks attached to multiple hosts
-            polarion("RHEVM3-4078")(net_used_by_hosts_mtu_and_vlan),
-            polarion("RHEVM3-4077")(net_used_by_hosts_mtu_vlan_diff_cl),
+            # # Tests on networks attached to multiple hosts
+            pytest.param(
+                *net_used_by_hosts_mtu_and_vlan, marks=(
+                    polarion("RHEVM3-4078")
+                )
+            ),
+            pytest.param(
+                *net_used_by_hosts_mtu_vlan_diff_cl, marks=(
+                    polarion("RHEVM3-4077")
+                )
+            ),
 
-            # Tests on networks attached to bond
-            polarion("RHEVM3-4081")(non_vm_net_on_bond),
-            polarion("RHEVM-19363")(vm_net_on_bond),
-            polarion("RHEVM3-4069")(vlan_9_on_bond),
-            polarion("RHEVM-19357")(vlan_10_on_bond),
-            polarion("RHVEM3-4068")(mtu_9000_on_bond),
-            polarion("RHEVM-19356")(bz({"1460687": {}})(mtu_1500_on_bond)),
-            polarion("RHEVM-19358")(remove_vlan_from_bond)
+            # # Tests on networks attached to bond
+            pytest.param(*non_vm_net_on_bond, marks=(polarion("RHEVM3-4081"))),
+            pytest.param(*vm_net_on_bond, marks=(polarion("RHEVM3-19363"))),
+            pytest.param(*vlan_9_on_bond, marks=(polarion("RHEVM3-4069"))),
+            pytest.param(*vlan_10_on_bond, marks=(polarion("RHEVM3-19357"))),
+            pytest.param(*mtu_9000_on_bond, marks=(polarion("RHEVM3-4068"))),
+            pytest.param(
+                *mtu_1500_on_bond, marks=(
+                    (polarion("RHEVM3-19356"), bz({"1460687": {}})))
+            ),
+            pytest.param(
+                *remove_vlan_from_bond, marks=(polarion("RHEVM3-19358"))
+            ),
         ],
         ids=[
             # Tests on networks attached to host
@@ -627,7 +678,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
             "Update_MTU_1500_property_on_network_attached_to_host",
             "Try_to_rename_network_that_attached_to_host",
 
-            # Tests on networks attached to running VM
+            # # Tests on networks attached to running VM
             "Update_MTU_9000_property_on_network_attached_to_running_VM",
             "Update_VLAN_property_on_network_attached_to_running_VM",
             (
@@ -635,7 +686,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
                 "to_be_non-VM"
             ),
 
-            # Tests on networks attached to non-running VM
+            # # Tests on networks attached to non-running VM
             "Update_MTU_property_on_network_attached_to_non-running_VM",
             "Update_VLAN_property_on_network_attached_to_non-running_VM",
             (
@@ -653,14 +704,14 @@ class TestMultiHostNetworkProperties(NetworkTest):
             "Update_VLAN_property_on_network_used_by_template",
             "Try_to_rename_network_used_by_template",
 
-            # Tests on networks attached on multiple hosts
+            # # Tests on networks attached on multiple hosts
             "Update_MTU_and_VLAN_properties_on_network_used_by_two_hosts",
             (
                "Update_MTU_and_VLAN_properties_on_network_used_by_two_hosts_"
                "but_on_different_clusters"
             ),
 
-            # Tests on networks attached to bond
+            # # Tests on networks attached to bond
             "Update_non-VM_property_on_network_used_by_bond",
             "Update_VM_property_on_network_used_by_bond",
             "Update_VLAN_9_property_on_network_used_by_bond",
@@ -670,7 +721,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
             "Remove_VLAN_property_from_network_attached_to_bond"
         ]
     )
-    def test_update_network(self, net, params, positive):
+    def test_update_network(self, net, test_params, positive):
         """
         Tests for network properties update
         """
@@ -680,9 +731,9 @@ class TestMultiHostNetworkProperties(NetworkTest):
         )
         _id = helpers.get_test_parametrize_ids(
             item=self.test_update_network.parametrize,
-            params=[net, params, positive]
+            params=[net, test_params, positive]
         )
         testflow.step(_id)
         assert multi_host_helper.update_network_and_check_changes(
-            net=net, positive=positive, **params
-        ), assert_fail_msg
+            net=net, positive=positive, **test_params
+        ), "{_id}{err}".format(_id=_id, err=assert_fail_msg)
