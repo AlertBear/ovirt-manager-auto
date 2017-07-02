@@ -495,7 +495,6 @@ class TestCase10696(BasicEnvironment):
         )
 
 
-@bz({'1411123': {}})
 class TestCase10697(BasicEnvironment):
     """
     Import a glance image as disk

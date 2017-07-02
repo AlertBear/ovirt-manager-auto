@@ -55,7 +55,7 @@ def add_disk(request):
         disk_params['provisioned_size'] = (60 * config.GB)
         disk_params['format'] = config.DISK_FORMAT_RAW
         disk_params['sparse'] = False
-        timeout = DEFAULT_DISK_TIMEOUT * 4
+        timeout = DEFAULT_DISK_TIMEOUT * 10
 
     disk_params['active'] = getattr(self, 'active', False)
     disk_params['wipe_after_delete'] = getattr(

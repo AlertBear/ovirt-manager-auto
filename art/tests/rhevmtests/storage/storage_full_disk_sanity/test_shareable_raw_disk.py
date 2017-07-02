@@ -107,7 +107,6 @@ class TestCase11513(TestCase):
     remove_vms.__name__,
     delete_disk.__name__,
 )
-@tier2
 class TestCase11624(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=834893
@@ -128,6 +127,7 @@ class TestCase11624(TestCase):
 
     @classmethod
     @polarion("RHEVM3-11624")
+    @tier2
     def test_several_vms_with_same_shared_disk_on_one_host_test(cls):
         """ tests if running a few VMs with the same shared disk on the same
             host works correctly
@@ -167,6 +167,7 @@ class TestCase11624(TestCase):
             cls.vm_names, wait_for_status=config.VM_UP,
             max_workers=config.MAX_WORKERS, wait_for_ip=False
         )
+        assert ll_vms.stop_vms_safely(cls.vm_names), "Failed to poweroff VMs"
 
 
 @pytest.mark.usefixtures(delete_disks.__name__)

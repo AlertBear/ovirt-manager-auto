@@ -1096,10 +1096,11 @@ def remove_glance_image(request):
                     config.HOSTS_USER, config.HOSTS_PW
                 ), "Failed to remove glance image %s" % self.disk.get_alias()
         assert image_found, (
-            "Failed to find image %s in glance image repository %s" %
-            self.disk.get_alias(), self.glance_domain
+            "Failed to find image %s in glance image repository %s" % (
+                self.disk.get_alias(), self.glance_domain
             )
-    request.addfinalizer(finalizer)
+        )
+        request.addfinalizer(finalizer)
 
 
 @pytest.fixture(scope='class')

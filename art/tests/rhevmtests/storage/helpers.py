@@ -8,8 +8,7 @@ import re
 import shlex
 import hashlib
 import time
-import multiprocessing
-import multiprocessing.dummy
+from concurrent.futures.thread import ThreadPoolExecutor
 from art.core_api.apis_utils import TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils import test_utils
@@ -108,7 +107,6 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     :rtype bool
     """
     is_ro = 'Read Only' if read_only else 'Read Write'
-    pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
 
     def attach_and_activate(disk):
         logger.info("Attaching disk %s as %s disk to vm %s",
@@ -128,7 +126,9 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
                                            "to vm %s"
                                            % (disk, vm_name))
 
-    pool.map(attach_and_activate, disks_to_prepare)
+    with ThreadPoolExecutor(max_workers=len(disks_to_prepare)) as executor:
+        for disk in disks_to_prepare:
+            executor.submit(attach_and_activate, disk)
     return True
 
 
@@ -792,19 +792,23 @@ def start_creating_disks_for_test(
     :returns: List of disk aliases created
     :rtype: list
     """
+    disk_names = []
     logger.info("Creating all disks required for test")
     disk_permutations = ll_disks.get_all_disk_permutation(
         block=sd_type in config.BLOCK_TYPES, shared=shared,
         interfaces=interfaces
     )
-    pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
 
     def add_disk(permutation):
-        return add_new_disk(
+        alias = add_new_disk(
             sd_name=sd_name, permutation=permutation, shared=shared,
             sd_type=sd_type, disk_size=disk_size
         )
-    return pool.map(add_disk, disk_permutations)
+        disk_names.append(alias)
+    with ThreadPoolExecutor(max_workers=len(disk_permutations)) as executor:
+        for disk in disk_permutations:
+            executor.submit(add_disk, disk)
+    return disk_names
 
 
 def prepare_disks_with_fs_for_vm(
@@ -851,12 +855,20 @@ def prepare_disks_with_fs_for_vm(
         executor = get_vm_executor(vm_name)
     logger.info("Creating filesystems on disks %s", disk_names)
 
-    for disk_alias in disk_names:
-        ecode, mount_point = create_fs_on_disk(vm_name, disk_alias, executor)
-        if not ecode:
-            logger.error("Cannot create filesystem on disk: %s", disk_alias)
-            mount_point = ''
-        mount_points.append(mount_point)
+    with ThreadPoolExecutor(max_workers=len(disk_names)) as thread_executor:
+        for disk_alias in disk_names:
+            result = thread_executor.submit(
+                create_fs_on_disk, vm_name=vm_name, disk_alias=disk_alias,
+                executor=executor
+            )
+            ecode = result.result()[0]
+            mount_point = result.result()[1]
+            if not ecode:
+                logger.error(
+                    "Cannot create filesysem on disk %s:", disk_alias
+                )
+                mount_point = ''
+            mount_points.append(mount_point)
     logger.info(
         "Mount points for new disks: %s", mount_points
     )
