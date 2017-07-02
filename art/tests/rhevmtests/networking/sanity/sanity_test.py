@@ -1166,6 +1166,7 @@ class TestSanity14(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier1
+    @polarion("RHEVM-16627")
     def test_static_ipv6_network_on_host(self):
         """
         Attach network with static IPv6 over bridge.
@@ -1204,6 +1205,7 @@ class TestSanity15(NetworkTest):
     }
 
     @tier1
+    @polarion("RHEVM-17189")
     def test_report_active_slave(self,):
         """
         Verify that RHV is report primary/active interface of the bond mode 1.
@@ -1395,6 +1397,7 @@ class TestSanity18(NetworkTest):
 
     @tier1
     @bz({"1426225": {}})
+    @polarion("RHEVM-19392")
     def test_acquire_nm_connetion(self):
         """
         Use network that was created via NetworkManager in VDSM
