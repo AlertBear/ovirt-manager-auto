@@ -18,7 +18,9 @@ def get_storage_domain_size(request):
     assert ll_sds.wait_for_storage_domain_available_size(
         config.DATA_CENTER_NAME, self.new_storage_domain
     )
-    self.domain_size = ll_sds.get_total_size(self.new_storage_domain)
+    self.domain_size = ll_sds.get_total_size(
+        self.new_storage_domain, config.DATA_CENTER_NAME
+    )
     logger.info(
         "Total size for domain '%s' is '%s'",
         self.new_storage_domain, self.domain_size

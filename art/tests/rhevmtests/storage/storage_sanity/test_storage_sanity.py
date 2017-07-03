@@ -72,9 +72,11 @@ class TestCase11591(TestCase):
             self.new_storage_domain, self.storage, self.spm, **extend_lun
         )
         ll_sds.wait_for_change_total_size(
-            self.new_storage_domain, self.domain_size
+            self.new_storage_domain, config.DATA_CENTER_NAME, self.domain_size
         )
-        extended_sd_size = ll_sds.get_total_size(self.new_storage_domain)
+        extended_sd_size = ll_sds.get_total_size(
+            self.new_storage_domain, config.DATA_CENTER_NAME
+        )
         testflow.step(
             "Total size for domain '%s' after extend is '%s'",
             self.new_storage_domain, extended_sd_size

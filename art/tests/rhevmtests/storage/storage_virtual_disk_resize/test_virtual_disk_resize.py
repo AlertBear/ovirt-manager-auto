@@ -588,7 +588,9 @@ class TestCase5070(BasicResize):
         - VM with thin disk and OS
         - Resize the VM disk to disk current size + total storage domain size
         """
-        storage_domain_size = ll_sds.get_total_size(self.storage_domain)
+        storage_domain_size = ll_sds.get_total_size(
+            self.storage_domain, config.DATA_CENTER_NAME
+        )
         self.new_size = (config.DISK_SIZE + config.GB * storage_domain_size)
         testflow.step("Resizing disk %s", self.disk_name)
         status = ll_vms.extend_vm_disk_size(

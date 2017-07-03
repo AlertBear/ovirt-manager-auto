@@ -1607,7 +1607,7 @@ def extend_storage_domain(storage_domain, extend_indices):
     extend_kwargs = dict()
     extension_luns = list()
     spm = ll_hosts.get_spm_host(config.HOSTS)
-    domain_size = ll_sd.get_total_size(storage_domain)
+    domain_size = ll_sd.get_total_size(storage_domain, config.DATA_CENTER_NAME)
     if storage_type == config.STORAGE_TYPE_ISCSI:
         extension_lun_addresses = list()
         extension_lun_targets = list()
@@ -1632,9 +1632,12 @@ def extend_storage_domain(storage_domain, extend_indices):
         **extend_kwargs
     )
     assert ll_sd.wait_for_change_total_size(
-        storagedomain_name=storage_domain, original_size=domain_size
+        storage_domain=storage_domain, data_center=config.DATA_CENTER_NAME,
+        original_size=domain_size
     ), "Storage domain %s size hasn't been changed" % storage_domain
-    extended_sd_size = ll_sd.get_total_size(storagedomain=storage_domain)
+    extended_sd_size = ll_sd.get_total_size(
+        storagedomain=storage_domain, data_center=config.DATA_CENTER_NAME
+    )
     logger.info(
         "Total size for domain %s after extend is %s",
         storage_domain, extended_sd_size
@@ -1662,7 +1665,9 @@ def reduce_luns_from_storage_domain(
     Raises:
         AssertionError: In case of any failure
     """
-    size_before_reduce = ll_sd.get_total_size(storage_domain)
+    size_before_reduce = ll_sd.get_total_size(
+        storage_domain, config.DATA_CENTER_NAME
+    )
     logger.info(
         "Reducing storage domain %s, size before reduce is %s",
         storage_domain, size_before_reduce
@@ -1692,11 +1697,13 @@ def reduce_luns_from_storage_domain(
             ), "Failed to activate storage domain %s" % storage_domain
 
             assert ll_sd.wait_for_change_total_size(
-                storagedomain_name=storage_domain,
+                storage_domain=storage_domain,
+                data_center=config.DATA_CENTER_NAME,
                 original_size=size_before_reduce
             ), "Storage domain %s size hasn't been changed" % storage_domain
             size_after_reduce = ll_sd.get_total_size(
-                storagedomain=storage_domain
+                storagedomain=storage_domain,
+                data_center=config.DATA_CENTER_NAME
             )
             assert size_after_reduce == expected_size, (
                 "Storage domain %s size hasn't been decreased after LUN "

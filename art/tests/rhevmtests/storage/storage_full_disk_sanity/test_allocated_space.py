@@ -328,7 +328,7 @@ class TestCase11546(BaseCase):
         # wait_for_tasks_deprecated doesn't work
         # (value is not updated correctly)
         ll_sd.wait_for_change_total_size(
-            self.new_storage_domain,
+            self.new_storage_domain, config.DATA_CENTER_NAME,
             self.current_total_size[self.new_storage_domain]
         )
 

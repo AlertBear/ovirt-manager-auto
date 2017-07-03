@@ -129,7 +129,7 @@ def check_initial_storage_domain_params(request):
             ll_sd.get_allocated_size(domain)
         )
         self.current_total_size[domain] = (
-            ll_sd.get_total_size(domain)
+            ll_sd.get_total_size(domain, config.DATA_CENTER_NAME)
         )
         self.current_used_size[domain] = (
             ll_sd.get_used_size(domain)

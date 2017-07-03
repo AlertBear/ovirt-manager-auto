@@ -1098,7 +1098,7 @@ def get_allocated_size(storagedomain):
     return sdObj.get_committed()
 
 
-def get_total_size(storagedomain, data_center=None):
+def get_total_size(storagedomain, data_center):
     """
     Gets the total size of the storage domain (available + used)
 
@@ -1497,23 +1497,37 @@ def get_storage_domain_obj(storage_domain, key='name'):
     return util.find(storage_domain, attribute=key)
 
 
-def wait_for_change_total_size(storagedomain_name, original_size=0,
-                               sleep=5, timeout=50):
+def wait_for_change_total_size(
+    storage_domain, data_center, original_size=0, sleep=5, timeout=50,
+):
     """
-    Waits until the total size changes from original_size
-    Parameters:
-        * storagedomain_name
-        * original_size: size to compare to
+    Wait until the total size changes from original_size
+
+    Args:
+        storage_domain (str): The name of the storage domain
+        data_center (str): The data_center name which storage_domain is
+            attached to
+        original_size (int): The size to compare to
+        sleep (int): The sampler interval in seconds
+        timeout (int): The time to wait for the storage domain size to change
+            in seconds
+
+    Returns:
+        bool: True in case the size has changed, False otherwise
     """
-    for total_size in TimeoutingSampler(timeout, sleep, get_total_size,
-                                        storagedomain_name):
-        util.logger.info("Total size for %s is %d", storagedomain_name,
-                         total_size)
+    for total_size in TimeoutingSampler(
+        timeout, sleep, get_total_size, storage_domain, data_center
+    ):
+        util.logger.info(
+            "Total size for %s is %d", storage_domain, total_size
+        )
         if total_size != original_size:
             return True
 
-    util.logger.warning("Total size for %s didn't update from %d",
-                        storagedomain_name, original_size)
+    util.logger.warning(
+        "Total size for %s didn't update from %d", storage_domain,
+        original_size
+    )
     return False
 
 

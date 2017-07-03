@@ -67,7 +67,8 @@ class BaseTestCase(TestCase):
         Resize LUNs on storage server
         """
         self.size_before = ll_sd.get_total_size(
-            storagedomain=self.new_storage_domain
+            storagedomain=self.new_storage_domain,
+            data_center=config.DATA_CENTER_NAME
         )
         testflow.step(
             "Storage domain %s total size before LUNs %s resize is %s",
@@ -112,14 +113,16 @@ class BaseTestCase(TestCase):
         )
 
         assert ll_sd.wait_for_change_total_size(
-            storagedomain_name=self.new_storage_domain,
+            storage_domain=self.new_storage_domain,
+            data_center=config.DATA_CENTER_NAME,
             original_size=self.size_before
         ), "Storage domain %s size hasn't been changed" % (
             self.new_storage_domain
         )
 
         size_after = ll_sd.get_total_size(
-            storagedomain=self.new_storage_domain
+            storagedomain=self.new_storage_domain,
+            data_center=config.DATA_CENTER_NAME
         )
         testflow.step(
             "Storage domain %s total size after LUNs %s resize is %s",
