@@ -532,6 +532,7 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
         """
         disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
         initial_vol_count = storage_helpers.get_disks_volume_count(disk_ids)
+        target = ",".join(target)
 
         def f():
             """
