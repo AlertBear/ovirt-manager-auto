@@ -128,9 +128,11 @@ class TestVirtConsoleHeadlessClass(VirtTest):
         Test set headless on Active VM.
         """
         testflow.setup("Activate test VM.")
-        assert ll_vms.startVms(vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM]), (
-            "Failed to start test VMs."
-        )
+        assert ll_vms.startVms(
+            vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM],
+            wait_for_status=vcons_conf.VM_UP
+        ), "Failed to start test VMs."
+
         testflow.step("Remove graphics consoles.")
         helper.del_consoles(vcons_conf.VIRT_CONSOLE_VM_SYSTEM, "vm")
         testflow.step("Verify VM is not headless.")
@@ -165,9 +167,10 @@ class TestVirtConsoleHeadlessClass(VirtTest):
         testflow.setup("Remove graphics consoles.")
         helper.del_consoles(vcons_conf.VIRT_CONSOLE_VM_SYSTEM, "vm")
         testflow.setup("Activate test VM.")
-        assert ll_vms.startVms(vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM]), (
-            "Failed to start test VMs."
-        )
+        assert ll_vms.startVms(
+            vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM],
+            wait_for_status=vcons_conf.VM_UP
+        ), "Failed to start test VMs."
 
         testflow.step("Verify VM is headless.")
         assert helper.verify_object_headless(
@@ -211,9 +214,11 @@ class TestVirtConsoleHeadlessClass(VirtTest):
         testflow.setup("Remove graphics consoles.")
         helper.del_consoles(vcons_conf.VIRT_CONSOLE_VM_SYSTEM, "vm")
         testflow.setup("Activate test VM.")
-        assert ll_vms.startVms(vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM]), (
-            "Failed to start test VMs."
-        )
+        assert ll_vms.startVms(
+            vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM],
+            wait_for_status=vcons_conf.VM_UP
+        ), "Failed to start test VMs."
+
         testflow.step("Verify VM is headless.")
         assert helper.verify_object_headless(
             object_name=vcons_conf.VIRT_CONSOLE_VM_SYSTEM, object_type="vm"
@@ -254,6 +259,7 @@ class TestVirtConsoleHeadlessClass(VirtTest):
             vms=[vcons_conf.VIRT_CONSOLE_CLONE_VM_NAME],
             wait_for_status=vcons_conf.VM_UP
         ), "Failed to start VM."
+
         testflow.step("Verify cloned VM booted headless.")
         assert helper.verify_object_headless(
             object_name=vcons_conf.VIRT_CONSOLE_CLONE_VM_NAME, object_type="vm"

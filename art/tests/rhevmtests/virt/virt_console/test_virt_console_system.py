@@ -39,9 +39,10 @@ class TestVirtConsoleClass(VirtTest):
             obj='vm'
         )
         testflow.step('Activate test VM.')
-        assert ll_vms.startVms(vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM]), (
-            "Failed to start test VMs."
-        )
+        assert ll_vms.startVms(
+            vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM],
+            wait_for_status=vcons_conf.VM_UP
+        ), "Failed to start test VMs."
 
         testflow.step("Verify VM was configured with SPICE+VNC console.")
         vm_obj = ll_vms.get_vm(vcons_conf.VIRT_CONSOLE_VM_SYSTEM)
@@ -124,9 +125,10 @@ class TestVirtConsoleClass(VirtTest):
             obj='vm'
         )
         testflow.step('Activate test VM.')
-        assert ll_vms.startVms(vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM]), (
-            "Failed to start test VMs."
-        )
+        assert ll_vms.startVms(
+            vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM],
+            wait_for_status=vcons_conf.VM_UP
+        ), "Failed to start test VMs."
 
         vm_obj = ll_vms.get_vm(vcons_conf.VIRT_CONSOLE_VM_SYSTEM)
         consoles = ll_gc.get_graphics_consoles_values(vm_obj)
@@ -164,9 +166,10 @@ class TestVirtConsoleClass(VirtTest):
             obj='vm'
         )
         testflow.step('Activate test VM.')
-        assert ll_vms.startVms(vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM]), (
-            "Failed to start test VMs."
-        )
+        assert ll_vms.startVms(
+            vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM],
+            wait_for_status=vcons_conf.VM_UP
+        ), "Failed to start test VMs."
 
         vm_obj = ll_vms.get_vm(vcons_conf.VIRT_CONSOLE_VM_SYSTEM)
         consoles = ll_gc.get_graphics_consoles_values(vm_obj)
