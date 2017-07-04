@@ -26,17 +26,18 @@ def get_host_pm_state(pm_command_executor, host_pm_details, expected_state):
         bool: True, if the host power management state equals
             to expected_state, otherwise False
     """
-    out = pm_command_executor.vds_client(
-        cmd="fenceNode",
-        args={
-            "addr": host_pm_details.get(sla_conf.PM_ADDRESS),
-            "port": host_pm_details.get(sla_conf.PM_SLOT, "0"),
-            "agent": host_pm_details.get(sla_conf.PM_TYPE),
-            "username": host_pm_details.get(sla_conf.PM_USERNAME),
-            "password": host_pm_details.get(sla_conf.PM_PASSWORD),
-            "action": "status"
-        }
-    )
+    pm_command_args = {
+        "addr": host_pm_details.get(sla_conf.PM_ADDRESS),
+        "port": host_pm_details.get(sla_conf.PM_SLOT, "0"),
+        "agent": host_pm_details.get(sla_conf.PM_TYPE),
+        "username": host_pm_details.get(sla_conf.PM_USERNAME),
+        "password": host_pm_details.get(sla_conf.PM_PASSWORD),
+        "action": "status"
+    }
+    if sla_conf.PM_OPTIONS in host_pm_details:
+        pm_command_args["options"] = host_pm_details[sla_conf.PM_OPTIONS]
+
+    out = pm_command_executor.vds_client(cmd="fenceNode", args=pm_command_args)
     if not out:
         logger.error(
             "%s: failed to run power management command",
@@ -80,6 +81,10 @@ def wait_for_host_pm_state(
     if not host_pm:
         logger.error("%s: does not have PM", host_resource)
         return False
+
+    if host_pm.get(sla_conf.PM_TYPE) == sla_conf.PM_TYPE_DRAC7:
+        host_pm[sla_conf.PM_TYPE] = sla_conf.PM_TYPE_IPMILAN
+        host_pm[sla_conf.PM_OPTIONS] = "privlvl=operator\ndelay=10\nlanplus=1"
 
     sampler = TimeoutingSampler(
         timeout=sampler_timeout,

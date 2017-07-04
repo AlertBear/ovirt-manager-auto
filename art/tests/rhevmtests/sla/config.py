@@ -11,6 +11,10 @@ PM_USERNAME = "pm_username"
 PM_TYPE = "pm_type"
 PM_SLOT = "pm_slot"
 PM_PORT = "pm_port"
+PM_OPTIONS = "pm_options"
+
+PM_TYPE_IPMILAN = "ipmilan"
+PM_TYPE_DRAC7 = "drac7"
 
 APC_SNMP = "apc_snmp"
 APC_SNMP_ADDRESS = "rack04-pdu01-lab4.tlv.redhat.com"
