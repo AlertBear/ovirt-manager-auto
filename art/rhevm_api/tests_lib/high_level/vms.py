@@ -129,7 +129,7 @@ def calculate_memory_for_memory_filter(hosts_list, difference=10):
 
 def migrate_by_maintenance(
     vms_list, src_host, vm_os_type, vm_user, vm_password,
-    connectivity_check=True
+    connectivity_check=True, src_host_resource=None
 ):
     """
     Migrate VMs by setting host to maintenance
@@ -141,6 +141,7 @@ def migrate_by_maintenance(
         vm_password (str): Password for the vm machine
         vm_os_type (str): Type of the OS of VM
         connectivity_check (bool): check VM connectivity after maintenance
+        src_host_resource (Host resource): Host resource object of source host
 
     Returns:
         bool: True if migration succeeded, False otherwise.
@@ -157,7 +158,7 @@ def migrate_by_maintenance(
         ):
             status = False
     if not hl_hosts.activate_host_if_not_up(
-        host=src_host, host_resource=src_host
+        host=src_host, host_resource=src_host_resource
     ):
         return False
     return status

@@ -169,7 +169,8 @@ def capture_traffic_while_migrating(
         "src_host": src_host_name,
         "vm_user": config.HOSTS_USER,
         "vm_password": config.VMS_LINUX_PW,
-        "vm_os_type": "rhel"
+        "vm_os_type": "rhel",
+        "src_host_resource": src_host_rsc
     }
 
     if req_nic:
