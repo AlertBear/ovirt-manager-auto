@@ -9,6 +9,8 @@ import types
 import logging
 import pytest
 
+import marks
+
 
 __all__ = [
     "pytest_addoption",
@@ -221,13 +223,7 @@ class ARTLogging(object):
             logger.info("Test Description: %s", line)
         logger.info("Iteration number: %s", self.itnum)
 
-        team = "no-team"
-        attr = item.get_marker('attr')
-        if attr:
-            for info in attr:
-                if 'team' in info.kwargs:
-                    team = info.kwargs['team']
-                    break
+        team = marks.get_item_team(item)
 
         flow_logger.info(
             "%03d: %s/%s", self.itnum, team, self.get_test_name(item)

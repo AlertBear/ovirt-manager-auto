@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 MIN = 60
-UNDEFINED_TEAM = "UNDEFINED TEAM"
+UNDEFINED_TEAM = "UNDEFINED-TEAM"
 
 # upgrade order
 BEFORE_UPGRADE = 1
@@ -80,6 +80,51 @@ order_upgrade_cluster = pytest.mark.run(order=UPGRADE_CL)
 order_after_upgrade_cluster = pytest.mark.run(order=AFTER_UPGRADE_CL)
 order_upgrade_dc = pytest.mark.run(order=UPGRADE_DC)
 order_after_upgrade = pytest.mark.run(order=AFTER_UPGRADE)
+
+
+def get_item_tier(item):
+    """
+    Returns tier of item
+
+    Args:
+        item (_pytest.python.Function): pytest item
+
+    Returns:
+        int: Tier number if specified 0 otherwise
+    """
+
+    item_markers = getattr(item.function, 'pytestmark', [])
+    tier_marker_names = [mark.name for mark in tier_markers]
+    for item_mark in item_markers:
+        if item_mark.name in tier_marker_names:
+            return item_mark.kwargs['value']
+    if item.cls:
+        cls_markers = getattr(item.cls, 'pytestmark', [])
+        for cls_mark in cls_markers[::-1]:
+            if cls_mark.name in tier_marker_names:
+                return cls_mark.kwargs['value']
+    return 0
+
+
+def get_item_team(item):
+    """
+    Returns team of item
+
+    Args:
+        item (_pytest.python.Function): Pytest item
+
+    Returns:
+        str: Team name if specified, otherwise UNDEFINED_TEAM
+    """
+    item_markers = getattr(item.function, 'pytestmark', [])
+    for item_mark in item_markers:
+        if item_mark.name in [mark.name for mark in team_markers]:
+            return item_mark.name
+    for team_marker in team_markers:
+        item_mark_info = item.get_marker(team_marker.name)
+        if item_mark_info:
+            return item_mark_info.name
+    return UNDEFINED_TEAM
 
 
 def pytest_addoption(parser):
@@ -137,49 +182,6 @@ class AttribDecorator(object):
                         return True
         return False
 
-    def get_item_tier(self, item):
-        """
-        Returns tier of item
-
-        Args:
-            item (_pytest.python.Function): pytest item
-
-        Returns:
-            int: Tier number if specified 0 otherwise
-        """
-
-        item_markers = getattr(item.function, 'pytestmark', [])
-        tier_marker_names = [mark.name for mark in tier_markers]
-        for item_mark in item_markers:
-            if item_mark.name in tier_marker_names:
-                return item_mark.kwargs['value']
-        if item.cls:
-            cls_markers = getattr(item.cls, 'pytestmark', [])
-            for cls_mark in cls_markers[::-1]:
-                if cls_mark.name in tier_marker_names:
-                    return cls_mark.kwargs['value']
-        return 0
-
-    def get_item_team(self, item):
-        """
-        Returns team of item
-
-        Args:
-            item (_pytest.python.Function): Pytest item
-
-        Returns:
-            str: Team name if specified, otherwise UNDEFINED_TEAM
-        """
-        item_markers = getattr(item.function, 'pytestmark', [])
-        for item_mark in item_markers:
-            if item_mark.name in [mark.name for mark in team_markers]:
-                return item_mark.name
-        for team_marker in team_markers:
-            item_mark_info = item.get_marker(team_marker.name)
-            if item_mark_info:
-                return item_mark_info.name
-        return UNDEFINED_TEAM
-
     def set_tier_timeout(self, item, tier):
         """
         Set timeout to item for specified tier
@@ -204,8 +206,8 @@ class AttribDecorator(object):
         )
         for item in items[:]:
 
-            item_tier = self.get_item_tier(item)
-            item_team = self.get_item_team(item)
+            item_tier = get_item_tier(item)
+            item_team = get_item_team(item)
 
             if not self._matches(item, item_tier, item_team):
                 items.remove(item)

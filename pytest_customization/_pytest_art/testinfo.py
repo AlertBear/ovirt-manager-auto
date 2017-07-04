@@ -7,6 +7,8 @@ import os
 import pytest
 from _pytest._code.code import ExceptionInfo
 
+import marks
+
 __all__ = [
     "pytest_addoption",
     "pytest_configure",
@@ -26,20 +28,8 @@ class LogTestInfo(object):
         if item.nodeid not in self.statistics:
             self.statistics[item.nodeid] = dict()
             self.statistics[item.nodeid]['testname'] = item.nodeid
-            item_attr = item.get_marker('attr')
-            tier = 0
-            team = "undefined_team"
-            if hasattr(item_attr, "_arglist"):
-                for _, kwargs in item_attr._arglist:
-                    item_tier = kwargs.get('tier', tier)
-                    if isinstance(item_tier, str):
-                        tier = item_tier
-                        break
-                    if item_tier > tier:
-                        tier = item_tier
-                team = item_attr.kwargs.get('team', team)
-            self.statistics[item.nodeid]['tier'] = tier
-            self.statistics[item.nodeid]['team'] = team
+            self.statistics[item.nodeid]['tier'] = marks.get_item_tier(item)
+            self.statistics[item.nodeid]['team'] = marks.get_item_team(item)
             for when in ('setup', 'call', 'teardown'):
                 self.statistics[item.nodeid][when] = (
                     {
