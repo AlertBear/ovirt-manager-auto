@@ -145,6 +145,7 @@ class TestCase5823(BasicEnvironment):
         Expected result: HSM host becomes SPM
         """
         testflow.step("Deactivate SPM host %s", self.spm_host)
+        wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
         assert ll_hosts.deactivate_host(
             True, self.spm_host
         ), "Unable to deactivate host %s " % self.spm_host
