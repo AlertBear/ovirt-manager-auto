@@ -192,7 +192,9 @@ def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     for i in range(num_dummy):
         nic_name = dummy_int % i
         if nic_name in host_nics:
-            logger.warning("Dummy %s already exists on host", nic_name, host)
+            logger.warning(
+                "Dummy %s already exists on host %s", nic_name, host
+            )
             continue
 
         cmd = ["ip", "link", "add", nic_name, "type", "dummy"]
