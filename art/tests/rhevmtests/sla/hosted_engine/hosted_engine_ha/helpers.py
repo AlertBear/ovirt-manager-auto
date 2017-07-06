@@ -10,7 +10,6 @@ import art.core_api.apis_exceptions as core_errors
 import art.core_api.apis_utils as utils
 import config as conf
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -3,7 +3,6 @@ HE webadmin helpers
 """
 import logging
 import re
-from time import sleep
 
 import art.core_api.apis_exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -14,65 +13,6 @@ import config as conf
 from art.core_api.apis_utils import TimeoutingSampler
 
 logger = logging.getLogger(__name__)
-
-
-# noinspection PyTypeChecker
-def wait_until_he_vm_will_appear_under_engine(
-    timeout=conf.SAMPLER_TIMEOUT, sleep=conf.SAMPLER_SLEEP
-):
-    """
-    Wait until the HE VM will appear under the engine after auto-import action
-
-    Args:
-        timeout (int): Sampler timeout
-        sleep (int): Sampler sleep
-
-    Returns:
-        bool: True, if the HE VM appears before timeout, otherwise False
-    """
-    sampler = TimeoutingSampler(
-        timeout=timeout,
-        sleep=sleep,
-        func=ll_vms.does_vm_exist,
-        vm_name=conf.HE_VM_NAME
-    )
-    try:
-        for sample in sampler:
-            if sample:
-                return True
-    except exceptions.APITimeout:
-        logger.error(
-            "HE VM does not exist under engine after %s second", timeout
-        )
-        return False
-
-
-def change_engine_config_ovf_update_interval(
-    value=conf.OVF_UPDATE_INTERVAL_VALUE
-):
-    """
-    1) Change the OvfUpdateIntervalInMinutes value via engine-config
-
-    Args:
-        value (int): New value
-
-    Returns:
-        bool: True, if update succeed, otherwise False
-    """
-    logger.info(
-        "Change engine-config parameter %s to %s",
-        conf.OVF_UPDATE_INTERVAL, value
-    )
-    cmd = [
-        "{0}={1}".format(conf.OVF_UPDATE_INTERVAL, value)
-    ]
-    if not conf.ENGINE.engine_config(action="set", param=cmd).get("results"):
-        logger.error(
-            "Failed to set %s option to %s",
-            conf.OVF_UPDATE_INTERVAL, value
-        )
-        return False
-    return True
 
 
 def run_hosted_engine_cli_command(resource, command):
@@ -113,7 +53,7 @@ def check_he_vm_memory_via_engine(expected_value):
     test_libs.testflow.step(
         "Check via engine that HE VM has memory equal to %s", expected_value
     )
-    return expected_value == ll_vms.get_vm_memory(vm_name=conf.HE_VM_NAME)
+    return expected_value == ll_vms.get_vm_memory(vm_name=conf.HE_VM)
 
 
 def check_he_vm_cpu_via_engine(expected_value):
@@ -132,7 +72,7 @@ def check_he_vm_cpu_via_engine(expected_value):
         expected_value
     )
     return expected_value == ll_vms.get_vm_processing_units_number(
-        vm_name=conf.HE_VM_NAME
+        vm_name=conf.HE_VM
     )
 
 
@@ -150,7 +90,7 @@ def check_he_vm_nic_via_engine(nic_name):
         test_libs.testflow.step(
             "Check via engine that HE VM has NIC %s", nic_name
         )
-        ll_vms.get_vm_nic(vm=conf.HE_VM_NAME, nic=nic_name)
+        ll_vms.get_vm_nic(vm=conf.HE_VM, nic=nic_name)
     except exceptions.EntityNotFound:
         return False
     return True
@@ -229,15 +169,12 @@ def apply_new_parameters_on_he_vm():
     2) Restart HE VM
     3) Wait until the engine will be UP
     """
-    logger.info("Wait until OVF update")
-    sleep(conf.WAIT_FOR_OVF_UPDATE)
     logger.info("Restart HE VM")
     restart_he_vm()
     logger.info("Wait until the engine will be UP")
     return conf.ENGINE.wait_for_engine_status_up(timeout=conf.SAMPLER_TIMEOUT)
 
 
-# noinspection PyTypeChecker
 def wait_until_host_will_deploy_he(
     host_name,
     negative=False,
@@ -351,3 +288,43 @@ def wait_for_hosts_he_attributes(
             )
             return False
     return True
+
+
+def deploy_hosted_engine_on_host(deploy):
+    """
+    1) Deactivate the host
+    2) Deploy/Undeploy the host
+    3) Activate the host
+    4) Wait for the host HE stats
+
+    Args:
+        deploy (bool): Deploy or undeploy the host
+
+    Returns:
+        bool: True, if all actions succeeded, otherwise False
+    """
+    if not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[1]):
+        return False
+
+    deploy_msg = "Deploy" if deploy else "Undeploy"
+    deploy_param = {"deploy_hosted_engine": True} if deploy else {
+        "undeploy_hosted_engine": True
+    }
+    u_libs.testflow.step("%s the host %s", deploy_msg, conf.HOSTS[1])
+    if not ll_hosts.install_host(
+        host=conf.HOSTS[1],
+        root_password=conf.HOSTS_PW,
+        **deploy_param
+    ):
+        return False
+
+    if not ll_hosts.activate_host(positive=True, host=conf.HOSTS[1]):
+        return False
+
+    u_libs.testflow.step(
+        "Wait until the engine will %s the host %s",
+        deploy_msg.lower(), conf.HOSTS[1]
+    )
+    return wait_until_host_will_deploy_he(
+        host_name=conf.HOSTS[1], negative=not deploy
+    )
