@@ -19,7 +19,6 @@ from rhevmtests.virt.fixtures import create_vm
 import rhevmtests.virt.helper as virt_helper
 
 
-@tier1
 class TestVmTz(VirtTest):
     """
     Check VM timezone tests
@@ -27,6 +26,7 @@ class TestVmTz(VirtTest):
     vm_parameters = config.VM_PARAMETERS
     vm_name = vm_parameters['name']
 
+    @tier1
     @pytest.mark.parametrize(
         "custom_vm_params",
         config.VM_TZ,
@@ -44,6 +44,7 @@ class TestVmTz(VirtTest):
         testflow.step('Check that VM timezone is correct')
         assert vm.get_time_zone().get_name() == custom_vm_params['time_zone']
 
+    @tier1
     @pytest.mark.parametrize(
         ("custom_vm_params", "tz_for_upd"), config.UPDATE_VM_TZ,
         ids=[
@@ -66,6 +67,7 @@ class TestVmTz(VirtTest):
         testflow.step('Check that VM timezone is updated')
         assert vm.get_time_zone().get_name() == tz_for_upd
 
+    @tier1
     @pytest.mark.parametrize(
         ("custom_vm_params", "tz_for_upd"), config.UPDATE_RUNNING_VM,
         ids=[
@@ -100,6 +102,7 @@ class TestVmTz(VirtTest):
         testflow.step('Check that VM timezone is updated')
         assert vm.get_time_zone().get_name() == tz_for_upd
 
+    @tier1
     @pytest.mark.parametrize(
         ("tz", 'expected_tz'), config.DEFAULT_TZ_DB,
         ids=[
@@ -115,7 +118,6 @@ class TestVmTz(VirtTest):
         assert default_tz[tz] == expected_tz
 
 
-@tier2
 class TestTzCli(VirtTest):
     """
     Tests for CLI part of timezones
@@ -123,6 +125,7 @@ class TestTzCli(VirtTest):
     vm_parameters = config.VM_PARAMETERS
     vm_name = vm_parameters['name']
 
+    @tier2
     @pytest.mark.parametrize(
         ('tz', 'tz_val', 'expected_tz'), config.CLI_CHANGE_DB,
         ids=[

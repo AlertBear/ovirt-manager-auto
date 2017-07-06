@@ -37,7 +37,6 @@ from rhevmtests.virt import helper as virt_helper
 from rhevmtests import helpers
 
 
-@tier2
 @pytest.mark.usefixtures(
     basic_teardown_fixture.__name__
 )
@@ -52,6 +51,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
     add_disk = False
     cluster_lower = False
 
+    @tier2
     @polarion("RHEVM3-10254")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -80,6 +80,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
         testflow.step("Start VM %s", config.CPU_MODEL_VM)
         assert not ll_vms.startVm(True, config.CPU_MODEL_VM)
 
+    @tier2
     @polarion("RHEVM3-10292")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
     def test_negative_start_vm_with_non_existing_cpu_type(self):
@@ -100,6 +101,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
         testflow.step("Start VM %s", config.CPU_MODEL_VM)
         assert not ll_vms.startVm(True, config.CPU_MODEL_VM)
 
+    @tier2
     @polarion("RHEVM3-10376")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -122,6 +124,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
             True, config.VM_NAME[0], custom_cpu_model=cpu_model
         )
 
+    @tier2
     @polarion("RHEVM3-10378")
     @pytest.mark.usefixtures(revert_ge_vm_to_default_values.__name__)
     def test_edit_vm_update_cpu_and_bad_values(self):
@@ -138,6 +141,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
             custom_cpu_model=config.NON_EXISTING_TYPE,
         )
 
+    @tier2
     @polarion("RHEVM3-10398")
     @pytest.mark.usefixtures(revert_ge_vm_to_default_values.__name__)
     def test_negative_runonce_vm_with_non_existing_cpu_type(self):
@@ -153,6 +157,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
             custom_cpu_model=config.NON_EXISTING_TYPE,
         )
 
+    @tier2
     @polarion("RHEVM3-11296")
     @pytest.mark.usefixtures(revert_ge_vm_to_default_values.__name__)
     def test_negative_runonce_vm_with_unsuppoted_cpu_type(self):
@@ -170,6 +175,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
             True, config.VM_NAME[0], custom_cpu_model=cpu_model
         )
 
+    @tier2
     @polarion("RHEVM3-12022")
     @pytest.mark.usefixtures(
         add_vm_fixture.__name__,
@@ -217,6 +223,7 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
             cluster=config.CLUSTER_NAME[0],
         )
 
+    @tier2
     @polarion("RHEVM3-10662")
     def test_check_scheduling_policy_units_exist(self):
         """
@@ -233,7 +240,6 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
         )
 
 
-@tier2
 class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
     """
     Tests basic configuration and inheritance of custom cpu model
@@ -245,6 +251,7 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
     add_disk = False
     cluster_lower = True
 
+    @tier2
     @polarion("RHEVM3-10255 ")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -279,6 +286,7 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
             config.CPU_MODEL_VM, host_resource, cpu_model
         )
 
+    @tier2
     @polarion("RHEVM3-10383 ")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -302,6 +310,7 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
             custom_cpu_model=cpu_model
         )
 
+    @tier2
     @polarion("RHEVM3-10635")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -332,6 +341,7 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
             vm_name, host_resource, cpu_model
         )
 
+    @tier2
     @polarion("RHEVM3-10654")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -361,6 +371,7 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
         )
         assert not ll_vms.migrateVm(True, config.VM_NAME[0])
 
+    @tier2
     @polarion("RHEVM3-10655")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -392,6 +403,7 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
         )
         assert ll_vms.migrateVm(True, config.VM_NAME[0])
 
+    @tier2
     @polarion("RHEVM3-10659")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -423,7 +435,6 @@ class TestClusterParamsOverrideHostHigherThanCluster(VirtTest):
         assert ll_vms.startVm(True, config.VM_NAME[0])
 
 
-@tier2
 class TestClusterParamsOverrideLowerThanCluster(VirtTest):
     """
     Tests basic configuration and inheritance of custom cpu model
@@ -435,6 +446,7 @@ class TestClusterParamsOverrideLowerThanCluster(VirtTest):
     add_disk = False
     cluster_lower = False
 
+    @tier2
     @polarion("RHEVM3-10377")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -457,6 +469,7 @@ class TestClusterParamsOverrideLowerThanCluster(VirtTest):
             True, config.VM_NAME[0], custom_cpu_model=cpu_model
         )
 
+    @tier2
     @polarion("RHEVM3-11293")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,
@@ -490,6 +503,7 @@ class TestClusterParamsOverrideLowerThanCluster(VirtTest):
             config.CPU_MODEL_VM, host_resource, cpu_model
         )
 
+    @tier2
     @polarion("RHEVM3-10384 ")
     @pytest.mark.usefixtures(
         set_cpu_model_param.__name__,

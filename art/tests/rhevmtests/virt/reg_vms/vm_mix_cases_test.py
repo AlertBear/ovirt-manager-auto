@@ -231,7 +231,6 @@ class TestMixCases(VirtTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(vm_display_fixture.__name__)
 class TestVmDisplay(VirtTest):
     """
@@ -245,6 +244,7 @@ class TestVmDisplay(VirtTest):
         display_type: '%s_vm' % display_type for display_type in display_types
         }
 
+    @tier1
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12574")
     def test_check_spice_parameters(self):
@@ -256,6 +256,7 @@ class TestVmDisplay(VirtTest):
             self.vm_names[config.SPICE], config.SPICE
         )
 
+    @tier1
     @polarion("RHEVM3-12575")
     def test_check_vnc_parameters(self):
         """

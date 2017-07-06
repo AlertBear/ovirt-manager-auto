@@ -25,7 +25,6 @@ import migration_helper
 logger = logging.getLogger(__name__)
 
 
-@tier2
 @pytest.mark.usefixtures(
     teardown_migration.__name__,
     setting_migration_vm.__name__,
@@ -43,6 +42,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
     load_size = 1500
     time_to_run_load = 1800
 
+    @tier2
     @polarion("RHEVM-16922")
     def test_migration_with_policy_bandwidth_auto(self):
         """
@@ -63,6 +63,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
             )
             time.sleep(25)
 
+    @tier2
     @polarion("RHEVM-16923")
     def test_migration_with_policy_bandwidth_hypervisor_default(self):
         """
@@ -86,6 +87,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
             )
             time.sleep(25)
 
+    @tier2
     @polarion("RHEVM-16924")
     def test_migration_with_policy_custom_bandwidth_32_mbps(self):
         """
@@ -111,7 +113,6 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
             time.sleep(25)
 
 
-@tier2
 @pytest.mark.usefixtures(
     teardown_migration.__name__,
     setting_migration_vm.__name__,
@@ -128,6 +129,7 @@ class TestVMLevelMigrationPoliciesCase1(VirtTest):
     load_size = 2000
     time_to_run_load = 600
 
+    @tier2
     @polarion("RHEVM-17042")
     def test_all_policy(self):
         """
@@ -144,7 +146,6 @@ class TestVMLevelMigrationPoliciesCase1(VirtTest):
             time.sleep(25)
 
 
-@tier2
 @pytest.mark.usefixtures(
     teardown_migration.__name__,
     setting_migration_vm.__name__,
@@ -162,6 +163,7 @@ class TestVMLevelMigrationPoliciesCase2(VirtTest):
     load_size = 2000
     time_to_run_load = 200
 
+    @tier2
     @polarion("RHEVM3-10444")
     def test_legacy_policy_and_optimize_features(self):
         """

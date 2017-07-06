@@ -27,7 +27,6 @@ from rhevmtests.virt.windows.fixtures import (
 )
 
 
-@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     create_windows_vms.__name__, remove_vm_from_storage_domain.__name__
@@ -41,6 +40,7 @@ class TestWindowsSanity01(VirtTest):
         virt_helper.get_storage_domains()
     )
 
+    @tier3
     @polarion("RHEVM-18238")
     def test_1_migrate_windows_vms(self):
         """
@@ -54,6 +54,7 @@ class TestWindowsSanity01(VirtTest):
             vms_list=config.WINDOWS_VM_NAMES
         )
 
+    @tier3
     @polarion("RHEVM-18235")
     def test_2_vm_snapshots_with_memory(self):
         """
@@ -67,7 +68,6 @@ class TestWindowsSanity01(VirtTest):
         )
 
 
-@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(create_windows_vms.__name__)
 class TestWindowsSanity02(VirtTest):
@@ -77,6 +77,7 @@ class TestWindowsSanity02(VirtTest):
 
     start_vm = False
 
+    @tier3
     @polarion("RHEVM-18239")
     @pytest.mark.usefixtures(stop_vms.__name__)
     def test_suspend_resume_windows_vm(self):
@@ -87,6 +88,7 @@ class TestWindowsSanity02(VirtTest):
             testflow.step("Suspend and resume windows VM %s", vm_name)
             assert helper.suspend_resume_vm(vm_name=vm_name)
 
+    @tier3
     @polarion("RHEVM-18240")
     @pytest.mark.usefixtures(stop_vms.__name__)
     def test_pause_windows_vm(self):

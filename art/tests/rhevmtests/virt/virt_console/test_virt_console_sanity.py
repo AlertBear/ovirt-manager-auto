@@ -13,7 +13,6 @@ from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 
 
-@tier2
 class TestVirtConsoleSanityClass(VirtTest):
 
     vm_name = vcons_conf.VIRT_CONSOLE_VM_SANITY
@@ -23,6 +22,7 @@ class TestVirtConsoleSanityClass(VirtTest):
         }
     }
 
+    @tier2
     @polarion('RHEVM3-14575')
     def test_1_network_port_range(self):
         """
@@ -48,6 +48,7 @@ class TestVirtConsoleSanityClass(VirtTest):
                     )
                 )
 
+    @tier2
     @polarion('RHEVM3-9896')
     @pytest.mark.skipif(
         vcons_conf.PPC_ARCH,

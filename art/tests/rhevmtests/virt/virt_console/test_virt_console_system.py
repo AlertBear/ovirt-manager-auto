@@ -15,9 +15,9 @@ from art.rhevm_api.tests_lib.low_level import graphics_console as ll_gc
 import helper
 
 
-@tier2
 class TestVirtConsoleClass(VirtTest):
 
+    @tier2
     @polarion('RHEVM3-12357')
     @pytest.mark.skipif(
         vcons_conf.PPC_ARCH,
@@ -101,6 +101,7 @@ class TestVirtConsoleClass(VirtTest):
                     " command output."
                 )
 
+    @tier2
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
         fixtures.shutdown_vm.__name__
@@ -143,6 +144,7 @@ class TestVirtConsoleClass(VirtTest):
             )
         )
 
+    @tier2
     @pytest.mark.usefixtures(
         fixtures.setup_vm.__name__,
         fixtures.shutdown_vm.__name__

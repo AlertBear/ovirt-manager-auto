@@ -25,13 +25,13 @@ testflow = TestFlowInterface
 ########################################################################
 
 
-@tier2
 class TestRunVmOnce(common.VirtTest):
     """
     Run once
     """
     __test__ = True
 
+    @tier2
     @polarion("RHEVM3-9809")
     @pytest.mark.usefixtures(
         base_setup_fixture.__name__, image_provider_fixture.__name__
@@ -58,6 +58,7 @@ class TestRunVmOnce(common.VirtTest):
             config.ENUMS['boot_sequence_network']
         )
 
+    @tier2
     @polarion("RHEVM3-9803")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_start_in_pause_mode(self):
@@ -69,6 +70,7 @@ class TestRunVmOnce(common.VirtTest):
         testflow.step("Check that vm started in pause mode")
         assert ll_vms.get_vm_state(config.VM_RUN_ONCE) == config.VM_PAUSED
 
+    @tier2
     @polarion("RHEVM3-12353")
     @pytest.mark.usefixtures(
         base_setup_fixture.__name__, image_provider_fixture.__name__

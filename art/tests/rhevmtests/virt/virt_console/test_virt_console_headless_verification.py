@@ -16,9 +16,9 @@ from art.unittest_lib import (
 import helper
 
 
-@tier3
 class TestVirtConsoleHeadlessInheritanceClass(VirtTest):
 
+    @tier3
     @pytest.mark.usefixtures(
         fixtures.setup_vm_adv.__name__
     )

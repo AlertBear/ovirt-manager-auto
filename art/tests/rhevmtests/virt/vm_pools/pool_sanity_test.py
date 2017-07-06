@@ -37,7 +37,6 @@ import rhevmtests.virt.helper as helper
 logger = logging.getLogger("virt.vm_pools.sanity")
 
 
-@tier1
 @pytest.mark.usefixtures(vm_pool_teardown.__name__)
 class TestFullCreateRemovePoolCycle(VirtTest):
     """
@@ -51,6 +50,7 @@ class TestFullCreateRemovePoolCycle(VirtTest):
     pool_name = 'Virt_vmpool_full_cycle'
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
 
+    @tier1
     @polarion("RHEVM3-13976")
     def test_full_create_remove_pool_cycle(self):
         """
@@ -72,7 +72,6 @@ class TestFullCreateRemovePoolCycle(VirtTest):
             raise exceptions.VmPoolException()
 
 
-@tier1
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestAddVmsToPool(VirtTest):
     """
@@ -84,6 +83,7 @@ class TestAddVmsToPool(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     new_pool_size = 3
 
+    @tier1
     @polarion("RHEVM3-9870")
     def test_add_vms_to_pool(self):
         """
@@ -113,7 +113,6 @@ class TestAddVmsToPool(VirtTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestAdminStartedVmNotStateless(VirtTest):
     """
@@ -124,6 +123,7 @@ class TestAdminStartedVmNotStateless(VirtTest):
     pool_name = "Virt_pool_admin_started_vm_not_stateless"
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
 
+    @tier2
     @polarion("RHEVM3-9880")
     def test_admin_started_vm_not_stateless(self):
         """
@@ -146,7 +146,6 @@ class TestAdminStartedVmNotStateless(VirtTest):
         helper.check_if_file_exist(True, vm, vm_resource)
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -164,6 +163,7 @@ class TestUserStartedVmIsStateless(VirtTest):
     users = [config.USER, config.VDC_ADMIN_USER]
     pool_size = 1
 
+    @tier2
     @polarion("RHEVM3-9878")
     def test_user_started_vm_is_stateless(self):
         """
@@ -198,7 +198,6 @@ class TestUserStartedVmIsStateless(VirtTest):
         helper.check_if_file_exist(False, vm, vm_resource)
 
 
-@tier2
 @pytest.mark.usefixtures(
     set_cluster_mac_pool.__name__, create_vm_pool.__name__
 )
@@ -214,6 +213,7 @@ class TestNoMacAddressDuplicationBetweenPools(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     pool_params['size'] = 20
 
+    @tier2
     @polarion("RHEVM-18288")
     def test_no_mac_address_duplication_between_pools(self):
         """

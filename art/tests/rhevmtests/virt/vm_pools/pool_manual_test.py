@@ -33,7 +33,6 @@ import rhevmtests.virt.helper as virt_helper
 logger = logging.getLogger("virt.vm_pools.manual_test")
 
 
-@tier2
 @pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestManualPoolCannotRecycleVm(VirtTest):
     """
@@ -53,6 +52,7 @@ class TestManualPoolCannotRecycleVm(VirtTest):
     pool_params['max_user_vms'] = 2
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @tier2
     @polarion("RHEVM3-9874")
     def test_manual_pool_cannot_recycle_vm(self):
         testflow.step(
@@ -74,7 +74,6 @@ class TestManualPoolCannotRecycleVm(VirtTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -102,6 +101,7 @@ class TestManualPoolRememberUser(VirtTest):
     pool_params['type_'] = config.POOL_TYPE_MANUAL
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @tier2
     @polarion("RHEVM3-9876")
     def test_manual_pool_remember_user(self):
         vms = {self.users[0]: '', self.users[1]: ''}
@@ -143,7 +143,6 @@ class TestManualPoolRememberUser(VirtTest):
             virt_helper.check_if_file_exist(True, vms[user], vm_resource)
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -171,6 +170,7 @@ class TestManualPoolRecycleVm(VirtTest):
     pool_params['type_'] = config.POOL_TYPE_MANUAL
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @tier2
     def test_manual_pool_recycle_vm(self):
         testflow.step(
             "Allocating a vm from pool: %s as user %s",

@@ -5,11 +5,10 @@ import add_vm_scenarios
 
 from art.unittest_lib import (
     VirtTest,
-    tier1,
+    tier1
 )
 
 
-@tier1
 class TestAddVm(VirtTest):
     """
     Add VM test suite.
@@ -18,6 +17,7 @@ class TestAddVm(VirtTest):
     helper.update_domains()
     reload(add_vm_scenarios)
 
+    @tier1
     @pytest.mark.usefixtures(
         fixtures.remove_vms_func_scope.__name__,
         fixtures.setup_vm.__name__,

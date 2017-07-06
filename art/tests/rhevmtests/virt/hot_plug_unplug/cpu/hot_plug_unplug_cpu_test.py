@@ -32,7 +32,6 @@ from _pytest_art.testlogger import TestFlowInterface
 testflow = TestFlowInterface
 
 
-@tier1
 class CPUHotPlugClass(VirtTest):
     """
     Base Class for hot plug cpu
@@ -95,6 +94,7 @@ class CPUHotPlugClass(VirtTest):
             "The number of working cores: %s isn't correct" % working_cores
         )
 
+    @tier1
     @polarion("RHEVM3-9638")
     @bz({'1453167': {'ppc': config.PPC_ARCH}})
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
@@ -111,6 +111,7 @@ class CPUHotPlugClass(VirtTest):
         )
         self.migrate_vm_and_check_cpu(number_of_cpus=1)
 
+    @tier1
     @polarion("RHEVM3-9627")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     @pytest.mark.args_marker(cpu_cores=1, cpu_socket=1)
@@ -126,6 +127,7 @@ class CPUHotPlugClass(VirtTest):
             number_of_cpus=2, action=config.HOT_UNPLUG_CPU
         )
 
+    @tier1
     @polarion("RHEVM3-9639")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_add_max_cpu(self):
@@ -159,13 +161,13 @@ class CPUHotPlugClass(VirtTest):
             "The number of working cores: %s isn't correct" % working_cores
         )
 
+    @tier2
     @polarion("RHEVM3-9629")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     @pytest.mark.args_marker(
         cpu_cores=2, cpu_socket=2, vcpu_pinning=config.VCPU_PINNING_3,
         placement_affinity=config.VM_PINNED, placement_host=0
     )
-    @tier2
     def test_negative_cpu_pinning(self):
         """
         Negative test - unplug vm CPUs (4 to 2) while
@@ -178,10 +180,10 @@ class CPUHotPlugClass(VirtTest):
             True, self.vm_name, cpu_socket=1
         ), "The action of remove cores didn't failed"
 
+    @tier2
     @polarion("RHEVM3-9637")
     @pytest.mark.args_marker(hot_plug_cpu_before=False)
     @pytest.mark.usefixtures(migrate_vm_for_test.__name__)
-    @tier2
     def test_negative_hotplug_during_migration(self):
         """
         Test hot plug while migrating VM
@@ -193,10 +195,10 @@ class CPUHotPlugClass(VirtTest):
             True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=2
         ), "hot plug  worked while migrating VM "
 
+    @tier2
     @polarion("RHEVM-18361")
     @pytest.mark.usefixtures(migrate_vm_for_test.__name__)
     @pytest.mark.args_marker(hot_plug_cpu_before=True)
-    @tier2
     def test_negative_hotunplug_during_migration(self):
         """
         Test hot unplug while migrating VM
@@ -208,13 +210,13 @@ class CPUHotPlugClass(VirtTest):
             True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=2
         ), "hot plug  worked while migrating VM "
 
+    @tier2
     @polarion("RHEVM3-9630")
     @pytest.mark.usefixtures(
         base_setup_fixture.__name__, set_cpu_toplogy.__name__,
         enable_cluster_cpu_threading.__name__,
     )
     @pytest.mark.args_marker(placement_host=0)
-    @tier2
     def test_negative_thread_cpu(self):
         """
         Test CPU hot plug while threads is enabled on the cluster
@@ -229,8 +231,8 @@ class CPUHotPlugClass(VirtTest):
             True, self.vm_name, cpu_socket=config.CPU_TOPOLOGY[0] * 10
         )
 
-    @polarion("RHEVM3-9630")
     @tier3
+    @polarion("RHEVM3-9630")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_suspend_vm(self):
         """
@@ -250,8 +252,8 @@ class CPUHotPlugClass(VirtTest):
             number_of_cpus=2, action=config.HOT_UNPLUG_CPU
         )
 
-    @polarion("RHEVM-19126")
     @tier3
+    @polarion("RHEVM-19126")
     @pytest.mark.usefixtures(update_vm_to_ha.__name__)
     def test_ha_vm(self):
         """

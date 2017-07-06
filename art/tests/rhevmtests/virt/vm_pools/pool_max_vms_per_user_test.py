@@ -17,7 +17,7 @@ from rhevmtests.virt.vm_pools import helpers
 import art.rhevm_api.tests_lib.high_level.vmpools as hl_vmpools
 import art.rhevm_api.tests_lib.low_level.vmpools as ll_vmpools
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier1,
     tier2,
@@ -28,7 +28,6 @@ from art.unittest_lib import VirtTest, testflow
 logger = logging.getLogger("virt.vm_pools.max_vms_per_user")
 
 
-@tier1
 @pytest.mark.usefixtures(vm_pool_teardown.__name__)
 class TestCreatePoolSetNumberOfVmsPerUser(VirtTest):
     """
@@ -41,6 +40,7 @@ class TestCreatePoolSetNumberOfVmsPerUser(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     pool_params['max_user_vms'] = 3
 
+    @tier1
     @polarion("RHEVM3-9865")
     def test_create_pool_set_number_of_vms_per_user(self):
         """
@@ -64,7 +64,6 @@ class TestCreatePoolSetNumberOfVmsPerUser(VirtTest):
             )
 
 
-@tier3
 @pytest.mark.usefixtures(vm_pool_teardown.__name__)
 class TestCreatePoolSetInvalidNumberOfVmsPerUser(VirtTest):
     """
@@ -78,6 +77,7 @@ class TestCreatePoolSetInvalidNumberOfVmsPerUser(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     pool_params['max_user_vms'] = -1
 
+    @tier3
     @polarion("RHEVM3-9864")
     def test_create_pool_set_invalid_number_of_vms_per_user(self):
         """
@@ -91,7 +91,6 @@ class TestCreatePoolSetInvalidNumberOfVmsPerUser(VirtTest):
         hl_vmpools.create_vm_pool(False, self.pool_name, self.pool_params)
 
 
-@tier1
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestUpdatePoolNumberOfVmsPerUser(VirtTest):
     """
@@ -104,6 +103,7 @@ class TestUpdatePoolNumberOfVmsPerUser(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     new_max_user_vms = 3
 
+    @tier1
     @polarion("RHEVM3-9866")
     def test_update_pool_number_of_vms_per_user(self):
         """
@@ -131,7 +131,6 @@ class TestUpdatePoolNumberOfVmsPerUser(VirtTest):
             )
 
 
-@tier3
 @pytest.mark.usefixtures(create_vm_pool.__name__)
 class TestUpdatePoolWithInvalidNumberOfVmsPerUser(VirtTest):
     """
@@ -145,6 +144,7 @@ class TestUpdatePoolWithInvalidNumberOfVmsPerUser(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     new_max_user_vms = -1
 
+    @tier3
     @polarion("RHEVM3-9867")
     def test_update_pool_with_invalid_number_of_vms_per_user(self):
         """
@@ -163,7 +163,6 @@ class TestUpdatePoolWithInvalidNumberOfVmsPerUser(VirtTest):
             raise exceptions.VmPoolException()
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, add_user.__name__
 )
@@ -181,8 +180,8 @@ class TestMaxVmsPerUserAsUser(VirtTest):
     updated_max_vms_per_user = 2
     users = [config.USER]
 
+    @tier2
     @polarion("RHEVM3-14383")
-    @bz({'1433924': {}})
     def test_max_vms_per_user_as_user(self):
         """
         Tests max_vms_per_user constraint on actual user:

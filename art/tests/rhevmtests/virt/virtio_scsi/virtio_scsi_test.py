@@ -24,7 +24,6 @@ from fixtures import (
 from rhevmtests.virt import config  # flake8:  noqa
 
 
-@tier2
 @pytest.mark.usefixtures(create_vm_for_virtio_scsi.__name__)
 class TestVirtioScsiDefaultInterface(VirtTest):
     """
@@ -33,6 +32,7 @@ class TestVirtioScsiDefaultInterface(VirtTest):
     vm_name = "virt_virtio_scsi"
     disk_name = "%s_Disk1" % vm_name
 
+    @tier2
     @polarion("RHEVM-18327")
     def test_if_virtio_scsi_is_enabled_by_default_in_blank_template(self):
         """
@@ -46,6 +46,7 @@ class TestVirtioScsiDefaultInterface(VirtTest):
             "The vitio-scsi is disabeled in the blank tempalte"
         )
 
+    @tier2
     @polarion("RHEVM-18327")
     def test_if_virtio_scsi_is_enabled_by_default_in_new_vm(self):
         """
@@ -59,6 +60,7 @@ class TestVirtioScsiDefaultInterface(VirtTest):
             "The vitio-scsi is disabeled in %s" % self.vm_name
         )
 
+    @tier2
     @pytest.mark.usefixtures(create_disk.__name__)
     @polarion("RHEVM-18329")
     @bz({'1435976': {}})
@@ -80,6 +82,7 @@ class TestVirtioScsiDefaultInterface(VirtTest):
                )
         )
 
+    @tier2
     @polarion("RHEVM-19662")
     @pytest.mark.usefixtures(
         disable_virtio_scsi.__name__, create_disk.__name__

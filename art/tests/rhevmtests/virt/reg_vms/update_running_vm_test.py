@@ -23,7 +23,6 @@ import config
 logger = logging.getLogger("update_vm_cases")
 
 
-@tier1
 class TestUpdateRunningVm(VirtTest):
     """
     Update parameters of a running VM.
@@ -59,6 +58,7 @@ class TestUpdateRunningVm(VirtTest):
             "parameter %s value is not as expected" % parameter_name
         )
 
+    @tier1
     @polarion("RHEVM3-6295")
     @pytest.mark.usefixtures(
         add_vm_fixture.__name__, start_stop_fixture.__name__
@@ -92,6 +92,7 @@ class TestUpdateRunningVm(VirtTest):
             parameters['comment'],
         )
 
+    @tier1
     @polarion("RHEVM3-6295")
     @pytest.mark.usefixtures(
         add_vm_fixture.__name__, start_stop_fixture.__name__

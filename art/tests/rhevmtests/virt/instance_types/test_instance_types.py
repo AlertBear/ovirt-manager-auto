@@ -24,16 +24,16 @@ from fixtures import (
 from rhevmtests.virt.helper import compare_dictionaries
 
 
-@tier1
 class TestInstanceType(VirtTest):
 
     __test__ = True
 
+    @tier1
+    @polarion("RHEVM3-6487")
     @pytest.mark.usefixtures(remove_custom_instance_type.__name__)
     @pytest.mark.instance_types_created(
         instance_types=[config.INSTANCE_TYPE_NAME, config.NAME_AFTER_UPDATE]
     )
-    @polarion("RHEVM3-6487")
     def test_instance_type_sanity(self):
         """
         1. Create a new instance type.
@@ -76,6 +76,7 @@ class TestInstanceType(VirtTest):
             instance_type_name=config.NAME_AFTER_UPDATE
         )
 
+    @tier1
     @polarion("RHEVM3-6490")
     @pytest.mark.usefixtures(
         default_instance_type_teardown.__name__, remove_test_vms.__name__
@@ -120,6 +121,7 @@ class TestInstanceType(VirtTest):
             expected=config.EDIT_TINY_INSTANCE_DICT, actual=actual_dict
         )
 
+    @tier1
     @polarion("RHEVM3-6488")
     @pytest.mark.usefixtures(
         default_instance_type_teardown.__name__, remove_test_vms.__name__
@@ -164,6 +166,7 @@ class TestInstanceType(VirtTest):
             expected=config.EDIT_MEDIUM_INSTANCE_DICT, actual=actual_dict
         )
 
+    @tier1
     @polarion("RHEVM3-6489")
     @pytest.mark.usefixtures(
         default_instance_type_teardown.__name__, remove_test_vms.__name__
@@ -216,6 +219,7 @@ class TestInstanceType(VirtTest):
             expected=config.EDIT_SMALL_INSTANCE_DICT, actual=actual_dict
         )
 
+    @tier1
     @polarion("RHEVM3-6493")
     @pytest.mark.usefixtures(
         default_instance_type_teardown.__name__, remove_test_vms.__name__
@@ -259,6 +263,7 @@ class TestInstanceType(VirtTest):
             expected=config.EDIT_LARGE_INSTANCE_DICT, actual=actual_dict
         )
 
+    @tier1
     @polarion("RHEVM3-6491")
     @pytest.mark.usefixtures(
         default_instance_type_teardown.__name__, remove_test_vms.__name__
@@ -306,6 +311,7 @@ class TestInstanceType(VirtTest):
             expected=config.EDIT_XLARGE_INSTANCE_DICT, actual=actual_dict
         )
 
+    @tier1
     @polarion("RHEVM3-6495")
     @pytest.mark.usefixtures(
         default_instance_type_teardown.__name__, remove_test_vms.__name__
@@ -357,6 +363,8 @@ class TestInstanceType(VirtTest):
         vm_object = ll_vms.get_vm_obj(vm_name=config.INSTANCE_TYPE_VM)
         assert vm_object.get_high_availability().get_enabled() is False
 
+    @tier1
+    @polarion("RHEVM3-15089")
     @pytest.mark.usefixtures(
         remove_test_templates.__name__, remove_test_vms.__name__,
         remove_custom_instance_type.__name__,
@@ -364,7 +372,6 @@ class TestInstanceType(VirtTest):
     @pytest.mark.instance_types_created(
         instance_types=[config.INSTANCE_TYPE_NAME]
     )
-    @polarion("RHEVM3-15089")
     def test_create_vm_with_instance_type_and_template(self):
         """
         1. Create a new instance type with some values.

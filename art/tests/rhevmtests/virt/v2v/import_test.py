@@ -25,7 +25,6 @@ from rhevmtests.virt import helper
 import config
 
 
-@tier2
 @pytest.mark.usefixtures(v2v_import_fixture.__name__)
 class TestV2V_RHEL(VirtTest):
     """
@@ -33,6 +32,7 @@ class TestV2V_RHEL(VirtTest):
     """
     vm_name = config.V2V_RHEL_7_2_NAME
 
+    @tier2
     @pytest.mark.parametrize(
         "parameter",
         [

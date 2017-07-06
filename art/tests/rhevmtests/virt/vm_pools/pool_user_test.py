@@ -32,7 +32,6 @@ from art.unittest_lib import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -51,6 +50,7 @@ class TestUserVmContinuity(VirtTest):
     pool_params['prestarted_vms'] = 1
     users = [config.USER]
 
+    @tier2
     @polarion("RHEVM3-9859")
     def test_user_vm_continuity(self):
         """
@@ -95,7 +95,6 @@ class TestUserVmContinuity(VirtTest):
             )
 
 
-@tier2
 @pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestTwoUsersTakeVmFromPool(VirtTest):
     """
@@ -114,6 +113,7 @@ class TestTwoUsersTakeVmFromPool(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @tier2
     @polarion("RHEVM3-9891")
     def test_two_users_take_vm_from_pool(self):
         testflow.step(
@@ -143,7 +143,6 @@ class TestTwoUsersTakeVmFromPool(VirtTest):
         )
 
 
-@tier3
 @pytest.mark.usefixtures(create_vm_pool.__name__, add_user.__name__)
 class TestNoAvailableVmsForUser(VirtTest):
     """
@@ -156,6 +155,7 @@ class TestNoAvailableVmsForUser(VirtTest):
     pool_params = copy.deepcopy(config.VM_POOLS_PARAMS)
     users = [config.USER]
 
+    @tier3
     @polarion("RHEVM3-9881")
     def test_no_available_vms_for_user(self):
         testflow.step("Start the only vm in pool: %s as admin", self.pool_name)
@@ -167,7 +167,6 @@ class TestNoAvailableVmsForUser(VirtTest):
         helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
 
 
-@tier3
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -184,6 +183,7 @@ class TestCannotStealVmFromOtherUser(VirtTest):
     pool_params['size'] = 1
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @tier3
     @polarion("RHEVM3-9883")
     def test_cannot_steal_vm_from_another_user(self):
         testflow.step(
@@ -200,7 +200,6 @@ class TestCannotStealVmFromOtherUser(VirtTest):
         helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_pool.__name__, stop_pool_vms_safely_before_removal.__name__,
     add_user.__name__,
@@ -218,6 +217,7 @@ class TestVmReturnsToPoolAfterUse(VirtTest):
     pool_params['size'] = 1
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @tier2
     @polarion("RHEVM3-9882")
     def test_vm_returns_to_pool_after_use(self):
         testflow.step(

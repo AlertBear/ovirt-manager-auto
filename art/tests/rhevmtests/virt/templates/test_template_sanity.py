@@ -28,11 +28,11 @@ import rhevmtests.virt.config as virt_conf
 logger = logging.getLogger('virt.templates.test_template_sanity')
 
 
-@tier1
 class TestTemplateSanity(VirtTest):
 
     __test__ = True
 
+    @tier1
     @pytest.mark.usefixtures(
         init_module.__name__, remove_existing_templates.__name__
     )
@@ -49,6 +49,7 @@ class TestTemplateSanity(VirtTest):
             True, vm=conf.BASE_VM_1, name=conf.TEMPLATE_LIST[0]
         )
 
+    @tier1
     @pytest.mark.usefixtures(add_user_role_permission_for_base_vm.__name__)
     @polarion("RHEVM-15179")
     def test_02_create_template_copy_vm_permission(self):
@@ -76,6 +77,7 @@ class TestTemplateSanity(VirtTest):
             user_name, template_object, conf.USER_ROLE
         )
 
+    @tier1
     @pytest.mark.usefixtures(
         supply_base_templates.__name__,
         restore_base_template_configurations.__name__
@@ -94,6 +96,7 @@ class TestTemplateSanity(VirtTest):
 
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
     @polarion("RHEVM-15182")
@@ -123,6 +126,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert ll_templates.remove_template(True, conf.TEMPLATE_LIST[0])
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
     @polarion("RHEVM3-5373")
@@ -139,6 +143,7 @@ class TestTemplateSanity(VirtTest):
             new_version=True, vm=conf.BASE_VM_2
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
     @polarion("RHEVM-15183")
@@ -161,6 +166,7 @@ class TestTemplateSanity(VirtTest):
             ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1, 2])
     @polarion("RHEVM-15186")
@@ -183,6 +189,7 @@ class TestTemplateSanity(VirtTest):
             ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
     @polarion("RHEVM3-5369")
@@ -199,6 +206,7 @@ class TestTemplateSanity(VirtTest):
             template_version=1, cluster=conf.CLUSTER_NAME[0]
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[2])
     @polarion("RHEVM3-5371")
@@ -215,6 +223,7 @@ class TestTemplateSanity(VirtTest):
             template_version=2, cluster=conf.CLUSTER_NAME[0]
         )
 
+    @tier1
     @pytest.mark.usefixtures(
         supply_base_templates.__name__, supply_vm.__name__
     )
@@ -241,6 +250,7 @@ class TestTemplateSanity(VirtTest):
             ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
+    @tier1
     @pytest.mark.usefixtures(
         supply_base_templates.__name__, supply_vm.__name__
     )
@@ -267,6 +277,7 @@ class TestTemplateSanity(VirtTest):
             ignore=virt_conf.VALIDATOR_IGNORE_LIST
         )
 
+    @tier1
     @pytest.mark.usefixtures(
         supply_base_templates.__name__, supply_vm.__name__
     )
@@ -286,6 +297,7 @@ class TestTemplateSanity(VirtTest):
             True, conf.TEMPLATE_LIST[0], version_number=2
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1, 2])
     @polarion("RHEVM3-13966")
@@ -304,6 +316,7 @@ class TestTemplateSanity(VirtTest):
             key_name='name',
         )
 
+    @tier1
     @pytest.mark.usefixtures(
         supply_base_templates.__name__,
         add_user_role_permission_for_template.__name__, remove_vm.__name__
@@ -335,6 +348,7 @@ class TestTemplateSanity(VirtTest):
             user_name, vm_object, conf.USER_ROLE
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
     @polarion("RHEVM3-12276")
@@ -350,6 +364,7 @@ class TestTemplateSanity(VirtTest):
             False, vm=conf.BASE_VM_2, name=conf.TEMPLATE_LIST[0]
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_dummy_template.__name__)
     @polarion("RHEVM3-12277")
     def test_16_update_template_with_existing_name_in_dc(self):
@@ -364,6 +379,7 @@ class TestTemplateSanity(VirtTest):
             False, conf.TEMPLATE_LIST[1], name=conf.TEMPLATE_LIST[0]
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_dummy_dc_cluster.__name__)
     @polarion("RHEVM3-12278")
     def test_17_create_template_with_wrong_dc(self):
@@ -378,6 +394,7 @@ class TestTemplateSanity(VirtTest):
             cluster=conf.DUMMY_CLUSTER
         )
 
+    @tier1
     @pytest.mark.usefixtures(remove_dummy_template.__name__)
     @polarion("RHEVM3-12279")
     def test_18_create_template_on_specific_sd(self):
@@ -390,6 +407,7 @@ class TestTemplateSanity(VirtTest):
             storagedomain=conf.NON_MASTER_DOMAIN
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.usefixtures(remove_template_admin_role_from_group.__name__)
     @pytest.mark.template_marker(template_versions=[1])
@@ -407,6 +425,7 @@ class TestTemplateSanity(VirtTest):
             True
         )
 
+    @tier1
     @pytest.mark.usefixtures(supply_dummy_template.__name__)
     @polarion("RHEVM3-12283")
     def test_20_export_import_template_sanity(self):
@@ -436,6 +455,7 @@ class TestTemplateSanity(VirtTest):
             conf.STORAGE_NAME[0], conf.CLUSTER_NAME[0]
         )
 
+    @tier1
     @bz({"1331068": {"engine": ["sdk"]}})
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])

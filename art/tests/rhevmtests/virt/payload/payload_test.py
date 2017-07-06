@@ -26,7 +26,6 @@ import helper
 import config
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -45,6 +44,7 @@ class TestCreateVmWithCdromPayload(VirtTest):
     payload_content = config.PAYLOADS_CONTENT[0]
     payload_type = config.PAYLOADS_TYPE[0]
 
+    @tier2
     @polarion("RHEVM3-10061")
     def test_check_existence_of_payload(self):
         """
@@ -59,6 +59,7 @@ class TestCreateVmWithCdromPayload(VirtTest):
             payload_device=config.PAYLOADS_DEVICES[0]
         )
 
+    @tier2
     @polarion("RHEVM3-10074")
     def test_check_object_existence(self):
         """
@@ -68,7 +69,6 @@ class TestCreateVmWithCdromPayload(VirtTest):
         assert ll_vms.getVmPayloads(True, self.vm_name)[0]
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -86,6 +86,7 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
     payload_content = config.PAYLOADS_CONTENT[1]
     payload_type = config.PAYLOADS_TYPE[0]
 
+    @tier2
     @polarion("RHEVM3-10063")
     def test_check_existence_of_payload(self):
         """
@@ -101,7 +102,6 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
         )
 
 
-@tier3
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -120,6 +120,7 @@ class TestCdromPayloadComplexContent(VirtTest):
     payload_content = config.PAYLOADS_CONTENT[4]
     payload_type = config.PAYLOADS_TYPE[0]
 
+    @tier3
     @polarion("RHEVM3-12155")
     def test_check_existence_of_payload(self):
         """
@@ -135,7 +136,6 @@ class TestCdromPayloadComplexContent(VirtTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -153,6 +153,7 @@ class TestCreateVmWithFloppyPayload(VirtTest):
     payload_content = config.PAYLOADS_CONTENT[2]
     payload_type = config.PAYLOADS_TYPE[1]
 
+    @tier2
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10070")
     def test_check_existence_of_payload(self):
@@ -169,7 +170,6 @@ class TestCreateVmWithFloppyPayload(VirtTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     create_vm_with_payloads.__name__,
     start_vms.__name__,
@@ -187,6 +187,7 @@ class TestUpdateVmWithFloppyPayload(VirtTest):
     payload_content = config.PAYLOADS_CONTENT[3]
     payload_type = config.PAYLOADS_TYPE[1]
 
+    @tier2
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10072")
     def test_check_existence_of_payload(self):

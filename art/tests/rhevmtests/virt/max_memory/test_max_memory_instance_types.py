@@ -20,7 +20,6 @@ from rhevmtests.virt.fixtures import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     edit_instance_types.__name__,
     remove_created_vms.__name__
@@ -35,6 +34,7 @@ class TestMaxMemoryUpdateInstanceTypes(VirtTest):
     instance_type_params = config.INSTANCE_TYPE_PARAMETERS
     reg_vms = config.REG_VMS_LIST
 
+    @tier2
     @pytest.mark.parametrize(
         "custom_vm_params", [
             polarion("RHEVM-19323")({'instance_type': 'Tiny'}),
@@ -71,12 +71,13 @@ class TestMaxMemoryUpdateInstanceTypes(VirtTest):
         testflow.step('Check that VM is up')
         assert ll_vms.get_vm_state(self.vm_name) == 'up'
 
+    @tier2
+    @polarion("RHEVM-19325")
     @pytest.mark.custom_vm_params(instance_type='Max_Mem_Custom')
     @pytest.mark.usefixtures(create_instance_type.__name__, create_vm.__name__)
     @pytest.mark.custom_instance_type_params({
         'instance_type_name': config.CUSTOM_INSTANCE_TYPE_NAME,
     })
-    @polarion("RHEVM-19325")
     def test_max_mem_create_custom(self):
         """
         Positive: Create custom instance type, add vm, check its maximum

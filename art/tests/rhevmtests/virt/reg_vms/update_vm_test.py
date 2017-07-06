@@ -21,7 +21,6 @@ import config
 logger = logging.getLogger("update_vm_cases")
 
 
-@tier1
 class UpdateVm(VirtTest):
     """
     Update vms with different parameters test cases
@@ -32,6 +31,7 @@ class UpdateVm(VirtTest):
     vm_name = 'update_vm'
     add_disk = False
 
+    @tier1
     @polarion("RHEVM3-12563")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -47,6 +47,7 @@ class UpdateVm(VirtTest):
             os_type=config.WIN_2008
         )
 
+    @tier1
     @polarion("RHEVM3-12561")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -62,6 +63,7 @@ class UpdateVm(VirtTest):
             os_type=config.WIN_7
         )
 
+    @tier1
     @polarion("RHEVM3-12564")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -77,6 +79,7 @@ class UpdateVm(VirtTest):
             os_type=config.RHEL6_64
         )
 
+    @tier1
     @polarion("RHEVM3-12562")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -94,6 +97,7 @@ class UpdateVm(VirtTest):
             os_type=config.WIN_7
         )
 
+    @tier1
     @polarion("RHEVM3-12560")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_5_vm_linux_boot_options(self):
@@ -109,6 +113,7 @@ class UpdateVm(VirtTest):
             cmdline='rd_NO_LUKS'
         )
 
+    @tier1
     @polarion("RHEVM3-10098")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_6_vm_name(self):
@@ -212,6 +217,7 @@ class UpdateVm(VirtTest):
             placement_affinity=affinity
         )
 
+    @tier1
     @polarion("RHEVM3-12533")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_12_vm_description(self):
@@ -225,6 +231,7 @@ class UpdateVm(VirtTest):
             description="TEST"
         )
 
+    @tier1
     @polarion("RHEVM3-12532")
     @bz({'1218528': {'engine': ['java', 'sdk', 'cli']}})
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
@@ -256,6 +263,7 @@ class UpdateVm(VirtTest):
         )
         logger.info("Update cluster to: %s", cluster)
 
+    @tier1
     @polarion("RHEVM3-12556")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_14_vm_memory(self):
@@ -269,6 +277,7 @@ class UpdateVm(VirtTest):
             memory=config.TWO_GB
         )
 
+    @tier1
     @polarion("RHEVM3-12555")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_15_vm_guranteed_memory(self):
@@ -295,6 +304,7 @@ class UpdateVm(VirtTest):
             memory_guaranteed=self.new_mem
         )
 
+    @tier1
     @polarion("RHEVM3-12559")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_16_vm_number_of_cpu_sockets(self):
@@ -308,6 +318,7 @@ class UpdateVm(VirtTest):
             cpu_socket=2
         )
 
+    @tier1
     @polarion("RHEVM3-12558")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_17_vm_number_of_cpu_cores(self):
@@ -321,6 +332,7 @@ class UpdateVm(VirtTest):
             cpu_cores=2
         )
 
+    @tier1
     @polarion("RHEVM3-12534")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -336,6 +348,7 @@ class UpdateVm(VirtTest):
             display_type=display_type
         )
 
+    @tier1
     @polarion("RHEVM3-12526")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -364,6 +377,7 @@ class UpdateVm(VirtTest):
             monitors=1
         )
 
+    @tier1
     @polarion("RHEVM3-12567")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
@@ -389,6 +403,7 @@ class UpdateVm(VirtTest):
             monitors=2
         )
 
+    @tier1
     @polarion("RHEVM3-12557")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_21_vm_name_to_existing_one(self):
@@ -414,6 +429,7 @@ class UpdateVm(VirtTest):
             [vm_exist_name]
         ), "Failed to remove vm %s" % vm_exist_name
 
+    @tier1
     @polarion("RHEVM3-12566")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_22_vm_with_too_many_sockets(self):
@@ -427,6 +443,7 @@ class UpdateVm(VirtTest):
             cpu_socket=40
         )
 
+    @tier1
     @polarion("RHEVM3-12565")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_23_vm_with_guranteed_memory_less_than_memory(self):

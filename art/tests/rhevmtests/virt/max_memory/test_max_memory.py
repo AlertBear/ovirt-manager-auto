@@ -213,7 +213,6 @@ class TestMaxMemory(VirtTest):
         assert vm.memory_policy.max == vm.memory
 
 
-@tier1
 @pytest.mark.usefixtures(remove_created_vms.__name__)
 class TestMaxMemVmPool(VirtTest):
     """
@@ -221,6 +220,7 @@ class TestMaxMemVmPool(VirtTest):
     """
     vm_pool_config = config.VM_POOL_PARAMETERS
 
+    @tier1
     @polarion("RHEVM-21314")
     @bz({"1438808": {}})
     @pytest.mark.usefixtures(create_vm_pool.__name__)

@@ -20,7 +20,6 @@ from rhevmtests.virt.migration.fixtures import (
 import config
 
 
-@tier1
 @pytest.mark.usefixtures(
     migration_init.__name__,
 )
@@ -32,6 +31,7 @@ class TestMigrationVirtSanityCase1(VirtTest):
 
     __test__ = True
 
+    @tier1
     @polarion("RHEVM3-3847")
     def test_migration(self):
         testflow.step("Check migration of one VM")
@@ -41,7 +41,6 @@ class TestMigrationVirtSanityCase1(VirtTest):
         ), "Failed to migrate VM: %s " % config.MIGRATION_VM
 
 
-@tier1
 @pytest.mark.usefixtures(
     migration_init.__name__,
     start_vm_on_spm.__name__
@@ -53,6 +52,7 @@ class TestMigrationVirtSanityCase2(VirtTest):
      """
     __test__ = True
 
+    @tier1
     @polarion("RHEVM3-12332")
     def test_maintenance_of_spm(self):
         testflow.step("Check maintenance on SPM host with one VM")

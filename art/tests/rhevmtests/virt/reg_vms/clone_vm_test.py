@@ -15,7 +15,6 @@ from art.unittest_lib import (
     tier1,
     tier2,
     tier3,
-    tier4,
 )
 from art.unittest_lib import VirtTest, testflow
 import rhevmtests.virt.helper as virt_helper
@@ -35,7 +34,6 @@ import config
 logger = logging.getLogger(__name__)
 
 
-@tier1
 @pytest.mark.usefixtures(
     create_vm_and_template_with_small_disk.__name__,
     basic_teardown_fixture.__name__,
@@ -45,6 +43,7 @@ class CloneVMSanityTestCase1(VirtTest):
     vm_name = config.CLONE_VM_TEST
     vm_parameters = config.CLONE_VM_TEST_VM_PARAMETERS
 
+    @tier1
     @polarion("RHEVM3-12582")
     def test_clone_vm_template_case(self):
         """
@@ -62,7 +61,6 @@ class CloneVMSanityTestCase1(VirtTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     create_file_on_vm.__name__,
@@ -76,6 +74,7 @@ class CloneVMSanityTestCase2(VirtTest):
     template_name = config.TEMPLATE_NAME[0]
     vm_parameters = config.CLONE_VM_TEST_VM_PARAMETERS
 
+    @tier2
     @polarion("RHEVM3-6511")
     def test_clone_vm(self):
         """
@@ -95,7 +94,6 @@ class CloneVMSanityTestCase2(VirtTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     add_vm_fixture.__name__,
     basic_teardown_fixture.__name__,
@@ -105,6 +103,7 @@ class CloneVMSanityTestCase3(VirtTest):
     vm_name = config.BASE_VM_VIRT
     add_disk = False
 
+    @tier2
     @polarion("RHEVM3-6509")
     def test_clone_vm_without_disks(self):
         """
@@ -118,7 +117,6 @@ class CloneVMSanityTestCase3(VirtTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     basic_teardown_fixture.__name__,
     add_vm_with_disks.__name__,
@@ -131,6 +129,7 @@ class CloneVmDisksCase(VirtTest):
     __test__ = True
     vm_name = config.BASE_VM_VIRT
 
+    @tier2
     @polarion("RHEVM3-6521")
     def test_clone_vm_with_disks_on_master(self):
         testflow.step("Clone VM with disks on master domain")
@@ -144,7 +143,6 @@ class CloneVmDisksCase(VirtTest):
         )
 
 
-@tier3
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     start_stop_fixture.__name__
@@ -159,6 +157,7 @@ class CloneVmNegativeCase1(VirtTest):
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
 
+    @tier3
     @polarion("RHEVM-17353")
     def test_negative_running_vm(self):
         testflow.step("Clone VM which is up and running")
@@ -168,7 +167,6 @@ class CloneVmNegativeCase1(VirtTest):
         )
 
 
-@tier3
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
 )
@@ -183,6 +181,7 @@ class CloneVmNegativeCase2(VirtTest):
     template_name = config.TEMPLATE_NAME[0]
     vm_parameters = {'start_in_pause': True}
 
+    @tier3
     @polarion("RHEVM-17355")
     def test_negative_paused_vm(self):
         """
@@ -200,7 +199,6 @@ class CloneVmNegativeCase2(VirtTest):
         )
 
 
-@tier3
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     remove_locked_vm.__name__
@@ -215,6 +213,7 @@ class CloneVmNegativeCase3(VirtTest):
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
 
+    @tier3
     @polarion("RHEVM-17354")
     def test_negative_locked_vm(self):
         testflow.step("lock VM in DB")
@@ -233,7 +232,6 @@ class CloneVmNegativeCase3(VirtTest):
         )
 
 
-@tier4
 @pytest.mark.usefixtures(
     add_vm_from_template_fixture.__name__,
     unlock_disks.__name__,
@@ -249,6 +247,7 @@ class CloneVmNegativeCase4(VirtTest):
     cluster_name = config.CLUSTER_NAME[0]
     template_name = config.TEMPLATE_NAME[0]
 
+    @tier3
     @polarion("RHEVM3-6509")
     def test_negative_same_vm_parallel(self):
         testflow.step("Clone negative: Clone same VM twice at the same time")

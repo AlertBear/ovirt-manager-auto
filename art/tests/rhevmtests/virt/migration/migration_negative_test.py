@@ -20,7 +20,6 @@ from rhevmtests.virt.migration.fixtures import (
 import config
 
 
-@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migrate_to_diff_dc.__name__
@@ -33,6 +32,7 @@ class TestMigrateNegativeCase1(VirtTest):
     """
     __test__ = True
 
+    @tier3
     @polarion("RHEVM3-5666")
     def test_migrate_no_available_host_on_cluster(self):
         testflow.step(
@@ -44,6 +44,7 @@ class TestMigrateNegativeCase1(VirtTest):
         ), 'migration success although'
         'no available host on cluster'
 
+    @tier3
     @polarion("RHEVM3-5658")
     def test_migrate_vm_to_other_data_center(self):
         testflow.step("Negative step: Migrate vm to another data center")
@@ -55,7 +56,6 @@ class TestMigrateNegativeCase1(VirtTest):
         'migration between data centers is not supported'
 
 
-@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__
 )
@@ -65,6 +65,7 @@ class TestMigrateNegativeCase2(VirtTest):
     """
     __test__ = True
 
+    @tier3
     @polarion("RHEVM3-5657")
     def test_migrate_vm_on_same_host(self):
         testflow.step("Negative step: Migrate vm on the same host")
@@ -76,7 +77,6 @@ class TestMigrateNegativeCase2(VirtTest):
         'migration to the same host is NOT supported'
 
 
-@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     migration_init.__name__,
@@ -89,6 +89,7 @@ class TestMigrateNegativeCase3(VirtTest):
     __test__ = True
     test_vms = config.VM_NAME[1:3]
 
+    @tier3
     @polarion("RHEVM3-5656")
     def test_migration_overload_host(self):
         testflow.step(
@@ -110,7 +111,6 @@ class TestMigrateNegativeCase3(VirtTest):
         ), "not all VMs are up"
 
 
-@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migration_options_test.__name__
@@ -123,6 +123,7 @@ class TestVMMigrateOptions(VirtTest):
     __test__ = True
     vm_name = 'DoNotAllowMigration'
 
+    @tier3
     @polarion("RHEVM3-5625")
     def test_migration_new_vm(self):
         """

@@ -21,7 +21,6 @@ import config
     default_cpu_settings.__name__,
     make_sure_vm_is_down.__name__
 )
-@tier2
 class TestVcpu(VirtTest):
     """
     VCPU cases
@@ -47,6 +46,7 @@ class TestVcpu(VirtTest):
             cpu_threads=2
         )
 
+    @tier2
     @polarion("RHEVM3-17328")
     def test_negative_update_vm_cpu_to_more_then_max(self):
         """
@@ -63,6 +63,7 @@ class TestVcpu(VirtTest):
             cpu_threads=2
         )
 
+    @tier2
     @pytest.mark.usefixtures(change_cpu_limitations.__name__)
     @polarion("RHEVM3-10623")
     def test_check_cpu_hotplug_over_limit(self):
@@ -92,7 +93,6 @@ class TestVcpu(VirtTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(default_cpu_settings.__name__)
 class TestVcpuVersion40(VirtTest):
     """
@@ -104,6 +104,7 @@ class TestVcpuVersion40(VirtTest):
     comp_version = "4.0"
     cluster = "Cluster_%s" % comp_version.replace(".", "_")
 
+    @tier2
     @polarion("RHEVM3-11267")
     @pytest.mark.usefixtures(
         create_dc.__name__,

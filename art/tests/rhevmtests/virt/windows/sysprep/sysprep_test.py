@@ -28,7 +28,6 @@ from rhevmtests.virt.windows.fixtures import (  # noqa: F401
 )
 
 
-@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(create_windows_vms.__name__)
 class TestSysprepCase1(VirtTest):
@@ -37,6 +36,7 @@ class TestSysprepCase1(VirtTest):
     """
     vms_name = config.WINDOWS_SEAL_VMS
 
+    @tier3
     @pytest.mark.parametrize(
         "vm_name",
         [
@@ -71,7 +71,6 @@ class TestSysprepCase1(VirtTest):
         assert ll_vms.safely_remove_vms([vm_name])
 
 
-@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     create_windows_vms_from_sealed_template.__name__,
@@ -82,6 +81,7 @@ class TestSysprepCase2(VirtTest):
     Sysprep testing on desktop(windows 10) and server VM (windows 2012 R2)
     """
 
+    @tier3
     @pytest.mark.parametrize(
         ("vm_name", "os_type"),
         [
@@ -111,7 +111,6 @@ class TestSysprepCase2(VirtTest):
         )
 
 
-@tier3
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     create_windows_vms_from_sealed_template.__name__,
@@ -122,6 +121,7 @@ class TestSysprepCase3(VirtTest):
     Sysprep testing on desktop(windows 10) and server VM (windows 2012 R2)
     """
 
+    @tier3
     @pytest.mark.parametrize(
         ("vm_name", "win_version", "os_type"),
         [

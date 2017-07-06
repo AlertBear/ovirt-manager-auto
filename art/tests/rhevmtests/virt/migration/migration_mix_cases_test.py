@@ -29,7 +29,6 @@ import config
 logger = logging.getLogger("virt_migration_mix_cases")
 
 
-@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     start_vms_on_specific_host.__name__
@@ -42,6 +41,7 @@ class TestMigrationMixCase1(VirtTest):
     """
     __test__ = True
 
+    @tier3
     @polarion("RHEVM3-5646")
     def test_bidirectional_migration_between_two_hosts(self):
         testflow.step("Test bidirectional vms migration between two hosts")
@@ -50,7 +50,6 @@ class TestMigrationMixCase1(VirtTest):
         ), "Failed to migration all VMs"
 
 
-@tier3
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migration_with_two_disks.__name__
@@ -63,6 +62,7 @@ class TestMigrationMixCase2(VirtTest):
     __test__ = True
     vm_name = "VM_with_2_disks"
 
+    @tier3
     @polarion("RHEVM3-5647")
     def test_migrate_vm_with_more_then_one_disk(self):
         testflow.step("Migrate VM with more then one disk")
@@ -73,7 +73,6 @@ class TestMigrationMixCase2(VirtTest):
         ), "Failed to migrate VM with more then 1 disk"
 
 
-@tier3
 @pytest.mark.usefixtures(migration_init.__name__)
 class TestMigrationMixCase3(VirtTest):
     """
@@ -88,6 +87,7 @@ class TestMigrationMixCase3(VirtTest):
     sql = "select vds_name,pending_vmem_size,pending_vcpus_count from vds;"
     vm_name = config.MIGRATION_VM
 
+    @tier3
     @polarion("RHEVM3-5619")
     def test_check_DB_resources(self):
         """
@@ -115,7 +115,6 @@ class TestMigrationMixCase3(VirtTest):
         ), "Found resource that are pended to hosts"
 
 
-@tier2
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     cancel_migration_test.__name__,
@@ -135,6 +134,7 @@ class TestCancelMigration(VirtTest):
     load_size = 2000
     time_to_run_load = 120
 
+    @tier2
     @polarion("RHEVM3-14032")
     def test_cancel_migration(self):
         testflow.step("Migrate VM %s", self.vm_name)

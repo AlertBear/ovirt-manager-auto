@@ -6,7 +6,7 @@
 
 import logging
 import pytest
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier1,
     tier2,
@@ -98,7 +98,6 @@ class TestPauseVM(VirtTest):
 
     @tier2
     @polarion("RHEVM3-9964")
-    @bz({'1454459': {}})
     def test_migrate_paused_vm(self):
         """
         Start vm in pause, migrate vm
@@ -113,7 +112,6 @@ class TestPauseVM(VirtTest):
         ), "failed to migrate pause vm"
 
 
-@tier1
 class TestStatelessVM(VirtTest):
     """
     Stateless VM tests
@@ -122,6 +120,7 @@ class TestStatelessVM(VirtTest):
     vm_name = "stateless_vm"
     vm_parameters = {'stateless': True}
 
+    @tier1
     @polarion("RHEVM-14778")
     @pytest.mark.usefixtures(stateless_vm_test_fixture.__name__)
     def test_stateless_vm(self):
@@ -135,6 +134,7 @@ class TestStatelessVM(VirtTest):
         logger.info("Actual stateless status is %s", stateless)
         assert stateless, "VM %s stateless status does not set" % self.vm_name
 
+    @tier1
     @polarion("RHEVM3-9979")
     @pytest.mark.usefixtures(stateless_vm_test_fixture.__name__)
     def test_reboot_stateless_vm(self):

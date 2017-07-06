@@ -24,7 +24,6 @@ from fixtures import (
 )
 
 
-@tier2
 @pytest.mark.usefixtures(
     virtio_data_plane_setup.__name__,
     update_vm_io_threads.__name__,
@@ -36,6 +35,7 @@ class TestBasicVirtioDataPlane(VirtTest):
     Virtio data plane test
     """
 
+    @tier2
     @pytest.mark.parametrize(
         ("iothreads", "vm_name"),
         [
@@ -68,7 +68,6 @@ class TestBasicVirtioDataPlane(VirtTest):
         helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
 
-@tier2
 @pytest.mark.usefixtures(
     virtio_data_plane_setup.__name__,
     update_vm_io_threads.__name__,
@@ -80,6 +79,7 @@ class TestHotplugVirtioDataPlane(VirtTest):
     Verify IO threads for test cases with disk hotplug
     """
 
+    @tier2
     @pytest.mark.parametrize(
         ("iothreads", "vm_name"),
         [
@@ -109,7 +109,6 @@ class TestHotplugVirtioDataPlane(VirtTest):
         helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
 
-@tier2
 @pytest.mark.usefixtures(
     virtio_data_plane_setup.__name__,
     update_vm_io_threads.__name__,
@@ -121,6 +120,7 @@ class TestMigrationVirtioDataPlane(VirtTest):
     Verify that migration preserve on VM IO threads
     """
 
+    @tier2
     @pytest.mark.parametrize(
         ("iothreads", "vm_name"),
         [
