@@ -322,7 +322,7 @@ def _prepare_vm_object(**kwargs):
     os_type = data_st.OperatingSystem(type_=os_type)
     for opt_name in "kernel", "initrd", "cmdline":
         opt_val = kwargs.pop(opt_name, None)
-        if opt_val:
+        if opt_val is not None:
             apply_os = True
             setattr(os_type, opt_name, opt_val)
     boot_seq = kwargs.pop("boot", None)
@@ -2018,6 +2018,9 @@ def runVmOnce(
 
     Keyword arguments:
         display_type (str): Display type of vm
+        kernel (str): Kernel path
+        initrd (str): Initrd path
+        cmdline (str): Kernel parameters
         stateless (bool): True if VM should be stateless
         cdrom_image (str): CD-ROM image to attach
         floppy_image (str): Floppy image to attach
@@ -2073,6 +2076,14 @@ def runVmOnce(
             )
         )
         vm_for_action.set_os(os_type)
+
+    os_type = data_st.OperatingSystem()
+
+    for opt_name in "kernel", "initrd", "cmdline":
+        opt_val = kwargs.pop(opt_name, None)
+        if opt_val is not None:
+            setattr(os_type, opt_name, opt_val)
+    vm_for_action.set_os(os_type)
     host = kwargs.get("host")
     if host:
         vm_policy = data_st.VmPlacementPolicy()
