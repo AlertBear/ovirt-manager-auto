@@ -7,88 +7,35 @@ import socket
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sds
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as conf
 import helpers
-from art.rhevm_api import resources
+import rhevmtests.helpers as rhevm_helpers
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def initialize_ge_constants():
+def init_he_ha_test():
     """
-    Initialize hosts constants
+    1) Define ISCSI storage type constant
+    2) Copy the HE stats script on all hosts
     """
-    if conf.GE:
-        golden_env = conf.ART_CONFIG["prepared_env"]
-        dc = golden_env["dcs"][0]
-        conf.DC_NAME = dc["name"]
-        clusters = dc["clusters"]
-        for cluster in clusters:
-            for host in cluster["hosts"]:
-                conf.HOSTS.append(host["name"])
-        host_objs = ll_hosts.HOST_API.get(abs_link=False)
-        conf.HOSTS_IP = [host_obj.get_address() for host_obj in host_objs]
-        if not ll_hosts.is_hosted_engine_configured(conf.HOSTS[0]):
-            pytest.skip("GE does not configured as HE environment")
-    conf.VDS_HOSTS = [resources.VDS(h, conf.HOSTS_PW) for h in conf.HOSTS_IP]
-    conf.HE_HOSTS = conf.VDS_HOSTS[:3] if conf.GE else conf.VDS_HOSTS
-    he_storage_domain_type = conf.HE_HOSTS[0].run_command(
+    if not ll_hosts.is_hosted_engine_configured(conf.HOSTS[0]):
+        pytest.skip("GE does not configured as HE environment")
+
+    he_storage_domain_type = conf.VDS_HOSTS[0].run_command(
         command=["grep", "domainType", conf.HOSTED_ENGINE_CONF_FILE]
     )[1].strip().split("=")[1]
     conf.IS_ISCSI_STORAGE_DOMAIN = (
-        he_storage_domain_type == conf.ISCSI_STORAGE_DOMAIN
+        he_storage_domain_type == conf.STORAGE_TYPE_ISCSI
     )
 
-
-@pytest.fixture(scope="module")
-def init_he_ha_test():
-    """
-    Copy the HE stats script on all hosts
-    """
-    if not conf.GE:
-        he_vm_exists = ll_vms.waitForVMState(vm=conf.HE_VM_NAME)
-        if not he_vm_exists:
-            u_libs.testflow.setup(
-                "Add master storage domain %s:%s",
-                conf.PARAMETERS["data_domain_address"],
-                conf.PARAMETERS["data_domain_path"]
-            )
-            assert hl_sds.create_storages(
-                storage=conf.PARAMETERS,
-                type_=conf.STORAGE_TYPE,
-                host=conf.HOSTS[0],
-                datacenter=conf.DC_NAME
-            )
-            u_libs.testflow.setup(
-                "Wait until the HE VM will be appear under the engine"
-            )
-            assert ll_vms.waitForVMState(vm=conf.HE_VM_NAME)
-            u_libs.testflow.step(
-                "Add the host %s to the engine", conf.HOSTS[1]
-            )
-            assert ll_hosts.add_host(
-                name=conf.HOSTS[1],
-                address=conf.HE_HOSTS[1].fqdn,
-                root_password=conf.HOSTS_PW,
-                deploy_hosted_engine=True
-            )
-        u_libs.testflow.setup(
-            "Wait until the metadata will have information about %s hosts",
-            len(conf.HE_HOSTS)
-        )
-        assert helpers.wait_until_he_metadata(
-            host_resource=conf.HE_HOSTS[0],
-            expected_number_of_he_hosts=len(conf.HE_HOSTS)
-        )
-
-    for vds in conf.HE_HOSTS:
-        he_script_path = helpers.locate_he_stats_script()
+    he_script_path = helpers.locate_he_stats_script()
+    for vds in conf.VDS_HOSTS:
         u_libs.testflow.setup(
             "%s: copy the file %s to the %s",
             conf.SLAVE_HOST, he_script_path, vds
@@ -107,7 +54,7 @@ def get_host_with_he_vm(request):
     """
     test_class = request.node.cls
     u_libs.testflow.setup("Get the host where runs HE VM")
-    he_stats = helpers.get_he_stats(command_executor=conf.HE_HOSTS[0])
+    he_stats = helpers.get_he_stats(command_executor=conf.VDS_HOSTS[0])
     test_class.hosts_without_he_vm = []
     for host_name, host_he_params in he_stats.iteritems():
         host_res = helpers.get_resource_by_name(host_name=host_name)
@@ -174,9 +121,10 @@ def restart_host_via_power_management(request):
     Restart host via power management
     """
     test_class = request.node.cls
-    he_vm_host_pm = helpers.get_host_power_management(
-        host_resource=test_class.he_vm_host
-    )
+    he_vm_host_fqdn = test_class.he_vm_host.fqdn
+    he_vm_host_pm = rhevm_helpers.get_pm_details(
+        host_name=he_vm_host_fqdn
+    ).get(he_vm_host_fqdn) or conf.PMS.get(he_vm_host_fqdn)
     if not he_vm_host_pm:
         pytest.skip(
             "%s: does not have power management" % test_class.he_vm_host
@@ -184,7 +132,7 @@ def restart_host_via_power_management(request):
 
     def fin():
         host_name = conf.HOSTS[conf.VDS_HOSTS.index(test_class.he_vm_host)]
-        if ll_hosts.get_host_status(host=host_name) != conf.HOST_STATUS_UP:
+        if ll_hosts.get_host_status(host=host_name) != conf.HOST_UP:
             fence_commands = {
                 "poweroff": "off",
                 "poweron": "on",
@@ -234,6 +182,15 @@ def block_connection_to_storage(request):
         pytest.skip(conf.HE_ISCSI_STORAGE_DOMAIN_MSG)
 
     def fin():
+        u_libs.testflow.teardown(
+            "%s: wait for status UP", test_class.he_vm_host
+        )
+        helpers.wait_for_host_he_up_to_date(
+            command_executor=test_class.command_executor,
+            host_resource=test_class.he_vm_host,
+            timeout=conf.WAIT_FOR_STATE_TIMEOUT
+        )
+
         cmd = ['iptables-restore', conf.IPTABLES_BACKUP_FILE]
         u_libs.testflow.teardown(
             "%s: restore iptables from the file %s",
@@ -459,40 +416,44 @@ def prepare_env_for_power_management_test(request):
     3) Start the HA VM on the host
     4) Poweroff of the host
     """
-    if not conf.GE:
-        pytest.skip("Not GE environment")
-
     he_vm_host_resource = request.node.cls.he_vm_host
+    he_vm_host_fqdn = he_vm_host_resource.fqdn
     host_name = conf.HOSTS[conf.VDS_HOSTS.index(he_vm_host_resource)]
-    he_vm_host_pm = helpers.get_host_power_management(
-        host_resource=he_vm_host_resource
-    )
+    he_vm_host_pm = rhevm_helpers.get_pm_details(
+        host_name=he_vm_host_fqdn
+    ).get(he_vm_host_fqdn) or conf.PMS.get(he_vm_host_fqdn)
     if not he_vm_host_pm:
         pytest.skip(
             "Host %s does not have power management" % host_name
         )
+    options = {
+        "slot": he_vm_host_pm.get(conf.PM_SLOT),
+        "port": he_vm_host_pm.get(conf.PM_PORT)
+    }
+    agent_options = {}
+    for option_name, option_value in options.iteritems():
+        if option_value:
+            agent_options[option_name] = option_value
     agent = {
         "agent_type": he_vm_host_pm.get(conf.PM_TYPE),
         "agent_address": he_vm_host_pm.get(conf.PM_ADDRESS),
         "agent_username": he_vm_host_pm.get(conf.PM_USERNAME),
         "agent_password": he_vm_host_pm.get(conf.PM_PASSWORD),
         "concurrent": False,
-        "order": 1
+        "order": 1,
+        "options": agent_options
     }
-    pm_slot = he_vm_host_pm.pop(conf.PM_SLOT, None)
-    if pm_slot:
-        he_vm_host_pm["options"] = {"slot": pm_slot}
 
     def fin():
         results = []
-        u_libs.testflow.teardown("Stop the VM %s", conf.HA_VM_NAME)
-        results.append(ll_vms.stop_vms_safely([conf.HA_VM_NAME]))
+        u_libs.testflow.teardown("Stop the VM %s", conf.VM_NAME[0])
+        results.append(ll_vms.stop_vms_safely([conf.VM_NAME[0]]))
 
-        u_libs.testflow.teardown("Disable HA on the VM %s", conf.HA_VM_NAME)
+        u_libs.testflow.teardown("Disable HA on the VM %s", conf.VM_NAME[0])
         results.append(
             ll_vms.updateVm(
                 positive=True,
-                vm=conf.HA_VM_NAME,
+                vm=conf.VM_NAME[0],
                 highly_available=False
             )
         )
@@ -505,10 +466,10 @@ def prepare_env_for_power_management_test(request):
         assert all(results)
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup("Enable HA on the VM %s", conf.HA_VM_NAME)
+    u_libs.testflow.setup("Enable HA on the VM %s", conf.VM_NAME[0])
     assert ll_vms.updateVm(
         positive=True,
-        vm=conf.HA_VM_NAME,
+        vm=conf.VM_NAME[0],
         highly_available=True
     )
 
@@ -518,9 +479,9 @@ def prepare_env_for_power_management_test(request):
     )
 
     u_libs.testflow.setup(
-        "Start the VM %s on the host %s", conf.HA_VM_NAME, host_name
+        "Start the VM %s on the host %s", conf.VM_NAME[0], host_name
     )
-    assert ll_vms.runVmOnce(positive=True, vm=conf.HA_VM_NAME, host=host_name)
+    assert ll_vms.runVmOnce(positive=True, vm=conf.VM_NAME[0], host=host_name)
 
     he_vm_host_resource.add_power_manager(pm_type="ssh")
     u_libs.testflow.setup("Poweroff the host %s", host_name)

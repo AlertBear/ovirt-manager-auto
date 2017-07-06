@@ -18,7 +18,6 @@ from fixtures import (
     enable_global_maintenance_on_host,
     enable_local_maintenance_on_host,
     get_host_with_he_vm,
-    initialize_ge_constants,
     init_he_ha_test,
     load_host_cpu_to_maximum,
     prepare_env_for_next_test,
@@ -31,7 +30,6 @@ from fixtures import (
 
 @u_libs.tier3
 @pytest.mark.usefixtures(
-    initialize_ge_constants.__name__,
     init_he_ha_test.__name__,
     get_host_with_he_vm.__name__,
     prepare_env_for_next_test.__name__
@@ -105,7 +103,6 @@ class TestHostWithHeVmLostConnection(HostedEngineTest):
     Stop network on the host where HE VM runs and check that
     HE VM starts on a another host
     """
-    __test__ = True
 
     @polarion("RHEVM3-5536")
     def test_he_vm_restart(self):
@@ -121,7 +118,6 @@ class TestBlockAccessToStorageDomainFromHost(HostedEngineTest):
     Block the access to the HE storage domain via iptables and check that
     HE VM starts on a another host
     """
-    __test__ = True
 
     @polarion("RHEVM3-5514")
     def test_he_vm_restart(self):
@@ -136,7 +132,6 @@ class TestShutdownHeVm(HostedEngineTest):
     Shutdown the HE VM and check that
     HE VM starts on a another host
     """
-    __test__ = True
 
     @polarion("RHEVM3-5528")
     def test_he_vm_restart(self):
@@ -158,7 +153,6 @@ class TestStopEngineService(HostedEngineTest):
     Stop the ovirt-engine service on the HE VM and check that
     HE VM starts on some host
     """
-    __test__ = True
 
     @polarion("RHEVM3-5533")
     def test_he_vm_restart(self):
@@ -174,7 +168,6 @@ class TestStopPostgresqlService(HostedEngineTest):
     Stop the postgresql service on the HE VM and check that
     HE VM starts on some host
     """
-    __test__ = True
 
     @polarion("RHEVM3-5520")
     def test_he_vm_restart(self):
@@ -190,7 +183,6 @@ class TestKernelPanicOnEngineVm(HostedEngineTest):
     Simulate kernel panic on the HE VM and check that
     HE VM starts on some host
     """
-    __test__ = True
 
     @polarion("RHEVM3-5527")
     def test_check_hosted_engine_vm(self):
@@ -217,7 +209,6 @@ class TestSanlockStatusOnHosts(HostedEngineTest):
     """
     Check sanlock status for hosts HE hosts
     """
-    __test__ = True
 
     @polarion("RHEVM3-5531")
     def test_check_sanlock_status_on_host_with_he_vm(self):
@@ -248,7 +239,6 @@ class TestStartTwoEngineVmsOnHost(HostedEngineTest):
     """
     Start the HE VM on the same or on different host, when it already runs
     """
-    __test__ = True
     command = [conf.HOSTED_ENGINE_CMD, "--vm-start"]
 
     @polarion("RHEVM3-5524")
@@ -289,7 +279,6 @@ class TestSynchronizeStateBetweenHosts(HostedEngineTest):
     """
     Check that both hosts have the same output of the HE status command
     """
-    __test__ = True
 
     @polarion("RHEVM3-5534")
     def test_check_he_status_on_hosts(self):
@@ -302,7 +291,11 @@ class TestSynchronizeStateBetweenHosts(HostedEngineTest):
         cmd = [conf.HOSTED_ENGINE_CMD, "--vm-status"]
         for host_resource in host_resources:
             out = re.sub(
-                r'\n.*timestamp.*|\n.*crc32.*', '',
+                r'\n.*timestamp.*|'
+                r'\n.*crc32.*|'
+                r'\n.*refresh_time.*|'
+                r'\n.*timeout.*',
+                '',
                 host_resource.run_command(command=cmd)[1]
             )
             statuses.append(out)
@@ -319,7 +312,6 @@ class TestHostGatewayProblem(HostedEngineTest):
     Change gateway address on the host where runs HE VM
     and check that HE VM starts on a another host with the better score
     """
-    __test__ = True
 
     @polarion("RHEVM3-5535")
     def test_he_vm_and_host_score(self):
@@ -345,7 +337,6 @@ class TestHostCpuLoadProblem(HostedEngineTest):
     Load the CPU on the host where runs the HE VM and check the score and
     HE VM migration
     """
-    __test__ = True
 
     @polarion("RHEVM3-5525")
     def test_host_score_and_he_vm_migration(self):
@@ -372,7 +363,6 @@ class TestGlobalMaintenance(HostedEngineTest):
     """
     Enable global maintenance on the host and kill the HE VM
     """
-    __test__ = True
 
     @polarion("RHEVM3-5516")
     def test_kill_vm_and_check_that_nothing_happen(self):
@@ -398,7 +388,6 @@ class TestLocalMaintenance(HostedEngineTest):
     Put the host with the HE VM to the local maintenance and check the
     host score and HE VM migration
     """
-    __test__ = True
 
     @polarion("RHEVM3-5517")
     def test_host_score_and_he_vm_migration(self):
@@ -433,7 +422,6 @@ class TestStopBrokerService(StopServices):
     Stop the ovirt-ha-broker service on the host with HE VM,
     and check that the HE VM does not migrate on a another host
     """
-    __test__ = True
     services_to_stop = [conf.BROKER_SERVICE]
     services_to_start = [conf.BROKER_SERVICE, conf.AGENT_SERVICE]
 
@@ -456,7 +444,6 @@ class TestStopAgentService(StopServices):
     Stop ovirt-ha-agent service on host with HE vm,
     and check that vm not migrate to second host
     """
-    __test__ = True
     services_to_stop = [conf.AGENT_SERVICE]
     services_to_start = [conf.AGENT_SERVICE]
 
@@ -479,7 +466,6 @@ class TestStopAgentAndBrokerServices(StopServices):
     Stop ovirt-ha-broker and ovirt-ha-agent service on host with HE vm,
     and check that vm not migrate to second host
     """
-    __test__ = True
     services_to_stop = [conf.AGENT_SERVICE, conf.BROKER_SERVICE]
     services_to_start = [conf.AGENT_SERVICE, conf.BROKER_SERVICE]
 
@@ -506,7 +492,6 @@ class TestFenceFlowWhenHostWithHeVmKilled(HostedEngineTest):
     Kill the host with the HE VM and check that the engine continue the
     fence flow after restart of the HE VM
     """
-    __test__ = True
 
     @polarion("RHEVM-19148")
     def test_fence_flow(self):
@@ -517,8 +502,8 @@ class TestFenceFlowWhenHostWithHeVmKilled(HostedEngineTest):
         """
         self.he_vm_restarted(hosts_resources=self.hosts_without_he_vm)
 
-        u_libs.testflow.step("Wait for the VM %s state 'UP'", conf.HA_VM_NAME)
-        assert ll_vms.waitForVMState(vm=conf.HA_VM_NAME)
+        u_libs.testflow.step("Wait for the VM %s state 'UP'", conf.VM_NAME[0])
+        assert ll_vms.waitForVMState(vm=conf.VM_NAME[0])
 
         host_name = conf.HOSTS[conf.VDS_HOSTS.index(self.he_vm_host)]
         u_libs.testflow.step("Wait for the host %s state 'UP'", host_name)

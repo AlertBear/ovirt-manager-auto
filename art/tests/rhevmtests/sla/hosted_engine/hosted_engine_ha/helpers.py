@@ -35,7 +35,7 @@ def get_resource_by_name(host_name):
     Returns:
         VDS: VDS resource
     """
-    for vds_resource in conf.HE_HOSTS:
+    for vds_resource in conf.VDS_HOSTS:
         logger.debug(
             "Host to search: %s; Host FQDN: %s",
             host_name, vds_resource.fqdn
@@ -440,30 +440,6 @@ def set_he_maintenance_mode(host_resource, mode):
     host_resource.run_command(command=cmd)
 
 
-def get_host_power_management(host_resource):
-    """
-    Get host power management
-
-    Args:
-        host_resource (VDS): Host resource
-
-    Returns:
-        dict: Host power management details
-    """
-    host_fqdn = host_resource.fqdn
-    foreman_api = ForemanActions(
-        uri=conf.FOREMAN_URL,
-        user=conf.FOREMAN_USER,
-        passwd=conf.FOREMAN_PASSWD
-    )
-    pm_host_details = foreman_api.get_host_pm_details(
-        host_name=host_fqdn
-    )
-    logger.debug("Power Management Details: %s", pm_host_details)
-    host_pm = conf.PMS.get(host_fqdn) or pm_host_details.get(host_fqdn)
-    return host_pm
-
-
 def run_power_management_command(
     command_executor, host_to_fence_pm, fence_command
 ):
@@ -478,17 +454,15 @@ def run_power_management_command(
     Returns:
         bool: True if action succeeds, otherwise False
     """
-    out = command_executor.vds_client(
-        cmd="fenceNode",
-        args={
-            "addr": host_to_fence_pm.get(conf.PM_ADDRESS),
-            "port": host_to_fence_pm.get(conf.PM_SLOT, "0"),
-            "agent": host_to_fence_pm.get(conf.PM_TYPE),
-            "username": host_to_fence_pm.get(conf.PM_USERNAME),
-            "password": host_to_fence_pm.get(conf.PM_PASSWORD),
-            "action": fence_command
-        }
-    )
+    pm_args = {
+        "addr": host_to_fence_pm.get(conf.PM_ADDRESS),
+        "port": host_to_fence_pm.get(conf.PM_SLOT, "0"),
+        "agent": host_to_fence_pm.get(conf.PM_TYPE),
+        "username": host_to_fence_pm.get(conf.PM_USERNAME),
+        "password": host_to_fence_pm.get(conf.PM_PASSWORD),
+        "action": fence_command
+    }
+    out = command_executor.vds_client(cmd="fenceNode", args=pm_args)
     if not out:
         logger.error(
             "%s: failed to %s host %s",
@@ -560,7 +534,7 @@ def host_has_sanlock_share(host_resource):
     he_storage_domain = host_resource.run_command(
         command=["grep", "storage=", conf.HOSTED_ENGINE_CONF_FILE]
     )[1].strip().split("=")[1]
-    dir_name = "%s/" % he_storage_domain.split("/")[-1]
+    dir_name = ("%s/" % he_storage_domain.split("/")[-1]).replace("_", "__")
     cmd = ["sanlock", "client", "status"]
     out = host_resource.run_command(command=cmd)[1]
     for line in out.splitlines():
