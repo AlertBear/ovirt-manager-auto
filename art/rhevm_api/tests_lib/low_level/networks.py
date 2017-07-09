@@ -1389,7 +1389,6 @@ def _prepare_vnic_profile_object(**kwargs):
     cluster = kwargs.get("cluster")
     network_filter = kwargs.get("network_filter")
     migratable = kwargs.get("migratable")
-    network_filter_object = apis_utils.data_st.NetworkFilter()
 
     vnic_profile_obj = apis_utils.data_st.VnicProfile()
 
@@ -1425,13 +1424,14 @@ def _prepare_vnic_profile_object(**kwargs):
         vp_pass_through = apis_utils.data_st.VnicPassThrough()
         vp_pass_through.set_mode(mode)
         vnic_profile_obj.set_pass_through(vp_pass_through)
-        # TODO: Remove when bz 1445759 solved
-        vnic_profile_obj.set_network_filter(network_filter_object)
 
     if network_filter:
         if network_filter != "None":
             network_filters = get_supported_network_filters()
             network_filter_object = network_filters.get(network_filter)
+        else:
+            network_filter_object = apis_utils.data_st.NetworkFilter()
+
         vnic_profile_obj.set_network_filter(network_filter_object)
 
     if migratable is not None:
