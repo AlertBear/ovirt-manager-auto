@@ -151,7 +151,6 @@ class HotplugHookTest(TestCase):
         self.verify_hook_called()
 
 
-@bz({'1409995': {}})
 class TestCase5033(HotplugHookTest):
     """
     Check if before_disk_hotplug is called
@@ -174,7 +173,6 @@ class TestCase5033(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@bz({'1409995': {}})
 class TestCase5034(HotplugHookTest):
     """
     Check if after_disk_hotplug is called
@@ -197,7 +195,6 @@ class TestCase5034(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@bz({'1409995': {}})
 class TestCase5035(HotplugHookTest):
     """
     Check if before_disk_hotunplug is called
@@ -220,7 +217,6 @@ class TestCase5035(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@bz({'1409995': {}})
 class TestCase5036(HotplugHookTest):
     """
     Check if after_disk_hotunplug is called
@@ -243,7 +239,6 @@ class TestCase5036(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@bz({'1409995': {}})
 class TestCase5037(HotplugHookTest):
     """
     Check after_disk_hotplug for plugging 7 disks concurrently
@@ -276,7 +271,6 @@ class TestCase5037(HotplugHookTest):
         assert len(result) == len(config.DISKS_TO_PLUG[self.storage]), result
 
 
-@bz({'1409995': {}})
 class TestCase5038(HotplugHookTest):
     """
     Check after_disk_hotunplug for unplugging 7 disks concurrently
@@ -309,7 +303,6 @@ class TestCase5038(HotplugHookTest):
         assert len(result) == len(config.DISKS_TO_PLUG[self.storage]), result
 
 
-@bz({'1409995': {}})
 @pytest.mark.usefixtures(
     add_disk.__name__,
     remove_vm_disk.__name__
@@ -349,7 +342,6 @@ class TestCase5039(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@bz({'1409995': {}})
 class TestCase5044(HotplugHookTest):
     """
     Check that activation will succeed and the hook will fail if
@@ -410,7 +402,7 @@ class TestCase5044(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@bz({'1409995': {}})
+@bz({'1469235': {}})
 class TestCase5041(HotplugHookTest):
     """
     Check that non-executable hooks will not be called
@@ -447,7 +439,6 @@ class TestCase5041(HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@bz({'1409995': {}})
 class TestCase5040(HotplugHookTest):
     """
     Multiple hooks for one action, checks that all will be called
@@ -539,7 +530,6 @@ class TestCase5042(HotplugHookTest):
     add_disks_to_vm.__name__,
     start_vm.__name__
 )
-@bz({'1409995': {}})
 class TestCase6231(TestCase):
     """
     Activate/Deactivate an already attached disk on a running VM with
