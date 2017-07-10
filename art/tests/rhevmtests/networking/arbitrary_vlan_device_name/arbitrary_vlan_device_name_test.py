@@ -20,10 +20,7 @@ from rhevmtests import helpers
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.networking.config as network_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier2,
-)
-from art.unittest_lib import NetworkTest, testflow
+from art.unittest_lib import NetworkTest, testflow, tier2
 from rhevmtests.networking.fixtures import (  # noqa: F401
      clean_host_interfaces,
      setup_networks_fixture,
