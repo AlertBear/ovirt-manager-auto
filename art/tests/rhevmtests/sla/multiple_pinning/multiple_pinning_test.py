@@ -6,12 +6,12 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import config as conf
 import helpers as pinning_helpers
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
+from art.unittest_lib import testflow, tier1, tier2, tier3, SlaTest
 from fixtures import (
     change_host_cluster,
     numa_pinning,
@@ -39,7 +39,7 @@ he_dst_host = 2
     migrate_he_vm.__name__,
     choose_specific_host_as_spm.__name__
 )
-class BaseMultiplePinning(u_libs.SlaTest):
+class BaseMultiplePinning(SlaTest):
     """
     Base class for all multiple pinning tests
     """
@@ -51,13 +51,13 @@ class BaseMultiplePinning(u_libs.SlaTest):
         1) Start VM
         2) Get VM host
         """
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert ll_vms.startVm(
             positive=True,
             vm=conf.VM_NAME[0],
             wait_for_status=wait_for_vm_state
         )
-        u_libs.testflow.step("Get the VM %s host", conf.VM_NAME[0])
+        testflow.step("Get the VM %s host", conf.VM_NAME[0])
         return ll_vms.get_vm_host(vm_name=conf.VM_NAME[0])
 
     @staticmethod
@@ -69,15 +69,13 @@ class BaseMultiplePinning(u_libs.SlaTest):
         Args:
             vm_host (str): Host to deactivate
         """
-        u_libs.testflow.step("Stop the VM %s", conf.VM_NAME[0])
+        testflow.step("Stop the VM %s", conf.VM_NAME[0])
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
         assert ll_hosts.deactivate_host(
             positive=True, host=vm_host, host_resource=host_resource
         )
 
 
-@u_libs.tier1
-@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
@@ -88,7 +86,6 @@ class TestMultiplePinning01(BaseMultiplePinning):
     Check, that VM pinned to two hosts,
     can start only on this hosts(has three hosts in cluster)
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -98,6 +95,8 @@ class TestMultiplePinning01(BaseMultiplePinning):
     vms_to_stop = [conf.VM_NAME[0]]
     hosts_to_activate_indexes = range(2)
 
+    @tier1
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12073")
     def test_check_multiple_pinning(self):
         """
@@ -109,7 +108,7 @@ class TestMultiplePinning01(BaseMultiplePinning):
         """
         for _ in range(conf.PIN_TO_HOSTS_NUM):
             vm_host = self._start_and_get_vm_host()
-            u_libs.testflow.step(
+            testflow.step(
                 "Check if the VM %s starts on the correct host",
                 conf.VM_NAME[0]
             )
@@ -118,11 +117,10 @@ class TestMultiplePinning01(BaseMultiplePinning):
                 vm_host=vm_host,
                 host_resource=conf.VDS_HOSTS[conf.HOSTS.index(vm_host)]
             )
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert not ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_libs.tier1
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -131,7 +129,6 @@ class TestMultiplePinning02(BaseMultiplePinning):
     """
     Check, that VM pinned to two hosts, can not migrate
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -140,19 +137,19 @@ class TestMultiplePinning02(BaseMultiplePinning):
     }
     vms_to_stop = [conf.VM_NAME[0]]
 
+    @tier1
     @polarion("RHEVM3-12074")
     def test_check_vm_migration(self):
         """
         1) Start VM
         2) Migrate VM
         """
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
-        u_libs.testflow.step("Migrate the VM %s", conf.VM_NAME[0])
+        testflow.step("Migrate the VM %s", conf.VM_NAME[0])
         assert not ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_libs.tier1
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -161,7 +158,6 @@ class TestMultiplePinning03(BaseMultiplePinning):
     """
     Check, that VM pinned to two hosts, can be 'High Available'
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -179,13 +175,14 @@ class TestMultiplePinning03(BaseMultiplePinning):
         host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=vm_host
         )
-        u_libs.testflow.step(
+        testflow.step(
             "%s: kill the VM %s process", host_resource, conf.VM_NAME[0]
         )
         assert ll_hosts.kill_vm_process(
             resource=host_resource, vm_name=conf.VM_NAME[0]
         )
 
+    @tier1
     @polarion("RHEVM3-12087")
     def test_check_ha_vm(self):
         """
@@ -194,14 +191,14 @@ class TestMultiplePinning03(BaseMultiplePinning):
         3) Kill VM on host
         4) Check that VM started again
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Update the VM %s to be highly available", conf.VM_NAME[0]
         )
         assert ll_vms.updateVm(
             positive=True, vm=conf.VM_NAME[0], highly_available=True
         )
         self._start_and_kill_ha_vm()
-        u_libs.testflow.step(
+        testflow.step(
             "Check that HA VM %s starts again", conf.VM_NAME[0]
         )
         assert ll_vms.waitForVMState(
@@ -209,7 +206,6 @@ class TestMultiplePinning03(BaseMultiplePinning):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_class_cpu_pinning.__name__,
     update_vms.__name__,
@@ -220,7 +216,6 @@ class TestMultiplePinning04(BaseMultiplePinning):
     """
     Pin VM to two hosts and add CPU pinning to VM
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -230,6 +225,7 @@ class TestMultiplePinning04(BaseMultiplePinning):
     vms_to_stop = [conf.VM_NAME[0]]
     hosts_to_activate_indexes = range(2)
 
+    @tier2
     @polarion("RHEVM3-12099")
     def test_check_vm_cpu_pinning(self):
         """
@@ -245,7 +241,7 @@ class TestMultiplePinning04(BaseMultiplePinning):
                 host_name=vm_host
             )
             expected_pinning = {conf.VCPU: 0, conf.CPU: host_online_cpu}
-            u_libs.testflow.step(
+            testflow.step(
                 "Check that VM %s has correct CPU pinning %s",
                 conf.VM_NAME[0], expected_pinning
             )
@@ -260,7 +256,6 @@ class TestMultiplePinning04(BaseMultiplePinning):
             )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
@@ -270,7 +265,6 @@ class TestMultiplePinning05(BaseMultiplePinning):
     """
     Pin VM to two hosts and update VM CPU mode to pass-through
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -281,6 +275,7 @@ class TestMultiplePinning05(BaseMultiplePinning):
     vms_to_stop = [conf.VM_NAME[0]]
     hosts_to_activate_indexes = range(2)
 
+    @tier2
     @polarion("RHEVM3-12101")
     def test_check_vm_cpu_mode(self):
         """
@@ -297,7 +292,7 @@ class TestMultiplePinning05(BaseMultiplePinning):
                 vm=conf.VM_NAME[0], start_vm=False
             )
             vm_cpu_info = sla_helpers.get_cpu_info(resource=vm_resource)
-            u_libs.testflow.step(
+            testflow.step(
                 "Check that VM %s has host CPU model %s",
                 conf.VM_NAME[0], host_cpu_info[conf.CPU_MODEL_NAME]
             )
@@ -311,7 +306,6 @@ class TestMultiplePinning05(BaseMultiplePinning):
             )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -320,7 +314,6 @@ class TestMultiplePinning06(BaseMultiplePinning):
     """
     Negative: Pin VM to two host and add NUMA pinning to VM
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -329,6 +322,7 @@ class TestMultiplePinning06(BaseMultiplePinning):
     }
     vms_to_stop = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-12137")
     def test_check_numa_pinning(self):
         """
@@ -337,7 +331,6 @@ class TestMultiplePinning06(BaseMultiplePinning):
         pinning_helpers.add_one_numa_node_to_vm(negative=True)
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
@@ -347,7 +340,6 @@ class TestMultiplePinning07(BaseMultiplePinning):
     """
     Negative: Pin VM to two host, when VM already has NUMA pinning
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -356,12 +348,13 @@ class TestMultiplePinning07(BaseMultiplePinning):
     }
     vms_to_stop = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-12450")
     def test_check_numa_pinning(self):
         """
         1) Pin VM to two hosts
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Update VM %s placement hosts to %s",
             conf.VM_NAME[0], conf.HOSTS[:2]
         )
@@ -372,20 +365,19 @@ class TestMultiplePinning07(BaseMultiplePinning):
         )
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(change_host_cluster.__name__)
 class TestMultiplePinning08(BaseMultiplePinning):
     """
     Negative: Pin VM to host from another cluster
     """
-    __test__ = True
 
+    @tier3
     @polarion("RHEVM3-12401")
     def test_check_pinning_to_incorrect_host(self):
         """
         1) Pin VM to host from another cluster
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Update the VM %s placement host to %s",
             conf.VM_NAME[0], conf.HOSTS[0]
         )
@@ -397,7 +389,6 @@ class TestMultiplePinning08(BaseMultiplePinning):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__
@@ -406,7 +397,6 @@ class TestMultiplePinning09(BaseMultiplePinning):
     """
     Negative: attach host device to VM, that pinned to two hosts
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -415,6 +405,7 @@ class TestMultiplePinning09(BaseMultiplePinning):
     }
     vms_to_stop = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-12405")
     def test_check_host_devices(self):
         """
@@ -423,7 +414,7 @@ class TestMultiplePinning09(BaseMultiplePinning):
         host_device_name = ll_hosts.get_host_devices(
             host_name=conf.HOSTS[0]
         )[0].get_name()
-        u_libs.testflow.step(
+        testflow.step(
             "Attach the host device %s to VM %s",
             host_device_name, conf.VM_NAME[0]
         )
@@ -434,7 +425,6 @@ class TestMultiplePinning09(BaseMultiplePinning):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     stop_vms.__name__,
@@ -444,7 +434,6 @@ class TestMultiplePinning10(BaseMultiplePinning):
     """
     Pin VM to two host when VM has attached device
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_PLACEMENT_AFFINITY: conf.VM_PINNED,
@@ -453,13 +442,14 @@ class TestMultiplePinning10(BaseMultiplePinning):
     }
     vms_to_stop = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-12449")
     def test_check_host_devices(self):
         """
         1) Pin VM to two hosts
         2) Check that VM does not have host devices
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Update the VM %s placement hosts to %s",
             conf.VM_NAME[0], conf.HOSTS[:2]
         )
@@ -468,11 +458,10 @@ class TestMultiplePinning10(BaseMultiplePinning):
             vm=conf.VM_NAME[0],
             placement_hosts=conf.HOSTS[:2]
         )
-        u_libs.testflow.step("Get VM %s host devices", conf.VM_NAME[0])
+        testflow.step("Get VM %s host devices", conf.VM_NAME[0])
         assert not ll_vms.get_vm_host_devices(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     create_vm_without_disk.__name__,
     update_vms.__name__,
@@ -483,7 +472,6 @@ class TestImportExport(BaseMultiplePinning):
     """
     Import and export the VM that pinned to two hosts
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_WITHOUT_DISK: {conf.VM_PLACEMENT_HOSTS: range(2)}
     }
@@ -491,6 +479,7 @@ class TestImportExport(BaseMultiplePinning):
     vm_to_import = conf.VM_WITHOUT_DISK
     vm_import_name = conf.VM_IMPORTED
 
+    @tier2
     @polarion("RHEVM3-12406")
     def test_check_import_export(self):
         """
@@ -500,12 +489,10 @@ class TestImportExport(BaseMultiplePinning):
             vm_name=conf.VM_IMPORTED
         )
         vm_placement_hosts.sort()
-        u_libs.testflow.step("Check VM %s placement hosts", conf.VM_NAME[0])
+        testflow.step("Check VM %s placement hosts", conf.VM_NAME[0])
         assert vm_placement_hosts == conf.HOSTS[:2]
 
 
-@u_libs.tier2
-@bz({"1333409": {}})
 @pytest.mark.usefixtures(
     create_vm_without_disk.__name__,
     update_vms.__name__,
@@ -517,7 +504,6 @@ class TestTemplate(BaseMultiplePinning):
     Create template from the VM that pinned to two host and
     create the VM from this template
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_WITHOUT_DISK: {conf.VM_PLACEMENT_HOSTS: range(2)}
     }
@@ -525,6 +511,8 @@ class TestTemplate(BaseMultiplePinning):
     template_name = conf.VM_IMPORT_EXPORT_TEMPLATE
     vm_from_template_name = conf.VM_FROM_TEMPLATE
 
+    @tier2
+    @bz({"1333409": {}})
     @polarion("RHEVM3-12407")
     def test_check_template(self):
         """
@@ -534,7 +522,7 @@ class TestTemplate(BaseMultiplePinning):
             vm_name=conf.VM_FROM_TEMPLATE
         )
         vm_placement_hosts.sort()
-        u_libs.testflow.step(
+        testflow.step(
             "Check VM %s placement hosts", conf.VM_FROM_TEMPLATE
         )
         assert vm_placement_hosts == conf.HOSTS[:2]

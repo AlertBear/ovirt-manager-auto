@@ -1,15 +1,16 @@
 """
 Host To VM affinity tests
 """
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import config as conf
-import pytest
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion, bz
+from art.unittest_lib import testflow, tier1, tier2, tier3, SlaTest
 from rhevmtests.sla.fixtures import (  # noqa: F401
     activate_hosts,
     choose_specific_host_as_spm,
@@ -67,7 +68,7 @@ def init_affinity_test(request):
     init_affinity_test.__name__,
     update_cluster.__name__
 )
-class BaseHostAffinity(u_libs.SlaTest):
+class BaseHostAffinity(SlaTest):
     """
     Base class for all affinity tests
     """
@@ -87,7 +88,7 @@ class BaseHostAffinity(u_libs.SlaTest):
         Returns:
             bool: True, if the VM started on correct host, otherwise False
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if the VM %s started on the host %s", vm_name, host_name
         )
         return ll_vms.get_vm_host(vm_name=vm_name) == host_name
@@ -103,7 +104,7 @@ class BaseHostAffinity(u_libs.SlaTest):
         Returns:
             bool: True, if the VM started, otherwise False
         """
-        u_libs.testflow.step("Start the VM %s", vm_name)
+        testflow.step("Start the VM %s", vm_name)
         return ll_vms.startVm(positive=True, vm=vm_name)
 
     @staticmethod
@@ -117,7 +118,7 @@ class BaseHostAffinity(u_libs.SlaTest):
         Returns:
             bool: True, if migration succeeds, otherwise False
         """
-        u_libs.testflow.step("Migrate the VM %s", vm_name)
+        testflow.step("Migrate the VM %s", vm_name)
         return ll_vms.migrateVm(positive=True, vm=vm_name)
 
 
@@ -129,8 +130,6 @@ class BaseHostAffinityStartVm(BaseHostAffinity):
     affinity_groups = None
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 @pytest.mark.usefixtures(stop_vms.__name__)
 class TestStartVmUnderHostAffinity01(BaseHostAffinityStartVm):
     """
@@ -143,6 +142,8 @@ class TestStartVmUnderHostAffinity01(BaseHostAffinityStartVm):
     }
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-17586")
     def test_vm_start(self):
         """
@@ -154,8 +155,6 @@ class TestStartVmUnderHostAffinity01(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 @pytest.mark.usefixtures(stop_vms.__name__)
 class TestStartVmUnderHostAffinity02(BaseHostAffinityStartVm):
     """
@@ -168,6 +167,8 @@ class TestStartVmUnderHostAffinity02(BaseHostAffinityStartVm):
     }
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-17587")
     def test_vm_start(self):
         """
@@ -179,7 +180,6 @@ class TestStartVmUnderHostAffinity02(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(run_once_vms.__name__)
 class TestStartVmUnderHostAffinity03(BaseHostAffinityStartVm):
     """
@@ -196,6 +196,7 @@ class TestStartVmUnderHostAffinity03(BaseHostAffinityStartVm):
     }
     vms_to_run = {conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1}}
 
+    @tier2
     @polarion("RHEVM-17588")
     def test_vm_start(self):
         """
@@ -204,7 +205,6 @@ class TestStartVmUnderHostAffinity03(BaseHostAffinityStartVm):
         assert not self.start_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(run_once_vms.__name__)
 class TestStartVmUnderHostAffinity04(BaseHostAffinityStartVm):
     """
@@ -221,6 +221,7 @@ class TestStartVmUnderHostAffinity04(BaseHostAffinityStartVm):
     }
     vms_to_run = conf.VMS_TO_RUN_0
 
+    @tier2
     @polarion("RHEVM-17589")
     def test_vm_start(self):
         """
@@ -229,7 +230,6 @@ class TestStartVmUnderHostAffinity04(BaseHostAffinityStartVm):
         assert not self.start_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     stop_vms.__name__
@@ -250,6 +250,7 @@ class TestStartVmUnderHostAffinity05(BaseHostAffinityStartVm):
     vms_to_run = {conf.VM_NAME[1]: {conf.VM_RUN_ONCE_HOST: 1}}
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier2
     @polarion("RHEVM-17590")
     def test_vm_start(self):
         """
@@ -261,7 +262,6 @@ class TestStartVmUnderHostAffinity05(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     stop_vms.__name__
@@ -282,6 +282,7 @@ class TestStartVmUnderHostAffinity06(BaseHostAffinityStartVm):
     vms_to_run = conf.VMS_TO_RUN_0
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier2
     @polarion("RHEVM-17591")
     def test_vm_start(self):
         """
@@ -293,7 +294,6 @@ class TestStartVmUnderHostAffinity06(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     stop_vms.__name__
@@ -320,6 +320,7 @@ class TestStartVmUnderHostAffinity07(BaseHostAffinityStartVm):
     vms_to_run = conf.VMS_TO_RUN_0
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier2
     @polarion("RHEVM-18192")
     def test_vm_start(self):
         """
@@ -331,8 +332,6 @@ class TestStartVmUnderHostAffinity07(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 @pytest.mark.usefixtures(stop_vms.__name__)
 class TestStartVmUnderHostAffinity08(BaseHostAffinityStartVm):
     """
@@ -346,6 +345,8 @@ class TestStartVmUnderHostAffinity08(BaseHostAffinityStartVm):
     }
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-19279")
     def test_vm_start(self):
         """
@@ -365,8 +366,6 @@ class BaseHostAffinityMigrateVm(BaseHostAffinityStartVm):
     vms_to_run = {conf.VM_NAME[0]: {}}
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHostAffinity01(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into hard positive affinity group with the host
@@ -377,6 +376,8 @@ class TestMigrateVmUnderHostAffinity01(BaseHostAffinityMigrateVm):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_1
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-17592")
     def test_vm_migration(self):
         """
@@ -385,8 +386,6 @@ class TestMigrateVmUnderHostAffinity01(BaseHostAffinityMigrateVm):
         assert not self.migrate_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHostAffinity02(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into hard negative affinity group with the host
@@ -397,6 +396,8 @@ class TestMigrateVmUnderHostAffinity02(BaseHostAffinityMigrateVm):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_2
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-17593")
     def test_vm_migration(self):
         """
@@ -408,7 +409,6 @@ class TestMigrateVmUnderHostAffinity02(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.tier2
 class TestMigrateVmUnderHostAffinity03(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into soft positive affinity group with the host
@@ -426,6 +426,7 @@ class TestMigrateVmUnderHostAffinity03(BaseHostAffinityMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM-17594")
     def test_vm_migration(self):
         """
@@ -437,7 +438,6 @@ class TestMigrateVmUnderHostAffinity03(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.tier2
 class TestMigrateVmUnderHostAffinity04(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into soft negative affinity group with the host
@@ -448,6 +448,7 @@ class TestMigrateVmUnderHostAffinity04(BaseHostAffinityMigrateVm):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_4
     }
 
+    @tier2
     @polarion("RHEVM-17595")
     def test_vm_migration(self):
         """
@@ -459,7 +460,6 @@ class TestMigrateVmUnderHostAffinity04(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     run_once_vms.__name__,
@@ -492,6 +492,7 @@ class TestMigrateVmUnderHostAffinity05(BaseHostAffinity):
         }
     }
 
+    @tier2
     @polarion("RHEVM-18193")
     def test_vm_migration(self):
         """
@@ -500,7 +501,6 @@ class TestMigrateVmUnderHostAffinity05(BaseHostAffinity):
         assert not self.migrate_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.tier2
 class TestMigrateVmUnderHostAffinity06(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into hard negative affinity group with the host
@@ -523,6 +523,7 @@ class TestMigrateVmUnderHostAffinity06(BaseHostAffinityMigrateVm):
     }
     vms_to_run = conf.VMS_TO_RUN_2
 
+    @tier2
     @polarion("RHEVM-18194")
     def test_vm_migration(self):
         """
@@ -531,7 +532,6 @@ class TestMigrateVmUnderHostAffinity06(BaseHostAffinityMigrateVm):
         assert not self.migrate_vm(vm_name=conf.VM_NAME[0])
 
 
-@u_libs.tier2
 class TestMigrateVmUnderHostAffinity07(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into hard negative affinity group with the host
@@ -553,6 +553,7 @@ class TestMigrateVmUnderHostAffinity07(BaseHostAffinityMigrateVm):
     }
     vms_to_run = conf.VMS_TO_RUN_2
 
+    @tier2
     @polarion("RHEVM-18196")
     def test_vm_migration(self):
         """
@@ -564,8 +565,6 @@ class TestMigrateVmUnderHostAffinity07(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHostAffinity08(BaseHostAffinityMigrateVm):
     """
     Migrate the VM that placed into hard positive affinity group
@@ -582,6 +581,8 @@ class TestMigrateVmUnderHostAffinity08(BaseHostAffinityMigrateVm):
         }
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-19280")
     def test_vm_migration(self):
         """
@@ -598,7 +599,6 @@ class BaseHostAffinityPutHostToMaintenance(BaseHostAffinityMigrateVm):
     hosts_to_activate_indexes = [0]
 
 
-@u_libs.tier2
 class TestMaintenanceUnderHostAffinity01(BaseHostAffinityPutHostToMaintenance):
     """
     Put the host with the VM to the maintenance, when both host and VM placed
@@ -610,6 +610,7 @@ class TestMaintenanceUnderHostAffinity01(BaseHostAffinityPutHostToMaintenance):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_1
     }
 
+    @tier2
     @polarion("RHEVM-17596")
     def test_host_maintenance(self):
         """
@@ -618,7 +619,6 @@ class TestMaintenanceUnderHostAffinity01(BaseHostAffinityPutHostToMaintenance):
         assert not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0])
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     activate_hosts.__name__
@@ -638,6 +638,7 @@ class TestMaintenanceUnderHostAffinity02(BaseHostAffinityStartVm):
     }
     hosts_to_activate_indexes = [1]
 
+    @tier2
     @polarion("RHEVM-17597")
     def test_host_maintenance(self):
         """
@@ -651,7 +652,6 @@ class TestMaintenanceUnderHostAffinity02(BaseHostAffinityStartVm):
         )
 
 
-@u_libs.tier2
 class TestMaintenanceUnderHostAffinity03(BaseHostAffinityPutHostToMaintenance):
     """
     Put the host with the VM to the maintenance, when both host and VM placed
@@ -663,6 +663,7 @@ class TestMaintenanceUnderHostAffinity03(BaseHostAffinityPutHostToMaintenance):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_3
     }
 
+    @tier2
     @polarion("RHEVM-17598")
     def test_host_maintenance(self):
         """
@@ -673,7 +674,6 @@ class TestMaintenanceUnderHostAffinity03(BaseHostAffinityPutHostToMaintenance):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     run_once_vms.__name__,
     activate_hosts.__name__
@@ -693,6 +693,7 @@ class TestMaintenanceUnderHostAffinity04(BaseHostAffinityStartVm):
     }
     hosts_to_activate_indexes = [1]
 
+    @tier2
     @polarion("RHEVM-17599")
     def test_host_maintenance(self):
         """
@@ -718,8 +719,6 @@ class BaseHostAffinityEnforcement(BaseHostAffinity):
     affinity_groups = None
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestEnforcementUnderHostAffinity01(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM
@@ -732,6 +731,8 @@ class TestEnforcementUnderHostAffinity01(BaseHostAffinityEnforcement):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_1
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-17607")
     def test_affinity_enforcement(self):
         """
@@ -742,8 +743,6 @@ class TestEnforcementUnderHostAffinity01(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestEnforcementUnderHostAffinity02(BaseHostAffinityEnforcement):
     """
     Test that affinity enforcement migrates the VM
@@ -756,6 +755,8 @@ class TestEnforcementUnderHostAffinity02(BaseHostAffinityEnforcement):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_5
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM-17608")
     def test_affinity_enforcement(self):
         """
@@ -766,7 +767,6 @@ class TestEnforcementUnderHostAffinity02(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 class TestEnforcementUnderHostAffinity03(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM
@@ -779,6 +779,7 @@ class TestEnforcementUnderHostAffinity03(BaseHostAffinityEnforcement):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_3
     }
 
+    @tier2
     @polarion("RHEVM-18189")
     def test_affinity_enforcement(self):
         """
@@ -789,7 +790,6 @@ class TestEnforcementUnderHostAffinity03(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 class TestEnforcementUnderHostAffinity04(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM
@@ -802,6 +802,7 @@ class TestEnforcementUnderHostAffinity04(BaseHostAffinityEnforcement):
         ): conf.HOST_TO_VM_AFFINITY_GROUP_5
     }
 
+    @tier2
     @polarion("RHEVM-18190")
     def test_affinity_enforcement(self):
         """
@@ -812,7 +813,6 @@ class TestEnforcementUnderHostAffinity04(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 class TestEnforcementUnderHostAffinity05(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement does not migrate the VM,
@@ -839,6 +839,7 @@ class TestEnforcementUnderHostAffinity05(BaseHostAffinityEnforcement):
         }
     }
 
+    @tier2
     @polarion("RHEVM-18229")
     def test_affinity_enforcement(self):
         """
@@ -849,7 +850,6 @@ class TestEnforcementUnderHostAffinity05(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 class TestEnforcementUnderHostAffinity06(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement does not migrate the VM,
@@ -873,6 +873,7 @@ class TestEnforcementUnderHostAffinity06(BaseHostAffinityEnforcement):
         }
     }
 
+    @tier2
     @polarion("RHEVM-18230")
     def test_affinity_enforcement(self):
         """
@@ -886,7 +887,6 @@ class TestEnforcementUnderHostAffinity06(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 class TestEnforcementUnderHostAffinity07(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM,
@@ -916,6 +916,7 @@ class TestEnforcementUnderHostAffinity07(BaseHostAffinityEnforcement):
         }
     }
 
+    @tier2
     @polarion("RHEVM-18231")
     def test_affinity_enforcement(self):
         """
@@ -926,7 +927,6 @@ class TestEnforcementUnderHostAffinity07(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 class TestEnforcementUnderHostAffinity08(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM,
@@ -954,6 +954,7 @@ class TestEnforcementUnderHostAffinity08(BaseHostAffinityEnforcement):
         }
     }
 
+    @tier2
     @polarion("RHEVM-18232")
     def test_affinity_enforcement(self):
         """
@@ -964,7 +965,6 @@ class TestEnforcementUnderHostAffinity08(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 class TestEnforcementUnderHostAffinity09(BaseHostAffinityEnforcement):
     """
     Test that the affinity enforcement migrates the VM,
@@ -987,6 +987,7 @@ class TestEnforcementUnderHostAffinity09(BaseHostAffinityEnforcement):
         }
     }
 
+    @tier2
     @polarion("RHEVM-18234")
     def test_affinity_enforcement(self):
         """
@@ -1000,9 +1001,8 @@ class TestEnforcementUnderHostAffinity09(BaseHostAffinityEnforcement):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
-class TestNegativeAddAffinityGroup(u_libs.SlaTest):
+class TestNegativeAddAffinityGroup(SlaTest):
     """
     Add affinity group negative test cases
     """
@@ -1011,6 +1011,7 @@ class TestNegativeAddAffinityGroup(u_libs.SlaTest):
         affinity_group_name: conf.HOST_TO_VM_AFFINITY_GROUP_1
     }
 
+    @tier2
     @polarion("RHEVM-18985")
     def test_add_affinity_group_with_name_in_use(self):
         """
@@ -1020,6 +1021,7 @@ class TestNegativeAddAffinityGroup(u_libs.SlaTest):
             cluster_name=conf.CLUSTER_NAME[0], name=self.affinity_group_name
         )
 
+    @tier2
     @polarion("RHEVM-18986")
     def test_add_affinity_group_with_long_name(self):
         """
@@ -1030,6 +1032,7 @@ class TestNegativeAddAffinityGroup(u_libs.SlaTest):
             cluster_name=conf.CLUSTER_NAME[0], name=affinity_group_name
         )
 
+    @tier2
     @polarion("RHEVM-18987")
     def test_add_affinity_group_with_special_characters_name(self):
         """
@@ -1041,13 +1044,13 @@ class TestNegativeAddAffinityGroup(u_libs.SlaTest):
         )
 
 
-@u_libs.tier1
-class TestAffinityModuleExistenceUnderPolicies(u_libs.SlaTest):
+class TestAffinityModuleExistenceUnderPolicies(SlaTest):
     """
     Test that affinity filter and weight modules exist under each
     engine policy except the InClusterUpgrade policy
     """
 
+    @tier1
     @polarion("RHEVM-19282")
     def test_modules_existence(self):
         """
@@ -1074,7 +1077,7 @@ class TestAffinityModuleExistenceUnderPolicies(u_libs.SlaTest):
                 policy_modules_ids = [
                     policy_unit.get_id() for policy_unit in policy_units
                 ]
-                u_libs.testflow.step(
+                testflow.step(
                     "Verify that affinity unit with id %s "
                     "exists under the scheduling policy %s",
                     affinity_module_id, policy_name
@@ -1082,7 +1085,6 @@ class TestAffinityModuleExistenceUnderPolicies(u_libs.SlaTest):
                 assert affinity_module_id in policy_modules_ids
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     configure_hosts_power_management.__name__,
     update_vms.__name__,
@@ -1100,18 +1102,18 @@ class TestHaVmUnderHostAffinity(BaseHostAffinityStartVm):
     vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 0}}
     stop_network_on_host = 0
 
+    @tier3
     @polarion("RHEVM-19283")
     def test_ha_vm_restart(self):
         """
         Verify that the engine restart the HA VM
         """
-        u_libs.testflow.step("Wait for the HA VM restart")
+        testflow.step("Wait for the HA VM restart")
         assert ll_vms.waitForVmsStates(
             positive=True, names=conf.VM_NAME[:1], states=conf.VM_POWERING_UP
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     skip_if_not_he_environment.__name__,
     create_affinity_groups.__name__,
@@ -1136,6 +1138,7 @@ class TestEnforcementUnderHostAffinityWithHeVm(BaseHostAffinity):
     }
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier2
     @polarion("RHEVM-19314")
     def test_he_vm_host(self):
         """
@@ -1146,7 +1149,7 @@ class TestEnforcementUnderHostAffinityWithHeVm(BaseHostAffinity):
         run_once_params = {
             conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: he_vm_host}
         }
-        u_libs.testflow.step(
+        testflow.step(
             "Run the VM %s on the host %s", conf.VM_NAME[0], he_vm_host
         )
         ll_vms.run_vms_once(vms=[conf.VM_NAME[0]], **run_once_params)
@@ -1164,7 +1167,6 @@ class TestEnforcementUnderHostAffinityWithHeVm(BaseHostAffinity):
         assert self.check_vm_host(vm_name=conf.HE_VM, host_name=he_vm_host)
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(load_hosts_cpu.__name__)
 class TestEnforcementAndPowerSavingBalancingLoop(BaseHostAffinityMigrateVm):
     """
@@ -1181,6 +1183,7 @@ class TestEnforcementAndPowerSavingBalancingLoop(BaseHostAffinityMigrateVm):
     vms_to_run = conf.VMS_TO_RUN_1
     hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
 
+    @tier2
     @polarion("RHEVM-18236")
     def test_balancing_loop(self):
         """
@@ -1192,7 +1195,6 @@ class TestEnforcementAndPowerSavingBalancingLoop(BaseHostAffinityMigrateVm):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(load_hosts_cpu.__name__)
 class TestEnforcementAndEvenDistributionBalancingLoop(
     BaseHostAffinityMigrateVm
@@ -1211,6 +1213,7 @@ class TestEnforcementAndEvenDistributionBalancingLoop(
     vms_to_run = conf.VMS_TO_RUN_1
     hosts_cpu_load = {conf.CPU_LOAD_100: [0]}
 
+    @tier2
     @polarion("RHEVM-18237")
     def test_balancing_loop(self):
         """

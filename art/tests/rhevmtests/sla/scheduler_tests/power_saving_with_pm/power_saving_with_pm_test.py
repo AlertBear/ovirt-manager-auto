@@ -9,16 +9,16 @@ import time
 
 import pytest
 
-import helpers
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_lib
+import helpers
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier3, SlaTest
 from fixtures import (
     disable_host_policy_control_flag,
     power_on_host
@@ -56,20 +56,20 @@ def init_test(request):
                 ll_hosts.get_host_status(host_name) == conf.HOST_DOWN
             )
             if host_status_down:
-                u_lib.testflow.teardown(
+                testflow.teardown(
                     "Wait %s seconds between fence operations",
                     conf.FENCE_TIMEOUT
                 )
                 time.sleep(conf.FENCE_TIMEOUT)
-                u_lib.testflow.teardown("Start the host %s", host_name)
+                testflow.teardown("Start the host %s", host_name)
                 ll_hosts.fence_host(
                     host=host_name, fence_type="start"
                 )
-            u_lib.testflow.teardown(
+            testflow.teardown(
                 "Remove the power management from the host %s", host_name
             )
             hl_hosts.remove_power_management(host_name=host_name)
-        u_lib.testflow.teardown("Free all host CPU's from the load")
+        testflow.teardown("Free all host CPU's from the load")
         sla_helpers.stop_load_on_resources(
             hosts_and_resources_l=[
                 {conf.RESOURCE: conf.VDS_HOSTS[:3], conf.HOST: conf.HOSTS[:3]}
@@ -82,9 +82,8 @@ def init_test(request):
         pytest.skip("Not all hosts have power management")
 
 
-@u_lib.tier3
 @pytest.mark.usefixtures(migrate_he_vm.__name__)
-class BasePowerSavingWithPM(u_lib.SlaTest):
+class BasePowerSavingWithPM(SlaTest):
     """
     Base class for power saving with power management tests
     """
@@ -129,13 +128,13 @@ class BasePowerSavingWithPM(u_lib.SlaTest):
             host_name (str): Host name
             host_state (str): Expected host state
         """
-        u_lib.testflow.step(
+        testflow.step(
             "Wait until one of hosts will have state %s", conf.HOST_DOWN
         )
         assert self._wait_for_hosts_with_state(
             num_of_hosts=1, hosts_state=conf.HOST_DOWN
         )
-        u_lib.testflow.step(
+        testflow.step(
             "Check that the host %s has state %s", host_name, host_state
         )
         assert self._check_host_state(host=host_name, state=host_state)
@@ -166,7 +165,7 @@ class BasePowerSavingWithPM(u_lib.SlaTest):
             cluster=conf.CLUSTER_NAME[0],
             properties=sch_properties
         )
-        u_lib.testflow.step(
+        testflow.step(
             "Wait until all hosts will have state %s", conf.HOST_UP
         )
         assert self._wait_for_hosts_with_state(
@@ -202,6 +201,7 @@ class TestSPMHostNotKilledByPolicy(PowerSavingWithPMFixtures):
     hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
     host_down = 2
 
+    @tier3
     @polarion("RHEVM3-5572")
     def test_host_with_spm(self):
         """
@@ -220,6 +220,7 @@ class TestHostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPMFixtures):
     hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
     host_down = 2
 
+    @tier3
     @polarion("RHEVM3-5580")
     def test_host_with_cpu_load(self):
         """
@@ -239,6 +240,7 @@ class TestHostStartedByPowerManagement(PowerSavingWithPMFixtures):
     hosts_cpu_load = {conf.CPU_LOAD_50: [1]}
     host_down = 2
 
+    @tier3
     @polarion("RHEVM3-5577")
     def test_start_host(self):
         """
@@ -275,13 +277,14 @@ class TestCheckPolicyControlOfPowerManagementFlag(BasePowerSavingWithPM):
     }
     host_down = 1
 
+    @tier3
     @polarion("RHEVM3-5579")
     def test_disable_policy_control_flag(self):
         """
         Test that the engine does not power off host with
         the disabled 'policy_control_flag'
         """
-        u_lib.testflow.step(
+        testflow.step(
             "Wait until host %s will have state %s",
             conf.HOSTS[2], conf.HOST_DOWN
         )
@@ -301,12 +304,13 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPMFixtures):
     vms_to_run = {conf.VM_NAME[0]: {conf.VM_RUN_ONCE_HOST: 1}}
     vms_to_stop = [conf.VM_NAME[1]]
 
+    @tier3
     @polarion("RHEVM3-5576")
     def test_no_reserve_left(self):
         """
         Test that the engine start a host, when no hosts left in reserve
         """
-        u_lib.testflow.step(
+        testflow.step(
             "Wait until one of hosts will have state %s", conf.HOST_DOWN
         )
         assert self._wait_for_hosts_with_state(
@@ -317,13 +321,13 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPMFixtures):
             host_resource=conf.VDS_HOSTS[2],
             expected_state=conf.POWER_MANAGEMENT_STATE_OFF
         )
-        u_lib.testflow.step(
+        testflow.step(
             "Run once VM %s on the host %s", conf.VM_NAME[1], conf.HOSTS[0]
         )
         assert ll_vms.runVmOnce(
             positive=True, vm=conf.VM_NAME[1], host=conf.HOSTS[0]
         )
-        u_lib.testflow.step(
+        testflow.step(
             "Wait until all hosts will have state %s", conf.HOST_UP
         )
         assert self._wait_for_hosts_with_state(
@@ -340,13 +344,14 @@ class TestNoExcessHosts(PowerSavingWithPMFixtures):
         (conf.VM_NAME[i], {conf.VM_RUN_ONCE_HOST: i}) for i in xrange(3)
     )
 
+    @tier3
     @polarion("RHEVM3-5575")
     def test_reserved_equal_to_up_hosts(self):
         """
         Test that the engine does not shutdown a host,
         when it does not have hosts in reserve
         """
-        u_lib.testflow.step(
+        testflow.step(
             "Check that all hosts stay in state %s", conf.HOST_UP
         )
         assert not self._wait_for_hosts_with_state(
@@ -378,6 +383,7 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
         conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_WITH_PM_PARAMS
     }
 
+    @tier3
     @polarion("RHEVM3-5573")
     def test_host_stopped_unexpectedly(self):
         """
@@ -391,13 +397,13 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
             host_resource=conf.VDS_HOSTS[2],
             expected_state=conf.POWER_MANAGEMENT_STATE_OFF
         )
-        u_lib.testflow.step("Stop network on the host %s", conf.HOSTS[1])
+        testflow.step("Stop network on the host %s", conf.HOSTS[1])
         try:
             conf.VDS_HOSTS[0].network.if_down(nic=conf.MGMT_BRIDGE)
         except socket.timeout:
             pass
 
-        u_lib.testflow.step(
+        testflow.step(
             "Wait until the host %s will have %s state",
             conf.HOSTS[0], conf.HOST_NONRESPONSIVE
         )
@@ -407,7 +413,7 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
             states=conf.HOST_NONRESPONSIVE
         )
 
-        u_lib.testflow.step(
+        testflow.step(
             "Wait until some other host in the cluster will have state %s",
             conf.HOST_UP
         )
@@ -417,7 +423,6 @@ class TestHostStoppedUnexpectedly(BasePowerSavingWithPM):
         self._wait_for_all_hosts_state_up()
 
 
-@u_lib.tier3
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     run_once_vms.__name__,
@@ -437,16 +442,17 @@ class TestHostStoppedByUser(BasePowerSavingWithPM):
     host_down = 2
     hosts_to_maintenance = [2]
 
+    @tier3
     @polarion("RHEVM3-5574")
     def test_host_stopped_by_user(self):
         """
         Test that the engine does not start host that was shutdown by user
         """
-        u_lib.testflow.step(
+        testflow.step(
             "Stop the host %s via power management", conf.HOSTS[2]
         )
         assert ll_hosts.fence_host(host=conf.HOSTS[2], fence_type="stop")
-        u_lib.testflow.step(
+        testflow.step(
             "Check that the host %s stay in state %s",
             conf.HOSTS[2], conf.HOST_DOWN
         )

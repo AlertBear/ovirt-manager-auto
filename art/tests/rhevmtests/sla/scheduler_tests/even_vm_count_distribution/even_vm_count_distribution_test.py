@@ -3,12 +3,13 @@ Scheduler - Even Vm Count Distribution Test
 Check different cases for start, migration and balancing when cluster policy
 is Vm_Evenly_Distribute
 """
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
-import config as conf
 import pytest
+
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier2, tier3, SlaTest
 from rhevmtests.sla.fixtures import (  # noqa: F401
     update_cluster,
     update_cluster_to_default_parameters,
@@ -26,14 +27,13 @@ host_as_spm = 0
 he_dst_host = 0
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     choose_specific_host_as_spm.__name__,
     run_once_vms.__name__,
     update_cluster.__name__
 )
-class BaseEvenVmCountDistribution(u_libs.SlaTest):
+class BaseEvenVmCountDistribution(SlaTest):
     """
     Base class for EvenVmCountDistribution policy
     """
@@ -62,6 +62,7 @@ class TestBalancingWithDefaultParameters(BaseEvenVmCountDistributionTwoHosts):
         ) for i in xrange(conf.NUM_OF_VMS)
     )
 
+    @tier2
     @polarion("RHEVM3-5565")
     def test_balancing(self):
         """
@@ -82,6 +83,7 @@ class TestNoHostForMigration(BaseEvenVmCountDistributionTwoHosts):
     """
     vms_to_run = conf.DEFAULT_VMS_TO_RUN
 
+    @tier2
     @polarion("RHEVM3-5566")
     def test_balancing(self):
         """
@@ -108,12 +110,13 @@ class TestStartVm(BaseEvenVmCountDistributionTwoHosts):
     }
     vms_to_stop = [conf.VM_NAME[4]]
 
+    @tier2
     @polarion("RHEVM3-5568")
     def test_start_vm(self):
         """
         Start the VM and check that VM starts on the correct host
         """
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME[4])
+        testflow.step("Start the VM %s", conf.VM_NAME[4])
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[4])
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
@@ -122,7 +125,6 @@ class TestStartVm(BaseEvenVmCountDistributionTwoHosts):
         )
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     choose_specific_host_as_spm.__name__,
@@ -133,7 +135,7 @@ class TestStartVm(BaseEvenVmCountDistributionTwoHosts):
     update_cluster.__name__,
     stop_host_network.__name__
 )
-class TestHaVmStartOnHostAboveMaxLevel(u_libs.SlaTest):
+class TestHaVmStartOnHostAboveMaxLevel(SlaTest):
     """
     Positive: Start VM's under vm_evenly_distributed cluster policy,
     when the host_1(SPM) has two VM's and the host_2 has three HA VM's.
@@ -153,6 +155,7 @@ class TestHaVmStartOnHostAboveMaxLevel(u_libs.SlaTest):
     vms_to_run = conf.DEFAULT_VMS_TO_RUN
     stop_network_on_host = 1
 
+    @tier3
     @polarion("RHEVM3-5570")
     def test_balancing(self):
         """
@@ -177,6 +180,7 @@ class TestPutHostToMaintenance(BaseEvenVmCountDistribution):
     vms_to_run = conf.DEFAULT_VMS_TO_RUN
     hosts_to_maintenance = [1]
 
+    @tier2
     @polarion("RHEVM3-5567")
     def test_balancing(self):
         """
@@ -204,12 +208,13 @@ class TestMigrateVm(BaseEvenVmCountDistribution):
         conf.VM_NAME[4]: {conf.VM_RUN_ONCE_HOST: 2}
     }
 
+    @tier2
     @polarion("RHEVM3-5569")
     def test_check_migration(self):
         """
         Migrate vm from host_2 and check number of vms on the host_3
         """
-        u_libs.testflow.step("Migrate the VM %s", conf.VM_NAME[1])
+        testflow.step("Migrate the VM %s", conf.VM_NAME[1])
         assert ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[1])
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[2],

@@ -9,10 +9,10 @@ import pytest
 
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
-import art.unittest_lib as u_libs
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier1, tier2, SlaTest
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
     migrate_he_vm,
@@ -67,7 +67,6 @@ def init_default_policies_test(request):
     )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     migrate_he_vm.__name__,
@@ -76,7 +75,7 @@ def init_default_policies_test(request):
     load_hosts_cpu.__name__,
     update_cluster.__name__
 )
-class BaseDefaultPolicies(u_libs.SlaTest):
+class BaseDefaultPolicies(SlaTest):
     """
     Base class for all default policies
     """
@@ -105,6 +104,7 @@ class TestPowerSavingBalanceModule1(BasePowerSavingPolicy):
     vms_to_stop = sla_conf.VM_NAME[:3]
     hosts_cpu_load = {sla_conf.CPU_LOAD_50: [1]}
 
+    @tier2
     @polarion("RHEVM3-9498")
     def test_power_saving_balance_module_1(self):
         """
@@ -131,6 +131,7 @@ class TestPowerSavingBalanceModule2(BasePowerSavingPolicy):
     vms_to_stop = sla_conf.VM_NAME[:3]
     hosts_cpu_load = {sla_conf.CPU_LOAD_100: [1]}
 
+    @tier2
     @polarion("RHEVM3-9489")
     def test_power_saving_balance_module_2(self):
         """
@@ -154,6 +155,7 @@ class TestPowerSavingBalanceModule3(BasePowerSavingPolicy):
     vms_to_stop = sla_conf.VM_NAME[:3]
     hosts_cpu_load = {sla_conf.CPU_LOAD_50: [1], sla_conf.CPU_LOAD_100: [2]}
 
+    @tier2
     @polarion("RHEVM3-9490")
     def test_power_saving_balance_module_3(self):
         """
@@ -179,12 +181,13 @@ class TestPowerSavingWeightModule1(BasePowerSavingPolicy):
     hosts_cpu_load = {sla_conf.CPU_LOAD_50: range(2)}
     hosts_to_activate_indexes = [0]
 
+    @tier2
     @polarion("RHEVM3-9492")
     def test_power_saving_weight_module_1(self):
         """
         Check if VM migrate on the normalutilized host
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check that VM %s migrates on the host %s",
             sla_conf.VM_NAME[0], sla_conf.HOSTS[1]
         )
@@ -219,6 +222,7 @@ class TestEvenDistributedBalanceModule1(BasePowerEvenDistribution):
     vms_to_stop = sla_conf.VM_NAME[:3]
     hosts_cpu_load = {sla_conf.CPU_LOAD_100: range(2)}
 
+    @tier2
     @polarion("RHEVM3-9493")
     def test_even_distributed_balance_module_1(self):
         """
@@ -245,6 +249,7 @@ class TestEvenDistributedBalanceModule2(BasePowerEvenDistribution):
     vms_to_stop = sla_conf.VM_NAME[:3]
     hosts_cpu_load = {sla_conf.CPU_LOAD_100: range(3)}
 
+    @tier2
     @polarion("RHEVM3-9494")
     def test_even_distributed_balance_module_2(self):
         """
@@ -270,12 +275,13 @@ class TestEvenDistributedWeightModule1(BasePowerEvenDistribution):
     hosts_cpu_load = {sla_conf.CPU_LOAD_100: [2]}
     hosts_to_activate_indexes = [0]
 
+    @tier2
     @polarion("RHEVM3-9496")
     def test_even_distributed_weight_module_1(self):
         """
         Check if VM migrated on the normalutilized host
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check that VM %s migrates on the host %s",
             sla_conf.VM_NAME[0], sla_conf.HOSTS[1]
         )
@@ -288,9 +294,8 @@ class TestEvenDistributedWeightModule1(BasePowerEvenDistribution):
         )
 
 
-@u_libs.tier1
 @pytest.mark.usefixtures(update_cluster_to_default_parameters.__name__)
-class TestCheckClusterPoliciesParameters(u_libs.SlaTest):
+class TestCheckClusterPoliciesParameters(SlaTest):
     """
     Check different values for cluster policy parameters:
         1) CpuOverCommitDurationMinutes - min=1; max=99
@@ -300,6 +305,7 @@ class TestCheckClusterPoliciesParameters(u_libs.SlaTest):
         https://bugzilla.redhat.com/show_bug.cgi?id=1070704
     """
 
+    @tier1
     @polarion("RHEVM-14841")
     def test_check_cluster_policies_parameters(self):
         """

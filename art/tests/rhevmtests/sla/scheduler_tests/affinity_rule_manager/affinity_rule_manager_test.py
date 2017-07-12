@@ -1,14 +1,13 @@
 """
 AREM test - check automatic migration of VM's under different affinity rules
 """
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.unittest_lib as u_libs
-
-
 import pytest
+
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion
+from art.unittest_lib import tier2, SlaTest
 from rhevmtests.sla.fixtures import (  # noqa: F401
     choose_specific_host_as_spm,
     run_once_vms,
@@ -47,12 +46,11 @@ def deactivate_third_host(request):
     )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     deactivate_third_host.__name__
 )
-class BaseAREM(u_libs.SlaTest):
+class BaseAREM(SlaTest):
     """
     Base class for all AREM tests
     """
@@ -71,7 +69,6 @@ class TestAREM1(BaseAREM):
     2) Add VM's to the hard positive affinity group
     3) Check if one of VM's migrated by system on the host with the second VM
     """
-    __test__ = True
     vms_to_run = {
         conf.VM_NAME[0]: {
             conf.VM_RUN_ONCE_HOST: 0,
@@ -88,6 +85,7 @@ class TestAREM1(BaseAREM):
     }
     vms_to_stop = conf.VM_NAME[:2]
 
+    @tier2
     @polarion("RHEVM3-10923")
     def test_check_balancing(self):
         """
@@ -113,7 +111,6 @@ class TestAREM2(BaseAREM):
     2) Add VM's to the hard negative affinity group
     3) Check if one of VM's migrated by system on the other host
     """
-    __test__ = True
     vms_to_run = {
         conf.VM_NAME[0]: {
             conf.VM_RUN_ONCE_HOST: 0,
@@ -130,6 +127,7 @@ class TestAREM2(BaseAREM):
     }
     vms_to_stop = conf.VM_NAME[:2]
 
+    @tier2
     @polarion("RHEVM3-10924")
     def test_check_balancing(self):
         """
@@ -154,7 +152,6 @@ class TestAREM3(BaseAREM):
     2) Add VM's to the soft positive affinity group
     3) Check that VM's stay on the old hosts
     """
-    __test__ = True
     vms_to_run = {
         conf.VM_NAME[0]: {
             conf.VM_RUN_ONCE_HOST: 0,
@@ -171,6 +168,7 @@ class TestAREM3(BaseAREM):
     }
     vms_to_stop = conf.VM_NAME[:2]
 
+    @tier2
     @polarion("RHEVM3-12536")
     def test_check_balancing(self):
         """
@@ -196,7 +194,6 @@ class TestAREM4(BaseAREM):
     2) Add VM's to the soft negative affinity group
     3) Check that VM's stay on the old host
     """
-    __test__ = True
     vms_to_run = {
         conf.VM_NAME[0]: {
             conf.VM_RUN_ONCE_HOST: 0,
@@ -213,6 +210,7 @@ class TestAREM4(BaseAREM):
     }
     vms_to_stop = conf.VM_NAME[:2]
 
+    @tier2
     @polarion("RHEVM3-12537")
     def test_check_balancing(self):
         """
@@ -243,7 +241,6 @@ class TestAREM5(BaseAREM):
     3) Add VM's to the positive hard affinity group
     4) Check that VM's stay on the old hosts because memory constraint
     """
-    __test__ = True
     cluster_to_update_params = {
         conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
@@ -259,6 +256,7 @@ class TestAREM5(BaseAREM):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-10927")
     def test_check_balancing(self):
         """
@@ -290,7 +288,6 @@ class TestAREM6(BaseAREM):
     3) Add VM's to the negative hard affinity group
     4) Check that VM's stay on the old hosts because memory constraint
     """
-    __test__ = True
     cluster_to_update_params = {
         conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
@@ -318,6 +315,7 @@ class TestAREM6(BaseAREM):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-10928")
     def test_check_balancing(self):
         """
@@ -350,7 +348,6 @@ class TestAREM7(BaseAREM):
     5) Check that PowerSaving balance module does not
      migrate VM from overutilized host
     """
-    __test__ = True
     cluster_to_update_params = {
         conf.CLUSTER_SCH_POLICY: conf.POLICY_POWER_SAVING,
         conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_PARAMS
@@ -372,6 +369,7 @@ class TestAREM7(BaseAREM):
     }
     hosts_cpu_load = {conf.CPU_LOAD_50: [0]}
 
+    @tier2
     @polarion("RHEVM3-10931")
     def test_check_balancing(self):
         """
@@ -403,7 +401,6 @@ class TestAREM8(BaseAREM):
     5) Check that EvenlyDistributed balance module does not
      migrate VM from overutilized host
     """
-    __test__ = True
     vms_to_run = {
         conf.VM_NAME[0]: {
             conf.VM_RUN_ONCE_HOST: 0,
@@ -425,6 +422,7 @@ class TestAREM8(BaseAREM):
         conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_ED_PARAMS
     }
 
+    @tier2
     @polarion("RHEVM3-10932")
     def test_check_balancing(self):
         """

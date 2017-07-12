@@ -7,12 +7,12 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 from art.core_api.apis_exceptions import APITimeout
 from art.core_api.apis_utils import TimeoutingSampler
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier1, tier2, tier3, SlaTest
 from rhevmtests.sla.fixtures import (
     configure_hosts_power_management,
     migrate_he_vm,
@@ -29,7 +29,7 @@ he_dst_host = 2
     update_vms.__name__,
     run_once_vms.__name__
 )
-class BaseHaVm(u_libs.SlaTest):
+class BaseHaVm(SlaTest):
     """
     Base class for all HA VM tests
     """
@@ -59,11 +59,11 @@ class BaseHaVm(u_libs.SlaTest):
                 desired message, otherwise False
         """
         last_event_id = ll_events.get_max_event_id()
-        u_libs.testflow.step(method_msg)
+        testflow.step(method_msg)
         status = method(*method_args, **method_kwargs)
         if status is not None and not status:
             return False
-        u_libs.testflow.step(
+        testflow.step(
             "Verify that the engine restart the HA VM %s", conf.VM_NAME[0]
         )
         sampler = TimeoutingSampler(
@@ -81,13 +81,13 @@ class BaseHaVm(u_libs.SlaTest):
             return False
 
 
-@u_libs.tier1
 class TestHaVm01(BaseHaVm):
     """
     Verify that the engine restart the HA VM
     that was unexpectedly killed on the host
     """
 
+    @tier1
     @polarion("RHEVM3-9814")
     def test_restart_of_ha_vm(self):
         """
@@ -105,13 +105,13 @@ class TestHaVm01(BaseHaVm):
         )
 
 
-@u_libs.tier1
 class TestHaVm02(BaseHaVm):
     """
     Verify that the engine does not restart the HA VM in case when it
     powered off from the engine
     """
 
+    @tier1
     @polarion("RHEVM3-9815")
     def test_restart_of_ha_vm(self):
         """
@@ -126,13 +126,13 @@ class TestHaVm02(BaseHaVm):
         )
 
 
-@u_libs.tier1
 class TestHaVm03(BaseHaVm):
     """
     Verify that the engine does not restart the HA VM in case when it
     powered off from the guest OS
     """
 
+    @tier1
     @polarion("RHEVM3-9816")
     def test_restart_of_ha_vm(self):
         """
@@ -152,13 +152,13 @@ class TestHaVm03(BaseHaVm):
         )
 
 
-@u_libs.tier2
 class TestHaVm04(BaseHaVm):
     """
     Verify that the engine does not restart the HA VM in case when it
     suspended from the engine
     """
 
+    @tier2
     @polarion("RHEVM3-9817")
     def test_restart_of_ha_vm(self):
         """
@@ -173,7 +173,6 @@ class TestHaVm04(BaseHaVm):
         )
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     configure_hosts_power_management.__name__,
     wait_for_hosts_status_up.__name__
@@ -185,6 +184,7 @@ class TestHaVm05(BaseHaVm):
     hosts_to_pms = [0]
     hosts_indexes_status_up = [0]
 
+    @tier3
     @polarion("RHEVM3-9821")
     def test_restart_of_ha_vm(self):
         """
@@ -200,7 +200,6 @@ class TestHaVm05(BaseHaVm):
         )
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     configure_hosts_power_management.__name__,
     wait_for_hosts_status_up.__name__
@@ -213,6 +212,7 @@ class TestHaVm06(BaseHaVm):
     hosts_to_pms = [0]
     hosts_indexes_status_up = [0]
 
+    @tier3
     @polarion("RHEVM-19634")
     def test_restart_of_ha_vm(self):
         """

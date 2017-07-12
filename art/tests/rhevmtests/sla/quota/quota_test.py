@@ -3,16 +3,17 @@ Quota Test
 Check different cases for quota limitations in None, Audit and Enforce mode
 Include CRUD tests, different limitations of storage, memory and vcpu tests
 """
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import config as conf
 import helpers
-import pytest
 from art.test_handler.tools import polarion, bz
+from art.unittest_lib import testflow, SlaTest
 from art.unittest_lib import (
     tier1,
     tier2,
@@ -45,18 +46,18 @@ def init_quota_test(request):
         1) Remove the VM
         2) Delete the quota
         """
-        u_libs.testflow.teardown("Remove the VM %s", conf.VM_NAME)
+        testflow.teardown("Remove the VM %s", conf.VM_NAME)
         ll_vms.safely_remove_vms(vms=[conf.VM_NAME])
-        u_libs.testflow.teardown("Delete the quota %s", conf.QUOTA_NAME)
+        testflow.teardown("Delete the quota %s", conf.QUOTA_NAME)
         ll_datacenters.delete_dc_quota(
             dc_name=conf.DC_NAME[0], quota_name=conf.QUOTA_NAME
         )
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup("Remove all events from the engine")
+    testflow.setup("Remove all events from the engine")
     sql = "DELETE FROM audit_log"
     conf.ENGINE.db.psql(sql)
-    u_libs.testflow.setup(
+    testflow.setup(
         "Create quota %s on datacenter %s",
         conf.DC_NAME[0], conf.QUOTA_NAME
     )
@@ -68,7 +69,7 @@ def init_quota_test(request):
         dc_name=conf.DC_NAME[0],
         quota_name=conf.QUOTA_NAME
     )
-    u_libs.testflow.setup("Create the VM %s", conf.VM_NAME)
+    testflow.setup("Create the VM %s", conf.VM_NAME)
     assert ll_vms.createVm(
         positive=True,
         vmName=conf.VM_NAME,
@@ -84,13 +85,12 @@ def init_quota_test(request):
     )
 
 
-@tier1
-class QuotaTestCRUD(u_libs.SlaTest):
+class QuotaTestCRUD(SlaTest):
     """
     Quota CRUD test
     """
-    __test__ = True
 
+    @tier1
     @polarion("RHEVM3-9375")
     def test_a_create_quota(self):
         """
@@ -101,7 +101,7 @@ class QuotaTestCRUD(u_libs.SlaTest):
             None: {conf.VCPU_LIMIT: 1, conf.MEMORY_LIMIT: 1024}
         }
         quota_storage_limit = {None: {conf.STORAGE_LIMIT: 10}}
-        u_libs.testflow.step(
+        testflow.step(
             "Create the quota %s on the datacenter %s",
             conf.QUOTA2_NAME, conf.DC_NAME[0]
         )
@@ -110,7 +110,7 @@ class QuotaTestCRUD(u_libs.SlaTest):
             quota_name=conf.QUOTA2_NAME,
             **quota_params
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Create cluster %s and storage %s limits on the quota %s",
             quota_cluster_limit, quota_storage_limit, conf.QUOTA2_NAME
         )
@@ -121,12 +121,13 @@ class QuotaTestCRUD(u_libs.SlaTest):
             quota_storage_limit=quota_storage_limit
         )
 
+    @tier1
     @polarion("RHEVM3-9390")
     def test_b_update_quota(self):
         """
         Update the quota
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Update the quota %s description", conf.QUOTA2_NAME
         )
         assert ll_datacenters.update_dc_quota(
@@ -135,7 +136,7 @@ class QuotaTestCRUD(u_libs.SlaTest):
             description=conf.QUOTA_DESC
         )
 
-        u_libs.testflow.step("Update the quota %s limits", conf.QUOTA2_NAME)
+        testflow.step("Update the quota %s limits", conf.QUOTA2_NAME)
         assert helpers.create_quota_limits(
             dc_name=conf.DC_NAME[0],
             quota_name=conf.QUOTA2_NAME,
@@ -145,12 +146,13 @@ class QuotaTestCRUD(u_libs.SlaTest):
             quota_storage_limit={None: {conf.STORAGE_LIMIT: 20}}
         )
 
+    @tier1
     @polarion("RHEVM3-9391")
     def test_c_delete_quota(self):
         """
         Delete the Quota
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Remove the quota %s from the datacenter %s",
             conf.QUOTA2_NAME, conf.DC_NAME[0]
         )
@@ -159,13 +161,12 @@ class QuotaTestCRUD(u_libs.SlaTest):
         )
 
 
-@tier2
 @pytest.mark.usefixtures(
     update_datacenter.__name__,
     update_quota_cluster_hard_limit.__name__,
     create_quota_limits.__name__
 )
-class QuotaTestMode(u_libs.SlaTest):
+class QuotaTestMode(SlaTest):
     """
     This unittest class tests quota enforced/audit mode
     """
@@ -189,7 +190,7 @@ class QuotaTestMode(u_libs.SlaTest):
             vm_sockets (str): VM sockets
         """
         max_id = ll_events.get_max_event_id()
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME)
+        testflow.step("Start the VM %s", conf.VM_NAME)
         assert ll_vms.startVm(
             positive=True, vm=conf.VM_NAME, wait_for_status=vm_state
         )
@@ -197,7 +198,7 @@ class QuotaTestMode(u_libs.SlaTest):
         compare = (
             False if self.quota_mode == conf.QUOTA_ENFORCED_MODE else True
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Update VM %s number of CPU sockets to %s",
             conf.VM_NAME, vm_sockets
         )
@@ -208,7 +209,7 @@ class QuotaTestMode(u_libs.SlaTest):
             compare=compare
         )
 
-        u_libs.testflow.step("Check the quota message under audit events")
+        testflow.step("Check the quota message under audit events")
         assert self._check_quota_message(max_id, audit_msg_type)
 
     def _check_quota_message(self, max_id, audit_msg_type):
@@ -224,7 +225,7 @@ class QuotaTestMode(u_libs.SlaTest):
                 than max_id exists, otherwise False
         """
         message = conf.QUOTA_EVENTS[self.quota_mode][audit_msg_type]
-        u_libs.testflow.step(
+        testflow.step(
             "Waiting for the quota message '%s' with ID greater then %s",
             message, max_id
         )
@@ -241,13 +242,13 @@ class QuotaTestMode(u_libs.SlaTest):
             vm_params (dict): VM new parameters
         """
         if vm_params:
-            u_libs.testflow.step(
+            testflow.step(
                 "Update the VM %s with parameters: %s", conf.VM_NAME, vm_params
             )
             assert ll_vms.updateVm(
                 positive=True, vm=conf.VM_NAME, **vm_params
             )
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME)
+        testflow.step("Start the VM %s", conf.VM_NAME)
         assert ll_vms.startVm(positive=positive, vm=conf.VM_NAME)
 
     @staticmethod
@@ -259,11 +260,11 @@ class QuotaTestMode(u_libs.SlaTest):
             positive (bool): Positive behaviour for the add disk action
             provisioned_size (int): Disk size
         """
-        u_libs.testflow.step("Get the quota %s ID", conf.QUOTA_NAME)
+        testflow.step("Get the quota %s ID", conf.QUOTA_NAME)
         q_id = ll_datacenters.get_quota_id_by_name(
             dc_name=conf.DC_NAME[0], quota_name=conf.QUOTA_NAME
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Add the new disk %s with the size %s",
             conf.DISK_NAME, provisioned_size
         )
@@ -292,7 +293,7 @@ class QuotaTestMode(u_libs.SlaTest):
         """
         last_event_id = None
         if audit_msg_type:
-            u_libs.testflow.step("Get the ID of the last event")
+            testflow.step("Get the ID of the last event")
             last_event_id = ll_events.get_max_event_id()
             assert last_event_id
         positive = True
@@ -307,7 +308,7 @@ class QuotaTestMode(u_libs.SlaTest):
         elif limit_type == conf.QUOTA_STORAGE_LIMIT:
             self.__prepare_for_storage_limits(positive=positive, **kwargs)
         if audit_msg_type:
-            u_libs.testflow.step(
+            testflow.step(
                 "Check that quota message appears under audit events"
             )
             assert self._check_quota_message(
@@ -331,7 +332,7 @@ class QuotaTestMode(u_libs.SlaTest):
             limit_type=limit_type,
             usage=usage_type
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check if the expected %s: %s equal to the quota limit %s: %s",
             usage_type, usage, usage_type, quota_limit_usage
         )
@@ -356,13 +357,11 @@ class QuotaTestMode(u_libs.SlaTest):
         )
 
 
-@tier1
 @pytest.mark.usefixtures(update_datacenter.__name__)
-class TestDeleteQuotaInUseAudit(u_libs.SlaTest):
+class TestDeleteQuotaInUseAudit(SlaTest):
     """
     Negative: Delete quota in use under audit quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -370,24 +369,23 @@ class TestDeleteQuotaInUseAudit(u_libs.SlaTest):
         }
     }
 
+    @tier1
     @polarion("RHEVM3-9406")
     def test_delete_quota_in_use(self):
         """
         Delete quota in use
         """
-        u_libs.testflow.step("Delete the quota %s", conf.QUOTA_NAME)
+        testflow.step("Delete the quota %s", conf.QUOTA_NAME)
         assert not ll_datacenters.delete_dc_quota(
             dc_name=conf.DC_NAME[0], quota_name=conf.QUOTA_NAME
         )
 
 
-@tier1
 @pytest.mark.usefixtures(update_datacenter.__name__)
-class TestDeleteQuotaInUseEnforced(u_libs.SlaTest):
+class TestDeleteQuotaInUseEnforced(SlaTest):
     """
     Negative: Delete quota in use under enforced quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_ENFORCED_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -395,12 +393,13 @@ class TestDeleteQuotaInUseEnforced(u_libs.SlaTest):
         }
     }
 
+    @tier1
     @polarion("RHEVM3-9447")
     def test_delete_quota_in_use(self):
         """
         Delete quota in use
         """
-        u_libs.testflow.step("Delete the quota %s", conf.QUOTA_NAME)
+        testflow.step("Delete the quota %s", conf.QUOTA_NAME)
         assert not ll_datacenters.delete_dc_quota(
             dc_name=conf.DC_NAME[0], quota_name=conf.QUOTA_NAME
         )
@@ -418,7 +417,6 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
     """
     Check cluster memory limit under audit quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -432,6 +430,7 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9428")
     def test_a_quota_memory_limit(self):
         """
@@ -439,6 +438,7 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
         """
         self._check_limits(limit_type=self.limit_type)
 
+    @tier2
     @polarion("RHEVM3-9430")
     def test_b_quota_memory_limit_in_grace(self):
         """
@@ -450,6 +450,7 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
             vm_params={conf.VM_MEMORY: conf.SIZE_1280_MB}
         )
 
+    @tier2
     @polarion("RHEVM3-9433")
     def test_c_quota_memory_limit_over_grace(self):
         """
@@ -466,7 +467,6 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
     """
     Check cluster memory limit under enforced quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_ENFORCED_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -480,6 +480,7 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9418")
     def test_a_quota_memory_limit(self):
         """
@@ -487,6 +488,7 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
         """
         self._check_limits(limit_type=self.limit_type)
 
+    @tier2
     @polarion("RHEVM3-9419")
     def test_b_quota_memory_limit_in_grace(self):
         """
@@ -498,6 +500,7 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
             vm_params={conf.VM_MEMORY: conf.SIZE_1280_MB}
         )
 
+    @tier2
     @polarion("RHEVM3-9409")
     def test_c_quota_memory_limit_over_grace(self):
         """
@@ -514,7 +517,6 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
     """
     Check cluster vcpu limit under audit quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -531,6 +533,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9434")
     def test_a_quota_vcpu_limit(self):
         """
@@ -538,6 +541,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
         """
         self._check_limits(limit_type=self.limit_type)
 
+    @tier2
     @polarion("RHEVM3-9437")
     def test_b_quota_vcpu_limit_in_grace(self):
         """
@@ -549,6 +553,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.GRACE_TYPE]}
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9438")
     def test_c_quota_vcpu_limit_over_grace(self):
@@ -561,6 +566,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.EXCEED_TYPE]}
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12366")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
@@ -574,6 +580,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             vm_sockets=conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12367")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
@@ -587,6 +594,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             vm_sockets=conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12364")
     @bz(
@@ -603,6 +611,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             vm_sockets=conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12365")
     @bz(
@@ -624,7 +633,6 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
     """
     Check cluster vcpu limit under enforced quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_ENFORCED_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -641,6 +649,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9408")
     def test_a_quota_vcpu_limit(self):
         """
@@ -648,6 +657,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
         """
         self._check_limits(limit_type=self.limit_type)
 
+    @tier2
     @polarion("RHEVM3-9402")
     def test_b_quota_vcpu_limit_in_grace(self):
         """
@@ -659,6 +669,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.GRACE_TYPE]}
         )
 
+    @tier2
     @polarion("RHEVM3-9403")
     def test_c_quota_vcpu_limit_over_grace(self):
         """
@@ -670,6 +681,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.EXCEED_TYPE]}
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12370")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
@@ -683,6 +695,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             vm_sockets=conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12371")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
@@ -696,6 +709,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             vm_sockets=conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12368")
     @bz(
@@ -712,6 +726,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             vm_sockets=conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
+    @tier2
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12369")
     @bz(
@@ -741,7 +756,6 @@ class TestQuotaAuditModeStorage(TestQuotaStorage):
     """
     Check storage limitation under audit quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -749,6 +763,7 @@ class TestQuotaAuditModeStorage(TestQuotaStorage):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9440")
     def test_a_quota_storage_limit(self):
         """
@@ -758,6 +773,7 @@ class TestQuotaAuditModeStorage(TestQuotaStorage):
             limit_type=self.limit_type, provisioned_size=conf.SIZE_10_GB
         )
 
+    @tier2
     @polarion("RHEVM3-9443")
     def test_b_quota_storage_limit_in_grace(self):
         """
@@ -769,6 +785,7 @@ class TestQuotaAuditModeStorage(TestQuotaStorage):
             provisioned_size=conf.SIZE_14_GB
         )
 
+    @tier2
     @polarion("RHEVM3-9446")
     def test_c_quota_storage_limit_over_grace(self):
         """
@@ -785,7 +802,6 @@ class TestQuotaEnforcedModeStorage(TestQuotaStorage):
     """
     Check storage limitation under audit quota
     """
-    __test__ = True
     quota_mode = conf.QUOTA_ENFORCED_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -793,6 +809,7 @@ class TestQuotaEnforcedModeStorage(TestQuotaStorage):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9405")
     def test_a_quota_storage_limit(self):
         """
@@ -802,6 +819,7 @@ class TestQuotaEnforcedModeStorage(TestQuotaStorage):
             limit_type=self.limit_type, provisioned_size=conf.SIZE_10_GB
         )
 
+    @tier2
     @polarion("RHEVM3-9407")
     def test_b_quota_storage_limit_in_grace(self):
         """
@@ -813,6 +831,7 @@ class TestQuotaEnforcedModeStorage(TestQuotaStorage):
             provisioned_size=conf.SIZE_14_GB
         )
 
+    @tier2
     @polarion("RHEVM3-9404")
     def test_c_quota_storage_limit_over_grace(self):
         """
@@ -830,7 +849,6 @@ class TestQuotaConsumptionRunOnceVM(QuotaTestMode):
     """
     Run vm once and check quota consumption
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -847,6 +865,7 @@ class TestQuotaConsumptionRunOnceVM(QuotaTestMode):
     }
     vms_to_run = {conf.VM_NAME: {}}
 
+    @tier2
     @polarion("RHEVM3-9396")
     def test_run_vm_once(self):
         """
@@ -863,7 +882,6 @@ class TestQuotaConsumptionSnapshot(QuotaTestMode):
     """
     Make snapshot and check quota consumption
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -873,6 +891,7 @@ class TestQuotaConsumptionSnapshot(QuotaTestMode):
     vms_to_start = [conf.VM_NAME]
     wait_for_vms_ip = False
 
+    @tier2
     @polarion("RHEVM3-9397")
     def test_make_snapshot(self):
         """
@@ -884,7 +903,7 @@ class TestQuotaConsumptionSnapshot(QuotaTestMode):
             limit_type=conf.LIMIT_TYPE_STORAGE,
             usage=conf.STORAGE_USAGE
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check if the quota %s storage usage greater than %sGB",
             conf.QUOTA_NAME, conf.DEFAULT_DISK_USAGE
         )
@@ -896,7 +915,6 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
     """
     Create template from vm, remove it and check quota consumption
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -906,6 +924,7 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
     vm_for_template = conf.VM_NAME
     template_name = conf.TEMPLATE_NAME
 
+    @tier2
     @polarion("RHEVM3-9394")
     def test_a_template_consumption(self):
         """
@@ -918,7 +937,7 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
             usage_type=conf.STORAGE_USAGE,
             usage=conf.FULL_DISK_USAGE
         )
-        u_libs.testflow.step("Remove the template %s", conf.TEMPLATE_NAME)
+        testflow.step("Remove the template %s", conf.TEMPLATE_NAME)
         assert ll_templates.remove_template(
             positive=True, template=conf.TEMPLATE_NAME
         )
@@ -934,7 +953,6 @@ class TestQuotaConsumptionVmWithDisk(QuotaTestMode):
     """
     Create and remove vm with disk and check quota consumption
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -955,6 +973,7 @@ class TestQuotaConsumptionVmWithDisk(QuotaTestMode):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9393")
     def test_vm_with_disk_consumption(self):
         """
@@ -967,7 +986,7 @@ class TestQuotaConsumptionVmWithDisk(QuotaTestMode):
             usage_type=conf.STORAGE_USAGE,
             usage=conf.FULL_DISK_USAGE
         )
-        u_libs.testflow.step("Remove the VM %s", conf.TMP_VM_NAME)
+        testflow.step("Remove the VM %s", conf.TMP_VM_NAME)
         assert ll_vms.removeVm(positive=True, vm=conf.TMP_VM_NAME)
         self._check_limit_usage(
             limit_type=conf.LIMIT_TYPE_STORAGE,
@@ -980,7 +999,6 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
     """
     Run basic vm actions and check quota consumption
     """
-    __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
     dcs_to_update = {
         conf.DC_NAME[0]: {
@@ -996,6 +1014,7 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9395")
     def test_run_basic_vm_actions(self):
         """
@@ -1010,25 +1029,25 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
         9) Stop the VM
         10) Check quota limit VCPU and memory usage
         """
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME)
+        testflow.step("Start the VM %s", conf.VM_NAME)
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME)
         self._check_vcpu_and_memory_limit_usage(usages=conf.DEFAULT_USAGES)
 
-        u_libs.testflow.step(
+        testflow.step(
             "Wait until the VM %s state will be equal to %s",
             conf.VM_NAME, conf.VM_UP
         )
         assert ll_vms.waitForVmsStates(positive=True, names=conf.VM_NAME)
         self._check_vcpu_and_memory_limit_usage(usages=conf.DEFAULT_USAGES)
 
-        u_libs.testflow.step("Suspend the VM %s", conf.VM_NAME)
+        testflow.step("Suspend the VM %s", conf.VM_NAME)
         assert ll_vms.suspendVm(positive=True, vm=conf.VM_NAME)
         self._check_vcpu_and_memory_limit_usage(usages=conf.ZERO_USAGES)
 
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME)
+        testflow.step("Start the VM %s", conf.VM_NAME)
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME)
         self._check_vcpu_and_memory_limit_usage(usages=conf.DEFAULT_USAGES)
 
-        u_libs.testflow.step("Stop the VM %s", conf.VM_NAME)
+        testflow.step("Stop the VM %s", conf.VM_NAME)
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME)
         self._check_vcpu_and_memory_limit_usage(usages=conf.ZERO_USAGES)

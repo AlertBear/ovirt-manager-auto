@@ -1,13 +1,14 @@
 """
 NUMA aware KSM test
 """
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.unittest_lib as u_libs
-import pytest
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier2, SlaTest
 from rhevmtests.sla.fixtures import (
     activate_hosts,
     choose_specific_host_as_spm
@@ -42,12 +43,11 @@ def update_cluster_merge_across_nodes(request):
     )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     activate_hosts.__name__
 )
-class BaseNumaAwareKsm(u_libs.SlaTest):
+class BaseNumaAwareKsm(SlaTest):
     """
     Base class for all NUMA aware KSM tests
     """
@@ -59,7 +59,7 @@ class BaseNumaAwareKsm(u_libs.SlaTest):
         """
         1) Update cluster merge_across_node_parameters
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Update cluster %s merge_across_nodes parameter",
             sla_conf.CLUSTER_NAME[0]
         )
@@ -81,7 +81,7 @@ class BaseNumaAwareKsm(u_libs.SlaTest):
         Args:
             ksm_merge_across_nodes (bool): NUMA aware KSM parameter
         """
-        u_libs.testflow.step("Deactivate the host %s", sla_conf.HOSTS[0])
+        testflow.step("Deactivate the host %s", sla_conf.HOSTS[0])
         assert ll_hosts.deactivate_host(
             positive=True,
             host=sla_conf.HOSTS[0],
@@ -95,7 +95,7 @@ class BaseNumaAwareKsm(u_libs.SlaTest):
             host=sla_conf.HOSTS[0],
             host_resource=sla_conf.VDS_HOSTS[0]
         )
-        u_libs.testflow.step(
+        testflow.step(
             "%s: wait until KSM merge across nodes will be equal to %s",
             sla_conf.VDS_HOSTS[0], ksm_merge_across_nodes
         )
@@ -109,9 +109,9 @@ class TestNumaAwareKsm1(BaseNumaAwareKsm):
     """
     Activate host under cluster with merge_across_nodes=True
     """
-    __test__ = True
     ksm_merge_across_nodes = False
 
+    @tier2
     @polarion("RHEVM3-10734")
     def test_check_numa_aware_ksm_status(self):
         """
@@ -127,9 +127,9 @@ class TestNumaAwareKsm2(BaseNumaAwareKsm):
     """
     Activate host under cluster with merge_across_nodes=False
     """
-    __test__ = True
     ksm_merge_across_nodes = True
 
+    @tier2
     @polarion("RHEVM3-10735")
     def test_check_numa_aware_ksm_status(self):
         """
@@ -145,9 +145,9 @@ class TestNumaAwareKsm3(BaseNumaAwareKsm):
     """
     Update cluster merge_across_nodes=True and check if host receive new value
     """
-    __test__ = True
     ksm_merge_across_nodes = False
 
+    @tier2
     @polarion("RHEVM3-10735")
     def test_check_numa_aware_ksm_status(self):
         """
@@ -165,9 +165,9 @@ class TestNumaAwareKsm4(BaseNumaAwareKsm):
     """
     Update cluster merge_across_nodes=False and check if host receive new value
     """
-    __test__ = True
     ksm_merge_across_nodes = True
 
+    @tier2
     @polarion("RHEVM3-10735")
     def test_check_numa_aware_ksm_status(self):
         """

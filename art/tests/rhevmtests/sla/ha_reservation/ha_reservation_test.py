@@ -13,11 +13,11 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import config as conf
 import helpers
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier2, SlaTest
 from rhevmtests.sla.fixtures import (
     activate_hosts,
     choose_specific_host_as_spm,
@@ -82,7 +82,7 @@ def init_ha_reservation(request):
                 host_resource=conf.VDS_HOSTS[2]
             )
         )
-        u_libs.testflow.teardown(
+        testflow.teardown(
             "Change HA reservation interval to %s via the engine-config",
             conf.DEFAULT_RESERVATION_INTERVAL
         )
@@ -97,7 +97,7 @@ def init_ha_reservation(request):
     assert ll_hosts.deactivate_host(
         positive=True, host=conf.HOSTS[2], host_resource=conf.VDS_HOSTS[2]
     )
-    u_libs.testflow.setup(
+    testflow.setup(
         "Change HA reservation interval to %s via the engine-config",
         conf.NEW_RESERVATION_INTERVAL
     )
@@ -112,13 +112,12 @@ def init_ha_reservation(request):
     )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     choose_specific_host_as_spm.__name__,
     migrate_he_vm.__name__,
     init_ha_reservation.__name__
 )
-class BaseHAReservation(u_libs.SlaTest):
+class BaseHAReservation(SlaTest):
     """
     Base class for all HA reservation tests
     """
@@ -133,13 +132,13 @@ class TestPutHostToMaintenance(BaseHAReservation):
     """
     Moving host to maintenance should make cluster not HA safe
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[2]: dict(conf.GENERAL_VM_PARAMS)
     }
     vms_to_start = conf.VM_NAME[2:3]
     wait_for_vms_ip = False
 
+    @tier2
     @polarion("RHEVM3-4995")
     def test_host_maintenance(self):
         """
@@ -147,21 +146,22 @@ class TestPutHostToMaintenance(BaseHAReservation):
         2) Move host to maintenance
         3) Check if cluster does not HA safe
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if cluster %s is HA safe", conf.CLUSTER_NAME[0]
         )
         assert helpers.is_cluster_ha_safe()
 
-        u_libs.testflow.step("Deactivate host %s", conf.HOSTS[1])
+        testflow.step("Deactivate host %s", conf.HOSTS[1])
         assert ll_hosts.deactivate_host(
             positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]
         )
         assert not helpers.is_cluster_ha_safe()
 
+    @tier2
     @polarion("RHEVM3-4992")
     def test_set_cluster_ha_safe(self):
         """
@@ -172,7 +172,7 @@ class TestPutHostToMaintenance(BaseHAReservation):
             positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check if cluster %s is HA safe", conf.CLUSTER_NAME[0]
         )
         assert helpers.is_cluster_ha_safe()
@@ -188,7 +188,6 @@ class TestNotCompatibleHost(BaseHAReservation):
     Cluster failing HA reservation check based on
     insufficient resources
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: dict(conf.SPECIFIC_VMS_PARAMS[conf.VM_NAME[0]]),
         conf.VM_NAME[1]: dict(conf.SPECIFIC_VMS_PARAMS[conf.VM_NAME[1]])
@@ -197,13 +196,14 @@ class TestNotCompatibleHost(BaseHAReservation):
     vms_to_start = conf.VM_NAME[:2]
     wait_for_vms_ip = False
 
+    @tier2
     @polarion("RHEVM3-4987")
     def test_insufficient_resources(self):
         """
         2 host scenario, 1st host has memory allocated,
         2nd host has running HA VM
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]
         )
         assert not helpers.is_cluster_ha_safe()
@@ -215,10 +215,10 @@ class TestNotCompatibleHost(BaseHAReservation):
         vm_memory = ll_vms.get_vm_memory(vm_name=conf.VM_NAME[0])
         host_expected_sch_memory = host_scheduling_memory + vm_memory
 
-        u_libs.testflow.step("Stop memory allocating VM %s", conf.VM_NAME[0])
+        testflow.step("Stop memory allocating VM %s", conf.VM_NAME[0])
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
 
-        u_libs.testflow.step(
+        testflow.step(
             "Wait until the engine will update host %s max scheduling memory",
             vm_host
         )
@@ -228,7 +228,7 @@ class TestNotCompatibleHost(BaseHAReservation):
             sampler_timeout=conf.RESERVATION_TIMEOUT
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check if cluster %s is HA safe", conf.CLUSTER_NAME[0]
         )
         assert helpers.is_cluster_ha_safe()
@@ -243,7 +243,6 @@ class TestMultiVM(BaseHAReservation):
     """
     Create 8 HA VMS in HA safe cluster and put one host to maintenance
     """
-    __test__ = True
     vm_list = ["%s_%d" % ("HA_reservation_VM", i) for i in range(8)]
     vms_create_params = dict(
         (vm_name, dict(conf.MULTI_VMS_PARAMS)) for vm_name in vm_list
@@ -252,22 +251,23 @@ class TestMultiVM(BaseHAReservation):
     wait_for_vms_ip = False
     hosts_to_activate_indexes = [1]
 
+    @tier2
     @polarion("RHEVM3-4994")
     def test_multi_vms(self):
         """
         Put host to maintenance and check cluster HA safe status
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if cluster %s is HA safe", conf.CLUSTER_NAME[0]
         )
         assert helpers.is_cluster_ha_safe()
 
-        u_libs.testflow.step("Deactivate host %s", conf.HOSTS[1])
+        testflow.step("Deactivate host %s", conf.HOSTS[1])
         assert ll_hosts.deactivate_host(
             positive=True, host=conf.HOSTS[1], host_resource=conf.VDS_HOSTS[1]
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check if cluster %s does not HA safe", conf.CLUSTER_NAME[0]
         )
         assert not helpers.is_cluster_ha_safe()

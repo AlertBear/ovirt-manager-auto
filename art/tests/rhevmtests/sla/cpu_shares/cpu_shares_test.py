@@ -3,19 +3,19 @@ CPU Share Test
 Test CPU share low, medium, high and custom and their combinations
 """
 
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import helpers
-import pytest
 import rhevmtests.sla.config as conf
 from art.test_handler.tools import polarion, bz
+from art.unittest_lib import tier1, tier2, SlaTest
 from fixtures import update_vms_cpu_share
 from rhevmtests.sla.fixtures import (
     migrate_he_vm,
     start_vms
 )
-
 
 he_src_host = 0
 
@@ -57,7 +57,7 @@ def pin_vms_cpu(request):
     update_vms_cpu_share.__name__,
     start_vms.__name__
 )
-class BaseCpuShare(u_libs.SlaTest):
+class BaseCpuShare(SlaTest):
     """
     Base CPU share class
     """
@@ -65,17 +65,16 @@ class BaseCpuShare(u_libs.SlaTest):
     expected_dict = dict((vm, 50) for vm in vms_to_start)
 
 
-@u_libs.tier2
 class TestLowShare(BaseCpuShare):
     """
     Check that two VM's that have the same low CPU share
     are competing evenly on the same core
     """
-    __test__ = True
     vms_cpu_shares = dict(
         (vm_name, conf.CPU_SHARE_LOW) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @tier2
     @polarion("RHEVM3-4980")
     def test_low_share(self):
         """
@@ -88,19 +87,18 @@ class TestLowShare(BaseCpuShare):
         )
 
 
-@u_libs.tier2
 class TestMediumShare(BaseCpuShare):
     """
     Check that two vms that have the same medium CPU share
     are competing evenly on the same core
     """
-    __test__ = True
     vms_cpu_shares = dict(
         (
             vm_name, conf.CPU_SHARE_MEDIUM
         ) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @tier2
     @polarion("RHEVM3-4981")
     def test_medium_share(self):
         """
@@ -113,19 +111,18 @@ class TestMediumShare(BaseCpuShare):
         )
 
 
-@u_libs.tier2
 class TestHighShare(BaseCpuShare):
     """
     Check that two vms that have the same high CPU share
     are competing evenly on the same core
     """
-    __test__ = True
     vms_cpu_shares = dict(
         (
             vm_name, conf.CPU_SHARE_HIGH
         ) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @tier2
     @polarion("RHEVM3-4982")
     def test_high_share(self):
         """
@@ -138,17 +135,16 @@ class TestHighShare(BaseCpuShare):
         )
 
 
-@u_libs.tier2
 class TestCustomShare(BaseCpuShare):
     """
     Check that two vms that have the same custom CPU share
     are competing evenly on the same core
     """
-    __test__ = True
     vms_cpu_shares = dict(
         (vm_name, 300) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @tier2
     @polarion("RHEVM3-4983")
     def test_custom_share(self):
         """
@@ -161,14 +157,11 @@ class TestCustomShare(BaseCpuShare):
         )
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestPredefinedValues(BaseCpuShare):
     """
     Check that 4 vms that have the different CPU share values
     are taking a different percent of core
     """
-    __test__ = True
     vms_to_start = conf.VM_NAME[:4]
     vms_cpu_shares = {
         conf.VM_NAME[0]: conf.CPU_SHARE_LOW,
@@ -178,6 +171,8 @@ class TestPredefinedValues(BaseCpuShare):
     }
     expected_dict = dict(zip(vms_to_start, (13, 13, 25, 50)))
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM3-4984")
     def test_predefined_values(self):
         """
@@ -190,13 +185,11 @@ class TestPredefinedValues(BaseCpuShare):
         )
 
 
-@u_libs.tier2
 class TestCustomValuesOfShare(BaseCpuShare):
     """
     Check that 4 vms that have the different custom CPU share values
     are taking a different percent of core
     """
-    __test__ = True
     vms_to_start = conf.VM_NAME[:4]
     vms_cpu_shares = {
         conf.VM_NAME[0]: 100,
@@ -206,6 +199,7 @@ class TestCustomValuesOfShare(BaseCpuShare):
     }
     expected_dict = dict(zip(vms_to_start, (13, 13, 25, 50)))
 
+    @tier2
     @polarion("RHEVM3-4985")
     def test_custom_values_of_share(self):
         """

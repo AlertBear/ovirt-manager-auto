@@ -1,15 +1,16 @@
 """
 CPU QoS test
 """
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import config as conf
-import pytest
 import rhevmtests.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
+from art.unittest_lib import testflow, tier1, tier2, SlaTest
 from fixtures import (
     create_cpu_profile,
     create_cpu_qoss,
@@ -24,7 +25,6 @@ from rhevmtests.sla.fixtures import (
     update_vms,
     update_vms_cpus_to_hosts_cpus
 )
-
 
 he_src_host = 0
 
@@ -49,8 +49,7 @@ def init_constants():
     )
 
 
-@u_libs.tier1
-class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
+class TestQoSAndCpuProfileCRUD(SlaTest):
     """
     1. test_a_add_qos
     2. test_b_negative_add_qos
@@ -58,15 +57,15 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
     4. test_d_attach_cpu_profile_to_vm
     5. test_e_remove_cpu_profile_and_qos
     """
-    __test__ = True
 
-    @polarion("RHEVM3-14700")
+    @tier1
+    @polarion("RHEVM-14931")
     def test_a_add_qos(self):
         """
         Add 4 QoS with: 10%, 25%, 50% and 75%
         """
         for qos_name, qos_value in conf.QOSS.iteritems():
-            u_libs.testflow.step(
+            testflow.step(
                 "Create CPU QoS %s on datacenter %s with value: %s",
                 qos_name, conf.DC_NAME[0], qos_value
             )
@@ -77,6 +76,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 cpu_limit=qos_value
             )
 
+    @tier1
     @polarion("RHEVM3-14700")
     def test_b_negative_add_qos(self):
         """
@@ -86,7 +86,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
         """
         qoss = {"qos_120": 120, "qos_-5": -5}
         for qos_name, qos_value in qoss.iteritems():
-            u_libs.testflow.step(
+            testflow.step(
                 "Create CPU QoS %s on datacenter %s with parameters: %s",
                 qos_name, conf.DC_NAME[0], qos_value
             )
@@ -97,6 +97,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 cpu_limit=qos_value
             )
 
+    @tier1
     @polarion("RHEVM3-14711")
     def test_c_add_cpu_profile(self):
         """
@@ -107,7 +108,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 datacenter=conf.DC_NAME[0],
                 qos_name=qos_name
             )
-            u_libs.testflow.step(
+            testflow.step(
                 "Create CPU profile %s on cluster %s with QoS %s",
                 cpu_profile_name, conf.CLUSTER_NAME[0], qos_name
             )
@@ -117,6 +118,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 qos=cpu_qos_obj
             )
 
+    @tier1
     @polarion("RHEVM-14932")
     def test_d_attach_cpu_profile_to_vm(self):
         """
@@ -127,7 +129,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 cluster_name=conf.CLUSTER_NAME[0],
                 cpu_profile_name=cpu_profile_name
             )
-            u_libs.testflow.step(
+            testflow.step(
                 "Attach CPU profile %s to VM %s", cpu_profile_name, vm_name
             )
             assert ll_vms.updateVm(
@@ -136,6 +138,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 cpu_profile_id=cpu_profile_id
             )
 
+    @tier1
     @polarion("RHEVM3-14710")
     def test_e_remove_cpu_profile_and_qos(self):
         """
@@ -144,7 +147,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
         3. Delete a Qos that does not attached to a VM
         """
         for vm_name in conf.VMS_CPU_PROFILES.iterkeys():
-            u_libs.testflow.step(
+            testflow.step(
                 "Attach default CPU profile to VM %s", vm_name
             )
             assert ll_vms.updateVm(
@@ -153,7 +156,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 cpu_profile_id=conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_0
             )
         for cpu_profile_name, qos_name in conf.CPU_PROFILES.iteritems():
-            u_libs.testflow.step(
+            testflow.step(
                 "Remove CPU profile %s from cluster %s",
                 cpu_profile_name, conf.CLUSTER_NAME[0]
             )
@@ -161,7 +164,7 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
                 cluster_name=conf.CLUSTER_NAME[0],
                 cpu_prof_name=cpu_profile_name
             )
-            u_libs.testflow.step(
+            testflow.step(
                 "Remove CPU QoS %s from datacenter %s",
                 qos_name, conf.DC_NAME[0]
             )
@@ -171,14 +174,13 @@ class TestQoSAndCpuProfileCRUD(u_libs.SlaTest):
             )
 
 
-@bz({'1454633': {}})
 @pytest.mark.usefixtures(
     migrate_he_vm.__name__,
     create_cpu_qoss.__name__,
     create_cpu_profile.__name__,
     update_vms.__name__
 )
-class BaseCpuQoSAndCpuProfile(u_libs.SlaTest):
+class BaseCpuQoSAndCpuProfile(SlaTest):
     """
     Apply common fixtures on all child classes
     """
@@ -209,14 +211,12 @@ class BaseCpuQoSAndCpuProfile(u_libs.SlaTest):
         return expected_values
 
 
-@bz({'1454633': {}})
-@u_libs.tier1
 @pytest.mark.usefixtures(start_vms.__name__)
 class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
     """
     Check that VM limited to specific CPU load by CPU QoS
     """
-    __test__ = True
+
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
     vms_to_params = {
@@ -225,6 +225,8 @@ class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
+    @tier1
+    @bz({'1454633': {}})
     @polarion("RHEVM3-14688")
     def test_vm_cpu_limitation(self):
         """
@@ -241,33 +243,30 @@ class TestCpuQoSLimitationSanity(BaseCpuQoSAndCpuProfile):
         )
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 class TestRemoveAttachedCpuProfile(BaseCpuQoSAndCpuProfile):
     """
     Negative: remove CPU profile that attached to VM
     """
-    __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
     vms_to_params = {
         conf.QOS_VMS[0]: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
     }
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM-14708")
     def test_remove_cpu_profile(self):
         """
         Try to delete a CPU profile that is attached to a VM
         """
-        u_libs.testflow.step("Remove CPU profile %s", conf.CPU_PROFILE_10)
+        testflow.step("Remove CPU profile %s", conf.CPU_PROFILE_10)
         assert not ll_clusters.remove_cpu_profile(
             cluster_name=conf.CLUSTER_NAME[0],
             cpu_prof_name=conf.CPU_PROFILE_10
         )
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 @pytest.mark.usefixtures(
     create_vm_without_disk.__name__,
     create_cpu_qoss.__name__,
@@ -276,17 +275,18 @@ class TestRemoveAttachedCpuProfile(BaseCpuQoSAndCpuProfile):
     create_template_for_cpu_qos_test.__name__,
     create_vm_from_template_for_cpu_qos_test.__name__
 )
-class TestCreateQoSVmFromTemplate(u_libs.SlaTest):
+class TestCreateQoSVmFromTemplate(SlaTest):
     """
     Create VM from template that has specific CPU profile
     """
-    __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
     vms_to_params = {
         conf.VM_WITHOUT_DISK: {conf.VM_CPU_PROFILE: conf.CPU_PROFILE_10}
     }
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-14939")
     def test_template_cpu_profile(self):
         """
@@ -297,21 +297,18 @@ class TestCreateQoSVmFromTemplate(u_libs.SlaTest):
         vm_cpu_profile_id = ll_vms.get_cpu_profile_id(
             vm_name=conf.QOS_VM_FROM_TEMPLATE
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM created from template has default CPU profile %s",
             conf.CLUSTER_NAME[1]
         )
         assert vm_cpu_profile_id == conf.DEFAULT_CPU_PROFILE_ID_CLUSTER_1
 
 
-@bz({'1454633': {}})
-@u_libs.tier1
 @pytest.mark.usefixtures(start_vms.__name__)
 class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
     """
     Check VM CPU limitation after migration
     """
-    __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
     vms_to_params = {
@@ -320,6 +317,8 @@ class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
+    @tier1
+    @bz({'1454633': {}})
     @polarion("RHEVM3-14697")
     def test_vm_cpu_limitation(self):
         """
@@ -328,7 +327,7 @@ class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
         3. Check that the VM CPU is the right amount CPU,
            that is taken from the host.
         """
-        u_libs.testflow.step("Migrate VM %s", conf.QOS_VMS[0])
+        testflow.step("Migrate VM %s", conf.QOS_VMS[0])
         assert ll_vms.migrateVm(positive=True, vm=conf.QOS_VMS[0])
         expected_dict = self.calculate_expected_values(
             load_dict=self.load_dict
@@ -338,14 +337,11 @@ class TestCpuLimitationAfterVmMigration(BaseCpuQoSAndCpuProfile):
         )
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 @pytest.mark.usefixtures(start_vms.__name__)
 class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
     """
     Check VM CPU limitation after CPU hotplug
     """
-    __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
     vms_to_params = {
@@ -354,6 +350,8 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
     vms_to_start = conf.QOS_VMS[:1]
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-14696")
     def test_vm_cpu_limitation_after_cpu_hot_plug(self):
         """
@@ -362,7 +360,7 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
         """
         host = ll_vms.get_vm_host(vm_name=conf.QOS_VMS[0])
         host_cpu = ll_hosts.get_host_processing_units_number(host_name=host)
-        u_libs.testflow.step("Hotplug CPU to VM %s", conf.QOS_VMS[0])
+        testflow.step("Hotplug CPU to VM %s", conf.QOS_VMS[0])
         vm_cpu_sockets = min(8, host_cpu)
         assert ll_vms.updateVm(
             positive=True, vm=conf.QOS_VMS[0], cpu_socket=vm_cpu_sockets
@@ -375,8 +373,6 @@ class TestVmCpuLimitationAfterHotplug(BaseCpuQoSAndCpuProfile):
         )
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms_cpus_to_hosts_cpus.__name__,
     start_vms.__name__
@@ -385,7 +381,6 @@ class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
     """
     Check VM CPU limitation with different values
     """
-    __test__ = True
     cpu_qoss = conf.QOSS
     cpu_profiles = conf.CPU_PROFILES
     vms_to_params = dict(
@@ -397,6 +392,8 @@ class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
     vms_to_start = conf.QOS_VMS
     load_dict = dict(zip(conf.QOS_VMS, sorted(conf.QOSS.values())))
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-14727")
     def test_cpu_limitation(self):
         """
@@ -411,8 +408,6 @@ class TestVmCpuLimitationWithDifferentValues(BaseCpuQoSAndCpuProfile):
         )
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 @pytest.mark.usefixtures(
     start_vms.__name__,
     stop_guest_agent_service.__name__
@@ -421,7 +416,6 @@ class TestVmCpuLimitationWithoutGuestAgent(BaseCpuQoSAndCpuProfile):
     """
     Check VM CPU limitation when VM does not have guest agent
     """
-    __test__ = True
     cpu_qoss = {conf.CPU_QOS_10: conf.QOSS[conf.CPU_QOS_10]}
     cpu_profiles = {conf.CPU_PROFILE_10: conf.CPU_QOS_10}
     vms_to_params = {
@@ -431,6 +425,8 @@ class TestVmCpuLimitationWithoutGuestAgent(BaseCpuQoSAndCpuProfile):
     load_dict = {conf.QOS_VMS[0]: conf.QOSS[conf.CPU_QOS_10]}
     stop_guest_agent_vm = conf.QOS_VMS[0]
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-14729")
     def test_cpu_limitation_without_guest_agent(self):
         """

@@ -13,13 +13,14 @@ Tests covers:
         VM with memory set to max guaranteed memory, VM without guest
         agent, multiple VMs on one host with ballooning enabled
 """
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import config as conf
 import helpers
-import pytest
 from art.test_handler import find_test_file
 from art.test_handler.tools import polarion, bz
+from art.unittest_lib import testflow, tier2, SlaTest
 from fixtures import (
     prepare_env_for_ballooning_test,
     stop_memory_allocation,
@@ -73,16 +74,15 @@ def prepare_env_for_mom_test(request):
     )
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
     update_vms_for_ksm_test.__name__,
     update_vms_to_default_parameters.__name__,
     update_cluster.__name__,
     stop_vms.__name__
 )
-class TestKSM(u_libs.SlaTest):
+class TestKSM(SlaTest):
     """
     KSM tests
     """
@@ -95,6 +95,8 @@ class TestKSM(u_libs.SlaTest):
         conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_DESKTOP
     }
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4969")
     def test_a_ksm_progressive(self):
         """
@@ -106,7 +108,7 @@ class TestKSM(u_libs.SlaTest):
         """
         ksm_running = False
         for vm_name in conf.MOM_VMS:
-            u_libs.testflow.step("Start VM %s", vm_name)
+            testflow.step("Start VM %s", vm_name)
             assert ll_vms.startVm(
                 positive=True,
                 vm=vm_name,
@@ -115,7 +117,7 @@ class TestKSM(u_libs.SlaTest):
             )
             self.__class__.vms_to_stop.append(vm_name)
             self.threshold_list.append(vm_name)
-            u_libs.testflow.step(
+            testflow.step(
                 "Check if KSM triggered after VM %s start",
                 vm_name
             )
@@ -130,6 +132,8 @@ class TestKSM(u_libs.SlaTest):
         assert ll_vms.stop_vms_safely(vms_list=self.threshold_list)
         assert ksm_running
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4977")
     def test_b_ksm_kicking(self):
         """
@@ -138,18 +142,20 @@ class TestKSM(u_libs.SlaTest):
         1) Start simultaneously VM's in threshold_list to trigger KSM
         2) Check if KSM is running
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Running VM's %s that should trigger KSM",
             self.threshold_list
         )
         ll_vms.start_vms(
             vm_list=self.threshold_list, max_workers=len(self.threshold_list)
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check if KSM triggered on host %s", conf.HOSTS[0]
         )
         assert helpers.wait_for_ksm_state(resource=conf.VDS_HOSTS[0])
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4976")
     def test_c_ksm_migration(self):
         """
@@ -159,14 +165,16 @@ class TestKSM(u_libs.SlaTest):
         2) Check if KSM is running on source host
         """
         for vm_name in self.threshold_list:
-            u_libs.testflow.step("Migrate VM %s", vm_name)
+            testflow.step("Migrate VM %s", vm_name)
             assert ll_vms.migrateVm(positive=True, vm=vm_name, force=True)
-        u_libs.testflow.step(
+        testflow.step(
             "Check that KSM disabled on the host %s after VM's migration",
             conf.HOSTS[0]
         )
         assert not helpers.is_ksm_running(resource=conf.VDS_HOSTS[0])
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4975")
     def test_d_ksm_stop(self):
         """
@@ -174,10 +182,10 @@ class TestKSM(u_libs.SlaTest):
         when half om VM's from threshold_list migrated on the host
         """
         for vm_name in self.threshold_list[:len(self.threshold_list) / 2]:
-            u_libs.testflow.step("Migrate VM %s", vm_name)
+            testflow.step("Migrate VM %s", vm_name)
             assert ll_vms.migrateVm(positive=True, vm=vm_name, force=True)
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check that KSM disabled on the host %s after VM's migration",
             conf.HOSTS[0]
         )
@@ -185,12 +193,13 @@ class TestKSM(u_libs.SlaTest):
 
 
 @pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
     update_vms.__name__,
     prepare_env_for_ballooning_test.__name__,
     start_vms.__name__,
     stop_memory_allocation.__name__
 )
-class Balloon(u_libs.SlaTest):
+class Balloon(SlaTest):
     """
     Balloon tests
     """
@@ -207,11 +216,11 @@ class Balloon(u_libs.SlaTest):
             negative (bool): Negative or positive behaviour
             timeout (int): Sampler timeout
         """
-        u_libs.testflow.step("Allocate host %s memory", conf.HOSTS[0])
+        testflow.step("Allocate host %s memory", conf.HOSTS[0])
         pid = helpers.allocate_host_memory()
         assert pid
 
-        u_libs.testflow.step("Testing deflation of balloon")
+        testflow.step("Testing deflation of balloon")
         balloon_deflates = helpers.wait_for_vms_balloon_state(
             vm_list=vm_list, timeout=timeout
         )
@@ -219,7 +228,7 @@ class Balloon(u_libs.SlaTest):
             balloon_deflates = not balloon_deflates
         assert balloon_deflates
 
-        u_libs.testflow.step(
+        testflow.step(
             "Cancel memory allocation on host %s", conf.HOSTS[0]
         )
         helpers.cancel_host_allocation(pid=pid)
@@ -234,14 +243,12 @@ class Balloon(u_libs.SlaTest):
         """
         self.check_balloon_deflation(vm_list=vm_list, timeout=timeout)
 
-        u_libs.testflow.step("Testing inflation of balloon")
+        testflow.step("Testing inflation of balloon")
         assert helpers.wait_for_vms_balloon_state(
             vm_list=vm_list, deflation=False, timeout=timeout
         )
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 class TestBalloonUsage(Balloon):
     """
     Test Balloon usage on one VM
@@ -257,6 +264,8 @@ class TestBalloonUsage(Balloon):
     }
     vms_to_start = conf.MOM_VMS[:1]
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4974")
     def test_balloon_usage(self):
         """
@@ -265,8 +274,6 @@ class TestBalloonUsage(Balloon):
         self.check_balloon_usage(vm_list=self.vms_to_start)
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 class TestBalloonUsageDifferentMemory(Balloon):
     """
     Test balloon inflation and deflation on 2 VM's with different memories
@@ -287,6 +294,8 @@ class TestBalloonUsageDifferentMemory(Balloon):
     )
     vms_to_start = conf.MOM_VMS[:2]
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4973")
     def test_balloon_multi_memory(self):
         """
@@ -295,8 +304,6 @@ class TestBalloonUsageDifferentMemory(Balloon):
         self.check_balloon_usage(vm_list=self.vms_to_start)
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 @pytest.mark.usefixtures(stop_guest_agent_service.__name__)
 class TestBalloonWithoutAgent(Balloon):
     """
@@ -314,6 +321,8 @@ class TestBalloonWithoutAgent(Balloon):
     vms_to_start = conf.MOM_VMS[:1]
     stop_guest_agent_vm = conf.MOM_VMS[0]
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4971")
     def test_negative_balloon_no_agent(self):
         """
@@ -322,8 +331,6 @@ class TestBalloonWithoutAgent(Balloon):
         self.check_balloon_deflation(vm_list=self.vms_to_start, negative=True)
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 class TestBalloonMax(Balloon):
     """
     Negative: Test ballooning on the VM
@@ -340,6 +347,8 @@ class TestBalloonMax(Balloon):
     }
     vms_to_start = conf.MOM_VMS[:1]
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4978")
     def test_negative_balloon_max(self):
         """
@@ -348,8 +357,6 @@ class TestBalloonMax(Balloon):
         self.check_balloon_deflation(vm_list=self.vms_to_start, negative=True)
 
 
-@bz({'1454633': {}})
-@u_libs.tier2
 class TestBalloonMultipleVms(Balloon):
     """
     Test ballooning with multiple VM's
@@ -367,6 +374,8 @@ class TestBalloonMultipleVms(Balloon):
     )
     vms_to_start = conf.MOM_VMS
 
+    @tier2
+    @bz({'1454633': {}})
     @polarion("RHEVM3-4970")
     def test_f_balloon_multiple_vms(self):
         """

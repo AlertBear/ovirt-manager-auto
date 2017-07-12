@@ -10,11 +10,11 @@ import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch_policies
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion, bz
+from art.unittest_lib import testflow, tier1, tier2, SlaTest
 from rhevmtests.sla.fixtures import (
     choose_specific_host_as_spm,
     create_additional_cluster,
@@ -80,7 +80,7 @@ def init_affinity_test(request):
     choose_specific_host_as_spm.__name__,
     init_affinity_test.__name__
 )
-class BaseAffinity(u_libs.SlaTest):
+class BaseAffinity(SlaTest):
     """
     Base class for all affinity tests
     """
@@ -99,14 +99,11 @@ class BaseStartVms(BaseAffinity):
     wait_for_vms_ip = False
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestStartVmsUnderHardPositiveAffinity(BaseStartVms):
     """
     Start VM's that placed into the same hard positive affinity group,
     and check if they started on the same host
     """
-    __test__ = True
     affinity_groups = {
         "hard_positive_start_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
@@ -115,25 +112,25 @@ class TestStartVmsUnderHardPositiveAffinity(BaseStartVms):
         }
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM3-5539")
     def test_vms_hosts(self):
         """
         Check where VM's started
         """
-        u_libs.testflow.step("Check if VM's started on the same host")
+        testflow.step("Check if VM's started on the same host")
         assert (
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) ==
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[1])
         )
 
 
-@u_libs.tier2
 class TestStartVmsUnderSoftPositiveAffinity(BaseStartVms):
     """
     Start VM's that placed into the same soft positive affinity group,
     and check if they started on the same host
     """
-    __test__ = True
 
     affinity_groups = {
         "soft_positive_start_vm": {
@@ -143,26 +140,24 @@ class TestStartVmsUnderSoftPositiveAffinity(BaseStartVms):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5541")
     def test_vms_hosts(self):
         """
         Check where vms started
         """
-        u_libs.testflow.step("Check if VM's started on the same host")
+        testflow.step("Check if VM's started on the same host")
         assert (
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) ==
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[1])
         )
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestStartVmsUnderHardNegativeAffinity(BaseStartVms):
     """
     Start VM's that placed into the same hard negative affinity group,
     and check if they started on different hosts
     """
-    __test__ = True
     affinity_groups = {
         "hard_negative_start_vm": {
             conf.AFFINITY_GROUP_POSITIVE: False,
@@ -171,25 +166,25 @@ class TestStartVmsUnderHardNegativeAffinity(BaseStartVms):
         }
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM3-5553")
     def test_vms_host(self):
         """
         Check where VM's started
         """
-        u_libs.testflow.step("Check if VM's started on different hosts")
+        testflow.step("Check if VM's started on different hosts")
         assert (
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) !=
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[1])
         )
 
 
-@u_libs.tier2
 class TestStartVmsUnderSoftNegativeAffinity(BaseStartVms):
     """
     Start VM's that placed into the same soft negative affinity group,
     and check if they started on different hosts
     """
-    __test__ = True
     affinity_groups = {
         "soft_negative_start_vm": {
             conf.AFFINITY_GROUP_POSITIVE: False,
@@ -200,12 +195,13 @@ class TestStartVmsUnderSoftNegativeAffinity(BaseStartVms):
     vms_to_start = conf.VM_NAME[:2]
     wait_for_vms_ip = False
 
+    @tier2
     @polarion("RHEVM3-5542")
     def test_vms_host(self):
         """
         Check where VM's started
         """
-        u_libs.testflow.step("Check if VM's started on different hosts")
+        testflow.step("Check if VM's started on different hosts")
         assert (
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) !=
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[1])
@@ -242,9 +238,9 @@ class BaseMigrateVm(BaseAffinity):
             positive (bool): Positive or negative behaviour
         """
         flow_msg = "with" if positive else "without"
-        u_libs.testflow.step("Migrate VM %s", conf.VM_NAME[0])
+        testflow.step("Migrate VM %s", conf.VM_NAME[0])
         assert ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0])
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s migrated on the host %s second VM %s",
             conf.VM_NAME[0], flow_msg, conf.VM_NAME[1]
         )
@@ -254,14 +250,11 @@ class BaseMigrateVm(BaseAffinity):
         ) == positive
 
 
-@u_libs.tier1
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
     """
     Migrate VM under hard positive affinity,
     VM must migrate on the same host, where second vm run
     """
-    __test__ = True
     affinity_groups = {
         "hard_positive_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
@@ -270,6 +263,8 @@ class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
         }
     }
 
+    @tier1
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM3-5557")
     def test_vm_migration(self):
         """
@@ -278,13 +273,11 @@ class TestMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=True)
 
 
-@u_libs.tier2
 class TestMigrateVmUnderSoftPositiveAffinity(BaseMigrateVm):
     """
     Migrate VM under soft positive affinity,
     VM must migrate on the same host, where second VM runs
     """
-    __test__ = True
     affinity_groups = {
         "soft_positive_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
@@ -293,6 +286,7 @@ class TestMigrateVmUnderSoftPositiveAffinity(BaseMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5543")
     def test_vm_migration(self):
         """
@@ -301,15 +295,11 @@ class TestMigrateVmUnderSoftPositiveAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=True)
 
 
-@u_libs.tier1
-@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_TWO_HOSTS)
-@bz({"1304300": {"ppc": conf.PPC_ARCH}})
 class TestMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
     """
     Migrate VM under hard negative affinity,
     VM must migrate on different from second VM host
     """
-    __test__ = True
     affinity_groups = {
         "hard_negative_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: False,
@@ -318,6 +308,9 @@ class TestMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
         }
     }
 
+    @tier1
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_TWO_HOSTS)
+    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM3-5558")
     def test_vm_migration(self):
         """
@@ -326,13 +319,11 @@ class TestMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=False)
 
 
-@u_libs.tier2
 class TestMigrateVmUnderSoftNegativeAffinity(BaseMigrateVm):
     """
     Migrate VM under soft negative affinity,
     so VM must migrate on different from second VM host
     """
-    __test__ = True
     affinity_groups = {
         "soft_negative_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: False,
@@ -341,6 +332,7 @@ class TestMigrateVmUnderSoftNegativeAffinity(BaseMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5544")
     def test_vm_migration(self):
         """
@@ -349,12 +341,10 @@ class TestMigrateVmUnderSoftNegativeAffinity(BaseMigrateVm):
         self.check_vm_host_after_migration(positive=False)
 
 
-@u_libs.tier2
 class TestNegativeMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
     """
     Negative: Migrate VM under hard positive affinity to the opposite host
     """
-    __test__ = True
     affinity_groups = {
         "negative_hard_positive_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
@@ -363,12 +353,13 @@ class TestNegativeMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5559")
     def test_vm_migration(self):
         """
         Check if VM succeeds to migrate
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Migrate VM %s on host %s", conf.VM_NAME[0], conf.HOSTS[2]
         )
         assert not ll_vms.migrateVm(
@@ -376,12 +367,10 @@ class TestNegativeMigrateVmUnderHardPositiveAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.tier2
 class TestMigrateVmOppositeUnderSoftPositiveAffinity(BaseMigrateVm):
     """
     Migrate VM under soft positive affinity to the opposite host
     """
-    __test__ = True
     affinity_groups = {
         "opposite_soft_positive_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: True,
@@ -390,12 +379,13 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(BaseMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5546")
     def test_vm_migration(self):
         """
         Check if VM succeeds to migrate
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Migrate VM %s on host %s", conf.VM_NAME[0], conf.HOSTS[2]
         )
         assert ll_vms.migrateVm(
@@ -403,13 +393,11 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.tier2
 class TestNegativeMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
     """
     Negative: Migrate vm under hard negative affinity
     to the host where second VM placed
     """
-    __test__ = True
     affinity_groups = {
         "negative_hard_negative_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: False,
@@ -418,12 +406,13 @@ class TestNegativeMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5545")
     def test_vm_migration(self):
         """
         Check if VM succeeds to migrate
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Migrate VM %s on host %s", conf.VM_NAME[0], conf.HOSTS[1]
         )
         assert not ll_vms.migrateVm(
@@ -431,12 +420,10 @@ class TestNegativeMigrateVmUnderHardNegativeAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.tier2
 class TestMigrateVmSameUnderSoftNegativeAffinity(BaseMigrateVm):
     """
     Migrate VM under soft negative affinity to the host where second VM placed
     """
-    __test__ = True
     affinity_groups = {
         "same_soft_negative_migrate_vm": {
             conf.AFFINITY_GROUP_POSITIVE: False,
@@ -445,12 +432,13 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(BaseMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5547")
     def test_vm_migration(self):
         """
         Check if VM succeeds to migrate
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Migrate VM %s on host %s", conf.VM_NAME[0], conf.HOSTS[1]
         )
         assert ll_vms.migrateVm(
@@ -458,7 +446,6 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     create_affinity_groups.__name__,
     create_additional_cluster.__name__,
@@ -469,7 +456,6 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(BaseAffinity):
     Change VM cluster, and check that VM removed from
     affinity group on the old cluster
     """
-    __test__ = True
     affinity_groups = {
         "cluster_change_affinity_group": {
             conf.AFFINITY_GROUP_POSITIVE: True,
@@ -482,13 +468,14 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(BaseAffinity):
         conf.VM_NAME[0]: {conf.VM_CLUSTER: additional_cluster_name}
     }
 
+    @tier2
     @polarion("RHEVM3-5560")
     def test_affinity_group(self):
         """
         Check if VM removed from the affinity group
         """
         affinity_group_name = self.affinity_groups.keys()[0]
-        u_libs.testflow.step(
+        testflow.step(
             "Check that VM %s removed by the engine from affinity group %s",
             conf.VM_NAME[0], affinity_group_name
         )
@@ -499,12 +486,10 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(BaseAffinity):
         )
 
 
-@u_libs.tier2
 class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseMigrateVm):
     """
     Put host with VM's placed under hard positive affinity group to maintenance
     """
-    __test__ = True
     affinity_groups = {
         "maintenance_hard_positive_affinity_group": {
             conf.AFFINITY_GROUP_POSITIVE: True,
@@ -513,16 +498,16 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(BaseMigrateVm):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5563")
     def test_vms_destination(self):
         """
         Check that after deactivate hosts vms migrated on the same host
         """
-        u_libs.testflow.step("Deactivate host %s", conf.HOSTS[0])
+        testflow.step("Deactivate host %s", conf.HOSTS[0])
         assert not ll_hosts.deactivate_host(positive=True, host=conf.HOSTS[0])
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     deactivate_hosts.__name__
 )
@@ -531,7 +516,6 @@ class TestPutHostToMaintenanceUnderHardNegativeAffinity(BaseMigrateVm):
     Put host to maintenance under hard negative affinity
     and check vms migration destination
     """
-    __test__ = True
     affinity_groups = {
         "maintenance_hard_negative_affinity_group": {
             conf.AFFINITY_GROUP_POSITIVE: False,
@@ -541,12 +525,13 @@ class TestPutHostToMaintenanceUnderHardNegativeAffinity(BaseMigrateVm):
     }
     hosts_to_maintenance = [0]
 
+    @tier2
     @polarion("RHEVM3-5549")
     def test_check_vms_placement(self):
         """
         Check that after deactivate hosts vms migrated on different hosts
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s migrated on the host without second VM %s",
             conf.VM_NAME[0], conf.VM_NAME[1]
         )
@@ -556,7 +541,6 @@ class TestPutHostToMaintenanceUnderHardNegativeAffinity(BaseMigrateVm):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
 class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
     """
@@ -566,7 +550,6 @@ class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
     Populate second group with VMS will fail
     because of affinity group rules collision
     """
-    __test__ = True
     additional_affinity_group_name = "affinity_group_scenario_1_2"
     affinity_groups = {
         "affinity_group_scenario_1_1": {
@@ -580,12 +563,13 @@ class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5562")
     def test_second_affinity_group(self):
         """
         Populate second affinity group with VMS
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Populate affinity group %s with VM's %s",
             self.additional_affinity_group_name, conf.VM_NAME[:2]
         )
@@ -597,7 +581,6 @@ class TestTwoDifferentAffinitiesScenario1(BaseAffinity):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
 class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
     """
@@ -607,7 +590,6 @@ class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
     Populate second group with VM's will fail
     because of affinity group rules collision
     """
-    __test__ = True
     additional_affinity_group_name = "affinity_group_scenario_2_2"
     affinity_groups = {
         "affinity_group_scenario_2_1": {
@@ -621,12 +603,13 @@ class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5552")
     def test_second_affinity_group(self):
         """
         Populate second affinity group with VMS
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Populate affinity group %s with VM's %s",
             self.additional_affinity_group_name, conf.VM_NAME[:2]
         )
@@ -638,7 +621,6 @@ class TestTwoDifferentAffinitiesScenario2(BaseAffinity):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(create_affinity_groups.__name__)
 class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
     """
@@ -648,7 +630,6 @@ class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
     Populate second group with VM's will fail
     because of affinity group rules collision
     """
-    __test__ = True
     additional_affinity_group_name = "affinity_group_scenario_3_2"
     affinity_groups = {
         "affinity_group_scenario_3_1": {
@@ -662,12 +643,13 @@ class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-5551")
     def test_second_affinity_group(self):
         """
         Populate second affinity group with VMS
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Populate affinity group %s with VM's %s",
             self.additional_affinity_group_name, conf.VM_NAME[:2]
         )
@@ -679,7 +661,6 @@ class TestTwoDifferentAffinitiesScenario3(BaseAffinity):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     deactivate_hosts.__name__,
     create_affinity_groups.__name__,
@@ -691,7 +672,6 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
     Kill HA VM and check that VM failed to start,
     because hard negative affinity
     """
-    __test__ = True
     hosts_to_maintenance = [2]
     vms_to_params = {
         conf.VM_NAME[2]: {conf.VM_HIGHLY_AVAILABLE: True}
@@ -706,6 +686,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
     }
     vms_to_start = conf.VM_NAME[:3]
 
+    @tier2
     @polarion("RHEVM3-5548")
     def test_ha_vm(self):
         """
@@ -715,7 +696,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
         4) Stop VM VM_NAME[1]
         5) Check that HA VM succeeds to start
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Add VM %s to affinity group %s",
             conf.VM_NAME[2], self.affinity_group_name
         )
@@ -729,19 +710,19 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
         host_resource = rhevm_helpers.get_host_resource_by_name(
             host_name=ha_host
         )
-        u_libs.testflow.step("Kill HA VM %s", conf.VM_NAME[2])
+        testflow.step("Kill HA VM %s", conf.VM_NAME[2])
         assert ll_hosts.kill_vm_process(
             resource=host_resource, vm_name=conf.VM_NAME[2]
         )
-        u_libs.testflow.step("Wait for HA VM %s to be down", conf.VM_NAME[2])
+        testflow.step("Wait for HA VM %s to be down", conf.VM_NAME[2])
         assert ll_vms.waitForVMState(vm=conf.VM_NAME[2], state=conf.VM_DOWN)
-        u_libs.testflow.step(
+        testflow.step(
             "Check that HA VM %s fails to start", conf.VM_NAME[2]
         )
         assert not ll_vms.waitForVMState(vm=conf.VM_NAME[2], timeout=120)
-        u_libs.testflow.step("Stop VM %s", conf.VM_NAME[1])
+        testflow.step("Stop VM %s", conf.VM_NAME[1])
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[1])
-        u_libs.testflow.step(
+        testflow.step(
             "Check that HA VM %s succeeds to start", conf.VM_NAME[2]
         )
         assert ll_vms.waitForVMState(
@@ -749,7 +730,6 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(BaseAffinity):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     create_affinity_groups.__name__,
@@ -760,7 +740,6 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
     Start two HA VM's under hard positive affinity, kill them and
     check that they started on the same host
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {conf.VM_HIGHLY_AVAILABLE: True},
         conf.VM_NAME[1]: {conf.VM_HIGHLY_AVAILABLE: True}
@@ -776,6 +755,7 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
     wait_for_vms_state = conf.VM_UP
     wait_for_vms_ip = False
 
+    @tier2
     @polarion("RHEVM3-5550")
     def test_ha_vms(self):
         """
@@ -787,14 +767,14 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
             host_name=vm_host
         )
         for vm_name in conf.VM_NAME[:2]:
-            u_libs.testflow.step(
+            testflow.step(
                 "Kill QEMU process of VM %s on host %s", vm_name, vm_host
             )
             assert ll_hosts.kill_vm_process(
                 resource=host_resource, vm_name=vm_name
             )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Wait until both HA VM's %s will change state to %s",
             conf.VM_NAME[:2], conf.VM_POWERING_UP
         )
@@ -802,7 +782,7 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
             positive=True, names=conf.VM_NAME[:2], states=conf.VM_POWERING_UP
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check that both HA VM's started on the same host"
         )
         assert (
@@ -811,7 +791,6 @@ class TestStartHAVmsUnderHardPositiveAffinity(BaseAffinity):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms_memory_to_hosts_memory.__name__,
     update_vms_to_default_parameters.__name__,
@@ -823,7 +802,6 @@ class TestSoftPositiveAffinityVsMemoryFilter(BaseAffinity):
     Change memory of VM's to prevent possibility to start two VM's on the same
     host and check if soft positive affinity not prevent this
     """
-    __test__ = True
     update_vms_memory = conf.VM_NAME[:2]
     update_to_default_params = conf.VM_NAME[:2]
     affinity_groups = {
@@ -835,12 +813,13 @@ class TestSoftPositiveAffinityVsMemoryFilter(BaseAffinity):
     }
     vms_to_start = conf.VM_NAME[:2]
 
+    @tier2
     @polarion("RHEVM3-5561")
     def test_start_vms(self):
         """
         Check that affinity policy not prevent to start VM's
         """
-        u_libs.testflow.step("Check if VM's started on different hosts")
+        testflow.step("Check if VM's started on different hosts")
         assert (
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) !=
             ll_vms.get_vm_host(vm_name=conf.VM_NAME[1])

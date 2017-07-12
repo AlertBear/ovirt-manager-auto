@@ -1,9 +1,9 @@
 """
 Ovirt Scheduler Proxy Test
 """
-import art.unittest_lib as u_libs
-import config as conf
 import pytest
+
+import config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
@@ -11,6 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier3, SlaTest
 from rhevmtests.sla.fixtures import (  # noqa: F401
     run_once_vms,
     stop_vms,
@@ -39,7 +40,7 @@ def prepare_environment(request):
         """
         results = list()
         cmd = "{0}={1}".format(conf.ENGINE_CONFIG_OVIRT_SCHEDULER_PROXY, False)
-        u_libs.testflow.teardown(
+        testflow.teardown(
             "Disable the ovirt-scheduler-proxy via the engine config"
         )
         results.append(
@@ -47,12 +48,12 @@ def prepare_environment(request):
         )
 
         for script_path in conf.PATH_EXTERNAL_SCHEDULER_PLUGINS:
-            u_libs.testflow.teardown(
+            testflow.teardown(
                 "Remove the script %s from the engine", script_path
             )
             results.append(conf.ENGINE_HOST.fs.remove(path=script_path))
 
-        u_libs.testflow.teardown(
+        testflow.teardown(
             "Remove the package %s from the engine",
             conf.PACKAGE_OVIRT_SCHEDULER_PROXY
         )
@@ -71,7 +72,7 @@ def prepare_environment(request):
         assert all(results)
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup(
+    testflow.setup(
         "Install the package %s on the engine",
         conf.PACKAGE_OVIRT_SCHEDULER_PROXY
     )
@@ -93,14 +94,14 @@ def prepare_environment(request):
                 )
             else:
                 script_content = script_content.format(host_uuid=host_uuid)
-        u_libs.testflow.setup(
+        testflow.setup(
             "Create the script %s on the engine", script_path
         )
         conf.ENGINE_HOST.fs.create_script(
             content=script_content, path=script_path
         )
 
-    u_libs.testflow.setup(
+    testflow.setup(
         "Start the service %s", conf.SERVICE_OVIRT_SCHEDULER_PROXY
     )
     assert conf.ENGINE_HOST.service(
@@ -108,7 +109,7 @@ def prepare_environment(request):
     ).start()
 
     cmd = "{0}={1}".format(conf.ENGINE_CONFIG_OVIRT_SCHEDULER_PROXY, True)
-    u_libs.testflow.setup(
+    testflow.setup(
         "Enable the ovirt-scheduler-proxy via the engine config"
     )
     conf.ENGINE.engine_config(action="set", param=cmd)
@@ -127,44 +128,43 @@ def stop_ovirt_scheduler_proxy(request):
         """
         Start the ovirt-scheduler-proxy service
         """
-        u_libs.testflow.teardown(
+        testflow.teardown(
             "Start the %s service", conf.SERVICE_OVIRT_SCHEDULER_PROXY
         )
         assert ovirt_scheduler_proxy_service.start()
     request.addfinalizer(fin)
 
-    u_libs.testflow.setup(
+    testflow.setup(
         "Stop the %s service", conf.SERVICE_OVIRT_SCHEDULER_PROXY
     )
     assert ovirt_scheduler_proxy_service.stop()
 
 
-@u_libs.tier3
-class TestCorruptedPlugin(u_libs.SlaTest):
+class TestCorruptedPlugin(SlaTest):
     """
     Verify that the engine does not have the corrupted policy unit
     """
 
+    @tier3
     @polarion("RHEVM3-9500")
     def test_policy_unit_existence(self):
         """
         Verify that the engine does not have the corrupted policy unit
         """
         policy_units_names = ll_sch.get_all_policy_units_names()
-        u_libs.testflow.step(
+        testflow.step(
             "Verify tha the policy unit %s does not exist under the engine",
             conf.POLICY_UNIT_CORRUPTED
         )
         assert conf.POLICY_UNIT_CORRUPTED not in policy_units_names
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
     stop_vms.__name__
 )
-class TestExternalSchedulerTimeout(u_libs.SlaTest):
+class TestExternalSchedulerTimeout(SlaTest):
     """
     Verify that the engine skips the external scheduler module,
     if scheduler module takes too much time to consider
@@ -181,22 +181,22 @@ class TestExternalSchedulerTimeout(u_libs.SlaTest):
     }
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier3
     @polarion("RHEVM3-9501")
     def test_start_vm(self):
         """
         Start the VM
         """
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
     run_once_vms.__name__
 )
-class TestExternalSchedulerFilter(u_libs.SlaTest):
+class TestExternalSchedulerFilter(SlaTest):
     """
     Verify that the engine starts VM on the correct host under external
     scheduler filter module
@@ -214,25 +214,25 @@ class TestExternalSchedulerFilter(u_libs.SlaTest):
         conf.VM_NAME[0]: {conf.VM_RUN_ONCE_WAIT_FOR_STATE: conf.VM_UP}
     }
 
+    @tier3
     @polarion("RHEVM3-9502")
     def test_vm_host(self):
         """
         Verify that the VM started on the host_0
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Verify that the VM %s started on the host %s",
             conf.VM_NAME[0], conf.HOSTS[0]
         )
         assert ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) == conf.HOSTS[0]
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
     run_once_vms.__name__
 )
-class TestExternalSchedulerWeight(u_libs.SlaTest):
+class TestExternalSchedulerWeight(SlaTest):
     """
     Verify that the engine starts VM on the correct host under external
     scheduler weight module
@@ -250,25 +250,25 @@ class TestExternalSchedulerWeight(u_libs.SlaTest):
         conf.VM_NAME[0]: {conf.VM_RUN_ONCE_WAIT_FOR_STATE: conf.VM_UP}
     }
 
+    @tier3
     @polarion("RHEVM3-9504")
     def test_vm_host(self):
         """
         Verify that the VM started on the host_0
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Verify that the VM %s started on the host %s",
             conf.VM_NAME[0], conf.HOSTS[0]
         )
         assert ll_vms.get_vm_host(vm_name=conf.VM_NAME[0]) == conf.HOSTS[0]
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
     run_once_vms.__name__
 )
-class TestExternalSchedulerBalance(u_libs.SlaTest):
+class TestExternalSchedulerBalance(SlaTest):
     """
     Verify that the engine balancing VM on the correct host under external
     scheduler balance module
@@ -289,12 +289,13 @@ class TestExternalSchedulerBalance(u_libs.SlaTest):
         }
     }
 
+    @tier3
     @polarion("RHEVM3-9503")
     def test_vm_host(self):
         """
         Verify that the engine balancing the VM to the host_0
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Verify that the engine balancing the VM %s to the host %s",
             conf.VM_NAME[0], conf.HOSTS[0]
         )
@@ -303,14 +304,13 @@ class TestExternalSchedulerBalance(u_libs.SlaTest):
         )
 
 
-@u_libs.tier3
 @pytest.mark.usefixtures(
     create_new_scheduling_policy.__name__,
     update_cluster.__name__,
     stop_ovirt_scheduler_proxy.__name__,
     stop_vms.__name__
 )
-class TestExternalSchedulerServiceStopped(u_libs.SlaTest):
+class TestExternalSchedulerServiceStopped(SlaTest):
     """
     Verify that the engine skips the external scheduler module,
     if the ovirt-scheduler-proxy service stopped
@@ -326,10 +326,11 @@ class TestExternalSchedulerServiceStopped(u_libs.SlaTest):
     }
     vms_to_stop = conf.VM_NAME[:1]
 
+    @tier3
     @polarion("RHEVM3-9506")
     def test_start_vm(self):
         """
         Start the VM
         """
-        u_libs.testflow.step("Start the VM %s", conf.VM_NAME[0])
+        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])

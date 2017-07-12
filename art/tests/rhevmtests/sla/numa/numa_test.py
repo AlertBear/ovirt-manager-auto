@@ -2,14 +2,15 @@
 NUMA test - Check creation of NUMA nodes on VM,
 pin VM NUMA node to the host NUMA node and run it on the host
 """
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as u_libs
 import config as conf
 import helpers
-import pytest
 from art.test_handler.tools import polarion
+from art.unittest_lib import testflow, tier1, tier2, SlaTest
 from fixtures import (
     create_equals_numa_nodes_on_vm,
     create_custom_numa_nodes_on_vm,
@@ -46,13 +47,12 @@ def setup_numa_test():
     helpers.install_numa_package(resource=conf.VDS_HOSTS[0])
 
 
-@u_libs.tier1
-class TestGetNumaStatisticFromHost(u_libs.SlaTest):
+class TestGetNumaStatisticFromHost(SlaTest):
     """
     Check that engine receives correct information from host about numa nodes
     """
-    __test__ = True
 
+    @tier1
     @polarion("RHEVM3-9546")
     def test_numa_statistics(self):
         """
@@ -65,7 +65,7 @@ class TestGetNumaStatisticFromHost(u_libs.SlaTest):
             numa_node_obj = ll_hosts.get_numa_node_by_index(
                 conf.HOSTS[0], node_index
             )
-            u_libs.testflow.step(
+            testflow.step(
                 "Check that engine receives correct "
                 "memory values for the host %s node %s",
                 conf.HOSTS[0], node_index
@@ -74,7 +74,7 @@ class TestGetNumaStatisticFromHost(u_libs.SlaTest):
             assert (
                 memory_from_engine == numa_node_param[conf.NUMA_NODE_MEMORY]
             )
-            u_libs.testflow.step(
+            testflow.step(
                 "Check that engine receives correct "
                 "CPU values for the host %s node %s",
                 conf.HOSTS[0], node_index
@@ -86,13 +86,11 @@ class TestGetNumaStatisticFromHost(u_libs.SlaTest):
             )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
-class TestUpdateVmWithNumaAndAutomaticMigration(u_libs.SlaTest):
+class TestUpdateVmWithNumaAndAutomaticMigration(SlaTest):
     """
     Negative: add NUMA node to VM with AutomaticMigration option enabled
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -100,12 +98,13 @@ class TestUpdateVmWithNumaAndAutomaticMigration(u_libs.SlaTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9565")
     def test_add_numa_node(self):
         """
         Add NUMA node to VM
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Add NUMA node to VM %s with parameters: %s",
             conf.VM_NAME[0], conf.DEFAULT_NUMA_NODE_PARAMS
         )
@@ -116,13 +115,11 @@ class TestUpdateVmWithNumaAndAutomaticMigration(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
-class TestUpdateVmWithNumaAndManualMigration(u_libs.SlaTest):
+class TestUpdateVmWithNumaAndManualMigration(SlaTest):
     """
     Negative: add NUMA node to VM with ManualMigration option enable
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -131,12 +128,13 @@ class TestUpdateVmWithNumaAndManualMigration(u_libs.SlaTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9564")
     def test_add_numa_node(self):
         """
         Add NUMA node to VM
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Add NUMA node to VM %s with parameters: %s",
             conf.VM_NAME[0], conf.DEFAULT_NUMA_NODE_PARAMS
         )
@@ -147,13 +145,11 @@ class TestUpdateVmWithNumaAndManualMigration(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(update_vms.__name__)
-class TestUpdateVmWithNumaAndAnyHostPlacement(u_libs.SlaTest):
+class TestUpdateVmWithNumaAndAnyHostPlacement(SlaTest):
     """
     Negative: add NUMA node to VM with AnyHostInCluster option enabled
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -161,12 +157,13 @@ class TestUpdateVmWithNumaAndAnyHostPlacement(u_libs.SlaTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9566")
     def test_add_numa_node(self):
         """
         Add NUMA node to VM
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Add NUMA node to VM %s with parameters: %s",
             conf.VM_NAME[0], conf.DEFAULT_NUMA_NODE_PARAMS
         )
@@ -177,7 +174,6 @@ class TestUpdateVmWithNumaAndAnyHostPlacement(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -185,11 +181,10 @@ class TestUpdateVmWithNumaAndAnyHostPlacement(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestStrictNumaModeOnVM(u_libs.SlaTest):
+class TestStrictNumaModeOnVM(SlaTest):
     """
     Check VM NUMA pinning under strict mode
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
@@ -201,12 +196,13 @@ class TestStrictNumaModeOnVM(u_libs.SlaTest):
     vm_numa_mode = conf.STRICT_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-9567")
     def test_cpu_pinning(self):
         """
         Check VM NUMA CPU pinning
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA CPU pinning is correct", conf.VM_NAME[0]
         )
         assert helpers.is_numa_pinning_correct(
@@ -215,12 +211,13 @@ class TestStrictNumaModeOnVM(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
+    @tier2
     @polarion("RHEVM3-12235")
     def test_numa_memory_mode(self):
         """
         Check VM NUMA memory mode
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
         )
         assert helpers.get_numa_mode_from_vm_process(
@@ -230,7 +227,6 @@ class TestStrictNumaModeOnVM(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -238,11 +234,10 @@ class TestStrictNumaModeOnVM(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestPreferModeOnVm(u_libs.SlaTest):
+class TestPreferModeOnVm(SlaTest):
     """
     Check VM NUMA pinning under preferred mode
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -254,12 +249,13 @@ class TestPreferModeOnVm(u_libs.SlaTest):
     vm_numa_mode = conf.PREFER_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-9568")
     def test_cpu_pinning(self):
         """
         Check VM NUMA CPU pinning
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA CPU pinning is correct", conf.VM_NAME[0]
         )
         assert helpers.is_numa_pinning_correct(
@@ -268,12 +264,13 @@ class TestPreferModeOnVm(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
+    @tier2
     @polarion("RHEVM3-12236")
     def test_memory_pinning(self):
         """
         Check VM NUMA memory pinning
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory pinning is correct", conf.VM_NAME[0]
         )
         assert helpers.is_numa_pinning_correct(
@@ -282,12 +279,13 @@ class TestPreferModeOnVm(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
+    @tier2
     @polarion("RHEVM3-12237")
     def test_numa_memory_mode(self):
         """
         Check VM NUMA memory mode
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
         )
         assert helpers.get_numa_mode_from_vm_process(
@@ -297,7 +295,6 @@ class TestPreferModeOnVm(u_libs.SlaTest):
         )
 
 
-@u_libs.tier1
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -305,11 +302,10 @@ class TestPreferModeOnVm(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestInterleaveModeOnVm(u_libs.SlaTest):
+class TestInterleaveModeOnVm(SlaTest):
     """
     Check VM NUMA pinning under interleave mode
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
@@ -321,12 +317,13 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier1
     @polarion("RHEVM3-9569")
     def test_cpu_pinning(self):
         """
         Check VM NUMA CPU pinning
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA CPU pinning is correct", conf.VM_NAME[0]
         )
         assert helpers.is_numa_pinning_correct(
@@ -335,12 +332,13 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
+    @tier1
     @polarion("RHEVM3-12238")
     def test_memory_pinning(self):
         """
         Check VM NUMA memory pinning
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory pinning is correct", conf.VM_NAME[0]
         )
         assert helpers.is_numa_pinning_correct(
@@ -349,12 +347,13 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
+    @tier1
     @polarion("RHEVM3-12239")
     def test_numa_memory_mode(self):
         """
         Check VM NUMA memory mode
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
         )
         assert helpers.get_numa_mode_from_vm_process(
@@ -364,7 +363,6 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_cpu_pinning.__name__,
@@ -373,11 +371,10 @@ class TestInterleaveModeOnVm(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestCpuPinningOverrideNumaPinning(u_libs.SlaTest):
+class TestCpuPinningOverrideNumaPinning(SlaTest):
     """
     Check that CPU pinning override NUMA pinning options(for CPU's only)
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -389,6 +386,7 @@ class TestCpuPinningOverrideNumaPinning(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-9570")
     def test_check_cpu_pinning(self):
         """
@@ -405,13 +403,12 @@ class TestCpuPinningOverrideNumaPinning(u_libs.SlaTest):
         with_pinning = sum(
             x == [host_online_cpu] for x in vm_pinning.values()
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA pinning override CPU pinning", conf.VM_NAME[0]
         )
         assert with_pinning == 1
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -419,12 +416,11 @@ class TestCpuPinningOverrideNumaPinning(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestTotalVmMemoryEqualToNumaNodesMemory(u_libs.SlaTest):
+class TestTotalVmMemoryEqualToNumaNodesMemory(SlaTest):
     """
     Create two NUMA nodes on the VM, when nodes memory sum equal to the VM
     memory
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
@@ -447,18 +443,19 @@ class TestTotalVmMemoryEqualToNumaNodesMemory(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-9571")
     def test_vm_numa_nodes(self):
         """
         Check if VM NUMA nodes parameters equal to expected parameters
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s has correct number of NUMA nodes", conf.VM_NAME[0]
         )
         assert helpers.is_vm_has_correct_number_of_numa_nodes(
             expected_number_of_vm_numa_nodes=len(self.vm_numa_nodes_params)
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA nodes have correct amount of memory",
             conf.VM_NAME[0]
         )
@@ -468,7 +465,6 @@ class TestTotalVmMemoryEqualToNumaNodesMemory(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -476,12 +472,11 @@ class TestTotalVmMemoryEqualToNumaNodesMemory(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestTotalVmCpusEqualToNumaNodesCpus(u_libs.SlaTest):
+class TestTotalVmCpusEqualToNumaNodesCpus(SlaTest):
     """
     Create two NUMA nodes on the VM, when nodes CPU's sum equal to
     the total number of the VM CPU's
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
@@ -504,18 +499,19 @@ class TestTotalVmCpusEqualToNumaNodesCpus(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-9573")
     def test_vm_numa_nodes(self):
         """
         Check if VM NUMA nodes parameters equal to expected parameters
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s has correct number of NUMA nodes", conf.VM_NAME[0]
         )
         assert helpers.is_vm_has_correct_number_of_numa_nodes(
             expected_number_of_vm_numa_nodes=len(self.vm_numa_nodes_params)
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA nodes have correct number of CPU's",
             conf.VM_NAME[0]
         )
@@ -525,16 +521,14 @@ class TestTotalVmCpusEqualToNumaNodesCpus(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__
 )
-class TestCreateVmNumaNodeWithIncorrectCpu(u_libs.SlaTest):
+class TestCreateVmNumaNodeWithIncorrectCpu(SlaTest):
     """
     Negative: create the NUMA node with incorrect CPU core
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
@@ -543,6 +537,7 @@ class TestCreateVmNumaNodeWithIncorrectCpu(u_libs.SlaTest):
         }
     }
 
+    @tier2
     @polarion("RHEVM3-9574")
     def test_vm_numa_nodes(self):
         """
@@ -560,7 +555,6 @@ class TestCreateVmNumaNodeWithIncorrectCpu(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -568,11 +562,10 @@ class TestCreateVmNumaNodeWithIncorrectCpu(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestPinningOneVNUMAToTwoPNUMA(u_libs.SlaTest):
+class TestPinningOneVNUMAToTwoPNUMA(SlaTest):
     """
     Pin one VM NUMA node to two host NUMA nodes
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -583,6 +576,7 @@ class TestPinningOneVNUMAToTwoPNUMA(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-9552")
     def test_vm_cpu_pinning(self):
         """
@@ -604,14 +598,13 @@ class TestPinningOneVNUMAToTwoPNUMA(u_libs.SlaTest):
             cores_list.extend(
                 ll_hosts.get_numa_node_cpus(numa_node_obj=h_numa_node_obj)
             )
-        u_libs.testflow.step(
+        testflow.step(
             "Check VM %s NUMA CPU pinning", conf.VM_NAME[0]
         )
         for cpu_pinning in vm_pinning.values():
             assert cpu_pinning.sort() == cores_list.sort()
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -619,11 +612,10 @@ class TestPinningOneVNUMAToTwoPNUMA(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestPinningTwoVNUMAToOnePNUMA(u_libs.SlaTest):
+class TestPinningTwoVNUMAToOnePNUMA(SlaTest):
     """
     Pin two VM NUMA nodes to one host NUMA node
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
@@ -634,6 +626,7 @@ class TestPinningTwoVNUMAToOnePNUMA(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM3-9555")
     def test_vm_cpu_pinning(self):
         """
@@ -651,25 +644,23 @@ class TestPinningTwoVNUMAToOnePNUMA(u_libs.SlaTest):
             host_name=conf.HOSTS[0], index=host_numa_node_index
         )
         cores_list = ll_hosts.get_numa_node_cpus(numa_node_obj=h_numa_node_obj)
-        u_libs.testflow.step(
+        testflow.step(
             "Check VM %s NUMA CPU pinning", conf.VM_NAME[0]
         )
         for cpu_pinning in vm_pinning.values():
             assert cpu_pinning.sort() == cores_list.sort()
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_memory_for_numa_test.__name__,
     remove_all_numa_nodes_from_vm.__name__,
     update_vm_numa_mode.__name__,
 )
-class TestPinVNUMAWithLessMemoryThanOnPNUMAStrict(u_libs.SlaTest):
+class TestPinVNUMAWithLessMemoryThanOnPNUMAStrict(SlaTest):
     """
     Pin VM NUMA node with memory less than host NUMA node has under strict mode
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -681,6 +672,7 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAStrict(u_libs.SlaTest):
     num_of_vm_numa_nodes = 1
     vm_numa_mode = conf.STRICT_MODE
 
+    @tier2
     @polarion("RHEVM3-9575")
     def test_pin_virtual_numa_node(self):
         """
@@ -691,7 +683,7 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAStrict(u_libs.SlaTest):
             vm_name=conf.VM_NAME[0],
             num_of_numa_nodes=self.num_of_vm_numa_nodes
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Add NUMA node to VM %s with parameters: %s",
             conf.VM_NAME[0], vm_numa_nodes_params[0]
         )
@@ -702,19 +694,17 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAStrict(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_memory_for_numa_test.__name__,
     remove_all_numa_nodes_from_vm.__name__,
     update_vm_numa_mode.__name__,
 )
-class TestPinVNUMAWithMoreMemoryThanOnPNUMAStrict(u_libs.SlaTest):
+class TestPinVNUMAWithMoreMemoryThanOnPNUMAStrict(SlaTest):
     """
     Negative: pin VM NUMA node with memory greater than host
     NUMA node has under strict mode
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -726,6 +716,7 @@ class TestPinVNUMAWithMoreMemoryThanOnPNUMAStrict(u_libs.SlaTest):
     num_of_vm_numa_nodes = 1
     vm_numa_mode = conf.STRICT_MODE
 
+    @tier2
     @polarion("RHEVM3-9576")
     def test_pin_virtual_numa_node(self):
         """
@@ -736,7 +727,7 @@ class TestPinVNUMAWithMoreMemoryThanOnPNUMAStrict(u_libs.SlaTest):
             vm_name=conf.VM_NAME[0],
             num_of_numa_nodes=self.num_of_vm_numa_nodes
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Add NUMA node to VM %s with parameters: %s",
             conf.VM_NAME[0], vm_numa_nodes_params[0]
         )
@@ -747,19 +738,17 @@ class TestPinVNUMAWithMoreMemoryThanOnPNUMAStrict(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     update_vm_memory_for_numa_test.__name__,
     remove_all_numa_nodes_from_vm.__name__,
     update_vm_numa_mode.__name__,
 )
-class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(u_libs.SlaTest):
+class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(SlaTest):
     """
     Pin VM NUMA node with memory greater than host
     NUMA node has under interleave mode
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER,
@@ -771,6 +760,7 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(u_libs.SlaTest):
     num_of_vm_numa_nodes = 1
     vm_numa_mode = conf.INTERLEAVE_MODE
 
+    @tier2
     @polarion("RHEVM3-9549")
     def test_pin_virtual_numa_node(self):
         """
@@ -781,7 +771,7 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(u_libs.SlaTest):
             vm_name=conf.VM_NAME[0],
             num_of_numa_nodes=self.num_of_vm_numa_nodes
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Add NUMA node to VM %s with parameters: %s",
             conf.VM_NAME[0], vm_numa_nodes_params[0]
         )
@@ -792,7 +782,6 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     remove_all_numa_nodes_from_vm.__name__,
@@ -800,12 +789,10 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
-class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
+class TestHotplugCpuUnderNumaPinning(SlaTest):
     """
     Hotplug VM CPU and check that VM NUMA node updated accordingly
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_SOCKET: conf.CORES_MULTIPLIER,
@@ -831,7 +818,7 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
             vm=conf.VM_NAME[0],
             cpu_socket=new_num_of_sockets
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Get NUMA parameters from VM %s", conf.VM_NAME[0]
         )
         vm_numa_params = helpers.get_numa_parameters_from_vm(
@@ -842,12 +829,14 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
             len(params[conf.NUMA_NODE_CPUS])
             for params in vm_numa_params.itervalues()
         )
-        u_libs.testflow.step(
+        testflow.step(
             "Check total number of CPU's under NUMA stats of the VM %s",
             conf.VM_NAME[0]
         )
         assert new_num_of_sockets == real_amount_of_cpus
 
+    @tier2
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9556")
     def test_hotplug_cpu(self):
         """
@@ -855,17 +844,16 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
         architecture
         Case 2: Hot unplug CPU to VM and check the VM NUMA architecture
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Hotplug CPU to VM %s to %s ", conf.VM_NAME[0], 4
         )
         self._check_hotplug_unplug_cpu(4)
-        u_libs.testflow.step(
+        testflow.step(
             "Hot unplug CPU to VM %s to %s", conf.VM_NAME[0], 2
         )
         self._check_hotplug_unplug_cpu(2)
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     get_pci_device_name.__name__,
     get_pci_device_numa_node.__name__,
@@ -873,12 +861,11 @@ class TestHotplugCpuUnderNumaPinning(u_libs.SlaTest):
     attach_host_device.__name__,
     start_vms.__name__,
 )
-class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
+class TestNumaWithAttachedPciDevice(SlaTest):
     """
     Attaching host device to the VM, must apply host
     device NUMA node on the VM in preferred mode
     """
-    __test__ = True
     pci_device_name = None
     pci_device_numa_node = None
     num_of_vm_numa_nodes = 1
@@ -891,13 +878,14 @@ class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
     }
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM-17391")
     def test_vm_numa_pinning_and_mode(self):
         """
         1) Check NUMA memory pinning
         2) Check NUMA mode
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory pinning is correct",
             conf.VM_NAME[0]
         )
@@ -907,7 +895,7 @@ class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
         )
         assert helpers.get_numa_mode_from_vm_process(
@@ -917,7 +905,6 @@ class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
         )
 
 
-@u_libs.tier2
 @pytest.mark.usefixtures(
     update_vms.__name__,
     attach_host_device.__name__,
@@ -926,11 +913,10 @@ class TestNumaWithAttachedPciDevice(u_libs.SlaTest):
     update_vm_numa_mode.__name__,
     start_vms.__name__
 )
-class TestNumaPinningOverrideHotsDeviceNuma(u_libs.SlaTest):
+class TestNumaPinningOverrideHotsDeviceNuma(SlaTest):
     """
     Setting NUMA pinning must override host device NUMA configuration
     """
-    __test__ = True
     vms_to_params = {
         conf.VM_NAME[0]: {
             conf.VM_CPU_CORES: conf.CORES_MULTIPLIER * 2,
@@ -942,6 +928,7 @@ class TestNumaPinningOverrideHotsDeviceNuma(u_libs.SlaTest):
     vm_numa_mode = conf.INTERLEAVE_MODE
     vms_to_start = [conf.VM_NAME[0]]
 
+    @tier2
     @polarion("RHEVM-17390")
     def test_vm_numa_pinning_and_mode(self):
         """
@@ -949,7 +936,7 @@ class TestNumaPinningOverrideHotsDeviceNuma(u_libs.SlaTest):
         2) Check NUMA memory pinning
         3) Check NUMA mode
         """
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA CPU pinning is correct", conf.VM_NAME[0]
         )
         assert helpers.is_numa_pinning_correct(
@@ -958,7 +945,7 @@ class TestNumaPinningOverrideHotsDeviceNuma(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory pinning is correct",
             conf.VM_NAME[0]
         )
@@ -968,7 +955,7 @@ class TestNumaPinningOverrideHotsDeviceNuma(u_libs.SlaTest):
             num_of_vm_numa_nodes=self.num_of_vm_numa_nodes
         )
 
-        u_libs.testflow.step(
+        testflow.step(
             "Check if VM %s NUMA memory mode is correct", conf.VM_NAME[0]
         )
         assert helpers.get_numa_mode_from_vm_process(
