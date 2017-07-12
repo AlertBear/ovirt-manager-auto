@@ -15,24 +15,6 @@ logger = logging.getLogger(__name__)
 __test__ = False
 
 
-def get_list(params, key):
-    """
-    Get element from configuration section as list
-
-    :param params: configuration section
-    :type params: ConfigObj section
-    :param key: element to get
-    :type key: str
-    :return: return element of configuration section as list
-    :rtype: list
-    """
-    l = params.get(key) if key in params else []
-    if isinstance(l, basestring):
-        return [i.strip() for i in l.split(',')]
-
-    return l
-
-
 GOLDEN_ENV = True
 
 # RHEVM related constants
@@ -40,7 +22,6 @@ ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 PERMITS = ART_CONFIG['elements_conf']['RHEVM Permits']
 RHEVM_UTILS_ENUMS = ART_CONFIG['elements_conf']['RHEVM Utilities']
 NOT_APPLICABLE = 'N/A'
-
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
@@ -53,7 +34,6 @@ RHVH = "Red Hat Enterprise Virtualization Hypervisor"
 
 # ENGINE SECTION
 VDC_HOST = GE['engine']['fqdn']
-
 
 VDC_ROOT_PASSWORD = GE['root_passwd']
 VDC_ROOT_USER = "root"
@@ -88,11 +68,6 @@ STORAGE_TYPE_GLUSTER = ENUMS['storage_type_gluster']
 
 STORAGE_SERVER_XTREMIO = 'xtremio'
 STORAGE_SERVER_NETAPP = 'netapp'
-
-# We provision for posix with the subtype, like: "posixfs_subfix"
-# For the moment just revert back
-# if STORAGE_TYPE.startswith(STORAGE_TYPE_POSIX):
-#     STORAGE_TYPE = STORAGE_TYPE_POSIX
 
 CPU_NAME = GE['cpu_type']
 
@@ -141,11 +116,7 @@ COMP_VERSION = DC_COMP_VERSIONS[0]
 
 ###############################################################################
 # Clusters
-CLUSTER_NAME = []
-
-for cl in GE['clusters']:
-    CLUSTER_NAME.append(cl['name'])
-
+CLUSTER_NAME = [cl['name'] for cl in GE['clusters']]
 logger.info("CLUSTERS in golden environment: %s", CLUSTER_NAME)
 
 
@@ -153,15 +124,10 @@ logger.info("CLUSTERS in golden environment: %s", CLUSTER_NAME)
 # storage
 def get_storages_data(ge_storages, key):
 
-    storages = []
-
     if ge_storages is None:
-        return storages
+        return []
 
-    for storage in ge_storages:
-        storages.append(storage[key])
-
-    return storages
+    return [sd[key] for sd in ge_storages]
 
 
 NFS_STORAGE = get_storages_data(GE.get('nfs_storage_domains'), 'name')
@@ -279,7 +245,7 @@ def get_vms_list(ge_vms):
     vms = []
 
     if ge_vms is None:
-        return vms
+        return []
 
     vms_count = ge_vms.get('count')
 
