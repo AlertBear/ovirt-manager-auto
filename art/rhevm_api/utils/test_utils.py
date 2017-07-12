@@ -61,10 +61,6 @@ RESTART_TIMEOUT = 70
 RHEVM_UTILS_ENUMS = settings.ART_CONFIG['elements_conf']['RHEVM Utilities']
 
 
-class PSQLException(Exception):
-    pass
-
-
 class GetApi(object):
 
     _util_cache = {}
@@ -399,32 +395,6 @@ def convertOsNameToOsTypeElement(positive, osName):
         return False, {'osTypeElement': None}
 
 
-def getImageByOsType(positive, osType, slim=False):
-    '''
-    Function get osTypeElement and return image from action.conf file.
-    in case os windows: return cdrom_image and unattended floppy.
-    in case os rhel: return os profile compatible with cobbler.
-    Author: Tomer
-    '''
-    if slim:
-        if re.search('rhel', osType, re.I):
-            # Following line should be removed once RHEL5_SLIM, and RHEL6_SLIM
-            # will be added.
-            if ((osType != 'RHEL5') and (osType != 'RHEL6')):
-                osType = osType + '_SLIM'
-    try:
-        supportedOs = settings.ART_CONFIG['elements_conf'][osType]
-    except Exception as err:
-        logger.error(err)
-        return False, {'osBoot': None, 'floppy': None}
-
-    if re.search('rhel', osType, re.I):
-        return True, {'osBoot': supportedOs['profile'], 'floppy': None}
-    elif re.search('win', osType, re.I):
-        return True, {'osBoot': supportedOs['cdrom_image'],
-                      'floppy': supportedOs['floppy_image']}
-
-
 def isServiceRunning(positive, host, user, password, service):
     """
         Check if service is running on host.
@@ -695,26 +665,6 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
     return setup.psql(query, psql_db=psql_db)
 
 
-def get_running_tasks_deprecated(vdc, vdc_pass, sp_id, db_name, db_user):
-    """
-    Description: Gets taks_id for all tasks running in rhevm
-    Parameters:
-        * vdc - ip or hostname of rhevm
-        * vdc_pass - root password for rhevm machine
-        * sp_id - storage pool id
-        * db_name - name of the rhevm database
-        * db_user - name of the user of database
-    """
-    warnings.warn(
-        "get_running_tasks_deprecated function is deprecated "
-        "please use get_running_tasks instead", DeprecationWarning)
-    query = "select task_id, action_type, status, vdsm_task_id from " \
-            "async_tasks where storage_pool_id = '%s'" % sp_id
-    tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
-    logger.debug("Query %s returned list: %s", query, tasks)
-    return tasks
-
-
 def get_running_tasks(engine, sp_id):
     """
     Gets taks_id for all tasks running in rhevm
@@ -760,24 +710,6 @@ def wait_for_tasks(engine, datacenter, timeout=TASK_TIMEOUT, sleep=TASK_POLL):
         if not tasks:
             logger.info("All tasks are gone")
             return
-
-
-def wait_for_vds_tasks(vds_resource):
-    """
-    Wait for VDS tasks (vdsClient -s 0 getAllTasks)
-
-    Args:
-        vds_resource (VDS): VDS resource
-    """
-    sampler = TimeoutingSampler(
-        TASK_TIMEOUT, TASK_POLL, vds_resource.vds_client, "getAllTasks"
-    )
-    for tasks in sampler:
-        task = tasks["tasks"]
-        if not task:
-            logger.info("All VDSM tasks are gone")
-            return
-        logger.info(task)
 
 
 def restart_engine(engine, interval, timeout):
@@ -1083,16 +1015,3 @@ def waitUntilGone(positive, names, api, timeout,
         if not sample:
             logger.info("All %s are gone.", names)
             return positive
-
-
-def raise_if_exception(results):
-    """
-    Raises exception if any of Future object in results has exception
-
-    :param results: list of Future objects
-    :type results: list
-    """
-    for result in results:
-        if result.exception():
-            logger.error(result.exception())
-            raise result.exception()
