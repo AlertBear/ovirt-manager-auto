@@ -1624,3 +1624,28 @@ def copy_golden_template_disk(request):
     )
     ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
     test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
+
+
+@pytest.fixture(scope='class')
+def put_all_hsm_hosts_to_maintenance(request):
+    """
+    Put all HSM hosts to maintenance
+    """
+    def finalizer():
+        for host in non_spm:
+            testflow.teardown("Activating Host %s", host)
+            assert ll_hosts.activate_host(True, host), (
+                "Failed to activate host %s" % host
+            )
+    request.addfinalizer(finalizer)
+
+    non_spm = []
+
+    for host, resource in zip(config.HOSTS, config.VDS_HOSTS):
+        test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
+        if ll_hosts.check_host_spm_status(False, host):
+            testflow.setup("Deactivating Host %s", host)
+            assert hl_hosts.deactivate_host_if_up(host, resource), (
+                "Failed to deactivate host %s" % host
+            )
+            non_spm.append(host)
