@@ -86,18 +86,24 @@ def port_mirroring_prepare_setup(request):
         "add": {
             "1": {
                 "network": pm_conf.PM_NETWORK[1],
-                "slaves": conf.HOST_0_NICS[2:4],
+                "slaves": None,
                 "nic": bond_1,
             },
             "2": {
                 "network": pm_conf.PM_NETWORK[0],
-                "nic": conf.HOST_0_NICS[1],
+                "nic": None
             },
 
         }
     }
-    for host_name in conf.HOSTS[:2]:
-        assert hl_host_network.setup_networks(host_name=host_name, **sn_dict)
+    hosts_and_nics = (
+        (conf.HOST_0_NAME, conf.HOST_0_NICS),
+        (conf.HOST_1_NAME, conf.HOST_1_NICS)
+    )
+    for host, nics in hosts_and_nics:
+        sn_dict["add"]["1"]["slaves"] = nics[2:4]
+        sn_dict["add"]["2"]["nic"] = nics[1]
+        assert hl_host_network.setup_networks(host_name=host, **sn_dict)
 
     testflow.setup("Create vnic profiles with port mirroring")
     helper.create_vnic_profiles_with_pm()

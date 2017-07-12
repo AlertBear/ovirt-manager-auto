@@ -20,7 +20,10 @@ from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks
 )
 import config as label_conf
-from rhevmtests.networking import config as conf, helper as network_helper
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
@@ -334,7 +337,12 @@ class TestNetLabels02(NetworkTest):
         assert ll_networks.remove_label(
             networks=[self.net_1], labels=[self.label_1]
         )
-        for host in conf.HOSTS[:2]:
+
+        host_and_nics = (
+            (conf.HOST_0_NAME, conf.HOST_0_NICS),
+            (conf.HOST_1_NAME, conf.HOST_1_NICS)
+        )
+        for host, nics in host_and_nics:
             testflow.step(
                 "Check that the network %s is not attached to host %s",
                 self.net_1, host
@@ -342,7 +350,7 @@ class TestNetLabels02(NetworkTest):
             sample = apis_utils.TimeoutingSampler(
                 timeout=conf.SAMPLER_TIMEOUT, sleep=1,
                 func=hl_host_network.check_network_on_nic,
-                network=self.net_1, host=host, nic=conf.HOST_0_NICS[1]
+                network=self.net_1, host=host, nic=nics[1]
             )
             assert sample.waitForFuncStatus(result=False)
 
