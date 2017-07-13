@@ -57,18 +57,6 @@ def unblockOutgoingConnection(source, userName, password, dest, port=None):
                              'OUTPUT', 'DROP', 'all', False, port)
 
 
-def blockIncomingConnection(source, userName, password, dest):
-    """Warpper for blocking incoming connection from any server to host."""
-    return setupIptables(source, userName, password, dest,
-                         '--append', 'INPUT', 'DROP')
-
-
-def unblockIncomingConnection(source, userName, password, dest):
-    """Warpper for unblocking incoming connection from any server to host."""
-    return setupIptables(source, userName, password, dest,
-                         '--delete', 'INPUT', 'DROP')
-
-
 def flushIptables(host, userName, password, chain='', persistently=False):
     """Warpper for utilities.machine.flushIptables() method."""
     hostObj = machine.Machine(host, userName, password).util('linux')
