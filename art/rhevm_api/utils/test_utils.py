@@ -18,7 +18,6 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import threading
-import warnings
 import logging
 import re
 import time
@@ -643,26 +642,6 @@ def setPersistentNetwork(host, password):
     # Flush FS buffers
     vm_obj.executor().run_cmd(['sync'])
     return True
-
-
-def runSQLQueryOnSetup(vdc, vdc_pass, query,
-                       psql_username='postgres', psql_db='engine'):
-    """
-    Runs a SQL query on the setup database.
-    Parameters:
-      * vdc - setup hostname or IP address
-      * vdc_pass - password of setup's root account
-      * query - the SQL query to run
-      * psql_username - username of postgres
-      * psql_db - the database to run the query on
-    Returns True and a list of the records in the query output on success
-            False and an empty list on failure
-    """
-    warnings.warn(
-        "runSQLQueryOnSetup function is deprecated "
-        "please use Engine.db.psql instead", DeprecationWarning)
-    setup = Setup(vdc, 'root', vdc_pass, dbuser=psql_username)
-    return setup.psql(query, psql_db=psql_db)
 
 
 def get_running_tasks(engine, sp_id):
