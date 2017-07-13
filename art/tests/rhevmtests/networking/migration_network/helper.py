@@ -169,8 +169,7 @@ def capture_traffic_while_migrating(
         "src_host": src_host_name,
         "vm_user": config.HOSTS_USER,
         "vm_password": config.VMS_LINUX_PW,
-        "vm_os_type": "rhel",
-        "src_host_resource": src_host_rsc
+        "vm_os_type": "rhel"
     }
 
     if req_nic:
@@ -179,6 +178,7 @@ def capture_traffic_while_migrating(
         migration_kwargs["password"] = config.HOSTS_PW
     elif maintenance:
         migration_func = hl_vms.migrate_by_maintenance
+        migration_kwargs["src_host_resource"] = src_host_rsc
     else:
         migration_func = hl_vms.migrate_vms
         migration_kwargs["dst_host"] = dst_host_name
