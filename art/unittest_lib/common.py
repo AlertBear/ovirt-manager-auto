@@ -68,7 +68,7 @@ class NetworkTest(object):
     """
     Basic class for network tests
     """
-    apis = set(["rest", "java", "sdk"])
+    apis = set(["rest", "sdk"])
 
 
 @virt
@@ -76,7 +76,7 @@ class VirtTest(object):
     """
     Basic class for compute/virt tests
     """
-    apis = set(["rest", "java", "sdk"])
+    apis = set(["rest", "sdk"])
 
 
 @sla
@@ -91,7 +91,7 @@ class CoreSystemTest(object):
     """
     Basic class for core system tests
     """
-    apis = set(["rest", "java", "sdk"])
+    apis = set(["rest", "sdk"])
 
 
 @coresystem
