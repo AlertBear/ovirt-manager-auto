@@ -12,7 +12,6 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as multi_host_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from art.rhevm_api.utils import test_utils
 
 logger = logging.getLogger("MultiHost_Helper")
 
@@ -122,7 +121,7 @@ def check_mtu(net, mtu, nic, host, vds_host):
     logger.info(
         multi_host_conf.MSG_UPDATED_HOST.format(net=net, prop="MTU", host=host)
     )
-    if not test_utils.check_mtu(
+    if not network_helper.check_mtu(
         vds_resource=vds_host, mtu=mtu, physical_layer=False,
         network=net, nic=nic
     ):
@@ -133,7 +132,7 @@ def check_mtu(net, mtu, nic, host, vds_host):
         )
         return False
 
-    if not test_utils.check_mtu(vds_resource=vds_host, mtu=mtu, nic=nic):
+    if not network_helper.check_mtu(vds_resource=vds_host, mtu=mtu, nic=nic):
         logger.error(
             multi_host_conf.MSG_NOT_UPDATED_HOST.format(
                 net=net, prop="MTU (physical layer)", host=host

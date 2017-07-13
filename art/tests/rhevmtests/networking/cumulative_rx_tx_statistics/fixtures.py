@@ -8,7 +8,6 @@ Fixtures for cumulative_rx_tx_statistics
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.utils.test_utils as test_utils
 import config as rx_tx_conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
@@ -109,7 +108,7 @@ def vm_prepare_setup(request):
             "Configure temporary static IP %s on specific interface %s",
             temp_ip, interface
         )
-        assert test_utils.configure_temp_static_ip(
+        assert network_helper.configure_temp_static_ip(
             vds_resource=vm_resource, ip=temp_ip, nic=interface,
             netmask="255.255.0.0"
         )

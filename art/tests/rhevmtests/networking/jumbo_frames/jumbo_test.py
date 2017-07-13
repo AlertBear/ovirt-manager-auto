@@ -15,7 +15,6 @@ import config as jumbo_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
@@ -365,7 +364,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         ]
         testflow.step("Check that MTU is configured on the hosts")
         for element in list_check_networks:
-            assert test_utils.check_configured_mtu(
+            assert network_helper.check_configured_mtu(
                 vds_resource=conf.VDS_0_HOST, mtu=str(self.mtu_9000),
                 inter_or_net=element
             )
@@ -684,7 +683,7 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
         Check that host NIC MTU is changed to 1500
         """
         testflow.step("Check that host NIC MTU is changed to 1500")
-        assert test_utils.check_configured_mtu(
+        assert network_helper.check_configured_mtu(
             vds_resource=conf.VDS_0_HOST, mtu=self.mtu_1500,
             inter_or_net=conf.HOST_0_NICS[1]
         )

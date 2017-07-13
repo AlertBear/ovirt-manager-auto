@@ -9,7 +9,6 @@ import shlex
 import logging
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.utils.test_utils as test_utils
 import config as net_api_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
@@ -72,7 +71,7 @@ def manage_host_ip(interface, ip=None, netmask="24"):
 
     if ip or netmask != "24":
         ip = int_ip if not ip else ip
-        assert test_utils.configure_temp_static_ip(
+        assert network_helper.configure_temp_static_ip(
             vds_resource=conf.VDS_0_HOST, ip=ip, nic=interface, netmask=netmask
         )
 

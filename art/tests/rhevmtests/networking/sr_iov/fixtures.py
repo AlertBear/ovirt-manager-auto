@@ -9,6 +9,7 @@ import shlex
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+
 from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_storagedomains,
     datacenters as ll_datacenters,
@@ -18,7 +19,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 
-import art.rhevm_api.utils.test_utils as test_utils
 import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
@@ -387,7 +387,7 @@ def set_ip_on_vm_interface(request):
             "Configure temporary static IP %s on specific interface %s",
             ip, interface[0]
         )
-        assert test_utils.configure_temp_static_ip(
+        assert network_helper.configure_temp_static_ip(
             vds_resource=vm_resource, ip=ip, nic=interface[0]
         )
 

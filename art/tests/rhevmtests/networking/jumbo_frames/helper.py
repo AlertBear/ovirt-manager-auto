@@ -11,7 +11,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as jumbo_conf
 import rhevmtests.networking.config as conf
-from art.rhevm_api.utils import test_utils
+import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger("Jumbo_Frame_Helper")
 
@@ -62,7 +62,7 @@ def check_logical_physical_layer(
             "Checking logical layer of %s %s %s %s",
             br_log, net_log, vlan_log, nic_log
         )
-        if not test_utils.check_mtu(
+        if not network_helper.check_mtu(
             vds_resource=host, mtu=mtu, bond=bond, physical_layer=False,
             network=network, nic=nic, vlan=vlan, bridged=bridge
         ):
@@ -74,7 +74,7 @@ def check_logical_physical_layer(
 
     if physical:
         logger.info("Checking physical layer %s %s", bond_log, nic_log)
-        if not test_utils.check_mtu(
+        if not network_helper.check_mtu(
             vds_resource=host, mtu=mtu, nic=nic, bond=bond,
             bond_nic1=bond_nic1, bond_nic2=bond_nic2
         ):
@@ -118,12 +118,12 @@ def add_vnics_to_vms(ips, mtu, network, nic_name, set_ip=True):
                 logger.error("Failed to get %s NICs", vm_name)
                 return False
 
-            if not test_utils.configure_temp_mtu(
+            if not network_helper.configure_temp_mtu(
                 vds_resource=vm_resource, mtu=mtu, nic=vm_nics[1]
             ):
                 return False
 
-            if not test_utils.configure_temp_static_ip(
+            if not network_helper.configure_temp_static_ip(
                 vds_resource=vm_resource, ip=ip, nic=vm_nics[1]
             ):
                 return False

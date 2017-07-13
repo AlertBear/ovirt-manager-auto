@@ -6,6 +6,7 @@ Helper for networking jobs
 """
 
 import logging
+import os
 import random
 import re
 import shlex
@@ -41,6 +42,10 @@ VIRSH_PASS = "qum5net"
 PE_EXPECT = "pe.expect"
 PE_SENDLINE = "pe.sendline"
 SN_TIMEOUT = 300
+IFCFG_NETWORK_SCRIPTS_DIR = '/etc/sysconfig/network-scripts'
+TCDUMP_TIMEOUT = "60"
+MTU_DEFAULT_VALUE = 1500
+SYS_CLASS_NET_DIR = '/sys/class/net'
 
 
 def create_random_ips(num_of_ips=2, mask=16, ip_version=4, base_ip_prefix="5"):
@@ -333,7 +338,7 @@ def check_traffic_during_func_operation(
         tcpdump_kwargs=tcpdump_kwargs
     )
     """
-    tcpdump_job = jobs.Job(test_utils.run_tcp_dump, (), tcpdump_kwargs)
+    tcpdump_job = jobs.Job(run_tcp_dump, (), tcpdump_kwargs)
     func_job = jobs.Job(func, (), func_kwargs)
     job_set = jobs.JobsSet()
     job_set.addJobs([tcpdump_job, func_job])
@@ -559,3 +564,260 @@ def network_manager_remove_all_connections(host):
 
 if __name__ == "__main__":
     pass
+
+
+def configure_temp_static_ip(
+    vds_resource, ip, nic="eth1", netmask="255.255.255.0"
+):
+    """
+    Configure temporary static IP on specific interface
+
+    Args:
+        vds_resource (VDS): VDS resource
+        ip (str): temporary IP to configure on NIC
+        nic (str): specific NIC to configure ip/netmask on
+        netmask (str): netmask to configure on NIC (full or CIDR)
+
+    Returns:
+        bool:  True if command executed successfully, False otherwise
+    """
+    cmd = ["ip", "address", "add", "%s/%s" % (ip, netmask), "dev", nic]
+    return not vds_resource.run_command(cmd)[0]
+
+
+def check_mtu(
+    vds_resource, mtu, physical_layer=True, network=None, nic=None,
+    vlan=None, bond=None, bond_nic1='eth3', bond_nic2='eth2', bridged=True
+):
+    """
+    Check MTU for all files provided from build_list_files_mtu function
+    Uses helper test_mtu_in_script_list function to do it
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param mtu: the value to test against
+    :type mtu: int
+    :param network: the network name to test the MTU value
+    :type network: str
+    :param physical_layer: flag to test MTU for physical or logical layer
+    :type physical_layer: bool
+    :param nic: interface name to test the MTU value for
+    :type nic: str
+    :param vlan: vlan number to test the MTU value for nic.vlan
+    :type vlan: str
+    :param bond: bond name to test the MTU value for
+    :type bond: str
+    :param bond_nic1: name of the first nic of the bond
+    :type bond_nic1: str
+    :param bond_nic2: name of the second nic of the bond
+    :type bond_nic2: str
+    :param bridged: flag, to differentiate bridged and non_bridged network
+    :type bridged: bool
+    :return: True value if MTU in script files is correct
+    :rtype: bool
+    """
+    ifcfg_script_list, sys_class_net_list = build_list_files_mtu(
+        physical_layer=physical_layer, network=network, nic=nic, vlan=vlan,
+        bond=bond, bond_nic1=bond_nic1, bond_nic2=bond_nic2, bridged=bridged
+    )
+    if not ifcfg_script_list or not sys_class_net_list:
+        if not physical_layer and not bridged and not vlan:
+            return True
+        else:
+            logger.error("The file with MTU parameter is empty")
+            return False
+    return test_mtu_in_script_list(
+        vds_resource=vds_resource, script_list=ifcfg_script_list, mtu=mtu,
+        flag_for_ifcfg=1) and test_mtu_in_script_list(
+        vds_resource=vds_resource, script_list=sys_class_net_list, mtu=mtu
+    )
+
+
+def test_mtu_in_script_list(vds_resource, script_list, mtu, flag_for_ifcfg=0):
+    """
+    Helper function for check_mtu to test specific list of files
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param script_list: list with names of files to test MTU in
+    :type script_list: list
+    :param mtu: the value to test against
+    :type mtu: int
+    :param flag_for_ifcfg: flag if this file is ifcfg or not
+    :type flag_for_ifcfg: int
+    :return: True value if MTU in script list is correct
+    :type: bool
+    """
+    err_msg = '"MTU in {0} is {1} when the expected is {2}"'
+    for script_name in script_list:
+        logger.info("Check if MTU for %s is %s", script_name, mtu)
+        rc, out, _ = vds_resource.run_command(['cat', script_name])
+        if rc:
+            return False
+        if flag_for_ifcfg:
+            match_obj = re.search('MTU=([0-9]+)', out)
+            if match_obj:
+                mtu_script = int(match_obj.group(1))
+            else:
+                mtu_script = MTU_DEFAULT_VALUE
+            if mtu_script != mtu:
+                logger.error(err_msg.format(script_name, mtu_script, mtu))
+                return False
+        else:
+            if int(out) != mtu:
+                logger.error(err_msg.format(script_name, out, mtu))
+                return False
+    return True
+
+
+def configure_temp_mtu(vds_resource, mtu, nic="eth1"):
+    """
+    Configure MTU temporarily on specific host interface
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param mtu: MTU to be configured on the host interface
+    :type mtu: string
+    :param nic: specific interface to configure MTU on
+    :type nic: string
+    :return: True if command executed successfully, False otherwise
+    :rtype: bool
+    """
+    cmd = ["ip", "link", "set", "dev", nic, "mtu", mtu]
+    rc, _, _ = vds_resource.run_command(cmd)
+    if rc:
+        return False
+    return True
+
+
+def run_tcp_dump(host_obj, nic, **kwargs):
+    """
+    Runs tcpdump on the given machine and returns its output.
+
+    :param host_obj: Host resource
+    :type host_obj: resources.VDS object
+    :param nic: interface on which traffic will be monitored
+    :type nic: str
+    :param kwargs: Extra kwargs
+    :type kwargs: dict
+        :param src: source IP by which to filter packets
+        :type src: str
+        :param dst: destination IP by which to filter packets
+        :type dst: str
+        :param srcPort: source port by which to filter packets, should be
+                       numeric (e.g. 80 instead of 'HTTP')
+        :type srcPort: str
+        :param dstPort: destination port by which to filter packets, should
+                       be numeric like 'srcPort'
+        :type dstPort: str
+        :param protocol: protocol by which traffic will be received
+        :type protocol: str
+        :param numPackets: number of packets to be received (10 by default)
+        :type numPackets: str
+    :return: Returns tcpdump's output and return code.
+    :rtype: tuple
+    """
+    cmd = [
+        "timeout", kwargs.pop("timeout", TCDUMP_TIMEOUT), "tcpdump", "-i",
+        nic, "-c", str(kwargs.pop("numPackets", "10")), "-nn"
+    ]
+    if kwargs:
+        for k, v in kwargs.iteritems():
+            cmd.extend([k, str(v), "and"])
+        cmd.pop()  # Removes unnecessary "and"
+
+    logger.info("TcpDump command to be sent: %s", cmd)
+    host_exec = host_obj.executor()
+    rc, output, err = host_exec.run_cmd(cmd)
+    logger.debug("TcpDump output:\n%s", output)
+    if rc:
+        logger.error(
+            "Failed to run tcpdump command or no packets were captured by "
+            "filter. Output: %s ERR: %s", output, err
+        )
+        return False
+    return True
+
+
+def check_configured_mtu(vds_resource, mtu, inter_or_net):
+    """
+    Checks if the configured MTU on an interface or network match
+    provided MTU using ip command
+
+    Args:
+        vds_resource (VDS): VDS resource
+        mtu (str): expected MTU for the network/interface
+        inter_or_net (str): interface name or network name
+
+    Returns:
+        bool: True if MTU on host is equal to "mtu", False otherwise.
+    """
+    logger.info(
+        "Checking if %s is configured correctly with MTU %s", inter_or_net, mtu
+    )
+    cmd = ["ip", "link", "list", inter_or_net, "|", "grep", mtu]
+    rc, out, _ = vds_resource.run_command(cmd)
+    if rc:
+        return False
+
+    if out.find(mtu) == -1:
+        logger.error(
+            "MTU is not configured correctly on %s: %s", inter_or_net, out
+        )
+        return False
+    return True
+
+
+def build_list_files_mtu(
+    physical_layer=True, network=None, nic=None, vlan=None, bond=None,
+    bond_nic1='eth3', bond_nic2='eth2', bridged=True
+):
+    """
+    Builds a list of file names to check MTU value
+
+    :param network: network name to build ifcfg-network name
+    :type network: str
+    :param physical_layer: flag to create file names for physical or logical
+    layer
+    :type physical_layer: bool
+    :param nic: nic name to build ifcfg-nic name
+    :type nic: str
+    :param vlan: vlan name to build ifcfg-* files names for
+    :type vlan: str
+    :param bond: bond name to create ifcfg-* files names for
+    :type bond: str
+    :param bond_nic1: name of the first nic of the bond
+    :type bond_nic1: str
+    :param bond_nic2: name of the second nic of the bond
+    :type bond_nic2: str
+    :param bridged: flag, to differentiate bridged and non_bridged network
+    :type bridged: bool
+    :return: 2 lists of ifcfg files names
+    :rtype: tuple
+    """
+    ifcfg_script_list = []
+    sys_class_net_list = []
+    temp_name_list = []
+    if not physical_layer:
+        if bridged:
+            temp_name_list.append("%s" % network)
+        if vlan and bond:
+            temp_name_list.append("%s.%s" % (bond, vlan))
+        if vlan and not bond:
+            temp_name_list.append("%s.%s" % (nic, vlan))
+    else:
+        if bond:
+            for if_name in [bond_nic1, bond_nic2, bond]:
+                temp_name_list.append("%s" % if_name)
+
+        elif vlan or nic:
+            temp_name_list.append("%s" % nic)
+
+    for script_name in temp_name_list:
+        ifcfg_script_list.append(os.path.join(
+            IFCFG_NETWORK_SCRIPTS_DIR, "ifcfg-%s" % script_name)
+        )
+        sys_class_net_list.append(os.path.join(
+            SYS_CLASS_NET_DIR, script_name, "mtu")
+        )
+    return ifcfg_script_list, sys_class_net_list

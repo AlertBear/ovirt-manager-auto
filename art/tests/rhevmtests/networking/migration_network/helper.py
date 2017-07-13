@@ -18,7 +18,6 @@ from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
     vms as ll_vms
 )
-from art.rhevm_api.utils import test_utils
 from rhevmtests.networking import config
 from utilities import jobs
 
@@ -183,7 +182,7 @@ def capture_traffic_while_migrating(
         migration_func = hl_vms.migrate_vms
         migration_kwargs["dst_host"] = dst_host_name
 
-    tcpdump_job = jobs.Job(test_utils.run_tcp_dump, (), tcpdump_kwargs)
+    tcpdump_job = jobs.Job(network_helper.run_tcp_dump, (), tcpdump_kwargs)
     migration_job = jobs.Job(migration_func, (), migration_kwargs)
     job_set = jobs.JobsSet()
     job_set.addJobs([tcpdump_job, migration_job])

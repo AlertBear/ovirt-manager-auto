@@ -16,7 +16,6 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 
-from art.rhevm_api.utils import test_utils
 from art.unittest_lib import testflow
 from rhevmtests.networking import (
     config as conf,
@@ -76,7 +75,7 @@ def configure_mtu_on_host(request, restore_hosts_mtu):
         "Configure MTU %s on host %s host NIC %s", mtu,
         jumbo_frame.vds_0_host, host_nic
     )
-    assert test_utils.configure_temp_mtu(
+    assert network_helper.configure_temp_mtu(
         vds_resource=jumbo_frame.vds_0_host, mtu=mtu,
         nic=host_nic
     )
