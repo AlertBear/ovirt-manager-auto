@@ -33,15 +33,6 @@ class BaseTestCase(TestCase):
     __test__ = False
     # All APIs available that test can run with
     apis = set(ART_CONFIG['RUN']['engines'])
-    test_failed = False
-
-    @classmethod
-    def teardown_exception(cls):
-        try:
-            if cls.test_failed:
-                raise TearDownException("TearDown failed with errors")
-        finally:
-            cls.test_failed = False
     # All storage types available that test can run with
     storages = NOT_APPLICABLE
     # current API on run time
@@ -58,7 +49,15 @@ class StorageTest(BaseTestCase):
     __test__ = False
 
     storages = set([NFS, ISCSI, GLUSTERFS, CEPH, FCP])
+    test_failed = False
 
+    @classmethod
+    def teardown_exception(cls):
+        try:
+            if cls.test_failed:
+                raise TearDownException("TearDown failed with errors")
+        finally:
+            cls.test_failed = False
     # STORAGE_TYPE value sets type of storage when running
     # without the --with-multiplier flag
     storage = STORAGE_TYPE if STORAGE_TYPE != "none" else ISCSI
