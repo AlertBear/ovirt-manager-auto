@@ -256,7 +256,7 @@ class BaseTestCase2(BaseTestCase):
     create_several_snapshots.__name__,
 )
 class BaseTestCase3(BaseTestCase):
-    pass
+    image_name = config.GLANCE_QCOW2v2_IMAGE_NAME
 
 
 class TestCase18215(BaseTestCase):
@@ -804,6 +804,7 @@ class TestCase18346(BaseTestCase):
     snapshots_descriptions_list = []
     checksum_file_list = []
     full_path_list = []
+    image_name = config.GLANCE_QCOW2v2_IMAGE_NAME
 
     @polarion("RHEVM3-18346")
     @tier2

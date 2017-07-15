@@ -793,6 +793,7 @@ class TestCase19016(ColdMoveBase):
     dc_version = "4.0"
     dc_upgrade_version = "4.1"
     templates_names = list()
+    image_name = config.GLANCE_QCOW2v2_IMAGE_NAME
 
     def get_other_type_of_storage_domain(self):
         """

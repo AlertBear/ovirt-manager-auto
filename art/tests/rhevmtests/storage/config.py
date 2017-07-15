@@ -105,6 +105,7 @@ RAW_DISK = DISK_FORMAT_RAW
 
 QCOW_V3 = DISK_QCOW_V3
 QCOW_V2 = DISK_QCOW_V2
+GLANCE_QCOW2v2_IMAGE_NAME = 'rhel7.3_rhv4.1_guest_disk'
 
 KILL_VDSM = "kill `systemctl show vdsmd -p MainPID | awk -F '=' {'print $2'}`"
 RESTART_ENGINE = "systemctl restart ovirt-engine.service"

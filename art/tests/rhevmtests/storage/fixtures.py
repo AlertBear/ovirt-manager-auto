@@ -1278,9 +1278,10 @@ def import_image_from_glance(request):
 
     import_as_template = getattr(self, 'import_as_template', True)
     cluster = getattr(self, 'cluster_name', config.CLUSTER_NAME)
+    glance_image = getattr(self, 'image_name', config.GOLDEN_GLANCE_IMAGE)
 
     assert ll_sd.import_glance_image(
-        config.GLANCE_DOMAIN, config.GOLDEN_GLANCE_IMAGE,
+        config.GLANCE_DOMAIN, glance_image,
         target_storage_domain=storage_domain, target_cluster=cluster,
         new_disk_alias=self.disk_alias,
         new_template_name=self.glance_template_name,
