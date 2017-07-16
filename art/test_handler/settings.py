@@ -34,11 +34,7 @@ from jinja2 import Environment, FileSystemLoader
 
 
 ART_CONFIG = {}
-opts = {}
 GE = {}
-
-""" A options global for all REST tests. """
-RC_RANGE = [2, 9]
 
 # garbage collector interval in seconds
 GC_INTERVAL = 600
@@ -115,7 +111,6 @@ def get_vds_n_passwords():
 
 def create_runtime_config(path_to_defaults, art_define_args):
 
-    # global opts
     global ART_CONFIG
     global GE
 

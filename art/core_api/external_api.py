@@ -20,9 +20,10 @@
 import os
 import logging
 from time import strftime
-from art.test_handler.settings import opts
 from art.core_api.apis_exceptions import APICommandError
 from utilities.logger_utils import initialize_logger
+
+opts = {}
 
 
 class TestRunnerWrapper():

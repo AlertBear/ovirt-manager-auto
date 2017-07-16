@@ -22,7 +22,7 @@ import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_utils import getDS
 from art.core_api.validator import compareElements
 from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler.settings import opts  # noqa
+from art.test_handler.settings import ART_CONFIG  # noqa
 
 ELEMENT = 'user'
 COLLECTION = 'users'
@@ -274,11 +274,11 @@ def loginAsUser(user, domain, password, filter):
     """
     get_api.logoff_api()
     msg = "Logged in as %s@%s(filter=%s), with password: %s"
-    global opts
-    opts['filter'] = filter
-    opts['user'] = user
-    opts['user_domain'] = domain
-    opts['password'] = password
+    global ART_CONFIG
+    ART_CONFIG['REST_CONNECTION']['filter'] = filter
+    ART_CONFIG['REST_CONNECTION']['user'] = user
+    ART_CONFIG['REST_CONNECTION']['user_domain'] = domain
+    ART_CONFIG['REST_CONNECTION']['password'] = password
     logger.info(msg, user, domain, filter, password)
 
 
