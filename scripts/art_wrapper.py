@@ -81,7 +81,7 @@ def art(path_to_config):
     settings.opts["engine"] = "java"
     settings.opts["persistent_auth"] = True
     settings.opts["confSpec"] = "conf/specs/main.spec"
-    settings.readTestRunOpts(
+    settings.create_runtime_config(
         path_to_config, [
             "DEFAULT.PRODUCT=rhevm",
             "DEFAULT.VERSION=3.5",
