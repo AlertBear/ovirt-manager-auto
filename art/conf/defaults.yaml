@@ -28,6 +28,8 @@ RUN:
       - nfs
       - iscsi
       - glusterfs
+      - ceph
+      - fcp
     storage_type:
     engine: rest
     golden_environment:

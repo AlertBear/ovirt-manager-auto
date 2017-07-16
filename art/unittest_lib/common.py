@@ -1,5 +1,5 @@
 import logging
-from unittest2 import TestCase
+from unittest2 import TestCase  # only storage tests uses unittest2
 
 from _pytest_art.marks import (
     network,
@@ -16,21 +16,14 @@ from art.test_handler.settings import ART_CONFIG
 logger = logging.getLogger(__name__)
 testflow = TestFlowInterface
 
-# WA This will be removed after multiplier is merged
-ISCSI = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_iscsi']
-NFS = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_nfs']
-GLUSTERFS = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_gluster']
-FCP = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_fcp']
-CEPH = ART_CONFIG['elements_conf']['RHEVM Enums']['storage_type_ceph']
-STORAGE_TYPE = ART_CONFIG['PARAMETERS'].get('storage_type', None)
+STORAGE_TYPE = ART_CONFIG['RUN'].get('storage_type')
 NOT_APPLICABLE = 'N/A'
 
 
-class BaseTestCase(TestCase):
+class BaseTestCase(object):
     """
     Base test case class for unittest testing
     """
-    __test__ = False
     # All APIs available that test can run with
     apis = set(ART_CONFIG['RUN']['engines'])
     # All storage types available that test can run with
@@ -42,13 +35,14 @@ class BaseTestCase(TestCase):
 
 
 @storage
-class StorageTest(BaseTestCase):
+class StorageTest(TestCase):
     """
     Basic class for storage tests
     """
     __test__ = False
 
-    storages = set([NFS, ISCSI, GLUSTERFS, CEPH, FCP])
+    apis = set(ART_CONFIG['RUN']['engines'])
+    storages = set(ART_CONFIG['RUN']['storages'])
     test_failed = False
 
     @classmethod
@@ -60,38 +54,37 @@ class StorageTest(BaseTestCase):
             cls.test_failed = False
     # STORAGE_TYPE value sets type of storage when running
     # without the --with-multiplier flag
-    storage = STORAGE_TYPE if STORAGE_TYPE != "none" else ISCSI
+    storage = STORAGE_TYPE if STORAGE_TYPE != "none" else 'iscsi'
+    # current API on run time
+    api = None
 
 
 @network
-class NetworkTest(object):
+class NetworkTest(BaseTestCase):
     """
     Basic class for network tests
     """
-    apis = set(["rest", "sdk"])
 
 
 @virt
-class VirtTest(object):
+class VirtTest(BaseTestCase):
     """
     Basic class for compute/virt tests
     """
-    apis = set(["rest", "sdk"])
 
 
 @sla
-class SlaTest(object):
+class SlaTest(BaseTestCase):
     """
     Basic class for compute/sla tests
     """
 
 
 @coresystem
-class CoreSystemTest(object):
+class CoreSystemTest(BaseTestCase):
     """
     Basic class for core system tests
     """
-    apis = set(["rest", "sdk"])
 
 
 @coresystem
@@ -99,7 +92,6 @@ class IntegrationTest(BaseTestCase):
     """
     Basic class for integration test
     """
-    __test__ = False
 
 
 @upgrade
@@ -107,4 +99,3 @@ class UpgradeTest(BaseTestCase):
     """
     Basic class for upgrade test
     """
-    __test__ = False
