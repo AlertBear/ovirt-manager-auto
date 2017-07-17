@@ -6,8 +6,7 @@ ART wrapper
 """
 
 from collections import defaultdict
-from art.core_api.external_api import TestRunnerWrapper
-import art.test_handler.settings as settings
+from art.test_handler import settings
 
 GIT = False
 DS_MOD = "rhevm_api.data_struct.data_structures"
@@ -65,37 +64,33 @@ class FakeDict(defaultdict):
         return True
 
 
-def art(path_to_config):
+def art(path_to_defaults, template_yaml):
     """
     ART wrapper
-    :param path_to_config: Path to config file
-    :type path_to_config: str
+
+    Args:
+        path_to_defaults (str): Path to defaults.yaml
+        template_yaml (str): Path to template.yaml
     """
-    TestRunnerWrapper(
-        ip=VDC, scheme="https", port=443, user=USER,
-        user_domain=DOMAIN, password=PASS,
-        headers={"Prefer": "persistent-auth"}, logger_init=False
-    )
-    settings.opts["standalone"] = True
-    settings.opts["data_struct_mod"] = DS_MOD
-    settings.opts["engine"] = "java"
-    settings.opts["persistent_auth"] = True
-    settings.opts["confSpec"] = "conf/specs/main.spec"
     settings.create_runtime_config(
-        path_to_config, [
-            "DEFAULT.PRODUCT=rhevm",
-            "DEFAULT.VERSION=3.5",
+        path_to_defaults, [
+            "RUN.golden_environment={ge_yaml}".format(ge_yaml=template_yaml),
         ]
     )
-    settings.opts["host"] = VDC
-    ds_conf = settings.opts.setdefault("GENERATE_DS", {})
-    ds_conf.setdefault("encoding", "utf8")
-    ds_conf.setdefault("enabled", False)
-    ds_conf.setdefault("schema_url", "/ovirt-engine/api?schema")
-    settings.opts["user"] = USER
-    settings.opts["password"] = PASS
-    settings.opts["user_domain"] = DOMAIN
-    rhevm_api.generate_ds(rhevm_api.opts)
-    settings.ART_CONFIG["PARAMETERS"]["vds"] = ["1.1.1.1"] * 4
-    settings.ART_CONFIG["RUN"]["engine"] = VDC
-    settings.ART_CONFIG["PARAMETERS"]["disk_size"] = "1000"
+    settings.ART_CONFIG["REST_CONNECTION"]["password"] = PASS
+    settings.ART_CONFIG["REST_CONNECTION"]["user"] = USER
+    settings.ART_CONFIG["REST_CONNECTION"]["host"] = VDC
+    settings.ART_CONFIG["REST_CONNECTION"]["user_domain"] = DOMAIN
+    settings.ART_CONFIG["REST_CONNECTION"]["uri"] = (
+        "https://%s:443/ovirt-engine/api/" % VDC
+    )
+
+    rhevm_api.generate_ds(settings.ART_CONFIG)
+
+
+if __name__ == "__main__":
+    root = None  # Path to root git folder
+    art(
+        path_to_defaults="%s/rhevm-art/art/conf/defaults.yaml" % root,
+        template_yaml="%s/rhevm-jenkins/qe/GE-yamls/template.yaml" % root
+    )
