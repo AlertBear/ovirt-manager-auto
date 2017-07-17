@@ -88,9 +88,7 @@ def prepare_disks_for_test(vm_name, storage_type, storage_domain):
 
     testflow.setup("Creating FS on VM's %s disks", vm_name)
     config.DISKS_FOR_TEST[storage_type], config.MOUNT_POINTS[storage_type] = (
-        storage_helpers.prepare_disks_with_fs_for_vm(
-            storage_domain, storage_type, vm_name
-        )
+        storage_helpers.prepare_disks_with_fs_for_vm(storage_domain, vm_name)
     )
     disk_objects = ll_vms.getVmDisks(vm_name)
     for disk in disk_objects:

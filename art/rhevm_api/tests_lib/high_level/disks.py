@@ -87,44 +87,6 @@ def add_new_disk(sd_name, size, block, shared=False, **kwargs):
     return disk_args['alias']
 
 
-def create_all_legal_disk_permutations(
-        sd_name, shared=False, block=False, size=DISK_SIZE,
-        interfaces=None
-):
-    """
-    Begins asynchronous creation of disks of all permutations
-    interfaces, formats and allocation policies
-
-    __author__ = "ratamir"
-    :param sd_name: Name of storage domain under which the disks should created
-    :type sd_name: str
-    :param shared: Determines whether the disks should be created as Shareable
-    (if True)
-    :type shared: bool
-    :param block: Use block storage type (if True), use File based storage
-    (if False)
-    :type block: bool
-    :param size: The disk size to be used (for all disks created)
-    :type size: int
-    :param interfaces: List of interfaces to be used in generating the disks
-    permutations
-    :type interfaces: list
-    :returns: List of the disk aliases created
-    :rtype: list
-    """
-    disks_names = []
-    logger.info("Creating all disks")
-    disk_permutations = ll_disks.get_all_disk_permutation(
-        block=block, shared=shared, interfaces=interfaces
-    )
-    for permutation in disk_permutations:
-        name = add_new_disk(
-            sd_name, size, block, shared=shared, **permutation
-        )
-        disks_names.append(name)
-    return disks_names
-
-
 @ll_general.generate_logs()
 def unlock_disks(
     vdc,

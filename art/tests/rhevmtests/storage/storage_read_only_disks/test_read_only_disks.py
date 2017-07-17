@@ -84,9 +84,10 @@ class BaseTestCase(TestCase):
     def prepare_disks_for_vm(self, read_only, vm_name=None):
         """Attach read-only disks to the VM"""
         vm_name = self.vm_name if not vm_name else vm_name
-        disk_names = self.disk_names
+        disk_interfaces = [disk['disk_interface'] for disk in self.disks]
         return storage_helpers.prepare_disks_for_vm(
-            vm_name, disk_names, read_only=read_only
+            vm_name, self.disk_names, read_only=read_only,
+            interfaces=disk_interfaces
         )
 
     def set_persistent_network(self, vm_name=None):
@@ -212,7 +213,6 @@ class TestCase4907(BaseTestCase):
                 'shareable': False,
                 'active': True,
                 'format': config.COW_DISK,
-                'interface': interface,
                 'alias': disk_alias,
                 'lun_address': config.DIRECT_LUN_ADDRESSES[i],
                 'lun_target': config.DIRECT_LUN_TARGETS[i],
@@ -373,12 +373,12 @@ class TestCase4910(BaseTestCase):
           to read-only
         - Activate the disk
         """
-        self.disk_names = (
-            storage_helpers.create_disks_from_requested_permutations(
-                domain_to_use=self.storage_domain,
-                test_name=self.polarion_test_case
+        self.disks = (
+            storage_helpers.start_creating_disks_for_test(
+                sd_name=self.storage_domain
             )
         )
+        self.disk_names = [disk['disk_name'] for disk in self.disks]
         ll_vms.start_vms(
             [self.vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=False
         )

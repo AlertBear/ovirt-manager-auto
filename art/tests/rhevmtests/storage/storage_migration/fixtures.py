@@ -176,8 +176,10 @@ def prepare_disks_for_vm(request):
     testflow.setup(
         "Add disks %s to VM %s", config.DISK_NAMES[self.storage], self.vm_name
     )
+    disk_interfaces = [disk['disk_interface'] for disk in self.disks]
     assert storage_helpers.prepare_disks_for_vm(
-        self.vm_name, config.DISK_NAMES[self.storage]
+        self.vm_name, config.DISK_NAMES[self.storage],
+        interfaces=disk_interfaces
     ), "Failed to attach disks to VM %s" % self.vm_name
 
 

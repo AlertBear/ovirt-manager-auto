@@ -43,11 +43,12 @@ def create_disks(request):
     request.addfinalizer(finalizer)
     config.FLOATING_DISKS = list()
     testflow.setup("Creating disks for test")
-    disk_names = (
+    disks = (
         storage_helpers.start_creating_disks_for_test(
-            sd_name=self.storage_domain, sd_type=self.storage
+            sd_name=self.storage_domain
         )
     )
+    disk_names = [disk['disk_name'] for disk in disks]
     ll_disks.wait_for_disks_status(disk_names)
     for disk_alias in disk_names:
         config.FLOATING_DISKS.append(

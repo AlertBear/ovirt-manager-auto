@@ -91,42 +91,46 @@ CEPH = config.STORAGE_TYPE_CEPH
 POSIX = config.STORAGE_TYPE_POSIX
 
 
-def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
+def prepare_disks_for_vm(
+    vm_name, disks_to_prepare, read_only=False, interfaces=list()
+):
     """
     Attach disks to vm
 
-    :param vm_name: name of vm which disk should be attached to
-    :type vm_name: str
-    :param disks_to_prepare: list of disks' aliases
-    :type disks_to_prepare: list
-    :param read_only: Determines if the disks should be attached in RO mode
-    :param read_only: bool
-    :returns: True if successful, or raise DiskException otherwise
-    :rtype bool
+    Args:
+        vm_name (str): The name of the VM which the disks should be attached to
+        disks_to_prepare (list): Disks names
+        read_only (bool): True if disks are attached in RO mode, False
+            otherwise
+        interfaces (list): Disk interfaces for attach
+
+    Returns:
+        bool: True for success, False otherwise
+
+    Raises:
+        AssertionError: In case of disk attachment failure
     """
     is_ro = 'Read Only' if read_only else 'Read Write'
+    if not interfaces:
+        interfaces = [config.VIRTIO] * len(disks_to_prepare)
 
-    def attach_and_activate(disk):
-        logger.info("Attaching disk %s as %s disk to vm %s",
-                    disk, is_ro, vm_name)
-        status = ll_disks.attachDisk(
-            True, disk, vm_name, active=False, read_only=read_only
+    def attach_and_activate(disk, interface):
+        logger.info(
+            "Attaching disk %s as %s disk to vm %s", disk, is_ro, vm_name
         )
-        if not status:
-            raise exceptions.DiskException("Failed to attach disk %s to"
-                                           " vm %s"
-                                           % (disk, vm_name))
+        assert ll_disks.attachDisk(
+            positive=True, alias=disk, vm_name=vm_name, active=False,
+            read_only=read_only, interface=interface
+        ), "Failed to attach disk %s to vm %s" % (disk, vm_name)
 
         logger.info("Plugging disk %s", disk)
-        status = ll_vms.activateVmDisk(True, vm_name, disk)
-        if not status:
-            raise exceptions.DiskException("Failed to plug disk %s "
-                                           "to vm %s"
-                                           % (disk, vm_name))
+        assert ll_vms.activateVmDisk(True, vm_name, disk), (
+            "Failed to plug disk %s to vm %s" % (disk, vm_name)
+        )
 
     with ThreadPoolExecutor(max_workers=len(disks_to_prepare)) as executor:
-        for disk in disks_to_prepare:
-            executor.submit(attach_and_activate, disk)
+        for disk, interface in zip(disks_to_prepare, interfaces):
+            executor.submit(attach_and_activate, disk, interface)
     return True
 
 
@@ -152,71 +156,6 @@ def remove_all_vm_snapshots(vm_name, description):
         [ENUMS['job_remove_snapshot']], timeout=REMOVE_SNAPSHOT_TIMEOUT
     )
     assert False not in results
-
-
-def create_disks_from_requested_permutations(
-        domain_to_use, interfaces=INTERFACES, size=config.DISK_SIZE,
-        shared=False, wait=True, test_name="Test"
-):
-    """
-    Creates disks using a list of permutations
-
-    __author__ = "glazarov"
-    :param domain_to_use: The storage domain on which to create the disks
-    :type domain_to_use: str
-    :param interfaces: List of interfaces to use in generating the ll_disks.
-    Default is (VIRTIO, VIRTIO_SCSI)
-    :type interfaces: list
-    :param size: The disk size (in bytes) to create, uses config.DISK_SIZE as a
-    default
-    :type size: int
-    :param shared: Specifies whether the disks to be created are shareable
-    :type shared: bool
-    :param wait: Specifies whether to wait for each disk to be created
-    :type wait: bool
-    :param test_name: The test name to use as part of the disk naming
-    :type test_name: str
-    :returns: List of the disk aliases created
-    :rtype: list
-    """
-    logger.info("Generating a list of disk permutations")
-    # Get the storage domain object and its type, use this to ascertain
-    # whether the storage is of a block or file type
-    storage_domain_object = ll_sd.get_storage_domain_obj(domain_to_use)
-    storage_type = storage_domain_object.get_storage().get_type()
-    is_block = storage_type in config.BLOCK_TYPES
-    disk_permutations = ll_disks.get_all_disk_permutation(
-        block=is_block, shared=shared, interfaces=interfaces
-    )
-    # Provide a warning in the logs when the total number of disk
-    # permutations is 0
-    if len(disk_permutations) == 0:
-        logger.warn("The number of disk permutations is 0")
-    # List of the disk aliases that will be returned when
-    # the function completes execution
-    disk_aliases = []
-
-    logger.info("Create disks for all permutations generated previously")
-    for disk_permutation in disk_permutations:
-        disk_alias = "%s_%s" % (
-            test_name,
-            create_unique_object_name(
-                disk_permutation['interface'] + disk_permutation['format'],
-                config.OBJECT_TYPE_DISK
-            )
-        )
-        disk_description = disk_alias.replace("_alias", "_description")
-        disk_aliases.append(disk_alias)
-        assert ll_disks.addDisk(
-            True, alias=disk_alias, description=disk_description,
-            provisioned_size=size, interface=disk_permutation['interface'],
-            sparse=disk_permutation['sparse'],
-            format=disk_permutation['format'],
-            storagedomain=domain_to_use, bootable=False, shareable=shared
-        )
-    if wait:
-        assert ll_disks.wait_for_disks_status(disk_aliases)
-    return disk_aliases
 
 
 def perform_dd_to_disk(
@@ -718,27 +657,27 @@ def get_disks_volume_count(
 
 
 def add_new_disk(
-        sd_name, permutation, sd_type, shared=False, disk_size=config.DISK_SIZE
+    sd_name, permutation, sd_type, shared=False, disk_size=config.DISK_SIZE
 ):
     """
     Add a new disk
 
-    :param sd_name: storage domain where a new disk will be added
-    :type sd_name: str
-    :param permutation:
-            * alias - alias of the disk
-            * interface - VIRTIO, VIRTIO_SCSI or IDE
-            * sparse - True if thin, False if preallocated
-            * format - disk format 'cow' or 'raw'
-    :type permutation: dict
-    :param sd_type: type of the storage domain (nfs, iscsi, gluster)
-    :type sd_type: str
-    :param shared: True if the disk should be shared
-    :type shared: bool
-    :param disk_size: disk size (default is 1GB)
-    :type disk_size: int
-    :returns: disk's alias
-    :rtype: str
+    Args:
+        sd_name (str): storage domain where a new disk will be added
+        permutation (dict):
+            alias - alias of the disk
+            interface - VIRTIO, VIRTIO_SCSI or IDE
+            sparse - True if thin, False if preallocated
+            format - disk format 'cow' or 'raw'
+        sd_type (str): type of the storage domain (nfs, iscsi, gluster)
+        shared (bool): True if the disk should be shared
+        disk_size (int): disk size (default is 1GB)
+
+    Returns:
+        tuple: The disk alias and permutation
+
+    Raises:
+        AssertionError: In case of add disk failure
     """
     if 'alias' in permutation:
         alias = permutation['alias']
@@ -758,67 +697,71 @@ def add_new_disk(
         'active': True,
         # Custom arguments - change for each disk
         'format': permutation['format'],
-        'interface': permutation['interface'],
         'sparse': permutation['sparse'],
-        'alias': alias,
+        'alias': alias
     }
     logger.info("Adding new disk: %s", alias)
 
     assert ll_disks.addDisk(True, **new_disk_args)
-    return alias
+    return alias, permutation['interface']
 
 
 def start_creating_disks_for_test(
-        shared=False, sd_name=None, sd_type=None, disk_size=config.DISK_SIZE,
-        interfaces=INTERFACES
+    shared=False, sd_name=None, disk_size=config.DISK_SIZE,
+    interfaces=INTERFACES
 ):
     """
     Begins asynchronous creation of disks from all permutations of disk
     interfaces, formats and allocation policies
 
-    :param shared: Specifies whether the disks should be shared
-    :type shared: bool
-    :param sd_name: name of the storage domain where the disks will be created
-    :type sd_name: str
-    :param sd_type: storage type of the domain where the disks will be created
-    :type sd_type: str
-    :param disk_size: Disk size to be used with the disk creation
-    :type disk_size: int
-    :param interfaces: List of interfaces to include in generating the disks
-    permutations
-    :type interfaces: list
-    :returns: List of disk aliases created
-    :rtype: list
+    Args:
+        shared (bool): Specifies whether the disks should be shared
+        sd_name (str): The name of the storage domain where the disks will be
+            created
+        disk_size (int): Disk size to be used with the disk creation
+        interfaces (list): Interfaces to include in generating the disks
+            permutations
+
+    Returns:
+        list: Dictionaries of disk aliases and interfaces
     """
-    disk_names = []
+    disks = []
+    storage_domain_object = ll_sd.get_storage_domain_obj(sd_name)
+    sd_type = storage_domain_object.get_storage().get_type()
     logger.info("Creating all disks required for test")
     disk_permutations = ll_disks.get_all_disk_permutation(
         block=sd_type in config.BLOCK_TYPES, shared=shared,
         interfaces=interfaces
     )
+    # Provide a warning in the logs when the total number of disk
+    # permutations is 0
+    if len(disk_permutations) == 0:
+        logger.warn("The number of disk permutations is 0")
 
     def add_disk(permutation):
-        alias = add_new_disk(
+        alias, interface = add_new_disk(
             sd_name=sd_name, permutation=permutation, shared=shared,
             sd_type=sd_type, disk_size=disk_size
         )
-        disk_names.append(alias)
+        disk = {
+            'disk_name': alias,
+            'disk_interface': interface
+        }
+        disks.append(disk)
+
     with ThreadPoolExecutor(max_workers=len(disk_permutations)) as executor:
         for disk in disk_permutations:
             executor.submit(add_disk, disk)
-    return disk_names
+    return disks
 
 
-def prepare_disks_with_fs_for_vm(
-    storage_domain, storage_type, vm_name, executor=None
-):
+def prepare_disks_with_fs_for_vm(storage_domain, vm_name, executor=None):
     """
     Prepare disks with filesystem for vm
 
     Args:
         storage_domain (str): Name of the storage domain to be used for disk
             creation
-        storage_type (str): Storage type to be used with the disk creation
         vm_name (str): Name of the VM under which a disk with a file system
             will be created
         executor (Host resource): Host resource on which commands can
@@ -830,28 +773,28 @@ def prepare_disks_with_fs_for_vm(
     """
     disk_ids = list()
     mount_points = list()
+    disk_names = []
+    disk_interfaces = []
     logger.info('Creating disks for test')
-    disk_names = start_creating_disks_for_test(
-        sd_name=storage_domain, sd_type=storage_type
-    )
-    for disk_alias in disk_names:
-        disk_ids.append(ll_disks.get_disk_obj(disk_alias).get_id())
+    disks = start_creating_disks_for_test(sd_name=storage_domain)
+    for disk in disks:
+        disk_names.append(disk['disk_name'])
+        disk_interfaces.append(disk['disk_interface'])
+        disk_ids.append(ll_disks.get_disk_obj(disk['disk_name']).get_id())
 
-    if not ll_disks.wait_for_disks_status(
+    assert ll_disks.wait_for_disks_status(
         disk_names, timeout=CREATION_DISKS_TIMEOUT
-    ):
-        raise exceptions.DiskException("Some disks are still locked")
+    ), "Some disks are still locked"
     logger.info("Attaching and activating disks %s", disk_names)
-    prepare_disks_for_vm(vm_name, disk_names)
+    prepare_disks_for_vm(vm_name, disk_names, interfaces=disk_interfaces)
 
     if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
         ll_vms.startVm(
-            True, vm_name, wait_for_status=config.VM_UP,
-            wait_for_ip=True
+            True, vm_name, wait_for_status=config.VM_UP, wait_for_ip=True
         )
     if not executor:
         executor = get_vm_executor(vm_name)
-    logger.info("Creating filesystems on disks %s", disk_names)
+    logger.info("Creating filesystems on disks %s", disks)
 
     with ThreadPoolExecutor(max_workers=len(disk_names)) as thread_executor:
         for disk_alias in disk_names:

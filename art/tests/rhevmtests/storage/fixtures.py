@@ -94,11 +94,11 @@ def add_disk_permutations(request):
     disks_size = getattr(self, 'disks_size', config.DISK_SIZE)
     self.polarion_test_case = getattr(self, 'polarion_test_case', 'Test')
     testflow.setup("Creating all disk permutations")
-    self.disk_names = storage_helpers.create_disks_from_requested_permutations(
-        domain_to_use=self.storage_domain,
-        interfaces=storage_helpers.INTERFACES, shared=self.shared,
-        size=disks_size, test_name=self.polarion_test_case
+    self.disks = storage_helpers.start_creating_disks_for_test(
+        shared=self.shared, sd_name=self.storage_domain, disk_size=disks_size,
+        interfaces=storage_helpers.INTERFACES
     )
+    self.disk_names = [disk['disk_name'] for disk in self.disks]
     assert ll_disks.wait_for_disks_status(self.disk_names), (
         "At least one of the disks %s was not in the expected state 'OK"
         % self.disk_names
@@ -870,7 +870,7 @@ def prepare_disks_with_fs_for_vm(request):
         "Creating disks with filesystem and attach to VM %s", self.vm_name,
     )
     disks, mount_points = storage_helpers.prepare_disks_with_fs_for_vm(
-        self.storage_domain, self.storage, self.vm_name,
+        self.storage_domain, self.vm_name,
         executor=getattr(self, 'vm_executor', None)
     )
     self.disks_to_remove = disks
@@ -1396,7 +1396,7 @@ def create_disks_with_fs(request):
     testflow.setup("Create disks with filesystem on VM %s", self.vm_name)
     disk_ids, mount_points = (
         storage_helpers.prepare_disks_with_fs_for_vm(
-            storage_domain, self.storage, self.vm_name, executor=executor
+            storage_domain, self.vm_name, executor=executor
         )
     )
     self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks'] = disk_ids

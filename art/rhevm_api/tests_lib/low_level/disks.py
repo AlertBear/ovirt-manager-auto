@@ -172,8 +172,6 @@ def _prepareDiskObject(**kwargs):
     :type description: str
     :param provisioned_size: Size of the disk
     :type provisioned_size: int
-    :param interface: IDE or virtio or virtio-scsi
-    :type interface: str
     :param format: raw or cow
     :type format: str
     :param sparse: True if disk should be sparse, False otherwise
@@ -305,7 +303,6 @@ def addDisk(positive, **kwargs):
         * alias - name of the disk
         * description - description of the disk
         * provisioned_size - size of the disk
-        * interface - IDE or virtio
         * format - raw or cow
         * size - size of the disk
         * sparse - True or False whether disk should be sparse
@@ -704,18 +701,20 @@ def checksum_disk(hostname, user, password, disk_object, dc_obj):
     return checksum
 
 
-def get_all_disk_permutation(block=True, shared=False,
-                             interfaces=(VIRTIO, VIRTIO_SCSI)):
+def get_all_disk_permutation(
+    block=True, shared=False, interfaces=(VIRTIO, VIRTIO_SCSI)
+):
     """
-    Description: Get all disks interfaces/formats/allocation policies
-    permutations possible
-    Author: ratamir, glazarov
-    Parameters:
-        * block - True if storage type is block, False otherwise
-        * shared - True if disk is shared, False otherwise
-        * interfaces - The list of interfaces to use in generating the disk
-        permutations, default is (VIRTIO, VIRTIO_SCSI)
-    Return: list of permutations stored in dictionary
+    Get all disks interfaces/formats/allocation policies permutations possible
+
+    Args:
+        block (bool): True if storage type is block, False otherwise
+        shared (bool): True if disk is shared, False otherwise
+        interfaces (list): The disks interfaces for permutations.
+
+    Returns:
+        list: Each permutation is stored in a dictionary which is one element
+            in the list
     """
     permutations = []
     for disk_format in [FORMAT_COW, FORMAT_RAW]:
