@@ -11,6 +11,7 @@ import pytest
 import fixtures_helper as network_fixture_helper
 import config as conf
 from rhevmtests import fixtures_helper
+import art.core_api.apis_exceptions as exceptions
 from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
     networks as hl_networks
@@ -91,7 +92,7 @@ class NetworkFixtures(object):
             host_nics = ll_hosts.get_host_nics_list(host=host)
             for nic in host_nics:
                 nic_name = nic.name
-                if "dummy" in nic_name:
+                if "dummy" in nic_name or nic_name not in nics:
                     continue
 
                 try:
@@ -108,8 +109,9 @@ class NetworkFixtures(object):
                         )
                         nics.pop(nics.index(nic_name))
                         break
-                except AttributeError:
-                    # In case no network on NIC
+                except (AttributeError, exceptions.EntityNotFound):
+                    # In case no network on NIC or in case host have VLAN
+                    # on host NIC
                     continue
 
 
