@@ -60,9 +60,11 @@ class XPathMatch(object):
         """
         # A hack to make the XPathMatch able to match against the tags in the
         # RHEVM entry-point url.
-        if self.api.opts['engine'] != 'rest':
-            raise EngineTypeError("Engine type '%s' not supported by xpath"
-                                  % self.api.opts['engine'])
+        if self.api.opts['RUN']['engine'] != 'rest':
+            raise EngineTypeError(
+                "Engine type '%s' not supported by xpath" %
+                self.api.opts['RUN']['engine']
+            )
 
         if link.startswith('/'):
             matching_nodes = self.get_and_xpath_eval(link, xpath, abs_link)
@@ -110,9 +112,11 @@ class XPathLinks(XPathMatch):
     def __call__(self, positive, entity, link_name, xpath,
                  rslt_eval='0. < result'):
 
-        if self.api.opts['engine'] != 'rest':
-            raise EngineTypeError("Engine type '%s' not supported by xpath"
-                                  % self.api.opts['engine'])
+        if self.api.opts['RUN']['engine'] != 'rest':
+            raise EngineTypeError(
+                "Engine type '%s' not supported by xpath"
+                % self.api.opts['RUN']['engine']
+            )
 
         entityObj = self.api.find(entity)
         link = self.api.getElemFromLink(entityObj, link_name=link_name,
