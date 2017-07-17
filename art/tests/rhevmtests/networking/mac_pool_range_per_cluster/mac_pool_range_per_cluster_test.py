@@ -17,7 +17,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as mac_pool_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
 )
@@ -36,7 +36,6 @@ class TestMacPoolRange01(NetworkTest):
     2.  Check that invalid engine config commands are deprecated
         (MacPoolRanges and MaxMacCountPool)
     """
-    __test__ = True
 
     @tier2
     @polarion("RHEVM3-6442")
@@ -69,7 +68,6 @@ class TestMacPoolRange02(NetworkTest):
     2.  Try to remove default MAC pool
     3.  Extend and shrink Default MAC pool ranges
     """
-    __test__ = True
 
     ext_cl = mac_pool_conf.EXT_CL_1
     mac_pool = mac_pool_conf.MAC_POOL_NAME_0
@@ -164,7 +162,6 @@ class TestMacPoolRange03(NetworkTest):
     6.  Creating pool with the same name
     7.  Creating pool with the same range
     """
-    __test__ = True
 
     ext_cl = mac_pool_conf.MAC_POOL_CL
     ext_cl_1 = mac_pool_conf.EXT_CL_1
@@ -356,7 +353,6 @@ class TestMacPoolRange04(NetworkTest):
     7.  Extending the MAC pool range by 2 will let you add 2 additional VNICs
         only
     """
-    __test__ = True
 
     ext_cl = mac_pool_conf.MAC_POOL_CL
     vm = mac_pool_conf.MP_VM_0
@@ -424,7 +420,6 @@ class TestMacPoolRange05(NetworkTest):
     2.  Check that you can add VNICs according to the number of MAC ranges when
         each MAC range has only one MAC address in the pool
     """
-    __test__ = True
 
     ext_cl = mac_pool_conf.MAC_POOL_CL
     vm = mac_pool_conf.MP_VM_0
@@ -490,30 +485,6 @@ class TestMacPoolRange05(NetworkTest):
         assert nic_mac == self.mac_pool_ranges[-1][0]
 
 
-@bz({"1219383": {}})
-class TestMacPoolRange06(NetworkTest):
-    """
-    1.  Combine MAC pool range of Unicast and multicast MAC's
-    2.  Check that when having a combined range of multicast and unicast
-        addresses the new VNICs will be created with unicast addresses only
-    """
-    __test__ = True
-
-    mac_pool_ranges = [("00:ff:ff:ff:ff:ff", "02:00:00:00:00:01")]
-    pool_0 = mac_pool_conf.MAC_POOL_NAME_0
-
-    @tier2
-    @polarion("RHEVM3-6454")
-    def test_big_range(self):
-        """
-        Try to add big range
-        """
-        testflow.step("Try to add big range - MAC range with 2^31 addresses")
-        assert not ll_mac_pool.create_mac_pool(
-            name=self.pool_0, ranges=self.mac_pool_ranges
-        )
-
-
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
     remove_non_default_mac_pool.__name__,
@@ -522,7 +493,7 @@ class TestMacPoolRange06(NetworkTest):
     add_vnics_to_template.__name__,
     create_vm_from_template.__name__
 )
-class TestMacPoolRange07(NetworkTest):
+class TestMacPoolRange06(NetworkTest):
     """
     1.  Create VM from Template
     2.  Check that VNIC created from template uses the correct MAC POOL value
@@ -530,7 +501,6 @@ class TestMacPoolRange07(NetworkTest):
         VM from that template
     4.  Check that creating new VM from template fails
     """
-    __test__ = True
 
     ext_cl = mac_pool_conf.MAC_POOL_CL
     nic_0 = mac_pool_conf.NIC_NAME_0
@@ -583,12 +553,11 @@ class TestMacPoolRange07(NetworkTest):
     create_mac_pools.__name__,
     create_cluster_with_mac_pools.__name__
 )
-class TestMacPoolRange08(NetworkTest):
+class TestMacPoolRange07(NetworkTest):
     """
     Removal of cluster with custom MAC pool when that MAC pool is assigned to
         2 clusters
     """
-    __test__ = True
 
     ext_cl_1 = mac_pool_conf.EXT_CL_2
     ext_cl_2 = mac_pool_conf.EXT_CL_3
