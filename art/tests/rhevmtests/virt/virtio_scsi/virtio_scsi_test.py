@@ -7,7 +7,7 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Compute/4_1_VIRT_virtio-scsi_default_interface
 """
 import pytest
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     VirtTest,
     testflow,
@@ -58,28 +58,6 @@ class TestVirtioScsiDefaultInterface(VirtTest):
         vm_obj = ll_vms.get_vm_obj(self.vm_name, all_content=True)
         assert vm_obj.virtio_scsi.enabled, (
             "The vitio-scsi is disabeled in %s" % self.vm_name
-        )
-
-    @tier2
-    @pytest.mark.usefixtures(create_disk.__name__)
-    @polarion("RHEVM-18329")
-    @bz({'1435976': {}})
-    def test_default_disk_interface_is_iscsi(self):
-        """
-        Check that the Default disk interface is iscsi
-        """
-        disk = ll_vms.get_disk_attachment(
-            name=self.vm_name, disk=self.disk_name, attr="name"
-        )
-        testflow.step(
-            "Test if VM %s has %s interface",
-            self.vm_name, config.INTERFACE_VIRTIO_SCSI
-        )
-        assert config.INTERFACE_VIRTIO_SCSI == disk.get_interface(), (
-            "Disk %s should have interface %s instead of interface %s"
-            % (self.disk_name, config.INTERFACE_VIRTIO_SCSI,
-               disk.get_interface()
-               )
         )
 
     @tier2
