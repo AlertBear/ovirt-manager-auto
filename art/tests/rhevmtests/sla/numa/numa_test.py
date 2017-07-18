@@ -9,7 +9,7 @@ import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import testflow, tier1, tier2, SlaTest
 from fixtures import (
     create_equals_numa_nodes_on_vm,
@@ -444,6 +444,7 @@ class TestTotalVmMemoryEqualToNumaNodesMemory(SlaTest):
     vms_to_start = [conf.VM_NAME[0]]
 
     @tier2
+    @bz({"1472167": {}})
     @polarion("RHEVM3-9571")
     def test_vm_numa_nodes(self):
         """
@@ -500,6 +501,7 @@ class TestTotalVmCpusEqualToNumaNodesCpus(SlaTest):
     vms_to_start = [conf.VM_NAME[0]]
 
     @tier2
+    @bz({"1472167": {}})
     @polarion("RHEVM3-9573")
     def test_vm_numa_nodes(self):
         """
@@ -836,6 +838,7 @@ class TestHotplugCpuUnderNumaPinning(SlaTest):
         assert new_num_of_sockets == real_amount_of_cpus
 
     @tier2
+    @bz({"1472167": {}})
     @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9556")
     def test_hotplug_cpu(self):
