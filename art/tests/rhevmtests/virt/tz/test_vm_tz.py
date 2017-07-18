@@ -96,11 +96,15 @@ class TestVmTz(VirtTest):
         rtc_base_new = virt_helper.get_vm_qemu_process_args(
             self.vm_name
         ).get('rtc_base')
-        testflow.step('Check that rtc base was changed accordingly')
-        assert (rtc_base_new - rtc_base_old).seconds / 3600 == 2 + is_dst
+        testflow.step(
+            'Comparing rtc base - Old value: {old} New value: {new}'.format(
+                old=rtc_base_old,
+                new=rtc_base_new)
+        )
         vm = ll_vms.get_vm(self.vm_name)
         testflow.step('Check that VM timezone is updated')
         assert vm.get_time_zone().get_name() == tz_for_upd
+        assert (rtc_base_new - rtc_base_old).seconds / 3600 == 2 + is_dst
 
     @tier1
     @pytest.mark.parametrize(
