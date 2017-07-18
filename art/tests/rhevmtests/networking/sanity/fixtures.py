@@ -202,9 +202,15 @@ def prepare_setup_for_register_domain(request):
     Add storage domain to setup.
     Create VM.
     """
+    gluster = False
     storage_name = sanity_conf.EXTRA_SD_NAME
-    storage_address = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-    storage_path = conf.UNUSED_DATA_DOMAIN_PATHS[0]
+    if conf.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES:
+        storage_address = conf.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
+        storage_path = conf.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
+        gluster = True
+    else:
+        storage_address = conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
+        storage_path = conf.UNUSED_DATA_DOMAIN_PATHS[0]
     dc = conf.DC_0
     cluster = conf.CL_0
     host = conf.HOST_0_NAME
@@ -226,11 +232,21 @@ def prepare_setup_for_register_domain(request):
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Add NFS storage domain %s to DC %s", storage_name, dc)
-    assert hl_storage.addNFSDomain(
-        host=host, storage=storage_name, data_center=dc,
-        address=storage_address, path=storage_path
+    testflow.setup(
+        "Add %s storage domain %s to DC %s", "gluster" if gluster
+        else "NFS", storage_name, dc
     )
+    if gluster:
+        assert hl_storage.addGlusterDomain(
+            host=host, name=storage_name, data_center=dc,
+            address=storage_address, path=storage_path,
+            vfs_type=conf.ENUMS["vfs_type_glusterfs"]
+        )
+    else:
+        assert hl_storage.addNFSDomain(
+            host=host, storage=storage_name, data_center=dc,
+            address=storage_address, path=storage_path
+        )
     testflow.setup(
         "Create VM %s with: %s, %s", vm, network, mac or "MAC from pool"
     )
