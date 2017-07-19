@@ -7,7 +7,6 @@ import config
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api import resources
-from art.rhevm_api.utils.inventory import Inventory
 
 logger = logging.getLogger(__name__)
 
@@ -96,14 +95,6 @@ def setup_package():
     ):
         config.VM_NAME.append(config.HE_VM)
         config.SD_LIST.append(config.HE_STORAGE_DOMAIN)
-
-    # setup inventory reporter
-    reporter = Inventory.get_instance()
-    reporter.get_setup_inventory_report(
-        print_report=True,
-        check_inventory=True,
-        rhevm_config_file=config
-    )
 
 
 def teardown_package():

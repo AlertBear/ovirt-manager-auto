@@ -40,3 +40,23 @@ def pytest_package_teardown(entry):
     :param entry: reference to package
     :type entry: instance of package_fixtures.Entry
     """
+
+
+def pytest_rhv_setup(team):
+    """
+    It gets executed at package setup
+
+    :param team: reference to the team that owns the package that is
+    going to be executed
+    :type team: string
+    """
+
+
+def pytest_rhv_teardown(team):
+    """
+    It gets executed at package teardown
+
+    :param team: reference to the team that owns the package that was
+    executed
+    :type team: string
+    """

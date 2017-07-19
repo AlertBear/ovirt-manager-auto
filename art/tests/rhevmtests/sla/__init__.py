@@ -6,8 +6,8 @@ import logging
 import config
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
-from art.rhevm_api.utils.inventory import Inventory
 from rhevmtests import networking
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +34,14 @@ def sla_cleanup():
 
 
 def teardown_package():
-    reporter = Inventory.get_instance()
-    reporter.get_setup_inventory_report(
-        print_report=True,
-        check_inventory=True,
-        rhevm_config_file=config
-    )
+    """
+    Run package teardown
+    """
+    pytest.config.hook.pytest_rhv_teardown(team="sla")
+
+
+def setup_package():
+    """
+    Run package setup
+    """
+    pytest.config.hook.pytest_rhv_setup(team="sla")

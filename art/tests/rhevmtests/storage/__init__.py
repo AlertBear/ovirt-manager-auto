@@ -1,5 +1,5 @@
 from rhevmtests.storage import config
-from art.rhevm_api.utils.inventory import Inventory
+import pytest
 
 
 def assign_storgage_params(targets, keywords, *args):
@@ -10,6 +10,8 @@ def assign_storgage_params(targets, keywords, *args):
 
 
 def setup_package():
+    pytest.config.hook.pytest_rhv_setup(team="storage")
+
     config.FIRST_HOST = config.HOSTS[0]
     assign_storgage_params(
         config.NFS_DOMAINS_KWARGS,
@@ -38,9 +40,7 @@ def setup_package():
 
 
 def teardown_package():
-    reporter = Inventory.get_instance()
-    reporter.get_setup_inventory_report(
-        print_report=True,
-        check_inventory=True,
-        rhevm_config_file=config
-    )
+    """
+    Run package teardown
+    """
+    pytest.config.hook.pytest_rhv_teardown(team="storage")

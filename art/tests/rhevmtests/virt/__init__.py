@@ -1,14 +1,18 @@
 import logging
-from art.rhevm_api.utils.inventory import Inventory
-import config
+import pytest
 
 logger = logging.getLogger(__name__)
 
 
 def teardown_package():
-    reporter = Inventory.get_instance()
-    reporter.get_setup_inventory_report(
-        print_report=True,
-        check_inventory=True,
-        rhevm_config_file=config
-    )
+    """
+    Run package teardown
+    """
+    pytest.config.hook.pytest_rhv_teardown(team="virt")
+
+
+def setup_package():
+    """
+    Run package setup
+    """
+    pytest.config.hook.pytest_rhv_setup(team="virt")
