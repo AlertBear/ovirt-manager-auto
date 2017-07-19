@@ -268,9 +268,13 @@ def prepare_setup_for_register_domain(request):
 
     testflow.setup("Import storage domain %s", storage_name)
     assert ll_storage.importStorageDomain(
-        positive=True, type=conf.ENUMS['storage_dom_type_data'],
-        storage_type=conf.STORAGE_TYPE_NFS, address=storage_address,
-        path=storage_path, host=host
+        positive=True,
+        type=conf.ENUMS['storage_dom_type_data'],
+        storage_type=conf.STORAGE_TYPE_GLUSTER if gluster else
+        conf.STORAGE_TYPE_NFS,
+        address=storage_address,
+        path=storage_path, host=host,
+        vfs_type=conf.ENUMS["vfs_type_glusterfs"] if gluster else None
     )
     testflow.setup("Attach storage domain to data center %s", dc)
     assert ll_storage.attachStorageDomain(
