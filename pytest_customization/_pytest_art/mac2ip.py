@@ -84,26 +84,25 @@ def pytest_artconf_ready(config):
     """
     Register AutoDevices plugin.
     """
-    if settings.ART_CONFIG.get(CONF_SECTION).get(ENABLED):
-        hosts = []
-        user = RootUser(
-            settings.ART_CONFIG[PARAMETERS].get(VDS_PASSWORD)[0]
+    hosts = []
+    user = RootUser(
+        settings.ART_CONFIG[PARAMETERS].get(VDS_PASSWORD)[0]
+    )
+    for ip in settings.ART_CONFIG[PARAMETERS].get(VDS):
+        h = Host(ip)
+        h.users.append(user)
+        hosts.append(h)
+    if hosts:
+        debug = str(
+            settings.ART_CONFIG[CONF_SECTION].get(DEBUG, "False")
         )
-        for ip in settings.ART_CONFIG[PARAMETERS].get(VDS):
-            h = Host(ip)
-            h.users.append(user)
-            hosts.append(h)
-        if hosts:
-            debug = str(
-                settings.ART_CONFIG[CONF_SECTION].get(DEBUG, "False")
+        debug = debug.lower() in ('1', 'yes', 'true')
+        config.pluginmanager.register(
+            Mac2IpConvertor(
+                hosts,
+                get_int_option(ATTEMPTS, DEFAULT_ATTEMPTS),
+                get_int_option(TIMEOUT, DEFAULT_TIMEOUT),
+                get_int_option(WAIT_INT, DEFAULT_WAIT),
+                debug,
             )
-            debug = debug.lower() in ('1', 'yes', 'true')
-            config.pluginmanager.register(
-                Mac2IpConvertor(
-                    hosts,
-                    get_int_option(ATTEMPTS, DEFAULT_ATTEMPTS),
-                    get_int_option(TIMEOUT, DEFAULT_TIMEOUT),
-                    get_int_option(WAIT_INT, DEFAULT_WAIT),
-                    debug,
-                )
-            )
+        )
