@@ -77,7 +77,6 @@ PARAMETERS:
     vds:
     vds_ovirt_port: 8443
     vds_password:
-    vlan_id: 446,447,448,449,450,451,452
     vm_linux_password: qum5net
     vm_linux_user: root
     vm_os: Red Hat Enterprise Linux 6.x x64
