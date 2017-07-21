@@ -163,7 +163,7 @@ class WithHighAvailableVm(TestCase):
             volumeFormat=config.FORMAT
         )
         disks.updateDisk(
-            True, vmName=cls.vm_ha_name, alias=config.TEMPLATE_NAME[0],
+            True, vmName=cls.vm_ha_name, alias=config.GOLDEN_GLANCE_IMAGE,
             bootable=True
         )
         assert vms.runVmOnce(True, cls.vm_ha_name, host=HOST_WITH_PM)
@@ -180,7 +180,7 @@ class WithHighAvailableVm(TestCase):
             volumeFormat=config.FORMAT
         )
         disks.updateDisk(
-            True, vmName=cls.vm2_name, alias=config.TEMPLATE_NAME[0],
+            True, vmName=cls.vm2_name, alias=config.GOLDEN_GLANCE_IMAGE,
             bootable=True
         )
         assert vms.runVmOnce(True, cls.vm2_name, host=HOST_WITH_PM)

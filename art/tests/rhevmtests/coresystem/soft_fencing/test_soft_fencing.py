@@ -170,7 +170,7 @@ class TestCheckVmAfterSoftFencing(SoftFencing):
     """
     Positive: Check vm after soft fencing
     """
-    vm_test = "vm_test"
+    vm_test = "sf_test_vm"
 
     @classmethod
     @pytest.fixture(scope="class", autouse=True)
