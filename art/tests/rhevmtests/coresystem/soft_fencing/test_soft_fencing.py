@@ -6,10 +6,11 @@ on host with pm and without,
 
 import logging
 import pytest
+from socket import timeout
 
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    run_delayed_control_service, wait_for_hosts_states, remove_host,
-    add_host, is_host_up, activate_host, select_host_as_spm, wait_for_spm
+    wait_for_hosts_states, remove_host, add_host, is_host_up,
+    activate_host, select_host_as_spm, wait_for_spm
 )
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import waitForVMState
@@ -78,10 +79,11 @@ def _check_host_state(host_num, service, job_status):
         service, config.HOSTS[host_num], job_status
     )
     testflow.step("Stop %s on host %s", service, config.HOSTS[host_num])
-    assert run_delayed_control_service(
-        True, config.VDS_HOSTS[host_num].fqdn, config.HOSTS_USER,
-        config.HOSTS_PW, service=service, command='stop'
-    )
+    try:
+        config.VDS_HOSTS[host_num].service(service).stop()
+    except timeout as err:
+        logger.info(err)
+
     testflow.step(
         "Check if %s job was invoked for host: %s",
         JOB, config.HOSTS[host_num]
@@ -90,7 +92,8 @@ def _check_host_state(host_num, service, job_status):
             True, config.HOSTS[host_num], states=HOST_CONNECTING
     ):
         assert config.ENGINE.db.psql(sql, 'SELECT *')
-    assert wait_for_hosts_states(True, config.HOSTS[host_num])
+    wait_for_hosts_states(True, config.HOSTS[host_num])
+
     testflow.step("Check recent jobs for job %s", config.job_description)
     assert check_recent_job(
         description=config.job_description, job_status=job_status
@@ -191,7 +194,9 @@ class TestCheckVmAfterSoftFencing(SoftFencing):
             network=config.MGMT_BRIDGE
         )
         testflow.setup("Start VM %s", cls.vm_test)
-        assert vms.startVm(positive=True, vm=cls.vm_test)
+        assert vms.startVm(
+            positive=True, vm=cls.vm_test, wait_for_status=config.VM_UP
+        )
 
     @polarion("RHEVM3-8406")
     def test_check_vm_state(self):
