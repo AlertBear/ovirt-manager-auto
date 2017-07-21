@@ -11,8 +11,8 @@ from art.test_handler.settings import GE
 
 # Logs constants
 NOTIFIER_LOG = '/var/log/ovirt-engine/notifier/notifier.log'
-SNMPTRAPD_LOG = "/var/log/snmptrapd.log"
-LOGS_LIST = [NOTIFIER_LOG, SNMPTRAPD_LOG]
+SNMPD_LOG = "/var/log/snmpd.log"
+LOGS_LIST = [NOTIFIER_LOG, SNMPD_LOG]
 
 OVIRT_USER = "ovirt"
 OVIRT_GROUP = OVIRT_USER

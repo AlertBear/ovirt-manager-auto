@@ -200,7 +200,7 @@ def stop_ovirt_notifier_service():
 def flush_logs():
     """
     Description:
-        Flushes snmptrapd.log and notifier.log files on engine host.
+        Flushes snmpd.log and notifier.log files on engine host.
     """
     for log in config.LOGS_LIST:
         assert config.engine.host.fs.flush_file(
@@ -299,7 +299,7 @@ def get_snmp_result():
         Get the result of snmp traps.
     Returns:
         bool: True if number of events is equals to the number
-        of events in snmptrapd.log file.
+        of events in snmpd.log file.
     """
     actions = ["add_vm", "vm_start", "vm_stop", "vm_remove"]
 
@@ -310,11 +310,11 @@ def get_snmp_result():
     notifier_log = config.engine.host.fs.read_file(
         config.NOTIFIER_LOG
     ).lower()
-    snmptrapd_log = config.engine.host.fs.read_file(
-        config.SNMPTRAPD_LOG
+    snmpd_log = config.engine.host.fs.read_file(
+        config.SNMPD_LOG
     ).lower()
 
-    if not notifier_log or not snmptrapd_log:
+    if not notifier_log or not snmpd_log:
         return False
 
     def actions_counter(log, a):
@@ -334,7 +334,7 @@ def get_snmp_result():
     for action in actions:
         if (
             actions_counter(notifier_log, action) !=
-            actions_counter(snmptrapd_log, action)
+            actions_counter(snmpd_log, action)
         ):
             return False
 
