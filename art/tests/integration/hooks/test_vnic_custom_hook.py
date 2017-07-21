@@ -10,7 +10,8 @@ from shlex import split
 from os import path
 from time import sleep
 
-from art.rhevm_api.tests_lib.low_level import hooks, vms, networks
+from art.rhevm_api.resources import VDS
+from art.rhevm_api.tests_lib.low_level import hooks, vms, networks, hosts
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier3,
@@ -237,14 +238,14 @@ class CaseVnic(TestCase):
         def finalize():
             """ remove created script """
             testflow.teardown("Removing all hooks.")
-            for hook_name, hook_type in cls.hooks_names.iteritems():
-                hook_name = "{0}/{1}.{2}".format(
-                    hook_name,
-                    hook_name,
-                    hook_type
+            for _hook_name, _hook_type in cls.hooks_names.iteritems():
+                _hook_name = "{0}/{1}.{2}".format(
+                    _hook_name,
+                    _hook_name,
+                    _hook_type
                 )
                 assert config.hooks_host.fs.remove(
-                    path.join(HOOK_PATH, hook_name)
+                    path.join(HOOK_PATH, _hook_name)
                 )
 
         request.addfinalizer(finalize)
@@ -422,10 +423,6 @@ class TestCaseAfterBeforeUpdateDevice(CaseVnic):
 class TestCaseAfterUpdateDeviceFail(CaseVnic):
     """ after_update_device_fail hook """
     NONEXISTENT = "xxxyxxx"
-    UPDATE_FAIL = (
-        "vdsClient -s 0 vmUpdateDevice {0} deviceType=interface "
-        "alias={1} network={2}"
-    )
 
     hooks_names = {
         "after_update_device_fail": SCRIPT_TYPES["shell"]
@@ -453,10 +450,25 @@ class TestCaseAfterUpdateDeviceFail(CaseVnic):
         vm_id = vms.VM_API.find(config.HOOKS_VM_NAME).get_id()
 
         testflow.setup("Defining a command for updating a nic to fail.")
-        cmd = split(cls.UPDATE_FAIL.format(vm_id, fail_nic, cls.NONEXISTENT))
+        cmd = {
+            "vmID": vm_id,
+            "params":
+                {
+                    "alias": fail_nic,
+                    "network": cls.NONEXISTENT,
+                    "deviceType": "interface"
+                }
+        }
+
+        testflow.setup("Get host VM is running on.")
+        host = VDS(
+            hosts.get_host_vm_run_on(config.HOOKS_VM_NAME),
+            config.vdc_root_password
+        )
 
         testflow.setup("Checking if the command above failed.")
-        assert config.hooks_host.run_command(cmd)[0] != 0
+        rc = host.vds_client("VM.updateDevice", cmd)
+        assert not rc or rc[0] != 0
 
     @polarion("RHEVM3-12346")
     def test_after_update_device_fail(self):

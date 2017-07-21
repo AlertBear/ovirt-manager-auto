@@ -112,7 +112,6 @@ for host in hosts_objects:
     hosts.append(host.name)
     hosts_ips.append(host.address)
 
-
 hooks_host = resources.Host(ip=hosts_ips[0])
 hooks_host.users.append(resources.RootUser(vdc_root_password))
 
