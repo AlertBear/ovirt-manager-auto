@@ -108,7 +108,9 @@ class TestPauseVM(VirtTest):
             wait_for_status=config.ENUMS['vm_state_paused']
         ), "Failed to start vm in pause mode"
         assert ll_vms.migrateVm(
-            positive=True, vm=self.base_vm_name
+            positive=True,
+            vm=self.base_vm_name,
+            wait_for_status=config.VM_PAUSED
         ), "failed to migrate pause vm"
 
 

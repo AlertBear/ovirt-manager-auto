@@ -2141,36 +2141,36 @@ def migrateVm(
         host=None,
         wait=True,
         force=False,
-        timeout=MIGRATION_TIMEOUT
+        timeout=MIGRATION_TIMEOUT,
+        wait_for_status='up'
 ):
     """
     Migrate the VM.
 
     If the host was specified, after the migrate action was performed,
-    the method is checking whether the VM status is UP and whether
+    the method is checking whether the VM status is as expected and whether
     the VM runs on required destination host.
 
     If the host was not specified, after the migrate action was performed, the
     method is checking whether the VM is UP and whether the VM runs
     on host different to the source host.
 
-    :param positive: Expected result
-    :type positive: bool
-    :param vm: name of vm
-    :type vm: str
-    :param host: Name of the destination host to migrate VM on, or
-                 None for RHEVM destination host autodetect.
-    :type host: str
-    :param wait: When True wait until end of action, False return without
-                 waiting.
-    :type wait: bool
-    :param force: <Don't know what is force. please comment>
-    :type force: bool
-    :param timeout: Timeout to check if vm is update after migration is done
-    :type timeout: int
-    :return: True if vm was migrated and test is positive, False otherwise.
-    :rtype: bool
+
+    Args:
+        positive(bool): Expected result
+        vm(str): name of vm
+        host(str): Name of the destination host to migrate VM on, or
+         None for RHEVM destination host autodetect.
+        wait(bool): When True wait until end of action, False return without
+         waiting.
+        wait_for_status(str): VM status after migrate done. (up, paused)
+        force(bool): Force action
+        timeout(int): Timeout to check if vm is update after migration is done
+
+    Returns:
+         True if vm was migrated and test is positive, False otherwise.
     """
+
     vm_obj = VM_API.find(vm)
     if not vm_obj.get_host():
         logger.error("VM has no attribute 'host': %s", dir(vm_obj))
@@ -2204,7 +2204,7 @@ def migrateVm(
 
     # Barak: change status to up from powering up, since all migrations ends in
     # up, but diskless VM skips the powering_up phase
-    if not VM_API.waitForElemStatus(vm_obj, "up", timeout):
+    if not VM_API.waitForElemStatus(vm_obj, wait_for_status, timeout):
         return False
 
     # Check whether we tried to migrate vm to different cluster
