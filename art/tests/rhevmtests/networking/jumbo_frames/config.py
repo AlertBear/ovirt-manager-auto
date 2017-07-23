@@ -62,7 +62,7 @@ NETS_DICT = {
     },
     NETS[4][1]: {
         "required": "false",
-        "vlan_id": conf.VLAN_ID[2],
+        "vlan_id": conf.VLAN_ID[2] if conf.VLAN_ID else None,
         "mtu": conf.MTU[0]
     },
     NETS[4][2]: {
@@ -77,7 +77,7 @@ NETS_DICT = {
     },
     NETS[5][0]: {
         "required": "false",
-        "vlan_id": conf.VLAN_ID[3],
+        "vlan_id": conf.VLAN_ID[3] if conf.VLAN_ID else None,
         "mtu": conf.MTU[1],
     },
     NETS[6][0]: {
@@ -93,12 +93,12 @@ NETS_DICT = {
     NETS[7][0]: {
         "required": "false",
         "mtu": conf.MTU[1],
-        "vlan_id": conf.VLAN_ID[0],
+        "vlan_id": conf.VLAN_ID[0] if conf.VLAN_ID else None,
     },
     NETS[7][1]: {
         "required": "false",
         "mtu": conf.MTU[0],
-        "vlan_id": conf.VLAN_ID[1],
+        "vlan_id": conf.VLAN_ID[1] if conf.VLAN_ID else None,
     },
     NETS[8][0]: {
         "required": "false",

@@ -516,8 +516,8 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     __test__ = True
     net_1 = jumbo_conf.NETS[7][0]
     net_2 = jumbo_conf.NETS[7][1]
-    vlan_1 = conf.VLAN_ID[0]
-    vlan_2 = conf.VLAN_ID[1]
+    vlan_1 = conf.VLAN_ID[0] if conf.VLAN_ID else None
+    vlan_2 = conf.VLAN_ID[1] if conf.VLAN_ID else None
     mtu_5000 = conf.MTU[1]
     mtu_9000 = conf.MTU[0]
     mtu_4500 = str(conf.SEND_MTU[0])
