@@ -20,7 +20,7 @@ class ConfigFileReadingError(Exception):
     Exception for error in config file reading
     """
     def __init__(self, path):
-        super(ConfigFileReadingError, path).__init__(
+        super(ConfigFileReadingError, self).__init__(
             "FileSystem reading error occurred while reading configuration"
             " file: {0}.", path
         )
@@ -304,6 +304,19 @@ class HostConfigFileHandler(object):
                     "option_1": "value"
                 }
             }
+
+            Create or update section-less config file:
+
+            from config_handler import DEFAULT_CONFIG_SECTION_NAME
+            .
+            .
+            .
+            parameters_dict = {
+                DEFAULT_CONFIG_SECTION_NAME: {
+                    "option_1": "value",
+                    "option_2": "value"
+                }
+            }
         """
         for section, options in parameters.items():
             for option, value in options.items():
@@ -336,6 +349,16 @@ class HostConfigFileHandler(object):
 
             parameters_dict = {
                 "section_1": list()
+            }
+
+            Delete options from section-less config file:
+
+            from config_handler import DEFAULT_CONFIG_SECTION_NAME
+            .
+            .
+            .
+            parameters_dict = {
+                DEFAULT_CONFIG_SECTION_NAME: ["option_1", "option_2"]
             }
         """
         for section, options in parameters.items():

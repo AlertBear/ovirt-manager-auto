@@ -17,39 +17,43 @@ import helper
 import rhevmtests.networking.config as net_conf
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
-    networks as ll_networks,
-    vms as ll_vms,
-    external_providers
+    networks as ll_networks, vms as ll_vms
 )
-from art.test_handler.tools import (
-    bz, jira, polarion
-)
-from art.unittest_lib import (
-    NetworkTest, testflow, tier2
-)
+from art.test_handler.tools import bz, polarion
+from art.unittest_lib import NetworkTest, testflow, tier2, tier3
 from fixtures import (
     check_running_on_rhevh, configure_ovn, configure_provider_plugin,
-    remove_ovn_networks_from_provider, remove_ovn_networks_from_engine,
-    remove_vnics_from_vms, remove_vnic_profiles, remove_ifcfg_from_vms,
-    add_ovn_provider
+    create_ovn_networks_on_provider, import_ovn_networks,
+    remove_ifcfg_from_vms, add_ovn_provider, get_default_ovn_provider,
+    setup_vms_ovn_interface, benchmark_file_transfer, save_vm_resources
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
+from rhevmtests.networking.fixtures import (
+    remove_vnic_profiles, add_vnics_to_vms, remove_vnics_from_vms,
+    setup_ldap_integration
+)
 
 
 @pytest.mark.usefixtures(
     check_running_on_rhevh.__name__,
+    setup_ldap_integration.__name__,
     configure_ovn.__name__,
     configure_provider_plugin.__name__,
     add_ovn_provider.__name__
 )
-class TestOVNProviderAuthorization(NetworkTest):
+class TestOVNAuthorization(NetworkTest):
     """
     1. Test OVN provider authorization with JDBC user
     2. NEGATIVE: Test OVN provider authorization with wrong JDBC user
     3. Test OVN provider authorization with LDAP user
     4. NEGATIVE: Test OVN provider authorization with wrong LDAP user
     """
+    # setup_ldap_integration fixture parameters
+    ldap_services = ["ad"]
+
+    # Provider name to be used in authorization tests
+    provider_name = "%s-auth-test" % ovn_conf.OVN_PROVIDER_NAME
 
     # Test case parameters = [
     #   Username to be used in authentication,
@@ -58,31 +62,28 @@ class TestOVNProviderAuthorization(NetworkTest):
     #   True for positive test, False for negative test
     # ]
 
-    # Provider name to be used in authorization tests
-    provider_name = "%s-auth-test" % ovn_conf.OVN_PROVIDER_NAME
-
     # JDBC username test case parameters
     jdbc_group_with_user = [
-        ovn_conf.OVN_JDBC_GROUP_USERNAME, ovn_conf.OVN_JDBC_USERNAME_PASSWORD,
-        ovn_conf.OVN_JDBC_GROUP_NAME, "JDBC", True
+        ovn_conf.OVN_JDBC_USERNAME, ovn_conf.OVN_JDBC_USERNAME_PASSWORD,
+        ovn_conf.OVN_JDBC_GROUP, "JDBC", True
     ]
 
     # NEGATIVE: JDBC username with wrong password test case parameters
     jdbc_group_with_wrong_user = [
-        ovn_conf.OVN_JDBC_GROUP_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
-        ovn_conf.OVN_JDBC_GROUP_NAME, "JDBC", False
+        ovn_conf.OVN_JDBC_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
+        ovn_conf.OVN_JDBC_GROUP, "JDBC", False
     ]
 
     # LDAP username test case parameters
     ldap_group_with_user = [
-        ovn_conf.OVN_LDAP_GROUP_USERNAME, ovn_conf.OVN_LDAP_USERNAME_PASSWORD,
-        ovn_conf.OVN_LDAP_GROUP_NAME, "LDAP", True
+        ovn_conf.OVN_LDAP_USERNAME, ovn_conf.OVN_LDAP_USERNAME_PASSWORD,
+        ovn_conf.OVN_LDAP_GROUP, "LDAP", True
     ]
 
     # NEGATIVE: LDAP username with wrong password test case parameters
     ldap_group_with_wrong_user = [
-        ovn_conf.OVN_LDAP_GROUP_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
-        ovn_conf.OVN_LDAP_GROUP_NAME, "LDAP", False
+        ovn_conf.OVN_LDAP_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
+        ovn_conf.OVN_LDAP_GROUP, "LDAP", False
     ]
 
     @tier2
@@ -96,21 +97,17 @@ class TestOVNProviderAuthorization(NetworkTest):
                 *jdbc_group_with_wrong_user, marks=(polarion("RHEVM-21800"))
             ),
             pytest.param(
-                *ldap_group_with_user, marks=(
-                    polarion("RHEVM-21683"), jira("RHEVM-3126", run=False)
-                )
+                *ldap_group_with_user, marks=(polarion("RHEVM-21683"))
             ),
             pytest.param(
-                *ldap_group_with_wrong_user, marks=(
-                    polarion("RHEVM-21801"), jira("RHEVM-3126", run=False)
-                )
+                *ldap_group_with_wrong_user, marks=(polarion("RHEVM-21801"))
             )
         ],
         ids=[
-            "OVN_provider_JDBC_group_with_user_test",
-            "OVN_provider_JDBC_group_with_wrong_password_test",
-            "OVN_provider_LDAP_group_with_user_test",
-            "OVN_provider_LDAP_group_with_wrong_user_test",
+            "ovn_provider_jdbc_group_with_user_test",
+            "ovn_provider_jdbc_group_with_wrong_password_test",
+            "ovn_provider_ldap_group_with_user_test",
+            "ovn_provider_ldap_group_with_wrong_user_test",
         ]
     )
     def test_ovn_authentication_plugin(
@@ -132,16 +129,16 @@ class TestOVNProviderAuthorization(NetworkTest):
         assert ovn_conf.OVN_PROVIDER.update(
             username=username, password=password
         )
-        assert ovn_conf.OVN_PROVIDER.test_connection(positive=positive)
+        assert positive == ovn_conf.OVN_PROVIDER.test_connection()
 
 
-@bz({"1478054": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     check_running_on_rhevh.__name__,
     configure_ovn.__name__,
-    remove_ovn_networks_from_provider.__name__,
-    remove_ovn_networks_from_engine.__name__,
+    get_default_ovn_provider.__name__,
+    create_ovn_networks_on_provider.__name__,
+    import_ovn_networks.__name__,
     remove_vnic_profiles.__name__,
     remove_vnics_from_vms.__name__,
     start_vm.__name__,
@@ -167,20 +164,43 @@ class TestOVNComponent(NetworkTest):
     15. Change MAC address of vNIC attached to OVN network
     16. Migrate a VM with OVN network and subnet
     """
+    # Common settings
     provider_name = ovn_conf.OVN_PROVIDER_NAME
     dc = net_conf.DC_0
     cl = net_conf.CL_0
-
-    remove_vnics_from_vms_params = {
-        net_conf.VM_0: ovn_conf.OVN_VNIC,
-        net_conf.VM_1: ovn_conf.OVN_VNIC
-    }
-    vms_to_stop = [net_conf.VM_0, net_conf.VM_1]
-    remove_vnic_profiles_params = {
-        ovn_conf.OVN_VNIC_PROFILE: ovn_conf.OVN_NET_1
-    }
-    remove_ifcfg_from_vms_parms = [net_conf.VM_0, net_conf.VM_1]
     vms_ips = list()
+
+    # create_ovn_networks_on_provider fixture parameters
+    add_ovn_networks_to_provider = ovn_conf.OVN_LONG_NETS
+    remove_ovn_networks_from_provider = dict(
+        ovn_conf.OVN_NETS, **ovn_conf.OVN_LONG_NETS
+    )
+
+    # import_ovn_networks fixture parameters
+    remove_ovn_networks_from_engine = ovn_conf.OVN_NETS.keys()
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {
+        1: {
+            "vm": net_conf.VM_0,
+            "name": ovn_conf.OVN_VNIC
+        },
+        2: {
+            "vm": net_conf.VM_1,
+            "name": ovn_conf.OVN_VNIC
+        }
+    }
+
+    # start_vm fixture parameters
+    vms_to_stop = [net_conf.VM_0, net_conf.VM_1]
+
+    # remove_vnic_profile fixture parameters
+    remove_vnic_profile_params = {
+        "1": {
+            "name": ovn_conf.OVN_VNIC_PROFILE,
+            "network": ovn_conf.OVN_NET_1,
+        }
+    }
 
     @tier2
     @polarion("RHEVM3-21661")
@@ -191,11 +211,9 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Testing default OVN network provider: %s", self.provider_name
         )
-        ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["name"] = self.provider_name
-        ovn_conf.OVN_PROVIDER = external_providers.ExternalNetworkProvider(
-            **ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS
+        assert helper.get_provider_from_engine(
+            provider_name=self.provider_name
         )
-        assert ovn_conf.OVN_PROVIDER.test_connection(positive=True)
 
         # Check for objects in the OVS DB and report warning in case found
         helper.check_for_ovn_objects()
@@ -206,7 +224,7 @@ class TestOVNComponent(NetworkTest):
         """
         Create networks on OVN provider
         """
-        for net_name, subnet in ovn_conf.OVN_NETS.iteritems():
+        for net_name, subnet in ovn_conf.OVN_NETS.items():
             txt = " with subnet: %s" % subnet.get("name") if subnet else ""
             testflow.step(
                 "Creating network: %s%s on OVN provider", net_name, txt
@@ -221,15 +239,16 @@ class TestOVNComponent(NetworkTest):
         """
         Import networks from OVN provider
         """
-        for net_name in ovn_conf.OVN_NET_NAMES:
+        for net_name in ovn_conf.OVN_NETS.keys():
             testflow.step(
-                "Importing OVN provider network: %s to DC: %s Cluster: %s",
-                net_name, self.dc, self.cl
+                "Importing network: %s from OVN network provider to DC: %s "
+                "Cluster: %s", net_name, self.dc, self.cl
             )
             assert ovn_conf.OVN_PROVIDER.import_network(
                 network=net_name, datacenter=self.dc, cluster=self.cl
             )
 
+    @bz({"1478054": {}})
     @tier2
     @polarion("RHEVM3-17439")
     def test_04_start_vm_with_ovn_network(self):
@@ -481,8 +500,8 @@ class TestOVNComponent(NetworkTest):
         vm_0_rsc = ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0]
         vm_1_rsc = ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1]
 
-        # On OVN tunnel connections, MTU should be set to 1400 in order to get
-        # TCP transfer work successfully
+        # On OVN tunnel connections, MTU should be set to 1400 for TCP transfer
+        # to work successfully over tunnel
         for vm in [vm_0_rsc, vm_1_rsc]:
             assert helper.set_vm_non_mgmt_interface_mtu(vm=vm, mtu=1400)
 
@@ -492,11 +511,11 @@ class TestOVNComponent(NetworkTest):
             vm_0_rsc, vm_1_rsc, ovn_conf.OVN_VM_1_IP
         )
         assert helper.check_ssh_file_copy(
-            src_vm=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
-            dst_vm=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
+            src_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
+            dst_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
             dst_ip=ovn_conf.OVN_VM_1_IP,
-            mb=ovn_conf.OVN_COPY_FILE_SIZE_MB
-        )
+            size=ovn_conf.OVN_COPY_FILE_SIZE_MB
+        )[0]
 
         for vm in [vm_0_rsc, vm_1_rsc]:
             assert helper.set_vm_non_mgmt_interface_mtu(vm=vm, mtu=1500)
@@ -535,7 +554,7 @@ class TestOVNComponent(NetworkTest):
             )
 
             testflow.step("Requesting IP from DHCP on VM: %s", vm_name)
-            ip = helper.set_ip_non_mgmt_nic(vm=vm_name, address_type="dhcp")
+            ip = helper.set_ip_non_mgmt_nic(vm=vm_name, address_type="dynamic")
 
             testflow.step(
                 "Verifying that VM: %s received valid IP: %s", vm_name, ip
@@ -592,13 +611,12 @@ class TestOVNComponent(NetworkTest):
 
         testflow.step("Requesting IP from DHCP on VM: %s", net_conf.VM_0)
         assert helper.set_ip_non_mgmt_nic(
-            vm=net_conf.VM_0, address_type="dhcp"
+            vm=net_conf.VM_0, address_type="dynamic"
         )
 
         testflow.step(
             "Testing ping from VM: %s to VM: %s", net_conf.VM_0, net_conf.VM_1
         )
-
         # Sample ping requests due to MAC update problem with RHEL 7.4 beta
         sampler = TimeoutingSampler(
             timeout=60, sleep=1, func=helper.check_ping, vm=net_conf.VM_0,
@@ -635,4 +653,136 @@ class TestOVNComponent(NetworkTest):
         )
         assert helper.check_ping_during_vm_migration(
             ping_kwargs=ping_kwargs, migration_kwargs=migrate_kwargs
+        )
+
+    @bz({"1458407": {}})
+    @tier2
+    @polarion("RHEVM-22212")
+    def test_17_long_network_names(self):
+        """
+        1. Import network with long name to engine
+        2. Attach network to OVN vNIC on VM_0 and VM_1
+        3. Get DHCP IP on OVN vNIC on VM_0 and VM_1
+        4. Test ping from VM-0 to VM-1 over OVN IP
+        """
+        for net_name in ovn_conf.OVN_LONG_NETS.keys():
+            testflow.step("Importing network: %s to engine", net_name)
+            assert ovn_conf.OVN_PROVIDER.import_network(
+                network=net_name, datacenter=self.dc, cluster=self.cl
+            )
+
+            ip = ""
+            for vm in (net_conf.VM_0, net_conf.VM_1):
+                testflow.step(
+                    "Hot-unplug vNIC: %s on VM: %s, "
+                    "change vNIC network to: %s, and hot-plug it back",
+                    ovn_conf.OVN_VNIC, vm, net_name
+                )
+                assert helper.check_hot_unplug_and_plug(
+                    vm=vm, vnic=ovn_conf.OVN_VNIC, network=net_name
+                )
+
+                testflow.step("Requesting IP from DHCP on VM: %s", vm)
+                ip = helper.set_ip_non_mgmt_nic(vm=vm, address_type="dynamic")
+                assert ip, "Failed to get IP from DHCP on VM: %s" % vm
+
+            # At this point, VM_0 and VM_1 should have OVN IPs
+            # Last ip is assigned on VM_1
+            testflow.step(
+                "Testing ping from VM: %s to IP: %s", net_conf.VM_0, ip
+            )
+            assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
+
+
+@bz({"1478054": {}})
+@pytest.mark.usefixtures(
+    check_running_on_rhevh.__name__,
+    configure_ovn.__name__,
+    get_default_ovn_provider.__name__,
+    create_ovn_networks_on_provider.__name__,
+    import_ovn_networks.__name__,
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__,
+    start_vm.__name__,
+    save_vm_resources.__name__,
+    setup_vms_ovn_interface.__name__,
+    benchmark_file_transfer.__name__
+)
+class TestOVNPerformance(NetworkTest):
+    """
+    Test OVN performance over OVN tunneling protocol
+    """
+    # Common settings
+    provider_name = ovn_conf.OVN_PROVIDER_NAME
+    dc = net_conf.DC_0
+    cl = net_conf.CL_0
+
+    # create_ovn_networks_on_provider fixture parameters
+    add_ovn_networks_to_provider = ovn_conf.OVN_NETS_PERF
+
+    # import_ovn_networks fixture parameters
+    import_ovn_networks_to_engine = ovn_conf.OVN_NETS_PERF.keys()
+
+    # add_vnics_to_vms fixture parameters
+    add_vnics_vms_params = {
+        1: {
+            "vm": net_conf.VM_0,
+            "name": ovn_conf.OVN_VNIC,
+            "network": ovn_conf.OVN_NET_4
+        },
+        2: {
+            "vm": net_conf.VM_1,
+            "name": ovn_conf.OVN_VNIC,
+            "network": ovn_conf.OVN_NET_4
+        }
+    }
+
+    # remove_vnics_to_vms fixture parameters
+    remove_vnics_vms_params = add_vnics_vms_params
+
+    # start_vm fixture parameters
+    start_vms_dict = {
+        net_conf.VM_0: {
+            "host": 0
+        },
+        net_conf.VM_1: {
+            "host": 1
+        }
+    }
+
+    # setup_vms_ovn_interface fixture parameters
+    set_vms_ips = {
+        net_conf.VM_0: ovn_conf.OVN_VM_0_NET,
+        net_conf.VM_1: ovn_conf.OVN_VM_1_NET
+    }
+
+    # save_vm_resources fixture parameters
+    save_vm_resources_params = [net_conf.VM_0, net_conf.VM_1]
+
+    @tier3
+    @polarion("RHEVM-22061")
+    def test_01_ovn_over_tunnel_traffic(self):
+        """
+        1. Copy 1 GB file from VM-0 to VM-1 over OVN tunnel while measuring
+           performance
+        2. Compare VM-to-VM and HOST-to-HOST benchmarks (VMs results should be
+           80% of hosts or higher)
+        """
+        copy_res, vm_to_vm_perf = helper.copy_file_benchmark(
+            src_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
+            dst_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
+            dst_ip=ovn_conf.OVN_VM_1_IP, size=1000
+        )
+        assert copy_res, "Failed to copy file over OVN tunnel"
+
+        # Calculate the expected performance average based on
+        # Host-to-Host performance values and percent
+        exp_cpu = ovn_conf.OVN_HOST_PERF_COUNTERS[0] * 0.8
+        exp_mem = ovn_conf.OVN_HOST_PERF_COUNTERS[1] * 0.8
+
+        assert vm_to_vm_perf[0] > exp_cpu, (
+            "CPU average: %s <= CPU minimum: %s" % (vm_to_vm_perf[0], exp_cpu)
+        )
+        assert vm_to_vm_perf[1] > exp_mem, (
+            "mem average: %s <= mem minimum: %s" % (vm_to_vm_perf[1], exp_mem)
         )

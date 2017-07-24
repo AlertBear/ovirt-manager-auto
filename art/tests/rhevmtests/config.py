@@ -29,9 +29,6 @@ REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 PRODUCT_NAME = PARAMETERS['product_name']
 PRODUCT_BUILD = ART_CONFIG['DEFAULT'].get('RHEVM_BUILD', None)
 
-# RHVH constants
-RHVH = "Red Hat Enterprise Virtualization Hypervisor"
-
 # ENGINE SECTION
 VDC_HOST = GE['engine']['fqdn']
 

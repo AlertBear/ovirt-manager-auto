@@ -45,20 +45,23 @@ OVN_EXTERNAL_PROVIDER_PARAMS = {
 }
 
 # OVN authorization tests parameters
-
 # JDBC internal settings
-OVN_JDBC_GROUP_NAME = "OvnAdmins"
-OVN_JDBC_GROUP_USERNAME = "ovn_admin@internal"
+OVN_JDBC_GROUP = "OvnAdmins"
+OVN_JDBC_USERNAME = "ovn_admin@internal"
 OVN_JDBC_USERNAME_PASSWORD = "123456"
-
 # LDAP settings
-OVN_LDAP_GROUP_NAME = "ovn_admins"
-# TODO: need to fill the ldap domain once it will become available
-OVN_LDAP_GROUP_USERNAME = "ovn_admin@ldap_domain"
-OVN_LDAP_USERNAME_PASSWORD = "123456"
-
+OVN_LDAP_GROUP = "ovn_admins"
+OVN_LDAP_DOMAIN = "ad-w2k12r2.rhev.lab.eng.brq.redhat.com"
+OVN_LDAP_AUTH_PROFILE = "ad-w2k12r2"
+OVN_LDAP_USERNAME = "{user}@{domain}@{auth_profile}".format(
+    user="ovn_admin", domain=OVN_LDAP_DOMAIN,
+    auth_profile=OVN_LDAP_AUTH_PROFILE
+)
+OVN_LDAP_USERNAME_PASSWORD = "Heslo123"
+# Negative authorization test password
 OVN_WRONG_PASSWORD = "1234567"
 
+# Configuration file values to be changed
 OVN_AUTHENTICATION_BY_GROUP_CONF = {
     "AUTH": {
         "auth-plugin": "auth.plugins.ovirt:AuthorizationByGroup"
@@ -76,12 +79,24 @@ OVN_AUTHENTICATION_BY_GROUP_CONF = {
 OVN_PROVIDER = None
 
 # OVN networks
-OVN_NET_NAMES = ["ovn_net_%s" % i for i in range(1, 4)]
+OVN_NET_NAMES = ["ovn_net_%s" % i for i in range(1, 5)]
 OVN_NET_1 = OVN_NET_NAMES[0]
 OVN_NET_2 = OVN_NET_NAMES[1]
 OVN_NET_3 = OVN_NET_NAMES[2]
+OVN_NET_4 = OVN_NET_NAMES[3]
+
+# OVN DHCP subnet settings
 OVN_NETS_CIDR = "172.16.0.0/24"
 OVN_NETS_DNS = ["8.8.8.8"]
+
+# External provider long network names test settings
+OVN_LONG_NET_SPECIAL_CHARS = "A*_-&$()@"
+OVN_LONG_NET_15_CHARS_SPECIAL = "a" * 6 + OVN_LONG_NET_SPECIAL_CHARS
+OVN_LONG_NET_20_CHARS = "a" * 20
+OVN_LONG_NET_256_CHARS_SPECIAL = "A" * 247 + OVN_LONG_NET_SPECIAL_CHARS
+OVN_LONG_NET_256_CHARS = "a" * 256
+
+# OVN networks for TestOVNComponent
 OVN_NETS = {
     OVN_NET_1: None,
     OVN_NET_2: None,
@@ -96,6 +111,50 @@ OVN_NETS = {
     }
 }
 
+# OVN networks for TestOVNPerformance
+OVN_NETS_PERF = {
+    OVN_NET_4: None
+}
+
+OVN_LONG_NETS = {
+    OVN_LONG_NET_15_CHARS_SPECIAL: {
+        "name": "long_net_subnet_15_special",
+        "cidr": "172.16.0.0/24",
+        "enable_dhcp": True,
+        "network_id": None,
+        "dns_nameservers": ["8.8.8.8"],
+        "ip_version": 4,
+        "gateway_ip": "172.16.0.254"
+    },
+    OVN_LONG_NET_20_CHARS: {
+        "name": "long_net_subnet_15",
+        "cidr": "172.16.0.0/24",
+        "enable_dhcp": True,
+        "network_id": None,
+        "dns_nameservers": ["8.8.8.8"],
+        "ip_version": 4,
+        "gateway_ip": "172.16.0.254"
+    },
+    OVN_LONG_NET_256_CHARS_SPECIAL: {
+        "name": "long_net_subnet_256_special",
+        "cidr": "172.16.0.0/24",
+        "enable_dhcp": True,
+        "network_id": None,
+        "dns_nameservers": ["8.8.8.8"],
+        "ip_version": 4,
+        "gateway_ip": "172.16.0.254"
+    },
+    OVN_LONG_NET_256_CHARS: {
+        "name": "long_net_subnet_256",
+        "cidr": "172.16.0.0/24",
+        "enable_dhcp": True,
+        "network_id": None,
+        "dns_nameservers": ["8.8.8.8"],
+        "ip_version": 4,
+        "gateway_ip": "172.16.0.254"
+    }
+}
+
 # OVN vNIC profile
 OVN_VNIC_PROFILE = "ovn_vnic_profile"
 
@@ -103,9 +162,9 @@ OVN_VNIC_PROFILE = "ovn_vnic_profile"
 OVN_VNIC = "ovn_vnic"
 
 # OVN VM IP networks
-OVN_VM_0_NET = "192.168.10.1/24"
+OVN_VM_0_NET = "7.7.7.1/24"
 OVN_VM_0_IP = OVN_VM_0_NET.split("/")[0]
-OVN_VM_1_NET = "192.168.10.2/24"
+OVN_VM_1_NET = "7.7.7.2/24"
 OVN_VM_1_IP = OVN_VM_1_NET.split("/")[0]
 
 # VM Host resources
@@ -114,7 +173,14 @@ OVN_VMS_RESOURCES = {
     conf.VM_1: None
 }
 
-# Copy file configuration
+# Hosts performance counters to be used as baseline (filled on runtime)
+OVN_HOST_PERF_COUNTERS = None
+# get_performance_counters parameters:
+# First element: collect CPU performance flag
+# Second element: collect memory performance flag
+COLLECT_PERFORMANCE = [True, True]
+
+# Copy file test parameters
 OVN_COPY_FILE_SIZE_MB = 250
 
 # Ping configuration for all test cases
@@ -124,21 +190,25 @@ OVN_PING_COUNT = 10
 # Ping output packets received extraction
 OVN_PING_PACKETS_RECEIVED_REGEX = "\d*(?= received)"
 
-# Ping and migration test configuration
+# Ping and migration test parameters
 OVN_MIGRATION_PING_COUNT = 30
 # Maximum number of packets loss during VM migration
 # (1 packet loss = 1 second loss of communication)
 OVN_MIGRATION_PING_LOSS_COUNT = 3
 
+# dd command output MB/s value
+OVN_DD_MBS_REGEX = "\d+\.\d+(?=\D*\z)"
+
 # Timeout for migration and ping test
 OVN_MIGRATION_TIMEOUT = 300
+
+# Timeout for SSH copy test
+OVN_COPY_TIMEOUT = 600
 
 # Arbitrary MAC address for change MAC test (not supposed to be used)
 OVN_ARBITRARY_MAC_ADDRESS = "00:01:11:11:11:11"
 
 # RPM packages to remove
-# All OVN releated packages are depend on openvswitch-ovn-common except
-# python-openvswitch
 OVN_DRIVER_REMOVE_RPMS = [
     "openvswitch-ovn-common",
     "python-openvswitch"
@@ -170,6 +240,10 @@ OVN_CMD_DHCLIENT = "dhclient -r {eth} && dhclient {eth}"
 OVN_CMD_VDSM_TOOL = "vdsm-tool ovn-config {provider_ip} {host_ip}"
 OVN_CMD_SERVICE_STATUS = "systemctl is-active {name}.service"
 OVN_CMD_SSH_TRANSFER_FILE = (
-    "dd if=/dev/urandom bs=1M count={count} | "
+    "dd if=/dev/zero bs=1M count={count} | "
     "ssh root@{dst} ""dd of=/dev/null"""
 )
+OVN_CMD_GET_CPU_USAGE = (
+    "top -bn 2 -d 0.01 | grep '^%Cpu' | tail -n 1 | gawk '{print $2+$4+$6}'"
+)
+OVN_CMD_GET_MEM_USAGE = "free | grep Mem | awk '{print $3/$2 * 100.0}'"

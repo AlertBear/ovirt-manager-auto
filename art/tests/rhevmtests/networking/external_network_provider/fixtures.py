@@ -12,13 +12,11 @@ import pytest
 import config as enp_conf
 import helper
 import rhevmtests.config as global_config
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as net_config
 import rhevmtests.networking.helper as network_helper
-from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.low_level import (
-    networks as ll_networks,
-    vms as ll_vms,
-    external_providers
+    networks as ll_networks, external_providers
 )
 from art.rhevm_api.utils import config_handler
 from art.unittest_lib import testflow
@@ -27,17 +25,16 @@ from art.unittest_lib import testflow
 @pytest.fixture(scope="module", autouse=True)
 def check_running_on_rhevh(request):
     """
-    Check if test is running on unsupported environment
+    Check if test is running on unsupported RHEVH environment
+
+    # TODO: remove this fixture when RHEV-H support will be added
     """
-    # TODO: remove this fixture when RHV-H support will be added
-    for host in net_config.VDS_HOSTS_LIST[:2]:
-        testflow.setup(
-            "Checking RHV host: %s compatibility with tests", host.fqdn
-        )
-        if host.os.distribution.distname == global_config.RHVH:
-            pytest.skip(
-                "Unsupported host found: %s" % net_config.VDS_0_HOST.fqdn
-            )
+    env_rhevh_hosts = [
+        h.name for h in global_config.HOSTS_RHEVH
+        if h.name in net_config.HOSTS[:2]
+    ]
+    if env_rhevh_hosts:
+        pytest.skip("Unsupported host(s) found: %s" % env_rhevh_hosts)
 
 
 @pytest.fixture()
@@ -125,17 +122,23 @@ def configure_provider_plugin(request):
 
 
 @pytest.fixture(scope="class")
-def remove_ovn_networks_from_provider(request):
+def create_ovn_networks_on_provider(request):
     """
-    Remove OVN network(s) and associated subnet(s) from provider
+    Create OVN network(s) and subnet(s) on provider
     """
+    add_networks = getattr(request.cls, "add_ovn_networks_to_provider", dict())
+    remove_networks = getattr(
+        request.cls, "remove_ovn_networks_from_provider", dict()
+    )
+
     def fin():
         """
         Remove OVN networks and associated subnets
         """
         result_list = list()
+        networks_and_subnets = remove_networks or add_networks
 
-        for name, subnet in enp_conf.OVN_NETS.iteritems():
+        for net, subnet in networks_and_subnets.items():
             if subnet:
                 subnet_name = subnet.get("name")
                 testflow.teardown(
@@ -147,26 +150,41 @@ def remove_ovn_networks_from_provider(request):
                     )
                 )
 
-            testflow.teardown("Removing OVN network: %s from provider", name)
+            testflow.teardown("Removing OVN network: %s from provider", net)
             result_list.append(
-                enp_conf.OVN_PROVIDER.remove_network(network_name=name)
+                enp_conf.OVN_PROVIDER.remove_network(network_name=net)
             )
         assert all(result_list)
     request.addfinalizer(fin)
 
+    for net, subnet in add_networks.items():
+        txt = " with subnet: %s" % subnet.get("name") if subnet else ""
+        testflow.setup("Adding network: %s%s to OVN provider", net, txt)
+        assert enp_conf.OVN_PROVIDER.add_network(
+            network_name=net, subnet_dict=subnet
+        )
+
 
 @pytest.fixture(scope="class")
-def remove_ovn_networks_from_engine(request):
+def import_ovn_networks(request):
     """
-    Remove OVN networks from engine
+    Import OVN network(s)
     """
-    networks = enp_conf.OVN_NET_NAMES
+    import_networks = getattr(
+        request.cls, "import_ovn_networks_to_engine", list()
+    )
+    remove_networks = getattr(
+        request.cls, "remove_ovn_networks_from_engine", list()
+    )
+    dc = request.node.cls.dc
+    cluster = request.node.cls.cl
 
     def fin():
         """
-        Remove OVN networks
+        Remove OVN network(s)
         """
         results_list = list()
+        networks = remove_networks or import_networks
 
         for net in [net for net in networks if ll_networks.find_network(net)]:
             testflow.teardown("Removing network: %s from engine", net)
@@ -176,54 +194,14 @@ def remove_ovn_networks_from_engine(request):
         assert all(results_list)
     request.addfinalizer(fin)
 
-
-@pytest.fixture(scope="class")
-def remove_vnics_from_vms(request):
-    """
-    Remove vNIC(s) with properties from VM(s)
-    """
-    vnics_remove_dict = request.node.cls.remove_vnics_from_vms_params
-
-    def fin():
-        """
-        Remove vNIC from VM
-        """
-        results_list = list()
-
-        for vm, vnic in vnics_remove_dict.iteritems():
-            testflow.teardown("Removing vNIC: %s from VM: %s", vnic, vm)
-            try:
-                res = ll_vms.removeNic(positive=True, vm=vm, nic=vnic)
-            except apis_exceptions.EntityNotFound:
-                res = True
-            results_list.append(res)
-        assert all(results_list)
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def remove_vnic_profiles(request):
-    """
-    Remove vNIC profile(s)
-    """
-    vnic_profiles = request.node.cls.remove_vnic_profiles_params
-
-    def fin():
-        """
-        Remove vNIC profile
-        """
-        results = list()
-
-        for name, net in vnic_profiles.iteritems():
-            testflow.teardown("Removing vNIC profile: %s", name)
-            if ll_networks.is_vnic_profile_exist(name):
-                results.append(
-                    ll_networks.remove_vnic_profile(
-                        positive=True, vnic_profile_name=name, network=net
-                    )
-                )
-        assert all(results)
-    request.addfinalizer(fin)
+    for net in import_networks:
+        testflow.setup(
+            "Importing network: %s from OVN network provider to DC: %s "
+            "Cluster: %s", net, dc, cluster
+        )
+        assert enp_conf.OVN_PROVIDER.import_network(
+            network=net, datacenter=dc, cluster=cluster
+        )
 
 
 @pytest.fixture(scope="class")
@@ -293,3 +271,64 @@ def configure_ovn(request):
                 )
             )
         )[0]
+
+
+@pytest.fixture(scope="class")
+def get_default_ovn_provider(request):
+    """
+    Get the default OVN network provider from engine and save its instance
+    """
+    provider = request.node.cls.provider_name
+
+    testflow.setup("Getting default provider: %s from engine", provider)
+    assert helper.get_provider_from_engine(provider_name=provider)
+
+
+@pytest.fixture(scope="class")
+def setup_vms_ovn_interface(request):
+    """
+    1. Set IP(s) on the non-mgmt interface of VM(s)
+    2. Set MTU 1400 on the non-mgmt interface of the VM(s)
+    """
+    for vm_name, net in request.node.cls.set_vms_ips.items():
+        testflow.setup("Setting IP network: %s on VM: %s", net, vm_name)
+        assert helper.set_ip_non_mgmt_nic(vm=vm_name, ip_network=net)
+
+        # On OVN tunnel connections, MTU should be set to 1400 for TCP transfer
+        # to work successfully over tunnel
+        testflow.setup("Setting MTU 1400 on VM: %s OVN interface", vm_name)
+        assert helper.set_vm_non_mgmt_interface_mtu(
+            vm=enp_conf.OVN_VMS_RESOURCES[vm_name], mtu=1400
+        )
+
+
+@pytest.fixture(scope="class")
+def save_vm_resources(request):
+    """
+    Save VM(s) host resources
+    """
+    for vm_name in request.node.cls.save_vm_resources_params:
+        testflow.setup("Saving VM: %s host resource", vm_name)
+        enp_conf.OVN_VMS_RESOURCES[vm_name] = global_helper.get_vm_resource(
+            vm=vm_name, start_vm=False
+        )
+        assert enp_conf.OVN_VMS_RESOURCES[vm_name], (
+            "Unable to get VM: %s host resource" % vm_name
+        )
+
+
+@pytest.fixture(scope="class")
+def benchmark_file_transfer(request):
+    """
+    Benchmark Host-to-Host file transfer rate and collect performance counters
+    """
+    testflow.setup(
+        "Benchmarking file transfer from host: %s to host: %s",
+        net_config.HOST_0_NAME, net_config.HOST_1_NAME
+    )
+    perf_counters = helper.copy_file_benchmark(
+        src_host=net_config.VDS_0_HOST, dst_host=net_config.VDS_1_HOST,
+        dst_ip=net_config.HOST_1_IP, size=1000
+    )
+    assert perf_counters, "Failed to copy file over OVN tunnel"
+    enp_conf.OVN_HOST_PERF_COUNTERS = perf_counters[0], perf_counters[1]

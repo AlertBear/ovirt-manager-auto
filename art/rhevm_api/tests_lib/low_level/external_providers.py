@@ -1003,7 +1003,7 @@ class ExternalNetworkProvider(OpenStackProvider):
         """
         subnet_id = subnet_id or self.get_subnet_id(subnet_name=subnet_name)
         if not subnet_id:
-            logger.error("Unable to locate subnet with ID: %s", subnet_id)
+            logger.error("Unable to locate a subnet for the given network")
             return False
 
         logger.info("Removing subnet ID: %s from provider", subnet_id)
@@ -1019,19 +1019,17 @@ class ExternalNetworkProvider(OpenStackProvider):
 
         return True
 
-    def test_connection(self, positive):
+    def test_connection(self):
         """
         Test the state of the connection to the external provider
-
-        Args:
-            positive (bool): True for positive test, False for negative test
 
         Returns:
             bool: True provider connection is working, False otherwise
         """
-        return self._api.syncAction(
-            entity=self.osp_obj, action="testconnectivity", positive=positive
+        res = self._api.syncAction(
+            entity=self.osp_obj, action="testconnectivity", positive=True
         )
+        return bool(res)
 
 
 class OpenStackNetworkProvider(ExternalNetworkProvider):

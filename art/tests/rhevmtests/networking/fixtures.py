@@ -6,12 +6,15 @@ Networking fixtures
 """
 
 import logging
+import os
+
 import pytest
 
-import fixtures_helper as network_fixture_helper
-import config as conf
-from rhevmtests import fixtures_helper
 import art.core_api.apis_exceptions as exceptions
+import config as conf
+import fixtures_helper as network_fixture_helper
+import rhevmtests.coresystem.aaa.ldap.common as aaa_common
+import rhevmtests.helpers as global_helper
 from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
     networks as hl_networks
@@ -23,7 +26,9 @@ from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
     vms as ll_vms
 )
-import rhevmtests.helpers as global_helper
+from art.rhevm_api.utils import config_handler
+from art.unittest_lib import testflow
+from rhevmtests import fixtures_helper
 
 logger = logging.getLogger(__name__)
 
@@ -406,3 +411,50 @@ def update_vnic_profiles(request):
         if "network" not in val.keys():
             val["network"] = vnic
         assert ll_networks.update_vnic_profile(name=vnic, **val)
+
+
+@pytest.fixture(scope="class")
+def setup_ldap_integration(request):
+    """
+    Setup LDAP service(s) integration in oVirt engine
+    """
+    ldap_params = getattr(request.cls, "ldap_services", list())
+    ldap_params_answer_files = [
+        conf.AAA_LDAP_ANSWER_FILES[srv] for srv in ldap_params
+    ]
+
+    def fin():
+        """
+        Removes non-default LDAP services from oVirt engine
+        """
+        for aaa_dir in (
+            conf.ENGINE_EXTENSIONS_DIR, conf.AAA_PROFILES_DIR
+        ):
+            testflow.teardown("Cleaning AAA directory: %s", aaa_dir)
+            aaa_common.cleanExtDirectory(ext_dir=aaa_dir)
+
+        testflow.setup("Restarting ovirt-engine service")
+        conf.ENGINE.restart()
+    request.addfinalizer(fin)
+
+    answers_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        conf.AAA_ART_ANSWER_FILES_RELATIVE_PATH
+    )
+
+    testflow.setup("Setting up LDAP(s) services")
+    for answer_file in ldap_params_answer_files:
+        assert aaa_common.setup_ldap(
+            host=conf.ENGINE_HOST,
+            conf_file=os.path.join(answers_dir, answer_file)
+        )
+
+        if "w2k12r2" in answer_file:
+            # In AD profile additional properties are needed
+            conf_handler = config_handler.HostConfigFileHandler(
+                host=conf.ENGINE_HOST, path=conf.AAA_AD_PROFILE
+            )
+            assert conf_handler.set_options(parameters=conf.AAA_AD_PROPERTIES)
+
+    testflow.setup("Restarting ovirt-engine service")
+    conf.ENGINE.restart()

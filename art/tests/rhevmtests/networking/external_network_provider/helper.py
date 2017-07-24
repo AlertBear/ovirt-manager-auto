@@ -11,10 +11,13 @@ import shlex
 
 import config as ovn_conf
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as net_conf
 import rhevmtests.networking.helper as net_helper
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
-from art.rhevm_api.tests_lib.low_level import vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    vms as ll_vms, external_providers
+)
 from art.unittest_lib import testflow
 from utilities import jobs
 
@@ -49,8 +52,8 @@ def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
 
     Args:
         vm (str): VM name
-        address_type (str): IP address type, can be "static" for static, or
-            "dhcp" for DHCP
+        address_type (str): IP address type, can be "static" for static IP, or
+            "dynamic" for automatic IP
         ip_network (str): IP network to be set (in CIDR convention, e.g.
             192.168.100.0/24) to be used in conjunction with static address
             type
@@ -76,7 +79,7 @@ def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
         )
         return ip_network if ret[0] == 0 else ""
 
-    if address_type == "dhcp":
+    if address_type == "dynamic":
         network = vm_resource.get_network()
 
         logger.info(
@@ -158,40 +161,63 @@ def check_for_ovn_objects():
     return True if ret_net or ret_sub else False
 
 
-def check_ssh_file_copy(src_vm, dst_vm, dst_ip, mb):
+def check_ssh_file_copy(src_host, dst_host, dst_ip, size):
     """
-    Check SSH file copy of given MB size from source VM to destination VM
+    Check SSH file copy of given MB size from source host to destination host
 
     Args:
-        src_vm (Host): Source VM
-        dst_vm (Host): Destination VM
-        dst_ip (str): Destination VM IP
-        mb (int): File size in MB
+        src_host (Host): Source host
+        dst_host (Host): Destination host
+        dst_ip (str): Destination host IP
+        size (int): File size in megabytes (MB)
 
     Returns:
-        bool: True if copy was successful, false if error occurred
-
+        tuple: True and transfer rate (MB/s) if copy was successful, False and
+            0.0 transfer rate otherwise
     """
+    return_fail = False, 0.0
+
     if not global_helper.set_passwordless_ssh(
-        src_host=src_vm, dst_host=dst_vm, dst_host_ips=[dst_ip]
+        src_host=src_host, dst_host=dst_host, dst_host_ips=[dst_ip]
     ):
-        return False
+        return return_fail
 
     logger.info(
         "Checking SSH file copy of {count} MB file from VM: {src} "
-        "to VM: {dst}".format(count=mb, src=src_vm.fqdn, dst=dst_vm.fqdn)
+        "to VM: {dst}".format(
+            count=size, src=src_host.fqdn, dst=dst_host.fqdn
+        )
     )
-    return not src_vm.run_command(
-        ovn_conf.OVN_CMD_SSH_TRANSFER_FILE.format(
-            count=mb, dst=dst_ip
-        ).split(" ")
-    )[0]
+    rc, out, _ = src_host.run_command(
+        shlex.split(
+            ovn_conf.OVN_CMD_SSH_TRANSFER_FILE.format(
+                count=size, dst=dst_ip
+            )
+        )
+    )
+    if rc:
+        return return_fail
+
+    # Extract last MB/s value from dd command output
+    match = re.findall(ovn_conf.OVN_DD_MBS_REGEX, out)
+    err_txt = "Something went wrong with dd command output: %s" % out
+
+    try:
+        transfer_rate = float(match[0])
+    except ValueError or IndexError:
+        logger.error(err_txt)
+        return return_fail
+
+    logger.info(
+        "SSH file copy completed with %s MB/s transfer rate", transfer_rate
+    )
+    return True, transfer_rate
 
 
 def check_ping(vm, dst_ip, max_loss=0, count=ovn_conf.OVN_PING_COUNT):
     """
     Send ICMP ping between VM and destination IP address, packets will be sent
-    from the non-mgmt interface
+    from the non-management interface
 
     Args:
         vm (str): VM name as source to send the ping
@@ -252,8 +278,8 @@ def wait_for_port(host, port):
         Returns:
             bool: True if open is open, False otherwise
         """
-        cmd = "netstat -ltn | grep :{port}".format(port=port).split(" ")
-        rc = host.executor().run_cmd(cmd)[0]
+        cmd = "netstat -ltn | grep :{port}".format(port=port)
+        rc = host.executor().run_cmd(shlex.split(cmd))[0]
         logger.debug("netstat command: '%s' return code: %s", cmd, rc)
         return rc == 0
 
@@ -372,13 +398,14 @@ def check_ping_during_vm_migration(ping_kwargs, migration_kwargs):
 
 def set_vm_non_mgmt_interface_mtu(vm, mtu):
     """
+    Set IP on the non-mangement interface of a VM
 
     Args:
         vm (Host): VM Host object
         mtu (int): MTU size
 
     Returns:
-
+        bool: True if succeeded, False otherwise
     """
     eth = net_helper.get_non_mgmt_nic_name(vm_resource=vm)
     if not eth:
@@ -435,3 +462,99 @@ def service_handler(host, service, action="stop"):
         return host.run_command(
             shlex.split(ovn_conf.OVN_CMD_SERVICE_STATUS.format(name=service))
         )[0] == 0
+
+
+def get_provider_from_engine(provider_name):
+    """
+    Get provider from engine and test the connection to it
+
+    Args:
+        provider_name (str): Provider name
+
+    Returns:
+        bool: True if get was successful, False otherwise
+    """
+    ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["name"] = provider_name
+    ovn_conf.OVN_PROVIDER = external_providers.ExternalNetworkProvider(
+        **ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS
+    )
+    logger.info("Testing engine connection to the external network provider")
+    return ovn_conf.OVN_PROVIDER.test_connection()
+
+
+def collect_performance_counters(hosts):
+    """
+    Collect host(s) CPU and memory performance counters
+
+    Args:
+        hosts (list): List of host resources to benchmark
+
+    Returns:
+        list: List of two float values, first represents the average CPU
+            usage, and second represents the average memory usage, or empty
+            list if collection failed
+    """
+    counters = list()
+
+    while any(ovn_conf.COLLECT_PERFORMANCE):
+        for host in hosts:
+            if ovn_conf.COLLECT_PERFORMANCE[0]:
+                cpu_rc, cpu_out, _ = host.run_command(
+                    command=shlex.split(ovn_conf.OVN_CMD_GET_CPU_USAGE)
+                )
+                if cpu_rc:
+                    logger.error("Failed to collect CPU performance")
+                    logger.debug("CPU collection output: %s", cpu_out)
+                    return list()
+            if ovn_conf.COLLECT_PERFORMANCE[1]:
+                mem_rc, mem_out, _ = host.run_command(
+                    command=shlex.split(ovn_conf.OVN_CMD_GET_MEM_USAGE)
+                )
+                if mem_rc:
+                    logger.error("Failed to collect memory performance")
+                    logger.debug("Memory collection output: %s", mem_out)
+                    return list()
+            if counters:
+                counters[0] = round((counters[0] + float(cpu_out)) / 2.0, 2)
+                counters[1] = round((counters[1] + float(mem_out)) / 2.0, 2)
+            else:
+                counters.extend([float(cpu_out), float(mem_out)])
+
+    return counters
+
+
+def copy_file_benchmark(**kwargs):
+    """
+    Copy file from source host to destination host and collect performance
+    counters from hosts: HOST-0 and HOST-1
+
+    Keyword Args:
+        src_host (Host): Source host resource
+        dst_host (Host): Destination host resource
+        dst_ip (str): Destination IP address
+        size (int): Size in megabytes (MB)
+
+    Returns:
+        tuple: Copy job result and performance job result
+    """
+    performance_job = jobs.Job(
+        target=collect_performance_counters, args=(),
+        kwargs={"hosts": [net_conf.VDS_0_HOST, net_conf.VDS_1_HOST]}
+    )
+    copy_job = jobs.Job(
+        target=check_ssh_file_copy, args=(), kwargs=kwargs
+    )
+    job_set = jobs.JobsSet()
+    job_set.addJobs(jobs=[copy_job, performance_job])
+    job_set.start()
+    job_set.waitUntilAnyDone(time=ovn_conf.OVN_COPY_TIMEOUT)
+    # Stop collection thread
+    ovn_conf.COLLECT_PERFORMANCE = False, False
+    # Join threads to wait for performance job be completed
+    job_set.join(timeout=ovn_conf.OVN_COPY_TIMEOUT)
+
+    logger.info(
+        "Copy job result: %s performance job result: %s",
+        performance_job.result, copy_job.result
+    )
+    return copy_job.result, performance_job.result

@@ -7,8 +7,7 @@ Consolidated network config module
 
 import art.test_handler.exceptions as exceptions
 from rhevmtests.config import *  # flake8: noqa
-
-__test__ = False
+from art.rhevm_api.utils.config_handler import DEFAULT_CONFIG_SECTION_NAME
 
 # Global parameters
 VIRSH_USER = "virsh"
@@ -109,3 +108,25 @@ BASIC_IPV6_DICT = {
 
 # Misc
 SSH_TYPE = "ssh"
+
+# LDAP parameters for OVN provider tests
+AAA_PROFILES_DIR = "/etc/ovirt-engine/aaa"
+AAA_ART_ANSWER_FILES_RELATIVE_PATH = "../coresystem/aaa/ldap/answerfiles"
+AAA_AD_PROFILE = "%s/ad-w2k12r2.properties" % AAA_PROFILES_DIR
+AAA_AD_PROPERTIES = {
+    DEFAULT_CONFIG_SECTION_NAME : {
+        "pool.default.serverset.srvrecord.domain-conversion.type": "regex",
+        "pool.default.serverset.srvrecord.domain-conversion."
+        "regex.pattern": "^(?<domain>.*)$",
+        "pool.default.serverset.srvrecord.domain-conversion."
+        "regex.replacement": "BRQ._sites.${domain}"
+    }
+}
+
+# ovirt-engine-extension-aaa-ldap-setup answer files
+AAA_LDAP_ANSWER_FILES = {
+    "ad": "adw2k12r2.conf",
+    "ipa": "ipa.conf",
+    "openldap": "openldap.conf",
+    "rhds": "rhds.conf"
+}
