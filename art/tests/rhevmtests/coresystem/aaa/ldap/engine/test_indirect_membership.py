@@ -39,11 +39,8 @@ class IndirectMembership(TestCase):
             testflow.teardown("Login as admin")
             common.loginAsAdmin()
 
-            testflow.teardown("Removing user %s", cls.USER)
-            assert users.removeUser(True, cls.USER)
-
             testflow.teardown("Deleting group %s", cls.GROUP)
-            assert users.deleteGroup(True, cls.GROUP)
+            users.deleteGroup(True, cls.GROUP)
 
         request.addfinalizer(finalize)
 
@@ -128,7 +125,7 @@ class TestGroupRecursion(TestCase):
             common.loginAsAdmin()
 
             testflow.teardown("Deleting group %s", config.IPA_GROUP_LOOP2)
-            assert users.deleteGroup(True, config.IPA_GROUP_LOOP2)
+            users.deleteGroup(True, config.IPA_GROUP_LOOP2)
 
         request.addfinalizer(finalize)
 

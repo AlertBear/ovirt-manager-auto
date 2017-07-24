@@ -22,6 +22,12 @@ KRB5_CONF = 'krb5.conf'
 KEYTAB = '/etc/http.keytab'
 APACHE_FIXTURES = 'apache'
 APACHE_CONF = 'z-ovirt-sso.conf'
+PACKAGES = [
+    config.GSSAPI_MODULE,
+    config.SESSION_MODULE,
+    config.MISC_PKG,
+    config.KRB_PKG,
+]
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -30,25 +36,25 @@ def setup_module(request):
     OPENLDAP_HOST.users.append(
         resources.RootUser(config.OPENLDAP_ROOT_PW)
     )
+    FQDN = config.VDC_HOST
+    REALM = config.OPENLDAP.upper()
 
     def finalize():
         testflow.teardown("Tearing down module %s", __name__)
 
-        fqdn = config.ENGINE_HOST.fqdn
-        delete_principal = 'delete_principal -force HTTP/%s' % fqdn
+        delete_principal = 'delete_principal -force HTTP/%s@%s' % (FQDN, REALM)
 
-        testflow.teardown("Deleting principal %s", fqdn)
+        testflow.teardown("Deleting principal %s@%s", FQDN, REALM)
         OPENLDAP_HOST.executor().run_cmd(
             ['kadmin.local', '-q', delete_principal])
 
         testflow.teardown("Removing Kerberos")
         with config.ENGINE_HOST.executor().session() as engine_session:
-            config.ENGINE_HOST.package_manager.remove(
-                config.GSSAPI_MODULE,
-                config.SESSION_MODULE,
-                config.MISC_PKG
-            )
-            engine_session.fs.remove(KEYTAB)
+            for _package in PACKAGES:
+                config.ENGINE_HOST.package_manager.remove(
+                    _package
+                )
+            engine_session.run_cmd(['rm', '-f', KEYTAB])
 
         testflow.teardown("Cleaning extensions directory")
         common.cleanExtDirectory(config.APACHE_EXTENSIONS, [APACHE_CONF])
@@ -70,17 +76,15 @@ def setup_module(request):
 
     testflow.setup("Setting up module %s", __name__)
 
-    fqdn = config.ENGINE_HOST.fqdn
-    add_principal = 'add_principal -randkey HTTP/%s' % fqdn
-    add_keytab = 'ktadd -keytab %s HTTP/%s' % (KEYTAB, fqdn)
+    add_principal = 'add_principal -randkey HTTP/%s@%s' % (FQDN, REALM)
+    add_keytab = 'ktadd -keytab %s HTTP/%s@%s' % (KEYTAB, FQDN, REALM)
 
     testflow.setup("Installing and configuring Kerberos")
     with config.ENGINE_HOST.executor().session() as engine_session:
-        config.ENGINE_HOST.package_manager.install(
-            config.GSSAPI_MODULE,
-            config.SESSION_MODULE,
-            config.MISC_PKG
-        )
+        for _package in PACKAGES:
+            config.ENGINE_HOST.package_manager.install(
+                _package
+            )
         with OPENLDAP_HOST.executor().session() as openldap_session:
             openldap_session.run_cmd(['kadmin.local', '-q', add_principal])
             openldap_session.run_cmd(['kadmin.local', '-q', add_keytab])
@@ -88,7 +92,13 @@ def setup_module(request):
                 with engine_session.open_file(KEYTAB, 'wb') as engine_kt:
                     engine_kt.write(ldap_kt.read())
                     logger.info('%s was created.' % KEYTAB)
-            openldap_session.fs.remove(KEYTAB)
+            openldap_session.run_cmd(['rm', '-f', KEYTAB])
+
+    testflow.setup("Restarting Apache")
+    common.enableExtensions(config.APACHE_SERVICE, config.ENGINE_HOST)
+
+    testflow.setup("Restarting engine")
+    common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)
 
     testflow.setup("Adding user %s", config.SSO_USER)
     assert users.addExternalUser(

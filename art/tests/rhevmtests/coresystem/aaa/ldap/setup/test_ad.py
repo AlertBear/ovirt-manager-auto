@@ -76,15 +76,3 @@ class TestADDifferentUPN(base.AuthBaseCase):
     def test_different_upn(self):
         """ Login as user with disabled account """
         assert self.login(user='automation_upn@w2k12r2-t1.com')
-
-
-class TestADSpecialCharsSearch(base.BaseSpecialCharsSearch):
-    """ Search special characters in AD """
-    domain = '%s-authz' % DOMAIN
-    namespace = NAMESPACE
-
-    @bz({'1275237': {}})
-    @polarion('RHEVM3-14485')
-    def test_special_characters(self):
-        """ Test search special characters in AD """
-        self.search()

@@ -1,6 +1,7 @@
 import logging
 import pytest
 
+from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import (
     tier2,
 )
@@ -30,7 +31,10 @@ class AuthBaseCase(TestCase):
             common.loginAsAdmin()
 
             testflow.teardown("Removing user %s", self.user)
-            assert users.removeUser(True, self.user)
+            try:
+                users.removeUser(True, self.user)
+            except EntityNotFound as err:
+                logger.warning(err)
 
         request.addfinalizer(finalize)
 
@@ -81,9 +85,6 @@ class BaseUserFromGroup(AuthBaseCase):
 
             testflow.teardown("Login as admin")
             common.loginAsAdmin()
-
-            testflow.teardown("Removing user %s", self.user)
-            assert users.removeUser(True, self.user)
 
             testflow.teardown("Deleting group %s", self.group)
             assert users.deleteGroup(True, group_name=self.group)
