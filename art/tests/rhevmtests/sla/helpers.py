@@ -596,18 +596,21 @@ def wait_for_dc_and_storagedomains():
         conf.SD_ACTIVE
     )
     results = []
-    storage_domains = ll_sds.get_storage_domains_by_type()
+    storage_domains = ll_sds.getDCStorages(
+        datacenter=conf.DC_NAME[0], get_href=False
+    )
     with ThreadPoolExecutor(max_workers=len(storage_domains)) as executor:
         for storage_domain in storage_domains:
-            results.append(
-                executor.submit(
-                    ll_sds.wait_for_storage_domain_status,
-                    True,
-                    conf.DC_NAME[0],
-                    storage_domain.get_name(),
-                    conf.SD_ACTIVE
+            if storage_domain.get_type() == ll_sds.DATA_DOMAIN_TYPE:
+                results.append(
+                    executor.submit(
+                        ll_sds.wait_for_storage_domain_status,
+                        True,
+                        conf.DC_NAME[0],
+                        storage_domain.get_name(),
+                        conf.SD_ACTIVE
+                    )
                 )
-            )
     for result in results:
         if result.exception():
             logger.error(result.exception())
