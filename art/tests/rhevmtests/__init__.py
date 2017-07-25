@@ -97,8 +97,6 @@ def setup_package():
         config.VM_NAME.append(config.HE_VM)
         config.SD_LIST.append(config.HE_STORAGE_DOMAIN)
 
-    helpers.storage_cleanup()
-
     # setup inventory reporter
     reporter = Inventory.get_instance()
     reporter.get_setup_inventory_report(
@@ -114,6 +112,3 @@ def teardown_package():
     """
     # Check unfinished jobs after all tests
     helpers.get_unfinished_jobs_list()
-
-    # Clean up all storage domains which are not in GE yaml
-    helpers.storage_cleanup()
