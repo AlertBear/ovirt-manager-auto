@@ -14,11 +14,13 @@ import rhevmtests.virt.helper as virt_helper
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier1,
-    tier2,
+    tier2
 )
 from art.unittest_lib.common import VirtTest, testflow
-from fixtures import case_setup, start_vm_with_cloud_init
-
+from fixtures import case_setup
+from rhevmtests.virt.fixtures import (
+    start_vm_with_parameters
+)
 logger = logging.getLogger("Cloud init VM")
 
 
@@ -31,6 +33,11 @@ class TestCloudInit(VirtTest):
     __test__ = True
     vm_name = config.CLOUD_INIT_VM_NAME
     initialization = None
+    start_vm_parameters = {
+        "wait_for_ip": True,
+        "use_cloud_init": True,
+        "wait_for_status": config.VM_UP
+    }
 
     @tier1
     @polarion("RHEVM3-14364")
@@ -89,12 +96,14 @@ class TestCloudInit(VirtTest):
     @polarion("RHEVM3-14369")
     @pytest.mark.usefixtures(
         case_setup.__name__,
-        start_vm_with_cloud_init.__name__
+        start_vm_with_parameters.__name__
     )
     def test_case_3_migration_vm(self):
         """
         Cloud init case 3: Migration VM with cloud init configuration
         """
+        testflow.step("Wait for VM FQDN", self.vm_name)
+        assert virt_helper.wait_for_vm_fqdn(self.vm_name)
         testflow.step("Migration VM %s", self.vm_name)
         assert ll_vms.migrateVm(
             positive=True, vm=self.vm_name

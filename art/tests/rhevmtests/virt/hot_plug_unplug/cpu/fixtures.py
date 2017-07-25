@@ -9,46 +9,15 @@ import helper
 from art.unittest_lib.common import testflow
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
-    clusters as ll_clusters,
     vms as ll_vms,
     hosts as ll_hosts
+)
+from rhevmtests.virt.fixtures import (  # flake8: noqa
+    create_vm_class
 )
 from rhevmtests.virt import config
 import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as virt_helper
-
-
-@pytest.fixture(scope="module")
-def cpu_hot_plug_setup(request):
-    """
-    Setup/teardown for cpu hotplug module.
-    Setup: Creates a vm from template.
-    Teardown: Removes vm from engine.
-    """
-    vm_name = config.CPU_HOTPLUG_VM
-
-    def fin():
-        """
-        Finalizer for cpu hot plug test module
-        """
-        testflow.teardown(
-            "Stop and remove vms %s", config.CPU_HOTPLUG_VMS_NAME
-        )
-        ll_vms.safely_remove_vms(config.CPU_HOTPLUG_VMS_NAME)
-
-    request.addfinalizer(fin)
-    testflow.setup("Create vm %s for CPU hotplug test", vm_name)
-    virt_helper.create_vm_from_template(
-        vm_name=vm_name
-    )
-    assert ll_vms.updateVm(
-        positive=True,
-        vm=vm_name,
-        memory=config.GB,
-        max_memory=gen_helper.get_gb(4),
-        os_type=config.VM_OS_TYPE,
-        compare=False
-    )
 
 
 @pytest.fixture(scope="module")
@@ -86,7 +55,7 @@ def create_vm_for_load(request):
 
 
 @pytest.fixture(scope='function')
-def update_vm_to_ha(request, cpu_hot_plug_setup):
+def update_vm_to_ha(request, create_vm_class):
     """
     Enable HA VM
     """
@@ -106,15 +75,13 @@ def update_vm_to_ha(request, cpu_hot_plug_setup):
         )
 
     request.addfinalizer(fin)
-    testflow.setup("Stop VM")
-    assert ll_vms.stop_vms_safely(vms_list=[vm_name])
     testflow.setup("Enable HA on VM")
     assert ll_vms.updateVm(positive=True, vm=vm_name, highly_available=True)
     init_and_start_vm(params, vm_name)
 
 
 @pytest.fixture(scope='function')
-def base_setup_fixture(request, cpu_hot_plug_setup):
+def base_setup_fixture(request, create_vm_class):
     """
     Update vm cpu socket and core
     """
@@ -153,7 +120,7 @@ def init_and_start_vm(params, vm_name):
 
 
 @pytest.fixture(scope='function')
-def migrate_vm_for_test(request, create_vm_for_load):
+def migrate_vm_for_test(request):
     """
     Load vm and migrate it in order to hot plug vm while migrating
     """
@@ -219,25 +186,3 @@ def set_cpu_toplogy(request):
     )
     config.CPU_TOPOLOGY = helper.calculate_the_cpu_topology(cpu_number)
     config.CPU_HOTPLUG_VM_PARAMS['cpu_cores'] = config.CPU_TOPOLOGY[1]
-
-
-@pytest.fixture(scope='function')
-def enable_cluster_cpu_threading(request):
-    """
-    Enable cluster cpu threading in order to use host threads as cpus
-    """
-
-    def fin():
-        """
-        Disable cluster cpu threading
-        """
-        testflow.teardown("Disable threads in cluster level")
-        ll_clusters.updateCluster(
-            True, config.CLUSTER_NAME[0], threads=False
-        )
-
-    request.addfinalizer(fin)
-    testflow.setup("Enable threads in cluster level")
-    assert ll_clusters.updateCluster(
-        True, config.CLUSTER_NAME[0], threads=True
-    )

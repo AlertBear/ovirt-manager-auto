@@ -12,20 +12,14 @@ MEM_FOR_UPDATE = get_gb(10)
 INSTANCE_TYPE_MEMORY = TWO_GB
 MEMORY_TO_MAX_RATIO = 4
 MAX_INSTANCE_TYPE_MEMORY = 4 * INSTANCE_TYPE_MEMORY
-
-NIC_NAME = 'max_memory_nic'
-WIN_TZ = ENUMS['timezone_win_gmt_standard_time']
-RHEL_TZ = ENUMS['timezone_rhel_etc_gmt']
-# Timeout for VM creation in Vmpool
-VMPOOL_TIMEOUT = 30
 # vm names
 MAX_MEMORY_VM_TEST = 'max_memory_vm_test'
 MAX_MEMORY_VM_TEST_FROM_SNAPSHOT = 'max_memory_vm_test_from_snapshot'
 MAX_MEMORY_VM_TEST_CLONED = 'max_memory_vm_test_cloned'
 REG_VMS_LIST = [
-    MAX_MEMORY_VM_TEST, MAX_MEMORY_VM_TEST_CLONED, MAX_MEMORY_VM_TEST_FROM_SNAPSHOT
+    MAX_MEMORY_VM_TEST, MAX_MEMORY_VM_TEST_CLONED,
+    MAX_MEMORY_VM_TEST_FROM_SNAPSHOT
 ]
-DESCRIPTION = 'description'
 # clone vm
 VM_PARAMETERS = {
     'name': MAX_MEMORY_VM_TEST,

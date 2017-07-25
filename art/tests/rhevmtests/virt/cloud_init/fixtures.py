@@ -16,7 +16,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import config
 import helper
-import rhevmtests.virt.helper as virt_helper
 
 logger = logging.getLogger("cloud_init_fixture")
 
@@ -150,18 +149,3 @@ def init_parameters(args_per_condition, initialization_params):
         args_per_condition_params[key] = val
     res["per_condition"] = args_per_condition_params
     return res
-
-
-@pytest.fixture(scope="class")
-def start_vm_with_cloud_init(request):
-    """
-    Start vm with cloud init
-    """
-    vm_name = request.node.cls.vm_name
-
-    testflow.setup("Start cloud init VM")
-    assert ll_vms.startVm(
-        positive=True, vm=vm_name, wait_for_ip=True,
-        use_cloud_init=True, wait_for_status=config.VM_UP
-    )
-    assert virt_helper.wait_for_vm_fqdn(vm_name)

@@ -299,7 +299,7 @@ def updateCluster(positive, cluster, **kwargs):
         transparent_hugepages (booL): Defines the availability of
             Transparent Hugepages
         on_error (str): Migration behaviour for VM's on non-operational host
-        threads (bool): Count threads as cores
+        threads_as_cores (bool): Count threads as cores
         ballooning_enabled (bool): Enables ballooning on cluster
         ksm_enabled (bool): Enables KSM on cluster
         ha_reservation (bool): Enables HA Reservation on cluster

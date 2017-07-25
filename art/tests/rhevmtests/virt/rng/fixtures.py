@@ -1,62 +1,9 @@
 import config
 import pytest
 import shlex
-from art.rhevm_api.tests_lib.low_level import (
-    vms as ll_vms,
-    clusters as ll_clusters
-)
+from art.rhevm_api.tests_lib.low_level import clusters as ll_clusters
 from art.unittest_lib import testflow
-
-
-@pytest.fixture(scope='class')
-def enable_rng_on_vm(request):
-    """
-    Enable RNG device on VM
-    """
-    vm_name = request.node.cls.vm_name
-    rng_device = request.node.cls.rng_device
-
-    def fin():
-        """
-        Disable RNG device
-        """
-        testflow.teardown("Set rng device from VM %s to urandom", vm_name)
-        assert ll_vms.updateVm(
-            positive=True, vm=vm_name, rng_device=config.URANDOM_RNG
-        )
-    request.addfinalizer(fin)
-
-    testflow.setup("Set rng device %s on VM %s ", rng_device, vm_name)
-    assert ll_vms.updateVm(positive=True, vm=vm_name, rng_device=rng_device)
-
-
-@pytest.fixture(scope='class')
-def update_vm_host(request):
-    """
-    Update Vm to be pinned to host
-    """
-    vm_name = request.node.cls.vm_name
-
-    def fin():
-        """
-        Unpin VM
-        """
-        testflow.teardown("Update VM %s to be unpin to host", vm_name)
-        assert ll_vms.updateVm(
-            True, vm_name,
-            placement_affinity=config.VM_MIGRATABLE,
-            placement_host=config.VM_ANY_HOST
-        )
-
-    request.addfinalizer(fin)
-    testflow.setup(
-        "Update VM %s to be pinned to host %s", vm_name, config.HOSTS[0]
-    )
-    assert ll_vms.updateVm(
-        True, vm_name,
-        placement_affinity=config.VM_PINNED,
-        placement_host=config.HOSTS[0]
-    )
+import rhevmtests.helpers as helpers
 
 
 @pytest.fixture(scope='class')
@@ -65,7 +12,7 @@ def enable_hwrng_source_on_cluster(request):
     1. create hwrng device on host if not exists already
     2. Enable hwrng device on cluster
     """
-    host_resource = config.VDS_HOSTS[0]
+    vm_name = request.node.cls.vm_name
     hwrng_exists = True
 
     def fin():
@@ -86,6 +33,7 @@ def enable_hwrng_source_on_cluster(request):
             )
     request.addfinalizer(fin)
 
+    host_resource = helpers.get_host_resource_of_running_vm(vm_name)
     if not host_resource.fs.exists(config.DEST_HWRNG):
         hwrng_exists = False
         cmd = "ln -s /dev/zero %s" % config.DEST_HWRNG

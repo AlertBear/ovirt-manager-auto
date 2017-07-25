@@ -103,6 +103,31 @@ def create_dc(request):
     )
 
 
+@pytest.fixture(scope="class")
+def create_vm_class(request):
+    """
+    Create VM with teardown.
+    VM parameters are taken from vm_parameters attribute of test class
+    Parameters can be overriden with @pytest.mark.custom_vm_params decorator
+    for instance:
+    @pytest.mark.custom_vm_params({
+        'memory': get_gb(4),
+        'max_memory': get_gb(4),
+    })
+    """
+    vm_parameters = init_parameters(request)
+    vm_name = vm_parameters['name']
+
+    def fin():
+        """
+        Remove created VM
+        """
+        assert ll_vms.safely_remove_vms([vm_name])
+
+    request.addfinalizer(fin)
+    assert ll_vms.addVm(True, **vm_parameters)
+
+
 @pytest.fixture(scope="function")
 def create_vm(request):
     """
@@ -115,23 +140,8 @@ def create_vm(request):
         'max_memory': get_gb(4),
     })
     """
-    vm_parameters = copy.copy(
-        getattr(request.node.cls, "vm_parameters", dict())
-    )
-
-    custom_vm_marker = request.node.get_marker('custom_vm_params')
-    custom_params = custom_vm_marker.kwargs if custom_vm_marker else (
-        fixture_helper.get_fixture_val(
-            request=request,
-            attr_name='custom_vm_params',
-            default_value=None
-        )
-    )
-
-    if custom_params:
-        vm_parameters.update(custom_params)
+    vm_parameters = init_parameters(request)
     vm_name = vm_parameters['name']
-    assert ll_vms.addVm(True, **vm_parameters)
 
     def fin():
         """
@@ -140,6 +150,24 @@ def create_vm(request):
         assert ll_vms.safely_remove_vms([vm_name])
 
     request.addfinalizer(fin)
+    assert ll_vms.addVm(True, **vm_parameters)
+
+
+def init_parameters(request):
+    vm_parameters = copy.copy(
+        getattr(request.node.cls, "vm_parameters", dict())
+    )
+    custom_vm_marker = request.node.get_marker('custom_vm_params')
+    custom_params = custom_vm_marker.kwargs if custom_vm_marker else (
+        fixture_helper.get_fixture_val(
+            request=request,
+            attr_name='custom_vm_params',
+            default_value=None
+        )
+    )
+    if custom_params:
+        vm_parameters.update(custom_params)
+    return vm_parameters
 
 
 @pytest.fixture()
@@ -247,3 +275,34 @@ def remove_created_vms(request):
         assert ll_vms.safely_remove_vms(reg_vms)
 
     request.addfinalizer(fin)
+
+
+@pytest.fixture()
+def start_vm_with_parameters(request):
+    """
+    Start vm with parameters
+    """
+    vm_name = request.node.cls.vm_name
+    start_vm_parameters = request.node.cls.start_vm_parameters
+
+    testflow.setup(
+        "Start VM %s with parameters %s", vm_name, start_vm_parameters
+    )
+    assert ll_vms.startVm(
+        positive=True, vm=vm_name, **start_vm_parameters
+    ), "Failed to start vm"
+
+
+@pytest.fixture()
+def update_vm(request):
+    """
+    Update VM
+    """
+    vm_name = request.node.cls.vm_name
+    update_vm_params = request.node.cls.update_vm_params
+    testflow.setup(
+        "Update VM %s with %s", vm_name, update_vm_params
+    )
+    assert ll_vms.updateVm(
+        positive=True, vm=vm_name, **update_vm_params
+    ), "Failed to update vm with params %s" % update_vm_params

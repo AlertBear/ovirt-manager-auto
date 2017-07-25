@@ -13,39 +13,6 @@ import config
 
 
 @pytest.fixture(scope="class")
-def update_cluster(request):
-    """
-    Update cluster's cpu model to fit relevant test class
-    """
-    cpu_model_params = request.cls.cpu_model_params
-
-    def fin():
-        """
-        Revert cluster cpu model type to origial value
-        """
-        if config.CLUSTER_UPDATED_CPU:
-            testflow.teardown(
-                "Update cluster - set cpu model to %s",
-                cpu_model_params['cluster_cpu_model']
-            )
-            assert ll_clusters.updateCluster(
-                positive=True,
-                cluster=cpu_model_params['cluster_name'],
-                cpu=cpu_model_params['cluster_cpu_model']
-            )
-    request.addfinalizer(fin)
-    if config.CLUSTER_UPDATED_CPU:
-        testflow.setup(
-            "Update cluster - set cpu model to %s", config.CLUSTER_UPDATED_CPU
-        )
-        assert ll_clusters.updateCluster(
-            positive=True,
-            cluster=cpu_model_params['cluster_name'],
-            cpu=config.CLUSTER_UPDATED_CPU
-        )
-
-
-@pytest.fixture(scope="class")
 def set_cpu_model_param(request):
     """
     Set the following cluster cpu parameters:

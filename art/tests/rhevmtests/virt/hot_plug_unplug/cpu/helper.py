@@ -3,8 +3,12 @@
 """
 Helper for hot plug cpu module
 """
+from art.unittest_lib.common import testflow
 from rhevmtests.virt import config
 from art.test_handler import exceptions
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from rhevmtests import helpers
 
 logger = config.logging.getLogger("virt.hot_plug_unplug.cpu.helper")
 
@@ -60,3 +64,62 @@ def calculate_the_cpu_topology(cpu_number):
                 )
     logger.info("cpu socket:%d, cpu_core:%d", cpu_socket, cpu_core)
     return cpu_socket, cpu_core
+
+
+def migrate_vm_and_check_cpu(number_of_cpus, vm_name=config.CPU_HOTPLUG_VM):
+    """
+    Migration VM and check CPU number on VM
+
+    Args:
+        vm_name: VM name
+        number_of_cpus (int): Expected number of CPUs
+    """
+    testflow.step("migrating vm: %s", vm_name)
+    assert ll_vms.migrateVm(True, vm_name)
+    vm_resource = helpers.get_host_resource(
+        hl_vms.get_vm_ip(vm_name), config.VMS_LINUX_PW
+    )
+    testflow.step(
+        "Verifying that after migration vm: %s has %d cpus" %
+        (vm_name, number_of_cpus)
+    )
+    assert get_number_of_cores(vm_resource) == number_of_cpus, (
+        "The Cores number should be % and not: %s",
+        number_of_cpus, ll_vms.get_vm_cores(vm_name)
+    )
+
+
+def hot_plug_unplug_cpu(
+    number_of_cpus,
+    action,
+    vm_name=config.CPU_HOTPLUG_VM
+):
+    """
+    Update VM CPU according to action (hot plug / hot unplug)
+    And verify CPU amount on VM
+
+    Args:
+        number_of_cpus (int): Expected number of CPUs
+        action (str): Hot plug / hot unplug action to update VM
+        vm_name (str): VM name, default "cpu_hotplug_vm"
+    """
+    testflow.step(
+        "%s case:\nUpdating number of cpu sockets on vm: %s to "
+        "%d" % (action, vm_name, number_of_cpus)
+    )
+    assert ll_vms.updateVm(
+        positive=True,
+        vm=vm_name,
+        cpu_socket=number_of_cpus
+    )
+    vm_resource = helpers.get_host_resource(
+        hl_vms.get_vm_ip(vm_name), config.VMS_LINUX_PW
+    )
+    working_cores = get_number_of_cores(vm_resource)
+    testflow.step(
+        "Verifying that after %s vm: %s has %d cpus" %
+        (action, vm_name, number_of_cpus)
+    )
+    assert working_cores == number_of_cpus, (
+        "The number of working cores: %s isn't correct" % working_cores
+    )

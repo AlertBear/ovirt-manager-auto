@@ -10,7 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import rhevmtests.helpers as global_helper
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier1,
     tier2,
@@ -18,6 +18,7 @@ from art.unittest_lib import (
 from art.unittest_lib.common import VirtTest, testflow
 from fixtures import reboot_vm
 from rhevmtests.virt import config
+from rhevmtests import helpers as gen_helper
 import helper
 
 logger = logging.getLogger("memory_hotplug_cases")
@@ -28,9 +29,16 @@ class TestMemoryHotplug(VirtTest):
     """
     Hotplug memory test case
     """
-    __test__ = True
     vm_ip = None
-    vm_name = config.MEMORY_HOTPLUG_VM
+    vm_parameters = {
+        'cluster': config.CLUSTER_NAME[0],
+        'template': config.TEMPLATE_NAME[0],
+        'os_type': config.VM_OS_TYPE,
+        'display_type': config.VM_DISPLAY_TYPE,
+        'max_memory': gen_helper.get_gb(16),
+        'name': config.MEMORY_HOTPLUG_VM
+    }
+    vm_name = vm_parameters['name']
 
     @tier1
     @polarion("RHEVM3-14601")
@@ -207,7 +215,6 @@ class TestMemoryHotplug(VirtTest):
     @tier2
     @pytest.mark.usefixtures(reboot_vm.__name__)
     @polarion("RHEVM3-14615")
-    @bz({"1459765": {}})
     def test_neg_b_wrong_memory_size(self):
         """
         Negative case: Expend VM memory with 400MB, wrong size should be in

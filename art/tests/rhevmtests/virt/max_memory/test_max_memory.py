@@ -30,7 +30,6 @@ class TestMaxMemory(VirtTest):
     Check VM maximum memory tests
     """
     reg_vms = config.REG_VMS_LIST
-
     vm_parameters = config.VM_PARAMETERS
     vm_name = vm_parameters['name']
 

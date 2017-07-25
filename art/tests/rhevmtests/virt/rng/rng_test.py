@@ -12,10 +12,10 @@ from art.unittest_lib import (
     common,
 )
 from art.test_handler.tools import polarion
-from rhevmtests.virt.fixtures import start_vms
-from rhevmtests.virt.rng.fixtures import (
-    enable_rng_on_vm, enable_hwrng_source_on_cluster, update_vm_host
+from rhevmtests.virt.fixtures import (
+    start_vms, update_vm
 )
+from rhevmtests.virt.rng.fixtures import enable_hwrng_source_on_cluster
 
 
 class TestUrandom(common.VirtTest):
@@ -23,11 +23,13 @@ class TestUrandom(common.VirtTest):
     Urandom RNG Device Class
     """
     vm_name = config.VM_NAME[0]
-    rng_device = config.URANDOM_RNG
+    update_vm_params = {
+        'rng_device': config.URANDOM_RNG
+    }
     wait_for_vms_ip = False
 
     @tier2
-    @pytest.mark.usefixtures(enable_rng_on_vm.__name__, start_vms.__name__,)
+    @pytest.mark.usefixtures(update_vm.__name__, start_vms.__name__,)
     @polarion("RHEVM-19286")
     def test_urandom(self):
         """
@@ -35,9 +37,12 @@ class TestUrandom(common.VirtTest):
         """
         testflow.step(
             "Verify that device %s exists on vm %s",
-            self.rng_device, self.vm_name
+            self.update_vm_params['rng_device'], self.vm_name
         )
-        assert helper.check_if_device_exists(self.vm_name, self.rng_device)
+        assert helper.check_if_device_exists(
+            vm_name=self.vm_name,
+            device_name=self.update_vm_params['rng_device']
+        )
 
 
 class TestHwrng(common.VirtTest):
@@ -45,15 +50,17 @@ class TestHwrng(common.VirtTest):
     Hwrng RNG Device Class
     """
     vm_name = config.VM_NAME[0]
-    rng_device = config.HW_RNG
     wait_for_vms_ip = False
+    update_vm_params = {
+        'rng_device': config.HW_RNG
+    }
 
     @tier2
     @polarion("RHEVM3-6485")
     @pytest.mark.usefixtures(
-        update_vm_host.__name__,
-        enable_hwrng_source_on_cluster.__name__,
-        enable_rng_on_vm.__name__, start_vms.__name__
+        update_vm.__name__,
+        start_vms.__name__,
+        enable_hwrng_source_on_cluster.__name__
     )
     def test_hwrng(self):
         """
@@ -61,6 +68,9 @@ class TestHwrng(common.VirtTest):
         """
         testflow.step(
             "Verify that device %s exists on vm %s",
-            self.rng_device, self.vm_name
+            self.update_vm_params['rng_device'], self.vm_name
         )
-        assert helper.check_if_device_exists(self.vm_name, self.rng_device)
+        assert helper.check_if_device_exists(
+            vm_name=self.vm_name,
+            device_name=self.update_vm_params['rng_device']
+        )

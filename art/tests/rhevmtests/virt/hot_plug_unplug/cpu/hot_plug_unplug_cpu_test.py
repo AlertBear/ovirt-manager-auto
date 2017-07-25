@@ -11,6 +11,7 @@ Hot Plug and Unplug CPU - Testing
 """
 import pytest
 import helper
+from art.unittest_lib.common import testflow
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     VirtTest,
@@ -20,79 +21,35 @@ from art.unittest_lib import (
 )
 from rhevmtests import helpers
 from rhevmtests.virt import config
+from rhevmtests.sla import config as sla_config
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from fixtures import (
     base_setup_fixture, migrate_vm_for_test,
-    set_cpu_toplogy, enable_cluster_cpu_threading,
-    update_vm_to_ha
+    set_cpu_toplogy, update_vm_to_ha
 )
-from _pytest_art.testlogger import TestFlowInterface
+from rhevmtests.sla.fixtures import (  # noqa: F401
+    update_cluster_to_default_parameters,
+    update_cluster
+)
 
-testflow = TestFlowInterface
 
-
-class CPUHotPlugClass(VirtTest):
+class TestCPUHotPlug(VirtTest):
     """
-    Base Class for hot plug cpu
+    CPU hot-plug  and hot-unplug testing
     """
 
-    __test__ = True
-    vm_name = config.CPU_HOTPLUG_VM
-
-    def migrate_vm_and_check_cpu(self, number_of_cpus):
-        """
-        Migration VM and check CPU number on VM
-
-        Args:
-            number_of_cpus (int): Expected number of CPUs
-        """
-        testflow.step("migrating vm: %s", self.vm_name)
-        assert ll_vms.migrateVm(True, self.vm_name)
-        vm_resource = helpers.get_host_resource(
-            hl_vms.get_vm_ip(self.vm_name), config.VMS_LINUX_PW
-        )
-        testflow.step(
-            "Verifying that after migration vm: %s has %d cpus",
-            self.vm_name, number_of_cpus
-        )
-        assert helper.get_number_of_cores(vm_resource) == number_of_cpus, (
-            "The Cores number should be % and not: %s",
-            number_of_cpus, ll_vms.get_vm_cores(self.vm_name)
-        )
-
-    def hot_plug_unplug_cpu(
-        self, number_of_cpus, action, vm_name=config.CPU_HOTPLUG_VM
-    ):
-        """
-        Update VM CPU according to action (hot plug / hot unplug)
-        And verify CPU amount on VM
-
-        Args:
-            number_of_cpus (int): Expected number of CPUs
-            action (str): Hot plug / hot unplug action to update VM
-            vm_name (str): VM name, default "cpu_hotplug_vm"
-        """
-        testflow.step(
-            "%s case:\nUpdating number of cpu sockets on vm: %s to "
-            "%d", action, vm_name, number_of_cpus
-        )
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=vm_name,
-            cpu_socket=number_of_cpus
-        )
-        vm_resource = helpers.get_host_resource(
-            hl_vms.get_vm_ip(vm_name), config.VMS_LINUX_PW
-        )
-        working_cores = helper.get_number_of_cores(vm_resource)
-        testflow.step(
-            "Verifying that after %s vm: %s has %d cpus",
-            action, vm_name, number_of_cpus
-        )
-        assert working_cores == number_of_cpus, (
-            "The number of working cores: %s isn't correct" % working_cores
-        )
+    cluster_to_update_params = {
+        sla_config.CLUSTER_THREADS_AS_CORE: True
+    }
+    vm_parameters = {
+        'cluster': config.CLUSTER_NAME[0],
+        'template': config.TEMPLATE_NAME[0],
+        'os_type': config.VM_OS_TYPE,
+        'display_type': config.VM_DISPLAY_TYPE,
+        'name': config.CPU_HOTPLUG_VM
+    }
+    vm_name = vm_parameters['name']
 
     @tier1
     @polarion("RHEVM3-9638")
@@ -103,13 +60,15 @@ class CPUHotPlugClass(VirtTest):
         1. Test migration after increasing the number of CPUs
         2. Test migration after decreasing the number of CPUs
         """
-        self.hot_plug_unplug_cpu(number_of_cpus=2, action=config.HOT_PLUG_CPU)
-        self.migrate_vm_and_check_cpu(number_of_cpus=2)
+        helper.hot_plug_unplug_cpu(
+            number_of_cpus=2, action=config.HOT_PLUG_CPU
+        )
+        helper.migrate_vm_and_check_cpu(number_of_cpus=2)
         # unplug CPU
-        self.hot_plug_unplug_cpu(
+        helper.hot_plug_unplug_cpu(
             number_of_cpus=1, action=config.HOT_UNPLUG_CPU
         )
-        self.migrate_vm_and_check_cpu(number_of_cpus=1)
+        helper.migrate_vm_and_check_cpu(number_of_cpus=1)
 
     @tier1
     @polarion("RHEVM3-9627")
@@ -120,10 +79,10 @@ class CPUHotPlugClass(VirtTest):
         Basic hot-plug and hot-unplug case:
         Plug CPU and check it on OS, and unplug CPU and check it on OS
         """
-        self.hot_plug_unplug_cpu(
+        helper.hot_plug_unplug_cpu(
             number_of_cpus=4, action=config.HOT_UNPLUG_CPU
         )
-        self.hot_plug_unplug_cpu(
+        helper.hot_plug_unplug_cpu(
             number_of_cpus=2, action=config.HOT_UNPLUG_CPU
         )
 
@@ -143,8 +102,8 @@ class CPUHotPlugClass(VirtTest):
             helper.get_number_of_cores(config.VDS_HOSTS[host_index]), 16
         )
         testflow.step(
-            "Updating number of sockets on vm: %s to %d",
-            self.vm_name, cpu_number
+            "Updating number of sockets on vm: %s to %d" %
+            (self.vm_name, cpu_number)
         )
         assert ll_vms.updateVm(
             True, self.vm_name, cpu_cores=1, cpu_socket=cpu_number
@@ -154,8 +113,8 @@ class CPUHotPlugClass(VirtTest):
         )
         working_cores = helper.get_number_of_cores(vm_resource)
         testflow.step(
-            "Verifying that after hotplug vm: %s has %d sockets",
-            self.vm_name, cpu_number
+            "Verifying that after hotplug vm: %s has %d sockets" %
+            (self.vm_name, cpu_number)
         )
         assert working_cores == cpu_number, (
             "The number of working cores: %s isn't correct" % working_cores
@@ -210,11 +169,12 @@ class CPUHotPlugClass(VirtTest):
             True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=2
         ), "hot plug  worked while migrating VM "
 
-    @tier2
-    @polarion("RHEVM3-9630")
+    @tier3
+    @polarion("RHEVM-22074")
     @pytest.mark.usefixtures(
-        base_setup_fixture.__name__, set_cpu_toplogy.__name__,
-        enable_cluster_cpu_threading.__name__,
+        base_setup_fixture.__name__,
+        set_cpu_toplogy.__name__,
+        update_cluster.__name__,
     )
     @pytest.mark.args_marker(placement_host=0)
     def test_negative_thread_cpu(self):
@@ -224,11 +184,34 @@ class CPUHotPlugClass(VirtTest):
         and check that action failed.
         """
         testflow.step(
-            "Update VM %s cpu socket to %d",
-            self.vm_name, config.CPU_TOPOLOGY[0] * 10
+            "Update VM %s cpu socket to %d" %
+            (self.vm_name, config.CPU_TOPOLOGY[0] * 10)
         )
         assert not ll_vms.updateVm(
             True, self.vm_name, cpu_socket=config.CPU_TOPOLOGY[0] * 10
+        )
+
+    @tier2
+    @polarion("RHEVM3-9630")
+    @pytest.mark.usefixtures(
+        update_cluster.__name__,
+        base_setup_fixture.__name__,
+        set_cpu_toplogy.__name__,
+    )
+    @pytest.mark.args_marker(placement_host=0)
+    def test_thread_cpu(self):
+        """
+        Test CPU hot plug while threads is enabled on the cluster
+        Set number of threads to max cpu topology but not pass the limit of 16
+        CPU.
+        """
+
+        num_of_cpus = min(config.CPU_TOPOLOGY[0], 16)
+        testflow.step(
+            "Update VM %s cpu socket to %d" % (self.vm_name, num_of_cpus)
+        )
+        assert ll_vms.updateVm(
+            True, self.vm_name, cpu_socket=num_of_cpus
         )
 
     @tier3
@@ -238,7 +221,9 @@ class CPUHotPlugClass(VirtTest):
         """
         Hot plug CPU -> suspend VM -> resume VM -> hot unplug CPU
         """
-        self.hot_plug_unplug_cpu(number_of_cpus=4, action=config.HOT_PLUG_CPU)
+        helper.hot_plug_unplug_cpu(
+            number_of_cpus=4, action=config.HOT_PLUG_CPU
+        )
         testflow.step("Suspend VM")
         assert ll_vms.suspendVm(positive=True, vm=self.vm_name)
         testflow.step("Resume VM")
@@ -248,7 +233,7 @@ class CPUHotPlugClass(VirtTest):
             wait_for_ip=True,
             wait_for_status=config.VM_UP
         )
-        self.hot_plug_unplug_cpu(
+        helper.hot_plug_unplug_cpu(
             number_of_cpus=2, action=config.HOT_UNPLUG_CPU
         )
 
@@ -261,7 +246,9 @@ class CPUHotPlugClass(VirtTest):
         Case 1: Hot plug CPU
         Case 2: Hot unplug CPU
         """
-        self.hot_plug_unplug_cpu(number_of_cpus=4, action=config.HOT_PLUG_CPU)
-        self.hot_plug_unplug_cpu(
+        helper.hot_plug_unplug_cpu(
+            number_of_cpus=4, action=config.HOT_PLUG_CPU
+        )
+        helper.hot_plug_unplug_cpu(
             number_of_cpus=2, action=config.HOT_UNPLUG_CPU
         )
