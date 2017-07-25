@@ -410,26 +410,28 @@ def change_cpu_limitations(request):
     """
     Change the engine cpu limitation
     """
-    comp_version = request.cls.comp_version
-    if comp_version == config.COMP_VERSION:
-        value = config.VCPU_4_1
-    elif comp_version == "4.0":
-        value = config.VCPU_4_0
 
-    def fin():
-        testflow.teardown("Return CPU limitations to default")
-        param = "MaxNumOfVmCpus=%s" % value
+    if request.getfixturevalue("change_limitation"):
+        comp_version = request.getfixturevalue("comp_version")
+        if comp_version == config.COMP_VERSION:
+            value = config.VCPU_FROM_41_AND_UP
+        elif comp_version == "4.0":
+            value = config.VCPU_4_0
+
+        def fin():
+            testflow.teardown("Return CPU limitations to default")
+            param = "MaxNumOfVmCpus=%s" % value
+            assert config.ENGINE.engine_config(
+                action='set', param=param, version=comp_version
+            ).get('results'), "Failed to configure %s" % param
+
+        request.addfinalizer(fin)
+
+        testflow.setup("Change CPU limitations to 10")
+        param = "MaxNumOfVmCpus=10"
         assert config.ENGINE.engine_config(
             action='set', param=param, version=comp_version
         ).get('results'), "Failed to configure %s" % param
-
-    request.addfinalizer(fin)
-
-    testflow.setup("Change CPU limitations to 10")
-    param = "MaxNumOfVmCpus=10"
-    assert config.ENGINE.engine_config(
-        action='set', param=param, version=comp_version
-    ).get('results'), "Failed to configure %s" % param
 
 
 @pytest.fixture()
@@ -437,11 +439,17 @@ def default_cpu_settings(request):
     """
     cleanup for vcpu test cases
     """
+    comp_version = request.getfixturevalue('comp_version')
+    vm_name = (
+        config.VM_NAME[0] if comp_version is config.COMP_VERSION
+        else config.VCPU_4_0_VM
+    )
+
     def fin():
-        testflow.teardown("Update VM %s cpu to 1", config.VM_NAME[0])
+        testflow.teardown("Update VM %s cpu to 1", vm_name)
         assert ll_vms.updateVm(
             positive=True,
-            vm=config.VM_NAME[0],
+            vm=vm_name,
             cpu_cores=1,
             cpu_socket=1,
             cpu_threads=1
@@ -455,29 +463,20 @@ def create_vm_for_vcpu(request):
     Create VM for Vcpu test,
     The test requires a new vm in 4.0 cluster
     """
-    cluster = request.cls.cluster
-    vm_name = request.cls.vm_name
-
     def fin():
-        testflow.teardown("Remove VM %s", vm_name)
-        assert ll_vms.safely_remove_vms([vm_name])
+        testflow.teardown("Remove VM %s", config.VCPU_4_0_VM)
+        assert ll_vms.safely_remove_vms([config.VCPU_4_0_VM])
     request.addfinalizer(fin)
 
-    testflow.setup("Create VM %s for on cluster %s", vm_name, cluster)
+    testflow.setup(
+        "Create VM %s for on cluster %s",
+        config.VCPU_4_0_VM, config.VCPU_4_0_CLUSTER
+    )
     assert ll_vms.addVm(
         positive=True,
-        name=vm_name,
-        cluster=cluster,
+        name=config.VCPU_4_0_VM,
+        cluster=config.VCPU_4_0_CLUSTER,
         os_type=config.VM_OS_TYPE,
         display_type=config.VM_DISPLAY_TYPE,
 
     )
-
-
-@pytest.fixture(scope="class")
-def make_sure_vm_is_down(request):
-    """
-    Power Down VM in case it's running
-    """
-    vm_name = request.cls.vm_name
-    assert ll_vms.stop_vms_safely([vm_name])

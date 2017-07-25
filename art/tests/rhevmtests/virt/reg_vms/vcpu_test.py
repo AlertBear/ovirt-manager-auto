@@ -4,137 +4,87 @@
 import pytest
 from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.unittest_lib import (
-    tier1,
-    tier2,
-)
-from art.unittest_lib import VirtTest, testflow
+from art.unittest_lib import VirtTest, testflow, tier2
 from rhevmtests.virt.reg_vms.fixtures import (
     change_cpu_limitations, default_cpu_settings,
-    create_vm_for_vcpu, make_sure_vm_is_down
+    create_vm_for_vcpu
 )
 from rhevmtests.virt.fixtures import create_dc
 import config
 
 
 @pytest.mark.usefixtures(
-    default_cpu_settings.__name__,
-    make_sure_vm_is_down.__name__
+    create_dc.__name__,
+    create_vm_for_vcpu.__name__,
+
+
 )
 class TestVcpu(VirtTest):
     """
     VCPU cases
     """
 
-    comp_version = config.COMP_VERSION
-    vm_name = config.VM_NAME[0]
+    current_version = config.COMP_VERSION
+    version_4_0 = "4.0"
+    dc_version_to_create = version_4_0
 
-    @tier1
+    @tier2
     @polarion("RHEVM3-17327")
-    def test_update_vm_cpu_to_max(self):
+    @pytest.mark.parametrize(
+        (
+            "comp_version", "cpu_cores", "cpu_sockets", "cpu_threads",
+            "positive", "change_limitation"
+        ),
+        [
+            pytest.param(
+                current_version, 16, 9, 2, True, False,
+                marks=(polarion("RHEVM-17328"))
+            ),
+            pytest.param(
+                current_version, 15, 10, 2, False, False,
+                marks=(polarion("RHEVM-17328"))
+            ),
+            pytest.param(
+                current_version, 5, 2, 1, True, True,
+                marks=(polarion("RHEVM3-10623"))
+            ),
+            pytest.param(
+                current_version, 3, 4, 1, False, True,
+                marks=(polarion("RHEVM3-10623"))
+            ),
+            pytest.param(
+                version_4_0, 16, 15, 1, True, False,
+                marks=(polarion("RHEVM3-11267"))
+            ),
+            pytest.param(
+                version_4_0, 10, 5, 5, False, False,
+                marks=(polarion("RHEVM3-11267"))
+            ),
+
+        ]
+    )
+    @pytest.mark.usefixtures(
+        default_cpu_settings.__name__, change_cpu_limitations.__name__,
+    )
+    def test_update_vm_cpu_to_max(
+        self, comp_version, cpu_cores, cpu_sockets, cpu_threads,
+        positive, change_limitation
+    ):
         """
         Positive: Update VM cpu to maximum (288 cpu's)
         """
+        vm_name = (
+            config.VM_NAME[0] if comp_version == self.current_version
+            else config.VCPU_4_0_VM
+        )
         testflow.step(
-            "Positive: Update VM %s cpu total to 288", config.VM_NAME[0]
+            "Update VM %s cpu total to %s", vm_name,
+            (cpu_cores*cpu_sockets*cpu_threads)
         )
         assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_cores=16,
-            cpu_socket=9,
-            cpu_threads=2
-        )
-
-    @tier2
-    @polarion("RHEVM3-17328")
-    def test_negative_update_vm_cpu_to_more_then_max(self):
-        """
-        Negative: Update vm cpu to maximum (300 cpu's)
-        """
-        testflow.step(
-            "Negative: Update VM  %s cpu total to 300", config.VM_NAME[0]
-        )
-        assert not ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_cores=15,
-            cpu_socket=10,
-            cpu_threads=2
-        )
-
-    @tier2
-    @pytest.mark.usefixtures(change_cpu_limitations.__name__)
-    @polarion("RHEVM3-10623")
-    def test_check_cpu_hotplug_over_limit(self):
-        """
-        Positive + Negative: Change limitation of cpu to 10 and test it
-        """
-        testflow.step(
-            "Positive: Update VM %s cpu total to 10", config.VM_NAME[0]
-        )
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_cores=5,
-            cpu_socket=2,
-            cpu_threads=1
-        )
-        testflow.step(
-            "Negative: Update VM %s cpu total to 11", config.VM_NAME[0]
-        )
-        assert not ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_cores=3,
-            cpu_socket=4,
-            cpu_threads=1
-
-        )
-
-
-@pytest.mark.usefixtures(default_cpu_settings.__name__)
-class TestVcpuVersion40(VirtTest):
-    """
-    VCPU cases for 4.0 cluster
-    """
-
-    vm_name = "vcpu_vm"
-    host_index = 2
-    comp_version = "4.0"
-    cluster = "Cluster_%s" % comp_version.replace(".", "_")
-
-    @tier2
-    @polarion("RHEVM3-11267")
-    @pytest.mark.usefixtures(
-        create_dc.__name__,
-        create_vm_for_vcpu.__name__
-    )
-    def test_vcpu_on_40(self):
-        """
-        Positive: change VM CPU'S to maximum value and
-        negative: change VM CPU's to value bigger then maximum
-        """
-        testflow.step(
-            "Positive: Update VM %s to maximum value %s",
-            self.vm_name, config.VCPU_4_0
-        )
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_cores=16,
-            cpu_socket=15,
-            cpu_threads=1
-        )
-        testflow.step(
-            "Negative: Update VM %s cpu value bigger then maximum 250",
-            self.vm_name
-        )
-        assert not ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_cores=10,
-            cpu_socket=5,
-            cpu_threads=5
-
+            positive=positive,
+            vm=vm_name,
+            cpu_cores=cpu_cores,
+            cpu_socket=cpu_sockets,
+            cpu_threads=cpu_threads
         )
