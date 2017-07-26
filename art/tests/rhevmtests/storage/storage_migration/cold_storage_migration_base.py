@@ -736,10 +736,7 @@ class TestCase19012(ColdMoveBase):
     Storage_4_0/4_1_Storage_Cold_Move
     """
     __test__ = False
-    vm_names = list()
-    num_on_vms = 4
-    DISKS_MOUNTS_EXECUTOR = config.DISKS_MOUNTS_EXECUTOR.copy()
-    CHECKSUM_FILES_RESULTS = config.CHECKSUM_FILES.copy()
+    num_of_vms = 4
 
     @polarion("RHEVM3-19012")
     @tier3

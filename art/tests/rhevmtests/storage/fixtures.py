@@ -1448,7 +1448,7 @@ def create_vms(request):
             config.DATA_CENTER_NAME, self.storage
         )[0]
 
-    num_of_vms = getattr(self, 'num_on_vms', 2)
+    num_of_vms = getattr(self, 'num_of_vms', 2)
 
     for index in range(num_of_vms):
         self.vm_name = storage_helpers.create_unique_object_name(
