@@ -1,6 +1,8 @@
 """
 config module for host regression test
 """
+from rhevmtests.coresystem.config import *  # flake8: noqa
+
 PM1_ADDRESS = '10.35.35.35'
 PM2_ADDRESS = '10.11.11.11'
 PM_TYPE_DEFAULT = 'apc'
