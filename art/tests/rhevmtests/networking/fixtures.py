@@ -20,7 +20,8 @@ from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
     hosts as ll_hosts,
     general as ll_general,
-    clusters as ll_clusters
+    clusters as ll_clusters,
+    vms as ll_vms
 )
 import rhevmtests.helpers as global_helper
 
@@ -267,3 +268,98 @@ def restore_network_usage(request):
             usages=conf.ALL_NETWORK_USAGES
         )
     request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def add_vnic_profiles(request):
+    """
+    Add vNIC profiles with properties
+    """
+    vnics_profiles = getattr(
+        request.node.cls, "add_vnic_profile_params", dict()
+    )
+    for values in vnics_profiles.values():
+        assert ll_networks.add_vnic_profile(positive=True, **values)
+
+
+@pytest.fixture(scope="class")
+def remove_vnic_profiles(request):
+    """
+    Remove vNICs profiles
+    """
+    results = list()
+    vnics_profiles = getattr(
+        request.node.cls, "remove_vnic_profile_params", dict()
+    )
+
+    def fin2():
+        """
+        Check if one of the finalizers failed.
+        """
+        global_helper.raise_if_false_in_list(results=results)
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove vNIC profile
+        """
+        for values in vnics_profiles.values():
+            kwargs = {
+                "vnic_profile_name": values.get("name"),
+                "network": values.get("network"),
+                "cluster": values.get("cluster"),
+                "data_center": values.get("data_center")
+            }
+            results.append(
+                (
+                    ll_networks.remove_vnic_profile(positive=True, **kwargs),
+                    "fin1: ll_networks.remove_vnic_profile {kwargs}".format(
+                        kwargs=kwargs
+                    )
+                )
+            )
+    request.addfinalizer(fin1)
+
+
+@pytest.fixture(scope="class")
+def add_vnics_to_vms(request):
+    """
+    Add vNIC(s) with properties to a VM(s)
+    """
+    vms_and_vnics = getattr(request.node.cls, "add_vnics_vms_params", dict())
+    for values in vms_and_vnics.values():
+        assert ll_vms.addNic(positive=True, **values)
+
+
+@pytest.fixture(scope="class")
+def remove_vnics_from_vms(request):
+    """
+    Remove vNICs from VMs
+    """
+    results = list()
+    vms_and_vnics = getattr(
+        request.node.cls, "remove_vnics_vms_params", dict()
+    )
+
+    def fin2():
+        """
+        Check if one of the finalizers failed.
+        """
+        global_helper.raise_if_false_in_list(results=results)
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove vNIC(s) from a VM(s)
+        """
+        for values in vms_and_vnics.values():
+            kwargs = {
+                "vm": values.get("vm"),
+                "nic": values.get("name")
+            }
+            results.append(
+                (
+                    ll_vms.removeNic(positive=True, **kwargs),
+                    "fin1: ll_vms.removeNic {kwargs}".format(kwargs=kwargs))
+            )
+    request.addfinalizer(fin1)

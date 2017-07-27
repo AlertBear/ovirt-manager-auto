@@ -16,23 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
 import rhevmtests.networking.config as conf
 import config as nf_conf
 from art.unittest_lib import testflow
-from rhevmtests import networking
 from rhevmtests.networking.fixtures import NetworkFixtures
-
-
-@pytest.fixture(scope="class")
-def remove_vnic_profiles(request):
-    """
-    Remove vNIC profiles
-    """
-
-    def fin():
-        """
-        Remove NIC from VM
-        """
-        testflow.teardown("Remove unneeded vNIC profiles")
-        networking.remove_unneeded_vnic_profiles()
-    request.addfinalizer(fin)
 
 
 @pytest.fixture(scope="class")
@@ -54,37 +38,6 @@ def restore_vnic_profile_filter(request):
             data_center=conf.DC_0
         )
     request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def remove_vnic_from_vm(request):
-    """
-    Remove vNIC from VM
-    """
-    NetworkFixtures()
-    vm = request.node.cls.vm_name
-    nic1 = request.node.cls.nic1
-
-    def fin():
-        """
-        Remove vNIC from VM
-        """
-        testflow.teardown("Remove vNIC %s from VM %s", nic1, vm)
-        assert ll_vms.removeNic(positive=True, vm=vm, nic=nic1)
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
-def add_vnic_to_vm(request):
-    """
-    Add vNIC to VM
-    """
-    NetworkFixtures()
-    vm = request.node.cls.vm_name
-    nic1 = request.node.cls.nic1
-    net = request.node.cls.net
-    testflow.setup("Add vNIC %s to VM %s", nic1, vm)
-    assert ll_vms.addNic(positive=True, vm=vm, name=nic1, network=net)
 
 
 @pytest.fixture(scope="class")

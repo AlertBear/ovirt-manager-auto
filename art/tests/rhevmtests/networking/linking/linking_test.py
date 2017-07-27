@@ -23,13 +23,18 @@ from art.unittest_lib import (
     tier2,
 )
 from art.unittest_lib import NetworkTest, testflow
-from fixtures import add_vnics_to_vms, add_vnic_profile
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking import (
     config as conf,
     helper as network_helper
 )
-from rhevmtests.networking.fixtures import NetworkFixtures
+from rhevmtests.networking.fixtures import (
+    NetworkFixtures,
+    add_vnic_profiles,
+    remove_vnic_profiles,
+    add_vnics_to_vms,
+    remove_vnics_from_vms
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -88,24 +93,29 @@ def linking_prepare_setup(request):
 
 
 @pytest.mark.incremental
-@pytest.mark.usefixtures(add_vnics_to_vms.__name__)
+@pytest.mark.usefixtures(
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__
+)
 class TestLinkedCase01(NetworkTest):
     """
     Check if plugged/linked properties are enabled by default
     """
-    __test__ = True
 
     vm = conf.VM_1
     vnic = linking_conf.CASE_01_VNIC_1
     net_1 = linking_conf.CASE_01_NET_1
 
-    add_vnics_vms_params = [
-        {
-            "vm": vm,
-            "name": vnic,
-            "network": net_1
-        }
-    ]
+    add_vnics_vms_params = {
+        "1":
+            {
+                "vm": vm,
+                "name": vnic,
+                "network": net_1
+            }
+    }
+
+    remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
     @polarion("RHEVM3-3817")
@@ -120,32 +130,39 @@ class TestLinkedCase01(NetworkTest):
 
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
-@pytest.mark.usefixtures(add_vnics_to_vms.__name__)
+@pytest.mark.usefixtures(
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__
+)
 class TestLinkedCase02(NetworkTest):
     """
     Create permutation for a plugged/linked vNIC, use e1000 and rtl8139
     drivers
     """
-    __test__ = True
 
-    add_vnics_vms_params = [
-        {
-            "vm": conf.VM_1,
-            "name": linking_conf.CASE_02_VNIC_1,
-            "network": linking_conf.CASE_02_NET_1,
-            "interface": conf.NIC_TYPE_RTL8139,
-            "plugged": True,
-            "linked": True
-        },
-        {
-            "vm": conf.VM_1,
-            "name": linking_conf.CASE_02_VNIC_2,
-            "network": linking_conf.CASE_02_NET_2,
-            "interface": conf.NIC_TYPE_E1000,
-            "plugged": True,
-            "linked": False
-        }
-    ]
+    add_vnics_vms_params = {
+        "1":
+            {
+                "vm": conf.VM_1,
+                "name": linking_conf.CASE_02_VNIC_1,
+                "network": linking_conf.CASE_02_NET_1,
+                "interface": conf.NIC_TYPE_RTL8139,
+                "plugged": True,
+                "linked": True
+            },
+        "2":
+            {
+                "vm": conf.VM_1,
+                "name": linking_conf.CASE_02_VNIC_2,
+                "network": linking_conf.CASE_02_NET_2,
+                "interface": conf.NIC_TYPE_E1000,
+                "plugged": True,
+                "linked": False
+
+            }
+    }
+
+    remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
     @polarion("RHEVM3-3834")
@@ -158,7 +175,7 @@ class TestLinkedCase02(NetworkTest):
         4.  Update and check vNICs with original names and unplug them
         5.  Check the network on vNICs and their unplug state
         """
-        for vnic_props in self.add_vnics_vms_params:
+        for vnic_props in self.add_vnics_vms_params.values():
             vm = vnic_props.get("vm")
             vnic = vnic_props.get("name")
             linked = vnic_props.get("linked")
@@ -201,24 +218,29 @@ class TestLinkedCase02(NetworkTest):
 
 
 @pytest.mark.incremental
-@pytest.mark.usefixtures(add_vnics_to_vms.__name__)
+@pytest.mark.usefixtures(
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__
+)
 class TestLinkedCase03(NetworkTest):
     """
     Try to run a VM with network attached to cluster and not host, the test
     should fail as VM can't run when there is no network on at least one host
     of the cluster
     """
-    __test__ = True
 
     vm = conf.VM_1
 
-    add_vnics_vms_params = [
-        {
-            "vm": conf.VM_1,
-            "name": linking_conf.CASE_03_VNIC_1,
-            "network": linking_conf.CASE_03_NET_1
-        }
-    ]
+    add_vnics_vms_params = {
+        "1":
+            {
+                "vm": conf.VM_1,
+                "name": linking_conf.CASE_03_VNIC_1,
+                "network": linking_conf.CASE_03_NET_1
+            }
+    }
+
+    remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
     @polarion("RHEVM3-3833")
@@ -234,7 +256,9 @@ class TestLinkedCase03(NetworkTest):
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    add_vnic_profile.__name__,
+    remove_vnic_profiles.__name__,
+    remove_vnics_from_vms.__name__,
+    add_vnic_profiles.__name__,
     add_vnics_to_vms.__name__,
     start_vm.__name__
 )
@@ -244,7 +268,6 @@ class TestLinkedCase04(NetworkTest):
     2.  Change network parameters for both VNICs:
     3.  Change nic names, link/plugged states
     """
-    __test__ = True
 
     vm_name = conf.VM_0
     vnic_1 = linking_conf.CASE_04_VNIC_1
@@ -260,30 +283,41 @@ class TestLinkedCase04(NetworkTest):
         vm_name: {}
     }
 
-    add_vnics_vms_params = [
-        {
-            "vm": vm_name,
-            "name": vnic_1,
-            "network": net_1,
-            "plugged": True
-        },
-        {
-            "vm": vm_name,
-            "name": vnic_2,
-            "network": net_1,
-            "plugged": False
-        },
-        {
-            "vm": vm_name,
-            "name": vnic_3,
-            "network": net_1,
-            "vnic_profile": linking_conf.CASE_04_VNIC_PROFILE_1
-        }
-    ]
-    add_vnic_profile_params = {
-        "name": linking_conf.CASE_04_VNIC_PROFILE_1,
-        "network": net_1
+    add_vnics_vms_params = {
+        "1":
+            {
+                "vm": vm_name,
+                "name": vnic_1,
+                "network": net_1,
+                "plugged": True
+            },
+        "2":
+            {
+                "vm": vm_name,
+                "name": vnic_2,
+                "network": net_1,
+                "plugged": False
+            },
+        "3":
+            {
+                "vm": vm_name,
+                "name": vnic_3,
+                "network": net_1,
+                "vnic_profile": linking_conf.CASE_04_VNIC_PROFILE_1
+            }
     }
+
+    remove_vnics_vms_params = add_vnics_vms_params
+
+    add_vnic_profile_params = {
+        linking_conf.CASE_04_VNIC_PROFILE_1: {
+            "name": linking_conf.CASE_04_VNIC_PROFILE_1,
+            "network": net_1,
+            "port_mirroring": True
+        }
+    }
+
+    remove_vnic_profile_params = add_vnic_profile_params
 
     @tier2
     @polarion("RHEVM3-3825")
@@ -367,8 +401,10 @@ class TestLinkedCase04(NetworkTest):
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    remove_vnics_from_vms.__name__,
+    remove_vnic_profiles.__name__,
     add_vnics_to_vms.__name__,
-    add_vnic_profile.__name__,
+    add_vnic_profiles.__name__,
     start_vm.__name__
 )
 class TestLinkedCase05(NetworkTest):
@@ -376,7 +412,6 @@ class TestLinkedCase05(NetworkTest):
     Check vNIC update scenarios on VM (both on and off) with plugged and
     linked vNIC states
     """
-    __test__ = True
 
     vm = conf.VM_1
     vms_to_stop = [vm]
@@ -387,17 +422,24 @@ class TestLinkedCase05(NetworkTest):
     rtl_int = conf.NIC_TYPE_RTL8139
     mac_addr = "12:22:33:44:55:66"
 
-    add_vnics_vms_params = [
-        {
-            "vm": vm,
-            "name": vnic,
-            "network": net_1,
-        }
-    ]
-    add_vnic_profile_params = {
-        "name": linking_conf.CASE_05_VNIC_PROFILE_1,
-        "network": net_2
+    add_vnics_vms_params = {
+        "1":
+            {
+                "vm": vm,
+                "name": vnic,
+                "network": net_1,
+            }
     }
+
+    remove_vnics_vms_params = add_vnics_vms_params
+
+    add_vnic_profile_params = {
+        linking_conf.CASE_05_VNIC_PROFILE_1: {
+            "name": linking_conf.CASE_05_VNIC_PROFILE_1,
+            "network": net_2
+        }
+    }
+    remove_vnic_profile_params = add_vnic_profile_params
 
     @tier2
     @polarion("RHEVM3-3826")

@@ -21,20 +21,30 @@ from art.rhevm_api.tests_lib.low_level import (
 import config as nf_conf
 import helper
 from rhevmtests.networking import config as conf, helper as network_helper
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
     NetworkTest,
     testflow,
 )
 from fixtures import (
-    restore_vnic_profile_filter, add_vnic_to_vm, remove_vnic_from_vm,
-    remove_vnic_profiles, update_network_filter_on_profile,
+    restore_vnic_profile_filter,
+    update_network_filter_on_profile,
     update_vnic_clean_traffic_param
 )
-from rhevmtests.fixtures import start_vm, create_datacenters, create_clusters
+from rhevmtests.fixtures import (
+    start_vm,
+    create_datacenters,
+    create_clusters
+)
 from rhevmtests.networking.fixtures import (  # noqa: F401
-    setup_networks_fixture, NetworkFixtures, clean_host_interfaces
+    setup_networks_fixture,
+    NetworkFixtures,
+    clean_host_interfaces,
+    add_vnic_profiles,
+    remove_vnic_profiles,
+    add_vnics_to_vms,
+    remove_vnics_from_vms
 )
 
 
@@ -66,7 +76,6 @@ class TestNetworkFilterCase01(NetworkTest):
     Check that network filter (vdsm-no-mac-spoofing) is enabled by default for
     new network
     """
-    __test__ = True
     net = nf_conf.NETS[1][0]
 
     @tier2
@@ -92,7 +101,6 @@ class TestNetworkFilterCase02(NetworkTest):
     """
     Check the vdsm-no-mac-spoofing in on virsh nwfilter-list
     """
-    __test__ = True
     vdsm_spoofing_file = "/etc/libvirt/nwfilter/vdsm-no-mac-spoofing.xml"
 
     @tier2
@@ -128,7 +136,7 @@ class TestNetworkFilterCase02(NetworkTest):
 
 @pytest.mark.usefixtures(
     restore_vnic_profile_filter.__name__,
-    remove_vnic_from_vm.__name__,
+    remove_vnics_from_vms.__name__,
     setup_networks_fixture.__name__,
     start_vm.__name__,
 )
@@ -136,7 +144,6 @@ class TestNetworkFilterCase03(NetworkTest):
     """
     Check that Network Filter is enabled for via dumpxml
     """
-    __test__ = True
     vm_name = conf.VM_0
     nic0 = conf.VM_NIC_0
     nic1 = conf.VM_NIC_1
@@ -152,6 +159,13 @@ class TestNetworkFilterCase03(NetworkTest):
     start_vms_dict = {
         vm_name: {
             "host": 0
+        }
+    }
+
+    remove_vnics_vms_params = {
+        "1": {
+            "vm": vm_name,
+            "name": nic1
         }
     }
 
@@ -233,17 +247,27 @@ class TestNetworkFilterCase03(NetworkTest):
 
 
 @pytest.mark.usefixtures(
-    remove_vnic_from_vm.__name__,
-    add_vnic_to_vm.__name__
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__
 )
 class TestNetworkFilterCase04(NetworkTest):
     """
     Remove network filter from vNIC profile while profile attach to stopped VM
     """
-    __test__ = True
     nic1 = nf_conf.VNICS[4][0]
     vm_name = conf.VM_0
     net = nf_conf.NETS[4][0]
+
+    add_vnics_vms_params = {
+        "1":
+            {
+                "vm": vm_name,
+                "name": nic1,
+                "network": net
+            }
+    }
+
+    remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
     @polarion("RHEVM-15102")
@@ -261,7 +285,9 @@ class TestNetworkFilterCase04(NetworkTest):
         )
 
 
-@pytest.mark.usefixtures(remove_vnic_profiles.__name__)
+@pytest.mark.usefixtures(
+    remove_vnic_profiles.__name__
+)
 class TestNetworkFilterCase05(NetworkTest):
     """
     Create new vNIC profile with custom network_filter, no network
@@ -270,10 +296,23 @@ class TestNetworkFilterCase05(NetworkTest):
     filter and default network filter
 
     """
-    __test__ = True
+    # General params
     vnic_pro_1 = nf_conf.VNIC_PROFILES[5][0]
     vnic_pro_2 = nf_conf.VNIC_PROFILES[5][1]
     vnic_pro_3 = nf_conf.VNIC_PROFILES[5][2]
+
+    # remove_vnic_profiles params
+    remove_vnic_profile_params = {
+        vnic_pro_1: {
+            "name": vnic_pro_1,
+        },
+        vnic_pro_2: {
+            "name": vnic_pro_2,
+        },
+        vnic_pro_3: {
+            "name": vnic_pro_3,
+        }
+    }
 
     @tier2
     @polarion("RHEVM-15476")
@@ -335,7 +374,6 @@ class TestNetworkFilterCase06(NetworkTest):
     3. Update vNIC profile with custom network_filter, no network
        filter and default network filter
     """
-    __test__ = True
     ext_dc = "NetworkFilter-DC-3-6"
     ext_cl = "NetworkFilter-CL-3-6"
     clusters_dict = {
@@ -522,3 +560,57 @@ class TestNetworkFilterCase08(NetworkTest):
             assert ll_vms.delete_vnic_network_filter_parameters(
                 nf_object=filter_object
             )
+
+
+@pytest.mark.usefixtures(
+    remove_vnic_profiles.__name__,
+    add_vnic_profiles.__name__
+)
+class TestNetworkFilterCase09(NetworkTest):
+    """
+    1. Add vNIC with network filter parameters to VM
+    """
+    # General params
+    vm = conf.VM_0
+    vnic = nf_conf.VNICS[9][0]
+    vnic_profile = nf_conf.VNIC_PROFILES[9][0]
+    net = conf.MGMT_BRIDGE
+
+    # add_vnic_profiles params
+    add_vnic_profile_params = {
+        vnic_profile: {
+            "name": vnic_profile,
+            "network": net,
+            "data_center": conf.DC_0,
+            "network_filter": "clean-traffic"
+        }
+    }
+
+    # remove_vnic_profiles params
+    remove_vnic_profile_params = add_vnic_profile_params
+
+    @tier2
+    @bz({"1475790": {}})
+    def test_add_vnic_to_vm_with_parameters(self):
+        """
+        Add vNIC with network filter parameters to VM
+        """
+        add_nic_kwargs = {
+            "name": self.vnic,
+            "network": self.net,
+            "vnic_profile": self.vnic_profile,
+            "network_filter": {
+                "name": nf_conf.IP_NAME,
+                "value": nf_conf.FAKE_IP_1
+            }
+        }
+        assert ll_vms.addNic(
+            positive=True, vm=self.vm, **add_nic_kwargs
+        )
+        filter_params = ll_vms.get_vnic_network_filter_parameters(
+            vm=self.vm, nic=self.vnic
+        )
+        assert filter_params
+        filter_params = filter_params[0]
+        assert filter_params.name != nf_conf.IP_NAME
+        assert filter_params.value != nf_conf.FAKE_IP_1

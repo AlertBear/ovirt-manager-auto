@@ -557,7 +557,7 @@ def get_vnic_profile_attr(
     return attr_dict
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(step=True)
 def add_vnic_profile(positive, name, **kwargs):
     """
     Add new vnic profile to network
@@ -576,6 +576,8 @@ def add_vnic_profile(positive, name, **kwargs):
         custom_properties (str): Custom properties for the profile
         description (str): Description of vnic profile
         pass_through (bool): Enable or disable pass through mode
+        network_filter (str): Network filter name to use. ('None') to update
+            vNIC profile with no network_filter
 
     Returns:
         bool: True, if adding vnic profile was success, otherwise False
@@ -585,9 +587,9 @@ def add_vnic_profile(positive, name, **kwargs):
     return VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(step=True)
 def remove_vnic_profile(
-    positive, vnic_profile_name, network, cluster=None, data_center=None
+    positive, vnic_profile_name, network=None, cluster=None, data_center=None
 ):
     """
     Remove vnic profile
@@ -604,8 +606,9 @@ def remove_vnic_profile(
     Returns:
         bool: True if action succeeded, otherwise False
     """
-    profile_obj = get_vnic_profile_obj(
-        vnic_profile_name, network, cluster, data_center
+    profile_obj = get_vnic_profile_object(
+        vnic_profile=vnic_profile_name, network=network, cluster=cluster,
+        data_center=data_center
     )
     return VNIC_PROFILE_API.delete(profile_obj, positive)
 
@@ -1614,3 +1617,42 @@ def get_network_cluster(network, datacenter=None):
         x[1] == network_dc.id
     ]
     return cluster[0] if cluster else None
+
+
+@ll.general.generate_logs(step=True)
+def get_all_vnics_profiles():
+    """
+    Get all vNICs profiles from ebgine
+
+    Returns:
+        list: List of vNICs profiles
+    """
+    return VNIC_PROFILE_API.get(abs_link=False)
+
+
+@ll.general.generate_logs(step=True)
+def get_vnic_profile_object(
+    vnic_profile, network=None, cluster=None, data_center=None
+):
+    """
+    Get vNIC profile object by vnic_profile name
+
+    Args:
+        vnic_profile (str): vNIC profile name
+        network (str): Network name used by profile
+        cluster (str): Name of the cluster the network resides on
+        data_center (str):  Name of the data center the network resides on
+
+    Returns:
+        VnicProfile: vNIC profile object
+    """
+    if network:
+        return get_vnic_profile_obj(
+            name=vnic_profile, network=network, cluster=cluster,
+            data_center=data_center
+        )
+    else:
+        profile_obj = filter(
+            lambda x: x.name == vnic_profile, get_all_vnics_profiles()
+        )
+        return profile_obj[0] if profile_obj else None

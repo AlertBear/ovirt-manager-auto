@@ -1559,6 +1559,26 @@ def checkVmHasCdromAttached(positive, vmName):
 
 
 def _prepareNicObj(**kwargs):
+    """
+    Prepare Nic object
+
+    Keyword Args:
+        name (str): NIC name
+        network (str): Network name
+        vnic_profile (str): The VNIC profile that will be selected for the NIC
+        interface (str): NIC type. (virtio, rtl8139, e1000 and passthrough)
+        mac_address (str): NIC mac address
+        plugged (bool): Add the NIC with plugged/unplugged state
+        linked (bool): Add the NIC with linked/unlinked state
+        vm (str): VM name where nic should be added
+        network_filter (dict): Network filter params, nf = {
+            name: filter name,
+            value: filter value
+            }
+
+    Returns:
+        Nic: Nic object
+    """
     nic_obj = data_st.Nic()
     vnic_profile_obj = data_st.VnicProfile()
 
@@ -1592,6 +1612,17 @@ def _prepareNicObj(**kwargs):
             )
 
             nic_obj.set_vnic_profile(vnic_profile_obj)
+
+    if "network_filter" in kwargs:
+        network_filter = kwargs.get("network_filter")
+        network_filter_parameters = data_st.NetworkFilterParameters()
+        network_filter_object = prepare_vnic_network_filter_parameters(
+            name=network_filter.get("name"), value=network_filter.get("value")
+        )
+        network_filter_parameters.add_network_filter_parameter(
+            network_filter_object
+        )
+        nic_obj.set_network_filter_parameters(network_filter_parameters)
 
     return nic_obj
 
@@ -1651,24 +1682,21 @@ def addNic(positive, vm, **kwargs):
         mac_address (str): NIC mac address
         plugged (bool): Add the NIC with plugged/unplugged state
         linked (bool): Add the NIC with linked/unlinked state
+        network_filter (dict): Network filter params, nf = {
+            name: filter name,
+            value: filter value
+            }
 
     Returns:
         bool: True if NIC was added properly, False otherwise
     """
-    nic_name = kwargs.get("name")
     vm_obj = VM_API.find(vm)
     expected_status = vm_obj.get_status()
 
     nic_obj = _prepareNicObj(vm=vm, **kwargs)
     nics_coll = get_vm_nics(vm)
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Add", obj_type="vNIC", obj_name=nic_name,
-        positive=positive, extra_txt="to VM %s" % vm, **kwargs
-    )
-    logger.info(log_info)
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
     if not status:
-        logger.error(log_error)
         return False
 
     # TODO: remove wait section. func need to be atomic. wait can be done
