@@ -30,7 +30,6 @@ HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 DISK_SIZE = 3 * 1024 * 1024 * 1024
 PINNED = config.ENUMS['vm_affinity_pinned']
-HOST_CONNECTING = config.ENUMS['host_state_connecting']
 VM_DOWN = config.ENUMS['vm_state_down']
 JOB = 'VdsNotRespondingTreatment'
 sql = '%s FROM job WHERE action_type=\'VdsNotRespondingTreatment\''
@@ -96,7 +95,11 @@ def _check_host_state(host_num, service, job_status):
         JOB, config.HOSTS[host_num]
     )
     if not wait_for_hosts_states(
-            True, config.HOSTS[host_num], states=HOST_CONNECTING
+            True, config.HOSTS[host_num],
+            states=[
+                config.HOST_CONNECTING,
+                config.HOST_NONRESPONSIVE
+            ]
     ):
         assert config.ENGINE.db.psql(sql, 'SELECT *')
     wait_for_hosts_states(True, config.HOSTS[host_num])
