@@ -23,11 +23,14 @@ V2V_RHEL_7_2_NAME = 'test_v2v_rhel_7_2'
 # VMWare details
 VM_WARE_RHEL_7_2 = 'test_v2v_rhel_7_2_automation_vmware'
 VM_WARE_USERNAME = "administrator"
-VM_WARE_PASSWORD = 'Heslo123'
+VM_WARE_PASSWORD = 'Heslo123_'
 VM_WARE_PROVIDER = 'vmware'
 VM_WARE_URL = (
-        "vpx://administrator@10.35.5.21/Folder1/Folder2/Compute3/Folder4/"
-        "Cluster5/10.35.72.10?no_verify=1"
+        "vpx://{user}@{vcenter}/{esxi_host}?no_verify=1".format(
+            vcenter='compute-vmware-env.scl.lab.tlv.redhat.com/Datacenter',
+            esxi_host='cougar02.scl.lab.tlv.redhat.com',
+            user=VM_WARE_USERNAME
+        )
     )
 # KVM details
 KVM_RHEL_7 = 'test_v2v_rhel_7_2_automation_kvm'

@@ -45,7 +45,7 @@ def v2v_import_fixture(request):
         )
     )
     assert helper.wait_for_v2v_import_event(
-        vm_name_ext, vm_conf['cluster']
+        vm_name_ext, vm_conf['cluster'], timeout=3600
     )
     testflow.step("Check that VM status_detail is None")
     assert ll_vms.get_vm(vm_name).get_status_detail() is None
