@@ -1,4 +1,4 @@
-from rhevmtests.virt.config import *  # noqa: F403, 401
+from rhevmtests.virt.config import *  # flake8: noqa
 
 START = "start"
 REBOOT = "reboot"

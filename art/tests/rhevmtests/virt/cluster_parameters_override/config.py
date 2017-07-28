@@ -1,7 +1,7 @@
 """
 Virt - VM cpu and machine type
 """
-from rhevmtests.virt.reg_vms.config import *  # noqa: F401, F403
+from rhevmtests.virt.reg_vms.config import *  # flake8: noqa
 
 CLUSTER_CPU_NAME = "cluster_name"
 CLUSTER_CPU_MODEL = "cluster_cpu_model"
