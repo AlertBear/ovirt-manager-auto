@@ -10,7 +10,7 @@ from socket import timeout
 
 from art.rhevm_api.tests_lib.low_level.hosts import (
     wait_for_hosts_states, remove_host, add_host, is_host_up,
-    activate_host, select_host_as_spm, wait_for_spm
+    activate_host, select_host_as_spm, wait_for_spm, fence_host
 )
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import waitForVMState
@@ -44,6 +44,13 @@ def module_setup(request):
     Prepare environment for Soft Fencing tests
     """
     def fin():
+        testflow.teardown("Check if host %s is up", config.host_with_pm)
+        if not is_host_up(True, config.host_with_pm):
+            testflow.teardown("Fence host %s to clean up", config.host_with_pm)
+            fence_host(
+                host=config.host_with_pm,
+                fence_type=config.ENUMS['fence_type_restart']
+            )
         testflow.teardown(
             "Remove power management of host %s", config.host_with_pm
         )
