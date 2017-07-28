@@ -13,12 +13,14 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as import_export_conf
 import helper
 import rhevmtests.networking.config as net_conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
 )
 from art.unittest_lib import NetworkTest, testflow
 from fixtures import import_vms, import_templates, remove_networks
+
+pytestmark = bz({"1476191": {}})
 
 
 @pytest.mark.incremental
