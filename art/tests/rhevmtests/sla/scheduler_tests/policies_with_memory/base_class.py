@@ -14,6 +14,7 @@ import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from rhevmtests.sla.fixtures import (  # noqa: F401
     migrate_he_vm,
     run_once_vms,
+    choose_specific_host_as_spm,
     update_cluster,
     update_cluster_to_default_parameters,
     update_vms
@@ -24,6 +25,7 @@ from rhevmtests.sla.scheduler_tests.fixtures import (
 )
 
 he_dst_host = 2
+host_as_spm = 2
 
 
 @pytest.fixture(scope="class")
@@ -208,6 +210,7 @@ def prepare_environment_for_tests(request):
 
 @u_libs.tier3
 @pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
     migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,
     wait_for_scheduling_memory_update.__name__,
@@ -226,6 +229,7 @@ class BaseStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
 
 @u_libs.tier2
 @pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
     migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,
     update_vms.__name__,
@@ -246,6 +250,7 @@ class BaseUpdateAndStartVmsUnderPolicyWithMemory(u_libs.SlaTest):
 
 @u_libs.tier2
 @pytest.mark.usefixtures(
+    choose_specific_host_as_spm.__name__,
     migrate_he_vm.__name__,
     prepare_environment_for_tests.__name__,
     update_vm_parameters_variable.__name__,
