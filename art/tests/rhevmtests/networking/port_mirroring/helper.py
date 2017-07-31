@@ -19,9 +19,7 @@ from rhevmtests import helpers
 logger = logging.getLogger("Port_Mirroring_Helper")
 
 
-def set_port_mirroring(
-    vm, nic, network, disable_mirroring=False, teardown=False
-):
+def set_port_mirroring(vm, nic, network, disable_mirroring=False):
     """
     Set port mirroring on a machine by shutting it down and bringing it back up
     to avoid unplugging NIC's and changing their order in the machine (eth1,
@@ -33,49 +31,25 @@ def set_port_mirroring(
         network (str): The name of the network the nic is connected to.
         disable_mirroring (bool): Indicate if we want to enable or disable port
             mirroring (leave False to enable).
-        teardown (boo): True if calling from teardown.
 
     Returns:
         bool: True if set port mirroring on a machine was Succeeded,
             False otherwise.
     """
-    unplug_error = "Failed to unplug %s on %s"
-    update_error = "Failed to update %s to %s profile."
-    plug_error = "Failed to plug %s on %s"
-    vnic_profile = network + (
-        "" if disable_mirroring else "_vNIC_PORT_MIRRORING"
+    vnic_profile = "{0}{1}".format(
+        network, "" if disable_mirroring else "_vNIC_PORT_MIRRORING"
     )
-    port_mirror_text = "Disabling" if disable_mirroring else "Enabling"
-    logger_info = (
-        "%s port mirroring on: VM: %s, NIC: %s,  vNIC profile: %s" %
-        (port_mirror_text, vm, nic, vnic_profile)
-    )
-    logger.info(logger_info)
+
     if not ll_vms.updateNic(positive=True, vm=vm, nic=nic, plugged=False):
-        if teardown:
-            logger.error(unplug_error, nic, vm)
-        else:
-            logger.error(unplug_error, nic, vm)
-            return False
+        return False
 
     if not ll_vms.updateNic(
         positive=True, vm=vm, nic=nic, network=network,
         vnic_profile=vnic_profile
     ):
-        if teardown:
-            logger.error(update_error, nic, vnic_profile)
-        else:
-            logger.error(update_error, nic, vnic_profile)
-            return False
+        return False
 
-    if not ll_vms.updateNic(positive=True, vm=vm, nic=nic, plugged=True):
-        if teardown:
-            logger.error(plug_error, nic, vm)
-        else:
-            logger.error(plug_error, nic, vm)
-            return False
-
-    return True
+    return ll_vms.updateNic(positive=True, vm=vm, nic=nic, plugged=True)
 
 
 def migrate_vms_to_origin_host():

@@ -7,15 +7,22 @@ Fixtures for Port Mirroring
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks
+)
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    vms as ll_vms
+)
 import config as pm_conf
 import helper
-import rhevmtests.networking.config as conf
-import rhevmtests.networking.helper as network_helper
+import rhevmtests.helpers as global_helper
+from rhevmtests.networking import (
+    config as conf,
+    helper as network_helper
+)
 from art.unittest_lib import testflow
-from rhevmtests import networking
 
 
 @pytest.fixture(scope="module")
@@ -25,47 +32,87 @@ def port_mirroring_prepare_setup(request):
     """
     bond_1 = "bond01"
     vm_list = conf.VM_NAME[:pm_conf.NUM_VMS]
+    result = list()
 
-    @networking.ignore_exception
-    def fin5():
+    def fin7():
+        """
+        Check if one of the finalizers failed.
+        """
+        global_helper.raise_if_false_in_list(results=result)
+    request.addfinalizer(fin7)
+
+    def fin6():
         """
         Remove networks
         """
-        hl_networks.remove_net_from_setup(
-            host=conf.HOSTS[:2],
-            data_center=conf.DC_0,
-            all_net=True
+        result.append(
+            (
+                hl_networks.remove_net_from_setup(
+                    host=conf.HOSTS[:2], data_center=conf.DC_0, all_net=True
+                ), "fin6:  hl_networks.remove_net_from_setup"
+            )
         )
+    request.addfinalizer(fin6)
+
+    def fin5():
+        """
+        Remove all vNIC profile from setup
+        """
+        result.append(
+            (
+                ll_networks.remove_vnic_profile(
+                    positive=True,
+                    vnic_profile_name=pm_conf.PM_VNIC_PROFILE[0],
+                    network=conf.MGMT_BRIDGE, data_center=conf.DC_0
+                ), "fin5: ll_networks.remove_vnic_profile"
+            )
+        )
+
     request.addfinalizer(fin5)
 
-    @networking.ignore_exception
     def fin4():
-        """
-        Remove all vNIC profiles from setup
-        """
-        testflow.teardown("Remove unneeded vnic profiles")
-        networking.remove_unneeded_vnic_profiles()
-    request.addfinalizer(fin4)
-
-    @networking.ignore_exception
-    def fin3():
         """
         Finalizer for remove vNICs from VMs
         """
-        testflow.teardown("Remove unneeded VMs NICs")
-        networking.remove_unneeded_vms_nics()
+        for vm_name in vm_list:
+            for nic, net in zip(
+                pm_conf.PM_NIC_NAME, pm_conf.PM_NETWORK[:2]
+            ):
+                result.append(
+                    (
+                        ll_vms.removeNic(positive=True, vm=vm_name, nic=nic),
+                        "fin4: ll_vms.removeNic"
+                    )
+                )
+    request.addfinalizer(fin4)
+
+    def fin3():
+        """
+        Finalizer for updating vNIC to original VM NIC
+        """
+        result.append(
+            (
+                ll_vms.updateNic(
+                    positive=True, vm=conf.VM_0, nic=conf.NIC_NAME[0],
+                    network=conf.MGMT_BRIDGE, vnic_profile=conf.MGMT_BRIDGE,
+                ), "fin3: ll_vms.updateNic"
+            )
+        )
     request.addfinalizer(fin3)
 
-    @networking.ignore_exception
     def fin2():
         """
         Stop all VMs
         """
         testflow.teardown("Stop all VMs")
-        ll_vms.stop_vms_safely(vms_list=conf.VM_NAME)
+        result.append(
+            (
+                ll_vms.stop_vms_safely(vms_list=conf.VM_NAME),
+                "fin: ll_vms.stop_vms_safely"
+            )
+        )
     request.addfinalizer(fin2)
 
-    @networking.ignore_exception
     def fin1():
         """
         Remove ifcfg files from VMs
@@ -75,8 +122,14 @@ def port_mirroring_prepare_setup(request):
             vms_resources.append(
                 pm_conf.VMS_NETWORKS_PARAMS.get(vm).get("resource")
             )
-            testflow.teardown("Remove ifcfg files from VMs")
-        assert network_helper.remove_ifcfg_files(vms_resources=vms_resources)
+
+        testflow.teardown("Remove ifcfg files from VMs")
+        result.append(
+            (
+                network_helper.remove_ifcfg_files(vms_resources=vms_resources),
+                "fin1: network_helper.remove_ifcfg_files"
+            )
+        )
     request.addfinalizer(fin1)
 
     network_helper.prepare_networks_on_setup(
@@ -107,9 +160,11 @@ def port_mirroring_prepare_setup(request):
 
     testflow.setup("Create vnic profiles with port mirroring")
     helper.create_vnic_profiles_with_pm()
+
     testflow.setup("Set port mirroring on VM %s", conf.VM_0)
-    assert helper.set_port_mirroring(
-        vm=conf.VM_0, nic=conf.NIC_NAME[0], network=conf.MGMT_BRIDGE
+    assert ll_vms.updateNic(
+        positive=True, vm=conf.VM_0, nic=conf.NIC_NAME[0],
+        network=conf.MGMT_BRIDGE, vnic_profile=pm_conf.PM_VNIC_PROFILE[0]
     )
     for vm in vm_list:
         testflow.setup(
@@ -145,18 +200,29 @@ def disable_port_mirroring(request):
     """
     Disable port mirroring.
     """
+    result = list()
 
-    def fin():
+    def fin2():
+        """
+        Check if the finalizer failed.
+        """
+        global_helper.raise_if_false_in_list(results=result)
+    request.addfinalizer(fin2)
+
+    def fin1():
         """
         Disable PM for non first VM
         """
         for vm_name in conf.VM_NAME[2:4]:
-            testflow.teardown("Disable port mirroring on VM %s", vm_name)
-            assert helper.set_port_mirroring(
-                vm=vm_name, nic=pm_conf.PM_NIC_NAME[0], teardown=True,
-                network=pm_conf.PM_NETWORK[0], disable_mirroring=True
+            result.append(
+                (
+                    helper.set_port_mirroring(
+                        vm=vm_name, nic=pm_conf.PM_NIC_NAME[0],
+                        network=pm_conf.PM_NETWORK[0], disable_mirroring=True
+                    ), "fin1: helper.set_port_mirroring"
+                )
             )
-    request.addfinalizer(fin)
+    request.addfinalizer(fin1)
 
 
 @pytest.fixture(scope="class")
@@ -167,6 +233,5 @@ def set_port_mirroring(request):
 
     testflow.step("Set port on VM %s", conf.VM_1)
     assert helper.set_port_mirroring(
-        vm=conf.VM_1, nic=pm_conf.PM_NIC_NAME[0],
-        network=pm_conf.PM_NETWORK[0]
+        vm=conf.VM_1, nic=pm_conf.PM_NIC_NAME[0], network=pm_conf.PM_NETWORK[0]
     )

@@ -1708,7 +1708,7 @@ def addNic(positive, vm, **kwargs):
     return status
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def updateNic(positive, vm, nic, **kwargs):  # noqa: N802
     """
     Update VM NIC
