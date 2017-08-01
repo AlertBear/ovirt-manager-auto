@@ -263,9 +263,10 @@ def register_windows_templates(request):
             "Detach and deactivate %s storage domain" %
             config.WINDOWS_DATASD_NAME
         )
-        hl_sd.detach_and_deactivate_domain(
+        hl_sd.remove_storage_domain(
+            name=config.WINDOWS_DATASD_NAME,
             datacenter=config.WINDOWS_DATASD_DC,
-            domain=config.WINDOWS_DATASD_NAME,
+            host=config.HOSTS[0],
             engine=config.ENGINE
         )
     request.addfinalizer(fin)
