@@ -398,3 +398,11 @@ def finalize_class_helper():
 
     # And finally purge all configs for good
     purge_configs(config.CONFIGURATIONS)
+
+
+def restore_selinux_context():
+    """
+    In case the log file was created or flushed manually, we need to
+    restore selinux context on it
+    """
+    config.engine.host.run_command(['restorecon', '-R', config.SNMPD_LOG])

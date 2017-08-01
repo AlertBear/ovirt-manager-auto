@@ -10,6 +10,7 @@ from art.unittest_lib import (
 )
 
 from snmp_traps import (
+    restore_selinux_context,
     configs_dir,
     copy_ovirt_notifier_config_file,
     generate_events,
@@ -80,6 +81,9 @@ class SNMPTestTemplate(TestCase):
 
         testflow.setup("Copying SNMP oVirt notifier config.")
         copy_ovirt_notifier_config_file(cls.init_config_file_path())
+
+        testflow.setup("Restore selinux context on log file.")
+        restore_selinux_context()
 
         testflow.setup("Starting ovirt notifier service.")
         start_ovirt_notifier_service()
