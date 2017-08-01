@@ -90,7 +90,7 @@ CASE_01_VM_NETS = {
 CASE_02_VM_NETS = {
     VM_NETS[2][0]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     }
 }
 
@@ -103,7 +103,7 @@ CASE_03_VM_NETS = {
     },
     VM_NETS[3][2]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     VM_NETS[3][3]: {
         "required": "false"
@@ -140,7 +140,7 @@ CASE_06_VM_NETS = {
 CASE_01_IMPORT_EXPORT_NETS = {
     IMPORT_EXPORT_NETS[1][0]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
     },
     IMPORT_EXPORT_NETS[1][1]: {
         "required": "false"

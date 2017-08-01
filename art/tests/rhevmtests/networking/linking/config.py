@@ -47,17 +47,17 @@ CASE_05_NET_2 = NETS[5][1]
 
 NET_DICT = {
     CASE_01_NET_1: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
     },
     CASE_02_NET_1: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
     },
     CASE_02_NET_2: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
     },
@@ -65,17 +65,17 @@ NET_DICT = {
         "required": "false"
     },
     CASE_04_NET_1: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
     },
     CASE_05_NET_1: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
     },
     CASE_05_NET_2: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
     }

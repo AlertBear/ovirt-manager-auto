@@ -15,7 +15,7 @@ VLAN_NAMES = global_helper.generate_object_names(
     num_of_cases=1, num_of_objects=11, prefix="avdn_vlan_"
 )
 
-VLAN_IDS_LIST = [conf.VLAN_IDS.pop(i) for i in range(15)]
+VLAN_IDS_LIST = [conf.DUMMY_VLANS.pop(i) for i in range(15)]
 
 CASE_1_NETS = {
     ARBITRARY_NETS[1][0]: {

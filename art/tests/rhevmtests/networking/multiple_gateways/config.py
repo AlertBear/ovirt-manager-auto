@@ -18,7 +18,7 @@ GATEWAY = "5.5.5.254"
 NETS_DICT = {
     NETS[1][0]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[1][1]: {
         "required": "false",

@@ -16,7 +16,7 @@ NETS = global_helper.generate_object_names(
 )
 NET_DICT = {
     NETS[1][0]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[1][1]: {
@@ -27,31 +27,31 @@ NET_DICT = {
         "required": "false"
     },
     NETS[1][3]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[2][0]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[2][1]: {
         "required": "false"
     },
     NETS[3][0]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "usages": ""
     },
     NETS[5][0]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[5][1]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[5][2]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[5][3]: {
@@ -120,11 +120,11 @@ local_dict = {
         "usages": ""
     },
     NETS[7][2]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[7][3]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "usages": ""
     },

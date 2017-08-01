@@ -47,7 +47,7 @@ SETUP_NETWORKS_DICT = {
     # Test case: Network with VLAN attached to host
     NETS[1][3]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     # Test case: Network attached to running VM
     NETS[1][4]: {
@@ -85,7 +85,7 @@ SETUP_NETWORKS_DICT = {
     # Test case: network with VLAN attached to bond
     NETS[1][12]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     # Test case: network with MTU attached to bond
     NETS[1][13]: {

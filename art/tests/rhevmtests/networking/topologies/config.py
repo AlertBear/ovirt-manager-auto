@@ -26,11 +26,11 @@ NON_VM_BOND_IP = {
 NETS_DICT = {
     NETS[1][0]: {
         "required": "false",
-        "vlan_id": conf.VLAN_ID[0] if conf.VLAN_ID else None
+        "vlan_id": conf.REAL_VLANS[0] if conf.REAL_VLANS else None
     },
     NETS[1][1]: {
         "required": "false",
-        "vlan_id": conf.VLAN_ID[1] if conf.VLAN_ID else None
+        "vlan_id": conf.REAL_VLANS[1] if conf.REAL_VLANS else None
     },
     NETS[1][2]: {
         "required": "false",

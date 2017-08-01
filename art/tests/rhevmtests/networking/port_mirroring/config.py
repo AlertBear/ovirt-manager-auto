@@ -19,8 +19,8 @@ PM_VNIC_PROFILE = [
     '%s_vNIC_PORT_MIRRORING' % net for net in [conf.MGMT_BRIDGE] + PM_NETWORK
 ]
 MGMT_IPS = []  # Gets filled up during the test
-VLAN_0 = conf.VLAN_ID[0] if conf.VLAN_ID else None
-VLAN_1 = conf.VLAN_ID[1] if conf.VLAN_ID else None
+VLAN_0 = conf.REAL_VLANS[0] if conf.REAL_VLANS else None
+VLAN_1 = conf.REAL_VLANS[1] if conf.REAL_VLANS else None
 
 NETS_DICT = {
     PM_NETWORK[0]: {

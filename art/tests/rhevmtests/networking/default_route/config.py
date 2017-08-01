@@ -30,18 +30,18 @@ NET_DICT_CASE_02 = {
 
 NET_DICT_CASE_03 = {
     NETS[3][0]: {
-        "vlan_id": conf.VLAN_ID[1] if conf.VLAN_ID else None,
+        "vlan_id": conf.REAL_VLANS[1] if conf.REAL_VLANS else None,
         "required": "false"
     },
     NETS[3][1]: {
-        "vlan_id": conf.VLAN_ID[2] if conf.VLAN_ID else None,
+        "vlan_id": conf.REAL_VLANS[2] if conf.REAL_VLANS else None,
         "required": "false"
     }
 }
 
 NET_DICT_CASE_04 = {
     NETS[4][0]: {
-        "vlan_id": conf.VLAN_ID[3] if conf.VLAN_ID else None,
+        "vlan_id": conf.REAL_VLANS[3] if conf.REAL_VLANS else None,
         "required": "false"
     }
 }

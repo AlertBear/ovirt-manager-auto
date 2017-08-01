@@ -48,7 +48,7 @@ CASE_2_NETS = {
     },
     NETWORK_2: {
         "required": "false",
-        "vlan_id": conf.VLANS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     }
 }
 

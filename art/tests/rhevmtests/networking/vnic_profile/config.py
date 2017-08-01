@@ -53,19 +53,19 @@ CASE_2_NETS = {
     },
     NETS[2][9]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][10]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][11]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][12]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][13]: {
         "required": "false",
@@ -75,11 +75,11 @@ CASE_2_NETS = {
     },
     NETS[2][16]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][17]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     }
 }
 

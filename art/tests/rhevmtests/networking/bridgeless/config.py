@@ -26,12 +26,12 @@ CASE_1_NETS = {
         "usages": ""
     },
     BRIDGELESS_NETS[1][1]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "usages": ""
     },
     BRIDGELESS_NETS[1][2]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "usages": ""
     },

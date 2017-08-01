@@ -67,11 +67,11 @@ CASE_2_NETS = {
     },
     NETS[2][1]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][2]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][3]: {
         "required": "false",
@@ -79,7 +79,7 @@ CASE_2_NETS = {
     },
     NETS[2][4]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[2][5]: {
         "required": "false",
@@ -105,7 +105,7 @@ CASE_4_NETS = {
     },
     NETS[4][2]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "mtu": conf.MTU[1]
     },
     NETS[4][3]: {
@@ -118,7 +118,7 @@ CASE_4_NETS = {
     },
     NETS[4][5]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "usages": "",
     },
     NETS[4][6]: {
@@ -127,7 +127,7 @@ CASE_4_NETS = {
     },
     NETS[4][7]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "usages": ""
     }
 }
@@ -138,33 +138,33 @@ CASE_5_NETS = {
     },
     NETS[5][1]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
     },
     NETS[5][2]: {
         "required": "false",
     },
     NETS[5][3]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
     }
 }
 
 CASE_6_NETS = {
     NETS[6][0]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[6][1]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
     },
     NETS[6][2]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0)
+        "vlan_id": conf.DUMMY_VLANS.pop(0)
     },
     NETS[6][3]: {
         "required": "false",
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
     }
 }
 

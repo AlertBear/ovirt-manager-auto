@@ -408,7 +408,7 @@ class TestNetLabels03(NetworkTest):
     net_1 = label_conf.NETS[3][0]
     net_2 = label_conf.NETS[3][1]
     label_1 = label_conf.LABEL_NAME[3][0]
-    vlan_id_1 = conf.VLAN_IDS.pop(0)
+    vlan_id_1 = conf.DUMMY_VLANS.pop(0)
     labels_list = [
         {
             "label": label_1,

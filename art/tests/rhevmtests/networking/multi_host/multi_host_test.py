@@ -123,15 +123,15 @@ class TestMultiHostNetworkProperties(NetworkTest):
     mtu_1500 = conf.MTU[-1]
 
     # VLANs
-    vlan_2 = conf.VLAN_IDS.pop(0)
-    vlan_3 = conf.VLAN_IDS.pop(0)
-    vlan_4 = conf.VLAN_IDS.pop(0)
-    vlan_5 = conf.VLAN_IDS.pop(0)
-    vlan_6 = conf.VLAN_IDS.pop(0)
-    vlan_7 = conf.VLAN_IDS.pop(0)
-    vlan_8 = conf.VLAN_IDS.pop(0)
-    vlan_9 = conf.VLAN_IDS.pop(0)
-    vlan_10 = conf.VLAN_IDS.pop(0)
+    vlan_2 = conf.DUMMY_VLANS.pop(0)
+    vlan_3 = conf.DUMMY_VLANS.pop(0)
+    vlan_4 = conf.DUMMY_VLANS.pop(0)
+    vlan_5 = conf.DUMMY_VLANS.pop(0)
+    vlan_6 = conf.DUMMY_VLANS.pop(0)
+    vlan_7 = conf.DUMMY_VLANS.pop(0)
+    vlan_8 = conf.DUMMY_VLANS.pop(0)
+    vlan_9 = conf.DUMMY_VLANS.pop(0)
+    vlan_10 = conf.DUMMY_VLANS.pop(0)
 
     # BONDs
     bond_0_vm_net = multi_host_conf.BOND_NAMES.pop(0)

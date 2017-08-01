@@ -36,8 +36,8 @@ REQUIRED_NIC_MIGRATION_TIMEOUT = 3
 ICMP_DST_IP_COUNT = 1
 
 # VLAN ID's that are configured on the switch (not arbitrary)
-VLAN_CASE_2 = network_conf.VLAN_ID[0] if network_conf.VLAN_ID else None
-VLAN_CASE_8 = network_conf.VLAN_ID[1] if network_conf.VLAN_ID else None
+VLAN_CASE_2 = network_conf.REAL_VLANS[0] if network_conf.REAL_VLANS else None
+VLAN_CASE_8 = network_conf.REAL_VLANS[1] if network_conf.REAL_VLANS else None
 
 # BONDs names
 BOND_CASE_6 = "bond6"

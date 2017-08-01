@@ -44,11 +44,11 @@ QOS_2 = {
 
 CASE_1_NETS = {
     NETS[1][0]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[1][1]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[1][2]: {
@@ -84,11 +84,11 @@ CASE_5_NETS = {
 }
 CASE_6_NETS = {
     NETS[6][0]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     },
     NETS[6][1]: {
-        "vlan_id": conf.VLAN_IDS.pop(0),
+        "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false"
     }
 }
