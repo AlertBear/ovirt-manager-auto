@@ -8,6 +8,8 @@ import functools
 import logging
 import os
 
+from _pytest.mark import ParameterSet
+
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import config
@@ -639,17 +641,12 @@ def get_test_parametrize_ids(item, params):
     for i in param_args:
         if isinstance(i, list) or isinstance(i, tuple):
             for x in i:
-                try:
-                    x_args = x.args
-                except AttributeError:
+                if not isinstance(i, ParameterSet):
                     continue
 
-                try:
-                    if params in x_args:
-                        return param_ids[param_args_values.index(x)]
-                except AttributeError:
-                    if params in x_args[-1].args:
-                        return param_ids[param_args_values.index(x)]
+                x_values = x.values
+                if params == x_values:
+                    return param_ids[param_args_values.index(x)]
     return _id
 
 

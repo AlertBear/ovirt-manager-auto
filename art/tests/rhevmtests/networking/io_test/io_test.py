@@ -10,7 +10,6 @@ with valid/invalid names, IPs, netmask, VLAN, usages.
 
 import pytest
 
-import art.core_api.apis_exceptions as exceptions
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as io_conf
@@ -66,6 +65,9 @@ class TestIOTest01(NetworkTest):
                 "1a2s3d4f5g6h",
                 "01234567891011",
                 "______",
+                "networkWithMoreThanFifteenChars",
+                "inv@lidName",
+                "________________",
             ]
         }, True
     ]
@@ -74,9 +76,6 @@ class TestIOTest01(NetworkTest):
     test_2_invalid_names = [
         {
             "name": [
-                "networkWithMoreThanFifteenChars",
-                "inv@lidName",
-                "________________",
                 "bond",
                 "",
             ]
@@ -354,7 +353,8 @@ class TestIOTest03(NetworkTest):
     """
     # General params
     initial_name = io_conf.NETS[3][0]
-    valid_name = "C3_NET_changed"
+    valid_name_1 = "C3_NET_changed%s" + "_" * 240
+    valid_name_2 = "inv@lidName" + "!" * 245
     dc = conf.DC_0
 
     # create_and_attach_networks params
@@ -375,33 +375,40 @@ class TestIOTest03(NetworkTest):
     # Test 1 params - edit network name to valid name
     test_1_edit_name_valid = [
         {
-            "name": [valid_name]
+            "name": [valid_name_1]
         }, True
     ]
 
-    # Test 2 params - edit network name to invalid name
-    test_2_edit_name_invalid = [
+    # Test 1 params - edit network name to valid name special characters
+    test_2_edit_name_valid_special_characters = [
         {
-            "name": ["inv@lidName"]
+            "name": [valid_name_1]
+        }, True
+    ]
+
+    # Test 3 params - edit network name to invalid name
+    test_3_edit_name_invalid = [
+        {
+            "name": ["io_net_%s" % "_" * 300]
         }, False
     ]
 
-    # Test 3 params - edit network with valid VLAN
-    test_3_edit_valid_vlan = [
+    # Test 4 params - edit network with valid VLAN
+    test_4_edit_valid_vlan = [
         {
             "vlan_id": [2, 3, 15, 444, 4093]
         }, True
     ]
 
-    # Test 4 params - edit network with invalid VLAN
-    test_4_edit_invalid_vlan = [
+    # Test 5 params - edit network with invalid VLAN
+    test_5_edit_invalid_vlan = [
         {
             "vlan_id": [-10, 4095, 4096]
         }, False
     ]
 
-    # Test 5 params - edit network usages
-    test_5_edit_valid_usages = [
+    # Test 6 params - edit network usages
+    test_6_edit_valid_usages = [
         {
             "usages": [""]
         }, True
@@ -412,24 +419,30 @@ class TestIOTest03(NetworkTest):
         ("test_params", "positive"),
         [
             pytest.param(
-                *test_1_edit_name_valid, marks=(polarion("RHEVM3-4374"))
+                *test_1_edit_name_valid, marks=(polarion("RHEVM-21967"))
             ),
             pytest.param(
-                *test_2_edit_name_invalid, marks=(polarion("RHEVM3-14745"))
+                *test_2_edit_name_valid_special_characters, marks=(
+                    polarion("RHEVM-21968")
+                )
             ),
             pytest.param(
-                *test_3_edit_valid_vlan, marks=(polarion("RHEVM3-4373"))
+                *test_3_edit_name_invalid, marks=(polarion("RHEVM-21969"))
             ),
             pytest.param(
-                *test_4_edit_invalid_vlan, marks=(polarion("RHEVM3-14746"))
+                *test_4_edit_valid_vlan, marks=(polarion("RHEVM3-4373"))
             ),
             pytest.param(
-                *test_5_edit_valid_usages, marks=(polarion("RHEVM3-4372"))
+                *test_5_edit_invalid_vlan, marks=(polarion("RHEVM3-14746"))
+            ),
+            pytest.param(
+                *test_6_edit_valid_usages, marks=(polarion("RHEVM3-4372"))
             ),
         ],
         ids=[
-            "Edit_valid_name",
-            "Try_to_edit_invalid_name",
+            "Edit_valid_network_name",
+            "Edit_valid_network_name_with_special_characters",
+            "Try_to_edit_invalid_network_name",
             "Edit_valid_VLAN",
             "Try_to_Edit_invalid_VLAN",
             "Edit_valid_usages"
@@ -447,12 +460,12 @@ class TestIOTest03(NetworkTest):
         for type_, params in test_params.iteritems():
             for param in params:
                 param_dict = {type_: param}
-                try:
-                    ll_networks.find_network(network=self.valid_name)
-                    network_to_update = self.valid_name
-                except exceptions.EntityNotFound:
-                    network_to_update = self.initial_name
-
+                all_networks = ll_networks.get_all_networks()
+                network_to_update = [
+                    i.name for i in all_networks if i.name != conf.MGMT_BRIDGE
+                ]
+                assert network_to_update
+                network_to_update = network_to_update[0]
                 assert ll_networks.update_network(
                     positive=positive, network=network_to_update,
                     data_center=conf.DC_0, **param_dict

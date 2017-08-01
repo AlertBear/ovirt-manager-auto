@@ -1326,7 +1326,8 @@ class TestSanity17(NetworkTest):
     # update_vnic_profiles
     vnics_profiles = {
         net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": 'None'
         }
     }
 
