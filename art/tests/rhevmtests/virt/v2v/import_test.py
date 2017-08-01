@@ -19,7 +19,7 @@ from art.unittest_lib import (
     tier2,
 )
 from art.unittest_lib import testflow, VirtTest
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from fixtures import v2v_import_fixture
 from rhevmtests.virt import helper
 import config
@@ -41,7 +41,7 @@ class TestV2V_RHEL(VirtTest):
             'threads',
             'memory',
             'disk_size',
-            bz({"1437152": {}})('nic_mac_address'),
+            'nic_mac_address',
         ]
     )
     @polarion("RHEVM-21386")
