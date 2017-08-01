@@ -30,7 +30,7 @@ PRODUCT_NAME = PARAMETERS['product_name']
 PRODUCT_BUILD = ART_CONFIG['DEFAULT'].get('RHEVM_BUILD', None)
 
 # ENGINE SECTION
-VDC_HOST = GE['engine']['fqdn']
+VDC_HOST = GE['engine_fqdn']
 
 VDC_ROOT_PASSWORD = GE['root_passwd']
 VDC_ROOT_USER = "root"
@@ -103,9 +103,8 @@ VMS_LINUX_PW = VDC_ROOT_PASSWORD
 DC_NAME = []
 DC_COMP_VERSIONS = []
 
-for dc in GE['datacenters']:
-    DC_NAME.append(dc['name'])
-    DC_COMP_VERSIONS.append(dc['compatibility_version'])
+DC_NAME.append(GE['data_center_name'])
+DC_COMP_VERSIONS.append(GE['compatibility_version'])
 
 logger.info("DATACENTERS in golden environment: %s", DC_NAME)
 
@@ -115,10 +114,77 @@ COMP_VERSION = DC_COMP_VERSIONS[0]
 # Clusters
 CLUSTER_NAME = [cl['name'] for cl in GE['clusters']]
 logger.info("CLUSTERS in golden environment: %s", CLUSTER_NAME)
+###############################################################################
+# storages
+NFS_STORAGE = []
+DATA_DOMAIN_ADDRESSES = []
+DATA_DOMAIN_PATHS = []
 
+ISCSI_STORAGE = []
+LUN_TARGETS = []
+LUN_ADDRESSES = []
+LUNS = []
+
+GLUSTERFS_STORAGE = []
+GLUSTER_DATA_DOMAIN_ADDRESSES = []
+GLUSTER_DATA_DOMAIN_PATHS = []
+
+FCP_STORAGE = []
+FC_LUNS = []
+
+for sd_name, sd_info in GE.get('storages').items():
+    if 'domain_function' in sd_info:
+        if sd_info.get('domain_function') == 'export':
+            EXPORT_DOMAIN_NAME = sd_name
+        elif sd_info.get('domain_function') == 'iso':
+            ISO_DOMAIN_NAME = sd_name
+            if 'nfs' in sd_info:
+                ISO_DOMAIN_ADDRESS = sd_info.get('nfs').get('address')
+                ISO_DOMAIN_PATH = sd_info.get('nfs').get('path')
+            elif 'glusterfs' in sd_info:
+                ISO_DOMAIN_ADDRESS = sd_info.get('glusterfs').get('address')
+                ISO_DOMAIN_PATH = sd_info.get('glusterfs').get('path')
+    elif 'nfs' in sd_info:
+        NFS_STORAGE.append(sd_name)
+        DATA_DOMAIN_ADDRESSES.append(sd_info.get('nfs').get('address'))
+        DATA_DOMAIN_PATHS.append(sd_info.get('nfs').get('path'))
+    elif 'iscsi' in sd_info:
+        ISCSI_STORAGE.append(sd_name)
+        LUN_TARGETS.append(sd_info.get('iscsi').get('target'))
+        LUN_ADDRESSES.append(sd_info.get('iscsi').get('address'))
+        LUNS.append(sd_info.get('iscsi').get('lun_id'))
+    elif 'glusterfs' in sd_info:
+        GLUSTERFS_STORAGE.append(sd_name)
+        GLUSTER_DATA_DOMAIN_ADDRESSES.append(
+            sd_info.get('glusterfs').get('address')
+        )
+        GLUSTER_DATA_DOMAIN_PATHS.append(sd_info.get('glusterfs').get('path'))
+    elif 'fcp' in sd_info:
+        FCP_STORAGE.append(sd_name)
+        FC_LUNS.append(sd_info.get('fcp').get('lun_id'))
+
+STORAGE_NAME = NFS_STORAGE + ISCSI_STORAGE + GLUSTERFS_STORAGE + FCP_STORAGE
+
+logger.info("STORAGES in golden environment: %s", STORAGE_NAME)
+logger.info(
+    "NFS storage for building GE: %s",
+    zip(DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS)
+)
+logger.info(
+    "GLUSTERFS storage for building GE: %s",
+    zip(GLUSTER_DATA_DOMAIN_ADDRESSES, GLUSTER_DATA_DOMAIN_PATHS)
+)
+logger.info(
+    "ISCSI luns for building GE: %s", zip(LUNS, LUN_ADDRESSES, LUN_TARGETS)
+)
+logger.info("Fibre channel LUNs for building GE: %s", FC_LUNS)
+logger.info("EXPORT domain for building GE: %s", EXPORT_DOMAIN_NAME)
+logger.info("ISO domain for building GE: %s", ISO_DOMAIN_NAME)
 
 ###############################################################################
-# storage
+# extra storages
+
+
 def get_storages_data(ge_storages, key):
 
     if ge_storages is None:
@@ -127,48 +193,7 @@ def get_storages_data(ge_storages, key):
     return [sd[key] for sd in ge_storages]
 
 
-NFS_STORAGE = get_storages_data(GE.get('nfs_storage_domains'), 'name')
-ISCSI_STORAGE = get_storages_data(GE.get('iscsi_storage_domains'), 'name')
-GLUSTERFS_STORAGE = get_storages_data(
-    GE.get('glusterfs_storage_domains'), 'name'
-)
-FCP_STORAGE = get_storages_data(GE.get('fcp_storage_domains'), 'name')
-STORAGE_NAME = NFS_STORAGE + ISCSI_STORAGE + GLUSTERFS_STORAGE + FCP_STORAGE
-
-logger.info("STORAGES in golden environment: %s", STORAGE_NAME)
-
-DATA_DOMAIN_ADDRESSES = get_storages_data(
-    GE.get('nfs_storage_domains'), 'address'
-)
-DATA_DOMAIN_PATHS = get_storages_data(GE.get('nfs_storage_domains'), 'path')
-logger.info(
-    "nfs storage for building GE: %s %s",
-    DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS
-)
-
-GLUSTER_DATA_DOMAIN_ADDRESSES = get_storages_data(GE.get(
-    'glusterfs_storage_domains'), 'address'
-)
-GLUSTER_DATA_DOMAIN_PATHS = get_storages_data(GE.get(
-    'glusterfs_storage_domains'), 'path'
-)
-logger.info(
-    "Gluster storage for building GE: %s %s",
-    GLUSTER_DATA_DOMAIN_ADDRESSES, GLUSTER_DATA_DOMAIN_PATHS
-)
-
-LUNS = get_storages_data(GE.get('iscsi_storage_domains'), 'lun_id')
-LUN_ADDRESSES = get_storages_data(GE.get('iscsi_storage_domains'), 'address')
-LUN_TARGETS = get_storages_data(GE.get('iscsi_storage_domains'), 'target')
-logger.info(
-    "iscsi luns for building GE: %s %s %s",
-    LUNS, LUN_ADDRESSES, LUN_TARGETS
-)
-FC_LUNS = get_storages_data(GE.get('fcp_storage_domains'), 'lun')
-logger.info("Fibre channel LUNs: %s", FC_LUNS)
-###############################################################################
-# extra storage
-#
+# nfs extra storages
 UNUSED_DATA_DOMAIN_ADDRESSES = get_storages_data(
     GE.get('extra_nfs_storage_domains'), 'address'
 )
@@ -179,7 +204,9 @@ logger.info(
     "Free nfs shares: %s %s",
     UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS
 )
+# END nfs extra storages
 
+# glusterfs extra storages
 UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = get_storages_data(
     GE.get('extra_glusterfs_storage_domains'), 'address'
 )
@@ -190,7 +217,8 @@ logger.info(
     "Free Gluster shares: %s %s",
     UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES, UNUSED_GLUSTER_DATA_DOMAIN_PATHS
 )
-
+# END glusterfs extra storages
+# iscsi extra storages
 UNUSED_LUNS = get_storages_data(
     GE.get('extra_iscsi_storage_domains'), 'lun_id'
 )
@@ -204,24 +232,11 @@ logger.info(
     "Free iscsi LUNs: %s %s %s",
     UNUSED_LUNS, UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS
 )
+# END iscsi extra storages
+# FCP extra storages
 UNUSED_FC_LUNS = get_storages_data(GE.get('extra_fcp_storage_domains'), 'lun')
-
 logger.info("Free fibre channel LUNs: %s", UNUSED_FC_LUNS)
-###############################################################################
-# export domain
-EXPORT_DOMAIN_NAME = GE.get('export_domain', {}).get('name')
-
-###############################################################################
-# iso domain
-ISO_DOMAIN_NAME = GE.get('iso_domain', {}).get('name')
-ISO_DOMAIN_ADDRESS = GE.get('iso_domain', {}).get('address')
-ISO_DOMAIN_PATH = GE.get('iso_domain', {}).get('path')
-###############################################################################
-# external providers
-EXTERNAL_PROVIDERS = {}
-provider_type = None
-GLANCE_URL = ''
-
+# END FCP extra storages
 ###############################################################################
 # windows data sd
 WINDOWS_DATASD = GE.get('immutable_windows_nfs_storage_domains', {})
@@ -238,6 +253,10 @@ if WINDOWS_DATASD:
     )
 
 ###############################################################################
+# external providers
+EXTERNAL_PROVIDERS = {}
+provider_type = None
+GLANCE_URL = ''
 
 ge_external_providers = GE.get('external_providers', [])
 
@@ -251,31 +270,25 @@ for ep in ge_external_providers:
         EXTERNAL_PROVIDERS[provider_type] = list()
     EXTERNAL_PROVIDERS[provider_type].append(ep['name'])
 
-
 ###############################################################################
-# Vms
-def get_vms_list(ge_vms):
 
-    vms = []
+GE_VMS = {
+    'nfs': [],
+    'iscsi': [],
+    'gluster': [],
+    'fc': [],
+}
+for vm in GE.get('vms'):
+    profile = vm.get('profile')
+    for storage_type in ['nfs', 'iscsi', 'gluster', 'fc']:
+        if storage_type in profile:
+            GE_VMS[storage_type].append(vm.get('name'))
+            break
 
-    if ge_vms is None:
-        return []
-
-    vms_count = ge_vms.get('count')
-
-    if vms_count:
-        for suffix in vms_count:
-            vms.append('{0}{1}'.format(ge_vms['name'], suffix))
-    else:
-        vms.append(ge_vms['name'])
-
-    return vms
-
-
-NFS_VMS = get_vms_list(GE.get('vms_on_nfs'))
-ISCSI_VMS = get_vms_list(GE.get('vms_on_iscsi'))
-GLUSTER_VMS = get_vms_list(GE.get('vms_on_gluster'))
-FCP_VMS = get_vms_list(GE.get('vms_on_fcp'))
+NFS_VMS = GE_VMS.get('nfs')
+ISCSI_VMS = GE_VMS.get('iscsi')
+GLUSTER_VMS = GE_VMS.get('gluster')
+FCP_VMS = GE_VMS.get('fc')
 VM_NAME = NFS_VMS + ISCSI_VMS + GLUSTER_VMS + FCP_VMS
 
 logger.info("VMS in golden environment: %s", VM_NAME)

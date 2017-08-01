@@ -86,7 +86,7 @@ local = parameters.get("local", None) if not storage_type else (
 )
 
 
-dcs = GE['datacenters']
+dcs = GE['data_center_name']
 # for dc in :
 #     dcs.append(dc)
 
@@ -96,7 +96,7 @@ dcs = GE['datacenters']
 #         dc = _dc
 
 compatibility_version = GE.get("version")
-dcs_names = [dc['name'] for dc in dcs]
+dcs_names = [dcs]
 clusters = GE["clusters"]
 clusters_names = [cluster["name"] for cluster in clusters]
 

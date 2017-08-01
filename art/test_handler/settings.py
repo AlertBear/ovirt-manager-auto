@@ -130,7 +130,7 @@ def create_runtime_config(path_to_defaults, art_define_args):
 
     ART_CONFIG['DEFAULT']['PRODUCT'] = GE['product']
     ART_CONFIG['DEFAULT']['VERSION'] = GE['version']
-    ART_CONFIG['REST_CONNECTION']['host'] = GE['engine']['fqdn']
+    ART_CONFIG['REST_CONNECTION']['host'] = GE['engine_fqdn']
     ART_CONFIG['REST_CONNECTION']['uri'] = (
         ART_CONFIG['REST_CONNECTION']['uri'] % ART_CONFIG['REST_CONNECTION']
     )
@@ -143,6 +143,12 @@ def create_runtime_config(path_to_defaults, art_define_args):
 
     ART_CONFIG['PARAMETERS']['vds'] = vds
     ART_CONFIG['PARAMETERS']['vds_password'] = vds_paswords
+
+    GE['mac_ranges'] = GE.get('mac_pools')[0].get(
+        'mac_pool_ranges'
+    )[0].replace(
+        ',', '-'
+    )
 
 
 def dump_stacks(signal, frame):

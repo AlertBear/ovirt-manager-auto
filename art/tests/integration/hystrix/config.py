@@ -50,7 +50,7 @@ local = parameters.get("local", None) if not storage_type else (
     storage_type == storage_type_local
 )
 
-dcs = GE['datacenters']
+dcs = GE['data_center_name']
 
 # dc = None
 # for _dc in dcs:
