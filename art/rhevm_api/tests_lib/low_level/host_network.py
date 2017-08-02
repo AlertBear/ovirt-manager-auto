@@ -442,6 +442,7 @@ def prepare_ip_object(network_attachment, ip_dict):
     return network_attachment
 
 
+@ll_general.generate_logs(step=True)
 def get_host_unmanaged_networks(host_name, networks=list()):
     """
     Get unmanaged network object from host

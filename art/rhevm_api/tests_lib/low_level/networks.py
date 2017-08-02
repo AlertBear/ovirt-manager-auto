@@ -169,7 +169,7 @@ def update_network(positive, network, **kwargs):
     return NET_API.update(net, net_update, positive)[1]
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(step=True)
 def remove_network(positive, network, data_center=None):
     """
     Remove network
