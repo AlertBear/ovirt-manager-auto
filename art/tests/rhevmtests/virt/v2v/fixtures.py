@@ -38,7 +38,15 @@ def v2v_import_fixture(request):
         )
     )
     assert ll_external_import.import_vm_from_external_provider(**vm_conf)
-    testflow.step("Waiting for event of successful import")
+    vm_status = ll_vms.get_vm(vm_name).get_status_detail()
+    testflow.step(
+        "Waiting for event of successful import, vm status is {}".format(
+            vm_status
+        )
+    )
     assert helper.wait_for_v2v_import_event(
         vm_name_ext, vm_conf['cluster']
     )
+    testflow.step("Check that VM status_detail is None")
+    assert ll_vms.get_vm(vm_name).get_status_detail() is None
+    assert ll_vms.get_vm(vm_name).get_status() == 'down'
