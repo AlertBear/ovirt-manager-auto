@@ -151,7 +151,7 @@ def migrate_vm_with_policy(
     testflow.step("Migrate VM and check bandwidth")
     if expected_bandwidth:
         if (
-            bandwidth_method == config.MIGRATION_BANDWIDTH_CUSTOM and
+            bandwidth_method == config.BW_CUSTOM and
             migration_policy == config.MIGRATION_POLICY_SUSPEND_WORK_IF_NEEDED
         ):
             expected_bandwidth = custom_bandwidth

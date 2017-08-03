@@ -435,9 +435,9 @@ def restore_default_policy_on_cluster(request):
         """
         testflow.teardown("update cluster migration policy to default")
         migration_helper.update_migration_policy_on_cluster(
-            migration_policy=config.MIGRATION_POLICY_NAME[0],
+            migration_policy=config.MIGRATION_POLICY_NAMES[0],
             cluster_name=config.CLUSTER_NAME[0],
-            bandwidth=config.MIGRATION_BANDWIDTH_AUTO
+            bandwidth=config.BW_AUTO
         )
 
     request.addfinalizer(fin)
