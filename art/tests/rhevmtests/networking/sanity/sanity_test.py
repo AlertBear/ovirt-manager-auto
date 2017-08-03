@@ -56,7 +56,8 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces,
     setup_networks_fixture,
     create_and_attach_networks,
-    remove_all_networks
+    remove_all_networks,
+    update_vnic_profiles
 )
 from rhevmtests.networking.register_domain.fixtures import (
     import_vm_from_data_domain
@@ -65,7 +66,6 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
     add_vnics_to_vm,
     reset_host_sriov_params,
     set_num_of_vfs,
-    update_vnic_profiles,
     sr_iov_init
 )
 
@@ -1328,7 +1328,7 @@ class TestSanity17(NetworkTest):
     vnics_profiles = {
         net_1: {
             "pass_through": True,
-            "network_filter": 'None'
+            "network_filter": "None"
         }
     }
 

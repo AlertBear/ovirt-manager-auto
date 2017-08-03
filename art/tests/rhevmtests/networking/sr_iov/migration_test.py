@@ -22,7 +22,6 @@ from art.test_handler.tools import polarion
 from fixtures import (  # noqa: F401
     modify_ifcfg_nm_controlled,
     reset_host_sriov_params,
-    update_vnic_profiles,
     add_vnics_to_vm,
     set_num_of_vfs,
     sr_iov_init
@@ -36,7 +35,8 @@ from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
     create_and_attach_networks,
     store_vms_params,
-    remove_all_networks
+    remove_all_networks,
+    update_vnic_profiles
 )
 
 pytestmark = pytest.mark.skipif(
@@ -173,9 +173,10 @@ class TestSriovMigration01(NetworkTest):
     remove_dcs_networks = [dc]
 
     # update_vnic_profiles
-    vnics_profiles = {
+    update_vnics_profiles = {
         sriov_net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         }
     }
 
@@ -221,7 +222,8 @@ class TestSriovMigration01(NetworkTest):
             self.sriov_net_1, self.vm_name
         )
         assert ll_networks.update_vnic_profile(
-            name=self.sriov_net_1, network=self.sriov_net_1, migratable=True
+            name=self.sriov_net_1, network=self.sriov_net_1, migratable=True,
+            network_filter="None"
         )
         testflow.step(
             "Try to migrate VM %s when no VFs are available on the "
@@ -243,7 +245,8 @@ class TestSriovMigration01(NetworkTest):
             "Update vNIC profile %s to have passthrough", self.sriov_net_2
         )
         assert ll_networks.update_vnic_profile(
-            name=self.sriov_net_2, network=self.sriov_net_2, pass_through=True
+            name=self.sriov_net_2, network=self.sriov_net_2, pass_through=True,
+            network_filter="None"
         )
         testflow.setup(
             "Add vNIC %s on VM %s with SR-IOV network",

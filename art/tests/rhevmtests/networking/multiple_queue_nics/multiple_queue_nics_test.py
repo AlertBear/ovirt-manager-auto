@@ -10,12 +10,14 @@ VM from template, vNIC, vNIC profile
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    vms as ll_vms
+)
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
     NetworkTest,
@@ -23,13 +25,17 @@ from art.unittest_lib import (
 )
 from rhevmtests.fixtures import start_vm
 from fixtures import (
-    update_vnic_profile, create_vm, attach_vnic_profile_to_vm
+    create_vm,
+    attach_vnic_profile_to_vm
+)
+from rhevmtests.networking.fixtures import (
+    update_vnic_profiles
 )
 
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    update_vnic_profile.__name__,
+    update_vnic_profiles.__name__,
     start_vm.__name__
 )
 class TestMultipleQueueNics01(NetworkTest):
@@ -39,12 +45,28 @@ class TestMultipleQueueNics01(NetworkTest):
     2) Check that queue survive VM hibernate
     3) Check that queues survive VM migration
     """
-    __test__ = True
-
+    # General params
     vm_name = conf.VM_0
     num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
     num_queues_1 = multiple_queue_conf.NUM_QUEUES[1]
     prop_queues = multiple_queue_conf.PROP_QUEUES[1]
+
+    # update_vnic_profiles params
+    update_vnics_profiles = {
+        conf.MGMT_BRIDGE: {
+            "custom_properties": multiple_queue_conf.PROP_QUEUES[0],
+            "data_center": conf.DC_0,
+        }
+    }
+
+    restore_vnics_profiles = {
+        conf.MGMT_BRIDGE: {
+            "custom_properties": "clear",
+            "data_center": conf.DC_0,
+        }
+    }
+
+    # start_vm params
     start_vms_dict = {
         vm_name: {}
     }
@@ -83,7 +105,6 @@ class TestMultipleQueueNics01(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-4312")
-    @bz({"1389996": {}})
     def test_02_multiple_queue_nics(self):
         """
         Hibernate the VM and check the queue still configured on qemu
@@ -117,7 +138,7 @@ class TestMultipleQueueNics01(NetworkTest):
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    update_vnic_profile.__name__,
+    update_vnic_profiles.__name__,
     create_vm.__name__,
     attach_vnic_profile_to_vm.__name__,
     start_vm.__name__
@@ -127,11 +148,31 @@ class TestMultipleQueueNics02(NetworkTest):
     1.  Check queue exists for VM from template
     2.  Check hot-unplug vNIC with custom queues property
     """
-    __test__ = True
-
-    vm_name = multiple_queue_conf.VM_FROM_TEMPLATE
-    vm_nic = multiple_queue_conf.VM_NIC
+    # General params
     num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
+
+    # create_vm params
+    vm_name = multiple_queue_conf.VM_FROM_TEMPLATE
+
+    # attach_vnic_profile_to_vm params
+    vm_nic = multiple_queue_conf.VM_NIC
+
+    # update_vnic_profiles params
+    update_vnics_profiles = {
+        conf.MGMT_BRIDGE: {
+            "custom_properties": multiple_queue_conf.PROP_QUEUES[0],
+            "data_center": conf.DC_0,
+        }
+    }
+
+    restore_vnics_profiles = {
+        conf.MGMT_BRIDGE: {
+            "custom_properties": "clear",
+            "data_center": conf.DC_0,
+        }
+    }
+
+    # start_vm params
     start_vms_dict = {
         vm_name: {}
     }

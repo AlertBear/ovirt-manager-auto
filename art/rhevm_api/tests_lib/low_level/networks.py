@@ -413,7 +413,7 @@ def check_ip_rule(vds_resource, subnet, matches=2):
     return len(re.findall(subnet.replace('.', '[.]'), out)) >= matches
 
 
-@ll.general.generate_logs()
+@ll.general.generate_logs(step=True)
 def update_vnic_profile(name, network, **kwargs):
     """
     Update VNIC profile

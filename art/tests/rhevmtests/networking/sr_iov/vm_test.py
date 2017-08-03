@@ -24,7 +24,6 @@ from fixtures import (  # noqa: F401
     set_all_networks_allowed,
     reset_host_sriov_params,
     set_ip_on_vm_interface,
-    update_vnic_profiles,
     add_vnic_profile,
     add_vnics_to_vm,
     set_num_of_vfs,
@@ -43,7 +42,8 @@ from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
     clean_host_interfaces,
-    store_vms_params
+    store_vms_params,
+    update_vnic_profiles
 )
 from rhevmtests.networking.fixtures import (  # noqa: F401
     create_and_attach_networks,
@@ -82,13 +82,15 @@ class TestSriovVm01(NetworkTest):
     # stop VM
     vms_to_stop = [vm]
 
-    # update_vnic_profiles
-    vnics_profiles = {
+    # update_vnic_profiles params
+    update_vnics_profiles = {
         net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
         net_2: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
     }
 
@@ -303,9 +305,10 @@ class TestSriovVm02(NetworkTest):
     num_of_vfs = 1
 
     # update_vnic_profiles
-    vnics_profiles = {
+    update_vnics_profiles = {
         net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
     }
 
@@ -396,15 +399,18 @@ class TestSriovVm03(NetworkTest):
     nets = net_list
 
     # update_vnic_profiles
-    vnics_profiles = {
+    update_vnics_profiles = {
         net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
         net_2: {
-            "port_mirroring": True
+            "port_mirroring": True,
+            "network_filter": "None"
         },
         net_4: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         }
     }
 
@@ -514,18 +520,22 @@ class TestSriovVm04(NetworkTest):
     label_list = [label_1, label_2]
 
     # update_vnic_profiles
-    vnics_profiles = {
+    update_vnics_profiles = {
         net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
         net_2: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
         net_3: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
         net_4: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
     }
 
@@ -766,9 +776,10 @@ class TestSriovVm06(NetworkTest):
     num_of_vfs = 2
 
     # update_vnic_profiles
-    vnics_profiles = {
+    update_vnics_profiles = {
         net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         }
     }
 

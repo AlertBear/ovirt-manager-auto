@@ -363,3 +363,46 @@ def remove_vnics_from_vms(request):
                     "fin1: ll_vms.removeNic {kwargs}".format(kwargs=kwargs))
             )
     request.addfinalizer(fin1)
+
+
+@pytest.fixture(scope="class")
+def update_vnic_profiles(request):
+    """
+    Update vNICs profiles.
+    """
+    results = list()
+    update_vnics_profiles = getattr(
+        request.node.cls, "update_vnics_profiles", dict()
+    )
+    restore_vnics_profiles = getattr(
+        request.node.cls, "restore_vnics_profiles", dict()
+    )
+
+    def fin2():
+        """
+        Check if one of the finalizers failed.
+        """
+        global_helper.raise_if_false_in_list(results=results)
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Update vNICs proflies
+        """
+        for vnic, val in restore_vnics_profiles.iteritems():
+            if "network" not in val.keys():
+                val["network"] = vnic
+            results.append(
+                (
+                    ll_networks.update_vnic_profile(name=vnic, **val),
+                    "fin1: ll_networks.update_vnic_profile {val}".format(
+                        val=val
+                    )
+                )
+            )
+    request.addfinalizer(fin1)
+
+    for vnic, val in update_vnics_profiles.iteritems():
+        if "network" not in val.keys():
+            val["network"] = vnic
+        assert ll_networks.update_vnic_profile(name=vnic, **val)

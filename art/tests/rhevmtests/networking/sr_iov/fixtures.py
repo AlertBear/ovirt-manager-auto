@@ -198,19 +198,6 @@ def add_vnics_to_vm(request):
 
 
 @pytest.fixture(scope="class")
-def update_vnic_profiles(request):
-    """
-    Update vNICs profiles.
-    """
-    vnics_profiles = request.node.cls.vnics_profiles
-    for vnic, val in vnics_profiles.iteritems():
-        testflow.setup("Update vNIC profile %s with %s", vnic, val)
-        assert ll_networks.update_vnic_profile(
-            name=vnic, network=vnic, data_center=conf.DC_0, **val
-        )
-
-
-@pytest.fixture(scope="class")
 def reset_host_sriov_params(request):
     """
     1. Set number of VFs to 0

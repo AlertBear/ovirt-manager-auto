@@ -19,7 +19,6 @@ from art.test_handler.tools import polarion
 from fixtures import (  # noqa: F401
     create_template_fixture,
     reset_host_sriov_params,
-    update_vnic_profiles,
     remove_vm_fixture,
     create_vm_fixture,
     add_vnics_to_vm,
@@ -35,7 +34,8 @@ from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
     create_and_attach_networks,
     clean_host_interfaces,
-    remove_all_networks
+    remove_all_networks,
+    update_vnic_profiles
 )
 
 pytestmark = pytest.mark.skipif(
@@ -155,13 +155,15 @@ class TestSriovImportExport01(NetworkTest):
     # remove_all_networks params
     remove_dcs_networks = [dc]
 
-    # update_vnic_profiles
-    vnics_profiles = {
+    # update_vnic_profiles params
+    update_vnics_profiles = {
         net_1: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
         net_2: {
-            "pass_through": True
+            "pass_through": True,
+            "network_filter": "None"
         },
     }
 
