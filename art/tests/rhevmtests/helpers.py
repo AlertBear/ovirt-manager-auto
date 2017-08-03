@@ -641,11 +641,11 @@ def get_test_parametrize_ids(item, params):
     for i in param_args:
         if isinstance(i, list) or isinstance(i, tuple):
             for x in i:
-                if not isinstance(i, ParameterSet):
+                if not isinstance(x, ParameterSet):
                     continue
 
                 x_values = x.values
-                if params == x_values:
+                if tuple(params) == x_values:
                     return param_ids[param_args_values.index(x)]
     return _id
 
