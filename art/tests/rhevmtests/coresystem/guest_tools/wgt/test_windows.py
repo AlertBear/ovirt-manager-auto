@@ -145,7 +145,8 @@ class Windows(TestCase):
             positive=True,
             vmName=cls.vm_name,
             alias=cls.disk_name,
-            bootable=True
+            bootable=True,
+            interface=self.disk_interface
         )
         testflow.setup("Run once VM %s", cls.vm_name)
         ll_vms.runVmOnce(
@@ -164,21 +165,29 @@ class Windows(TestCase):
 
     def check_vm_ip_fqdn_info(self):
         """ Check vm ip/fqdn are reported """
-        vm = ll_vms.get_vm(self.vm_name)
         testflow.step("Check if guest agent is reporting IP address")
-        assert len(
-            LookUpVMIpByName('', '').get_ip(self.vm_name)
-        ) > 0, "No ip found in guest info"
+        for sample in TimeoutingSampler(
+            config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
+            LookUpVMIpByName('', '').get_ip, self.vm_name, check_mac=False
+        ):
+            if len(sample) > 0:
+                break
         testflow.step("Check if guest agent is reporting FQDN")
+        vm = ll_vms.get_vm(self.vm_name)
         assert vm.get_fqdn() and len(vm.get_fqdn()) > 0
 
     def check_guest_applications(self):
         """ Check guest's applications are reported """
-        vm = ll_vms.get_vm(self.vm_name)
-        apps = ll_vms.get_vm_applications(vm.get_name())
-        logger.info("Windows '%s' apps are: %s", self.disk_name, apps)
+        apps = None
         testflow.step("Check if guest agent is reporting applications")
-        assert len(apps) > 0, "Applications are empty"
+        for sample in TimeoutingSampler(
+            config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
+            ll_vms.get_vm, self.vm_name
+        ):
+            apps = ll_vms.get_vm_applications(sample.get_name())
+            if len(apps) > 0:
+                break
+        logger.info("Windows '%s' apps are: %s", self.disk_name, apps)
         for app in apps:
             testflow.step("Check if app %s is reporting version", app)
             try:
