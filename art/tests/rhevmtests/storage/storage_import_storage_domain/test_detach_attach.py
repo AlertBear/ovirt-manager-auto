@@ -696,7 +696,7 @@ class BaseTestCase5192(BasicEnvironment):
     dc_version = None
     vm_args = {'clone_from_template': False}
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-5192")
     @tier3
     def test_attach_from_older_version(self):
         """
@@ -763,7 +763,7 @@ class TestCase5200(DomainImportWithTemplate):
     storages = set([ISCSI, NFS])
     partial_import = True
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-5200")
     @bz({'1422508': {}})
     @tier3
     def test_import_template_cross_domain(self):

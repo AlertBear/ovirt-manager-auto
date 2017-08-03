@@ -167,7 +167,7 @@ class TestCase18863(BasicEnvironmentSetUp):
             "Snapshot operation failed"
         )
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-18863")
     @tier2
     def test_live_snapshot(self):
         """
@@ -264,7 +264,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         testflow.step("Checking that files no longer exist after commit")
         self.check_file_existence_operation(False)
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11679")
     @tier2
     def test_snapshot_operation(self):
         """
@@ -290,7 +290,7 @@ class TestCase11676(TestCase):
     live_snapshot = None
     polarion_test_case = '11676'
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11676")
     @tier3
     def test_snapshot_description_length_positive(self):
         """
@@ -309,7 +309,7 @@ class TestCase11676(TestCase):
             True, vm=self.vm_name, description=description
         )
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11676")
     @tier3
     def test_special_characters(self):
         """
@@ -349,7 +349,7 @@ class TestCase11665(TestCase):
     polarion_test_case = '11665'
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_CREATE_SNAPSHOT])
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11665")
     @tier3
     def test_snapshot_on_multiple_domains(self):
         """
@@ -386,7 +386,7 @@ class TestCase11680(TestCase):
     polarion_test_case = '11680'
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MIGRATE_VM])
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11680")
     @tier3
     def test_migration(self):
         """
@@ -425,7 +425,7 @@ class TestCase11674(TestCase):
     live_snapshot = None
     polarion_test_case = '11674'
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11674")
     @tier2
     def test_snapshot_with_multiple_disks(self):
         """
@@ -472,7 +472,7 @@ class TestCase11684(TestCase):
     live_snapshot = None
     polarion_test_case = '11684'
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11684")
     @tier3
     def test_snapshot_on_thin_vm(self):
         """
@@ -483,7 +483,7 @@ class TestCase11684(TestCase):
             True, vm=self.vm_thin, description=LIVE_SNAPSHOT_DESC
         )
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-11684")
     @tier3
     def test_snapshot_on_cloned_vm(self):
         """
@@ -514,7 +514,7 @@ class TestCase18886(TestCase):
     snap_count = 2
     polarion_test_case = '18886'
 
-    @polarion("RHEVM3-" + polarion_test_case)
+    @polarion("RHEVM3-18886")
     @tier3
     def test_commit_snapshot(self):
 

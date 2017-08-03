@@ -308,7 +308,7 @@ class TestCase6038(BasicEnvironment):
     __test__ = False
     test_case = '6038'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6038")
     @tier1
     def test_basic_snapshot_deletion(self):
         self.basic_flow()
@@ -330,7 +330,7 @@ class TestCase6052(BasicEnvironment):
     __test__ = False
     test_case = '6052'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6052")
     @tier2
     def test_basic_snapshot_deletion_with_io(self):
         self.basic_flow()
@@ -349,7 +349,7 @@ class TestCase16287(BasicEnvironment):
     __test__ = False
     test_case = '16287'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-16287")
     @tier2
     def test_basic_snapshot_deletion_of_snapshots_disk(self):
         self.perform_snapshot_operation(self.snapshot_description)
@@ -386,7 +386,7 @@ class TestCase12215(BasicEnvironment):
     __test__ = False
     test_case = '12215'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-12215")
     @tier3
     def test_snapshot_deletion_of_all_snapshots(self):
         self.basic_flow()
@@ -416,7 +416,7 @@ class TestCase6044(BasicEnvironment):
     test_case = '6044'
 
     @tier3
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6044")
     def test_snapshot_deletion_base_snapshot(self):
         self.basic_flow()
 
@@ -441,7 +441,7 @@ class TestCase6045(BasicEnvironment):
     __test__ = False
     test_case = '6045'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6045")
     @tier4
     def test_snapshot_deletion_during_vdsm_restart(self):
         host = ll_hosts.get_spm_host(config.HOSTS)
@@ -482,7 +482,7 @@ class TestCase6043(BasicEnvironment):
     __test__ = False
     test_case = '6043'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6043")
     @tier3
     def test_basic_snapshot_deletion(self):
         self.basic_flow()
@@ -508,7 +508,7 @@ class TestCase6046(BasicEnvironment):
     __test__ = False
     test_case = '6046'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6046")
     @tier4
     def test_live_deletion_during_engine_restart(self):
         self.basic_flow()
@@ -542,7 +542,7 @@ class TestCase6048(BasicEnvironment):
     __test__ = False
     test_case = '6048'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6048")
     @tier3
     def test_consecutive_snapshot_deletion_of_snapshots(self):
         self.basic_flow(5)
@@ -578,7 +578,7 @@ class TestCase6050(BasicEnvironment):
     __test__ = False
     test_case = '6050'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6050")
     @tier3
     def test_snapshot_merge_during_snapshot_merge(self):
         self.basic_flow()
@@ -608,7 +608,7 @@ class TestCase6057(BasicEnvironment):
     __test__ = False
     test_case = '6057'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6057")
     @tier2
     def test_live_deletion_after_disk_migration(self):
         self.basic_flow()
@@ -632,7 +632,7 @@ class TestCase6058(BasicEnvironment):
     __test__ = False
     test_case = '6058'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6058")
     @tier2
     def test_live_merge_with_stop_vm(self):
         self.basic_flow()
@@ -671,7 +671,7 @@ class TestCase6062(BasicEnvironment):
     test_case = '6062'
     disk_to_migrate = None
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-6062")
     @tier3
     def test_live_merge_during_lsm(self):
         self.basic_flow()
@@ -708,7 +708,7 @@ class TestCase12216(BasicEnvironment):
     __test__ = False
     test_case = '12216'
 
-    @polarion("RHEVM3-%s" % test_case)
+    @polarion("RHEVM3-12216")
     @tier2
     def test_basic_snapshot_merge_after_disk_resize(self):
         self.basic_flow(1)

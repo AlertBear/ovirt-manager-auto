@@ -230,10 +230,11 @@ class JunitExtension(object):
         'polarion',
     )
 
-    attributes = (
-        'api',
+    polarion_attributes = (
         'storage',
     )
+
+    attributes_name_prefix = 'polarion-parameter-'
 
     polarion_importer_properties = {
         'polarion-project-id': None,
@@ -269,14 +270,17 @@ class JunitExtension(object):
             if mark_info:
                 for value in mark_info.args:
                     if mark_name == 'polarion':
-                        mark_name = 'polarion-testcase-id'
-                    self._add_property(item, mark_info.name, value)
+                        self._add_property(item, 'polarion-testcase-id', value)
+                    else:
+                        self._add_property(item, mark_info.name, value)
 
-    def _add_attributes(self, item):
-        for attr_name in self.attributes:
+    def _add_polarion_attributes(self, item):
+        for attr_name in self.polarion_attributes:
             attr_value = getattr(item.parent.obj, attr_name, None)
             if attr_value:
-                self._add_property(item, attr_name, attr_value)
+                self._add_property(
+                    item, self.attributes_name_prefix + attr_name, attr_value
+                )
 
     def _add_global_properties(self):
         # junit.add_global_property(k, v) will be available in pytest 2.10.1
@@ -291,7 +295,9 @@ class JunitExtension(object):
 
     def pytest_runtest_setup(self, item):
         self._add_marks(item)
-        self._add_attributes(item)
+        # TODO remove comment once relevant tests will have storage param
+        # in polarion (pending on Gil)
+        # self._add_polarion_attributes(item)
 
     def pytest_artconf_ready(self, config):
         self.global_properties['polarion-custom-plannedin'] = (
