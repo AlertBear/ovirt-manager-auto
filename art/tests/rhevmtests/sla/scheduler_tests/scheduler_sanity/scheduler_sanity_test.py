@@ -276,6 +276,7 @@ class TestMemoryFilter(BaseSchedulerSanity):
     update_to_default_params = conf.VM_NAME[:2]
     vms_to_start = conf.VM_NAME[:2]
     wait_for_vms_ip = False
+    wait_for_vms_state = conf.VM_UP
 
     @tier2
     @polarion("RHEVM3-9480")

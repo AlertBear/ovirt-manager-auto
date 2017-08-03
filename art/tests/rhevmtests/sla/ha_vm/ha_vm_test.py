@@ -195,8 +195,7 @@ class TestHaVm05(BaseHaVm):
 
         method_msg = "Poweroff the host %s" % conf.HOSTS[0]
         assert self.run_action_and_verify_ha_vm_restart(
-            method=conf.VDS_HOSTS[0].get_power_manager().poweroff,
-            method_msg=method_msg
+            conf.VDS_HOSTS[0].get_power_manager().poweroff, method_msg, "-f"
         )
 
 
