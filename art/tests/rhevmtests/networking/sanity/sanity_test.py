@@ -580,6 +580,7 @@ class TestSanity05(NetworkTest):
             )
 
 
+@bz({"1478007": {}})
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
