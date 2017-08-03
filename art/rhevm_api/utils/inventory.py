@@ -1,4 +1,5 @@
 import logging
+from pprint import pformat
 import art.rhevm_api.utils.test_utils as utils
 
 logger = logging.getLogger("art.inventory")
@@ -19,7 +20,10 @@ class Inventory(object):
             ('vnic_profile', 'vnicprofiles', lambda x: x),
         ]
         # We should not bother when SDs size gets changed
-        self.whitelisted_attr = ["used", "available"]
+        self.whitelisted_attr = [
+            "used", "available",
+            "actual_size", "committed"
+        ]
         self._summary = {}
 
     def dump_ge_resource(self, resource_type):
@@ -64,7 +68,7 @@ class Inventory(object):
             logger.error("Failed to create GE-state summary")
             logger.error(e)
             self._summary = {}
-        logger.info("Dumped GE state is: %s" % self._summary)
+        logger.info("Dumped GE state is: %s", pformat(self._summary, indent=2))
         return self._summary
 
     def find_resources_diff(
@@ -91,11 +95,11 @@ class Inventory(object):
                 if resource_cur['id'] == resource_id:
                     copy_rsrc_cur_state.remove(resource_cur)
                     if cmp(resource_cur, resource_old) != 0:
-                        resources_changed.append(
-                            self.find_params_changed(
-                                resource_old, resource_cur
-                            )
+                        changed_resource = self.find_params_changed(
+                            resource_old, resource_cur
                         )
+                        if changed_resource[1]:
+                            resources_changed.append(changed_resource)
                     break
             else:
                 resources_removed.append(resource_name)
@@ -116,18 +120,15 @@ class Inventory(object):
             dict: A dictionary containing the resources differences.
 
         """
-        diff_dict = []
         values_changed = dict()
         resource_name = rsrc_old_state['name']
-        for rsrc_param, rsrc_param_val in rsrc_cur_state.iteritems():
+        for rsrc_param, rsrc_param_val in rsrc_old_state.iteritems():
             if rsrc_param_val != rsrc_cur_state[rsrc_param]:
                 values_changed[rsrc_param] = (
                     "old_value: %s, new_value: %s" %
                     (rsrc_param_val, rsrc_cur_state[rsrc_param])
                 )
-        diff_dict.append((resource_name, values_changed))
-
-        return diff_dict
+        return (resource_name, values_changed)
 
     def compare_ge_state(self, old_state, new_state):
         """Creates a dictionary containing the GE state diff

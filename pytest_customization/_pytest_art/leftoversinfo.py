@@ -33,7 +33,7 @@ class LeftoversInfo(object):
 
     def pytest_rhv_setup(self, team):
         """
-        Get dict containing GE descsetupription at package setup
+        Get dict containing GE description at package setup
         """
         inventory = self._get_inventory_instance()
         self.ge_state = inventory.get_summary_report()
