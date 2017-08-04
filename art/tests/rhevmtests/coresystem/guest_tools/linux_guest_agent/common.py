@@ -8,14 +8,11 @@ from art.rhevm_api.resources import Host, RootUser, VDS
 from art.rhevm_api.tests_lib.low_level import (
     clusters, disks, hosts, storagedomains, vms
 )
-from art.rhevm_api.utils import test_utils
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import testflow
 
 from rhevmtests.coresystem.guest_tools.linux_guest_agent import config
 
-VM_API = test_utils.get_api('vm', 'vms')
-HOST_API = test_utils.get_api('host', 'hosts')
 logger = logging.getLogger(__name__)
 
 GA_HOOKS_FOLDER = "/etc/ovirt-guest-agent/hooks.d"
@@ -62,25 +59,27 @@ def prepare_vms(vm_disks):
             nicType=config.NIC_TYPE_VIRTIO,
             display_type=config.ENUMS['display_type_vnc'],
         )
-        config.TEST_IMAGES[image]['id'] = VM_API.find(image).id
+        config.TEST_IMAGES[image]['id'] = vms.get_vm(image).id
 
     for image in vm_disks:
         if config.TEST_IMAGES[image]['image']._is_import_success(3600):
             testflow.setup("Attach disk %s to VM %s", image, image)
             disks.attachDisk(True, image, image)
-            testflow.setup("Start VM %s", image)
-            assert vms.startVm(True, image, wait_for_status=config.VM_UP)
-            testflow.setup("Get MAC address of VM %s", image)
-            mac = vms.getVmMacAddress(
-                True, vm=image, nic=config.NIC_NAME
-            )[1].get('macAddress', None)
-            logger.info("Mac address is %s", mac)
+            testflow.setup("Add snapshot %s to VM %s", image, image)
+            assert vms.addSnapshot(True, image, image)
+            os_codename = image[2:5]
+            repo_url = config.GA_REPO_URL % os_codename
+            initialization = vms.init_initialization_obj(
+                {'custom_script': config.CLOUD_INIT_SCRIPT % repo_url}
+            )
+            testflow.setup("Run once VM %s", image)
+            assert vms.runVmOnce(
+                True, image, wait_for_state=config.VM_UP,
+                use_cloud_init=True, initialization=initialization
+            )
+            ip = vms.wait_for_vm_ip(image)[1].get('ip')
 
-            testflow.setup("Get IP address of VM %s", image)
-            ip = test_utils.convertMacToIpAddress(
-                True, mac, subnetClassB=config.SUBNET_CLASS
-            )[1].get('ip', None)
-
+            testflow.setup("Setup a machine with ip %s", ip)
             machine = Host(ip)
             machine.users.append(
                 RootUser(config.GUEST_ROOT_PASSWORD)
@@ -89,8 +88,6 @@ def prepare_vms(vm_disks):
             wait_for_connective(machine)
             testflow.setup("Stop VM %s", image)
             vms.stop_vms_safely([image])
-            testflow.setup("Add snapshot %s to VM %s", image, image)
-            assert vms.addSnapshot(True, image, image)
 
 
 class GABaseTestCase(TestCase):

@@ -38,19 +38,15 @@ class RHEL7GATest(common.GABaseTestCase):
         'grep', 'enabled',
     ]
 
+    @classmethod
     @pytest.fixture(scope="class")
-    def rhel7_setup(self, request):
-        cls = request.cls
-
+    def rhel7_setup(cls, request):
         def fin():
             testflow.teardown("Shutdown VM %s", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
-            testflow.teardown("Undo snapshot preview")
-            assert vms.undo_snapshot_preview(True, cls.vm_name)
-            vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
-        super(RHEL7GATest, cls).ga_base_setup()
+        cls.ga_base_setup()
         testflow.setup(
             "Preview snapshot %s of VM %s", cls.vm_name, cls.vm_name
         )
@@ -58,6 +54,13 @@ class RHEL7GATest(common.GABaseTestCase):
         vms.wait_for_vm_snapshots(
             cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
+            cls.vm_name
+        )
+        testflow.setup("Commit snapshot %s of VM %s", cls.vm_name, cls.vm_name)
+        assert vms.commit_snapshot(True, cls.vm_name)
+        vms.wait_for_vm_snapshots(
+            cls.vm_name,
+            config.SNAPSHOT_OK,
             cls.vm_name
         )
         testflow.setup("Start VM %s", cls.vm_name)

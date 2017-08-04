@@ -55,6 +55,19 @@ if not UPSTREAM:
 else:
     GA_REPO_OLDER_URL = 'http://resources.ovirt.org/repos/ovirt/tested/4.1/rpm/%s'
 
+CLOUD_INIT_SCRIPT = """
+yum_repos:
+    ovirt:
+        name: oVirt latest
+        baseurl: %s
+        enabled: true
+        gpgcheck: false
+packages:
+    ovirt-guest-agent
+runcmd:
+    - [ service, ovirt-guest-agent, restart ]
+"""
+
 GUEST_ROOT_USER = 'root'
 GUEST_ROOT_PASSWORD = '123456'
 

@@ -35,19 +35,15 @@ class RHEL6GATest(common.GABaseTestCase):
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
                    'ovirt', '|', 'egrep', '3:on']
 
+    @classmethod
     @pytest.fixture(scope="class")
-    def rhel6_setup(self, request):
-        cls = request.cls
-
+    def rhel6_setup(cls, request):
         def fin():
             testflow.teardown("Shutdown VM %s", cls.vm_name)
             assert vms.stop_vms_safely([cls.vm_name])
-            testflow.teardown("Undo snapshot preview")
-            assert vms.undo_snapshot_preview(True, cls.vm_name)
-            vms.wait_for_vm_snapshots(cls.vm_name, config.SNAPSHOT_OK)
         request.addfinalizer(fin)
 
-        super(RHEL6GATest, cls).ga_base_setup()
+        cls.ga_base_setup()
         testflow.setup(
             "Preview snapshot %s of VM %s", cls.vm_name, cls.vm_name
         )
@@ -57,8 +53,17 @@ class RHEL6GATest(common.GABaseTestCase):
             config.SNAPSHOT_IN_PREVIEW,
             cls.vm_name
         )
+        testflow.setup("Commit snapshot %s of VM %s", cls.vm_name, cls.vm_name)
+        assert vms.commit_snapshot(True, cls.vm_name)
+        vms.wait_for_vm_snapshots(
+            cls.vm_name,
+            config.SNAPSHOT_OK,
+            cls.vm_name
+        )
         testflow.setup("Start VM %s", cls.vm_name)
-        assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
+        assert vms.runVmOnce(
+            True, cls.vm_name, wait_for_state=config.VM_UP, use_cloud_init=True
+        )
         common.wait_for_connective(cls.machine)
 
 
