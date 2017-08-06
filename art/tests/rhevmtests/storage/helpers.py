@@ -1851,6 +1851,12 @@ def get_logical_name_by_vdsm_client(
         if vm_disks.get(dev).get("imageID") == disk_id:
             logical_name = dev
             break
+    if not logical_name:
+        logger.error(
+            "Logical name for disk ID: '%s' wasn't found under VM %s",
+            vm_id, vm_name
+        )
+        return ""
     if not parse_logical_name:
         logical_name = "/dev/" + logical_name
     return logical_name

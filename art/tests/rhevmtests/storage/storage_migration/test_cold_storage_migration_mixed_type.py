@@ -19,6 +19,10 @@ def inizialize_tests_params(request):
     config.LIVE_MOVE = False
 
 
+@pytest.mark.skipif(
+    config.ISCSI_DOMAINS_KWARGS[0]['lun'] is None,
+    reason="No other storage type exist for HCI"
+)
 class TestCase19001(TestCase6004):
     """
     Cold migrate

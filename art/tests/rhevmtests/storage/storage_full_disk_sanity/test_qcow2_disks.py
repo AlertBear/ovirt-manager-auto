@@ -510,7 +510,7 @@ class TestCase16968(TestCase):
     volume_format = config.DISK_FORMAT_COW
 
     @polarion("RHEVM3-16968")
-    @bz({'1419240': {}})
+    @bz({'1459455': {}})
     @tier2
     def test_virtual_actual_disk_size_block(self):
         """

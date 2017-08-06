@@ -17,6 +17,10 @@ def inizialize_tests_params(request):
     config.MIGRATE_SAME_TYPE = False
 
 
+@pytest.mark.skipif(
+    config.ISCSI_DOMAINS_KWARGS[0]['lun'] is None,
+    reason="No other storage type exist for HCI"
+)
 class TestCase10348(TestCase6004):
     """
     live migrate

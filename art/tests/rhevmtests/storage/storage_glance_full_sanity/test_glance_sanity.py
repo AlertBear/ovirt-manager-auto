@@ -437,7 +437,6 @@ class TestCase5746(BasicEnvironment):
         )
 
 
-@bz({'1411123': {}})
 @pytest.mark.usefixtures(
     create_template.__name__,
     extract_template_disks.__name__,
@@ -462,7 +461,6 @@ class TestCase5683(BaseTestCase):
         )
 
 
-@bz({'1411123': {}})
 class TestCase10696(BasicEnvironment):
     """
     Import a glance image as template
