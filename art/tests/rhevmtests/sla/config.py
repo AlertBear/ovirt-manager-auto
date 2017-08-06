@@ -129,7 +129,6 @@ POLICY_NONE = "none"
 POLICY_POWER_SAVING = ENUMS["scheduling_policy_power_saving"]
 POLICY_EVEN_DISTRIBUTION = ENUMS["scheduling_policy_evenly_distributed"]
 POLICY_EVEN_VM_DISTRIBUTION = ENUMS["scheduling_policy_vm_evenly_distributed"]
-POLICY_IN_CLUSTER_UPGRADE = "InClusterUpgrade"
 POLICY_CLUSTER_MAINTENANCE = "cluster_maintenance"
 
 # Scheduling policies constants
@@ -250,7 +249,6 @@ ENGINE_POLICIES = [
     POLICY_POWER_SAVING,
     POLICY_EVEN_DISTRIBUTION,
     POLICY_EVEN_VM_DISTRIBUTION,
-    POLICY_IN_CLUSTER_UPGRADE,
     POLICY_CLUSTER_MAINTENANCE
 ]
 
