@@ -19,10 +19,13 @@ class Inventory(object):
             ('disk', 'disks', lambda x: x),
             ('vnic_profile', 'vnicprofiles', lambda x: x),
         ]
-        # We should not bother when SDs size gets changed
+        # List of resource names that we should ignore
+        self.ignored_rsrc_names = ["OVF_STORE"]
+        # List of attributes that we should ignore
         self.whitelisted_attr = [
             "used", "available",
-            "actual_size", "committed"
+            "actual_size", "committed",
+            "stop_time"
         ]
         self._summary = {}
 
@@ -103,7 +106,11 @@ class Inventory(object):
                     break
             else:
                 resources_removed.append(resource_name)
-        resources_added = [rsc['name'] for rsc in copy_rsrc_cur_state]
+        resources_added = [
+            rsc['name']
+            for rsc in copy_rsrc_cur_state
+            if rsc['name'] not in self.ignored_rsrc_names
+        ]
 
         return resources_changed, resources_added, resources_removed
 
