@@ -100,6 +100,7 @@ class TestRunVmOnce(common.VirtTest):
             config.CDROM_IMAGE_2
         )
 
+    @tier2
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9794")
     @pytest.mark.usefixtures(
@@ -120,6 +121,7 @@ class TestRunVmOnce(common.VirtTest):
             pause=True
         )
 
+    @tier1
     @polarion("RHEVM3-9800")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_run_once_with_specific_host(self):  # add validation
@@ -132,6 +134,7 @@ class TestRunVmOnce(common.VirtTest):
         )
         assert ll_vms.runVmOnce(True, config.VM_RUN_ONCE, host=config.HOSTS[0])
 
+    @tier1
     @polarion("RHEVM3-9781")
     @pytest.mark.usefixtures(
         image_provider_fixture.__name__, remove_vm_disk_fixture.__name__,
@@ -145,6 +148,7 @@ class TestRunVmOnce(common.VirtTest):
         testflow.step("run once VM %s without disk", config.VM_RUN_ONCE)
         assert not ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
 
+    @tier1
     @polarion("RHEVM3-9805")
     @pytest.mark.usefixtures(
         remove_vm_nic_fixture.__name__, base_setup_fixture.__name__
@@ -160,6 +164,7 @@ class TestRunVmOnce(common.VirtTest):
             config.ENUMS['boot_sequence_network']
         )
 
+    @tier2
     @polarion("RHEVM3-9783")
     @pytest.mark.usefixtures(base_setup_fixture.__name__)
     @pytest.mark.args_marker(highly_available=True)
@@ -170,6 +175,7 @@ class TestRunVmOnce(common.VirtTest):
         testflow.step("run once HA VM %s as stateless vm", config.VM_RUN_ONCE)
         assert not ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
 
+    @tier2
     @polarion("RHEVM3-9796")
     @pytest.mark.usefixtures(
         base_setup_fixture.__name__, image_provider_fixture.__name__
