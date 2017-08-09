@@ -226,3 +226,14 @@ VIRSH_VM_IOTHREADS_DRIVERS_CMD = "virsh -r dumpxml %s | grep 'iothread='"
 VIRSH_VM_EMULATED_MACHINE_CMD = "virsh -r dumpxml %s | grep -o machine=\'.*\'"
 VIRSH_VM_CPU_MODEL_CMD = "virsh -r dumpxml %s | grep -o '<model.*</model>'"
 LSBLK_CMS = "lsblk | grep disk"
+
+
+# vm_actions
+MIGRATION_ACTION = 'migration'
+MEMORY_HOTPLUG_ACTION = 'memory_hotplug'
+CPU_HOTPLUG_ACTION = 'cpu_hotplug'
+SNAPSHOT_MEM_ACTION = 'snapshot_memory'
+SNAPSHOT_NO_MEM_ACTION = 'snapshot_without_memory'
+CLONE_ACTION = 'clone'
+
+CLONE_VM_NAME = "clone_vm_test_vm_actions"

@@ -1428,3 +1428,83 @@ def execute_multi_sparsify(disks_ids, storage_domain_name):
             )
     for result in results:
         assert result.result()
+
+
+def snapshot_vm(
+    vm_name, snapshot_description, with_memory=False, start_vm=False
+):
+    """
+    Create, restore, remove snapshots
+
+    Args:
+        vm_name (str): VM name
+        snapshot_description (list): List of snapshot description
+        with_memory (bool): Create snapshot with memory
+        start_vm (bool): start vm before create snapshot
+
+    Raises:
+         AssertionError: if failed operation
+    """
+
+    if start_vm:
+        assert ll_vms.startVm(True, vm_name)
+    for description in snapshot_description:
+        assert ll_vms.addSnapshot(
+            positive=True,
+            vm=vm_name,
+            description=description,
+            persist_memory=with_memory,
+        ), "Failed to add snapshot to VM."
+    testflow.step(
+        "Restore vm %s from snapshot %s", vm_name, snapshot_description[1]
+    )
+    assert ll_vms.restore_snapshot(
+        positive=True,
+        vm=vm_name,
+        description=snapshot_description[1],
+        restore_memory=with_memory,
+        ensure_vm_down=True
+    )
+    testflow.step(
+        "Remove snapshots %s and %s of vm %s",
+        snapshot_description[0],
+        snapshot_description[1],
+        vm_name
+    )
+    for snapshot in snapshot_description:
+        assert ll_vms.removeSnapshot(
+            positive=True,
+            vm=vm_name,
+            description=snapshot,
+            timeout=config_virt.VM_REMOVE_SNAPSHOT_TIMEOUT
+        )
+
+
+def clone_vm(base_vm_name, clone_vm_name):
+    """
+    Clone VM
+
+    Args:
+        base_vm_name (str): VM name which will be clone (source vm)
+        clone_vm_name (str): Clone VM name (destination vm)
+
+    Raises:
+         AssertionError: if failed operation
+    """
+
+    assert ll_vms.stop_vms_safely([base_vm_name])
+    assert hl_vms.clone_vm(
+        positive=True, vm=base_vm_name,
+        clone_vm_name=clone_vm_name
+    )
+    assert check_clone_vm(
+        clone_vm_name=clone_vm_name,
+        base_vm_name=base_vm_name
+    )
+    check_disk_contents_on_clone_vm(
+        clone_vm_name=clone_vm_name
+    )
+    assert ll_vms.startVm(
+        positive=True, vm=base_vm_name,
+        wait_for_status=config.VM_UP
+    )

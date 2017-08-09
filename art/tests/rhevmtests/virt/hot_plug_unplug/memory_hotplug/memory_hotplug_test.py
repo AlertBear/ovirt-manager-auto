@@ -5,7 +5,6 @@
 Memory hotplug tests
 """
 
-import logging
 import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -20,8 +19,6 @@ from fixtures import reboot_vm
 from rhevmtests.virt import config
 from rhevmtests import helpers as gen_helper
 import helper
-
-logger = logging.getLogger("memory_hotplug_cases")
 
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
