@@ -580,7 +580,6 @@ class TestSanity05(NetworkTest):
             )
 
 
-@bz({"1478007": {}})
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
@@ -643,6 +642,7 @@ class TestSanity06(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier1
+    @bz({"1478007": {}})
     @polarion("RHEVM3-3829")
     def test_check_combination_plugged_linked_values(self):
         """
@@ -1006,6 +1006,7 @@ class TestSanity11(NetworkTest):
     }
 
     @tier1
+    @bz({"1478054": {}})
     @polarion("RHEVM3-4309")
     def test_multiple_queue_nics(self):
         """
