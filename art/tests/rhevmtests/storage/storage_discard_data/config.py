@@ -6,8 +6,6 @@ from rhevmtests.storage.config import *  # flake8: noqa
 DD_SIZE = 0.5 * GB
 DATA_CENTER_NAME = DC_NAME[0]
 DISK_SIZE = 5 * GB
-INITIAL_LUN_USED_SIZE = None
-USED_SIZE_BEFORE_DELETE = None
 DISK_ALLOCATIONS = {False: 'preallocated', True: 'thin'}
 
 DELETE_DISK = 'delete_disk'

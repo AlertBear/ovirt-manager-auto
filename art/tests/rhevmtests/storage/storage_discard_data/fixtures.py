@@ -8,7 +8,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from rhevmtests.storage.fixtures import (
     attach_disk, start_vm, create_vm
-
 )
 
 from rhevmtests.storage.fixtures import remove_vm  # noqa F401
