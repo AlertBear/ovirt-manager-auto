@@ -10,10 +10,7 @@ from art.test_handler.tools import polarion, bz
 import rhevmtests.helpers as helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
-from art.unittest_lib import (
-    tier1,
-    tier2,
-)
+from art.unittest_lib import tier1
 from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.reg_vms.fixtures import add_vm_fixture
 import config
@@ -21,96 +18,139 @@ import config
 logger = logging.getLogger("update_vm_cases")
 
 
-class UpdateVm(VirtTest):
+class TestUpdateVm(VirtTest):
     """
     Update vms with different parameters test cases
     """
-    __test__ = True
     new_mem = 1280 * config.MB
     half_GB = 512 * config.MB
     vm_name = 'update_vm'
-    add_disk = False
 
     @tier1
-    @polarion("RHEVM3-12563")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-    def test_update_1_vm_os_type_from_rhel_to_windows_2008(self):
-        """
-        Positive: Update vm OS type from rhel to Windows 2008
-        """
-        testflow.step("Positive: Update vm OS type from rhel to Windows 2008")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            time_zone=config.WIN_TZ,
-            os_type=config.WIN_2008
-        )
+    @pytest.mark.parametrize(
+        ("update_dict", "positive"),
+        [
+            pytest.param(
+                {"time_zone": config.WIN_TZ, "os_type": config.WIN_2008}, True,
+                marks=(
+                    polarion("RHEVM3-12563"),
+                    pytest.mark.skipif(
+                        config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE
+                    )
+                )
+            ),
+            pytest.param(
+                {"time_zone": config.WIN_TZ, "os_type": config.WIN_7}, True,
+                marks=(
+                    polarion("RHEVM3-12561"),
+                    pytest.mark.skipif(
+                        config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE
+                    )
+                )
+            ),
+            pytest.param(
+                {"time_zone": config.RHEL_TZ, "os_type": config.RHEL6_64},
+                True, marks=(
+                    polarion("RHEVM3-12564"),
+                    pytest.mark.skipif(
+                        config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE
+                    )
+                )
+            ),
+            pytest.param(
+                {"os_type": config.WIN_7}, False,
+                marks=(
+                    polarion("RHEVM3-12562"),
+                    pytest.mark.skipif(
+                        config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE
+                    )
+                )
+            ),
 
-    @tier1
-    @polarion("RHEVM3-12561")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-    def test_update_2_vm_os_type_from_rhel_to_windows_7(self):
-        """
-        Positive: Update vm OS type from rhel to Windows 7
-        """
-        testflow.step("Positive: Update vm OS type from rhel to Windows 7")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            time_zone=config.WIN_TZ,
-            os_type=config.WIN_7
-        )
+            pytest.param(
+                {
+                    "placement_affinity": config.VM_MIGRATABLE,
+                    "placement_host": 0
+                }, True,
+                marks=(polarion("RHEVM3-12528"))
+            ),
+            pytest.param(
+                {
+                    "placement_affinity": config.VM_USER_MIGRATABLE,
+                    "placement_host": 0
+                }, True,
+                marks=(polarion("RHEVM3-12531"))
+            ),
+            pytest.param(
+                {
+                    "placement_affinity": config.VM_PINNED,
+                    "placement_host": 0
+                }, True,
+                marks=(polarion("RHEVM3-12529"))
+            ),
+            pytest.param(
+                {
+                    "placement_affinity": config.VM_USER_MIGRATABLE,
+                    "placement_host": config.VM_ANY_HOST
+                }, True,
+                marks=(polarion("RHEVM3-12530"))
+            ),
+            pytest.param(
+                {
+                    "placement_affinity": config.VM_MIGRATABLE,
+                    "placement_host": config.VM_ANY_HOST
+                }, True,
+                marks=(polarion("RHEVM3-12527"))
+            ),
+            pytest.param(
+                {"description": 'TEST'}, True, marks=(polarion("RHEVM3-12533"))
+            ),
+            pytest.param(
+                {"memory": config.TWO_GB}, True,
+                marks=(polarion("RHEVM3-12556"))
+            ),
+            pytest.param(
+                {"cpu_socket": 2}, True, marks=(polarion("RHEVM3-12559"))
+            ),
+            pytest.param(
+                {"cpu_socket": 40}, False, marks=(polarion("RHEVM3-12566"))
+            ),
+            pytest.param(
+                {"cpu_cores": 2}, True, marks=(polarion("RHEVM3-12558"))
+            ),
+            pytest.param(
+                {"display_type": config.VNC}, True,
+                marks=(
+                    polarion("RHEVM3-12534"),
+                    pytest.mark.skipif(config.PPC_ARCH,
+                                       reason=config.PPC_SKIP_MESSAGE
+                                       )
+                )
+            ),
+            pytest.param(
+                {"memory": half_GB}, False, marks=(polarion("RHEVM3-12565"))
+            ),
+            pytest.param(
+                {"name": vm_name}, True, marks=(polarion("RHEVM3-12557"))
+            )
 
-    @tier1
-    @polarion("RHEVM3-12564")
+        ]
+    )
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-    def test_update_3_vm_os_type_from_win7_to_rhel(self):
+    def test_update_vm(self, update_dict, positive):
         """
-        Positive: Update vm OS type from Windows 7 to RHEL
+        Update vms with different parameters test cases
         """
-        testflow.step("Positive: Update vm OS type from Windows 7 to RHEL")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            time_zone=config.RHEL_TZ,
-            os_type=config.RHEL6_64
-        )
 
-    @tier1
-    @polarion("RHEVM3-12562")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-    def test_update_4_vm_os_type_from_rhel_to_windows_7_neg(self):
-        """
-        Negative: Update vm OS type from rhel to Windows 7, no timezone update
-        """
+        host_id = update_dict.get(config.VM_PLACEMENT_HOST)
+        if host_id and isinstance(host_id, int):
+            update_dict[config.VM_PLACEMENT_HOST] = config.HOSTS[host_id]
+
         testflow.step(
-            "Negative: "
-            "Update vm OS type from rhel to Windows 7, no timezone update"
+            "Test is %s positive: Update vm with: %s", positive, update_dict
         )
-        assert not ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            os_type=config.WIN_7
-        )
-
-    @tier1
-    @polarion("RHEVM3-12560")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_5_vm_linux_boot_options(self):
-        """
-        Positive: Update vm OS parameters
-        """
-        testflow.step("Positive: Update vm OS parameters")
         assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            kernel='/kernel-new-path',
-            initrd='/initrd-new-path',
-            cmdline='rd_NO_LUKS'
+            positive=positive, vm=self.vm_name, **update_dict
         )
 
     @tier1
@@ -131,105 +171,6 @@ class UpdateVm(VirtTest):
             positive=True,
             vm=new_name,
             name=self.vm_name)
-
-    @tier2
-    @polarion("RHEVM3-12528")
-    @bz({'1260732': {}})
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_7_vm_affinity_to_migratable_with_host(self):
-        """
-        Positive: Update vm affinity to migratable with host
-        """
-
-        affinity = config.ENUMS['vm_affinity_migratable']
-        testflow.step("Update vm affinity to vm_affinity_migratable with host")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            placement_affinity=affinity,
-            placement_host=config.HOSTS[0]
-        )
-
-    @tier2
-    @polarion("RHEVM3-12531")
-    @bz({'1260732': {}})
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_8_vm_affinity_to_user_migratable_with_host(self):
-        """
-        Positive: Update vm affinity to user migratable with host
-        """
-        affinity = config.ENUMS['vm_affinity_user_migratable']
-        testflow.step("Update vm affinity to user migratable with host")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            placement_affinity=affinity,
-            placement_host=config.HOSTS[0]
-        )
-
-    @tier2
-    @polarion("RHEVM3-12529")
-    @bz({'1260732': {}})
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_9_vm_affinity_to_pinned_with_host(self):
-        """
-        Positive: Update vm affinity to pinned with host
-        """
-        affinity = config.ENUMS['vm_affinity_pinned']
-        testflow.step("Update vm affinity to pinned with host")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            placement_affinity=affinity,
-            placement_host=config.HOSTS[0])
-
-    @tier2
-    @polarion("RHEVM3-12527")
-    @bz({'1260732': {}})
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_10_vm_affinity_to_migratable_to_any_host(self):
-        """
-        Positive: Update vm affinity to migratable on any host
-        """
-        affinity = config.ENUMS['vm_affinity_migratable']
-        testflow.step("Update vm affinity to migratable on any host")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            placement_host=config.VM_ANY_HOST,
-            placement_affinity=affinity
-        )
-
-    @tier2
-    @polarion("RHEVM3-12530")
-    @bz({'1260732': {}})
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_vm_11_affinity_to_user_migratable_to_any_host(self):
-        """
-        Positive: Update vm affinity to user migratable on any host
-        """
-        affinity = config.ENUMS['vm_affinity_user_migratable']
-        testflow.step("Update vm affinity to user migratable on any host")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            placement_host=config.VM_ANY_HOST,
-            placement_affinity=affinity
-        )
-
-    @tier1
-    @polarion("RHEVM3-12533")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_12_vm_description(self):
-        """
-        Positive: Update vm description
-        """
-        testflow.step("Update vm description")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            description="TEST"
-        )
 
     @tier1
     @polarion("RHEVM3-12532")
@@ -264,20 +205,6 @@ class UpdateVm(VirtTest):
         logger.info("Update cluster to: %s", cluster)
 
     @tier1
-    @polarion("RHEVM3-12556")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_14_vm_memory(self):
-        """
-        Update vm memory
-        """
-        testflow.step("Update vm memory")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            memory=config.TWO_GB
-        )
-
-    @tier1
     @polarion("RHEVM3-12555")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_15_vm_guranteed_memory(self):
@@ -302,50 +229,6 @@ class UpdateVm(VirtTest):
             positive=True,
             vm=self.vm_name,
             memory_guaranteed=self.new_mem
-        )
-
-    @tier1
-    @polarion("RHEVM3-12559")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_16_vm_number_of_cpu_sockets(self):
-        """
-        Positive: Update vm number of CPU sockets
-        """
-        testflow.step("Update vm number of CPU sockets")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_socket=2
-        )
-
-    @tier1
-    @polarion("RHEVM3-12558")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_17_vm_number_of_cpu_cores(self):
-        """
-        Positive: Update vm number of CPU cores
-        """
-        testflow.step("Update vm number of CPU cores")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_cores=2
-        )
-
-    @tier1
-    @polarion("RHEVM3-12534")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-    def test_update_18_vm_display_type_to_vnc(self):
-        """
-        Positive: Update vm display type to VNC
-        """
-        display_type = config.ENUMS['display_type_vnc']
-        testflow.step("Update vm display type to VNC")
-        assert ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            display_type=display_type
         )
 
     @tier1
@@ -401,63 +284,4 @@ class UpdateVm(VirtTest):
             positive=True,
             vm=self.vm_name,
             monitors=2
-        )
-
-    @tier1
-    @polarion("RHEVM3-12557")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_21_vm_name_to_existing_one(self):
-        """
-        Negative: Update vm name to existing one
-        """
-        vm_exist_name = 'exist_vm'
-        testflow.step("Add new vm %s", vm_exist_name)
-        if not ll_vms.addVm(
-            True, name=vm_exist_name,
-            cluster=config.CLUSTER_NAME[0],
-            os_type=config.VM_OS_TYPE,
-            type=config.VM_TYPE,
-            display_type=config.VM_DISPLAY_TYPE
-        ):
-            raise errors.VMException("Failed to add vm")
-        testflow.step("Update vm name to existing one")
-        assert not ll_vms.updateVm(
-            True, self.vm_name,
-            name=vm_exist_name
-        )
-        assert ll_vms.safely_remove_vms(
-            [vm_exist_name]
-        ), "Failed to remove vm %s" % vm_exist_name
-
-    @tier1
-    @polarion("RHEVM3-12566")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_22_vm_with_too_many_sockets(self):
-        """
-        Negative: Update vm with too many CPU sockets
-        """
-        testflow.step("Negative: Update vm with too many CPU sockets")
-        assert not ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            cpu_socket=40
-        )
-
-    @tier1
-    @polarion("RHEVM3-12565")
-    @pytest.mark.usefixtures(add_vm_fixture.__name__)
-    def test_update_23_vm_with_guranteed_memory_less_than_memory(self):
-        """
-        Negative: Update vm memory, to be less than guaranteed memory,
-        that equal to 1gb
-        """
-        testflow.step(
-            "Negative: Update vm memory, "
-            "to be less than guaranteed memory,"
-            "that equal to 1 GB"
-        )
-        assert not ll_vms.updateVm(
-            positive=True,
-            vm=self.vm_name,
-            memory=self.half_GB
         )
