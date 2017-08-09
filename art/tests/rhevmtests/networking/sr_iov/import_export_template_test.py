@@ -15,7 +15,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import config as sriov_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.helpers as global_helper
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from fixtures import (  # noqa: F401
     create_template_fixture,
     reset_host_sriov_params,
@@ -190,6 +190,7 @@ class TestSriovImportExport01(NetworkTest):
         )
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM3-14733")
     def test_02_import_vm_with_vf(self):
         """
@@ -221,6 +222,7 @@ class TestSriovImportExport01(NetworkTest):
         )
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM3-10409")
     def test_04_import_template_with_vf(self):
         """

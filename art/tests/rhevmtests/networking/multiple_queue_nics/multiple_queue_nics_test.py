@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import (
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.networking.multiple_queue_nics.config as multiple_queue_conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
     tier2,
     NetworkTest,
@@ -72,6 +72,7 @@ class TestMultipleQueueNics01(NetworkTest):
     }
 
     @tier2
+    @bz({"1479808": {}})
     @polarion("RHEVM3-4310")
     def test_01_multiple_queue_nics_update(self):
         """
@@ -189,6 +190,7 @@ class TestMultipleQueueNics02(NetworkTest):
         )
 
     @tier2
+    @bz({"1478054": {}})
     @polarion("RHEVM3-4313")
     def test_multiple_queue_nics(self):
         """

@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
     external_providers
 )
 from art.test_handler.tools import (
-    jira, polarion
+    bz, jira, polarion
 )
 from art.unittest_lib import (
     NetworkTest, testflow, tier2
@@ -135,6 +135,7 @@ class TestOVNProviderAuthorization(NetworkTest):
         assert ovn_conf.OVN_PROVIDER.test_connection(positive=positive)
 
 
+@bz({"1478054": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     check_running_on_rhevh.__name__,

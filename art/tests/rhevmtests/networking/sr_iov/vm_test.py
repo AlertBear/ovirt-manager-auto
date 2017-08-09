@@ -124,6 +124,7 @@ class TestSriovVm01(NetworkTest):
         )
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM3-10628")
     def test_02_change_vf_num_for_occupied_vf_on_vm(self):
         """
@@ -335,6 +336,7 @@ class TestSriovVm02(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM3-6314")
     def test_01_vm_with_vlan(self):
         """
@@ -470,6 +472,7 @@ class TestSriovVm03(NetworkTest):
         )
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM3-10631")
     def test_03_run_multiple_vnics(self):
         """
@@ -555,6 +558,7 @@ class TestSriovVm04(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM3-14640")
     def test_01_all_networks_allowed_specific_net_negative(self):
         """
@@ -734,6 +738,7 @@ class TestSriovVm05(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM3-6728")
     def test_check_connectivity(self):
         """

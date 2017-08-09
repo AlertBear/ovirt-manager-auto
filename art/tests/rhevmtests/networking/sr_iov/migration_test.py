@@ -18,7 +18,7 @@ import config as sriov_conf
 import helper
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from fixtures import (  # noqa: F401
     modify_ifcfg_nm_controlled,
     reset_host_sriov_params,
@@ -188,6 +188,7 @@ class TestSriovMigration01(NetworkTest):
     vms = [vm_name]
 
     @tier2
+    @bz({"1479484": {}})
     @polarion("RHEVM-17060")
     def test_01_migrate_without_migratable_enables(self):
         """
