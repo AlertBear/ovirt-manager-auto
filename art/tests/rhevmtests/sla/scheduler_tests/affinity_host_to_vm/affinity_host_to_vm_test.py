@@ -1065,8 +1065,6 @@ class TestAffinityModuleExistenceUnderPolicies(SlaTest):
             unit_type=conf.SCH_UNIT_TYPE_WEIGHT
         ).get_id()
         for policy_name in conf.ENGINE_POLICIES:
-            if policy_name == conf.POLICY_IN_CLUSTER_UPGRADE:
-                continue
             for unit_type, affinity_module_id in zip(
                 (conf.SCH_UNIT_TYPE_FILTER, conf.SCH_UNIT_TYPE_WEIGHT),
                 (affinity_host_to_vm_filter_id, affinity_host_to_vm_weight_id)
