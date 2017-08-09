@@ -9,16 +9,12 @@ import rhevmtests.helpers as helpers
 @pytest.fixture(scope='class')
 def enable_hwrng_source_on_cluster(request):
     """
-    1. create hwrng device on host if not exists already
-    2. Enable hwrng device on cluster
+    Enable HWRNG on cluster.
     """
-    vm_name = request.node.cls.vm_name
-    hwrng_exists = True
 
     def fin():
         """
-        1. Update urandom device on cluster
-        2. remove hwrng if created in setup
+        Update urandom device on cluster
         """
         testflow.teardown(
             "Update cluster to use %s device", config.URANDOM_RNG
@@ -26,6 +22,26 @@ def enable_hwrng_source_on_cluster(request):
         assert ll_clusters.updateCluster(
             True, config.CLUSTER_NAME[0], rng_sources=['urandom']
         ), "Failed to update cluster rng device"
+    request.addfinalizer(fin)
+
+    testflow.setup("Update Cluster to use %s device", config.HW_RNG)
+    assert ll_clusters.updateCluster(
+        True, config.CLUSTER_NAME[0], rng_sources=["hwrng", 'urandom']
+    ), "Failed to update cluster rng device"
+
+
+@pytest.fixture(scope='class')
+def add_symbolic_link_on_host(request):
+    """
+    Add sym link on cluster.
+    """
+    vm_name = request.node.cls.vm_name
+    hwrng_exists = True
+
+    def fin():
+        """
+        Remove hwrng if created in setup
+        """
         if not hwrng_exists:
             testflow.teardown("remove soft link %s", config.HW_RNG)
             assert host_resource.fs.remove(config.DEST_HWRNG), (
@@ -39,8 +55,4 @@ def enable_hwrng_source_on_cluster(request):
         cmd = "ln -s /dev/zero %s" % config.DEST_HWRNG
         testflow.setup("Create soft link for %s", config.HW_RNG)
         rc, _, _ = host_resource.run_command(shlex.split(cmd))
-        assert not rc, "failed to run %s on host %s" % (cmd, config.HOSTS[0])
-    testflow.setup("Update Cluster to use %s device", config.HW_RNG)
-    assert ll_clusters.updateCluster(
-        True, config.CLUSTER_NAME[0], rng_sources=["hwrng", 'urandom']
-    ), "Failed to update cluster rng device"
+        assert not rc, "failed to run %s on host %s" % (cmd, host_resource.ip)

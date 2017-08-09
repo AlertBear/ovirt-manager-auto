@@ -15,7 +15,7 @@ from art.test_handler.tools import polarion
 from rhevmtests.virt.fixtures import (
     start_vms, update_vm
 )
-from rhevmtests.virt.rng.fixtures import enable_hwrng_source_on_cluster
+import fixtures as hwrng_fixtures
 
 
 class TestUrandom(common.VirtTest):
@@ -58,9 +58,10 @@ class TestHwrng(common.VirtTest):
     @tier2
     @polarion("RHEVM3-6485")
     @pytest.mark.usefixtures(
+        hwrng_fixtures.enable_hwrng_source_on_cluster.__name__,
         update_vm.__name__,
         start_vms.__name__,
-        enable_hwrng_source_on_cluster.__name__
+        hwrng_fixtures.add_symbolic_link_on_host.__name__
     )
     def test_hwrng(self):
         """
