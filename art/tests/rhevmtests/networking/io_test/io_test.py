@@ -14,7 +14,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as io_conf
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     NetworkTest,
     testflow,
@@ -128,7 +128,11 @@ class TestIOTest01(NetworkTest):
     @pytest.mark.parametrize(
         ("test_params", "positive"),
         [
-            pytest.param(*test_1_valid_names, marks=(polarion("RHEVM3-4381"))),
+            pytest.param(
+                *test_1_valid_names, marks=(
+                    (polarion("RHEVM3-4381"), bz({"1458407": {}}))
+                    )
+                ),
             pytest.param(
                 *test_2_invalid_names, marks=(polarion("RHEVM3-14742"))
             ),
@@ -379,10 +383,10 @@ class TestIOTest03(NetworkTest):
         }, True
     ]
 
-    # Test 1 params - edit network name to valid name special characters
+    # Test 2 params - edit network name to valid name special characters
     test_2_edit_name_valid_special_characters = [
         {
-            "name": [valid_name_1]
+            "name": [valid_name_2]
         }, True
     ]
 
@@ -419,11 +423,13 @@ class TestIOTest03(NetworkTest):
         ("test_params", "positive"),
         [
             pytest.param(
-                *test_1_edit_name_valid, marks=(polarion("RHEVM-21967"))
+                *test_1_edit_name_valid, marks=(
+                    (polarion("RHEVM-21967"), bz({"1458407": {}}))
+                )
             ),
             pytest.param(
                 *test_2_edit_name_valid_special_characters, marks=(
-                    polarion("RHEVM-21968")
+                    (polarion("RHEVM-21968"), bz({"1458407": {}}))
                 )
             ),
             pytest.param(

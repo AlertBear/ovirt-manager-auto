@@ -55,15 +55,12 @@ class TestLongNetworkName01(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
+    @bz({"1458407": {}})
     @pytest.mark.parametrize(
         "network",
         [
             pytest.param(old_network_name, marks=(polarion("RHEVM-21966"))),
-            pytest.param(
-                long_network_name, marks=(
-                    (polarion("RHEVM-21970"), bz({"1477569": {}}))
-                )
-            )
+            pytest.param(long_network_name, marks=(polarion("RHEVM-21970")))
         ],
         ids=[
             "Create_network_with_old_restriction",
