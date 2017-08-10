@@ -76,9 +76,11 @@ class BaseStorageVMLeaseTest(StorageTest):
             assert storage_helpers.create_vm_or_clone(**vm_args), (
                 "Failed to create VM %s" % vm_name
             )
+        wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
 
     def start_vms(self, set_placement_host_value=True, wait_for_ip=True):
         for vm_name in self.vm_names:
+            wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
             testflow.step("Start VM %s", vm_name)
             assert ll_vms.startVm(
                 True, vm_name, config.VM_UP, wait_for_ip=wait_for_ip
@@ -386,6 +388,7 @@ class TestCase18184(BaseStorageVmLeaseTestWithFixtures):
     storages = set([config.STORAGE_TYPE_NFS])
     vm_lease = False
 
+    @bz({'1484053': {}})
     @polarion("RHEVM3-18184")
     @tier3
     def test_create_lease_while_vm_up(self):
@@ -414,6 +417,7 @@ class TestCase18185(BaseStorageVmLeaseTestWithFixtures):
     __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
+    @bz({'1484053': {}})
     @polarion("RHEVM3-18185")
     @tier3
     def test_ha_remove_lease_while_vm_up(self):
@@ -491,6 +495,7 @@ class TestCase17625(BaseStorageVmLeaseTestWithFixtures):
     __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
+    @bz({'1484053': {}})
     @polarion("RHEVM3-17625")
     @tier4
     def test_ha_failover_multiple_hosts_unreachable(self):
@@ -748,6 +753,7 @@ class TestCase18187(BaseStorageVmLeaseTestWithFixtures):
     __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
+    @bz({'1484053': {}})
     @polarion("RHEVM3-18187")
     @tier3
     def test_take_snapshot_vm_with_lease(self):
@@ -840,6 +846,7 @@ class TestCase18162(TestCaseBaseSnapshot):
     __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
+    @bz({'1484863': {}})
     @polarion("RHEVM3-18162")
     @tier3
     def test_ha_failover_with_preview_snapshot(self):
@@ -860,6 +867,7 @@ class TestCase17641(TestCaseBaseSnapshot):
     storages = set([config.STORAGE_TYPE_NFS])
     live_snapshot = True
 
+    @bz({'1484863': {}})
     @polarion("RHEVM3-17641")
     @tier3
     def test_ha_failover_with_live_preview_snapshot(self):
@@ -1058,6 +1066,7 @@ class TestCase18188(BaseStorageVmLeaseTestWithFixtures):
     storages = set([config.STORAGE_TYPE_NFS])
     ssh_vm = False
 
+    @bz({'1484053': {}})
     @polarion("RHEVM3-18188")
     @tier3
     def test_ha_failover_diskless(self):
@@ -1101,7 +1110,7 @@ class TestCase18216(BaseStorageVMLeaseTest):
     __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_NFS])
 
-    @bz({'1459072': {}})
+    @bz({'1481691': {}})
     @polarion("RHEVM3-18216")
     @tier3
     def test_ha_failover_from_template_with_lease(self):
