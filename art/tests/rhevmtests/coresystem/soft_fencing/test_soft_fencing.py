@@ -12,7 +12,9 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
     wait_for_hosts_states, remove_host, add_host, is_host_up,
     activate_host, select_host_as_spm, wait_for_spm, fence_host
 )
-from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
+from art.rhevm_api.tests_lib.low_level.jobs import (
+    check_recent_job, wait_for_jobs
+)
 from art.rhevm_api.tests_lib.low_level.vms import waitForVMState
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
@@ -103,6 +105,7 @@ def _check_host_state(host_num, service, job_status):
     ):
         assert config.ENGINE.db.psql(sql, 'SELECT *')
     wait_for_hosts_states(True, config.HOSTS[host_num])
+    wait_for_jobs()
 
     testflow.step("Check recent jobs for job %s", config.job_description)
     assert check_recent_job(
