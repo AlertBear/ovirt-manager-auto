@@ -114,6 +114,7 @@ class TestMaxMemory(VirtTest):
             vm=self.vm_name,
             **upd_maxmem
         )
+        global_helper.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
         assert ll_vms.restartVm(
             vm=self.vm_name,
             wait_for_status='up'
