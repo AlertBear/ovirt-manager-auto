@@ -26,3 +26,4 @@ uritemplate
 ovirt-engine-sdk-python
 requests
 pytest-jira
+idna == 2.5
