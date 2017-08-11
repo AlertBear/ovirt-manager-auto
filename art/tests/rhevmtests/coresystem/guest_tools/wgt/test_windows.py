@@ -43,8 +43,7 @@ def get_latest_gt_iso_version_from_latest_repo_and_change_variable():
 
 
 @pytest.fixture(scope='module', autouse=True)  # noqa: F811
-def module_setup(request,
-                 register_windows_templates):
+def module_setup(request, register_windows_templates):
     def fin_cluster():
         testflow.teardown(
             "Set %s cluster CPU level on cluster %s",
@@ -244,6 +243,12 @@ class Windows(TestCase):
         testflow.step("Check if guest agent reports UTC offset")
         assert len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
 
+    def check_function_continuity(self):
+        """ Check that GA works after migration """
+        testflow.step("Migrate VM %s", self.vm_name)
+        assert ll_vms.migrateVm(True, self.vm_name)
+        self.check_vm_ip_fqdn_info()
+
 
 @tier3
 class TestWin2008R2_CI_64b(Windows):
@@ -276,6 +281,11 @@ class TestWin2008R2_CI_64b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22236")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
 
 
 @tier3
@@ -310,6 +320,11 @@ class TestWin2008R2_CI_core_64b(Windows):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22238")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier2
 class TestWin2012R2_CI_64b(Windows):
@@ -342,6 +357,11 @@ class TestWin2012R2_CI_64b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22245")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
 
 
 @tier3
@@ -376,6 +396,11 @@ class TestWin2012R2_CI_core_64b(Windows):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22244")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier3
 class TestWin2012_CI_64b(Windows):
@@ -408,6 +433,11 @@ class TestWin2012_CI_64b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22239")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
 
 
 @tier3
@@ -442,6 +472,11 @@ class TestWin2012_CI_core_64b(Windows):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22240")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier3
 class TestWin7_CI_32b(Windows):
@@ -474,6 +509,11 @@ class TestWin7_CI_32b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22235")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
 
 
 @tier2
@@ -508,6 +548,11 @@ class TestWin7_CI_64b(Windows):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22241")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier3
 class TestWin8_1_CI_32b(Windows):
@@ -540,6 +585,11 @@ class TestWin8_1_CI_32b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22243")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
 
 
 @tier2
@@ -574,6 +624,11 @@ class TestWin8_1_CI_64b(Windows):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22237")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier3
 class TestWin8_CI_32b(Windows):
@@ -607,6 +662,11 @@ class TestWin8_CI_32b(Windows):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22242")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier3
 class TestWin8_CI_64b(Windows):
@@ -639,6 +699,11 @@ class TestWin8_CI_64b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22234")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
 
 
 @tier3
@@ -674,6 +739,11 @@ class TestWindows10_32b(Windows):
         """ Check guest timezone reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22248")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier2
 class TestWindows10_64b(Windows):
@@ -707,6 +777,11 @@ class TestWindows10_64b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22249")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
 
 
 @tier3
@@ -742,6 +817,11 @@ class TestWindows2016_core_64b(Windows):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
 
+    @polarion("RHEVM-22246")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
+
 
 @tier2
 class TestWindows2016_64b(Windows):
@@ -775,3 +855,8 @@ class TestWindows2016_64b(Windows):
     def test_guest_timezone(self):
         """ Check guest timezone is reported """
         self.check_guest_timezone()
+
+    @polarion("RHEVM-22247")
+    def test_function_continuity(self):
+        """ Check if GA data is reported after migration """
+        self.check_function_continuity()
