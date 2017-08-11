@@ -26,7 +26,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from fixtures import (
     base_setup_fixture, migrate_vm_for_test,
-    set_cpu_toplogy, update_vm_to_ha
+    set_cpu_toplogy, update_vm_to_ha, create_vm_for_load
 )
 from rhevmtests.sla.fixtures import (  # noqa: F401
     update_cluster_to_default_parameters,
@@ -142,7 +142,10 @@ class TestCPUHotPlug(VirtTest):
     @tier2
     @polarion("RHEVM3-9637")
     @pytest.mark.args_marker(hot_plug_cpu_before=False)
-    @pytest.mark.usefixtures(migrate_vm_for_test.__name__)
+    @pytest.mark.usefixtures(
+        create_vm_for_load.__name__,
+        migrate_vm_for_test.__name__
+    )
     def test_negative_hotplug_during_migration(self):
         """
         Test hot plug while migrating VM
@@ -156,7 +159,10 @@ class TestCPUHotPlug(VirtTest):
 
     @tier2
     @polarion("RHEVM-18361")
-    @pytest.mark.usefixtures(migrate_vm_for_test.__name__)
+    @pytest.mark.usefixtures(
+        create_vm_for_load.__name__,
+        migrate_vm_for_test.__name__,
+    )
     @pytest.mark.args_marker(hot_plug_cpu_before=True)
     def test_negative_hotunplug_during_migration(self):
         """
