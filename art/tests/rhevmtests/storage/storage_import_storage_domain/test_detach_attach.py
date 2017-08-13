@@ -697,7 +697,6 @@ class BaseTestCase5192(BasicEnvironment):
     vm_args = {'clone_from_template': False}
 
     @polarion("RHEVM3-" + polarion_test_case)
-    @bz({'1446878': {}})
     @tier3
     def test_attach_from_older_version(self):
         """
@@ -723,6 +722,7 @@ class BaseTestCase5192(BasicEnvironment):
         ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
 
+@bz({'1467061': {}})
 class TestCase5192_3_6(BaseTestCase5192):
     """
     Attach storage domain from 3.6 version into 4.1 data center
