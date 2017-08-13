@@ -1142,7 +1142,7 @@ class TestCase4925(DefaultEnvironment):
             ll_vms.move_vm_disk(
                 self.vm_name, disk.get_alias(), self.storage_domain_1,
             )
-            storage_helpers.wait_for_disks_and_snapshots(self.vm_name)
+            storage_helpers.wait_for_disks_and_snapshots([self.vm_name])
 
             logger.info("disk %s moved", disk.get_alias())
             vm_disk = ll_disks.getVmDisk(self.vm_name, disk.get_alias())
