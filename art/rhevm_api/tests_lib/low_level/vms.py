@@ -843,6 +843,7 @@ def updateVm(positive, vm, **kwargs):
         rng_device (bool): Enable rng device
         rng_bytes (int): Bytes per period
         rng_period (int): Period duration (ms)
+        custom_properties (str): custom properties set to the vm
 
     Returns:
         bool: True, if update success, otherwise False
@@ -1089,6 +1090,7 @@ def restartVm(
     )
 
 
+@ll_general.generate_logs(step=True)
 def startVm(
     positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
     wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, placement_host=None,
@@ -2171,6 +2173,7 @@ def shutdownVm(positive, vm, async='true'):
     return changeVMStatus(positive, vm, 'shutdown', 'down', async=async)
 
 
+@ll_general.generate_logs(step=True)
 def migrateVm(
         positive,
         vm,

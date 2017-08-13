@@ -235,5 +235,7 @@ CPU_HOTPLUG_ACTION = 'cpu_hotplug'
 SNAPSHOT_MEM_ACTION = 'snapshot_memory'
 SNAPSHOT_NO_MEM_ACTION = 'snapshot_without_memory'
 CLONE_ACTION = 'clone'
+START_ACTION = 'start'
+STOP_ACTION = 'stop'
 
 CLONE_VM_NAME = "clone_vm_test_vm_actions"

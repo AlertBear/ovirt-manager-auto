@@ -1,7 +1,6 @@
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.virt.config as config
 import rhevmtests.virt.helper as virt_helper
-from art.unittest_lib import testflow
 from rhevmtests.virt.hot_plug_unplug.cpu.helper import (
     hot_plug_unplug_cpu
 )
@@ -27,7 +26,7 @@ def vm_life_cycle_action(vm_name, action_name, func_args=None):
 
     migration_kwargs = {
         "positive": True,
-        "vm_name": vm_name
+        "vm": vm_name
     }
 
     memory_hotplug_kwargs = {
@@ -60,40 +59,38 @@ def vm_life_cycle_action(vm_name, action_name, func_args=None):
         "clone_vm_name": config.CLONE_VM_NAME
     }
 
-    if action_name == config.MIGRATION_ACTION:
-        testflow.step("Migrate vm %s", vm_name)
-        func_name = ll_vms.migrateVm
-        func_kwargs = migration_kwargs if func_args is None else func_args
+    start_vm_args = {
+        "positive": True,
+        "vm": vm_name,
+        "wait_for_status": config.VM_UP,
+        "wait_for_ip": False,
+    }
+    stop_vm_args = {
+        "vms_list": [vm_name]
+    }
 
-    if action_name == config.MEMORY_HOTPLUG_ACTION:
-        testflow.step("Memory hotplug on vm %s", vm_name)
-        func_name = hotplug_memory_check
+    actions_info = {
+        config.MIGRATION_ACTION: (ll_vms.migrateVm, migration_kwargs),
+        config.MEMORY_HOTPLUG_ACTION: (
+            hotplug_memory_check, memory_hotplug_kwargs
+        ),
+        config.CPU_HOTPLUG_ACTION: (hot_plug_unplug_cpu, cpu_hotplug_kwargs),
+        config.SNAPSHOT_MEM_ACTION: (
+            virt_helper.snapshot_vm, snapshot_with_memory
+        ),
+        config.SNAPSHOT_NO_MEM_ACTION: (
+            virt_helper.snapshot_vm, snapshot_without_memory
+        ),
+        config.CLONE_ACTION: (virt_helper.clone_vm, clone_vm_args),
+        config.START_ACTION: (ll_vms.startVm, start_vm_args),
+        config.STOP_ACTION: (ll_vms.stop_vms_safely, stop_vm_args)
+
+    }
+
+    if action_name in actions_info.keys():
+        func_name = actions_info[action_name][0]
         func_kwargs = (
-            memory_hotplug_kwargs if func_args is None else func_args
+            actions_info[action_name][1] if func_args is None else func_args
         )
-
-    if action_name == config.CPU_HOTPLUG_ACTION:
-        testflow.step("CPU hotplug on vm %s", vm_name)
-        func_name = hot_plug_unplug_cpu
-        func_kwargs = cpu_hotplug_kwargs if func_args is None else func_args
-
-    if action_name == config.SNAPSHOT_MEM_ACTION:
-        testflow.step("Snapshot with memory on vm %s", vm_name)
-        func_name = virt_helper.snapshot_vm
-        func_kwargs = (
-            snapshot_with_memory if func_args is None else func_args
-        )
-
-    if action_name == config.SNAPSHOT_NO_MEM_ACTION:
-        testflow.step("Snapshot without memory on vm %s", vm_name)
-        func_name = virt_helper.snapshot_vm
-        func_kwargs = (
-            snapshot_without_memory if func_args is None else func_args
-        )
-
-    if action_name == config.CLONE_ACTION:
-        testflow.step("Clone vm %s", vm_name)
-        func_name = virt_helper.clone_vm
-        func_kwargs = clone_vm_args if func_args is None else func_args
 
     return func_name(**func_kwargs)
