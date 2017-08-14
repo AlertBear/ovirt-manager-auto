@@ -127,12 +127,12 @@ class TestSpecificTable(VacuumTest):
         """
         Test running vacuum full for specific table
         """
-        rc, _, err = self.run_engine_vacuum(
+        rc, _, _ = self.run_engine_vacuum(
             full=True, table=config.VM_DYNAMIC_TABLE
         )
 
         testflow.step("Check vacuum run successfully.")
-        assert not rc and not err
+        assert not rc
 
     @polarion("RHEVM-18938")
     def test_run_table(self):
