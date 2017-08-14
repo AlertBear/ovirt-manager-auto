@@ -1326,7 +1326,7 @@ class TestSanity17(NetworkTest):
     num_of_vfs = 1
 
     # update_vnic_profiles
-    vnics_profiles = {
+    update_vnics_profiles = {
         net_1: {
             "pass_through": True,
             "network_filter": "None"
@@ -1355,6 +1355,7 @@ class TestSanity17(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier1
+    @bz({"1479484": {}})
     @polarion("RHEVM-19654")
     def test_01_run_vm_with_passthrough_vnic_profile_and_one_vf(self):
         """

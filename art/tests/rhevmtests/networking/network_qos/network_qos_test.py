@@ -7,8 +7,6 @@ Testing network VM QoS feature.
 Create, update, remove and migration tests will be done for Network QoS feature
 """
 
-import logging
-
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
@@ -17,17 +15,14 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as qos_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier2,
-)
+from art.test_handler.tools import polarion, bz
+from art.unittest_lib import tier2
 from art.unittest_lib import NetworkTest, testflow
 from fixtures import add_qos_to_dc_and_qos_profile_to_nic
 from rhevmtests.fixtures import start_vm
 
-logger = logging.getLogger("Network_VNIC_QoS_Tests")
 
-
+@bz({"1481198": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     add_qos_to_dc_and_qos_profile_to_nic.__name__,
@@ -37,7 +32,6 @@ class TestNetQOSCase01(NetworkTest):
     """
     Add new network QOS
     """
-    __test__ = True
     qos_name_1 = qos_conf.QOS_NAME[1][0]
     qos_name_2 = qos_conf.QOS_NAME[1][1]
     new_qos_name = "network_qos_new_qos"

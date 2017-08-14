@@ -18,7 +18,7 @@ import helper
 import rhevmtests.helpers as global_helper
 from rhevmtests.networking import config as conf, helper as network_helper
 from art.core_api import apis_utils
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
     NetworkTest,
@@ -32,6 +32,7 @@ from fixtures import (
 )
 
 
+@bz({"1481217": {}})
 @pytest.mark.usefixtures(port_mirroring_prepare_setup.__name__)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS,

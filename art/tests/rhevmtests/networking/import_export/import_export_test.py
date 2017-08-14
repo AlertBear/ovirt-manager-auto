@@ -20,8 +20,6 @@ from art.unittest_lib import (
 from art.unittest_lib import NetworkTest, testflow
 from fixtures import import_vms, import_templates, remove_networks
 
-pytestmark = bz({"1476191": {}})
-
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(import_vms.__name__)
@@ -173,6 +171,7 @@ class TestImportExportCase03(NetworkTest):
         )
 
     @tier2
+    @bz({"1478007": {}})
     @polarion("RHEVM3-3761")
     def test_03_start_vm(self):
         """
