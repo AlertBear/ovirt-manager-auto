@@ -301,8 +301,8 @@ SD_LIST += (
 )
 ###############################################################################
 # gluster replica
-GLUSTER_REPLICA_PATH = GE.get('gluster-replica', {}).get('servers')
-GLUSTER_REPLICA_SERVERS = GE.get('gluster-replica', {}).get('path')
+GLUSTER_REPLICA_PATH = GE.get('gluster-replica', {}).get('path')
+GLUSTER_REPLICA_SERVERS = GE.get('gluster-replica', {}).get('servers')
 ###############################################################################
 HOSTS_USER = 'root'
 
