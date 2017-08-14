@@ -93,7 +93,7 @@ def add_disks_different_sd(request):
         )
 
 
-@pytest.fixture()
+@pytest.fixture(scope='class')
 def add_two_vms_from_template(request):
     """
     Create two vms, one thin and the other cloned, from a template
@@ -101,7 +101,7 @@ def add_two_vms_from_template(request):
 
     self = request.node.cls
 
-    self.vm_names = []
+    self.vm_names = list()
     self.vm_thin = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_VM
     )

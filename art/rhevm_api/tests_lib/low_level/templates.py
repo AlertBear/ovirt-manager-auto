@@ -32,6 +32,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     DiskNotFound,
     prepare_watchdog_obj,
     createCustomPropertiesFromArg,
+    getVmDisks,
 )
 from art.test_handler.settings import ART_CONFIG
 from utilities.jobs import Job, JobsSet
@@ -308,6 +309,8 @@ def createTemplate(
         bool: True if template was added properly, False otherwise
     """
     name = kwargs.get("name")
+    storage_domain = kwargs.get("storagedomain")
+    vm_name = kwargs.get("vm")
     copy_permissions = kwargs.get("copy_permissions")
     log_info, log_error = ll_general.get_log_msg(
         log_action="Create", obj_type="template", obj_name=name,
@@ -323,6 +326,18 @@ def createTemplate(
         kwargs['version'] = data_st.TemplateVersion(**template_version_params)
     template = _prepareTemplateObject(**kwargs)
     disks = kwargs.pop('disks', None)
+    if disks is None:
+        vm_disks = getVmDisks(vm_name)
+        disks = dict()
+        for disk in vm_disks:
+            disk_id = disk.get_id()
+            disk_properties = {
+                'alias': disk.get_alias(),
+                'format': disk.get_format(),
+                'sparse': disk.get_sparse(),
+                'storagedomain': storage_domain,
+            }
+            disks[disk_id] = disk_properties
     if disks:
         disk_array = data_st.Disks()
         for key, properties in disks.items():

@@ -471,6 +471,7 @@ class TestCase11684(TestCase):
     __test__ = False
     live_snapshot = None
     polarion_test_case = '11684'
+    vm_names = list()
 
     @polarion("RHEVM3-11684")
     @tier3

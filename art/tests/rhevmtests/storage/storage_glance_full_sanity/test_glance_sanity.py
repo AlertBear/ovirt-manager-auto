@@ -131,15 +131,21 @@ class BasicEnvironment(BaseTestCase):
         assert ll_vms.cloneVmFromTemplate(**self.clone_vm_args), (
             'Unable to create VM %s for test' % vm_name
         )
-        ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
-        self.add_nic_to_vm(vm_name)
-        ll_vms.wait_for_vm_states(vm_name, [config.VM_DOWN])
-        if start_vm:
-            assert ll_vms.startVm(True, vm_name, config.VM_UP, True), (
-                "Unable to start VM %s cloned from template %s" % (
-                    vm_name, template_name
+        if wait:
+            # Start VM will happen only if start_vm == True and also when
+            # wait == True
+            ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
+            self.add_nic_to_vm(vm_name)
+            ll_vms.wait_for_vm_states(vm_name, [config.VM_DOWN])
+            if start_vm:
+                assert ll_vms.startVm(True, vm_name, config.VM_UP, True), (
+                    "Unable to start VM %s cloned from template %s" % (
+                        vm_name, template_name
+                    )
                 )
-            )
+                assert ll_vms.stop_vms_safely([vm_name]), (
+                    "Failed to power off VM %s" % vm_name
+                )
 
 
 class TestCase5734(BasicEnvironment):
@@ -215,10 +221,14 @@ class TestCase5735(BasicEnvironment):
         for template_name, allocation_policy in zip(
                 self.templates_names, [True, False]
         ):
+            disk_name = storage_helpers.create_unique_object_name(
+                self.__name__, config.OBJECT_TYPE_DISK
+            )
             self.basic_flow_import_image_as_template(
                 template_name, allocation_policy, self.storage_domain,
-                self.disks_to_remove[0]
+                disk_name
             )
+            self.disks_to_remove.append(disk_name)
         for template_name, vm_name in zip(self.templates_names, self.vm_names):
             self.basic_flow_clone_vm_from_template(
                 vm_name, template_name, self.storage_domain
@@ -284,6 +294,9 @@ class TestCase5738(BasicEnvironment):
             True, self.disks_to_remove[1], self.vm_names[0]
         ), "Failed to attach disk %s to vm %s" % (
             self.disks_to_remove[1], self.vm_names[0]
+        )
+        assert ll_templates.remove_template(True, self.templates_names[0]), (
+            "Failed to remove template %s" % self.templates_names[0]
         )
         ll_vms.startVm(True, self.vm_names[0], config.VM_UP, True)
         status, output = storage_helpers.perform_dd_to_disk(
@@ -356,6 +369,7 @@ class TestCase5741(BasicEnvironment):
                     "Template %s should not be in locked state while"
                     "creating a VM from it" % self.templates_names[0]
                 )
+        ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
 
 
 class TestCase5743(BasicEnvironment):
@@ -450,6 +464,7 @@ class TestCase5683(BaseTestCase):
 
     @polarion("RHEVM3-5683")
     @tier2
+    @bz({'1484303': {}})
     def test_export_template_disk(self):
         """
         Export template disk to glance domain

@@ -187,9 +187,10 @@ def perform_dd_to_disk(
     """
     if not vm_executor:
         vm_executor = get_vm_executor(vm_name)
-    boot_device = hl_vms.get_boot_device_logical_name(vm_name)
+    boot_disk = ll_vms.get_vm_bootable_disk(vm_name)
+    boot_device = get_logical_name_by_vdsm_client(vm_name, boot_disk)
 
-    disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
+    disk_logical_volume_name = get_logical_name_by_vdsm_client(
         vm_name, disk_alias
     )
     assert disk_logical_volume_name, (
