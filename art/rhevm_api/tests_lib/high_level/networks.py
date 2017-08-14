@@ -69,12 +69,14 @@ def remove_networks(positive, networks, data_center=None):
     Returns:
         bool: True if remove networks succeeded, otherwise False
     """
+    results = list()
     for net in networks:
-        if not ll_networks.remove_network(
-            positive=positive, network=net, data_center=data_center
-        ):
-            return False
-    return True
+        results.append(
+            ll_networks.remove_network(
+                positive=positive, network=net, data_center=data_center
+            )
+        )
+    return all(results)
 
 
 @ll_general.generate_logs(step=True)
