@@ -10,20 +10,15 @@ from rhevmtests.networking import (
     config as network_conf,
     helper as network_helper
 )
-import rhevmtests.networking.config as config
-
-# Host migration participants index list
-MIGRATION_HOSTS = [0, 1]
 
 # VM settings
 VM_NAME = network_conf.VM_0
-VM_ADDITIONAL_VNIC = "migration_network_vnic"
-VM_ORIGIN_HOSTER_INDEX = 1
+VM_MIG_VNIC = "migration_network_vnic"
 
-# TCPDump number of migration PCAPs to capture
-TCPDUMP_PACKETS_COUNT = 500
+# Number of TCPDump packets to receive during test
+TCPDUMP_PCAP_COUNT = 500
 
-# TCPDump Running timeout (in minutes)
+# TCPDump running timeout (in minutes)
 TCPDUMP_TIMEOUT = 4
 
 # Total timeout (in minutes) for all migration tests
@@ -32,14 +27,14 @@ DEFAULT_MIGRATION_TIMEOUT = 4
 # Total timeout (in minutes) for required NIC down PCAP test
 REQUIRED_NIC_MIGRATION_TIMEOUT = 3
 
-# Total ICMP packets to send when testing destination migration IP connection
-ICMP_DST_IP_COUNT = 1
+# Total ping packets to send while testing migration to destination IP
+ICMP_PACKETS_DURING_MIGRATION = 1
 
 # VLAN ID's that are configured on the switch (not arbitrary)
 VLAN_CASE_2 = network_conf.REAL_VLANS[0] if network_conf.REAL_VLANS else None
 VLAN_CASE_8 = network_conf.REAL_VLANS[1] if network_conf.REAL_VLANS else None
 
-# BONDs names
+# BOND names
 BOND_CASE_6 = "bond6"
 BOND_CASE_7 = "bond7"
 BOND_CASE_8 = "bond8"
@@ -47,22 +42,17 @@ BOND_CASE_8 = "bond8"
 # BOND mode
 BOND_MODE = 4
 
-# Host setup Network settings
+# Host setup network settings
 NETWORK_NAMES = ["mig_net_%s" % (i + 1) for i in range(2)]
 
 # Two random IP addresses
 IPS = network_helper.create_random_ips(mask=24)
 IPSV6 = network_helper.create_random_ips(mask=24, ip_version=6)
 
+# Networks
 NETS = global_helper.generate_object_names(
     num_of_cases=11, num_of_objects=2, prefix="mig"
 )
-
-# clean_host_interfaces_fixture_function cleanup dict
-CLEANUP_HOSTS_SETUP_DICT = {
-    0: {},
-    1: {}
-}
 
 # Networks used in tests
 SETUP_NETWORKS_DICT = {
@@ -117,7 +107,7 @@ HOSTS_NETS_TWO_NIC_DICT = {
             "ip": {
                 "1": {
                     "address": IPS[0],
-                    "netmask": config.NETMASK
+                    "netmask": network_conf.NETMASK
                 },
             }
         },
@@ -133,7 +123,7 @@ HOSTS_NETS_TWO_NIC_DICT = {
             "ip": {
                 "1": {
                     "address": IPS[1],
-                    "netmask": config.NETMASK
+                    "netmask": network_conf.NETMASK
                 },
             }
         },
@@ -144,7 +134,6 @@ HOSTS_NETS_TWO_NIC_DICT = {
     }
 }
 
-
 # Host network setup template for two hosts with one NIC
 HOSTS_NETS_ONE_NIC_DICT = {
     0: {
@@ -154,7 +143,7 @@ HOSTS_NETS_ONE_NIC_DICT = {
             "ip": {
                 "1": {
                     "address": IPS[0],
-                    "netmask": config.NETMASK
+                    "netmask": network_conf.NETMASK
                 },
             }
         }
@@ -166,7 +155,7 @@ HOSTS_NETS_ONE_NIC_DICT = {
             "ip": {
                 "1": {
                     "address": IPS[1],
-                    "netmask": config.NETMASK
+                    "netmask": network_conf.NETMASK
                 },
             }
         }
@@ -184,7 +173,7 @@ HOSTS_NETS_NIC_DICT_WITH_BONDS = {
             "ip": {
                 "1": {
                     "address": IPS[0],
-                    "netmask": config.NETMASK
+                    "netmask": network_conf.NETMASK
                 }
             }
         }
@@ -198,7 +187,7 @@ HOSTS_NETS_NIC_DICT_WITH_BONDS = {
             "ip": {
                 "1": {
                     "address": IPS[1],
-                    "netmask": config.NETMASK
+                    "netmask": network_conf.NETMASK
                 }
             }
         }
@@ -214,7 +203,7 @@ HOST_NET_NIC_DICT = {
             "ip": {
                 "1": {
                     "address": IPS[0],
-                    "netmask": config.NETMASK
+                    "netmask": network_conf.NETMASK
                 },
             }
         }

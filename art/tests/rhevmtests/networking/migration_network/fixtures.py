@@ -6,7 +6,7 @@ Migration Network fixtures
 """
 import pytest
 
-import rhevmtests.config as global_config
+import rhevmtests.networking.config as net_config
 from art.rhevm_api.tests_lib.high_level import (
     hosts as hl_hosts,
     networks as hl_networks
@@ -16,25 +16,22 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
 def deactivate_hosts(request):
     """
-    Deactivate hosts
+    Deactivate hosts (except HOST-0 and HOST-1)
     """
-    NetworkFixtures()
-    hosts = global_config.HOSTS[2:]
+    hosts = net_config.HOSTS[2:]
 
     def fin():
         """
         Activate hosts
         """
-        results_list = [
-            hl_hosts.activate_host_if_not_up(host=host) for host in hosts
-        ]
-        assert all(results_list)
+        assert all(
+            [hl_hosts.activate_host_if_not_up(host=host) for host in hosts]
+        )
     request.addfinalizer(fin)
 
     for host in hosts:
@@ -46,13 +43,12 @@ def update_network_usages(request):
     """
     Update network usages
     """
-    mig = NetworkFixtures()
-    net_usages_dict = request.getfixturevalue("update_network_usages_param")
+    net_usages_dict = request.getfixturevalue("update_network_usages_params")
 
     for net, net_usages in net_usages_dict.items():
         testflow.setup("Updating network: %s usages: %s", net, net_usages)
         assert ll_networks.update_cluster_network(
-            positive=True, cluster=mig.cluster_0, network=net,
+            positive=True, cluster=net_config.CL_0, network=net,
             usages=net_usages
         )
 
@@ -62,7 +58,6 @@ def remove_networks(request):
     """
     Remove networks by setup network host dict from test case
     """
-    mig = NetworkFixtures()
     network_dicts = request.getfixturevalue("hosts_nets_nic_dict")
 
     def fin():
@@ -76,25 +71,23 @@ def remove_networks(request):
 
         assert hl_networks.remove_networks(
             positive=True, networks=list(nets_to_remove),
-            data_center=mig.dc_0
+            data_center=net_config.DC_0
         )
     request.addfinalizer(fin)
 
 
 @pytest.fixture()
-def add_vnic_to_vm(request):
+def add_vnic_to_vms(request):
     """
     Add vNIC(s) with properties to VM(s)
     """
-    NetworkFixtures()
-    add_vnic_dict = request.getfixturevalue("add_vnic_to_vm_param")
+    add_vnic_dict = request.getfixturevalue("add_vnic_to_vms_params")
 
     def fin():
         """
         Remove vNIC(s) from VM(s)
         """
-        results_list = list()
-
+        results_list = []
         for vm, props_dict in add_vnic_dict.items():
             vnic = props_dict.get("name")
             text = "vNIC: {vnic} from VM: {vm}".format(vnic=vnic, vm=vm)
