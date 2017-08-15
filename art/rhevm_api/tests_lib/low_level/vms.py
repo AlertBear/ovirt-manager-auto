@@ -211,11 +211,10 @@ def _prepare_vm_object(**kwargs):
         instance of VM: vm object
     """
     add = kwargs.pop("add", False)
+    vm_name = kwargs.pop("name", None)
+    uuid = kwargs.pop("uuid", None)
     description = kwargs.pop("description", None)
-    if description is None or description == "":
-        vm = data_st.Vm(name=kwargs.pop("name", None))
-    else:
-        vm = data_st.Vm(name=kwargs.pop("name", None), description=description)
+    vm = data_st.Vm(name=vm_name, description=description, id=uuid)
 
     # snapshot
     snapshot_name = kwargs.pop("snapshot", None)
@@ -5913,3 +5912,17 @@ def get_vm_sessions(vm_name):
     return VM_API.getElemFromLink(
         vm_obj, link_name='sessions', attr='session', get_href=False
     ) or []
+
+
+@ll_general.generate_logs(step=True)
+def get_vm_uuid(vm_name):
+    """
+    Get VM uuid.
+
+    Args:
+        vm_name (str): VM name
+
+    Returns:
+        vm_uuid (str): VM uuid
+    """
+    return get_vm(vm_name).get_id()

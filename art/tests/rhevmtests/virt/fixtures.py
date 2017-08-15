@@ -51,6 +51,26 @@ def start_vms(request):
     ll_vms.start_vms(vm_list=[vms], wait_for_ip=wait_for_vms_ip)
 
 
+@pytest.fixture(scope="function")
+def start_vms_function_scope(request):
+    """
+    Start VM's
+    """
+    vms = request.node.cls.vm_name
+    wait_for_vms_ip = getattr(request.node.cls, "wait_for_vms_ip", True)
+
+    def fin():
+        """
+        Stop VM's
+        """
+        testflow.teardown("Stop vms %s", vms)
+        ll_vms.stop_vms_safely(vms_list=[vms])
+    request.addfinalizer(fin)
+
+    testflow.setup("Start vms %s", vms)
+    ll_vms.start_vms(vm_list=[vms], wait_for_ip=wait_for_vms_ip)
+
+
 @pytest.fixture(scope="class")
 def create_dc(request):
     """
