@@ -471,7 +471,9 @@ class TestNetworkFilterCase07(NetworkTest):
                 *[conf.VM_NIC_0, True], marks=(polarion("RHEVM3-21765"))
             ),
             pytest.param(
-                *[conf.VM_NIC_0, False], marks=(polarion("RHEVM3-21766"))
+                *[conf.VM_NIC_0, False], marks=(
+                    (polarion("RHEVM3-21766"), bz({"1482034": {}}))
+                )
             ),
         ],
         ids=(
