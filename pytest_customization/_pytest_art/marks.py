@@ -298,9 +298,7 @@ class JunitExtension(object):
 
     def pytest_runtest_setup(self, item):
         self._add_marks(item)
-        # TODO remove comment once relevant tests will have storage param
-        # in polarion (pending on Gil)
-        # self._add_polarion_attributes(item)
+        self._add_polarion_attributes(item)
 
     def pytest_artconf_ready(self, config):
         self.global_properties['polarion-custom-plannedin'] = (
