@@ -9,7 +9,9 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 
 
-NETS = global_helper.generate_object_names(num_of_cases=4, num_of_objects=20)
+NETS = global_helper.generate_object_names(
+    num_of_cases=4, num_of_objects=20, prefix="vnic_pro"
+)
 
 VNIC_PROFILES = global_helper.generate_object_names(
     num_of_cases=3, num_of_objects=20, prefix="vnic-profile_vnic_profile"
