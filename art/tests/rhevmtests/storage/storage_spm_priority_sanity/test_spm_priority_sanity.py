@@ -25,7 +25,8 @@ from rhevmtests.storage.fixtures import (
 )
 from rhevmtests.storage.storage_spm_priority_sanity.fixtures import (
     wait_for_spm, remove_host, deactivate_hsm_hosts, initialize_hosts_params,
-    activate_old_master_domain, set_different_host_priorities
+    activate_old_master_domain, set_different_host_priorities,
+    check_hosts_status
 )
 from utilities import utils
 
@@ -259,6 +260,9 @@ class TestCase6212(BasicEnvironment):
         ), "Set SPM priority to illegal value succeded"
 
 
+@pytest.mark.usefixtures(
+    check_hosts_status.__name__
+)
 class TestCase6217(SPMHostsMinusOnePriorityFlow):
     """
     RHEVM3-6217 - All hosts with '-1' priority

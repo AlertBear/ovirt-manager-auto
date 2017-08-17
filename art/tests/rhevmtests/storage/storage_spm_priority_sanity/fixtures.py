@@ -158,3 +158,18 @@ def set_different_host_priorities(request):
     assert ll_hosts.set_spm_priority(True, self.spm_host, 2), (
         'Unable to set host %s priority' % self.spm_host
     )
+
+
+@pytest.fixture()
+def check_hosts_status(request, activate_hosts):
+    """
+    Create list of hosts to activate after test
+    """
+    self = request.node.cls
+
+    def finalizer():
+        for host in config.HOSTS:
+            if ll_hosts.is_host_in_maintenance(True, host):
+                self.hosts_to_activate.append(host)
+
+    request.addfinalizer(finalizer)
