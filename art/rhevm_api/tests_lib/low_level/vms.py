@@ -2110,6 +2110,7 @@ def runVmOnce(
     return status
 
 
+@ll_general.generate_logs(step=True)
 def suspendVm(positive, vm, wait=True):
     """
     Suspend VM:

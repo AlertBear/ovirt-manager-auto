@@ -23,7 +23,10 @@ from rhevmtests import helpers
 from rhevmtests.virt import config
 from rhevmtests.sla import config as sla_config
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    vms as ll_vms,
+    hosts as ll_hosts
+)
 from fixtures import (
     base_setup_fixture, migrate_vm_for_test,
     set_cpu_toplogy, update_vm_to_ha, create_vm_for_load
@@ -93,13 +96,14 @@ class TestCPUHotPlug(VirtTest):
         """
         Increase The number of CPUs to host cpu number, while VM is running
         """
-        host_index = config.HOSTS.index(ll_vms.get_vm_host(self.vm_name))
-        testflow.step(
-            "Fetch the number of cpu cores in host: %s",
-            config.VDS_HOSTS[host_index]
+        vm_host = ll_vms.get_vm_host(self.vm_name)
+        host_resource = helpers.get_host_executor(
+            ip=ll_hosts.get_host_ip(vm_host), password=config.VMS_LINUX_PW
         )
+
+        testflow.step("Fetch the number of cpu cores in host: %s", vm_host)
         cpu_number = min(
-            helper.get_number_of_cores(config.VDS_HOSTS[host_index]), 16
+            helper.get_number_of_cores(host_resource), 16
         )
         testflow.step(
             "Updating number of sockets on vm: %s to %d" %
@@ -108,8 +112,8 @@ class TestCPUHotPlug(VirtTest):
         assert ll_vms.updateVm(
             True, self.vm_name, cpu_cores=1, cpu_socket=cpu_number
         )
-        vm_resource = helpers.get_host_resource(
-            hl_vms.get_vm_ip(self.vm_name), config.VMS_LINUX_PW
+        vm_resource = helpers.get_host_executor(
+            ip=hl_vms.get_vm_ip(self.vm_name), password=config.VMS_LINUX_PW
         )
         working_cores = helper.get_number_of_cores(vm_resource)
         testflow.step(

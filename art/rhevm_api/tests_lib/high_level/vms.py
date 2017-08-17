@@ -928,12 +928,15 @@ def get_memory_on_vm(vm_resource):
     """
     Return the memory on VM using free command
     Args:
-         vm_resource(Host): VM
+         vm_resource(RemoteExecutor): VM executor
+
     Returns:
         str: VM memory in KB
     """
     logger.info("Getting vm actual memory with free command")
-    rc, out, _ = vm_resource.run_command(shlex.split(CHECK_MEMORY_COMMAND))
+    rc, out, _ = vm_resource.run_cmd(
+        cmd=shlex.split(CHECK_MEMORY_COMMAND),
+    )
     if rc:
         logger.error("Failed to get VM memory")
         return ""

@@ -19,17 +19,19 @@ MAX_NUM_CORES_PER_SOCKET = 16
 def get_number_of_cores(resource):
     """
     Get the number of cores on the resource using `nproc` command
-    :param resource: the resource of the VM/host
-    :type: resource: VM/Host resource
-    :return: the number of cores on the host
-    :rtype: int
+
+    Args:
+        resource (RemoteExecutor): The resource of the VM/host
+
+    Returns:
+        int: The number of cores on the host
     """
 
     logger.info(
         "Run %s on %s in order to get the number of cores",
         NPROC_COMMAND, resource
     )
-    rc, out, _ = resource.run_command([NPROC_COMMAND])
+    rc, out, _ = resource.run_cmd([NPROC_COMMAND])
     if rc:
         return 0
     logger.info("Number of cores on:%s is:%s", resource, out)
@@ -76,7 +78,7 @@ def migrate_vm_and_check_cpu(number_of_cpus, vm_name=config.CPU_HOTPLUG_VM):
     """
     testflow.step("migrating vm: %s", vm_name)
     assert ll_vms.migrateVm(True, vm_name)
-    vm_resource = helpers.get_host_resource(
+    vm_resource = helpers.get_host_executor(
         hl_vms.get_vm_ip(vm_name), config.VMS_LINUX_PW
     )
     testflow.step(
@@ -92,7 +94,10 @@ def migrate_vm_and_check_cpu(number_of_cpus, vm_name=config.CPU_HOTPLUG_VM):
 def hot_plug_unplug_cpu(
     number_of_cpus,
     action,
-    vm_name=config.CPU_HOTPLUG_VM
+    vm_name=config.CPU_HOTPLUG_VM,
+    user_name=None,
+    password=config.VMS_LINUX_PW
+
 ):
     """
     Update VM CPU according to action (hot plug / hot unplug)
@@ -102,6 +107,11 @@ def hot_plug_unplug_cpu(
         number_of_cpus (int): Expected number of CPUs
         action (str): Hot plug / hot unplug action to update VM
         vm_name (str): VM name, default "cpu_hotplug_vm"
+        user_name (str): User name to login VM
+        password (str): Password to login VM
+
+    Returns:
+        bool: True if check pass, else False
     """
     testflow.step(
         "%s case:\nUpdating number of cpu sockets on vm: %s to "
@@ -112,8 +122,10 @@ def hot_plug_unplug_cpu(
         vm=vm_name,
         cpu_socket=number_of_cpus
     )
-    vm_resource = helpers.get_host_resource(
-        hl_vms.get_vm_ip(vm_name), config.VMS_LINUX_PW
+    vm_resource = helpers.get_host_executor(
+        username=user_name,
+        password=password,
+        ip=hl_vms.get_vm_ip(vm_name)
     )
     working_cores = get_number_of_cores(vm_resource)
     testflow.step(
@@ -123,3 +135,4 @@ def hot_plug_unplug_cpu(
     assert working_cores == number_of_cpus, (
         "The number of working cores: %s isn't correct" % working_cores
     )
+    return True

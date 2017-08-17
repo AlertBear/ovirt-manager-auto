@@ -60,6 +60,7 @@ def _prepareVmPoolObject(**kwargs):
         stateful (bool): pool state
         custom_cpu_model (str): Name of custom cpu model to start vm with
         custom_emulated_machine (str): Name of custom emulated machine type to
+        Initialization (Initialization):  Initialization obj for cloud init
 
     Returns:
         VmPool: Returns a VmPool object with relevant attributes
@@ -116,6 +117,11 @@ def _prepareVmPoolObject(**kwargs):
     if custom_emulated_machine is not None:
         vm.set_custom_emulated_machine(custom_emulated_machine)
 
+    # initialization
+    initialization = kwargs.pop("initialization", None)
+    if initialization:
+        vm.set_initialization(initialization)
+
     pool.set_vm(vm)
     return pool
 
@@ -141,6 +147,7 @@ def addVmPool(positive, wait=True, **kwargs):
         stateful (bool): pool state
         custom_cpu_model (str): Name of custom cpu model to start vm with
         custom_emulated_machine (str): Name of custom emulated machine type to
+        Initialization (Initialization):  Initialization obj for cloud init
 
     Returns:
         bool: True if action result == positive, False otherwise

@@ -33,7 +33,8 @@ class TestMemoryHotplug(VirtTest):
         'os_type': config.VM_OS_TYPE,
         'display_type': config.VM_DISPLAY_TYPE,
         'max_memory': gen_helper.get_gb(16),
-        'name': config.MEMORY_HOTPLUG_VM
+        'name': config.MEMORY_HOTPLUG_VM,
+        'ballooning': False
     }
     vm_name = vm_parameters['name']
 
@@ -121,7 +122,12 @@ class TestMemoryHotplug(VirtTest):
             "after suspend VM"
         )
         testflow.step("Record memory status on VM")
-        hl_vms.get_memory_on_vm(global_helper.get_vm_resource(self.vm_name))
+        hl_vms.get_memory_on_vm(
+            global_helper.get_host_executor(
+                ip=hl_vms.get_vm_ip(self.vm_name),
+                password=config.VMS_LINUX_PW
+            )
+        )
         _, _, new_memory = hl_vms.expand_vm_memory(
             self.vm_name, mem_size_to_expand=config.GB
         )
@@ -149,7 +155,12 @@ class TestMemoryHotplug(VirtTest):
             "check that memory stay the same after reboot VM"
         )
         testflow.step("Record memory status on VM")
-        hl_vms.get_memory_on_vm(global_helper.get_vm_resource(self.vm_name))
+        hl_vms.get_memory_on_vm(
+            global_helper.get_host_executor(
+                ip=hl_vms.get_vm_ip(self.vm_name),
+                password=config.VMS_LINUX_PW
+            )
+        )
         _, _, new_memory = hl_vms.expand_vm_memory(
             self.vm_name, mem_size_to_expand=config.GB
         )
@@ -175,7 +186,12 @@ class TestMemoryHotplug(VirtTest):
             "check memory updated"
         )
         testflow.step("Record memory status on VM")
-        hl_vms.get_memory_on_vm(global_helper.get_vm_resource(self.vm_name))
+        hl_vms.get_memory_on_vm(
+            global_helper.get_host_executor(
+                ip=hl_vms.get_vm_ip(self.vm_name),
+                password=config.VMS_LINUX_PW
+            )
+        )
         _, _, new_memory = hl_vms.expand_vm_memory(
             self.vm_name, mem_size_to_expand=config.GB
         )

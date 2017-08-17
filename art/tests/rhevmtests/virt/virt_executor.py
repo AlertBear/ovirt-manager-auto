@@ -31,13 +31,17 @@ def vm_life_cycle_action(vm_name, action_name, func_args=None):
 
     memory_hotplug_kwargs = {
         "vm_name": vm_name,
-        "memory_to_expand": 1
+        "memory_to_expand": config.GB,
+        "user_name": None,
+        "password": config.VMS_LINUX_PW
     }
 
     cpu_hotplug_kwargs = {
-        "number_of_cpus": 1,
+        "number_of_cpus": 2,
         "action": config.HOT_PLUG_CPU,
-        "vm_name": vm_name
+        "vm_name": vm_name,
+        "user_name": None,
+        "password": config.VMS_LINUX_PW
     }
 
     snapshot_with_memory = {
@@ -68,6 +72,18 @@ def vm_life_cycle_action(vm_name, action_name, func_args=None):
     stop_vm_args = {
         "vms_list": [vm_name]
     }
+    suspend_resume_args = {
+        'vm_name': vm_name
+    }
+    cloud_init_args = {
+        'vm_name': vm_name,
+        'dns_search': None,
+        'dns_servers': None,
+        'time_zone': config.NEW_ZEALAND_TZ,
+        'script_content': None,
+        'hostname': None,
+        'check_nic': False
+    }
 
     actions_info = {
         config.MIGRATION_ACTION: (ll_vms.migrateVm, migration_kwargs),
@@ -83,14 +99,19 @@ def vm_life_cycle_action(vm_name, action_name, func_args=None):
         ),
         config.CLONE_ACTION: (virt_helper.clone_vm, clone_vm_args),
         config.START_ACTION: (ll_vms.startVm, start_vm_args),
-        config.STOP_ACTION: (ll_vms.stop_vms_safely, stop_vm_args)
-
+        config.STOP_ACTION: (ll_vms.stop_vms_safely, stop_vm_args),
+        config.SUSPEND_RESUME: (
+            virt_helper.suspend_resume_vm_test, suspend_resume_args
+        ),
+        config.CLOUD_INIT_CHECK: (
+            virt_helper.check_cloud_init_parameters,
+            cloud_init_args
+        )
     }
 
     if action_name in actions_info.keys():
         func_name = actions_info[action_name][0]
-        func_kwargs = (
-            actions_info[action_name][1] if func_args is None else func_args
-        )
-
+        func_kwargs = actions_info[action_name][1]
+        if func_args:
+            func_kwargs.update(func_args)
     return func_name(**func_kwargs)

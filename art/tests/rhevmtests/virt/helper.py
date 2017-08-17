@@ -12,7 +12,7 @@ import re
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-
+from art.rhevm_api.data_struct import data_structures as data_struct
 import art.core_api.validator as validator
 import art.rhevm_api.resources as resources
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -54,11 +54,36 @@ DELAY_FOR_SNAPSHOT = 60
 RUN_SCRIPT_COMMAND = (
     'python /tmp/memoryLoad.py -s %s -r %s &> /tmp/OUT1 & echo $!'
 )
-LOAD_VM_COMMAND = (
-    '/home/pig -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
-)
 VIRSH_VM_LIST_CMD = "virsh -r list | grep "
 V2V_IMPORT_TIMEOUT = 1500
+
+# cloud init settings
+NIC_CONFIGURATION = data_struct.NicConfiguration(
+    name=config_virt.CLOUD_INIT_NIC_NAME, ip=None, boot_protocol='dhcp',
+    on_boot=True
+)
+SCRIPT_CONTENT = "test_cloud_init"
+CUSTOM_SCRIPT = (
+    "write_files:\n"
+    "-  content: %s\n"
+    "   path: /tmp/test.txt\n"
+    "   permissions: '0644'"
+) % SCRIPT_CONTENT
+
+# base initialization parameters
+initialization_params = {
+    'host_name': config_virt.CLOUD_INIT_HOST_NAME,
+    'root_password': config.VDC_ROOT_PASSWORD,
+    'user_name': config_virt.VM_USER_CLOUD_INIT,
+    'timezone': config_virt.NEW_ZEALAND_TZ,
+    'dns_servers': config_virt.DNS_SERVER,
+    'dns_search': config_virt.DNS_SEARCH,
+    'nic_configurations': data_struct.NicConfigurations(
+        nic_configuration=[NIC_CONFIGURATION]
+    ),
+    'custom_script': CUSTOM_SCRIPT
+}
+
 
 test_handler.find_test_file.__test__ = False
 
@@ -1430,6 +1455,7 @@ def execute_multi_sparsify(disks_ids, storage_domain_name):
         assert result.result()
 
 
+@ll_general.generate_logs(step=True)
 def snapshot_vm(
     vm_name, snapshot_description, with_memory=False, start_vm=False
 ):
@@ -1465,21 +1491,19 @@ def snapshot_vm(
         restore_memory=with_memory,
         ensure_vm_down=True
     )
-    testflow.step(
-        "Remove snapshots %s and %s of vm %s",
-        snapshot_description[0],
-        snapshot_description[1],
-        vm_name
-    )
     for snapshot in snapshot_description:
+        testflow.step("Remove snapshot %s of vm %s", snapshot, vm_name)
         assert ll_vms.removeSnapshot(
             positive=True,
             vm=vm_name,
             description=snapshot,
             timeout=config_virt.VM_REMOVE_SNAPSHOT_TIMEOUT
+
         )
+    return True
 
 
+@ll_general.generate_logs(step=True)
 def clone_vm(base_vm_name, clone_vm_name):
     """
     Clone VM
@@ -1508,3 +1532,234 @@ def clone_vm(base_vm_name, clone_vm_name):
         positive=True, vm=base_vm_name,
         wait_for_status=config.VM_UP
     )
+
+
+def check_data_on_vm(command_to_run, expected_output):
+    """
+    Check configure data on VM. Runs command on VM and compare it with
+    expected output
+
+    Args:
+        command_to_run (str): command to run on vm
+        expected_output (str): the expected value
+
+    Returns:
+        bool: True if output as expected else False
+    """
+    if config_virt.VM_USER_CLOUD_INIT == config.VDC_ROOT_USER:
+        logger.info("connect with root user")
+        executor = helpers.get_host_executor(
+            ip=config_virt.VM_IP, password=config.VDC_ROOT_PASSWORD
+        )
+    elif config_virt.USER_PKEY:
+        logger.info(
+            "connect without password, user: %s",
+            config_virt.VM_USER_CLOUD_INIT
+        )
+        host = helpers.Host(ip=config_virt.VM_IP)
+        host.users.append(config_virt.VM_USER_CLOUD_INIT)
+        user_root = helpers.User(
+            name=config.VDC_ROOT_USER,
+            password=config.VDC_ROOT_PASSWORD
+        )
+        executor = host.executor(
+            user=user_root, pkey=True
+        )
+    else:
+        logger.info("connect with user %s", config_virt.VM_USER_CLOUD_INIT)
+        executor = helpers.get_host_executor(
+            ip=config_virt.VM_IP,
+            username=config_virt.VM_USER_CLOUD_INIT,
+            password=config.VDC_ROOT_PASSWORD
+        )
+    logger.info("Run command: %s", command_to_run)
+    out = executor.run_cmd(shlex.split(command_to_run))[1]
+    logger.info("output: %s", out)
+    return expected_output in out
+
+
+@ll_general.generate_logs(step=True)
+def check_cloud_init_parameters(
+    vm_name=config_virt.CLOUD_INIT_VM_NAME,
+    dns_search=None, dns_servers=None, time_zone=None, script_content=None,
+    hostname=None, check_nic=True
+):
+    """
+    Checks cloud init parameters on VM
+
+    Args:
+        vm_name: VM name to check
+        dns_search (str): DNS search configured
+        dns_servers (str):  DNS server/s configured
+        time_zone (list): list of possible time zones configured
+        script_content (str): file content configured by script
+        hostname (str): configured hostname
+        check_nic (bool): check nic configuration
+
+    Returns:
+        bool: True if all checks pass Else False
+    """
+    assert wait_for_vm_fqdn(vm_name), "Failed to get FQDN"
+    logger.info('Get ip for VM: %s', vm_name)
+    config_virt.VM_IP = hl_vms.get_vm_ip(
+        vm_name=vm_name, start_vm=False
+    )
+    logger.info('VM: %s , IP:%s', vm_name, config_virt.VM_IP)
+    network_status = check_networks_configuration(
+        check_nic=check_nic, dns_search=dns_search, dns_servers=dns_servers
+    )
+    authentication_status = check_authentication_configuration()
+    script_status = check_custom_script(script_content=script_content)
+    general_status = check_general(time_zone=time_zone, hostname=hostname)
+    if (
+        network_status and
+        authentication_status and
+        script_status and
+        general_status
+    ):
+        return True
+    else:
+        logger.error("The guest check failed")
+        return False
+
+
+def check_general(time_zone=None, hostname=None):
+    """
+    Check general data on VM
+
+    Args:
+        time_zone (list): list of possible Time zone on guest
+        (Daylight vs Standard) e.g. NZST and NZDT
+        hostname (str): configured hostname
+
+    Returns:
+        bool: True if general parameters are as expected else False
+    """
+    status = True
+    if time_zone:
+        for tz in time_zone:
+            logger.info("Check time zone, expected: %s", tz)
+            if check_data_on_vm(config_virt.CHECK_TIME_ZONE_IN_GUEST, tz):
+                logger.info("time zone check pass")
+                status = True
+                break
+            else:
+                logger.error("time zone check failed")
+                status = False
+    if hostname:
+        logger.info("Check hostname, expected: %s", hostname)
+        if check_data_on_vm(config_virt.CHECK_HOST_NAME, hostname):
+            logger.info("hostname check pass")
+        else:
+            logger.error("hostname check failed")
+            status = False
+    return status
+
+
+def check_custom_script(script_content):
+    """
+    Check custom script content
+
+    Args:
+        script_content (str): expected script content
+
+    Returns
+        bool: True if content on guest equals to expected content
+    """
+
+    if script_content:
+        logger.info("Check script content, expected: %s", script_content)
+        if check_data_on_vm(config_virt.CHECK_FILE_CONTENT, script_content):
+            logger.info("script content check pass")
+            return True
+        else:
+            logger.error("script content check failed")
+            return False
+    else:
+        return True
+
+
+def check_authentication_configuration():
+    """
+    Check user authentication
+
+    Returns:
+        bool: True if user name matches the user name on guest else False
+    """
+    logger.info(
+        "Check user name, expected: %s", config_virt.VM_USER_CLOUD_INIT
+    )
+    cmd = config_virt.CHECK_USER_IN_GUEST % config_virt.VM_USER_CLOUD_INIT
+    if check_data_on_vm(cmd, config_virt.VM_USER_CLOUD_INIT):
+        logger.info("user name check pass")
+        return True
+    else:
+        logger.error("user name check failed")
+        return False
+
+
+def check_networks_configuration(
+    check_nic=False, dns_search=None, dns_servers=None
+):
+    """
+    Check networks configuration, first check that NIC exists
+
+    Args:
+        check_nic (bool): check nic configuration
+        dns_search (str): DNS search configured
+        dns_servers (str): DNS server/s configured
+
+    Returns:
+        bool: True if networks check pass else False
+
+    Raises:
+         AssertionError: if failed operation
+    """
+    status = True
+    if check_nic:
+        logger.info("Check the NIC file name exists")
+        cmd = config_virt.CHECK_NIC_EXIST
+        if check_data_on_vm(cmd, config_virt.CLOUD_INIT_NIC_NAME):
+            logger.info("NIC file name exist")
+        else:
+            logger.error("NIC file name doesn't exist")
+            status = False
+    if dns_search:
+        logger.info("Check DNS search, expected: %s", dns_search)
+        cmd = config_virt.CHECK_DNS_IN_GUEST % dns_search
+        if check_data_on_vm(cmd, dns_search):
+            logger.info("DNS search check pass")
+        else:
+            logger.error("DNS search check failed")
+            status = False
+    if dns_servers:
+        logger.info("Check DNS servers, expected: %s", dns_servers)
+        cmd = config_virt.CHECK_DNS_IN_GUEST % dns_servers
+        if check_data_on_vm(cmd, dns_servers):
+            logger.info("DNS servers check pass")
+        else:
+            logger.error("DNS servers check failed")
+            status = False
+    return status
+
+
+@ll_general.generate_logs(step=True)
+def suspend_resume_vm_test(vm_name):
+    """
+    Suspend vm and resume vm, and check that status is up
+
+    Args:
+        vm_name (str): vm name
+    Returns:
+        bool: True if all actions pass
+    Raises:
+        AssertionError: if failed operation
+    """
+    assert ll_vms.suspendVm(True, vm_name), "Failed to suspend vm"
+    logging.info("VM status: %s", ll_vms.get_vm_state(vm_name=vm_name))
+    assert ll_vms.startVm(
+        positive=True, vm=vm_name,
+        wait_for_status=config.VM_UP,
+        timeout=2 * config_virt.VM_ACTION_TIMEOUT
+    )
+    return True

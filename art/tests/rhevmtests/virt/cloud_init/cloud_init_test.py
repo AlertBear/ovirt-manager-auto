@@ -7,20 +7,21 @@ Check basic cases with cloud init
 """
 import logging
 import pytest
+from art.unittest_lib.common import VirtTest, testflow
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config
-import helper
+import rhevmtests.virt.config as config
 import rhevmtests.virt.helper as virt_helper
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier1,
     tier2
 )
-from art.unittest_lib.common import VirtTest, testflow
 from fixtures import case_setup
 from rhevmtests.virt.fixtures import (
     start_vm_with_parameters
 )
+import rhevmtests.virt.helper as helper
+
 logger = logging.getLogger("Cloud init VM")
 
 
@@ -30,7 +31,6 @@ class TestCloudInit(VirtTest):
     Cloud init test cases
     """
 
-    __test__ = True
     vm_name = config.CLOUD_INIT_VM_NAME
     initialization = None
     start_vm_parameters = {
@@ -42,7 +42,6 @@ class TestCloudInit(VirtTest):
     @tier1
     @polarion("RHEVM3-14364")
     @pytest.mark.usefixtures(case_setup.__name__)
-    @bz({"1464043": {}})
     def test_case_1_new_vm_with_cloud_init(self):
         """
         Cloud init case 1: Create new VM with cloud init parameters
@@ -56,7 +55,7 @@ class TestCloudInit(VirtTest):
         )
         assert virt_helper.wait_for_vm_fqdn(self.vm_name)
         testflow.step("Check cloud init parameters")
-        assert helper.check_cloud_init_parameters(
+        assert virt_helper.check_cloud_init_parameters(
             script_content=helper.SCRIPT_CONTENT,
             time_zone=config.NEW_ZEALAND_TZ_LIST,
             hostname=config.CLOUD_INIT_HOST_NAME
@@ -84,7 +83,7 @@ class TestCloudInit(VirtTest):
         ), "Failed to start VM %s " % self.vm_name
         assert virt_helper.wait_for_vm_fqdn(self.vm_name)
         testflow.step("Check VM %s with root user", self.vm_name)
-        assert helper.check_cloud_init_parameters(
+        assert virt_helper.check_cloud_init_parameters(
             time_zone=config.NEW_ZEALAND_TZ_LIST,
             check_nic=False, script_content=helper.SCRIPT_CONTENT,
         ), (
@@ -111,7 +110,7 @@ class TestCloudInit(VirtTest):
         testflow.step(
             "Check that all cloud init configuration exists after migration"
         )
-        assert helper.check_cloud_init_parameters(
+        assert virt_helper.check_cloud_init_parameters(
             script_content=helper.SCRIPT_CONTENT,
             time_zone=config.NEW_ZEALAND_TZ_LIST,
             hostname=config.CLOUD_INIT_HOST_NAME
@@ -137,7 +136,7 @@ class TestCloudInit(VirtTest):
         )
         assert virt_helper.wait_for_vm_fqdn(self.vm_name)
         testflow.step("Check connectivity without password")
-        assert helper.check_cloud_init_parameters(
+        assert virt_helper.check_cloud_init_parameters(
             script_content=helper.SCRIPT_CONTENT,
             time_zone=config.NEW_ZEALAND_TZ_LIST,
             hostname=config.CLOUD_INIT_HOST_NAME

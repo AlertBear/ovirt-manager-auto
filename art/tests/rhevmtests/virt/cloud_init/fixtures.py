@@ -8,14 +8,15 @@ import pytest
 from art.unittest_lib.common import testflow
 import art.rhevm_api.data_struct.data_structures as data_struct
 import rhevmtests.helpers as gen_helper
+import rhevmtests.virt.helper as helper
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     storagedomains as ll_sd,
     templates as ll_templates,
     vms as ll_vms
 )
-import config
-import helper
+import rhevmtests.virt.config as config
+
 
 logger = logging.getLogger("cloud_init_fixture")
 

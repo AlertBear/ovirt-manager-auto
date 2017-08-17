@@ -431,7 +431,13 @@ def get_host_name_by_resource(host_resource):
     )
 
 
-def wait_for_vm_gets_to_full_memory(vm_name, expected_memory, threshold=0.9):
+def wait_for_vm_gets_to_full_memory(
+    vm_name,
+    expected_memory,
+    threshold=0.9,
+    user_name=None,
+    password=config.VMS_LINUX_PW
+):
     """
     Wait until VM gets to full Memory allocation,
     Check that the value is as expected 3 times,
@@ -441,12 +447,16 @@ def wait_for_vm_gets_to_full_memory(vm_name, expected_memory, threshold=0.9):
         vm_name (str): vm_name
         expected_memory(int): value of expected Memory allocation
         threshold (float): lower bound to memory on VM
+        user_name (str): User name to login VM (None will login with root)
+        password (str): Password to login VM
 
     Returns:
       bool: True if VM gets to the expected Memory allocation, False otherwise
     """
     count = 0
-    vm_resource = get_vm_resource(vm_name)
+    vm_resource = get_host_executor(
+        ip=hl_vms.get_vm_ip(vm_name), username=user_name, password=password
+    )
     expected_mem = expected_memory / 1024
     sampler = apis_utils.TimeoutingSampler(
         60, 5, hl_vms.get_memory_on_vm, vm_resource
