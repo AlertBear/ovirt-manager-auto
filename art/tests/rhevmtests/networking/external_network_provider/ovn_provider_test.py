@@ -21,11 +21,18 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, testflow, tier2, tier3
-from fixtures import (
-    check_running_on_rhevh, configure_ovn, configure_provider_plugin,
-    create_ovn_networks_on_provider, import_ovn_networks,
-    remove_ifcfg_from_vms, add_ovn_provider, get_default_ovn_provider,
-    setup_vms_ovn_interface, benchmark_file_transfer, save_vm_resources
+from fixtures import (  # noqa: F401
+    check_running_on_rhevh,
+    configure_ovn,
+    configure_provider_plugin,
+    create_ovn_networks_on_provider,
+    import_ovn_networks,
+    remove_ifcfg_from_vms,
+    add_ovn_provider,
+    get_default_ovn_provider,
+    setup_vms_ovn_interface,
+    benchmark_file_transfer,
+    save_vm_resources
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
@@ -35,8 +42,35 @@ from rhevmtests.networking.fixtures import (
 )
 
 
+class TestOVNDeployment(NetworkTest):
+    """
+    1. Test deployment of OVN packages on engine (OVN central)
+    2. Test deployment of OVN packages on hosts (HOST-0 and HOST-1)
+    """
+
+    @tier2
+    @polarion("RHEVM-22395")
+    def test_ovn_central_server(self):
+        """
+        Test deployment of OVN packages on engine (OVN central)
+        """
+        assert net_conf.ENGINE_HOST.package_manager.exist(
+            package="ovirt-provider-ovn"
+        ), "OVN provider package is not installed on engine"
+
+    @tier2
+    @polarion("RHEVM-22396")
+    def test_ovn_host(self):
+        """
+        Test deployment of OVN packages on OVN hosts (HOST-0 and HOST-1)
+        """
+        for ovn_host in net_conf.VDS_HOSTS[:2]:
+            assert ovn_host.package_manager.exist(
+                package="ovirt-provider-ovn-driver"
+            ), "OVN driver is not installed on host: %s" % ovn_host.fqdn
+
+
 @pytest.mark.usefixtures(
-    check_running_on_rhevh.__name__,
     setup_ldap_integration.__name__,
     configure_ovn.__name__,
     configure_provider_plugin.__name__,
@@ -134,7 +168,6 @@ class TestOVNAuthorization(NetworkTest):
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    check_running_on_rhevh.__name__,
     configure_ovn.__name__,
     get_default_ovn_provider.__name__,
     create_ovn_networks_on_provider.__name__,
@@ -168,7 +201,7 @@ class TestOVNComponent(NetworkTest):
     provider_name = ovn_conf.OVN_PROVIDER_NAME
     dc = net_conf.DC_0
     cl = net_conf.CL_0
-    vms_ips = list()
+    vms_ips = []
 
     # create_ovn_networks_on_provider fixture parameters
     add_ovn_networks_to_provider = ovn_conf.OVN_LONG_NETS
@@ -180,27 +213,13 @@ class TestOVNComponent(NetworkTest):
     remove_ovn_networks_from_engine = ovn_conf.OVN_NETS.keys()
 
     # remove_vnics_from_vms fixture parameters
-    remove_vnics_vms_params = {
-        1: {
-            "vm": net_conf.VM_0,
-            "name": ovn_conf.OVN_VNIC
-        },
-        2: {
-            "vm": net_conf.VM_1,
-            "name": ovn_conf.OVN_VNIC
-        }
-    }
+    remove_vnics_vms_params = {}
 
     # start_vm fixture parameters
     vms_to_stop = [net_conf.VM_0, net_conf.VM_1]
 
     # remove_vnic_profile fixture parameters
-    remove_vnic_profile_params = {
-        "1": {
-            "name": ovn_conf.OVN_VNIC_PROFILE,
-            "network": ovn_conf.OVN_NET_1,
-        }
-    }
+    remove_vnic_profile_params = {}
 
     @tier2
     @polarion("RHEVM3-21661")
@@ -214,9 +233,6 @@ class TestOVNComponent(NetworkTest):
         assert helper.get_provider_from_engine(
             provider_name=self.provider_name
         )
-
-        # Check for objects in the OVS DB and report warning in case found
-        helper.check_for_ovn_objects()
 
     @tier2
     @polarion("RHEVM3-16925")
@@ -248,7 +264,7 @@ class TestOVNComponent(NetworkTest):
                 network=net_name, datacenter=self.dc, cluster=self.cl
             )
 
-    @bz({"1478054": {}})
+    @bz({"1483309": {}})
     @tier2
     @polarion("RHEVM3-17439")
     def test_04_start_vm_with_ovn_network(self):
@@ -263,11 +279,18 @@ class TestOVNComponent(NetworkTest):
             positive=True, vm=net_conf.VM_0, name=ovn_conf.OVN_VNIC,
             network=ovn_conf.OVN_NET_1, plugged=True
         )
+        # Remove vNIC during teardown
+        self.remove_vnics_vms_params["1"] = {
+            "vm": net_conf.VM_0,
+            "name": ovn_conf.OVN_VNIC
+        }
 
         testflow.step(
             "Starting VM: %s on host: %s", net_conf.VM_0, net_conf.HOST_0_NAME
         )
-        helper.run_vm_on_host(vm=net_conf.VM_0, host=net_conf.HOST_0_NAME)
+        assert helper.run_vm_on_host(
+            vm=net_conf.VM_0, host=net_conf.HOST_0_NAME
+        )
 
     @tier2
     @polarion("RHEVM3-17296")
@@ -279,7 +302,9 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Starting VM: %s on host: %s", net_conf.VM_1, net_conf.HOST_0_NAME
         )
-        helper.run_vm_on_host(vm=net_conf.VM_1, host=net_conf.HOST_0_NAME)
+        assert helper.run_vm_on_host(
+            vm=net_conf.VM_1, host=net_conf.HOST_0_NAME
+        )
 
         testflow.step(
             "Hot-adding vNIC: %s with OVN network: %s on live VM: %s",
@@ -289,6 +314,11 @@ class TestOVNComponent(NetworkTest):
             positive=True, vm=net_conf.VM_1, name=ovn_conf.OVN_VNIC,
             network=ovn_conf.OVN_NET_1, plugged=True
         )
+        # Remove vNIC during teardown
+        self.remove_vnics_vms_params["2"] = {
+            "vm": net_conf.VM_1,
+            "name": ovn_conf.OVN_VNIC
+        }
 
     @tier2
     @polarion("RHEVM3-16927")
@@ -365,6 +395,11 @@ class TestOVNComponent(NetworkTest):
             positive=True, name=ovn_conf.OVN_VNIC_PROFILE,
             data_center=self.dc, cluster=self.cl, network=ovn_conf.OVN_NET_1
         )
+        # Remove vNIC profile during teardown
+        self.remove_vnic_profile_params["1"] = {
+            "name": ovn_conf.OVN_VNIC_PROFILE,
+            "network": ovn_conf.OVN_NET_1
+        }
 
         testflow.step(
             "Hot-unplug vNIC: %s on VM: %s, change vNIC profile to: %s, "
@@ -593,9 +628,7 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Testing ping from VM: %s to VM: %s", net_conf.VM_0, net_conf.VM_1
         )
-        assert helper.check_ping(
-            vm=net_conf.VM_0, dst_ip=self.vms_ips[1]
-        )
+        assert helper.check_ping(vm=net_conf.VM_0, dst_ip=self.vms_ips[1])
 
     @tier2
     @polarion("RHEVM-19599")
@@ -696,7 +729,6 @@ class TestOVNComponent(NetworkTest):
 
 @bz({"1478054": {}})
 @pytest.mark.usefixtures(
-    check_running_on_rhevh.__name__,
     configure_ovn.__name__,
     get_default_ovn_provider.__name__,
     create_ovn_networks_on_provider.__name__,
@@ -761,7 +793,7 @@ class TestOVNPerformance(NetworkTest):
 
     @tier3
     @polarion("RHEVM-22061")
-    def test_01_ovn_over_tunnel_traffic(self):
+    def test_ovn_over_tunnel_traffic(self):
         """
         1. Copy 1 GB file from VM-0 to VM-1 over OVN tunnel while measuring
            performance

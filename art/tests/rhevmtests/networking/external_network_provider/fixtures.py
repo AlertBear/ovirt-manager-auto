@@ -126,16 +126,16 @@ def create_ovn_networks_on_provider(request):
     """
     Create OVN network(s) and subnet(s) on provider
     """
-    add_networks = getattr(request.cls, "add_ovn_networks_to_provider", dict())
+    add_networks = getattr(request.cls, "add_ovn_networks_to_provider", {})
     remove_networks = getattr(
-        request.cls, "remove_ovn_networks_from_provider", dict()
+        request.cls, "remove_ovn_networks_from_provider", {}
     )
 
     def fin():
         """
         Remove OVN networks and associated subnets
         """
-        result_list = list()
+        result_list = []
         networks_and_subnets = remove_networks or add_networks
 
         for net, subnet in networks_and_subnets.items():
@@ -170,11 +170,9 @@ def import_ovn_networks(request):
     """
     Import OVN network(s)
     """
-    import_networks = getattr(
-        request.cls, "import_ovn_networks_to_engine", list()
-    )
+    import_networks = getattr(request.cls, "import_ovn_networks_to_engine", [])
     remove_networks = getattr(
-        request.cls, "remove_ovn_networks_from_engine", list()
+        request.cls, "remove_ovn_networks_from_engine", []
     )
     dc = request.node.cls.dc
     cluster = request.node.cls.cl
@@ -183,7 +181,7 @@ def import_ovn_networks(request):
         """
         Remove OVN network(s)
         """
-        results_list = list()
+        results_list = []
         networks = remove_networks or import_networks
 
         for net in [net for net in networks if ll_networks.find_network(net)]:

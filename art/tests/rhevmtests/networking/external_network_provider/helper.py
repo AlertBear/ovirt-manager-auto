@@ -78,8 +78,7 @@ def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
             )
         )
         return ip_network if ret[0] == 0 else ""
-
-    if address_type == "dynamic":
+    elif address_type == "dynamic":
         network = vm_resource.get_network()
 
         logger.info(
@@ -96,7 +95,6 @@ def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
         ip = network.find_ip_by_int(interface)
         logger.info("VM: %s acquired IP address: %s", vm, ip)
         return ip
-
     return ""
 
 
@@ -113,10 +111,6 @@ def create_ifcfg_on_vm(vm, action="create"):
         bool: True if file created or deleted successfully, False otherwise
 
     """
-    ifcfg_prevent_default_route = {
-        "DEFROUTE": "no"
-    }
-
     interface = net_helper.get_non_mgmt_nic_name(
         vm_resource=ovn_conf.OVN_VMS_RESOURCES[vm]
     )
@@ -132,33 +126,8 @@ def create_ifcfg_on_vm(vm, action="create"):
         "Creating configuration file: %s to prevent default route"
         " changes on VM: %s", filename, vm
     )
-    network.create_ifcfg_file(interface, ifcfg_prevent_default_route)
-
+    network.create_ifcfg_file(interface, {"DEFROUTE": "no"})
     return vm_resource.fs.exists(filename)
-
-
-def check_for_ovn_objects():
-    """
-    Check for existing OVN objects on the provider database and in case found,
-    write error log
-
-    Returns:
-        bool: True if OVN objects exists on provider, False otherwise
-
-    """
-    ret_net = ovn_conf.OVN_PROVIDER.get_networks_list_from_provider_server()
-    if ret_net:
-        logger.error(
-            "There are exiting networks objects in the provider: %s", ret_net
-        )
-
-    ret_sub = ovn_conf.OVN_PROVIDER.get_subnets_list()
-    if ret_sub:
-        logger.error(
-            "There are exiting subnets objects in the provider: %s", ret_sub
-        )
-
-    return True if ret_net or ret_sub else False
 
 
 def check_ssh_file_copy(src_host, dst_host, dst_ip, size):
@@ -184,24 +153,19 @@ def check_ssh_file_copy(src_host, dst_host, dst_ip, size):
 
     logger.info(
         "Checking SSH file copy of {count} MB file from VM: {src} "
-        "to VM: {dst}".format(
-            count=size, src=src_host.fqdn, dst=dst_host.fqdn
-        )
+        "to VM: {dst}".format(count=size, src=src_host.fqdn, dst=dst_host.fqdn)
     )
     rc, out, _ = src_host.run_command(
         shlex.split(
-            ovn_conf.OVN_CMD_SSH_TRANSFER_FILE.format(
-                count=size, dst=dst_ip
-            )
+            ovn_conf.OVN_CMD_SSH_TRANSFER_FILE.format(count=size, dst=dst_ip)
         )
     )
     if rc:
         return return_fail
 
+    err_txt = "Something went wrong with dd command output: %s" % out
     # Extract last MB/s value from dd command output
     match = re.findall(ovn_conf.OVN_DD_MBS_REGEX, out)
-    err_txt = "Something went wrong with dd command output: %s" % out
-
     try:
         transfer_rate = float(match[0])
     except ValueError or IndexError:
@@ -247,7 +211,6 @@ def check_ping(vm, dst_ip, max_loss=0, count=ovn_conf.OVN_PING_COUNT):
     )
 
     match = re.findall(ovn_conf.OVN_PING_PACKETS_RECEIVED_REGEX, ret[1])
-
     if max_loss > 0 and match:
         logger.info(
             "Ping migration test: packets sent: %s received: %s [max defined "
@@ -255,7 +218,6 @@ def check_ping(vm, dst_ip, max_loss=0, count=ovn_conf.OVN_PING_COUNT):
             count, int(match[0]), max_loss
         )
         return int(match[0]) >= max_loss
-
     return ret[0] == 0
 
 
@@ -300,15 +262,13 @@ def check_dns_resolver(vm, ip_address):
             False if not, or error has occurred
 
     """
-    resolv_content = ""
-
     logger.info("Looking for nameserver: %s in %s", ip_address, vm)
     fs = ovn_conf.OVN_VMS_RESOURCES[vm].fs
+    resolv_content = ""
     if fs.exists(ovn_conf.OVN_CMD_RESOLV_CONFIG):
         resolv_content = fs.read_file(ovn_conf.OVN_CMD_RESOLV_CONFIG)
     else:
         logger.error("Unable to locate: %s", ovn_conf.OVN_CMD_RESOLV_CONFIG)
-
     return ip_address in resolv_content
 
 
@@ -330,8 +290,6 @@ def check_hot_unplug_and_plug(
         bool: True if action was successful, False otherwise
 
     """
-    msg = "Changing vNIC: {vnic} {prop} to: {val}"
-
     for state, action in zip(
         ("False", "True"), ("Hot-unplugging", "Hot-plugging")
     ):
@@ -344,25 +302,22 @@ def check_hot_unplug_and_plug(
         }
 
         testflow.step("%s vNIC: %s on VM: %s", action, ovn_conf.OVN_VNIC, vm)
+        msg = "Changing vNIC: {vnic} {prop} to: {val}"
 
         if network and state == "True":
             testflow.step(msg.format(vnic=vnic, prop="network", val=network))
             update_nic_args["network"] = network
-
         if vnic_profile and state == "True":
             testflow.step(
                 msg.format(vnic=vnic, prop="vNIC profile", val=vnic_profile)
             )
             update_nic_args["vnic_profile"] = vnic_profile
-
         if mac_address and state == "True":
             testflow.step(
                 msg.format(vnic=vnic, prop="MAC address", val=mac_address)
             )
-
         if not ll_vms.updateNic(**update_nic_args):
             return False
-
     return True
 
 
@@ -392,7 +347,6 @@ def check_ping_during_vm_migration(ping_kwargs, migration_kwargs):
         "Migration job result: %s ping job result: %s", migrate_job.result,
         ping_job.result
     )
-
     return migrate_job.result and ping_job.result
 
 
@@ -410,7 +364,8 @@ def set_vm_non_mgmt_interface_mtu(vm, mtu):
     eth = net_helper.get_non_mgmt_nic_name(vm_resource=vm)
     if not eth:
         return False
-    eth = eth[0]
+    else:
+        eth = eth[0]
 
     return vm.network.set_mtu(nics=[eth], mtu=str(mtu))
 
@@ -462,6 +417,8 @@ def service_handler(host, service, action="stop"):
         return host.run_command(
             shlex.split(ovn_conf.OVN_CMD_SERVICE_STATUS.format(name=service))
         )[0] == 0
+    else:
+        return False
 
 
 def get_provider_from_engine(provider_name):
@@ -494,7 +451,7 @@ def collect_performance_counters(hosts):
             usage, and second represents the average memory usage, or empty
             list if collection failed
     """
-    counters = list()
+    counters = []
 
     while any(ovn_conf.COLLECT_PERFORMANCE):
         for host in hosts:
@@ -505,7 +462,7 @@ def collect_performance_counters(hosts):
                 if cpu_rc:
                     logger.error("Failed to collect CPU performance")
                     logger.debug("CPU collection output: %s", cpu_out)
-                    return list()
+                    return []
             if ovn_conf.COLLECT_PERFORMANCE[1]:
                 mem_rc, mem_out, _ = host.run_command(
                     command=shlex.split(ovn_conf.OVN_CMD_GET_MEM_USAGE)
@@ -513,12 +470,13 @@ def collect_performance_counters(hosts):
                 if mem_rc:
                     logger.error("Failed to collect memory performance")
                     logger.debug("Memory collection output: %s", mem_out)
-                    return list()
+                    return []
             if counters:
                 counters[0] = round((counters[0] + float(cpu_out)) / 2.0, 2)
                 counters[1] = round((counters[1] + float(mem_out)) / 2.0, 2)
             else:
-                counters.extend([float(cpu_out), float(mem_out)])
+                counters.append(float(cpu_out))
+                counters.append(float(mem_out))
 
     return counters
 
