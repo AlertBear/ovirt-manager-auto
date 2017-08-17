@@ -11,6 +11,8 @@ from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
     disks as hl_disks
 )
+
+import rhevmtests.fixtures_helper as fixt_helper
 import rhevmtests.helpers as helpers
 import config
 
@@ -80,9 +82,8 @@ def file_storage_domain_setup(request):
     Sets class variables based on the specific file storage configurations
     """
     storage_type = request.cls.storage or request.getfixturevalue('storage')
-    nfs_version = (
-        request.cls.nfs_version or request.getfixturevalue('nfs_version')
-    )
+    nfs_version = fixt_helper.get_fixture_val(request, "nfs_version")
+
     existing_storages = ll_sd.getStorageDomainNamesForType(
         config.DC_NAME[0], storage_type
     )
