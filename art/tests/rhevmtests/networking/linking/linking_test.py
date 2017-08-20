@@ -24,10 +24,7 @@ from art.unittest_lib import (
 )
 from art.unittest_lib import NetworkTest, testflow
 from rhevmtests.fixtures import start_vm
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
-)
+import rhevmtests.networking.config as conf
 from rhevmtests.networking.fixtures import (
     NetworkFixtures,
     add_vnic_profiles,
@@ -82,9 +79,9 @@ def linking_prepare_setup(request):
         )
     request.addfinalizer(fin)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=linking_conf.NET_DICT, dc=linking.dc_0,
-        cluster=linking.cluster_0
+    assert hl_networks.create_and_attach_networks(
+        networks=linking_conf.NET_DICT, data_center=linking.dc_0,
+        clusters=[linking.cluster_0]
     )
 
     assert hl_host_network.setup_networks(

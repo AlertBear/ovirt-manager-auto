@@ -41,8 +41,8 @@ class TestBridgelessCase(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": bridgeless_conf.CASE_1_NETS
         }
     }

@@ -228,14 +228,8 @@ def create_and_attach_networks(request, remove_all_networks):
     Create and attach network to Data-Centers and clusters
     """
     create_network_dict = request.cls.create_networks
-
     for val in create_network_dict.values():
-        dc = val.get("datacenter")
-        cluster = val.get("cluster")
-        network_dict = val.get("networks")
-        assert hl_networks.create_and_attach_networks(
-            data_center=dc, cluster=cluster, network_dict=network_dict
-        )
+        assert hl_networks.create_and_attach_networks(**val)
 
 
 @pytest.fixture(scope="class")

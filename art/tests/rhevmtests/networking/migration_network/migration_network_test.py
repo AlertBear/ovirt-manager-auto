@@ -15,7 +15,7 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import config
 import helper
-import rhevmtests.networking.helper as network_helper
+import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, tier2
 from fixtures import (
@@ -28,7 +28,6 @@ from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
     clean_host_interfaces_fixture_function,
-    NetworkFixtures,
     setup_networks_fixture_function
 )
 
@@ -38,21 +37,19 @@ def migration_network_prepare_setup(request):
     """
     Prepare networks setup for tests
     """
-    mig = NetworkFixtures()
 
     def fin():
         """
         Remove networks from setup
         """
         assert hl_networks.remove_net_from_setup(
-            host=mig.hosts_list[:2], all_net=True,
-            data_center=mig.dc_0
+            host=conf.HOSTS[:2], all_net=True, data_center=conf.DC_0
         )
     request.addfinalizer(fin)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=mig_config.SETUP_NETWORKS_DICT, dc=mig.dc_0,
-        cluster=mig.cluster_0
+    assert hl_networks.create_and_attach_networks(
+        networks=mig_config.SETUP_NETWORKS_DICT, data_center=conf.DC_0,
+        clusters=[conf.CL_0]
     )
 
 

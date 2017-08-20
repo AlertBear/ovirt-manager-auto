@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import config as nf_conf
 import helper
-from rhevmtests.networking import config as conf, helper as network_helper
+from rhevmtests.networking import config as conf
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
@@ -39,7 +39,6 @@ from rhevmtests.fixtures import (
 )
 from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
-    NetworkFixtures,
     clean_host_interfaces,
     add_vnic_profiles,
     remove_vnic_profiles,
@@ -53,21 +52,18 @@ def network_filter_prepare_setup(request):
     """
     Prepare setup
     """
-    network_filter = NetworkFixtures()
-
     def fin():
         """
         Remove networks from setup
         """
         assert hl_networks.remove_net_from_setup(
-            host=[network_filter.host_0_name], all_net=True,
-            data_center=network_filter.dc_0
+            host=[conf.HOST_0_NAME], all_net=True, data_center=conf.DC_0
         )
     request.addfinalizer(fin)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=nf_conf.NETS_DICT, dc=network_filter.dc_0,
-        cluster=network_filter.cluster_0
+    assert hl_networks.create_and_attach_networks(
+        networks=nf_conf.NETS_DICT, data_center=conf.DC_0,
+        clusters=[conf.CL_0]
     )
 
 

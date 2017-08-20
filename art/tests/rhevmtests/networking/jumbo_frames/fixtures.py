@@ -48,9 +48,9 @@ def prepare_setup_jumbo_frame(request):
         assert ll_vms.stop_vms(vms=jumbo_frame.vms_list)
     request.addfinalizer(fin1)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=jumbo_conf.NETS_DICT, dc=jumbo_frame.dc_0,
-        cluster=jumbo_frame.cluster_0
+    assert hl_networks.create_and_attach_networks(
+        networks=jumbo_conf.NETS_DICT, data_center=jumbo_frame.dc_0,
+        clusters=[jumbo_frame.cluster_0]
     )
 
     for vm, host in zip(jumbo_frame.vms_list, jumbo_frame.hosts_list[:2]):

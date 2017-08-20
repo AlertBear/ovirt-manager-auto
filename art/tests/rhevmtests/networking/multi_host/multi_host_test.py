@@ -25,12 +25,9 @@ from fixtures import (
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm, create_clusters
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
-)
+import rhevmtests.networking.config as conf
 from rhevmtests.networking.fixtures import (
-    NetworkFixtures, setup_networks_fixture, clean_host_interfaces
+    setup_networks_fixture, clean_host_interfaces
 )
 
 
@@ -39,21 +36,20 @@ def multi_host_prepare_setup(request):
     """
     Prepare setup of networks for tests
     """
-    multi_host = NetworkFixtures()
 
     def fin():
         """
         Remove networks from setup
         """
         assert hl_networks.remove_net_from_setup(
-            host=[multi_host.host_0_name], all_net=True,
-            data_center=multi_host.dc_0
+            host=[conf.HOST_0_NAME], all_net=True,
+            data_center=conf.DC_0
         )
     request.addfinalizer(fin)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=multi_host_conf.SETUP_NETWORKS_DICT, dc=multi_host.dc_0,
-        cluster=multi_host.cluster_0
+    assert hl_networks.create_and_attach_networks(
+        networks=multi_host_conf.SETUP_NETWORKS_DICT,
+        data_center=conf.DC_0, clusters=[conf.CL_0]
     )
 
 

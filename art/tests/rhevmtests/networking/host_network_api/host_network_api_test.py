@@ -56,8 +56,8 @@ class TestHostNetworkApi01(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_01_DICT,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 
@@ -192,8 +192,8 @@ class TestHostNetworkApi02(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_02_DICT,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 
@@ -424,8 +424,8 @@ class TestHostNetworkApi03(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_03_DICT,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 
@@ -509,8 +509,8 @@ class TestHostNetworkApi04(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_04_DICT,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 
@@ -646,8 +646,8 @@ class TestHostNetworkApi05(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_05_DICT,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 
@@ -839,8 +839,8 @@ class TestHostNetworkApiHost06(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_06_DICT,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 
@@ -953,8 +953,8 @@ class TestHostNetworkApi07(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.NETS_CLASS_07_DICT,
-            "datacenter": conf.DC_0,
-            "cluster": conf.CL_0,
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
         }
     }
 

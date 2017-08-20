@@ -146,8 +146,8 @@ class TestSriovImportExport01(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": cluster,
+            "data_center": dc,
+            "clusters": [cluster],
             "networks": sriov_conf.CASE_01_IMPORT_EXPORT_NETS
         }
     }

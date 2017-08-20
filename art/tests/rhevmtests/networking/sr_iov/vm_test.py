@@ -103,8 +103,8 @@ class TestSriovVm01(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sriov_conf.CASE_01_VM_NETS
         }
     }
@@ -326,8 +326,8 @@ class TestSriovVm02(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sriov_conf.CASE_02_VM_NETS
         }
     }
@@ -433,8 +433,8 @@ class TestSriovVm03(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sriov_conf.CASE_03_VM_NETS
         }
     }
@@ -548,8 +548,8 @@ class TestSriovVm04(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sriov_conf.CASE_04_VM_NETS
         }
     }
@@ -728,8 +728,8 @@ class TestSriovVm05(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sriov_conf.CASE_05_VM_NETS
         }
     }
@@ -804,8 +804,8 @@ class TestSriovVm06(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sriov_conf.CASE_06_VM_NETS
         }
     }

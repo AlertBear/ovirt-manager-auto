@@ -91,8 +91,8 @@ class TestVNICProfileCase02(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": cluster,
+            "data_center": dc,
+            "clusters": [cluster],
             "networks": vnic_conf.CASE_2_NETS
         }
     }
@@ -620,8 +620,8 @@ class TestVNICProfileCase03(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": cluster,
+            "data_center": dc,
+            "clusters": [cluster],
             "networks": vnic_conf.CASE_3_NETS
         }
     }

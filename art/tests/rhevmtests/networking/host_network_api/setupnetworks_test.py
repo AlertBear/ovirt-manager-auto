@@ -49,8 +49,8 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.SN_NET_CASE_1
         }
     }
@@ -164,8 +164,8 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.SN_NET_CASE_2
         }
     }
@@ -410,8 +410,8 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.SN_NET_CASE_3
         }
     }
@@ -504,8 +504,8 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.SN_NET_CASE_4
         }
     }
@@ -585,8 +585,8 @@ class TestHostNetworkApiSetupNetworks05(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.SN_NET_CASE_5
         }
     }

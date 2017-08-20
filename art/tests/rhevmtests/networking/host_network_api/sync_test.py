@@ -118,13 +118,13 @@ class TestHostNetworkApiSync01(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.SYNC_DICT_1_CASE_1,
         },
         "2": {
-            "datacenter": net_api_conf.SYNC_DC,
-            "cluster": net_api_conf.SYNC_CL,
+            "data_center": net_api_conf.SYNC_DC,
+            "clusters": [net_api_conf.SYNC_CL],
             "networks": net_api_conf.SYNC_DICT_2_CASE_1,
         }
     }
@@ -443,8 +443,8 @@ class TestHostNetworkApiSync02(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.IP_DICT_CASE_2,
         }
     }
@@ -754,13 +754,13 @@ class TestHostNetworkApiSync03(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": net_api_conf.SYNC_DICT_1_CASE_3,
         },
         "2": {
-            "datacenter": net_api_conf.SYNC_DC,
-            "cluster": net_api_conf.SYNC_CL,
+            "data_center": net_api_conf.SYNC_DC,
+            "clusters": [net_api_conf.SYNC_CL],
             "networks": net_api_conf.SYNC_DICT_2_CASE_3,
         }
     }

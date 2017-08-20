@@ -132,8 +132,8 @@ def port_mirroring_prepare_setup(request):
         )
     request.addfinalizer(fin1)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=pm_conf.NETS_DICT, dc=conf.DC_0, cluster=conf.CL_0
+    assert hl_networks.create_and_attach_networks(
+        networks=pm_conf.NETS_DICT, data_center=conf.DC_0, clusters=[conf.CL_0]
     )
     sn_dict = {
         "add": {

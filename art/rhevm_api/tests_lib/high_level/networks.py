@@ -81,15 +81,15 @@ def remove_networks(positive, networks, data_center=None):
 
 @ll_general.generate_logs(step=True)
 def create_and_attach_networks(
-    data_center=None, cluster=None, network_dict=None
+    networks, data_center=None, clusters=[]
 ):
     """
     Create networks on datacenter and attach the networks to a cluster
 
     Args:
         data_center (str): DC name.
-        cluster (str): Cluster name.
-        network_dict (dict): Dictionary of dictionaries.
+        clusters (list): List of clusters name.
+        networks(dict): Dictionary of dictionaries.
 
     network_dict parameters:
         Logical network name as the key for the following:
@@ -109,20 +109,19 @@ def create_and_attach_networks(
         bool: True value if succeeded in creating and adding net list
             to DC/Cluster with all the parameters.
     """
-    for net, net_param in network_dict.items():
-        if data_center and net:
-            if not ll_networks.add_network(
-                positive=True, name=net, data_center=data_center,
-                usages=net_param.get("usages", "vm"),
-                vlan_id=net_param.get("vlan_id"),
-                mtu=net_param.get("mtu"),
-                profile_required=net_param.get("profile_required"),
-                qos_dict=net_param.get("qos"),
-                description=net_param.get("description")
-            ):
-                return False
+    for net, net_param in networks.items():
+        if data_center and not ll_networks.add_network(
+            positive=True, name=net, data_center=data_center,
+            usages=net_param.get("usages", "vm"),
+            vlan_id=net_param.get("vlan_id"),
+            mtu=net_param.get("mtu"),
+            profile_required=net_param.get("profile_required"),
+            qos_dict=net_param.get("qos"),
+            description=net_param.get("description")
+        ):
+            return False
 
-        if cluster and net:
+        for cluster in clusters:
             if not ll_networks.add_network_to_cluster(
                 positive=True, network=net, cluster=cluster,
                 required=net_param.get("required", "true"),

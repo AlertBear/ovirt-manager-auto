@@ -87,8 +87,8 @@ class TestSanity01(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_1_NETS
         }
     }
@@ -151,8 +151,8 @@ class TestSanity02(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_2_NETS
         }
     }
@@ -312,8 +312,8 @@ class TestSanity03(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_3_NETS
         }
     }
@@ -421,8 +421,8 @@ class TestSanity04(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_4_NETS
         }
     }
@@ -532,8 +532,8 @@ class TestSanity05(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_5_NETS
         }
     }
@@ -632,8 +632,8 @@ class TestSanity06(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_6_NETS
         }
     }
@@ -775,8 +775,8 @@ class TestSanity08(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc_for_nets,
-            "cluster": conf.CL_0,
+            "data_center": dc_for_nets,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_8_NETS
         }
     }
@@ -869,8 +869,8 @@ class TestSanity09(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_9_NETS
         }
     }
@@ -946,8 +946,8 @@ class TestSanity10(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_10_NETS
         }
     }
@@ -1035,8 +1035,8 @@ class TestSanity12(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_12_NETS
         }
     }
@@ -1158,8 +1158,8 @@ class TestSanity14(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_14_NETS
         }
     }
@@ -1258,8 +1258,8 @@ class TestSanity16(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_16_NETS
         }
     }
@@ -1345,8 +1345,8 @@ class TestSanity17(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_17_NETS
         }
     }
@@ -1390,8 +1390,8 @@ class TestSanity18(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": sanity_conf.CASE_18_NETS
         }
     }

@@ -9,7 +9,10 @@ import shlex
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.storagedomains as hl_storage
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_storage,
+    networks as hl_networks
+)
 from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
     datacenters as ll_dc,
@@ -18,10 +21,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 import config as sanity_conf
-from rhevmtests.networking import (
-    config as conf,
-    helper as network_helper
-)
+import rhevmtests.networking.config as conf
 from rhevmtests.networking.acquire_network_manager_connections import helper
 from rhevmtests.networking.mac_pool_range_per_cluster import (
     helper as mac_pool_helper
@@ -142,9 +142,8 @@ def add_network_to_dc(request):
             "required": "true",
         }
     }
-    testflow.setup("Create network %s on datacenter %s", net, dc)
-    network_helper.prepare_networks_on_setup(
-        networks_dict=net_dict, dc=dc,
+    assert hl_networks.create_and_attach_networks(
+        networks=net_dict, data_center=dc,
     )
 
 

@@ -32,40 +32,21 @@ from art.unittest_lib import (
     testflow,
 )
 from fixtures import (
-    add_label_nic_and_network, create_network_on_dc_and_cluster,
-    move_host_to_another_cluster, create_datacenter
+    add_label_nic_and_network,
+    move_host_to_another_cluster
 )
-from rhevmtests.fixtures import create_clusters
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces, NetworkFixtures
+from rhevmtests.fixtures import create_clusters, create_datacenters
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    setup_networks_fixture,
+    clean_host_interfaces,
+    remove_all_networks,
+    create_and_attach_networks,
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def labels_prepare_setup(request):
-    """
-    Prepare setup
-    """
-    labels = NetworkFixtures()
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[labels.host_0_name, labels.host_1_name], all_net=True,
-            data_center=labels.dc_0
-        )
-    request.addfinalizer(fin)
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=label_conf.NET_DICT, dc=labels.dc_0,
-        cluster=labels.cluster_0
-    )
 
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     add_label_nic_and_network.__name__
 )
@@ -79,7 +60,6 @@ class TestNetLabels01(NetworkTest):
     3) check that the label can attach to several interface with several
         networks on label.
     """
-    __test__ = True
     bond = "bond01"
     net_1 = label_conf.NETS[1][0]
     net_2 = label_conf.NETS[1][1]
@@ -88,6 +68,20 @@ class TestNetLabels01(NetworkTest):
     label_1 = label_conf.LABEL_NAME[1][0]
     label_2 = label_conf.LABEL_NAME[1][1]
     label_3 = label_conf.LABEL_NAME[1][2]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_1_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     hosts_nets_nic_dict = {
         0: {
             bond: {
@@ -260,6 +254,7 @@ class TestNetLabels01(NetworkTest):
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
     add_label_nic_and_network.__name__
 )
@@ -271,12 +266,25 @@ class TestNetLabels02(NetworkTest):
     2) Check that you can break bond which has network attached to it by
     Un-Labeling
     """
-    __test__ = True
     bond = "bond02"
     net_1 = label_conf.NETS[2][0]
     net_2 = label_conf.NETS[2][1]
     label_1 = label_conf.LABEL_NAME[2][0]
     label_2 = label_conf.LABEL_NAME[2][1]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_2_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     hosts_nets_nic_dict = {
         0: {
             bond: {
@@ -392,6 +400,7 @@ class TestNetLabels02(NetworkTest):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
 )
@@ -403,12 +412,24 @@ class TestNetLabels03(NetworkTest):
     from it
     3) Attach another network to the same interface with setupNetworks
     """
-    __test__ = True
-
     net_1 = label_conf.NETS[3][0]
     net_2 = label_conf.NETS[3][1]
     label_1 = label_conf.LABEL_NAME[3][0]
     vlan_id_1 = conf.DUMMY_VLANS.pop(0)
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_3_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     labels_list = [
         {
             "label": label_1,
@@ -417,9 +438,9 @@ class TestNetLabels03(NetworkTest):
             "nic": 1
         }
     ]
-    hosts_nets_nic_dict = {
-        0: {}
-    }
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
     @tier2
     @polarion("RHEVM3-4130")
@@ -470,8 +491,8 @@ class TestNetLabels03(NetworkTest):
         }
 
         assert hl_networks.create_and_attach_networks(
-            data_center=conf.DC_0, cluster=conf.CL_0,
-            network_dict=local_dict2
+            data_center=conf.DC_0, clusters=[conf.CL_0],
+            networks=local_dict2
         )
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
@@ -482,8 +503,8 @@ class TestNetLabels03(NetworkTest):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
-    create_network_on_dc_and_cluster.__name__
 )
 class TestNetLabels04(NetworkTest):
 
@@ -491,18 +512,23 @@ class TestNetLabels04(NetworkTest):
     Check that the labeled network created in the DC level only will not be
     attached to the labeled Host NIC
     """
-    __test__ = True
-
     net_1 = label_conf.NETS[4][0]
     label_1 = label_conf.LABEL_NAME[4][0]
-    networks_dict = {
-        net_1: {
-            "required": "false"
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_4_NETS,
+            "data_center": dc,
         }
     }
-    hosts_nets_nic_dict = {
-        0: {}
-    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
     @tier2
     @polarion("RHEVM3-4113")
@@ -534,6 +560,7 @@ class TestNetLabels04(NetworkTest):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
 )
@@ -548,7 +575,6 @@ class TestNetLabels05(NetworkTest):
     4)Create bond from labeled interfaces when those labels are attached to two
     VM non-VLAN network appropriately and fail.
     """
-    __test__ = True
     bond_1 = "bond051"
     bond_2 = "bond052"
     bond_3 = "bond053"
@@ -571,6 +597,20 @@ class TestNetLabels05(NetworkTest):
     label_6 = labels[5]
     label_7 = labels[6]
     label_8 = labels[7]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_5_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
     label_dict_1 = {
         "label": label_1,
         "networks": [net_1]
@@ -649,9 +689,8 @@ class TestNetLabels05(NetworkTest):
         label_dict_9, label_dict_10, label_dict_11, label_dict_12,
         label_dict_13, label_dict_14, label_dict_15, label_dict_16
     ]
-    hosts_nets_nic_dict = {
-        0: {}
-    }
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
     @tier2
     @polarion("RHEVM3-4116")
@@ -835,6 +874,7 @@ class TestNetLabels05(NetworkTest):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
     add_label_nic_and_network.__name__
 )
@@ -845,14 +885,26 @@ class TestNetLabels06(NetworkTest):
     the network will be removed from any labeled interface within that cluster.
     2) The same will happen when the network is removed from the DC
     """
-    __test__ = True
     net_1 = label_conf.NETS[6][0]
     label_1 = label_conf.LABEL_NAME[6][0]
     cl_1 = conf.CL_0
     dc_1 = conf.DC_0
-    hosts_nets_nic_dict = {
-        0: {}
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_6_NETS,
+            "data_center": dc_1,
+            "clusters": [cl_1],
+        }
     }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc_1]
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
     labels_list = [
         {
             "label": label_1,
@@ -923,9 +975,9 @@ class TestNetLabels06(NetworkTest):
 
 
 @pytest.mark.usefixtures(
-    create_datacenter.__name__,
+    create_datacenters.__name__,
     create_clusters.__name__,
-    create_network_on_dc_and_cluster.__name__,
+    create_and_attach_networks.__name__,
     move_host_to_another_cluster.__name__,
 )
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
@@ -935,10 +987,8 @@ class TestNetLabels07(NetworkTest):
     Cluster versions for the 3.6 DC, the network label feature is functioning
     as expected
     """
-    __test__ = True
-
     labels = label_conf.LABEL_NAME[7][:4]
-    networks_dict = label_conf.local_dict
+    networks_dict = label_conf.CASE_7_NETS
     datacenter = "Label_DC_%s_case07" % conf.COMP_VERSION_4_0[-2].replace(
         ".", "_"
     )
@@ -946,6 +996,12 @@ class TestNetLabels07(NetworkTest):
         "Label_cluster_%s_case07" % conf.COMP_VERSION_4_0[i]
         for i in range(len(conf.COMP_VERSION_4_0) - 1)
     ]
+    datacenters_dict = {
+        datacenter: {
+            "name": datacenter,
+            "version": conf.COMP_VERSION_4_0[0],
+        },
+    }
     clusters_dict = dict()
     for idx, cl in enumerate(cluster_list):
         cluster_dict = {
@@ -955,6 +1011,18 @@ class TestNetLabels07(NetworkTest):
             "version": conf.COMP_VERSION_4_0[idx]
         }
         clusters_dict[cl] = cluster_dict
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_7_NETS,
+            "data_center": datacenter,
+            "clusters": cluster_list,
+        },
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [datacenter]
 
     nets = label_conf.NETS[7][:4]
     sleep_timeout = 30
@@ -1023,7 +1091,11 @@ class TestNetLabels07(NetworkTest):
                 assert ll_networks.remove_label(labels=[lb], networks=[net])
 
 
-@pytest.mark.usefixtures(add_label_nic_and_network.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    clean_host_interfaces.__name__,
+    add_label_nic_and_network.__name__
+)
 class TestNetLabels08(NetworkTest):
     """
     Negative test cases:
@@ -1034,7 +1106,6 @@ class TestNetLabels08(NetworkTest):
     3) Check it is not possible to have bridged + bridgeless network on the
     same host interface
     """
-    __test__ = True
     label_1 = label_conf.LABEL_NAME[8][0]
     label_2 = label_conf.LABEL_NAME[8][1]
     label_3 = label_conf.LABEL_NAME[8][2]
@@ -1044,6 +1115,23 @@ class TestNetLabels08(NetworkTest):
     net_4 = label_conf.NETS[8][3]
     net_5 = label_conf.NETS[8][4]
     net_6 = label_conf.NETS[8][5]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_8_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
     label_dict_1 = {
         "label": label_1,
         "networks": [net_1, net_2]
@@ -1098,7 +1186,11 @@ class TestNetLabels08(NetworkTest):
             )
 
 
-@pytest.mark.usefixtures(add_label_nic_and_network.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    add_label_nic_and_network.__name__,
+    clean_host_interfaces.__name__,
+)
 class TestNetLabels09(NetworkTest):
     """
     1) Check that when adding a new labeled VM network to the system which
@@ -1108,14 +1200,29 @@ class TestNetLabels09(NetworkTest):
     has another non-VM network with the same label attached to the Host, will
     not attach the new network to the Host
     """
-    __test__ = True
-
     net_1 = label_conf.NETS[9][0]
     net_2 = label_conf.NETS[9][1]
     net_3 = label_conf.NETS[9][2]
     net_4 = label_conf.NETS[9][3]
     label_1 = label_conf.LABEL_NAME[9][0]
     label_2 = label_conf.LABEL_NAME[9][1]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": label_conf.CASE_9_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # clean_host_interfaces fixture
+    hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
+
     label_dict_1 = {
         "label": label_1,
         "host": 0,

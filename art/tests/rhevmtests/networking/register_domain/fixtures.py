@@ -68,8 +68,8 @@ def prepare_setup(request):
     request.addfinalizer(fin1)
 
     assert hl_networks.create_and_attach_networks(
-        data_center=dc, cluster=conf.CL_0,
-        network_dict=register_domain_conf.NETS_DICT
+        data_center=dc, clusters=[conf.CL_0],
+        networks=register_domain_conf.NETS_DICT
     )
 
     testflow.setup("Add NFS storage domain %s to DC %s", storage_name, dc)

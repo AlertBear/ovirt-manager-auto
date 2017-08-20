@@ -39,8 +39,8 @@ class TestPersistenceSetupNetworks01(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": host_network_api_conf.PERSIST_NETS_CASE_1
         }
     }

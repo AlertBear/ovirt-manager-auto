@@ -49,5 +49,5 @@ def create_network_on_setup(request):
 
     if net_dict:
         assert hl_networks.create_and_attach_networks(
-            data_center=conf.DC_0, cluster=conf.CL_0, network_dict=net_dict
+            data_center=conf.DC_0, clusters=[conf.CL_0], networks=net_dict
         )

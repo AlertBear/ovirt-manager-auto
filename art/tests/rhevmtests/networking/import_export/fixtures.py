@@ -106,8 +106,8 @@ def import_export_prepare_setup(request):
     }
 
     assert hl_networks.create_and_attach_networks(
-        data_center=conf.DC_0, cluster=conf.CL_0,
-        network_dict=import_export_conf.LOCAL_DICT
+        data_center=conf.DC_0, clusters=[conf.CL_0],
+        networks=import_export_conf.LOCAL_DICT
     )
     assert hl_host_network.setup_networks(
         host_name=conf.HOST_0_NAME, **sn_dict

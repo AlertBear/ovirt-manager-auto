@@ -44,8 +44,8 @@ class TestHostNetworkApiIpV601(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.IPV6_NETS_CLASS_1,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 
@@ -262,8 +262,8 @@ class TestHostNetworkApiIpV602(NetworkTest):
     create_networks = {
         "1": {
             "networks": net_api_conf.IPV6_NETS_CLASS_2,
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
         }
     }
 

@@ -65,6 +65,6 @@ def create_network(request):
 
     assert hl_networks.create_and_attach_networks(
         data_center=conf.DC_NAME[0],
-        cluster=conf.CLUSTER_NAME[0],
-        network_dict={network_name: {}}
+        clusters=[conf.CLUSTER_NAME[0]],
+        networks={network_name: {}}
     )

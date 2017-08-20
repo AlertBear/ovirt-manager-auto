@@ -44,8 +44,8 @@ class TestDuplicateVlanId01(NetworkTest):
         Create 2 networks with the same VLAN ID
         """
         assert hl_networks.create_and_attach_networks(
-            data_center=conf.DC_0, cluster=conf.CL_0,
-            network_dict=dup_vlan_conf.ALLOW_DUPLICATE_VLAN_ID_CREATE_NETWORKS
+            data_center=conf.DC_0, clusters=[conf.CL_0],
+            networks=dup_vlan_conf.ALLOW_DUPLICATE_VLAN_ID_CREATE_NETWORKS
         )
 
     @tier2

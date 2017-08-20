@@ -22,10 +22,8 @@ from art.unittest_lib import (
     tier2,
 )
 from art.unittest_lib import NetworkTest, testflow
-from rhevmtests.networking import config as conf, helper as network_helper
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, setup_networks_fixture
-)
+from rhevmtests.networking import config as conf
+from rhevmtests.networking.fixtures import setup_networks_fixture
 from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
@@ -34,21 +32,19 @@ def multiple_gw_prepare_setup(request):
     """
     Create networks on engine
     """
-    multiple_gw = NetworkFixtures()
 
     def fin():
         """
         Remove networks from setup
         """
         assert hl_networks.remove_net_from_setup(
-            host=[multiple_gw.host_0_name], all_net=True,
-            data_center=multiple_gw.dc_0
+            host=[conf.HOST_0_NAME], all_net=True, data_center=conf.DC_0
         )
     request.addfinalizer(fin)
 
-    network_helper.prepare_networks_on_setup(
-        networks_dict=multiple_gw_conf.NETS_DICT, dc=multiple_gw.dc_0,
-        cluster=multiple_gw.cluster_0
+    assert hl_networks.create_and_attach_networks(
+        networks=multiple_gw_conf.NETS_DICT, data_center=conf.DC_0,
+        clusters=[conf.CL_0]
     )
 
 

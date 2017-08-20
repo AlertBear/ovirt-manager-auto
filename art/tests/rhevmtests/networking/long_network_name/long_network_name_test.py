@@ -86,7 +86,7 @@ class TestLongNetworkName01(NetworkTest):
             }
         }
         assert hl_networks.create_and_attach_networks(
-            data_center=conf.DC_0, cluster=conf.CL_0, network_dict=network_dict
+            data_center=conf.DC_0, clusters=[conf.CL_0], network=network_dict
         )
 
         assert hl_host_network.setup_networks(
@@ -138,8 +138,8 @@ class TestLongNetworkName02(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": long_network_name
         }
     }
@@ -184,8 +184,8 @@ class TestLongNetworkName03(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": long_network_name
         }
     }

@@ -103,8 +103,8 @@ class TestRequiredNetwork02(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": required_conf.CASE_2_NETS
         }
     }
@@ -161,8 +161,8 @@ class TestRequiredNetwork03(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": conf.CL_0,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
             "networks": required_conf.CASE_3_NETS
         }
     }

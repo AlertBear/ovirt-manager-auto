@@ -46,8 +46,8 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
     # create_and_attach_network params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": network_conf.CL_0,
+            "data_center": dc,
+            "clusters": [network_conf.CL_0],
             "networks": vlan_name_conf.CASE_1_NETS
         }
     }

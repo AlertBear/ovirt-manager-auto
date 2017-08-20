@@ -113,8 +113,8 @@ class TestMGMTNetRole02(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": cluster,
+            "data_center": dc,
+            "clusters": [cluster],
             "networks": mgmt_conf.NET_DICT_CASE_02
         }
     }
@@ -200,14 +200,10 @@ class TestMGMTNetRole03(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": ext_dc,
-            "cluster": ext_cluster,
+            "data_center": ext_dc,
+            "clusters": [ext_cluster, ext_cluster_1],
             "networks": mgmt_conf.NET_DICT_CASE_03
         },
-        "2": {
-            "cluster": ext_cluster_1,
-            "networks": mgmt_conf.NET_DICT_CASE_03
-        }
     }
 
     @tier2
@@ -306,8 +302,8 @@ class TestMGMTNetRole04(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": ext_cls_0,
+            "data_center": dc,
+            "clusters": [ext_cls_0],
             "networks": mgmt_conf.NET_DICT_CASE_04
         }
     }
@@ -377,7 +373,7 @@ class TestMGMTNetRole05(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
+            "data_center": dc,
             "networks": mgmt_conf.NET_DICT_CASE_05
         }
     }
@@ -477,7 +473,7 @@ class TestMGMTNetRole06(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": ext_dc,
+            "data_center": ext_dc,
             "networks": mgmt_conf.NET_DICT_CASE_06
         }
     }
@@ -596,7 +592,7 @@ class TestMGMTNetRole07(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": ext_dc,
+            "data_center": ext_dc,
             "networks": mgmt_conf.NET_DICT_CASE_07
         }
     }
@@ -704,7 +700,7 @@ class TestMGMTNetRole08(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
+            "data_center": dc,
             "networks": mgmt_conf.NET_DICT_CASE_08_2
         }
     }

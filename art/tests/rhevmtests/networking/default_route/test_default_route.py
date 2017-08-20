@@ -56,8 +56,8 @@ class TestDefaultRoute01(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": ext_cluster,
+            "data_center": dc,
+            "clusters": [ext_cluster],
             "networks": dr_conf.NET_DICT_CASE_01
         }
     }
@@ -102,8 +102,8 @@ class TestDefaultRoute02(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": cluster,
+            "data_center": dc,
+            "clusters": [cluster],
             "networks": dr_conf.NET_DICT_CASE_02
         }
     }
@@ -178,8 +178,8 @@ class TestDefaultRoute03(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": cluster,
+            "data_center": dc,
+            "clusters": [cluster],
             "networks": dr_conf.NET_DICT_CASE_03
         }
     }
@@ -263,8 +263,8 @@ class TestDefaultRoute04(NetworkTest):
     # create_and_attach_networks params
     create_networks = {
         "1": {
-            "datacenter": dc,
-            "cluster": cluster,
+            "data_center": dc,
+            "clusters": [cluster],
             "networks": dr_conf.NET_DICT_CASE_03
         }
     }

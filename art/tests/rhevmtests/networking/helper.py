@@ -113,23 +113,6 @@ def seal_vm(vm, root_password):
     return True
 
 
-def prepare_networks_on_setup(networks_dict, dc, cluster=None):
-    """
-    Create and attach all networks that are needed for all cases
-
-    :param networks_dict: Networks dict
-    :type networks_dict: dict
-    :param dc: DC name
-    :type dc: str
-    :param cluster: Cluster name
-    :type cluster: str
-    :raise: NetworkException
-    """
-    assert hl_networks.create_and_attach_networks(
-        data_center=dc, cluster=cluster, network_dict=networks_dict
-    )
-
-
 def networks_sync_status(host, networks):
     """
     Get networks sync status
