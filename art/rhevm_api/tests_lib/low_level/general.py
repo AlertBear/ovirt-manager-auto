@@ -321,11 +321,12 @@ def get_log_msg(
         tuple: Log info and log error text
     """
     kwargs = prepare_kwargs_for_log(**kwargs)
-    kwargs_to_pop = list()
+    kwargs_to_pop = []
+    kwargs_to_log = {}
     log = [
         re.sub('[^0-9a-zA-Z|_]+', "", i) for i in log_action.lower().split()
     ]
-    for k, v in kwargs.iteritems():
+    for k, v in kwargs.items():
         if k.lower() in log:
             if isinstance(v, bool):
                 continue
@@ -342,7 +343,12 @@ def get_log_msg(
     for k in kwargs_to_pop:
         kwargs.pop(k)
 
-    with_kwargs = "with %s" % kwargs if kwargs else ""
+    for k, v in kwargs.items():
+        kwargs_to_log[k] = getattr(
+            v, "name", getattr(v, "id", getattr(v, "fqdn", v))
+        )
+
+    with_kwargs = "with %s" % kwargs_to_log if kwargs_to_log else ""
     state = "Succeeded to" if not positive else "Failed to"
     info_text = (
         "{log_action} {obj_type} {obj_name} {with_kwargs} {extra_txt}".format(
