@@ -8,8 +8,6 @@ import shlex
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-
 from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_storagedomains,
     datacenters as ll_datacenters,
@@ -38,7 +36,7 @@ def sr_iov_init(request):
         datacenter_name=conf.DC_0, storage_type=conf.STORAGE_TYPE
     )[0]
     # Create SR-IOV host NIC class instances to work with SR-IOV interfaces
-    sriov_conf.HOST_O_SRIOV_NICS_OBJ = (
+    sriov_conf.HOST_0_SRIOV_NICS_OBJ = (
         ll_sriov.SriovHostNics(conf.HOST_0_NAME)
     )
     sriov_conf.HOST_1_SRIOV_NICS_OBJ = (
@@ -47,19 +45,22 @@ def sr_iov_init(request):
 
     # Get all SR-IOV host NIC objects
     sriov_conf.HOST_0_PF_LIST = (
-        sriov_conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
+        sriov_conf.HOST_0_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
     )
     sriov_conf.HOST_1_PF_LIST = (
         sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
     )
 
     # Get all SR-IOV host NIC names
-    sriov_conf.HOST_0_PF_NAMES = (
-        sriov_conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_names()
-    )
-    sriov_conf.HOST_1_PF_NAMES = (
-        sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_names()
-    )
+    host_0_pf_nics = sriov_conf.HOST_0_SRIOV_NICS_OBJ.get_all_pf_nics_names()
+    sriov_conf.HOST_0_PF_NAMES = [
+        i for i in conf.HOST_0_NICS if i in host_0_pf_nics
+    ]
+
+    host_1_pf_nics = sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_names()
+    sriov_conf.HOST_1_PF_NAMES = [
+        i for i in conf.HOST_1_NICS if i in host_1_pf_nics
+    ]
 
     # Get all PF objects according to PF NIC names
     sriov_conf.HOST_0_PF_OBJECTS = [
@@ -76,28 +77,6 @@ def sr_iov_init(request):
     sriov_conf.HOST_0_PF_OBJECT_1 = sriov_conf.HOST_0_PF_OBJECTS[0]
     sriov_conf.HOST_0_PF_OBJECT_2 = sriov_conf.HOST_0_PF_OBJECTS[1]
     sriov_conf.HOST_1_PF_OBJECT_1 = sriov_conf.HOST_1_PF_OBJECTS[0]
-
-    host_0_mgmt_nic_obj = hl_networks.get_management_network_host_nic(
-        host=conf.HOST_0_NAME, cluster=conf.CL_0
-    )
-    # Remove the host NIC with management network from PF lists
-    if host_0_mgmt_nic_obj.name in sriov_conf.HOST_0_PF_NAMES:
-        sriov_conf.HOST_0_PF_NAMES.remove(host_0_mgmt_nic_obj.name)
-        sriov_conf.HOST_0_PF_LIST = filter(
-            lambda x: x.id != host_0_mgmt_nic_obj.id,
-            sriov_conf.HOST_0_PF_LIST
-        )
-    host_1_mgmt_nic_obj = hl_networks.get_management_network_host_nic(
-        host=conf.HOST_1_NAME, cluster=conf.CL_0
-    )
-
-    # Remove the host NIC with management network from PF lists
-    if host_1_mgmt_nic_obj.name in sriov_conf.HOST_1_PF_NAMES:
-        sriov_conf.HOST_1_PF_NAMES.remove(host_1_mgmt_nic_obj.name)
-        sriov_conf.HOST_1_PF_LIST = filter(
-            lambda x: x.id != host_1_mgmt_nic_obj.id,
-            sriov_conf.HOST_1_PF_LIST
-        )
 
 
 @pytest.fixture(scope="class")

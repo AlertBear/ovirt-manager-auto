@@ -77,7 +77,7 @@ class TestSriov01(NetworkTest):
         """
         helper.update_host_nics()
         pf_list_names = (
-            sriov_conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_names()
+            sriov_conf.HOST_0_SRIOV_NICS_OBJ.get_all_pf_nics_names()
         )
         testflow.step(
             "Check that bond name is not in sr_iov pf names list"

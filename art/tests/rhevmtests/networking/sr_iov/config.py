@@ -24,7 +24,7 @@ MIGRATION_TEST_VNICS = global_helper.generate_object_names(
 )
 
 # All the following objects will be filled during runtime
-HOST_O_SRIOV_NICS_OBJ = None
+HOST_0_SRIOV_NICS_OBJ = None
 HOST_1_SRIOV_NICS_OBJ = None
 HOST_0_PF_LIST = list()
 HOST_1_PF_LIST = list()
