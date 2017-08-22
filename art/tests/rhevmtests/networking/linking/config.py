@@ -8,6 +8,7 @@ Config for Network Linking feature tests
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 
+
 VNIC_PROFILES = global_helper.generate_object_names(
     num_of_cases=6, num_of_objects=10, prefix="linking_vnic_profile"
 )
@@ -17,7 +18,6 @@ VNICS = global_helper.generate_object_names(
 NETS = global_helper.generate_object_names(
     num_of_cases=6, num_of_objects=10, prefix="linking_net"
 )
-
 
 # vNICS
 CASE_01_VNIC_1 = VNICS[1][0]
@@ -45,12 +45,16 @@ CASE_04_NET_1 = NETS[4][0]
 CASE_05_NET_1 = NETS[5][0]
 CASE_05_NET_2 = NETS[5][1]
 
-NET_DICT = {
+# Create Network dicts
+CASE_01_NETS_DICT = {
     CASE_01_NET_1: {
         "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
-    },
+    }
+}
+
+CASE_02_NETS_DICT = {
     CASE_02_NET_1: {
         "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
@@ -60,15 +64,24 @@ NET_DICT = {
         "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
-    },
+    }
+}
+
+CASE_03_NETS_DICT = {
     CASE_03_NET_1: {
         "required": "false"
-    },
+    }
+}
+
+CASE_04_NETS_DICT = {
     CASE_04_NET_1: {
         "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",
         "nic": 1
-    },
+    }
+}
+
+CASE_05_NETS_DICT = {
     CASE_05_NET_1: {
         "vlan_id": conf.DUMMY_VLANS.pop(0),
         "required": "false",

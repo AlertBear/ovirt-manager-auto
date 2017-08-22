@@ -8,89 +8,31 @@ The following elements will be created for the testing:
 1 DC, 1 Cluster, 1 Hosts, 8 vNICs, 3 vNIC profiles, 7 networks and 2 VMs
 """
 
-import config as linking_conf
-
 import pytest
 
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    vms as hl_vms,
-    networks as hl_networks
-)
-from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier2,
-)
-from art.unittest_lib import NetworkTest, testflow
-from rhevmtests.fixtures import start_vm
+import config as linking_conf
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures,
+from art.test_handler.tools import polarion
+from art.unittest_lib import NetworkTest, testflow, tier2
+from rhevmtests.fixtures import start_vm
+from rhevmtests.networking.fixtures import (  # noqa: F401
     add_vnic_profiles,
     remove_vnic_profiles,
     add_vnics_to_vms,
-    remove_vnics_from_vms
+    remove_vnics_from_vms,
+    create_and_attach_networks,
+    remove_all_networks,
+    setup_networks_fixture,
+    clean_host_interfaces
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def linking_prepare_setup(request):
-    """
-    Prepare shared environment for cases
-    """
-    linking = NetworkFixtures()
-    setup_net_dict = {
-        "add": {
-            "1": {
-                "network": linking_conf.CASE_01_NET_1,
-                "nic": linking.host_0_nics[1]
-            },
-            "2": {
-                "network": linking_conf.CASE_02_NET_1,
-                "nic": linking.host_0_nics[1]
-            },
-            "3": {
-                "network": linking_conf.CASE_02_NET_2,
-                "nic": linking.host_0_nics[1]
-            },
-            "4": {
-                "network": linking_conf.CASE_04_NET_1,
-                "nic": linking.host_0_nics[1]
-            },
-            "5": {
-                "network": linking_conf.CASE_05_NET_1,
-                "nic": linking.host_0_nics[1]
-            },
-            "6": {
-                "network": linking_conf.CASE_05_NET_2,
-                "nic": linking.host_0_nics[1]
-            }
-        }
-    }
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[linking.host_0_name], all_net=True,
-            data_center=linking.dc_0
-        )
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_and_attach_networks(
-        networks=linking_conf.NET_DICT, data_center=linking.dc_0,
-        clusters=[linking.cluster_0]
-    )
-
-    assert hl_host_network.setup_networks(
-        host_name=linking.host_0_name, **setup_net_dict
-    )
 
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__,
     remove_vnics_from_vms.__name__,
     add_vnics_to_vms.__name__
 )
@@ -98,11 +40,32 @@ class TestLinkedCase01(NetworkTest):
     """
     Check if plugged/linked properties are enabled by default
     """
-
+    # Global parameters
     vm = conf.VM_1
     vnic = linking_conf.CASE_01_VNIC_1
     net_1 = linking_conf.CASE_01_NET_1
 
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": linking_conf.CASE_01_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
+    hosts_nets_nic_dict = {
+        0: {
+            linking_conf.CASE_01_NET_1: {
+                "network": linking_conf.CASE_01_NET_1,
+                "nic": 1
+            }
+        }
+    }
+
+    # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
         "1":
             {
@@ -112,6 +75,7 @@ class TestLinkedCase01(NetworkTest):
             }
     }
 
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
@@ -128,6 +92,8 @@ class TestLinkedCase01(NetworkTest):
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__,
     remove_vnics_from_vms.__name__,
     add_vnics_to_vms.__name__
 )
@@ -136,7 +102,31 @@ class TestLinkedCase02(NetworkTest):
     Create permutation for a plugged/linked vNIC, use e1000 and rtl8139
     drivers
     """
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": linking_conf.CASE_02_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
 
+    # setup_networks_fixture fixture parameters
+    hosts_nets_nic_dict = {
+        0: {
+            linking_conf.CASE_02_NET_1: {
+                "network": linking_conf.CASE_02_NET_1,
+                "nic": 1
+            },
+            linking_conf.CASE_02_NET_2: {
+                "network": linking_conf.CASE_02_NET_2,
+                "nic": 1
+            }
+        }
+    }
+
+    # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
         "1":
             {
@@ -159,6 +149,7 @@ class TestLinkedCase02(NetworkTest):
             }
     }
 
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
@@ -216,6 +207,7 @@ class TestLinkedCase02(NetworkTest):
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     remove_vnics_from_vms.__name__,
     add_vnics_to_vms.__name__
 )
@@ -225,9 +217,20 @@ class TestLinkedCase03(NetworkTest):
     should fail as VM can't run when there is no network on at least one host
     of the cluster
     """
-
+    # global parameters
     vm = conf.VM_1
 
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": linking_conf.CASE_03_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
         "1":
             {
@@ -237,6 +240,7 @@ class TestLinkedCase03(NetworkTest):
             }
     }
 
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
@@ -253,6 +257,8 @@ class TestLinkedCase03(NetworkTest):
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__,
     remove_vnic_profiles.__name__,
     remove_vnics_from_vms.__name__,
     add_vnic_profiles.__name__,
@@ -265,7 +271,7 @@ class TestLinkedCase04(NetworkTest):
     2.  Change network parameters for both VNICs:
     3.  Change nic names, link/plugged states
     """
-
+    # global parameters
     vm_name = conf.VM_0
     vnic_1 = linking_conf.CASE_04_VNIC_1
     vnic_2 = linking_conf.CASE_04_VNIC_2
@@ -276,10 +282,33 @@ class TestLinkedCase04(NetworkTest):
     nic_names = [
         linking_conf.CASE_04_VNIC_1_REN, linking_conf.CASE_04_VNIC_2_REN
     ]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": linking_conf.CASE_04_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
+    hosts_nets_nic_dict = {
+        0: {
+            linking_conf.CASE_04_NET_1: {
+                "network": linking_conf.CASE_04_NET_1,
+                "nic": 1
+            }
+        }
+    }
+
+    # start_vm fixture parameters
     start_vms_dict = {
         vm_name: {}
     }
 
+    # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
         "1":
             {
@@ -304,8 +333,10 @@ class TestLinkedCase04(NetworkTest):
             }
     }
 
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
+    # add_vnic_profiles fixture parameters
     add_vnic_profile_params = {
         linking_conf.CASE_04_VNIC_PROFILE_1: {
             "name": linking_conf.CASE_04_VNIC_PROFILE_1,
@@ -314,6 +345,7 @@ class TestLinkedCase04(NetworkTest):
         }
     }
 
+    # remove_vnic_profiles fixture parameters
     remove_vnic_profile_params = add_vnic_profile_params
 
     @tier2
@@ -398,6 +430,8 @@ class TestLinkedCase04(NetworkTest):
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__,
     remove_vnics_from_vms.__name__,
     remove_vnic_profiles.__name__,
     add_vnics_to_vms.__name__,
@@ -409,7 +443,7 @@ class TestLinkedCase05(NetworkTest):
     Check vNIC update scenarios on VM (both on and off) with plugged and
     linked vNIC states
     """
-
+    # global parameters
     vm = conf.VM_1
     vms_to_stop = [vm]
     vnic = linking_conf.CASE_05_VNIC_1
@@ -419,6 +453,31 @@ class TestLinkedCase05(NetworkTest):
     rtl_int = conf.NIC_TYPE_RTL8139
     mac_addr = "12:22:33:44:55:66"
 
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": linking_conf.CASE_05_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
+    hosts_nets_nic_dict = {
+        0: {
+            linking_conf.CASE_02_NET_1: {
+                "network": linking_conf.CASE_05_NET_1,
+                "nic": 1
+            },
+            linking_conf.CASE_02_NET_2: {
+                "network": linking_conf.CASE_05_NET_2,
+                "nic": 1
+            }
+        }
+    }
+
+    # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
         "1":
             {
@@ -428,14 +487,18 @@ class TestLinkedCase05(NetworkTest):
             }
     }
 
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
+    # add_vnic_profiles fixture parameters
     add_vnic_profile_params = {
         linking_conf.CASE_05_VNIC_PROFILE_1: {
             "name": linking_conf.CASE_05_VNIC_PROFILE_1,
             "network": net_2
         }
     }
+
+    # remove_vnic_profiles fixture parameters
     remove_vnic_profile_params = add_vnic_profile_params
 
     @tier2
