@@ -64,7 +64,10 @@ class RHEL7GATest(common.GABaseTestCase):
             cls.vm_name
         )
         testflow.setup("Start VM %s", cls.vm_name)
-        assert vms.startVm(True, cls.vm_name, wait_for_status=config.VM_UP)
+        assert vms.startVm(
+            True, cls.vm_name, wait_for_status=config.VM_UP,
+            use_cloud_init=True
+        )
         common.wait_for_connective(cls.machine)
 
 
