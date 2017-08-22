@@ -1,5 +1,10 @@
+import copy
+import rhevmtests.virt.config as virt_conf
 from rhevmtests.virt.config import *  # flake8: noqa
 
+
+TEMPLATE_VALIDATOR_IGNORE_LIST = copy.deepcopy(virt_conf.VALIDATOR_IGNORE_LIST)
+TEMPLATE_VALIDATOR_IGNORE_LIST += ['has_illegal_images']
 
 MEMORY_SIZE_1 = GB
 MEMORY_SIZE_2 = GB/2

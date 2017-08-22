@@ -23,7 +23,6 @@ from art.unittest_lib import (
     tier1,
 )
 from art.unittest_lib import testflow, VirtTest
-import rhevmtests.virt.config as virt_conf
 
 logger = logging.getLogger('virt.templates.test_template_sanity')
 
@@ -163,7 +162,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             vm_object, template_object, logger=logger, root='Comparator',
-            ignore=virt_conf.VALIDATOR_IGNORE_LIST
+            ignore=conf.TEMPLATE_VALIDATOR_IGNORE_LIST
         )
 
     @tier1
@@ -186,7 +185,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             vm_object, template_object, logger=logger, root='Comparator',
-            ignore=virt_conf.VALIDATOR_IGNORE_LIST
+            ignore=conf.TEMPLATE_VALIDATOR_IGNORE_LIST
         )
 
     @tier1
@@ -247,7 +246,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             template_object, vm_object, logger=logger, root='Comparator',
-            ignore=virt_conf.VALIDATOR_IGNORE_LIST
+            ignore=conf.TEMPLATE_VALIDATOR_IGNORE_LIST
         )
 
     @tier1
@@ -274,7 +273,7 @@ class TestTemplateSanity(VirtTest):
         )
         assert validator.compareElements(
             template_object, vm_object, logger=logger, root='Comparator',
-            ignore=virt_conf.VALIDATOR_IGNORE_LIST
+            ignore=conf.TEMPLATE_VALIDATOR_IGNORE_LIST
         )
 
     @tier1
