@@ -74,6 +74,7 @@ class TestLowShare(BaseCpuShare):
         (vm_name, conf.CPU_SHARE_LOW) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @bz({'1484023': {}})
     @tier2
     @polarion("RHEVM3-4980")
     def test_low_share(self):
@@ -98,6 +99,7 @@ class TestMediumShare(BaseCpuShare):
         ) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @bz({'1484023': {}})
     @tier2
     @polarion("RHEVM3-4981")
     def test_medium_share(self):
@@ -122,6 +124,7 @@ class TestHighShare(BaseCpuShare):
         ) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @bz({'1484023': {}})
     @tier2
     @polarion("RHEVM3-4982")
     def test_high_share(self):
@@ -144,6 +147,7 @@ class TestCustomShare(BaseCpuShare):
         (vm_name, 300) for vm_name in BaseCpuShare.vms_to_start
     )
 
+    @bz({'1484023': {}})
     @tier2
     @polarion("RHEVM3-4983")
     def test_custom_share(self):
@@ -171,8 +175,8 @@ class TestPredefinedValues(BaseCpuShare):
     }
     expected_dict = dict(zip(vms_to_start, (13, 13, 25, 50)))
 
+    @bz({'1484023': {}, "1304300": {"ppc": conf.PPC_ARCH}})
     @tier1
-    @bz({"1304300": {"ppc": conf.PPC_ARCH}})
     @polarion("RHEVM3-4984")
     def test_predefined_values(self):
         """
@@ -199,6 +203,7 @@ class TestCustomValuesOfShare(BaseCpuShare):
     }
     expected_dict = dict(zip(vms_to_start, (13, 13, 25, 50)))
 
+    @bz({'1484023': {}})
     @tier2
     @polarion("RHEVM3-4985")
     def test_custom_values_of_share(self):
