@@ -2067,9 +2067,10 @@ def runVmOnce(
         floppy.set_file(data_st.File(id=floppy_image))
         floppies.add_floppy(floppy)
         vm_for_action.set_floppies(floppies)
+
+    os_type = data_st.OperatingSystem()
     boot_dev = kwargs.get("boot_dev")
     if boot_dev:
-        os_type = data_st.OperatingSystem()
         os_type.set_boot(
             boot=data_st.Boot(
                 devices=data_st.devicesType(
@@ -2077,9 +2078,6 @@ def runVmOnce(
                 )
             )
         )
-        vm_for_action.set_os(os_type)
-
-    os_type = data_st.OperatingSystem()
 
     for opt_name in "kernel", "initrd", "cmdline":
         opt_val = kwargs.pop(opt_name, None)
