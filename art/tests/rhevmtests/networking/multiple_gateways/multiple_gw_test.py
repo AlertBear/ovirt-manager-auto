@@ -11,43 +11,21 @@ Only static IP configuration is tested.
 
 import pytest
 
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as multiple_gw_conf
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    networks as hl_networks
-)
+import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier2,
+from art.unittest_lib import NetworkTest, testflow, tier2
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    setup_networks_fixture,
+    clean_host_interfaces,
+    create_and_attach_networks,
+    remove_all_networks
 )
-from art.unittest_lib import NetworkTest, testflow
-from rhevmtests.networking import config as conf
-from rhevmtests.networking.fixtures import setup_networks_fixture
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
-@pytest.fixture(scope="module", autouse=True)
-def multiple_gw_prepare_setup(request):
-    """
-    Create networks on engine
-    """
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[conf.HOST_0_NAME], all_net=True, data_center=conf.DC_0
-        )
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_and_attach_networks(
-        networks=multiple_gw_conf.NETS_DICT, data_center=conf.DC_0,
-        clusters=[conf.CL_0]
-    )
-
-
+@pytest.mark.usefixtures(create_and_attach_networks.__name__)
 class TestGatewaysCase01(NetworkTest):
     """
     1. Verify you can configure additional VLAN network with static IP and
@@ -58,6 +36,16 @@ class TestGatewaysCase01(NetworkTest):
     4. Verify you can add additional NIC to the already created bond.
     5. Verify you can remove slave from already created bond
     """
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": multiple_gw_conf.CASE_01_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
     # Test params = [network, host NIC, IP, IP gateway]
     # VLAN network params
     vlan_net = multiple_gw_conf.NETS[1][0]
@@ -131,7 +119,10 @@ class TestGatewaysCase01(NetworkTest):
         assert hl_host_network.clean_host_interfaces(host_name=host)
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestGatewaysCase02(NetworkTest):
     """
     1. Verify you can add additional NIC to the already created bond
@@ -147,6 +138,16 @@ class TestGatewaysCase02(NetworkTest):
     net_bond_2 = multiple_gw_conf.NETS[2][1]
     bond_2 = "bond21"
     remove_slave_params = [bond_2, 6]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": multiple_gw_conf.CASE_02_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {
