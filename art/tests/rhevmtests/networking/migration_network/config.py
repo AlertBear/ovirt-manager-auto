@@ -55,7 +55,7 @@ NETS = global_helper.generate_object_names(
 )
 
 # Networks used in tests
-SETUP_NETWORKS_DICT = {
+CREATE_NETWORKS_DICT = {
     NETS[1][0]: {
         "required": "true",
     },

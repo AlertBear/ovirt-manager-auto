@@ -12,7 +12,6 @@ import config as mig_config
 
 import pytest
 
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import config
 import helper
 import rhevmtests.networking.config as conf
@@ -27,34 +26,16 @@ from fixtures import (
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (  # noqa: F401
-    clean_host_interfaces_fixture_function,
-    setup_networks_fixture_function
+    create_and_attach_networks,
+    remove_all_networks,
+    setup_networks_fixture_function,
+    clean_host_interfaces_fixture_function
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def migration_network_prepare_setup(request):
-    """
-    Prepare networks setup for tests
-    """
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=conf.HOSTS[:2], all_net=True, data_center=conf.DC_0
-        )
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_and_attach_networks(
-        networks=mig_config.SETUP_NETWORKS_DICT, data_center=conf.DC_0,
-        clusters=[conf.CL_0]
-    )
 
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture_function.__name__,
     update_network_usages.__name__,
     remove_networks.__name__,
@@ -92,6 +73,16 @@ class TestMigrationNetwork(NetworkTest):
             "host": 1
         }
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": mig_config.CREATE_NETWORKS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
 
     # Test case parameters = [
     #   Test case setup network dict,
