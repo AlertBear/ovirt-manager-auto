@@ -13,47 +13,27 @@ import pytest
 
 import config as multi_host_conf
 import helper as multi_host_helper
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import (
-    tier2,
-)
-from art.unittest_lib import NetworkTest, testflow
+from art.unittest_lib import NetworkTest, testflow, tier2
 from fixtures import (
-    add_vnics_to_vms, add_vnic_to_template, move_host_to_cluster,
+    add_vnics_to_vms,
+    add_vnic_to_template,
+    move_host_to_cluster,
     add_network_to_cluster
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm, create_clusters
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    setup_networks_fixture, clean_host_interfaces
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    setup_networks_fixture,
+    clean_host_interfaces,
+    create_and_attach_networks,
+    remove_all_networks
 )
 
 
-@pytest.fixture(scope="module", autouse=True)
-def multi_host_prepare_setup(request):
-    """
-    Prepare setup of networks for tests
-    """
-
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[conf.HOST_0_NAME], all_net=True,
-            data_center=conf.DC_0
-        )
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_and_attach_networks(
-        networks=multi_host_conf.SETUP_NETWORKS_DICT,
-        data_center=conf.DC_0, clusters=[conf.CL_0]
-    )
-
-
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
     create_clusters.__name__,
     add_network_to_cluster.__name__,
@@ -151,6 +131,16 @@ class TestMultiHostNetworkProperties(NetworkTest):
     network_attached_to_bond = multi_host_conf.NETS[1][11]
     vlan_network_attached_to_bond = multi_host_conf.NETS[1][12]
     mtu_network_attached_to_bond = multi_host_conf.NETS[1][13]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": multi_host_conf.CREATE_NETWORKS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {

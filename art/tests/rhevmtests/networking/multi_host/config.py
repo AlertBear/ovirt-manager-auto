@@ -29,7 +29,7 @@ MSG_NOT_UPDATED_HOST = (
     "Network: {net} property: {prop} not updated on host: {host}"
 )
 
-SETUP_NETWORKS_DICT = {
+CREATE_NETWORKS_DICT = {
     # Test case: VM network attached to host
     NETS[1][0]: {
         "required": "false",
