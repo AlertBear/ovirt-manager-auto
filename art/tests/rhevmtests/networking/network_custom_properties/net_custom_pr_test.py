@@ -7,44 +7,24 @@ It will cover scenarios for VM/non-VM networks.
 
 import pytest
 
-from art.rhevm_api.tests_lib.high_level import (
-    host_network as hl_host_network,
-    networks as hl_networks
-)
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as custom_prop_conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier2,
-)
-from art.unittest_lib import testflow, NetworkTest
+from art.unittest_lib import testflow, NetworkTest, tier2
 from rhevmtests.networking import config as conf
-from rhevmtests.networking.fixtures import setup_networks_fixture
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
+from rhevmtests.networking.fixtures import (  # noqa: F401
+    create_and_attach_networks,
+    remove_all_networks,
+    setup_networks_fixture,
+    clean_host_interfaces
+)
 
 
-@pytest.fixture(scope="module", autouse=True)
-def prepare_setup(request):
-    """
-    Create networks on engine
-    """
-
-    def fin():
-        """
-        Remove networks from engine
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[conf.HOST_0_NAME], all_net=True, data_center=conf.DC_0
-        )
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_and_attach_networks(
-        networks=custom_prop_conf.NETS_DICT,
-        data_center=conf.DC_0, clusters=[conf.CL_0]
-    )
-
-
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase01(NetworkTest):
     """
     Verify bridge_opts exists for VM network
@@ -52,12 +32,24 @@ class TestNetworkCustomPropertiesCase01(NetworkTest):
     Verify bridge_opts exists for VM VLAN network over BOND
     Verify bridge_opts doesn't exist for the non-VM VLAN network over BOND
     """
-    __test__ = True
+    # global parameters
     net_1 = custom_prop_conf.NETS[1][0]
     net_2 = custom_prop_conf.NETS[1][1]
     net_3 = custom_prop_conf.NETS[1][2]
     net_4 = custom_prop_conf.NETS[1][3]
     bond_1 = "bond10"
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_01_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -127,7 +119,10 @@ class TestNetworkCustomPropertiesCase01(NetworkTest):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase02(NetworkTest):
     """
     Configure bridge_opts with non-default value
@@ -135,7 +130,7 @@ class TestNetworkCustomPropertiesCase02(NetworkTest):
     Update bridge_opts with default value
     Verify bridge_opts were updated with the default value
     """
-    __test__ = True
+    # global parameters
     net_1 = custom_prop_conf.NETS[2][0]
     priority_opts = custom_prop_conf.KEY1
     priority_value = custom_prop_conf.BRIDGE_OPTS.get(priority_opts)[1]
@@ -146,6 +141,18 @@ class TestNetworkCustomPropertiesCase02(NetworkTest):
     properties_dict = {
         "bridge_opts": custom_prop_conf.PRIORITY
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_02_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -199,7 +206,10 @@ class TestNetworkCustomPropertiesCase02(NetworkTest):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase03(NetworkTest):
     """
     Configure bridge_opts with non-default value
@@ -209,7 +219,7 @@ class TestNetworkCustomPropertiesCase03(NetworkTest):
     Update both values of bridge_opts with the default values
     Verify bridge_opts were updated accordingly
     """
-    __test__ = True
+    # global parameters
     bond_1 = "bond30"
     net_1 = custom_prop_conf.NETS[3][0]
     net_2 = custom_prop_conf.NETS[3][1]
@@ -227,6 +237,18 @@ class TestNetworkCustomPropertiesCase03(NetworkTest):
     properties_dict = {
         "bridge_opts": custom_prop_conf.PRIORITY
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_03_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -370,7 +392,10 @@ class TestNetworkCustomPropertiesCase03(NetworkTest):
             )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase04(NetworkTest):
     """
     Configure bridge_opts with non-default value for VLAN network over NIC
@@ -381,7 +406,7 @@ class TestNetworkCustomPropertiesCase04(NetworkTest):
     Verify bridge_opts have the default values when reattached (not updated
     values)
     """
-    __test__ = True
+    # global parameters
     bond_1 = "bond40"
     priority_opts = custom_prop_conf.KEY1
     priority_value = custom_prop_conf.BRIDGE_OPTS.get(priority_opts)[1]
@@ -392,6 +417,18 @@ class TestNetworkCustomPropertiesCase04(NetworkTest):
     properties_dict = {
         "bridge_opts": custom_prop_conf.PRIORITY
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_04_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -462,7 +499,10 @@ class TestNetworkCustomPropertiesCase04(NetworkTest):
 
 
 @pytest.mark.incremental
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase05(NetworkTest):
     """
     Configure ethtool with non-default value
@@ -470,7 +510,7 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
     Update ethtool_opts with default value
     Verify ethtool_opts were updated with the default value
     """
-    __test__ = True
+    # global parameters
     ethtool_checksums = [custom_prop_conf.TX_CHECKSUM]
     net_1 = custom_prop_conf.NETS[5][0]
     net_2 = custom_prop_conf.NETS[5][1]
@@ -484,6 +524,18 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
             nic=2, state="off"
         )
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_05_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -743,7 +795,10 @@ class TestNetworkCustomPropertiesCase05(NetworkTest):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase06(NetworkTest):
     """
     Configure ethtool and bridge opts with non-default value
@@ -751,7 +806,7 @@ class TestNetworkCustomPropertiesCase06(NetworkTest):
     Update ethtool_and bridge opts with default value
     Verify ethtool and bridge_opts were updated with the default value
     """
-    __test__ = True
+    # global parameters
     ethtool_checksums = [custom_prop_conf.TX_CHECKSUM]
     net_1 = custom_prop_conf.NETS[6][0]
     properties_dict = {
@@ -760,6 +815,18 @@ class TestNetworkCustomPropertiesCase06(NetworkTest):
         ),
         "bridge_opts": custom_prop_conf.PRIORITY
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_06_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -834,7 +901,10 @@ class TestNetworkCustomPropertiesCase06(NetworkTest):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase07(NetworkTest):
     """
     Create a network without ethtool or bridge opts configured
@@ -843,8 +913,20 @@ class TestNetworkCustomPropertiesCase07(NetworkTest):
     Update ethtool_and bridge opts with default value
     Verify ethtool and bridge_opts were updated with the default value
     """
-    __test__ = True
+    # global parameters
     net_1 = custom_prop_conf.NETS[7][0]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_07_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -939,7 +1021,10 @@ class TestNetworkCustomPropertiesCase07(NetworkTest):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase08(NetworkTest):
     """
     Configure several ethtool_opts  with non-default value for the NIC with
@@ -949,8 +1034,20 @@ class TestNetworkCustomPropertiesCase08(NetworkTest):
     Test on the Host that the ethtool values were updated correctly
     Test on the Host that bridge_opts values were updated correctly
     """
-    __test__ = True
-    net_1 = custom_prop_conf.NETS[7][0]
+    # global parameters
+    net_1 = custom_prop_conf.NETS[8][0]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_08_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -1060,7 +1157,10 @@ class TestNetworkCustomPropertiesCase08(NetworkTest):
             )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase09(NetworkTest):
     """
     Create several ethtool and bridge opts while adding network to the Host
@@ -1071,7 +1171,7 @@ class TestNetworkCustomPropertiesCase09(NetworkTest):
     Test on the Host that the ethtool values were updated correctly
     Test on the Host that bridge_opts values were updated correctly
     """
-    __test__ = True
+    # global parameters
     default_bridge_opts = " ".join(
         [
             custom_prop_conf.DEFAULT_PRIORITY,
@@ -1097,6 +1197,18 @@ class TestNetworkCustomPropertiesCase09(NetworkTest):
         ),
         "bridge_opts": default_bridge_opts
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_09_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -1220,7 +1332,10 @@ class TestNetworkCustomPropertiesCase09(NetworkTest):
             )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase10(NetworkTest):
     """
     Configure ethtool with non-default value over bond
@@ -1229,9 +1344,21 @@ class TestNetworkCustomPropertiesCase10(NetworkTest):
     Verify ethtool_opts were updated with the default value for each slave
     of the bond
     """
-    __test__ = True
+    # global parameters
     bond = "bond100"
     net_1 = custom_prop_conf.NETS[10][0]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_10_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -1315,7 +1442,10 @@ class TestNetworkCustomPropertiesCase10(NetworkTest):
             )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase11(NetworkTest):
     """
     Configure ethtool_opts with non-default value
@@ -1325,9 +1455,21 @@ class TestNetworkCustomPropertiesCase11(NetworkTest):
     Update both values of ethtool_opts with the default values
     Verify ethtool_opts were updated accordingly
     """
-    __test__ = True
+    # global parameters
     bond = "bond110"
     net_1 = custom_prop_conf.NETS[11][0]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_11_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -1452,7 +1594,10 @@ class TestNetworkCustomPropertiesCase11(NetworkTest):
                 )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestNetworkCustomPropertiesCase12(NetworkTest):
     """
     Configure ethtool and bridge opts with non-default value over Bond
@@ -1460,18 +1605,30 @@ class TestNetworkCustomPropertiesCase12(NetworkTest):
     Update ethtool_and bridge opts with default value over Bond
     Verify ethtool and bridge_opts were updated with the default value
     """
-    __test__ = True
+    # global parameters
     bridge_opts_properties = {"bridge_opts": custom_prop_conf.PRIORITY}
     ethtool_properties = {"ethtool_opts": "off"}
     ethtool_checksums = [custom_prop_conf.TX_CHECKSUM]
     bond = "bond110"
-    net_1 = custom_prop_conf.NETS[11][0]
+    net_1 = custom_prop_conf.NETS[12][0]
     properties_dict = {
         "ethtool_opts": custom_prop_conf.TX_CHECKSUM.format(
             nic="*", state="off"
         ),
         "bridge_opts": custom_prop_conf.PRIORITY
     }
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": custom_prop_conf.CASE_12_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net_1: {
