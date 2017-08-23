@@ -22,9 +22,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils.storage_api import (
-    blockOutgoingConnection
-)
 from art.test_handler.tools import polarion, bz
 import rhevmtests.storage.helpers as storage_helpers
 from art.test_handler.settings import ART_CONFIG
@@ -688,7 +685,7 @@ class TestCase4566(IscsiNfsSD):
             "Blocking outgoing connection from %s to %s", self.host_ip,
             self.storage_domain_ip,
         )
-        assert blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip
         ), (

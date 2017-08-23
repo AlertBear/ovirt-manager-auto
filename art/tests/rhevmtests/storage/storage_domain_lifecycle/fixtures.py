@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd
 )
 from utilities import utils
-from art.rhevm_api.utils import storage_api
+import rhevmtests.storage.helpers as storage_helpers
 from art.test_handler import exceptions
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ def unblock_connectivity_engine_to_host(request):
         if not check_dc_and_host_state():
             testflow.teardown("Unblocking connections, something went wrong")
             try:
-                storage_api.unblockOutgoingConnection(
+                storage_helpers.unblockOutgoingConnection(
                     self.engine_ip, config.HOSTS_USER, config.HOSTS_PW,
                     self.first_host_ip
                 )

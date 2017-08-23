@@ -26,7 +26,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
-from art.rhevm_api.utils.storage_api import flushIptables
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion, bz
 from art.test_handler.settings import ART_CONFIG
@@ -164,7 +163,11 @@ class BasicResize(BaseTestCase):
                 (self.disk_name, self.new_size)
             )
         testflow.step("Unblocking the connection to host %s", self.host_ip)
-        flushIptables(self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
+        storage_helpers.flushIptables(
+            self.host_ip,
+            config.HOSTS_USER,
+            config.HOSTS_PW
+        )
         if not ll_disks.wait_for_disks_status(
             self.disk_name, timeout=DISK_RESIZE_TIMEOUT
         ):

@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     storagedomains as ll_sd,
 )
-import art.rhevm_api.utils.storage_api as st_api
+import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
@@ -574,7 +574,7 @@ class TestCase6215(BasicEnvironment):
             self.max_spm_priority_host
         )
         self.former_spm = self.spm_host
-        assert st_api.blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             self.max_spm_priority_host_ip, config.HOSTS_USER,
             config.HOSTS_PW, self.engine_ip
         ), "Unable to block connection between %s and %s" % (
@@ -593,7 +593,7 @@ class TestCase6215(BasicEnvironment):
             "Unblock connection between %s and %s", self.max_spm_priority_host,
             self.engine_ip
         )
-        if not st_api.unblockOutgoingConnection(
+        if not storage_helpers.unblockOutgoingConnection(
             self.max_spm_priority_host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.engine_ip
         ):
@@ -678,7 +678,7 @@ class TestCase6219(BasicEnvironment):
             self.non_master_storage_domain_ip
         )
         self.former_spm = self.spm_host
-        assert st_api.blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             self.spm_host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.non_master_storage_domain_ip
         ), "Unable to block connection between %s and %s" % (
@@ -700,7 +700,7 @@ class TestCase6219(BasicEnvironment):
             "Unblock connection between %s and %s", self.former_spm,
             self.non_master_storage_domain_ip
         )
-        if not st_api.unblockOutgoingConnection(
+        if not storage_helpers.unblockOutgoingConnection(
             self.spm_host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.non_master_storage_domain_ip
         ):

@@ -16,7 +16,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
-import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion, bz
@@ -498,7 +497,7 @@ class TestCase6168(BaseTestCase):
             self.host, self.storage_domains[0]
         )
 
-        status = st_api.blockOutgoingConnection(
+        status = storage_helpers.blockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip['address']
         )
@@ -524,7 +523,7 @@ class TestCase6168(BaseTestCase):
             self.host, self.storage_domains[0]
         )
 
-        status = st_api.unblockOutgoingConnection(
+        status = storage_helpers.unblockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip['address']
         )

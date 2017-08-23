@@ -18,9 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils.log_listener import watch_logs
-from art.rhevm_api.utils.storage_api import (
-    blockOutgoingConnection,
-)
+import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.test_utils import (
     restartVdsmd,
 )
@@ -34,10 +32,8 @@ from art.unittest_lib import (
     tier4,
 )
 from art.unittest_lib.common import StorageTest, testflow
-from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as rhevm_helpers
-import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
     create_snapshot, delete_disks, deactivate_domain,
     add_disk_permutations, remove_templates, remove_vms, restart_vdsmd,
@@ -1612,7 +1608,9 @@ class TestCase6000(BaseTestCase):
         )
         ll_vms.migrate_vm_disk(self.vm_name, disk, target, wait=False)
         testflow.step("Block connection between %s to %s", source, target_ip)
-        status = blockOutgoingConnection(source, username, password, target_ip)
+        status = storage_helpers.blockOutgoingConnection(
+            source, username, password, target_ip
+        )
         assert status, "Failed to block connection"
 
     @polarion("RHEVM3-6000")
@@ -2203,7 +2201,7 @@ class TestCase5981(AllPermutationsDisks):
                 "Block connection between %s to %s",
                 self.host_ip, self.storage_domain_ip
             )
-            assert blockOutgoingConnection(
+            assert storage_helpers.blockOutgoingConnection(
                 self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
                 self.storage_domain_ip
             )
@@ -2215,7 +2213,7 @@ class TestCase5981(AllPermutationsDisks):
                 "Unblock connection between %s to %s",
                 self.host_ip, self.storage_domain_ip
             )
-            assert unblockOutgoingConnection(
+            assert storage_helpers.unblockOutgoingConnection(
                 self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
                 self.storage_domain_ip
             )
@@ -2336,7 +2334,7 @@ class TestCase5974(BaseTestCase):
             "Block connection between %s to %s", cls.host_ip,
             cls.storage_domain_ip
         )
-        assert blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             cls.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             cls.storage_domain_ip
         ), "Failed to block connection from host %s to storage domain %s" % (

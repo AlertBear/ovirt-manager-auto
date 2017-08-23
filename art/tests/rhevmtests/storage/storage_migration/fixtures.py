@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
-from art.rhevm_api.utils import test_utils, storage_api
+from art.rhevm_api.utils import test_utils
 from rhevmtests.storage.fixtures import create_disks_with_fs
 import rhevmtests.storage.helpers as storage_helpers
 
@@ -465,7 +465,7 @@ def unblock_connectivity_teardown(request):
             "Unblock connection from host %s to target %s",
             config.SOURCE, config.TARGET
         )
-        storage_api.unblockOutgoingConnection(
+        storage_helpers.unblockOutgoingConnection(
             config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, config.TARGET
         )
     request.addfinalizer(finalizer)

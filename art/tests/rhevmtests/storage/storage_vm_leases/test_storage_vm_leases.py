@@ -41,9 +41,6 @@ from fixtures import (
     unblock_engine_to_host, unblock_host_to_storage_domain,
     finalizer_wait_for_host_up, initialize_params
 )
-from art.rhevm_api.utils.storage_api import (
-    blockOutgoingConnection, unblockOutgoingConnection
-)
 
 # BZ1459865 is leaving the env in a bad status if this tests are run with
 # ISCSI or GLUSTERFS. After is fixed enable tests for all storage domain types
@@ -118,7 +115,7 @@ class BaseStorageVMLeaseTest(StorageTest):
             "Blocking connection from the engine to host %s",
             config.PLACEMENT_HOST
         )
-        assert blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
             config.PLACEMENT_HOST_IP
         )
@@ -146,7 +143,7 @@ class BaseStorageVMLeaseTest(StorageTest):
             config.PLACEMENT_HOST, self.storage_domain
         )
         for ip in self.storage_domain_ips:
-            assert blockOutgoingConnection(
+            assert storage_helpers.blockOutgoingConnection(
                 config.PLACEMENT_HOST_IP, config.HOSTS_USER, config.HOSTS_PW,
                 ip
             )
@@ -299,7 +296,7 @@ class TestCase17621(BaseStorageVmLeaseTestWithFixtures):
                 host_ip = ll_hosts.get_host_ip(host)
                 hosts_ips.append(host_ip)
                 for storage_ip in self.storage_domain_ips:
-                    assert blockOutgoingConnection(
+                    assert storage_helpers.blockOutgoingConnection(
                         host_ip, config.HOSTS_USER,
                         config.HOSTS_PW, storage_ip
                     )
@@ -315,7 +312,7 @@ class TestCase17621(BaseStorageVmLeaseTestWithFixtures):
         finally:
             for host_ip in hosts_ips:
                 for storage_domain_ip in self.storage_domain_ips:
-                    unblockOutgoingConnection(
+                    storage_helpers.unblockOutgoingConnection(
                         host_ip, config.HOSTS_USER,
                         config.HOSTS_PW, storage_domain_ip
                     )
@@ -460,7 +457,7 @@ class TestCase18186(BaseStorageVmLeaseTestWithFixtures):
         )
         ll_jobs.wait_for_jobs([config.JOB_UPDATE_VM])
         try:
-            assert blockOutgoingConnection(
+            assert storage_helpers.blockOutgoingConnection(
                 config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
                 self.spm_ip
             )
@@ -469,7 +466,7 @@ class TestCase18186(BaseStorageVmLeaseTestWithFixtures):
                 config.WAIT_FOR_SPM_INTERVAL
             )
         finally:
-            unblockOutgoingConnection(
+            storage_helpers.unblockOutgoingConnection(
                 config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
                 self.spm_ip
             )
@@ -515,7 +512,7 @@ class TestCase17625(BaseStorageVmLeaseTestWithFixtures):
             testflow.step(
                 "Block connection to the other hsm host %s", second_host
             )
-            assert blockOutgoingConnection(
+            assert storage_helpers.blockOutgoingConnection(
                 config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
                 second_host_ip
             )
@@ -529,7 +526,7 @@ class TestCase17625(BaseStorageVmLeaseTestWithFixtures):
                 "VM %s is running on a non responsive host" % self.vm_name
             )
         finally:
-            unblockOutgoingConnection(
+            storage_helpers.unblockOutgoingConnection(
                 config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
                 second_host_ip
             )

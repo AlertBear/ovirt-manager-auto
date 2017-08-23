@@ -19,7 +19,6 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms,
 )
-from art.rhevm_api.utils import storage_api as utils
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import ART_CONFIG
@@ -265,7 +264,7 @@ class TestCase5302(BasicEnvironment):
                 True, config.DATA_CENTER_NAME, self.non_master, wait=False
             )
 
-            assert utils.blockOutgoingConnection(
+            assert storage_helpers.blockOutgoingConnection(
                 self.host_ip, config.HOSTS_USER, config.HOSTS_PW, config.VDC
             )
 
@@ -279,7 +278,7 @@ class TestCase5302(BasicEnvironment):
             # TODO: Expected results are not clear
 
     def tearDown(self):
-        utils.unblockOutgoingConnection(
+        storage_helpers.unblockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, config.VDC
         )
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)

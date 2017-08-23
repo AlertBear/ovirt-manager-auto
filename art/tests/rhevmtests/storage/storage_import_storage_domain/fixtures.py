@@ -13,7 +13,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils import storage_api
 from art.unittest_lib import testflow
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.fixtures import attach_disk, create_vm
@@ -403,7 +402,7 @@ def block_connection_to_sd(request):
                     "Verify connection Unblocked between %s to %s",
                     host_ip, address
                 )
-                storage_api.unblockOutgoingConnection(
+                storage_helpers.unblockOutgoingConnection(
                     host_ip, config.HOSTS_USER, config.HOSTS_PW, address
                 ), "Failed to unblock connection between %s to %s" % (
                     host_ip, address
@@ -423,7 +422,7 @@ def block_connection_to_sd(request):
             testflow.setup(
                 "Block connection between %s to %s", host_ip, address
             )
-            assert storage_api.blockOutgoingConnection(
+            assert storage_helpers.blockOutgoingConnection(
                 host_ip, config.HOSTS_USER, config.HOSTS_PW, address
             ), "Failed to block connection between %s to %s" % (
                 host_ip, address
@@ -450,7 +449,7 @@ def unblock_connection_to_sd(request):
             testflow.setup(
                 "Unblock connection between %s to %s", host_ip, address
             )
-            assert storage_api.unblockOutgoingConnection(
+            assert storage_helpers.unblockOutgoingConnection(
                 host_ip, config.HOSTS_USER, config.HOSTS_PW, address
             ), "Failed to unblock connection between %s to %s" % (
                 host_ip, address

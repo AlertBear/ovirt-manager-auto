@@ -18,7 +18,6 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     storagedomains as ll_sd,
 )
-from art.rhevm_api.utils import storage_api
 from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
@@ -35,6 +34,7 @@ from rhevmtests.storage.storage_gluster_additional_nodes.fixtures import (
 from rhevmtests.storage.fixtures import (
     remove_storage_domain,
 )
+import rhevmtests.storage.helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -89,7 +89,7 @@ class BaseGlusterMount(BaseTestCase):
             logger.info(
                 "Blocking source %s from target %s", cls.host_ip, node_ip
             )
-            assert storage_api.blockOutgoingConnection(
+            assert storage_helpers.blockOutgoingConnection(
                 cls.host_ip, config.HOSTS_USER, config.HOSTS_PW, node_ip
             ), (
                 "Unable to block connection to gluster node %s from host %s" %
@@ -108,7 +108,7 @@ class BaseGlusterMount(BaseTestCase):
             logger.info(
                 "Unblocking source %s from target %s", cls.host_ip, node_ip
             )
-            assert storage_api.unblockOutgoingConnection(
+            assert storage_helpers.unblockOutgoingConnection(
                 cls.host_ip, config.HOSTS_USER, config.HOSTS_PW, node_ip
             ), "Unblock connection to gluster node %s from host %s failed" % (
                 node_ip, cls.host_ip

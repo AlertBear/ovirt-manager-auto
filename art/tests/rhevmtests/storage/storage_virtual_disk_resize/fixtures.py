@@ -7,7 +7,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 import rhevmtests.storage.helpers as storage_helpers
-from art.rhevm_api.utils.storage_api import flushIptables
 
 
 @pytest.fixture()
@@ -20,7 +19,7 @@ def initialize_attributes_start_vm(request):
 
     def finalizer():
         testflow.teardown("Flushing iptables on host %s", self.host_ip)
-        assert flushIptables(
+        assert storage_helpers.flushIptables(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW
         ), "Failed to flush iptables rules on host %s" % self.host_ip
 

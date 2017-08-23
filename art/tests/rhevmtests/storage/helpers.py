@@ -89,6 +89,14 @@ FCP = config.STORAGE_TYPE_FCP
 GLUSTER = config.STORAGE_TYPE_GLUSTER
 CEPH = config.STORAGE_TYPE_CEPH
 POSIX = config.STORAGE_TYPE_POSIX
+FILE_HANDLER_TIMEOUT = 15
+
+BLOCK = 'block'
+UNBLOCK = 'unblock'
+
+HOST_NONOPERATIONAL = ENUMS["host_state_non_operational"]
+HOST_NONRESPONSIVE = ENUMS["host_state_non_responsive"]
+HOST_UP = ENUMS['search_host_state_up']
 
 
 def prepare_disks_for_vm(
@@ -1982,3 +1990,142 @@ def logout_iscsi_session(host_executor, host, iscsi_sessions_output):
             host, iscsi_sessions_output
         )
     )
+
+
+def setupIptables(source, userName, password, dest, command, chain,
+                  target, protocol='all', persistently=False, *ports):
+    """Wrapper for resources.storage.set_ipatbles() method"""
+    hostObj = Machine(source, userName, password).util('linux')
+    return hostObj.setupIptables(dest, command, chain, target,
+                                 protocol, persistently, *ports)
+
+
+def blockOutgoingConnection(source, userName, password, dest, port=None):
+    '''
+    Description: Blocks outgoing connection to an address
+    Parameters:
+      * source - ip or fqdn of the source machine
+      * userName - username on the source machine
+      * password - password on the source machine
+      * dest - ip or fqdn of the machine to which to prevent traffic
+      * port - outgoing port we wanna block
+    Return: True if commands succeeds, false otherwise.
+    '''
+    if port is None:
+        return setupIptables(source, userName, password, dest, '--append',
+                             'OUTPUT', 'DROP')
+    else:
+        return setupIptables(source, userName, password, dest, '--append',
+                             'OUTPUT', 'DROP', 'all', False, port)
+
+
+def unblockOutgoingConnection(source, userName, password, dest, port=None):
+    '''
+    Description: Unblocks outgoing connection to an address
+    Parameters:
+      * source - ip or fqdn of the source machine
+      * userName - username on the source machine
+      * password - password on the source machine
+      * dest - ip or fqdn of the machine to which to remove traffic block
+      * port - outgoing port we wanna unblock
+    Return: True if commands succeeds, false otherwise.
+    '''
+    if port is None:
+        return setupIptables(source, userName, password, dest, '--delete',
+                             'OUTPUT', 'DROP')
+    else:
+        return setupIptables(source, userName, password, dest, '--delete',
+                             'OUTPUT', 'DROP', 'all', False, port)
+
+
+def flushIptables(host, userName, password, chain='', persistently=False):
+    """Warpper for utilities.machine.flushIptables() method."""
+    hostObj = Machine(host, userName, password).util('linux')
+    return hostObj.flushIptables(chain, persistently)
+
+
+def _perform_iptables_action_and_wait(action, source,
+                                      s_user, s_pass,
+                                      destination, wait_for_entity,
+                                      expected_state):
+    """
+    Description: block/unblock connection from source to destination,
+    and wait_for_entity state to change to expected_state
+    Author: ratamir
+    Parameters:
+        * action - the action that need to preform
+                   (i.e. BLOCK or UNBLOCK)
+        * source - block/unblock connection from this ip or fdqn
+        * s_user - user name for this machine
+        * s_pass - password for this machine
+        * destination - block/unblock connection to this ip or fqdn
+        * wait_for_entity - the ip or fdqn of the machine that we wait
+                            for its state
+        * expected_state - the state that we wait for
+    Return: True if operation executed successfully , False otherwise
+
+    """
+    logger.info("%sing connection from %s to %s", action, source,
+                destination)
+
+    function = blockOutgoingConnection if action == BLOCK else unblockOutgoingConnection
+    success = function(source, s_user, s_pass, destination)
+    if not success:
+        logger.warning("%sing connection to %s failed. result was %s."
+                       % (action, destination, success))
+        return success
+
+    logger.info("wait for state : '%s' ", expected_state)
+    response = ll_hosts.wait_for_hosts_states(True, wait_for_entity,
+                                           states=expected_state)
+
+    host_state = ll_hosts.get_host_status(wait_for_entity)
+    if not response:
+        logger.warning("Host should be in status %s but it's in status %s"
+                       % (expected_state, host_state))
+    return response
+
+
+def block_and_wait(source, s_user, s_pass, destination,
+                   wait_for_entity,
+                   expected_state=HOST_NONOPERATIONAL):
+    """
+    block connection from source to destination, and wait_for_entity
+    state to change to expected_state
+    Author: ratamir
+    Parameters:
+        * source - block connection from this ip or fdqn
+        * s_user - user name for this machine
+        * s_pass - password for this machine
+        * destination - block connection to this ip or fqdn
+        * wait_for_entity - the ip or fdqn of the machine that we wait
+                            for its state
+        * expected_state - the state that we wait for
+    Return: True if operation executed successfully , False otherwise
+    """
+    return _perform_iptables_action_and_wait(
+        BLOCK, source, s_user, s_pass,
+        destination, wait_for_entity, expected_state)
+
+
+def unblock_and_wait(source, s_user, s_pass, destination,
+                     wait_for_entity,
+                     expected_state=HOST_UP):
+    """
+    unblock connection from source to destination, and wait_for_entity
+    state to change to expected_state
+    Author: ratamir
+    Parameters:
+        * source - unblock connection from this ip or fdqn
+        * s_user - user name for this machine
+        * s_pass - password for this machine
+        * destination - unblock connection to this ip or fqdn
+        * wait_for_entity - the ip or fdqn of the machine that we wait
+                            for its state
+        * expected_state - the state that we wait for
+    Return: True if operation executed successfully , False otherwise
+    """
+
+    return _perform_iptables_action_and_wait(
+        UNBLOCK, source, s_user, s_pass,
+        destination, wait_for_entity, expected_state)

@@ -12,7 +12,6 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms,
 )
-import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
@@ -72,7 +71,7 @@ class ReassignSPMWithStorageBlocked(BasicEnvironment):
             "Blocking connection between %s and %s",
             (self.origin_host_address, self.target_host_address)
         )
-        assert st_api.blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             self.origin_host_address, config.HOSTS_USER, config.HOSTS_PW,
             self.target_host_address
         ), (

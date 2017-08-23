@@ -15,7 +15,6 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
 )
-from art.rhevm_api.utils import storage_api
 from art.rhevm_api.utils import test_utils
 from art.unittest_lib import (
     tier2,
@@ -799,7 +798,7 @@ class TestCase6015(BasicEnvironment):
         - Block connectivity to storage server during snapshot creation
         """
         self._perform_snapshot_operation(self.disks_names[0:2], wait=False)
-        assert storage_api.blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip
         ), "Failed to block connections from %s to %s" % (

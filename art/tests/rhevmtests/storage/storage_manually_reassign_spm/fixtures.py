@@ -8,7 +8,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     storagedomains as ll_sd,
 )
-import art.rhevm_api.utils.storage_api as storage_api
+import rhevmtests.storage.helpers as storage_helpers
 from art.unittest_lib import testflow
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ def flush_iptable_block(request):
                 self.blocked_domain, self.target_host_address
             )
         )
-        assert storage_api.unblockOutgoingConnection(
+        assert storage_helpers.unblockOutgoingConnection(
             self.blocked_domain, config.HOSTS_USER, config.HOSTS_PW,
             self.target_host_address
         ), "Failed to unblock connection between %s and %s" % (

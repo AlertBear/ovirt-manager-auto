@@ -11,8 +11,6 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from rhevmtests.storage import helpers as storage_helpers
 
-from art.rhevm_api.utils import storage_api
-
 
 @pytest.fixture(scope='class')
 def unblock_engine_to_host(request):
@@ -24,7 +22,7 @@ def unblock_engine_to_host(request):
             "Unblock connection from engine %s to host %s",
             config.ENGINE.host.ip, config.PLACEMENT_HOST_IP
         )
-        storage_api.unblockOutgoingConnection(
+        storage_helpers.unblockOutgoingConnection(
             config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
             config.PLACEMENT_HOST_IP
         )
@@ -45,7 +43,7 @@ def unblock_host_to_storage_domain(request):
             config.PLACEMENT_HOST, self.storage_domain
         )
         for ip in self.storage_domain_ips:
-            storage_api.unblockOutgoingConnection(
+            storage_helpers.unblockOutgoingConnection(
                 config.PLACEMENT_HOST_IP, config.HOSTS_USER, config.HOSTS_PW,
                 ip
             )

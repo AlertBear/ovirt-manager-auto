@@ -8,7 +8,6 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms,
 )
-from art.rhevm_api.utils import storage_api
 from art.test_handler import exceptions
 from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
@@ -149,7 +148,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
         logger.info(
             "Blocking outgoing connection from %s to %s", self.host, self.sd
         )
-        if not storage_api.blockOutgoingConnection(
+        if not storage_helpers.blockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip
         ):
             raise exceptions.NetworkException(
@@ -162,7 +161,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
         Unblock connection from host to storage server
         """
         logger.info("Unblocking connection from %s to %s", self.host, self.sd)
-        if not storage_api.unblockOutgoingConnection(
+        if not storage_helpers.unblockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip
         ):
             raise exceptions.NetworkException(
@@ -181,7 +180,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
             logger.info(
                 "Unblocking connection from %s to %s", self.host, self.sd
             )
-            if not storage_api.unblockOutgoingConnection(
+            if not storage_helpers.unblockOutgoingConnection(
                 self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip
             ):
                 logger.error(

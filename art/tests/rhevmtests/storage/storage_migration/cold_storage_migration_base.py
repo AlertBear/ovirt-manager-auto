@@ -22,7 +22,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils.log_listener import watch_logs
-import art.rhevm_api.utils.storage_api as storage_api
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
@@ -577,7 +576,7 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
         testflow.step(
             "Block connection between %s to %s", config.SOURCE, target
         )
-        assert storage_api.blockOutgoingConnection(
+        assert storage_helpers.blockOutgoingConnection(
             config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
         ), "Failed to block connection"
 
@@ -591,7 +590,7 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
         testflow.step(
             "Unblock connection from %s to %s", config.SOURCE, target
         )
-        assert storage_api.unblockOutgoingConnection(
+        assert storage_helpers.unblockOutgoingConnection(
             config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
         ), "Failed to unblock connection from host %s to %s" % (
             config.SOURCE, target

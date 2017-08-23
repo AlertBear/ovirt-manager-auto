@@ -23,8 +23,6 @@ from rhevmtests.storage.fixtures import (
     move_host_to_another_cluster, clean_dc, create_storage_domain,
 )
 
-from art.rhevm_api.utils import iptables
-
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
@@ -80,12 +78,12 @@ class TestCase11598(BaseTestCase):
         Unblock connection.
         Check that the host is up again.
         """
-        assert iptables.block_and_wait(
+        assert storage_helpers.block_and_wait(
             self.engine_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.first_host_ip, self.host_name, config.HOST_NONRESPONSIVE
         )
 
-        assert iptables.unblock_and_wait(
+        assert storage_helpers.unblock_and_wait(
             self.engine_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.first_host_ip, self.host_name
         )

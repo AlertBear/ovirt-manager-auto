@@ -23,7 +23,6 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.resources import storage
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
-from art.rhevm_api.utils.storage_api import unblockOutgoingConnection
 import rhevmtests.storage.helpers as storage_helpers
 import rhevmtests.helpers as rhevm_helpers
 from rhevmtests.networking import helper as network_helper
@@ -918,7 +917,7 @@ def unblock_connectivity_storage_domain_teardown(request):
     self = request.node.cls
 
     def finalizer():
-        assert unblockOutgoingConnection(
+        assert storage_helpers.unblockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
             self.storage_domain_ip
         ), "Failed to block connection from %s to %s" % (
