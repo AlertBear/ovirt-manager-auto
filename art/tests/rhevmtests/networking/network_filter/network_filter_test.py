@@ -9,10 +9,7 @@ import shlex
 
 import pytest
 
-from art.rhevm_api.tests_lib.high_level import (
-    vms as hl_vms,
-    networks as hl_networks
-)
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     networks as ll_networks,
@@ -22,11 +19,7 @@ import config as nf_conf
 import helper
 from rhevmtests.networking import config as conf
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import (
-    tier2,
-    NetworkTest,
-    testflow,
-)
+from art.unittest_lib import tier2, NetworkTest, testflow
 from fixtures import (
     restore_vnic_profile_filter,
     update_network_filter_on_profile,
@@ -38,6 +31,8 @@ from rhevmtests.fixtures import (
     create_clusters
 )
 from rhevmtests.networking.fixtures import (  # noqa: F401
+    create_and_attach_networks,
+    remove_all_networks,
     setup_networks_fixture,
     clean_host_interfaces,
     add_vnic_profiles,
@@ -47,32 +42,24 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 )
 
 
-@pytest.fixture(scope="module", autouse=True)
-def network_filter_prepare_setup(request):
-    """
-    Prepare setup
-    """
-    def fin():
-        """
-        Remove networks from setup
-        """
-        assert hl_networks.remove_net_from_setup(
-            host=[conf.HOST_0_NAME], all_net=True, data_center=conf.DC_0
-        )
-    request.addfinalizer(fin)
-
-    assert hl_networks.create_and_attach_networks(
-        networks=nf_conf.NETS_DICT, data_center=conf.DC_0,
-        clusters=[conf.CL_0]
-    )
-
-
+@pytest.mark.usefixtures(create_and_attach_networks.__name__)
 class TestNetworkFilterCase01(NetworkTest):
     """
     Check that network filter (vdsm-no-mac-spoofing) is enabled by default for
     new network
     """
+    # global parameters
     net = nf_conf.NETS[1][0]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": nf_conf.CASE_01_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
 
     @tier2
     @polarion("RHEVM-15078")
@@ -131,6 +118,7 @@ class TestNetworkFilterCase02(NetworkTest):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     restore_vnic_profile_filter.__name__,
     remove_vnics_from_vms.__name__,
     setup_networks_fixture.__name__,
@@ -140,10 +128,23 @@ class TestNetworkFilterCase03(NetworkTest):
     """
     Check that Network Filter is enabled for via dumpxml
     """
+    # global parameters
     vm_name = conf.VM_0
     nic0 = conf.VM_NIC_0
     nic1 = conf.VM_NIC_1
     net = nf_conf.NETS[3][0]
+
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": nf_conf.CASE_03_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # setup_networks_fixture fixture parameters
     hosts_nets_nic_dict = {
         0: {
             net: {
@@ -152,12 +153,15 @@ class TestNetworkFilterCase03(NetworkTest):
             }
         }
     }
+
+    # start_vm fixture parameters
     start_vms_dict = {
         vm_name: {
             "host": 0
         }
     }
 
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = {
         "1": {
             "vm": vm_name,
@@ -243,6 +247,7 @@ class TestNetworkFilterCase03(NetworkTest):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     remove_vnics_from_vms.__name__,
     add_vnics_to_vms.__name__
 )
@@ -250,10 +255,22 @@ class TestNetworkFilterCase04(NetworkTest):
     """
     Remove network filter from vNIC profile while profile attach to stopped VM
     """
+    # global parameters
     nic1 = nf_conf.VNICS[4][0]
     vm_name = conf.VM_0
     net = nf_conf.NETS[4][0]
 
+    # create_and_attach_networks fixture parameters
+    create_networks = {
+        "1": {
+            "data_center": conf.DC_0,
+            "clusters": [conf.CL_0],
+            "networks": nf_conf.CASE_04_NETS_DICT
+        }
+    }
+    remove_dcs_networks = [conf.DC_0]
+
+    # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
         "1":
             {
@@ -263,6 +280,7 @@ class TestNetworkFilterCase04(NetworkTest):
             }
     }
 
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
     @tier2
@@ -370,6 +388,7 @@ class TestNetworkFilterCase06(NetworkTest):
     3. Update vNIC profile with custom network_filter, no network
        filter and default network filter
     """
+    # global parameters
     ext_dc = "NetworkFilter-DC-3-6"
     ext_cl = "NetworkFilter-CL-3-6"
     clusters_dict = {

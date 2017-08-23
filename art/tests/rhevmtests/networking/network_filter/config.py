@@ -27,14 +27,20 @@ NETWORK_FILTER_STR = "network_filter"
 
 ARP_FILTER = "allow-arp"
 
-NETS_DICT = {
+CASE_01_NETS_DICT = {
     NETS[1][0]: {
         "required": "false"
-    },
+    }
+}
+
+CASE_03_NETS_DICT = {
     NETS[3][0]: {
         "required": "false"
-    },
+    }
+}
+
+CASE_04_NETS_DICT = {
     NETS[4][0]: {
         "required": "false"
-    },
+    }
 }
