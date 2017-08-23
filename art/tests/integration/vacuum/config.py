@@ -8,8 +8,13 @@ from art.test_handler.settings import ART_CONFIG
 logger = logging.getLogger(__name__)
 
 VACUUM_UTIL = "engine-vacuum"
-VM_DYNAMIC_TABLE = "vm_dynamic"
+VACUUM_DWH_UTIL = "dwh-vacuum"
+VACUUM_TABLE = "vm_dynamic"
+VACUUM_DWH_TABLE = "vm_daily_history"
 
+DWH_DATABASE_CONFIG = (
+    "/etc/ovirt-engine/engine.conf.d/10-setup-dwh-database.conf"
+)
 # parameters
 FULL = "-f"
 ANALYZE = "-a"
@@ -21,25 +26,11 @@ VERBOSE = "-v"
 VERBOSE_INFO = "INFO"
 
 # SQL queries
-
-SQL_VACUUM_RUNNING = (
-    "select 1 from pg_stat_activity "
-    "where usename='engine' and "
-    "datname = 'engine' and "
-    "regexp_replace(query,  '\s+$', '') "
-    "ilike 'vacuum (full);';"
-)
-SQL_VACUUM_RUNNING_TABLE = (
-    "select 1 from pg_stat_activity "
-    "where usename='engine' and "
-    "datname = 'engine' and "
-    "regexp_replace(query,  '\s+$', '') "
-    "ilike 'vacuum (full) vm_dynamic;';"
-)
+# used in check_vacuum_stats() with .format(table)
 SQL_VACUUM_STATS = (
     "select vacuum_count, analyze_count "
     "from pg_catalog.pg_stat_all_tables "
-    "where relname = 'vm_dynamic';"
+    "where relname = '{}';"
 )
 
 # RHEVM related constants
@@ -71,3 +62,7 @@ ENGINE = resources.Engine(
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
 )
+
+# changes in database can be visible after some time when vacuum finishes
+GET_STATS_TIMEOUT = 2
+GET_STATS_SLEEP = 0.5
