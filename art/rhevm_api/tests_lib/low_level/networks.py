@@ -748,7 +748,7 @@ def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     """
     net = get_network_in_datacenter(network=network, datacenter=datacenter)
     net_update = _prepare_network_object(**kwargs)
-    return NET_API.update(net, net_update, positive)
+    return NET_API.update(net, net_update, positive)[1]
 
 
 @ll.general.generate_logs(error=False)
@@ -792,30 +792,6 @@ def is_vlan_on_host_network(vds_resource, interface, vlan):
         vid = match_obj.group(1)
     res = vid == vlan
     return res
-
-
-@ll.general.generate_logs()
-def create_networks_in_datacenter(datacenter, num_of_net, prefix):
-    """
-    Create number of networks under datacenter.
-
-    Args:
-        datacenter (str): datacenter name
-        num_of_net (int): number of networks to create
-        prefix (str): Prefix for network name
-
-    Returns:
-        list: list of networks that created under datacenter
-    """
-    dc_net_list = list()
-    for num in range(num_of_net):
-        net_name = "_".join([prefix, str(num)])
-        dc_net_list.append(net_name)
-        if not create_network_in_datacenter(
-            positive=True, datacenter=datacenter, name=net_name
-        ):
-            return list()
-    return dc_net_list
 
 
 @ll.general.generate_logs()

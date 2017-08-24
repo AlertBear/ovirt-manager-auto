@@ -8,63 +8,47 @@ Fixtures for datacenter networks
 import pytest
 
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import config as dc_conf
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 from art.unittest_lib import testflow
 
 
 @pytest.fixture(scope="class")
-def create_network_in_datacenter(request):
+def create_networks_on_dc(request):
     """
-    create network in datacenter
+    Create networks on Data-Center
     """
-    net_name = request.node.cls.net_name
-    dc_1 = dc_conf.DATACENTER_NETWORKS_DC_NAMES[1]
-
-    for idx, (key, val) in enumerate(
-        dc_conf.DATACENTER_NETWORKS_NET_DICT.iteritems()
-    ):
-        kwargs_dict = {
-            key: val,
-            "name": net_name[idx]
-        }
-        testflow.setup(
-            "Add network to datatcenter %s with %s", dc_1, kwargs_dict
-        )
-        assert ll_networks.create_network_in_datacenter(
-            positive=True, datacenter=dc_1, **kwargs_dict
-        )
-
-
-@pytest.fixture(scope="class")
-def create_networks_in_dc(request):
-    """
-    Create networks in datacenter.
-    """
-    nets_num_list = request.node.cls.nets_num_list
-    dc_list = request.node.cls.dc_list
-    prefix_list = request.node.cls.prefix_list
+    create_nets = request.node.cls.create_networks_on_dc_params
+    dcs_to_remove_nets = getattr(
+        request.cls, "remove_network_from_dcs_params", create_nets.keys()
+    )
 
     def fin():
         """
-        Remove networks from setup
+        Remove networks from Data-Center
         """
-        for dc_name in dc_list:
-            testflow.teardown("Remove network from setup")
-            assert ll_networks.delete_networks_in_datacenter(
-                datacenter=dc_name, mgmt_net=conf.MGMT_BRIDGE
+        results = []
+        for dc_name in dcs_to_remove_nets:
+            testflow.teardown(
+                "Removing networks from Data-Center: %s" % dc_name
             )
+            results.append(
+                (
+                    ll_networks.delete_networks_in_datacenter(
+                        datacenter=dc_name, mgmt_net=conf.MGMT_BRIDGE
+                    ),
+                    "Failed to delete networks from DC: %s" % dc_name
+                )
+            )
+        global_helper.raise_if_false_in_list(results=results)
     request.addfinalizer(fin)
 
-    for idx, (nets_num, dc, prefix) in enumerate(
-        zip(nets_num_list, dc_list, prefix_list)
-    ):
-        testflow.setup("Create networks in datacenter %s", dc)
-        dc_net_list = ll_networks.create_networks_in_datacenter(
-            num_of_net=nets_num, datacenter=dc, prefix=prefix
-        )
-        if dc_conf.DATACENTER_NETWORKS_DC_NAMES[0] == dc:
-            dc_conf.DC_0_NET_LIST = dc_net_list
-
-        if dc_conf.DATACENTER_NETWORKS_DC_NAMES[1] == dc:
-            dc_conf.DC_1_NET_LIST = dc_net_list
+    for dc_name, networks in create_nets.items():
+        for network, network_properties in networks.items():
+            testflow.setup(
+                "Creating network: %s on Data-Center: %s" % (network, dc_name)
+            )
+            assert ll_networks.create_network_in_datacenter(
+                positive=True, datacenter=dc_name, name=network,
+                **network_properties
+            )

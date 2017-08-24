@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Testing DataCenter Networks feature.
+Testing DataCenter Networks feature
 https://bugzilla.redhat.com/show_bug.cgi?id=741111
-2 DC will be created for testing.
+5 DC's will be created for testing
 In version 3.4 there is new network collection under /api/datacenter.
 This test will create/delete/update and list networks under /api/datacenter.
 """
@@ -15,182 +15,108 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as dc_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier2,
-)
-from art.unittest_lib import NetworkTest, testflow
-from fixtures import create_networks_in_dc, create_network_in_datacenter
+from art.unittest_lib import NetworkTest, testflow, tier2
+from fixtures import create_networks_on_dc
 from rhevmtests.fixtures import create_datacenters
 
 
 @pytest.mark.usefixtures(
     create_datacenters.__name__,
-    create_networks_in_dc.__name__
+    create_networks_on_dc.__name__
 )
-@tier2
-class TestDataCenterNetworksCase1(NetworkTest):
+class TestDataCenterNetworks(NetworkTest):
     """
-    List all networks under datacenter.
+    1. Get Data-Center network list
+    2. Verify that all networks were created with correct network properties
+    3. Delete all networks from Data-Center
+    4. Update Data-Center network properties
     """
+    # create_datacenters fixture params
+    datacenters_dict = dc_conf.DC_CONFIG
 
-    # create_networks_in_dc params
-    nets_num_list = [10, 5]
-    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
-    prefix_list = ["C1_dcNetwork", "C1_dcNetwork"]
-
-    # create_datacenters params
-    datacenters_dict = {
-        dc_list[0]: {
-            "name": dc_list[0],
-            "version": conf.COMP_VERSION,
-        },
-        dc_list[1]: {
-            "name": dc_list[1],
-            "version": conf.COMP_VERSION,
-        },
-    }
+    # create_networks_on_dc fixture params
+    create_networks_on_dc_params = dc_conf.CREATE_NETWORKS
 
     @tier2
     @polarion("RHEVM3-4132")
-    def test_get_networks_list(self):
+    def test_get_network_list(self):
         """
-        Get all networks under the datacenter.
+        Get Data-Center network list
         """
-        for dc, net_list in (
-            (self.dc_list[0], dc_conf.DC_0_NET_LIST),
-            (self.dc_list[1], dc_conf.DC_1_NET_LIST)
-        ):
-            dc_net_list = ll_networks.get_networks_in_datacenter(datacenter=dc)
-            testflow.step(
-                "Checking that all networks %s exist in the datacenters %s",
-                net_list, dc
+        for dc in dc_conf.DCS_CASE_1:
+            created_nets = dc_conf.NETS_CASE_1
+            # By default, ovirtmgmt network is already exists on DC
+            created_nets.append("ovirtmgmt")
+            testflow.step("Getting a list of all networks in DC: %s", dc)
+            net_list = ll_networks.get_networks_in_datacenter(datacenter=dc)
+            non_created_nets = [
+                net.name for net in net_list if net.name not in created_nets
+            ]
+            assert not non_created_nets, (
+                "Unexpected networks: %s exists on DC: %s"
+                % (non_created_nets, dc)
             )
-            assert all(
-                map(lambda v: v in [x.name for x in dc_net_list], net_list)
-            ), (
-                "Not all networks exist in the datacenter %s" % dc
-            )
-
-
-@pytest.mark.usefixtures(
-    create_datacenters.__name__,
-    create_network_in_datacenter.__name__
-)
-@tier2
-class TestDataCenterNetworksCase2(NetworkTest):
-    """
-    Create network under datacenter.
-    """
-    # create_network_in_datacenter params
-    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
-    dc_1 = dc_list[1]
-    net_name = dc_conf.NETS[2]
-
-    # create_datacenters params
-    datacenters_dict = {
-        dc_list[0]: {
-            "name": dc_list[0],
-            "version": conf.COMP_VERSION,
-        },
-        dc_list[1]: {
-            "name": dc_list[1],
-            "version": conf.COMP_VERSION,
-        },
-    }
 
     @tier2
     @polarion("RHEVM3-4135")
-    def test_01_verify_network_parameters(self):
+    def test_created_network_properties(self):
         """
-        Verify that all networks have the correct parameters.
+        Verify that all networks were created with correct network properties
         """
-        for idx, (key, val) in enumerate(
-            dc_conf.DATACENTER_NETWORKS_NET_DICT.iteritems()
-        ):
-            testflow.step(
-                "Verify that network %s have the correct parameter %s",
-                self.net_name[idx], key
+        dc = dc_conf.DCS_CASE_2
+        for net in dc_conf.NETS_CASE_2:
+            network_obj = ll_networks.get_network_in_datacenter(
+                network=net, datacenter=dc
             )
-            net_obj = ll_networks.get_network_in_datacenter(
-                self.net_name[idx], self.dc_1
-            )
+            assert network_obj, "Network: %s not found in DC: %s" % (net, dc)
 
-            if key == "vlan_id":
-                res = net_obj.get_vlan().get_id()
+            net_prop = self.create_networks_on_dc_params.get(dc).get(net)
+            net_prop_name, net_prop_value = net_prop.items()[0]
 
-            elif key == "usages":
-                res = net_obj.get_usages().get_usage()
-
+            if net_prop_name == "vlan_id":
+                actual_prop_value = network_obj.get_vlan().get_id()
+            elif net_prop_name == "usages":
+                actual_prop_value = network_obj.usages.get_usage()
             else:
-                res = getattr(net_obj, key)
+                actual_prop_value = getattr(network_obj, net_prop_name)
 
-            assert res == val, (
-                "%s %s should be %s but have %s" % (
-                    self.net_name[idx], key, val, res
+            testflow.step(
+                "Verifying Data-Center: %s network: %s properties", dc, net
+            )
+            assert actual_prop_value == net_prop_value, (
+                "Network: %s property: %s current value: %s "
+                "expected value: %s" % (
+                    net, net_prop_name, actual_prop_value,
+                    net_prop_value
                 )
             )
 
     @tier2
     @polarion("RHEVM3-4134")
-    def test_02_delete_networks(self):
+    def test_delete_networks_from_dc(self):
         """
-        Delete networks under datacenter.
+        Delete all networks from Data-Center
         """
         testflow.step(
-            "Delete all networks %s from datacenter %s", self.net_name,
-            self.dc_1
+            "Delete all networks from Data-Center: %s", dc_conf.DCS_CASE_3
         )
         assert ll_networks.delete_networks_in_datacenter(
-            datacenter=self.dc_1, mgmt_net=conf.MGMT_BRIDGE
+            datacenter=dc_conf.DCS_CASE_3, mgmt_net=conf.MGMT_BRIDGE
         )
-
-
-@pytest.mark.usefixtures(
-    create_datacenters.__name__,
-    create_networks_in_dc.__name__
-)
-@tier2
-class TestDataCenterNetworksCase3(NetworkTest):
-    """
-    Update network under datacenter.
-    """
-    # create_networks_in_dc
-    nets_num_list = [5]
-    dc_list = dc_conf.DATACENTER_NETWORKS_DC_NAMES
-    dc_1 = dc_list[1]
-    prefix_list = ["C3_dcNetwork"]
-
-    # create_datacenters params
-    datacenters_dict = {
-        dc_list[0]: {
-            "name": dc_list[0],
-            "version": conf.COMP_VERSION,
-        },
-        dc_list[1]: {
-            "name": dc_list[1],
-            "version": conf.COMP_VERSION,
-        },
-    }
 
     @tier2
     @polarion("RHEVM3-4133")
-    def test_update_networks_parameters(self):
+    def test_update_dc_networks(self):
         """
-        Update network under datacenter with:
-        description
-        stp
-        vlan_id
-        usages
-        mtu
+        Update Data-Center network properties
         """
-        for idx, net in enumerate(dc_conf.DC_0_NET_LIST):
-            testflow.step(
-                "Update network %s under %s", net, self.dc_list[0]
-            )
-            key = dc_conf.DATACENTER_NETWORKS_VERIFY_NET_LIST[idx]
-            val = dc_conf.DATACENTER_NETWORKS_NET_DICT[key]
-            kwargs_dict = {key: val}
-            assert ll_networks.update_network_in_datacenter(
-                positive=True, network=net, datacenter=self.dc_list[0],
-                **kwargs_dict
-            )
+        dc = dc_conf.DCS_CASE_4
+        for net in dc_conf.NETS_CASE_4:
+            for prop_name in dc_conf.CUSTOM_NET_PROPERTIES.keys():
+                testflow.step(
+                    "Updating Data-Center: %s network: %s properties", dc, net
+                )
+                assert ll_networks.update_network_in_datacenter(
+                    positive=True, network=net, datacenter=dc,
+                    **{prop_name: dc_conf.CUSTOM_NET_PROPERTIES[prop_name]}
+                )
