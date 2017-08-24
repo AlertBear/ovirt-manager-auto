@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     tags as ll_tags,
 )
-from art.rhevm_api.utils.xpath_utils import XPathMatch
+from rhevmtests.coresystem.helpers import XPathMatch
 from art.test_handler.tools import bz
 from art.unittest_lib import (
     testflow,

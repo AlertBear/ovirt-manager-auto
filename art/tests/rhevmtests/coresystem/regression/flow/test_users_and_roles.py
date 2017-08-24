@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import (
     general as ll_general,
     mla as ll_mla,
 )
-from art.rhevm_api.utils.xpath_utils import XPathMatch
+from rhevmtests.coresystem.helpers import XPathMatch
 from art.test_handler.tools import bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,

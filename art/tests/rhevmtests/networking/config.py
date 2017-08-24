@@ -7,7 +7,7 @@ Consolidated network config module
 
 import art.test_handler.exceptions as exceptions
 from rhevmtests.config import *  # flake8: noqa
-from art.rhevm_api.utils.config_handler import DEFAULT_CONFIG_SECTION_NAME
+from rhevmtests.config_handler import DEFAULT_CONFIG_SECTION_NAME
 
 # Global parameters
 VIRSH_USER = "virsh"

@@ -7,7 +7,7 @@ import pytest
 
 from art.core_api.apis_exceptions import APIException
 from art.rhevm_api.tests_lib.low_level import general, mla, users
-from art.rhevm_api.utils.enginecli import EngineCLI
+from rhevmtests.coresystem.helpers import EngineCLI
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier1,

@@ -18,7 +18,7 @@ import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks, external_providers
 )
-from art.rhevm_api.utils import config_handler
+from rhevmtests.networking import config_handler
 from art.unittest_lib import testflow
 
 

@@ -26,7 +26,7 @@ from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
     vms as ll_vms
 )
-from art.rhevm_api.utils import config_handler
+from rhevmtests.networking import config_handler
 from art.unittest_lib import testflow
 from rhevmtests import fixtures_helper
 

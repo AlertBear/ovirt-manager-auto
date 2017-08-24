@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters, clusters, hosts,
     storagedomains, general as ll_general
 )
-from art.rhevm_api.utils.enginecli import EngineCLI
+from rhevmtests.coresystem.helpers import EngineCLI
 
 import config
 
