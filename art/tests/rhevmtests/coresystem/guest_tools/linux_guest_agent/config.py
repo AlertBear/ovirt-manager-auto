@@ -47,7 +47,7 @@ GA_REPO_NAME = 'rhevm_latest'
 if not UPSTREAM:
     GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_4.2/%s'
 else:
-    GA_REPO_URL = 'http://resources.ovirt.org/repos/ovirt/experimental/master/latest/rpm/%s'
+    GA_REPO_URL = 'http://resources.ovirt.org/pub/ovirt-master-snapshot/rpm/%s'
 
 GA_REPO_OLDER_NAME = 'rhevm_older'
 if not UPSTREAM:
