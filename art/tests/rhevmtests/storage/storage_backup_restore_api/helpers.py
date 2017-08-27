@@ -6,9 +6,8 @@ Storage/3_3_Storage_Backup_API
 import logging
 import shlex
 
-from rhevmtests.storage import config
 from art.rhevm_api.utils.test_utils import get_api
-from utilities.machine import Machine
+import rhevmtests.storage.helpers as storage_helpers
 
 DISKS_API = get_api('disk', 'disks')
 COPY_DISK_TIMEOUT = 2000
@@ -27,39 +26,34 @@ def is_transient_directory_empty(host):
         True if the directory is empty, False otherwise
     """
     logger.info("Checking transient directory")
-    vdsm_machine = Machine(
-        host=host, user=config.HOSTS_USER, password=config.HOSTS_PW
-    ).util('linux')
-
-    return vdsm_machine.is_dir_empty(dir_path=TRANSIENT_DIR_PATH)
+    return storage_helpers.is_dir_empty(
+        host_name=host, dir_path=TRANSIENT_DIR_PATH
+    )
 
 
 def copy_backup_disk(
-    vm_ip, source_disk, destination_disk, timeout=COPY_DISK_TIMEOUT
+    vm_name, source_disk, destination_disk, timeout=COPY_DISK_TIMEOUT
 ):
     """
     Copy disks using dd command in specified machine
-    Parameters:
-        * vm_ip - ip of vm that the operation should executes on
-        * source_disk - name of source device (e.g. vdb)
-        * destination_disk - name of destination device (e.g. vdc)
-        * timeout - timeout for operation
+
+    Args:
+        vm_name (str): The name of the vm that the operation should be
+            executed on
+        source_disk (str): The name of source device (e.g. vdb)
+        destination_disk (str): The name of destination device (e.g. vdc)
+        timeout (int): The timeout for operation in seconds
     Return:
         True if operation succeeded, False otherwise
     """
-    vm_machine = Machine(
-        host=vm_ip, user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW
-    ).util('linux')
-
+    vm_executor = storage_helpers.get_vm_executor(vm_name)
     command = DD_COMMAND % (source_disk, destination_disk)
-
     logger.info(
         "copying data from %s to %s on vm %s",
-        source_disk, destination_disk, vm_ip
+        source_disk, destination_disk, vm_name
     )
-
-    rc, out = vm_machine.runCmd(shlex.split(command), timeout=timeout)
-    logger.debug(
-        "The dd output is: '%s', return code is '%s'", out.strip(), rc
+    rc, out, err = vm_executor.run_cmd(
+        shlex.split(command), io_timeout=timeout
     )
-    return rc
+    logger.debug("The dd output is: '%s'", out.strip())
+    return not rc

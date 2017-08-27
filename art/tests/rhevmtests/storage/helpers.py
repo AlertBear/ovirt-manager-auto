@@ -28,14 +28,13 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
-from art.rhevm_api.utils.resource_utils import runMachineCommand
+from utilities.machine import Machine, LINUX
 from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 import rhevmtests.helpers as rhevm_helpers
 from rhevmtests.helpers import get_host_resource_by_name
 from rhevmtests.storage import config
 from utilities import errors
-from utilities.machine import Machine, LINUX
 
 
 logger = logging.getLogger(__name__)
@@ -447,19 +446,27 @@ def create_unique_object_name(object_description, object_type):
         )
 
 
-def wait_for_dd_to_start(vm_name, timeout=20, interval=1):
+def wait_for_dd_to_start(vm_name, timeout=20, interval=1, vm_executor=None):
     """
-    Waits until dd starts execution in the machine
-    """
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(
-        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
-    ).util(LINUX)
+    Wait until dd starts execution in the VM
 
-    cmd = shlex.split(WAIT_DD_STARTS)
-    for code, out in TimeoutingSampler(
-            timeout, interval, vm_machine.runCmd, cmd):
-        if code:
+    Args:
+        vm_name (str): The name of the VM
+        timeout (int): The timeout in seconds to wait for dd to start
+        interval (int): The polling interval in seconds
+        vm_executor (Host resource): VM executor
+
+    Returns:
+        bool: True if 'dd' command was started, False otherwise
+    """
+    if not vm_executor:
+        vm_executor = get_vm_executor(vm_name)
+    command = shlex.split(WAIT_DD_STARTS)
+    for rc, out, error in TimeoutingSampler(
+            timeout, interval, vm_executor.run_cmd, shlex.split(command),
+            io_timeout=DD_TIMEOUT
+    ):
+        if not rc:
             return True
     return False
 
@@ -555,37 +562,36 @@ def get_lv_count_for_block_disk(host_ip, password, disk_id=None):
     return int(out)
 
 
-def get_amount_of_file_type_volumes(
-        host_ip, user, password, sp_id, sd_id, image_id
-):
-        """
-        Get the number of volumes from a file based storage domain
+def get_amount_of_file_type_volumes(host_ip, sp_id, sd_id, image_id):
+    """
+    Get the number of volumes from a file based storage domain
 
-        __author__ = "glazarov"
-        :param sp_id: Storage pool id
-        :type sp_id: str
-        :param sd_id: Storage domain id
-        :type sd_id: str
-        :param image_id: Image id of the disk
-        :type image_id: str
-        :returns: Number of volumes found on a file based storage domain's disk
-        :rtype: int
-        """
-        # Build the path to the Disk's location on the file system
-        volume_path = FILE_SD_VOLUME_PATH_IN_FS % (sp_id, sd_id, image_id)
-        cmd = GET_FILE_SD_NUM_DISK_VOLUMES % volume_path
-        status, output = runMachineCommand(
-            True, ip=host_ip, user=user, password=password, cmd=cmd
-        )
-        if not status:
-            raise errors.CommandExecutionError("Output: %s" % output)
-        # There are a total of 3 files/volume, the volume metadata (.meta),
-        # the volume lease (.lease) and the volume content itself (no
-        # extension)
-        num_volumes = int(output['out'])/3
-        logger.debug("The number of file type volumes found is '%s'",
-                     num_volumes)
-        return num_volumes
+    Args:
+        host_ip (str): The host IP address
+        sp_id (str): The storage pool id
+        sd_id (str): The storage domain id
+        image_id (str): The image id
+
+    Returns:
+        int: The number of volumes found on a file based storage domain's disk
+    """
+    # Build the path to the Disk's location on the file system
+    volume_path = FILE_SD_VOLUME_PATH_IN_FS % (sp_id, sd_id, image_id)
+    command = GET_FILE_SD_NUM_DISK_VOLUMES % volume_path
+    executor = rhevm_helpers.get_host_executor(
+        ip=host_ip, password=config.VDC_ROOT_PASSWORD
+    )
+    rc, output, err = executor.run_cmd(shlex.split(command))
+
+    assert not rc, errors.CommandExecutionError("Output: %s" % output)
+    # There are a total of 3 files/volume, the volume metadata (.meta),
+    # the volume lease (.lease) and the volume content itself (no
+    # extension)
+    num_volumes = int(output['out'])/3
+    logger.debug(
+        "The number of file type volumes found is '%s'",num_volumes
+    )
+    return num_volumes
 
 
 def get_disks_volume_count(
@@ -643,9 +649,7 @@ def get_disks_volume_count(
             image_id = get_imguuid(disk_obj)
             logger.debug("The Image ID is: '%s'", image_id)
             volume_count += get_amount_of_file_type_volumes(
-                host_ip=host_ip, user=config.HOSTS_USER,
-                password=config.HOSTS_PW, sp_id=sp_id, sd_id=sd_id,
-                image_id=image_id
+                host_ip=host_ip, sp_id=sp_id, sd_id=sd_id, image_id=image_id
             )
     return volume_count
 
@@ -812,24 +816,23 @@ def prepare_disks_with_fs_for_vm(storage_domain, vm_name, executor=None):
 
 def get_vm_boot_disk(vm_name):
     """
-    Returns the vm's boot device name (i.e.: /dev/vda)
+    Get the VM's boot device name (i.e.: /dev/vda)
 
-    __author__ = "cmestreg"
-    :param vm_name: Name of the vm from which the boot disk name should be
-    extracted
-    :type vm_name: str
-    :returns: Name of the boot device
-    :rtype: str
+    Args:
+        vm_name (str): The name of the VM from which the boot disk name should
+            be extracted
+
+    Returns:
+        str: The name of the boot device
     """
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(
-        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
-    ).util(LINUX)
-    # TODO: Workaround for bug:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
-    vm_machine.runCmd(shlex.split("udevadm trigger"))
-    output = vm_machine.get_boot_storage_device()
-    return re.search(REGEX_DEVICE_NAME, output).group()
+    vm_executor = get_vm_executor(vm_name)
+    rc, out, err = vm_executor.run_cmd(shlex.split(config.BOOT_DEVICE_CMD))
+    assert not rc, (
+        "Failed to execute command %s on VM %s with error: %s, output: %s" % (
+            config.BOOT_DEVICE_CMD, vm_name, err, out
+        )
+    )
+    return re.search(REGEX_DEVICE_NAME, out).group()
 
 
 def create_fs_on_disk(vm_name, disk_alias, executor=None):
@@ -1094,25 +1097,27 @@ def is_dir_empty(host_name, dir_path=None, excluded_files=[]):
     """
     Check if directory is empty
 
-    :param host_name: The host to use for checking if a directory is empty
-    :type host_name: str
-    :param dir_path: Full path of directory
-    :type dir_path: str
-    :param excluded_files: List of files to ignore
-    :type excluded_files: list
-    :return: True if directory is empty, False otherwise
-    :rtype: bool
+    Args:
+        host_name (str): The host to use for checking if a directory is empty
+        dir_path (str): Full path of directory
+        excluded_files (list): List of files to ignore
+
+    Returns:
+        bool: True if directory is empty, False otherwise
     """
     if dir_path is None:
         logger.error(
             "Error while checking if dir is empty, path is None"
         )
         return False
-
-    host_ip = ll_hosts.get_host_ip(host_name)
-    host_machine = rhevm_helpers.get_host_resource(host_ip, config.HOSTS_PW)
-    rc, out, err = host_machine.run_command(['ls', dir_path])
-    files = out.split()
+    executor = rhevm_helpers.get_host_executor(host_name, config.HOSTS_PW)
+    command = ['ls', dir_path]
+    rc, out, err = executor.run_cmd(command)
+    assert not rc, (
+        "Failed to execute command %s on host %s with error: %s and output: "
+        "%s" % (command, host_name, err, out)
+    )
+    files = shlex.split(out)
     for file_in_dir in files:
         if file_in_dir not in excluded_files:
             logger.error("Directory %s is not empty", dir_path)
@@ -1951,27 +1956,6 @@ def wait_for_background_process_state(
     return False
 
 
-def logout_iscsi_session(host_executor, host, iscsi_sessions_output):
-    """
-    Log out all iscsi sessions on the host
-
-    Args:
-        host_executor (Host executor): Host executor
-        host (str): Host name
-        iscsi_sessions_output (str): Iscsi sessions output
-
-    Raises:
-        AssertionError: If there still are active iscsi sessions on the host
-    """
-    cmd = ["iscsiadm", "-m", "session", "-u"]
-    host_executor.run_command(cmd)
-    assert not iscsi_sessions_output, (
-        "Host %s has active iscsi connections %s before starting the test" % (
-            host, iscsi_sessions_output
-        )
-    )
-
-
 def setupIptables(source, userName, password, dest, command, chain,
                   target, protocol='all', persistently=False, *ports):
     """Wrapper for resources.storage.set_ipatbles() method"""
@@ -2116,3 +2100,55 @@ def assign_storage_params(targets, keywords, *args):
         for i, target in enumerate(targets):
             for j, key in enumerate(keywords):
                 target[key] = args[j][i]
+
+
+def logout_iscsi_sessions(
+    host_executor, mode='session', target_name=None, portal_ip=None
+):
+    """
+    Log out all iSCSI sessions on the host
+
+    Args:
+        host_executor (Host executor): Host executor
+        mode (str): The iscsiadm mode to perform the logout from (i.e, session,
+            node)
+        target_name (str): The name of the target to logout from
+        portal_ip (str): The portal IP to disconnect from
+
+    Raises:
+        AssertionError: If there still are active iscsi sessions on the host
+    """
+    command = ["iscsiadm", "--mode", mode]
+    if mode.lower() == "node" and target_name and portal_ip:
+        command.extend(["--targetname", target_name, "--portal", portal_ip])
+    command.append("-u")
+    rc, out, err = host_executor.run_cmd(command)
+    if rc:
+        if "No matching sessions found" in err:
+            rc = 0
+    assert not rc, ("Failed to disconnect iSCSI sessions with error: %s" % err)
+
+
+def get_iscsi_sessions(host_executor):
+    """
+    Get the host's iSCSI active sessions
+
+    Args:
+        host_executor (Host executor): Host executor
+
+    Returns:
+        list: iSCSI sessions, None in case no active sessions were found
+    """
+    rc, out, err = host_executor.run_cmd(config.ISCSIADM_SESSION)
+    if rc:
+        if "No active sessions" in err:
+            return None
+        else:
+            logger.error(
+                "Unable to execute command %s", config.ISCSIADM_SESSION
+            )
+            raise Exception(
+                "Error executing %s command: %s"
+                % (config.ISCSIADM_SESSION, err)
+            )
+    return out.rstrip().splitlines()

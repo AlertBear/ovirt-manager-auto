@@ -11,7 +11,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     jobs as ll_jobs,
 )
-from utilities import machine
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests import helpers as rhevm_helpers
 from art.unittest_lib.common import testflow
@@ -56,13 +55,11 @@ def initializer_hotplug_hook(request):
 
     self.user = config.HOSTS_USER
     self.password = config.HOSTS_PW
-
-    logger.info("Creating 'machine' object")
-    self.machine = machine.LinuxMachine(
-        self.host_address, self.user, self.password, False
-    )
     logger.info("Creating 'executor' object")
     self.executor = rhevm_helpers.get_host_resource(
+        ip=self.host_address, password=self.password, username=self.user
+    )
+    self.host_resource = rhevm_helpers.get_host_resource(
         ip=self.host_address, password=self.password, username=self.user
     )
 
@@ -124,7 +121,11 @@ def install_hooks(request):
             remote_hook = os.path.join(
                 config.MAIN_HOOK_DIR, hook_dir, os.path.basename(hook)
             )
-            assert self.machine.copyTo(hook, remote_hook)
+            assert config.SLAVE_HOST.fs.transfer(
+                path_src=hook,
+                target_host=self.host_resource,
+                path_dst=remote_hook
+            )
             testflow.setup("Changing permissions")
             if not non_executable_hook:
                 helpers.run_cmd(self.executor, ["chmod", "775", remote_hook])

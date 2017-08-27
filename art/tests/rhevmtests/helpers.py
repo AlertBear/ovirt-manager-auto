@@ -236,11 +236,10 @@ def get_host_executor(ip, password, username=None, use_pkey=False):
     :return: RemoteExecutor with given username
     :rtype: RemoteExecutor
     """
-
     _user = username if username else config.VDC_ROOT_USER
     user = User(_user, password)
     return get_host_resource(
-        ip, username, password
+        ip, password, username
     ).executor(user, pkey=use_pkey)
 
 

@@ -512,7 +512,7 @@ class TestCase6169(BaseTestCase):
     # in string literals
     deep_copy = True
 
-    @bz({'1422508': {}})
+    @bz({'1477600': {}})
     @polarion("RHEVM3-6169")
     @tier2
     def test_full_flow_of_backup_restore(self):
@@ -572,7 +572,7 @@ class TestCase6169(BaseTestCase):
             source_vm_device, backup_disk_device, self.backup_vm
         )
         status = helpers.copy_backup_disk(
-            self.backup_vm_ip, source_vm_device, backup_disk_device,
+            self.backup_vm, source_vm_device, backup_disk_device,
             timeout=TASK_TIMEOUT
         )
 

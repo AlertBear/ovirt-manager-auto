@@ -82,7 +82,6 @@ def create_local_files_with_hooks():
     Creates all the hook files locally, in the tests these files are copied
     over
     """
-    # The easiest hook
     with open(config.HOOKFILENAME, "w+") as handle:
         handle.write("#!/bin/bash\nuuidgen>> %s\n" % config.FILE_WITH_RESULTS)
 

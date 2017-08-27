@@ -8,8 +8,8 @@ import helpers
 import logging
 import pytest
 import time
+import shlex
 from threading import Thread
-from utilities.machine import Machine
 from art.unittest_lib import (
     tier1,
     tier2,
@@ -33,7 +33,7 @@ from art.test_handler.settings import ART_CONFIG
 from rhevmtests.storage.fixtures import (
     create_vm, create_snapshot, add_disk, attach_disk,
     initialize_storage_domains, poweroff_vm, add_disk_permutations,
-    attach_and_activate_disks, delete_disk,
+    attach_and_activate_disks, delete_disk, init_host_or_engine_executor
 )
 
 from rhevmtests.storage.fixtures import remove_vm # noqa
@@ -609,6 +609,7 @@ class TestCase5070(BasicResize):
 
 
 @pytest.mark.usefixtures(
+    init_host_or_engine_executor.__name__,
     create_vm.__name__,
     initialize_attributes_start_vm.__name__,
     add_disk.__name__,
@@ -655,12 +656,8 @@ class TestCase5071(BasicResize):
         assert status, "Failed to resize disk %s to size %s" % (
             self.disk_name, self.new_size
         )
-        host_machine = Machine(
-            host=host_ip, user=config.HOSTS_USER,
-            password=config.HOSTS_PW
-        ).util('linux')
-        rc, output = host_machine.runCmd(self.start_libvirt.split())
-        assert rc, "Failed to start libvirt: %s" % output
+        rc, out, err = shlex.split(self.executor.run_cmd(self.start_libvirt))
+        assert not rc, "Failed to start libvirt: %s" % err
         if not ll_disks.wait_for_disks_status(
             self.disk_name, timeout=DISK_RESIZE_TIMEOUT
         ):
@@ -687,9 +684,7 @@ class TestCase5071(BasicResize):
         ][0]
         datacenter_obj = ll_dcs.get_data_center(config.DATA_CENTER_NAME)
 
-        lv_size = helpers.get_volume_size(
-            self.host_ip, disk_obj, datacenter_obj
-        )
+        lv_size = helpers.get_volume_size(self.host, disk_obj, datacenter_obj)
         assert not lv_size == -1
         assert lv_size == self.new_size / config.GB
 

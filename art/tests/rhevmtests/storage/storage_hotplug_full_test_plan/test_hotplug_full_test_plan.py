@@ -34,7 +34,7 @@ from art.unittest_lib import (
 )
 from art.unittest_lib import StorageTest as TestCase, testflow
 from rhevmtests.storage.fixtures import (
-    create_vm, add_disk, delete_disks, start_vm,
+    create_vm, add_disk, delete_disks, start_vm
 )
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 
@@ -65,7 +65,6 @@ def initializer_module(request):
             hl_disks.delete_disks(disks)
 
     request.addfinalizer(finalizer_module)
-
     helpers.create_local_files_with_hooks()
     testflow.setup("Add VM with 7 disks")
     for storage_type in config.STORAGE_SELECTOR:
@@ -107,7 +106,11 @@ class HotplugHookTest(TestCase):
         _, tmpfile = tempfile.mkstemp()
         logger.info("temp: %s" % tmpfile)
         try:
-            self.machine.copyFrom(config.FILE_WITH_RESULTS, tmpfile)
+            assert self.host_resource.fs.transfer(
+                path_src=config.FILE_WITH_RESULTS,
+                target_host=config.SLAVE_HOST,
+                path_dst=tmpfile
+            )
             with open(tmpfile) as handle:
                 result = handle.readlines()
             logger.debug("Hook result: %s", "".join(result))

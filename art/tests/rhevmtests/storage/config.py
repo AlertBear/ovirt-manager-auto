@@ -107,6 +107,9 @@ QCOW_V3 = DISK_QCOW_V3
 QCOW_V2 = DISK_QCOW_V2
 GLANCE_QCOW2v2_IMAGE_NAME = 'rhel7.3_rhv4.1_guest_disk'
 
+SUPERVDSMD = "supervdsmd"
+VDSMD = "vdsmd"
+
 KILL_VDSM = "kill `systemctl show vdsmd -p MainPID | awk -F '=' {'print $2'}`"
 RESTART_ENGINE = "systemctl restart ovirt-engine.service"
 
@@ -382,6 +385,9 @@ JOBS_CMD = 'jobs'
 MOUNT_POINT_CREATE_CMD = 'mkdir ' + '-p ' + '%s'
 
 VDSM_LOG = '/var/log/vdsm/vdsm.log'
+SUPERVDSM_LOG = "/var/log/vdsm/supervdsm.log"
 
 GLANCE_HOSTNAME = urlparse(GLANCE_URL).hostname
 REBOOT_CMD = 'reboot'
+BOOT_DEVICE_CMD = 'mount | grep boot'
+ISCSIADM_SESSION = ["iscsiadm", "-m", "session"]

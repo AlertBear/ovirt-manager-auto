@@ -513,8 +513,8 @@ def create_environment_logout_session(request):
     request.addfinalizer(finalizer)
     self.host = config.HOST_FOR_MOUNT
     self.host_ip = config.HOST_FOR_MOUNT_IP
-    self.host_executor = rhevm_helpers.get_host_resource_by_name(
-        host_name=self.host
+    self.host_executor = rhevm_helpers.get_host_executor(
+        ip=self.host_ip, password=config.ROOT_PASSWORD
     )
     self.storage_domains = []
     self.dc = storage_helpers.create_unique_object_name(
@@ -536,9 +536,10 @@ def create_environment_logout_session(request):
     ), "Failed to migrate host '%s' into cluster '%s'" % (
         self.host, self.cluster
     )
-    storage_helpers.logout_iscsi_session(
-        self.host_executor, self.host, self.host_iscsi_sessions()
+    executor = rhevm_helpers.get_host_executor(
+        ip=config.HOST_FOR_MOUNT_IP, password=config.HOSTS_PW
     )
+    storage_helpers.logout_iscsi_sessions(executor)
 
     self.iscsi_domain = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_SD

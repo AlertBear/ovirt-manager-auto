@@ -1,16 +1,16 @@
-import paramiko
 import re
 import subprocess
 import logging
 import os
 import time
-from utilities.machine import Machine
+from rrmngmnt.host import Host as HostResource
+from rrmngmnt.user import User
 import argparse
 
 logger = logging.getLogger("art.utils.log_listener")
 
 
-class LogListener():
+class LogListener:
     """
     listener class, watch files for changes (look for requested pattern) and
     executes a command (given by the user).
@@ -22,64 +22,58 @@ class LogListener():
     def __init__(self, ip_for_files, username, password, time_out=None):
         self.ssh = None
         self.channel = None
-        self.machine = None
+        self.executor = None
         self.time_out = time_out
-        logger.info("Trying to open a channel to ip: %s with username %s "
-                    "and password %s" % (ip_for_files, username, password))
-        if not self.set_connection_for_remote(ip_for_files, username,
-                                              password):
-            raise Exception("No Channel opened")
+        logger.info(
+            "Initiating executor for ip: %s with username %s and "
+            "password %s" % (ip_for_files, username, password)
+        )
+        self.initiate_executor(ip_for_files, username, password)
 
-    def set_connection_for_remote(self, ip, username, password):
+    def initiate_executor(self, ip, username, password):
         """
-        Sets up a connection (ssh) and creates a channel for transfer data
-        Return True if succeeded, otherwise False.
+        Initiate an executor instance
         """
         if ip:
-            logger.info('connecting to remote machine %s ...', ip)
-            self.machine = Machine(host=ip, user=username,
-                                   password=password).util('linux')
-            self.ssh = self.machine.ssh
+            host = HostResource(ip=ip)
+            user = User(username, password)
+            host.users.append(user)
+            self.executor = host.executor(user)
+            self.ssh = self.executor.session()
+            transport = self.ssh._ssh.get_transport()
+            if transport is None:
+                self.ssh.close()
+                self.ssh.open()
+                transport = self.ssh._ssh.get_transport()
+            self.channel = transport.open_session()
 
-            try:
-                transport = self.ssh._getTransport()
-                self.channel = transport.open_session()
-
-            except paramiko.AuthenticationException, msg:
-                logger.info("Can't SSH to IP %s due to exception %s", ip, msg)
-                return False
-
-            if not (self.ssh and self.channel):
-                return False
-            logger.info('Connection Success')
-        return True
-
-    def execute_command(self, run_locally, command_to_exec,
-                        ip_for_execute_command=None,
-                        remote_username=None, remote_password=None):
+    def execute_command(
+        self, run_locally, command_to_exec, ip_for_execute_command=None,
+        remote_username=None, remote_password=None
+    ):
         """
         Executes command on a local or remote machine -
-        if "ip_for_execute_command" is None then command will executes on the
-        same host as the file
-        return:
-        True if command executed successfully or False otherwise
+        if "ip_for_execute_command" is None then command will be executed on
+        the same host as the file
         """
         rc = None
         if not run_locally:
             if ip_for_execute_command:
-                machine_for_command = Machine(
-                    host=ip_for_execute_command, user=remote_username,
-                    password=remote_password).util('linux')
-            else:
-                machine_for_command = self.machine
-
-            logger.info("run command %s on ip %s", command_to_exec,
-                        ip_for_execute_command)
-            rc, out = machine_for_command.runCmd(command_to_exec, timeout=90,
-                                                 bg=False,
-                                                 conn_timeout=90,
-                                                 cmd_list=False)
-
+                self.initiate_executor(
+                    ip_for_execute_command, remote_username, remote_password
+                )
+            logger.info(
+                "run command %s on ip %s", command_to_exec,
+                ip_for_execute_command
+            )
+            rc, out, err = self.executor.run_cmd(
+                cmd=command_to_exec, io_timeout=90
+            )
+            assert not rc, (
+                "Failed to execute command %s with err %s and output %s" % (
+                    command_to_exec, err, out
+                )
+            )
         else:
             try:
                 logger.info("run command %s locally", command_to_exec)
@@ -89,8 +83,9 @@ class LogListener():
                 # when no errors
                 rc = not bool(os.system(command_to_exec))
             except RuntimeError, ex:
-                logger.info("Can't run command %s, exception is %s",
-                            command_to_exec, ex)
+                logger.info(
+                    "Can't run command %s, exception: %s", command_to_exec, ex
+                )
         return rc
 
     def watch_for_remote_changes(self, files_to_watch, regex):
@@ -197,10 +192,11 @@ class LogListener():
             return self.watch_for_local_changes(files_to_watch, regex)
 
 
-def watch_logs(files_to_watch, regex, command_to_exec=None, time_out=None,
-               ip_for_files=None, username=None, password=None,
-               ip_for_execute_command=None, remote_username=None,
-               remote_password=None):
+def watch_logs(
+    files_to_watch, regex, command_to_exec=None, time_out=None,
+    ip_for_files=None, username=None, password=None,
+    ip_for_execute_command=None, remote_username=None, remote_password=None
+):
     """
     When importing this module, this function can be used to watch log file
     for specific event , and executes commands.

@@ -4,11 +4,9 @@
 
 import logging
 import re
-from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 
-from art.test_handler import exceptions
 from rhevmtests.storage import helpers as storage_helpers
 
 import config
@@ -33,17 +31,11 @@ def get_vm_storage_devices(vm_name):
     if ll_vms.get_vm_state(vm_name) != config.VM_UP:
         ll_vms.start_vms([vm_name], max_workers=1, wait_for_ip=True)
         assert ll_vms.waitForVMState(vm_name)
-    vm_ip = storage_helpers.get_vm_ip(vm_name)
-    vm_machine = Machine(
-        host=vm_ip, user=config.VMS_LINUX_USER,
-        password=config.VMS_LINUX_PW
-    ).util('linux')
-    output = vm_machine.get_boot_storage_device()
+    output = storage_helpers.get_vm_boot_disk(vm_name)
     boot_disk = re.search(storage_helpers.REGEX_DEVICE_NAME, output).group()
 
-    vm_devices = vm_machine.get_storage_devices(
-        filter=storage_helpers.REGEX_DEVICE_NAME
-    )
+    vm_devices = storage_helpers.get_storage_devices(vm_name)
+
     if not vm_devices:
         raise EntityNotFound("Error occurred retrieving vm devices")
 
@@ -93,15 +85,7 @@ def get_vm_device_size(vm_name, device_name):
     Return:
         VM device size (integer) output, or raise exception otherwise
     """
-    try:
-        vm_ip = storage_helpers.get_vm_ip(vm_name)
-    except exceptions.CanNotFindIP:
-        raise exceptions.VMException("No IP found for vm %s: ", vm_name)
-
-    vm_machine = Machine(host=vm_ip, user=config.VMS_LINUX_USER,
-                         password=config.VMS_LINUX_PW).util('linux')
-
-    device_size = vm_machine.get_storage_device_size(device_name)
+    device_size = storage_helpers.get_storage_device_size(vm_name, device_name)
     logger.info("Device %s size: %s GB", device_name, device_size)
 
     return device_size

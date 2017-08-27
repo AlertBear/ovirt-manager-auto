@@ -6,7 +6,6 @@ Storage/3_5_Storage_Get_Device_Name
 import config
 import logging
 import pytest
-import shlex
 
 from art.rhevm_api.tests_lib.low_level import disks, vms
 from art.test_handler.settings import ART_CONFIG
@@ -17,7 +16,6 @@ from art.unittest_lib import (
 )
 from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from rhevmtests.storage import helpers
-from utilities.machine import LINUX, Machine
 from rhevmtests.storage.fixtures import (
     delete_disks, initialize_storage_domains,
 )
@@ -137,13 +135,6 @@ class BasicEnvironment(BaseTestCase):
             if not hot_plug:
                 assert vms.startVm(True, self.vm_names[0], config.VM_UP, True)
 
-            # TODO: This is a workaround for bug
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-            vm_ip = helpers.get_vm_ip(self.vm_names[0])
-            vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                                 password=config.VM_PASSWORD).util(LINUX)
-            vm_machine.runCmd(shlex.split("udevadm trigger"))
-
             disk_logical_volume_name = vms.get_vm_disk_logical_name(
                 self.vm_names[0], disk_alias, parse_logical_name=True
             )
@@ -193,12 +184,6 @@ class BasicEnvironment(BaseTestCase):
         vms.start_vms(vm_names, wait_for_status=config.VM_UP)
 
         for vm_name in vm_names:
-            # TODO: This is a workaround for bug
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-            vm_ip = helpers.get_vm_ip(vm_name)
-            vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                                 password=config.VM_PASSWORD).util(LINUX)
-            vm_machine.runCmd(shlex.split("udevadm trigger"))
 
             self.current_storage_devices[vm_name] = (
                 helpers.get_storage_devices(

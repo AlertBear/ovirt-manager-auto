@@ -6,7 +6,6 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Storage/
 import pytest
 import config
 import logging
-from art.rhevm_api.tests_lib.low_level.hosts import get_host_ip
 from art.unittest_lib.common import StorageTest as TestCase, testflow
 from art.unittest_lib import (
     tier1,
@@ -19,6 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     templates as ll_templates,
     vms as ll_vms,
+    hosts as ll_hosts
 )
 from rhevmtests.storage.fixtures import (
     create_vm, remove_template, start_vm,
@@ -32,7 +32,6 @@ from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from rhevmtests import helpers as rhevm_helpers
 from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import polarion, bz
-from utilities.machine import Machine, LINUX
 import rhevmtests.storage.helpers as storage_helpers
 
 
@@ -303,12 +302,11 @@ class TestCase5934(DirectLunAttachTestCase):
         ll_vms.startVm(True, self.vm_name)
         host = ll_vms.get_vm_host(vm_name=self.vm_name)
         assert host, "Failed to get VM: %s hoster" % self.vm_name
-        host_ip = get_host_ip(host=host)
-        host_machine = Machine(
-            host_ip, config.HOSTS_USER, config.HOSTS_PW).util(LINUX)
-        assert host_machine.kill_qemu_process(
-            self.vm_name
-        ), "Failed to kill the QEMU process"
+        host_resource = rhevm_helpers.get_host_resource_by_name(host_name=host)
+        status = ll_hosts.kill_vm_process(
+            resource=host_resource, vm_name=self.vm_name
+        )
+        assert status, "Failed to kill qemu process"
         assert ll_vms.waitForVMState(self.vm_name), (
             "VM state is not up after killing QEMU process and setting HA "
             "attribute to 'true"

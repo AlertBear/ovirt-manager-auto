@@ -20,8 +20,6 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     clusters as ll_clusters,
 )
-from rrmngmnt.host import Host
-from rrmngmnt.user import User
 from art.core_api.apis_utils import TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils.test_utils import wait_for_tasks
@@ -35,7 +33,7 @@ from art.unittest_lib import (
     testflow,
 )
 import rhevmtests.storage.helpers as storage_helpers
-
+import rhevmtests.helpers as rhevm_helpers
 from fixtures import (
     create_environment_logout_session, activate_host,
     add_additional_iscsi_domain, remove_storage_domains,
@@ -64,10 +62,9 @@ class BaseTestCase(StorageTest):
         """
         self.host = config.HOST_FOR_MOUNT
         self.host_ip = config.HOST_FOR_MOUNT_IP
-        host = Host(self.host_ip)
-        user = User(config.HOSTS_USER, config.HOSTS_PW)
-        host.users.append(user)
-        self.host_executor = host.executor(user)
+        self.host_executor = rhevm_helpers.get_host_executor(
+            ip=self.host_ip, password=config.ROOT_PASSWORD
+        )
 
     def logout_sessions(self):
         """
@@ -79,26 +76,6 @@ class BaseTestCase(StorageTest):
                 "Error executing %s command: %s" % (ISCSIADM_LOGOUT, error)
             )
 
-    @classmethod
-    def host_iscsi_sessions(cls):
-        """
-        Return the output from executing "iscsiadm -m session" command
-        """
-        rc, out, error = cls.host_executor.run_command(ISCSIADM_SESSION)
-        if rc:
-            if "No active sessions" in error:
-                return []
-            else:
-                logger.error(
-                    "Unable execute %s command on host %s", ISCSIADM_SESSION,
-                    cls.host
-                )
-                raise Exception(
-                    "Error executing %s command: %s"
-                    % (ISCSIADM_SESSION, error)
-                )
-        return out.rstrip().split('\n')
-
     def timeout_sampling_iscsi_session(self):
         """
         Wait until all sessions have been removed from the host
@@ -106,7 +83,7 @@ class BaseTestCase(StorageTest):
         try:
             for sessions in TimeoutingSampler(
                 TIME_UNTIL_ISCSI_SESSION_DISAPPEARS, 5,
-                self.host_iscsi_sessions,
+                storage_helpers.get_iscsi_sessions, self.host_executor,
             ):
                 if not sessions:
                     return True
@@ -189,11 +166,11 @@ class BaseTestCaseNewDC(BaseTestCase):
             )
 
         self.logout_sessions()
-        if len(self.host_iscsi_sessions()) != 0:
-            raise exceptions.HostException(
-                "Host %s has active iscsi connections before starting "
-                "the test" % self.host
+        assert not storage_helpers.get_iscsi_sessions(self.host_executor), (
+            "Host %s has active iscsi connections before starting the test" % (
+                self.host
             )
+        )
 
         self.iscsi_domain = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_SD
@@ -262,7 +239,7 @@ class TestCase11196(BaseTestCase):
         - Run command 'iscsiadm -m session' ->  Host shouldn't have any iscsi
         connections
         """
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
         wait_for_tasks(engine=config.ENGINE, datacenter=self.dc)
@@ -279,7 +256,7 @@ class BasicDeactivateStorageDomain(BaseTestCase):
     add_nfs_domain = True
 
     def deactivate_last_iscsi_domain(self):
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
         testflow.step("Deactivate storage domain %s", self.iscsi_domain)
@@ -384,7 +361,7 @@ class TestCase11201(BaseTestCaseNewDC):
         - Run command 'iscsiadm -m session' -> Host should have iscsi
         connections
         """
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
         testflow.step("Deactivate storage domain %s", self.iscsi_domain2)
@@ -394,7 +371,7 @@ class TestCase11201(BaseTestCaseNewDC):
             "Unable to place iscsi domain %s in maintenance mode" %
             self.iscsi_domain2
         )
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
 
@@ -430,7 +407,7 @@ class TestCase11257(BaseTestCase):
         - Once the remove task is finished, run command'iscsiadm -m session' ->
         Host shouldn't have iscsi connections
         """
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
         wait_for_tasks(engine=config.ENGINE, datacenter=self.dc)
@@ -483,7 +460,7 @@ class TestCase11233(BaseTestCase):
         - Once the remove domain task has completed, run command
         'iscsiadm -m session' -> Host shouldn't have iscsi connections
         """
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
         testflow.step("Deactivate host %s", self.host)
@@ -561,7 +538,7 @@ class TestCase11231(BaseTestCase):
             "Failed to add direct LUN %s" % self.lun_alias
         )
         ll_jobs.wait_for_jobs([config.JOB_ADD_DISK])
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
         testflow.step("Removing LUN disk %s", self.lun_alias)
@@ -569,7 +546,7 @@ class TestCase11231(BaseTestCase):
             "Failed to remove LUN %s" % self.lun_alias
         )
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
-        assert self.host_iscsi_sessions(), (
+        assert storage_helpers.get_iscsi_sessions(self.host_executor), (
             "Host %s does not have iscsi connections" % self.host
         )
 

@@ -1218,6 +1218,18 @@ def init_host_or_engine_executor(request):
 
 
 @pytest.fixture(scope='class')
+def init_host_resource(request):
+    """
+    Initialize Host resource
+    """
+    self = request.node.cls
+
+    self.host_resource = rhevm_helpers.get_host_resource(
+        self.host_ip, config.HOSTS_PW
+    )
+
+
+@pytest.fixture(scope='class')
 def init_vm_executor(request):
     """
     Initialize VM executor later used for commands executions in the VM
