@@ -130,7 +130,7 @@ def update_default_mac_pool(mac_range=None):
     :rtype: bool
     """
     if mac_range is None:
-        mac_range = GE['engine'].get('mac_range')
+        mac_range = GE["mac_ranges"]
     utils.logger.debug("MAC range is: %s", mac_range)
     if mac_range:
         mac_range_obj = MACRange.from_string(mac_range)
