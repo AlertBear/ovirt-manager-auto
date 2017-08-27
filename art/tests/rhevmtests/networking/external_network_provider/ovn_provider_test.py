@@ -727,7 +727,7 @@ class TestOVNComponent(NetworkTest):
             assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
 
 
-@bz({"1478054": {}})
+@bz({"1483309": {}})
 @pytest.mark.usefixtures(
     configure_ovn.__name__,
     get_default_ovn_provider.__name__,
