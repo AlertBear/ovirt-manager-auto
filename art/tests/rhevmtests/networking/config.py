@@ -130,3 +130,6 @@ AAA_LDAP_ANSWER_FILES = {
     "openldap": "openldap.conf",
     "rhds": "rhds.conf"
 }
+
+# Long network name
+LONG_NETWORK_NAME = "long_network_name_" + "@_!" * 79

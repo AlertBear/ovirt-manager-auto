@@ -301,3 +301,21 @@ def register_windows_templates(request):
         assert ll_sd.register_object(
             template, cluster=config.CLUSTER_NAME[0],
         ), "Template %s registration failed" % (template.name)
+
+
+@pytest.fixture(scope="class")
+def stop_vms_fixture(request):
+    """
+    Stop VM(s).
+    """
+    vms_to_stop = fixtures_helper.get_fixture_val(
+        request=request, attr_name="vms_to_stop", default_value=[]
+    )
+
+    def fin():
+        """
+        Stop VM(s).
+        """
+        testflow.teardown("Stop VMs %s", vms_to_stop)
+        assert ll_vms.stop_vms_safely(vms_list=vms_to_stop)
+    request.addfinalizer(fin)

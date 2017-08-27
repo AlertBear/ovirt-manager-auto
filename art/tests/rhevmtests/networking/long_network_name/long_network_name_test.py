@@ -7,7 +7,7 @@ Tests for long network name
 
 import pytest
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import tier2, NetworkTest
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
@@ -27,6 +27,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
     clean_host_interfaces
 )
+from rhevmtests.fixtures import stop_vms_fixture
 
 
 @pytest.mark.usefixtures(
@@ -46,7 +47,7 @@ class TestLongNetworkName01(NetworkTest):
     # General params
     dc = conf.DC_0
     old_network_name = "15_characters__"
-    long_network_name = "long_network_name_" + "@_!" * 79
+    long_network_name = conf.LONG_NETWORK_NAME
 
     # clean_host_interfaces_fixture_function params
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
@@ -55,7 +56,6 @@ class TestLongNetworkName01(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
-    @bz({"1458407": {}})
     @pytest.mark.parametrize(
         "network",
         [
@@ -86,7 +86,7 @@ class TestLongNetworkName01(NetworkTest):
             }
         }
         assert hl_networks.create_and_attach_networks(
-            data_center=conf.DC_0, clusters=[conf.CL_0], network=network_dict
+            data_center=conf.DC_0, clusters=[conf.CL_0], networks=network_dict
         )
 
         assert hl_host_network.setup_networks(
@@ -97,8 +97,8 @@ class TestLongNetworkName01(NetworkTest):
             network=network, data_center=self.dc
         )
         vdsm_network_name = (
-            network if len(network) < 16 else "no{_id}".format(
-                _id=network_object.id[:13]
+            network if len(network) < 16 else "on{_id}".format(
+                _id=network_object.id.replace('-', '')[:13]
             )
         )
         vds_caps = conf.VDS_0_HOST.vds_client("getCapabilities")
@@ -107,10 +107,11 @@ class TestLongNetworkName01(NetworkTest):
 
 
 @pytest.mark.usefixtures(
-    remove_vnics_from_vms.__name__,
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
-    add_vnics_to_vms.__name__
+    add_vnics_to_vms.__name__,
+    remove_vnics_from_vms.__name__,
+    stop_vms_fixture.__name__
 )
 class TestLongNetworkName02(NetworkTest):
     """
@@ -120,14 +121,14 @@ class TestLongNetworkName02(NetworkTest):
     # General params
     vm = conf.VM_0
     dc = conf.DC_0
-    long_network_name = "long_network_name_" + "!_@" * 79
+    long_network_name = conf.LONG_NETWORK_NAME
 
     # add_vnics_to_vms params
     add_vnics_vms_params = {
         "1":
             {
                 "vm": vm,
-                "name": long_network_name,
+                "name": "long_network_name_nic_case_02",
                 "network": long_network_name
             }
     }
@@ -136,11 +137,16 @@ class TestLongNetworkName02(NetworkTest):
     remove_vnics_vms_params = add_vnics_vms_params
 
     # create_and_attach_network params
+    network_dict = {
+        long_network_name: {
+            "required": "false"
+        }
+    }
     create_networks = {
         "1": {
             "data_center": dc,
             "clusters": [conf.CL_0],
-            "networks": long_network_name
+            "networks": network_dict
         }
     }
 
@@ -157,9 +163,11 @@ class TestLongNetworkName02(NetworkTest):
         }
     }
 
+    # stop_vms_fixture params
+    vms_to_stop = [vm]
+
     @tier2
-    @bz({"1477569": {}})
-    def test_run_vm_with_long_network_name(self, network):
+    def test_run_vm_with_long_network_name(self):
         """
         Start VM that use network with long name
         """
@@ -179,14 +187,19 @@ class TestLongNetworkName03(NetworkTest):
     # General params
     vm = conf.VM_0
     dc = conf.DC_0
-    long_network_name = "long_network_name_" + "!_@" * 79
+    long_network_name = conf.LONG_NETWORK_NAME
 
     # create_and_attach_network params
+    network_dict = {
+        long_network_name: {
+            "required": "false"
+        }
+    }
     create_networks = {
         "1": {
             "data_center": dc,
             "clusters": [conf.CL_0],
-            "networks": long_network_name
+            "networks": network_dict
         }
     }
 
@@ -204,7 +217,6 @@ class TestLongNetworkName03(NetworkTest):
     }
 
     @tier2
-    @bz({"1477569": {}})
     def test_unmanaged_network_reported_as_prefis_uuid(self):
         """
         Make sure unmanaged network reported as prefix+uuid for network with
@@ -213,7 +225,9 @@ class TestLongNetworkName03(NetworkTest):
         network_object = ll_networks.find_network(
             network=self.long_network_name, data_center=self.dc
         )
-        vdsm_network_name = "no{_id}".format(_id=network_object.id[:13])
+        vdsm_network_name = "on{_id}".format(
+            _id=network_object.id.replace('-', '')[:13]
+        )
         assert ll_networks.remove_network(
             positive=True, network=self.long_network_name
         )
