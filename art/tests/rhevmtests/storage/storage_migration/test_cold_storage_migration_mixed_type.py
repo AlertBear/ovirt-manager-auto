@@ -3,6 +3,7 @@ Storage cold migration sanity test
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage_4_0/4_1_Storage_Cold_Move
 """
+
 from storage_migration_base import *  # flake8: noqa
 from cold_storage_migration_base import *  # flake8: noqa
 
@@ -19,10 +20,10 @@ def inizialize_tests_params(request):
     config.LIVE_MOVE = False
 
 
-@pytest.mark.skipif(
-    config.ISCSI_DOMAINS_KWARGS[0]['lun'] is None,
-    reason="No other storage type exist for HCI"
-)
+@pytest.mark.skipif((
+    not any("iscsi" in sd for sd in config.SD_LIST) or
+    not any("nfs" in sd for sd in config.SD_LIST)
+), reason="No other storage type exist for HCI")
 class TestCase19001(TestCase6004):
     """
     Cold migrate
