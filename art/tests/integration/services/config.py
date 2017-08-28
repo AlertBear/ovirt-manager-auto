@@ -38,8 +38,7 @@ ENGINE_SERVICES = {
     'ovirt-fence-kdump-listener',
     'ovirt-imageio-proxy',
     'ovirt-vmconsole-proxy-sshd',
-    'ovirt-websocket-proxy',
-    'chronyd'
+    'ovirt-websocket-proxy'
 }
 
 HOST_SERVICES = {
@@ -49,8 +48,7 @@ HOST_SERVICES = {
     'libvirtd',
     'ovirt-imageio-daemon',
     'momd',
-    'ovirt-vmconsole-host-sshd',
-    'chronyd'
+    'ovirt-vmconsole-host-sshd'
 }
 
 SERVICES = ENGINE_SERVICES.union(HOST_SERVICES)
@@ -69,7 +67,6 @@ BUGGED_SERVICES = {
     'momd': '1427066',
     'vdsmd': '1444087',
     'libvirtd': '1443965',
-    'chronyd': '1466422'
 }
 
 DISABLED_SERVICES = [
