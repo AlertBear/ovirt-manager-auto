@@ -7,15 +7,19 @@ MAC pool range per DC networking feature helper
 
 import logging
 
-from utilities import utils
-
 import art.core_api.apis_exceptions as api_exc
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import config as conf
+import rhevmtests.config as global_conf
 import rhevmtests.networking.config as network_conf
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_clusters,
+    jobs as ll_jobs,
+    mac_pool as ll_mac_pool,
+    vms as ll_vm
+)
+from art.rhevm_api.utils import test_utils
+from utilities import utils
 
 logger = logging.getLogger("MAC_Pool_Range_Per_cluster_Helper")
 
@@ -53,30 +57,29 @@ def update_mac_pool_range_size(
     return True
 
 
-def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
+def check_single_mac_range_match(vm, vm_vnics, mac_ranges):
     """
     Check that MAC on the vNIC matches the MAC on the mac_ranges, where each
     range consists of a single MAC
 
     Args:
+        vm: (str): VM name
+        vm_vnics (dict): VM vNICs
         mac_ranges (list): MAC ranges of MAC pool
-        start_idx (int): Starting index for vNIC in vNIC list
-        end_idx (int): Ending index for vNIC in vNIc list
 
     Returns:
         bool: True if there's a match, False if no match found
     """
     logger.info("Check that MACs on the VNICs correspond to Ranges")
     macs = [i[0] for i in mac_ranges]
-    for i in range(start_idx, end_idx):
-        nic_mac = ll_vm.get_vm_nic_mac_address(
-            vm=conf.MP_VM_0, nic=conf.NICS_NAME[i]
-        )
-        if nic_mac in macs:
-            macs.remove(nic_mac)
+
+    for vnic in vm_vnics:
+        vm_nic_mac = ll_vm.get_vm_nic_mac_address(vm=vm, nic=vnic)
+        if vm_nic_mac in macs:
+            macs.remove(vm_nic_mac)
         else:
             logger.error(
-                "VNIC MAC %s is not in the MAC pool range for %s", nic_mac,
+                "VNIC MAC %s is not in the MAC pool range for %s", vm_nic_mac,
                 conf.MAC_POOL_NAME_0
             )
             return False
@@ -117,26 +120,24 @@ def create_cluster_with_mac_pool(
     )
 
 
-def check_mac_in_range(
-    vm=conf.MP_VM_0, nic=conf.NIC_NAME_1, mac_range=conf.MAC_POOL_RANGE_LIST[0]
-):
+def check_mac_in_range(vm, nic, mac_range=conf.MAC_POOL_RANGE_LIST[0]):
     """
     Check if MAC of VM is in a specified range
 
     Args:
-        vm (str, optional): VM name
-        nic (str, optional): NIC of VM
-        mac_range (tuple, optional): MAC Range
+        vm (str): VM name
+        nic (str): NIC of VM
+        mac_range (tuple): MAC Range
 
     Returns:
-        bool: True if MAC is in range, False if MAC is not in range
+        bool: True if MAC is in range, False otherwise
     """
     logger.info(
         "Check that vNIC added to VM %s uses the correct MAC POOL value", vm
     )
     nic_mac = ll_vm.get_vm_nic_mac_address(vm=vm, nic=nic)
     if not nic_mac:
-        logger.error("MAC was not found on NIC %s", conf.NIC_NAME_1)
+        logger.error("MAC was not found on NIC %s", nic)
         return False
 
     mac_range = utils.MACRange(mac_range[0], mac_range[1])
@@ -146,3 +147,87 @@ def check_mac_in_range(
         )
         return False
     return True
+
+
+def shutdown_stateless_vm(vm, dc):
+    """
+    Shutdown a VM and wait for snapshot completion
+
+    Args:
+        vm (str): VM to stop
+        dc (str): Data-Center name where the VM resides
+
+    Returns:
+        bool: True for success, False for failure
+    """
+    if not ll_vm.stop_vms_safely(vms_list=[vm]):
+        return False
+
+    return not test_utils.wait_for_tasks(
+        engine=network_conf.ENGINE, datacenter=dc
+    )
+
+
+def preview_snapshot_on_vm(vm, snapshot_desc, positive=True):
+    """
+    Preview snapshot of VM
+
+    NOTE: Function shuts down the VM
+
+    Args:
+        vm (str): VM name
+        snapshot_desc (str): Snapshot description to preview
+        positive (bool): True for positive test, False for negative test
+
+    Returns:
+        bool: True for success, False for failure
+    """
+    res = ll_vm.preview_snapshot(
+        positive=positive, vm=vm, description=snapshot_desc,
+        ensure_vm_down=True
+    )
+    if positive:
+        ll_jobs.wait_for_jobs([global_conf.JOB_PREVIEW_SNAPSHOT])
+    return res
+
+
+def remove_non_default_mac_pools():
+    """
+    Remove non-default MAC pools from engine
+
+    Returns:
+        bool: True if all non-default MAC pools removed successfully, False
+            otherwise
+    """
+    res_list = []
+    all_macs = ll_mac_pool.get_all_mac_pools()
+    for mac in filter(lambda x: x.name != "Default", all_macs):
+        try:
+            res = ll_mac_pool.remove_mac_pool(mac_pool_name=mac.name)
+        except Exception as e:
+            logger.error(e)
+            res_list.append(False)
+        else:
+            res_list.append(res)
+    return all(res_list)
+
+
+def undo_snapshot_and_wait(vm, snapshot_desc):
+    """
+    Undo a snapshot and wait for snapshot and job completion
+
+    Args:
+        vm (str): VM name
+        snapshot_desc (str): Snapshot description to wait for
+
+    Returns:
+        bool: True for undo success, False for failure
+    """
+    if ll_vm.undo_snapshot_preview(positive=True, vm=vm, ensure_vm_down=True):
+        ll_jobs.wait_for_jobs([global_conf.JOB_RESTORE_SNAPSHOT])
+        ll_vm.wait_for_vm_snapshots(
+            vm_name=vm, states=global_conf.SNAPSHOT_OK,
+            snapshots_description=[snapshot_desc]
+        )
+        return True
+    return False

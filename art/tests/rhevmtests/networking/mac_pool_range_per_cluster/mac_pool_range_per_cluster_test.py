@@ -11,22 +11,31 @@ Data-Centers, clusters, MAC pools, storage domain, VM, templates, vNICs
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as mac_pool_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier2,
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_clusters,
+    mac_pool as ll_mac_pool,
+    vms as ll_vms
 )
-from art.unittest_lib import testflow, NetworkTest
+from art.test_handler.tools import bz, polarion
+from art.unittest_lib import NetworkTest, testflow, tier2
 from fixtures import (
-    mac_pool_per_cl_prepare_setup, create_mac_pools,
-    create_cluster_with_mac_pools, update_clusters_mac_pool,
-    remove_vnics_from_vms, add_vnics_to_vm, remove_non_default_mac_pool,
-    add_vnics_to_template, create_vm_from_template
+    mac_pool_per_cl_prepare_setup,
+    create_mac_pools,
+    create_cluster_with_mac_pools,
+    update_clusters_mac_pool,
+    add_vnics_to_template,
+    create_vm_from_template,
+    set_stateless_vm,
+    take_vms_snapshot,
+    undo_snapshot_preview
+)
+from rhevmtests.fixtures import start_vm
+from rhevmtests.networking.fixtures import (
+    add_vnics_to_vms,
+    remove_vnics_from_vms
 )
 
 
@@ -68,15 +77,18 @@ class TestMacPoolRange02(NetworkTest):
     2.  Try to remove default MAC pool
     3.  Extend and shrink Default MAC pool ranges
     """
-
+    # General parameters
     ext_cl = mac_pool_conf.EXT_CL_1
     mac_pool = mac_pool_conf.MAC_POOL_NAME_0
     def_mac_pool = mac_pool_conf.DEFAULT_MAC_POOL
     range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
 
+    # create_mac_pools fixture parameters
     create_mac_pools_params = {
         mac_pool: [range_list, False]
     }
+
+    # create_cluster_with_mac_pools fixture parameters
     create_cl_with_mac_pools_params = {
         ext_cl: [mac_pool, True]
     }
@@ -162,23 +174,23 @@ class TestMacPoolRange03(NetworkTest):
     6.  Creating pool with the same name
     7.  Creating pool with the same range
     """
-
+    # General parameters
     ext_cl = mac_pool_conf.MAC_POOL_CL
     ext_cl_1 = mac_pool_conf.EXT_CL_1
     vm = mac_pool_conf.MP_VM_0
     pool_0 = mac_pool_conf.MAC_POOL_NAME_0
     pool_1 = mac_pool_conf.MAC_POOL_NAME_1
     pool_2 = mac_pool_conf.MAC_POOL_NAME_2
-    vnic_1 = mac_pool_conf.NIC_NAME_1
-    vnic_2 = mac_pool_conf.NIC_NAME_2
-    vnic_3 = mac_pool_conf.NIC_NAME_3
-    vnic_4 = mac_pool_conf.NIC_NAME_4
     range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
+
+    # create_mac_pools fixture parameters
     create_mac_pools_params = {
         pool_0: [[mac_pool_conf.MAC_POOL_RANGE_LIST[0]], False],
         pool_1: None,
         pool_2: None
     }
+
+    # update_clusters_mac_pool fixture parameters
     update_cls_mac_pool_params = {
         ext_cl: pool_0
     }
@@ -193,24 +205,28 @@ class TestMacPoolRange03(NetworkTest):
         """
         manual_mac = "00:00:00:12:34:56"
         testflow.step("Add VNICs to the VM until MAC pool is exhausted")
-        for nic in [self.vnic_1, self.vnic_2]:
+        for nic in [mac_pool_conf.CASE_3_NIC_1, mac_pool_conf.CASE_3_NIC_2]:
             assert ll_vms.addNic(positive=True, vm=self.vm, name=nic)
 
         testflow.step("Fail on adding extra VNIC with auto assigned MAC to VM")
-        assert ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_3)
+        assert ll_vms.addNic(
+            positive=False, vm=self.vm, name=mac_pool_conf.CASE_3_NIC_3
+        )
 
         testflow.step("Add MAC manually (not from a range) and succeed")
         assert ll_vms.addNic(
-            positive=True, vm=self.vm, name=self.vnic_3, mac_address=manual_mac
+            positive=True, vm=self.vm, name=mac_pool_conf.CASE_3_NIC_3,
+            mac_address=manual_mac
         )
 
     @tier2
     @polarion("RHEVM3-6449")
     def test_02_add_remove_ranges(self):
         """
-        1.  Add 2 new ranges
-        2.  Remove one of the added ranges
-        3.  Check that the correct ranges still exist in the range list
+        1.  Add 2 new MAC pool ranges
+        2.  Remove one of the added MAC pool ranges
+        3.  Check that the correct MAC pool ranges still exist in the range
+            list
         """
         testflow.step("Add 2 new ranges")
         assert hl_mac_pool.add_ranges_to_mac_pool(
@@ -244,21 +260,24 @@ class TestMacPoolRange03(NetworkTest):
         assert hl_mac_pool.add_ranges_to_mac_pool(
             mac_pool_name=self.pool_0, range_list=[self.range_list[1]]
         )
-        assert ll_vms.addNic(positive=True, vm=self.vm, name=self.vnic_4)
+        assert ll_vms.addNic(
+            positive=True, vm=self.vm, name=mac_pool_conf.CASE_3_NIC_4
+        )
         testflow.step(
             "Check that VM NIC is created with MAC from the first MAC pool "
             "range"
         )
         assert helper.check_mac_in_range(
-            vm=self.vm, nic=self.vnic_4, mac_range=self.range_list[1]
+            vm=self.vm, nic=mac_pool_conf.CASE_3_NIC_4,
+            mac_range=self.range_list[1]
         )
         testflow.step(
             "Check that for updated cluster with new MAC pool, the NICs on "
             "the VM on that cluster are created with MACs from the new MAC "
             "pool range"
         )
-        for nic in [self.vnic_1, self.vnic_2, self.vnic_3, self.vnic_4]:
-            assert ll_vms.removeNic(True, vm=self.vm, nic=nic)
+        for vnic in mac_pool_conf.CASE_3_ALL_NICS:
+            assert ll_vms.removeNic(positive=True, vm=self.vm, nic=vnic)
 
         assert hl_mac_pool.remove_ranges_from_mac_pool(
             mac_pool_name=self.pool_0, range_list=[self.range_list[1]]
@@ -353,23 +372,27 @@ class TestMacPoolRange04(NetworkTest):
     7.  Extending the MAC pool range by 2 will let you add 2 additional VNICs
         only
     """
-
+    # General parameters
     ext_cl = mac_pool_conf.MAC_POOL_CL
     vm = mac_pool_conf.MP_VM_0
     pool_0 = mac_pool_conf.MAC_POOL_NAME_0
-    vnic_1 = mac_pool_conf.NIC_NAME_1
-    vnic_2 = mac_pool_conf.NIC_NAME_2
-    vnic_3 = mac_pool_conf.NIC_NAME_3
-    vnic_5 = mac_pool_conf.NIC_NAME_5
+
+    # create_mac_pools fixture parameters
     create_mac_pools_params = {
         pool_0: [[mac_pool_conf.MAC_POOL_RANGE_LIST[1]], False]
     }
+
+    # update_clusters_mac_pool fixture parameters
     update_cls_mac_pool_params = {
         ext_cl: pool_0
     }
-    remove_vnics_from_vms_params = {
-        vm: [mac_pool_conf.NICS_NAME[i] for i in range(1, 5)]
-    }
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {vm: {}}
+    for i, nic in enumerate(mac_pool_conf.CASE_4_REMOVE_NICS):
+        remove_vnics_vms_params[vm][i] = {
+            "name": nic
+        }
 
     @tier2
     @polarion("RHEVM3-6448")
@@ -381,12 +404,18 @@ class TestMacPoolRange04(NetworkTest):
         4.  Try to add additional VNIC to VM and fail
         """
         testflow.step("Add VNICs to the VM and shrink the MAC pool")
-        assert ll_vms.addNic(positive=True, vm=self.vm, name=self.vnic_1)
+        assert ll_vms.addNic(
+            positive=True, vm=self.vm, name=mac_pool_conf.CASE_4_NIC_1
+        )
         assert helper.update_mac_pool_range_size(extend=False, size=(0, -1))
         testflow.step("Add one VNIC and succeed")
-        assert ll_vms.addNic(positive=True, vm=self.vm, name=self.vnic_2)
+        assert ll_vms.addNic(
+            positive=True, vm=self.vm, name=mac_pool_conf.CASE_4_NIC_2
+        )
         testflow.step("Try to add additional VNIC to VM and fail")
-        assert ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_3)
+        assert ll_vms.addNic(
+            positive=False, vm=self.vm, name=mac_pool_conf.CASE_4_NIC_3
+        )
 
     @tier2
     @polarion("RHEVM3-6447")
@@ -399,12 +428,12 @@ class TestMacPoolRange04(NetworkTest):
         testflow.step("Extend the MAC pool range")
         assert helper.update_mac_pool_range_size()
         testflow.step("Add another VNICs (until you reach range limit again)")
-        for i in range(3, 5):
-            assert ll_vms.addNic(
-                positive=True, vm=self.vm, name=mac_pool_conf.NICS_NAME[i]
-            )
+        for vnic in [mac_pool_conf.CASE_4_NIC_3, mac_pool_conf.CASE_4_NIC_4]:
+            assert ll_vms.addNic(positive=True, vm=self.vm, name=vnic)
         testflow.step("Fail when you try to overcome that limit")
-        assert ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_5)
+        assert ll_vms.addNic(
+            positive=False, vm=self.vm, name=mac_pool_conf.CASE_4_NIC_5
+        )
 
 
 @pytest.mark.incremental
@@ -412,7 +441,8 @@ class TestMacPoolRange04(NetworkTest):
     mac_pool_per_cl_prepare_setup.__name__,
     create_mac_pools.__name__,
     update_clusters_mac_pool.__name__,
-    add_vnics_to_vm.__name__
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__
 )
 class TestMacPoolRange05(NetworkTest):
     """
@@ -420,10 +450,9 @@ class TestMacPoolRange05(NetworkTest):
     2.  Check that you can add VNICs according to the number of MAC ranges when
         each MAC range has only one MAC address in the pool
     """
-
+    # General settings
     ext_cl = mac_pool_conf.MAC_POOL_CL
     vm = mac_pool_conf.MP_VM_0
-    nic7 = mac_pool_conf.NIC_NAME_6
     pool_0 = mac_pool_conf.MAC_POOL_NAME_0
     mac_pool_ranges = [
         ("00:00:00:10:10:10", "00:00:00:10:10:10"),
@@ -433,18 +462,30 @@ class TestMacPoolRange05(NetworkTest):
         ("00:00:00:10:10:50", "00:00:00:10:10:50"),
         ("00:00:00:10:10:60", "00:00:00:10:10:60")
     ]
+
+    # create_mac_pools fixture parameters
     create_mac_pools_params = {
         pool_0: [mac_pool_ranges[:3], False]
     }
+
+    # update_clusters_mac_pool fixture parameters
     update_cls_mac_pool_params = {
         ext_cl: pool_0
     }
-    remove_vnics_from_vms_params = {
-        vm: [mac_pool_conf.NICS_NAME[i] for i in range(1, 7)]
-    }
-    add_vnics_to_vm_params = {
-        vm: [mac_pool_conf.NICS_NAME[i] for i in range(1, 4)]
-    }
+
+    # add_vnics_to_vms fixture parameters
+    add_vnics_vms_params = {vm: {}}
+    for i, nic in enumerate(mac_pool_conf.CASE_5_SETUP_NICS):
+        add_vnics_vms_params[vm][i] = {
+            "name": nic
+        }
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {vm: {}}
+    for i, nic in enumerate(mac_pool_conf.CASE_5_ALL_NICS):
+        remove_vnics_vms_params[vm][i] = {
+            "name": nic
+        }
 
     @tier2
     @polarion("RHEVM3-6450")
@@ -458,17 +499,17 @@ class TestMacPoolRange05(NetworkTest):
             "only one MAC address in the pool"
         )
         assert helper.check_single_mac_range_match(
-            mac_ranges=self.mac_pool_ranges[:3], start_idx=1, end_idx=4
+            vm=self.vm, vm_vnics=mac_pool_conf.NICS_NAME[5][:3],
+            mac_ranges=self.mac_pool_ranges[:3]
         )
         assert hl_mac_pool.add_ranges_to_mac_pool(
             mac_pool_name=self.pool_0, range_list=self.mac_pool_ranges[3:5]
         )
-        for i in range(4, 6):
-            assert ll_vms.addNic(
-                positive=True, vm=self.vm, name=mac_pool_conf.NICS_NAME[i]
-            )
+        for vnic in [mac_pool_conf.CASE_5_NIC_4, mac_pool_conf.CASE_5_NIC_5]:
+            assert ll_vms.addNic(positive=True, vm=self.vm, name=vnic)
         assert helper.check_single_mac_range_match(
-            mac_ranges=self.mac_pool_ranges[3:5], start_idx=4, end_idx=6
+            vm=self.vm, vm_vnics=mac_pool_conf.NICS_NAME[5][3:5],
+            mac_ranges=self.mac_pool_ranges[3:5]
         )
         testflow.step(
             "Remove the last added range, add another one and check that "
@@ -480,14 +521,17 @@ class TestMacPoolRange05(NetworkTest):
         assert hl_mac_pool.add_ranges_to_mac_pool(
             mac_pool_name=self.pool_0, range_list=[self.mac_pool_ranges[5]]
         )
-        assert ll_vms.addNic(positive=True, vm=self.vm, name=self.nic7)
-        nic_mac = ll_vms.get_vm_nic_mac_address(vm=self.vm, nic=self.nic7)
+        assert ll_vms.addNic(
+            positive=True, vm=self.vm, name=mac_pool_conf.CASE_5_NIC_6
+        )
+        nic_mac = ll_vms.get_vm_nic_mac_address(
+            vm=self.vm, nic=mac_pool_conf.CASE_5_NIC_6
+        )
         assert nic_mac == self.mac_pool_ranges[-1][0]
 
 
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
-    remove_non_default_mac_pool.__name__,
     create_mac_pools.__name__,
     update_clusters_mac_pool.__name__,
     add_vnics_to_template.__name__,
@@ -501,24 +545,33 @@ class TestMacPoolRange06(NetworkTest):
         VM from that template
     4.  Check that creating new VM from template fails
     """
-
+    # General parameters
     ext_cl = mac_pool_conf.MAC_POOL_CL
-    nic_0 = mac_pool_conf.NIC_NAME_0
-    nic_1 = mac_pool_conf.NIC_NAME_1
     cluster = mac_pool_conf.MAC_POOL_CL
     template = mac_pool_conf.MP_TEMPLATE
     pool_0 = mac_pool_conf.MAC_POOL_NAME_0
-    mp_vm = mac_pool_conf.MP_VM_1
+    mp_vm = mac_pool_conf.MP_VM_CASE_6
     range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
+
+    # create_mac_pools fixture parameters
     create_mac_pools_params = {
         pool_0: [[range_list[0]], False]
     }
+
+    # update_clusters_mac_pool fixture parameters
     update_cls_mac_pool_params = {
         ext_cl: pool_0
     }
+
+    # add_vnics_to_template fixture parameters
     add_vnics_to_template_params = {
-        template: [nic_0, nic_1]
+        template: [mac_pool_conf.CASE_6_NIC_1, mac_pool_conf.CASE_6_NIC_2]
     }
+
+    # remove_vnics_from_template fixture parameters
+    remove_vnics_from_template_params = add_vnics_to_template_params
+
+    # create_vm_from_template fixture parameters
     create_vm_from_template_params = {
         mp_vm: template
     }
@@ -536,7 +589,8 @@ class TestMacPoolRange06(NetworkTest):
             "vNIC is created from template that uses the valid MAC pool values"
         )
         assert helper.check_mac_in_range(
-            vm=self.mp_vm, nic=self.nic_0, mac_range=self.range_list[0]
+            vm=self.mp_vm, nic=mac_pool_conf.CASE_6_NIC_1,
+            mac_range=self.range_list[0]
         )
         testflow.step(
             "Negative: try to create new VM from template when there are not "
@@ -558,14 +612,18 @@ class TestMacPoolRange07(NetworkTest):
     Removal of cluster with custom MAC pool when that MAC pool is assigned to
         2 clusters
     """
-
+    # General parameters
     ext_cl_1 = mac_pool_conf.EXT_CL_2
     ext_cl_2 = mac_pool_conf.EXT_CL_3
     pool_0 = mac_pool_conf.MAC_POOL_NAME_0
     range_list = mac_pool_conf.MAC_POOL_RANGE_LIST
+
+    # create_mac_pools fixture parameters
     create_mac_pools_params = {
         pool_0: [[range_list[0]], False]
     }
+
+    # create_cluster_with_mac_pools fixture parameters
     create_cl_with_mac_pools_params = {
         ext_cl_1: [pool_0, False],
         ext_cl_2: [pool_0, False]
@@ -596,3 +654,312 @@ class TestMacPoolRange07(NetworkTest):
                     cluster=self.ext_cl_2
                 )
                 assert mac_on_cl.name == mac_pool_obj.name
+
+
+@pytest.mark.incremental
+@pytest.mark.usefixtures(
+    mac_pool_per_cl_prepare_setup.__name__,
+    create_mac_pools.__name__,
+    update_clusters_mac_pool.__name__,
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__,
+    set_stateless_vm.__name__,
+    start_vm.__name__
+)
+class TestMacPoolRange08(NetworkTest):
+    """
+    Test VM stateless mode with MAC address changes:
+
+    1. Verify that the VM MAC address is blocked from being used
+    2. Verify that on VM shutdown, it restores the default MAC address
+    """
+    # general parameters
+    vm_0_mac_address = mac_pool_conf.MAC_POOL_RANGE_LIST[0][0]
+    vm_1_mac_address = mac_pool_conf.MAC_POOL_RANGE_LIST[1][0]
+    arbitrary_mac_address = mac_pool_conf.MAC_POOL_RANGE_LIST[2][0]
+
+    # create_mac_pools fixture parameters
+    create_mac_pools_params = {
+        mac_pool_conf.MAC_POOL_NAME_0: (
+            [mac_pool_conf.MAC_POOL_RANGE_LIST, False]
+        )
+    }
+
+    # set_stateless_vm fixture parameters
+    set_stateless_vm_param = mac_pool_conf.MP_VM_0
+
+    # add_vnics_to_vms fixture parameters
+    add_vnics_vms_params = {
+        mac_pool_conf.MP_VM_0: {
+            "1": {
+                "name": mac_pool_conf.CASE_8_NIC_1,
+                "mac_address": vm_0_mac_address,
+                "network": conf.MGMT_BRIDGE
+            }
+        },
+        mac_pool_conf.MP_VM_1: {
+            "1": {
+                "name": mac_pool_conf.CASE_8_NIC_1,
+                "mac_address": vm_1_mac_address,
+                "network": conf.MGMT_BRIDGE
+            }
+        }
+    }
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = add_vnics_vms_params
+
+    # start_vm fixture parameters
+    start_vms_dict = {
+        mac_pool_conf.MP_VM_0: {}
+    }
+
+    # update_clusters_mac_pool fixture parameters
+    update_cls_mac_pool_params = {
+        mac_pool_conf.MAC_POOL_CL: mac_pool_conf.MAC_POOL_NAME_0
+    }
+
+    @tier2
+    @polarion("RHEVM-23232")
+    def test_01_mac_assignment_on_vnic_unplug(self):
+        """
+        1. Hot-unplug vNIC from MP_VM_0
+        2. NEGATIVE: try to assign MP_VM_0 MAC address on MP_VM_1
+        """
+        assert ll_vms.updateNic(
+            positive=True, vm=mac_pool_conf.MP_VM_0,
+            nic=mac_pool_conf.CASE_8_NIC_1, plugged=False
+        )
+        assert ll_vms.updateNic(
+            positive=False, vm=mac_pool_conf.MP_VM_1,
+            nic=mac_pool_conf.CASE_8_NIC_1, mac_address=self.vm_0_mac_address
+        )
+
+    @tier2
+    @polarion("RHEVM-22434")
+    def test_02_test_mac_assignment_on_running_stateless_vm(self):
+        """
+        1. Hot-unplug vNIC from MP_VM_0
+        2. Remove vNIC from MP_0
+        3. NEGATIVE: try to assign MP_VM_0 MAC address on MP_VM_1
+        """
+        assert ll_vms.updateNic(
+            positive=True, vm=mac_pool_conf.MP_VM_0,
+            nic=mac_pool_conf.CASE_8_NIC_1, plugged=False
+        )
+        assert ll_vms.removeNic(
+            positive=True, vm=mac_pool_conf.MP_VM_0,
+            nic=mac_pool_conf.CASE_8_NIC_1
+        )
+        assert ll_vms.updateNic(
+            positive=False, vm=mac_pool_conf.MP_VM_1,
+            nic=mac_pool_conf.CASE_8_NIC_1, mac_address=self.vm_0_mac_address
+        )
+        # Restore MP_VM_0 vNIC with differnet MAC address
+        assert ll_vms.addNic(
+            positive=True, vm=mac_pool_conf.MP_VM_0,
+            name=mac_pool_conf.CASE_8_NIC_1,
+            mac_address=self.arbitrary_mac_address, network=conf.MGMT_BRIDGE,
+            plugged=True
+        )
+
+    @tier2
+    @polarion("RHEVM-22435")
+    def test_03_mac_assignment_on_stopped_stateless_vm(self):
+        """
+        1. Assign arbitrary MAC address on vNIC on MP_VM_0 (done in previous
+           test steps)
+        2. Shutdown MP_VM_0
+        3. Verify that the MAC address on MP_VM_0 is restored (VM is stateless)
+        """
+        testflow.step(
+            "Shutting down VM: %s to restore state", mac_pool_conf.MP_VM_0
+        )
+        assert helper.shutdown_stateless_vm(
+            vm=mac_pool_conf.MP_VM_0, dc=conf.DC_0
+        )
+        testflow.step(
+            "Comparing VM: %s vNIC MAC address with original MAC address",
+            mac_pool_conf.MP_VM_0
+        )
+        assert ll_vms.get_vm_nic_mac_address(
+            vm=mac_pool_conf.MP_VM_0, nic=mac_pool_conf.CASE_8_NIC_1
+        ) == self.vm_0_mac_address
+
+
+@bz({"1495723": {}})
+@pytest.mark.incremental
+@pytest.mark.usefixtures(
+    mac_pool_per_cl_prepare_setup.__name__,
+    create_mac_pools.__name__,
+    update_clusters_mac_pool.__name__,
+    remove_vnics_from_vms.__name__,
+    add_vnics_to_vms.__name__,
+    take_vms_snapshot.__name__,
+    undo_snapshot_preview.__name__,
+    start_vm.__name__
+)
+class TestMacPoolRange09(NetworkTest):
+    """
+    Test VM with preview snapshot:
+
+    1. Verify that the snapshot allocates new MAC when it is already allocated
+    2. Verify that the snapshot restores the original MAC address on VM
+    3. Verify that snapshot preview action fails when there no MAC are
+       available on the pool
+    """
+    # General parameters
+    vm_0_mac_address_1 = "00:00:00:10:10:10"
+    vm_1_mac_address_1 = "00:00:00:10:10:11"
+    out_of_scope_mac_address_1 = "00:00:00:10:10:12"
+    out_of_scope_mac_address_2 = "00:00:00:10:10:13"
+    mac_pool_snapshot = "MAC_pool_snapshot_c9"
+
+    # undo_snapshot_preview, take_vms_snapshot fixture parameters
+    vms_snapshot = {
+        mac_pool_conf.MP_VM_0: mac_pool_snapshot,
+        mac_pool_conf.MP_VM_1: mac_pool_snapshot
+    }
+
+    # create_mac_pools fixture parameters
+    create_mac_pools_params = {
+        mac_pool_conf.MAC_POOL_NAME_0: (
+            [[mac_pool_conf.MAC_POOL_RANGE_LIST[0]], False]
+        )
+    }
+
+    # add_vnics_to_vms fixture parameters
+    add_vnics_vms_params = {
+        mac_pool_conf.MP_VM_0: {
+            1: {
+                "name": mac_pool_conf.CASE_9_NIC_1,
+                "mac_address": vm_0_mac_address_1,
+                "network": conf.MGMT_BRIDGE
+            }
+        },
+        mac_pool_conf.MP_VM_1: {
+            "1": {
+                "name": mac_pool_conf.CASE_9_NIC_1,
+                "mac_address": vm_1_mac_address_1,
+                "network": conf.MGMT_BRIDGE
+            },
+            "2": {
+                "name": mac_pool_conf.CASE_9_NIC_2,
+                "mac_address": out_of_scope_mac_address_1,
+                "network": conf.MGMT_BRIDGE,
+                "plugged": False
+            }
+        }
+    }
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = add_vnics_vms_params
+
+    # start_vm fixture parameters
+    start_vms_dict = {
+        mac_pool_conf.MP_VM_0: {},
+        mac_pool_conf.MP_VM_1: {}
+    }
+
+    # update_clusters_mac_pool fixture parameters
+    update_cls_mac_pool_params = {
+        mac_pool_conf.MAC_POOL_CL: mac_pool_conf.MAC_POOL_NAME_0
+    }
+
+    @tier2
+    @polarion("RHEVM-22436")
+    def test_01_test_mac_assignment_on_another_vm_with_snapshot(self):
+        """
+        1. Unplug MP_VM_0 vNIC and assign MAC: out_of_scope_mac_address_2
+        2. Unplug MP_VM_1 vNIC and assign MAC: vm_0_mac_address_1
+        3. Preview a snapshot on VM_0
+        4. Verify that MP_VM_0 vNIC MAC address is renewed and allocated
+           from the pool (already allocated to VM_1)
+        5. Preparation step for test_03_test_mac_pool_full_with_snapshot test:
+           Undo snapshot preview on VM_0
+        6. Start MP_VM_0
+        """
+        assert ll_vms.updateNic(
+            positive=True, vm=mac_pool_conf.MP_VM_0,
+            nic=mac_pool_conf.CASE_9_NIC_1,
+            mac_address=self.out_of_scope_mac_address_2, plugged=False
+        )
+        assert ll_vms.updateNic(
+            positive=True, vm=mac_pool_conf.MP_VM_1,
+            nic=mac_pool_conf.CASE_9_NIC_1,
+            mac_address=self.vm_0_mac_address_1, plugged=False
+        )
+        testflow.step("Previewing VM: %s snaphost", mac_pool_conf.MP_VM_0)
+        assert helper.preview_snapshot_on_vm(
+            vm=mac_pool_conf.MP_VM_0, snapshot_desc=self.mac_pool_snapshot
+        )
+        vm_0_mac_address = ll_vms.get_vm_nic_mac_address(
+            vm=mac_pool_conf.MP_VM_0, nic=mac_pool_conf.CASE_9_NIC_1
+        )
+        assert vm_0_mac_address == self.vm_1_mac_address_1, (
+            "VM: %s vNIC assigned with reserved MAC address"
+            % mac_pool_conf.MP_VM_0
+        )
+        testflow.step(
+            "Undoing VM: %s snapshot: %s", mac_pool_conf.MP_VM_0,
+            self.mac_pool_snapshot
+        )
+        assert helper.undo_snapshot_and_wait(
+            vm=mac_pool_conf.MP_VM_0, snapshot_desc=self.mac_pool_snapshot
+        )
+        assert ll_vms.startVm(
+            positive=True, vm=mac_pool_conf.MP_VM_0, wait_for_status="up"
+        )
+
+    @tier2
+    @polarion("RHEVM-22437")
+    def test_02_test_mac_assignment_with_snapshot(self):
+        """
+        1. Unplug MP_VM_1 vNIC and assign different MAC from what is used in
+           its snapshot (already done in the previous test steps)
+        2. Unplug MP_VM_0 vNIC and assign MAC: out_of_scope_mac_address_2
+           (to allow next step to restore MP_VM_1 vNIC MAC address)
+        3. Preview a snapshot on MP_VM_1
+        4. Verify that the MAC address on MP_VM_1 is restored correctly
+        5. Start MP_VM_1
+        """
+        assert ll_vms.updateNic(
+            positive=True, vm=mac_pool_conf.MP_VM_0,
+            nic=mac_pool_conf.CASE_9_NIC_1,
+            mac_address=self.out_of_scope_mac_address_2, plugged=False
+        )
+        testflow.step("Previewing VM: %s snaphost", mac_pool_conf.MP_VM_1)
+        assert helper.preview_snapshot_on_vm(
+            vm=mac_pool_conf.MP_VM_1, snapshot_desc=self.mac_pool_snapshot
+        )
+        vm_1_mac_address = ll_vms.get_vm_nic_mac_address(
+            vm=mac_pool_conf.MP_VM_1, nic=mac_pool_conf.CASE_9_NIC_1
+        )
+        assert vm_1_mac_address == self.vm_1_mac_address_1, (
+            "VM: %s vNIC is assigned with unexpected MAC address: %s"
+            % (mac_pool_conf.MP_VM_1, vm_1_mac_address)
+        )
+        assert ll_vms.startVm(
+            positive=True, vm=mac_pool_conf.MP_VM_1, wait_for_status="up"
+        )
+
+    @tier2
+    @polarion("RHEVM-23178")
+    def test_03_test_mac_pool_full_with_snapshot(self):
+        """
+        1. Unplug MP_VM_0 vNIC and assign MAC: out_of_scope_mac_address_2
+           (already done in previous test steps)
+        2. Unplug MP_VM_1 second vNIC and assign MAC: vm_0_mac_address_1
+        3. NEGATIVE: Try to preview a snapshot of VM_0 (should fail, because
+           they are no available MACs to allocate from the pool)
+        """
+        assert ll_vms.updateNic(
+            positive=True, vm=mac_pool_conf.MP_VM_1,
+            nic=mac_pool_conf.CASE_9_NIC_2,
+            mac_address=self.vm_0_mac_address_1, plugged=False
+        )
+        testflow.step("Previewing VM: %s snaphost", mac_pool_conf.MP_VM_0)
+        assert helper.preview_snapshot_on_vm(
+            vm=mac_pool_conf.MP_VM_0, snapshot_desc=self.mac_pool_snapshot,
+            positive=False
+        )

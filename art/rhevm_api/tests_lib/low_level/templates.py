@@ -583,6 +583,7 @@ def get_template_nic(template, nic, version=BASE_TEMPLATE_VERSION):
     return TEMPLATE_API.getElemFromElemColl(template_obj, nic, 'nics', 'nic')
 
 
+@ll_general.generate_logs()
 def addTemplateNic(
     positive, template, version=BASE_TEMPLATE_VERSION, **kwargs
 ):
@@ -602,25 +603,16 @@ def addTemplateNic(
     Returns:
         bool: True if nic was added properly, False otherwise
     """
-    nic_name = kwargs.get("name")
-    template_obj = get_template_obj(template, version=version)
+    template_obj = get_template_obj(template_name=template, version=version)
     if not template_obj:
         return False
-    log_info_txt, log_error_txt = ll_general.get_log_msg(
-        log_action="add", obj_type="nic", obj_name=nic_name, positive=positive,
-        extra_txt="template version: %s" % version, **kwargs
-    )
+
     kwargs.update([("cluster", template_obj.cluster.id)])
 
     nic_obj = _prepareNicObj(**kwargs)
-    nics_coll = getTemplatesNics(template, version)
+    nics_coll = getTemplatesNics(template=template, version=version)
 
-    logger.info("%s to %s", log_info_txt, template)
-    status = NIC_API.create(nic_obj, positive, collection=nics_coll)[1]
-    if not status:
-        logger.error(log_error_txt)
-        return False
-    return True
+    return NIC_API.create(nic_obj, positive, collection=nics_coll)[1]
 
 
 def get_watchdog_collection(template_name, version=BASE_TEMPLATE_VERSION):

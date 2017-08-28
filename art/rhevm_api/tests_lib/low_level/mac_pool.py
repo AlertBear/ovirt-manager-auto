@@ -29,16 +29,17 @@ MACPOOL_API = utils.get_api("mac_pool", "macpools")
 RANGES = "ranges"
 
 
+@ll_general.generate_logs()
 def get_mac_pool(pool_name):
     """
-    Get MAC pool object due to given Pool name
+    Get pool object by given MAC pool_name
 
-    :param pool_name: MAC pool name
-    :type pool_name: str
-    :return: MAC pool object
-    :rtype: MacPool object
+    Args:
+        pool_name (str): MAC pool name
+
+    Returns:
+        MacPool: MacPool object
     """
-    logger.info("Get MAC pool %s", pool_name)
     return MACPOOL_API.find(pool_name)
 
 
@@ -116,22 +117,19 @@ def get_mac_range_values(mac_pool_obj):
     return [(i.get_from(), i.get_to()) for i in ranges]
 
 
+@ll_general.generate_logs()
 def remove_mac_pool(mac_pool_name):
     """
-    Remove MAC pool
+    Remove mac_pool_name from engine
 
     Args:
-        mac_pool_name (str): name of the MAC pool you want to remove
+        mac_pool_name (str): Name of the MAC pool to remove
 
     Returns:
         bool: True if remove of MAC pool succeeded, False otherwise
     """
-    logger.info("Remove MAC pool %s", mac_pool_name)
-    mac_pool_obj = get_mac_pool(mac_pool_name)
-    res = MACPOOL_API.delete(mac_pool_obj, True)
-    if not res:
-        logger.error("Failed to remove MAC pool %s", mac_pool_name)
-    return res
+    mac_pool_obj = get_mac_pool(pool_name=mac_pool_name)
+    return MACPOOL_API.delete(entity=mac_pool_obj, positive=True)
 
 
 def prepare_macpool_obj(**kwargs):
