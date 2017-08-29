@@ -40,6 +40,7 @@ Skipping tests after or before upgrade:
 """
 
 import logging
+import os
 
 import pytest
 from art.rhevm_api.tests_lib.low_level import (
@@ -79,14 +80,17 @@ class TestUpgradeCommon(UpgradeTest):
         assert prepare_env_group_vars(
             config.product, config.upgrade_version
         ), "Failed when copy groupvars!"
+        hosted_engine = os.getenv('HOSTED_ENGINE', 'False')
         testflow.step("Running ansible for upgrade engine.")
         rc, out, err = run_ansible_playbook(
             "ansible-playbooks/playbooks/ovirt-upgrade",
             "-e '{{ovirt_upgrade_skip_hosts: True, "
             "ovirt_engine_answer_file_path: "
             "answerfile_{version}_upgrade.txt.j2, "
-            "ovirt_upgrade_packages_repos_update_all: True}}'".format(
-                version=config.upgrade_version
+            "ovirt_upgrade_packages_repos_update_all: True, "
+            "hosted_engine: {hosted_engine}}}'".format(
+                version=config.upgrade_version,
+                hosted_engine=hosted_engine.lower()
             )
         )
         logger.info("Output of ansible commands: %s", out)
