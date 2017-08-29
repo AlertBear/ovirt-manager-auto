@@ -172,7 +172,10 @@ class TestInstanceType(VirtTest):
         default_instance_type_teardown.__name__, remove_test_vms.__name__
     )
     @pytest.mark.instance_type_name(name=config.SMALL_INSTANCE_TYPE)
-    @bz({'1397118': {'ppc': config.PPC_ARCH}})
+    @pytest.mark.skipif(
+        condition=config.PPC_ARCH,
+        reason=config.PPC_SKIP_MESSAGE
+    )
     def test_edit_small_instance_type(self):
         """
         1. Update 'small' instance type.
