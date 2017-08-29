@@ -687,6 +687,8 @@ def wait_for_tasks(engine, datacenter, timeout=TASK_TIMEOUT, sleep=TASK_POLL):
         if not tasks:
             logger.info("All tasks are gone")
             return
+    tasks = get_running_tasks(engine, sp_id)
+    logger.error("Tasks %s are still running", tasks)
 
 
 def restart_engine(engine, interval, timeout):
