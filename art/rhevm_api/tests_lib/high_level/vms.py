@@ -209,9 +209,7 @@ def migrate_by_nic_down(
         logger.error("Couldn't put NIC %s in up state on %s", nic, src_host)
         return False
 
-    logger.info("Activating %s", src_host)
-    if not hosts.activate_host(True, host=src_host):
-        logger.error("Couldn't activate host %s", src_host)
+    if not hl_hosts.activate_host_if_not_up(host=src_host, host_resource=None):
         return False
     return status
 
