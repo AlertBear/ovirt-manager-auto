@@ -19,7 +19,6 @@ from art.rhevm_api.tests_lib.low_level import (
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import polarion, bz
 from fixtures import (  # noqa: F401
-    remove_network_manager_connection,
     add_sriov_host_device_to_vm,
     set_all_networks_allowed,
     reset_host_sriov_params,
@@ -124,7 +123,6 @@ class TestSriovVm01(NetworkTest):
         )
 
     @tier2
-    @bz({"1479484": {}})
     @polarion("RHEVM3-10628")
     def test_02_change_vf_num_for_occupied_vf_on_vm(self):
         """
@@ -336,7 +334,6 @@ class TestSriovVm02(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
-    @bz({"1479484": {}})
     @polarion("RHEVM3-6314")
     def test_01_vm_with_vlan(self):
         """
@@ -472,7 +469,6 @@ class TestSriovVm03(NetworkTest):
         )
 
     @tier2
-    @bz({"1479484": {}})
     @polarion("RHEVM3-10631")
     def test_03_run_multiple_vnics(self):
         """
@@ -558,7 +554,6 @@ class TestSriovVm04(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
-    @bz({"1479484": {}})
     @polarion("RHEVM3-14640")
     def test_01_all_networks_allowed_specific_net_negative(self):
         """
@@ -653,7 +648,6 @@ class TestSriovVm04(NetworkTest):
     start_vm.__name__,
     store_vms_params.__name__,
     set_ip_on_vm_interface.__name__,
-    remove_network_manager_connection.__name__,
 )
 class TestSriovVm05(NetworkTest):
     """
@@ -738,7 +732,6 @@ class TestSriovVm05(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier2
-    @bz({"1479484": {}})
     @polarion("RHEVM3-6728")
     def test_check_connectivity(self):
         """

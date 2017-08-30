@@ -410,24 +410,6 @@ def modify_ifcfg_nm_controlled(request):
 
 
 @pytest.fixture(scope="class")
-def remove_network_manager_connection(request):
-    """
-    Remove all NetworkManager connections
-    """
-    vm_name = getattr(request.node.cls, "vm_name")
-
-    def fin():
-        """
-        Remove all NetworkManager connections from VM
-        """
-        vm_resource = conf.VMS_TO_STORE.get(vm_name).get("resource")
-        assert network_helper.network_manager_remove_all_connections(
-            host=vm_resource
-        )
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
 def pin_vm_to_host(request):
     """
     Pin VM to host
