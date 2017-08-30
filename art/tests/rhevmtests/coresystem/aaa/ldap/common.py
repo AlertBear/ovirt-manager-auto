@@ -7,7 +7,7 @@ from functools import wraps
 from art.core_api.apis_exceptions import APIException
 from rhevmtests.coresystem.aaa.ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general
-from art.rhevm_api.utils.aaa import copy_extension_file
+from rhevmtests.coresystem.helpers import copy_extension_file
 from art.rhevm_api.utils.test_utils import restart_engine
 
 logger = logging.getLogger(__name__)
