@@ -1055,7 +1055,7 @@ class TestCase5970(BaseTestCase):
     __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
     storages = set([config.STORAGE_TYPE_ISCSI])
     polarion_test_case = '5970'
-    regex = config.REGEX_DD_WIPE_AFTER_DELETE
+    regex = config.REGEX_WIPE_AFTER_DELETE_START
     wipe_after_delete = True
 
     @polarion("RHEVM3-5970")
