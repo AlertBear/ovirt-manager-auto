@@ -17,7 +17,7 @@ from art.unittest_lib import (
 from art.unittest_lib import VirtTest, testflow
 from rhevmtests.virt.fixtures import create_vm
 import rhevmtests.virt.helper as virt_helper
-import rhevmtests.helpers as global_helper
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 
 class TestVmTz(VirtTest):
@@ -93,8 +93,15 @@ class TestVmTz(VirtTest):
         ).get('rtc_base')
         testflow.step('Change VM timezone to {tz}'.format(tz=tz_for_upd))
         assert not ll_vms.updateVm(True, self.vm_name, **upd_params)
-        global_helper.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
-        assert ll_vms.restartVm(self.vm_name, wait_for_status='up')
+        # use startVm and stopVm to avoid race condition, when VM is started
+        #  too fast after shutdown, while VmUpdate is in progress
+        assert ll_vms.stopVm(positive=True, vm=self.vm_name)
+        wait_for_tasks(datacenter=config.DC_NAME[0], engine=config.ENGINE)
+        assert ll_vms.startVm(
+            positive=True,
+            vm=self.vm_name,
+            wait_for_status='up'
+        )
         rtc_base_new = virt_helper.get_vm_qemu_process_args(
             self.vm_name
         ).get('rtc_base')
