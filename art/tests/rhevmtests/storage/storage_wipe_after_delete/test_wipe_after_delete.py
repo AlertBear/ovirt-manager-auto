@@ -71,7 +71,7 @@ class CommonUsage(BaseTestCase):
         assert self.host_ip
         disk_obj = ll_disks.getVmDisk(self.vm_name, disk_id=self.disk_id)
         regex = (
-            config.REGEX_WIPE_AFTER_DELETE_START % disk_obj.get_image_id()
+            config.REGEX_DD_WIPE_AFTER_DELETE % disk_obj.get_image_id()
         )
 
         if update:

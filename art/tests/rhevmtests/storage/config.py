@@ -359,8 +359,7 @@ clone_vm_args = {
     'highly_available': None,
 }
 
-REGEX_WIPE_AFTER_DELETE_START = 'Zero volume thread started for volume %s'
-REGEX_WIPE_AFTER_DELETE_FINISH = 'Zero volume thread finished for volume %s'
+REGEX_DD_WIPE_AFTER_DELETE = 'Zeroing device /dev/.*/%s'
 
 DEV_ZERO = '/dev/zero'
 DEV_URANDOM = '/dev/urandom'
