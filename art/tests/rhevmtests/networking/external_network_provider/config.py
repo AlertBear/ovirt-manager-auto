@@ -214,10 +214,10 @@ OVN_DRIVER_REMOVE_RPMS = [
     "python-openvswitch"
 ]
 
-# Services that can make OVN malfunction
-OVN_FW_SERVICES = [
-    "firewalld",
-    "iptables"
+# OVN ports to open
+OVN_TEST_PORTS = [
+    9696,  # OVN HTTP API provider
+    35357  # Keystone HTTP port
 ]
 
 # OVN config file settings
@@ -225,7 +225,7 @@ OVN_CONFIG_FILE = "/etc/ovirt-provider-ovn/ovirt-provider-ovn.conf"
 OVN_CONFIG_FILE_BCK = None
 
 # Services to stop pre-removing RPM packages
-OVN_DRIVER_SERVICE = "ovn-controller"
+OVN_CONTROLLER_SERVICE = "ovn-controller"
 
 # Commands and constants to be used with SSH terminal
 OVN_CMD_PING = "ping -M do -c {count} -s {size} -I {eth} {ip}"
@@ -247,3 +247,7 @@ OVN_CMD_GET_CPU_USAGE = (
     "top -bn 2 -d 0.01 | grep '^%Cpu' | tail -n 1 | gawk '{print $2+$4+$6}'"
 )
 OVN_CMD_GET_MEM_USAGE = "free | grep Mem | awk '{print $3/$2 * 100.0}'"
+OVN_CMD_ADD_FW_PORT = "firewall-cmd --zone=public --add-port={port}/{proto}"
+OVN_CMD_DEL_FW_PORT = (
+    "firewall-cmd --zone=public --remove-port={port}/{proto}"
+)

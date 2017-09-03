@@ -397,7 +397,7 @@ def service_handler(host, service, action="stop"):
         host (Host): Host object
         service (str): Service name
         action (str): Action to take on service, can be "stop", "start",
-            "restart" or "state" to get service state
+            "restart" or "active" to get running service state
 
     Returns:
         bool: True if action was successful or if service state is running,
@@ -413,7 +413,7 @@ def service_handler(host, service, action="stop"):
             return True
     elif action == "restart":
         return host.service(name=service).restart()
-    elif action == "state":
+    elif action == "active":
         return host.run_command(
             shlex.split(ovn_conf.OVN_CMD_SERVICE_STATUS.format(name=service))
         )[0] == 0

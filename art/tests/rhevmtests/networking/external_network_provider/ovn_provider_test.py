@@ -266,7 +266,6 @@ class TestOVNComponent(NetworkTest):
                 network=net_name, datacenter=self.dc, cluster=self.cl
             )
 
-    @bz({"1483309": {}})
     @tier2
     @polarion("RHEVM3-17439")
     def test_04_start_vm_with_ovn_network(self):
@@ -320,6 +319,7 @@ class TestOVNComponent(NetworkTest):
             "name": ovn_conf.OVN_VNIC
         }
 
+    @bz({"1432354": {}})
     @tier2
     @polarion("RHEVM3-16927")
     def test_06_ping_same_ovn_network_and_host(self):
@@ -771,7 +771,7 @@ class TestOVNPerformance(NetworkTest):
         }
     }
 
-    # remove_vnics_to_vms fixture parameters
+    # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
     # start_vm fixture parameters

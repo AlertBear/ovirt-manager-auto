@@ -8,6 +8,7 @@ External Network Provider fixtures
 import shlex
 
 import pytest
+import logging
 
 import config as enp_conf
 import helper
@@ -20,6 +21,8 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from rhevmtests.networking import config_handler
 from art.unittest_lib import testflow
+
+logger = logging.getLogger("External_Network_Provider_Fixtures")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -222,50 +225,79 @@ def remove_ifcfg_from_vms(request):
 @pytest.fixture(scope="module")
 def configure_ovn(request):
     """
-    Prepare the environment for OVN tests
-
-    OVN provider driver (OVN node) will be configured in a two nodes topology,
-    on servers: vds_1 and vds_2
+    1. Configure ovirt-provider-ovn-driver component on OVN hosts 1 and 2
+    2. Verify that firewalld service is up
+    3. Open required firewalld ports
     """
-    provider_server = net_config.ENGINE_HOST
-    provider_driver_servers = net_config.VDS_HOSTS_LIST[:2]
-    all_servers = [provider_server] + provider_driver_servers
+    ovn_central = net_config.ENGINE_HOST
+    ovn_hosts = net_config.VDS_HOSTS_LIST[:2]
+    ovn_servers = [ovn_central] + ovn_hosts
 
     def fin():
         """
-        Stopping OVN service on driver servers
+        Remove firewalld ports from OVN central
         """
-        for host in provider_driver_servers:
+        results = []
+
+        for port in enp_conf.OVN_TEST_PORTS:
             testflow.teardown(
-                "Stopping service: %s on OVN driver server: %s",
-                enp_conf.OVN_DRIVER_SERVICE, host.fqdn
+                "Removing firewalld TCP port: %s on OVN central server", port
             )
-            assert helper.service_handler(
-                host=host, service=enp_conf.OVN_DRIVER_SERVICE
-            ), "Failed to stop service: %s" % enp_conf.OVN_DRIVER_SERVICE
+            cmd = enp_conf.OVN_CMD_DEL_FW_PORT.format(port=port, proto="tcp")
+            results.append(
+                (
+                    not ovn_central.run_command(shlex.split(cmd))[0],
+                    (
+                        "Failed to remove firewalld TCP port: %s "
+                        "from server: %s" % (port, ovn_central.fqdn)
+                    )
+                )
+            )
+        global_helper.raise_if_false_in_list(results)
     request.addfinalizer(fin)
 
-    # Configuration actions for all servers
-    for host in all_servers:
-        # Stop firewall services that blocks OVN traffic.
-        # Waiting for RFE: https://bugzilla.redhat.com/show_bug.cgi?id=1432354
-        # to be resolved.
-        for service in enp_conf.OVN_FW_SERVICES:
-            testflow.setup(
-                "Stopping firewall service: %s on host: %s", service, host.fqdn
+    # Make sure firewalld service is up
+    # This is used to handle scenarios where firewalld is stopped manually
+    for ovn_server in ovn_servers:
+        if not helper.service_handler(
+            host=ovn_server, service="firewalld", action="active"
+        ):
+            logger.error(
+                "firewalld service is not started on host: %s", ovn_server.fqdn
             )
-            assert helper.service_handler(host=host, service=service)
+            testflow.setup(
+                "Starting firewalld service on host: %s", ovn_server.fqdn
+            )
+            assert helper.service_handler(
+                host=ovn_server, service="firewalld", action="start"
+            )
 
-    # Driver server configuration
-    for host in provider_driver_servers:
-        testflow.setup("Starting OVN driver service on host: %s", host.fqdn)
-        assert host.service(name=enp_conf.OVN_DRIVER_SERVICE).start()
+    # OVN required ports for testing the provider
+    for port in enp_conf.OVN_TEST_PORTS:
+        testflow.setup(
+            "Adding firewalld TCP port: %s on OVN central server", port
+        )
+        assert not ovn_central.run_command(
+            shlex.split(
+                enp_conf.OVN_CMD_ADD_FW_PORT.format(port=port, proto="tcp")
+            )
+        )[0]
+
+    # OVN driver configuration
+    for host in ovn_hosts:
+        if not helper.service_handler(
+            host=host, service=enp_conf.OVN_CONTROLLER_SERVICE, action="active"
+        ):
+            testflow.setup(
+                "Starting ovn-controller service on host: %s", host.fqdn
+            )
+            assert host.service(name=enp_conf.OVN_CONTROLLER_SERVICE).start()
 
         testflow.setup("Configuring vdsm-tool on host: %s", host.fqdn)
         assert not host.run_command(
             shlex.split(
                 enp_conf.OVN_CMD_VDSM_TOOL.format(
-                    provider_ip=provider_server.ip, host_ip=host.ip
+                    provider_ip=ovn_central.ip, host_ip=host.ip
                 )
             )
         )[0]
