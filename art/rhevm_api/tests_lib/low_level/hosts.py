@@ -91,6 +91,8 @@ FENCE_AGENT = "fence agent"
 
 ACTIVATION_MAX_TIME = 300
 INSTALLATION_MAX_TIME = 3600
+LLDPS = "linklayerdiscoveryprotocolelements"
+LLDP = "link_layer_discovery_protocol_element"
 
 logger = logging.getLogger("art.ll_lib.hosts")
 
@@ -2304,3 +2306,22 @@ def wait_for_hosted_engine_maintenance_state(
             host_resource
         )
         return False
+
+
+@ll_general.generate_logs(step=True)
+def get_lldp_nic_info(host, nic):
+    """
+    Get host NIC LLDP info
+
+    Args:
+        host (str): Host name
+        nic (str): NIC name
+
+    Returns:
+        dict: LLDP content
+    """
+    host_nic = get_host_nic(host=host, nic=nic)
+    data = HOST_NICS_API.getElemFromLink(
+        elm=host_nic, link_name=LLDPS, attr=LLDP
+    )
+    return {elm.name: elm.properties.property[0].value for elm in data}
