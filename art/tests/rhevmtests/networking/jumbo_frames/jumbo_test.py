@@ -26,11 +26,14 @@ from fixtures import (
     configure_mtu_on_host,
     prepare_setup_jumbo_frame
 )
-from rhevmtests.networking.fixtures import (
+from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
-    update_cluster_network_usages
+    update_cluster_network_usages,
+    clean_host_interfaces,
+    remove_all_networks,
+    create_and_attach_networks,
+    remove_vnics_from_vms
 )
-from rhevmtests.networking.fixtures import clean_host_interfaces  # noqa: F401
 
 
 @pytest.mark.skipif(
@@ -47,14 +50,31 @@ class TestJumboFramesTestCaseBase(NetworkTest):
     pass
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
     """
     Test VM network with MTU 5000
     """
-    __test__ = True
     net = jumbo_conf.NETS[1][0]
     mtu_5000 = conf.MTU[1]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_1_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net: {
@@ -78,20 +98,37 @@ class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     """
     Attach two non-VM VLAN networks with Jumbo Frames
     Removes one of the networks
     Check the correct values for the MTU in files
     """
-    __test__ = True
     net_1 = jumbo_conf.NETS[2][0]
     net_2 = jumbo_conf.NETS[2][1]
-    vlan_1 = jumbo_conf.NETS_DICT.get(net_1).get("vlan_id")
-    vlan_2 = jumbo_conf.NETS_DICT.get(net_2).get("vlan_id")
+    vlan_1 = jumbo_conf.CASE_2_NETS.get(net_1).get("vlan_id")
+    vlan_2 = jumbo_conf.CASE_2_NETS.get(net_2).get("vlan_id")
     mtu_5000 = conf.MTU[1]
     mtu_9000 = conf.MTU[0]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_2_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -131,8 +168,10 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
 )
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
-    add_vnics_to_vms.__name__
+    add_vnics_to_vms.__name__,
+    remove_vnics_from_vms.__name__
 )
 class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     """
@@ -141,7 +180,6 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     Add slave to BOND
     Check connectivity between two VMs
     """
-    __test__ = True
     net = jumbo_conf.NETS[3][0]
     mtu_5000 = conf.MTU[1]
     mtu_4500 = str(conf.SEND_MTU[0])
@@ -150,6 +188,33 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     vms_ips = network_helper.create_random_ips(mask=24)
     hosts_ips = network_helper.create_random_ips(mask=24, base_ip_prefix="6")
     vnic = jumbo_conf.VNICS[3][0]
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_3_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {
+        "1": {
+            "vm": conf.VM_0,
+            "name": vnic
+        },
+        "2": {
+            "vm": conf.VM_1,
+            "name": vnic
+        }
+    }
+
+    # add_vnics_to_vms params
     vnic_1_params = {
         "mtu": mtu_5000,
         "network": net,
@@ -157,6 +222,8 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         "set_ip": True
     }
     vnics_to_add = [vnic_1_params]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net: {
@@ -267,8 +334,10 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
-    add_vnics_to_vms.__name__
+    add_vnics_to_vms.__name__,
+    remove_vnics_from_vms.__name__
 )
 class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     """
@@ -276,7 +345,6 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     Check that MTU is configured on the hosts
     Check connectivity between the hosts
     """
-    __test__ = True
     bond = "bond4"
     net_1 = jumbo_conf.NETS[4][0]
     net_2 = jumbo_conf.NETS[4][1]
@@ -290,6 +358,41 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     vm = conf.VM_0
     hosts_ips = network_helper.create_random_ips(mask=24, base_ip_prefix="6")
     vms_ips = network_helper.create_random_ips(mask=24)
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_4_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {
+        "1": {
+            "vm": conf.VM_0,
+            "name": vnic_1
+        },
+        "2": {
+            "vm": conf.VM_0,
+            "name": vnic_2
+        },
+        "3": {
+            "vm": conf.VM_1,
+            "name": vnic_1
+        },
+        "4": {
+            "vm": conf.VM_1,
+            "name": vnic_2
+        }
+    }
+
+    # add_vnics_to_vms params
     vnic_1_params = {
         "mtu": mtu_9000,
         "network": net_2,
@@ -303,6 +406,8 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         "set_ip": False
     }
     vnics_to_add = [vnic_1_params, vnic_2_params]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -394,9 +499,11 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     update_cluster_network_usages.__name__,
     setup_networks_fixture.__name__,
-    add_vnics_to_vms.__name__
+    add_vnics_to_vms.__name__,
+    remove_vnics_from_vms.__name__
 )
 class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     """
@@ -404,7 +511,6 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     and as display, Attaching the network to VMs and checking the traffic
     between them
     """
-    __test__ = True
     net = jumbo_conf.NETS[5][0]
     mtu_5000 = str(conf.MTU[1])
     mtu_4500 = str(conf.SEND_MTU[0])
@@ -412,6 +518,33 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     hosts_ips = network_helper.create_random_ips(mask=24, base_ip_prefix="6")
     vms_ips = network_helper.create_random_ips(mask=24)
     vm = conf.VM_0
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_5_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {
+        "1": {
+            "vm": conf.VM_0,
+            "name": vnic
+        },
+        "2": {
+            "vm": conf.VM_1,
+            "name": vnic
+        },
+    }
+
+    # add_vnics_to_vms params
     vnic_1_params = {
         "mtu": mtu_5000,
         "network": net,
@@ -419,6 +552,8 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
         "set_ip": True
     }
     vnics_to_add = [vnic_1_params]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net: {
@@ -467,16 +602,31 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
         )
 
 
-@pytest.mark.usefixtures(restore_hosts_mtu.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    restore_hosts_mtu.__name__
+)
 class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
     """
     Try to attach VM VLAN network and non-VM network with different MTU to the
     same BOND
     """
-    __test__ = True
     net_1 = jumbo_conf.NETS[6][0]
     net_2 = jumbo_conf.NETS[6][1]
     bond = "bond6"
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_6_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
 
     @tier2
     @polarion("RHEVM3-3719")
@@ -504,8 +654,10 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     setup_networks_fixture.__name__,
-    add_vnics_to_vms.__name__
+    add_vnics_to_vms.__name__,
+    remove_vnics_from_vms.__name__
 )
 class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     """
@@ -513,7 +665,6 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     Check physical and logical levels for bridged VLAN networks
     between VMs over those networks
     """
-    __test__ = True
     net_1 = jumbo_conf.NETS[7][0]
     net_2 = jumbo_conf.NETS[7][1]
     vlan_1 = conf.REAL_VLANS[0] if conf.REAL_VLANS else None
@@ -523,7 +674,34 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     mtu_4500 = str(conf.SEND_MTU[0])
     vnic = jumbo_conf.VNICS[7][0]
     vm_0 = conf.VM_0
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_7_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {
+        "1": {
+            "vm": conf.VM_0,
+            "name": vnic
+        },
+        "2": {
+            "vm": conf.VM_1,
+            "name": vnic
+        },
+    }
     vms_ips = network_helper.create_random_ips(mask=24)
+
+    # add_vnics_to_vms params
     vnic_1_params = {
         "mtu": mtu_5000,
         "network": net_1,
@@ -531,6 +709,8 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         "set_ip": True
     }
     vnics_to_add = [vnic_1_params]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -594,7 +774,10 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         )
 
 
-@pytest.mark.usefixtures(setup_networks_fixture.__name__)
+@pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
+    setup_networks_fixture.__name__
+)
 class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     """
     Attach bridged VLAN network over BOND on Host with MTU 5000
@@ -602,14 +785,28 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     Check that MTU on NICs are configured correctly on the logical and
     physical layers.
     """
-    __test__ = True
     net_1 = jumbo_conf.NETS[8][0]
     net_2 = jumbo_conf.NETS[8][1]
-    vlan_1 = jumbo_conf.NETS_DICT.get(net_1).get("vlan_id")
-    vlan_2 = jumbo_conf.NETS_DICT.get(net_2).get("vlan_id")
+    vlan_1 = jumbo_conf.CASE_8_NETS.get(net_1).get("vlan_id")
+    vlan_2 = jumbo_conf.CASE_8_NETS.get(net_2).get("vlan_id")
     mtu_5000 = conf.MTU[1]
     mtu_1500 = conf.MTU[3]
     bond = "bond8"
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_8_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net_1: {
@@ -653,6 +850,7 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
 
 
 @pytest.mark.usefixtures(
+    create_and_attach_networks.__name__,
     configure_mtu_on_host.__name__,
     setup_networks_fixture.__name__
 )
@@ -662,11 +860,25 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
     Attach network to the same host NIC without MTU
     Check that host NIC MTU is changed to 1500
     """
-    __test__ = True
     mtu_1500 = str(conf.MTU[3])
     mtu = str(conf.MTU[2])
     net = jumbo_conf.NETS[9][0]
     host_nic_index = 1
+    dc = conf.DC_0
+
+    # create_and_attach_network params
+    create_networks = {
+        "1": {
+            "networks": jumbo_conf.CASE_9_NETS,
+            "data_center": dc,
+            "clusters": [conf.CL_0],
+        }
+    }
+
+    # remove_all_networks params
+    remove_dcs_networks = [dc]
+
+    # setup_networks_fixture params
     hosts_nets_nic_dict = {
         0: {
             net: {

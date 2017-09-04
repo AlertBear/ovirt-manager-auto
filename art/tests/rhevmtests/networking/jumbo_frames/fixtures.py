@@ -7,6 +7,7 @@ Fixtures for jumbo frame
 
 import pytest
 
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.jumbo_frames.config as jumbo_conf
@@ -14,14 +15,11 @@ from art.rhevm_api.tests_lib.high_level import (
     networks as hl_networks,
     vms as hl_vms
 )
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-
 from art.unittest_lib import testflow
 from rhevmtests.networking import (
     config as conf,
     helper as network_helper
 )
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
@@ -29,15 +27,26 @@ def prepare_setup_jumbo_frame(request):
     """
     Prepare setup for jumbo frame test
     """
-    jumbo_frame = NetworkFixtures()
+    results = []
+
+    def fin3():
+        """
+        Check if one of the finalizers failed.
+        """
+        global_helper.raise_if_false_in_list(results=results)
+    request.addfinalizer(fin3)
 
     def fin2():
         """
         Remove networks from setup
         """
-        assert hl_networks.remove_net_from_setup(
-            host=jumbo_frame.hosts_list[:2], data_center=jumbo_frame.dc_0,
-            all_net=True
+        results.append(
+            (
+                hl_networks.remove_net_from_setup(
+                    host=conf.HOSTS[:2], data_center=conf.DC_0,
+                    all_net=True
+                ), "fin2: hl_networks.remove_net_from_setup"
+            )
         )
     request.addfinalizer(fin2)
 
@@ -45,15 +54,17 @@ def prepare_setup_jumbo_frame(request):
         """
         Stop VMs
         """
-        assert ll_vms.stop_vms(vms=jumbo_frame.vms_list)
+        results.append(
+            (ll_vms.stop_vms(vms=conf.VM_NAME[:2]), "fin1: ll_vms.stop_vms")
+        )
     request.addfinalizer(fin1)
 
     assert hl_networks.create_and_attach_networks(
-        networks=jumbo_conf.NETS_DICT, data_center=jumbo_frame.dc_0,
-        clusters=[jumbo_frame.cluster_0]
+        networks=jumbo_conf.NETS_DICT, data_center=conf.DC_0,
+        clusters=[conf.CL_0]
     )
 
-    for vm, host in zip(jumbo_frame.vms_list, jumbo_frame.hosts_list[:2]):
+    for vm, host in zip(conf.VM_NAME[:2], conf.HOSTS[:2]):
         assert hl_vms.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=True
         )
@@ -67,17 +78,15 @@ def configure_mtu_on_host(request, restore_hosts_mtu):
     """
     Configure MTU on hosts interfaces
     """
-    jumbo_frame = NetworkFixtures()
     mtu = request.node.cls.mtu
     host_nic_index = request.node.cls.host_nic_index
-    host_nic = jumbo_frame.host_0_nics[host_nic_index]
+    host_nic = conf.HOST_0_NICS[host_nic_index]
     testflow.setup(
         "Configure MTU %s on host %s host NIC %s", mtu,
-        jumbo_frame.vds_0_host, host_nic
+        conf.VDS_0_HOST, host_nic
     )
     assert network_helper.configure_temp_mtu(
-        vds_resource=jumbo_frame.vds_0_host, mtu=mtu,
-        nic=host_nic
+        vds_resource=conf.VDS_0_HOST, mtu=mtu, nic=host_nic
     )
 
 
@@ -86,22 +95,8 @@ def add_vnics_to_vms(request):
     """
     Add vNICs to VMs
     """
-    NetworkFixtures()
     vms_ips = request.node.cls.vms_ips
     vnics_to_add = request.node.cls.vnics_to_add
-
-    def fin():
-        """
-        Remove NICs from VMs
-        """
-        for vm_name in conf.VM_NAME[:2]:
-            for vnic_to_remove in vnics_to_add:
-                nic_name = vnic_to_remove.get("nic_name")
-                ll_vms.updateNic(
-                    positive=True, vm=vm_name, nic=nic_name, plugged=False
-                )
-                ll_vms.removeNic(positive=True, vm=vm_name, nic=nic_name)
-    request.addfinalizer(fin)
 
     for vnic_to_add in vnics_to_add:
         vnic_to_add["ips"] = vms_ips
@@ -113,7 +108,6 @@ def restore_hosts_mtu(request):
     """
     Restore hosts interfaces MTU
     """
-    NetworkFixtures()
 
     def fin():
         """

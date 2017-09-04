@@ -133,20 +133,6 @@ def add_vnics_to_vms(ips, mtu, network, nic_name, set_ip=True):
     return True
 
 
-def remove_vnics_from_vms(nic_name):
-    """
-    Remove NIC from config.VM_NAME[:2]
-
-    :param nic_name: NIC name to remove
-    :type nic_name: str
-    """
-    for vm_name in conf.VM_NAME[:2]:
-        ll_vms.updateNic(
-            positive=True, vm=vm_name, nic=nic_name, plugged=False
-        )
-        ll_vms.removeNic(positive=True, vm=vm_name, nic=nic_name)
-
-
 def restore_mtu_and_clean_interfaces():
     """
     Restore Hosts NICs MTU by Attaching network on each host NIC with MTU 1500
@@ -154,15 +140,15 @@ def restore_mtu_and_clean_interfaces():
     """
     network_dict = {
         "1": {
-            "network": jumbo_conf.NETS[35][0],
+            "network": jumbo_conf.NETS_RESTORE_MTU[0],
             "nic": None
         },
         "2": {
-            "network": jumbo_conf.NETS[35][1],
+            "network": jumbo_conf.NETS_RESTORE_MTU[1],
             "nic": None
         },
         "3": {
-            "network": jumbo_conf.NETS[35][2],
+            "network": jumbo_conf.NETS_RESTORE_MTU[2],
             "nic": None
         }
     }

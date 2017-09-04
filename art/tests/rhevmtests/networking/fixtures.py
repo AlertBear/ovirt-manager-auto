@@ -352,10 +352,24 @@ def remove_vnics_from_vms(request):
         Remove vNIC(s) from a VM(s)
         """
         for values in vms_and_vnics.values():
+            vm_name = values.get("vm")
+            nic_name = values.get("name")
             kwargs = {
-                "vm": values.get("vm"),
-                "nic": values.get("name")
+                "vm": vm_name,
+                "nic": nic_name
             }
+            if ll_vms.get_vm_state(vm_name=vm_name) == conf.VM_UP:
+                results.append(
+                    (
+                        ll_vms.updateNic(
+                            positive=True, vm=vm_name, nic=nic_name,
+                            plugged=False
+                        ), "fin1: ll_vms.updateNic {kwargs}".format(
+                            kwargs=kwargs
+                        )
+                    )
+                )
+
             results.append(
                 (
                     ll_vms.removeNic(positive=True, **kwargs),
