@@ -261,9 +261,8 @@ def check_vms_after_migration(
             return False
 
         logger.info("Check %s connectivity after migration finished", vm)
-        if not vms.checkVMConnectivity(
-            True, vm=vm, osType=vm_os_type, attempt=ATTEMPTS,
-            interval=INTERVAL, user=vm_user, password=vm_password,
+        if not vms.check_vm_connectivity(
+            vm=vm, interval=INTERVAL, password=vm_password,
             timeout=MIGRATION_TIMEOUT
         ):
             logger.error("Check connectivity to %s failed", vm)

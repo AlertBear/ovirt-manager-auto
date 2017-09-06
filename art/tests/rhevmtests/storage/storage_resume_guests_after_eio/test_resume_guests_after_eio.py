@@ -31,12 +31,10 @@ NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 
 
-def _wait_for_vm_booted(
-        vm_name, os_type, user, password, timeout=300, interval=15
-):
-    return ll_vms.checkVMConnectivity(
-        True, vm_name, os_type, timeout / interval, interval, user=user,
-        password=password, nic=config.NIC_NAME[0]
+def _wait_for_vm_booted(vm_name, password, timeout=300, interval=15):
+    return ll_vms.check_vm_connectivity(
+        vm=vm_name, timeout=timeout / interval, interval=interval,
+        password=password
     )
 
 
@@ -115,9 +113,7 @@ class TestResumeGuests(TestCase):
                 "Waiting for VM %s status 'up' failed" % self.vm_name
             )
         logger.info("VM is up, waiting for connectivity")
-        if not _wait_for_vm_booted(
-            self.vm, config.OS_TYPE, config.VMS_LINUX_USER, config.VMS_LINUX_PW
-        ):
+        if not _wait_for_vm_booted(self.vm, config.VMS_LINUX_PW):
             raise exceptions.VMException(
                 "Waiting for VM %s to booted failed" % self.vm_name
             )

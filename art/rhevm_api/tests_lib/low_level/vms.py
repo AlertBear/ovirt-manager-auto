@@ -42,9 +42,7 @@ from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import (
-    searchForObj, convertMacToIpAddress,
-    checkHostConnectivity, update_vm_status_in_database, get_api, split,
-    waitUntilGone,
+    searchForObj, update_vm_status_in_database, get_api, split, waitUntilGone,
 )
 from art.test_handler import exceptions
 from art.test_handler.exceptions import CanNotFindIP
@@ -61,6 +59,7 @@ ID_ATTR = 'id'
 DEF_SLEEP = 10
 VM_SNAPSHOT_ACTION = 600
 VM_ACTION_TIMEOUT = 600
+
 # Live merge requires a long timeout for snapshot removal
 VM_REMOVE_SNAPSHOT_TIMEOUT = 2400
 VM_DISK_CLONE_TIMEOUT = 720
@@ -3162,69 +3161,27 @@ def wait_for_vm_disk_active_status(
     return sampler.waitForFuncStatus(result=True)
 
 
-def checkVMConnectivity(
-    positive, vm, osType, attempt=1, interval=1, nic='nic1', user=None,
-    password=None, ip=False, timeout=1800
-):
+def check_vm_connectivity(vm, interval=1, password=None, timeout=1800):
     """
     Check VM Connectivity
-    :param positive: Expected result
-    :type positive: bool
-    :param vm: vm name
-    :type vm: str
-    :param osType: os type element rhel/windows.
-    :type osType: str
-    :param attempt: number of attempts to connect
-    :type attempt: int
-    :param interval:  interval between attempts
-    :type interval: int
-    :param nic: NIC to get IP from
-    :type nic: str
-    :param user: Username
-    :type user: str
-    :param password: Password for Username
-    :type password: str
-    :param ip:  if supplied, check VM connectivity by this IP.
-    :type ip: str
-    :param timeout: timeout to wait for IP
-    :type timeout: int
-    :return: True if succeed to connect to VM, False otherwise).
-    :rtype: bool
+
+    Args:
+        vm (str): vm name
+        interval (int):  interval between attempts
+        password (str): Password for Username
+        timeout (int): timeout to wait for IP
+
+    Returns:
+        bool: True if succeed to connect to VM, False otherwise).
     """
-    vlan = None
-    if re.search('rhel', osType, re.I):
-        osType = 'linux'
-    elif re.search('win', osType, re.I):
-        osType = 'windows'
-    else:
-        VM_API.logger.error(
-            'Wrong value for osType: Should be rhel or windows')
+    ip = wait_for_vm_ip(vm=vm, timeout=timeout)[1].get("ip")
+    if not ip:
         return False
 
-    if not ip:
-        agent_status, ip = wait_for_vm_ip(vm=vm, timeout=timeout)
-        # agent should be installed so convertMacToIpAddress is irrelevant
-        if not agent_status:
-            status, mac = getVmMacAddress(positive, vm, nic=nic)
-            if not status:
-                return False
-            status, vlan = getVmNicVlanId(vm, nic)
-            status, ip = convertMacToIpAddress(
-                positive, mac=mac['macAddress'], vlan=vlan['vlan_id']
-            )
-            if not status:
-                return False
-        ip = ip['ip']
-
-    status, res = checkHostConnectivity(
-        positive, ip,  user=user, password=password, osType=osType,
-        attempt=attempt, interval=interval
+    vds_resource = resources.VDS(ip=ip, root_password=password)
+    return vds_resource.executor().wait_for_connectivity_state(
+        positive=True, timeout=timeout, sample_time=interval
     )
-    VM_API.logger.info(
-        "VM: %s TYPE: %s, IP: %s, VLAN: %s, NIC: %s Connectivity Status: %s",
-        vm, osType, ip, vlan, nic, status
-    )
-    return status
 
 
 def get_vm_nic_plugged(vm, nic='nic1', positive=True):
@@ -3302,31 +3259,6 @@ def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
         if profile.get_name() == vnic_profile_name:
             return profile.get_id() == nic_obj.get_vnic_profile().get_id()
     return False
-
-
-def getVmNicVlanId(vm, nic='nic1'):
-    '''
-    Get nic vlan id if configured
-    Author: atal
-    Parameters:
-        * vm - vm name
-        * nic - nic name
-    Return: tuple (True and {'vlan_id': id} in case of success
-                   False and {'vlan_id': 0} otherwise)
-    '''
-    try:
-        nic_obj = get_vm_nic(vm, nic)
-        vnic_profile = VNIC_PROFILE_API.find(nic_obj.vnic_profile, 'id')
-        net_obj = NETWORK_API.find(vnic_profile.network.id, 'id')
-    except EntityNotFound:
-        return False, {'vlan_id': 0}
-
-    try:
-        return True, {'vlan_id': int(net_obj.vlan.id)}
-    except AttributeError:
-        VM_API.logger.warning("%s network doesn't contain vlan id.",
-                              net_obj.get_name())
-    return False, {'vlan_id': 0}
 
 
 def validateVmDisks(positive, vm, sparse, format):
@@ -4404,30 +4336,6 @@ def delete_watchdog(vm_name):
     if not status:
         logger.error(log_error)
     return status
-
-
-def get_vm_machine(vm_name, user, password):
-    '''
-    Obtain VM machine from vm name for LINUX machine
-    Author: lsvaty
-    Parameters:
-        * vm - vm name
-        * user - user of vm
-        * password - password for user
-    Return value: vm machine
-    '''
-    status, got_ip = wait_for_vm_ip(vm_name, timeout=600, sleep=10)
-    if not status:
-        status, mac = getVmMacAddress(True, vm_name,
-                                      nic='nic1')
-        if not status:
-            return False
-        status, vlan = getVmNicVlanId(vm_name, 'nic1')
-        status, got_ip = convertMacToIpAddress(True, mac=mac['macAddress'],
-                                               vlan=vlan['vlan_id'])
-        if not status:
-            return False
-    return Machine(got_ip['ip'], user, password).util(LINUX)
 
 
 def reboot_vms(vms):

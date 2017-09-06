@@ -460,32 +460,6 @@ def searchElement(positive, element, collection, keyName, searchValue):
     return False, None
 
 
-def checkHostConnectivity(positive, ip, user, password, osType, attempt=1,
-                          interval=1, remoteAgent=None):
-    '''
-    wrapper function check if windows server up and running
-    indication to server up and running if wmi query return SystemArchitecture
-    and elapsed time
-    '''
-    try:
-        t1 = time.time()
-        logger.debug("Checking %s %s host connectivity", ip, osType)
-        machine = Machine(ip, user, password).util(osType)
-        if remoteAgent == 'staf':
-            status = machine.isConnective(attempt, interval, remoteAgent)
-        else:
-            status = machine.isConnective(attempt, interval, True)
-        t2 = time.time()
-        logger.info(
-            'Host: %s, Connectivity Status: %s, Elapsed Time: %d', ip, status,
-            int(t2 - t1),
-        )
-        return status, {'elapsedTime': int(t2 - t1)}
-    except Exception as err:
-        logger.error(str(err))
-        return False, {'elapsedTime': -1}
-
-
 def removeDirOnHost(
     positive, ip, dirname, user='root', password='qum5net', osType=LINUX,
 ):
