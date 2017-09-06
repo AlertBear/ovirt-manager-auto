@@ -163,9 +163,10 @@ class TestNetworkFilterCase03(NetworkTest):
 
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = {
-        "1": {
-            "vm": vm_name,
-            "name": nic1
+        vm_name: {
+            "1": {
+                "name": nic1
+            }
         }
     }
 
@@ -272,12 +273,12 @@ class TestNetworkFilterCase04(NetworkTest):
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
-        "1":
-            {
-                "vm": vm_name,
+        vm_name: {
+            "1": {
                 "name": nic1,
                 "network": net
             }
+        }
     }
 
     # remove_vnics_from_vms fixture parameters
@@ -581,8 +582,10 @@ class TestNetworkFilterCase08(NetworkTest):
 
 @pytest.mark.usefixtures(
     remove_vnic_profiles.__name__,
-    add_vnic_profiles.__name__
+    add_vnic_profiles.__name__,
+    remove_vnics_from_vms.__name__
 )
+@pytest.mark.skip(msg="We will skip the test until the bug 1475790 reopen")
 class TestNetworkFilterCase09(NetworkTest):
     """
     1. Add vNIC with network filter parameters to VM
@@ -605,6 +608,15 @@ class TestNetworkFilterCase09(NetworkTest):
 
     # remove_vnic_profiles params
     remove_vnic_profile_params = add_vnic_profile_params
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {
+        vm: {
+            "1": {
+                "name": vnic
+            }
+        }
+    }
 
     @tier2
     @bz({"1475790": {}})

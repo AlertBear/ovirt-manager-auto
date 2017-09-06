@@ -67,12 +67,12 @@ class TestLinkedCase01(NetworkTest):
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
-        "1":
-            {
-                "vm": vm,
+        vm: {
+            "1": {
                 "name": vnic,
                 "network": net_1
             }
+        }
     }
 
     # remove_vnics_from_vms fixture parameters
@@ -128,25 +128,22 @@ class TestLinkedCase02(NetworkTest):
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
-        "1":
-            {
-                "vm": conf.VM_1,
+        conf.VM_1: {
+            "1": {
                 "name": linking_conf.CASE_02_VNIC_1,
                 "network": linking_conf.CASE_02_NET_1,
                 "interface": conf.NIC_TYPE_RTL8139,
                 "plugged": True,
                 "linked": True
             },
-        "2":
-            {
-                "vm": conf.VM_1,
+            "2": {
                 "name": linking_conf.CASE_02_VNIC_2,
                 "network": linking_conf.CASE_02_NET_2,
                 "interface": conf.NIC_TYPE_E1000,
                 "plugged": True,
                 "linked": False
-
             }
+        }
     }
 
     # remove_vnics_from_vms fixture parameters
@@ -163,46 +160,50 @@ class TestLinkedCase02(NetworkTest):
         4.  Update and check vNICs with original names and unplug them
         5.  Check the network on vNICs and their unplug state
         """
-        for vnic_props in self.add_vnics_vms_params.values():
-            vm = vnic_props.get("vm")
-            vnic = vnic_props.get("name")
-            linked = vnic_props.get("linked")
-            net = vnic_props.get("network")
+        for vm, val in self.add_vnics_vms_params.items():
+            for vnic_props in val.values():
+                vnic = vnic_props.get("name")
+                linked = vnic_props.get("linked")
+                net = vnic_props.get("network")
 
-            testflow.step(
-                "Checking link state of vNIC: %s on VM: %s", vnic, vm
-            )
-            assert ll_vms.get_vm_nic_linked(vm=vm, nic=vnic, positive=linked)
+                testflow.step(
+                    "Checking link state of vNIC: %s on VM: %s", vnic, vm
+                )
+                assert ll_vms.get_vm_nic_linked(
+                    vm=vm, nic=vnic, positive=linked
+                )
 
-            testflow.step(
-                "Updating link state of vNIC: %s to: %s (opposite value)",
-                vnic, not linked
-            )
-            assert ll_vms.updateNic(
-                positive=True, vm=vm, nic=vnic, linked=not linked
-            )
+                testflow.step(
+                    "Updating link state of vNIC: %s to: %s (opposite value)",
+                    vnic, not linked
+                )
+                assert ll_vms.updateNic(
+                    positive=True, vm=vm, nic=vnic, linked=not linked
+                )
 
-            testflow.step("Checking updated link state of vNIC: %s ", vnic)
-            assert ll_vms.get_vm_nic_linked(
-                vm=vm, nic=vnic, positive=not linked
-            )
+                testflow.step("Checking updated link state of vNIC: %s ", vnic)
+                assert ll_vms.get_vm_nic_linked(
+                    vm=vm, nic=vnic, positive=not linked
+                )
 
-            testflow.step(
-                "Updating and checking vNIC: %s with empty network", vnic
-            )
-            assert ll_vms.updateNic(
-                positive=True, vm=vm, nic=vnic, network=None
-            )
+                testflow.step(
+                    "Updating and checking vNIC: %s with empty network", vnic
+                )
+                assert ll_vms.updateNic(
+                    positive=True, vm=vm, nic=vnic, network=None
+                )
 
-            testflow.step("Restoring vNIC: %s settings", vnic)
-            assert ll_vms.updateNic(
-                positive=True, vm=vm, nic=vnic, network=net,
-                vnic_profile=net, plugged=False
-            )
-            testflow.step(
-                "Negative: checking if vNIC: %s is in plugged state", vnic
-            )
-            assert ll_vms.get_vm_nic_plugged(vm=vm, nic=vnic, positive=False)
+                testflow.step("Restoring vNIC: %s settings", vnic)
+                assert ll_vms.updateNic(
+                    positive=True, vm=vm, nic=vnic, network=net,
+                    vnic_profile=net, plugged=False
+                )
+                testflow.step(
+                    "Negative: checking if vNIC: %s is in plugged state", vnic
+                )
+                assert ll_vms.get_vm_nic_plugged(
+                    vm=vm, nic=vnic, positive=False
+                )
 
 
 @pytest.mark.incremental
@@ -232,14 +233,13 @@ class TestLinkedCase03(NetworkTest):
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
-        "1":
-            {
-                "vm": conf.VM_1,
+        conf.VM_1: {
+            "1": {
                 "name": linking_conf.CASE_03_VNIC_1,
                 "network": linking_conf.CASE_03_NET_1
             }
+        }
     }
-
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
@@ -310,29 +310,25 @@ class TestLinkedCase04(NetworkTest):
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
-        "1":
-            {
-                "vm": vm_name,
+        vm_name: {
+            "1": {
                 "name": vnic_1,
                 "network": net_1,
                 "plugged": True
             },
-        "2":
-            {
-                "vm": vm_name,
+            "2": {
                 "name": vnic_2,
                 "network": net_1,
                 "plugged": False
             },
-        "3":
-            {
-                "vm": vm_name,
+            "3": {
                 "name": vnic_3,
                 "network": net_1,
                 "vnic_profile": linking_conf.CASE_04_VNIC_PROFILE_1
             }
-    }
 
+        }
+    }
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 
@@ -479,14 +475,13 @@ class TestLinkedCase05(NetworkTest):
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
-        "1":
-            {
-                "vm": vm,
+        vm: {
+            "1": {
                 "name": vnic,
                 "network": net_1,
             }
+        }
     }
-
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = add_vnics_vms_params
 

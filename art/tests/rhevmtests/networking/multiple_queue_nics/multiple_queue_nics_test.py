@@ -24,12 +24,11 @@ from art.unittest_lib import (
     testflow,
 )
 from rhevmtests.fixtures import start_vm
-from fixtures import (
-    create_vm,
-    attach_vnic_profile_to_vm
-)
+from fixtures import create_vm
 from rhevmtests.networking.fixtures import (
-    update_vnic_profiles
+    update_vnic_profiles,
+    add_vnics_to_vms,
+    remove_vnics_from_vms
 )
 
 
@@ -141,7 +140,8 @@ class TestMultipleQueueNics01(NetworkTest):
 @pytest.mark.usefixtures(
     update_vnic_profiles.__name__,
     create_vm.__name__,
-    attach_vnic_profile_to_vm.__name__,
+    add_vnics_to_vms.__name__,
+    remove_vnics_from_vms.__name__,
     start_vm.__name__
 )
 class TestMultipleQueueNics02(NetworkTest):
@@ -154,9 +154,21 @@ class TestMultipleQueueNics02(NetworkTest):
 
     # create_vm params
     vm_name = multiple_queue_conf.VM_FROM_TEMPLATE
-
-    # attach_vnic_profile_to_vm params
     vm_nic = multiple_queue_conf.VM_NIC
+
+    # add_vnics_to_vms fixture params
+    add_vnics_vms_params = {
+        vm_name: {
+            "1": {
+                "name": vm_nic,
+                "network": conf.MGMT_BRIDGE,
+                "vnic_profile": conf.MGMT_BRIDGE,
+                "plugged": True
+            }
+        }
+    }
+    # remove_vnics_from_vms params
+    remove_vnics_vms_params = add_vnics_vms_params
 
     # update_vnic_profiles params
     update_vnics_profiles = {

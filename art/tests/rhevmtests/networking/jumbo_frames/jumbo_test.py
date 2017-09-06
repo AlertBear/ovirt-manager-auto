@@ -204,13 +204,15 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
 
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = {
-        "1": {
-            "vm": conf.VM_0,
-            "name": vnic
+        conf.VM_0: {
+            "1": {
+                "name": vnic
+            }
         },
-        "2": {
-            "vm": conf.VM_1,
-            "name": vnic
+        conf.VM_1: {
+            "1": {
+                "name": vnic
+            },
         }
     }
 
@@ -374,22 +376,22 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
 
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = {
-        "1": {
-            "vm": conf.VM_0,
-            "name": vnic_1
+        conf.VM_0: {
+            "1": {
+                "name": vnic_1
+            },
+            "2": {
+                "name": vnic_2
+            }
         },
-        "2": {
-            "vm": conf.VM_0,
-            "name": vnic_2
+        conf.VM_1: {
+            "1": {
+                "name": vnic_1
+            },
+            "2": {
+                "name": vnic_2
+            }
         },
-        "3": {
-            "vm": conf.VM_1,
-            "name": vnic_1
-        },
-        "4": {
-            "vm": conf.VM_1,
-            "name": vnic_2
-        }
     }
 
     # add_vnics_to_vms params
@@ -534,14 +536,16 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
 
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = {
-        "1": {
-            "vm": conf.VM_0,
-            "name": vnic
+        conf.VM_0: {
+            "1": {
+                "name": vnic
+            }
         },
-        "2": {
-            "vm": conf.VM_1,
-            "name": vnic
-        },
+        conf.VM_1: {
+            "1": {
+                "name": vnic
+            },
+        }
     }
 
     # add_vnics_to_vms params
@@ -690,14 +694,16 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
 
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = {
-        "1": {
-            "vm": conf.VM_0,
-            "name": vnic
+        conf.VM_0: {
+            "1": {
+                "name": vnic
+            }
         },
-        "2": {
-            "vm": conf.VM_1,
-            "name": vnic
-        },
+        conf.VM_1: {
+            "1": {
+                "name": vnic
+            },
+        }
     }
     vms_ips = network_helper.create_random_ips(mask=24)
 

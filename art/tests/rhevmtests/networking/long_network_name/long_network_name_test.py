@@ -125,12 +125,12 @@ class TestLongNetworkName02(NetworkTest):
 
     # add_vnics_to_vms params
     add_vnics_vms_params = {
-        "1":
-            {
-                "vm": vm,
+        vm: {
+            "1": {
                 "name": "long_network_name_nic_case_02",
                 "network": long_network_name
             }
+        }
     }
 
     # remove_vnics_from_vms params

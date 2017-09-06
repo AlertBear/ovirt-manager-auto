@@ -34,25 +34,3 @@ def create_vm(request):
         positive=True, vmName=vm_name, cluster=conf.CL_0,
         vmDescription="from_template", template=template
     )
-
-
-@pytest.fixture(scope="class")
-def attach_vnic_profile_to_vm(request):
-    """
-    Attach plugged vNIC with custom queues property to a VM (in shutdown state)
-    """
-    vm_name = request.node.cls.vm_name
-    vnic = request.node.cls.vm_nic
-    bridge = conf.MGMT_BRIDGE
-
-    def fin():
-        """
-        Remove vNIC from VM
-        """
-        assert ll_vms.removeNic(positive=True, vm=vm_name, nic=vnic)
-    request.addfinalizer(fin)
-
-    assert ll_vms.addNic(
-        positive=True, vm=vm_name, name=vnic, network=bridge,
-        vnic_profile=bridge, plugged=True
-    )

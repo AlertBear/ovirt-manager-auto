@@ -213,8 +213,10 @@ class TestOVNComponent(NetworkTest):
     remove_ovn_networks_from_engine = ovn_conf.OVN_NETS.keys()
 
     # remove_vnics_from_vms fixture parameters
-    remove_vnics_vms_params = {}
-
+    remove_vnics_vms_params = {
+        net_conf.VM_0: {},
+        net_conf.VM_1: {}
+    }
     # start_vm fixture parameters
     vms_to_stop = [net_conf.VM_0, net_conf.VM_1]
 
@@ -280,8 +282,7 @@ class TestOVNComponent(NetworkTest):
             network=ovn_conf.OVN_NET_1, plugged=True
         )
         # Remove vNIC during teardown
-        self.remove_vnics_vms_params["1"] = {
-            "vm": net_conf.VM_0,
+        self.remove_vnics_vms_params[net_conf.VM_0]["1"] = {
             "name": ovn_conf.OVN_VNIC
         }
 
@@ -315,8 +316,7 @@ class TestOVNComponent(NetworkTest):
             network=ovn_conf.OVN_NET_1, plugged=True
         )
         # Remove vNIC during teardown
-        self.remove_vnics_vms_params["2"] = {
-            "vm": net_conf.VM_1,
+        self.remove_vnics_vms_params[net_conf.VM_1]["1"] = {
             "name": ovn_conf.OVN_VNIC
         }
 
@@ -757,15 +757,17 @@ class TestOVNPerformance(NetworkTest):
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
-        1: {
-            "vm": net_conf.VM_0,
-            "name": ovn_conf.OVN_VNIC,
-            "network": ovn_conf.OVN_NET_4
+        net_conf.VM_0: {
+            "1": {
+                "name": ovn_conf.OVN_VNIC,
+                "network": ovn_conf.OVN_NET_4
+            }
         },
-        2: {
-            "vm": net_conf.VM_1,
-            "name": ovn_conf.OVN_VNIC,
-            "network": ovn_conf.OVN_NET_4
+        net_conf.VM_1: {
+            "1": {
+                "name": ovn_conf.OVN_VNIC,
+                "network": ovn_conf.OVN_NET_4
+            }
         }
     }
 

@@ -16,10 +16,8 @@ import helper as multi_host_helper
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, testflow, tier2
 from fixtures import (
-    add_vnics_to_vms,
     add_vnic_to_template,
     move_host_to_cluster,
-    add_network_to_cluster
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm, create_clusters
@@ -28,18 +26,20 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
     clean_host_interfaces,
     create_and_attach_networks,
-    remove_all_networks
+    remove_all_networks,
+    remove_vnics_from_vms,
+    add_vnics_to_vms
 )
 
 
 @pytest.mark.usefixtures(
+    create_clusters.__name__,
     create_and_attach_networks.__name__,
     clean_host_interfaces.__name__,
-    create_clusters.__name__,
-    add_network_to_cluster.__name__,
     move_host_to_cluster.__name__,
     setup_networks_fixture.__name__,
     add_vnics_to_vms.__name__,
+    remove_vnics_from_vms.__name__,
     add_vnic_to_template.__name__,
     start_vm.__name__
 )
@@ -132,15 +132,26 @@ class TestMultiHostNetworkProperties(NetworkTest):
     vlan_network_attached_to_bond = multi_host_conf.NETS[1][12]
     mtu_network_attached_to_bond = multi_host_conf.NETS[1][13]
 
+    cl_name = multi_host_conf.EXTRA_CLUSTER_NAME
+    cl_net = network_attached_to_two_hosts_diff_cluster
+
     # create_and_attach_networks fixture parameters
     create_networks = {
         "1": {
-            "data_center": conf.DC_0,
+            "data_center": dc,
             "clusters": [conf.CL_0],
             "networks": multi_host_conf.CREATE_NETWORKS_DICT
+        },
+        "2": {
+            "clusters": [cl_name],
+            "networks": {
+                cl_net: {
+                    "required": "false"
+                }
+            }
         }
     }
-    remove_dcs_networks = [conf.DC_0]
+    remove_dcs_networks = [dc]
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {
@@ -222,16 +233,22 @@ class TestMultiHostNetworkProperties(NetworkTest):
     }
 
     # add_vnics_to_vms fixture params
-    add_vnics_to_vms_params = {
+    add_vnics_vms_params = {
         conf.VM_0: {
-            "vnic_name": multi_host_conf.VNICS[1][0],
-            "network": network_attached_to_running_vm
+            "1": {
+                "name": multi_host_conf.VNICS[1][0],
+                "network": network_attached_to_running_vm
+            },
         },
         conf.VM_1: {
-            "vnic_name": multi_host_conf.VNICS[1][1],
-            "network": network_attached_to_non_running_vm
+            "1": {
+                "name": multi_host_conf.VNICS[1][1],
+                "network": network_attached_to_non_running_vm
+            }
         }
     }
+    # remove_vnics_from_vms params
+    remove_vnics_vms_params = add_vnics_vms_params
 
     # start_vm fixture params
     start_vms_dict = {
@@ -255,10 +272,6 @@ class TestMultiHostNetworkProperties(NetworkTest):
             "version": conf.COMP_VERSION
         },
     }
-
-    # add_network_to_cluster fixture params
-    cl_name = multi_host_conf.EXTRA_CLUSTER_NAME
-    cl_net = network_attached_to_two_hosts_diff_cluster
 
     # move_host_to_cluster fixture params
     cl_src_cluster = conf.CL_0
@@ -580,7 +593,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
                 *rename_net_used_by_host, marks=(polarion("RHEVM3-4079"))
             ),
 
-            # # Tests on networks attached to running VM
+            # Tests on networks attached to running VM
             pytest.param(
                 *net_mtu_on_running_vm, marks=(polarion("RHEVM3-4074"))
             ),
@@ -593,7 +606,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
                 )
             ),
 
-            # # Tests on networks attached to non-running VM
+            # Tests on networks attached to non-running VM
             pytest.param(
                 *net_mtu_on_non_running_vm, marks=(polarion("RHEVM3-19361"))
             ),
@@ -639,7 +652,7 @@ class TestMultiHostNetworkProperties(NetworkTest):
                 )
             ),
 
-            # # Tests on networks attached to bond
+            # Tests on networks attached to bond
             pytest.param(*non_vm_net_on_bond, marks=(polarion("RHEVM3-4081"))),
             pytest.param(*vm_net_on_bond, marks=(polarion("RHEVM3-19363"))),
             pytest.param(*vlan_9_on_bond, marks=(polarion("RHEVM3-4069"))),

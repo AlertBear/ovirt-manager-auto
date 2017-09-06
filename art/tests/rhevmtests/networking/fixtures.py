@@ -326,8 +326,9 @@ def add_vnics_to_vms(request):
     Add vNIC(s) with properties to a VM(s)
     """
     vms_and_vnics = getattr(request.node.cls, "add_vnics_vms_params", dict())
-    for values in vms_and_vnics.values():
-        assert ll_vms.addNic(positive=True, **values)
+    for vm_name, vnics_properties in vms_and_vnics.items():
+        for values in vnics_properties.values():
+            assert ll_vms.addNic(positive=True, vm=vm_name, **values)
 
 
 @pytest.fixture(scope="class")
@@ -351,30 +352,31 @@ def remove_vnics_from_vms(request):
         """
         Remove vNIC(s) from a VM(s)
         """
-        for values in vms_and_vnics.values():
-            vm_name = values.get("vm")
-            nic_name = values.get("name")
-            kwargs = {
-                "vm": vm_name,
-                "nic": nic_name
-            }
-            if ll_vms.get_vm_state(vm_name=vm_name) == conf.VM_UP:
+        for vm_name, vnics_properties in vms_and_vnics.items():
+            for values in vnics_properties.values():
+                nic_name = values.get("name")
+                if ll_vms.get_vm_state(vm_name=vm_name) == conf.VM_UP:
+                    results.append(
+                        (
+                            ll_vms.updateNic(
+                                positive=True, vm=vm_name, nic=nic_name,
+                                plugged=False
+                            ), "fin1: ll_vms.updateNic {vm} {nic}".format(
+                                vm=vm_name, nic=nic_name
+                            )
+                        )
+                    )
+
                 results.append(
                     (
-                        ll_vms.updateNic(
-                            positive=True, vm=vm_name, nic=nic_name,
-                            plugged=False
-                        ), "fin1: ll_vms.updateNic {kwargs}".format(
-                            kwargs=kwargs
+                        ll_vms.removeNic(
+                            positive=True, vm=vm_name, nic=nic_name
+                        ),
+                        "fin1: ll_vms.removeNic {vm} {nic}".format(
+                            vm=vm_name, nic=nic_name
                         )
                     )
                 )
-
-            results.append(
-                (
-                    ll_vms.removeNic(positive=True, **kwargs),
-                    "fin1: ll_vms.removeNic {kwargs}".format(kwargs=kwargs))
-            )
     request.addfinalizer(fin1)
 
 
