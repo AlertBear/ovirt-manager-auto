@@ -5,11 +5,14 @@ and store them into a json file
 """
 
 import json
+import logging
 
 __all__ = [
     "pytest_addoption",
     "pytest_configure",
 ]
+
+logger = logging.getLogger("pytest.art.leftovers")
 
 
 class LeftoversInfo(object):
@@ -35,6 +38,7 @@ class LeftoversInfo(object):
         """
         Get dict containing GE description at package setup
         """
+        logger.info("Running pytest_rhv_setup for %s team", team)
         inventory = self._get_inventory_instance()
         self.ge_state = inventory.get_summary_report()
         self.team = team
@@ -45,6 +49,7 @@ class LeftoversInfo(object):
         Compare this dict with the one that was fetched in package setup,
         create some difference and store it in json file.
         """
+        logger.info("Running pytest_rhv_teardown for %s team", team)
         inventory = self._get_inventory_instance()
         new_ge_state = inventory.get_summary_report()
         diff_summary = {}
