@@ -12,7 +12,7 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import helpers
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import testflow, SlaTest
 from art.unittest_lib import (
     tier1,
@@ -594,40 +594,6 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             vm_sockets=conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
-    @tier2
-    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
-    @polarion("RHEVM3-12364")
-    @bz(
-        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
-    )
-    def test_f_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
-        """
-        Hotplug additional vCPU, when vm is powering up,
-        to put quota vCPU limit in grace
-        """
-        self._check_hotplug(
-            vm_state=conf.VM_POWER_UP,
-            audit_msg_type=conf.GRACE_TYPE,
-            vm_sockets=conf.NUM_OF_CPUS[conf.GRACE_TYPE]
-        )
-
-    @tier2
-    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
-    @polarion("RHEVM3-12365")
-    @bz(
-        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
-    )
-    def test_g_quota_vcpu_hotplug_in_exceed_vm_up(self):
-        """
-        Hotplug additional vCPU, when vm is powering up,
-        to put quota vCPU limit over grace
-        """
-        self._check_hotplug(
-            vm_state=conf.VM_POWER_UP,
-            audit_msg_type=conf.EXCEED_TYPE,
-            vm_sockets=conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
-        )
-
 
 class TestQuotaEnforcedModeCPU(TestQuotaCluster):
     """
@@ -705,40 +671,6 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
         """
         self._check_hotplug(
             vm_state=conf.VM_UP,
-            audit_msg_type=conf.EXCEED_TYPE,
-            vm_sockets=conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
-        )
-
-    @tier2
-    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
-    @polarion("RHEVM3-12368")
-    @bz(
-        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
-    )
-    def test_f_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
-        """
-        Hotplug additional vCPU, when vm is powering up,
-        to put quota vCPU limit in grace
-        """
-        self._check_hotplug(
-            vm_state=conf.VM_POWER_UP,
-            audit_msg_type=conf.GRACE_TYPE,
-            vm_sockets=conf.NUM_OF_CPUS[conf.GRACE_TYPE]
-        )
-
-    @tier2
-    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
-    @polarion("RHEVM3-12369")
-    @bz(
-        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
-    )
-    def test_g_quota_vcpu_hotplug_in_exceed_vm_up(self):
-        """
-        Hotplug additional vCPU, when vm is powering up,
-        to put quota vCPU limit over grace
-        """
-        self._check_hotplug(
-            vm_state=conf.VM_POWER_UP,
             audit_msg_type=conf.EXCEED_TYPE,
             vm_sockets=conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
