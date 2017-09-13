@@ -10,9 +10,9 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import rhevmtests.networking.config as conf
 import helper
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
@@ -20,9 +20,8 @@ def move_host_to_cluster(request):
     """
     Move host to a specified cluster
     """
-    mgmt_as_role = NetworkFixtures()
-    host = mgmt_as_role.hosts_list[request.cls.move_host_to_cluster_params[0]]
-    vds = mgmt_as_role.vds_list[request.cls.move_host_to_cluster_params[0]]
+    host = conf.HOSTS[request.cls.move_host_to_cluster_params[0]]
+    vds = conf.VDS_HOSTS[request.cls.move_host_to_cluster_params[0]]
     cl = request.cls.move_host_to_cluster_params[1]
 
     def fin3():
@@ -80,8 +79,6 @@ def install_host_with_new_management(request):
     """
     Install host with new management network
     """
-    mgmt_as_role = NetworkFixtures()
-
     host_index = request.cls.install_host_with_new_management_params[0]
     net = request.cls.install_host_with_new_management_params[1]
     src_cl = request.cls.install_host_with_new_management_params[2]
@@ -100,7 +97,7 @@ def install_host_with_new_management(request):
         )
     request.addfinalizer(fin)
 
-    vds_host_obj = mgmt_as_role.vds_list[host_index]
+    vds_host_obj = conf.VDS_HOSTS[host_index]
 
     testflow.setup("Install host with new management network %s", mgmt_net)
     assert helper.install_host_new_mgmt(

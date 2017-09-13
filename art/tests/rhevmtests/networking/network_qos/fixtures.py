@@ -9,10 +9,10 @@ import pytest
 
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import config as qos_conf
+import rhevmtests.networking.config as conf
 import helper
 from rhevmtests import networking
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
@@ -24,7 +24,6 @@ def add_qos_to_dc_and_qos_profile_to_nic(request):
     Remove vNIC profile
     Delete QoS from datacenter
     """
-    network_qos = NetworkFixtures()
     qos_name_1 = request.node.cls.qos_name_1
     qos_name_2 = request.node.cls.qos_name_2
     vnic_profile_1 = request.node.cls.vnic_profile_1
@@ -47,10 +46,10 @@ def add_qos_to_dc_and_qos_profile_to_nic(request):
         [qos_name_1, qos_name_2], [vnic_profile_1, vnic_profile_2]
     ):
         testflow.setup(
-            "Add QoS %s to datacenter %s", qos_name, network_qos.dc_0
+            "Add QoS %s to datacenter %s", qos_name, conf.DC_0
         )
         assert ll_datacenters.add_qos_to_datacenter(
-            datacenter=network_qos.dc_0, qos_name=qos_name,
+            datacenter=conf.DC_0, qos_name=qos_name,
             qos_type=qos_conf.QOS_TYPE,
             inbound_average=qos_conf.BW_PARAMS[0],
             inbound_peak=qos_conf.BW_PARAMS[1],

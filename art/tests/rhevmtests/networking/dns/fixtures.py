@@ -13,7 +13,6 @@ import config as dns_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.helpers as global_helper
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -21,7 +20,6 @@ def get_host_dns_servers(request):
     """
     Get host DNS servers and store them in config
     """
-    NetworkFixtures()
     dns_servers = helper.get_host_dns_servers()
     assert dns_servers
     dns_conf.HOST_DNS_SERVERS = dns_servers

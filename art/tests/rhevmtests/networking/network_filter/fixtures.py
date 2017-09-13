@@ -16,7 +16,6 @@ from art.rhevm_api.tests_lib.low_level import (
 import rhevmtests.networking.config as conf
 import config as nf_conf
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
@@ -24,7 +23,6 @@ def restore_vnic_profile_filter(request):
     """
     Restore vNIC profile network filter
     """
-    NetworkFixtures()
     net = request.node.cls.net
     no_spoof = conf.VDSM_NO_MAC_SPOOFING
 

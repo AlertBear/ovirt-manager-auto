@@ -1750,18 +1750,12 @@ def removeNic(positive, vm, nic):  # noqa: N802
     Returns:
         bool: True if nic was removed properly, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
-        extra_txt="from VM %s" % vm
-    )
     vm_obj = VM_API.find(vm)
     nic_obj = get_vm_nic(vm, nic)
     expected_status = vm_obj.get_status()
 
-    logger.info(log_info)
     status = NIC_API.delete(nic_obj, positive)
     if not status:
-        logger.error(log_error)
         return False
 
     # TODO: remove wait section. func need to be atomic. wait can be done

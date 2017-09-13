@@ -13,7 +13,6 @@ import helper
 import rhevmtests.networking.config as conf
 from art.rhevm_api import resources
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -22,7 +21,6 @@ def set_route_to_engine_and_local_host(request):
     Set static routes to engine and to local host that run the test in order to
     keep connection while we change the host default route
     """
-    NetworkFixtures()
     add_cmd = "ip route add {subnet} via {gateway}"
     del_cmd = "ip route del {subnet}"
     check_cmd = "ip route | grep -c {subnet}"

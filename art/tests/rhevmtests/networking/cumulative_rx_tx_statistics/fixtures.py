@@ -18,7 +18,6 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms
 )
 from art.unittest_lib import testflow
-from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
@@ -26,13 +25,12 @@ def send_icmp(request):
     """
     Send ICMP to increase host NICs stats
     """
-    rx_tx_stats = NetworkFixtures()
     testflow.setup(
-        "Send ICMP from host %s to host %s", rx_tx_stats.host_0_name,
-        rx_tx_stats.host_1_name
+        "Send ICMP from host %s to host %s", conf.HOST_0_NAME,
+        conf.HOST_1_NAME
     )
-    rx_tx_stats.vds_0_host.network.send_icmp(dst=rx_tx_conf.HOST_IPS[1])
-    rx_tx_stats.vds_1_host.network.send_icmp(dst=rx_tx_conf.HOST_IPS[0])
+    conf.VDS_0_HOST.network.send_icmp(dst=rx_tx_conf.HOST_IPS[1])
+    conf.VDS_1_HOST.network.send_icmp(dst=rx_tx_conf.HOST_IPS[0])
 
 
 @pytest.fixture(scope="class")
@@ -42,8 +40,7 @@ def vm_prepare_setup(request):
     Run VMs
     Set IPs on VM vNICs
     """
-    rx_tx_state = NetworkFixtures()
-    vms_list = rx_tx_state.vms_list
+    vms_list = conf.VM_NAME[:2]
     nic = request.node.cls.nic_name
     network = request.node.cls.net_1
     result = list()
@@ -82,7 +79,7 @@ def vm_prepare_setup(request):
     request.addfinalizer(fin1)
 
     for host, vm, temp_ip in zip(
-        rx_tx_state.hosts_list[:2], vms_list, rx_tx_conf.VM_IPS
+        conf.HOSTS[:2], vms_list, rx_tx_conf.VM_IPS
     ):
         assert ll_vms.addNic(
             positive=True, vm=vm, name=nic, network=network,
@@ -123,10 +120,9 @@ def update_host_nics_stats(request):
     """
     Update host NICs stats values
     """
-    rx_tx_stats = NetworkFixtures()
     testflow.setup("Update host NICs stats values")
     conf.NIC_STAT = hl_networks.get_nic_statistics(
-        nic=rx_tx_stats.host_0_nics[1], host=rx_tx_stats.host_0_name,
+        nic=conf.HOST_0_NICS[1], host=conf.HOST_0_NAME,
         keys=rx_tx_conf.STAT_KEYS
     )
 
@@ -139,21 +135,19 @@ def move_host_to_another_cluster(request):
     """
     move host to another cluster.
     """
-    rx_tx_stats = NetworkFixtures()
-
     def fin():
         """
         Move host back to original cluster
         """
         assert hl_hosts.move_host_to_another_cluster(
-            host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_0,
-            host_resource=rx_tx_stats.vds_0_host
+            host=conf.HOST_0_NAME, cluster=conf.CL_0,
+            host_resource=conf.VDS_0_HOST
         )
     request.addfinalizer(fin)
 
     assert hl_hosts.move_host_to_another_cluster(
-        host=rx_tx_stats.host_0_name, cluster=rx_tx_stats.cluster_1,
-        host_resource=rx_tx_stats.vds_0_host
+        host=conf.HOST_0_NAME, cluster=conf.CL_1,
+        host_resource=conf.VDS_0_HOST
     )
 
 
@@ -162,10 +156,9 @@ def update_vms_nics_stats(request):
     """
     Update VMs NICs stats.
     """
-    rx_tx_stats = NetworkFixtures()
     nic_name = rx_tx_conf.VM_NIC_NAME
-    vm_0_dict = rx_tx_conf.VMS_IPS_PARAMS.get(rx_tx_stats.vm_0)
-    vm_1_dict = rx_tx_conf.VMS_IPS_PARAMS.get(rx_tx_stats.vm_1)
+    vm_0_dict = rx_tx_conf.VMS_IPS_PARAMS.get(conf.VM_0)
+    vm_1_dict = rx_tx_conf.VMS_IPS_PARAMS.get(conf.VM_1)
     vm_0_resource = vm_0_dict.get("resource")
     vm_1_resource = vm_1_dict.get("resource")
     vm_0_temp_ip = vm_0_dict.get("temp_ip")
@@ -178,7 +171,7 @@ def update_vms_nics_stats(request):
         vm_0_resource.network.send_icmp(dst=vm_1_temp_ip)
         vm_1_resource.network.send_icmp(dst=vm_0_temp_ip)
         rx_tx_conf.NIC_STAT = hl_networks.get_nic_statistics(
-            nic=nic_name, vm=rx_tx_stats.vm_1, keys=rx_tx_conf.STAT_KEYS
+            nic=nic_name, vm=conf.VM_1, keys=rx_tx_conf.STAT_KEYS
         )
         nic_state_attempts -= 1
         if nic_state_attempts == 0:
