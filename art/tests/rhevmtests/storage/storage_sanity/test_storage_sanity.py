@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.test_handler.settings import ART_CONFIG
 from art.unittest_lib import (
     tier1,
@@ -28,8 +28,6 @@ from rhevmtests.storage.fixtures import (
 from rhevmtests.storage.storage_sanity.fixtures import (
     get_storage_domain_size, prepare_storage_parameters,
 )
-
-from art.test_handler.tools import bz  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -51,6 +49,7 @@ class TestCase11591(TestCase):
     storages = set([ISCSI])
     polarion_test_case = '11591'
 
+    @bz({'1488929': {}})
     @polarion("RHEVM3-11591")
     @tier1
     def test_create_and_extend_storage_domain(self):
