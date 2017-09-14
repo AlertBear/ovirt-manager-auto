@@ -9,6 +9,8 @@ The following elements will be used for the testing:
 2 VM's (VM-0, VM-1), 1 extra vNIC on VM's, 1 vNIC profile
 """
 
+import shlex
+
 import netaddr
 import pytest
 
@@ -23,6 +25,7 @@ from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, testflow, tier2, tier3
 from fixtures import (  # noqa: F401
     check_running_on_rhevh,
+    check_ldap_availability,
     configure_ovn,
     configure_provider_plugin,
     create_ovn_networks_on_provider,
@@ -69,8 +72,55 @@ class TestOVNDeployment(NetworkTest):
                 package="ovirt-provider-ovn-driver"
             ), "OVN driver is not installed on host: %s" % ovn_host.fqdn
 
+    @tier2
+    @polarion("RHEVM-23230")
+    def test_firewalld_service(self):
+        """
+        # TODO: add additional test for OVN host configuration
+
+        Test if the firewalld service is running on engine (OVN central)
+        """
+        testflow.step("Test if the firewalld service is running on engine")
+        assert helper.service_handler(
+            host=net_conf.ENGINE_HOST, service="firewalld", action="active"
+        )
+
+    @tier2
+    @polarion("RHEVM-23228")
+    def test_firewall_ports_configuration(self):
+        """
+        1. Test connection to the provider port
+        2. Test connection to the provider keystone service port
+        3. Test connection to OVN northbound port
+        4. Test connection to OVN southbound port
+        """
+        http_services = [
+            ("provider", ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["api_url"]),
+            ("keystone", ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["keystone_url"])
+        ]
+        for service, url in http_services:
+            testflow.step(
+                "Test connection to the {service} port".format(service=service)
+            )
+            assert not net_conf.ENGINE_HOST.run_command(
+                shlex.split(
+                    ovn_conf.OVN_CMD_TEST_HTTP_RESPONSE.format(url=url)
+                )
+            )[0]
+
+        for service, tcp_port in ovn_conf.OVN_NETWORK_SERVICE_PORTS:
+            testflow.step(
+                "Test connection to the OVN {service} port".format(
+                    service=service
+                )
+            )
+            assert helper.is_tcp_port_open(
+                host=net_conf.ENGINE_HOST.ip, port=tcp_port
+            )
+
 
 @pytest.mark.usefixtures(
+    check_ldap_availability.__name__,
     setup_ldap_integration.__name__,
     configure_ovn.__name__,
     configure_provider_plugin.__name__,
@@ -288,7 +338,7 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Starting VM: %s on host: %s", net_conf.VM_0, net_conf.HOST_0_NAME
         )
-        assert helper.run_vm_on_host(
+        assert helper.run_vm_and_wait_for_ip(
             vm=net_conf.VM_0, host=net_conf.HOST_0_NAME
         )
 
@@ -302,7 +352,7 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Starting VM: %s on host: %s", net_conf.VM_1, net_conf.HOST_0_NAME
         )
-        assert helper.run_vm_on_host(
+        assert helper.run_vm_and_wait_for_ip(
             vm=net_conf.VM_1, host=net_conf.HOST_0_NAME
         )
 
@@ -319,7 +369,6 @@ class TestOVNComponent(NetworkTest):
             "name": ovn_conf.OVN_VNIC
         }
 
-    @bz({"1432354": {}})
     @tier2
     @polarion("RHEVM3-16927")
     def test_06_ping_same_ovn_network_and_host(self):
@@ -555,6 +604,7 @@ class TestOVNComponent(NetworkTest):
         for vm in [vm_0_rsc, vm_1_rsc]:
             assert helper.set_vm_non_mgmt_interface_mtu(vm=vm, mtu=1500)
 
+    @bz({"1494944": {}})
     @tier2
     @polarion("RHEVM3-17236")
     def test_12_ovn_network_with_subnet(self):
@@ -688,14 +738,13 @@ class TestOVNComponent(NetworkTest):
             ping_kwargs=ping_kwargs, migration_kwargs=migrate_kwargs
         )
 
-    @bz({"1458407": {}})
     @tier2
     @polarion("RHEVM-22212")
     def test_17_long_network_names(self):
         """
         1. Import network with long name to engine
-        2. Attach network to OVN vNIC on VM_0 and VM_1
-        3. Get DHCP IP on OVN vNIC on VM_0 and VM_1
+        2. Attach network to OVN vNIC on VM-0 and VM-1
+        3. Get DHCP IP on OVN vNIC on VM-0 and VM-1
         4. Test ping from VM-0 to VM-1 over OVN IP
         """
         for net_name in ovn_conf.OVN_LONG_NETS.keys():
@@ -727,7 +776,7 @@ class TestOVNComponent(NetworkTest):
             assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
 
 
-@bz({"1483309": {}})
+@bz({"1494944": {}})
 @pytest.mark.usefixtures(
     configure_ovn.__name__,
     get_default_ovn_provider.__name__,
@@ -797,26 +846,37 @@ class TestOVNPerformance(NetworkTest):
     @polarion("RHEVM-22061")
     def test_ovn_over_tunnel_traffic(self):
         """
-        1. Copy 1 GB file from VM-0 to VM-1 over OVN tunnel while measuring
-           performance
-        2. Compare VM-to-VM and HOST-to-HOST benchmarks (VMs results should be
-           80% of hosts or higher)
+        1. Copy 1 GB file from VM-0 to VM-1 over OVN tunnel while collecting
+           performance counters
+        2. Compare VM-to-VM and Host-to-Host benchmarks
         """
-        copy_res, vm_to_vm_perf = helper.copy_file_benchmark(
+        copy_file_res, hosts_perf = helper.copy_file_benchmark(
             src_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
             dst_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
             dst_ip=ovn_conf.OVN_VM_1_IP, size=1000
         )
-        assert copy_res, "Failed to copy file over OVN tunnel"
+        assert copy_file_res[0], "Failed to copy file over OVN tunnel"
 
-        # Calculate the expected performance average based on
-        # Host-to-Host performance values and percent
-        exp_cpu = ovn_conf.OVN_HOST_PERF_COUNTERS[0] * 0.8
-        exp_mem = ovn_conf.OVN_HOST_PERF_COUNTERS[1] * 0.8
+        # Calculate expected values:
+        # 1. CPU and memory usage should be at maximum 30% higher
+        # 2. Maximum usage values are 100%
+        # 3. VM-to-VM transfer rate should be at minimum 20% slower
+        cpu_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[0] * 1.3)
+        max_cpu_value = max(min(cpu_value, 100), cpu_value)
+        mem_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[1] * 1.3)
+        max_mem_value = max(min(mem_value, 100), mem_value)
+        min_transfer_rate = round(ovn_conf.OVN_HOST_PERF_COUNTERS[2] * 0.8)
 
-        assert vm_to_vm_perf[0] > exp_cpu, (
-            "CPU average: %s <= CPU minimum: %s" % (vm_to_vm_perf[0], exp_cpu)
+        assert hosts_perf[0] < max_cpu_value, (
+            "VM-to-VM Host CPU average: %s >= %s (expected value)"
+            % (hosts_perf[0], max_cpu_value)
         )
-        assert vm_to_vm_perf[1] > exp_mem, (
-            "mem average: %s <= mem minimum: %s" % (vm_to_vm_perf[1], exp_mem)
+        assert hosts_perf[1] < max_mem_value, (
+            "VM-to-VM Host memory average: %s >= %s (expected value)"
+            % (hosts_perf[1], max_mem_value)
+        )
+        assert copy_file_res[1] > min_transfer_rate, (
+            "VM-to-VM Transfer rate (MB/s): %s "
+            "<= minimum transfer rate (MB/s): %s (expected value)" %
+            (copy_file_res[1], min_transfer_rate)
         )

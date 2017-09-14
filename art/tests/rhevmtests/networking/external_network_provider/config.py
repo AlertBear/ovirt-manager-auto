@@ -57,11 +57,14 @@ OVN_LDAP_USERNAME = "{user}@{domain}@{auth_profile}".format(
     user="ovn_admin", domain=OVN_LDAP_DOMAIN,
     auth_profile=OVN_LDAP_AUTH_PROFILE
 )
+# LDAP and LDAP SSL ports
+OVN_LDAP_PORTS = [389, 636]
+
 OVN_LDAP_USERNAME_PASSWORD = "Heslo123"
 # Negative authorization test password
 OVN_WRONG_PASSWORD = "1234567"
 
-# Configuration file values to be changed
+# OVN Configuration file (values to be changed)
 OVN_AUTHENTICATION_BY_GROUP_CONF = {
     "AUTH": {
         "auth-plugin": "auth.plugins.ovirt:AuthorizationByGroup"
@@ -173,12 +176,14 @@ OVN_VMS_RESOURCES = {
     conf.VM_1: None
 }
 
-# Hosts performance counters to be used as baseline (filled on runtime)
+# Hosts performance counters to be used as baseline for VM-to-VM benchmark
+# List of two elements: avg CPU usage and avg memory usage
 OVN_HOST_PERF_COUNTERS = None
+
 # get_performance_counters parameters:
 # First element: collect CPU performance flag
 # Second element: collect memory performance flag
-COLLECT_PERFORMANCE = [True, True]
+COLLECT_PERFORMANCE_FLAGS = [True, True]
 
 # Copy file test parameters
 OVN_COPY_FILE_SIZE_MB = 250
@@ -197,7 +202,7 @@ OVN_MIGRATION_PING_COUNT = 30
 OVN_MIGRATION_PING_LOSS_COUNT = 3
 
 # dd command output MB/s value
-OVN_DD_MBS_REGEX = "\d+\.\d+(?=\D*\z)"
+OVN_DD_MBS_REGEX = "\d+\.?\d+(?=\D*\Z)"
 
 # Timeout for migration and ping test
 OVN_MIGRATION_TIMEOUT = 300
@@ -214,10 +219,13 @@ OVN_DRIVER_REMOVE_RPMS = [
     "python-openvswitch"
 ]
 
-# OVN ports to open
-OVN_TEST_PORTS = [
-    9696,  # OVN HTTP API provider
-    35357  # Keystone HTTP port
+# List of OVN servers with for firewalld started state
+OVN_FIREWALLD_STARTED_SERVERS = []
+
+# OVN network service ports
+OVN_NETWORK_SERVICE_PORTS = [
+    ("northbound", 6641),
+    ("southbound", 6642)
 ]
 
 # OVN config file settings
@@ -248,6 +256,5 @@ OVN_CMD_GET_CPU_USAGE = (
 )
 OVN_CMD_GET_MEM_USAGE = "free | grep Mem | awk '{print $3/$2 * 100.0}'"
 OVN_CMD_ADD_FW_PORT = "firewall-cmd --zone=public --add-port={port}/{proto}"
-OVN_CMD_DEL_FW_PORT = (
-    "firewall-cmd --zone=public --remove-port={port}/{proto}"
-)
+OVN_CMD_DEL_FW_PORT = "firewall-cmd --zone=public --remove-port={port}/{proto}"
+OVN_CMD_TEST_HTTP_RESPONSE = "curl -k {url}"

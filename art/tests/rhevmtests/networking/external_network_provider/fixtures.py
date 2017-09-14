@@ -8,7 +8,6 @@ External Network Provider fixtures
 import shlex
 
 import pytest
-import logging
 
 import config as enp_conf
 import helper
@@ -19,10 +18,8 @@ import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks, external_providers
 )
-from rhevmtests.networking import config_handler
 from art.unittest_lib import testflow
-
-logger = logging.getLogger("External_Network_Provider_Fixtures")
+from rhevmtests.networking import config_handler
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -30,7 +27,7 @@ def check_running_on_rhevh(request):
     """
     Check if test is running on unsupported RHEVH environment
 
-    # TODO: remove this fixture when RHEV-H support will be added
+    TODO: remove fixture when RHV-H 4.2 is available for testing
     """
     env_rhevh_hosts = [
         h.name for h in global_config.HOSTS_RHEVH
@@ -38,6 +35,19 @@ def check_running_on_rhevh(request):
     ]
     if env_rhevh_hosts:
         pytest.skip("Unsupported host(s) found: %s" % env_rhevh_hosts)
+
+
+@pytest.fixture(scope="class")
+def check_ldap_availability(request):
+    """
+    Check the availability of LDAP server
+    """
+    if not helper.check_ldap_availability(
+        server=enp_conf.OVN_LDAP_DOMAIN, ports=enp_conf.OVN_LDAP_PORTS
+    ):
+        pytest.skip(
+            "LDAP server: %s is unavailable" % enp_conf.OVN_LDAP_DOMAIN
+        )
 
 
 @pytest.fixture()
@@ -226,65 +236,79 @@ def remove_ifcfg_from_vms(request):
 def configure_ovn(request):
     """
     1. Configure ovirt-provider-ovn-driver component on OVN hosts 1 and 2
-    2. Verify that firewalld service is up
-    3. Open required firewalld ports
+    2. Verify that firewalld service is stopped on OVN hosts_1 and 2 until
+       RFE: https://bugzilla.redhat.com/show_bug.cgi?id=1432354 is resolved.
+    3. Verify that firewalld is running on OVN central
     """
     ovn_central = net_config.ENGINE_HOST
     ovn_hosts = net_config.VDS_HOSTS_LIST[:2]
-    ovn_servers = [ovn_central] + ovn_hosts
 
     def fin():
         """
-        Remove firewalld ports from OVN central
+        Restore firewalld service state on OVN hosts
         """
         results = []
 
-        for port in enp_conf.OVN_TEST_PORTS:
-            testflow.teardown(
-                "Removing firewalld TCP port: %s on OVN central server", port
+        for host in enp_conf.OVN_FIREWALLD_STARTED_SERVERS:
+            testflow.setup(
+                "Starting firewall firewalld service on host: %s", host.fqdn
             )
-            cmd = enp_conf.OVN_CMD_DEL_FW_PORT.format(port=port, proto="tcp")
             results.append(
                 (
-                    not ovn_central.run_command(shlex.split(cmd))[0],
-                    (
-                        "Failed to remove firewalld TCP port: %s "
-                        "from server: %s" % (port, ovn_central.fqdn)
-                    )
+                    helper.service_handler(
+                        host=host, service="firewalld", action="start"
+                    ),
+                    "Failed to start firewalld service on host: %s"
+                    % host.fqdn
                 )
             )
+            results.append(
+                (
+                    helper.service_handler(
+                        host=host, service="libvirtd", action="restart"
+                    ),
+                    "Failed to restart libvirtd service on host: %s"
+                    % host.fqdn
+                )
+            )
+
         global_helper.raise_if_false_in_list(results)
     request.addfinalizer(fin)
 
-    # Make sure firewalld service is up
-    # This is used to handle scenarios where firewalld is stopped manually
-    for ovn_server in ovn_servers:
-        if not helper.service_handler(
-            host=ovn_server, service="firewalld", action="active"
-        ):
-            logger.error(
-                "firewalld service is not started on host: %s", ovn_server.fqdn
-            )
-            testflow.setup(
-                "Starting firewalld service on host: %s", ovn_server.fqdn
-            )
-            assert helper.service_handler(
-                host=ovn_server, service="firewalld", action="start"
-            )
-
-    # OVN required ports for testing the provider
-    for port in enp_conf.OVN_TEST_PORTS:
-        testflow.setup(
-            "Adding firewalld TCP port: %s on OVN central server", port
-        )
-        assert not ovn_central.run_command(
-            shlex.split(
-                enp_conf.OVN_CMD_ADD_FW_PORT.format(port=port, proto="tcp")
-            )
-        )[0]
+    # OVN central configuration
+    testflow.setup(
+        "Verifying that firewalld is started on OVN central: %s",
+        ovn_central.fqdn
+    )
+    assert helper.service_handler(
+        host=ovn_central, service="firewalld", action="active"
+    )
 
     # OVN driver configuration
     for host in ovn_hosts:
+        # Stop firewall services that blocks OVN traffic
+        testflow.setup(
+            "Checking if firewalld is started on OVN host: %s", host.fqdn
+        )
+        if helper.service_handler(
+            host=host, service="firewalld", action="active"
+        ):
+            testflow.setup(
+                "Stopping firewall firewalld service on host: %s", host.fqdn
+            )
+            assert helper.service_handler(host=host, service="firewalld")
+
+            testflow.setup(
+                "Restarting libvirtd service on host: %s", host.fqdn
+            )
+            assert helper.service_handler(
+                host=host, service="libvirtd", action="restart"
+            )
+            enp_conf.OVN_FIREWALLD_STARTED_SERVERS.append(host)
+
+        # Start ovn-controller
+        # TODO: removed once BZ:
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1490104 is resolved
         if not helper.service_handler(
             host=host, service=enp_conf.OVN_CONTROLLER_SERVICE, action="active"
         ):
@@ -351,14 +375,21 @@ def save_vm_resources(request):
 def benchmark_file_transfer(request):
     """
     Benchmark Host-to-Host file transfer rate and collect performance counters
+    from hosts
     """
     testflow.setup(
         "Benchmarking file transfer from host: %s to host: %s",
         net_config.HOST_0_NAME, net_config.HOST_1_NAME
     )
-    perf_counters = helper.copy_file_benchmark(
+    copy_file_res, perf_counters = helper.copy_file_benchmark(
         src_host=net_config.VDS_0_HOST, dst_host=net_config.VDS_1_HOST,
         dst_ip=net_config.HOST_1_IP, size=1000
     )
-    assert perf_counters, "Failed to copy file over OVN tunnel"
-    enp_conf.OVN_HOST_PERF_COUNTERS = perf_counters[0], perf_counters[1]
+    assert copy_file_res[0], "Failed to copy file over OVN tunnel"
+
+    # Save counters
+    enp_conf.OVN_HOST_PERF_COUNTERS = (
+        perf_counters[0], perf_counters[1], copy_file_res[1]
+    )
+    # Reset collection values
+    enp_conf.COLLECT_PERFORMANCE_FLAGS = [True, True]

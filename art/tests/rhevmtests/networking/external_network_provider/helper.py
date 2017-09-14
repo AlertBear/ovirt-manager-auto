@@ -8,6 +8,9 @@ External Network Provider helper functions
 import logging
 import re
 import shlex
+import socket
+
+from contextlib import closing
 
 import config as ovn_conf
 import rhevmtests.helpers as global_helper
@@ -18,15 +21,16 @@ from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms, external_providers
 )
+from art.test_handler import exceptions
 from art.unittest_lib import testflow
 from utilities import jobs
 
 logger = logging.getLogger("external_network_provider_helper")
 
 
-def run_vm_on_host(vm, host):
+def run_vm_and_wait_for_ip(vm, host):
     """
-    Run a VM on host and save its Host resource
+    Run a VM on host, wait for MGMT IP and save its Host resource
 
     Args:
         vm (str): VM name
@@ -39,9 +43,12 @@ def run_vm_on_host(vm, host):
     if hl_vms.run_vm_once_specific_host(
         vm=vm, host=host, wait_for_up_status=True
     ):
-        ovn_conf.OVN_VMS_RESOURCES[vm] = global_helper.get_vm_resource(
-            vm=vm, start_vm=False
-        )
+        try:
+            ovn_conf.OVN_VMS_RESOURCES[vm] = global_helper.get_vm_resource(
+                vm=vm, start_vm=False
+            )
+        except exceptions.VMException:
+            return False
         return True
     return False
 
@@ -93,6 +100,9 @@ def set_ip_non_mgmt_nic(vm, address_type="static", ip_network=None):
             return ""
 
         ip = network.find_ip_by_int(interface)
+        if not ip:
+            return ""
+
         logger.info("VM: %s acquired IP address: %s", vm, ip)
         return ip
     return ""
@@ -155,20 +165,22 @@ def check_ssh_file_copy(src_host, dst_host, dst_ip, size):
         "Checking SSH file copy of {count} MB file from VM: {src} "
         "to VM: {dst}".format(count=size, src=src_host.fqdn, dst=dst_host.fqdn)
     )
-    rc, out, _ = src_host.run_command(
+    rc, out, err = src_host.run_command(
         shlex.split(
             ovn_conf.OVN_CMD_SSH_TRANSFER_FILE.format(count=size, dst=dst_ip)
         )
     )
     if rc:
         return return_fail
+    if not out:
+        out = err
 
     err_txt = "Something went wrong with dd command output: %s" % out
     # Extract last MB/s value from dd command output
     match = re.findall(ovn_conf.OVN_DD_MBS_REGEX, out)
     try:
         transfer_rate = float(match[0])
-    except ValueError or IndexError:
+    except (ValueError, IndexError):
         logger.error(err_txt)
         return return_fail
 
@@ -453,24 +465,37 @@ def collect_performance_counters(hosts):
     """
     counters = []
 
-    while any(ovn_conf.COLLECT_PERFORMANCE):
+    while any(ovn_conf.COLLECT_PERFORMANCE_FLAGS):
         for host in hosts:
-            if ovn_conf.COLLECT_PERFORMANCE[0]:
+            # CPU counter collection
+            if ovn_conf.COLLECT_PERFORMANCE_FLAGS[0]:
                 cpu_rc, cpu_out, _ = host.run_command(
-                    command=shlex.split(ovn_conf.OVN_CMD_GET_CPU_USAGE)
+                    ovn_conf.OVN_CMD_GET_CPU_USAGE.split(" ")
                 )
                 if cpu_rc:
-                    logger.error("Failed to collect CPU performance")
-                    logger.debug("CPU collection output: %s", cpu_out)
+                    logger.error(
+                        "Failed to collect CPU performance: %s", cpu_out
+                    )
                     return []
-            if ovn_conf.COLLECT_PERFORMANCE[1]:
+                logger.info(
+                    "Collecting CPU counter from host: %s -> value: %s",
+                    host.fqdn, cpu_out
+                )
+            # Memory counter collection
+            if ovn_conf.COLLECT_PERFORMANCE_FLAGS[1]:
                 mem_rc, mem_out, _ = host.run_command(
-                    command=shlex.split(ovn_conf.OVN_CMD_GET_MEM_USAGE)
+                    ovn_conf.OVN_CMD_GET_MEM_USAGE.split(" ")
                 )
                 if mem_rc:
-                    logger.error("Failed to collect memory performance")
-                    logger.debug("Memory collection output: %s", mem_out)
+                    logger.error(
+                        "Failed to collect memory performance: %s", mem_out
+                    )
                     return []
+                logger.info(
+                    "Collecting memory counter from host: %s -> value: %s",
+                    host.fqdn, mem_out
+                )
+
             if counters:
                 counters[0] = round((counters[0] + float(cpu_out)) / 2.0, 2)
                 counters[1] = round((counters[1] + float(mem_out)) / 2.0, 2)
@@ -484,7 +509,7 @@ def collect_performance_counters(hosts):
 def copy_file_benchmark(**kwargs):
     """
     Copy file from source host to destination host and collect performance
-    counters from hosts: HOST-0 and HOST-1
+    counters from VDS hosts: HOST-0 and HOST-1
 
     Keyword Args:
         src_host (Host): Source host resource
@@ -495,24 +520,71 @@ def copy_file_benchmark(**kwargs):
     Returns:
         tuple: Copy job result and performance job result
     """
+    # Create jobs
     performance_job = jobs.Job(
         target=collect_performance_counters, args=(),
         kwargs={"hosts": [net_conf.VDS_0_HOST, net_conf.VDS_1_HOST]}
     )
-    copy_job = jobs.Job(
-        target=check_ssh_file_copy, args=(), kwargs=kwargs
-    )
+    copy_job = jobs.Job(target=check_ssh_file_copy, args=(), kwargs=kwargs)
+
     job_set = jobs.JobsSet()
     job_set.addJobs(jobs=[copy_job, performance_job])
     job_set.start()
     job_set.waitUntilAnyDone(time=ovn_conf.OVN_COPY_TIMEOUT)
-    # Stop collection thread
-    ovn_conf.COLLECT_PERFORMANCE = False, False
+
+    # Stop and clear collection threads
+    ovn_conf.COLLECT_PERFORMANCE_FLAGS = False, False
+
     # Join threads to wait for performance job be completed
     job_set.join(timeout=ovn_conf.OVN_COPY_TIMEOUT)
 
     logger.info(
         "Copy job result: %s performance job result: %s",
-        performance_job.result, copy_job.result
+        copy_job.result, performance_job.result
     )
     return copy_job.result, performance_job.result
+
+
+def is_tcp_port_open(host, port, timeout=5):
+    """
+    Check if TCP port is open on host
+
+    Args:
+        host (str): Host name
+        port (int): Port number
+        timeout (int): Timeout
+
+    Returns:
+        bool: True if port is open, False otherwise
+    """
+    sock = socket.socket()
+    sock.settimeout(timeout)
+
+    with closing(sock):
+        try:
+            sock.connect((host, port))
+        except socket.error as err:
+            logger.error(
+                "failed to connect %s port %s: %s", host, port, err
+            )
+            return False
+    logger.info("TCP port: %s is open on: %s", port, host)
+    return True
+
+
+def check_ldap_availability(server, ports):
+    """
+    Check if LDAP server is available by enumerating LDAP TCP ports
+
+    Args:
+        server (str): LDAP server name
+        ports (list): List of LDAP ports to enumerate
+
+    Returns:
+        bool: True if LDAP server is available, False otherwise
+    """
+    for ldap_port in ports:
+        logger.info("Checking if LDAP port: %s is available", ldap_port)
+        if is_tcp_port_open(host=server, port=ldap_port, timeout=3):
+            return True
+    return False

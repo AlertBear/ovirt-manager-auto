@@ -53,6 +53,9 @@ def get_vm_ip(vm_name, start_vm=True):
         vm_name (str): vm name
         start_vm (bool): Start the VM before get IP
 
+    Raises:
+        VMException: VM didn't received an IP
+
     Returns:
         str: VM IP
     """
