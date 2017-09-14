@@ -11,7 +11,7 @@ DWH_VARS = {
     "hoursToKeepHourly" : "720",
     "ovirtEngineDbPassword" : "******",
     "runDeleteTime" : "3",
-    "runInterleave" : "20",
+    "runInterleave" : "60",
     "limitRows" : "limit 1000",
     "ovirtEngineHistoryDbUser" : "ovirt_engine_history",
     "ovirtEngineDbUser" : "engine",
