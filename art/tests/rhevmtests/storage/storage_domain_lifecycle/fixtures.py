@@ -109,9 +109,8 @@ def unblock_connectivity_engine_to_host(request, storage):
         if not check_dc_and_host_state():
             testflow.teardown("Unblocking connections, something went wrong")
             try:
-                storage_helpers.unblockOutgoingConnection(
-                    self.engine_ip, config.HOSTS_USER, config.HOSTS_PW,
-                    self.first_host_ip
+                storage_helpers.setup_iptables(
+                    self.engine_ip, self.first_host_ip, block=False
                 )
             except exceptions.NetworkException, msg:
                 logging.info("Connection already unblocked. Reason: %s", msg)

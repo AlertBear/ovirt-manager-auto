@@ -29,7 +29,6 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
-from utilities.machine import Machine, LINUX
 from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 import rhevmtests.helpers as rhevm_helpers
@@ -1960,143 +1959,98 @@ def wait_for_background_process_state(
     return False
 
 
-def setupIptables(source, userName, password, dest, command, chain,
-                  target, protocol='all', persistently=False, *ports):
-    """Wrapper for resources.storage.set_ipatbles() method"""
-    hostObj = Machine(source, userName, password).util('linux')
-    return hostObj.setupIptables(dest, command, chain, target,
-                                 protocol, persistently, *ports)
-
-
-def blockOutgoingConnection(source, userName, password, dest, port=None):
-    '''
-    Description: Blocks outgoing connection to an address
-    Parameters:
-      * source - ip or fqdn of the source machine
-      * userName - username on the source machine
-      * password - password on the source machine
-      * dest - ip or fqdn of the machine to which to prevent traffic
-      * port - outgoing port we wanna block
-    Return: True if commands succeeds, false otherwise.
-    '''
-    if port is None:
-        return setupIptables(source, userName, password, dest, '--append',
-                             'OUTPUT', 'DROP')
-    else:
-        return setupIptables(source, userName, password, dest, '--append',
-                             'OUTPUT', 'DROP', 'all', False, port)
-
-
-def unblockOutgoingConnection(source, userName, password, dest, port=None):
-    '''
-    Description: Unblocks outgoing connection to an address
-    Parameters:
-      * source - ip or fqdn of the source machine
-      * userName - username on the source machine
-      * password - password on the source machine
-      * dest - ip or fqdn of the machine to which to remove traffic block
-      * port - outgoing port we wanna unblock
-    Return: True if commands succeeds, false otherwise.
-    '''
-    if port is None:
-        return setupIptables(source, userName, password, dest, '--delete',
-                             'OUTPUT', 'DROP')
-    else:
-        return setupIptables(source, userName, password, dest, '--delete',
-                             'OUTPUT', 'DROP', 'all', False, port)
-
-
-def flushIptables(host, userName, password, chain='', persistently=False):
-    """Warpper for utilities.machine.flushIptables() method."""
-    hostObj = Machine(host, userName, password).util('linux')
-    return hostObj.flushIptables(chain, persistently)
-
-
-def _perform_iptables_action_and_wait(action, source,
-                                      s_user, s_pass,
-                                      destination, wait_for_entity,
-                                      expected_state):
+def setup_iptables(
+    source, dest, chain='OUTPUT', protocol='all', ports=None, block=True
+):
     """
-    Description: block/unblock connection from source to destination,
+    Blocks or unblocks outgoing connection to an address
+
+    Args:
+        source (str): IP or FQDN of the source machine
+        dest (dict): IP or FQDN of host or hosts to which to prevent traffic
+        chain (str): name of chain to add rules to, Default is 'OUTPUT'
+        protocol (str): affected network protocol, Default is 'all'
+        ports (list): outgoing ports we want to block, default is None
+        block (bool): True for blocking outgoing connections, False for
+            unblocking
+
+    Returns:
+        bool: True if commands succeeded, False otherwise
+
+    """
+    host_resource = rhevm_helpers.get_host_resource(source, config.HOSTS_PW)
+    if block:
+        return host_resource.firewall.chain(chain).add_rule(
+            dest, 'DROP', protocol, ports
+        )
+    else:
+        return host_resource.firewall.chain(chain).delete_rule(
+            dest, 'DROP', protocol, ports
+        )
+
+
+def flush_iptables(host, chain='OUTPUT'):
+    """
+    Flushes all rules in a given chain
+
+    Args:
+        host (str): IP or FQDN of the host
+        chain (str): chain name to flush rules from
+
+    Returns:
+        bool: True if command succeeded, False otherwise
+
+    """
+    host_resource = rhevm_helpers.get_host_resource(host, config.HOSTS_PW)
+    return host_resource.firewall.chain(chain).clean_rules()
+
+
+def perform_iptables_action_and_wait(
+    action, source, destination, wait_for_entity, expected_state
+):
+    """
+    Block/unblock connection from source to destination,
     and wait_for_entity state to change to expected_state
-    Author: ratamir
-    Parameters:
-        * action - the action that need to preform
-                   (i.e. BLOCK or UNBLOCK)
-        * source - block/unblock connection from this ip or fdqn
-        * s_user - user name for this machine
-        * s_pass - password for this machine
-        * destination - block/unblock connection to this ip or fqdn
-        * wait_for_entity - the ip or fdqn of the machine that we wait
-                            for its state
-        * expected_state - the state that we wait for
-    Return: True if operation executed successfully , False otherwise
+
+    Args:
+        action (str): the action that need to preform (i.e. BLOCK or UNBLOCK)
+        source (str): block/unblock connection from this IP or FQDN
+        destination (dict): block/unblock connection to this IP or FQDN
+        wait_for_entity (str): the IP or FQDN of the machine that we wait
+            for its state
+        expected_state (str): the state that we wait for
+
+    Returns:
+        bool: True if operation executed successfully , False otherwise
 
     """
-    logger.info("%sing connection from %s to %s", action, source,
-                destination)
+    logger.info(
+        "%sing connection from %s to %s", action, source, destination
+    )
 
-    function = blockOutgoingConnection if action == BLOCK else unblockOutgoingConnection
-    success = function(source, s_user, s_pass, destination)
+    block = True if action == BLOCK else False
+    success = setup_iptables(source, destination, block=block)
     if not success:
-        logger.warning("%sing connection to %s failed. result was %s."
-                       % (action, destination, success))
+        logger.warning(
+            "%sing connection to %s failed. result was %s." % (
+                action, destination, success
+            )
+        )
         return success
 
     logger.info("wait for state : '%s' ", expected_state)
-    response = ll_hosts.wait_for_hosts_states(True, wait_for_entity,
-                                           states=expected_state)
+    response = ll_hosts.wait_for_hosts_states(
+        True, wait_for_entity, states=expected_state
+    )
 
     host_state = ll_hosts.get_host_status(wait_for_entity)
     if not response:
-        logger.warning("Host should be in status %s but it's in status %s"
-                       % (expected_state, host_state))
+        logger.warning(
+            "Host should be in status %s but it's in status %s" % (
+                expected_state, host_state
+            )
+        )
     return response
-
-
-def block_and_wait(source, s_user, s_pass, destination,
-                   wait_for_entity,
-                   expected_state=HOST_NONOPERATIONAL):
-    """
-    block connection from source to destination, and wait_for_entity
-    state to change to expected_state
-    Author: ratamir
-    Parameters:
-        * source - block connection from this ip or fdqn
-        * s_user - user name for this machine
-        * s_pass - password for this machine
-        * destination - block connection to this ip or fqdn
-        * wait_for_entity - the ip or fdqn of the machine that we wait
-                            for its state
-        * expected_state - the state that we wait for
-    Return: True if operation executed successfully , False otherwise
-    """
-    return _perform_iptables_action_and_wait(
-        BLOCK, source, s_user, s_pass,
-        destination, wait_for_entity, expected_state)
-
-
-def unblock_and_wait(source, s_user, s_pass, destination,
-                     wait_for_entity,
-                     expected_state=HOST_UP):
-    """
-    unblock connection from source to destination, and wait_for_entity
-    state to change to expected_state
-    Author: ratamir
-    Parameters:
-        * source - unblock connection from this ip or fdqn
-        * s_user - user name for this machine
-        * s_pass - password for this machine
-        * destination - unblock connection to this ip or fqdn
-        * wait_for_entity - the ip or fdqn of the machine that we wait
-                            for its state
-        * expected_state - the state that we wait for
-    Return: True if operation executed successfully , False otherwise
-    """
-
-    return _perform_iptables_action_and_wait(
-        UNBLOCK, source, s_user, s_pass,
-        destination, wait_for_entity, expected_state)
 
 
 def assign_storage_params(targets, keywords, *args):

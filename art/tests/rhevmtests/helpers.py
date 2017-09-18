@@ -738,28 +738,6 @@ def reboot_hosts(hosts_resources):
     ), "SPM was not elected on data-center %s" % config.DATA_CENTER_NAME
 
 
-def config_iptables_connection(
-    source, dest, protocol='all', ports=None, block=True
-):
-    """
-    Blocks or unblocks outgoing connection to an address
-
-    Args:
-        source (str): ip or fqdn of the source machine
-        dest (dict): ip or fqdn of host or hosts to which to prevent traffic
-        protocol (str): affected network protocol, Default is 'all'
-        ports (list): outgoing ports we want to block, default is None
-        block (bool): True for blocking outgoing connections, False for
-            unblocking
-
-    Returns:
-        bool: True if commands successed, False otherwise
-
-    """
-    # TODO: Add Firewall object and config_firewall function after Firewall
-    # module is merged into rrmngmnt
-
-
 def ignore_exception(func):
     """
     Decorator to catch exception

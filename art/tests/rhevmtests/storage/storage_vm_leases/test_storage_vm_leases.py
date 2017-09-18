@@ -29,7 +29,6 @@ from art.unittest_lib import (
     tier4,
 )
 from art.unittest_lib import StorageTest, testflow, storages
-
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage.fixtures import (
@@ -115,9 +114,9 @@ class BaseStorageVMLeaseTest(StorageTest):
             "Blocking connection from the engine to host %s",
             config.PLACEMENT_HOST
         )
-        assert storage_helpers.blockOutgoingConnection(
-            config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
-            config.PLACEMENT_HOST_IP
+        assert storage_helpers.setup_iptables(
+            config.VDC, {'address': [config.PLACEMENT_HOST_IP]},
+            block=True
         )
         if wait_for_nonresponsive:
             testflow.step(
@@ -142,11 +141,10 @@ class BaseStorageVMLeaseTest(StorageTest):
             "Blocking connection from host %s to storage domain %s",
             config.PLACEMENT_HOST, self.storage_domain
         )
-        for ip in self.storage_domain_ips:
-            assert storage_helpers.blockOutgoingConnection(
-                config.PLACEMENT_HOST_IP, config.HOSTS_USER, config.HOSTS_PW,
-                ip
-            )
+        assert storage_helpers.setup_iptables(
+            config.PLACEMENT_HOST_IP, {'address': self.storage_domain_ips},
+            block=True
+        )
 
     def verify_vm_is_running_on_different_host(self):
         for vm_name in self.vm_names:
@@ -294,9 +292,8 @@ class TestCase17621(BaseStorageVmLeaseTestWithFixtures):
                 host_ip = ll_hosts.get_host_ip(host)
                 hosts_ips.append(host_ip)
                 for storage_ip in self.storage_domain_ips:
-                    assert storage_helpers.blockOutgoingConnection(
-                        host_ip, config.HOSTS_USER,
-                        config.HOSTS_PW, storage_ip
+                    assert storage_helpers.setup_iptables(
+                        host_ip, storage_ip, block=True
                     )
             self.block_connection_engine_to_host()
             assert ll_vms.waitForVMState(
@@ -310,9 +307,8 @@ class TestCase17621(BaseStorageVmLeaseTestWithFixtures):
         finally:
             for host_ip in hosts_ips:
                 for storage_domain_ip in self.storage_domain_ips:
-                    storage_helpers.unblockOutgoingConnection(
-                        host_ip, config.HOSTS_USER,
-                        config.HOSTS_PW, storage_domain_ip
+                    storage_helpers.setup_iptables(
+                        host_ip, storage_domain_ip, block=False
                     )
 
 
@@ -450,18 +446,16 @@ class TestCase18186(BaseStorageVmLeaseTestWithFixtures):
         )
         ll_jobs.wait_for_jobs([config.JOB_UPDATE_VM])
         try:
-            assert storage_helpers.blockOutgoingConnection(
-                config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
-                self.spm_ip
+            assert storage_helpers.setup_iptables(
+                config.ENGINE.host.ip, self.spm_ip, block=True
             )
             assert ll_hosts.wait_for_spm(
                 config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
                 config.WAIT_FOR_SPM_INTERVAL
             )
         finally:
-            storage_helpers.unblockOutgoingConnection(
-                config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
-                self.spm_ip
+            storage_helpers.setup_iptables(
+                config.ENGINE.host.ip, self.spm_ip, block=False
             )
         self.vm_lease = True
         assert ll_vms.updateVm(
@@ -499,14 +493,13 @@ class TestCase17625(BaseStorageVmLeaseTestWithFixtures):
             ):
                 second_host = host
                 break
-        second_host_ip = ll_hosts.get_host_ip(second_host)
+        second_host_ip = {'address': ll_hosts.get_host_ip(second_host)}
         try:
             testflow.step(
                 "Block connection to the other hsm host %s", second_host
             )
-            assert storage_helpers.blockOutgoingConnection(
-                config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
-                second_host_ip
+            assert storage_helpers.setup_iptables(
+                config.ENGINE.host.ip, second_host_ip, block=True
             )
             assert ll_hosts.wait_for_hosts_states(
                 True, [second_host], config.HOST_NONRESPONSIVE,
@@ -518,9 +511,8 @@ class TestCase17625(BaseStorageVmLeaseTestWithFixtures):
                 "VM %s is running on a non responsive host" % self.vm_name
             )
         finally:
-            storage_helpers.unblockOutgoingConnection(
-                config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
-                second_host_ip
+            storage_helpers.setup_iptables(
+                config.ENGINE.host.ip, second_host_ip, block=False
             )
 
 

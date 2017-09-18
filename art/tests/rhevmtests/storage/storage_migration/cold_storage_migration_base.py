@@ -534,7 +534,6 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
         """
         disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
         initial_vol_count = storage_helpers.get_disks_volume_count(disk_ids)
-        target = ",".join(target)
 
         def f():
             """
@@ -580,8 +579,8 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
             testflow.step(
                 "Block connection between %s to %s", config.SOURCE, target
             )
-            assert storage_helpers.blockOutgoingConnection(
-                config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
+            assert storage_helpers.setup_iptables(
+                config.SOURCE, target, block=True
             ), "Failed to block connection"
 
             hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
@@ -596,8 +595,8 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
             testflow.step(
                 "Unblock connection from %s to %s", config.SOURCE, target
             )
-            assert storage_helpers.unblockOutgoingConnection(
-                config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
+            assert storage_helpers.setup_iptables(
+                config.SOURCE, target, block=False
             ), "Failed to unblock connection from host %s to %s" % (
                 config.SOURCE, target
             )
@@ -653,7 +652,7 @@ class TestCase19095(BaseBlockConnection):
             self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks'][0],
             self.vm_name, force_type=config.MIGRATE_SAME_TYPE, key='id'
         )
-        config.TARGET = config.ENGINE.host.ip
+        config.TARGET = {'address': [config.ENGINE.host.ip]}
         self.basic_flow(target=config.TARGET, migration_succeed=True)
 
 
@@ -689,7 +688,7 @@ class TestCase19028(BaseBlockConnection):
         assert found, "IP for storage domain %s not found" % (
             self.storage_domain
         )
-        config.TARGET = address['address']
+        config.TARGET = address
         self.basic_flow(target=config.TARGET)
 
 
@@ -725,7 +724,7 @@ class TestCase19007(BaseBlockConnection):
         assert found, "IP for storage domain %s not found" % (
             self.target_sd
         )
-        config.TARGET = address['address']
+        config.TARGET = address
         spm_host = ll_hosts.get_spm_host(config.HOSTS)
         config.SOURCE = ll_hosts.get_host_ip(spm_host)
         self.basic_flow(target=config.TARGET, source=config.SOURCE)

@@ -678,9 +678,8 @@ class TestCase4566(IscsiNfsSD):
             "Blocking outgoing connection from %s to %s", self.host_ip,
             self.storage_domain_ip,
         )
-        assert storage_helpers.blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
+        assert storage_helpers.setup_iptables(
+            self.host_ip, self.storage_domain_ip, block=True
         ), (
             "Failed to block outgoing connection from host %s to storage"
             "domain %s" % (self.non_master, self.master_domain)

@@ -406,8 +406,8 @@ def block_connection_to_sd(request, storage):
                     "Verify connection Unblocked between %s to %s",
                     host_ip, address
                 )
-                storage_helpers.unblockOutgoingConnection(
-                    host_ip, config.HOSTS_USER, config.HOSTS_PW, address
+                storage_helpers.setup_iptables(
+                    host_ip, address, block=False
                 ), "Failed to unblock connection between %s to %s" % (
                     host_ip, address
                 )
@@ -426,8 +426,8 @@ def block_connection_to_sd(request, storage):
             testflow.setup(
                 "Block connection between %s to %s", host_ip, address
             )
-            assert storage_helpers.blockOutgoingConnection(
-                host_ip, config.HOSTS_USER, config.HOSTS_PW, address
+            assert storage_helpers.setup_iptables(
+                host_ip, address, block=True
             ), "Failed to block connection between %s to %s" % (
                 host_ip, address
             )
@@ -453,8 +453,8 @@ def unblock_connection_to_sd(request, storage):
             testflow.setup(
                 "Unblock connection between %s to %s", host_ip, address
             )
-            assert storage_helpers.unblockOutgoingConnection(
-                host_ip, config.HOSTS_USER, config.HOSTS_PW, address
+            assert storage_helpers.setup_iptables(
+                host_ip, address, block=False
             ), "Failed to unblock connection between %s to %s" % (
                 host_ip, address
             )

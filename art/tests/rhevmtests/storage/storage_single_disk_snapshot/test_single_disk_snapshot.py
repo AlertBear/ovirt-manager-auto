@@ -798,9 +798,8 @@ class TestCase6015(BasicEnvironment):
         - Block connectivity to storage server during snapshot creation
         """
         self._perform_snapshot_operation(self.disks_names[0:2], wait=False)
-        assert storage_helpers.blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
+        assert storage_helpers.setup_iptables(
+            self.host_ip, self.storage_domain_ip, block=True
         ), "Failed to block connections from %s to %s" % (
             self.host_ip, self.storage_domain_ip
         )

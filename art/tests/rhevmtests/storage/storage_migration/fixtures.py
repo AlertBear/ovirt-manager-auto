@@ -465,7 +465,7 @@ def unblock_connectivity_teardown(request, storage):
             "Unblock connection from host %s to target %s",
             config.SOURCE, config.TARGET
         )
-        storage_helpers.unblockOutgoingConnection(
-            config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, config.TARGET
+        storage_helpers.setup_iptables(
+            config.SOURCE, config.TARGET, block=False
         )
     request.addfinalizer(finalizer)

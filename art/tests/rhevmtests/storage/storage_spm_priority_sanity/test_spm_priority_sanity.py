@@ -27,9 +27,8 @@ from rhevmtests.storage.fixtures import (
 from rhevmtests.storage.storage_spm_priority_sanity.fixtures import (
     wait_for_spm, remove_host, deactivate_hsm_hosts, initialize_hosts_params,
     activate_old_master_domain, set_different_host_priorities,
-    check_hosts_status, init_host_and_sd_params, init_params_for_unblock,
+    check_hosts_status, init_host_and_sd_params, init_params_for_block_unblock,
 )
-from utilities import utils
 
 
 logger = logging.getLogger(__name__)
@@ -538,7 +537,7 @@ class TestCase6221(BasicEnvironment):
 
 @pytest.mark.usefixtures(
     initialize_hosts_params.__name__,
-    init_params_for_unblock.__name__,
+    init_params_for_block_unblock.__name__,
 )
 class TestCase6215(BasicEnvironment):
     """
@@ -561,22 +560,21 @@ class TestCase6215(BasicEnvironment):
         Expected result: HSM with the next highest SPM priority is selected
         as SPM
         """
-        self.engine_ip = utils.getIpAddressByHostName(config.VDC)
         new_priority = range(1, len(self.hsm_hosts) + 1)
         self.set_priorities(priorities=new_priority, hosts=self.hsm_hosts)
         rhevm_helpers.maintenance_and_activate_hosts(
             hosts=[self.spm_host], activate=False
         )
         logger.info(
-            "Blocking connection between %s and %s", self.engine_ip,
-            self.high_spm_priority_host
+            "Blocking connection between %s and %s",
+            self.high_spm_priority_host, config.VDC
         )
         self.former_spm = self.spm_host
-        assert storage_helpers.blockOutgoingConnection(
-            self.high_spm_priority_host, config.HOSTS_USER,
-            config.HOSTS_PW, self.engine_ip
+
+        assert storage_helpers.setup_iptables(
+            self.host_ip, self.engine_ip, block=True
         ), "Unable to block connection between %s and %s" % (
-            self.high_spm_priority_host, self.engine_ip
+            self.high_spm_priority_host, config.VDC
         )
         self.wait_for_spm_host_and_verify_identity(
             self.low_spm_priority_host
@@ -595,8 +593,6 @@ class TestCase6219(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6219'
     former_spm = None
-    spm_priority = config.MAX_SPM_PRIORITY
-    block_spm_host = True
 
     @polarion("RHEVM3-6219")
     @tier4
@@ -610,12 +606,12 @@ class TestCase6219(BasicEnvironment):
         """
         logger.info(
             "Blocking connection between %s and %s", self.spm_host,
-            self.storage_domain_ip
+            self.non_master
         )
         self.former_spm = self.spm_host
-        assert storage_helpers.blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
+
+        assert storage_helpers.setup_iptables(
+            self.host_ip, self.storage_domain_ip, block=True
         ), "Unable to block connection between %s and %s" % (
             self.spm_host, self.non_master
         )

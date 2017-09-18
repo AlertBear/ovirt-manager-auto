@@ -1523,30 +1523,6 @@ def get_host_topology(host_name):
     return host_obj.cpu.topology
 
 
-def run_command(host, user, password, cmd):
-    """
-    Ssh to user@hostname and run cmd on cli
-
-    Args:
-        host (str): The name of the host
-        user (str): User name
-        password (str): User password
-        cmd (str): Command to run
-
-    Returns:
-        str: the command's output.
-    """
-    #  TODO: Remove usage of Machine
-    connection = machine.Machine(
-        host=get_host_ip(host), user=user, password=password
-    ).util(machine.LINUX)
-    rc, out = connection.runCmd(shlex.split(cmd))
-    if not rc:
-        raise RuntimeError("Output: %s" % out)
-
-    return out
-
-
 @ll_general.generate_logs()
 def get_host_name_from_engine(vds_resource):
     """

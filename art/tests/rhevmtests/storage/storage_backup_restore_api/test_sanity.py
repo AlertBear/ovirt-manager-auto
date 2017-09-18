@@ -156,7 +156,7 @@ class TestCase6182(BaseTestCase):
         assert utils.restartVdsmd(backup_vm_vdsm_host_ip, config.HOSTS_PW), (
             "Failed restarting VDSM service"
         )
-        ll_hosts.wait_for_hosts_states(True, self.host)
+        ll_hosts.wait_for_hosts_states(True, [backup_vm_vdsm_host])
         logger.info("Successfully restarted VDSM service")
 
         vm_disks = ll_vms.getVmDisks(self.backup_vm)
@@ -486,9 +486,8 @@ class TestCase6168(BaseTestCase):
             self.host, self.storage_domain
         )
 
-        status = storage_helpers.blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
+        status = storage_helpers.setup_iptables(
+            self.host_ip, self.storage_domain_ip, block=True
         )
 
         if status:

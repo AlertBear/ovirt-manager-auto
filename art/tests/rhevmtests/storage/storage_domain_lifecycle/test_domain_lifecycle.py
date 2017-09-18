@@ -79,14 +79,16 @@ class TestCase11598(BaseTestCase):
         Unblock connection.
         Check that the host is up again.
         """
-        assert storage_helpers.block_and_wait(
-            self.engine_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.first_host_ip, self.host_name, config.HOST_NONRESPONSIVE
+        self.first_host_ip = {'address': [self.first_host_ip]}
+
+        assert storage_helpers.perform_iptables_action_and_wait(
+            'block', self.engine_ip, self.first_host_ip, self.host_name,
+            config.HOST_NONRESPONSIVE
         )
 
-        assert storage_helpers.unblock_and_wait(
-            self.engine_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.first_host_ip, self.host_name
+        assert storage_helpers.perform_iptables_action_and_wait(
+            'unblock', self.engine_ip, self.first_host_ip, self.host_name,
+            config.HOST_UP
         )
 
 

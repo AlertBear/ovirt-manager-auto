@@ -8,7 +8,6 @@ Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
 """
 import logging
 import config
-from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
@@ -244,9 +243,6 @@ class TestCase5302(BasicEnvironment):
         logger.info('Checking if domain %s is attached to dc %s',
                     self.non_master, config.DATA_CENTER_NAME)
 
-        host_obj = rhevm_helpers.get_host_resource(
-            self.host_ip, config.HOSTS_PW
-        )
         non_master_domains = ll_sd.findNonMasterStorageDomains(
             True, config.DATA_CENTER_NAME
         )[1]['nonMasterDomains']
@@ -261,8 +257,9 @@ class TestCase5302(BasicEnvironment):
             ll_sd.attachStorageDomain(
                 True, config.DATA_CENTER_NAME, self.non_master, wait=False
             )
-            assert host_obj.firewall.chain('OUTPUT').add_rule(
-                self.block_dest, 'DROP'
+
+            assert storage_helpers.setup_iptables(
+                self.host_ip, self.block_dest, block=True
             )
 
         non_master_domains = ll_sd.findNonMasterStorageDomains(
@@ -272,7 +269,9 @@ class TestCase5302(BasicEnvironment):
             self.imported = True
             # TODO: Expected results are not clear
 
-        host_obj.firewall.chain('OUTPUT').delete_rule(self.block_dest, 'DROP')
+        storage_helpers.setup_iptables(
+            self.host_ip, self.block_dest, block=False
+        )
 
 
 @pytest.mark.usefixtures(

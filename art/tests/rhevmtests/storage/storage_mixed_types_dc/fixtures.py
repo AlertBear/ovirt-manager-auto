@@ -105,7 +105,7 @@ def init_parameters(request, storage):
         "Couldn't get storage domain address for storage domain %s"
         % self.master_domain
     )
-    self.storage_domain_ip = master_address['address']
+    self.storage_domain_ip = master_address
 
 
 @pytest.fixture(scope='class')

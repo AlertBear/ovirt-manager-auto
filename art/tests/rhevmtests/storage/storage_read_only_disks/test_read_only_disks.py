@@ -28,14 +28,14 @@ from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.networking.helper import seal_vm
 from rhevmtests.storage import helpers as storage_helpers
 from fixtures import (
-    initialize_template_name,
+    initialize_template_name, initialize_params_for_unblock,
 )
 from rhevmtests.storage.fixtures import (
     create_vm, add_disk_permutations,
     attach_and_activate_disks, create_snapshot,
     delete_disks, remove_vm_from_export_domain,
-    remove_template, unblock_connectivity_storage_domain_teardown,
-    create_second_vm, remove_vms, initialize_storage_domains, detach_disks
+    remove_template, create_second_vm, remove_vms, initialize_storage_domains,
+    detach_disks,
 )
 
 from rhevmtests.storage.fixtures import remove_vm  # noqa
@@ -419,11 +419,8 @@ class TestCase4912(BaseTestCase):
         """
 
 
-@pytest.mark.skip(
-    reason="rrmngmnt Firewall module which is used in this case not merged yet"
-)
 @pytest.mark.usefixtures(
-    unblock_connectivity_storage_domain_teardown.__name__,
+    initialize_params_for_unblock.__name__,
 )
 class TestCase4913(DefaultEnvironment):
     """
@@ -442,7 +439,6 @@ class TestCase4913(DefaultEnvironment):
 
     @polarion("RHEVM3-4913")
     @tier4
-    @bz({'1431432': {}})
     def test_RO_persistent_after_block_connectivity_to_storage(self):
         """
         - VM with OS
@@ -485,7 +481,7 @@ class TestCase4913(DefaultEnvironment):
         assert vm_host, "Failed to get VM: %s hoster" % self.vm_name
         self.host_ip = ll_hosts.get_host_ip(vm_host)
         logger.info("Blocking connection from vdsm to storage domain")
-        status = rhevm_helpers.config_iptables_connection(
+        status = storage_helpers.setup_iptables(
             self.host_ip, self.storage_domain_ip, block=True
         )
 
@@ -515,7 +511,7 @@ class TestCase4913(DefaultEnvironment):
             )
 
         logger.info("Unblocking connection from vdsm to storage domain")
-        status = rhevm_helpers.config_iptables_connection(
+        status = storage_helpers.setup_iptables(
             self.host_ip, self.storage_domain_ip, block=False
         )
         if status:

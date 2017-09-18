@@ -921,10 +921,9 @@ def unblock_connectivity_storage_domain_teardown(request, storage):
     self = request.node.cls
 
     def finalizer():
-        assert storage_helpers.unblockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip
-        ), "Failed to block connection from %s to %s" % (
+        assert storage_helpers.setup_iptables(
+            self.host_ip, self.storage_domain_ip, block=False
+        ), "Failed to unblock connection from %s to %s" % (
             self.host_ip, self.storage_domain_ip
         )
 
@@ -949,7 +948,7 @@ def initialize_variables_block_domain(request, storage):
     self.host_ip = ll_hosts.get_host_ip(self.host)
     found, address = ll_sd.getDomainAddress(True, self.storage_domain)
     assert found, "IP for storage domain %s not found" % self.storage_domain
-    self.storage_domain_ip = address['address']
+    self.storage_domain_ip = address
 
 
 @pytest.fixture()

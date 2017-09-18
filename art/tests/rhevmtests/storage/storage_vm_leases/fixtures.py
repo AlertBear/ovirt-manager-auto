@@ -20,11 +20,10 @@ def unblock_engine_to_host(request, storage):
     def finalizer():
         testflow.teardown(
             "Unblock connection from engine %s to host %s",
-            config.ENGINE.host.ip, config.PLACEMENT_HOST_IP
+            config.VDC, config.PLACEMENT_HOST_IP
         )
-        storage_helpers.unblockOutgoingConnection(
-            config.ENGINE.host.ip, config.HOSTS_USER, config.HOSTS_PW,
-            config.PLACEMENT_HOST_IP
+        storage_helpers.setup_iptables(
+            config.VDC, {'address': [config.PLACEMENT_HOST_IP]}, block=False
         )
 
     request.addfinalizer(finalizer)
@@ -42,11 +41,10 @@ def unblock_host_to_storage_domain(request, storage):
             "Unblock connection from host %s to storage domain %s",
             config.PLACEMENT_HOST, self.storage_domain
         )
-        for ip in self.storage_domain_ips:
-            storage_helpers.unblockOutgoingConnection(
-                config.PLACEMENT_HOST_IP, config.HOSTS_USER, config.HOSTS_PW,
-                ip
-            )
+        storage_helpers.setup_iptables(
+            config.PLACEMENT_HOST_IP, {'address': self.storage_domain_ips},
+            block=False
+        )
 
     request.addfinalizer(finalizer)
 

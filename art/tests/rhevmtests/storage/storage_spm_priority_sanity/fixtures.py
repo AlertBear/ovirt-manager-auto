@@ -10,6 +10,7 @@ from art.unittest_lib import testflow
 from rhevmtests.storage.fixtures import (
     unblock_connectivity_storage_domain_teardown
 )  # flake8: noqa
+from utilities import utils
 
 logger = logging.getLogger(__name__)
 
@@ -194,20 +195,22 @@ def init_host_and_sd_params(request, storage):
     self.non_master = non_master_obj['nonMasterDomains'][0]
     self.storage_domain_ip = ll_sd.getDomainAddress(
         True, self.non_master
-    )[1]['address']
+    )[1]
 
 
 @pytest.fixture()
-def init_params_for_unblock(
+def init_params_for_block_unblock(
     request, unblock_connectivity_storage_domain_teardown
 ):
     """
-    Initialize parameters for unblock connectivity teardown
+    Initialize parameters for block fixture and unblock connectivity teardown
     """
     self = request.node.cls
 
     def finalizer():
-        self.host_ip = ll_hosts.get_host_ip(self.high_spm_priority_host)
         self.storage_domain_ip = self.engine_ip
+
+    self.host_ip = ll_hosts.get_host_ip(self.high_spm_priority_host)
+    self.engine_ip = {'address': [utils.getIpAddressByHostName(config.VDC)]}
 
     request.addfinalizer(finalizer)

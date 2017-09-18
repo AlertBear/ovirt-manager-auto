@@ -17,8 +17,8 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-from utilities.machine import Machine
 import random
+import shlex
 from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Disk, Fault
@@ -28,6 +28,8 @@ from art.rhevm_api.tests_lib.low_level.general import (
 )
 from art.rhevm_api.utils.test_utils import get_api, waitUntilGone
 from art.test_handler.settings import ART_CONFIG
+from rrmngmnt.host import Host as HostResource
+from rrmngmnt.user import User
 
 
 ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
@@ -679,8 +681,8 @@ def checksum_disk(hostname, user, password, disk_object, dc_obj):
     Return:
         Checksum output, or raise exception otherwise
     """
-    host_machine = Machine(host=hostname, user=user,
-                           password=password).util('linux')
+    host_resource = HostResource(hostname)
+    host_resource.users.append(User(user, password))
 
     vol_id = disk_object.get_image_id()
     sd_id = disk_object.get_storage_domains().get_storage_domain()[0].get_id()
@@ -690,13 +692,17 @@ def checksum_disk(hostname, user, password, disk_object, dc_obj):
     block = sd.get_type() in BLOCK_DEVICES
 
     if block:
-        host_machine.lv_change(sd_id, vol_id, activate=True)
+        host_resource.lvm.lvchange(sd_id, vol_id, activate=True)
 
-    vol_path = host_machine.get_volume_path(sd_id, sp_id, image_id, vol_id)
-    checksum = host_machine.checksum(vol_path)
+    vol_path = host_resource.executor().run_cmd(
+        shlex.split("lvs -o path | grep %s" % vol_id)
+    )[1]
+    checksum = host_resource.executor().run_cmd(
+        shlex.split("md5sum %s" % vol_path)
+    )[1]
 
     if block:
-        host_machine.lv_change(sd_id, vol_id, activate=False)
+        host_resource.lvm.lvchange(sd_id, vol_id, activate=False)
 
     return checksum
 

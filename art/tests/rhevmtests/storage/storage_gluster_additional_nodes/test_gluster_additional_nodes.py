@@ -89,8 +89,8 @@ class BaseGlusterMount(BaseTestCase):
             logger.info(
                 "Blocking source %s from target %s", cls.host_ip, node_ip
             )
-            assert storage_helpers.blockOutgoingConnection(
-                cls.host_ip, config.HOSTS_USER, config.HOSTS_PW, node_ip
+            assert storage_helpers.setup_iptables(
+                cls.host_ip, node_ip, block=True
             ), (
                 "Unable to block connection to gluster node %s from host %s" %
                 (node_ip, cls.host_ip)
@@ -108,8 +108,8 @@ class BaseGlusterMount(BaseTestCase):
             logger.info(
                 "Unblocking source %s from target %s", cls.host_ip, node_ip
             )
-            assert storage_helpers.unblockOutgoingConnection(
-                cls.host_ip, config.HOSTS_USER, config.HOSTS_PW, node_ip
+            assert storage_helpers.setup_iptables(
+                cls.host_ip, node_ip, block=False
             ), "Unblock connection to gluster node %s from host %s failed" % (
                 node_ip, cls.host_ip
             )

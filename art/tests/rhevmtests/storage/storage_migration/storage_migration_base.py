@@ -1598,7 +1598,7 @@ class TestCase6000(BaseTestCase):
     storage_domain_ip = None
 
     def _migrate_vm_disk_and_block_connection(
-        self, disk, source, username, password, target, target_ip
+        self, disk, source, target, target_ip
     ):
         testflow.step("Start VM %s", self.vm_name)
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
@@ -1608,8 +1608,8 @@ class TestCase6000(BaseTestCase):
         )
         ll_vms.migrate_vm_disk(self.vm_name, disk, target, wait=False)
         testflow.step("Block connection between %s to %s", source, target_ip)
-        status = storage_helpers.blockOutgoingConnection(
-            source, username, password, target_ip
+        status = storage_helpers.setup_iptables(
+            source, target_ip, block=True
         )
         assert status, "Failed to block connection"
 
@@ -1632,10 +1632,9 @@ class TestCase6000(BaseTestCase):
         )
         status, target_sd_ip = ll_sd.getDomainAddress(True, self.target_sd)
         assert status
-        self.storage_domain_ip = target_sd_ip['address']
+        self.storage_domain_ip = target_sd_ip
         self._migrate_vm_disk_and_block_connection(
-            vm_disk, self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.target_sd, self.storage_domain_ip
+            vm_disk, self.host_ip, self.target_sd, self.storage_domain_ip
         )
         storage_helpers.wait_for_disks_and_snapshots(
             [self.vm_name], live_operation=config.LIVE_MOVE
@@ -2201,9 +2200,8 @@ class TestCase5981(AllPermutationsDisks):
                 "Block connection between %s to %s",
                 self.host_ip, self.storage_domain_ip
             )
-            assert storage_helpers.blockOutgoingConnection(
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-                self.storage_domain_ip
+            assert storage_helpers.setup_iptables(
+                self.host_ip, self.storage_domain_ip, block=True
             )
 
             ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
@@ -2213,9 +2211,8 @@ class TestCase5981(AllPermutationsDisks):
                 "Unblock connection between %s to %s",
                 self.host_ip, self.storage_domain_ip
             )
-            assert storage_helpers.unblockOutgoingConnection(
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-                self.storage_domain_ip
+            assert storage_helpers.setup_iptables(
+                self.host_ip, self.storage_domain_ip, block=False
             )
             assert ll_hosts.wait_for_spm(
                 config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
@@ -2328,15 +2325,14 @@ class TestCase5974(BaseTestCase):
             vm_disk, cls.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
         status, target_sd_ip = ll_sd.getDomainAddress(True, cls.target_sd)
-        cls.storage_domain_ip = target_sd_ip.get('address')
+        cls.storage_domain_ip = target_sd_ip
         assert status
         testflow.step(
             "Block connection between %s to %s", cls.host_ip,
             cls.storage_domain_ip
         )
-        assert storage_helpers.blockOutgoingConnection(
-            cls.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            cls.storage_domain_ip
+        assert storage_helpers.setup_iptables(
+            cls.host_ip, cls.storage_domain_ip, block=True
         ), "Failed to block connection from host %s to storage domain %s" % (
             cls.host_ip, cls.storage_domain_ip
         )
@@ -2345,7 +2341,7 @@ class TestCase5974(BaseTestCase):
             cls.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
             target_domain=cls.target_sd
         )
-        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        storage_helpers.wait_for_disks_and_snapshots([cls.vm_name])
         assert not ll_vms.verify_vm_disk_moved(
             cls.vm_name, vm_disk, source_sd, target_sd=cls.target_sd
         ), "Succeeded to migrate VM disk %s" % vm_disk

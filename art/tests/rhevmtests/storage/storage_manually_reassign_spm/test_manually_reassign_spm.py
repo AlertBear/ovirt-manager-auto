@@ -69,15 +69,14 @@ class ReassignSPMWithStorageBlocked(BasicEnvironment):
         :type positive: bool
         """
         testflow.step(
-            "Blocking connection between %s and %s",
-            (self.origin_host_address, self.target_host_address)
+            "Blocking connection between %s and %s", self.origin_host_address,
+            self.non_master_domain
         )
-        assert storage_helpers.blockOutgoingConnection(
-            self.origin_host_address, config.HOSTS_USER, config.HOSTS_PW,
-            self.target_host_address
+        assert storage_helpers.setup_iptables(
+            self.origin_host_address, self.target_host_address, block=True
         ), (
             "Unable to block connection between %s and %s" %
-            (self.origin_host_address, self.target_host_address)
+            (self.origin_host_address, self.non_master_domain)
         )
 
         self.blocked_domain = self.origin_host_address

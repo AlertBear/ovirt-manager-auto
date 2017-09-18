@@ -34,13 +34,13 @@ def init_non_master_domains_params(request, storage):
         True, self.non_master_domain
     )
     assert rc, (
-        "Could not get the address of '%s'" % self.non_master_address
+        "Could not get the address of '%s'" % self.non_master_domain
     )
-    self.non_master_address = non_master_address['address']
+    self.non_master_address = non_master_address
 
     logger.info(
         'Found non-master %s domain in address: %s',
-        self.non_master_domain, self.non_master_address
+        self.non_master_domain, self.non_master_address['address']
     )
 
 
@@ -52,16 +52,16 @@ def flush_iptable_block(request, storage):
     self = request.node.cls
 
     def finalizer():
+        self.blocked_domain = ll_hosts.get_host_ip(self.spm_host)
         testflow.teardown(
             "Unblocking connection between %s and %s" % (
-                self.blocked_domain, self.target_host_address
+                self.blocked_domain, self.non_master_address['address']
             )
         )
-        assert storage_helpers.unblockOutgoingConnection(
-            self.blocked_domain, config.HOSTS_USER, config.HOSTS_PW,
-            self.target_host_address
+        assert storage_helpers.setup_iptables(
+            self.blocked_domain, self.non_master_address, block=False
         ), "Failed to unblock connection between %s and %s" % (
-            self.target_host_address, self.blocked_domain
+            self.blocked_domain, self.non_master_address['address']
         )
 
         assert ll_dc.waitForDataCenterState(
@@ -71,7 +71,7 @@ def flush_iptable_block(request, storage):
             config.DATA_CENTER_NAME
         )
         assert ll_hosts.wait_for_hosts_states(
-            True, self.blocked_domain_name
+            True, self.spm_host
         ), ("Host %s failed to reach status 'up'" % self.spm_host)
     request.addfinalizer(finalizer)
 
