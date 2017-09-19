@@ -8,6 +8,7 @@ Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
 """
 import logging
 import config
+from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
@@ -41,7 +42,7 @@ from fixtures import (
     add_non_master_storage_domain, remove_template_setup, create_vm_func_lvl,
     remove_storage_domain_setup, attach_and_activate_storage_domain,
     attach_disk_to_cloned_vm, delete_snapshot_setup, initialize_disk_params,
-    block_connection_to_sd, unblock_connection_to_sd
+    block_connection_to_sd, unblock_connection_to_sd, wait_for_dc_state,
 )
 from art.unittest_lib.common import testflow
 import pytest
@@ -217,6 +218,10 @@ class TestCase5300(BasicEnvironment):
         vm_names.append(self.cloned_vm)
 
 
+@pytest.mark.usefixtures(
+    add_non_master_storage_domain.__name__,
+    wait_for_dc_state.__name__,
+)
 class TestCase5302(BasicEnvironment):
     """
     IP block during import domain
@@ -225,15 +230,8 @@ class TestCase5302(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '5302'
-
-    def setUp(self):
-        self.imported = False
-        super(TestCase5302, self).setUp()
-
-        self._secure_deactivate_detach_storage_domain(
-            config.DATA_CENTER_NAME, self.non_master
-        )
-        self.host_ip = ll_hosts.get_host_ip(config.HOSTS[0])
+    imported = False
+    block_dest = dict()
 
     @polarion("RHEVM3-5302")
     @tier4
@@ -247,13 +245,15 @@ class TestCase5302(BasicEnvironment):
         logger.info('Checking if domain %s is attached to dc %s',
                     self.non_master, config.DATA_CENTER_NAME)
 
+        host_obj = rhevm_helpers.get_host_resource(
+            self.host_ip, config.HOSTS_PW
+        )
         non_master_domains = ll_sd.findNonMasterStorageDomains(
             True, config.DATA_CENTER_NAME
-        )
+        )[1]['nonMasterDomains']
+        self.block_dest['address'] = [config.VDC]
 
-        if self.non_master not in [
-            sd['nonMasterDomains'] for sd in non_master_domains
-        ]:
+        if self.non_master not in [sd for sd in non_master_domains]:
             logger.info(
                 'Attaching domain %s to dc %s' % (
                     self.non_master, config.DATA_CENTER_NAME
@@ -262,26 +262,18 @@ class TestCase5302(BasicEnvironment):
             ll_sd.attachStorageDomain(
                 True, config.DATA_CENTER_NAME, self.non_master, wait=False
             )
-
-            assert storage_helpers.blockOutgoingConnection(
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW, config.VDC
+            assert host_obj.firewall.chain('OUTPUT').add_rule(
+                self.block_dest, 'DROP'
             )
 
         non_master_domains = ll_sd.findNonMasterStorageDomains(
             True, config.DATA_CENTER_NAME
         )
-        if self.non_master in [
-            sd['nonMasterDomains'] for sd in non_master_domains
-        ]:
+        if self.non_master in [sd for sd in non_master_domains]:
             self.imported = True
             # TODO: Expected results are not clear
 
-    def tearDown(self):
-        storage_helpers.unblockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, config.VDC
-        )
-        ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-        super(TestCase5302, self).tearDown()
+        host_obj.firewall.chain('OUTPUT').delete_rule(self.block_dest, 'DROP')
 
 
 @pytest.mark.usefixtures(

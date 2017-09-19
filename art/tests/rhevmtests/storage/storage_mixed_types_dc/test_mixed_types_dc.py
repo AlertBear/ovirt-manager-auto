@@ -568,13 +568,6 @@ class TestCase4555(IscsiNfsSD):
     __test__ = False  # Not running on FC
     polarion_test_case = '4555'
 
-    def setUp(self):
-        """
-        * Create ISCSI and NFS SDs.
-        * Create a disk on each SD.
-        """
-        super(TestCase4555, self).setUp()
-
     @polarion("RHEVM3-4555")
     @tier2
     def test_move_between_types(self):

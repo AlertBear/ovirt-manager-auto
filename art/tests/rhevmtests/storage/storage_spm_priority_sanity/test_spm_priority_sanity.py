@@ -21,12 +21,12 @@ from art.unittest_lib import (
 )
 from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from rhevmtests.storage.fixtures import (
-    set_spm_priorities,
+    set_spm_priorities, unblock_connectivity_storage_domain_teardown,
 )
 from rhevmtests.storage.storage_spm_priority_sanity.fixtures import (
     wait_for_spm, remove_host, deactivate_hsm_hosts, initialize_hosts_params,
     activate_old_master_domain, set_different_host_priorities,
-    check_hosts_status
+    check_hosts_status, init_host_and_sd_params, init_params_for_unblock,
 )
 from utilities import utils
 
@@ -528,6 +528,10 @@ class TestCase6221(BasicEnvironment):
         )
 
 
+@pytest.mark.usefixtures(
+    initialize_hosts_params.__name__,
+    init_params_for_unblock.__name__,
+)
 class TestCase6215(BasicEnvironment):
     """
     RHEVM3-6215 - Host with higher SPM Priority not responding
@@ -539,25 +543,6 @@ class TestCase6215(BasicEnvironment):
     former_spm = None
     polarion_test_case = '6215'
 
-    def setUp(self):
-        """
-        Set different SPM priorities to each host
-        """
-        super(TestCase6215, self).setUp()
-        new_priority = range(1, len(self.hsm_hosts) + 1)
-        self.set_priorities(priorities=new_priority, hosts=self.hsm_hosts)
-
-        self.second_spm_priority_host = self.hsm_hosts[1]
-        self.max_spm_priority_host = self.hsm_hosts[2]
-        self.max_spm_priority_host_ip = ll_hosts.get_host_ip(
-            self.max_spm_priority_host
-        )
-        self.engine_ip = utils.getIpAddressByHostName(config.VDC)
-        logger.info(
-            "Host '%s' has the highest SPM priority and next is %s",
-            self.max_spm_priority_host, self.second_spm_priority_host
-        )
-
     @polarion("RHEVM3-6215")
     @tier4
     def test_highest_spm_priority_host_non_responsive(self):
@@ -568,61 +553,31 @@ class TestCase6215(BasicEnvironment):
         Expected result: HSM with the next highest SPM priority is selected
         as SPM
         """
+        self.engine_ip = utils.getIpAddressByHostName(config.VDC)
+        new_priority = range(1, len(self.hsm_hosts) + 1)
+        self.set_priorities(priorities=new_priority, hosts=self.hsm_hosts)
         helpers.deactivate_and_verify_hosts(hosts=[self.spm_host])
         logger.info(
             "Blocking connection between %s and %s", self.engine_ip,
-            self.max_spm_priority_host
+            self.high_spm_priority_host
         )
         self.former_spm = self.spm_host
         assert storage_helpers.blockOutgoingConnection(
-            self.max_spm_priority_host_ip, config.HOSTS_USER,
+            self.high_spm_priority_host, config.HOSTS_USER,
             config.HOSTS_PW, self.engine_ip
         ), "Unable to block connection between %s and %s" % (
-            self.max_spm_priority_host_ip, self.engine_ip
+            self.high_spm_priority_host, self.engine_ip
         )
         self.wait_for_spm_host_and_verify_identity(
-            self.second_spm_priority_host
+            self.low_spm_priority_host
         )
 
-    def tearDown(self):
-        """
-        Unblock connection between the engine and the host and
-        activate the former SPM host
-        """
-        logger.info(
-            "Unblock connection between %s and %s", self.max_spm_priority_host,
-            self.engine_ip
-        )
-        if not storage_helpers.unblockOutgoingConnection(
-            self.max_spm_priority_host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.engine_ip
-        ):
-            logger.error(
-                "Failed to unblock connection between %s and %s",
-                self.max_spm_priority_host, self.engine_ip
-            )
-            BaseTestCase.test_failed = True
-        if not ll_hosts.wait_for_hosts_states(
-            True, self.max_spm_priority_host
-        ):
-            logger.error(
-                "Host failed to reach 'UP' state %s",
-                self.max_spm_priority_host
-            )
-            BaseTestCase.test_failed = True
-        if not ll_hosts.activate_host(True, self.former_spm):
-            logger.error(
-                "Failed to activate host '%s'", self.former_spm
-            )
-            BaseTestCase.test_failed = True
-        if not ll_hosts.wait_for_hosts_states(True, self.former_spm):
-            logger.error(
-                "Host failed to reach 'UP' state %s", self.former_spm
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase6215, self).tearDown()
 
-
+@pytest.mark.usefixtures(
+    init_host_and_sd_params.__name__,
+    check_hosts_status.__name__,
+    unblock_connectivity_storage_domain_teardown.__name__,
+)
 class TestCase6219(BasicEnvironment):
     """
     RHEVM3-6219 - Storage disconnection and SPM re-election
@@ -630,38 +585,8 @@ class TestCase6219(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6219'
     former_spm = None
-
-    def setUp(self):
-        """
-        Set HSM hosts SPM priority to '-1' and SPM host SPM priority to '10'
-        """
-        super(TestCase6219, self).setUp()
-        minus_one_priorities = (
-            [config.MIN_SPM_PRIORITY] * len(self.hsm_hosts)
-        )
-        self.set_priorities(
-            priorities=minus_one_priorities, hosts=self.hsm_hosts
-        )
-        self.set_priorities(
-            priorities=[config.MAX_SPM_PRIORITY], hosts=[self.spm_host]
-        )
-        self.spm_host_ip = ll_hosts.get_host_ip(
-            self.spm_host
-        )
-
-        logger.info(
-            "Search non-master storage domain to block on the SPM host"
-        )
-        found, non_master_obj = ll_sd.findNonMasterStorageDomains(
-            True, config.DATA_CENTER_NAME,
-        )
-        assert found, "Failed to find non-master storage domain"
-        non_master = non_master_obj['nonMasterDomains'][0]
-        rc, non_master_domain = ll_sd.getDomainAddress(
-            True, non_master
-        )
-        assert rc, "Could not get the address of '%s'" % non_master
-        self.non_master_storage_domain_ip = non_master_domain['address']
+    spm_priority = config.MAX_SPM_PRIORITY
+    block_spm_host = True
 
     @polarion("RHEVM3-6219")
     @tier4
@@ -675,14 +600,14 @@ class TestCase6219(BasicEnvironment):
         """
         logger.info(
             "Blocking connection between %s and %s", self.spm_host,
-            self.non_master_storage_domain_ip
+            self.storage_domain_ip
         )
         self.former_spm = self.spm_host
         assert storage_helpers.blockOutgoingConnection(
-            self.spm_host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.non_master_storage_domain_ip
+            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
+            self.storage_domain_ip
         ), "Unable to block connection between %s and %s" % (
-            self.spm_host, self.non_master_storage_domain_ip
+            self.spm_host, self.non_master
         )
         assert ll_hosts.wait_for_hosts_states(
             True, self.spm_host, states=config.HOST_NONOPERATIONAL
@@ -691,27 +616,3 @@ class TestCase6219(BasicEnvironment):
             priorities=[config.DEFAULT_SPM_PRIORITY], hosts=[self.hsm_hosts[0]]
         )
         self.wait_for_spm_host_and_verify_identity(self.hsm_hosts[0])
-
-    def tearDown(self):
-        """
-        Unblock connection between the former SPM and the storage domain
-        """
-        logger.info(
-            "Unblock connection between %s and %s", self.former_spm,
-            self.non_master_storage_domain_ip
-        )
-        if not storage_helpers.unblockOutgoingConnection(
-            self.spm_host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.non_master_storage_domain_ip
-        ):
-            logger.error(
-                "Failed to unblock connection between %s and %s",
-                self.former_spm, self.non_master_storage_domain_ip
-            )
-            BaseTestCase.test_failed = True
-        if not ll_hosts.wait_for_hosts_states(True, self.former_spm):
-            logger.error(
-                "Host failed to reach 'UP' state %s", self.former_spm
-            )
-            BaseTestCase.test_failed = True
-        super(TestCase6219, self).tearDown()

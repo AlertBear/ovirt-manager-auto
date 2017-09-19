@@ -11,6 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     templates as ll_templates,
     vms as ll_vms,
+    datacenters as ll_dc,
 )
 from art.rhevm_api.utils import test_utils
 from art.unittest_lib import testflow
@@ -42,6 +43,7 @@ def initialize_params(request):
         )
         assert status, "Unable to find master storage domain"
     self.host = ll_hosts.get_spm_host(config.HOSTS)
+    self.host_ip = ll_hosts.get_host_ip(config.HOSTS[0])
     self.non_master = storage_helpers.create_unique_object_name(
         self.__class__.__name__, config.OBJECT_TYPE_SD
     )
@@ -458,3 +460,20 @@ def unblock_connection_to_sd(request):
     test_utils.wait_for_tasks(
         config.ENGINE, config.DATA_CENTER_NAME
     )
+
+
+@pytest.fixture()
+def wait_for_dc_state(request):
+    """
+    Wait until Data center is in status OK finalizer
+    """
+    def finalizer():
+        testflow.teardown(
+            "Wait until Data center %s is in status OK",
+            config.DATA_CENTER_NAME
+        )
+        assert ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME), (
+            "Data center %s failed to reach state OK" % config.DATA_CENTER_NAME
+        )
+
+    request.addfinalizer(finalizer)

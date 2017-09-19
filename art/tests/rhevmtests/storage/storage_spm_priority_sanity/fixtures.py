@@ -2,12 +2,14 @@ import pytest
 import logging
 import config
 import helpers
-
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     storagedomains as ll_sd,
 )
 from art.unittest_lib import testflow
+from rhevmtests.storage.fixtures import (
+    unblock_connectivity_storage_domain_teardown
+)  # flake8: noqa
 
 logger = logging.getLogger(__name__)
 
@@ -154,8 +156,9 @@ def set_different_host_priorities(request):
         assert ll_hosts.set_spm_priority(True, host, priority), (
             'Unable to set host %s priority' % host
         )
+    self.spm_priority = getattr(self, 'spm_priority', 2)
     testflow.setup("Setting SPM priority for hosts: %s", self.spm_host)
-    assert ll_hosts.set_spm_priority(True, self.spm_host, 2), (
+    assert ll_hosts.set_spm_priority(True, self.spm_host, self.spm_priority), (
         'Unable to set host %s priority' % self.spm_host
     )
 
@@ -169,7 +172,41 @@ def check_hosts_status(request, activate_hosts):
 
     def finalizer():
         for host in config.HOSTS:
-            if ll_hosts.is_host_in_maintenance(True, host):
+            if ll_hosts.is_host_up(False, host):
                 self.hosts_to_activate.append(host)
+
+    request.addfinalizer(finalizer)
+
+
+@pytest.fixture()
+def init_host_and_sd_params(request):
+    """
+    Initialize host and storage domain for test
+    """
+    self = request.node.cls
+
+    self.host_ip = ll_hosts.get_host_ip(self.spm_host)
+    found, non_master_obj = ll_sd.findNonMasterStorageDomains(
+        True, config.DATA_CENTER_NAME,
+    )
+    assert found, "Failed to find non-master storage domain"
+    self.non_master = non_master_obj['nonMasterDomains'][0]
+    self.storage_domain_ip = ll_sd.getDomainAddress(
+        True, self.non_master
+    )[1]['address']
+
+
+@pytest.fixture()
+def init_params_for_unblock(
+    request, unblock_connectivity_storage_domain_teardown
+):
+    """
+    Initialize parameters for unblock connectivity teardown
+    """
+    self = request.node.cls
+
+    def finalizer():
+        self.host_ip = ll_hosts.get_host_ip(self.high_spm_priority_host)
+        self.storage_domain_ip = self.engine_ip
 
     request.addfinalizer(finalizer)

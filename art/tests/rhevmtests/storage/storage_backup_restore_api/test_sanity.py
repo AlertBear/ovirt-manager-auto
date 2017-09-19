@@ -6,12 +6,10 @@ Storage/3_3_Storage_Backup_API
 import logging
 import pytest
 import helpers
-from unittest2 import SkipTest
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     disks as ll_disks,
     hosts as ll_hosts,
-    storagedomains as ll_sd,
     templates as ll_templates,
     vms as ll_vms,
 )
@@ -29,7 +27,9 @@ from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import config
 from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage.fixtures import (
-    remove_template,
+    remove_template, initialize_storage_domains,
+    initialize_variables_block_domain,
+    unblock_connectivity_storage_domain_teardown,
 )
 from rhevmtests.storage.storage_backup_restore_api.fixtures import (
     initialize_params, create_source_vm, create_backup_vm, attach_backup_disk,
@@ -437,6 +437,11 @@ class TestCase6167(CreateTemplateFromVM):
         self._create_template()
 
 
+@pytest.mark.usefixtures(
+    initialize_storage_domains.__name__,
+    initialize_variables_block_domain.__name__,
+    unblock_connectivity_storage_domain_teardown.__name__,
+)
 class TestCase6168(BaseTestCase):
     """
     Block connection from host to storage domain 2 that contains
@@ -456,32 +461,6 @@ class TestCase6168(BaseTestCase):
     blocked = False
     attach_backup_disk = False
 
-    def setUp(self):
-        super(TestCase6168, self).setUp()
-
-        self.storage_domains = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )
-
-        self.host = ll_hosts.get_spm_host(config.HOSTS)
-        self.host_ip = ll_hosts.get_host_ip(self.host)
-
-        status, self.storage_domain_ip = ll_sd.getDomainAddress(
-            True, self.storage_domains[0]
-        )
-        if not status:
-            raise SkipTest(
-                "Unable to get storage domain %s address" %
-                self.storage_domains[0]
-            )
-
-        ll_vms.stop_vms_safely([self.backup_vm])
-        logger.info("Succeeded to stop vm %s", self.backup_vm)
-        hl_vms.move_vm_disks(self.backup_vm, self.storage_domains[1])
-        ll_vms.attach_backup_disk_to_vm(
-            self.src_vm, self.backup_vm, self.first_snapshot_description
-        )
-
     @polarion("RHEVM3-6168")
     @tier4
     def test_storage_failure_of_snapshot(self):
@@ -490,16 +469,21 @@ class TestCase6168(BaseTestCase):
         containing the snapshot of attached disk, cause the backup
         vm enter to paused status
         """
+        hl_vms.move_vm_disks(self.backup_vm, self.storage_domain_1)
+        ll_vms.attach_backup_disk_to_vm(
+            self.src_vm, self.backup_vm, self.first_snapshot_description
+        )
+
         ll_vms.start_vms([self.backup_vm], 1, config.VM_UP, True)
 
         logger.info(
             "Blocking connectivity from host %s to storage domain %s",
-            self.host, self.storage_domains[0]
+            self.host, self.storage_domain
         )
 
         status = storage_helpers.blockOutgoingConnection(
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip['address']
+            self.storage_domain_ip
         )
 
         if status:
@@ -513,29 +497,6 @@ class TestCase6168(BaseTestCase):
         assert vm_state == config.VM_PAUSED, (
             "vm %s should be in state paused" % self.backup_vm
         )
-
-    def tearDown(self):
-        """
-        Detach backup disk
-        """
-        logger.info(
-            "Unblocking connectivity from host %s to storage domain %s",
-            self.host, self.storage_domains[0]
-        )
-
-        status = storage_helpers.unblockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW,
-            self.storage_domain_ip['address']
-        )
-
-        if not status:
-            logger.error(
-                "Failed to unblock connectivity from host %s to storage "
-                "domain %s", self.host, self.storage_domains[0]
-            )
-            BaseTestCase.test_failed = True
-
-        super(TestCase6168, self).tearDown()
 
 
 class TestCase6169(BaseTestCase):
