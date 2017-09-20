@@ -9,7 +9,7 @@ from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.utils import test_utils
 from art.test_handler.exceptions import HostException
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,
     tier1,
@@ -147,6 +147,7 @@ class TestAddRemovePowerManagement(TestCase):
     Positive - add power management to host then remove it
     Test does not check PM only adding PM entity
     """
+    @bz({"1488755": {}})
     @polarion("RHEVM3-8840")
     def test_add_power_management(self):
         agent = {
@@ -178,6 +179,7 @@ class TestUpdatePowerManagementType(PowerManagement):
     """
     Positive - update power management type on host
     """
+    @bz({"1488755": {}})
     @polarion("RHEVM3-8841")
     def test_update_power_management_type(self):
         testflow.step(
@@ -201,6 +203,7 @@ class TestUpdatePowerManagementInvalidType(PowerManagement):
     """
     INVALID_TYPE = 'invalid_type'
 
+    @bz({"1488755": {}})
     @polarion("RHEVM3-8842")
     def test_update_power_management_invalid_type(self):
         testflow.step(
@@ -488,6 +491,7 @@ class TestAddSecondaryPowerManagement(PowerManagement):
     """
     Positive - add secondary power management
     """
+    @bz({"1488755": {}})
     @polarion("RHEVM3-8836")
     def test_add_secondary_power_management(self):
         agent = {
