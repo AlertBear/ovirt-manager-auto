@@ -1,5 +1,16 @@
 from art.test_handler.settings import ART_CONFIG as art_config
 
+parameters = art_config["PARAMETERS"]
+rest_connection = art_config["REST_CONNECTION"]
+enums = art_config["elements_conf"]["RHEVM Enums"]
+
+vdc_host = rest_connection["host"]
+vdc_port = rest_connection["port"]
+scheme = rest_connection.get("scheme")
+product = parameters['product_name']
+
+upstream_flag = 'ovirt' in product.lower()
+
 OVIRT_ENGINE = "ovirt-engine"
 
 HTTP_OK = 200
@@ -77,14 +88,6 @@ WEB_IDS = {
         "WelcomePage_pythonsdkGuidePDF"
     ]
 }
-
-parameters = art_config["PARAMETERS"]
-rest_connection = art_config["REST_CONNECTION"]
-enums = art_config["elements_conf"]["RHEVM Enums"]
-
-vdc_host = rest_connection["host"]
-vdc_port = rest_connection["port"]
-scheme = rest_connection.get("scheme")
 
 root_url = "{0}://{1}:{2}/{3}".format(
     scheme, vdc_host, vdc_port,

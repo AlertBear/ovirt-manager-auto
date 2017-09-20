@@ -14,7 +14,7 @@ def get_links():
         str: Link to a documentation resource.
     """
     requests.packages.urllib3.disable_warnings()
-
+    testflow.step("Using %s as url.", config.root_url)
     for resource in config.WEB_IDS.values():
         for id in resource:
             page = requests.get(config.root_url, verify=False)

@@ -1,10 +1,10 @@
+import pytest
+
 from art.test_handler.tools import polarion
-from art.unittest_lib import (
-    tier1,
-    CoreSystemTest,
-)
+from art.unittest_lib import CoreSystemTest, tier1
 
 from docs_links import check_links
+import config
 
 
 class TestDocsLinks(CoreSystemTest):
@@ -13,6 +13,9 @@ class TestDocsLinks(CoreSystemTest):
     """
     @staticmethod
     @polarion("RHEVM3-8689")
+    @pytest.mark.skipif(
+        config.upstream_flag, reason="Tests supported only on downstream"
+    )
     @tier1
     def test_docs_links():
         result, failed_link = check_links()
