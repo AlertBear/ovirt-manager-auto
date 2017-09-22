@@ -68,11 +68,12 @@ class TestMigrateNegativeCase2(VirtTest):
     @tier3
     @polarion("RHEVM3-5657")
     def test_migrate_vm_on_same_host(self):
+        host = ll_vms.get_vm_host(config.MIGRATION_VM)
         testflow.step("Negative step: Migrate vm on the same host")
         assert ll_vms.migrateVm(
             positive=False,
             vm=config.MIGRATION_VM,
-            host=config.HOSTS[0]
+            host=host
         ), 'migration success although'
         'migration to the same host is NOT supported'
 
