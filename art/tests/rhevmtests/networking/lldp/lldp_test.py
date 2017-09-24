@@ -7,7 +7,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.networking.config as conf
 from art.unittest_lib import NetworkTest, tier2
 from art.core_api import apis_utils
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.core_api import apis_exceptions
 from rhevmtests.networking.fixtures import (  # noqa: F401
     remove_all_networks,
@@ -20,6 +20,7 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
 
 @tier2
 @polarion("RHEVM-22039")
+@bz({"1494921": {}})
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     setup_networks_fixture.__name__
