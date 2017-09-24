@@ -1,5 +1,5 @@
 """
-Test power saving and even distribution scheduler policy 
+Test power saving and even distribution scheduler policy
 under different CPU and memory conditions
 """
 from art.test_handler.tools import polarion
@@ -33,7 +33,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad1(BasePSWithMemory):
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
-            expected_num_of_vms=2,
+            expected_num_of_vms=3,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -53,7 +54,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad2(BasePSWithMemory):
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
-            expected_num_of_vms=2,
+            expected_num_of_vms=3,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -75,6 +77,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad3(BasePSWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[0],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -95,7 +98,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad4(BasePSWithMemory):
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
-            expected_num_of_vms=2,
+            expected_num_of_vms=3,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -116,7 +120,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad5(BasePSWithMemory):
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
-            expected_num_of_vms=2,
+            expected_num_of_vms=3,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -137,7 +142,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad6(BasePSWithMemory):
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
-            expected_num_of_vms=2,
+            expected_num_of_vms=3,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -159,6 +165,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad7(BasePSWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -180,6 +187,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad8(BasePSWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -201,6 +209,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad9(BasePSWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -226,6 +235,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad10(BasePSWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -247,6 +257,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad11(BasePSWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -267,7 +278,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad12(BasePSWithMemory):
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
-            expected_num_of_vms=2,
+            expected_num_of_vms=3,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -288,7 +300,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad13(BasePSWithMemory):
         """
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
-            expected_num_of_vms=2,
+            expected_num_of_vms=3,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -640,6 +653,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad2(BaseEDWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -661,6 +675,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad3(BaseEDWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 
@@ -682,6 +697,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad4(BaseEDWithMemory):
         assert sch_helpers.is_balancing_happen(
             host_name=conf.HOSTS[1],
             expected_num_of_vms=2,
+            sampler_timeout=conf.LONG_BALANCE_TIMEOUT,
             additional_vms=conf.VM_NAME[4:6]
         )
 

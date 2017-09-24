@@ -154,6 +154,7 @@ DEFAULT_SCHEDULER_FILTERS = [
     "CpuPinning",
     "HostDevice",
     "Memory",
+    "Migration",
     VM_TO_HOST_AFFINITY_UNIT,
     "PinToHost",
     "Network"

@@ -123,7 +123,7 @@ def _start_and_wait_for_cpu_load_on_resources(load, hosts_d):
         raise errors.HostException()
     if not wait_for_hosts_cpu_load(
         hosts=hosts_d[conf.HOST],
-        expected_min_load=load - 5
+        expected_min_load=load - 10
     ):
         raise errors.HostException()
 
@@ -245,12 +245,12 @@ def wait_for_active_vms_on_host(
     )
     try:
         for sample in sampler:
-            active_vms = sample.get_summary().get_active()
+            total_vms = sample.get_summary().get_total()
             logger.info(
-                "Number of active VM's on the host %s: %s",
-                sample.get_name(), active_vms
+                "Number of total VM's on the host %s: %s",
+                sample.get_name(), total_vms
             )
-            if (active_vms == expected_num_of_vms) == (not negative):
+            if (total_vms == expected_num_of_vms) == (not negative):
                 return True
     except APITimeout:
         logger.error(
