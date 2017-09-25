@@ -31,6 +31,7 @@ from art.unittest_lib import (
 from art.unittest_lib.common import StorageTest, testflow
 from art.rhevm_api.utils import test_utils
 import rhevmtests.storage.helpers as storage_helpers
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from rhevmtests.storage.fixtures import (
     create_snapshot, remove_templates, remove_vms, initialize_storage_domains,
     create_disks_with_fs, create_dc, create_storage_domain, clean_dc,
@@ -239,6 +240,8 @@ class BaseKillSpmVdsm(basePlan.BaseTestCase, ColdMoveBase):
     """
     Base class for Kill SPM VDSM tests
     """
+    exception = False
+
     def basic_flow(self, migration_succeed=True):
         disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
 
@@ -262,32 +265,29 @@ class BaseKillSpmVdsm(basePlan.BaseTestCase, ColdMoveBase):
         sleep(5)
 
         testflow.step("Migrate VM %s", self.vm_name)
-        if migration_succeed:
-            ll_vms.migrate_vm_disks(
-                self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE,
-                ensure_on=config.LIVE_MOVE, target_domain=self.target_sd
-            )
-        else:
-            with pytest.raises(exceptions.DiskException):
-                ll_vms.migrate_vm_disks(
-                    self.vm_name, wait=False,
-                    same_type=config.MIGRATE_SAME_TYPE,
-                    ensure_on=config.LIVE_MOVE, target_domain=self.target_sd
-                )
+        try:
 
-        testflow.step(
-            "Wait for command %s to appear on the engine log file", self.regex
-        )
+            ll_vms.migrate_vm_disks(
+                self.vm_name, wait=False,
+                same_type=config.MIGRATE_SAME_TYPE,
+                ensure_on=config.LIVE_MOVE,
+                target_domain=self.target_sd
+            )
+        except exceptions.DiskException:
+            testflow.step("Exception raised during first storage migration")
+            self.exception = True
+        finally:
+            wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+
         t.join()
         storage_helpers.wait_for_disks_and_snapshots(
             [self.vm_name], live_operation=config.LIVE_MOVE
         )
         testflow.step(
-            "Verify migration %s after kill SPM VDSM process",
-            "Succeed" if migration_succeed else "Failed"
+            "Verify if migration succeeded after kill SPM VDSM process"
         )
         unsetisfied_disks = self.verify_cold_move(
-            source_sd=self.storage_domain, moved=False
+            source_sd=self.storage_domain, moved=not self.exception
         )
         if unsetisfied_disks is not None:
             for disk in unsetisfied_disks:
@@ -329,8 +329,9 @@ class TestCase18995(BaseKillSpmVdsm):
             - We should succeed in migrating all disks for the second time
             - Data on the disks should remain
         """
-        self.basic_flow(migration_succeed=False)
-        self.cold_migrate_vm_and_verify()
+        self.basic_flow()
+        if self.exception:
+            self.cold_migrate_vm_and_verify()
 
 
 class TestCase19059(BaseKillSpmVdsm):
@@ -354,7 +355,7 @@ class TestCase19059(BaseKillSpmVdsm):
             - We should succeed in migrating all disks
             - Data on the disks should remain
         """
-        self.basic_flow(migration_succeed=True)
+        self.basic_flow()
         assert self.check_files_after_operation()
 
 
@@ -574,31 +575,36 @@ class BaseBlockConnection(basePlan.BaseTestCase, ColdMoveBase):
 
         assert config.SOURCE, "HSM host was not found"
 
-        testflow.step(
-            "Block connection between %s to %s", config.SOURCE, target
-        )
-        assert storage_helpers.blockOutgoingConnection(
-            config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
-        ), "Failed to block connection"
+        try:
+            testflow.step(
+                "Block connection between %s to %s", config.SOURCE, target
+            )
+            assert storage_helpers.blockOutgoingConnection(
+                config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
+            ), "Failed to block connection"
 
-        hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
-        assert ll_hosts.wait_for_spm(
-            config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
-            config.WAIT_FOR_SPM_INTERVAL
-        ), (
-            'SPM was not elected on data-center %s' % config.DATA_CENTER_NAME
-        )
-        testflow.step(
-            "Unblock connection from %s to %s", config.SOURCE, target
-        )
-        assert storage_helpers.unblockOutgoingConnection(
-            config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
-        ), "Failed to unblock connection from host %s to %s" % (
-            config.SOURCE, target
-        )
-        storage_helpers.wait_for_disks_and_snapshots(
-            [self.vm_name], live_operation=config.LIVE_MOVE
-        )
+            hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
+            assert ll_hosts.wait_for_spm(
+                config.DATA_CENTER_NAME, config.WAIT_FOR_SPM_TIMEOUT,
+                config.WAIT_FOR_SPM_INTERVAL
+            ), (
+                'SPM was not elected on data-center %s' % (
+                    config.DATA_CENTER_NAME
+                )
+            )
+            testflow.step(
+                "Unblock connection from %s to %s", config.SOURCE, target
+            )
+            assert storage_helpers.unblockOutgoingConnection(
+                config.SOURCE, config.HOSTS_USER, config.HOSTS_PW, target
+            ), "Failed to unblock connection from host %s to %s" % (
+                config.SOURCE, target
+            )
+        finally:
+            wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+            storage_helpers.wait_for_disks_and_snapshots(
+                [self.vm_name], live_operation=config.LIVE_MOVE
+            )
         unsetisfied_disks = self.verify_cold_move(
             source_sd=self.storage_domain, moved=migration_succeed
         )
