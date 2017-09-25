@@ -23,7 +23,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
     tier2,
     tier3,
@@ -361,6 +361,7 @@ class TestCase19059(BaseKillSpmVdsm):
 @pytest.mark.usefixtures(
     create_disks_with_fs.__name__,
 )
+@bz({'1488015': {}})
 class BaseRestartEngine(basePlan.BaseTestCase, ColdMoveBase):
     """
     Base class for restart engine tests
