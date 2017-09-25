@@ -11,6 +11,7 @@ from art.unittest_lib import (
     tier1,
     tier2,
     tier3,
+    tier4,
 )
 from art.unittest_lib import StorageTest as BaseTestCase, testflow
 from art.test_handler.tools import bz, polarion
@@ -379,7 +380,7 @@ class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
     # is resolved
 
     @polarion("RHEVM3-11262")
-    @tier3
+    @tier4
     def test_no_space_left_same_domain(self):
         """
         Copy existing disk to the same storage domain
@@ -387,7 +388,7 @@ class TestCaseCopyDiskNoSpaceLeft(CopyDiskWithoutContent):
         self.basic_copy(positive=False)
 
     @polarion("RHEVM3-11263")
-    @tier3
+    @tier4
     def test_no_space_left_different_domain(self):
         """
         Copy existing disk to different storage domain

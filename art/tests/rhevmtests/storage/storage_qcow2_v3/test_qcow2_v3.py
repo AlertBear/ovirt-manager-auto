@@ -52,6 +52,7 @@ from rhevmtests.storage.fixtures import (
 from art.unittest_lib import (
     tier2,
     tier3,
+    tier4,
 )
 from art.unittest_lib import StorageTest as TestCase
 logger = logging.getLogger(__name__)
@@ -351,7 +352,7 @@ class TestCase18336(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18336")
-    @tier3
+    @tier4
     @bz({'1482454': {}})
     def test_failure_engine_during_amend(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
@@ -416,7 +417,7 @@ class TestCase18337(BaseTestCase2):
     installation = False
 
     @polarion("RHEVM3-18337")
-    @tier3
+    @tier4
     @bz({'1450692': {}})
     def test_failure_of_SPM_during_amend(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
@@ -664,7 +665,7 @@ class TestCase18305(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-18305")
-    @tier3
+    @tier4
     @bz({'1482454': {}})
     def test_restart_engine_during_upgrade_cluster(self):
         testflow.step(
@@ -704,7 +705,7 @@ class TestCase18334(BaseTestCase):
     __test__ = True
 
     @polarion("RHEVM3-18334")
-    @tier3
+    @tier4
     @bz({'1482454': {}})
     def test_restart_engine_during_upgrade_dc(self):
         self.data_center_upgrade_without_verification()
@@ -1052,7 +1053,7 @@ class TestCase18335(BaseTestCase):
     new_storage_domains_count = 2
 
     @polarion("RHEVM3-18335")
-    @tier3
+    @tier4
     def test_spm_failure_after_upgrade_dc_and_activate_sd(self):
         testflow.step("Deactivate non master domain %s", self.sd_names[1])
         assert ll_sd.deactivateStorageDomain(

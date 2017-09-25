@@ -13,6 +13,7 @@ from art.unittest_lib import (
     testflow,
     tier2,
     tier3,
+    tier4,
 )
 from art.rhevm_api.utils import test_utils, resource_utils, log_listener
 from art.rhevm_api.tests_lib.high_level import (
@@ -505,7 +506,7 @@ class TestCase18979(BaseClassKillProc):
     regex = 'CreateVolumeContainerCommand'
 
     @polarion("RHEVM3-18979")
-    @tier3
+    @tier4
     def test_kill_vdsm_on_spm_after_regex_copy_image(self):
         self.kill_vdsm_on_spm_after_regex_copy_image()
 
@@ -519,7 +520,7 @@ class TestCase18980(BaseClassKillProc):
     regex = 'CopyVolumeDataVDSCommand'
 
     @polarion("RHEVM3-18980")
-    @tier3
+    @tier4
     def test_kill_vdsm_on_spm_after_regex_copy_image(self):
         self.kill_vdsm_on_spm_after_regex_copy_image()
 
@@ -533,7 +534,7 @@ class TestCase16794(BaseClassKillProc):
     regex = 'CopyVolumeDataVDSCommand'
 
     @polarion("RHEVM3-16794")
-    @tier3
+    @tier4
     def test_restart_ovirt_engine_copy_image(self):
         self.get_lv_count_before()
 
@@ -568,7 +569,7 @@ class TestCase18981(BaseClassKillProc):
     hsm_host = None
 
     @polarion("RHEVM3-18981")
-    @tier3
+    @tier4
     def test_restart_hsm_after_regex_copy_data(self):
         self.get_lv_count_before()
 
