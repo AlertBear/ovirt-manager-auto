@@ -23,14 +23,14 @@ KEYTAB = '/etc/http.keytab'
 APACHE_FIXTURES = 'apache'
 APACHE_CONF = 'z-ovirt-sso.conf'
 
-OPENLDAP_HOST = resources.Host(config.OPENLDAP)
-OPENLDAP_HOST.users.append(
-    resources.RootUser(config.OPENLDAP_ROOT_PW)
-)
-
 
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
+    OPENLDAP_HOST = resources.Host(config.OPENLDAP)
+    OPENLDAP_HOST.users.append(
+        resources.RootUser(config.OPENLDAP_ROOT_PW)
+    )
+
     def finalize():
         testflow.teardown("Tearing down module %s", __name__)
 
