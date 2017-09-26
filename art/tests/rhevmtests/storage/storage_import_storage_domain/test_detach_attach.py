@@ -20,7 +20,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils import test_utils
-from art.test_handler import exceptions
 from art.test_handler.settings import ART_CONFIG
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
@@ -627,8 +626,7 @@ class TestCase12207(BaseCaseInitializeDataCenter):
         """
         self.execute_flow()
         testflow.step("Attaching storage domain %s", self.non_master)
-        with pytest.raises(exceptions.StorageDomainException):
-            hl_sd.attach_and_activate_domain(self.new_dc_name, self.non_master)
+        hl_sd.attach_and_activate_domain(self.new_dc_name, self.non_master)
         ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
         # set remove_param for fin_remove_storage_domain
         self.remove_param = {'format': 'true'}
