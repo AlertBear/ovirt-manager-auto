@@ -932,8 +932,11 @@ class TestCase4922(DefaultEnvironment):
         ll_vms.start_vms([self.cloned_vm_name], 1, wait_for_ip=True)
         ro_vm_disks = not_bootable(self.vm_name)
         for disk in ro_vm_disks:
+            disk_id = ll_disks.get_disk_attachment(
+                self.cloned_vm_name, disk.get_alias(), attr='name'
+            ).get_id()
             state, out = storage_helpers.perform_dd_to_disk(
-                self.cloned_vm_name, disk.get_alias(),
+                self.cloned_vm_name, disk_id, key='id'
             )
             logger.info("Trying to write to read-only disk %s", disk)
             status = (not state) and ((READ_ONLY in out) or
@@ -1019,7 +1022,7 @@ class TestCase4923(DefaultEnvironment):
 
                 logger.info("Trying to write to read-only disk %s", disk)
                 state, out = storage_helpers.perform_dd_to_disk(
-                    vm, disk.get_alias(),
+                    vm, disk.get_id(), key='id'
                 )
                 status = (not state) and (
                     (READ_ONLY in out) or (NOT_PERMITTED in out)

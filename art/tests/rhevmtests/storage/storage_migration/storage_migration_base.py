@@ -769,7 +769,7 @@ class TestCase5995(AllPermutationsDisks):
             self.vm_name, self.disk_to_move, target_sd
         )
         ll_vms.move_vm_disk(vm_name, self.disk_to_move, target_sd)
-        ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+        ll_disks.wait_for_disks_status([self.disk_to_move])
         target_sd = ll_disks.get_other_storage_domain(
             self.disk_to_move, vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
