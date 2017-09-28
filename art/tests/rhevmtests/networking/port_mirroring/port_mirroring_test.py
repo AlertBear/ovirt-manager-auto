@@ -32,7 +32,6 @@ from fixtures import (
 )
 
 
-@bz({"1481217": {}})
 @pytest.mark.usefixtures(port_mirroring_prepare_setup.__name__)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS,
@@ -42,6 +41,7 @@ class Base(NetworkTest):
     pass
 
 
+@bz({"1496719": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(return_vms_to_original_host.__name__)
 class TestPortMirroringCase01(Base):
