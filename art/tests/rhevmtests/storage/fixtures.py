@@ -701,6 +701,7 @@ def clean_dc(request):
     def finalizer():
         master_domain = None
         new_storage_domain = getattr(self, 'new_storage_domain', False)
+        new_dc_name = getattr(self, 'new_dc_name', config.DATA_CENTER_NAME)
         if new_storage_domain:
             master_domain = new_storage_domain
         else:
@@ -724,6 +725,7 @@ def clean_dc(request):
             testflow.teardown(
                 "Removing storage domain %s", self.storage_domain
             )
+            test_utils.wait_for_tasks(config.ENGINE, new_dc_name)
             assert ll_sd.removeStorageDomain(
                 True, master_domain, self.host_name, format='true',
             )

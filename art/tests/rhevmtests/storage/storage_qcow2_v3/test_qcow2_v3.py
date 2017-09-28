@@ -63,11 +63,11 @@ logger = logging.getLogger(__name__)
     init_spm_host.__name__,
     init_hsm_host.__name__,
     initialize_dc_parameters_for_upgrade.__name__,
-    create_dc.__name__,
-    create_one_or_more_storage_domains_same_type_for_upgrade.__name__,
     remove_unattached_domain.__name__,
     clean_dc.__name__,
     deactivate_and_remove_non_master_domains.__name__,
+    create_dc.__name__,
+    create_one_or_more_storage_domains_same_type_for_upgrade.__name__,
 )
 class BaseTestCase(TestCase):
     """
@@ -747,7 +747,7 @@ class TestCase18343(BaseTestCase3):
 
     @polarion("RHEVM3-18343")
     @tier2
-    @bz({'1489005': {}})
+    @bz({'1497117': {}})
     def test_live_migration_old_image(self):
         self.migration_test(live=config.LIVE_MIGRATION)
 
@@ -808,6 +808,7 @@ class TestCase18346(BaseTestCase):
     full_path_list = []
     image_name = config.GLANCE_QCOW2v2_IMAGE_NAME
 
+    @bz({'1497424': {}})
     @polarion("RHEVM3-18346")
     @tier2
     def test_live_merge_old_version_image_with_new_version_image(self):
