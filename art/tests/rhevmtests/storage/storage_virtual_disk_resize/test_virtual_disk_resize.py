@@ -33,14 +33,15 @@ from art.test_handler.settings import ART_CONFIG
 from rhevmtests.storage.fixtures import (
     create_vm, create_snapshot, add_disk, attach_disk,
     initialize_storage_domains, poweroff_vm, add_disk_permutations,
-    attach_and_activate_disks, delete_disk, init_host_or_engine_executor
+    attach_and_activate_disks, delete_disk, start_vm,
+    init_host_or_engine_executor
 )
 
-from rhevmtests.storage.fixtures import remove_vm # noqa
+from rhevmtests.storage.fixtures import remove_vm  # noqa
 
 from fixtures import (
-    initialize_attributes_start_vm, wait_for_disks_status_ok,
-    create_multiple_vms, add_vm_with_disk
+    initialize_attributes, wait_for_disks_status_ok,
+    create_multiple_vms, add_vm_with_disk, flush_ip_table
 )
 
 logger = logging.getLogger(__name__)
@@ -220,6 +221,7 @@ class BasicResize(BaseTestCase):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
+    start_vm.__name__,
     add_disk_permutations.__name__,
     attach_and_activate_disks.__name__,
     create_snapshot.__name__,
@@ -345,7 +347,8 @@ class TestCase5060(BaseTestCase):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     poweroff_vm.__name__,
@@ -379,7 +382,8 @@ class TestCase5062(BasicResize):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     poweroff_vm.__name__,
@@ -413,7 +417,8 @@ class TestCase5063(BasicResize):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     poweroff_vm.__name__,
@@ -449,7 +454,9 @@ class TestCase5065(BasicResize):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    flush_ip_table.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     poweroff_vm.__name__,
@@ -482,7 +489,9 @@ class TestCase5066(BasicResize):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    flush_ip_table.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     poweroff_vm.__name__,
@@ -515,7 +524,8 @@ class TestCase5067(BasicResize):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     delete_disk.__name__,
     attach_disk.__name__,
@@ -567,7 +577,8 @@ class TestCase5069(BasicResize):
 
 @pytest.mark.usefixtures(
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     wait_for_disks_status_ok.__name__,
@@ -611,7 +622,8 @@ class TestCase5070(BasicResize):
 @pytest.mark.usefixtures(
     init_host_or_engine_executor.__name__,
     create_vm.__name__,
-    initialize_attributes_start_vm.__name__,
+    start_vm.__name__,
+    initialize_attributes.__name__,
     add_disk.__name__,
     attach_disk.__name__,
     poweroff_vm.__name__,
@@ -623,7 +635,7 @@ class TestCase5071(BasicResize):
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = True
-    look_for_regex = 'Run and protect: extendVolumeSize'
+    look_for_regex = 'START extendVolumeSize'
 
     add_disk_params = {
         'sparse': True,

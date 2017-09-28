@@ -387,6 +387,7 @@ class TestCase5134(VMWithMemoryStateSnapshot):
     persist_network = True
 
     @polarion("RHEVM3-5134")
+    @bz({'1496805': {}})
     @tier2
     def test_import_vm_with_memory_state_snapshot(self):
         """

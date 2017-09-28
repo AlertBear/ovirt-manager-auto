@@ -519,7 +519,6 @@ class TestCase5042(HotplugHookTest):
 
     @polarion("RHEVM3-5042")
     @tier4
-    @pytest.mark.usefixtures("initializer_TestCase5042")
     def test_multiple_hooks(self):
         """
         Restart VDSM during before_disk_hotplug, action should fail

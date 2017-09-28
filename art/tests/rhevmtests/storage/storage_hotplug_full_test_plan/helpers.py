@@ -45,7 +45,7 @@ def create_vm_with_disks(storage_domain, storage_type):
         )
 
     config.DISKS_TO_PLUG.update({storage_type: []})
-    for index in xrange(7):
+    for index in xrange(8):
         config.DISKS_TO_PLUG[storage_type].append(
             (
                 "disk_to_plug_%s_%s" % (storage_type, str(index))

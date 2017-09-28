@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import shlex
+
 from concurrent.futures.thread import ThreadPoolExecutor
 from art.core_api.apis_utils import TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout
@@ -1466,14 +1467,14 @@ def kill_vdsm_on_hsm_executor(
     return ll_hosts.kill_vdsmd(host)
 
 
-def get_volume_info(hostname, disk_object, dc_obj):
+def get_volume_info(host, disk_object, dc_obj):
     """
     Get volume info from vdsm-client
 
     Author: ratamir
 
     Args:
-        hostname (str): IP or fqdn of the host
+        host (str): IP or fqdn of the host
         disk_object (Disk object): Disk object to return his volume info
         dc_obj (DataCenter object): Data center that the disk belongs to
 
@@ -1508,7 +1509,7 @@ def get_volume_info(hostname, disk_object, dc_obj):
         }
 
     """
-    host_resource = get_host_resource_by_name(hostname)
+    host_resource = get_host_resource_by_name(host)
 
     vol_id = disk_object.get_image_id()
     sd_id = disk_object.get_storage_domains().get_storage_domain()[0].get_id()
