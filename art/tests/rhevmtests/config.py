@@ -542,6 +542,13 @@ NO_EXTRA_BOND_MODE_SUPPORT = GE['extra_configuration_options'].get(
 NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % (
     "extra bond mode support"
 )
+NO_HYPERCONVERGED_SUPPORT = GE['extra_configuration_options'].get(
+    'not_hyperconverged', True
+)
+NO_HYPERCONVERGED_SUPPORT_SKIP_MSG = (
+    SKIP_MSG_PREFIX % "Test does not support hyperconverged env"
+)
+
 # used for tests that are not adjusted to GE or tests that we don't want to run
 DO_NOT_RUN = 17
 
