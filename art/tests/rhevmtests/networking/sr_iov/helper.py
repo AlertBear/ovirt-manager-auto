@@ -75,116 +75,97 @@ def create_bond_on_vm(vm_name, vm_resource, vnics, mode=1, proto="auto"):
     Raises:
         AssertionError: If creation of the BOND fails.
     """
-    vm_params = dict()
     bond = "bond1"
-    bond_created = False
-    for idx, vnic in enumerate(vnics):
-        inter = hl_networks.get_vm_interface_by_vnic(
-            vm=vm_name, vm_resource=vm_resource, vnic=vnic
+    remove_nm_controlled_cmd = (
+        "sed -i /NM_CONTROLLED/d /etc/sysconfig/network-scripts/ifcfg-{"
+        "interface}"
+    )
+    active_interface = vm_resource.network.get_info().get("interface")
+    assert not vm_resource.run_command(
+        command=shlex.split(remove_nm_controlled_cmd.format(
+            interface=active_interface)
         )
-        vm_params[vnic] = dict()
-        vm_params[vnic]["interface"] = inter
-        primary = True if idx == 0 else False
-        vm_params[vnic]["primary"] = primary
+    )[0]
+    assert not vm_resource.run_command(
+        command=shlex.split("nmcli connection reload")
+    )[0]
 
-        nmcli_add_con = [
-            "nmcli connection add type ethernet con-name {vnic} ifname"
-            " {inter}".format(vnic=vnic, inter=inter),
-            "nmcli connection modify id {vnic} ipv4.method disabled"
-            " ipv6.method ignore".format(vnic=vnic),
-            ]
-        assert not all(
-            [
-                vm_resource.run_command(
-                    command=shlex.split(cmd))[0] for cmd in
-                nmcli_add_con
-            ]
-        )
-        if not bond_created:
-            create_bond_cmds = [
-                "nmcli connection add type bond con-name {bond} ifname "
-                "bond1 mode {mode} {primary}".format(
-                    bond=bond, mode=mode, primary="primary {inter}".format(
-                        inter=inter
-                    ) if mode == 1 else ""
-                ),
-                "nmcli connection modify id {bond} ipv4.method {proto} "
-                "ipv6.method ignore".format(bond=bond, proto=proto)
-            ]
-            assert not all(
-                [
-                    vm_resource.run_command(
-                        command=shlex.split(cmd))[0] for cmd in
-                    create_bond_cmds
-                ]
-            )
-            bond_created = True
-
-        nmcli_add_slave = [
-            "nmcli connection modify id {vnic} connection.slave-type "
-            "bond connection.master {bond} connection.autoconnect "
-            "yes".format(bond=bond, vnic=vnic)
-        ]
-        assert not all(
-            [
-                vm_resource.run_command(
-                    command=shlex.split(cmd))[0] for cmd in
-                nmcli_add_slave
-            ]
-        )
-
-    nmcli_up_cmd = (
-        "nmcli connection down {con1};"
-        "nmcli connection down {con2};"
-        "nmcli connection up {con3};"
-        "nmcli connection up {con4};"
-        "nmcli connection up {bond}"
-    ).format(
-        con1=vnics[0],
-        con2=vnics[1],
-        con3=vnics[0],
-        con4=vnics[1],
-        bond=bond
+    secondary_interface = "System\ {active_interface}".format(
+        active_interface=active_interface
+    )
+    primary_interface = hl_networks.get_vm_interface_by_vnic(
+        vm=vm_name, vm_resource=vm_resource, vnic=vnics[0]
     )
 
-    for vnic, params in vm_params.iteritems():
-        second_vnic = filter(lambda x: x != vnic, vm_params.keys())[0]
-        nmcli_con_down_cmd = "nmcli connection down {con}"
-        nmcli_con_up_cmd = "nmcli connection up {con}"
-        inter = params.get("interface")
-        primary_inter = params.get("primary")
-        ip_link_cmd = "ip link show {inter}".format(inter=inter)
-        out = vm_resource.run_command(command=shlex.split(ip_link_cmd))[1]
-        if bond not in out:
-            if primary_inter:
-                try:
-                    vm_resource.run_command(
-                        command=shlex.split(
-                            nmcli_con_down_cmd.format(con=second_vnic)
-                        ), tcp_timeout=10, io_timeout=10
-                    )
-                    vm_resource.run_command(
-                        command=shlex.split(
-                            nmcli_con_down_cmd.format(con=vnic)
-                        ), tcp_timeout=10, io_timeout=10
-                    )
-                    vm_resource.run_command(
-                        command=shlex.split(
-                            nmcli_con_up_cmd.format(con=vnic)
-                        ), tcp_timeout=10, io_timeout=10
-                    )
-                    vm_resource.run_command(
-                        command=shlex.split(
-                            nmcli_con_up_cmd.format(con=second_vnic)
-                        ), tcp_timeout=10, io_timeout=10
-                    )
-                except socket.timeout:
-                    pass
+    # Create connection in NM for the new interface
+    nmcli_add_con = [
+        "nmcli connection add type ethernet con-name {primary_interface_1} "
+        "ifname {primary_interface_2}".format(
+            primary_interface_1=primary_interface,
+            primary_interface_2=primary_interface
+        ),
+        "nmcli connection modify id {primary_interface} ipv4.method disabled"
+        " ipv6.method ignore".format(primary_interface=primary_interface),
+    ]
+    assert not all(
+        [
+            vm_resource.run_command(
+                command=shlex.split(cmd))[0] for cmd in
+            nmcli_add_con
+        ]
+    )
 
+    # Create BOND
+    create_bond_cmds = [
+        "nmcli connection add type bond con-name {bond} ifname "
+        "bond1 mode {mode} {primary}".format(
+            bond=bond, mode=mode, primary="primary {primary_interface}".format(
+                primary_interface=primary_interface
+            ) if mode == 1 else ""
+        ),
+        "nmcli connection modify id {bond} ipv4.method {proto} "
+        "ipv6.method ignore".format(bond=bond, proto=proto)
+    ]
+    assert not all(
+        [
+            vm_resource.run_command(
+                command=shlex.split(cmd))[0] for cmd in
+            create_bond_cmds
+        ]
+    )
+
+    # Add the slaves to the BOND
+    for inter in primary_interface, secondary_interface:
+        nmcli_add_slave = (
+            "nmcli connection modify id {inter} connection.slave-type "
+            "bond connection.master {bond} connection.autoconnect "
+            "yes".format(bond=bond, inter=inter)
+        )
+        assert not vm_resource.run_command(
+            command=shlex.split(nmcli_add_slave)
+        )[0]
+
+    # Deactivate all connection and activate again to get the new configuration
+    nmcli_up_cmd = (
+        "nmcli connection down {primary_interface_1};"
+        "nmcli connection down {secondary_interface_1};"
+        "nmcli connection down {bond_1};"
+        "nmcli connection up {bond_2};"
+        "nmcli connection up {primary_interface_2};"
+        "nmcli connection up {secondary_interface_2}"
+    ).format(
+        primary_interface_1=primary_interface,
+        secondary_interface_1=secondary_interface,
+        bond_1=bond,
+        bond_2=bond,
+        primary_interface_2=primary_interface,
+        secondary_interface_2=secondary_interface
+    )
     try:
         vm_resource.run_command(
-            command=shlex.split(nmcli_up_cmd), tcp_timeout=10, io_timeout=10
-
+            command=shlex.split(
+                nmcli_up_cmd
+            ), tcp_timeout=10, io_timeout=10
         )
     except socket.timeout:
         pass
