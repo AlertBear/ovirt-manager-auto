@@ -127,14 +127,9 @@ def prepare_disks_for_vm(
             "Attaching disk %s as %s disk to vm %s", disk, is_ro, vm_name
         )
         assert ll_disks.attachDisk(
-            positive=True, alias=disk, vm_name=vm_name, active=False,
+            positive=True, alias=disk, vm_name=vm_name, active=True,
             read_only=read_only, interface=interface
         ), "Failed to attach disk %s to vm %s" % (disk, vm_name)
-
-        logger.info("Plugging disk %s", disk)
-        assert ll_vms.activateVmDisk(True, vm_name, disk), (
-            "Failed to plug disk %s to vm %s" % (disk, vm_name)
-        )
 
     with ThreadPoolExecutor(max_workers=len(disks_to_prepare)) as executor:
         for disk, interface in zip(disks_to_prepare, interfaces):
