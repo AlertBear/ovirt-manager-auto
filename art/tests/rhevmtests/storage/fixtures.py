@@ -711,23 +711,23 @@ def clean_dc(request, storage):
                 self, 'master_domain', config.MASTER_DOMAIN
             )
             found, storage_domain = ll_sd.findMasterStorageDomain(
-                True, self.new_dc_name
+                True, new_dc_name
             )
             if found:
                 master_domain = storage_domain['masterDomain']
 
         testflow.teardown(
-            "Clean data-center %s and remove it", self.new_dc_name
+            "Clean data-center %s and remove it", new_dc_name
         )
         storage_helpers.clean_dc(
-            self.new_dc_name, self.cluster_name, self.host_name,
+            new_dc_name, self.cluster_name, self.host_name,
             sd_name=master_domain
         )
         if new_storage_domain:
             testflow.teardown(
-                "Removing storage domain %s", self.storage_domain
+                "Removing storage domain %s", new_storage_domain
             )
-            test_utils.wait_for_tasks(config.ENGINE, new_dc_name)
+            test_utils.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
             assert ll_sd.removeStorageDomain(
                 True, master_domain, self.host_name, format='true',
             )
@@ -1310,6 +1310,7 @@ def import_image_from_glance(request, storage):
     )
 
     ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE])
+    ll_templates.waitForTemplatesStates([self.glance_template_name])
     # initialize for remove_templates fixture
     self.templates_names.append(self.glance_template_name)
 
