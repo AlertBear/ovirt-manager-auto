@@ -55,48 +55,13 @@ def get_iothreads_controllers(vm_xml):
         vm_xml (str): VM dump XML
 
     Returns:
-        dict: SCSI controllers(controller index -> controller IO thread)
+        list: list with SCSI controllers indexes
     """
-    controllers = dict()
-    for controller in re.findall(
+    return re.findall(
         pattern=conf.IOTHREADS_CONTROLLERS_REGEXP,
         string=vm_xml,
         flags=re.DOTALL
-    ):
-        controllers[int(controller[0])] = int(controller[1])
-    logger.debug("SCSI controllers: %s", controllers)
-    return controllers
-
-
-def get_vm_disks(vm_xml):
-    """
-    Get VM disks from VM dump XML
-
-    Args:
-        vm_xml (str): VM dump XML
-
-    Returns:
-        dict: VM disks(disk number -> {"type": "block", "iothread": 1})
-    """
-    disks = dict()
-    controllers = get_iothreads_controllers(vm_xml=vm_xml)
-
-    disk_number = 0
-    for pattern in (
-        conf.VIRTIO_DISKS_REGEXP, conf.VIRTIO_SCSI_DISKS_REGEXP
-    ):
-        disk_bus = conf.BUS_TYPES[pattern]
-        disks[disk_bus] = {}
-        for disk in re.findall(
-            pattern=pattern, string=vm_xml, flags=re.DOTALL
-        ):
-            iothread = int(disk[0])
-            if pattern == conf.VIRTIO_SCSI_DISKS_REGEXP:
-                iothread = controllers[iothread]
-            disks[disk_bus][disk_number] = iothread
-            disk_number += 1
-    logger.debug("VM disks: %s", disks)
-    return disks
+    )
 
 
 def check_iothreads_number(vm_xml, expected_number_of_iothreads):
@@ -123,7 +88,6 @@ def check_iothreads_number(vm_xml, expected_number_of_iothreads):
 def check_controllers_number(vm_xml, expected_number_of_controllers):
     """
     Verify that number of VM SCSI controllers equal to the expected value
-    and that each controller has separate IO thread
 
     Args:
         vm_xml (str): VM dump XML
@@ -134,16 +98,11 @@ def check_controllers_number(vm_xml, expected_number_of_controllers):
             each controller has separate IO thread, otherwise False
     """
     controllers = get_iothreads_controllers(vm_xml=vm_xml)
-    number_of_iothreads = len(set(controllers.values()))
-    number_of_controllers = len(controllers.keys())
     testflow.step(
         "Verify that the number of SCSI controllers equal to %s",
         expected_number_of_controllers
     )
-    return (
-        number_of_controllers == number_of_iothreads and
-        number_of_controllers == expected_number_of_controllers
-    )
+    return len(controllers) == expected_number_of_controllers
 
 
 def check_vm_disks_iothreads(vm_xml, number_of_iothreads):
@@ -159,21 +118,21 @@ def check_vm_disks_iothreads(vm_xml, number_of_iothreads):
             (in the case when number of IO threads bigger than number of VM
             disks, each VM disk must have separate IO thread)
     """
-
-    vm_disks = get_vm_disks(vm_xml=vm_xml)
-    testflow.step("Verify that each VM disk has correct IO thread")
-    for disk_bus in conf.BUS_TYPES.values():
-        disks = vm_disks[disk_bus]
-        if not disks:
-            continue
-        number_of_disks = len(disks.keys())
-        number_of_disks_iothreads = len(set(disks.values()))
-        if number_of_disks >= number_of_iothreads:
-            if number_of_iothreads != number_of_disks_iothreads:
+    for pattern in (conf.VIRTIO_DISKS_REGEXP, conf.VIRTIO_SCSI_DISKS_REGEXP):
+        disks = re.findall(pattern=pattern, string=vm_xml, flags=re.DOTALL)
+        if disks:
+            iothreads = [
+                x for n, x in enumerate(disks)
+                if x not in disks[:n]
+            ]
+            number_of_disks_iothreads = len(iothreads)
+            number_of_disks = len(disks)
+            if number_of_disks >= number_of_iothreads:
+                if number_of_iothreads != number_of_disks_iothreads:
+                    return False
+            elif number_of_disks != number_of_disks_iothreads:
                 return False
-        elif number_of_disks != number_of_disks_iothreads:
-            return False
-    return True
+        return True
 
 
 def check_iothreads(vm_name, number_of_iothreads):

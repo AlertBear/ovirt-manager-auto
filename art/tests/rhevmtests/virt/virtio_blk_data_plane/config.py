@@ -23,8 +23,7 @@ VMS_IOTHREADS_NAMES = {
 
 IOTHREADS_REGEXP = r"<iothreads>(\d+)</iothreads>"
 IOTHREADS_CONTROLLERS_REGEXP = (
-    r"<controller type='scsi' index='(\d+)' model='virtio-scsi'>\n"
-    r"\s*<driver iothread='(\d+)'/>.*?</controller>"
+    r"<controller type='scsi' index='(\d+)' model='virtio-scsi'>"
 )
 VIRTIO_DISKS_REGEXP = (
     r"<disk type='\w+' device='disk' snapshot='\w+'>\n"
