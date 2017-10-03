@@ -37,8 +37,20 @@ class SriovHostNics(object):
             host (str): Host name
         """
         self.host = host
-        self.host_nics = ll_hosts.get_host_nics_list(
-            host=host, all_content=True
+        self.host_nics = self.get_host_nics()
+
+    def get_host_nics(self):
+        """
+        List of network interfaces which were recognized on host
+
+        Returns:
+            list: Host NICs
+        """
+        host_nics = ll_hosts.get_host_nics_list(
+            host=self.host, all_content=True
+        )
+        return filter(
+            lambda x: (DUMMY_NIC or "dpdk") not in x.name, host_nics
         )
 
     def get_all_pf_nics_objects(self):
@@ -79,8 +91,6 @@ class SriovHostNics(object):
         )
         for nic in self.host_nics:
             nic_name = nic.get_name()
-            if DUMMY_NIC in nic_name or "dpdk" in nic_name:
-                continue
             try:
                 SriovNicVF(host=self.host, nic=nic_name)
                 vfs_nics.append(nic)

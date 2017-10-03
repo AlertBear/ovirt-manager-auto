@@ -5,6 +5,7 @@
 Fixtures for SR-IOV
 """
 import shlex
+import time
 
 import pytest
 
@@ -231,6 +232,9 @@ def reset_host_sriov_params(request):
         """
         prop = "number of VFs"
         for host_name, pfs in hosts_and_pfs.iteritems():
+            # In some cases we need to wait to make sure the VF is free to
+            # remove
+            time.sleep(5)
             for pf in pfs:
                 testflow.teardown(
                     msg_set_property.format(
@@ -238,11 +242,14 @@ def reset_host_sriov_params(request):
                         host=host_name
                     )
                 )
+                res = pf.set_number_of_vf(0)
+                if not res:
+                    # In some cases we need to wait to make sure the VF is
+                    # free to remove
+                    time.sleep(5)
+                    res = pf.set_number_of_vf(0)
                 results.append(
-                    (
-                        pf.set_number_of_vf(0),
-                        err_set_property.format(pf=pf.nic_name, prop=prop)
-                    )
+                    (res, err_set_property.format(pf=pf.nic_name, prop=prop))
                 )
     request.addfinalizer(fin1)
 
