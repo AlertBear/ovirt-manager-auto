@@ -119,6 +119,7 @@ class TestOVNDeployment(NetworkTest):
             )
 
 
+@bz({"1497820": {}})
 @pytest.mark.usefixtures(
     check_ldap_availability.__name__,
     setup_ldap_integration.__name__,
@@ -216,6 +217,7 @@ class TestOVNAuthorization(NetworkTest):
         assert positive == ovn_conf.OVN_PROVIDER.test_connection()
 
 
+@bz({"1497820": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     configure_ovn.__name__,
@@ -776,7 +778,12 @@ class TestOVNComponent(NetworkTest):
             assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
 
 
-@bz({"1494944": {}})
+@bz(
+    {
+        "1494944": {},
+        "1497820": {}
+    }
+)
 @pytest.mark.usefixtures(
     configure_ovn.__name__,
     get_default_ovn_provider.__name__,
