@@ -534,8 +534,8 @@ def create_environment_logout_session(request):
     assert hl_hosts.move_host_to_another_cluster(
         self.host, self.cluster
     ), "Failed to migrate host '%s' into cluster '%s'" % (
-            self.host, self.cluster
-        )
+        self.host, self.cluster
+    )
     storage_helpers.logout_iscsi_session(
         self.host_executor, self.host, self.host_iscsi_sessions()
     )
