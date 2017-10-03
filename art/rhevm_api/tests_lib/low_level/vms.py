@@ -1092,7 +1092,7 @@ def restartVm(
 def startVm(
     positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
     wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, placement_host=None,
-    use_cloud_init=False, pause=False
+    use_cloud_init=False, pause=False, **kwargs
 ):
     """
     Start VM
@@ -1132,6 +1132,7 @@ def startVm(
     if pause:
         wait_for_status = ENUMS['vm_state_paused']
         action_params["pause"] = pause
+    action_params.update(kwargs)
     log_info, log_error = ll_general.get_log_msg(
         log_action="start", obj_type=VM, obj_name=vm, positive=positive,
         **action_params

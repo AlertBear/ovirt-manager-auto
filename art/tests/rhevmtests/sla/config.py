@@ -79,6 +79,7 @@ VM_NIC = "nic"
 VM_NETWORK = "network"
 VM_PROTECTED = "protected"
 VM_CPU_PROFILE = "cpu_profile_id"
+VM_CUSTOM_PROPERTIES = "custom_properties"
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
@@ -97,7 +98,8 @@ DEFAULT_VM_PARAMETERS = {
     VM_CPU_PINNING: [],
     VM_CPU_SHARES: 0,
     VM_CPU_MODE: "custom",
-    VM_PROTECTED: False
+    VM_PROTECTED: False,
+    VM_CUSTOM_PROPERTIES: "clear"
 }
 
 VM_WITHOUT_DISK = "vm_without_disk_sla"
@@ -337,3 +339,14 @@ WAIT_FOR_VM_STATUS_SLEEP = 2
 # Power management states
 POWER_MANAGEMENT_STATE_ON = "on"
 POWER_MANAGEMENT_STATE_OFF = "off"
+
+# Hugepages sizes
+HUGEPAGE_SZ_2048KB = "2048"  # 2MB hugepages
+HUGEPAGE_SZ_1048576KB = "1048576"  # 1GB hugepages
+HUGEPAGE_SZ_16384KB = "16384"  # PPC architecture 16MB hugepages
+DEFAULT_HUGEPAGE_SZ = HUGEPAGE_SZ_16384KB if PPC_ARCH else HUGEPAGE_SZ_2048KB
+
+HUGEPAGES_NR_FILE = "/sys/kernel/mm/hugepages/hugepages-{0}kB/nr_hugepages"
+
+CUSTOM_PROPERTY_HUGEPAGES = "hugepages={0}"
+DEFAULT_CP_HUGEPAGES = CUSTOM_PROPERTY_HUGEPAGES.format(DEFAULT_HUGEPAGE_SZ)

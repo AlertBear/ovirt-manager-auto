@@ -808,3 +808,60 @@ def wait_for_hosts_status_up(request):
         )
         ll_hosts.wait_for_hosts_states(positive=True, names=hosts_names)
     request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def define_hugepages_on_hosts(request):
+    """
+    Set hugepages of different sizes on hosts
+    """
+    hosts_to_hugepages = request.node.cls.hosts_to_hugepages
+
+    def set_hugepages_on_host(vds_host, hugepage_size, hugepages_nr):
+        """
+        Set hugepages on the host
+
+        Args:
+            vds_host (VDS): VDS resource
+            hugepage_size (str): Hugepage size
+            hugepages_nr (int): Number of hugepages
+        """
+        cmd = [
+            "echo", str(hugepages_nr), ">",
+            sla_config.HUGEPAGES_NR_FILE.format(hugepage_size)
+        ]
+        assert not vds_host.run_command(cmd)[0]
+        # TODO: add timeout sampler when bug 1497708 will have a fix
+        time.sleep(2 * sla_config.ENGINE_STAT_UPDATE_INTERVAL)
+
+    def fin():
+        for host_index, hugepages in hosts_to_hugepages.iteritems():
+            for hugepage_size in hugepages.iterkeys():
+                u_libs.testflow.teardown(
+                    "%s :set %s of hugepages of size %skB",
+                    sla_config.VDS_HOSTS[host_index],
+                    0,
+                    hugepage_size
+                )
+                set_hugepages_on_host(
+                    vds_host=sla_config.VDS_HOSTS[host_index],
+                    hugepage_size=hugepage_size,
+                    hugepages_nr=0
+                )
+
+    request.addfinalizer(fin)
+
+    for host_index, hugepages in hosts_to_hugepages.iteritems():
+        for hugepage_size, total_size in hugepages.iteritems():
+            hugepages_nr = total_size / (int(hugepage_size) * 1024)
+            u_libs.testflow.setup(
+                "%s :set %s of hugepages of size %skB",
+                sla_config.VDS_HOSTS[host_index],
+                hugepages_nr,
+                hugepage_size
+            )
+            set_hugepages_on_host(
+                vds_host=sla_config.VDS_HOSTS[host_index],
+                hugepage_size=hugepage_size,
+                hugepages_nr=hugepages_nr
+            )
