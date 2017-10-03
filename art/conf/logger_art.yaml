@@ -11,20 +11,20 @@ handlers:
     level: INFO
     formatter: flow
     stream: ext://sys.stdout
-  fileHandler:
-    class: logging.handlers.RotatingFileHandler
-    level: DEBUG
-    formatter: fileFormatter
-    1filename: "%(logfile)s"
-    2mode: w
-    3maxBytes: 31457280
-    4backupCount: 100
   devnull:
     class: utilities.logger_utils.NullHandler
     level: DEBUG
-  duplicateFileHandler:
+  duplicateFileHandlerDebug:
     class: utilities.logger_utils.DuplicateFileHandler
     level: DEBUG
+    formatter: fileFormatter
+    1filename: "%(logfile)s.debug"
+    2mode: w
+    3maxBytes: 31457280
+    4backupCount: 100
+  duplicateFileHandler:
+    class: utilities.logger_utils.DuplicateFileHandler
+    level: INFO
     formatter: fileFormatter
     1filename: "%(logfile)s"
     2mode: w
@@ -47,3 +47,4 @@ loggers:
     level: DEBUG
     handlers:
       - duplicateFileHandler
+      - duplicateFileHandlerDebug
