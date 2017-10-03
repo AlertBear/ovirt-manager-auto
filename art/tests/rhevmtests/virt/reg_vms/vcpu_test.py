@@ -13,6 +13,10 @@ from rhevmtests.virt.fixtures import create_dc
 import config
 
 
+@pytest.mark.skipif(
+    config.NO_HYPERCONVERGED_SUPPORT,
+    reason=config.NO_HYPERCONVERGED_SUPPORT_SKIP_MSG
+)
 @pytest.mark.usefixtures(
     create_dc.__name__,
     create_vm_for_vcpu.__name__,

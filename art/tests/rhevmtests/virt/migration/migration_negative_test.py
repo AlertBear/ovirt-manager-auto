@@ -20,6 +20,10 @@ from rhevmtests.virt.migration.fixtures import (
 import config
 
 
+@pytest.mark.skipif(
+    config.NO_HYPERCONVERGED_SUPPORT,
+    reason=config.NO_HYPERCONVERGED_SUPPORT_SKIP_MSG
+)
 @pytest.mark.usefixtures(
     migration_init.__name__,
     migrate_to_diff_dc.__name__
