@@ -153,9 +153,9 @@ def init_storage_manager(request):
 
     self = request.node.cls
 
-    self.manager = config.ISCSI_STORAGE_MANAGER[0] if self.storage == (
+    self.manager = config.ISCSI_STORAGE_MANAGER if self.storage == (
         config.STORAGE_TYPE_ISCSI
-    ) else config.FCP_STORAGE_MANAGER[0]
+    ) else config.FCP_STORAGE_MANAGER
 
     # Initialize the storage manager with iscsi as the storage type since
     # storage_api has only iscsi manager which is good also for fc

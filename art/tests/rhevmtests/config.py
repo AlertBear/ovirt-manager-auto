@@ -88,8 +88,12 @@ CEPH_SERVER_SECRET = PARAMETERS.get('ceph_server_secret', None)
 CEPH_MOUNT_OPTIONS = "name=admin,secret={0}".format(CEPH_SERVER_SECRET)
 
 SD_LIST = []
-ISCSI_STORAGE_MANAGER = ["vserver-san01-iscsi01.qa.lab.tlv.redhat.com"]
-FCP_STORAGE_MANAGER = ["vserver-san01-iscsi01.qa.lab.tlv.redhat.com"]
+ISCSI_STORAGE_MANAGER = (
+    GE['extra_configuration_options'].get('storage_managers', {}).get('iscsi')
+)
+FCP_STORAGE_MANAGER = (
+    GE['extra_configuration_options'].get('storage_managers', {}).get('fcp')
+)
 
 # Hosted engine constants
 HE_VM = "HostedEngine"
