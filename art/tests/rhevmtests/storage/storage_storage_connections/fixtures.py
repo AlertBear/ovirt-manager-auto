@@ -16,6 +16,8 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     storageconnections as ll_storageconnections,
     vms as ll_vms,
+    templates as ll_templates,
+    jobs as ll_jobs,
 )
 from art.unittest_lib import testflow
 
@@ -48,8 +50,23 @@ def a0_initialize_variables_clean_storages(request):
         ), "Failed to import iSCSI domains back"
 
         register_failed = False
+
         for sd in ISCSI_SDS:
+            testflow.teardown("Attach and activate storage domain %s", sd)
             hl_sd.attach_and_activate_domain(config.DATA_CENTER_NAME, sd)
+
+            testflow.teardown(
+                "Copying templates disks to imported storage domain %s", sd
+            )
+            ll_templates.copyTemplateDisk(
+                config.TEMPLATE_NAME[0], config.GOLDEN_GLANCE_IMAGE, sd
+            )
+            ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
+            ll_disks.wait_for_disks_status([config.GOLDEN_GLANCE_IMAGE])
+
+            testflow.teardown(
+                "importing VMs back to imported storage domain %s", sd
+            )
             unregistered_vms = ll_sd.get_unregistered_vms(sd)
             if unregistered_vms:
                 for vm in unregistered_vms:
