@@ -446,6 +446,7 @@ class TestRemoveDisk(TestDiskTemplate):
             role=config.role.UserRole
         )
 
+    @bz({'1495598': {}})
     @polarion("RHEVM3-7629")
     def test_remove_disk(self):
         """ Remove disk as user with and without permissions """
@@ -654,6 +655,7 @@ class TestAddDiskToVM(TestDiskTemplate):
             role=config.role.UserRole
         )
 
+    @bz({'1503269': {}})
     @polarion("RHEVM3-7632")
     def test_add_disk_to_vm(self):
         """ add disk to vm with and without permissions """
