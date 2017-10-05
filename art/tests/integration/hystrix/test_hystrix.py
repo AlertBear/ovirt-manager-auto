@@ -148,4 +148,4 @@ class TestHystrixIntegration(HystrixTemplate):
     @polarion("RHEVM-18287")
     def test_hystrix_stream():
         testflow.step("Checking if Hystrix does monitor engine events.")
-        assert check_hystrix_monitoring()
+        check_hystrix_monitoring()

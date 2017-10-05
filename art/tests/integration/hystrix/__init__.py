@@ -3,16 +3,14 @@ import logging
 import os
 import requests
 from multiprocessing import Process, Manager
+from time import sleep
 
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 
 import config
 
-
 ACCEPTABLE_STATUSES = {"ok": 200, "mna": 405}
-
-
 # Main actions to look at Hystrix log
 ACTIONS = [
     "GetVmByVmId", "SearchVmTemplate",
@@ -23,11 +21,11 @@ ACTIONS = [
 # Main vdsm commands to look at Hystrix log
 VDSM_COMMANDS = [
     "VdsSetVmStatus", "VdsDestroyVm",
-    "VdsCreateVm", "VdsGetAllVmStats"
+    "VdsCreate", "VdsGetAllVmStats"
 ]
 
-
 logger = logging.getLogger(__name__)
+HYSTRIX_WAIT = 60
 
 
 def functor(f, collection):
@@ -94,7 +92,7 @@ def write_message(input_pipe, message):
         input_pipe (str): Message passing pipe (file path).
         message (str): Message to send.
     """
-    logger.info("Writing message '%s'", message)
+    logger.info("Writing message '%s' to pipe %s", message, input_pipe)
     fd = os.open(input_pipe, os.O_WRONLY | os.O_NONBLOCK | os.O_TRUNC)
     os.write(fd, message)
     os.close(fd)
@@ -175,6 +173,15 @@ def get_hystrix_stream_commands(d):
         if line and line.startswith("data"):
             hystrix_command_name = json.loads(line[5:])["name"]
 
+            logger.info(
+                "For hystrix command {command} we have event message '{event}'"
+                " and status message '{status}'".format(
+                    command=hystrix_command_name,
+                    event=event_message,
+                    status=status_message
+                )
+            )
+
             if event_message != "done" and status_message != "err":
                 d[hystrix_command_name] = True
             else:
@@ -227,6 +234,7 @@ def generate_events():
     )
     write_message(config.status_pipe, "ok" if res else "err")
 
+    sleep(HYSTRIX_WAIT)
     write_message(config.event_pipe, "done")
 
 
@@ -234,9 +242,8 @@ def check_hystrix_monitoring():
     """
     Description:
         Checks if Hystrix monitors engine and vdsm events properly.
-    Returns:
-        bool: True if all essential actions and vdsm commands were logged by
-            Hystrix, False otherwise.
+    Throws:
+        assertion error: check that all actions are logged in hystrix
     """
     manager = Manager()
 
@@ -252,9 +259,10 @@ def check_hystrix_monitoring():
     dict_builder.join()
 
     for action in ACTIONS:
-        if not d.get(action, False):
-            return False
+        assert d.get(action, False), (
+            "Failed to get action {}".format(action)
+        )
     for vdsm_command in VDSM_COMMANDS:
-        if not d.get(vdsm_command, False):
-            return False
-    return True
+        assert d.get(vdsm_command, False), (
+            "Failed to get vdsm command {}".format(vdsm_command)
+        )
