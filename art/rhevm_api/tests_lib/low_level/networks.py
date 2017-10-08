@@ -1599,7 +1599,7 @@ def get_network_cluster(network, datacenter=None):
 @ll.general.generate_logs(step=True)
 def get_all_vnics_profiles():
     """
-    Get all vNICs profiles from ebgine
+    Get all vNICs profiles from engine
 
     Returns:
         list: List of vNICs profiles
