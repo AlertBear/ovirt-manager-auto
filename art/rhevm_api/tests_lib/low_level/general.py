@@ -344,9 +344,14 @@ def get_log_msg(
         kwargs.pop(k)
 
     for k, v in kwargs.items():
-        kwargs_to_log[k] = getattr(
-            v, "name", getattr(v, "id", getattr(v, "fqdn", v))
-        )
+        if isinstance(v, list):
+            kwargs_to_log[k] = [
+                getattr(i, "name", getattr(i, "id", i)) for i in v
+            ]
+        else:
+            kwargs_to_log[k] = getattr(
+                v, "name", getattr(v, "id", getattr(v, "fqdn", v))
+            )
 
     with_kwargs = "with %s" % kwargs_to_log if kwargs_to_log else ""
     state = "Succeeded to" if not positive else "Failed to"
