@@ -19,6 +19,7 @@
 
 import logging
 import shlex
+import socket
 import time
 
 from art.rhevm_api.tests_lib.low_level import (
@@ -1552,12 +1553,13 @@ def get_host_name_from_engine(vds_resource):
     Returns:
         str or None: Host name or None
     """
-
     engine_hosts = get_host_list()
     for host in engine_hosts:
         if (
-            host.get_address() == vds_resource.fqdn or host.get_address() ==
-            vds_resource.ip or host.name == vds_resource.fqdn
+                host.get_address() == vds_resource.fqdn
+                or host.get_address() == vds_resource.ip
+                or host.name == vds_resource.fqdn
+                or vds_resource.ip == socket.gethostbyname(host.address)
         ):
             return host.name
     return None
