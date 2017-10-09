@@ -587,7 +587,7 @@ def get_amount_of_file_type_volumes(host_ip, sp_id, sd_id, image_id):
     # There are a total of 3 files/volume, the volume metadata (.meta),
     # the volume lease (.lease) and the volume content itself (no
     # extension)
-    num_volumes = int(output['out'])/3
+    num_volumes = int(output)/3
     logger.debug(
         "The number of file type volumes found is '%s'",num_volumes
     )
