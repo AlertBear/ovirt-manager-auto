@@ -12,11 +12,11 @@ def prepare_env_coresystem(request):
     """
     Run setup inventory
     """
-    pytest.config.hook.pytest_rhv_setup(team="coresystem")
-
     def fin():
         """
         Run teardown inventory
         """
         pytest.config.hook.pytest_rhv_teardown(team="coresystem")
     request.addfinalizer(fin)
+
+    pytest.config.hook.pytest_rhv_setup(team="coresystem")

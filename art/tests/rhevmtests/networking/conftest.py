@@ -21,16 +21,16 @@ def prepare_env_networking(request):
     import helper
     import fixtures
 
-    pytest.config.hook.pytest_rhv_setup(team="network")
-    for vds_host in config.VDS_HOSTS[:2]:
-        num_dummy = 30 if vds_host.fqdn == config.VDS_HOSTS[0].fqdn else 8
-        helper.prepare_dummies(host_resource=vds_host, num_dummy=num_dummy)
-        logger.info("Host %s. NICs: %s", vds_host.fqdn, vds_host.nics)
-    fixtures.NetworkFixtures()
-
     def fin():
         """
         Run teardown inventory
         """
         pytest.config.hook.pytest_rhv_teardown(team="network")
     request.addfinalizer(fin)
+
+    pytest.config.hook.pytest_rhv_setup(team="network")
+    for vds_host in config.VDS_HOSTS[:2]:
+        num_dummy = 30 if vds_host.fqdn == config.VDS_HOSTS[0].fqdn else 8
+        helper.prepare_dummies(host_resource=vds_host, num_dummy=num_dummy)
+        logger.info("Host %s. NICs: %s", vds_host.fqdn, vds_host.nics)
+    fixtures.NetworkFixtures()

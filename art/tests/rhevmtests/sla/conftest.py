@@ -12,11 +12,11 @@ def prepare_env_sla(request):
     """
     Run setup inventory
     """
-    pytest.config.hook.pytest_rhv_setup(team="sla")
-
     def fin():
         """
         Run teardown inventory
         """
         pytest.config.hook.pytest_rhv_teardown(team="sla")
     request.addfinalizer(fin)
+
+    pytest.config.hook.pytest_rhv_setup(team="sla")
