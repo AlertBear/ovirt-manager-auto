@@ -96,7 +96,7 @@ class Windows(TestCase):
     drivers/services/products to tests.
     """
     disk_name = None
-    disk_interface = config.ENUMS["interface_virtio"]
+    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @pytest.fixture(scope='class', autouse=True)
     def setup_vm(self, request):
@@ -172,8 +172,12 @@ class Windows(TestCase):
             if len(sample) > 0:
                 break
         testflow.step("Check if guest agent is reporting FQDN")
-        vm = ll_vms.get_vm(self.vm_name)
-        assert vm.get_fqdn() and len(vm.get_fqdn()) > 0
+        for sample in TimeoutingSampler(
+            config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
+            ll_vms.get_vm, self.vm_name
+        ):
+            if sample.get_fqdn() and len(sample.get_fqdn()) > 0:
+                break
 
     def check_guest_applications(self):
         """ Check guest's applications are reported """
@@ -337,6 +341,7 @@ class TestWin2012R2_CI_64b(Windows):
     architecture = config.WIN2012R2_64B['architecture']
     codename = config.WIN2012R2_64B['codename']
     os_type = config.ENUMS['windows2012r2x64']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM3-14405")
     def test_guest_applications(self):
@@ -375,6 +380,7 @@ class TestWin2012R2_CI_core_64b(Windows):
     architecture = config.WIN2012R2_64B['architecture']
     codename = config.WIN2012R2_64B['codename']
     os_type = config.ENUMS['windows2012r2x64']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM3-14769")
     def test_guest_applications(self):
@@ -413,6 +419,7 @@ class TestWin2012_CI_64b(Windows):
     architecture = config.WIN2012_64B['architecture']
     codename = config.WIN2012_64B['codename']
     os_type = config.ENUMS['windows2012x64']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM3-14433")
     def test_guest_applications(self):
@@ -451,6 +458,7 @@ class TestWin2012_CI_core_64b(Windows):
     architecture = config.WIN2012_64B['architecture']
     codename = config.WIN2012_64B['codename']
     os_type = config.ENUMS['windows2012x64']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM-14784")
     def test_guest_applications(self):
@@ -489,6 +497,7 @@ class TestWin7_CI_32b(Windows):
     architecture = config.WIN7_32B['architecture']
     codename = config.WIN7_32B['codename']
     os_type = config.ENUMS['windows7']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM3-14425")
     def test_guest_applications(self):
@@ -565,6 +574,7 @@ class TestWin8_1_CI_32b(Windows):
     architecture = config.WIN8_1_32B['architecture']
     codename = config.WIN8_1_32B['codename']
     os_type = config.ENUMS['windows8']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM3-14409")
     def test_guest_applications(self):
@@ -603,6 +613,7 @@ class TestWin8_1_CI_64b(Windows):
     architecture = config.WIN8_1_64B['architecture']
     codename = config.WIN8_1_64B['codename']
     os_type = config.ENUMS['windows8x64']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM3-14417")
     def test_guest_applications(self):
@@ -641,6 +652,7 @@ class TestWin8_CI_32b(Windows):
     architecture = config.WIN8_32B['architecture']
     codename = config.WIN8_32B['codename']
     os_type = config.ENUMS['windows8']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM-14792")
     def test_guest_applications(self):
@@ -679,6 +691,7 @@ class TestWin8_CI_64b(Windows):
     architecture = config.WIN8_64B['architecture']
     codename = config.WIN8_64B['codename']
     os_type = config.ENUMS['windows8x64']
+    disk_interface = config.ENUMS['interface_virtio']
 
     @polarion("RHEVM-14788")
     def test_guest_applications(self):
@@ -717,7 +730,6 @@ class TestWindows10_32b(Windows):
     architecture = config.WIN10_32B['architecture']
     codename = config.WIN10_32B['codename']
     os_type = config.ENUMS['windows10']
-    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @polarion("RHEVM-19563")
     def test_guest_applications(self):
@@ -756,7 +768,6 @@ class TestWindows10_64b(Windows):
     architecture = config.WIN10_64B['architecture']
     codename = config.WIN10_64B['codename']
     os_type = config.ENUMS['windows10x64']
-    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @polarion("RHEVM3-14413")
     def test_guest_applications(self):
@@ -795,7 +806,6 @@ class TestWindows2016_core_64b(Windows):
     architecture = config.WIN2016_64B['architecture']
     codename = config.WIN2016_64B['codename']
     os_type = config.ENUMS['windows2016x64']
-    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @polarion("RHEVM-19384")
     def test_guest_applications(self):
@@ -834,7 +844,6 @@ class TestWindows2016_64b(Windows):
     architecture = config.WIN2016_64B['architecture']
     codename = config.WIN2016_64B['codename']
     os_type = config.ENUMS['windows2016x64']
-    disk_interface = config.ENUMS['interface_virtio_scsi']
 
     @polarion("RHEVM-19380")
     def test_guest_applications(self):
