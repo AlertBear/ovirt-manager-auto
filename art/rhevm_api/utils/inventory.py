@@ -64,13 +64,16 @@ class Inventory(object):
             dict: A dictionary with current GE-state summary
 
         """
-        try:
-            for resource_type in self.resource_types_to_dump:
+        for resource_type in self.resource_types_to_dump:
+            try:
                 self.dump_ge_resource(resource_type)
-        except Exception as e:
-            logger.error("Failed to create GE-state summary")
-            logger.error(e)
-            self._summary = {}
+            except Exception as e:
+                logger.error(
+                    "Failed to create GE-state summary for resource %s" %
+                    resource_type
+                )
+                logger.error(e)
+
         logger.info("Dumped GE state is: %s", pformat(self._summary, indent=2))
         return self._summary
 
