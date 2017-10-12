@@ -388,7 +388,7 @@ def prepare_kwargs_for_log(**kwargs):
     return new_kwargs
 
 
-def generate_logs(info=True, error=True, step=False):
+def generate_logs(info=True, error=True, step=False, warn=False):
     """
     Decorator to generate log info and log error for function.
     The log contain the first line from the function docstring and resolve
@@ -418,6 +418,7 @@ def generate_logs(info=True, error=True, step=False):
         info (bool): True to get INFO log
         error (bool): True to get ERROR log
         step (bool): True to get testflow.step if function called from test
+        warn (bool): True to get WARN log
 
     Returns:
         any: The function return
@@ -483,8 +484,11 @@ def generate_logs(info=True, error=True, step=False):
                 util.logger.info(log_info)
 
             res = func(*args, **kwargs)
-            if not res and error:
-                util.logger.error(log_err)
+            if not res:
+                if warn:
+                    util.logger.warn(log_err)
+                elif error:
+                    util.logger.error(log_err)
             return res
         return inner
     return generate_logs_decorator
