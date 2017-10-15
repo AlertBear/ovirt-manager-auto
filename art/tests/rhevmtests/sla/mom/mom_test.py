@@ -88,7 +88,7 @@ class TestKSM(SlaTest):
     """
     update_to_default_params = conf.MOM_VMS
     threshold_list = []
-    vms_to_stop = []
+    vms_to_stop = conf.MOM_VMS
     cluster_to_update_params = {
         conf.CLUSTER_KSM: True,
         conf.CLUSTER_BALLOONING: False,
@@ -96,7 +96,6 @@ class TestKSM(SlaTest):
     }
 
     @tier2
-    @bz({'1454633': {}})
     @polarion("RHEVM3-4969")
     def test_a_ksm_progressive(self):
         """
@@ -115,7 +114,6 @@ class TestKSM(SlaTest):
                 wait_for_status=conf.VM_UP,
                 wait_for_ip=True
             )
-            self.__class__.vms_to_stop.append(vm_name)
             self.threshold_list.append(vm_name)
             testflow.step(
                 "Check if KSM triggered after VM %s start",
@@ -127,13 +125,11 @@ class TestKSM(SlaTest):
                 # will be triggered in next test cases
                 if vm_name != conf.MOM_VMS[-1]:
                     self.threshold_list.append(conf.MOM_VMS[-1])
-                    self.__class__.vms_to_stop.append(conf.MOM_VMS[-1])
                 break
         assert ll_vms.stop_vms_safely(vms_list=self.threshold_list)
         assert ksm_running
 
     @tier2
-    @bz({'1454633': {}})
     @polarion("RHEVM3-4977")
     def test_b_ksm_kicking(self):
         """
@@ -155,7 +151,6 @@ class TestKSM(SlaTest):
         assert helpers.wait_for_ksm_state(resource=conf.VDS_HOSTS[0])
 
     @tier2
-    @bz({'1454633': {}})
     @polarion("RHEVM3-4976")
     def test_c_ksm_migration(self):
         """
@@ -174,7 +169,6 @@ class TestKSM(SlaTest):
         assert not helpers.is_ksm_running(resource=conf.VDS_HOSTS[0])
 
     @tier2
-    @bz({'1454633': {}})
     @polarion("RHEVM3-4975")
     def test_d_ksm_stop(self):
         """
@@ -265,7 +259,7 @@ class TestBalloonUsage(Balloon):
     vms_to_start = conf.MOM_VMS[:1]
 
     @tier2
-    @bz({'1454633': {}})
+    @bz({"1497517": {}})
     @polarion("RHEVM3-4974")
     def test_balloon_usage(self):
         """
@@ -295,7 +289,7 @@ class TestBalloonUsageDifferentMemory(Balloon):
     vms_to_start = conf.MOM_VMS[:2]
 
     @tier2
-    @bz({'1454633': {}})
+    @bz({"1497517": {}})
     @polarion("RHEVM3-4973")
     def test_balloon_multi_memory(self):
         """
@@ -322,7 +316,7 @@ class TestBalloonWithoutAgent(Balloon):
     stop_guest_agent_vm = conf.MOM_VMS[0]
 
     @tier2
-    @bz({'1454633': {}})
+    @bz({"1497517": {}})
     @polarion("RHEVM3-4971")
     def test_negative_balloon_no_agent(self):
         """
@@ -348,7 +342,7 @@ class TestBalloonMax(Balloon):
     vms_to_start = conf.MOM_VMS[:1]
 
     @tier2
-    @bz({'1454633': {}})
+    @bz({"1497517": {}})
     @polarion("RHEVM3-4978")
     def test_negative_balloon_max(self):
         """
@@ -375,7 +369,7 @@ class TestBalloonMultipleVms(Balloon):
     vms_to_start = conf.MOM_VMS
 
     @tier2
-    @bz({'1454633': {}})
+    @bz({"1497517": {}})
     @polarion("RHEVM3-4970")
     def test_f_balloon_multiple_vms(self):
         """
