@@ -38,6 +38,7 @@ from utilities.utils import (
     convertMacToIp,
     createDirTree,
 )
+import art.core_api.apis_exceptions as exceptions
 
 logger = logging.getLogger('test_utils')
 
@@ -654,15 +655,19 @@ def wait_for_tasks(engine, datacenter, timeout=TASK_TIMEOUT, sleep=TASK_POLL):
     """
     dc_util = get_api('data_center', 'datacenters')
     sp_id = dc_util.find(datacenter).id
-    sampler = TimeoutingSampler(
-        timeout, sleep, get_running_tasks, engine, sp_id,
-    )
-    for tasks in sampler:
-        if not tasks:
-            logger.info("All tasks are gone")
-            return
-    tasks = get_running_tasks(engine, sp_id)
-    logger.error("Tasks %s are still running", tasks)
+    try:
+        sampler = TimeoutingSampler(
+            timeout, sleep, get_running_tasks, engine, sp_id,
+        )
+        for tasks in sampler:
+            if not tasks:
+                logger.info("All tasks are gone")
+                return
+    except exceptions.APITimeout:
+        logger.error("APITimeout failure")
+    finally:
+        tasks = get_running_tasks(engine, sp_id)
+        logger.info("Tasks %s are still running", tasks)
 
 
 def restart_engine(engine, interval, timeout):
