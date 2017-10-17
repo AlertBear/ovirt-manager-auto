@@ -42,7 +42,7 @@ from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import (
-    searchForObj, update_vm_status_in_database, get_api, split, waitUntilGone,
+    searchForObj, update_vm_status_in_database, get_api, waitUntilGone,
 )
 from art.test_handler import exceptions
 from art.test_handler.exceptions import CanNotFindIP
@@ -939,7 +939,7 @@ def removeVms(positive, vms, stop='false', timeout=180):
     threads = set()
     if isinstance(vms, basestring):
         # 'vm1, vm2' -> [vm1, vm2]
-        vmsList = split(vms)
+        vmsList = vms.replace(',', ' ').split()
     else:
         vmsList = vms
     if not vmsList:
@@ -1002,7 +1002,7 @@ def waitForVmsStates(positive, names, states=ENUMS['vm_state_up'], *args,
     Return True if all events passed, otherwise False
     '''
     if isinstance(names, basestring):
-        names = split(names)
+        names = names.replace(',', ' ').split()
     for vm in names:
         VM_API.find(vm)
 
@@ -1169,7 +1169,7 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
     Returns: True iff all VMs started.
     '''
     if isinstance(vms, basestring):
-        vms = split(vms)
+        vms = vms.replace(',', ' ').split()
     jobs = [Job(target=startVm,
                 args=(True, vm, wait_for_status)) for vm in vms]
     js = JobsSet()
@@ -1221,7 +1221,7 @@ def stop_vms(vms, async='true'):
         bool: True if all VMs were stopped properly, False otherwise
     """
     if isinstance(vms, basestring):
-        vms = split(vms)
+        vms = vms.replace(',', ' ').split()
     results = list()
     for vm in vms:
         results.append(stopVm(positive=True, vm=vm, async=async))

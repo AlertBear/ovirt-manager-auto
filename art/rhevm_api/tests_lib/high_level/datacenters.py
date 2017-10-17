@@ -5,8 +5,6 @@ High-level functions above data-center
 import logging
 
 import art.rhevm_api.tests_lib.high_level.clusters as hl_clusters
-import art.rhevm_api.tests_lib.high_level.hosts as hosts
-import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as clusters
@@ -15,8 +13,6 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.test_handler.exceptions as errors
-from art.rhevm_api.resources import Host  # This import is not good here
-from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
 from art.rhevm_api.utils import test_utils
 from art.test_handler.settings import ART_CONFIG
 
@@ -28,67 +24,6 @@ SPM_TIMEOUT = 300
 SPM_SLEEP = 5
 FIND_SDS_TIMEOUT = 10
 SD_STATUS_OK_TIMEOUT = 120
-
-
-def build_setup(config, storage, storage_type, basename="testname",
-                local=False):
-    """
-    Description: Creates a setup based on what's specified in the config
-    Parameters:
-        * config - dict containing setup specification ([PARAMETERS] section)
-        * storage - dict containing storage specification ([{storage}] section)
-        * storage_type - type of storage to use (NFS, ISCSI, FCP, LOCALFS)
-        * basename - baseword for naming objects in setup
-    Returns names of created storage domains
-    """
-    hl_mac_pool.update_default_mac_pool()
-    datacenter_name = config.get('dc_name', '%s_DC_1' % basename)
-    cluster_name = config.get('cluster_name', '%s_Cluster_1' % basename)
-    config['dc_name'] = datacenter_name
-    config['cluster_name'] = cluster_name
-    version = config.get('compatibility_version')
-
-    if not datacenters.addDataCenter(
-            positive=True, name=datacenter_name, local=local, version=version
-    ):
-        raise errors.DataCenterException(
-            "Add DataCenter %s version %s failed." %
-            (datacenter_name, version)
-        )
-    logger.info("Datacenter %s was created successfully", datacenter_name)
-
-    if not clusters.addCluster(
-            positive=True, name=cluster_name, cpu=config['cpu_name'],
-            data_center=datacenter_name, version=version
-    ):
-        raise errors.ClusterException(
-            "Add Cluster %s with cpu_type %s and version %s "
-            "to datacenter %s failed" %
-            (cluster_name, config['cpu_name'], version, datacenter_name)
-        )
-    logger.info("Cluster %s was created successfully", cluster_name)
-
-    hosts.add_hosts(config.as_list('vds'), config.as_list('vds_password'),
-                    cluster_name)
-
-    # Align cluster cpu compatibility to fit all hosts
-    hosts_obj = [Host.get(h) for h in config.as_list('vds')]
-    cpu_den = CpuModelDenominator()
-    try:
-        cpu_info = cpu_den.get_common_cpu_model(
-            hosts_obj, version=version,
-        )
-    except CpuModelError as ex:
-        logger.error("Can not determine the best cpu_model: %s", ex)
-    else:
-        logger.info("Cpu info %s for cluster: %s", cpu_info, cluster_name)
-        if not clusters.updateCluster(True, cluster_name, cpu=cpu_info['cpu']):
-            logger.error(
-                "Can not update cluster cpu_model to: %s", cpu_info['cpu'],
-            )
-
-    return hl_sd.create_storages(
-        storage, storage_type, config.as_list('vds')[0], datacenter_name)
 
 
 def get_spm_host(positive, datacenter):

@@ -34,7 +34,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stopVm, get_vm_host, get_vm_state, get_all_vms
 )
 from art.rhevm_api.utils.test_utils import (
-    get_api, split, getStat, searchElement, searchForObj, stopVdsmd,
+    get_api, getStat, searchElement, searchForObj, stopVdsmd,
     startVdsmd
 )
 from art.test_handler.settings import ART_CONFIG
@@ -206,7 +206,7 @@ def wait_for_hosts_states(
         bool: True if hosts are in states, False otherwise.
     """
     if isinstance(names, basestring):
-        list_names = split(names)
+        list_names = names.replace(',', ' ').split()
     else:
         list_names = names[:]
 

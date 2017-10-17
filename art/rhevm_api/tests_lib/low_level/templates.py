@@ -26,7 +26,7 @@ from art.rhevm_api.tests_lib.low_level import (
     general as ll_general,
     disks as ll_disks,
 )
-from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
+from art.rhevm_api.utils.test_utils import get_api, waitUntilGone
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 from art.rhevm_api.tests_lib.low_level.vms import (
     DiskNotFound,
@@ -483,7 +483,7 @@ def remove_templates(positive, templates):
     :rtype: bool
     """
     if isinstance(templates, basestring):
-        templates_list = split(templates)
+        templates_list = templates.replace(',', ' ').split()
     else:
         templates_list = templates
     jobs = [Job(
@@ -1065,7 +1065,10 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
         return [templ for templ in templates if
                 (templ.get_status() != state)]
 
-    names = split(names) if not isinstance(names, list) else names
+    if not isinstance(names, list):
+        names = names.replace(',', ' ').split()
+    else:
+        names = names
     sampler = TimeoutingSampler(
         timeout, sleep, get_pending_templates, names, state)
     for bad_templates in sampler:

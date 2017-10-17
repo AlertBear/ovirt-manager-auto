@@ -18,7 +18,6 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import time
 from art.rhevm_api.tests_lib.low_level import (
     general as ll_general,
     networks as ll_networks,
@@ -30,7 +29,7 @@ from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.tests_lib.low_level.scheduling_policies import (
     get_scheduling_policy_id
 )
-from art.rhevm_api.utils.test_utils import get_api, split
+from art.rhevm_api.utils.test_utils import get_api
 from art.rhevm_api.utils.test_utils import searchForObj
 
 ELEMENT = 'cluster'
@@ -344,46 +343,6 @@ def removeCluster(positive, cluster):
     if not res:
         logger.error(log_error)
     return res
-
-
-def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
-    '''
-    Wait for clusters to disappear from the setup. This function will block up
-    to `timeout` seconds, sampling the clusters list every
-    `samplingPeriod` seconds, until no cluster specified by
-    names in `clusters` exists.
-
-    Parameters:
-        * clusters - comma (and no space) separated string of cluster names
-                     to wait for.
-        * timeout - Time in seconds for the clusters to disappear.
-        * samplingPeriod - Time in seconds for sampling the cluster list.
-    '''
-
-    cls_list = split(clusters)
-    t_start = time.time()
-    while time.time() - t_start < timeout and 0 < timeout:
-        clusters = util.get(abs_link=False)
-        remaining_cls = []
-        for cl in clusters:
-            cl_name = getattr(cl, 'name')
-            if cl_name in cls_list:
-                remaining_cls.append(cl_name)
-
-        if len(remaining_cls) > 0:
-            util.logger.info(
-                "Waiting for %d clusters to disappear.", len(remaining_cls)
-            )
-            time.sleep(samplingPeriod)
-        else:
-            util.logger.info("All %d clusters are gone.", len(cls_list))
-            return positive
-
-    remaining_cls_names = [cl for cl in remaining_cls]
-    util.logger.error(
-        "Clusters %s didn't disappear until timeout.", remaining_cls_names
-    )
-    return not positive
 
 
 def searchForCluster(positive, query_key, query_val, key_name, **kwargs):

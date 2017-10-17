@@ -26,7 +26,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
 from art.rhevm_api.tests_lib.low_level.general import (
     prepare_ds_object, generate_logs
 )
-from art.rhevm_api.utils.test_utils import get_api, waitUntilGone, split
+from art.rhevm_api.utils.test_utils import get_api, waitUntilGone
 from art.test_handler.settings import ART_CONFIG
 
 
@@ -508,7 +508,7 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
     """
     if isinstance(disks, basestring):
         # 'vm1, vm2' -> [vm1, vm2]
-        disks_list = split(disks)
+        disks_list = disks.replace(',', ' ').split()
     else:
         disks_list = disks
 

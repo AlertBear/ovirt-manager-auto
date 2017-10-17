@@ -20,7 +20,7 @@
 import logging
 from art.core_api.apis_utils import getDS
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.utils.test_utils import get_api, split
+from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import ART_CONFIG
 from art.rhevm_api.tests_lib.low_level.networks import (
     find_network,
@@ -113,7 +113,7 @@ def _prepareRoleObject(**kwargs):
     permits = kwargs.pop('permits', None)
     rolePermits = Permits()
     if permits:
-        permitsList = split(permits)
+        permitsList = permits.replace(',', ' ').split()
         for permit in permitsList:
             permitObj = permitUtil.find(permit, collection=getPermits())
             rolePermits.add_permit(permitObj)
