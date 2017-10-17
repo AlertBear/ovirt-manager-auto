@@ -127,7 +127,7 @@ def _remove_power_management(host=None, testflow_func=testflow.teardown):
 
 
 @tier2
-@bz({"1488755": {}})
+@bz({"1502741": {}})
 class WithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
