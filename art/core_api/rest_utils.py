@@ -510,7 +510,8 @@ class RestUtil(api_utils.APIUtil):
         return True
 
     def find(
-        self, val, attribute='name', abs_link=True, collection=None, **kwargs
+        self, val, attribute='name', abs_link=True, collection=None,
+        all_content=False, **kwargs
     ):
         """
         Find entity by name
@@ -519,6 +520,8 @@ class RestUtil(api_utils.APIUtil):
             val (str): name of entity to look for
             attribute (str): attribute name for searching
             abs_link (bool): absolute link or just a suffix
+            collection (str): Collection name
+            all_content (bool): All content header
             kwargs (dict): additional search attribute=val pairs (the attribute
                 can be a chain attribute such as 'attr_x.attr_y')
 
@@ -529,6 +532,9 @@ class RestUtil(api_utils.APIUtil):
             EntityNotFound: If entity not found
         """
         href = self.collection_name
+        if all_content:
+            self.api.headers['All-content'] = all_content
+
         if abs_link:
             href = self.links[self.collection_name]
 

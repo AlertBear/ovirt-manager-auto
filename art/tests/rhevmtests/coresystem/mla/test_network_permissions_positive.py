@@ -9,7 +9,7 @@ import pytest
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (
-    datacenters, mla, networks, templates, users, vms
+    datacenters, mla, networks, templates, users, vms, clusters
 )
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
@@ -267,6 +267,9 @@ class TestPositiveNetworkPermissions231823(NetworkingPositive):
     @polarion("RHEVM3-8383")
     def test_attaching_network_to_cluster(self):
         """ Attaching network to cluster """
+        cluster_obj = clusters.get_cluster_object(
+            cluster_name=config.CLUSTER_NAME[0]
+        )
         testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
 
@@ -287,7 +290,7 @@ class TestPositiveNetworkPermissions231823(NetworkingPositive):
         assert networks.remove_network_from_cluster(
             True,
             config.NETWORK_NAMES[0],
-            config.CLUSTER_NAME[0]
+            cluster_obj
         )
 
         testflow.step(
@@ -367,13 +370,16 @@ class TestSwitching(NetworkingPositive):
                 'vm' if kwargs['usages'] == 'display' else 'display')
 
     def _test_switching_display_and_required(self, **kwargs):
+        cluster_obj = clusters.get_cluster_object(
+            cluster_name=config.CLUSTER_NAME[0]
+        )
         testflow.step(
             "Update network %s in cluster %s.",
             config.NETWORK_NAMES[0], config.CLUSTER_NAME[0]
         )
         assert networks.update_cluster_network(
             True,
-            config.CLUSTER_NAME[0],
+            cluster_obj,
             config.NETWORK_NAMES[0],
             **kwargs
         )
@@ -392,7 +398,7 @@ class TestSwitching(NetworkingPositive):
             )
             assert networks.update_cluster_network(
                 True,
-                config.CLUSTER_NAME[0],
+                cluster_obj,
                 config.NETWORK_NAMES[0],
                 **kwargs
             )
@@ -406,7 +412,7 @@ class TestSwitching(NetworkingPositive):
             )
             assert networks.update_cluster_network(
                 True,
-                config.CLUSTER_NAME[0],
+                cluster_obj,
                 config.NETWORK_NAMES[0],
                 **kwargs
             )

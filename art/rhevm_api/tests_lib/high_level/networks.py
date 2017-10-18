@@ -253,6 +253,10 @@ def remove_all_networks(datacenter=None, cluster=None, remove_gluster=False):
         bool: True if removing networks succeeded, otherwise False
     """
     networks_to_remove = list()
+    cl_obj = (
+        ll_clusters.get_cluster_object(cluster_name=cluster) if cluster else
+        cluster
+    )
     mgmt_networks_ids = get_clusters_managements_networks_ids(cluster=cluster)
     if cluster:
         networks_list = ll_networks.get_cluster_networks(
@@ -271,9 +275,9 @@ def remove_all_networks(datacenter=None, cluster=None, remove_gluster=False):
         if not remove_gluster:
             if ll_networks.is_gluster_network(
                 network=net.name,
-                cluster=cluster or ll_networks.get_network_cluster(
+                cluster=cl_obj or ll_networks.get_network_cluster(
                     network=net.name, datacenter=datacenter
-                ).name
+                )
             ):
                 continue
 
@@ -305,7 +309,8 @@ def get_ip_on_host_nic(host, nic, ipv6=False):
     Returns:
         str: IP if HosNic have IP else empty str
     """
-    host_nic = ll_hosts.get_host_nic(host=host, nic=nic)
+    host_obj = ll_hosts.get_host_object(host_name=host)
+    host_nic = ll_hosts.get_host_nic(host=host_obj, nic=nic)
     if host_nic:
         return host_nic.ip.address if not ipv6 else host_nic.ipv6.address
     return ""
@@ -329,7 +334,8 @@ def check_host_nic_params(host, nic, **kwargs):
         bool: True if action succeeded, otherwise False
     """
     res = True
-    host_nic = ll_hosts.get_host_nic(host, nic)
+    host_obj = ll_hosts.get_host_object(host_name=host)
+    host_nic = ll_hosts.get_host_nic(host=host_obj, nic=nic)
     expected_bridge = kwargs.get("bridge")
     expected_vlan_id = kwargs.get("vlan_id")
     expected_mtu = kwargs.get("mtu")
@@ -348,7 +354,7 @@ def check_host_nic_params(host, nic, **kwargs):
         vlan_nic = ".".join([nic, expected_vlan_id])
         logger.info("Check that %s has vlan tag %s", nic, expected_vlan_id)
         try:
-            ll_hosts.get_host_nic(host, vlan_nic)
+            ll_hosts.get_host_nic(host=host_obj, nic=vlan_nic)
         except apis_exceptions.EntityNotFound:
             logger.error("Fail to get %s interface from %s", vlan_nic, host)
             res = False
@@ -468,7 +474,12 @@ def is_management_network(cluster_name, network):
         bool: True if network is management network, otherwise False
     """
     mgmt_net_obj = ll_networks.get_management_network(cluster_name)
-    cl_mgmt_net_obj = ll_clusters.get_cluster_management_network(cluster_name)
+    cl_obj = ll_clusters.get_cluster_object(
+        cluster_name=cluster_name, all_content=True
+    )
+    cl_mgmt_net_obj = ll_clusters.get_cluster_management_network(
+        cluster=cl_obj
+    )
     return (
         mgmt_net_obj.get_name() == network and
         mgmt_net_obj.get_id() == cl_mgmt_net_obj.get_id()
@@ -499,11 +510,13 @@ def get_nic_statistics(nic, host=None, vm=None, keys=None):
             )
     """
     res = dict()
-    stats = ll_hosts.get_host_nic_statistics(
-        host, nic
-    ) if host else ll_vms.get_vm_nic_statistics(
-        vm, nic
-    )
+    if host:
+        host_object = ll_hosts.get_host_object(host_name=host)
+        stats = ll_hosts.get_host_nic_statistics(
+            host=host_object, nic=nic
+        )
+    else:
+        stats = ll_vms.get_vm_nic_statistics(vm=vm, nic=nic)
     for stat in stats:
         stat_name = stat.get_name()
         if stat_name in keys:
@@ -558,7 +571,8 @@ def get_management_network_host_nic(host, cluster):
 
     """
     mgmt_net = ll_networks.get_management_network(cluster_name=cluster)
-    host_nics_list = ll_hosts.get_host_nics_list(host=host)
+    host_obj = ll_hosts.get_host_object(host_name=host)
+    host_nics_list = ll_hosts.get_host_nics_list(host=host_obj)
     host_nics_with_network = filter(
         lambda nic: getattr(nic, "network"), host_nics_list
     )
@@ -592,7 +606,7 @@ def remove_unneeded_vnic_profiles(dc_name):
             cluster=cluster.name, href=False
         )
         mngmnt_net = ll_clusters.get_cluster_management_network(
-            cluster_name=cluster.name
+            cluster=cluster
         )
         non_mngmnt_nets_ids = [
             net.get_id() for net in cluster_nets

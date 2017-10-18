@@ -7,7 +7,10 @@ Helper for active_bond_slave job
 import logging
 import shlex
 
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    hosts as ll_hosts
+)
 import rhevmtests.networking.config as conf
 
 logger = logging.getLogger("networking.misc.helper")
@@ -33,9 +36,10 @@ def compare_active_slave_from_host_to_engine(bond):
         return False
 
     host_active_slave = out.strip()
+    host_obj = ll_hosts.get_host_object(host_name=conf.HOST_0_NAME)
     logger.info("Check if active slave report on the engine")
     engine_active_slave = ll_networks.get_bond_active_slave_object(
-        host=conf.HOST_0_NAME, bond=bond
+        host=host_obj, bond=bond
     )
     if engine_active_slave is None:
         logger.error("Active slave name isn't exist on the engine")

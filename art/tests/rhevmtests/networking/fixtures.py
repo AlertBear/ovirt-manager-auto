@@ -12,6 +12,7 @@ import pytest
 
 import art.core_api.apis_exceptions as exceptions
 import config as conf
+import rhevmtests.networking.sr_iov.config as sriov_conf
 import fixtures_helper as network_fixture_helper
 import rhevmtests.coresystem.aaa.ldap.common as aaa_common
 import rhevmtests.helpers as global_helper
@@ -22,9 +23,9 @@ from art.rhevm_api.tests_lib.high_level import (
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
     hosts as ll_hosts,
-    general as ll_general,
+    vms as ll_vms,
     clusters as ll_clusters,
-    vms as ll_vms
+    sriov as ll_sriov
 )
 from rhevmtests.networking import config_handler
 from art.unittest_lib import testflow
@@ -82,6 +83,54 @@ class NetworkFixtures(object):
         conf.HOSTS_LIST = self.hosts_list
         conf.VDS_HOSTS_LIST = self.vds_list
         self.exclude_gluster_network_from_nics()
+        if not conf.NO_SEMI_SRIOV_SUPPORT:
+            # Create SR-IOV host NIC class instances to work with SR-IOV
+            # interfaces
+            sriov_conf.HOST_0_SRIOV_NICS_OBJ = (
+                ll_sriov.SriovHostNics(conf.HOST_0_NAME)
+            )
+            sriov_conf.HOST_1_SRIOV_NICS_OBJ = (
+                ll_sriov.SriovHostNics(conf.HOST_1_NAME)
+            )
+
+            # Get all SR-IOV host NIC objects
+            sriov_conf.HOST_0_PF_LIST = (
+                sriov_conf.HOST_0_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
+            )
+            sriov_conf.HOST_1_PF_LIST = (
+                sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
+            )
+
+            # Get all SR-IOV host NIC names
+            host_0_pf_nics = (
+                sriov_conf.HOST_0_SRIOV_NICS_OBJ.get_all_pf_nics_names()
+            )
+            sriov_conf.HOST_0_PF_NAMES = [
+                i for i in conf.HOST_0_NICS if i in host_0_pf_nics
+            ]
+
+            host_1_pf_nics = (
+                sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_names()
+            )
+            sriov_conf.HOST_1_PF_NAMES = [
+                i for i in conf.HOST_1_NICS if i in host_1_pf_nics
+            ]
+
+            # Get all PF objects according to PF NIC names
+            sriov_conf.HOST_0_PF_OBJECTS = [
+                ll_sriov.SriovNicPF(host=conf.HOST_0_NAME, nic=nic_name)
+                for nic_name in sriov_conf.HOST_0_PF_NAMES
+            ]
+            sriov_conf.HOST_1_PF_OBJECTS = [
+                ll_sriov.SriovNicPF(host=conf.HOST_1_NAME, nic=nic_name)
+                for nic_name in sriov_conf.HOST_1_PF_NAMES
+            ]
+
+            # Store specific PF objects for use in tests
+            # Assuming more then one SR-IOV NIC per host is available
+            sriov_conf.HOST_0_PF_OBJECT_1 = sriov_conf.HOST_0_PF_OBJECTS[0]
+            sriov_conf.HOST_0_PF_OBJECT_2 = sriov_conf.HOST_0_PF_OBJECTS[1]
+            sriov_conf.HOST_1_PF_OBJECT_1 = sriov_conf.HOST_1_PF_OBJECTS[0]
 
     def exclude_gluster_network_from_nics(self):
         """
@@ -92,10 +141,7 @@ class NetworkFixtures(object):
                 conf.HOST_0_NICS, conf.HOST_1_NICS, conf.HOST_2_NICS]
         ):
             host_obj = ll_hosts.get_host_object(host_name=host)
-            host_cl = ll_general.get_object_name_by_id(
-                ll_clusters.CLUSTER_API, host_obj.get_cluster().get_id()
-            )
-            host_nics = ll_hosts.get_host_nics_list(host=host)
+            host_nics = ll_hosts.get_host_nics_list(host=host_obj)
             for nic in host_nics:
                 nic_name = nic.name
                 if "dummy" in nic_name or nic_name not in nics:
@@ -106,7 +152,7 @@ class NetworkFixtures(object):
                         host=host, nic=nic_name
                     )
                     if ll_networks.is_gluster_network(
-                        network=network, cluster=host_cl
+                        network=network, cluster=host_obj.get_cluster()
                     ):
                         logger.debug(
                             "Found Gluster network (%s) on host %s NIC %s. "
@@ -217,8 +263,9 @@ def update_cluster_network_usages(request):
     network = request.cls.update_cluster_network
     usages = request.cls.update_cluster_network_usages
 
+    cluster_obj = ll_clusters.get_cluster_object(cluster_name=cluster)
     assert ll_networks.update_cluster_network(
-        positive=True, cluster=cluster, network=network, usages=usages
+        positive=True, cluster=cluster_obj, network=network, usages=usages
     )
 
 
@@ -262,8 +309,9 @@ def restore_network_usage(request):
         """
         Set management network as default route
         """
+        cluster_obj = ll_clusters.get_cluster_object(cluster_name=cluster)
         assert ll_networks.update_cluster_network(
-            positive=True, cluster=cluster, network=network,
+            positive=True, cluster=cluster_obj, network=network,
             usages=conf.ALL_NETWORK_USAGES
         )
     request.addfinalizer(fin)

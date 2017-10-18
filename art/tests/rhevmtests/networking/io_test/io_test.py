@@ -11,7 +11,10 @@ with valid/invalid names, IPs, netmask, VLAN, usages.
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    hosts as ll_hosts
+)
 import config as io_conf
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion, bz
@@ -565,7 +568,9 @@ class TestIOTest04(NetworkTest):
                 label: dict()
             }
             if nic:
-                label_dict[label]["host"] = conf.HOST_0_NAME
+                label_dict[label]["host"] = ll_hosts.get_host_object(
+                    host_name=conf.HOST_0_NAME
+                )
                 label_dict[label]["nic"] = conf.HOST_0_NICS[nic]
             else:
                 label_dict[label]["networks"] = [network]

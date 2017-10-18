@@ -17,7 +17,8 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
-    networks as ll_networks
+    networks as ll_networks,
+    clusters as ll_clusters
 )
 import config as label_conf
 from rhevmtests.networking import (
@@ -115,7 +116,7 @@ class TestNetLabels01(NetworkTest):
         )
         label_dict = {
             self.label_1: {
-                "host": conf.HOST_0_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_0_NAME),
                 "nic": self.bond
             }
         }
@@ -135,7 +136,7 @@ class TestNetLabels01(NetworkTest):
         )
         label_dict = {
             self.label_1: {
-                "host": conf.HOST_0_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_0_NAME),
                 "nic": self.bond
             }
         }
@@ -178,13 +179,13 @@ class TestNetLabels01(NetworkTest):
         }
         label_dict_1 = {
             self.label_2: {
-                "host": conf.HOST_0_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_0_NAME),
                 "nic": self.bond,
             }
         }
         label_dict_2 = {
             self.label_2: {
-                "host": conf.HOST_1_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_1_NAME),
                 "nic": conf.HOST_1_NICS[1]
             }
         }
@@ -232,13 +233,13 @@ class TestNetLabels01(NetworkTest):
         }
         label_dict_1 = {
             self.label_3: {
-                "host": conf.HOST_0_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_0_NAME),
                 "nic": self.bond
             }
         }
         label_dict_2 = {
             self.label_3: {
-                "host": conf.HOST_1_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_1_NAME),
                 "nic": conf.HOST_1_NICS[1]
             }
         }
@@ -369,6 +370,8 @@ class TestNetLabels02(NetworkTest):
         1) Break bond on both Hosts
         2) Make sure that the bond slave interfaces don't have label configured
         """
+        host_obj_1 = ll_hosts.get_host_object(host_name=conf.HOST_0_NAME)
+        host_obj_2 = ll_hosts.get_host_object(host_name=conf.HOST_1_NAME)
         kwargs = {
             "remove": {
                 'networks': [self.net_2],
@@ -389,10 +392,10 @@ class TestNetLabels02(NetworkTest):
         )
         assert not ll_networks.get_label_objects(
             host_nic_dict={
-                conf.HOST_0_NAME: [
+                host_obj_1: [
                     conf.HOST_0_NICS[-1], conf.HOST_0_NICS[-2]
                 ],
-                conf.HOST_1_NAME: [
+                host_obj_2: [
                     conf.HOST_1_NICS[-1], conf.HOST_1_NICS[-2]
                 ]
             }
@@ -549,7 +552,7 @@ class TestNetLabels04(NetworkTest):
         label_dict = {
             self.label_1: {
                 "networks": [self.net_1],
-                "host": conf.HOST_0_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_0_NAME),
                 "nic": conf.HOST_0_NICS[1]
             }
         }
@@ -702,6 +705,7 @@ class TestNetLabels05(NetworkTest):
         2) Check that both networks reside now on bond
         3) Check that label doesn't reside on slaves of the bond
         """
+        host_obj = ll_hosts.get_host_object(host_name=conf.HOST_0_NAME)
         sn_remove_labels = {
             "remove": {
                 "labels": self.labels[:2]
@@ -728,11 +732,11 @@ class TestNetLabels05(NetworkTest):
         )
         labels_dict = {
             self.label_1: {
-                "host": conf.HOST_0_NAME,
+                "host": host_obj,
                 "nic": self.bond_1
             },
             self.label_2: {
-                "host": conf.HOST_0_NAME,
+                "host": host_obj,
                 "nic": self.bond_1
             }
         }
@@ -752,6 +756,7 @@ class TestNetLabels05(NetworkTest):
         2) Check that both networks reside now on bond
         3) Check that label doesn't reside on slaves of the bond
         """
+        host_obj = ll_hosts.get_host_object(host_name=conf.HOST_0_NAME)
         sn_remove_labels = {
             "remove": {
                 "labels": self.labels[2:4]
@@ -780,11 +785,11 @@ class TestNetLabels05(NetworkTest):
 
         labels_dict = {
             self.label_3: {
-                "host": conf.HOST_0_NAME,
+                "host": host_obj,
                 "nic": self.bond_2
             },
             self.label_4: {
-                "host": conf.HOST_0_NAME,
+                "host": host_obj,
                 "nic": self.bond_2
             }
         }
@@ -803,6 +808,7 @@ class TestNetLabels05(NetworkTest):
         3) Check that both networks reside on appropriate interfaces after
         failure in second step
         """
+        host_obj = ll_hosts.get_host_object(host_name=conf.HOST_0_NAME)
         sn_remove_labels = {
             "remove": {
                 "labels": self.labels[4:6]
@@ -832,11 +838,11 @@ class TestNetLabels05(NetworkTest):
         )
         labels_dict = {
             self.label_5: {
-                "host": conf.HOST_0_NAME,
+                "host": host_obj,
                 "nic": self.bond_3
             },
             self.label_6: {
-                "host": conf.HOST_0_NAME,
+                "host": host_obj,
                 "nic": self.bond_3
             }
         }
@@ -928,13 +934,14 @@ class TestNetLabels06(NetworkTest):
         6) Check that network is not attached to Host NIC
         7) Check that network doesn't exist in DC
         """
+        cluster_obj = ll_clusters.get_cluster_object(cluster_name=self.cl_1)
         testflow.step(
             "Remove labeled network %s from cluster %s",
             self.net_1, self.cl_1
         )
         network_helper.call_function_and_wait_for_sn(
             func=ll_networks.remove_network_from_cluster, content=self.net_1,
-            positive=True, cluster=self.cl_1, network=self.net_1
+            positive=True, cluster=cluster_obj, network=self.net_1
         )
         testflow.step(
             "Check that the network %s is not attached to host NIC %s",
@@ -1054,7 +1061,9 @@ class TestNetLabels07(NetworkTest):
                 )
                 host_label_dict = {
                     lb: {
-                        "host": conf.HOST_1_NAME,
+                        "host": ll_hosts.get_host_object(
+                            host_name=conf.HOST_1_NAME
+                        ),
                         "nic": dummy
                     }
                 }
@@ -1172,7 +1181,9 @@ class TestNetLabels08(NetworkTest):
             label_dict = {
                 label: {
                     "nic": conf.HOST_0_NICS[1],
-                    "host": conf.HOST_0_NAME
+                    "host": ll_hosts.get_host_object(
+                        host_name=conf.HOST_0_NAME
+                    )
                 }
             }
             assert not ll_networks.add_label(**label_dict)
@@ -1254,7 +1265,7 @@ class TestNetLabels09(NetworkTest):
         label_dict = {
             self.label_1: {
                 "networks": [self.net_3],
-                "host": conf.HOST_0_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_0_NAME),
                 "nic": conf.HOST_0_NICS[1]
             }
         }
@@ -1279,7 +1290,7 @@ class TestNetLabels09(NetworkTest):
         label_dict = {
             self.label_2: {
                 "networks": [self.net_4],
-                "host": conf.HOST_0_NAME,
+                "host": ll_hosts.get_host_object(host_name=conf.HOST_0_NAME),
                 "nic": conf.HOST_0_NICS[1]
             }
         }

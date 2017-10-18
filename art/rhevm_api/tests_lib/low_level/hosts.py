@@ -636,13 +636,13 @@ def fence_host(host, fence_type, timeout=500, wait_for_status=True):
     )
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(warn=True)
 def get_host_nic(host, nic, all_content=False):
     """
     Get host NIC
 
     Args:
-        host (str): Host name
+        host (Host): Host object
         nic (str): NIC name
         all_content (bool): Get all content in NIC object
 
@@ -660,15 +660,14 @@ def get_host_nics_list(host, all_content=False):
     Get host NICs
 
     Args:
-        host (str): Host name
+        host (Host): Host object
         all_content (bool): Get NICs objects with all content
 
     Returns:
         list: Host NICs list
     """
-    host_obj = get_host_object(host_name=host)
     return HOST_API.getElemFromLink(
-        host_obj, 'nics', 'host_nic', get_href=False, all_content=all_content
+        host, 'nics', 'host_nic', get_href=False, all_content=all_content
     )
 
 
@@ -791,7 +790,7 @@ def remove_tag_from_host(positive, host, tag):
         return False
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(warn=True)
 def check_host_spm_status(positive, host):
     """
     Checking Storage Pool Manager (SPM) status of the host.
@@ -1668,13 +1667,13 @@ def get_host_nic_statistics(host, nic):
     Get host NIC statistics collection
 
     Args:
-        host (str): Host name
+        host (Host): Host object
         nic (str): NIC name
 
     Returns:
         list: Host NIC statistics list
     """
-    host_nic = get_host_nic(host, nic)
+    host_nic = get_host_nic(host=host, nic=nic)
     return HOST_NICS_API.getElemFromLink(
         host_nic, link_name="statistics", attr="statistic"
     )
@@ -2169,7 +2168,7 @@ def get_host_device_id_by_name(host_name, device_name):
         return host_device_obj.get_id()
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(warn=True)
 def get_hosted_engine_obj(host_name):
     """
     Get host hosted-engine object
@@ -2322,7 +2321,7 @@ def get_lldp_nic_info(host, nic):
     Get host NIC LLDP info
 
     Args:
-        host (str): Host name
+        host (Host): Host object
         nic (str): NIC name
 
     Returns:

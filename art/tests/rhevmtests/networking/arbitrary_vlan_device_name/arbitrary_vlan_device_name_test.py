@@ -125,7 +125,7 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
             item=self.test_vlan_on_nic_and_on_bond.parametrize,
             params=vlan_names
         )
-        host = network_conf.HOST_0_NAME
+        host_obj = ll_hosts.get_host_object(host_name=network_conf.HOST_0_NAME)
         testflow.step(_id)
         for vlan in vlan_names:
-            assert ll_hosts.get_host_nic(host=host, nic=vlan)
+            assert ll_hosts.get_host_nic(host=host_obj, nic=vlan)

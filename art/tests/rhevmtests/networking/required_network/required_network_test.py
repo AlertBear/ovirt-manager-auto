@@ -9,7 +9,10 @@ Testing RequiredNetwork network feature.
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    clusters as ll_clusters
+)
 import config as required_conf
 import helper
 import rhevmtests.networking.config as conf
@@ -62,15 +65,15 @@ class TestRequiredNetwork01(NetworkTest):
         Check that management network is required by default
         Try to set it to non required.
         """
-
+        cluster_obj = ll_clusters.get_cluster_object(cluster_name=self.cluster)
         testflow.step("Check that management network is required by default")
         assert ll_networks.is_network_required(
-            network=self.mgmt, cluster=self.cluster
+            network=self.mgmt, cluster=cluster_obj
         )
 
         testflow.step("Try to set management network to non required.")
         assert ll_networks.update_cluster_network(
-            positive=False, cluster=self.cluster, network=self.mgmt,
+            positive=False, cluster=cluster_obj, network=self.mgmt,
             required="false"
         )
 

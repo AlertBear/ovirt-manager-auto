@@ -18,7 +18,8 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
-    vms as ll_vms
+    vms as ll_vms,
+    hosts as ll_hosts
 )
 from utilities import jobs
 
@@ -280,9 +281,10 @@ def check_migration_network(
     elif non_vm:
         nic = dst_host_rsc.nics[nic_index]
     else:
+        dst_host_obj = ll_hosts.get_host_object(host_name=dst_host_name)
         # VM network
         nic = ll_networks.get_network_on_host_nic(
-            dst_host_name, dst_host_rsc.nics[nic_index]
+            host=dst_host_obj, nic=dst_host_rsc.nics[nic_index]
         )
 
     logger.info(

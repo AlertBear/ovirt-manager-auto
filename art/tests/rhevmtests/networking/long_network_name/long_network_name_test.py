@@ -12,7 +12,8 @@ from art.unittest_lib import tier2, NetworkTest
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
     vms as ll_vms,
-    host_network as ll_host_network
+    host_network as ll_host_network,
+    hosts as ll_hosts
 )
 from art.rhevm_api.tests_lib.high_level import (
     networks as hl_networks,
@@ -222,6 +223,7 @@ class TestLongNetworkName03(NetworkTest):
         Make sure unmanaged network reported as prefix+uuid for network with
         long name
         """
+        host_obj = ll_hosts.get_host_object(host_name=conf.HOST_0_NAME)
         network_object = ll_networks.find_network(
             network=self.long_network_name, data_center=self.dc
         )
@@ -232,5 +234,5 @@ class TestLongNetworkName03(NetworkTest):
             positive=True, network=self.long_network_name
         )
         assert ll_host_network.get_host_unmanaged_networks(
-            host_name=conf.HOST_0_NAME, networks=[vdsm_network_name]
+            host=host_obj, networks=[vdsm_network_name]
         )

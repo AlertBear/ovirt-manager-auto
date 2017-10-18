@@ -1,7 +1,10 @@
 import logging
 import shlex
 
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    hosts as ll_hosts
+)
 import rhevmtests.helpers as global_helper
 
 logger = logging.getLogger("Bad_Bond_Helper")
@@ -106,10 +109,10 @@ def check_bond_ad_partner_mac_in_rest(host_name, bond_name):
     Returns:
         str: MAC address, or empty string if not reported, or error has
             occurred
-
     """
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
     mac = ll_networks.get_bond_bonding_property(
-        host=host_name, bond=bond_name, property_name="ad_partner_mac"
+        host=host_obj, bond=bond_name, property_name="ad_partner_mac"
     )
     if not mac:
         logger.error(

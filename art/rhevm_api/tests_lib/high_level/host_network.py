@@ -44,8 +44,10 @@ def remove_networks_from_host(host_name, networks, nic=None):
     Returns:
         bool: True if success, otherwise False
     """
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
+    nic_obj = ll_hosts.get_host_nic(host=host_obj, nic=nic)
     attachments = ll_host_network.get_networks_attachments(
-        host_name, networks, nic
+        networks=networks, nic=nic_obj, host=host_obj
     )
     if not attachments:
         return False
@@ -69,10 +71,13 @@ def add_network_to_host(host_name, nic_name=None, **kwargs):
     Returns:
         bool: True if success, otherwise False
     """
+    nic_name = nic_name if nic_name else kwargs.get("nic")
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
+    nic_obj = ll_hosts.get_host_nic(host=host_obj, nic=nic_name)
     network_attachment_obj = ll_host_network.prepare_network_attachment_obj(
-        host_name, **kwargs
+        host=host_obj, **kwargs
     )
-    attachments_href = ll_host_network.get_attachment_href(host_name, nic_name)
+    attachments_href = ll_host_network.get_attachment_href(nic=nic_obj)
 
     res = ll_host_network.NETWORK_ATTACHMENT_API.create(
         entity=network_attachment_obj,
@@ -96,20 +101,23 @@ def update_network_on_host(host_name, nic_name=None, **kwargs):
     Returns:
         bool: True if success, otherwise False
     """
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
+    nic_obj = ll_hosts.get_host_nic(host=host_obj, nic=nic_name)
     network_name = kwargs.get("network")
     orig_attachment_obj = ll_host_network.get_networks_attachments(
-        host_name, [network_name], nic_name
+        networks=[network_name], nic=nic_obj, host=host_obj
     )
     if not orig_attachment_obj:
         return False
 
     network_attachment_obj = ll_host_network.prepare_network_attachment_obj(
-        host_name, **kwargs
+        host=host_obj, **kwargs
     )
-    res = ll_host_network.NETWORK_ATTACHMENT_API.update(
-        orig_attachment_obj[0], network_attachment_obj, True
+    return ll_host_network.NETWORK_ATTACHMENT_API.update(
+        origEntity=orig_attachment_obj[0],
+        newEntity=network_attachment_obj,
+        positive=True
     )[1]
-    return res
 
 
 @ll_general.generate_logs(step=True)
@@ -230,7 +238,7 @@ def setup_networks(host_name, **kwargs):
     labels = data_st.NetworkLabels()
     removed_labels = data_st.NetworkLabels()
     synchronized_network_attachments = data_st.NetworkAttachments()
-    host = ll_hosts.HOST_API.find(host_name)
+    host = ll_hosts.get_host_object(host_name=host_name)
 
     remove = kwargs.get("remove")
     add = kwargs.get("add")
@@ -245,25 +253,33 @@ def setup_networks(host_name, **kwargs):
     if remove:
         removed_bonds, removed_network_attachments, removed_labels = (
             ll_host_network.prepare_remove_for_setupnetworks(
-                host_name, remove
+                host=host, dict_to_remove=remove
             )
         )
     if add:
         network_attachments, bonds, labels = (
             ll_host_network.prepare_add_for_setupnetworks(
-                network_attachments, labels, host_name, add
+                network_attachments=network_attachments,
+                labels=labels,
+                host=host,
+                dict_to_add=add
             )
         )
     if update:
         network_attachments, bonds, labels = (
             ll_host_network.prepare_add_for_setupnetworks(
-                network_attachments, labels, host_name, update, True
+                network_attachments=network_attachments,
+                labels=labels, host=host,
+                dict_to_add=update,
+                update=True
             )
         )
     if sync:
         networks = sync["networks"]
         nets_to_sync = (
-            ll_host_network.get_networks_attachments(host_name, networks)
+            ll_host_network.get_networks_attachments(
+                host=host, networks=networks
+            )
         )
         synchronized_network_attachments.set_network_attachment(nets_to_sync)
 
@@ -300,23 +316,26 @@ def clean_host_interfaces(host_name, remove_gluster=False):
     networks = []
     bonds = []
     labels = []
-    host = ll_hosts.HOST_API.find(host_name)
-    host_cl = ll_general.get_object_name_by_id(
-        ll_clusters.CLUSTER_API, host.get_cluster().get_id()
+    host = ll_hosts.get_host_object(host_name=host_name)
+    attachments = ll_host_network.get_host_network_attachments(host=host)
+    cl_obj = ll_clusters.get_cluster_object(
+        cluster_name=ll_hosts.get_host_cluster(host=host.name),
+        all_content=True
     )
-    attachments = ll_host_network.get_host_network_attachments(host_name)
     mgmt_net_name = ll_networks.NET_API.find(
-        ll_clusters.get_cluster_management_network(host_cl).get_id(), "id"
+            val=cl_obj.get_management_network().get_id(),
+            attribute="id"
     ).get_name()
-    host_nics = ll_hosts.get_host_nics_list(host_name)
+    host_nics = ll_hosts.get_host_nics_list(host=host)
     for att in attachments:
         att_network_name = ll_general.get_object_name_by_id(
-            ll_networks.NET_API, att.get_network().get_id()
+            object_api=ll_networks.NET_API,
+            object_id=att.get_network().get_id()
         )
 
         if not remove_gluster:
             if ll_networks.is_gluster_network(
-                network=att_network_name, cluster=host_cl
+                network=att_network_name, cluster=host.get_cluster()
             ):
                 continue
 
@@ -337,7 +356,7 @@ def clean_host_interfaces(host_name, remove_gluster=False):
             [i.get_id() for i in ll_networks.get_host_nic_labels(nic=nic)]
         )
 
-    if not ll_host_network.remove_unmanaged_networks(host_name):
+    if not ll_host_network.remove_unmanaged_networks(host=host):
         return False
 
     if networks + bonds + labels:
@@ -348,13 +367,13 @@ def clean_host_interfaces(host_name, remove_gluster=False):
                 LABELS: labels
             }
         }
-        res = setup_networks(host_name, persist=True, **kwargs)
+        res = setup_networks(host_name=host_name, persist=True, **kwargs)
         if not res:
             return False
     return True
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(warn=True)
 def get_attached_networks_names_from_host_nic(host_name, nic):
     """
     Get attached networks names from host NIC
@@ -366,12 +385,15 @@ def get_attached_networks_names_from_host_nic(host_name, nic):
     Returns:
         list: Networks names from host NIC
     """
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
+    nic_obj = ll_hosts.get_host_nic(host=host_obj, nic=nic)
     attachments = ll_host_network.get_host_nic_network_attachments(
-        host_name, nic
+        nic=nic_obj
     )
     return [
         ll_general.get_object_name_by_id(
-            ll_networks.NET_API, att.get_network().get_id()
+            object_api=ll_networks.NET_API,
+            object_id=att.get_network().get_id()
         ) for att in attachments
     ]
 
@@ -388,7 +410,10 @@ def get_host_unmanaged_networks_info(host_name):
         dict: un-managed networks info
     """
     res = dict()
-    unmanaged_networks = ll_host_network.get_host_unmanaged_objects(host_name)
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
+    unmanaged_networks = ll_host_network.get_host_unmanaged_objects(
+        host=host_obj
+    )
     for un in unmanaged_networks:
         name = un.get_name()
         host_nic = un.get_host_nic().get_name()
@@ -408,16 +433,16 @@ def get_unsync_network_attachments(host_name, networks=None):
     Returns:
         list: Un-synced attachments list
     """
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
     if networks:
         attachments = ll_host_network.get_networks_attachments(
-            host_name, networks
+            host=host_obj, networks=networks
         )
     else:
-        attachments = ll_host_network.get_host_network_attachments(host_name)
-    return [
-        att for att in attachments if not
-        ll_host_network.get_attachment_sync_status(att)
-    ]
+        attachments = ll_host_network.get_host_network_attachments(
+            host=host_obj
+        )
+    return [att for att in attachments if not att.in_sync]
 
 
 @ll_general.generate_logs()
@@ -434,7 +459,9 @@ def get_networks_unsync_reason(host_name, networks=None):
     """
     res = dict()
     report_name_dict = dict()
-    attachments = get_unsync_network_attachments(host_name, networks)
+    attachments = get_unsync_network_attachments(
+        host_name=host_name, networks=networks
+    )
     for att in attachments:
         net_name = ll_host_network.get_network_name_from_attachment(att)
         reported = ll_host_network.get_attachment_reported_configurations(att)
@@ -448,7 +475,7 @@ def get_networks_unsync_reason(host_name, networks=None):
     return res
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(warn=True)
 def check_network_on_nic(network, host, nic):
     """
     Checks if network resides on Host NIC via NIC attachments
@@ -464,6 +491,4 @@ def check_network_on_nic(network, host, nic):
     networks = get_attached_networks_names_from_host_nic(
         host_name=host, nic=nic
     )
-    if network not in networks:
-        return False
-    return True
+    return network in networks

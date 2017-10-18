@@ -273,7 +273,7 @@ def get_cluster_network(cluster, network):
     specific to the cluster).
 
     Args:
-        cluster (str): Name of the cluster in which the network is located.
+        cluster (Cluster): Cluster object in which the network is located.
         network (str): Name of the network.
 
     Returns:
@@ -282,10 +282,9 @@ def get_cluster_network(cluster, network):
     Raises:
         EntityNotFound: If network was not found
     """
-    cluster_obj = CL_API.find(cluster)
     try:
         return CL_API.getElemFromElemColl(
-            cluster_obj, network, "networks", "network"
+            cluster, network, "networks", "network"
         )
     except apis_exceptions.EntityNotFound:
         return None
@@ -346,7 +345,7 @@ def update_cluster_network(positive, cluster, network, **kwargs):
 
     Args:
         positive (bool): Expected results
-        cluster (str): Cluster name
+        cluster (Cluster): Cluster object
         network (str): Network name
 
     Keyword Arguments:
@@ -357,7 +356,7 @@ def update_cluster_network(positive, cluster, network, **kwargs):
     Returns:
         bool: True if network was attached properly, False otherwise
     """
-    net = get_cluster_network(cluster, network)
+    net = get_cluster_network(cluster=cluster, network=network)
     net_update = _prepare_cluster_network_object(**kwargs)
     return NET_API.update(net, net_update, positive)[1]
 
@@ -370,7 +369,7 @@ def remove_network_from_cluster(positive, network, cluster):
     Args:
         positive (bool): Expected results
         network (str): Network name
-        cluster (str): Cluster name
+        cluster (Cluster): Cluster object
 
     Returns:
         bool: True if remove network succeeded, False otherwise.
@@ -386,12 +385,12 @@ def is_network_required(network, cluster):
 
     Args:
         network (str): Network name
-        cluster (str): cluster name
+        cluster (Cluster): cluster object
 
     Returns:
         bool: True if network is required, False otherwise.
     """
-    net_obj = get_cluster_network(cluster, network)
+    net_obj = get_cluster_network(cluster=cluster, network=network)
     return net_obj.get_required()
 
 
@@ -865,18 +864,18 @@ def create_label(label):
     return label_obj
 
 
+@ll.general.generate_logs(step=True)
 def add_label(**kwargs):
     """
-    Add network label to the network in the list provided or to
-    the NIC on the host for a dictionary of host: [nics] items
+    Add network label network or hostNIC
 
     Keyword Args:
         label (str): label to be added to network or NIC on the Host
             if string is provided will create a new label, otherwise expect
             already existed Label object
         networks (list): list of networks with labels
-        host_nic_dict (dict): dictionary with hosts as keys and a list of host
-            interfaces as a value for that key
+        host_nic_dict (dict): dictionary with hosts (Host object) as keys
+            and a list of host interfaces as a value for that key
         datacenter (str): for network parameter datacenter that networks
             resides on
         cluster (str): for cluster parameter cluster that the network
@@ -933,7 +932,7 @@ def add_label(**kwargs):
             )
             logger.info(
                 "Add label %s to the NIC %s on Host %s",
-                label_obj.id, nic, host
+                label_obj.id, nic, host.name
             )
             if not LABEL_API.create(
                 entity=label_obj, positive=True,
@@ -941,13 +940,13 @@ def add_label(**kwargs):
             )[1]:
                 logger.error(
                     "Can't add label %s to the NIC %s on Host %s",
-                    label_obj.id, nic, host
+                    label_obj.id, nic, host.name
                 )
                 return False
     return True
 
 
-@general.generate_logs()
+@general.generate_logs(warn=True)
 def get_label_objects(**kwargs):
     """
     Get network labels from given networks list and given list NICs of any
@@ -1225,12 +1224,12 @@ def get_management_network(cluster_name):
 
 
 @general.generate_logs(error=False)
-def check_network_usage(cluster_name, network, attrs):
+def check_network_usage(cluster, network, attrs):
     """
     Check if usages attributes exist for specific network
 
     Args:
-        cluster_name (str): Name of the Cluster
+        cluster (Cluster): Cluster object
         network (str): Name of the Network
         attrs (list): list of attributes (display, migration, management,
             default_route)
@@ -1238,7 +1237,7 @@ def check_network_usage(cluster_name, network, attrs):
     Returns:
         bool: If all attributes exist in network params, False otherwise
     """
-    net_obj = get_cluster_network(cluster=cluster_name, network=network)
+    net_obj = get_cluster_network(cluster=cluster, network=network)
     if not net_obj:
         return False
 
@@ -1325,7 +1324,7 @@ def get_network_on_host_nic(host, nic):
     Get network name from host NIC
 
     Args:
-        host (str): Host name
+        host (Host): Host object
         nic (str): NIC name
 
     Returns:
@@ -1485,7 +1484,7 @@ def get_bond_bonding_property(host, bond, property_name):
     Get bond bonding property_name Mac object for host
 
     Args:
-        host (str): Host name
+        host (Host): Host object
         bond (str): Bond name
         property_name (str): Property name, can be one of the following:
             "ad_partner_mac", "options", "slaves" or "active_slave"
@@ -1493,7 +1492,7 @@ def get_bond_bonding_property(host, bond, property_name):
     Returns:
         Mac: Mac object, or None if get failed
     """
-    host_nics = ll.hosts.get_host_nics_list(host)
+    host_nics = ll.hosts.get_host_nics_list(host=host)
     bond_object = [i for i in host_nics if i.name == bond]
 
     if not bond_object:
@@ -1508,7 +1507,7 @@ def get_bond_active_slave_object(host, bond):
     Get host bond active slave object.
 
     Args:
-        host (str): Host name.
+        host (Host): Host object.
         bond (str): Bond name.
 
     Returns:
@@ -1558,13 +1557,13 @@ def is_gluster_network(network, cluster=None):
 
     Args:
         network (str): Network name
-        cluster (str): Cluster name
+        cluster (Cluster): Cluster object
 
     Returns:
         bool: True if network has gluster role, False otherwise
     """
     return check_network_usage(
-        cluster_name=cluster, network=network, attrs=["gluster"]
+        cluster=cluster, network=network, attrs=["gluster"]
     )
 
 

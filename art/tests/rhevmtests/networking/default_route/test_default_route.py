@@ -5,7 +5,10 @@ Default route tests
 """
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from art.rhevm_api.tests_lib.low_level import (
+    networks as ll_networks,
+    clusters as ll_clusters
+)
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as dr_conf
 import rhevmtests.networking.config as conf
@@ -66,12 +69,15 @@ class TestDefaultRoute01(NetworkTest):
         1. Set default route role to non default management network
         2. Check that the network has default route role
         """
+        cluster_obj = ll_clusters.get_cluster_object(
+            cluster_name=self.ext_cluster
+        )
         assert ll_networks.update_cluster_network(
-            positive=True, cluster=self.ext_cluster, network=self.net,
+            positive=True, cluster=cluster_obj, network=self.net,
             usages=self.default_route_usage
         )
         assert ll_networks.check_network_usage(
-            cluster_name=self.ext_cluster, network=self.net,
+            cluster=cluster_obj, network=self.net,
             attrs=[self.default_route_usage]
         )
 
@@ -122,8 +128,11 @@ class TestDefaultRoute02(NetworkTest):
         Check that default route role require IP configuration while the
         network attached to the host
         """
+        cluster_obj = ll_clusters.get_cluster_object(
+            cluster_name=self.cluster
+        )
         assert ll_networks.update_cluster_network(
-            positive=False, cluster=self.cluster, network=self.net_1,
+            positive=False, cluster=cluster_obj, network=self.net_1,
             usages=self.default_route_usage
         )
 
@@ -134,8 +143,11 @@ class TestDefaultRoute02(NetworkTest):
         Check that default route role require IP configuration when attaching
         the network to host
         """
+        cluster_obj = ll_clusters.get_cluster_object(
+            cluster_name=self.cluster
+        )
         assert ll_networks.update_cluster_network(
-            positive=True, cluster=self.cluster, network=self.net_2,
+            positive=True, cluster=cluster_obj, network=self.net_2,
             usages=self.default_route_usage
         )
         sn_dict = {

@@ -104,7 +104,6 @@ def attach_networks_for_parametrize(
     if via == "host_nic" or via == "host":
         use_nic = nic if via == "host_nic" else None
         if remove:
-            nic = nic if via == "host_nic" else None
             res = hl_host_network.remove_networks_from_host(
                 host_name=host_0, networks=[network], nic=use_nic
             )

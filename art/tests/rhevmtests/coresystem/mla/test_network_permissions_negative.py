@@ -9,7 +9,7 @@ import pytest
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (
-    mla, networks, templates, vms, users
+    mla, networks, templates, vms, users, clusters
 )
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
@@ -300,6 +300,9 @@ class TestNegativeNetworkPermissions231917(NetworkingNegative):
     @polarion("RHEVM3-8678")
     def test_attaching_detaching_network_to_from_cluster(self):
         """ Attaching/Detaching network to/from Cluster """
+        cluster_obj = clusters.get_cluster_object(
+            cluster_name=config.CLUSTER_NAME[0]
+        )
         for user_name in config.USER_NAMES[:2]:
             testflow.step(
                 "Log in as user %s@%s.", user_name, config.USER_DOMAIN
@@ -314,7 +317,7 @@ class TestNegativeNetworkPermissions231917(NetworkingNegative):
             assert networks.remove_network_from_cluster(
                 False,
                 config.NETWORK_NAMES[0],
-                config.CLUSTER_NAME[0]
+                cluster_obj
             )
 
             testflow.step(
@@ -387,7 +390,9 @@ class TestNegativeNetworkPermissions231918(NetworkingNegative):
             )
             assert networks.update_cluster_network(
                 True,
-                config.CLUSTER_NAME[0],
+                clusters.get_cluster_object(
+                    cluster_name=config.CLUSTER_NAME[0]
+                ),
                 net,
                 required=True if net == config.NETWORK_NAMES[0] else False
             )
@@ -405,7 +410,9 @@ class TestNegativeNetworkPermissions231918(NetworkingNegative):
             )
             assert networks.update_cluster_network(
                 False,
-                config.CLUSTER_NAME[0],
+                clusters.get_cluster_object(
+                    cluster_name=config.CLUSTER_NAME[0]
+                ),
                 config.NETWORK_NAMES[0],
                 required=req
             )

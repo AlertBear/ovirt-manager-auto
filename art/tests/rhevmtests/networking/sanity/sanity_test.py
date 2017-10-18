@@ -569,7 +569,7 @@ class TestSanity05(NetworkTest):
         )
         label_dict = {
             label: {
-                "host": host,
+                "host": ll_hosts.get_host_object(host_name=host),
                 "nic": host_nic,
             }
         }

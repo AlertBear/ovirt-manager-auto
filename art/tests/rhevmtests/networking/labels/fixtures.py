@@ -13,7 +13,6 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     networks as ll_networks
 )
-from art.unittest_lib import testflow
 
 
 @pytest.fixture(scope="class")
@@ -30,7 +29,9 @@ def add_label_nic_and_network(request):
         networks = params.get("networks")
         labels_dict_to_send[lb] = {}
         if host_idx is not None:
-            labels_dict_to_send[lb]["host"] = conf.HOSTS[host_idx]
+            labels_dict_to_send[lb]["host"] = ll_hosts.get_host_object(
+                host_name=conf.HOSTS[host_idx]
+            )
 
         if nic_idx is not None:
             if isinstance(nic_idx, basestring):
@@ -42,7 +43,6 @@ def add_label_nic_and_network(request):
         if networks:
             labels_dict_to_send[lb]["networks"] = networks
 
-        testflow.setup("Add label %s: %s", lb, labels_dict_to_send[lb])
         assert ll_networks.add_label(**labels_dict_to_send)
         labels_dict_to_send = dict()
 
@@ -56,13 +56,9 @@ def move_host_to_another_cluster(request):
         """
         Move host back to it's original cluster
         """
-        testflow.teardown(
-            "Move host %s to cluster %s", conf.HOST_1_NAME, conf.CL_0
-        )
         assert hl_host.move_host_to_another_cluster(
             host=conf.HOST_1_NAME, cluster=conf.CL_0
         )
     request.addfinalizer(fin)
 
-    testflow.setup("Deactivate host %s", conf.HOST_1_NAME)
     assert ll_hosts.deactivate_host(positive=True, host=conf.HOST_1_NAME)

@@ -1242,7 +1242,7 @@ def wait_for_export_domain_template_state(
     return True
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(warn=True)
 def get_templates_obj(template_name, all_content=False):
     """
     Get template objects by using the template_name
@@ -1260,7 +1260,7 @@ def get_templates_obj(template_name, all_content=False):
     return TEMPLATE_API.query(template_name_query, all_content=all_content)
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(warn=True)
 def get_template_obj(
     template_name, all_content=False, version=BASE_TEMPLATE_VERSION
 ):
@@ -1289,6 +1289,7 @@ def get_template_obj(
     return None
 
 
+@ll_general.generate_logs(warn=True)
 def get_template_obj_from_export_domain(
     export_domain_object, template_name, version=BASE_TEMPLATE_VERSION
 ):
@@ -1304,21 +1305,14 @@ def get_template_obj_from_export_domain(
     Returns:
          object: If found returns the template object, otherwise None
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="get", obj_type="template", obj_name=template_name,
-        extra_txt="from export domain: %s" % export_domain_object.get_name(),
-        template_version=version
-    )
     try:
         templates_list = TEMPLATE_API.getElemFromLink(export_domain_object)
     except apis_exceptions.EntityNotFound:
-        logger.error(log_error)
         return None
-    logger.info(log_info)
+
     for template_object in templates_list:
         if template_object.get_version().get_version_number() == version:
             return template_object
-    logger.error(log_error)
     return None
 
 

@@ -13,7 +13,8 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
-    networks as ll_networks
+    networks as ll_networks,
+    clusters as ll_clusters
 )
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
@@ -135,13 +136,14 @@ def add_host_new_mgmt(
         bool: True if add host succeeded, otherwise False
     """
     if new_setup:
+        cluster_obj = ll_clusters.get_cluster_object(cluster_name=cl)
         if not hl_networks.create_and_attach_networks(
             data_center=dc,  clusters=[cl], networks=net_setup
         ):
             return False
 
         if not ll_networks.update_cluster_network(
-            positive=True, cluster=cl, network=mgmt_net,
+            positive=True, cluster=cluster_obj, network=mgmt_net,
                 usages=(
                     "{management},{default_route}".format(
                         management=conf.MANAGEMENT_NET_USAGE,

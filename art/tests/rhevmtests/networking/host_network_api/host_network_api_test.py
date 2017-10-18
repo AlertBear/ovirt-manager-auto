@@ -10,7 +10,10 @@ Test via SetupNetworks
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
+from art.rhevm_api.tests_lib.low_level import (
+    host_network as ll_host_network,
+    hosts as ll_hosts
+)
 import config as net_api_conf
 import helper as host_net_helper
 import rhevmtests.networking.config as conf
@@ -904,12 +907,13 @@ class TestHostNetworkApiHost06(NetworkTest):
         Remove the un-managed network from host
         """
         host_0 = conf.HOST_0_NAME
+        host_obj = ll_hosts.get_host_object(host_name=host_0)
         testflow.step(
             "Get un-managed network %s object from host %s via %s",
             network, host_0, via
         )
         assert ll_host_network.get_host_unmanaged_networks(
-            host_name=host_0, networks=[network]
+            host=host_obj, networks=[network]
         )
         testflow.step(
             "Remove the un-managed network %s from host %s via %s", network,
@@ -917,7 +921,7 @@ class TestHostNetworkApiHost06(NetworkTest):
         )
         if via == "host":
             assert ll_host_network.remove_unmanaged_networks(
-                host_name=host_0, networks=[network]
+                host=host_obj, networks=[network]
             )
         if via == "sn":
             sn_dict = {

@@ -432,16 +432,18 @@ def check_cluster_params(positive, cluster, **kwargs):
     return status == positive
 
 
-def get_cluster_object(cluster_name):
+def get_cluster_object(cluster_name, all_content=False):
     """
-    Description: get cluster object by name
-    Author: ratamir
-    Parameters:
-        * cluster_name - cluster name
-    Return: cluster object, or raise EntityNotFound exception
+    Get cluster object by name
+
+    Args:
+        cluster_name (str): cluster name
+        all_content (bool): Get all content with object
+
+    Returns:
+        Cluster: Cluster object
     """
-    cluster_obj = CLUSTER_API.find(cluster_name)
-    return cluster_obj
+    return CLUSTER_API.find(cluster_name, all_content=all_content)
 
 
 def _prepare_affinity_group_object(**kwargs):
@@ -733,29 +735,25 @@ def get_cpu_profile_id_by_name(cluster_name, cpu_profile_name):
     return cpu_profile_obj.id if cpu_profile_obj else None
 
 
-def get_cluster_management_network(cluster_name):
+def get_cluster_management_network(cluster):
     """
     Get management network object for Cluster
-    :param cluster_name: Name of the Cluster
-    :type cluster_name: str
-    :return: network management object
-    :rtype: Network
+
+    Args:
+        cluster (Cluster): Cluster object
+
+    Returns:
+        Network: Network management object
     """
-    try:
-        cl_obj = CLUSTER_API.query(
-            "name=%s" % cluster_name, all_content=True
-        )[0]
-    except IndexError:
-        return None
-    return cl_obj.get_management_network()
+    return cluster.get_management_network()
 
 
 def get_cluster_list():
     """
     Get list of cluster objects
 
-    :return: List of cluster objects
-    :rtype: list
+    Returns:
+        list: List of cluster objects
     """
     return util.get(abs_link=False)
 
@@ -764,8 +762,8 @@ def get_cluster_names_list():
     """
     Get list of cluster names
 
-    :return: List of cluster names
-    :rtype: list
+    Returns:
+        list: List of cluster names
     """
     return [cl.get_name() for cl in get_cluster_list()]
 

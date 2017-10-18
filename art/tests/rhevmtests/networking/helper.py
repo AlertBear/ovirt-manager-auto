@@ -125,27 +125,26 @@ def networks_sync_status(host, networks):
     """
     Get networks sync status
 
-    :param host: Host name
-    :type host: str
-    :param networks: List of networks
-    :type networks: list
-    :return: True if sync else False
-    :type: bool
+    Args:
+        host (str): Host name
+        networks (list): List of networks
+
+    Returns:
+        bool: True if sync else False
     """
+    host_obj = ll_hosts.get_host_object(host_name=host)
     for net in networks:
         logger.info("Get %s attachment", net)
         try:
             attachment = ll_host_network.get_networks_attachments(
-                host_name=host, networks=[net]
+                host=host_obj, networks=[net]
             )[0]
         except IndexError:
             logger.error("%s not found" % net)
             return False
 
         logger.info("Check if %s is unsync", net)
-        if not ll_host_network.get_attachment_sync_status(
-            attachment=attachment
-        ):
+        if not attachment.in_sync:
             logger.info("%s is not sync" % net)
             return False
     return True
@@ -239,7 +238,8 @@ def check_dummy_on_host_interfaces(dummy_name, host_name):
     :return: True/False
     :rtype: bool
     """
-    host_nics = ll_hosts.get_host_nics_list(host_name)
+    host_obj = ll_hosts.get_host_object(host_name=host_name)
+    host_nics = ll_hosts.get_host_nics_list(host=host_obj)
     logger.info(
         "Check if dummy %s exist on host %s via engine",
         dummy_name, host_name

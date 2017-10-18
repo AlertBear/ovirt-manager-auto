@@ -66,11 +66,12 @@ class TestLldp(NetworkTest):
         Get LLDP info for host NIC
         """
         nic = conf.HOST_0_NICS[0]
+        host_obj = ll_hosts.get_host_object(host_name=conf.HOST_0_NAME)
         sampler = apis_utils.TimeoutingSampler(
             timeout=60,
             sleep=1,
             func=ll_hosts.get_lldp_nic_info,
-            host=conf.HOST_0_NAME,
+            host=host_obj,
             nic=nic
         )
         for sample in sampler:

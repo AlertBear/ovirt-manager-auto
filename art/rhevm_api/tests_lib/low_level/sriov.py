@@ -46,8 +46,9 @@ class SriovHostNics(object):
         Returns:
             list: Host NICs
         """
+        host_obj = ll_hosts.get_host_object(host_name=self.host)
         host_nics = ll_hosts.get_host_nics_list(
-            host=self.host, all_content=True
+            host=host_obj, all_content=True
         )
         return filter(
             lambda x: (DUMMY_NIC or "dpdk") not in x.name, host_nics
@@ -141,8 +142,9 @@ class SriovNic(object):
         self.update_nic = False
         self.host = host
         self.nic_name = nic
+        self.host_obj = ll_hosts.get_host_object(host_name=self.host)
         self.nic_obj = ll_hosts.get_host_nic(
-            host=self.host, nic=self.nic_name, all_content=True
+            host=self.host_obj, nic=self.nic_name, all_content=True
         )
         self.vf_config = self.nic_obj.get_virtual_functions_configuration()
         self.vf = self._is_nic_vf()
@@ -222,7 +224,7 @@ class SriovNicPF(SriovNic):
         """
         if self.update_nic:
             self.nic_obj = ll_hosts.get_host_nic(
-                host=self.host, nic=self.nic_name, all_content=True
+                host=self.host_obj, nic=self.nic_name, all_content=True
             )
             self.vf_config = self.nic_obj.get_virtual_functions_configuration()
         return self.update_nic

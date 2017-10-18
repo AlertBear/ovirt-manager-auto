@@ -14,7 +14,6 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenters,
     templates as ll_templates,
     networks as ll_networks,
-    sriov as ll_sriov,
     vms as ll_vms
 )
 
@@ -36,48 +35,6 @@ def sr_iov_init(request):
     sriov_conf.SD_NAME = ll_storagedomains.getStorageDomainNamesForType(
         datacenter_name=conf.DC_0, storage_type=conf.STORAGE_TYPE
     )[0]
-    # Create SR-IOV host NIC class instances to work with SR-IOV interfaces
-    sriov_conf.HOST_0_SRIOV_NICS_OBJ = (
-        ll_sriov.SriovHostNics(conf.HOST_0_NAME)
-    )
-    sriov_conf.HOST_1_SRIOV_NICS_OBJ = (
-        ll_sriov.SriovHostNics(conf.HOST_1_NAME)
-    )
-
-    # Get all SR-IOV host NIC objects
-    sriov_conf.HOST_0_PF_LIST = (
-        sriov_conf.HOST_0_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
-    )
-    sriov_conf.HOST_1_PF_LIST = (
-        sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
-    )
-
-    # Get all SR-IOV host NIC names
-    host_0_pf_nics = sriov_conf.HOST_0_SRIOV_NICS_OBJ.get_all_pf_nics_names()
-    sriov_conf.HOST_0_PF_NAMES = [
-        i for i in conf.HOST_0_NICS if i in host_0_pf_nics
-    ]
-
-    host_1_pf_nics = sriov_conf.HOST_1_SRIOV_NICS_OBJ.get_all_pf_nics_names()
-    sriov_conf.HOST_1_PF_NAMES = [
-        i for i in conf.HOST_1_NICS if i in host_1_pf_nics
-    ]
-
-    # Get all PF objects according to PF NIC names
-    sriov_conf.HOST_0_PF_OBJECTS = [
-        ll_sriov.SriovNicPF(host=conf.HOST_0_NAME, nic=nic_name)
-        for nic_name in sriov_conf.HOST_0_PF_NAMES
-    ]
-    sriov_conf.HOST_1_PF_OBJECTS = [
-        ll_sriov.SriovNicPF(host=conf.HOST_1_NAME, nic=nic_name)
-        for nic_name in sriov_conf.HOST_1_PF_NAMES
-    ]
-
-    # Store specific PF objects for use in tests
-    # Assuming more then one SR-IOV NIC per host is available
-    sriov_conf.HOST_0_PF_OBJECT_1 = sriov_conf.HOST_0_PF_OBJECTS[0]
-    sriov_conf.HOST_0_PF_OBJECT_2 = sriov_conf.HOST_0_PF_OBJECTS[1]
-    sriov_conf.HOST_1_PF_OBJECT_1 = sriov_conf.HOST_1_PF_OBJECTS[0]
 
 
 @pytest.fixture(scope="class")

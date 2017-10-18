@@ -37,99 +37,88 @@ NETWORK_ATTACHMENT_API = get_api(NETWORK_ATTACHMENT, NETWORKATTACHMENTS)
 UNMANAGED_NETWORKS_API = get_api(UNMANAGED_NETWORK, UNMANAGEDNETWORKS)
 
 
-def get_host_network_attachments(host_name):
+@ll_general.generate_logs()
+def get_host_network_attachments(host):
     """
-    Get all host network attachments from:
-    api/hosts/<host_id>/networkattachments
+    Get host network attachments.
+
+    From api/hosts/<host_id>/networkattachments
 
     Args:
-        host_name (str): Host name
+        host (Host): Host object
 
     Returns:
         list: Host network attachments
     """
-    logger.info("Get host %s network attachments", host_name)
-    host = ll_hosts.HOST_API.find(host_name)
-    res = ll_hosts.HOST_API.getElemFromLink(
-        host, NETWORKATTACHMENTS, NETWORK_ATTACHMENT
+    return ll_hosts.HOST_API.getElemFromLink(
+        elm=host,
+        link_name=NETWORKATTACHMENTS,
+        attr=NETWORK_ATTACHMENT
     )
-    if not res:
-        logger.error("Failed to get host %s network attachments", host_name)
-    return res
 
 
-def get_host_nic_network_attachments(host_name, nic):
+@ll_general.generate_logs(warn=True)
+def get_host_nic_network_attachments(nic):
     """
-    Get host NIC network attachments from:
-    api/hosts/<host_id>/nics/<nic_id>/networkattachments
+    Get host NIC network attachments.
+
+    From api/hosts/<host_id>/nics/<nic_id>/networkattachments
 
     Args:
-        host_name (str): Host name
+        nic (Nic): NIC object
 
     Returns:
         list: Host NIC network attachments
     """
-    logger.info("Get host %s NIC %s network attachments", host_name, nic)
-    host_nic = ll_hosts.get_host_nic(host_name, nic)
-    res = ll_hosts.HOST_NICS_API.getElemFromLink(
-        host_nic, NETWORKATTACHMENTS, NETWORK_ATTACHMENT
+    return ll_hosts.HOST_NICS_API.getElemFromLink(
+        elm=nic,
+        link_name=NETWORKATTACHMENTS,
+        attr=NETWORK_ATTACHMENT
     )
-    if not res:
-        logger.error(
-            "Failed to get host %s NIC %s network attachments", host_name, nic
-        )
-    return res
 
 
-def get_networks_attachments(host_name, networks, nic=None):
+def get_networks_attachments(networks, host=None, nic=None):
     """
     Get networks attachments by network names
 
     Args:
-        host_name (str): Host name
         networks (list): Network names list
-        nic (str): NIC name
+        host (Host): Host object
+        nic (Nic): NIC object
 
     Returns:
         list: Network attachments
     """
-    func = "get_host{0}network_attachments".format("_nic_" if nic else "_")
-    args = (host_name, nic) if nic else (host_name,)
-    attachments = eval(func)(*args)
+    attachments = []
+    if nic:
+        attachments = get_host_nic_network_attachments(nic=nic)
+
+    elif host:
+        attachments = get_host_network_attachments(host=host)
 
     return [
-        att for att in attachments if get_network_name_from_attachment(att)
+        att for att in attachments if get_network_name_from_attachment(
+            attachment=att
+        )
         in networks
     ]
 
 
-def get_host_unmanaged_objects(host_name):
+def get_host_unmanaged_objects(host):
     """
     Get host unmanaged objects
 
     Args:
-        host_name (str): Host name
+        host (Host): Host object
 
     Returns:
         list: Host unmanaged objects
     """
-    host = ll_hosts.HOST_API.find(host_name)
     return ll_hosts.HOST_API.getElemFromLink(
-        host, UNMANAGEDNETWORKS, UNMANAGED_NETWORK
+        elm=host,
+        link_name=UNMANAGEDNETWORKS,
+        attr=UNMANAGED_NETWORK
     )
-
-
-def get_attachment_sync_status(attachment):
-    """
-    Get attachment sync status
-
-    Args:
-        attachment (NetworkAttachment): Network attachment
-
-    Returns:
-        bool: True if network is synced else False
-    """
-    return attachment.in_sync
 
 
 def get_attachment_reported_configurations(attachment):
@@ -146,34 +135,29 @@ def get_attachment_reported_configurations(attachment):
     return reported_.get_reported_configuration()
 
 
-def get_attachment_href(host_name, nic=None):
+def get_attachment_href(nic=None):
     """
     Get host/NIC attachment href
 
     Args:
-        host_name (str): Host name
-        nic (str): NIC name
+        nic (Nic): NIC object
 
     Returns:
         str: Host/NIC attachment href
     """
-    api = ll_hosts.HOST_NICS_API if nic else ll_hosts.HOST_API
-    if nic:
-        entity = ll_hosts.get_host_nic(host_name, nic)
-    else:
-        entity = ll_hosts.HOST_API.find(host_name)
-
-    return api.getElemFromLink(
-        entity, NETWORKATTACHMENTS, get_href=True
+    return ll_hosts.HOST_NICS_API.getElemFromLink(
+        elm=nic,
+        link_name=NETWORKATTACHMENTS,
+        get_href=True
     )
 
 
-def prepare_network_attachment_obj(host_name, **kwargs):
+def prepare_network_attachment_obj(host, **kwargs):
     """
     Prepare network attachment object
 
     Args:
-        host_name (str): Host name
+        host (Host): Host object
 
     Keyword Args:
         update (bool): True to update network attachment
@@ -208,7 +192,7 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     dns = kwargs.get(DNS)
     if update:
         network_attachment_obj = get_networks_attachments(
-            host_name, [network]
+            host=host, networks=[network]
         )
         if not network_attachment_obj:
             return None
@@ -231,12 +215,12 @@ def prepare_network_attachment_obj(host_name, **kwargs):
 
     if nic:
         if BOND in nic:
-            host_nic = ll_hosts.get_host_nic(host_name, nic)
+            host_nic = ll_hosts.get_host_nic(host=host, nic=nic)
             if not host_nic:
                 host_nic = data_st.HostNic()
                 host_nic.set_name(nic)
         else:
-            host_nic = ll_hosts.get_host_nic(host_name, nic)
+            host_nic = ll_hosts.get_host_nic(host=host, nic=nic)
 
         network_attachment_obj.set_host_nic(host_nic)
 
@@ -258,12 +242,12 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     return network_attachment_obj
 
 
-def prepare_bond_attachment_obj(host_name, **kwargs):
+def prepare_bond_attachment_obj(host, **kwargs):
     """
     Prepares a BOND host_nic object
 
     Args:
-        host_name (str): Engine hostname
+        host (Host): Host object
 
     Keyword Args:
             slaves (list): List of strings that represents slaves names
@@ -284,7 +268,7 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
     mii_mon = kwargs.get(MIIMON)
 
     if update:
-        host_nic_bond_obj = ll_hosts.get_host_nic(host=host_name, nic=nic_name)
+        host_nic_bond_obj = ll_hosts.get_host_nic(host=host, nic=nic_name)
         bond_obj = host_nic_bond_obj.get_bonding()
         slaves = bond_obj.get_slaves()
         options = bond_obj.get_options()
@@ -315,7 +299,7 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
             host_slave_dict = dict()
 
         for slave in slave_list:
-            host_nic = ll_hosts.get_host_nic(host=host_name, nic=slave)
+            host_nic = ll_hosts.get_host_nic(host=host, nic=slave)
             if host_nic and host_slave_dict.get(host_nic.id):
                 del host_slave_dict[host_nic.id]
             else:
@@ -330,13 +314,13 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
     return host_nic_bond_obj
 
 
-def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
+def prepare_remove_for_setupnetworks(host, dict_to_remove):
     """
     Prepare HostNics/NetworkAttachments objects of networks and BONDs
     for setup_networks function
 
     Args:
-        host_name (str): Host name
+        host (Host): Host object
         dict_to_remove (dict): Dict with networks/BONDs to remove
 
     Returns:
@@ -348,19 +332,21 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
     for k in dict_to_remove.keys():
         if k == NETWORKS:
             attach = get_networks_attachments(
-                host_name, dict_to_remove.get(NETWORKS)
+                host=host, networks=dict_to_remove.get(NETWORKS)
             )
             for att in attach:
                 removed_network_attachments.add_network_attachment(att)
 
         if k == BONDS:
             for bond in dict_to_remove.get(BONDS):
-                bond_to_remove = ll_hosts.get_host_nic(host_name, bond)
+                bond_to_remove = ll_hosts.get_host_nic(
+                    host=host, nic=bond
+                )
                 removed_bonds.add_host_nic(bond_to_remove)
 
         if k == LABELS:
             labels_list = dict_to_remove.get(LABELS)
-            host_nics = ll_hosts.get_host_nics_list(host=host_name)
+            host_nics = ll_hosts.get_host_nics_list(host=host)
             label_objs = ll_networks.get_host_nic_label_objs_by_id(
                 host_nics=host_nics, labels_id=labels_list
             )
@@ -371,7 +357,7 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
 
 
 def prepare_add_for_setupnetworks(
-    network_attachments, labels, host_name, dict_to_add, update=False
+    network_attachments, labels, host, dict_to_add, update=False
 ):
     """
     Prepare NetworkAttachment object for setup_networks function
@@ -379,7 +365,7 @@ def prepare_add_for_setupnetworks(
     Args:
         network_attachments (NetworkAttachment): Network attachment
         labels (Labels): labels object
-        host_name (str): Host name
+        host (Host): Host object
         dict_to_add (dict): Dict with networks to dict_to_add
         update (bool): True for update networks/BONDs/Labels
 
@@ -393,24 +379,26 @@ def prepare_add_for_setupnetworks(
 
         if v.get(SLAVES) or v.get(MODE):
             bond_obj = prepare_bond_attachment_obj(
-                host_name=host_name, **v
+                host=host, **v
             )
             bonds.add_host_nic(bond_obj)
 
         if v.get(NETWORK):
             network_attachment = prepare_network_attachment_obj(
-                host_name=host_name, **v
+                host=host, **v
             )
             network_attachments.add_network_attachment(network_attachment)
 
         if v.get(LABELS):
             labels_list = v.get(LABELS)
             host_nic = v.get("nic")
+            nic_obj = ll_hosts.get_host_nic(host=host, nic=host_nic)
             for label in labels_list:
-                label_obj = create_host_nic_label_object(
-                    host_name=host_name, nic=host_nic, label=label
+                label_obj = ll_networks.create_label(label=label)
+                host_nic_label_obj = create_host_nic_label_object(
+                    nic=nic_obj, label=label_obj
                 )
-                labels.add_network_label(label_obj)
+                labels.add_network_label(host_nic_label_obj)
 
     return network_attachments, bonds, labels
 
@@ -442,44 +430,43 @@ def prepare_ip_object(network_attachment, ip_dict):
     return network_attachment
 
 
-@ll_general.generate_logs(step=True)
-def get_host_unmanaged_networks(host_name, networks=list()):
+@ll_general.generate_logs(step=True, warn=True)
+def get_host_unmanaged_networks(host, networks=list()):
     """
     Get unmanaged network object from host
 
     Args:
-        host_name (str): Host name
+        host (Host): Host object
         networks (list): Networks names
 
     Returns:
         list: Unmanaged networks
     """
-    unmanaged_networks = get_host_unmanaged_objects(host_name)
+    unmanaged_networks = get_host_unmanaged_objects(host=host)
     if not networks:
         return unmanaged_networks
     return filter(lambda x: x.name in networks, unmanaged_networks)
 
 
-def remove_unmanaged_networks(host_name, networks=list()):
+@ll_general.generate_logs()
+def remove_unmanaged_networks(host, networks=list()):
     """
     Remove unmanaged networks from host
 
     Args:
-        host_name (str): Host name
+        host (Host): Host object
         networks (list): Networks to remove
 
     Returns:
         bool: True if network is removed else False
     """
-    unmanged_networks = get_host_unmanaged_networks(host_name, networks)
+    unmanged_networks = get_host_unmanaged_networks(
+        host=host, networks=networks
+    )
     for unmanaged_network in unmanged_networks:
-        log_info, log_error = ll_general.get_log_msg(
-            log_action="Remove", obj_type="un-managed network",
-            obj_name=unmanaged_network.name
-        )
-        logger.info(log_info)
-        if not UNMANAGED_NETWORKS_API.delete(unmanaged_network, True):
-            logger.error(log_error)
+        if not UNMANAGED_NETWORKS_API.delete(
+            entity=unmanaged_network, positive=True
+        ):
             return False
     return True
 
@@ -495,23 +482,21 @@ def get_network_name_from_attachment(attachment):
         str: Network name
     """
     return ll_general.get_object_name_by_id(
-        ll_networks.NET_API, attachment.get_network().get_id()
+        object_api=ll_networks.NET_API,
+        object_id=attachment.get_network().get_id()
     )
 
 
-def create_host_nic_label_object(host_name, nic, label):
+def create_host_nic_label_object(nic, label):
     """
     Prepare label object with host NIC
 
     Args:
-        host_name (str): Host name
-        nic (str): Host NIC name
-        label (str): Label name
+        nic (Nic): Host NIC object
+        label (Label): Label object
 
     Returns:
         Label: Label object
     """
-    label_obj = ll_networks.create_label(label=label)
-    host_nic_obj = ll_hosts.get_host_nic(host=host_name, nic=nic)
-    label_obj.set_host_nic(host_nic_obj)
-    return label_obj
+    label.set_host_nic(nic)
+    return label

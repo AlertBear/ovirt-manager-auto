@@ -13,7 +13,8 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
-    vms as ll_vms
+    vms as ll_vms,
+    clusters as ll_clusters
 )
 from art.unittest_lib import testflow
 
@@ -44,11 +45,11 @@ def update_network_usages(request):
     Update network usages
     """
     net_usages_dict = request.getfixturevalue("update_network_usages_params")
-
+    cluster_obj = ll_clusters.get_cluster_object(cluster_name=net_config.CL_0)
     for net, net_usages in net_usages_dict.items():
         testflow.setup("Updating network: %s usages: %s", net, net_usages)
         assert ll_networks.update_cluster_network(
-            positive=True, cluster=net_config.CL_0, network=net,
+            positive=True, cluster=cluster_obj, network=net,
             usages=net_usages
         )
 
