@@ -8,7 +8,7 @@ import pytest
 import config
 from art.test_handler.tools import polarion
 from art.unittest_lib import testflow
-from art.unittest_lib import tier3
+from art.unittest_lib import tier1
 from log_collector_base import LogCollectorTest
 
 
@@ -35,7 +35,7 @@ def module_setup(request):
     request.addfinalizer(finalizer)
 
 
-@tier3
+@tier1
 class TestLogCollector(LogCollectorTest):
     """
     Test log collector without parameters and with one parameter
