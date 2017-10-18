@@ -787,7 +787,6 @@ class TestMacPoolRange08(NetworkTest):
         ) == self.vm_0_mac_address
 
 
-@bz({"1495723": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     mac_pool_per_cl_prepare_setup.__name__,
@@ -943,6 +942,7 @@ class TestMacPoolRange09(NetworkTest):
             positive=True, vm=mac_pool_conf.MP_VM_1, wait_for_status="up"
         )
 
+    @bz({"1498580": {}})
     @tier2
     @polarion("RHEVM-23178")
     def test_03_test_mac_pool_full_with_snapshot(self):

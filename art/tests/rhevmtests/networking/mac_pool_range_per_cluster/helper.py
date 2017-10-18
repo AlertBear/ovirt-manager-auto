@@ -182,13 +182,26 @@ def preview_snapshot_on_vm(vm, snapshot_desc, positive=True):
     Returns:
         bool: True for success, False for failure
     """
-    res = ll_vm.preview_snapshot(
+    # Asynchronous API call to preview a snapshot (creates background task)
+    res_preview_snapshot = ll_vm.preview_snapshot(
         positive=positive, vm=vm, description=snapshot_desc,
         ensure_vm_down=True
     )
-    if positive:
-        ll_jobs.wait_for_jobs([global_conf.JOB_PREVIEW_SNAPSHOT])
-    return res
+    # Return on failure of asynchronous call (no background job is created)
+    # This is relevant for positive and negative tests
+    if not res_preview_snapshot:
+        return False
+
+    # Wait for snapshot task to be completed
+    ll_jobs.wait_for_jobs(job_descriptions=[global_conf.JOB_PREVIEW_SNAPSHOT])
+
+    desired_job_status = (
+        global_conf.JOB_FINISHED if positive else global_conf.JOB_FAILED
+    )
+    return ll_jobs.check_recent_job(
+        description=global_conf.JOB_PREVIEW_SNAPSHOT,
+        job_status=desired_job_status
+    )[0]
 
 
 def remove_non_default_mac_pools():
